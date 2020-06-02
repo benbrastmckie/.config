@@ -1,2 +1,10 @@
 let g:AutoPairsFlyMode = 1
-let g:AutoPairs = {"`": "'"}
+let g:AutoPairs = {
+      \ "`":"'",
+      \ "(":")",
+      \ "[":"]",
+      \ "{":"}",
+      \ "( ": " )",
+      \ "[ ": " ]",
+      \ "{ ": " }",
+      \ }
