@@ -3,8 +3,8 @@ inoremap <expr> <c-j> ("\<C-n>")
 inoremap <expr> <c-k> ("\<C-p>")
 
 " Use alt + hjkl to resize windows
-nnoremap <M-j>    :resize -2<CR>
-nnoremap <M-k>    :resize +2<CR>
+" nnoremap <M-j>    :resize -2<CR>
+" nnoremap <M-k>    :resize +2<CR>
 nnoremap <M-h>    :vertical resize -2<CR>
 nnoremap <M-l>    :vertical resize +2<CR>
 
@@ -12,8 +12,12 @@ nnoremap <M-l>    :vertical resize +2<CR>
 " nmap <C-j> :NERDTreeToggle<CR>
 
 " Drag lines
-vnoremap J :m '>+1<CR>gv=gv
-vnoremap K :m '<-2<CR>gv=gv
+vnoremap <M-j> :m '>+1<CR>gv=gv
+vnoremap <M-k> :m '<-2<CR>gv=gv
+" inoremap <M-j> :m '>+1<CR>gv=gv
+" inoremap <M-k> :m '<-2<CR>gv=gv
+nnoremap <M-j> :m '>+1<CR>gv=gv
+nnoremap <M-k> :m '<-2<CR>gv=gv
 
 " TAB in general mode will move to text buffer
 nnoremap <TAB> :bnext<CR>
@@ -49,10 +53,10 @@ noremap <C-m> :call <SNR>23_show_documentation()<CR>
 " noremap <C-m> :Man <cword><CR>
 
 " Display line movements
-nnoremap k gk
-nnoremap j gj
-vnoremap k gk
-vnoremap j gj
+nnoremap <S-k> gk
+nnoremap <S-j> gj
+vnoremap <S-k> gk
+vnoremap <S-j> gj
 
 " nnoremap <Leader>o o<Esc>^Da
 " nnoremap <Leader>O O<Esc>^Da
