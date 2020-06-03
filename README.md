@@ -1,13 +1,8 @@
 # .config
-
-Configuration files for NeoVim, Alacrrity, Tmux, and Zathura which have been optimized for writing in LaTeX.
-
+A complete configuration for writing LaTeX documents with NeoVim.
 ---
-
 The following sections provide instalation instructions for Mac and Debian Linux systems such as Ubuntu.
-
 # Mac Instalation
-
 Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 ```
@@ -22,6 +17,25 @@ If Homebrew has not been installed, you may install it by entering:
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
+Install node by running:
+```
+brew install node
+```
+Install Python 3 by running:
+```
+brew install python
+```
+It is important that python 3 is linked. To check, run:
+```
+brew link python
+```
+In case there are conflicts, you can run:
+```
+brew link --overwrite python
+```
+Reboot and proceed to install NeoVim.
+
+## [NeoVim](https://neovim.io/)
 Install NeoVim by entering:
 ```
 brew install neovim
@@ -40,6 +54,7 @@ In order to install pluggins, extending the features included in NeoVim, run the
 sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 ```
+## [Git](https://git-scm.com/)
 Check to see whether Git is already installed by entering the following:
 ```
 git --version
@@ -48,16 +63,22 @@ If Git is not installed, run:
 ```
 brew install git
 ```
-Install Zathura by running the following commands:
+## Skim
+Install Skim pdf viewer by running:
 ```
-brew install zathura
-brew install zathura-pdf-poppler
+brew cask install skim
 ```
-Link the pluggins for Zathura by running the following commands:
+Run the following command in the terminal:
 ```
-mkdir -p $(brew --prefix zathura)/lib/zathura
-$ ln -s $(brew --prefix zathura-pdf-poppler)/libpdf-poppler.dylib $(brew --prefix zathura)/lib/zathura/libpdf-poppler.dylib
+nvim ~/.config/nvim/plug-config/vimtex.vim
 ```
+Changing all occurances of 'zathura' to 'skim'.
+You will need to know basic Vim commands in order to do so.
+Save the file by entering the following in NeoVim:
+```
+:wq
+```
+## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
 cd ~/.config
@@ -69,8 +90,8 @@ Run NeoVim by entering the following into the terminal:
 ```
 nvim
 ```
-You are now ready to use NeoVim.
----
+NeoVim will now be fully configured.
+## Alacritty
 In order to upgrade your terminal, install the Alacritty ternimal emulator by running:
 ```
 brew cask install alacritty
@@ -84,6 +105,5 @@ After rebotting, open the terminal and run NeoVim by entering:
 nvim
 ```
 If you run into trouble, feel free to open an issue, and I'll do my best to help.
-
 # Debian Linux Instalation
 
