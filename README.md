@@ -76,7 +76,7 @@ Run NeoVim by entering the following into the terminal:
 nvim
 ```
 NeoVim will now be fully configured.
-## Skim
+## [Skim](https://skim-app.sourceforge.io/)
 Install Skim pdf viewer by running:
 ```
 brew cask install skim
@@ -90,11 +90,12 @@ Save and quit the file by entering the following in NeoVim:
 ```
 :wq
 ```
-## Alacritty
+## [Alacritty](https://github.com/alacritty/alacritty)
 In order to upgrade your terminal, install the Alacritty ternimal emulator by running:
 ```
 brew cask install alacritty
 ```
+## [Tmux](https://github.com/tmux/tmux/wiki)
 Install the Tmux terminal multiplexer by running:
 ```
 brew install tmux
@@ -103,6 +104,5 @@ After rebotting, open the terminal and run NeoVim by entering:
 ```
 nvim
 ```
-If you run into trouble, feel free to open an issue, and I'll do my best to help.
 # Debian Linux Instalation
 
