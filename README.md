@@ -63,21 +63,6 @@ If Git is not installed, run:
 ```
 brew install git
 ```
-## Skim
-Install Skim pdf viewer by running:
-```
-brew cask install skim
-```
-Run the following command in the terminal:
-```
-nvim ~/.config/nvim/plug-config/vimtex.vim
-```
-Changing all occurances of 'zathura' to 'skim'.
-You will need to know basic Vim commands in order to do so.
-Save the file by entering the following in NeoVim:
-```
-:wq
-```
 ## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
@@ -91,6 +76,20 @@ Run NeoVim by entering the following into the terminal:
 nvim
 ```
 NeoVim will now be fully configured.
+## Skim
+Install Skim pdf viewer by running:
+```
+brew cask install skim
+```
+Run the following command in the terminal:
+```
+nvim ~/.config/nvim/plug-config/vimtex.vim
+```
+Changing all occurances of 'zathura' to 'skim'.
+Save and quit the file by entering the following in NeoVim:
+```
+:wq
+```
 ## Alacritty
 In order to upgrade your terminal, install the Alacritty ternimal emulator by running:
 ```
