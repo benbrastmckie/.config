@@ -17,7 +17,7 @@ If Homebrew has not been installed, you may install it by entering:
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
-Install node by running:
+Install Node by running:
 ```
 brew install node
 ```
