@@ -116,8 +116,6 @@ For simplicity, I have included RobotoMono in `~/.config/fonts` which you can no
 sudo mv ~/.config/fonts/RobotoMono/ /Library/Fonts/
 ```
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
-
----
 You are now ready to write LaTex in NeoVim inside the stock terminal.
 
 # Debian Linux Instalation
