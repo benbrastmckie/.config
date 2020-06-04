@@ -116,7 +116,7 @@ For simplicity, I have included RobotoMono in `~/.config/fonts` which you can no
 sudo mv ~/.config/fonts/RobotoMono/ /Library/Fonts/
 ```
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
-This step is unncessary if you proceed to install Alacritty as detailed below.
+
 ---
 You are now ready to write LaTex in NeoVim inside the stock terminal.
 
