@@ -117,6 +117,29 @@ sudo mv ~/.config/fonts/RobotoMono/ /Library/Fonts/
 ```
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
+If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
+## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), [Fish](https://fishshell.com/)
+Run the following in the terminal:
+```
+brew cask install alacritty
+brew install tmux
+brew install fish
+```
+You will now need to locate fish on your opperating system by running the following:
+```
+which fish
+```
+The command should return `/usr/local/bin/fish`, otherwise copy the path and run the following:
+```
+nvim ~/.config/alacritty/alacritty.yml
+```
+Replace '/usr/bin/fish' with the location of fish, saving and exiting with Space-q.
+You will also need to move the Tmux configuration file to the appropriate location by running:
+```
+sudo mv ~/.config/tmux/.tmux.conf ~/
+tmux kill-server
+```
+Re-open Alacritty, typing `nvim` to open NeoVim.
 
 # Debian Linux Instalation
 
