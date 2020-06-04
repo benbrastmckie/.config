@@ -139,7 +139,12 @@ You will also need to move the Tmux configuration file to the appropriate locati
 sudo mv ~/.config/tmux/.tmux.conf ~/
 tmux kill-server
 ```
-Re-open Alacritty, typing `nvim` to open NeoVim.
+Re-open Alacritty, running the following:
+```
+curl -L https://get.oh-my.fish | fish
+omf install sashimi
+```
+You  are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 # Debian Linux Instalation
 
