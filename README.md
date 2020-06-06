@@ -87,7 +87,7 @@ nvim
 After the plugins finish installing, quite NeoVim with `:qa!`.
 
 ## [Skim](https://skim-app.sourceforge.io/)
-Install Skim pdf viewer by running:
+Install the Skim pdf viewer by running:
 ```
 brew cask install skim
 ```
