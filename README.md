@@ -8,8 +8,7 @@ You may check whether you already have Homebrew installed by entering the follow
 ```
 brew --version
 ```
-If Homebrew is installed, it will report which version you have.
-Otherwise, you may update by means of the following:
+If Homebrew is installed, it will report which version you have which you can update by means of the following:
 ```
 brew update
 ```
