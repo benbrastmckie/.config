@@ -75,7 +75,7 @@ git pull origin master
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
 ```
-If you have not already installed MacTex on your computer, you can run the following command after checking to see if it is already installed:
+If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
 ```
 latexmk --version
 ```
