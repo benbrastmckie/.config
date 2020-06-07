@@ -44,3 +44,5 @@ nvim/session/LogicReligion
 nvim/session/__LAST__
 nvim/spell/en.utf-8.add
 nvim/spell/en.utf-8.add.spl
+QtProject.conf
+tmux/.tmux.reset.conf
