@@ -21,7 +21,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
     " Auto pairs for '(' '[' '{' 
     Plug 'machakann/vim-sandwich' 
-    Plug 'jiangmiao/auto-pairs' " having trouble changing defaults 
+    Plug 'jiangmiao/auto-pairs' 
     Plug 'tpope/vim-surround' 
     Plug 'tpope/vim-repeat' 
     
@@ -44,6 +44,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'tpope/vim-rhubarb'
     Plug 'junegunn/gv.vim'
     
+    " Multiple Cursors
+    Plug 'terryma/vim-multiple-cursors'
+
     " Quick Movements in Text
     " Plug 'justinmk/vim-sneak'
     Plug 'unblevable/quick-scope'
@@ -106,6 +109,10 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
     " Spelling
     " Plug 'kopischke/unite-spell-suggest'
+
+    " Pandoc
+    " Plug 'vim-pandoc/vim-pandoc'
+    " Plug 'vim-pandoc/vim-pandoc-syntax' 
 
 
 

@@ -12,12 +12,30 @@ nnoremap <M-l>    :vertical resize +2<CR>
 " nmap <C-j> :NERDTreeToggle<CR>
 
 " Drag lines
+" xnoremap <silent> <M-k> :call wincent#mappings#visual#move_up()<CR>
+" xnoremap <silent> <M-j> :call wincent#mappings#visual#move_down()<CR>
 vnoremap <M-j> :m '>+1<CR>gv=gv
 vnoremap <M-k> :m '<-2<CR>gv=gv
 " inoremap <M-j> :m '>+1<CR>gv=gv
 " inoremap <M-k> :m '<-2<CR>gv=gv
 nnoremap <M-j> :m '>+1<CR>gv=gv
 nnoremap <M-k> :m '<-2<CR>gv=gv
+
+" Change next word instance
+" nnoremap c* Ncgn
+
+" Multiple Cursors
+let g:multi_cursor_use_default_mapping=0
+
+" Default mapping
+let g:multi_cursor_start_word_key      = '<C-n>'
+let g:multi_cursor_select_all_word_key = '<A-n>'
+let g:multi_cursor_start_key           = 'g<C-n>'
+let g:multi_cursor_select_all_key      = 'g<A-n>'
+let g:multi_cursor_next_key            = '<C-n>'
+let g:multi_cursor_prev_key            = '<C-p>'
+let g:multi_cursor_skip_key            = '<C-x>'
+let g:multi_cursor_quit_key            = '<Esc>'
 
 " TAB in general mode will move to text buffer
 nnoremap <TAB> :bnext<CR>
@@ -139,6 +157,14 @@ omap af <Plug>(coc-funcobj-a)
 " coc-tsserver, coc-python are the examples of servers that support it.
 " nmap <silent> <TAB> <Plug>(coc-range-select)
 " xmap <silent> <TAB> <Plug>(coc-range-select)
+
+" Registers
+nnoremap d "dd
+vnoremap d "dd
+" nnoremap y "xy
+" vnoremap y "xy
+" nnoremap p "xp
+" vnoremap p "xp
 
 " Unmappings
 " unmap <C-t>

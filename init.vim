@@ -23,4 +23,5 @@ source $HOME/.config/nvim/plug-config/ultisnips.vim
 " source $HOME/.config/nvim/plug-config/rnvimr.vim
 " source $HOME/.config/nvim/plug-config/sneak.vim
 " source $HOME/.config/nvim/themes/onedark.vim
+" source $HOME/.config/nvim/keys/mappings.vim
 
