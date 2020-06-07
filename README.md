@@ -2,14 +2,14 @@
 A complete configuration for writing LaTeX documents with NeoVim.
 ---
 The following sections provide instalation instructions for Mac and Debian Linux operating systems.
+I provide an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series.
 # Mac Instalation
 Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 ```
 brew --version
 ```
-If Homebrew is installed, it will report which version you have.
-Otherwise, you may update by means of the following:
+If Homebrew is installed, it will report which version you have which you can update by means of the following:
 ```
 brew update
 ```
@@ -76,7 +76,7 @@ git pull origin master
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
 ```
-If you have not already installed MacTex on your computer, you can run the following command after checking to see if it is already installed:
+If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
 ```
 latexmk --version
 ```
@@ -88,7 +88,7 @@ nvim
 After the plugins finish installing, quite NeoVim with `:qa!`.
 
 ## [Skim](https://skim-app.sourceforge.io/)
-Install Skim pdf viewer by running:
+Install the Skim pdf viewer by running:
 ```
 brew cask install skim
 ```
@@ -139,7 +139,16 @@ You will also need to move the Tmux configuration file to the appropriate locati
 sudo mv ~/.config/tmux/.tmux.conf ~/
 tmux kill-server
 ```
-Re-open Alacritty, typing `nvim` to open NeoVim.
+Re-open Alacritty, running the following:
+```
+curl -L https://get.oh-my.fish | fish
+omf install sashimi
+```
+To delete the welcome message, run:
+```
+set fish_greeting
+```
+You  are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 # Debian Linux Instalation
 
