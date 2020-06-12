@@ -81,10 +81,8 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
     " IntelLisense
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
-    " Keeping up to date with master
-    " Plug 'neoclide/coc.nvim', {'do': 'yarn install --frozen-lockfile'}
-    
-    " Auto-Complete
+      " Keeping up to date with master
+      " Plug 'neoclide/coc.nvim', {'do': 'yarn install --frozen-lockfile'}
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     " Plug 'Valloric/YouCompleteMe'
     
