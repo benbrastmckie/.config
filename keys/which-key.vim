@@ -24,13 +24,13 @@ autocmd  FileType which_key set laststatus=0 noshowmode noruler
 
 
 " Single mappings
-let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
+" let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
 let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
 let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
 let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
-let g:which_key_map['F'] = [ ':Files ~'              , 'files' ]
+let g:which_key_map['F'] = [ ':Files ~'              , 'home files' ]
 let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
 let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
 let g:which_key_map['R'] = [ ':source $MYVIMRC'      , 'reload' ]
@@ -63,6 +63,17 @@ let g:which_key_map.p = 'preview'
 
 
 " Group mappings
+
+" Templates
+let g:which_key_map.t = {
+      \ 'name' : '+templates' ,
+      \ 'p' : [':read ~/.config/nvim/templates/PhilPaper.tex'           , 'PhilPaper.tex'],
+      \ 'l' : [':read ~/.config/nvim/templates/Letter.tex'           , 'Letter.tex'],
+      \ 'h' : [':read ~/.config/nvim/templates/HandOut.tex'           , 'HandOut.tex'],
+      \ 'b' : [':read ~/.config/nvim/templates/PhilBeamer.tex'           , 'PhilBeamer.tex'],
+      \ 's' : [':read ~/.config/nvim/templates/SubFile.tex'           , 'SubFile.tex'],
+      \ 'm' : [':read ~/.config/nvim/templates/MultipleAnswer.tex'           , 'MultipleAnswer.tex'],
+      \ }
 
 " Markdown
 let g:which_key_map.m = {
