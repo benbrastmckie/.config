@@ -43,6 +43,15 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'tpope/vim-fugitive'
     Plug 'tpope/vim-rhubarb'
     Plug 'junegunn/gv.vim'
+
+    " Templates
+    " Plug 'KabbAmine/vBox.vim'
+    " Plug 'tibabit/vim-templates'
+    " Plug 'aperezdc/vim-template'
+
+    " Markdown
+    Plug 'gabrielelana/vim-markdown'
+    Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
     
     " Multiple Cursors
     Plug 'terryma/vim-multiple-cursors'
@@ -54,6 +63,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Fuzzy Search
     Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
     Plug 'junegunn/fzf.vim'
+    " Plug 'jremmen/vim-ripgrep'
     " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
     
     " File Manager etc 
@@ -78,8 +88,6 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     " Plug 'Valloric/YouCompleteMe'
     
-    Plug 'jremmen/vim-ripgrep'
-    
     " Undo tree
     Plug 'mbbill/undotree'
     
@@ -98,7 +106,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'Shougo/echodoc.vim'
     
     " Interactive code
-    Plug 'https://github.com/vimwiki/vimwiki.git'
+    " Plug 'https://github.com/vimwiki/vimwiki.git'
     " Plug 'metakirby5/codi.vim'
 
     " LaTeX Support

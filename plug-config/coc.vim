@@ -7,6 +7,7 @@ let g:coc_global_extensions = [
   \ 'coc-explorer',
   \ 'coc-json',
   \ 'coc-vimlsp',
+  \ 'coc-yank',
   \ ]
 
   "   \ 'coc-actions',
@@ -21,7 +22,6 @@ let g:coc_global_extensions = [
   "   \ 'coc-prettier',
   "   \ 'coc-flutter',
   "   \ 'coc-xml',
-  "   \ 'coc-yank',
 
 
 

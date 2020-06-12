@@ -29,8 +29,9 @@ let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
 let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
-let g:which_key_map['f'] = [ ':Files ~'              , 'files' ]
-let g:which_key_map['s'] = [ ':SSave'                , 'save session' ]
+let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
+let g:which_key_map['F'] = [ ':Files ~'              , 'files' ]
+let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
 let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
 let g:which_key_map['R'] = [ ':source $MYVIMRC'      , 'reload' ]
 let g:which_key_map['r'] = [ ':CocEnable'            , 'restore coc' ]
@@ -38,12 +39,16 @@ let g:which_key_map['l'] = [ ':VimtexErrors'         , 'log' ]
 let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
 let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
+let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
+let g:which_key_map.i = 'index'
 let g:which_key_map.b = 'build'
 let g:which_key_map.c = 'count'
-let g:which_key_map.x = 'clean'
-let g:which_key_map.i = 'index'
 let g:which_key_map.p = 'preview'
-let g:which_key_map.u = 'undo'
+
+" let g:which_key_map.x = 'clean'
+" let g:which_key_map['c'] = [ ':VimtexCountWords<CR>'      , 'count' ]
+" let g:which_key_map['x'] = [ ':VimtexClean<CR>'           , 'clean' ]
+" let g:which_key_map.u = 'undo'
 
 
 " let g:which_key_map['='] = [ '<C-W>='                     , 'balance windows' ]
@@ -54,16 +59,21 @@ let g:which_key_map.u = 'undo'
 " let g:which_key_map.f = 'float explorer'
 " let g:which_key_map['h'] = [ '<C-W>s'                     , 'split below']
 " let g:which_key_map.l = 'look up'
-" let g:which_key_map['c'] = [ ':VimtexCountWords<CR>'      , 'count' ]
-" let g:which_key_map['x'] = [ ':VimtexClean<CR>'           , 'clean' ]
-" let g:which_key_map['u'] = [ ':UndotreeToggle<CR>'        , 'undo' ]
 " let g:which_key_map['v'] = [ '<C-W>v'                     , 'split right']
 
 
 " Group mappings
 
+" Markdown
+let g:which_key_map.m = {
+      \ 'name' : '+markdown' ,
+      \ 'p' : ['<Plug>MarkdownPreview'           , 'preview'],
+      \ 'k' : ['<Plug>MarkdownPreviewStop'       , 'kill'],
+      \ 'm' : ['<Plug>MarkdownPreviewToggle'     , 'toggle'],
+      \ }
+
 " y is for you surround
-let g:which_key_map.y = {
+let g:which_key_map.s = {
       \ 'name' : '+surround' ,
       \ 's' : ['<Plug>Ysurround'         , 'surround'],
       \ 'c' : ['<Plug>Csurround'         , 'change'],
@@ -75,8 +85,9 @@ let g:which_key_map.y = {
 " a is for actions
 let g:which_key_map.a = {
       \ 'name' : '+actions' ,
-      \ 'c' : [':ColorizerToggle'        , 'colorizer'],
+      \ 'y' : [':CocList -A --normal yank'  , 'yank display'],
       \ 'n' : [':set nonumber!'          , 'line-numbers'],
+      \ 'k' : [':VimtexCountWords'       , 'kill aux files'],
       \ 'r' : [':set norelativenumber!'  , 'relative line nums'],
       \ 's' : [':let @/ = ""'            , 'remove search highlight'],
       \ 'v' : [':Vista!!'                , 'tag viewer'],
@@ -84,6 +95,7 @@ let g:which_key_map.a = {
 
 
       " \ 't' : [':FloatermToggle'         , 'terminal'],
+      " \ 'c' : [':ColorizerToggle'        , 'colorizer'],
 
 
 " " b is for buffer
@@ -140,18 +152,23 @@ let g:which_key_map.g = {
       \ 'c' : [':Git commit'                       , 'commit'],
       \ 'd' : [':Git diff'                         , 'diff'],
       \ 'D' : [':Gdiffsplit'                       , 'diff split'],
-      \ 'g' : [':GGrep'                            , 'git grep'],
-      \ 'G' : [':Gstatus'                          , 'status'],
+      \ 'G' : [':GGrep'                            , 'git grep'],
+      \ 's' : [':Gstatus'                          , 'status'],
       \ 'h' : [':GitGutterLineHighlightsToggle'    , 'highlight hunks'],
       \ 'l' : [':Git log'                          , 'log'],
       \ 'P' : [':Git push'                         , 'push'],
       \ 'p' : [':Git pull'                         , 'pull'],
       \ 'r' : [':GRemove'                          , 'remove'],
-      \ 's' : [':FloatermNew lazygit'              , 'stage'],
+      \ 'g' : [':FloatermNew lazygit'              , 'lazygit'],
       \ 't' : [':GitGutterSignsToggle'             , 'toggle signs'],
       \ 'v' : [':GV'                               , 'view commits'],
       \ 'V' : [':GV!'                              , 'view buffer commits'],
       \ }
+
+  " nmap ghp <Plug>(GitGutterPreviewHunk)
+  " nmap ghs <Plug>(GitGutterStageHunk)
+  " nmap ghu <Plug>(GitGutterUndoHunk)
+
 
 " \ 'H' : ['<Plug>(GitGutterPreviewHunk)'      , 'preview hunk'],
 " \ 'j' : ['<Plug>(GitGutterNextHunk)'         , 'next hunk'],

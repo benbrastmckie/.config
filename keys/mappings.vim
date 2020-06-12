@@ -27,15 +27,15 @@ nnoremap <M-k> :m '<-2<CR>gv=gv
 " Multiple Cursors
 let g:multi_cursor_use_default_mapping=0
 
-" Default mapping
-let g:multi_cursor_start_word_key      = '<C-n>'
-let g:multi_cursor_select_all_word_key = '<A-n>'
-let g:multi_cursor_start_key           = 'g<C-n>'
-let g:multi_cursor_select_all_key      = 'g<A-n>'
-let g:multi_cursor_next_key            = '<C-n>'
-let g:multi_cursor_prev_key            = '<C-p>'
-let g:multi_cursor_skip_key            = '<C-x>'
-let g:multi_cursor_quit_key            = '<Esc>'
+  " Default mapping
+  let g:multi_cursor_start_word_key      = '<C-n>'
+  let g:multi_cursor_select_all_word_key = '<A-n>'
+  let g:multi_cursor_start_key           = 'g<C-n>'
+  let g:multi_cursor_select_all_key      = 'g<A-n>'
+  let g:multi_cursor_next_key            = '<C-n>'
+  let g:multi_cursor_prev_key            = '<C-p>'
+  let g:multi_cursor_skip_key            = '<C-x>'
+  let g:multi_cursor_quit_key            = '<Esc>'
 
 " TAB in general mode will move to text buffer
 nnoremap <TAB> :bnext<CR>
@@ -86,10 +86,11 @@ vnoremap <C-\> :Commentary<CR>
 " LaTeX bindings
 nnoremap <space>b :VimtexCompile<CR>
 nnoremap <space>i :VimtexTocToggle<CR>
-nnoremap <space>x :VimtexClean<CR>
-nnoremap <space>c :VimtexCountWords<CR> 
-" nnoremap <space>l :VimtexLabelsToggle<CR> 
 nnoremap <space>p :VimtexView<CR> 
+" nnoremap <space>x :VimtexClean<CR>
+" nnoremap <space>c :VimtexCountWords<CR> 
+" nnoremap <space>l :VimtexLabelsToggle<CR> 
+
 " UndotreeToggle
 nnoremap <space>u :UndotreeToggle<CR> 
 
@@ -135,6 +136,11 @@ inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 " Use <c-space> to trigger completion.
 inoremap <silent><expr> <c-space> coc#refresh()
 
+" Jump though hunks
+" nmap <leader>gj <plug>(signify-next-hunk)
+" nmap <leader>gk <plug>(signify-prev-hunk)
+"nmap <leader>gJ 9999<leader>gJ
+"nmap <leader>gK 9999<leader>gk
 
 " GoTo code navigation.
 nmap <silent> gd <Plug>(coc-definition)
@@ -169,3 +175,20 @@ vnoremap d "dd
 " Unmappings
 " unmap <C-t>
 nnoremap <C-t> <Nop>
+
+" nnoremap <Space>hs <Nop>
+" nnoremap <Space>hu <Nop>
+
+" " Markdown
+let g:markdown_mapping_switch_status = '<Space>ms'
+" nnoremap <Space>ft <Space>mf
+" nmap <C-s> <Plug>MarkdownPreview
+" nmap <M-s> <Plug>MarkdownPreviewStop
+" nmap <C-p> <Plug>MarkdownPreviewToggle
+
+" GitGutterHunk
+  " nmap ghp <Plug>(GitGutterPreviewHunk)
+  " nmap ghs <Plug>(GitGutterStageHunk)
+  " nmap ghu <Plug>(GitGutterUndoHunk)
+
+
