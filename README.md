@@ -118,6 +118,27 @@ sudo mv ~/.config/fonts/RobotoMono/ /Library/Fonts/
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
 If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
+
+## [Zotero](https://www.zotero.org/)
+Download and install [Zotero](https://www.zotero.org/) along with the appropriate pluggin for your preferred browser.
+Find a paper online, sigining in to the journal as necessary and downloading the pdf manually.
+Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
+Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
+```
+mkdir -p ~/Library/texmf/bibtex/bib
+mv ~/.config/latex/bst ~/Library/texmf/bibtex
+```
+Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
+Under 'Edit' in the Zotero menu bar, select 'Preferences' and open up the 'Better BibTex' tab. 
+Under the 'Citation' sub-tab, replace the citation key format with `[auth][year]`. 
+Also check 'On item change' at the bottom left.
+Now switch to the 'Automatic Export' sub-tab and check 'On Change'. 
+Close the Preferences window, returning to the main Zotero window.
+Right-click the main library folder in the left-most column, and select 'Export Library'. 
+Under the 'Format' dropdown menu, select 'Better BibTex', selecting the 'Keep Updated' box. 
+Save the file as 'Zotero' (the extension will be added automatically) to ~/Library/texmf/bibtex/bib which you previously created.
+You are now ready to cite files in your Zotero database.
+
 ## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), [Fish](https://fishshell.com/)
 Run the following in the terminal:
 ```
