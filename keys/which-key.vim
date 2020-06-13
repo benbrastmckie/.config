@@ -31,7 +31,6 @@ let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
 let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
 let g:which_key_map['F'] = [ ':Files ~'              , 'home files' ]
-let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
 let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
 let g:which_key_map['R'] = [ ':source $MYVIMRC'      , 'reload' ]
 let g:which_key_map['r'] = [ ':CocEnable'            , 'restore coc' ]
@@ -45,6 +44,7 @@ let g:which_key_map.b = 'build'
 let g:which_key_map.c = 'count'
 let g:which_key_map.p = 'preview'
 
+" let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
 " let g:which_key_map.x = 'clean'
 " let g:which_key_map['c'] = [ ':VimtexCountWords<CR>'      , 'count' ]
 " let g:which_key_map['x'] = [ ':VimtexClean<CR>'           , 'clean' ]
@@ -75,6 +75,13 @@ let g:which_key_map.t = {
       \ 'm' : [':read ~/.config/nvim/templates/MultipleAnswer.tex'           , 'MultipleAnswer.tex'],
       \ }
 
+" Sessions
+let g:which_key_map.S = {
+      \ 'name' : '+session' ,
+      \ 's' : [':SSave'                , 'save session'],
+      \ 'd' : [':SDelete!'              , 'delete session'],
+      \ }
+
 " Markdown
 let g:which_key_map.m = {
       \ 'name' : '+markdown' ,
@@ -97,11 +104,11 @@ let g:which_key_map.s = {
 let g:which_key_map.a = {
       \ 'name' : '+actions' ,
       \ 'y' : [':CocList -A --normal yank'  , 'yank display'],
-      \ 'n' : [':set nonumber!'          , 'line-numbers'],
-      \ 'k' : [':VimtexCountWords'       , 'kill aux files'],
-      \ 'r' : [':set norelativenumber!'  , 'relative line nums'],
-      \ 's' : [':let @/ = ""'            , 'remove search highlight'],
-      \ 'v' : [':Vista!!'                , 'tag viewer'],
+      \ 'n' : [':set nonumber!'             , 'line-numbers'],
+      \ 'k' : [':VimtexClean'               , 'kill aux files'],
+      \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
+      \ 's' : [':let @/ = ""'               , 'remove search highlight'],
+      \ 'v' : [':Vista!!'                   , 'tag viewer'],
       \ }
 
 
