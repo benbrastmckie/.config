@@ -2,7 +2,7 @@
 A complete configuration for writing LaTeX documents with NeoVim.
 ---
 The following sections provide instalation instructions for Mac and Debian Linux operating systems.
-I provide an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series.
+I provide an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as configuration guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J).
 # Mac Instalation
 Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
