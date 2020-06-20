@@ -146,21 +146,21 @@ brew cask install alacritty
 brew install tmux
 brew install fish
 ```
+You will also need to move the Tmux configuration file to the appropriate location by running:
+```
+sudo mv ~/.config/tmux/.tmux.conf ~/
+```
 You will now need to locate fish on your opperating system by running the following:
 ```
 which fish
 ```
-The command should return `/usr/local/bin/fish`, otherwise copy the path and run the following:
+The command should return `/usr/local/bin/fish`.
+Copy the path and run the following:
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
 Replace '/usr/bin/fish' with the location of fish, saving and exiting with Space-q.
-You will also need to move the Tmux configuration file to the appropriate location by running:
-```
-sudo mv ~/.config/tmux/.tmux.conf ~/
-tmux kill-server
-```
-Re-open Alacritty, running the following:
+Quite the terminal and open Alacritty by hitting Command+Space and typing 'Alacritty', running the following:
 ```
 curl -L https://get.oh-my.fish | fish
 omf install sashimi
