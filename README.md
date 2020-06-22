@@ -65,6 +65,7 @@ git --version
 If Git is not installed, run:
 ```
 brew install git
+brew install jesseduffield/lazygit/lazygit
 ```
 ## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
@@ -169,7 +170,12 @@ To delete the welcome message, run:
 ```
 set fish_greeting
 ```
-You  are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+In order to reset Tmux, run:
+```
+Tmux kill-server
+```
+When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 # Arch Linux Instalation
 Open the terminal and run the following commands:
@@ -297,12 +303,12 @@ You will now need to locate fish on your opperating system by running the follow
 ```
 which fish
 ```
-The command should return `/usr/local/bin/fish`.
-Copy the path and run the following:
+The command should return `/usr/bin/fish`.
+If the path is different, copy the path and run the following:
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
-Replace '/usr/bin/fish' with the location of fish, saving and exiting with Space-q.
+Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `Space-q`.
 Quite the terminal and open Alacritty by hitting Command+Space and typing 'Alacritty', running the following:
 ```
 curl -L https://get.oh-my.fish | fish
@@ -312,9 +318,12 @@ To delete the welcome message, run:
 ```
 set fish_greeting
 ```
-You  are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-
-
+In order to reset Tmux, run:
+```
+Tmux kill-server
+```
+When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 ## Remapping Keys
 ```
