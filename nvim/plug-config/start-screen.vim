@@ -15,7 +15,6 @@ let g:startify_custom_header = [
 
 let g:startify_session_dir = '~/.config/nvim/session'
 
-
 let g:startify_lists = [
           \ { 'type': 'sessions',  'header': ['   Sessions']                     },
           \ { 'type': 'files',     'header': ['   Files']                        },
