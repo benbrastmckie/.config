@@ -9,7 +9,7 @@ I provide an overview of the resulting functionality in [this](https://www.youtu
 2. [Arch Linux Installation](#Arch-Linux-Installation)
 
 # Mac OS Installation
-Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
+Open the terminal by hitting `Command+Space` and typing `terminal` and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 ```
 brew --version
