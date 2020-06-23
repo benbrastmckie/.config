@@ -62,6 +62,10 @@ In order to install pluggins, extending the features included in NeoVim, run the
 sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 ```
+Install the FZF fuzzy finder by running:
+```
+brew install fzf
+```
 ## [Git](https://git-scm.com/)
 Check to see whether Git is already installed by entering the following:
 ```
@@ -216,6 +220,10 @@ In order to install pluggins, extending the features included in NeoVim, run the
 ```
 sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+```
+Install the FZF fuzzy finder with the following:
+```
+sudo pacman -S fzf
 ```
 ## [Git](https://git-scm.com/)
 Check to see whether Git is already installed by entering the following:
