@@ -402,7 +402,12 @@ In order to reset Tmux, run:
 Tmux kill-server
 ```
 When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+If you want to turn on the Vim keybindings within Fish, run the following:
+```
+fish_vi_key_bindings
+```
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+I highly recommend swapping the CapsLock and Esc keys as detailed below for using Arch on a Macbook Pro.
 
 ## Remapping Keys
 If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
