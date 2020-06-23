@@ -113,3 +113,7 @@ pamac/size
 qt5ct/qt5ct.conf
 nvim/session/IdentityAboutness
 nvim/session/Reduction
+
+autostart/create-template.desktop
+autostart/libinput-gestures.desktop
+autostart/msm_notifier.desktop
