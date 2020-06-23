@@ -3,7 +3,7 @@ A complete configuration for writing LaTeX documents with NeoVim.
 ---
 The following sections provide instalation instructions for Mac and Arch Linux operating systems.
 I provide an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as configuration guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J).
-# Mac Instalation
+# Mac OS Instalation
 Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 ```
@@ -175,6 +175,10 @@ In order to reset Tmux, run:
 Tmux kill-server
 ```
 When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+If you want to turn on the Vim keybindings within Fish, run the following:
+```
+fish_vi_key_bindings
+```
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 # Arch Linux Instalation
@@ -326,26 +330,39 @@ When you reopen `Alacritty` Fish should be the default shell inside a Tmux windo
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 ## Remapping Keys
+If you are running linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
+To achieve these remappings, run the following commands:
 ```
 sudo pacman -S xorg-xmodmap
 sudo pacman -S xorg-xev
 sudo pacman -S xorg-setxkbmap
+```
+In order to test to confirm the keycodes for your keyboard, run the following:
+```
 xev | awk -F'[ )]+' '/^KeyPress/ { a[NR+2] } NR in a { printf "%-3s %s\n", $5, $8 }'
-xmodmap -e 'keycode 66 = Escape'
-xmodmap -e 'keycode 9 = Caps_Lock'
-xmodmap -e 'clear lock'
-xmodmap -pke
-nvim ~/.xinitrc
 ```
-Add the following line to .xinitrc:
+This will open a white box which, when in focus, will print the keycodes of the depressed keys.
+In particular, test the `Ctrl` as well as both `Alt/Option` and `Command` keys on the left and right side of the keyboard.
+In order to get the `Command` keys to register, you will need to press `Shift+Command` which will print the keycode for `Shift` followed by the keycode for `Command`.
+Close the white box upon finishing, checking to see if the output matches the following:
 ```
-[[ -f ~/.config/.Xmodmap ]] && xmodmap ~/.config/.Xmodmap
+37 control
+64 Alt_L
+133 Super_L
+134 Super_R
+108 Alt_R
 ```
-Save and quite with `:wq`.
+If your output does not match the above, you will need to edit the following file accordingly by running:
+```
+nvim ~/.config/.Xmodmap
+```
+If your output does match with the keycodes listed above, you can proceed without changing the file.
+It is important to note that the `.Xmodmap` file is sourced by `~/.config/autostart/xmodmap.desktop`.
+In making changes to keymappings, you can test the result of editing `.Xmodmap` by running the following:
+```
+xmodmap ~/.config/.Xmodmap
+```
 You can return to defaults by running:
 ```
-
 setxkbmap
 ```
-
-
