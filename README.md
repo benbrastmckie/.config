@@ -3,7 +3,12 @@ A complete configuration for writing LaTeX documents with NeoVim.
 ---
 The following sections provide instalation instructions for Mac and Arch Linux operating systems.
 I provide an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as configuration guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J).
-# Mac OS Instalation
+
+## Table of Contents
+1. [Mac OS Installation](#Mac-OS-Installation)       
+2. [Arch Linux Installation](#Arch-Linux-Installation)
+
+# Mac OS Installation
 Open the terminal by hitting Command+Space and typing 'terminal' and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 ```
@@ -180,6 +185,7 @@ If you want to turn on the Vim keybindings within Fish, run the following:
 fish_vi_key_bindings
 ```
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+I highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard`, and making the appropriate changes.
 
 # Arch Linux Instalation
 Open the terminal and run the following commands:
