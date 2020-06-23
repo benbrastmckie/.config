@@ -403,7 +403,7 @@ When you reopen `Alacritty` Fish should be the default shell inside a Tmux windo
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 ## Remapping Keys
-If you are running linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
+If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
 To achieve these remappings, run the following commands:
 ```
 sudo pacman -S xorg-xmodmap
