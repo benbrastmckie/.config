@@ -148,7 +148,7 @@ Now return to the paper on the journal's website and test the browser plugin for
 Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
 ```
 mkdir -p ~/Library/texmf/bibtex/bib
-mv ~/.config/latex/bst ~/Library/texmf/bibtex
+cp ~/.config/latex/bst ~/Library/texmf/bibtex
 ```
 Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
 Under `Edit` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab. 
@@ -165,7 +165,7 @@ You are now ready to cite files in your Zotero database.
 In order for NeoVim to load icons, it will be imporant to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 ```
-sudo mv ~/.config/fonts/RobotoMono/ /Library/Fonts/
+sudo cp ~/.config/fonts/RobotoMono/ /Library/Fonts/
 ```
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
@@ -180,7 +180,7 @@ brew install fish
 ```
 You will also need to move the Tmux configuration file to the appropriate location by running:
 ```
-sudo mv ~/.config/tmux/.tmux.conf ~/
+sudo cp ~/.config/tmux/.tmux.conf ~/
 ```
 You will now need to locate fish on your opperating system by running the following:
 ```
@@ -348,7 +348,7 @@ Now return to the paper on the journal's website and test the browser plugin for
 Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
 ```
 mkdir -p ~/texmf/bibtex/bib
-mv ~/.config/latex/bst ~/texmf/bibtex
+cp ~/.config/latex/bst ~/texmf/bibtex
 ```
 Right-click the main library folder in the left-most column, and select `Export Library`. 
 Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep Updated` box. 
@@ -359,7 +359,7 @@ You are now ready to cite files in your Zotero database.
 In order for NeoVim to load icons, it will be imporant to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 ```
-sudo mv ~/.config/fonts/RobotoMono/ /usr/share/fonts
+sudo cp ~/.config/fonts/RobotoMono/ /usr/share/fonts
 ```
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
@@ -374,7 +374,7 @@ sudo pacman -S fish
 ```
 You will also need to move the Tmux configuration file to the appropriate location by running:
 ```
-sudo mv ~/.config/tmux/.tmux.conf ~/
+sudo cp ~/.config/tmux/.tmux.conf ~/
 ```
 You will now need to locate fish on your opperating system by running the following:
 ```
@@ -439,7 +439,7 @@ setxkbmap
 ```
 Once you achieve the desired result, or if your output matchs with the keycodes listed above, move the `.Xmodmap` and `.xmodmap.desktop` files to the appropriate locations by running:
 ```
-sudo mv ~/.config/.Xmodmap /etc/X11/xinit/.Xmodmap
-mv ~/.config/.xmodmap.desktop ~/.config/autostart/
+sudo cp ~/.config/.Xmodmap /etc/X11/xinit/.Xmodmap
+cp ~/.config/.xmodmap.desktop ~/.config/autostart/
 ```
 Reboot and confirm that the mappings are running as desired.
