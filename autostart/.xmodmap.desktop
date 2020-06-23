@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Xmodmap
-GenericName=Keyboard Remapping
-Comment=Remap Mac Keys
-Exec=xmodmap /etc/X11/xinit/.Xmodmap
-Terminal=false
-Type=Application
-Categories=Keyboard;
-StartupNotify=false

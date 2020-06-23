@@ -1,6 +1,7 @@
 
 Unknown Organization/zoom.conf
 autostart/google-chrome.desktop.gitignore
+autostart/
 chromium/
 coc/
 configstore/
