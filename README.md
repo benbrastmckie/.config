@@ -187,7 +187,7 @@ fish_vi_key_bindings
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 I highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard`, and making the appropriate changes.
 
-# Arch Linux Instalation
+# Arch Linux Installation
 Open the terminal and run the following commands:
 ```
 sudo pacman -S neovim
