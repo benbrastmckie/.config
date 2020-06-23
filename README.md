@@ -437,8 +437,9 @@ You can return to defaults by running:
 ```
 setxkbmap
 ```
-Once you achieve the desired result, or if your output matchs with the keycodes listed above, move the `.Xmodmap` file to the appropriate location by running:
+Once you achieve the desired result, or if your output matchs with the keycodes listed above, move the `.Xmodmap` and `.xmodmap.desktop` files to the appropriate locations by running:
 ```
 sudo mv ~/.config/.Xmodmap /etc/X11/xinit/.Xmodmap
+mv ~/.config/.xmodmap.desktop ~/.config/autostart/
 ```
-It is important to note that the `.Xmodmap` file is sourced by `~/.config/autostart/xmodmap.desktop`.
+Reboot and confirm that the mappings are running as desired.
