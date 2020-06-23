@@ -8,6 +8,9 @@ I provide an overview of the resulting functionality in [this](https://www.youtu
 1. [Mac OS Installation](#Mac-OS-Installation)       
 2. [Arch Linux Installation](#Arch-Linux-Installation)
 
+The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
+I will also include information for globally remapping keys to better suit writing LaTeX documents with NeoVim.
+
 # Mac OS Installation
 Open the terminal by hitting `Command+Space` and typing `terminal` and hitting return.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
