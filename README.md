@@ -70,6 +70,9 @@ git --version
 If Git is not installed, run:
 ```
 brew install git
+```
+Next install LazyGit by running:
+```
 brew install jesseduffield/lazygit/lazygit
 ```
 ## [Configuration](https://github.com/benbrastmckie/.config)
@@ -222,6 +225,20 @@ git --version
 If Git is not installed, run:
 ```
 sudo pacman -S install git
+```
+If you don't have Yay, you can install it by running the following:
+```
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
+```
+If you run into errors, you may be missing the following dependency, which you can add by running:
+```
+sudo pacman -S base-devel
+```
+Next, install LazyGit using Yay by running:
+```
+yay -S lazygit
 ```
 ## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
