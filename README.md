@@ -79,6 +79,25 @@ Next install LazyGit by running:
 ```
 brew install jesseduffield/lazygit/lazygit
 ```
+If you have not already, you can also add an SSH key by amending and running the following:
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+Hit `return` once, entering your GitHub passphrase in response to the prompt.
+Next run:
+```
+bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+```
+Run the following to copy the SSH key to your system clipboard:
+```
+pbcopy < ~/.ssh/id_rsa.pub
+```
+In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
+Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
+Saving the key completes the addition.
+
 ## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
@@ -248,6 +267,29 @@ Next, install LazyGit using Yay by running:
 ```
 yay -S lazygit
 ```
+If you have not already, you can also add an SSH key by amending and running the following:
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+Hit `return` once, entering your GitHub passphrase in response to the prompt.
+Next run:
+```
+bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+```
+If you do not have `xclip` you can install it by running:
+```
+sudo pacman -S xclip
+```
+After the install, run the following to copy the SSH key to your system clipboard:
+```
+xclip -sel clip < ~/.ssh/id_rsa.pub
+```
+In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
+Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
+Saving the key completes the addition.
+
 ## [Configuration](https://github.com/benbrastmckie/.config)
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
