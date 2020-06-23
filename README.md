@@ -106,8 +106,7 @@ Saving the key completes the addition.
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
 cd ~/.config
-git init
-git remote add origin https://github.com/benbrastmckie/.config.git
+git clone https://github.com/benbrastmckie/.config.git
 git pull origin master
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
@@ -299,9 +298,7 @@ Saving the key completes the addition.
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
 ```
 cd ~/.config
-git init
-git remote add origin https://github.com/benbrastmckie/.config.git
-git pull origin master
+git clone https://github.com/benbrastmckie/.config.git
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
 sudo pacman -S yarn
