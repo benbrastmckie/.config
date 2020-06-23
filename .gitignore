@@ -1,7 +1,6 @@
 
 Unknown Organization/zoom.conf
 autostart/google-chrome.desktop.gitignore
-autostart/
 chromium/
 coc/
 configstore/
@@ -112,3 +111,5 @@ manjaro-hello.json
 pamac/refresh_timestamp
 pamac/size
 qt5ct/qt5ct.conf
+nvim/session/IdentityAboutness
+nvim/session/Reduction
