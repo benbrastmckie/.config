@@ -356,9 +356,7 @@ If your output does not match the above, you will need to edit the following fil
 ```
 nvim ~/.config/.Xmodmap
 ```
-If your output does match with the keycodes listed above, you can proceed without changing the file.
-It is important to note that the `.Xmodmap` file is sourced by `~/.config/autostart/xmodmap.desktop`.
-In making changes to keymappings, you can test the result of editing `.Xmodmap` by running the following:
+If you need to make changes to keymappings, you can test the result of editing `.Xmodmap` and running the following:
 ```
 xmodmap ~/.config/.Xmodmap
 ```
@@ -366,3 +364,8 @@ You can return to defaults by running:
 ```
 setxkbmap
 ```
+Once you achieve the desired result, or if your output matchs with the keycodes listed above, move the `.Xmodmap` file to the appropriate location by running:
+```
+sudo mv ~/.config/.Xmodmap /etc/X11/xinit/.Xmodmap
+```
+It is important to note that the `.Xmodmap` file is sourced by `~/.config/autostart/xmodmap.desktop`.
