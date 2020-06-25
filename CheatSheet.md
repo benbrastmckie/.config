@@ -39,7 +39,6 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 ### _Commands_
 
 - **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
-- **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `Ctrl+m` to open Help for the word under the cursor.
 - **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
@@ -74,6 +73,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Trigger Completion**: use `Enter` to select highlighted option.
 - **Snippet Completion**: use `Enter` to select highlighted option, and `Tab` to reselect previous field.
 - **Go to**: use `gd` to go to the definition of the word under the cursor (if any), and `gr` to go to the reference of the word under the cursor (if any).
+- **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Hide**: use `Space+k` to hide autocomplete menu, and `Space+r` to restore.
 
 ### _Autopairs and Surround_
