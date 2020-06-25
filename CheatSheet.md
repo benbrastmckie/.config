@@ -28,7 +28,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Better tabbing**: after visually selecting one or more lines, the `<` and `>` keys will adjust indents.
 - **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines.
 
-### _Windows and Buffers_
+### _Windows, Buffers, and Panes_
 
 - **Manage windows**: use `Ctrl+Space+c` to create a new window, and `Ctrl+Space+k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `Space+q`).
 - **Switch windows**: use `Ctrl+Space+n` and `Ctrl+Space+p` to cycle through open windows.
