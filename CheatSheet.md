@@ -38,6 +38,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Commands_
 
+- **Save and Quit**: use `Space+w` to save buffer, and `Space+q` to save and quite all buffers.
 - **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `Ctrl+m` to open Help for the word under the cursor.
@@ -49,7 +50,6 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 ### _File Management_
 
-- **Save and Quit**: use `Space+w` to save buffer, and `Space+q` to save and quite all buffers.
 - **Local File Search**: use `Ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `Space+Shift+f` to fuzzy search through all files in the home folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
 - **Explorer**: use `Space+e` to open the file explorer, navigating with `Ctrl+j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
