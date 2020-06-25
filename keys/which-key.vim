@@ -88,6 +88,7 @@ let g:which_key_map.m = {
       \ 'p' : ['<Plug>MarkdownPreview'           , 'preview'],
       \ 'k' : ['<Plug>MarkdownPreviewStop'       , 'kill'],
       \ 'm' : ['<Plug>MarkdownPreviewToggle'     , 'toggle'],
+      \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select'],
       \ }
 
 " y is for you surround
