@@ -66,8 +66,8 @@ nnoremap <C-l> <C-w>l
 " noremap <S-l> w
 
 " Open Manual for word
-noremap <C-m> :call <SNR>23_show_documentation()<CR>
-" noremap <C-m> :execute "tab h " . expand("<cword>")<cr>
+" noremap <C-m> :call <SNR>23_show_documentation()<CR>
+noremap <C-h> :execute "tab h " . expand("<cword>")<cr>
 " noremap <C-m> :Man <cword><CR>
 
 " Display line movements
@@ -101,7 +101,7 @@ nnoremap <C-p> :Files<CR>
 " nmap <C-n> :NERDTreeToggle<CR>
 
 " Explorer
-nmap <space>f :w \| :CocCommand explorer --preset floating<CR>
+" nmap <space>f :w \| :CocCommand explorer --preset floating<CR>
 
 " Ranger
 " nmap <space>r :RnvimrToggle<CR>
@@ -144,8 +144,8 @@ inoremap <silent><expr> <c-space> coc#refresh()
 
 " GoTo code navigation.
 nmap <silent> gd <Plug>(coc-definition)
-nmap <silent> gy <Plug>(coc-type-definition)
-nmap <silent> gi <Plug>(coc-implementation)
+" nmap <silent> gy <Plug>(coc-type-definition)
+" nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
 
 " Use K to show documentation in preview window.
@@ -153,10 +153,10 @@ nmap <silent> gr <Plug>(coc-references)
 
 " Introduce function text object
 " NOTE: Requires 'textDocument.documentSymbol' support from the language server.
-xmap if <Plug>(coc-funcobj-i)
-xmap af <Plug>(coc-funcobj-a)
-omap if <Plug>(coc-funcobj-i)
-omap af <Plug>(coc-funcobj-a)
+" xmap if <Plug>(coc-funcobj-i)
+" xmap af <Plug>(coc-funcobj-a)
+" omap if <Plug>(coc-funcobj-i)
+" omap af <Plug>(coc-funcobj-a)
 
 " Use <TAB> for selections ranges.
 " NOTE: Requires 'textDocument/selectionRange' support from the language server.
@@ -180,7 +180,7 @@ nnoremap <C-t> <Nop>
 " nnoremap <Space>hu <Nop>
 
 " " Markdown
-let g:markdown_mapping_switch_status = '<Space>ms'
+" let g:markdown_mapping_switch_status = '<Space>ms'
 " nnoremap <Space>ft <Space>mf
 " nmap <C-s> <Plug>MarkdownPreview
 " nmap <M-s> <Plug>MarkdownPreviewStop

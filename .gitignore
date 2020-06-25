@@ -118,3 +118,5 @@ nvim/session/Reduction
 autostart/msm_notifier.desktop
 autostart/libinput-gestures.desktop
 autostart/create-template.desktop
+
+eog/accels

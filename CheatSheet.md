@@ -5,224 +5,107 @@ I will omit mention of the standard Vim commands which have been preserved excep
 
 ## Learning Vim
 
-[OpenVim](https://www.openvim.com/)
-[VimAdventure](https://vim-adventures.com/)
-[ShortcutFoo](https://www.shortcutfoo.com/) is free to test, but requires a subscription to gain full access.
-[Tutorial](https://www.youtube.com/watch?v=IiwGbcd8S7I&t=185s)
-[ThePrimeagen](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s)
+NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi, going back to the late 70s.
+With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
+Learning to use NeoVim is comparable to learning how to touch type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
+However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
+The following links provide resources for building a solid foundation for using NeoVim.
+
+- [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
+- [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
+- [Video Tutorial](https://www.youtube.com/watch?v=IiwGbcd8S7I&t=185s) Lengthy overview of the basics.
+- [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
+- [Inspiration](https://www.youtube.com/watch?v=1UXHsCT18wE) Inspiration and Comedy.
 
 ## Mappings
 
 Which-Key is triggered by the space bar, and will bring up a range of key-bindings with associated names.
-Accordingly, I will focus attention on the mappings included in mappings.vim, though I will mention some of the Which-Key bindings in discussing some of the functionality down below.
+Accordingly, I will focus attention on the mappings included in `~/.config/nvim/keys/mappings.vim`, though I will mention some of the Which-Key bindings in discussing plugins in the following section.
 
-" Better nav for omnicomplete
-inoremap <expr> <c-j> ("\<C-n>")
-inoremap <expr> <c-k> ("\<C-p>")
+### _Line Movements_
 
-" Use alt + hjkl to resize windows
-" nnoremap <M-j> :resize -2<CR>
-" nnoremap <M-k> :resize +2<CR>
-nnoremap <M-h> :vertical resize -2<CR>
-nnoremap <M-l> :vertical resize +2<CR>
+- **Drag lines**: after visually selecting one or more lines, the commands `Ctrl+j` and `Ctrl+k` will drag the selected lines up or down, indenting accordingly.
+- **Better tabbing**: after visually selecting one or more lines, the `<` and `>` keys will adjust indents.
+- **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines.
 
-" Drag lines
-vnoremap <M-j> :m '>+1<CR>gv=gv
-vnoremap <M-k> :m '<-2<CR>gv=gv
-nnoremap <M-j> :m '>+1<CR>gv=gv
-nnoremap <M-k> :m '<-2<CR>gv=gv
+### _Windows and Buffers_
 
-" Multiple Cursors
-let g:multi_cursor_use_default_mapping=0
+- **Manage windows**: use `Ctrl+Space+c` to create a new window, and `Ctrl+Space+k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `Space+q`).
+- **Switch windows**: use `Ctrl+Space+n` and `Ctrl+Space+p` to cycle through open windows.
+- **Switch buffers**: use `Tab` and `Shift+Tab` to cycle though the open buffers.
+- **Navigate panes**: use `Ctrl+h/j/k/l` to switch focus between buffers.
+- **Resize panes**: use `Alt+h/l` to horizontally resize the buffer in focus.
 
-" Default mapping
-let g:multi_cursor_start_word_key = '<C-n>'
-let g:multi_cursor_select_all_word_key = '<A-n>'
-let g:multi_cursor_start_key = 'g<C-n>'
-let g:multi_cursor_select_all_key = 'g<A-n>'
-let g:multi_cursor_next_key = '<C-n>'
-let g:multi_cursor_prev_key = '<C-p>'
-let g:multi_cursor_skip_key = '<C-x>'
-let g:multi_cursor_quit_key = '<Esc>'
+### _Commands_
 
-" TAB in general mode will move to text buffer
-nnoremap <TAB> :bnext<CR>
-" SHIFT-TAB will go back
-nnoremap <S-TAB> :bprevious<CR>
+- **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
+- **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
+- **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
+- **Help**: use `Ctrl+h` to open Help for the word under the cursor.
+- **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
 
-" Alternate way to save
-" nmap <C-s> <esc> \| :w<CR>
-" nmap <C-q> <esc> \| :wq<CR>
+## Plugins
 
-" <TAB>: completion.
-inoremap <expr><TAB> pumvisible() ? "\<C-n>" : "\<TAB>"
+In what follows, I will discuss a number of key plugins included in `~/.config/nvim/vim-plug/plugins.vim` which are of considerable use for writing LaTeX documents.
 
-" Better tabbing
-vnoremap < <gv
-vnoremap > >gv
+### _File Management_
 
-" Better window navigation
-nnoremap <C-h> <C-w>h
-nnoremap <C-j> <C-w>j
-nnoremap <C-k> <C-w>k
-nnoremap <C-l> <C-w>l
+- **Save and Quit**: use `Space+w` to save buffer, and `Space+q` to save and quite all buffers.
+- **Local File Search**: use `Ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
+- **Global File Search**: use `Space+Shift+f` to fuzzy search through all files in the home folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
+- **Explorer**: use `Space+e` to open the file explorer, navigating with `Ctrl+j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
+- **Close Buffer**: use `Space+d` to close current buffer.
 
-" Display line movements
-" noremap <S-h> b
-" noremap <S-j> gj
-" noremap <S-k> gk
-" noremap <S-l> w
+### _Projects and Templates_
 
-" Open Manual for word
-noremap <C-m> :call <SNR>23_show_documentation()<CR>
-" noremap <C-m> :execute "tab h " . expand("<cword>")<cr>
-" noremap <C-m> :Man <cword><CR>
+- **Projects**: use `Space+Shift+s,s` to create a new project, and `Space+Shift+s,d` to delete a new project.
+  - To create a first project, enter the command `:SSave` instead, following the prompt to create a sessions folder.
+- **Templates**: use `Space+t` to choose from a variety of templates in the `~/.config/nvim/templates` directory.
+  - To add new templates, add the relevant file to `~/.config/nvim/templates`, customising `~/.config/nvim/keys/which-key.vim`.
 
-" Display line movements
-nnoremap <S-k> gk
-nnoremap <S-j> gj
-vnoremap <S-k> gk
-vnoremap <S-j> gj
+### _Git Integration_
 
-" nnoremap <Leader>o o<Esc>^Da
-" nnoremap <Leader>O O<Esc>^Da
+- **LazyGit**: use `Space+g,g` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
+- **Fugitive**: use `Space+g` to bring up a range of git commands.
 
-" Comment out line
-nnoremap <C-\> :Commentary<CR>
-vnoremap <C-\> :Commentary<CR>
+### _Autocomplete_
 
-" LaTeX bindings
-nnoremap <space>b :VimtexCompile<CR>
-nnoremap <space>i :VimtexTocToggle<CR>
-nnoremap <space>p :VimtexView<CR>
-" nnoremap <space>x :VimtexClean<CR>
-" nnoremap <space>c :VimtexCountWords<CR>
-" nnoremap <space>l :VimtexLabelsToggle<CR>
+- **Select Entry**: use `Ctrl+j` and `Ctrl+k` to cycle through the autocomplete menu.
+- **Trigger Completion**: use `Enter` to select highlighted option.
+- **Snippet Completion**: use `Enter` to select highlighted option, and `Tab` to reselect previous field.
+- **Go to**: use `gd` to go to the definition of the word under the cursor (if any), and `gr` to go to the reference of the word under the cursor (if any).
+- **Hide**: use `Space+k` to hide autocomplete menu, and `Space+r` to restore.
 
-" UndotreeToggle
-nnoremap <space>u :UndotreeToggle<CR>
+### _Autopairs and Surround_
 
-" Fuzzy Search
-nnoremap <C-p> :Files<CR>
+- **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
+- **Add Surround**: in visual select mode use `Shift+s`, or in normal mode use `Space+s,s`, followed by the desired Vim noun to specify the text-object in question, and then enter either:
+  - `q/Q` for single/double LaTeX quotes, respectively.
+  - Open bracket for brackets with padding, and close bracket for brackets without padding.
+- **Change Surround**: in normal mode, use `Space+s` followed by:
+  - `k` to remove the next outermost quotes/brackets relative to the position of the cursor.
+  - `d` followed by the desired quotes/brackets to be deleted.
+  - `c` followed by both the quote/brackets to change, and then the quotes/brackets which are to be inserted instead.
 
-" NERDTree bindings
-" nmap <C-n> :NERDTreeToggle<CR>
+### _LaTeX Support_
 
-" Explorer
-nmap <space>f :w \| :CocCommand explorer --preset floating<CR>
+- **Build**: use `Space+b` to toggle auto-build.
+- **Preview**: use `Space+p` to preview current line.
+- **Index**: use `Ctrl+i` to open the index.
+- **Count**: use `Ctrl+c` to count words.
+- **Log**: use `Ctrl+l` to open LaTeX log in horizontal split, and `Space+d` to close.
+- **Clean**: use `Space+a,k` to delete auxiliary LaTeX files.
 
-" Ranger
-" nmap <space>r :RnvimrToggle<CR>
+### _Markdown_
 
-" Coc Autocomplete Toggle
-" nnoremap <expr> <space>r yourConditionExpression ? ':q!<cr>':':bd<cr>'
+- **Build**: use `Space+m,m` to toggle auto-build.
+- **Preview**: use `Space+m,p` to preview document.
+- **Kill**: use `Space+m,k` to close document.
+- **Select**: use `Space+m,s` to cycle through selection options in a markdown bullet point list.
 
-" Kill search on escape
-nnoremap <esc> :noh<return><esc>
+### _Misc Bindings_
 
-" Spelling: http://vimdoc.sourceforge.net/htmldoc/spell.html
-nnoremap <C-s> a<C-X><C-S>
-
-" function! FzfSpellSink(word)
-" exe 'normal! "\_ciw'.a:word
-" endfunction
-" function! FzfSpell()
-" let suggestions = spellsuggest(expand("<cword>"))
-" return fzf#run({'source': suggestions, 'sink': function("FzfSpellSink"), 'down': 10 })
-" endfunction
-" nnoremap z= :call FzfSpell()<CR>
-
-" Use tab for trigger completion with characters ahead and navigate.
-inoremap <silent><expr> <C-j>
-\ pumvisible() ? "\<C-n>" :
-\ <SID>check_back_space() ? "\<TAB>" :
-\ coc#refresh()
-inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-" Use <c-space> to trigger completion.
-inoremap <silent><expr> <c-space> coc#refresh()
-
-" Jump though hunks
-" nmap <leader>gj <plug>(signify-next-hunk)
-" nmap <leader>gk <plug>(signify-prev-hunk)
-"nmap <leader>gJ 9999<leader>gJ
-"nmap <leader>gK 9999<leader>gk
-
-" GoTo code navigation.
-nmap <silent> gd <Plug>(coc-definition)
-nmap <silent> gy <Plug>(coc-type-definition)
-nmap <silent> gi <Plug>(coc-implementation)
-nmap <silent> gr <Plug>(coc-references)
-
-" Use K to show documentation in preview window.
-" nnoremap <silent> K :call <SID>show_documentation()<CR>
-
-" Introduce function text object
-" NOTE: Requires 'textDocument.documentSymbol' support from the language server.
-xmap if <Plug>(coc-funcobj-i)
-xmap af <Plug>(coc-funcobj-a)
-omap if <Plug>(coc-funcobj-i)
-omap af <Plug>(coc-funcobj-a)
-
-" Use <TAB> for selections ranges.
-" NOTE: Requires 'textDocument/selectionRange' support from the language server.
-" coc-tsserver, coc-python are the examples of servers that support it.
-" nmap <silent> <TAB> <Plug>(coc-range-select)
-" xmap <silent> <TAB> <Plug>(coc-range-select)
-
-" Registers
-nnoremap d "dd
-vnoremap d "dd
-" nnoremap y "xy
-" vnoremap y "xy
-" nnoremap p "xp
-" vnoremap p "xp
-
-" Unmappings
-" unmap <C-t>
-nnoremap <C-t> <Nop>
-
-" nnoremap <Space>hs <Nop>
-" nnoremap <Space>hu <Nop>
-
-" " Markdown
-let g:markdown_mapping_switch_status = '<Space>ms'
-" nnoremap <Space>ft <Space>mf
-" nmap <C-s> <Plug>MarkdownPreview
-" nmap <M-s> <Plug>MarkdownPreviewStop
-" nmap <C-p> <Plug>MarkdownPreviewToggle
-
-" GitGutterHunk
-" nmap ghp <Plug>(GitGutterPreviewHunk)
-" nmap ghs <Plug>(GitGutterStageHunk)
-" nmap ghu <Plug>(GitGutterUndoHunk)
-
-" Snippets in Coc
-" Use <C-l> for trigger snippet expand.
-imap <C-l> <Plug>(coc-snippets-expand)
-
-" Use <C-j> for select text for visual placeholder of snippet.
-" vmap <C-j> <Plug>(coc-snippets-select)
-
-" Use <C-j> for jump to next placeholder, it's default of coc.nvim
-let g:coc_snippet_next = '<CR>'
-
-" Use <C-k> for jump to previous placeholder, it's default of coc.nvim
-let g:coc_snippet_prev = '<TAB>'
-
-" Use <C-j> for both expand and jump (make expand higher priority.)
-" imap <C-j> <Plug>(coc-snippets-expand-jump)
-
-" let g:UltiSnipsExpandTrigger='<Nop>'
-" let g:UltiSnipsJumpForwardTrigger = '<TAB>'
-" let g:UltiSnipsJumpBackwardTrigger = '<S-TAB>'
-
-...
-
-## Initialising Projects
-
-- Open the terminal and run `nvim` in the home folder.
-- Hit 'Space+e' to open the explorer, and 'Control+h' to hop into the explorer buffer.
-- Navigate to your preferred project destination, hitting '?' to open explorer help for an overview of relevant commands.
-- Hit 'A' to create a directory in the desired location, followed by 'a' to create a new .tex file (it is important to include the extension).
--
+- **Search**: use `Space+f` to fuzzy find within the current document.
+- **Undo**: use `Space+u` to open the undo tree.
+- **Zen Mode**: use `Space+z` to toggle zen mode (best used when the window is maximised).
+- **Reload**: use `Space+Shift+r` to reload the configuration files.
