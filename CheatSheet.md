@@ -24,7 +24,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Line Movements_
 
-- **Drag lines**: after visually selecting one or more lines, the commands `Ctrl+j` and `Ctrl+k` will drag the selected lines up or down, indenting accordingly.
+- **Drag lines**: after visually selecting one or more lines, the commands `Alt+j` and `Alt+k` will drag the selected lines up or down, indenting accordingly.
 - **Better tabbing**: after visually selecting one or more lines, the `<` and `>` keys will adjust indents.
 - **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines.
 
@@ -52,7 +52,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 - **Local File Search**: use `Ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `Space+Shift+f` to fuzzy search through all files in the home folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
-- **Explorer**: use `Space+e` to open the file explorer, navigating with `Ctrl+j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
+- **Explorer**: use `Space+e` to open the file explorer, navigating with `j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
 - **Close Buffer**: use `Space+d` to close current buffer.
 
 ### _Projects and Templates_
@@ -70,7 +70,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 ### _Autocomplete_
 
 - **Select Entry**: use `Ctrl+j` and `Ctrl+k` to cycle through the autocomplete menu.
-- **Trigger Completion**: use `Enter` to select highlighted option.
+- **Trigger Completion**: continue typing after selecting desired option.
 - **Snippet Completion**: use `Enter` to select highlighted option, and `Tab` to reselect previous field.
 - **Go to**: use `gd` to go to the definition of the word under the cursor (if any), and `gr` to go to the reference of the word under the cursor (if any).
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
