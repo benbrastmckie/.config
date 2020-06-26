@@ -13,6 +13,7 @@ The following links provide resources for building a solid foundation for using 
 
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
+- [Vim Tutor](https://www.youtube.com/watch?v=d8XtNXutVto) A guided tour through `vimtutor`.
 - [Video Tutorial](https://www.youtube.com/watch?v=IiwGbcd8S7I&t=185s) Lengthy overview of the basics.
 - [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
 - [Inspiration](https://www.youtube.com/watch?v=1UXHsCT18wE) Inspiration and Comedy.
