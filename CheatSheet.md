@@ -72,7 +72,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Select Entry**: use `Ctrl+j` and `Ctrl+k` to cycle through the autocomplete menu.
 - **Trigger Completion**: continue typing after selecting desired option.
 - **Snippet Completion**: use `Enter` to select highlighted option, and `Tab` to reselect previous field.
-- **Go to**: use `gd` to go to the definition of the word under the cursor (if any), and `gr` to go to the reference of the word under the cursor (if any).
+- **Go to**: use `gd` to go to the definition of the word under the cursor (if any).
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Hide**: use `Space+k` to hide autocomplete menu, and `Space+r` to restore.
 
