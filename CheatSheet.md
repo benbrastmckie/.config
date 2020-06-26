@@ -15,6 +15,7 @@ See the introduction [(Video 1/5)](https://youtu.be/pYNvDkB0iRk) for related dis
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
 - [Vim Tutor](https://www.youtube.com/watch?v=d8XtNXutVto) A guided tour through `vimtutor`.
+- [Crash Course](https://www.youtube.com/watch?v=IiwGbcd8S7I&t=1246s) A tour through basic Vim.
 - [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
 - [Inspiration](https://www.youtube.com/watch?v=1UXHsCT18wE) Inspiration and Comedy.
 
