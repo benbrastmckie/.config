@@ -8,9 +8,9 @@ For configuration instructions, see the installation [(Video 1/3)](https://youtu
 
 NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi, going back to the late 70s.
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
-Learning to use NeoVim is comparable to learning how to touch type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
+Learning to use NeoVim is comparable to learning how to touch-type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
 However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
-The following links provide resources for building a solid foundation for using NeoVim.
+See the introduction [(Video 1/5)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
 
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
