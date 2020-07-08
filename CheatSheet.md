@@ -108,12 +108,11 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Kill**: use `Space+m,k` to close document.
 - **Select**: use `Space+m,s` to cycle through selection options in a markdown bullet point list.
 
-### Pandoc
+### Pandoc [(Video 7/7)](https://www.youtube.com/watch?v=l0N5LJTe6-A)
 
 - Use `Space+Shift+p` to select which file format into which you would like to convert the file open in current buffer.
 - Alternatively, you can run `:Pandoc [Source file] [Output file]` in the command line to simulate terminal commands.
 
-### _Misc Bindings_
 ### _Misc Bindings_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Search**: use `Space+f` to fuzzy find within the current document.
