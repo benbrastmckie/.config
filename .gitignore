@@ -120,3 +120,6 @@ autostart/libinput-gestures.desktop
 autostart/create-template.desktop
 
 eog/accels
+evince/accels
+evince/print-settings
+nvim/session/TODO

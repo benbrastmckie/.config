@@ -94,11 +94,13 @@ sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.
        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 ```
 
-Install the FZF fuzzy finder and Ripgrep by running:
+Install the FZF fuzzy finder, Ripgrep, and Pandoc by running the following commands, respectively:
 
 ```
 brew install fzf
 brew install ripgrep
+brew install pandoc
+brew install pandoc-citeproc
 ```
 
 ## [Git](https://git-scm.com/)
@@ -339,11 +341,13 @@ sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.
        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
 ```
 
-Install the FZF fuzzy finder and Ripgrep with the following:
+Install the FZF fuzzy finder, Ripgrep, and Pandoc with the following commands respectively:
 
 ```
 sudo pacman -S fzf
 sudo pacman -S ripgrep
+sudo pacman -S pandoc
+sudo pacman -S pandoc-citeproc
 ```
 
 ## [Git](https://git-scm.com/)

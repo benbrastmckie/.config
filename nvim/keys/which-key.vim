@@ -26,7 +26,6 @@ autocmd  FileType which_key set laststatus=0 noshowmode noruler
 " Single mappings
 " let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
 let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
-let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
 let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
@@ -44,6 +43,7 @@ let g:which_key_map.b = 'build'
 let g:which_key_map.c = 'count'
 let g:which_key_map.p = 'preview'
 
+" let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 " let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
 " let g:which_key_map.x = 'clean'
 " let g:which_key_map['c'] = [ ':VimtexCountWords<CR>'      , 'count' ]
@@ -63,6 +63,18 @@ let g:which_key_map.p = 'preview'
 
 
 " Group mappings
+
+" Pandoc
+let g:which_key_map.P = {
+      \ 'name' : '+pandoc' ,
+      \ 'w' : [':Pandoc docx'           , 'to word from open'],
+      \ 'm' : [':Pandoc md'             , 'to markdown from open'],
+      \ 'h' : [':Pandoc html'           , 'to html from open'],
+      \ 'l' : [':Pandoc latex'          , 'to latex from open'],
+      \ }
+
+      " \ 'L' : [':terminal pandoc -s expand('%:t') -o expand('%:t').tex'       , 'to latex from file'],
+      " \ 'm' : [':SDelete!'              , 'to markdown from file'],
 
 " Templates
 let g:which_key_map.t = {

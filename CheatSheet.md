@@ -5,7 +5,7 @@ I will omit mention of the standard Vim commands which have been preserved excep
 
 ## Learning Vim
 
-NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi, going back to the late 70s.
+NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi which go back as far as the late 70s.
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
 Learning to use NeoVim is comparable to learning how to touch type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
 However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
@@ -16,6 +16,9 @@ The following links provide resources for building a solid foundation for using 
 - [Video Tutorial](https://www.youtube.com/watch?v=IiwGbcd8S7I&t=185s) Lengthy overview of the basics.
 - [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
 - [Inspiration](https://www.youtube.com/watch?v=1UXHsCT18wE) Inspiration and Comedy.
+
+I have not made any changes to the conventions which come standard with NeoVim, as there is no need to reinvent the wheel.
+Rather, what follows is a minimal number of extensions to the functionality provided by NeoVim.
 
 ## Mappings
 
@@ -38,7 +41,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Commands_
 
-- **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
+- **Comment**: in normal mode or visually mode, use `Ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `Ctrl+h` to open Help for the word under the cursor.
@@ -102,6 +105,11 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Preview**: use `Space+m,p` to preview document.
 - **Kill**: use `Space+m,k` to close document.
 - **Select**: use `Space+m,s` to cycle through selection options in a markdown bullet point list.
+
+### Pandoc
+
+- Use `Space+Shift+p` to select which file format into which you would like to convert the file open in current buffer.
+- Alternatively, you can run `:Pandoc [Source file] [Output file]` in the command line to simulate terminal commands.
 
 ### _Misc Bindings_
 
