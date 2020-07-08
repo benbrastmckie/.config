@@ -10,7 +10,7 @@ NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi whi
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
 Learning to use NeoVim is comparable to learning how to touch-type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
 However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
-See the introduction [(Video 1/5)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
+See the introduction [(Video 1/7)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
 
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
@@ -54,26 +54,26 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 In what follows, I will discuss a number of key plugins included in `~/.config/nvim/vim-plug/plugins.vim` which are of considerable use for writing LaTeX documents.
 
-### _File Management_ [(Video 3/5)](https://youtu.be/v_zYV8G7gOs)
+### _File Management_ [(Video 3/7)](https://youtu.be/v_zYV8G7gOs)
 
 - **Local File Search**: use `Ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `Space+Shift+f` to fuzzy search through all files in the home folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
 - **Explorer**: use `Space+e` to open the file explorer, navigating with `j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
 - **Close Buffer**: use `Space+d` to close current buffer.
 
-### _Projects and Templates_ [(Video 5/5)](https://youtu.be/z5HfVQQDrAg)
+### _Projects and Templates_ [(Video 5/7)](https://youtu.be/z5HfVQQDrAg)
 
 - **Projects**: use `Space+Shift+s,s` to create a new project, and `Space+Shift+s,d` to delete a new project.
   - To create a first project, enter the command `:SSave` instead, following the prompt to create a sessions folder.
 - **Templates**: use `Space+t` to choose from a variety of templates in the `~/.config/nvim/templates` directory.
   - To add new templates, add the relevant file to `~/.config/nvim/templates`, customising `~/.config/nvim/keys/which-key.vim`.
 
-### _Git Integration_ [(Video 3/5)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/5)](https://youtu.be/z5HfVQQDrAg)
+### _Git Integration_ [(Video 3/7)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/7)](https://youtu.be/z5HfVQQDrAg)
 
 - **LazyGit**: use `Space+g,g` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
 - **Fugitive**: use `Space+g` to bring up a range of git commands.
 
-### _Autocomplete_ [(Video 2/5)](https://youtu.be/KGqrpnxoDxw)
+### _Autocomplete_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
 
 - **Select Entry**: use `Ctrl+j` and `Ctrl+k` to cycle through the autocomplete menu.
 - **Trigger Completion**: continue typing after selecting desired option.
@@ -82,7 +82,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Hide**: use `Space+k` to hide autocomplete menu, and `Space+r` to restore.
 
-### _Autopairs and Surround_ [(Video 4/5)](https://youtu.be/1fcc5YoCrvc)
+### _Autopairs and Surround_ [(Video 4/7)](https://youtu.be/1fcc5YoCrvc)
 
 - **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
 - **Add Surround**: in visual select mode use `Shift+s`, or in normal mode use `Space+s,s`, followed by the desired Vim noun to specify the text-object in question, and then enter either:
@@ -93,7 +93,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
   - `d` followed by the desired quotes/brackets to be deleted.
   - `c` followed by both the quote/brackets to change, and then the quotes/brackets which are to be inserted instead.
 
-### _LaTeX Support_ [(Video 2/5)](https://youtu.be/KGqrpnxoDxw)
+### _LaTeX Support_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
 
 - **Build**: use `Space+b` to toggle auto-build.
 - **Preview**: use `Space+p` to preview current line.
