@@ -67,7 +67,7 @@ nnoremap <C-l> <C-w>l
 
 " Open Manual for word
 " noremap <C-m> :call <SNR>23_show_documentation()<CR>
-noremap <C-h> :execute "tab h " . expand("<cword>")<cr>
+noremap <C-m> :execute "tab h " . expand("<cword>")<cr>
 " noremap <C-m> :Man <cword><CR>
 
 " Display line movements
@@ -180,7 +180,7 @@ nnoremap <C-t> <Nop>
 " nnoremap <Space>hu <Nop>
 
 " " Markdown
-" let g:markdown_mapping_switch_status = '<Space>ms'
+let g:markdown_mapping_switch_status = '<Space>ms'
 " nnoremap <Space>ft <Space>mf
 " nmap <C-s> <Plug>MarkdownPreview
 " nmap <M-s> <Plug>MarkdownPreviewStop
