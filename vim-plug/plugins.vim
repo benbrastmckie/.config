@@ -52,6 +52,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Markdown
     Plug 'gabrielelana/vim-markdown'
     Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
+    " Plug 'plasticboy/vim-markdown'
     
     " Multiple Cursors
     Plug 'terryma/vim-multiple-cursors'
@@ -117,7 +118,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'kopischke/unite-spell-suggest'
 
     " Pandoc
-    Plug 'vim-pandoc/vim-pandoc'
+    " Plug 'vim-pandoc/vim-pandoc'
     " Plug 'vim-pandoc/vim-pandoc-syntax' " Syntax not as good
 
 
