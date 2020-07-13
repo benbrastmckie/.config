@@ -15,3 +15,6 @@ From: https://michael.mulqueen.me.uk/2018/03/reading-a-macos-harddisk-on-linux/
   - Make sure you have a mount point: sudo mkdir /media/myhfsdrive-mirrored
   - Make the bind mount: sudo bindfs --mirror=alice,bob /media/myhfsdrive /media/myhfsdrive-mirrored
 - You will now have access to the drive in the new mount point
+- Unmount drive
+  - sudo umount /media/myhfsdrive-mirrored
+  - sudo umount /media/myhfsdrive
