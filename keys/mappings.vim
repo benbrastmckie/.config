@@ -16,13 +16,13 @@ nnoremap <M-l>    :vertical resize +2<CR>
 " xnoremap <silent> <M-j> :call wincent#mappings#visual#move_down()<CR>
 vnoremap <M-j> :m '>+1<CR>gv=gv
 vnoremap <M-k> :m '<-2<CR>gv=gv
-" inoremap <M-j> :m '>+1<CR>gv=gv
-" inoremap <M-k> :m '<-2<CR>gv=gv
-nnoremap <M-j> :m '>+1<CR>gv=gv
-nnoremap <M-k> :m '<-2<CR>gv=gv
+nnoremap <M-j> <S-v> :m '>+1<CR>gv=gv<esc>
+nnoremap <M-k> <S-v> :m '<-2<CR>gv=gv<esc>
+inoremap <M-j> <esc><S-v> :m '>+1<CR>gv=gv<esc>
+inoremap <M-k> <esc><S-v> :m '<-2<CR>gv=gv<esc>
 
-" Change next word instance
-" nnoremap c* Ncgn
+  " Change next word instance
+  " nnoremap c* Ncgn
 
 " Multiple Cursors
 let g:multi_cursor_use_default_mapping=0
@@ -50,14 +50,20 @@ nnoremap <S-TAB> :bprevious<CR>
 inoremap <expr><TAB> pumvisible() ? "\<C-n>" : "\<TAB>"
 
 " Better tabbing
-vnoremap < <gv
 vnoremap > >gv
+vnoremap < <gv
+nnoremap > <S-v>><esc>
+nnoremap < <S-v><<esc>
 
 " Better window navigation
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
+
+" Horizontal line movement
+nnoremap <S-h> g0
+nnoremap <S-l> g$
 
 " Display line movements
 " noremap <S-h> b
