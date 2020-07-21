@@ -121,6 +121,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'vim-pandoc/vim-pandoc'
     " Plug 'vim-pandoc/vim-pandoc-syntax' " Syntax not as good
 
+    " VimWiki
+    " Plug 'vimwiki/vimwiki'
+
 
 
 

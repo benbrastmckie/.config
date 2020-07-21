@@ -28,9 +28,9 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Line Movements_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Drag lines**: after visually selecting one or more lines, the commands `Alt+j` and `Alt+k` will drag the selected lines up or down, indenting accordingly.
-- **Better tabbing**: after visually selecting one or more lines, the `<` and `>` keys will adjust indents.
-- **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines.
+- **Drag lines**: the commands `Alt+j` and `Alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
+- **Better tabbing**: the `<` and `>` keys will adjust indents in both normal and visual mode.
+- **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `Shift+h` and `Shift+l` will move to the beginning or end of the displayed line, respectively.
 
 ### _Windows, Buffers, and Panes_ [(Video 2/3)](https://youtu.be/Xvu1IKEpO0M)
 
@@ -43,7 +43,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 ### _Commands_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Save and Quit**: use `Space+w` to save buffer, and `Space+q` to save and quite all buffers.
-- **Comment**: in normal mode or visually mode, use `Ctrl+\ ` to toggle whether the lines in question are commented out.
+- **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `Ctrl+m` to open Help for the word under the cursor.
