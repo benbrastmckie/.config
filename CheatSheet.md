@@ -1,7 +1,7 @@
 # Cheat Sheet [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
 The following sections present a list of key-bindings and features which have been included in the present configuration.
-I will provide links to associated tutorial videos throughout, omitting mention of the standard Vim commands which have been preserved except to provide the following resources for learning Vim.
+I will provide links to associated tutorial videos throughout, omitting mention of the standard Vim commands (which have mostly been preserved) except to provide the following resources for learning Vim.
 For configuration instructions, see the installation [(Video 1/3)](https://youtu.be/JVIcU9ePtVE).
 
 ## Learning Vim
