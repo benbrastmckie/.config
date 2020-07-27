@@ -50,6 +50,13 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Help**: use `Ctrl+m` to open Help for the word under the cursor.
 - **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
 
+### _Zathura_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
+
+- **Index**: use `Space` to toggle the index.
+- **Zoom**: use `Shift+k` and `Shift+j` to zoom in and out, respectively.
+- **Print**: use `p` to print.
+- **Black Mode**: use `b` to invert colours.
+
 ## Plugins
 
 In what follows, I will discuss a number of key plugins included in `~/.config/nvim/vim-plug/plugins.vim` which are of considerable use for writing LaTeX documents.
