@@ -8,6 +8,9 @@ inoremap <expr> <c-k> ("\<C-p>")
 nnoremap <M-h>    :vertical resize -2<CR>
 nnoremap <M-l>    :vertical resize +2<CR>
 
+" remap Y to what it should be
+nnoremap <s-y> y$
+
 " Jump paragraph
 " nmap <C-j> :NERDTreeToggle<CR>
 
