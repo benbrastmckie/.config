@@ -21,6 +21,15 @@ snippet align align(ed) environment
 		${0:${VISUAL}}
 	\\end{align$1}
 
+# Quote
+snippet quote quotation environment
+	\\vspace{-.1in}
+	\\begin{quote}\singlespacing\small
+		${0:${VISUAL}}
+		\\hfill(p.~${1:number})
+	\\end{quote}
+	\\vspace{.1in}
+
 # Enumerate
 snippet enum enumerate environment
 	\\begin{enumerate}
