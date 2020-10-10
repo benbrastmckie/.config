@@ -2,7 +2,7 @@
 
 ## A complete configuration for writing LaTeX documents with NeoVim.
 
-The following sections provide instalation instructions for Mac and Arch Linux operating systems.
+The following sections provide installation instructions for Mac and Arch Linux operating systems.
 I present an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as a configuration guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J).
 I have also included a [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) with all of the key-bindings that I have set for writing LaTeX documents with NeoVim.
 
@@ -87,7 +87,7 @@ pip3 install --user pynvim
 ```
 
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
-In order to install pluggins, extending the features included in NeoVim, run the following:
+In order to install plugins, extending the features included in NeoVim, run the following:
 
 ```
 sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
@@ -183,7 +183,7 @@ Install the Skim pdf viewer by running:
 brew cask install skim
 ```
 
-You will need to grant permision to open Skim by opening Mac System Settings, and approving the application in Security.
+You will need to grant permission to open Skim by opening Mac System Settings, and approving the application in Security.
 In order to tell Vimtex to open Skim, run the following command in the terminal:
 
 ```
@@ -208,8 +208,8 @@ If other warnings are present, it is worth following the instructions provided b
 
 ## [Zotero](https://www.zotero.org/)
 
-Download and install [Zotero](https://www.zotero.org/) along with the appropriate pluggin for your preferred browser.
-Find a paper online, sigining in to the journal as necessary and downloading the pdf manually.
+Download and install [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
+Find a paper online, signing in to the journal as necessary and downloading the pdf manually.
 Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
 Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
 
@@ -315,7 +315,7 @@ Check to confirm that Python is installed:
 python3 --version
 ```
 
-If Python is not insalled, run:
+If Python is not installed, run:
 
 ```
 sudo pacman -S python
@@ -334,7 +334,7 @@ pip3 install --user pynvim
 ```
 
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
-In order to install pluggins, extending the features included in NeoVim, run the following:
+In order to install plugins, extending the features included in NeoVim, run the following:
 
 ```
 sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
