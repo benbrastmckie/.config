@@ -5,6 +5,8 @@ runtime macros/sandwich/keymap/surround.vim " for vim-sandwich
   " fixed this by using which-key for dss
 autocmd FileType tex let b:surround_{char2nr("q")} = "`\r'"
 autocmd FileType tex let b:surround_{char2nr('Q')} = "``\r''"
+autocmd FileType tex let b:surround_{char2nr('i')} = "\\textit{\r}"
+autocmd FileType tex let b:surround_{char2nr('b')} = "\\textbf{\r}"
 
 " let g:sandwich#recipes += [
 " 	\   {'buns': ['{ ', ' }'], 'nesting': 1, 'match_syntax': 1,
