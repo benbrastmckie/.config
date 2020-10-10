@@ -9,7 +9,14 @@ nnoremap <M-h>    :vertical resize -2<CR>
 nnoremap <M-l>    :vertical resize +2<CR>
 
 " remap Y to what it should be
-nnoremap <s-y> y$
+nnoremap <S-y> y$
+
+" italics and bold
+" vnoremap i <Plug>Ysurround ssiwi
+" vnoremap <C-b> <S-s>b
+
+" remap Return to save
+nnoremap <CR> :w<CR>
 
 " Jump paragraph
 " nmap <C-j> :NERDTreeToggle<CR>
@@ -17,12 +24,12 @@ nnoremap <s-y> y$
 " Drag lines
 " xnoremap <silent> <M-k> :call wincent#mappings#visual#move_up()<CR>
 " xnoremap <silent> <M-j> :call wincent#mappings#visual#move_down()<CR>
-vnoremap <M-j> :m '>+1<CR>gv=gv
-vnoremap <M-k> :m '<-2<CR>gv=gv
-nnoremap <M-j> <S-v> :m '>+1<CR>gv=gv<esc>
-nnoremap <M-k> <S-v> :m '<-2<CR>gv=gv<esc>
-inoremap <M-j> <esc><S-v> :m '>+1<CR>gv=gv<esc>
-inoremap <M-k> <esc><S-v> :m '<-2<CR>gv=gv<esc>
+vnoremap <M-j> :m '>+1<CR>gv
+vnoremap <M-k> :m '<-2<CR>gv
+nnoremap <M-j> <S-v> :m '>+1<CR>gv<esc>
+nnoremap <M-k> <S-v> :m '<-2<CR>gv<esc>
+inoremap <M-j> <esc><S-v> :m '>+1<CR>gv<esc>
+inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
 
   " Change next word instance
   " nnoremap c* Ncgn
@@ -32,9 +39,9 @@ let g:multi_cursor_use_default_mapping=0
 
   " Default mapping
   let g:multi_cursor_start_word_key      = '<C-n>'
-  let g:multi_cursor_select_all_word_key = '<A-n>'
+  let g:multi_cursor_select_all_word_key = '<M-n>'
   let g:multi_cursor_start_key           = 'g<C-n>'
-  let g:multi_cursor_select_all_key      = 'g<A-n>'
+  let g:multi_cursor_select_all_key      = 'g<M-n>'
   let g:multi_cursor_next_key            = '<C-n>'
   let g:multi_cursor_prev_key            = '<C-p>'
   let g:multi_cursor_skip_key            = '<C-x>'
@@ -65,8 +72,10 @@ nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
 " Horizontal line movement
-nnoremap <S-h> g0
-nnoremap <S-l> g$
+nnoremap <S-h> g^
+nnoremap <S-l> g_
+vnoremap <S-h> g^
+vnoremap <S-l> g_
 
 " Display line movements
 " noremap <S-h> b
@@ -76,8 +85,8 @@ nnoremap <S-l> g$
 
 " Open Manual for word
 " noremap <C-m> :call <SNR>23_show_documentation()<CR>
-noremap <C-m> :execute "tab h " . expand("<cword>")<cr>
-" noremap <C-m> :Man <cword><CR>
+noremap <C-S-h> :execute "help " . expand("<cword>")<cr>
+" noremap <C-m> :help expand("<cword>")<cr>
 
 " Display line movements
 nnoremap <S-k> gk
@@ -97,7 +106,7 @@ nnoremap <space>b :VimtexCompile<CR>
 nnoremap <space>i :VimtexTocToggle<CR>
 nnoremap <space>p :VimtexView<CR> 
 " nnoremap <space>x :VimtexClean<CR>
-" nnoremap <space>c :VimtexCountWords<CR> 
+nnoremap <space>c :VimtexCountWords<CR> 
 " nnoremap <space>l :VimtexLabelsToggle<CR> 
 
 " UndotreeToggle
@@ -176,6 +185,8 @@ nmap <silent> gr <Plug>(coc-references)
 " Registers
 nnoremap d "dd
 vnoremap d "dd
+nnoremap D vg_"dd
+vnoremap D g_"dd
 " nnoremap y "xy
 " vnoremap y "xy
 " nnoremap p "xp
