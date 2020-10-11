@@ -155,7 +155,6 @@ In order to clone the configuration files into the appropriate folder on your co
 ```
 cd ~/.config
 git clone https://github.com/benbrastmckie/.config.git
-git pull origin master
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
 ```
