@@ -73,9 +73,9 @@ nnoremap <C-l> <C-w>l
 
 " Horizontal line movement
 nnoremap <S-h> g^
-nnoremap <S-l> g_
+nnoremap <S-l> g$
 vnoremap <S-h> g^
-vnoremap <S-l> g_
+vnoremap <S-l> g$
 
 " Display line movements
 " noremap <S-h> b
