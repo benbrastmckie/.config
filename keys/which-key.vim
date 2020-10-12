@@ -85,6 +85,7 @@ let g:which_key_map.t = {
       \ 'h' : [':read ~/.config/nvim/templates/HandOut.tex'           , 'HandOut.tex'],
       \ 'b' : [':read ~/.config/nvim/templates/PhilBeamer.tex'           , 'PhilBeamer.tex'],
       \ 's' : [':read ~/.config/nvim/templates/SubFile.tex'           , 'SubFile.tex'],
+      \ 'r' : [':read ~/.config/nvim/templates/Root.tex'           , 'Root.tex'],
       \ 'm' : [':read ~/.config/nvim/templates/MultipleAnswer.tex'           , 'MultipleAnswer.tex'],
       \ }
 

@@ -85,7 +85,7 @@ vnoremap <S-l> g$
 
 " Open Manual for word
 " noremap <C-m> :call <SNR>23_show_documentation()<CR>
-noremap <C-S-h> :execute "help " . expand("<cword>")<cr>
+noremap <C-m> :execute "help " . expand("<cword>")<cr>
 " noremap <C-m> :help expand("<cword>")<cr>
 
 " Display line movements
