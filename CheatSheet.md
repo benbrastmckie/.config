@@ -47,7 +47,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
 - **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
-- **Help**: use `Ctrl+Shift+h` to open Help for the word under the cursor.
+- **Help**: use `Ctrl+m` to open Help for the word under the cursor.
 - **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
 
 ### _Zathura_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
