@@ -94,8 +94,8 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'junegunn/goyo.vim'
     
     " Snippets
-    " Plug 'SirVer/ultisnips'
-    Plug 'honza/vim-snippets'
+    Plug 'SirVer/ultisnips'
+    " Plug 'honza/vim-snippets'
 
     " Comments
     Plug 'tpope/vim-commentary'

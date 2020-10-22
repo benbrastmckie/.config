@@ -160,7 +160,13 @@
 \noindent BEGIN ABSTRACT
 \end{abstract}
 
+\setlength\cftaftertoctitleskip{10pt}
+\addtocontents{toc}{\protect\hypertarget{toc}{}}
+\renewcommand{\contentsname}{\LARGE\sc Table of Contents}
+
+\strut\vspace{-50pt}
 \tableofcontents
+\thispagestyle{empty}
 
 \pagebreak
 
@@ -168,16 +174,15 @@
 
 \doublespacing
 
-\section*{Introduction}
-\addcontentsline{toc}{section}{\protect\numberline{}Introduction}%
+% \section*{Introduction} % Turn on to included introduction in TOC
+% \addcontentsline{toc}{chapter}{\protect\numberline{}Introduction}%
 
- 
 \subfile{Chapters/Ch1/Ch1}
   
 \subfile{Chapters/Ch2/Ch2}
 
-\section*{Conclusion}
-\addcontentsline{toc}{section}{\protect\numberline{}Conclusion}%
+% \section*{Conclusion}
+% \addcontentsline{toc}{chapter}{\protect\numberline{}Conclusion}%
 
 
 

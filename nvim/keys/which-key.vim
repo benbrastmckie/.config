@@ -82,6 +82,7 @@ let g:which_key_map.t = {
       \ 'name' : '+templates' ,
       \ 'p' : [':read ~/.config/nvim/templates/PhilPaper.tex'           , 'PhilPaper.tex'],
       \ 'l' : [':read ~/.config/nvim/templates/Letter.tex'           , 'Letter.tex'],
+      \ 'g' : [':read ~/.config/nvim/templates/Glossary.tex'           , 'Glossary.tex'],
       \ 'h' : [':read ~/.config/nvim/templates/HandOut.tex'           , 'HandOut.tex'],
       \ 'b' : [':read ~/.config/nvim/templates/PhilBeamer.tex'           , 'PhilBeamer.tex'],
       \ 's' : [':read ~/.config/nvim/templates/SubFile.tex'           , 'SubFile.tex'],
@@ -122,8 +123,10 @@ let g:which_key_map.a = {
       \ 'n' : [':set nonumber!'             , 'line-numbers'],
       \ 'k' : [':VimtexClean'               , 'kill aux files'],
       \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
-      \ 's' : [':let @/ = ""'               , 'remove search highlight'],
+      \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
       \ 'v' : [':Vista!!'                   , 'tag viewer'],
+      \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex'                   , 'edit glossary'],
+      \ 's' : [':e ~/.config/nvim/snips/tex.snippets'                   , 'edit snippets'],
       \ }
 
 
