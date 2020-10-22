@@ -10,6 +10,10 @@
 % \usepackage{multicol} %% Use \begin{multicols}{3} for three columns and \end{multicols} after
 % \usepackage{adjmulticol}
 \usepackage{verbatim} %% Enables \begin{comment} ... \end{comment}
+% \usepackage{rotating} %% Enables rotating symbols
+% \usepackage{lplfitch} %% logic package 
+% \usepackage{bold-extra} %% bold+small caps
+% \usepackage{bussproofs}
 
 
 %%% HEADER %%%
@@ -38,8 +42,21 @@
 
 
 %%% SYMBOLS %%%
-\usepackage{amssymb, amsmath, mathrsfs,colonequals} %%Math packages
+\usepackage{amssymb,amsmath,mathrsfs,mathabx,colonequals} %%Math packages
 \usepackage{tipa}
+%%% GLOSSARY %%%
+% \usepackage[automake,%builds index
+%   nogroupskip,% makes spacing of entries uniform
+%   postpunc={dot},% full stop after description
+%   nostyles,% don't load default style packages
+%   % load glossaries-extra-stylemods.sty and glossary-tree.sty:
+%   stylemods={tree}
+%   ]{glossaries-extra}
+% \loadglsentries{Glossary}% sources file from local project folder
+% \newcommand{\g}{\glssymbol*}% unstar to allow hyperlinks
+% \makeglossaries
+
+% \printglossary[style={index}] %Add to end
 
 
 %%% GRAPHICS %%%
@@ -85,27 +102,57 @@
     {\NAT@orig@nmfmt{#1's}}}
 \makeatother
 
-\newcounter{acount}
-\newcommand{\aitem}[1]{%
-  \item[\bf #1] \refstepcounter{acount}\label{#1}
-}
-\newcommand{\aref}[1]{\hyperref[#1]{#1}}
-
 %%% DEFINITIONS FOR LOGICAL SYMBOLS AND QUOTES %%%
-\newcommand{\corner}[1]{\ulcorner#1\urcorner} %%Corner quotes
-\newcommand{\tuple}[1]{\langle#1\rangle} %%Angle brackets
-\newcommand{\set}[1]{\lbrace#1\rbrace} %%Set brackets
-% \newcommand{\interpret}[1]{\llbracket#1\rrbracket} %%Double brackets
-% \newcommand{\sq}[1]{`#1'} %%Proper opened-closed single quotation marks
-% \newcommand{\dq}[1]{``#1''} %%Proper opened-closed double quotation marks
-\newcommand{\qed}[0]{$\hfill\square$} %%Box at end of proofs
-% \newcommand{\M}[0]{\mathcal{M}}
-% \renewcommand{\L}[0]{\mathcal{L}}
+% \newcommand{\corner}[1]{\ulcorner#1\urcorner} %%Corner quotes
+% \newcommand{\tuple}[1]{\langle#1\rangle} %%Angle brackets
+% \newcommand{\set}[1]{\lbrace#1\rbrace} %%Set brackets
+% \newcommand{\qedp}[0]{$\hfill\Diamond$} %%Box at end of proofs
+% \newcommand{\ceil}[1]{\lceil#1\rceil} %%Corner quotes
+% \newcommand{\floor}[1]{\lfloor#1\rfloor} %%Corner quotes
 
 
 %%% ENVIRONMENTS %%%
-%\newenvironment{senum}[2][topsep=0in, itemsep=.05in]{\begin{enumerate}[#1,topsep=0in, itemsep=.05in]\begin{singlespace}#2}{\end{singlespace}\end{enumerate}\vspace{.175in}}
+\usepackage{amsthm}
 
+\newtheoremstyle{theorem}
+{}                % Space above
+{}                % Space below
+{\normalfont}        % Theorem body font % (default is "\upshape")
+{}                % Indent amount
+{\bfseries}       % Theorem head font % (default is \mdseries)
+{}               % Punctuation after theorem head % default: no punctuation
+{.18in}               % Space after theorem head
+{}                % Theorem head spec
+\theoremstyle{theorem}
+\newtheorem{theorem}{}% theorem counter resets every \subsection
+\renewcommand{\thetheorem}{T\arabic{theorem}}% Remove subsection from theorem counter representation
+
+
+\newtheoremstyle{Lthm}
+{}                % Space above
+{}                % Space below
+{\normalfont}        % Theorem body font % (default is "\upshape")
+{}                % Indent amount
+{\bfseries}       % Theorem head font % (default is \mdseries)
+{}               % Punctuation after theorem head % default: no punctuation
+{.18in}               % Space after theorem head
+{}                % Theorem head spec
+\theoremstyle{Lthm}
+\newtheorem{Lthm}{}[subsection]% theorem counter resets every \subsection
+\renewcommand{\theLthm}{L\arabic{Lthm}}% Remove subsection from theorem counter representation
+
+\newtheoremstyle{Pthm}
+{}                % Space above
+{}                % Space below
+{\normalfont}        % Theorem body font % (default is "\upshape")
+{}                % Indent amount
+{\bfseries}       % Theorem head font % (default is \mdseries)
+{}               % Punctuation after theorem head % default: no punctuation
+{.18in}               % Space after theorem head
+{}                % Theorem head spec
+\theoremstyle{Pthm}
+\newtheorem{Pthm}{}[subsection]% theorem counter resets every \subsection
+\renewcommand{\thePthm}{P\arabic{Pthm}}% Remove subsection from theorem counter representation
 
 \usepackage{calc}
 \makeatletter
@@ -136,12 +183,19 @@
   {\endlist}
 \makeatother
 
+%%% CROSS REFERENCES %%%
+\newcounter{acount}
+\newcommand{\aitem}[1]{%
+  \item[\bf #1] \refstepcounter{acount}\label{#1}
+}
+\newcommand{\aref}[1]{\hyperref[#1]{#1}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \begin{document}
-\title{\sc {{TITLE}}} %\thanks{}
+\title{\sc TITLE} %\thanks{}
 \author{\it Benjamin Brast-McKie} 
 \date{\today}
 \maketitle
@@ -151,7 +205,7 @@
 
 \begin{abstract}
 \noindent
-{{ABSTRACT}}
+ABSTRACT
 \end{abstract}
 
 
@@ -172,8 +226,11 @@
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%% GLOSSARY %%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%
+% \printglossary[style={index}] %Add to end
+
+%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%%
 
 
 \newpage
