@@ -5,6 +5,12 @@ I will provide links to associated tutorial videos throughout, omitting mention 
 For configuration instructions, see the installation [(Video 1/3)](https://youtu.be/JVIcU9ePtVE).
 I will also provide links to further resources for learning Vim below.
 
+## Table of Contents
+
+1. [Learning Vim](##Learning-Vim)
+2. [Mappings](##Mappings)
+3. [Learning Git](##Learning-Git)
+
 ## Learning Vim
 
 NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi which go back as far as the late 70s.
