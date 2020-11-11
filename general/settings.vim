@@ -1,8 +1,11 @@
 " set leader key
 let g:mapleader = "\<Space>"
 
-" set spell spelllang=en_gb
-set complete+=kspell
+set autoread " trigger `autoread` when files changes on disk
+  autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * if mode() != 'c' | checktime | endif
+  " autocmd FileChangedShellPost * " notification after file change
+  "   \ echohl WarningMsg | echo "File changed on disk. Buffer reloaded." | echohl None
+set complete+=kspell " set spell spelllang=en_gb
 autocmd BufRead,BufNewFile *.tex setlocal spell spelllang=en_gb
 syntax enable                           " Enables syntax highlighing
 set hidden                              " Required to keep multiple buffers open multiple buffers
