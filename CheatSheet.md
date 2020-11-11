@@ -8,8 +8,8 @@ I will also provide links to further resources for learning Vim below.
 ## Table of Contents
 
 1. [Learning Vim](##Learning-Vim)
-2. [Mappings](##Mappings)
-3. [Learning Git](##Learning-Git)
+2. [Mappings](#Mappings)
+3. [Learning Git](#Learning-Git)
 
 ## Learning Vim
 
@@ -28,7 +28,7 @@ See the introduction [(Video 1/7)](https://youtu.be/pYNvDkB0iRk) for related dis
 I have not made any changes to the conventions which come standard with NeoVim, as there is no need to reinvent the wheel.
 Rather, what follows is a minimal number of extensions to the functionality provided by NeoVim.
 
-## Mappings
+# Mappings
 
 Which-Key is triggered by the space bar, and will bring up a range of key-bindings with associated names.
 Accordingly, I will focus attention on the mappings included in `~/.config/nvim/keys/mappings.vim`, though I will mention some of the Which-Key bindings in discussing plugins in the following section.
