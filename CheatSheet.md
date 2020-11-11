@@ -35,8 +35,8 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Windows, Buffers, and Panes_ [(Video 2/3)](https://youtu.be/Xvu1IKEpO0M)
 
-- **Manage windows**: use `Ctrl+Space+c` to create a new window, and `Ctrl+Space+k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `Space+q`).
-- **Switch windows**: use `Ctrl+Space+n` and `Ctrl+Space+p` to cycle through open windows.
+- **Manage windows**: use `Ctrl+Space,c` to create a new window, and `Ctrl+Space,k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
+- **Switch windows**: use `Ctrl+Space,n` and `Ctrl+Space,p` to cycle through open windows.
 - **Switch buffers**: use `Tab` and `Shift+Tab` to cycle though the open buffers.
 - **Navigate panes**: use `Ctrl+h/j/k/l` to switch focus between buffers.
 - **Resize panes**: use `Alt+h/l` to horizontally resize the buffer in focus.
@@ -49,6 +49,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `Ctrl+m` to open Help for the word under the cursor.
 - **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
+- **Terminal**: use `Ctrl+t` to toggle the terminal window in NeoVim.
 
 ### _Zathura_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
 
@@ -77,8 +78,8 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 ### _Git Integration_ [(Video 3/7)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/7)](https://youtu.be/z5HfVQQDrAg)
 
-- **LazyGit**: use `Space+g,g` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
-- **Fugitive**: use `Space+g` to bring up a range of git commands.
+- **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
+- **Fugitive**: use `<space>g` to bring up a range of git commands.
 
 ### _Autocomplete_ [(Video 2/7)](https://youtu.be/KGqrpnxoDxw)
 
