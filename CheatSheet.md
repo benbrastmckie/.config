@@ -247,3 +247,15 @@ These are to be negotiated by both collaborators running the following procedure
 - Push these commits to the remote repository by hitting `P`.
 
 In order to reduce the number of conflicts, collaborators can may choose to avoid working on the same parts of the project, though this is not required.
+
+### _Further Resources_
+
+The resources below are organised from the most immediately applicable to the most theoretical.
+
+- [Overview](https://www.youtube.com/watch?v=uXv4poPOdvM&t=119s)
+- [Branches](https://www.youtube.com/watch?v=FyAAIHHClqI)
+- [LazyGit Features](https://www.youtube.com/watch?v=CPLdltN7wgE&t=307s)
+- [LazyGit Rebasing](https://www.youtube.com/watch?v=4XaToVut_hs&t=150s)
+- [Manual Commands (Short)](https://www.youtube.com/watch?v=USjZcfj8yxE)
+- [Manual Commands (Long)](https://www.youtube.com/watch?v=8JJ101D3knE)
+- [Theory](https://www.youtube.com/watch?v=2sjqTHE0zok)
