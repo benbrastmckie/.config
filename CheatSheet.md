@@ -11,7 +11,7 @@ I will also provide links to further resources for learning Vim below.
 2. [Mappings](#Mappings)
 3. [Learning Git](#Learning-Git)
 
-## Learning Vim
+## Learning-Vim
 
 NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi which go back as far as the late 70s.
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
