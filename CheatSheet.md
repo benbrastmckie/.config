@@ -135,41 +135,12 @@ Although there are a huge number of free resources for learning how to use git, 
 The following sections will include resources for using all of the basic git commands in LazyGit, providing everything one need to know to use git effectively for oneself and in collaborating with others.
 I will include links to further resources below.
 
-### Initialising Git
-
-Open the project folder in the terminal with:
-
-```
-   cd ~/<path to file from home directory>
-```
-
-Alternatively, open the project in NeoVim, hitting `<ctrl+t>` to open the terminal in project folder.
-To initialise a local git history, run `git init`.
-You may then exit the terminal with `<ctrl+t>` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `space`.
-Hit `c` to commit staged files, entering `initial commit` and hitting `return`.
-You are now ready to make commits and branches to your local git history.
-
-In order to link a remote repository, create a new repository in GitHub, selecting SSH in the quick setup menu copying a URL of the form:
-
-```
-  git@github.com:<username>/<project>.git
-```
-
-Return to the project in NeoVim, opening the project folder in the terminal with `<ctrl+t>`, running the following:
-
-```
-   git remote add origin git@github.com:<username>/<project>.git
-```
-
-Exit the terminal with `<ctrl+t>`, and reopen LazyGit, hitting `P` to push changes to the git repository.
-Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
-Reloading the GitHub website opened to your repository should show all files included in the commits so far.
-
-### Basic Git Commands
+### _Basic Git Commands_
 
 - **LazyGit**: to open LazyGit, hit `<space>gg`.
 - **Navigate**: use `h` and `l` to move between windows, and `j` and `k` to navigate within windows.
 - **Ignore**: use `i` to ignore all files which you do not wish to track, including any file which is not a text file.
+  - Note: if you accidentally ignore a file that you did not mean to, return to the project in NeoVim, open the explorer with `<space>e`, hit `.` in order to show hidden files, and open the `.gitignore` file, deleting the appropriate line which names the file you accidentally ignored.
 - **Staging**: use `space` to stage files in the files window, or `a` to stage/unstage all files.
 - **Commits**: use `c` to commit staged file to local git history.
 - **Pull**: use `p` to pull down latest commits from the git repository.
@@ -182,10 +153,24 @@ Reloading the GitHub website opened to your repository should show all files inc
 - **Help**: use `?` to look up the commands for the active window.
 - **Exit**: use `<esc>` to return to NeoVim.
 
-Note: if you accidentally ignore a file that you did not mean to, return to the project in NeoVim, open the explorer with `<space>e`, hit `.` in order to show hidden files, and open the `.gitignore` file.
-Close the explorer with `<space>e`, deleting the appropriate line in the `.gitignore` file.
+### _Initialising Git_
 
-### Merging Branches
+Open the project folder in the terminal with:
+
+```
+   cd ~/<path to file from home directory>
+```
+
+Alternatively, open the project in NeoVim, hitting `<ctrl+t>` to open the terminal in project folder.
+To initialise a local git history, run `git init`.
+You may then exit the terminal with `<ctrl+t>` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `space`.
+Hit `c` to commit staged files, entering `initial commit` and hitting `return`.
+You are now ready to make commits and branches to your local git history.
+Using `space` to checkout past commits in the commits window in LazyGit results in a detached-head state which is useful for viewing the history of the project.
+
+- Warning: any changes made to the project in a detached-head state will be lost upon checking out any other commit.
+
+### _Merging Branches_
 
 If you want to develop the project in a new direction which you may end up abandoning, or otherwise want to separate from the development of the rest of the project's development, you can create a new branch with `n` in the local branches window, where the new branch will be automatically checked out as indicated by a `*`.
 If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `space` to checkout master.
@@ -203,7 +188,62 @@ Search through the files with conflicts for `HEAD`, choosing which alternative i
 Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `return` will stage the file in question.
 If staging is not possible, check to make sure that there are no more conflicts, or miscellaneous marker syntax remaining.
 
-### Collaborating
+### _Remote Repositories_
 
-Before pushing commits to the repo with `P`, make sure to first pull down the most recent version with `p` if the right-most number on the starred branch in `Local Branches` does not read `0`.
-You may need to resolve conflicts upon pulling down changes before pushing the resolved version of the file up to the repo.
+In order to link a remote repository, it will be convenient to begin by adding an SSH key to your GitHub account if you have not already, as detailed in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md).
+Create a new repository in GitHub, selecting SSH in the quick setup menu, and copying a URL of the form:
+
+```
+  git@github.com:<username>/<project>.git
+```
+
+Return to the project in NeoVim, opening the project folder in the terminal with `<ctrl+t>`, running the following:
+
+```
+   git remote add origin git@github.com:<username>/<project>.git
+```
+
+Exit the terminal with `<ctrl+t>`, and reopen LazyGit, hitting `P` to push changes to the git repository.
+Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
+Reloading the GitHub website opened to your repository should show all files included in the commits so far.
+
+### _Setting up Collaborations_
+
+In order to add a collaborator to an existing repository, open the repository in GitHub and navigate to `Settings -> Manage acess` and click `invite a collaborator`, entering their GitHub username or email address.
+Your collaborator will then be able open the repo in GitHub, copying the address by clicking the `Code` drop-down menu, selecting SSH, and hitting the icon for copy-to-clipboard.
+They may then navigate in the terminal to the directory in which they want the project folder to live with:
+
+```
+    cd ~/<path to folder where the project folder should live>
+```
+
+The collaborator may then pull down the repo by running:
+
+```
+   git clone <address from the clipboard>
+```
+
+By then running `ls -a` in the terminal, the collaborator may check whether the project directory has appeared.
+If the collaborator is using the same configuration, then the project may be edited by moving into the project directory with `cd <project directory name>`, running `nvim` and hitting `<space>e` to open the explorer in the project folder, selecting the files to be edited.
+However, even without using the present configuration of NeoVim, collaborators may avoid manually entering git commands by running LazyGit in the terminal.
+In order to install LazyGit and add an SSH key, follow the instructions provided in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md).
+
+### _Collaboration Protocol_
+
+Assume collaborator A creates a repo inviting collaborator B as above.
+Upon first cloning the repo, collaborator B will be up to date with the remote repository on GitHub, and may begin making changes.
+At the same time, collaborator A may also make changes, leading to possible conflicts.
+These are to be negotiated by both collaborators running the following procedure:
+
+- Make and commit changes to the project.
+- Open LazyGit, checking in the local branches window whether the right-most number next to the active branch marked by a `*` is 0.
+- If the right-most number is greater than 0, pull down the most recent commits by hitting `p`.
+- If there are conflicts, hit `return` upon being asked by LazyGit whether to proceed.
+- Close LazyGit, searching through the files with conflicts for `HEAD`, choosing which alternative is preferable and deleting the other alternative along with all marker syntax.
+- Once all conflicts have been resolved, return to LazyGit.
+- Attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `return` will stage the file in question.
+- If conflicts remain, the staging will fail, requiring that you return to resolve whatever conflicts have been missed, perhaps in another file in the project.
+- Once the staging is successful, commit the changes with `c` noting that you have resolved conflicts in your message in addition to noting the most recent changes you made to the project.
+- Push these commits to the remote repository by hitting `P`.
+
+In order to reduce the number of conflicts, collaborators can may choose to avoid working on the same parts of the project, though this is not required.

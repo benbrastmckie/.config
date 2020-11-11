@@ -123,6 +123,8 @@ Next install LazyGit by running:
 brew install jesseduffield/lazygit/lazygit
 ```
 
+### Adding an SSH Key to GitHub
+
 If you have not already, you can also add an SSH key by amending and running the following:
 
 ```
@@ -382,6 +384,8 @@ Next, install LazyGit using Yay by running:
 ```
 yay -S lazygit
 ```
+
+### Adding an SSH Key to GitHub
 
 If you have not already, you can also add an SSH key by amending and running the following:
 
