@@ -16,7 +16,7 @@ I will also include information for globally remapping keys to better suit writi
 
 # Mac OS Installation
 
-Open the terminal by hitting `Command+Space` and typing `terminal` and hitting return.
+Open the terminal by hitting `Command+Space` and typing `terminal`.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 
 ```

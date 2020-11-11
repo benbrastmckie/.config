@@ -39,6 +39,7 @@ let g:which_key_map['w'] = [ ':w'                    , 'write' ]
 let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
 let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
 " let g:which_key_map['c'] = [ ':VimtexCountWords'     , 'count' ]
+" let g:which_key_map.t = 'terminal'
 let g:which_key_map.i = 'index'
 let g:which_key_map.b = 'build'
 let g:which_key_map.c = 'count'
@@ -130,6 +131,7 @@ let g:which_key_map.a = {
       \ }
 
 
+      " \ ';' : [ ':Commands'             , 'commands' ],
       " \ 't' : [':FloatermToggle'         , 'terminal'],
       " \ 'c' : [':ColorizerToggle'        , 'colorizer'],
 

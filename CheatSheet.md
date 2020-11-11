@@ -127,3 +127,83 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Undo**: use `Space+u` to open the undo tree.
 - **Zen Mode**: use `Space+z` to toggle zen mode (best used when the window is maximised).
 - **Reload**: use `Space+Shift+r` to reload the configuration files.
+
+## Learning Git
+
+Git is useful for: (1) maintaining a history of changes to your project; (2) backing up the project on a private repository online; (3) managing different ways of developing the project prior to knowing which way is preferable; (4) working on the same project from different computers; and (5) collaborating with others on a shared project.
+Although there are a huge number of free resources for learning how to use git, including full lecture series, few resources provide a complete overview of git's most basic functionality.
+The following sections will include resources for using all of the basic git commands in LazyGit, providing everything one need to know to use git effectively for oneself and in collaborating with others.
+I will include links to further resources below.
+
+### Initialising Git
+
+Open the project folder in the terminal with:
+
+```
+   cd ~/<path to file from home directory>
+```
+
+Alternatively, open the project in NeoVim, hitting `<ctrl+t>` to open the terminal in project folder.
+To initialise a local git history, run `git init`.
+You may then exit the terminal with `<ctrl+t>` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `space`.
+Hit `c` to commit staged files, entering `initial commit` and hitting `return`.
+You are now ready to make commits and branches to your local git history.
+
+In order to link a remote repository, create a new repository in GitHub, selecting SSH in the quick setup menu copying a URL of the form:
+
+```
+  git@github.com:<username>/<project>.git
+```
+
+Return to the project in NeoVim, opening the project folder in the terminal with `<ctrl+t>`, running the following:
+
+```
+   git remote add origin git@github.com:<username>/<project>.git
+```
+
+Exit the terminal with `<ctrl+t>`, and reopen LazyGit, hitting `P` to push changes to the git repository.
+Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
+Reloading the GitHub website opened to your repository should show all files included in the commits so far.
+
+### Basic Git Commands
+
+- **LazyGit**: to open LazyGit, hit `<space>gg`.
+- **Navigate**: use `h` and `l` to move between windows, and `j` and `k` to navigate within windows.
+- **Ignore**: use `i` to ignore all files which you do not wish to track, including any file which is not a text file.
+- **Staging**: use `space` to stage files in the files window, or `a` to stage/unstage all files.
+- **Commits**: use `c` to commit staged file to local git history.
+- **Pull**: use `p` to pull down latest commits from the git repository.
+  - Warning: make sure to commit any changes made to the local files before pulling down changes from the git repository.
+  - Note: if there are conflicts, hit `return` to generate conflict reports, returning to the file in question to resolve conflicts.
+- **Push**: use `P` to push recent commits to the git repository.
+  - Note: if changes have been made to the git repository, pull down all changes and resolve any conflicts before pushing to the git repository.
+- **Branch**: use `n` in the local branches window to create a new branch, `space` to checkout branches, and `M` to merge highlighted branch into checked out branch.
+- **Diff**: in the commits window, use `ctrl+e` to open diff menu, where default diff is between the current file and the highlighted commit.
+- **Help**: use `?` to look up the commands for the active window.
+- **Exit**: use `<esc>` to return to NeoVim.
+
+Note: if you accidentally ignore a file that you did not mean to, return to the project in NeoVim, open the explorer with `<space>e`, hit `.` in order to show hidden files, and open the `.gitignore` file.
+Close the explorer with `<space>e`, deleting the appropriate line in the `.gitignore` file.
+
+### Merging Branches
+
+If you want to develop the project in a new direction which you may end up abandoning, or otherwise want to separate from the development of the rest of the project's development, you can create a new branch with `n` in the local branches window, where the new branch will be automatically checked out as indicated by a `*`.
+If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `space` to checkout master.
+
+- Warning: if you switch branches before committing any changes that you made to the current branch, those changes will be lost.
+
+Once you have returned to the master branch, the history of the project's development in the now abandoned branch will remain stored in the git history unless you delete the abandoned branch by navigating to it in the local branches window and hitting `d`.
+
+Suppose that you return to further develop a previously abandoned branch, and now want to include the changes in the master branch.
+To do so, you can merge the finished branch into master by: (1) committing the most recent changes to the no longer abandoned branch; (2) checking out the master branch in the local branches window by navigating to master and hitting `space`; and (3) navigating back to the no longer abandoned branch and hitting `M` in order to merge the selected branch into the checked out branch.
+
+Upon merging branches, there may be conflicts if the two branches have been developed independently in conflicting ways.
+If there are conflicts, LazyGit will ask whether to go ahead with merge, where hitting `return` will include all alternatives in the files which have conflicts along with marker syntax.
+Search through the files with conflicts for `HEAD`, choosing which alternative is preferable and deleting the other alternative along with all marker syntax.
+Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `return` will stage the file in question.
+If staging is not possible, check to make sure that there are no more conflicts, or miscellaneous marker syntax remaining.
+
+### Collaborating
+
+Before pushing commits to the repo with `P`, make sure to first pull down the most recent version with `p` if the right-most number on the starred branch in `Local Branches` does not read `0`.
+You may need to resolve conflicts upon pulling down changes before pushing the resolved version of the file up to the repo.
