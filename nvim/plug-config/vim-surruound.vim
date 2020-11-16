@@ -7,6 +7,7 @@ autocmd FileType tex let b:surround_{char2nr("q")} = "`\r'"
 autocmd FileType tex let b:surround_{char2nr('Q')} = "``\r''"
 autocmd FileType tex let b:surround_{char2nr('i')} = "\\textit{\r}"
 autocmd FileType tex let b:surround_{char2nr('b')} = "\\textbf{\r}"
+autocmd FileType tex let b:surround_{char2nr('t')} = "\\texttt{\r}"
 
 " let g:sandwich#recipes += [
 " 	\   {'buns': ['{ ', ' }'], 'nesting': 1, 'match_syntax': 1,
