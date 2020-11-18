@@ -50,6 +50,8 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'aperezdc/vim-template'
 
     " Markdown
+    " Plug 'godlygeek/tabular'
+    " Plug 'plasticboy/vim-markdown'    
     Plug 'gabrielelana/vim-markdown'
     Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
     " Plug 'plasticboy/vim-markdown'

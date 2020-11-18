@@ -5,7 +5,7 @@ set autoread " trigger `autoread` when files changes on disk
   autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * if mode() != 'c' | checktime | endif
   " autocmd FileChangedShellPost * " notification after file change
   "   \ echohl WarningMsg | echo "File changed on disk. Buffer reloaded." | echohl None
-set complete+=kspell " set spell spelllang=en_gb
+set complete+=kspell                    " set spell spelllang=en_gb
 autocmd BufRead,BufNewFile *.tex setlocal spell spelllang=en_gb
 syntax enable                           " Enables syntax highlighing
 set hidden                              " Required to keep multiple buffers open multiple buffers
@@ -27,8 +27,8 @@ set t_Co=256                            " Support 256 colors
 set conceallevel=0                      " So that I can see `` in markdown files
 set tabstop=2                           " Insert 2 spaces for a tab
 set shiftwidth=2                        " Change the space characters inserted for indentation
-set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
 set expandtab                           " Converts tabs to spaces
+set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
 set smartindent                         " Makes indenting smart
 set autoindent                          " Good auto indent
 set laststatus=0                        " Always display the status line

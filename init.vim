@@ -21,7 +21,7 @@ source $HOME/.config/nvim/plug-config/ultisnips.vim
 " source $HOME/.config/nvim/plug-config/pandoc.vim
 
 " Abandoned
-" source $HOME/.config/nvim/plug-config/markdown.vim
+source $HOME/.config/nvim/plug-config/markdown.vim
 " source $HOME/.config/nvim/plug-config/vbox.vim
 " source $HOME/.config/nvim/plug-config/templates.vim
 " source $HOME/.config/nvim/plug-config/nerdtree.vim
