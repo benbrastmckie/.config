@@ -101,11 +101,12 @@ let g:which_key_map.S = {
 " Markdown
 let g:which_key_map.m = {
       \ 'name' : '+markdown' ,
-      \ 'p' : ['<Plug>MarkdownPreview'           , 'preview'],
-      \ 'k' : ['<Plug>MarkdownPreviewStop'       , 'kill'],
-      \ 'm' : ['<Plug>MarkdownPreviewToggle'     , 'toggle'],
+      \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
+      \ 'f' : ['zA'                                  , 'fold'],
+      \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill'],
       \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select'],
       \ }
+      " \ 'm' : ['<Plug>MarkdownPreviewToggle'     , 'toggle'],
 
 " y is for you surround
 let g:which_key_map.s = {
