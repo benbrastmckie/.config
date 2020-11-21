@@ -18,10 +18,10 @@ source $HOME/.config/nvim/plug-config/markdown-preview.vim
 source $HOME/.config/nvim/keys/mappings.vim
 source $HOME/.config/nvim/keys/which-key.vim
 source $HOME/.config/nvim/plug-config/ultisnips.vim
-" source $HOME/.config/nvim/plug-config/pandoc.vim
+source $HOME/.config/nvim/plug-config/markdown.vim
 
 " Abandoned
-source $HOME/.config/nvim/plug-config/markdown.vim
+" source $HOME/.config/nvim/plug-config/pandoc.vim
 " source $HOME/.config/nvim/plug-config/vbox.vim
 " source $HOME/.config/nvim/plug-config/templates.vim
 " source $HOME/.config/nvim/plug-config/nerdtree.vim

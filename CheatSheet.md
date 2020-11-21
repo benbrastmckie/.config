@@ -35,32 +35,32 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Line Movements_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Drag lines**: the commands `Alt+j` and `Alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
+- **Drag lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
 - **Better tabbing**: the `<` and `>` keys will adjust indents in both normal and visual mode.
-- **Display line movements**: in either normal or visual mode, `Shift+j` and `Shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `Shift+h` and `Shift+l` will move to the beginning or end of the displayed line, respectively.
+- **Display line movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
 
 ### _Windows, Buffers, and Panes_ [(Video 2/3)](https://youtu.be/Xvu1IKEpO0M)
 
-- **Manage windows**: use `Ctrl+Space,c` to create a new window, and `Ctrl+Space,k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
-- **Switch windows**: use `Ctrl+Space,n` and `Ctrl+Space,p` to cycle through open windows.
-- **Switch buffers**: use `Tab` and `Shift+Tab` to cycle though the open buffers.
-- **Navigate panes**: use `Ctrl+h/j/k/l` to switch focus between buffers.
-- **Resize panes**: use `Alt+h/l` to horizontally resize the buffer in focus.
+- **Manage windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
+- **Switch windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
+- **Switch buffers**: use `<tab>` and `<shift+tab>` to cycle though the open buffers.
+- **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
+- **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
 
 ### _Commands_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Save and Quit**: use `Space+w` to save buffer, and `Space+q` to save and quite all buffers.
-- **Comment**: in normal mode or visually mode, use `Ctrl+\` to toggle whether the lines in question are commented out.
-- **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
+- **Save and Quit**: use `<space>w` to save buffer, and `<space>q` to save and quite all buffers.
+- **Comment**: in normal mode or visually mode, use `ctrl+\` to toggle whether the lines in question are commented out.
+- **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
-- **Help**: use `Ctrl+m` to open Help for the word under the cursor.
-- **Multiple Cursors**: use `Ctrl+n` to select the word under the cursor, where repeating `Ctrl+n` will select the next occurrences of that word, `Ctrl+x` will skip the current selected occurrence, and `Ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
-- **Terminal**: use `Ctrl+t` to toggle the terminal window in NeoVim.
+- **Help**: use `ctrl+m` to open Help for the word under the cursor.
+- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
+- **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 
 ### _Zathura_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
 
-- **Index**: use `Space` to toggle the index.
-- **Zoom**: use `Shift+k` and `Shift+j` to zoom in and out, respectively.
+- **Index**: use `<space> to toggle the index.
+- **Zoom**: use `shift+k` and `shift+j` to zoom in and out, respectively.
 - **Print**: use `p` to print.
 - **Black Mode**: use `b` to invert colours.
 
@@ -70,75 +70,76 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 ### _File Management_ [(Video 3/10)](https://youtu.be/v_zYV8G7gOs)
 
-- **Local File Search**: use `Ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
-- **Global File Search**: use `Space+Shift+f` to fuzzy search through all files in the home folder, navigating with `Ctrl+j/k`, and opening files with `Enter`.
-- **Explorer**: use `Space+e` to open the file explorer, navigating with `j/k`, adding directories with `Shift+a`, adding files `a`, and opening files with `Enter`.
-- **Close Buffer**: use `Space+d` to close current buffer.
+- **Local File Search**: use `ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
+- **Global File Search**: use `<space>F` to fuzzy search through all files in the home folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
+- **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter` or `shift+x`, and opening help with `?`.
+- **Close Buffer**: use `<space>d` to close current buffer.
 
 ### _Projects and Templates_ [(Video 5/10)](https://youtu.be/z5HfVQQDrAg)
 
-- **Projects**: use `Space+Shift+s,s` to create a new project, and `Space+Shift+s,d` to delete a new project.
+- **Projects**: use `<space>Ss` to create a new project, and `<space>Sd` to delete a new project.
   - To create a first project, enter the command `:SSave` instead, following the prompt to create a sessions folder.
-- **Templates**: use `Space+t` to choose from a variety of templates in the `~/.config/nvim/templates` directory.
+- **Templates**: use `<space>t` to choose from a variety of templates in the `~/.config/nvim/templates` directory.
   - To add new templates, add the relevant file to `~/.config/nvim/templates`, customising `~/.config/nvim/keys/which-key.vim`.
 
 ### _Git Integration_ [(Video 3/10)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/10)](https://youtu.be/z5HfVQQDrAg)[(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
-- **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
 - **Fugitive**: use `<space>g` to bring up a range of git commands.
+- **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
 
 ### _Autocomplete_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
 
-- **Select Entry**: use `Ctrl+j` and `Ctrl+k` to cycle through the autocomplete menu.
+- **Select Entry**: use `ctrl+j` and `ctrl+k` to cycle through the autocomplete menu.
 - **Trigger Completion**: continue typing after selecting desired option.
-- **Snippet Completion**: use `Enter` to select highlighted option, and `Tab` to reselect previous field.
+- **Snippet Completion**: use `Enter` to select highlighted option, and `tab` to reselect previous field.
 - **Go to**: use `gd` to go to the definition of the word under the cursor (if any).
-- **Spelling**: use `Ctrl+s` to search alternatives to misspelled word.
-- **Hide**: use `Space+k` to hide autocomplete menu, and `Space+r` to restore.
+- **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
+- **Hide**: use `<space>k` to hide autocomplete menu, and `<space>r` to restore.
 
 ### _Autopairs and Surround_ [(Video 4/10)](https://youtu.be/1fcc5YoCrvc)
 
 - **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
-- **Add Surround**: in visual select mode use `Shift+s`, or in normal mode use `Space+s,s`, followed by the desired Vim noun to specify the text-object in question, and then enter either:
+- **Add Surround**: in visual select mode use `shift+s`, or in normal mode use `<space>ss`, followed by the desired text object, and then either:
   - `q/Q` for single/double LaTeX quotes, respectively.
+  - `i` for italics, `b` for bold, `t` for typescript, and `s` for small caps
   - Open bracket for brackets with padding, and close bracket for brackets without padding.
-- **Change Surround**: in normal mode, use `Space+s` followed by:
+- **Change Surround**: in normal mode, use `<space>s` followed by:
   - `k` to remove the next outermost quotes/brackets relative to the position of the cursor.
   - `d` followed by the desired quotes/brackets to be deleted.
   - `c` followed by both the quote/brackets to change, and then the quotes/brackets which are to be inserted instead.
 
 ### _LaTeX Support_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
 
-- **Build**: use `Space+b` to toggle auto-build.
-- **Preview**: use `Space+p` to preview current line.
-- **Index**: use `Ctrl+i` to open the index.
-- **Count**: use `Ctrl+c` to count words.
-- **Log**: use `Ctrl+l` to open LaTeX log in horizontal split, and `Space+d` to close.
-- **Clean**: use `Space+a,k` to delete auxiliary LaTeX files.
+- **Build**: use `<space>b` to toggle auto-build.
+- **Preview**: use `<space>p` to preview current line.
+- **Index**: use `ctrl+i` to open the index.
+- **Count**: use `ctrl+c` to count words.
+- **Log**: use `ctrl+l` to open LaTeX log in horizontal split, and `<space>d` to close.
+- **Clean**: use `<space>ak` to delete auxiliary LaTeX files.
 
 ### _Markdown_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Build**: use `Space+m,m` to toggle auto-build.
-- **Preview**: use `Space+m,p` to preview document.
-- **Kill**: use `Space+m,k` to close document.
-- **Select**: use `Space+m,s` to cycle through selection options in a markdown bullet point list.
+- **Fold**: use `<space>mf` to toggle folding.
+- **Preview**: use `<space>mp` to preview document.
+- **Kill**: use `<space>mk` to close document.
+- **Select**: use `<space>ms` to cycle through selection options in a markdown bullet point list.
 
 ### _Pandoc_ [(Video 7/10)](https://www.youtube.com/watch?v=l0N5LJTe6-A)
 
-- Use `Space+Shift+p` to select which file format into which you would like to convert the file open in current buffer.
-- Alternatively, you can run `:Pandoc [Source file] [Output file]` in the command line to simulate terminal commands.
+- Use `<space>P` to select which file format into which you would like to convert the file open in current buffer.
+- alternatively, you can run `:Pandoc [Source file] [Output file]` in the command line to simulate terminal commands.
 
 ### _Misc Bindings_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Search**: use `Space+f` to fuzzy find within the current document.
-- **Undo**: use `Space+u` to open the undo tree.
-- **Zen Mode**: use `Space+z` to toggle zen mode (best used when the window is maximised).
-- **Reload**: use `Space+Shift+r` to reload the configuration files.
+- **Search**: use `<space>f` to fuzzy find within the current document.
+- **Undo**: use `<space>u` to open the undo tree.
+- **Zen Mode**: use `<space>z` to toggle zen mode (best used when the window is maximised).
+- **Reload**: use `<space>R` to reload the configuration files.
 
 ## Learning Git
 
 Git is useful for: (1) maintaining a history of changes to your project; (2) backing up the project on a private repository online; (3) managing different ways of developing the project prior to knowing which way is preferable; (4) working on the same project from different computers; and (5) collaborating with others on a shared project.
-Although there are a huge number of free resources for learning how to use git, including full lecture series, few resources provide a complete overview of git's most basic functionality.
+although there are a huge number of free resources for learning how to use git, including full lecture series, few resources provide a complete overview of git's most basic functionality.
 The following sections will include resources for using all of the basic git commands in LazyGit, providing everything one need to know to use git effectively for oneself and in collaborating with others.
 I will include links to further resources below.
 
@@ -148,14 +149,14 @@ I will include links to further resources below.
 - **Navigate**: use `h` and `l` to move between windows, and `j` and `k` to navigate within windows.
 - **Ignore**: use `i` to ignore all files which you do not wish to track, including any file which is not a text file.
   - Note: if you accidentally ignore a file that you did not mean to, return to the project in NeoVim, open the explorer with `<space>e`, hit `.` in order to show hidden files, and open the `.gitignore` file, deleting the appropriate line which names the file you accidentally ignored.
-- **Staging**: use `space` to stage files in the files window, or `a` to stage/unstage all files.
+- **Staging**: use `<space>` to stage files in the files window, or `a` to stage/unstage all files.
 - **Commits**: use `c` to commit staged file to local git history.
 - **Pull**: use `p` to pull down latest commits from the git repository.
   - Warning: make sure to commit any changes made to the local files before pulling down changes from the git repository.
-  - Note: if there are conflicts, hit `return` to generate conflict reports, returning to the file in question to resolve conflicts.
+  - Note: if there are conflicts, hit `<return>` to generate conflict reports, returning to the file in question to resolve conflicts.
 - **Push**: use `P` to push recent commits to the git repository.
   - Note: if changes have been made to the git repository, pull down all changes and resolve any conflicts before pushing to the git repository.
-- **Branch**: use `n` in the local branches window to create a new branch, `space` to checkout branches, and `M` to merge highlighted branch into checked out branch.
+- **Branch**: use `n` in the local branches window to create a new branch, `<space>` to checkout branches, and `M` to merge highlighted branch into checked out branch.
 - **Diff**: in the commits window, use `ctrl+e` to open diff menu, where default diff is between the current file and the highlighted commit.
 - **Help**: use `?` to look up the commands for the active window.
 - **Exit**: use `<esc>` to return to NeoVim.
@@ -168,31 +169,31 @@ Open the project folder in the terminal with:
    cd ~/<path to file from home directory>
 ```
 
-Alternatively, open the project in NeoVim, hitting `<ctrl+t>` to open the terminal in project folder.
+alternatively, open the project in NeoVim, hitting `ctrl+t` to open the terminal in project folder.
 To initialise a local git history, run `git init`.
-You may then exit the terminal with `<ctrl+t>` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `space`.
-Hit `c` to commit staged files, entering `initial commit` and hitting `return`.
+You may then exit the terminal with `ctrl+t` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `<space>`.
+Hit `c` to commit staged files, entering `initial commit` and hitting `<return>`.
 You are now ready to make commits and branches to your local git history.
-Using `space` to checkout past commits in the commits window in LazyGit results in a detached-head state which is useful for viewing the history of the project.
+Using `<space>` to checkout past commits in the commits window in LazyGit results in a detached-head state which is useful for viewing the history of the project.
 
 - Warning: any changes made to the project in a detached-head state will be lost upon checking out any other commit.
 
 ### _Merging Branches_ [(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
 
 If you want to develop the project in a new direction which you may end up abandoning, or otherwise want to separate from the development of the rest of the project's development, you can create a new branch with `n` in the local branches window, where the new branch will be automatically checked out as indicated by a `*`.
-If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `space` to checkout master.
+If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `<space>` to checkout master.
 
 - Warning: if you switch branches before committing any changes that you made to the current branch, those changes will be lost.
 
 Once you have returned to the master branch, the history of the project's development in the now abandoned branch will remain stored in the git history unless you delete the abandoned branch by navigating to it in the local branches window and hitting `d`.
 
 Suppose that you return to further develop a previously abandoned branch, and now want to include the changes in the master branch.
-To do so, you can merge the finished branch into master by: (1) committing the most recent changes to the no longer abandoned branch; (2) checking out the master branch in the local branches window by navigating to master and hitting `space`; and (3) navigating back to the no longer abandoned branch and hitting `M` in order to merge the selected branch into the checked out branch.
+To do so, you can merge the finished branch into master by: (1) committing the most recent changes to the no longer abandoned branch; (2) checking out the master branch in the local branches window by navigating to master and hitting `<space>`; and (3) navigating back to the no longer abandoned branch and hitting `M` in order to merge the selected branch into the checked out branch.
 
 Upon merging branches, there may be conflicts if the two branches have been developed independently in conflicting ways.
-If there are conflicts, LazyGit will ask whether to go ahead with merge, where hitting `return` will include all alternatives in the files which have conflicts along with marker syntax.
+If there are conflicts, LazyGit will ask whether to go ahead with merge, where hitting `<return>` will include all alternatives in the files which have conflicts along with marker syntax.
 Search through the files with conflicts for `HEAD`, choosing which alternative is preferable and deleting the other alternative along with all marker syntax.
-Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `return` will stage the file in question.
+Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `<return>` will stage the file in question.
 If staging is not possible, check to make sure that there are no more conflicts, or miscellaneous marker syntax remaining.
 
 ### _Remote Repositories_ [(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
@@ -204,13 +205,13 @@ Create a new repository in GitHub, selecting SSH in the quick setup menu, and co
   git@github.com:<username>/<project>.git
 ```
 
-Return to the project in NeoVim, opening the project folder in the terminal with `<ctrl+t>`, running the following:
+Return to the project in NeoVim, opening the project folder in the terminal with `ctrl+t`, running the following:
 
 ```
    git remote add origin git@github.com:<username>/<project>.git
 ```
 
-Exit the terminal with `<ctrl+t>`, and reopen LazyGit, hitting `P` to push changes to the git repository.
+Exit the terminal with `ctrl+t`, and reopen LazyGit, hitting `P` to push changes to the git repository.
 Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
 Reloading the GitHub website opened to your repository should show all files included in the commits so far.
 
@@ -245,10 +246,10 @@ These are to be negotiated by both collaborators running the following procedure
 - Make and commit changes to the project.
 - Open LazyGit, checking in the local branches window whether the right-most number next to the active branch marked by a `*` is 0.
 - If the right-most number is greater than 0, pull down the most recent commits by hitting `p`.
-- If there are conflicts, hit `return` upon being asked by LazyGit whether to proceed.
+- If there are conflicts, hit `<return>` upon being asked by LazyGit whether to proceed.
 - Close LazyGit, searching through the files with conflicts for `HEAD`, choosing which alternative is preferable and deleting the other alternative along with all marker syntax.
 - Once all conflicts have been resolved, return to LazyGit.
-- Attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `return` will stage the file in question.
+- Attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `<return>` will stage the file in question.
 - If conflicts remain, the staging will fail, requiring that you return to resolve whatever conflicts have been missed, perhaps in another file in the project.
 - Once the staging is successful, commit the changes with `c` noting that you have resolved conflicts in your message in addition to noting the most recent changes you made to the project.
 - Push these commits to the remote repository by hitting `P`.
