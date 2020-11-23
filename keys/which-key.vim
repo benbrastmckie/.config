@@ -102,7 +102,8 @@ let g:which_key_map.S = {
 let g:which_key_map.m = {
       \ 'name' : '+markdown' ,
       \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
-      \ 'f' : ['zA'                                  , 'fold'],
+      \ 'F' : ['zA'                                  , 'fold all'],
+      \ 'f' : ['za'                                  , 'fold current'],
       \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill'],
       \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select'],
       \ }
