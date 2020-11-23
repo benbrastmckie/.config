@@ -25,12 +25,12 @@ set splitbelow                          " Horizontal splits will automatically b
 set splitright                          " Vertical splits will automatically be to the right
 set t_Co=256                            " Support 256 colors
 set conceallevel=0                      " So that I can see `` in markdown files
+set expandtab                           " Converts tabs to spaces
 set tabstop=2                           " Insert 2 spaces for a tab
 set shiftwidth=2                        " Change the space characters inserted for indentation
-set expandtab                           " Converts tabs to spaces
 set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
-set smartindent                         " Makes indenting smart
 set autoindent                          " Good auto indent
+set smartindent                         " Makes indenting smart
 set laststatus=0                        " Always display the status line
 set relativenumber                      " Relative Line numbers
 set number                              " Line numbers
@@ -48,6 +48,12 @@ set clipboard=unnamedplus               " Copy paste between vim and everything 
 
 au! BufWritePost $MYVIMRC source %      " auto source when writing to init.vm alternatively you can run :source $MYVIMRC
 
+" For highlighting yanked text in nvim (but didn't work)
+" augroup highlight_yank
+"     autocmd!
+"     au TextYankPost * silent! lua vim.highlight.on_yank{higroup="IncSearch", timeout=700}
+" augroup END
+
 " You can't stop me
 " cmap w!! w !sudo tee %
 
@@ -55,4 +61,8 @@ au! BufWritePost $MYVIMRC source %      " auto source when writing to init.vm al
 
 " set wildmenu                            " autocomplete in command mode
 " set wildmode=list:full                  " settings for wildmenue
-
+" filetype plugin indent on
+" set indentexpr=
+" set comments=fb:*,fb:-,fb:+,n:>
+" set formatoptions=tcroqn
+" let g:vim_indent_cont = shiftwidth() * 3

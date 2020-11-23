@@ -119,7 +119,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 ### _Markdown_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
-- **Fold**: use `<space>mf` to toggle folding.
+- **Fold**: use `<space>mf` to toggle folding for current, and `<space>mF` to toggle all folding.
 - **Preview**: use `<space>mp` to preview document.
 - **Kill**: use `<space>mk` to close document.
 - **Select**: use `<space>ms` to cycle through selection options in a markdown bullet point list.

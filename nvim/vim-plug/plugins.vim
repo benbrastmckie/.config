@@ -62,7 +62,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'godlygeek/tabular'
     " Plug 'plasticboy/vim-markdown'    
     
-" Pandoc
+" Pandoc: conflict with markdown auto-indent and syntax highlighting
     Plug 'vim-pandoc/vim-pandoc'
     Plug 'vim-pandoc/vim-pandoc-syntax' " Syntax not as good
 
