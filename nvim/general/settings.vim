@@ -52,3 +52,7 @@ au! BufWritePost $MYVIMRC source %      " auto source when writing to init.vm al
 " cmap w!! w !sudo tee %
 
 " set viminfo='100,n$HOME/.vim/files/info/viminfo
+
+" set wildmenu                            " autocomplete in command mode
+" set wildmode=list:full                  " settings for wildmenue
+

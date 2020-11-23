@@ -238,3 +238,8 @@ let g:markdown_mapping_switch_status = '<Space>ms'
   " let g:UltiSnipsExpandTrigger='<Nop>'
   " let g:UltiSnipsJumpForwardTrigger = '<TAB>'
   " let g:UltiSnipsJumpBackwardTrigger = '<S-TAB>'
+
+" scroll through autocomplete in commandline tab-menu
+cnoremap <C-j> <C-n>
+cnoremap <C-k> <C-p>
+
