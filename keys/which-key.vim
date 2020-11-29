@@ -73,6 +73,7 @@ let g:which_key_map.P = {
       \ 'm' : [':Pandoc md'             , 'to markdown from open'],
       \ 'h' : [':Pandoc html'           , 'to html from open'],
       \ 'l' : [':Pandoc latex'          , 'to latex from open'],
+      \ 'p' : [':Pandoc pdf'            , 'to pdf from open'],
       \ }
 
       " \ 'L' : [':terminal pandoc -s expand('%:t') -o expand('%:t').tex'       , 'to latex from file'],

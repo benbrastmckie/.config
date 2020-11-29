@@ -8,48 +8,6 @@ endif
 
 call plug#begin('~/.config/nvim/autoload/plugged')
 
-" APPEARANCE
-
-" Themes 
-    Plug 'morhetz/gruvbox'  " Source grubox theme
-    " Plug 'HerringtonDarkholme/yats.vim' " TS Syntax
-    " Plug 'joshdick/onedark.vim'
-    
-" Satus Line
-    Plug 'vim-airline/vim-airline'
-    Plug 'vim-airline/vim-airline-themes'
-    
-" Startup Screen
-    Plug 'mhinz/vim-startify'
-    
-
-" FILE MANAGEMENT
-
-" File Explorer
-    Plug 'ryanoasis/vim-devicons' "adds icons to coc-explorer
-    " Plug 'scrooloose/nerdtree'
-    " Plug 'preservim/nerdtree'
-    " Plug 'Xuyuanp/nerdtree-git-plugin'
-    " Plug 'tsony-tsonev/nerdtree-git-plugin'
-    " Plug 'tiagofumo/vim-nerdtree-syntax-highlight' " Is this required?
-    
-" Git Integration
-    Plug 'mhinz/vim-signify'
-    Plug 'airblade/vim-gitgutter'
-    Plug 'tpope/vim-fugitive'
-    Plug 'tpope/vim-rhubarb'
-    Plug 'junegunn/gv.vim'
-
-" Fuzzy Search
-    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-    Plug 'junegunn/fzf.vim'
-    " Plug 'jremmen/vim-ripgrep'
-    " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
-    
-" Undo tree
-    Plug 'mbbill/undotree'
-    
-
 " TEXT SUPPORT
 
 " LaTeX Support
@@ -81,6 +39,34 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'aperezdc/vim-template'
 
 
+" FILE MANAGEMENT
+
+" File Explorer
+    Plug 'ryanoasis/vim-devicons' "adds icons to coc-explorer
+    " Plug 'scrooloose/nerdtree'
+    " Plug 'preservim/nerdtree'
+    " Plug 'Xuyuanp/nerdtree-git-plugin'
+    " Plug 'tsony-tsonev/nerdtree-git-plugin'
+    " Plug 'tiagofumo/vim-nerdtree-syntax-highlight' " Is this required?
+    
+" Git Integration
+    Plug 'mhinz/vim-signify'
+    Plug 'airblade/vim-gitgutter'
+    Plug 'tpope/vim-fugitive'
+    Plug 'tpope/vim-rhubarb'
+    Plug 'junegunn/gv.vim'
+
+" Fuzzy Finder
+    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+    Plug 'junegunn/fzf.vim'
+    " Plug 'jremmen/vim-ripgrep'
+    " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
+    
+" Undo tree
+    Plug 'mbbill/undotree'
+    
+
+
 " ADDITIONAL FUNCTIONS
 
 " IntelLisense
@@ -97,16 +83,16 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'SirVer/ultisnips'
     " Plug 'honza/vim-snippets'
 
-" Comments
-    Plug 'tpope/vim-commentary'
-    " Plug 'jbgutierrez/vim-better-comments'
-
 " Auto pairs for '(' '[' '{' etc.
     Plug 'machakann/vim-sandwich' 
     Plug 'jiangmiao/auto-pairs' 
     Plug 'tpope/vim-surround' 
     Plug 'tpope/vim-repeat' 
     
+" Comments
+    Plug 'tpope/vim-commentary'
+    " Plug 'jbgutierrez/vim-better-comments'
+
 " Quick Movements in Text
     Plug 'unblevable/quick-scope'
     " Plug 'justinmk/vim-sneak'
@@ -122,6 +108,20 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
     
 
+" APPEARANCE
+
+" Themes 
+    Plug 'morhetz/gruvbox'  " Source grubox theme
+    " Plug 'HerringtonDarkholme/yats.vim' " TS Syntax
+    " Plug 'joshdick/onedark.vim'
+    
+" Satus Line
+    Plug 'vim-airline/vim-airline'
+    Plug 'vim-airline/vim-airline-themes'
+    
+" Startup Screen
+    Plug 'mhinz/vim-startify'
+    
 
 
 
