@@ -6,10 +6,10 @@ let g:coc_global_extensions = [
   \ 'coc-vimtex',
   \ 'coc-explorer',
   \ 'coc-json',
-  \ 'coc-vimlsp',
   \ 'coc-yank',
   \ ]
 
+  "   \ 'coc-vimlsp',
   "   \ 'coc-actions',
   "   \ 'coc-emmet',
   "   \ 'coc-tsserver',
@@ -19,7 +19,6 @@ let g:coc_global_extensions = [
   "   \ 'coc-yaml',
   "   \ 'coc-python',
   "   \ 'coc-svg',
-  "   \ 'coc-prettier',
   "   \ 'coc-flutter',
   "   \ 'coc-xml',
 

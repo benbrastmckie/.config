@@ -40,6 +40,11 @@ set showtabline=2                       " Always show tabs
 set noshowmode                          " We don't need to see things like -- INSERT -- 
 set nobackup                            " This is recommended by coc
 set nowritebackup                       " This is recommended by coc
+" set backupdir=~/.config/nvim/backup
+set scrolloff=7
+
+" let &backupdir = expand('~/.config/nvim/backup//') " Folder for backup files
+" if !isdirectory(&backupdir) | call mkdir(&backupdir, "p") | endif
 set updatetime=300                      " Faster completion
 set timeoutlen=100                      " By default timeoutlen is 1000 ms
 set formatoptions-=cro                  " Stop newline continution of comments
