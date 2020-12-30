@@ -41,6 +41,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " FILE MANAGEMENT
 
+" Startup Screen
+    Plug 'mhinz/vim-startify'
+    
 " File Explorer
     Plug 'ryanoasis/vim-devicons' "adds icons to coc-explorer
     " Plug 'scrooloose/nerdtree'
@@ -49,6 +52,12 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'tsony-tsonev/nerdtree-git-plugin'
     " Plug 'tiagofumo/vim-nerdtree-syntax-highlight' " Is this required?
     
+" Fuzzy Finder
+    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+    Plug 'junegunn/fzf.vim'
+    " Plug 'jremmen/vim-ripgrep'
+    " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
+    
 " Git Integration
     Plug 'mhinz/vim-signify'
     Plug 'airblade/vim-gitgutter'
@@ -56,39 +65,29 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'tpope/vim-rhubarb'
     Plug 'junegunn/gv.vim'
 
-" Fuzzy Finder
-    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-    Plug 'junegunn/fzf.vim'
-    " Plug 'jremmen/vim-ripgrep'
-    " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
-    
-" Undo tree
-    Plug 'mbbill/undotree'
-    
 
+" AUTOCOMPLETE
 
-" ADDITIONAL FUNCTIONS
-
-" IntelLisense
+" Intellisense
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
       " Keeping up to date with master
       " Plug 'neoclide/coc.nvim', {'do': 'yarn install --frozen-lockfile'}
     Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
     " Plug 'Valloric/YouCompleteMe'
     
-" Look Up Key Bindings
-    Plug 'liuchengxu/vim-which-key'
-    
 " Snippets
     Plug 'SirVer/ultisnips'
     " Plug 'honza/vim-snippets'
 
-" Auto pairs for '(' '[' '{' etc.
+" Auto pairs and surround for '(' '[' '{' etc.
     Plug 'machakann/vim-sandwich' 
     Plug 'jiangmiao/auto-pairs' 
     Plug 'tpope/vim-surround' 
     Plug 'tpope/vim-repeat' 
     
+
+" ADDITIONAL FUNCTIONS
+
 " Comments
     Plug 'tpope/vim-commentary'
     " Plug 'jbgutierrez/vim-better-comments'
@@ -100,6 +99,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 " Terminal
     Plug 'voldikss/vim-floaterm'
     
+" Undo tree
+    Plug 'mbbill/undotree'
+    
 " Multiple Cursors
     Plug 'terryma/vim-multiple-cursors'
 
@@ -107,6 +109,11 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'junegunn/goyo.vim'
     
     
+" MAPPINGS
+
+" Look Up Key Bindings
+    Plug 'liuchengxu/vim-which-key'
+
 
 " APPEARANCE
 
@@ -118,9 +125,6 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 " Satus Line
     Plug 'vim-airline/vim-airline'
     Plug 'vim-airline/vim-airline-themes'
-    
-" Startup Screen
-    Plug 'mhinz/vim-startify'
     
 
 

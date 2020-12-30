@@ -27,7 +27,8 @@ autocmd  FileType which_key set laststatus=0 noshowmode noruler
 " let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
 let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 " let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
-let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
+" let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
+let g:which_key_map['d'] = [ ':bd!'                   , 'force buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
 let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
 let g:which_key_map['F'] = [ ':Files ~'              , 'home files' ]
@@ -124,17 +125,18 @@ let g:which_key_map.s = {
 let g:which_key_map.a = {
       \ 'name' : '+actions' ,
       \ 'y' : [':CocList -A --normal yank'  , 'yank display'],
-      \ 'n' : [':set nonumber!'             , 'line-numbers'],
       \ 'k' : [':VimtexClean'               , 'kill aux files'],
-      \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
       \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
       \ 'v' : [':Vista!!'                   , 'tag viewer'],
+      \ 'n' : [':set nonumber!'             , 'line-numbers'],
+      \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
+      \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
+      \ ';' : [ ':Commands'             , 'commands' ],
       \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex'                   , 'edit glossary'],
       \ 's' : [':e ~/.config/nvim/snips/tex.snippets'                   , 'edit snippets'],
       \ }
 
 
-      " \ ';' : [ ':Commands'             , 'commands' ],
       " \ 't' : [':FloatermToggle'         , 'terminal'],
       " \ 'c' : [':ColorizerToggle'        , 'colorizer'],
 
