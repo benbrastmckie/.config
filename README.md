@@ -3,8 +3,8 @@
 ## A complete configuration for writing LaTeX documents with NeoVim.
 
 The following sections provide installation instructions for Mac and Arch Linux operating systems.
-I present an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as a configuration guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J).
-I have also included a [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) with all of the key-bindings that I have set for writing LaTeX documents with NeoVim.
+I present an overview of the resulting functionality in [this](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) video series as well as a installation guide [here](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J), and a configuration guide [here](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr).
+You can also find instructions for using Git to collaborate with others [here](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL), as well as a [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) with all of the key-bindings that I have included for writing LaTeX documents with NeoVim.
 
 ## Table of Contents
 
