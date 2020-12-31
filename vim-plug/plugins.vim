@@ -72,7 +72,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
       " Keeping up to date with master
       " Plug 'neoclide/coc.nvim', {'do': 'yarn install --frozen-lockfile'}
-    Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+    Plug 'Shougo/deoplete.nvim', {'do': ':UpdateRemotePlugins' }
     " Plug 'Valloric/YouCompleteMe'
     
 " Snippets
@@ -80,9 +80,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'honza/vim-snippets'
 
 " Auto pairs and surround for '(' '[' '{' etc.
-    Plug 'machakann/vim-sandwich' 
     Plug 'jiangmiao/auto-pairs' 
     Plug 'tpope/vim-surround' 
+    Plug 'machakann/vim-sandwich' 
     Plug 'tpope/vim-repeat' 
     
 
