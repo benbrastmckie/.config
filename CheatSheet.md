@@ -1,8 +1,8 @@
-# Cheat Sheet [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
+# Cheat Sheet [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 The following sections present a list of key-bindings and features which have been included in the present configuration.
 I will provide links to associated tutorial videos throughout, omitting mention of the standard Vim commands which have mostly been preserved.
-For configuration instructions, see the installation [(Video 1/3)](https://youtu.be/JVIcU9ePtVE).
+For configuration instructions, see the installation [(Install Part 1)](https://youtu.be/JVIcU9ePtVE).
 I will also provide links to further resources for learning Vim below.
 
 ## Table of Contents
@@ -17,7 +17,7 @@ NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi whi
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
 Learning to use NeoVim is comparable to learning how to touch-type: it will take a concerted effort over a short period of time to get a good foundation from which mastery can slowly be cultivated over the years to come.
 However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
-See the introduction [(Video 1/10)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
+See the introduction [(Demo Part 1)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
 
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
@@ -33,13 +33,13 @@ Rather, what follows is a minimal number of extensions to the functionality prov
 Which-Key is triggered by the space bar, and will bring up a range of key-bindings with associated names.
 Accordingly, I will focus attention on the mappings included in `~/.config/nvim/keys/mappings.vim`, though I will mention some of the Which-Key bindings in discussing plugins in the following section.
 
-### _Line Movements_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
+### _Line Movements_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Drag lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
 - **Better tabbing**: the `<` and `>` keys will adjust indents in both normal and visual mode.
 - **Display line movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
 
-### _Windows, Buffers, and Panes_ [(Video 2/3)](https://youtu.be/Xvu1IKEpO0M)
+### _Windows, Buffers, and Panes_ [(Install Part 2)](https://youtu.be/Xvu1IKEpO0M)
 
 - **Manage windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
 - **Switch windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
@@ -47,7 +47,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
 
-### _Commands_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
+### _Commands_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Save and Quit**: use `<space>w` to save buffer, and `<space>q` to save and quite all buffers.
 - **Copy**: use `Y` to yank to end of line.
@@ -58,7 +58,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Multiple Cursors**: use `ctrl+n` to select the word under the cursor, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 
-### _Zathura_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
+### _Zathura_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
 - **Index**: use `<space>i` to toggle the index.
 - **Zoom**: use `shift+k` and `shift+j` to zoom in and out, respectively.
@@ -78,26 +78,26 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 In what follows, I will discuss a number of key plugins included in `~/.config/nvim/vim-plug/plugins.vim` which are of considerable use for writing LaTeX documents.
 
-### _File Management_ [(Video 3/10)](https://youtu.be/v_zYV8G7gOs)
+### _File Management_ [(Demo Part 3)](https://youtu.be/v_zYV8G7gOs)
 
 - **Local File Search**: use `ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `<space>F` to fuzzy search through all files in the home folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter` or `shift+x`, and opening help with `?`.
 - **Close Buffer**: use `<space>d` to close current buffer.
 
-### _Projects and Templates_ [(Video 5/10)](https://youtu.be/z5HfVQQDrAg)
+### _Projects and Templates_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg)
 
 - **Projects**: use `<space>Ss` to create a new project, and `<space>Sd` to delete a new project.
   - To create a first project, enter the command `:SSave` instead, following the prompt to create a sessions folder.
 - **Templates**: use `<space>t` to choose from a variety of templates in the `~/.config/nvim/templates` directory.
   - To add new templates, add the relevant file to `~/.config/nvim/templates`, customising `~/.config/nvim/keys/which-key.vim`.
 
-### _Git Integration_ [(Video 3/10)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/10)](https://youtu.be/z5HfVQQDrAg)[(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Git Integration_ [(Demo Part 3)](http://syoutu.be/v_zYV8G7gOs) [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg)[(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 - **Fugitive**: use `<space>g` to bring up a range of git commands.
 - **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate.
 
-### _Autocomplete_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
+### _Autocomplete_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
 - **Select Entry**: use `ctrl+j` and `ctrl+k` to cycle through the autocomplete menu.
 - **Trigger Completion**: continue typing after selecting desired option.
@@ -106,7 +106,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Hide**: use `<space>k` to hide autocomplete menu, and `<space>r` to restore.
 
-### _Autopairs and Surround_ [(Video 4/10)](https://youtu.be/1fcc5YoCrvc)
+### _Autopairs and Surround_ [(Demo Part 4)](https://youtu.be/1fcc5YoCrvc)
 
 - **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
 - **Add Surround**: in visual select mode use `shift+s`, or in normal mode use `<space>ss`, followed by the desired text object, and then either:
@@ -118,7 +118,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
   - `d` followed by the desired quotes/brackets to be deleted.
   - `c` followed by both the quote/brackets to change, and then the quotes/brackets which are to be inserted instead.
 
-### _LaTeX Support_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
+### _LaTeX Support_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
 - **Build**: use `<space>b` to toggle auto-build.
 - **Preview**: use `<space>p` to preview current line.
@@ -127,19 +127,19 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Log**: use `ctrl+l` to open LaTeX log in horizontal split, and `<space>d` to close.
 - **Clean**: use `<space>ak` to delete auxiliary LaTeX files.
 
-### _Markdown_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
+### _Markdown_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Fold**: use `<space>mf` to toggle folding for current, and `<space>mF` to toggle all folding.
 - **Preview**: use `<space>mp` to preview document.
 - **Kill**: use `<space>mk` to close document.
 - **Select**: use `<space>ms` to cycle through selection options in a markdown bullet point list.
 
-### _Pandoc_ [(Video 7/10)](https://www.youtube.com/watch?v=l0N5LJTe6-A)
+### _Pandoc_ [(Demo Part 7)](https://www.youtube.com/watch?v=l0N5LJTe6-A)
 
 - Use `<space>P` to select which file format into which you would like to convert the file open in current buffer.
 - alternatively, you can run `:Pandoc [Source file] [Output file]` in the command line to simulate terminal commands.
 
-### _Misc Bindings_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
+### _Misc Bindings_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Search**: use `<space>f` to fuzzy find within the current document.
 - **Undo**: use `<space>u` to open the undo tree.
@@ -153,7 +153,7 @@ although there are a huge number of free resources for learning how to use git, 
 The following sections will include resources for using all of the basic git commands in LazyGit, providing everything one need to know to use git effectively for oneself and in collaborating with others.
 I will include links to further resources below.
 
-### _Basic Git Commands_ [(Video 5/10)](https://youtu.be/z5HfVQQDrAg) [(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI) [(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Basic Git Commands_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI) [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 - **LazyGit**: to open LazyGit, hit `<space>gg`.
 - **Navigate**: use `h` and `l` to move between windows, and `j` and `k` to navigate within windows.
@@ -171,7 +171,7 @@ I will include links to further resources below.
 - **Help**: use `?` to look up the commands for the active window.
 - **Exit**: use `<esc>` to return to NeoVim.
 
-### _Initialising Git_ [(Video 5/10)](https://youtu.be/z5HfVQQDrAg) [(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
+### _Initialising Git_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 9)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
 
 Open the project folder in the terminal with:
 
@@ -188,7 +188,7 @@ Using `<space>` to checkout past commits in the commits window in LazyGit result
 
 - Warning: any changes made to the project in a detached-head state will be lost upon checking out any other commit.
 
-### _Merging Branches_ [(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
+### _Merging Branches_ [(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
 
 If you want to develop the project in a new direction which you may end up abandoning, or otherwise want to separate from the development of the rest of the project's development, you can create a new branch with `n` in the local branches window, where the new branch will be automatically checked out as indicated by a `*`.
 If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `<space>` to checkout master.
@@ -206,7 +206,7 @@ Search through the files with conflicts for `HEAD`, choosing which alternative i
 Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `<return>` will stage the file in question.
 If staging is not possible, check to make sure that there are no more conflicts, or miscellaneous marker syntax remaining.
 
-### _Remote Repositories_ [(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Remote Repositories_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 In order to link a remote repository, it will be convenient to begin by adding an SSH key to your GitHub account if you have not already, as detailed in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md).
 Create a new repository in GitHub, selecting SSH in the quick setup menu, and copying a URL of the form:
@@ -225,7 +225,7 @@ Exit the terminal with `ctrl+t`, and reopen LazyGit, hitting `P` to push changes
 Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
 Reloading the GitHub website opened to your repository should show all files included in the commits so far.
 
-### _Setting up Collaborations_ [(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Setting up Collaborations_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 In order to add a collaborator to an existing repository, open the repository in GitHub and navigate to `Settings -> Manage acess` and click `invite a collaborator`, entering their GitHub username or email address.
 Your collaborator will then be able open the repo in GitHub, copying the address by clicking the `Code` drop-down menu, selecting SSH, and hitting the icon for copy-to-clipboard.
@@ -246,7 +246,7 @@ If the collaborator is using the same configuration, then the project may be edi
 However, even without using the present configuration of NeoVim, collaborators may avoid manually entering git commands by running LazyGit in the terminal.
 In order to install LazyGit and add an SSH key, follow the instructions provided in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md).
 
-### _Collaboration Protocol_ [(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Collaboration Protocol_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 Assume collaborator A creates a repo inviting collaborator B as above.
 Upon first cloning the repo, collaborator B will be up to date with the remote repository on GitHub, and may begin making changes.
@@ -265,7 +265,7 @@ These are to be negotiated by both collaborators running the following procedure
 
 In order to reduce the number of conflicts, collaborators can may choose to avoid working on the same parts of the project, though this is not required.
 
-### GitHub Cli
+### GitHub Cli [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk)
 
 Especially while collaborating with others on a common project, it is convenient to use GitHub Issues in order to facilitate exchange the development of the project.
 Although one could attempt to limit all such exchange to a Markdown file in a shared repository, such files can quickly become cluttered or overlooked.
