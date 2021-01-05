@@ -11,7 +11,7 @@ I will also provide links to further resources for learning Vim below.
 2. [Mappings](#Mappings)
 3. [Learning Git](#Learning-Git)
 
-## Learning-Vim
+## Learning-Vim [(Config Part 1)](https://www.youtube.com/watch?v=oyEPY6xFhs0&t=2s)
 
 NeoVim maintains the same modes, key-bindings, and conventions as Vim and Vi which go back as far as the late 70s.
 With some some practice, these conventions provide an extremely powerful and efficient way to edit text documents, making up the core functionality which NeoVim has to offer.
@@ -28,7 +28,7 @@ See the introduction [(Demo Part 1)](https://youtu.be/pYNvDkB0iRk) for related d
 I have not made any changes to the conventions which come standard with NeoVim, as there is no need to reinvent the wheel.
 Rather, what follows is a minimal number of extensions to the functionality provided by NeoVim.
 
-## Mappings
+## Mappings [(Config Part 7)](https://www.youtube.com/watch?v=cex2z74f9-4)
 
 Which-Key is triggered by the space bar, and will bring up a range of key-bindings with associated names.
 Accordingly, I will focus attention on the mappings included in `~/.config/nvim/keys/mappings.vim`, though I will mention some of the Which-Key bindings in discussing plugins in the following section.
@@ -47,7 +47,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
 
-### _Commands_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
+### _Commands_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)[(Config Part 6)](https://www.youtube.com/watch?v=KtkBoVWeipk)
 
 - **Save and Quit**: use `<space>w` to save buffer, and `<space>q` to save and quite all buffers.
 - **Copy**: use `Y` to yank to end of line.
@@ -65,7 +65,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Print**: use `p` to print.
 - **Black Mode**: use `b` to invert colours.
 
-### GitHub Cli
+### _GitHub Cli_
 
 - use `<space>h` to open GitHub Cli help.
 - use `<space>i` to create new GitHub issue.
@@ -78,14 +78,14 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 In what follows, I will discuss a number of key plugins included in `~/.config/nvim/vim-plug/plugins.vim` which are of considerable use for writing LaTeX documents.
 
-### _File Management_ [(Demo Part 3)](https://youtu.be/v_zYV8G7gOs)
+### _File Management_ [(Demo Part 3)](https://youtu.be/v_zYV8G7gOs)[(Config Part 4)](https://www.youtube.com/watch?v=o0zW2vVmrEE&t=574s)
 
 - **Local File Search**: use `ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `<space>F` to fuzzy search through all files in the home folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter` or `shift+x`, and opening help with `?`.
 - **Close Buffer**: use `<space>d` to close current buffer.
 
-### _Projects and Templates_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg)
+### _Projects and Templates_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg)[(Demo Part 8)](https://www.youtube.com/watch?v=pcfYBbQoNx8&t=52s)
 
 - **Projects**: use `<space>Ss` to create a new project, and `<space>Sd` to delete a new project.
   - To create a first project, enter the command `:SSave` instead, following the prompt to create a sessions folder.
@@ -97,7 +97,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Fugitive**: use `<space>g` to bring up a range of git commands.
 - **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate.
 
-### _Autocomplete_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
+### _Autocomplete_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)[(Config Part 5)](https://www.youtube.com/watch?v=tQ80wqNPbaM)
 
 - **Select Entry**: use `ctrl+j` and `ctrl+k` to cycle through the autocomplete menu.
 - **Trigger Completion**: continue typing after selecting desired option.
@@ -118,7 +118,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
   - `d` followed by the desired quotes/brackets to be deleted.
   - `c` followed by both the quote/brackets to change, and then the quotes/brackets which are to be inserted instead.
 
-### _LaTeX Support_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
+### _LaTeX Support_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)[(Config Part 3)](https://www.youtube.com/watch?v=vB7RsT0tF4s)
 
 - **Build**: use `<space>b` to toggle auto-build.
 - **Preview**: use `<space>p` to preview current line.
@@ -171,7 +171,7 @@ I will include links to further resources below.
 - **Help**: use `?` to look up the commands for the active window.
 - **Exit**: use `<esc>` to return to NeoVim.
 
-### _Initialising Git_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 9)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
+### _Initialising Git_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 9)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Config Part 2)](https://www.youtube.com/watch?v=FCUnlRjYPo8)[(Git Part 3)](https://www.youtube.com/watch?v=vB7RsT0tF4s&t=2s)
 
 Open the project folder in the terminal with:
 
@@ -225,7 +225,7 @@ Exit the terminal with `ctrl+t`, and reopen LazyGit, hitting `P` to push changes
 Hit return upon being asked whether origin master is the appropriate target, and wait for the push to finish.
 Reloading the GitHub website opened to your repository should show all files included in the commits so far.
 
-### _Setting up Collaborations_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Setting up Collaborations_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)[(Git Part 3)](https://www.youtube.com/watch?v=vB7RsT0tF4s&t=2s)
 
 In order to add a collaborator to an existing repository, open the repository in GitHub and navigate to `Settings -> Manage acess` and click `invite a collaborator`, entering their GitHub username or email address.
 Your collaborator will then be able open the repo in GitHub, copying the address by clicking the `Code` drop-down menu, selecting SSH, and hitting the icon for copy-to-clipboard.
@@ -265,7 +265,7 @@ These are to be negotiated by both collaborators running the following procedure
 
 In order to reduce the number of conflicts, collaborators can may choose to avoid working on the same parts of the project, though this is not required.
 
-### GitHub Cli [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk)
+### _GitHub Cli_ [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk)
 
 Especially while collaborating with others on a common project, it is convenient to use GitHub Issues in order to facilitate exchange the development of the project.
 Although one could attempt to limit all such exchange to a Markdown file in a shared repository, such files can quickly become cluttered or overlooked.
