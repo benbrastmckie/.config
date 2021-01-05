@@ -65,14 +65,14 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Print**: use `p` to print.
 - **Black Mode**: use `b` to invert colours.
 
-### _GitHub Cli_
+### _GitHub Cli_ [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk&t=198s)
 
-- use `<space>h` to open GitHub Cli help.
-- use `<space>i` to create new GitHub issue.
-- use `<space>k` to kill all open FloatTerminals.
-- use `<space>l` to list all open issues.
-- use `<space>r` to print all GitHub Cli references.
-- use `<space>v` to view the repo in a browser.
+- Use `<space>h` to open GitHub Cli help.
+- Use `<space>i` to create new GitHub issue.
+- Use `<space>k` to kill all open FloatTerminals.
+- Use `<space>l` to list all open issues.
+- Use `<space>r` to print all GitHub Cli references.
+- Use `<space>v` to view the repo in a browser.
 
 ## Plugins
 
@@ -106,7 +106,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Hide**: use `<space>k` to hide autocomplete menu, and `<space>r` to restore.
 
-### _Autopairs and Surround_ [(Demo Part 4)](https://youtu.be/1fcc5YoCrvc)
+### _Autopairs and Surround_ [(Demo Part 4)](https://youtu.be/1fcc5YoCrvc)[(Config Part 5)](https://www.youtube.com/watch?v=tQ80wqNPbaM)
 
 - **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
 - **Add Surround**: in visual select mode use `shift+s`, or in normal mode use `<space>ss`, followed by the desired text object, and then either:
@@ -127,7 +127,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Log**: use `ctrl+l` to open LaTeX log in horizontal split, and `<space>d` to close.
 - **Clean**: use `<space>ak` to delete auxiliary LaTeX files.
 
-### _Markdown_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
+### _Markdown_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)[(Demo Part 6)](https://www.youtube.com/watch?v=K9u7NrCSn1c&t=380s)
 
 - **Fold**: use `<space>mf` to toggle folding for current, and `<space>mF` to toggle all folding.
 - **Preview**: use `<space>mp` to preview document.
@@ -171,7 +171,7 @@ I will include links to further resources below.
 - **Help**: use `?` to look up the commands for the active window.
 - **Exit**: use `<esc>` to return to NeoVim.
 
-### _Initialising Git_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 9)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Config Part 2)](https://www.youtube.com/watch?v=FCUnlRjYPo8)[(Git Part 3)](https://www.youtube.com/watch?v=vB7RsT0tF4s&t=2s)
+### _Initialising Git_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 9)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Config Part 2)](https://www.youtube.com/watch?v=FCUnlRjYPo8)[(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI&t=5s)[(Git Part 3)](https://www.youtube.com/watch?v=vB7RsT0tF4s&t=2s)
 
 Open the project folder in the terminal with:
 
@@ -188,7 +188,7 @@ Using `<space>` to checkout past commits in the commits window in LazyGit result
 
 - Warning: any changes made to the project in a detached-head state will be lost upon checking out any other commit.
 
-### _Merging Branches_ [(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI)
+### _Merging Branches_ [(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&t=11s)
 
 If you want to develop the project in a new direction which you may end up abandoning, or otherwise want to separate from the development of the rest of the project's development, you can create a new branch with `n` in the local branches window, where the new branch will be automatically checked out as indicated by a `*`.
 If the development of the branch is not deemed successful, you can simply abandon the branch by navigating back to the master branch in the local branches window, hitting `<space>` to checkout master.
@@ -206,7 +206,7 @@ Search through the files with conflicts for `HEAD`, choosing which alternative i
 Upon returning to LazyGit, attempting to stage the files with conflicts should register a message which asks if all conflicts have been resolved, where hitting `<return>` will stage the file in question.
 If staging is not possible, check to make sure that there are no more conflicts, or miscellaneous marker syntax remaining.
 
-### _Remote Repositories_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
+### _Remote Repositories_ [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)[(Git Part 3)](https://www.youtube.com/watch?v=f5QUrv87Ol8)
 
 In order to link a remote repository, it will be convenient to begin by adding an SSH key to your GitHub account if you have not already, as detailed in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md).
 Create a new repository in GitHub, selecting SSH in the quick setup menu, and copying a URL of the form:
