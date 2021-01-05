@@ -124,6 +124,15 @@ Next install LazyGit by running:
 brew install jesseduffield/lazygit/lazygit
 ```
 
+### Installing the GitHub Cli
+
+Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+```
+brew install gh
+```
+
+For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
+
 ### Adding an SSH Key to GitHub
 
 If you have not already, you can also add an SSH key by amending and running the following:
@@ -387,6 +396,23 @@ Next, install LazyGit using Yay by running:
 ```
 yay -S lazygit
 ```
+
+### Installing the GitHub Cli
+
+Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+```
+sudo pacman -S github-cli
+```
+You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running:
+```
+gh auth login
+```
+Set NeoVim as your default editor by running:
+```
+gh config set editor nvim
+```
+
+For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
 
 ### Adding an SSH Key to GitHub
 

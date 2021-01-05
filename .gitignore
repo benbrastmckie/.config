@@ -1781,3 +1781,6 @@ Microsoft/Microsoft Teams/watchdog_17.json
 Microsoft/Microsoft Teams/watchdog_18.json
 Microsoft/Microsoft Teams/watchdog_26.json
 Microsoft/Microsoft Teams/watchdog_9.json
+gh/config.yml
+gh/hosts.yml
+gh/state.yml

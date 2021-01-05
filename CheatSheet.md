@@ -50,7 +50,8 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 ### _Commands_ [(Video 3/3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Save and Quit**: use `<space>w` to save buffer, and `<space>q` to save and quite all buffers.
-- **Comment**: in normal mode or visually mode, use `ctrl+\` to toggle whether the lines in question are commented out.
+- **Copy**: use `Y` to yank to end of line.
+- **Comment**: in normal mode or visually mode, use `ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `ctrl+m` to open Help for the word under the cursor.
@@ -59,10 +60,19 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _Zathura_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
 
-- **Index**: use `<space> to toggle the index.
+- **Index**: use `<space>i` to toggle the index.
 - **Zoom**: use `shift+k` and `shift+j` to zoom in and out, respectively.
 - **Print**: use `p` to print.
 - **Black Mode**: use `b` to invert colours.
+
+### GitHub Cli
+
+- use `<space>h` to open GitHub Cli help.
+- use `<space>i` to create new GitHub issue.
+- use `<space>k` to kill all open FloatTerminals.
+- use `<space>l` to list all open issues.
+- use `<space>r` to print all GitHub Cli references.
+- use `<space>v` to view the repo in a browser.
 
 ## Plugins
 
@@ -85,7 +95,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 ### _Git Integration_ [(Video 3/10)](http://syoutu.be/v_zYV8G7gOs) [(Video 5/10)](https://youtu.be/z5HfVQQDrAg)[(Video 9/10)](https://www.youtube.com/watch?v=GIJG4QtZBYI)[(Video 10/10)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
 - **Fugitive**: use `<space>g` to bring up a range of git commands.
-- **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate as usual.
+- **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate.
 
 ### _Autocomplete_ [(Video 2/10)](https://youtu.be/KGqrpnxoDxw)
 
@@ -101,7 +111,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Autopairs**: use open-quote/bracket to create pair, adding a space if padding is desired, followed by the closing quote/bracket.
 - **Add Surround**: in visual select mode use `shift+s`, or in normal mode use `<space>ss`, followed by the desired text object, and then either:
   - `q/Q` for single/double LaTeX quotes, respectively.
-  - `i` for italics, `b` for bold, `t` for typescript, and `s` for small caps
+  - `i` for italics, `b` for bold, `t` for typescript, `s` for wrap in set brackets, `c` for wrap in corner quotes, and `$` to create an in-line math environment.
   - Open bracket for brackets with padding, and close bracket for brackets without padding.
 - **Change Surround**: in normal mode, use `<space>s` followed by:
   - `k` to remove the next outermost quotes/brackets relative to the position of the cursor.
@@ -169,9 +179,9 @@ Open the project folder in the terminal with:
    cd ~/<path to file from home directory>
 ```
 
-alternatively, open the project in NeoVim, hitting `ctrl+t` to open the terminal in project folder.
+Alternatively, open the project in NeoVim, hitting `ctrl+t` to open the terminal in project folder.
 To initialise a local git history, run `git init`.
-You may then exit the terminal with `ctrl+t` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `<space>`.
+You may then exit the terminal with `ctrl+t` and open LazyGit, ignoring all files you do not wish to track with `i` in the files window as above, and staging all files you wish to track with `<space>`, or staging all files that have not been ignored with `a`.
 Hit `c` to commit staged files, entering `initial commit` and hitting `<return>`.
 You are now ready to make commits and branches to your local git history.
 Using `<space>` to checkout past commits in the commits window in LazyGit results in a detached-head state which is useful for viewing the history of the project.
@@ -241,9 +251,8 @@ In order to install LazyGit and add an SSH key, follow the instructions provided
 Assume collaborator A creates a repo inviting collaborator B as above.
 Upon first cloning the repo, collaborator B will be up to date with the remote repository on GitHub, and may begin making changes.
 At the same time, collaborator A may also make changes, leading to possible conflicts.
-These are to be negotiated by both collaborators running the following procedure:
+These are to be negotiated by both collaborators running the following procedure in order to make and commit changes to the project.
 
-- Make and commit changes to the project.
 - Open LazyGit, checking in the local branches window whether the right-most number next to the active branch marked by a `*` is 0.
 - If the right-most number is greater than 0, pull down the most recent commits by hitting `p`.
 - If there are conflicts, hit `<return>` upon being asked by LazyGit whether to proceed.
@@ -255,6 +264,18 @@ These are to be negotiated by both collaborators running the following procedure
 - Push these commits to the remote repository by hitting `P`.
 
 In order to reduce the number of conflicts, collaborators can may choose to avoid working on the same parts of the project, though this is not required.
+
+### GitHub Cli
+
+Especially while collaborating with others on a common project, it is convenient to use GitHub Issues in order to facilitate exchange the development of the project.
+Although one could attempt to limit all such exchange to a Markdown file in a shared repository, such files can quickly become cluttered or overlooked.
+By contrast, GitHub Issues allows collaborators to exchange ideas in an exchange of markdown files, where each thread corresponds to a given issue.
+
+GitHub Cli allows you to submit new issues to a repository without leaving the terminal.
+Accordingly, I have included a mapping in Which-Key to permit users to easily create and log a new issue without leaving the project they are working on.
+GitHub Cli also permits users to create pull-requests, along with a range of further features, and is currently being actively developed.
+However, assuming that all collaborators of a shared repo will have administrator access, there is no need for pull-requests, and so I have not included further mappings, though one could easily do so.
+In order to include this functionality in your configuration, refer to the **GitHub Cli** section in the [installation instructions](https://github.com/benbrastmckie/.config/blob/master/README.md) for setting up Git for use in NeoVim.
 
 ### _Further Resources_
 
