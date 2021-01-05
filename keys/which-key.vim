@@ -35,13 +35,13 @@ let g:which_key_map['r'] = [ ':CocEnable'            , 'restore coc' ]
 let g:which_key_map['l'] = [ ':VimtexErrors'         , 'log' ]
 let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
-let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
 let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
 let g:which_key_map.i = 'index'
 let g:which_key_map.b = 'build'
 let g:which_key_map.c = 'count'
 let g:which_key_map.p = 'preview'
 
+" let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
 " let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
 " let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
 " let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
@@ -184,6 +184,17 @@ let g:which_key_map.a = {
 "       \ 'y' : [':Filetypes'    , 'file types'],
 "       \ 'z' : [':FZF'          , 'FZF'],
 "       \ }
+
+" h is for GitHub
+let g:which_key_map.h = {
+      \ 'name' : '+github-cli' ,
+      \ 'h' : [':FloatermNew! gh help'              , 'help'],
+      \ 'i' : [':FloatermNew! gh issue create'      , 'create issue'],
+      \ 'k' : [':FloatermKill!'                     , 'kill terminals'],
+      \ 'l' : [':FloatermNew! gh issue list'        , 'list issues'],
+      \ 'r' : [':FloatermNew! gh reference'         , 'reference'],
+      \ 'v' : [':FloatermNew! gh repo view -w'      , 'view repo'],
+      \ }
 
 " g is for git
 let g:which_key_map.g = {
