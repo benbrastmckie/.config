@@ -160,6 +160,13 @@ In the top right corner of your GitHub page, click `Profile -> Settings -> SSH a
 Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
 Saving the key completes the addition.
 
+Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
+If your SSH key stops working after rebooting, run the following command:
+```
+ssh-add -K ~/.ssh/id_rsa
+```
+If you get an error, retry the command above with a lowercase `k`.
+
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
 In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
