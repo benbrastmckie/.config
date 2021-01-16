@@ -46,6 +46,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
 " File Explorer
     Plug 'ryanoasis/vim-devicons' "adds icons to coc-explorer
+    Plug 'vifm/vifm.vim'
     " Plug 'scrooloose/nerdtree'
     " Plug 'preservim/nerdtree'
     " Plug 'Xuyuanp/nerdtree-git-plugin'
