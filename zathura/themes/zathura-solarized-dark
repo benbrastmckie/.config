@@ -1,3 +1,15 @@
+# Basic Settings
+
+set highlight-transparency .1
+set zoom-center "true"
+set selection-clipboard clipboard
+set render-loading "false"
+map <Space> toggle_index
+map K zoom in
+map J zoom out
+map p print
+map b recolor
+
 # zathurarc-dark
 set notification-error-bg       "#586e75" # base01  # seem not work
 set notification-error-fg       "#dc322f" # red

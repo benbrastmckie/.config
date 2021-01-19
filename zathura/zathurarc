@@ -1,3 +1,15 @@
+# Basic Settings
+
+set highlight-transparency .1
+set zoom-center "true"
+set selection-clipboard clipboard
+set render-loading "false"
+map <Space> toggle_index
+map K zoom in
+map J zoom out
+map p print
+map b recolor
+
 set notification-error-bg       "#ebdbb2" # bg
 set notification-error-fg       "#9d0006" # bright:red
 set notification-warning-bg     "#ebdbb2" # bg
@@ -38,3 +50,4 @@ set recolor-lightcolor          "#ebdbb2" # bg
 set recolor-darkcolor           "#3c3836" # fg
 set recolor                     "true"
 # set recolor-keephue             true      # keep original color
+# set recolor-reverse-video       "true"
