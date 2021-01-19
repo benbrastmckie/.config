@@ -108,7 +108,10 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " Zen mode
     Plug 'junegunn/goyo.vim'
-    
+
+" Browser Support
+    Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
+ 
     
 " MAPPINGS
 

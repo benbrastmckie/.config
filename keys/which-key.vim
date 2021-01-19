@@ -41,6 +41,7 @@ let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
+" let g:which_key_map['B'] = [ ':Buffers'              , 'buffers' ]
 " let g:which_key_map['c'] = [ 'VimtexCountWords'      , 'count' ]
 " let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
 " let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
