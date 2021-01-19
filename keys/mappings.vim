@@ -45,7 +45,7 @@ inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
 " Multiple Cursors
 let g:multi_cursor_use_default_mapping=0
 
-  " Default mapping
+" Default mapping
   let g:multi_cursor_start_word_key      = '<C-n>'
   let g:multi_cursor_select_all_word_key = '<M-n>'
   let g:multi_cursor_start_key           = 'g<C-n>'
@@ -109,12 +109,16 @@ vnoremap <S-j> gj
 nnoremap <C-\> :Commentary<CR>
 vnoremap <C-\> :Commentary<CR>
 
+" UndoTree bindings
+nnoremap <space>u :UndotreeToggle<CR> \| <C-w>h
+
 " LaTeX bindings
-nnoremap <space>b :VimtexCompile<CR>
-nnoremap <space>i :VimtexTocToggle<CR>
-nnoremap <space>p :VimtexView<CR> 
-" nnoremap <space>x :VimtexClean<CR>
 nnoremap <space>c :VimtexCountWords<CR> 
+" nnoremap <space>b :VimtexCompile<CR>
+" nnoremap <space>i :VimtexTocOpen<CR>
+" nnoremap <space>i :VimtexTocToggle<CR> \| <C-w>h
+" nnoremap <space>p :VimtexView<CR> 
+" nnoremap <space>x :VimtexClean<CR>
 " nnoremap <space>l :VimtexLabelsToggle<CR> 
 
 " UndotreeToggle
