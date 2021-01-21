@@ -104,7 +104,8 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'mbbill/undotree'
     
 " Multiple Cursors
-    Plug 'terryma/vim-multiple-cursors'
+  Plug 'mg979/vim-visual-multi', {'branch': 'master'}
+  " Plug 'terryma/vim-multiple-cursors'
 
 " Zen mode
     Plug 'junegunn/goyo.vim'
