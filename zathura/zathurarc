@@ -4,11 +4,14 @@ set highlight-transparency .1
 set zoom-center "true"
 set selection-clipboard clipboard
 set render-loading "false"
+set window-width 960
+set window-height 1080
+
 map <Space> toggle_index
 map K zoom in
 map J zoom out
 map p print
-map b recolor
+map w recolor
 
 set notification-error-bg       "#ebdbb2" # bg
 set notification-error-fg       "#9d0006" # bright:red
@@ -39,7 +42,7 @@ set statusbar-fg                "#3c3836" # fg
 set highlight-color             "#b57614" # bright:yellow
 set highlight-active-color      "#af3a03" # bright:orange
 
-set default-bg                  "#ebdbb2" # bg
+set default-bg                  "#1d2021" # bg
 set default-fg                  "#3c3836" # fg
 set render-loading              true
 set render-loading-bg           "#ebdbb2" # bg
