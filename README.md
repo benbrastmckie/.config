@@ -35,6 +35,25 @@ If Homebrew has not been installed, you may install it by entering:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
 ```
 
+## [Fish](https://fishshell.com/)
+
+Although optional, I highly recommend that inexperienced users begin by installing Fish which makes working insider the terminal a little easier.
+Otherwise, you can skip to the next section.
+To install Fish, run the following commands in turn:
+```
+brew install fish
+curl -L https://get.oh-my.fish | fish
+omf install sashimi
+```
+
+To delete the welcome message, run:
+
+```
+set fish_greeting
+```
+
+## Basics
+
 Check if Node is installed by running:
 
 ```
@@ -260,16 +279,15 @@ sudo cp ~/.config/fonts/RobotoMono/ /Library/Fonts/
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
+If you intend to upgrade your terminal to Alacritty with Tmux, then proceed as follows:
 
-## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), [Fish](https://fishshell.com/)
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
 
 Run the following in the terminal:
 
 ```
 brew cask install alacritty
 brew install tmux
-brew install fish
 ```
 
 You will also need to move the Tmux configuration file to the appropriate location by running:
@@ -278,7 +296,7 @@ You will also need to move the Tmux configuration file to the appropriate locati
 sudo cp ~/.config/tmux/.tmux.conf ~/
 ```
 
-You will now need to locate fish on your opperating system by running the following:
+Assuming that you already installed Fish above, you will now need to locate fish on your operating system by running the following:
 
 ```
 which fish
@@ -291,21 +309,8 @@ Copy the path and run the following:
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace '/usr/bin/fish' with the location of fish, saving and exiting with Space-q.
-Quite the terminal and open Alacritty by hitting Command+Space and typing 'Alacritty', running the following:
-
-```
-curl -L https://get.oh-my.fish | fish
-omf install sashimi
-```
-
-To delete the welcome message, run:
-
-```
-set fish_greeting
-```
-
-In order to reset Tmux, run:
+Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Space-q`.
+Quite the terminal and open Alacritty by hitting `Ctrl+Space` and typing 'Alacritty', running the following to reset Tmux:
 
 ```
 Tmux kill-server
@@ -503,6 +508,7 @@ After reopening NeoVim, enter the following command:
 Ignore any warnings for Python 2, Ruby, and Node.js.
 If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
 
+
 ## [Zotero](https://www.zotero.org/)
 
 Download and extract the [Zotero](https://www.zotero.org/download/) tarball in ~/Downloads, and move the extracted contents and set the launcher by running the following in the terminal:
@@ -549,7 +555,7 @@ If you intend to use the stock terminal, you will need to go into the terminal's
 You are now ready to write LaTex in NeoVim inside the stock terminal.
 If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
 
-## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), [Fish](https://fishshell.com/)
+## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/)
 
 Run the following in the terminal:
 
@@ -565,7 +571,7 @@ You will also need to move the Tmux configuration file to the appropriate locati
 sudo cp ~/.config/tmux/.tmux.conf ~/
 ```
 
-You will now need to locate fish on your opperating system by running the following:
+Assuming that you installed Fish above, you will now need to locate fish on your operating system by running the following:
 
 ```
 which fish
@@ -579,7 +585,7 @@ nvim ~/.config/alacritty/alacritty.yml
 ```
 
 Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `Space-q`.
-Quite the terminal and open Alacritty by hitting Command+Space and typing 'Alacritty', running the following:
+Quite the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
 
 ```
 curl -L https://get.oh-my.fish | fish
@@ -598,7 +604,7 @@ In order to reset Tmux, run:
 Tmux kill-server
 ```
 
-When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+When you reopen Alacritty, Fish should be the default shell inside a Tmux window.
 If you want to turn on the Vim keybindings within Fish, run the following:
 
 ```

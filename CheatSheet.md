@@ -55,15 +55,15 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `ctrl+m` to open Help for the word under the cursor.
-- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word.
+- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Use `ctrl+a` to select all occurrences of the word under the cursor. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 
 ### _Zathura_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
-- **Index**: use `<space>i` to toggle the index.
+- **Index**: use `<space>` to toggle the index.
 - **Zoom**: use `shift+k` and `shift+j` to zoom in and out, respectively.
 - **Print**: use `p` to print.
-- **Black Mode**: use `b` to invert colours.
+- **Normal Mode**: use `w` to remove coloration.
 
 ### _GitHub Cli_ [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk&t=198s)
 
