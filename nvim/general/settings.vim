@@ -41,6 +41,7 @@ set noshowmode                          " We don't need to see things like -- IN
 set nobackup                            " This is recommended by coc
 set nowritebackup                       " This is recommended by coc
 " set backupdir=~/.config/nvim/backup
+" set directory=~/.config/nvim/swap//
 set scrolloff=7
 
 " let &backupdir = expand('~/.config/nvim/backup//') " Folder for backup files
