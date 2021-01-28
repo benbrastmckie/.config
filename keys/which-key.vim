@@ -126,20 +126,22 @@ let g:which_key_map.s = {
 
 " a is for actions
 let g:which_key_map.a = {
-      \ 'name' : '+actions' ,
-      \ 'y' : [':CocList -A --normal yank'  , 'yank display'],
-      \ 'k' : [':VimtexClean'               , 'kill aux files'],
-      \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
-      \ 'v' : [':Vista!!'                   , 'tag viewer'],
-      \ 'n' : [':set nonumber!'             , 'line-numbers'],
-      \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
-      \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
-      \ ';' : [ ':Commands'             , 'commands' ],
-      \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex'                   , 'edit glossary'],
-      \ 's' : [':e ~/.config/nvim/snips/tex.snippets'                   , 'edit snippets'],
-      \ }
+  \ 'name' : '+actions' ,
+  \ 'y' : [':CocList -A --normal yank'               , 'yank display'],
+  \ 'a' : [':VimtexClean'                            , 'kill aux'],
+  \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
+  \ 'c' : [':Commands'                               , 'commands' ],
+  \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
+  \ 's' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
+  \ 't' : [':FloatermKill!'                          , 'kill terminals'],
+  \ 'w' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'show swap'],
+  \ }
 
 
+    " \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
+    " \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
+      " \ 'n' : [':set nonumber!'             , 'line-numbers'],
+      " \ 'v' : [':Vista!!'                   , 'tag viewer'],
       " \ 't' : [':FloatermToggle'         , 'terminal'],
       " \ 'c' : [':ColorizerToggle'        , 'colorizer'],
 
@@ -193,11 +195,12 @@ let g:which_key_map.h = {
       \ 'name' : '+github-cli' ,
       \ 'h' : [':FloatermNew! gh help'              , 'help'],
       \ 'i' : [':FloatermNew! gh issue create'      , 'create issue'],
-      \ 'k' : [':FloatermKill!'                     , 'kill terminals'],
       \ 'l' : [':FloatermNew! gh issue list'        , 'list issues'],
       \ 'r' : [':FloatermNew! gh reference'         , 'reference'],
       \ 'v' : [':FloatermNew! gh repo view -w'      , 'view repo'],
       \ }
+
+
 
 " g is for git
 let g:which_key_map.g = {
