@@ -760,7 +760,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo apt install texlive-most
+sudo apt install texlive-full
 ```
 
 Run NeoVim to install plugins:
