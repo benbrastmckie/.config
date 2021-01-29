@@ -10,6 +10,7 @@ I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/bl
 
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
+3. [Ubuntu Linux Insallation](#Ubuntu-Linux-Installation)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to better suit writing LaTeX documents with NeoVim.
@@ -613,7 +614,8 @@ fish_vi_key_bindings
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 I highly recommend swapping the CapsLock and Esc keys as detailed below for using Arch on a Macbook Pro.
-# Arch Linux Installation
+
+# Ubuntu Linux Installation
 
 Open the terminal and run the following commands:
 
