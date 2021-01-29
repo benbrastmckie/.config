@@ -678,7 +678,7 @@ If Git is not installed, run:
 sudo apt install git
 ```
 
-Next, install LazyGit using Yay by running:
+Next, install LazyGit using Launchpad by running:
 
 ```
 sudo add-apt-repository ppa:lazygit-team/release
