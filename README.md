@@ -620,7 +620,7 @@ I highly recommend swapping the CapsLock and Esc keys as detailed below for usin
 Open the terminal and run the following commands:
 
 ```
-sudo pacman -S neovim
+sudo apt install neovim
 ```
 
 Check to confirm that Python is installed:
@@ -632,7 +632,7 @@ python3 --version
 If Python is not installed, run:
 
 ```
-sudo pacman -S python
+sudo apt install python
 ```
 
 To check the health of your NeoVim install, open NeoVim by running `nvim` in the terminal and enter the following command:
@@ -658,10 +658,10 @@ sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.
 Install the FZF fuzzy finder, Ripgrep, and Pandoc with the following commands respectively:
 
 ```
-sudo pacman -S fzf
-sudo pacman -S ripgrep
-sudo pacman -S pandoc
-sudo pacman -S pandoc-citeproc
+sudo apt install fzf
+sudo apt install ripgrep
+sudo apt install pandoc
+sudo apt install pandoc-citeproc
 ```
 
 ## [Git](https://git-scm.com/)
@@ -675,34 +675,25 @@ git --version
 If Git is not installed, run:
 
 ```
-sudo pacman -S install git
-```
-
-If you don't have Yay, you can install it by running the following:
-
-```
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si
-```
-
-If you run into errors, you may be missing the following dependency, which you can add by running:
-
-```
-sudo pacman -S base-devel
+sudo apt install git
 ```
 
 Next, install LazyGit using Yay by running:
 
 ```
-yay -S lazygit
+sudo add-apt-repository ppa:lazygit-team/release
+sudo apt-get update
+sudo apt-get install lazygit
 ```
 
 ### Installing the GitHub Cli
 
 Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
 ```
-sudo pacman -S github-cli
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+sudo apt-add-repository https://cli.github.com/packages
+sudo apt update
+sudo apt install gh
 ```
 You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running:
 ```
@@ -735,7 +726,7 @@ ssh-add ~/.ssh/id_rsa
 If you do not have `xclip` you can install it by running:
 
 ```
-sudo pacman -S xclip
+sudo apt install xclip
 ```
 
 After the install, run the following to copy the SSH key to your system clipboard:
@@ -757,7 +748,7 @@ cd ~/.config
 git clone https://github.com/benbrastmckie/.config.git
 mkdir -p ~/.vim/files/info
 sudo pip3 install neovim-remote
-sudo pacman -S yarn
+sudo apt install yarn
 ```
 
 If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
@@ -769,7 +760,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo pacman -S texlive-most
+sudo apt install texlive-full
 ```
 
 Run NeoVim to install plugins:
@@ -785,7 +776,7 @@ After the plugins finish installing, quite NeoVim with `:qa!`.
 Install the Zathura pdf viewer by running:
 
 ```
-sudo pacman -S zathura
+sudo apt install zathura
 ```
 
 After reopening NeoVim, enter the following command:
@@ -849,9 +840,9 @@ If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell
 Run the following in the terminal:
 
 ```
-sudo pacman -S alacritty
-sudo pacman -S tmux
-sudo pacman -S fish
+sudo apt install alacritty
+sudo apt install tmux
+sudo apt install fish
 ```
 
 You will also need to move the Tmux configuration file to the appropriate location by running:
