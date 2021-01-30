@@ -15,6 +15,10 @@ let g:vimtex_log_ignore = [
         \ 'specifier changed to',
         \ 'Token not allowed in a PDF string',
       \ ]
+
+let g:vimtex_context_pdf_viewer=1
+let g:vimtex_context_pdf_viewer= 'evince'
+
 " let g:vimtex_quickfix_latexlog = {
 "           \ 'overfull' : 0,
 "           \ 'underfull' : 0,
