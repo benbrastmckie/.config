@@ -1,10 +1,12 @@
+" NOTES
+" check mapping with :verbose map ____
+
 " Terminal mappings
 nnoremap  <C-t> :FloatermToggle<CR>
 tnoremap <C-t> <C-\><C-n>:FloatermToggle<CR>
 " nnoremap  <leader>t :tab ter<CR>
 " noremap! <leader>t <Esc>:FloatermToggle<CR>i
 " tnoremap  <leader>d <C-\><C-n>:bd!<CR>
-
 
 " Better nav for omnicomplete
 inoremap <expr> <c-j> ("\<C-n>")
@@ -24,7 +26,7 @@ nnoremap <S-y> y$
 " vnoremap <C-b> <S-s>b
 
 " remap Return to save
-nnoremap <CR> :w<CR>
+nnoremap <CR> :VimtexContextMenu<CR>
 
 " Jump paragraph
 " nmap <C-j> :NERDTreeToggle<CR>
@@ -93,7 +95,7 @@ vnoremap <S-l> g$
 
 " Open Manual for word
 " noremap <C-m> :call <SNR>23_show_documentation()<CR>
-noremap <C-m> :execute "help " . expand("<cword>")<cr>
+" nnoremap <C-m> :execute "help " . expand("<cword>")<cr>
 " noremap <C-m> :help expand("<cword>")<cr>
 
 " Display line movements
