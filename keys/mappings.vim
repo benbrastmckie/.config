@@ -26,7 +26,7 @@ nnoremap <S-y> y$
 " vnoremap <C-b> <S-s>b
 
 " remap Return to save
-nnoremap <CR> :VimtexContextMenu<CR>
+nmap <CR> <plug>(vimtex-context-menu)
 
 " Jump paragraph
 " nmap <C-j> :NERDTreeToggle<CR>
@@ -44,18 +44,18 @@ inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
   " Change next word instance
   " nnoremap c* Ncgn
 
-" Multiple Cursors
-let g:multi_cursor_use_default_mapping=0
+" " Multiple Cursors
+" let g:multi_cursor_use_default_mapping=0
 
-" Default mapping
-  let g:multi_cursor_start_word_key      = '<C-n>'
-  let g:multi_cursor_select_all_word_key = '<M-n>'
-  let g:multi_cursor_start_key           = 'g<C-n>'
-  let g:multi_cursor_select_all_key      = 'g<M-n>'
-  let g:multi_cursor_next_key            = '<C-n>'
-  let g:multi_cursor_prev_key            = '<C-p>'
-  let g:multi_cursor_skip_key            = '<C-x>'
-  let g:multi_cursor_quit_key            = '<Esc>'
+" " Default mapping
+"   let g:multi_cursor_start_word_key      = '<C-n>'
+"   let g:multi_cursor_select_all_word_key = '<M-n>'
+"   let g:multi_cursor_start_key           = 'g<C-n>'
+"   let g:multi_cursor_select_all_key      = 'g<M-n>'
+"   let g:multi_cursor_next_key            = '<C-n>'
+"   let g:multi_cursor_prev_key            = '<C-p>'
+"   let g:multi_cursor_skip_key            = '<C-x>'
+"   let g:multi_cursor_quit_key            = '<Esc>'
 
 " TAB in general mode will move to text buffer
 nnoremap <TAB> :bnext<CR>
@@ -94,8 +94,8 @@ vnoremap <S-l> g$
 " noremap <S-l> w
 
 " Open Manual for word
+nnoremap <M-m> :execute "help " . expand("<cword>")<cr>
 " noremap <C-m> :call <SNR>23_show_documentation()<CR>
-" nnoremap <C-m> :execute "help " . expand("<cword>")<cr>
 " noremap <C-m> :help expand("<cword>")<cr>
 
 " Display line movements
