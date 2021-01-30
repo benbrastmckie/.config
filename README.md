@@ -11,6 +11,7 @@ I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/bl
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
 3. [Ubuntu Linux Insallation](#Ubuntu-Linux-Installation)
+3. [Remapping Mac Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to better suit writing LaTeX documents with NeoVim.
@@ -206,7 +207,12 @@ If you have not already installed MacTex on your computer, you can run the follo
 latexmk --version
 ```
 
-To install MacTex, you can download the package [here](https://www.tug.org/mactex/).
+To install MacTex, you can download the package [here](https://www.tug.org/mactex/), or else run the following command:
+
+```
+brew cask install mactex
+```
+
 Reboot your computer, and run NeoVim by entering the following into the terminal:
 
 ```
@@ -472,7 +478,7 @@ sudo pip3 install neovim-remote
 sudo pacman -S yarn
 ```
 
-If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
+If you have not already installed LaTeX on your computer, you can run the following command in order to check to see if it is already installed:
 
 ```
 latexmk --version
@@ -481,7 +487,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo pacman -S texlive-most
+sudo pacman -S texlive-full
 ```
 
 Run NeoVim to install plugins:
@@ -751,7 +757,7 @@ sudo pip3 install neovim-remote
 sudo apt install yarn
 ```
 
-If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
+If you have not already installed LaTeX on your computer, you can run the following command in order to check to see if it is already installed:
 
 ```
 latexmk --version
@@ -892,18 +898,25 @@ fish_vi_key_bindings
 ```
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-I highly recommend swapping the CapsLock and Esc keys as detailed below for using Arch on a Macbook Pro.
+I highly recommend swapping the CapsLock and Esc keys as detailed below for using Ubuntu on a Macbook Pro.
 
-
-## Remapping Keys
+# Remapping Mac Keys
 
 If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
-To achieve these remappings, run the following commands:
+To achieve these remappings, run the following commands for Arch and Ubuntu, respectively:
 
+Arch:
 ```
 sudo pacman -S xorg-xmodmap
 sudo pacman -S xorg-xev
 sudo pacman -S xorg-setxkbmap
+```
+
+Ubuntu:
+```
+sudo apt install xorg-xmodmap
+sudo apt install xorg-xev
+sudo apt install xorg-setxkbmap
 ```
 
 In order to test to confirm the keycodes for your keyboard, run the following:
