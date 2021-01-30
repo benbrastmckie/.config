@@ -54,9 +54,10 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Comment**: in normal mode or visually mode, use `ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
 - **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
-- **Help**: use `ctrl+m` to open Help for the word under the cursor.
-- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Use `ctrl+a` to select all occurrences of the word under the cursor. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
+- **Help**: use `alt+m` to open Help for the word under the cursor.
+- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
+- **Citation**: use `<CR>` to lookup bib entry under the cursor, giving you the option of viewing or editing the bib data, opening the file, etc.
 
 ### _Zathura_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
