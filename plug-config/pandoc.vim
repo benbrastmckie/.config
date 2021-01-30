@@ -7,7 +7,10 @@
 " let g:pandoc#filetypes#pandoc_markdown = 0
 " let g:pandoc#folding#fdc = 0
 " configuration for vim-pandoc and vim-rmarkdown
+
 let g:pandoc#modules#disabled = ["folding"]
+" let g:pandoc#filetypes#pandoc_markdown = 0
+
 " let g:pandoc#syntax#conceal#use = 0
 " autocmd FileType pandoc
 "       \ if exists('#EnableFastFolds') |
