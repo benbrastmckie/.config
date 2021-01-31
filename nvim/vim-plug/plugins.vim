@@ -95,6 +95,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " Quick Movements in Text
     Plug 'unblevable/quick-scope'
+    Plug 'easymotion/vim-easymotion'
     " Plug 'justinmk/vim-sneak'
     
 " Terminal
@@ -108,7 +109,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
   " Plug 'terryma/vim-multiple-cursors'
 
 " Zen mode
-    Plug 'junegunn/goyo.vim'
+    " Plug 'junegunn/goyo.vim'
 
 " Browser Support
     Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }

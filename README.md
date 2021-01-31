@@ -2,7 +2,7 @@
 
 ## A complete configuration for writing LaTeX documents with NeoVim.
 
-The following sections provide installation instructions for Mac and Arch Linux operating systems.
+The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
 I have also created video series which demonstrate the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the configuration, as well as providing an [installation guide](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J), a [configuration guide](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for adapting my configuration to your needs, and [instructions for using Git to collaborate with others](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL).
 I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) with all of the key-bindings that I have included for writing LaTeX documents with NeoVim.
 
@@ -10,7 +10,7 @@ I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/bl
 
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
-3. [Ubuntu Linux Insallation](#Ubuntu-Linux-Installation)
+3. [Debian Linux Insallation](#Ubuntu-Linux-Installation)
 3. [Remapping Mac Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
@@ -621,7 +621,7 @@ fish_vi_key_bindings
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 I highly recommend swapping the CapsLock and Esc keys as detailed below for using Arch on a Macbook Pro.
 
-# Ubuntu Linux Installation
+# Debian Linux Installation
 
 Open the terminal and run the following commands:
 
@@ -898,12 +898,12 @@ fish_vi_key_bindings
 ```
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-I highly recommend swapping the CapsLock and Esc keys as detailed below for using Ubuntu on a Macbook Pro.
+I highly recommend swapping the CapsLock and Esc keys as detailed below for using Debian on a Macbook Pro.
 
 # Remapping Mac Keys
 
 If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
-To achieve these remappings, run the following commands for Arch and Ubuntu, respectively:
+To achieve these remappings, run the following commands for Arch and Debian, respectively:
 
 Arch:
 ```
@@ -912,7 +912,7 @@ sudo pacman -S xorg-xev
 sudo pacman -S xorg-setxkbmap
 ```
 
-Ubuntu:
+Debian:
 ```
 sudo apt install xorg-xmodmap
 sudo apt install xorg-xev
