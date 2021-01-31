@@ -10,7 +10,7 @@ I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/bl
 
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
-3. [Debian Linux Insallation](#Ubuntu-Linux-Installation)
+3. [Debian Linux Insallation](#Debian-Linux-Installation)
 3. [Remapping Mac Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
