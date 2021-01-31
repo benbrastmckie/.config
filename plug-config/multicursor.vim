@@ -15,7 +15,7 @@ let g:VM_maps = {}                                      " init dictionary
 
 " NOTE: permanant mappings below are enabled by default
 let g:VM_maps['Find Under']                  = '<C-n>'
-" let g:VM_maps['Find Subword Under']          = '<C-n>'
+let g:VM_maps['Find Subword Under']          = '<C-n>'
 " let g:VM_maps["Select All"]                  = '<C-A>'
 " let g:VM_maps["Start Regex Search"]          = '<C-/>'
 " let g:VM_maps["Add Cursor Down"]             = '<C-Down>'

@@ -1,6 +1,15 @@
 " NOTES
 " check mapping with :verbose map ____
 
+" Easymotion
+  " Move to line
+  " map <Leader>l <Plug>(easymotion-bd-jk)
+  " nmap <Leader>l <Plug>(easymotion-overwin-line)
+
+  " Move to word
+  map  <Leader>z <Plug>(easymotion-bd-w)
+  nmap <Leader>z <Plug>(easymotion-overwin-w)
+
 " Terminal mappings
 nnoremap  <C-t> :FloatermToggle<CR>
 tnoremap <C-t> <C-\><C-n>:FloatermToggle<CR>

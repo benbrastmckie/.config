@@ -30,17 +30,20 @@ let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
 let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
 let g:which_key_map['F'] = [ ':Files ~'              , 'home files' ]
 let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
-let g:which_key_map['R'] = [ ':source $MYVIMRC'      , 'reload' ]
-let g:which_key_map['r'] = [ ':CocEnable'            , 'restore coc' ]
+let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload' ]
+let g:which_key_map['R'] = [ ':CocEnable'            , 'restore coc' ]
 let g:which_key_map['l'] = [ ':VimtexErrors'         , 'log' ]
 let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
 let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
 let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
 let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
+" let g:which_key_map.l = 'line motion'
+let g:which_key_map.z = 'zoom'
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
+" let g:which_key_map['z'] = [ '<Plug>(easymotion-prefix)' , 'motion' ]
 " let g:which_key_map['B'] = [ ':Buffers'              , 'buffers' ]
 " let g:which_key_map['c'] = [ 'VimtexCountWords'      , 'count' ]
 " let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
@@ -84,7 +87,7 @@ let g:which_key_map.P = {
       " \ 'm' : [':SDelete!'              , 'to markdown from file'],
 
 " Templates
-let g:which_key_map.t = {
+let g:which_key_map.T = {
       \ 'name' : '+templates' ,
       \ 'p' : [':read ~/.config/nvim/templates/PhilPaper.tex'           , 'PhilPaper.tex'],
       \ 'l' : [':read ~/.config/nvim/templates/Letter.tex'           , 'Letter.tex'],
