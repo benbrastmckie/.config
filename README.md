@@ -11,7 +11,7 @@ I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/bl
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
 3. [Debian Linux Insallation](#Debian-Linux-Installation)
-3. [Remapping Mac Keys](#Remapping-Mac-Keys)
+4. [Remapping Mac Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to better suit writing LaTeX documents with NeoVim.
@@ -42,6 +42,7 @@ If Homebrew has not been installed, you may install it by entering:
 Although optional, I highly recommend that inexperienced users begin by installing Fish which makes working insider the terminal a little easier.
 Otherwise, you can skip to the next section.
 To install Fish, run the following commands in turn:
+
 ```
 brew install fish
 curl -L https://get.oh-my.fish | fish
@@ -148,6 +149,7 @@ brew install jesseduffield/lazygit/lazygit
 ### Installing the GitHub Cli
 
 Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+
 ```
 brew install gh
 ```
@@ -183,9 +185,11 @@ Saving the key completes the addition.
 
 Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
 If your SSH key stops working after rebooting, run the following command:
+
 ```
 ssh-add -K ~/.ssh/id_rsa
 ```
+
 If you get an error, retry the command above with a lowercase `k`.
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
@@ -419,14 +423,19 @@ yay -S lazygit
 ### Installing the GitHub Cli
 
 Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+
 ```
 sudo pacman -S github-cli
 ```
+
 You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running:
+
 ```
 gh auth login
 ```
+
 Set NeoVim as your default editor by running:
+
 ```
 gh config set editor nvim
 ```
@@ -514,7 +523,6 @@ After reopening NeoVim, enter the following command:
 
 Ignore any warnings for Python 2, Ruby, and Node.js.
 If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
-
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -695,17 +703,22 @@ sudo apt-get install lazygit
 ### Installing the GitHub Cli
 
 Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+
 ```
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
 sudo apt-add-repository https://cli.github.com/packages
 sudo apt update
 sudo apt install gh
 ```
+
 You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running:
+
 ```
 gh auth login
 ```
+
 Set NeoVim as your default editor by running:
+
 ```
 gh config set editor nvim
 ```
@@ -793,7 +806,6 @@ After reopening NeoVim, enter the following command:
 
 Ignore any warnings for Python 2, Ruby, and Node.js.
 If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
-
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -906,6 +918,7 @@ If you are running Linux on a Macbook, it can be convenient to swap the CapsLock
 To achieve these remappings, run the following commands for Arch and Debian, respectively:
 
 Arch:
+
 ```
 sudo pacman -S xorg-xmodmap
 sudo pacman -S xorg-xev
@@ -913,6 +926,7 @@ sudo pacman -S xorg-setxkbmap
 ```
 
 Debian:
+
 ```
 sudo apt install xorg-xmodmap
 sudo apt install xorg-xev

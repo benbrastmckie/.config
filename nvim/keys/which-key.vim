@@ -76,13 +76,20 @@ let g:which_key_map.u = 'undo'
 " Pandoc
 let g:which_key_map.P = {
       \ 'name' : '+pandoc' ,
-      \ 'w' : [':Pandoc docx'           , 'to word from open'],
-      \ 'm' : [':Pandoc md'             , 'to markdown from open'],
-      \ 'h' : [':Pandoc html'           , 'to html from open'],
-      \ 'l' : [':Pandoc latex'          , 'to latex from open'],
-      \ 'p' : [':Pandoc pdf'            , 'to pdf from open'],
+      \ 'w' : [':terminal pandoc %:t -o %:r.docx'         , 'word'],
+      \ 'm' : [':terminal pandoc %:t -o %:r.md'           , 'markdown'],
+      \ 'h' : [':terminal pandoc %:t -o %:r.html'         , 'html'],
+      \ 'l' : [':terminal pandoc %:t -o %:r.tex'          , 'latex'],
+      \ 'p' : [':terminal pandoc %:t -o %:r.pdf'          , 'pdf'],
       \ }
 
+  " \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
+
+      " \ 'w' : [':Pandoc docx'           , 'to word from open'],
+      " \ 'm' : [':Pandoc md'             , 'to markdown from open'],
+      " \ 'h' : [':Pandoc html'           , 'to html from open'],
+      " \ 'l' : [':Pandoc latex'          , 'to latex from open'],
+      " \ 'p' : [':Pandoc pdf'            , 'to pdf from open'],
       " \ 'L' : [':terminal pandoc -s expand('%:t') -o expand('%:t').tex'       , 'to latex from file'],
       " \ 'm' : [':SDelete!'              , 'to markdown from file'],
 

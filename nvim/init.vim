@@ -7,8 +7,8 @@ source $HOME/.config/nvim/vim-plug/plugins.vim
 
 " TEXT SUPPORT
 source $HOME/.config/nvim/plug-config/vimtex.vim
+source $HOME/.config/nvim/plug-config/markdown.vim
 source $HOME/.config/nvim/plug-config/markdown-preview.vim
-source $HOME/.config/nvim/plug-config/pandoc.vim
 
 " FILE MANAGEMENT
 source $HOME/.config/nvim/plug-config/start-screen.vim
@@ -38,7 +38,7 @@ source $HOME/.config/nvim/themes/gruvbox.vim
 source $HOME/.config/nvim/themes/airline.vim
 
 " ABANDONED
-" source $HOME/.config/nvim/plug-config/markdown.vim
+" source $HOME/.config/nvim/plug-config/pandoc.vim
 " source $HOME/.config/nvim/plug-config/vbox.vim
 " source $HOME/.config/nvim/plug-config/templates.vim
 " source $HOME/.config/nvim/plug-config/nerdtree.vim

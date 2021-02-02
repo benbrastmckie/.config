@@ -1,3 +1,9 @@
+" let g:markdown_enable_mappings = 0  " turning this on kills the nice
+" indent feature which drags the bullet with the tab
+
+" let g:vim_markdown_folding_disabled = 1
+" let g:vim_markdown_override_foldtext = 0
+
 " au FileType markdown setlocal ts=1 sw=1 expandtab smarttab
 
 " ABANDONED

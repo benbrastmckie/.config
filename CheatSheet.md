@@ -1,6 +1,7 @@
 # Cheat Sheet [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 The following sections present a list of key-bindings and features which have been included in the present configuration.
+If you are looking for the bindings which come default in Vim, then you might check this [resource](https://vim.rtorr.com) out.
 I will provide links to associated tutorial videos throughout, omitting mention of the standard Vim commands which have mostly been preserved.
 For configuration instructions, see the installation [(Install Part 1)](https://youtu.be/JVIcU9ePtVE).
 I will also provide links to further resources for learning Vim below.
