@@ -17,12 +17,12 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 " Markdown
     Plug 'gabrielelana/vim-markdown'
     Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
-    " Plug 'godlygeek/tabular'
     " Plug 'plasticboy/vim-markdown'    
+    " Plug 'godlygeek/tabular'
     
 " Pandoc: conflict with markdown auto-indent and syntax highlighting
-    Plug 'vim-pandoc/vim-pandoc'
-    Plug 'vim-pandoc/vim-pandoc-syntax' " Syntax not as good
+    " Plug 'vim-pandoc/vim-pandoc'
+    " Plug 'vim-pandoc/vim-pandoc-syntax' " Syntax not as good
 
 " Better Syntax Support
     " Plug 'sheerun/vim-polyglot'

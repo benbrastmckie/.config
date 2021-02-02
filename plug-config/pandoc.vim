@@ -9,7 +9,8 @@
 " configuration for vim-pandoc and vim-rmarkdown
 
 let g:pandoc#modules#disabled = ["folding"]
-" let g:pandoc#filetypes#pandoc_markdown = 0
+let g:pandoc#filetypes#pandoc_markdown = 0
+" let g:pandoc#modules#disabled = 1
 
 " let g:pandoc#syntax#conceal#use = 0
 " autocmd FileType pandoc
