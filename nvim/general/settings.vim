@@ -8,6 +8,7 @@ set autoread " trigger `autoread` when files changes on disk
 set complete+=kspell                    " set spell spelllang=en_gb
 autocmd BufRead,BufNewFile *.tex setlocal spell spelllang=en_gb
 syntax enable                           " Enables syntax highlighing
+set path+=**
 set hidden                              " Required to keep multiple buffers open multiple buffers
 "set nowrap                              " Display long lines as just one line
 set linebreak                           " Prenents words from breaking over line

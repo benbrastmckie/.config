@@ -24,6 +24,8 @@ See the introduction [(Demo Part 1)](https://youtu.be/pYNvDkB0iRk) for related d
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
 - [Vim Tutor](https://www.youtube.com/watch?v=d8XtNXutVto) A guided tour through `vimtutor`.
 - [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
+- [Orienting Remarks](http://www.viemu.com/a-why-vi-vim.html)
+- [Another List](https://blog.joren.ga/tools/vim-learning-steps)
 - [Inspiration](https://www.youtube.com/watch?v=1UXHsCT18wE) Inspiration and Comedy.
 
 I have not made any changes to the conventions which come standard with NeoVim, as there is no need to reinvent the wheel.
