@@ -39,7 +39,7 @@ let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
 let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
 let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
 " let g:which_key_map.l = 'line motion'
-let g:which_key_map.z = 'zoom'
+" let g:which_key_map.z = 'zoom'
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
