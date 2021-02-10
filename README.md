@@ -324,7 +324,7 @@ Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Spac
 Quite the terminal and open Alacritty by hitting `Ctrl+Space` and typing 'Alacritty', running the following to reset Tmux:
 
 ```
-Tmux kill-server
+tmux kill-server
 ```
 
 When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
@@ -616,7 +616,7 @@ set fish_greeting
 In order to reset Tmux, run:
 
 ```
-Tmux kill-server
+tmux kill-server
 ```
 
 When you reopen Alacritty, Fish should be the default shell inside a Tmux window.
@@ -899,7 +899,7 @@ set fish_greeting
 In order to reset Tmux, run:
 
 ```
-Tmux kill-server
+tmux kill-server
 ```
 
 When you reopen Alacritty, Fish should be the default shell inside a Tmux window.
