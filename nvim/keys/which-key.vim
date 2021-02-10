@@ -24,56 +24,29 @@ autocmd  FileType which_key set laststatus=0 noshowmode noruler
 
 
 " Single mappings
-let g:which_key_map[','] = [ 'Startify'              , 'start screen' ]
 let g:which_key_map['d'] = [ ':bd!'                  , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
-let g:which_key_map['f'] = [ ':BLines'               , 'find' ]
-let g:which_key_map['F'] = [ ':Files ~'              , 'home files' ]
-let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
-let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload' ]
-let g:which_key_map['R'] = [ ':CocEnable'            , 'restore coc' ]
-let g:which_key_map['l'] = [ ':VimtexErrors'         , 'log' ]
+let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload config' ]
 let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
-let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
 let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
 let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
-" let g:which_key_map.l = 'line motion'
-" let g:which_key_map.z = 'zoom'
+let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
+let g:which_key_map['k'] = [ 'VimtexClean'           , 'kill aux' ]
+let g:which_key_map['l'] = [ 'VimtexErrors'          , 'build log' ]
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
+" let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
+" let g:which_key_map['R'] = [ ':CocEnable'            , 'restore coc' ]
 " let g:which_key_map['z'] = [ '<Plug>(easymotion-prefix)' , 'motion' ]
-" let g:which_key_map['B'] = [ ':Buffers'              , 'buffers' ]
-" let g:which_key_map['c'] = [ 'VimtexCountWords'      , 'count' ]
 " let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
-" let g:which_key_map['z'] = [ 'Goyo'                  , 'zen' ]
-" let g:which_key_map['.'] = [ ':e $MYVIMRC'           , 'open init' ]
-" let g:which_key_map[';'] = [ ':Commands'             , 'commands' ]
-" let g:which_key_map['d'] = [ ':bd'                   , 'delete buffer']
-" let g:which_key_map['c'] = [ ':VimtexCountWords'     , 'count' ]
-" let g:which_key_map.t = 'terminal'
-" let g:which_key_map['S'] = [ ':SSave'                , 'save session' ]
-" let g:which_key_map.x = 'clean'
-" let g:which_key_map['c'] = [ ':VimtexCountWords<CR>'      , 'count' ]
-" let g:which_key_map['x'] = [ ':VimtexClean<CR>'           , 'clean' ]
-" let g:which_key_map.u = 'undo'
 
 
-" let g:which_key_map['='] = [ '<C-W>='                     , 'balance windows' ]
-" let g:which_key_map['n'] = [ ':tabnew'                    , 'new buffer' ]
-" let g:which_key_map['y'] = [ '<Plug>Ysurround'            , 'surround' ]
-" let g:which_key_map['n'] = [ ':NERDTreeToggle'            , 'nerdtree' ]
-" let g:which_key_map['p'] = [ ':Files'                     , 'search files' ]
-" let g:which_key_map.f = 'float explorer'
-" let g:which_key_map['h'] = [ '<C-W>s'                     , 'split below']
-" let g:which_key_map.l = 'look up'
-" let g:which_key_map['v'] = [ '<C-W>v'                     , 'split right']
 
+" GROUP MAPPINGS
 
-" Group mappings
-
-" Pandoc
+" P is for PANDOC
 let g:which_key_map.P = {
       \ 'name' : '+pandoc' ,
       \ 'w' : [':terminal pandoc %:t -o %:r.docx'         , 'word'],
@@ -83,48 +56,47 @@ let g:which_key_map.P = {
       \ 'p' : [':terminal pandoc %:t -o %:r.pdf'          , 'pdf'],
       \ }
 
-  " \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
+  " \ 'w' : [':Pandoc docx'           , 'to word from open'],
+  " \ 'm' : [':Pandoc md'             , 'to markdown from open'],
+  " \ 'h' : [':Pandoc html'           , 'to html from open'],
+  " \ 'l' : [':Pandoc latex'          , 'to latex from open'],
+  " \ 'p' : [':Pandoc pdf'            , 'to pdf from open'],
 
-      " \ 'w' : [':Pandoc docx'           , 'to word from open'],
-      " \ 'm' : [':Pandoc md'             , 'to markdown from open'],
-      " \ 'h' : [':Pandoc html'           , 'to html from open'],
-      " \ 'l' : [':Pandoc latex'          , 'to latex from open'],
-      " \ 'p' : [':Pandoc pdf'            , 'to pdf from open'],
-      " \ 'L' : [':terminal pandoc -s expand('%:t') -o expand('%:t').tex'       , 'to latex from file'],
-      " \ 'm' : [':SDelete!'              , 'to markdown from file'],
 
-" Templates
+" t is for TEMPLATES
 let g:which_key_map.T = {
-      \ 'name' : '+templates' ,
-      \ 'p' : [':read ~/.config/nvim/templates/PhilPaper.tex'           , 'PhilPaper.tex'],
-      \ 'l' : [':read ~/.config/nvim/templates/Letter.tex'           , 'Letter.tex'],
-      \ 'g' : [':read ~/.config/nvim/templates/Glossary.tex'           , 'Glossary.tex'],
-      \ 'h' : [':read ~/.config/nvim/templates/HandOut.tex'           , 'HandOut.tex'],
-      \ 'b' : [':read ~/.config/nvim/templates/PhilBeamer.tex'           , 'PhilBeamer.tex'],
-      \ 's' : [':read ~/.config/nvim/templates/SubFile.tex'           , 'SubFile.tex'],
-      \ 'r' : [':read ~/.config/nvim/templates/Root.tex'           , 'Root.tex'],
-      \ 'm' : [':read ~/.config/nvim/templates/MultipleAnswer.tex'           , 'MultipleAnswer.tex'],
-      \ }
+  \ 'name' : '+templates' ,
+  \ 'p' : [':read ~/.config/nvim/templates/PhilPaper.tex' , 'PhilPaper.tex'],
+  \ 'l' : [':read ~/.config/nvim/templates/Letter.tex'    , 'Letter.tex'],
+  \ 'g' : [':read ~/.config/nvim/templates/Glossary.tex'  , 'Glossary.tex'],
+  \ 'h' : [':read ~/.config/nvim/templates/HandOut.tex'   , 'HandOut.tex'],
+  \ 'b' : [':read ~/.config/nvim/templates/PhilBeamer.tex', 'PhilBeamer.tex'],
+  \ 's' : [':read ~/.config/nvim/templates/SubFile.tex'   , 'SubFile.tex'],
+  \ 'r' : [':read ~/.config/nvim/templates/Root.tex'      , 'Root.tex'],
+  \ 'm' : [':read ~/.config/nvim/templates/MultipleAnswer.tex'           , 'MultipleAnswer.tex'],
+  \ }
 
-" Sessions
+
+" s is for SESSIONS
 let g:which_key_map.S = {
       \ 'name' : '+session' ,
       \ 's' : [':SSave'                , 'save session'],
       \ 'd' : [':SDelete!'              , 'delete session'],
       \ }
 
-" Markdown
+
+" m is for MARKDOWN
 let g:which_key_map.m = {
       \ 'name' : '+markdown' ,
       \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
       \ 'F' : ['zA'                                  , 'fold all'],
       \ 'f' : ['za'                                  , 'fold current'],
-      \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill'],
-      \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select'],
+      \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
+      \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
       \ }
-      " \ 'm' : ['<Plug>MarkdownPreviewToggle'     , 'toggle'],
 
-" y is for you surround
+
+" y is for you SURROUND
 let g:which_key_map.s = {
       \ 'name' : '+surround' ,
       \ 's' : ['<Plug>Ysurround'         , 'surround'],
@@ -134,44 +106,43 @@ let g:which_key_map.s = {
       \ }
 
 
-" a is for actions
+" v is for VIEW
+let g:which_key_map.v = {
+  \ 'name' : '+view' ,
+  \ 'y' : [':CocList -A --normal yank'               , 'yanks'],
+  \ 's' : [ 'Startify'                               , 'start screen' ],
+  \ 'b' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'backup'],
+  \ }
+
+  " \ 'l' : [':VimtexErrors'                           , 'build log' ],
+  " \ 'a' : [':VimtexClean'                            , 'kill aux'],
+  " \ 'i' : [':VimtexTocOpen'                          , 'index' ],
+  " \ 'c' : ['VimtexCountWords'                       , 'word count' ],
+
+
+" a is for ACTIONS
 let g:which_key_map.a = {
   \ 'name' : '+actions' ,
-  \ 'y' : [':CocList -A --normal yank'               , 'yank display'],
-  \ 'a' : [':VimtexClean'                            , 'kill aux'],
   \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
-  \ 'c' : [':Commands'                               , 'commands' ],
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
   \ 's' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
-  \ 'w' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'show swap'],
   \ }
 
 
-    " \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
-    " \ 'r' : [':set norelativenumber!'     , 'relative line nums'],
-      " \ 'n' : [':set nonumber!'             , 'line-numbers'],
-      " \ 'v' : [':Vista!!'                   , 'tag viewer'],
-      " \ 't' : [':FloatermToggle'         , 'terminal'],
-      " \ 'c' : [':ColorizerToggle'        , 'colorizer'],
+" f is for FIND
+let g:which_key_map.f = {
+        \ 'name' : '+find' ,
+        \ 'f' : [ ':BLines'                          , 'in file' ],
+        \ 'c' : [ ':Commands'                        , 'command' ],
+        \ 'h' : [ ':Files ~'                         , 'files in home' ],
+        \ 'p' : [ ':GGrep'                           , 'in project'],
+        \ 'b' : [ ':Buffers'                         , 'buffer'],
+        \ }
 
 
-" " b is for buffer
-" let g:which_key_map.b = {
-"       \ 'name' : '+buffer' ,
-"       \ '1' : ['b1'        , 'buffer 1']        ,
-"       \ '2' : ['b2'        , 'buffer 2']        ,
-"       \ 'd' : ['bd'        , 'delete-buffer']   ,
-"       \ 'f' : ['bfirst'    , 'first-buffer']    ,
-"       \ 'h' : ['Startify'  , 'home-buffer']     ,
-"       \ 'l' : ['blast'     , 'last-buffer']     ,
-"       \ 'n' : ['bnext'     , 'next-buffer']     ,
-"       \ 'p' : ['bprevious' , 'previous-buffer'] ,
-"       \ '?' : ['Buffers'   , 'fzf-buffer']      ,
-"       \ }
-
-" " s is for search
-" let g:which_key_map.? = {
+" " s is for SEARCH
+" let g:which_key_map.s = {
 "       \ 'name' : '+search' ,
 "       \ '/' : [':History/'     , 'history'],
 "       \ ';' : [':Commands'     , 'commands'],
@@ -200,67 +171,54 @@ let g:which_key_map.a = {
 "       \ 'z' : [':FZF'          , 'FZF'],
 "       \ }
 
-" h is for GitHub
-let g:which_key_map.h = {
-      \ 'name' : '+github-cli' ,
-      \ 'h' : [':FloatermNew! gh help'              , 'help'],
-      \ 'i' : [':FloatermNew! gh issue create'      , 'create issue'],
-      \ 'l' : [':FloatermNew! gh issue list'        , 'list issues'],
-      \ 'r' : [':FloatermNew! gh reference'         , 'reference'],
-      \ 'v' : [':FloatermNew! gh repo view -w'      , 'view repo'],
-      \ }
 
 
-
-" g is for git
+" g is for GIT
 let g:which_key_map.g = {
-      \ 'name' : '+git' ,
-      \ 'a' : [':Git add .'                        , 'add all'],
-      \ 'A' : [':Git add %'                        , 'add current'],
-      \ 'b' : [':Git blame'                        , 'blame'],
-      \ 'B' : [':GBrowse'                          , 'browse'],
-      \ 'c' : [':Git commit'                       , 'commit'],
-      \ 'd' : [':Git diff'                         , 'diff'],
-      \ 'D' : [':Gdiffsplit'                       , 'diff split'],
-      \ 'G' : [':GGrep'                            , 'git grep'],
-      \ 's' : [':Gstatus'                          , 'status'],
-      \ 'h' : [':GitGutterLineHighlightsToggle'    , 'highlight hunks'],
-      \ 'l' : [':Git log'                          , 'log'],
-      \ 'P' : [':Git push'                         , 'push'],
-      \ 'p' : [':Git pull'                         , 'pull'],
-      \ 'r' : [':GRemove'                          , 'remove'],
-      \ 'g' : [':FloatermNew lazygit'              , 'lazygit'],
-      \ 't' : [':GitGutterSignsToggle'             , 'toggle signs'],
-      \ 'v' : [':GV'                               , 'view commits'],
-      \ 'V' : [':GV!'                              , 'view buffer commits'],
-      \ }
+  \ 'name' : '+git' ,
+  \ 'g' : [':FloatermNew lazygit'                      , 'lazygit'],
+  \ 'h' : [':GitGutterLineHighlightsToggle'            , 'hunks'],
+  \ 'c' : [':FloatermNew! --disposable gh issue create', 'create issue'],
+  \ 'l' : [':FloatermNew! --disposable gh issue list'  , 'list issues'],
+  \ 'r' : [':FloatermNew! --disposable gh reference'   , 'reference'],
+  \ 'v' : [':FloatermNew! --disposable gh repo view -w', 'view repo'],
+  \ }
 
-  " nmap ghp <Plug>(GitGutterPreviewHunk)
-  " nmap ghs <Plug>(GitGutterStageHunk)
-  " nmap ghu <Plug>(GitGutterUndoHunk)
+  " \ 'h' : [':FloatermNew! --disposable gh help'         , 'cli help'],
 
+" TO BE USED WITH RUBHARB PLUGIN
+      " \ 'l' : [':Git log'                          , 'log'],
+      " \ 'P' : [':Git push'                         , 'push'],
+      " \ 'p' : [':Git pull'                         , 'pull'],
+      " \ 'r' : [':GRemove'                          , 'remove'],
+      " \ 's' : [':Gstatus'                          , 'status'],
+      " \ 'a' : [':Git add .'                        , 'add all'],
+      " \ 'A' : [':Git add %'                        , 'add current'],
+      " \ 'b' : [':Git blame'                        , 'blame'],
+      " \ 'B' : [':GBrowse'                          , 'browse'],
+      " \ 'c' : [':Git commit'                       , 'commit'],
+      " \ 'd' : [':Git diff'                         , 'diff'],
+      " \ 'D' : [':Gdiffsplit'                       , 'diff split'],
+      
+" TO BE USED WITH GIT GV PLUGIN
+      " \ 'v' : [':GV'                               , 'view commits'],
+      " \ 'V' : [':GV!'                              , 'view buffer commits'],
 
-" \ 'H' : ['<Plug>(GitGutterPreviewHunk)'      , 'preview hunk'],
-" \ 'j' : ['<Plug>(GitGutterNextHunk)'         , 'next hunk'],
-" \ 'k' : ['<Plug>(GitGutterPrevHunk)'         , 'prev hunk'],
-" \ 's' : ['<Plug>(GitGutterStageHunk)'        , 'stage hunk'],
-" \ 'u' : ['<Plug>(GitGutterUndoHunk)'         , 'undo hunk'],
+" OTHER GIT BINDINGS
+    " \ 't' : [':GitGutterSignsToggle'             , 'toggle signs'],
+    " nmap ghp <Plug>(GitGutterPreviewHunk)
+    " nmap ghs <Plug>(GitGutterStageHunk)
+    " nmap ghu <Plug>(GitGutterUndoHunk)
 
-" " t is for terminal
-" let g:which_key_map.t = {
-"       \ 'name' : '+terminal' ,
-"       \ ';' : [':FloatermNew --wintype=popup --height=6'        , 'terminal'],
-"       \ 'f' : [':FloatermNew fzf'                               , 'fzf'],
-"       \ 'g' : [':FloatermNew lazygit'                           , 'git'],
-"       \ 'd' : [':FloatermNew lazydocker'                        , 'docker'],
-"       \ 'n' : [':FloatermNew node'                              , 'node'],
-"       \ 'N' : [':FloatermNew nnn'                               , 'nnn'],
-"       \ 'p' : [':FloatermNew python'                            , 'python'],
-"       \ 'r' : [':FloatermNew ranger'                            , 'ranger'],
-"       \ 't' : [':FloatermToggle'                                , 'toggle'],
-"       \ 'y' : [':FloatermNew ytop'                              , 'ytop'],
-"       \ 's' : [':FloatermNew ncdu'                              , 'ncdu'],
-"       \ }
+    " \ 'H' : ['<Plug>(GitGutterPreviewHunk)'      , 'preview hunk'],
+    " \ 'j' : ['<Plug>(GitGutterNextHunk)'         , 'next hunk'],
+    " \ 'k' : ['<Plug>(GitGutterPrevHunk)'         , 'prev hunk'],
+    " \ 's' : ['<Plug>(GitGutterStageHunk)'        , 'stage hunk'],
+    " \ 'u' : ['<Plug>(GitGutterUndoHunk)'         , 'undo hunk'],
+
+    " \ 'h' : [':let @/ = ""'               , 'remove search highlight'],
+    " \ 'v' : [':Vista!!'                   , 'tag viewer'],
+    " \ 'c' : [':ColorizerToggle'           , 'colorizer'],
 
 
 " Register which key map
