@@ -304,7 +304,7 @@ brew install tmux
 You will also need to move the Tmux configuration file to the appropriate location by running:
 
 ```
-sudo cp ~/.config/tmux/.tmux.conf ~/
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
 Assuming that you already installed Fish above, you will now need to locate fish on your operating system by running the following:
@@ -583,7 +583,7 @@ sudo pacman -S fish
 You will also need to move the Tmux configuration file to the appropriate location by running:
 
 ```
-sudo cp ~/.config/tmux/.tmux.conf ~/
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
 Assuming that you installed Fish above, you will now need to locate fish on your operating system by running the following:
@@ -866,7 +866,7 @@ sudo apt install fish
 You will also need to move the Tmux configuration file to the appropriate location by running:
 
 ```
-sudo cp ~/.config/tmux/.tmux.conf ~/
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
 Assuming that you installed Fish above, you will now need to locate fish on your operating system by running the following:
