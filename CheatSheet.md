@@ -71,12 +71,12 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ### _GitHub Cli_ [(Git Part 4)](https://www.youtube.com/watch?v=KM_Mwp7R_rk&t=198s)
 
-- Use `<space>h` to open GitHub Cli help.
-- Use `<space>i` to create new GitHub issue.
-- Use `<space>k` to kill all open FloatTerminals.
-- Use `<space>l` to list all open issues.
-- Use `<space>r` to print all GitHub Cli references.
-- Use `<space>v` to view the repo in a browser.
+- Use `<space>h,h` to open GitHub Cli help.
+- Use `<space>h,i` to create new GitHub issue.
+- Use `<space>h,k` to kill all open FloatTerminals.
+- Use `<space>h,l` to list all open issues.
+- Use `<space>h,r` to print all GitHub Cli references.
+- Use `<space>h,v` to view the repo in a browser.
 
 ## Plugins
 

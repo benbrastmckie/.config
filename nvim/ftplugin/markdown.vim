@@ -1,5 +1,13 @@
+" Set tabbing
 setlocal ts=2 sts=2 sw=1
 
+" " Better tabbing
+" vnoremap > 2>gv
+" vnoremap < 2<gv
+" nnoremap > <S-v>2><esc>
+" nnoremap < <S-v>2<<esc>
+
+" Set pairs to match
 let g:AutoPairs = {
       \ "`":"`",
       \ "(":")",
