@@ -48,13 +48,13 @@ let g:which_key_map.u = 'undo'
 
 " P is for PANDOC
 let g:which_key_map.P = {
-      \ 'name' : '+pandoc' ,
-      \ 'w' : [':terminal pandoc %:t -o %:r.docx'         , 'word'],
-      \ 'm' : [':terminal pandoc %:t -o %:r.md'           , 'markdown'],
-      \ 'h' : [':terminal pandoc %:t -o %:r.html'         , 'html'],
-      \ 'l' : [':terminal pandoc %:t -o %:r.tex'          , 'latex'],
-      \ 'p' : [':terminal pandoc %:t -o %:r.pdf'          , 'pdf'],
-      \ }
+  \ 'name' : '+pandoc' ,
+  \ 'w' : [':FloatermNew! --disposable pandoc %:t -o %:r.docx' , 'word'],
+  \ 'm' : [':FloatermNew! --disposable pandoc %:t -o %:r.md'   , 'markdown'],
+  \ 'h' : [':FloatermNew! --disposable pandoc %:t -o %:r.html' , 'html'],
+  \ 'l' : [':FloatermNew! --disposable pandoc %:t -o %:r.tex'  , 'latex'],
+  \ 'p' : [':FloatermNew! --disposable pandoc %:t -o %:r.pdf'  , 'pdf'],
+  \ }
 
   " \ 'w' : [':Pandoc docx'           , 'to word from open'],
   " \ 'm' : [':Pandoc md'             , 'to markdown from open'],
@@ -139,6 +139,7 @@ let g:which_key_map.f = {
         \ 'p' : [ ':GGrep'                           , 'in project'],
         \ 'b' : [ ':Buffers'                         , 'buffer'],
         \ }
+" let g:which_key_map.f.t = ''
 
 
 " " s is for SEARCH

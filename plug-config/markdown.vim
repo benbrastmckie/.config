@@ -1,18 +1,16 @@
-" let g:markdown_enable_mappings = 0  " turning this on kills the nice
-" indent feature which drags the bullet with the tab
+" INDENTING
+  let g:markdown_enable_insert_mode_leader_mappings = 0
+  " let g:markdown_enable_mappings = 0  " turning this on kills the nice
+  " indent feature which drags the bullet with the tab
+  " let g:markdown_enable_insert_mode_mappings = 1
 
-" let g:vim_markdown_folding_disabled = 1
-" let g:vim_markdown_override_foldtext = 0
+  " This is the indent on tab feature I like
+    " inoremap <silent> <buffer> <script> <expr> <Tab>
+    "   \ <SID>IsAnEmptyListItem() \|\| <SID>IsAnEmptyQuote() ? '<C-O>:call <SID>Indent(1)<CR>' : '<Tab>'
+    " inoremap <silent> <buffer> <script> <expr> <S-Tab>
+    "   \ <SID>IsAnEmptyListItem() \|\| <SID>IsAnEmptyQuote() ? '<C-O>:call <SID>Indent(0)<CR>' : '<Tab>'
 
-" au FileType markdown setlocal ts=1 sw=1 expandtab smarttab
-
-" ABANDONED
-" let g:markdown_enable_mappsetsetings = 0
-" let g:markdown_enable_folding = 0
-" setlocal ts=2 sw=2 expandtab smarttab
-" au FileType markdown setlocal ts=2 sw=2 noet
-" setlocal nolisp
-" setlocal autoindent
-" setlocal indentexpr=GoIndent(v:lnum)
-" setlocal indentkeys+=<:>,0=},0=
-" S au FileType markdown setlocal ts=2 sw=2 expandtab smarttab
+" FOLDING
+  let g:markdown_enable_folding = 0
+  " let g:vim_markdown_folding_disabled = 1
+  " let g:vim_markdown_override_foldtext = 0

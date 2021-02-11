@@ -1,6 +1,9 @@
 " Set tabbing
 setlocal ts=2 sts=2 sw=1
 
+" Unmappings
+" unmap! <space>ft
+
 " " Better tabbing
 " vnoremap > 2>gv
 " vnoremap < 2<gv

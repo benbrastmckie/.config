@@ -1,6 +1,9 @@
 " NOTES
 " check mapping with :verbose map ____
 
+" Unmappings
+" nunmap <space>ft
+
 " Easymotion
   " Move to line
   " map <Leader>l <Plug>(easymotion-bd-jk)
