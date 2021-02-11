@@ -113,7 +113,9 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " Browser Support
     Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
- 
+
+" View Registers
+    " Plug 'gennaro-tedesco/nvim-peekup'
     
 " MAPPINGS
 
