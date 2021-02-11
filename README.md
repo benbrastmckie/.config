@@ -3,8 +3,8 @@
 ## A complete configuration for writing LaTeX documents with NeoVim.
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
-I have also created video series which demonstrate the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the configuration, as well as providing an [installation guide](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J), a [configuration guide](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for adapting my configuration to your needs, and [instructions for using Git to track changes and collaborate with others](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL).
-I have also provided a [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) with all of the key-bindings that I have added to NeoVim for writing LaTeX documents, as well as resources specifically geared for [learning to integrate Git](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) into your workflow.
+In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources specifically geared for integrating Git into your workflow.
+You can also find video series which demonstrate the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the present configuration, walk through the [installation process](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J), explain how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for your own needs, and [use Git to track changes and collaborate with others](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL).
 
 ## Table of Contents
 
