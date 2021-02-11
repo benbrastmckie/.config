@@ -56,7 +56,7 @@ To delete the welcome message, run:
 set fish_greeting
 ```
 
-## Basics
+## Dependencies
 
 Check if Node is installed by running:
 

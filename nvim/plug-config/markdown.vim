@@ -11,6 +11,4 @@
     "   \ <SID>IsAnEmptyListItem() \|\| <SID>IsAnEmptyQuote() ? '<C-O>:call <SID>Indent(0)<CR>' : '<Tab>'
 
 " FOLDING
-  let g:markdown_enable_folding = 0
-  " let g:vim_markdown_folding_disabled = 1
-  " let g:vim_markdown_override_foldtext = 0
+  let g:vim_markdown_folding_disabled = 1 " big increase in speed
