@@ -26,7 +26,6 @@ source $HOME/.config/nvim/plug-config/vim-surruound.vim
 " ADDITIONAL FUNCTIONS
 source $HOME/.config/nvim/plug-config/quickscope.vim
 source $HOME/.config/nvim/plug-config/floaterm.vim
-source $HOME/.config/nvim/plug-config/goyo.vim
 source $HOME/.config/nvim/plug-config/multicursor.vim
 
 " MAPPINGS
@@ -38,6 +37,7 @@ source $HOME/.config/nvim/themes/gruvbox.vim
 source $HOME/.config/nvim/themes/airline.vim
 
 " ABANDONED
+" source $HOME/.config/nvim/plug-config/goyo.vim
 " source $HOME/.config/nvim/plug-config/pandoc.vim
 " source $HOME/.config/nvim/plug-config/vbox.vim
 " source $HOME/.config/nvim/plug-config/templates.vim

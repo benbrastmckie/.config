@@ -12,7 +12,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " LaTeX Support
     Plug 'lervag/vimtex'
-    Plug 'dense-analysis/ale' " LaTeX Linting
+    " Plug 'dense-analysis/ale' " LaTeX Linting
 
 " Markdown
     Plug 'gabrielelana/vim-markdown'
@@ -46,7 +46,7 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
 " File Explorer
     Plug 'ryanoasis/vim-devicons' "adds icons to coc-explorer
-    Plug 'vifm/vifm.vim'
+    " Plug 'vifm/vifm.vim'
     " Plug 'scrooloose/nerdtree'
     " Plug 'preservim/nerdtree'
     " Plug 'Xuyuanp/nerdtree-git-plugin'
