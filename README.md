@@ -241,10 +241,11 @@ In order to tell Vimtex to open Skim, run the following command in the terminal:
 nvim ~/.config/nvim/plug-config/vimtex.vim
 ```
 
-Once the file has opened in NeoVim, change all occurances of 'zathura' to 'skim' by entering the following in NeoVim in normal-mode:
+Once the file has opened in NeoVim, change all occurrences of 'zathura' to 'skim' by entering the following in NeoVim in normal-mode:
 
 ```
 :%s/'zathura'/'skim'/g
+:%s/'evince'/'skim'/g
 ```
 
 Save and quit the file by entering `:wq` in NeoVim in normal-mode.
@@ -516,6 +517,20 @@ Install the Zathura pdf viewer by running:
 sudo pacman -S zathura
 ```
 
+Unless you have the Evince pdf viewer installed, you may also want to set Zathura as your default pdf viewer for opening pdfs for the papers you cite via the Vimtex Context Menu.
+You can do so by editing the following file:
+
+```
+nvim ~/.config/nvim/plug-config/vimtex.vim
+```
+
+Once the file has opened in NeoVim, change all occurrences of 'evince' to 'zathura' by entering the following in NeoVim in normal-mode:
+
+```
+:%s/'evince'/'zathura'/g
+```
+
+Alternatively, you could replace Zathura here with another pdf viewer of your choice, for instance, one that allows you to easily take notes and highlight the associated pdf.
 After reopening NeoVim, enter the following command:
 
 ```

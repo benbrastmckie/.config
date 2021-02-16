@@ -33,7 +33,7 @@ let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
 let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
 let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
 let g:which_key_map['k'] = [ 'VimtexClean'           , 'kill aux' ]
-let g:which_key_map['l'] = [ 'VimtexErrors'          , 'build log' ]
+let g:which_key_map['l'] = [ 'VimtexErrors'          , 'error log' ]
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
