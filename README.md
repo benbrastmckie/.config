@@ -234,6 +234,12 @@ Install the Skim pdf viewer by running:
 brew cask install skim
 ```
 
+> If the command above does not work, some have found it helpful to run the following alternative:
+
+> ```
+> brew --cask install skim
+> ```
+
 You will need to grant permission to open Skim by opening Mac System Settings, and approving the application in Security.
 In order to tell Vimtex to open Skim, run the following command in the terminal:
 
