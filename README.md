@@ -18,7 +18,7 @@ I will also include information for globally remapping keys to better suit writi
 
 # Mac OS Installation
 
-Open the terminal by hitting `Command+Space` and typing `terminal`.
+Open the terminal by hitting `Command+Space` and typing 'terminal'.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 
 ```
@@ -97,7 +97,7 @@ Once the installation is complete, open NeoVim by entering:
 nvim
 ```
 
-To check the health of your NeoVim install, enter the following in Normal-Mode in NeoVim:
+To check the health of your NeoVim install, enter the following in normal-mode (enter normal-mode in NeoVim by hitting escape) in NeoVim:
 
 ```
 :checkhealth
@@ -110,6 +110,8 @@ pip3 install --user pynvim
 ```
 
 Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored).
+This may involve doing some research if errors persist.
+
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
 In order to install plugins, extending the features included in NeoVim, run the following:
 
@@ -191,7 +193,7 @@ If your SSH key stops working after rebooting, run the following command:
 ssh-add -K ~/.ssh/id_rsa
 ```
 
-If you get an error, retry the command above with a lowercase `k`.
+If you get an error, retry the command above with a lowercase 'k'.
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
@@ -247,7 +249,7 @@ In order to tell Vimtex to open Skim, run the following command in the terminal:
 nvim ~/.config/nvim/plug-config/vimtex.vim
 ```
 
-Once the file has opened in NeoVim, change all occurrences of 'zathura' to 'skim' by entering the following in NeoVim in normal-mode:
+Once the file has opened in NeoVim, change all occurrences of 'zathura' and 'evince' to 'skim' by entering the following commands in NeoVim:
 
 ```
 :%s/'zathura'/'skim'/g
@@ -255,6 +257,10 @@ Once the file has opened in NeoVim, change all occurrences of 'zathura' to 'skim
 ```
 
 Save and quit the file by entering `:wq` in NeoVim in normal-mode.
+
+Open Skim, navigating to the preferences, and select "Check for file changes" as well as "Reload automatically".
+In PDF-Tex support, open "Preset" and choose "Custom".
+In the "Command" filed, type `nvr`, and in the "Argument" field, type `--remote-silent +"%line" "%file"` and close Skim.
 After reopening NeoVim, enter the following in normal-mode:
 
 ```
