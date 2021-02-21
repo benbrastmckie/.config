@@ -42,6 +42,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Drag lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
 - **Better tabbing**: the `<` and `>` keys will adjust indents in both normal and visual mode.
 - **Display line movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
+- **Easy motion**: use `ctrl+f` to move within the displayed part of the open buffer.
 
 ### _Windows, Buffers, and Panes_ [(Install Part 2)](https://youtu.be/Xvu1IKEpO0M)
 
@@ -57,13 +58,12 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Copy**: use `Y` to yank to end of line.
 - **Comment**: in normal mode or visually mode, use `ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Spelling**: use `ctrl+s` to search alternatives to misspelled word.
-- **Cut and Paste**: use `"dp` and `"dP` to paste previously deleted block below and above respectively.
 - **Help**: use `alt+m` to open Help for the word under the cursor.
 - **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 - **Citation**: use `<CR>` to lookup bib entry under the cursor, giving you the option of viewing or editing the bib data, opening the file, etc.
 
-### _Zathura_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
+### _Zathura (Linux)_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
 - **Index**: use `<space>` to toggle the index.
 - **Zoom**: use `shift+k` and `shift+j` to zoom in and out, respectively.
