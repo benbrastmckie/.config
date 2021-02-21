@@ -26,7 +26,6 @@ autocmd  FileType which_key set laststatus=0 noshowmode noruler
 " Single mappings
 let g:which_key_map['d'] = [ ':bd!'                  , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
-let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload config' ]
 let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
 let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
@@ -34,12 +33,11 @@ let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
 let g:which_key_map['i'] = [ 'VimtexTocOpen'         , 'index' ]
 let g:which_key_map['k'] = [ 'VimtexClean'           , 'kill aux' ]
 let g:which_key_map['l'] = [ 'VimtexErrors'          , 'error log' ]
+let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload config' ]
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
-" let g:which_key_map['k'] = [ ':CocDisable'           , 'kill coc' ]
-" let g:which_key_map['R'] = [ ':CocEnable'            , 'restore coc' ]
-" let g:which_key_map['z'] = [ '<Plug>(easymotion-prefix)' , 'motion' ]
+" let g:which_key_map['j'] = [ '<Plug>(easymotion-prefix)' , 'motion' ]
 " let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
 
 
@@ -89,11 +87,12 @@ let g:which_key_map.S = {
 let g:which_key_map.m = {
       \ 'name' : '+markdown' ,
       \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
-      \ 'F' : ['zA'                                  , 'fold all'],
-      \ 'f' : ['za'                                  , 'fold current'],
       \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
       \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
       \ }
+
+      " \ 'F' : ['zA'                                  , 'fold all'],
+      " \ 'f' : ['za'                                  , 'fold current'],
 
 
 " y is for you SURROUND
@@ -110,8 +109,8 @@ let g:which_key_map.s = {
 let g:which_key_map.v = {
   \ 'name' : '+view' ,
   \ 'y' : [':CocList -A --normal yank'               , 'yanks'],
-  \ 's' : [ 'Startify'                               , 'start screen' ],
-  \ 'b' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'backup'],
+  \ 'p' : [ 'Startify'                               , 'projects' ],
+  \ 's' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'swap'],
   \ }
 
   " \ 'l' : [':VimtexErrors'                           , 'build log' ],
@@ -127,6 +126,8 @@ let g:which_key_map.a = {
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
   \ 's' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
+  \ 'k' : [':CocDisable'                             , 'kill coc'],
+  \ 'r' : [':CocEnable'                              , 'restore coc'],
   \ }
 
 

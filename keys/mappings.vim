@@ -10,8 +10,8 @@
   " nmap <Leader>l <Plug>(easymotion-overwin-line)
 
   " Move to word
-  map  <C-q> <Plug>(easymotion-bd-w)
-  nmap <C-q> <Plug>(easymotion-overwin-w)
+  map  <C-f> <Plug>(easymotion-bd-w)
+  nmap <C-f> <Plug>(easymotion-overwin-w)
 
 " Terminal mappings
 nnoremap  <C-t> :FloatermToggle<CR>
@@ -209,10 +209,14 @@ nmap <silent> gr <Plug>(coc-references)
 " xmap <silent> <TAB> <Plug>(coc-range-select)
 
 " Registers
-nnoremap d "dd
-vnoremap d "dd
-nnoremap D vg_"dd
-vnoremap D g_"dd
+" nnoremap c "cc
+" vnoremap c "cc
+" nnoremap C vg_"cc
+" vnoremap C g_"cc
+" nnoremap d "dd
+" vnoremap d "dd
+" nnoremap D vg_"dd
+" vnoremap D g_"dd
 " nnoremap y "xy
 " vnoremap y "xy
 " nnoremap p "xp
