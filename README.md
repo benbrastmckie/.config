@@ -279,7 +279,7 @@ Create the bib and bst directories, and move the .bst bibliography style files i
 
 ```
 mkdir -p ~/Library/texmf/bibtex/bib
-cp ~/.config/latex/bst ~/Library/texmf/bibtex
+cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
 ```
 
 Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
@@ -299,7 +299,7 @@ In order for NeoVim to load icons, it will be imporant to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
-sudo cp ~/.config/fonts/RobotoMono/ /Library/Fonts/
+sudo cp -R ~/.config/fonts/RobotoMono/ /Library/Fonts/
 ```
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
@@ -577,7 +577,7 @@ Create the bib and bst directories, and move the .bst bibliography style files i
 
 ```
 mkdir -p ~/texmf/bibtex/bib
-cp ~/.config/latex/bst ~/texmf/bibtex
+cp -R ~/.config/latex/bst ~/texmf/bibtex
 ```
 
 Right-click the main library folder in the left-most column, and select `Export Library`.
@@ -591,7 +591,7 @@ In order for NeoVim to load icons, it will be imporant to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
-sudo cp ~/.config/fonts/RobotoMono/ /usr/share/fonts
+sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 ```
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
@@ -860,7 +860,7 @@ Create the bib and bst directories, and move the .bst bibliography style files i
 
 ```
 mkdir -p ~/texmf/bibtex/bib
-cp ~/.config/latex/bst ~/texmf/bibtex
+cp -R ~/.config/latex/bst ~/texmf/bibtex
 ```
 
 Right-click the main library folder in the left-most column, and select `Export Library`.
@@ -874,7 +874,7 @@ In order for NeoVim to load icons, it will be imporant to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
-sudo cp ~/.config/fonts/RobotoMono/ /usr/share/fonts
+sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 ```
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
