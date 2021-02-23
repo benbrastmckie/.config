@@ -9,6 +9,18 @@ snippet gloss "Glossary Entry" b
 }
 endsnippet
 
+snippet customthm "Custom Theorem" b
+\vspace{.1in}
+\begin{customthm}{(${1:label})}
+  ${2:claim}
+\end{customthm}
+
+\begin{Answer}
+  ${0}
+\end{Answer}
+endsnippet
+
+
 # new command
 snippet nc "New Command" b
 \newcommand{${1:cmd}}[${2:opt}]{${3:realcmd}} ${0}
