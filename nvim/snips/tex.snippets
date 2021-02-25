@@ -9,17 +9,24 @@ snippet gloss "Glossary Entry" b
 }
 endsnippet
 
+# custom theorem enviornment
 snippet customthm "Custom Theorem" b
 \vspace{.1in}
 \begin{customthm}{(${1:label})}
-  ${2:claim}
+	${2:claim}
 \end{customthm}
 
 \begin{Answer}
-  ${0}
+	${0}
 \end{Answer}
 endsnippet
 
+# framed text enviornment
+snippet textbox "Text Box" b
+\begin{tcolorbox}
+	${0}
+\end{tcolorbox}
+endsnippet
 
 # new command
 snippet nc "New Command" b
