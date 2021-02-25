@@ -47,11 +47,11 @@ let g:which_key_map.u = 'undo'
 " P is for PANDOC
 let g:which_key_map.P = {
   \ 'name' : '+pandoc' ,
-  \ 'w' : [':FloatermNew! --disposable pandoc %:t -o %:r.docx' , 'word'],
-  \ 'm' : [':FloatermNew! --disposable pandoc %:t -o %:r.md'   , 'markdown'],
-  \ 'h' : [':FloatermNew! --disposable pandoc %:t -o %:r.html' , 'html'],
-  \ 'l' : [':FloatermNew! --disposable pandoc %:t -o %:r.tex'  , 'latex'],
-  \ 'p' : [':FloatermNew! --disposable pandoc %:t -o %:r.pdf'  , 'pdf'],
+  \ 'w' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.docx' , 'word'],
+  \ 'm' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.md'   , 'markdown'],
+  \ 'h' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.html' , 'html'],
+  \ 'l' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.tex'  , 'latex'],
+  \ 'p' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.pdf'  , 'pdf'],
   \ }
 
   " \ 'w' : [':Pandoc docx'           , 'to word from open'],
@@ -122,7 +122,7 @@ let g:which_key_map.v = {
 " a is for ACTIONS
 let g:which_key_map.a = {
   \ 'name' : '+actions' ,
-  \ 'b' : [':terminal bibexport -o %:r.bib %:r.aux'  , 'bib export'],
+  \ 'b' : [':terminal bibexport -o %:p:r.bib %:p:r.aux'  , 'bib export'],
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
   \ 's' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
