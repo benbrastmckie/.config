@@ -14,7 +14,7 @@ You can also find video series which: (1) demonstrates the [resulting functional
 4. [Remapping Mac Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
-I will also include information for globally remapping keys to better suit writing LaTeX documents with NeoVim.
+I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
 
 # Mac OS Installation
 

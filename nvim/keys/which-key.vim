@@ -37,6 +37,7 @@ let g:which_key_map['r'] = [ ':source $MYVIMRC'      , 'reload config' ]
 let g:which_key_map.c = 'count'
 let g:which_key_map.u = 'undo'
 
+" let g:which_key_map['t'] = [ ':OnlineThesaurusCurrentWord<CR>'      , 'thesaurus' ]
 " let g:which_key_map['j'] = [ '<Plug>(easymotion-prefix)' , 'motion' ]
 " let g:which_key_map['u'] = [ 'UndotreeToggle'        , 'undo' ]
 
