@@ -265,3 +265,9 @@ let g:markdown_mapping_switch_status = '<Space>ms'
 cnoremap <C-j> <C-n>
 cnoremap <C-k> <C-p>
 
+" online_thesaurus_map_keys
+" nnoremap <C-m> :OnlineThesaurusCurrentWord<CR>
+
+
+
+

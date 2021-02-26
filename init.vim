@@ -37,6 +37,7 @@ source $HOME/.config/nvim/themes/gruvbox.vim
 source $HOME/.config/nvim/themes/airline.vim
 
 " ABANDONED
+" source $HOME/.config/nvim/plug-config/thesaurus.vim
 " source $HOME/.config/nvim/plug-config/goyo.vim
 " source $HOME/.config/nvim/plug-config/pandoc.vim
 " source $HOME/.config/nvim/plug-config/vbox.vim

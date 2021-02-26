@@ -116,12 +116,18 @@ call plug#begin('~/.config/nvim/autoload/plugged')
 
 " View Registers
     " Plug 'gennaro-tedesco/nvim-peekup'
-    
+   
+" Look up words
+" Plug 'beloglazov/vim-online-thesaurus'
+
+
+
 " MAPPINGS
 
 " Look Up Key Bindings
     Plug 'liuchengxu/vim-which-key'
 
+    
 
 " APPEARANCE
 
