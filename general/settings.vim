@@ -55,6 +55,9 @@ set clipboard=unnamedplus               " Copy paste between vim and everything 
 "set autochdir                           " Your working directory will always be the same as your working directory
 " set filetype on
 
+" set no indent key triggers
+" set indentkeys-={
+
 " makes vim look for filetype specific settings in nvim/ftplugin/ and
 " sets indenting by file type
 filetype plugin indent on
