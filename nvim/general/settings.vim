@@ -11,7 +11,7 @@ syntax enable                           " Enables syntax highlighing
 set path+=**
 set hidden                              " Required to keep multiple buffers open multiple buffers
 "set nowrap                              " Display long lines as just one line
-set linebreak                           " Prenents words from breaking over line
+set linebreak                           " Prevents words from breaking over line
 set breakindent                         " Indent wrapped lines
   let &showbreak='  '                   " Indent amount
 set encoding=UTF-8                      " The encoding displayed 
@@ -31,14 +31,17 @@ set tabstop=2                           " Insert 2 spaces for a tab
 " set softtabstop=2                       " 
 set shiftwidth=2                        " Change the space characters inserted for indentation
 set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
-set autoindent                          " Good auto indent
-set smartindent                         " Makes indenting smart
+" set autoindent                          " Good auto indent
+" set nosmartindent                       " Was causing extra indenting
+set cindent                             " Better than smartindent
+set indentexpr=                         " Was changing line indenting?
+set indentkeys=                         " Was changing line indenting?
 set laststatus=0                        " Always display the status line
 set relativenumber                      " Relative Line numbers
-set number                              " Line numbers
+" set number                              " Line numbers
 set cursorline                          " Enable highlighting of the current line
 set background=dark                     " tell vim what the background color looks like
-set showtabline=2                       " Always show tabs 
+set showtabline=2                       " Always show tab bar at top 
 set noshowmode                          " We don't need to see things like -- INSERT -- 
 set nobackup                            " This is recommended by coc
 set nowritebackup                       " This is recommended by coc

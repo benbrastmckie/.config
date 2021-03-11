@@ -105,20 +105,20 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'mbbill/undotree'
     
 " Multiple Cursors
-  Plug 'mg979/vim-visual-multi', {'branch': 'master'}
-  " Plug 'terryma/vim-multiple-cursors'
-
-" Zen mode
-    " Plug 'junegunn/goyo.vim'
+    Plug 'mg979/vim-visual-multi', {'branch': 'master'}
+    " Plug 'terryma/vim-multiple-cursors'
 
 " Browser Support
     Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
 
-" View Registers
+" Registers
     " Plug 'gennaro-tedesco/nvim-peekup'
-   
+
+" Zen mode
+    " Plug 'junegunn/goyo.vim'
+
 " Look up words
-" Plug 'beloglazov/vim-online-thesaurus'
+    " Plug 'beloglazov/vim-online-thesaurus'
 
 
 
