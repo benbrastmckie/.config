@@ -17,7 +17,7 @@ let g:vimtex_log_ignore = [
       \ ]
 
 let g:vimtex_context_pdf_viewer=1
-let g:vimtex_context_pdf_viewer= 'evince'
+let g:vimtex_context_pdf_viewer= 'okular'
 
 " let g:vimtex_quickfix_latexlog = {
 "           \ 'overfull' : 0,
