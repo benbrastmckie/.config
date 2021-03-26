@@ -33,7 +33,7 @@ set shiftwidth=2                        " Change the space characters inserted f
 set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
 " set autoindent                          " Good auto indent
 " set nosmartindent                       " Was causing extra indenting
-set cindent                             " Better than smartindent
+set nocindent                             " Better than smartindent
 set indentexpr=                         " Was changing line indenting?
 set indentkeys=                         " Was changing line indenting?
 set laststatus=0                        " Always display the status line
