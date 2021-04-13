@@ -29,6 +29,7 @@ See the introduction [(Demo Part 1)](https://youtu.be/pYNvDkB0iRk) for related d
 - [Tutorial Series](https://www.youtube.com/watch?v=H3o4l4GVLW0&t=1s) Short tutorial video series.
 - [Orienting Remarks](http://www.viemu.com/a-why-vi-vim.html) Learning Vim is like learning to touch-type.
 - [Another List](https://blog.joren.ga/tools/vim-learning-steps) By no means the only other list of links for learning Vim.
+- [Pure Zeal](https://thevaluable.dev/vim-adept/) Nor is this the only sermon on the virtues of Vim and its subtleties.
 
 I have not made any changes to the conventions which come standard with NeoVim, as there is no need to reinvent the wheel.
 Rather, what follows is a minimal number of extensions to the functionality provided by NeoVim.
