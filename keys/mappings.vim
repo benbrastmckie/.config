@@ -46,12 +46,18 @@ nmap <CR> <plug>(vimtex-context-menu)
 " Drag lines
 " xnoremap <silent> <M-k> :call wincent#mappings#visual#move_up()<CR>
 " xnoremap <silent> <M-j> :call wincent#mappings#visual#move_down()<CR>
-vnoremap <M-j> :m '>+1<CR>gv
-vnoremap <M-k> :m '<-2<CR>gv
-nnoremap <M-j> <S-v> :m '>+1<CR>gv<esc>
-nnoremap <M-k> <S-v> :m '<-2<CR>gv<esc>
-inoremap <M-j> <esc><S-v> :m '>+1<CR>gv<esc>
-inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
+" vnoremap <M-j> :m '>+1<CR>gv
+" vnoremap <M-k> :m '<-2<CR>gv
+" nnoremap <M-j> <S-v> :m '>+1<CR>gv<esc>
+" nnoremap <M-k> <S-v> :m '<-2<CR>gv<esc>
+" inoremap <M-j> <esc><S-v> :m '>+1<CR>gv<esc>
+" inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
+vnoremap <M-j> dpV
+vnoremap <M-k> dkPV
+nnoremap <M-j> ddp
+nnoremap <M-k> ddkP
+inoremap <M-j> <esc>ddp
+inoremap <M-k> <esc>ddkP
 
   " Change next word instance
   " nnoremap c* Ncgn
