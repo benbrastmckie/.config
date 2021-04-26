@@ -52,8 +52,12 @@ nmap <CR> <plug>(vimtex-context-menu)
 " nnoremap <M-k> <S-v> :m '<-2<CR>gv<esc>
 " inoremap <M-j> <esc><S-v> :m '>+1<CR>gv<esc>
 " inoremap <M-k> <esc><S-v> :m '<-2<CR>gv<esc>
-vnoremap <M-j> dpV
-vnoremap <M-k> dkPV
+" vnoremap <M-j> dpgv
+" vnoremap <M-k> dkPgv
+" inoremap <M-j> <esc>:m'>+<CR>
+" inoremap <M-k> <esc>:m-2<CR>
+vnoremap <M-j> :m'>+<CR>gv
+vnoremap <M-k> :m-2<CR>gv
 nnoremap <M-j> ddp
 nnoremap <M-k> ddkP
 inoremap <M-j> <esc>ddp
@@ -75,8 +79,12 @@ inoremap <M-k> <esc>ddkP
 "   let g:multi_cursor_skip_key            = '<C-x>'
 "   let g:multi_cursor_quit_key            = '<Esc>'
 
+" Jump forward, replacing <c-i> since idential to <tab>
+" nnoremap <C-[> <C-i>
+" nnoremap <C-]> <C-o>
+
 " TAB in general mode will move to text buffer
-nnoremap <TAB> :bnext<CR>
+nnoremap <BS> :bnext<CR>
 " SHIFT-TAB will go back
 nnoremap <S-TAB> :bprevious<CR>
 
