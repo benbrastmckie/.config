@@ -42,7 +42,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 ## _Line Movements_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)
 
 - **Drag lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
-- **Better tabbing**: the `<` and `>` keys will adjust indents in both normal and visual mode.
+- **Better indenting**: the `<` and `>` keys will adjust indents in both normal and visual mode.
 - **Display line movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
 - **Easy motion**: use `ctrl+f` to move within the displayed part of the open buffer.
 
@@ -50,7 +50,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 - **Manage windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
 - **Switch windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
-- **Switch buffers**: use `<tab>` and `<shift+tab>` to cycle though the open buffers.
+- **Switch buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
 - **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
 
