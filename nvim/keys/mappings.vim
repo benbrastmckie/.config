@@ -83,9 +83,11 @@ inoremap <M-k> <esc>ddkP
 " nnoremap <C-[> <C-i>
 " nnoremap <C-]> <C-o>
 
-" TAB in general mode will move to text buffer
+" Backspace moves to next buffer
+  " TAB and <C-i> amount to the same in the terminal and so best to
+  " avoid remapping TAB so as to preserve the functionality of <C-i>
 nnoremap <BS> :bnext<CR>
-" SHIFT-TAB will go back
+" SHIFT-TAB will go back a buffer
 nnoremap <S-TAB> :bprevious<CR>
 
 " Alternate way to save

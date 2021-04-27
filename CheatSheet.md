@@ -22,7 +22,7 @@ Learning to use NeoVim is comparable to learning how to touch-type: it will take
 However, even with just the foundations, NeoVim offers a significant increase in efficiency, well worth the initial investment.
 See the introduction [(Demo Part 1)](https://youtu.be/pYNvDkB0iRk) for related discussion, as well as the following resources for learning to use NeoVim.
 
-- [Detailed Guide](https://danielmiessler.com/study/vim/)
+- [Detailed Guide](https://danielmiessler.com/study/vim/) Nice overview.
 - [OpenVim](https://www.openvim.com/) Free interactive Vim tutorial.
 - [VimAdventure](https://vim-adventures.com/) Free game to practice basic Vim commands.
 - [Vim Tutor](https://www.youtube.com/watch?v=d8XtNXutVto) A guided tour through `vimtutor`.

@@ -38,7 +38,7 @@ set indentexpr=                         " Was changing line indenting?
 set indentkeys=                         " Was changing line indenting?
 set laststatus=0                        " Always display the status line
 set relativenumber                      " Relative Line numbers
-" set number                              " Line numbers
+set number                              " Line numbers
 set cursorline                          " Enable highlighting of the current line
 set background=dark                     " tell vim what the background color looks like
 set showtabline=2                       " Always show tab bar at top 
