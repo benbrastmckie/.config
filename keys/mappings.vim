@@ -97,6 +97,9 @@ nnoremap <S-TAB> :bprevious<CR>
 " <TAB>: completion.
 inoremap <expr><TAB> pumvisible() ? "\<C-n>" : "\<TAB>"
 
+" jump to end of previous word
+nnoremap E ge
+
 " Better tabbing
 vnoremap > >gv
 vnoremap < <gv
