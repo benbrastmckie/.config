@@ -53,6 +53,7 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Switch buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
 - **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
+- **Previous word**: use `E` to go to the end of the previous word.
 
 ## _Commands_ [(Install Part 3)](https://youtu.be/TMA7nu9KCEQ)[(Config Part 6)](https://www.youtube.com/watch?v=KtkBoVWeipk)
 

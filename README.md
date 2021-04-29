@@ -1,6 +1,6 @@
 # .config
 
-## A complete configuration for writing LaTeX documents with NeoVim.
+## A complete configuration for writing LaTeX documents with [NeoVim]{https://neovim.io}.
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
 In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources specifically geared for integrating Git into your workflow.
