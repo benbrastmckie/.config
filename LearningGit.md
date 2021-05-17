@@ -1,14 +1,15 @@
 # Learning Git
 
 This document contains information about how to begin to learn how to integrate Git into your workflow.
-Git is useful for: (1) maintaining a history of changes to your project; (2) backing up the project on a private repository online; (3) managing different ways of developing the project prior to knowing which way is preferable; (4) working on the same project from different computers; and (5) collaborating with others on a shared project.
-Although there are a huge number of free resources for learning how to use git, including full lecture series, few resources provide a complete overview of git's most basic functionality.
+Git is useful for: (1) maintaining a history of changes to your project; (2) backing up the project on free private and public repositories online; (3) managing different ways of developing the project in branches prior to knowing which way is preferable; (4) working on the same project from different computers; and (5) collaborating with others on a shared project.
+Although there are a huge number of free resources for learning how to use git, including full lecture series, few resources provide a complete overview of git's most basic functionality to an academic audience otherwise unfamiliar with programing.
 The following sections will include resources for using all of the basic git commands in LazyGit, providing everything one need to know to use git effectively for oneself and in collaborating with others.
-I will include links to further resources below.
+I will include links to the relevant video demonstrations throughout.
 
 ## _Basic Git Commands_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg) [(Git Part 1)](https://www.youtube.com/watch?v=GIJG4QtZBYI) [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk)
 
-- **LazyGit**: to open LazyGit, hit `<space>gg`.
+- **LazyGit**: to open LazyGit in NeoVim with my configuration, hit `<space>gg`. Alternatively, you can open a terminal, navigating to the project folder in question, and run `lazygit` after installation (see the [README](https://github.com/benbrastmckie/.config/blob/master/README.md#git) for installation details).
+  - Note: See below to initialise a git.
 - **Navigate**: use `h` and `l` to move between windows, and `j` and `k` to navigate within windows.
 - **Ignore**: use `i` to ignore all files which you do not wish to track, including any file which is not a text file.
   - Note: if you accidentally ignore a file that you did not mean to, return to the project in NeoVim, open the explorer with `<space>e`, hit `.` in order to show hidden files, and open the `.gitignore` file, deleting the appropriate line which names the file you accidentally ignored.
