@@ -31,11 +31,11 @@ set tabstop=2                           " Insert 2 spaces for a tab
 " set softtabstop=2                       " 
 set shiftwidth=2                        " Change the space characters inserted for indentation
 set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
-" set noautoindent                          " Good auto indent
+set autoindent                          " Good auto indent
 " set nosmartindent                       " Was causing extra indenting
-set nocindent                             " Better than smartindent
-set indentexpr=                         " Was changing line indenting?
-set indentkeys=                         " Was changing line indenting?
+" set nocindent                             " Better than smartindent
+set indentexpr=""                       " Was changing line indenting?
+set indentkeys=""                       " Was changing line indenting?
 set laststatus=0                        " Always display the status line
 set relativenumber                      " Relative Line numbers
 set number                              " Line numbers
