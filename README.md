@@ -147,6 +147,8 @@ Next install LazyGit by running:
 
 ```
 brew install jesseduffield/lazygit/lazygit
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
 ```
 
 ### Installing the GitHub Cli
@@ -432,6 +434,8 @@ Next, install LazyGit using Yay by running:
 
 ```
 yay -S lazygit
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
 ```
 
 ### Installing the GitHub Cli
@@ -729,6 +733,8 @@ Next, install LazyGit using Launchpad by running:
 sudo add-apt-repository ppa:lazygit-team/release
 sudo apt-get update
 sudo apt-get install lazygit
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
 ```
 
 ### Installing the GitHub Cli
