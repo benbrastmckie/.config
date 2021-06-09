@@ -495,8 +495,11 @@ In order to clone the configuration files into the appropriate folder on your co
 
 ```
 cd ~/.config
-git clone https://github.com/benbrastmckie/.config.git
+git init
+git remote add origin https://github.com/benbrastmckie/.config.git
+git pull origin master
 mkdir -p ~/.vim/files/info
+sudo pacman -S python-pip
 sudo pip3 install neovim-remote
 sudo pacman -S yarn
 ```
@@ -792,8 +795,10 @@ In order to clone the configuration files into the appropriate folder on your co
 
 ```
 cd ~/.config
-git clone https://github.com/benbrastmckie/.config.git
+git remote add origin https://github.com/benbrastmckie/.config.git
+git pull origin master
 mkdir -p ~/.vim/files/info
+sudo apt install python-pip
 sudo pip3 install neovim-remote
 sudo apt install yarn
 ```
@@ -940,7 +945,7 @@ fish_vi_key_bindings
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 I highly recommend swapping the CapsLock and Esc keys as detailed below for using Debian on a Macbook Pro.
 
-# Remapping Mac Keys
+# Remapping Keys
 
 If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
 To achieve these remappings, run the following commands for Arch and Debian, respectively:
@@ -980,29 +985,29 @@ Close the white box upon finishing, checking to see if the output matches the fo
 108 Alt_R
 ```
 
+If you output matches the above, you can simply run the following:
+
+```
+sudo cp ~/.config/.XmodmapMAC /etc/X11/xinit/.Xmodmap
+cp ~/.config/.xmodmap.desktop ~/.config/autostart/
+```
+
 If your output does not match the above, you will need to edit the following file accordingly by running:
 
 ```
 nvim ~/.config/.Xmodmap
 ```
 
-If you need to make changes to keymappings, you can test the result of editing `.Xmodmap` and running the following:
+If you need to make changes to key mappings, you can test the result of editing `.Xmodmap` and running the following:
 
 ```
 xmodmap ~/.config/.Xmodmap
 ```
 
-You can fine further help [here](git clone https://github.com/benbrastmckie/.config.git), and return to defaults by running:
+You can fine further help [here](https://github.com/benbrastmckie/.config.git), and return to defaults by running:
 
 ```
 setxkbmap
 ```
 
-Once you achieve the desired result, or if your output matchs with the keycodes listed above, move the `.Xmodmap` and `.xmodmap.desktop` files to the appropriate locations by running:
-
-```
-sudo cp ~/.config/.Xmodmap /etc/X11/xinit/.Xmodmap
-cp ~/.config/.xmodmap.desktop ~/.config/autostart/
-```
-
-Reboot and confirm that the mappings are running as desired.
+Once you achieve the desired result, reboot and confirm that the mappings are running as desired.

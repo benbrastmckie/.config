@@ -234,7 +234,8 @@ shell:
     - -l
     - -c
     - "tmux"
-    # - "tmux attach || tmux"
+      # - "tmux attach || tmux"
+
 
   # Startup directory
   #
@@ -523,4 +524,4 @@ shell:
 #log_level: Warn
 
 # Print all received window events.
-#print_events: false
+#print_events: fal
