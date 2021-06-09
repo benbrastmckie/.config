@@ -992,7 +992,7 @@ If you need to make changes to keymappings, you can test the result of editing `
 xmodmap ~/.config/.Xmodmap
 ```
 
-You can return to defaults by running:
+You can fine further help [here](git clone https://github.com/benbrastmckie/.config.git), and return to defaults by running:
 
 ```
 setxkbmap
