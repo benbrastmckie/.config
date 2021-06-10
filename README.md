@@ -994,7 +994,7 @@ Close the white box upon finishing, checking to see if the output matches the fo
 If you output matches the above, you can run the following:
 
 ```
-sudo cp ~/.config/.XmodmapMAC /etc/X11/xinit/.Xmodmap
+sudo cp ~/.config/.XmodmapMAC ~/.Xmodmap
 ```
 
 If your output does not match the above, you will need to edit the following file accordingly by running:
@@ -1011,10 +1011,11 @@ xmodmap ~/.config/.Xmodmap
 
 Once you have .Xmodmap running the right key mappings, you will have to run the following so that .Xmodmap starts automatically:
 ```
+sudo cp ~/.config/.Xmodmap ~/.Xmodmap
 cp ~/.config/.xmodmap.desktop ~/.config/autostart/
 ```
 
-You can fine further help [here](https://github.com/benbrastmckie/.config.git), and return to defaults by running:
+You can return to defaults by running:
 
 ```
 setxkbmap
