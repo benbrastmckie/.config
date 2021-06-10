@@ -11,7 +11,7 @@ You can also find video series which: (1) demonstrates the [resulting functional
 1. [Mac OS Installation](#Mac-OS-Installation)
 2. [Arch Linux Installation](#Arch-Linux-Installation)
 3. [Debian Linux Insallation](#Debian-Linux-Installation)
-4. [Remapping Mac Keys](#Remapping-Mac-Keys)
+4. [Remapping Keys](#Remapping-Mac-Keys)
 
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
@@ -517,7 +517,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo pacman -S texlive-full
+sudo pacman -S texlive-most
 ```
 
 Run NeoVim to install plugins:
@@ -533,7 +533,7 @@ After the plugins finish installing, quite NeoVim with `:qa!`.
 Install the Zathura pdf viewer by running:
 
 ```
-sudo pacman -S zathura
+sudo pacman -S zathura-pdf-mupdf
 ```
 
 Unless you have the Evince pdf viewer installed, you may also want to set Zathura as your default pdf viewer for opening pdfs for the papers you cite via the Vimtex Context Menu.
@@ -834,7 +834,7 @@ After the plugins finish installing, quite NeoVim with `:qa!`.
 Install the Zathura pdf viewer by running:
 
 ```
-sudo apt install zathura
+sudo apt install zathura-pdf-mupdf
 ```
 
 After reopening NeoVim, enter the following command:
