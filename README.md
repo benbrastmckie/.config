@@ -953,8 +953,8 @@ I highly recommend swapping the CapsLock and Esc keys as detailed below for usin
 
 # Remapping Keys
 
-If you are running Linux on a Macbook, it can be convenient to swap the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
-To achieve these remappings, run the following commands for Arch and Debian, respectively:
+It can be convenient to swap keys so as to improve hand posture while working. For instance, one might switch the CapsLock and Esc keys, as well as turning Ctrl into Alt, Alt into Command, and Command into Ctrl.
+To include these remappings, run the following commands for Arch and Debian, respectively:
 
 Arch:
 
@@ -991,11 +991,10 @@ Close the white box upon finishing, checking to see if the output matches the fo
 108 Alt_R
 ```
 
-If you output matches the above, you can simply run the following:
+If you output matches the above, you can run the following:
 
 ```
 sudo cp ~/.config/.XmodmapMAC /etc/X11/xinit/.Xmodmap
-cp ~/.config/.xmodmap.desktop ~/.config/autostart/
 ```
 
 If your output does not match the above, you will need to edit the following file accordingly by running:
@@ -1008,6 +1007,11 @@ If you need to make changes to key mappings, you can test the result of editing 
 
 ```
 xmodmap ~/.config/.Xmodmap
+```
+
+Once you have .Xmodmap running the right key mappings, you will have to run the following so that .Xmodmap starts automatically:
+```
+cp ~/.config/.xmodmap.desktop ~/.config/autostart/
 ```
 
 You can fine further help [here](https://github.com/benbrastmckie/.config.git), and return to defaults by running:
