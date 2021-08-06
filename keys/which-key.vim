@@ -53,6 +53,7 @@ let g:which_key_map.P = {
   \ 'h' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.html' , 'html'],
   \ 'l' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.tex'  , 'latex'],
   \ 'p' : [':FloatermNew! --disposable pandoc %:p -o %:p:r.pdf'  , 'pdf'],
+  \ 'x' : [':FloatermNew! echo "run: unoconv -f pdf path-to.docx"'  , 'word to pdf'],
   \ }
 
   " \ 'w' : [':Pandoc docx'           , 'to word from open'],
