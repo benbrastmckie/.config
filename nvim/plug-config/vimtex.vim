@@ -19,6 +19,23 @@ let g:vimtex_log_ignore = [
 let g:vimtex_context_pdf_viewer=1
 let g:vimtex_context_pdf_viewer= 'okular'
 
+" SET SERVERNAME
+" function! SetServerName()
+"   if has('win32')
+"     let nvim_server_file = $TEMP . "/curnvimserver.txt"
+"   else
+"     let nvim_server_file = "/tmp/curnvimserver.txt"
+"   endif
+"   let cmd = printf("echo %s > %s", v:servername, nvim_server_file)
+"   call system(cmd)
+" endfunction
+
+" augroup vimtex_common
+"     autocmd!
+"     autocmd FileType tex call SetServerName()
+" augroup END
+
+
 " let g:vimtex_syntax_conceal_cites = {
 "       \ 'type': 'brackets',
 "       \ 'icon': '📖',

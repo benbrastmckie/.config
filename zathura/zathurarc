@@ -1,3 +1,8 @@
+# Synctex
+
+set synctex true
+set synctex-editor-command "nvim --remote-silent +%{line} %{input}"
+
 # Basic Settings
 
 set highlight-transparency .1

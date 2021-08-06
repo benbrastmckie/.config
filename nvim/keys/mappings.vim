@@ -10,8 +10,8 @@
   " nmap <Leader>l <Plug>(easymotion-overwin-line)
 
   " Move to word
-  map  <C-f> <Plug>(easymotion-bd-w)
-  nmap <C-f> <Plug>(easymotion-overwin-w)
+map  <C-f> <Plug>(easymotion-bd-w)
+nmap <C-f> <Plug>(easymotion-overwin-w)
 
 " Terminal mappings
 nnoremap  <C-t> :FloatermToggle<CR>

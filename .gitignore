@@ -205,3 +205,6 @@ variety/variety.conf
 vlc/vlcrc
 linux-steam-integration.conf
 starship.toml
+Smart Code ltd/Stremio.conf
+pipewire/media-session.d/default-nodes
+torbrowser/settings.json
