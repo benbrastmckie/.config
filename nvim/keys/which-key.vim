@@ -112,7 +112,6 @@ let g:which_key_map.v = {
   \ 'name' : '+view' ,
   \ 'y' : [':CocList -A --normal yank'               , 'yanks'],
   \ 'p' : [ 'Startify'                               , 'projects' ],
-  \ 's' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -A', 'swap'],
   \ }
 
   " \ 'l' : [':VimtexErrors'                           , 'build log' ],
@@ -126,9 +125,11 @@ let g:which_key_map.a = {
   \ 'name' : '+actions' ,
   \ 'b' : [':terminal bibexport -o %:p:r.bib %:p:r.aux'  , 'bib export'],
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
-  \ 's' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
+  \ 'e' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
-  \ 'k' : [':CocDisable'                             , 'kill coc'],
+  \ 'v' : [':FloatermNew! cd ~/.local/share/nvim/swap | ls -a', 'view swap'],
+  \ 'k' : [':FloatermNew! cd ~/.local/share/nvim/swap | rm *.swp', 'kill swap'],
+  \ 'd' : [':CocDisable'                             , 'delete coc'],
   \ 'r' : [':CocEnable'                              , 'restore coc'],
   \ }
 
