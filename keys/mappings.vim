@@ -154,9 +154,6 @@ nnoremap <space>c :VimtexCountWords<CR>
 " nnoremap <space>x :VimtexClean<CR>
 " nnoremap <space>l :VimtexLabelsToggle<CR> 
 
-" UndotreeToggle
-" nnoremap <space>u :UndotreeToggle<CR> 
-
 " Fuzzy Search
 nnoremap <C-p> :Files<CR>
 
