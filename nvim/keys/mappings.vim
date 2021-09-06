@@ -142,7 +142,7 @@ vnoremap <S-j> gj
 nnoremap <C-\> :Commentary<CR>
 vnoremap <C-\> :Commentary<CR>
 
-" UndoTree bindings
+" UndoTree bindings (drops cursor in the top right)
 nnoremap <space>u :UndotreeToggle<CR> \| <C-w>h \| <C-w>k
 
 " LaTeX bindings
