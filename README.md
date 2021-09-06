@@ -225,6 +225,7 @@ Repeat the steps above to run another test, entering your username and PAT as be
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
+ 
 
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
