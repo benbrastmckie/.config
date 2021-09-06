@@ -143,7 +143,7 @@ nnoremap <C-\> :Commentary<CR>
 vnoremap <C-\> :Commentary<CR>
 
 " UndoTree bindings
-nnoremap <space>u :UndotreeToggle<CR> \| <C-w>h
+nnoremap <space>u :UndotreeToggle<CR> \| <C-w>h \| <C-w>k
 
 " LaTeX bindings
 nnoremap <space>c :VimtexCountWords<CR> 
@@ -155,7 +155,7 @@ nnoremap <space>c :VimtexCountWords<CR>
 " nnoremap <space>l :VimtexLabelsToggle<CR> 
 
 " UndotreeToggle
-nnoremap <space>u :UndotreeToggle<CR> 
+" nnoremap <space>u :UndotreeToggle<CR> 
 
 " Fuzzy Search
 nnoremap <C-p> :Files<CR>
