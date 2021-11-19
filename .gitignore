@@ -275,3 +275,4 @@ GIMP/2.10/toolrc
 GIMP/2.10/unitrc
 gtk-2.0/gtkfilechooser.ini
 micro/buffers/history
+kconf_updaterc
