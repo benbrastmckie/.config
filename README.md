@@ -32,7 +32,9 @@ brew update
 ```
 
 If Homebrew has not been installed, you may install it by running the following two commands:
+
 ```
+xcode-select --install
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
