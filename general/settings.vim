@@ -58,14 +58,16 @@ set clipboard=unnamedplus               " Copy paste between vim and everything 
 "set autochdir                           " Your working directory will always be the same as your working directory
 " set filetype on
 
-" set no indent key triggers
-" set indentkeys-={
-
 " makes vim look for filetype specific settings in nvim/ftplugin/ and
 " sets indenting by file type
 filetype plugin indent on
 
 au! BufWritePost $MYVIMRC source %      " auto source when writing to init.vm alternatively you can run :source $MYVIMRC
+
+" ABANDONED
+
+" set no indent key triggers
+" set indentkeys-={
 
 " For highlighting yanked text in nvim (but didn't work)
 " augroup highlight_yank
