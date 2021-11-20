@@ -1,5 +1,11 @@
 # Notes
 
+## GitPush
+
+- error pushing repo
+  - helped to run: `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
+
+
 ## Access Mac External Hard Drive in Linux
 
 From: https://michael.mulqueen.me.uk/2018/03/reading-a-macos-harddisk-on-linux/
