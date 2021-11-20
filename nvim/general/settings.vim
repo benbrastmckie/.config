@@ -32,7 +32,7 @@ set tabstop=2                           " Insert 2 spaces for a tab
 set shiftwidth=2                        " Change the space characters inserted for indentation
 set smarttab                            " Makes tabbing smarter will realize you have 2 vs 4
 set autoindent                          " Good auto indent
-set nosmartindent                       " Was causing extra indenting
+set nosmartindent                       " prevents extra indenting 
 " set nocindent                             " Better than smartindent
 set indentexpr=""                       " Was changing line indenting?
 set indentkeys=""                       " Was changing line indenting?
