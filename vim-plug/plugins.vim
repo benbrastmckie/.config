@@ -1,3 +1,5 @@
+" GENERAL
+
 " auto-install plugins upon starting
 if empty(glob('~/.config/nvim/autoload/plug.vim'))
   silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
@@ -7,6 +9,7 @@ if empty(glob('~/.config/nvim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.config/nvim/autoload/plugged')
+
 
 " TEXT SUPPORT
 
@@ -58,6 +61,10 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     Plug 'junegunn/fzf.vim'
     " Plug 'jremmen/vim-ripgrep'
     " Plug 'ctrlpvim/ctrlp.vim' " Not as elegant as FZF
+
+" Telescope
+    " Plug 'nvim-lua/plenary.nvim'
+    " Plug 'nvim-telescope/telescope.nvim'
     
 " Git Integration
     Plug 'mhinz/vim-signify'
@@ -88,11 +95,6 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     
 
 " ADDITIONAL FUNCTIONS
-
-" Telescope
-" Plug 'nvim-lua/plenary.nvim'
-" Plug 'nvim-telescope/telescope.nvim'
-
 
 " Comments
     Plug 'tpope/vim-commentary'
@@ -126,13 +128,11 @@ call plug#begin('~/.config/nvim/autoload/plugged')
     " Plug 'beloglazov/vim-online-thesaurus'
 
 
-
 " MAPPINGS
 
 " Look Up Key Bindings
     Plug 'liuchengxu/vim-which-key'
 
-    
 
 " APPEARANCE
 
