@@ -28,7 +28,7 @@
 " SINGLE MAPPINGS
 let g:which_key_map['d'] = [ ':bd!'                  , 'delete buffer']
 let g:which_key_map['e'] = [ ':CocCommand explorer'  , 'explorer' ]
-let g:which_key_map['q'] = [ ':wqa'                  , 'quit' ]
+let g:which_key_map['q'] = [ ':wqa!'                  , 'quit' ]
 let g:which_key_map['w'] = [ ':w'                    , 'write' ]
 let g:which_key_map['b'] = [ 'VimtexCompile'         , 'build' ]
 let g:which_key_map['p'] = [ 'VimtexView'            , 'preview' ]
