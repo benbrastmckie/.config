@@ -35,7 +35,7 @@ If Homebrew has not been installed, you may install it by running the following 
 
 ```
 xcode-select --install
-$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 ## [Fish](https://fishshell.com/)

@@ -1,10 +1,14 @@
 # Notes
 
+## Tips
+
+You can * in a word, and then `:%s//replacement` will replace that word with replacement.
+The empty string in s// tells vim to use the string in the / register.
+
 ## GitPush
 
 - error pushing repo
   - helped to run: `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
-
 
 ## Access Mac External Hard Drive in Linux
 
