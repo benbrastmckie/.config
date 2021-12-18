@@ -46,7 +46,7 @@ To install Fish, run the following commands in turn:
 
 ```
 brew install fish
-curl -L https://get.oh-my.fish | fish
+curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
 omf install sashimi
 ```
 
