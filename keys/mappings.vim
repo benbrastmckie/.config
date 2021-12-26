@@ -2,7 +2,8 @@
 " check mapping with :verbose map ____
 
 " Unmappings
-" nunmap <space>ft
+  " nunmap <space>ft
+  nnoremap <c-z> <nop>
 
 " Move to word
   map  <C-f> <Plug>(easymotion-bd-w)
