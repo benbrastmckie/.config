@@ -28,3 +28,8 @@ From: https://michael.mulqueen.me.uk/2018/03/reading-a-macos-harddisk-on-linux/
 - Unmount drive
   - sudo umount /media/myhfsdrive-mirrored
   - sudo umount /media/myhfsdrive
+
+## Bare Repo
+
+- added files in $HOME
+- need to add folders included in .config
