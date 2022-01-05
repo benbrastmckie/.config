@@ -9,8 +9,11 @@
   map  <C-f> <Plug>(easymotion-bd-w)
   nmap <C-f> <Plug>(easymotion-overwin-w)
 
+" Stay centered
+  nnoremap n zz
+
 " Terminal mappings
-  nnoremap  <C-t> :FloatermToggle<CR>
+  nnoremap <C-t> :FloatermToggle<CR>
   tnoremap <C-t> <C-\><C-n>:FloatermToggle<CR>
   " nnoremap  <leader>t :tab ter<CR>
   " noremap! <leader>t <Esc>:FloatermToggle<CR>i
@@ -28,7 +31,7 @@
 
 " remap Y to what it should be
   nnoremap <S-y> y$
-
+  
 " remap Return to save
   nmap <CR> <plug>(vimtex-context-menu)
 

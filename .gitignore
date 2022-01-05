@@ -140,11 +140,6 @@ Microsoft/
 gh/config.yml
 gh/hosts.yml
 gh/state.yml
-gruvbox.vifm
-vifm/colors/Default.vifm
-vifm/scripts/README
-vifm/vifm-help.txt
-vifm/vifminfo
 nvim/session/
 BraveSoftware/
 google-chrome/
@@ -281,3 +276,7 @@ pipewire/media-session.d/default-profile
 luavim/
 garuda
 touchegg
+
+vifm/scripts/README
+vifm/vifm-help.txt
+neovim
