@@ -1,0 +1,54 @@
+#!/bin/sh
+export PCACHE="$HOME/.cache/vifm/thumbnail.$(stat --printf '%n\0%i\0%F\0%s\0%W\0%Y' -- "$(readlink -f "$PWD/$6")" | sha256sum | awk '{print $1}')"
+
+pclear() {
+	printf '{"action": "remove", "identifier": "vifm-preview"}\n' > "$FIFO_UEBERZUG"
+}
+
+image() {
+		printf '{"action": "add", "identifier": "vifm-preview", "x": "%s", "y": "%s", "width": "%s", "height": "%s", "scaler": "contain", "path": "%s"}\n' "$2" "$3" "$4" "$5" "$6" > "$FIFO_UEBERZUG"
+}
+
+main() {
+    case "$1" in
+        "clear")
+			pclear "$@"
+			;;
+        "draw")
+			FILE="$PWD/$6"
+			image "$1" "$2" "$3" "$4" "$5" "$FILE"
+			;;
+        "video")
+			[ ! -f "$PCACHE" ] && \
+				ffmpegthumbnailer -i "$6" -o "${PCACHE}.jpg" -s 0 -q 5
+			image "$1" "$2" "$3" "$4" "$5" "${PCACHE}.jpg"
+			;;
+        "epub")
+			[ ! -f "$PCACHE" ] && \
+				epub-thumbnailer "$6" "$PCACHE" 1024
+			image "$1" "$2" "$3" "$4" "$5" "$PCACHE"
+			;;
+        "pdf")
+			[ ! -f "${PCACHE}.jpg" ] && \
+				pdftoppm -jpeg -f 1 -singlefile "$6" "$PCACHE"
+			image "$1" "$2" "$3" "$4" "$5" "${PCACHE}.jpg"
+			;;
+        "djvu")
+			[ ! -f "${PCACHE}.jpg" ] && \
+				ddjvu -format=tiff -quality=90 -page=1 "$6" "$PCACHE.jpg"
+			image "$1" "$2" "$3" "$4" "$5" "${PCACHE}.jpg"
+			;;
+        "audio")
+			[ ! -f "${PCACHE}.jpg" ] && \
+				ffmpeg -hide_banner -i "$6" "${PCACHE}.jpg" -y >/dev/null
+			image "$1" "$2" "$3" "$4" "$5" "${PCACHE}.jpg"
+			;;
+        "font")
+			[ ! -f "${PCACHE}.jpg" ] && \
+				fontpreview -i "$6" -o "${PCACHE}.jpg"
+			image "$1" "$2" "$3" "$4" "$5" "${PCACHE}.jpg"
+			;;
+        *)
+    esac
+}
+main "$@"
