@@ -17,6 +17,8 @@ map K zoom in
 map J zoom out
 map p print
 map w recolor
+map k 5k
+map j 5k
 
 set notification-error-bg       "#ebdbb2" # bg
 set notification-error-fg       "#9d0006" # bright:red

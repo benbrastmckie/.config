@@ -10,7 +10,7 @@
   nmap <C-f> <Plug>(easymotion-overwin-w)
 
 " Stay centered
-  nnoremap n zz
+  nnoremap m zz
 
 " Terminal mappings
   nnoremap <C-t> :FloatermToggle<CR>
