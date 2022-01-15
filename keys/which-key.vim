@@ -119,8 +119,8 @@ let g:which_key_map.a = {
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
   \ 'e' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
-  \ 'v' : [':FloatermNew! cd ~/.local/share/nvim/swap <bar> :ls -a', 'view swap'],
-  \ 'k' : [':FloatermNew! cd ~/.local/share/nvim/swap <bar> :rm *.swp', 'kill swap'],
+  \ 'v' : [':FloatermNew! cd ~/.local/share/nvim/swap && ls -a', 'view swap'],
+  \ 'k' : [':FloatermNew! cd ~/.local/share/nvim/swap && rm *.swp', 'kill swap'],
   \ 'd' : [':CocDisable'                             , 'delete coc'],
   \ 'r' : [':CocEnable'                              , 'restore coc'],
   \ }
