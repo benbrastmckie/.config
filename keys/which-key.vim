@@ -84,10 +84,13 @@ let g:which_key_map.S = {
 " m is for MARKDOWN
 let g:which_key_map.m = {
   \ 'name' : '+markdown' ,
-  \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
   \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
+  \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
   \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
   \ }
+
+" COMMAND: pdfannots -o Beauty.md Beauty.pdf
+  " \ 'a' : [':FloatermNew! --disposable pdfannots -o output.md'   , 'annotate'],
 
   " \ 'F' : ['zA'                                  , 'fold all'],
   " \ 'f' : ['za'                                  , 'fold current'],
@@ -105,7 +108,8 @@ let g:which_key_map.s = {
 let g:which_key_map.v = {
   \ 'name' : '+view' ,
   \ 'y' : [':CocList -A --normal yank'               , 'yanks'],
-  \ 'p' : [ 'Startify'                               , 'projects' ],
+  \ 'p' : ['Startify'                               , 'projects'],
+  \ 'v' : [':FloatermNew! --disposable vifm'         , 'vifm'],
   \ }
 
   " \ 'l' : [':VimtexErrors'                           , 'build log' ],
@@ -119,8 +123,8 @@ let g:which_key_map.a = {
   \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
   \ 'e' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
   \ 't' : [':FloatermKill!'                          , 'kill terminals'],
-  \ 'v' : [':FloatermNew! cd ~/.local/share/nvim/swap && ls -a', 'view swap'],
-  \ 'k' : [':FloatermNew! cd ~/.local/share/nvim/swap && rm *.swp', 'kill swap'],
+  \ 'v' : [':FloatermNew! --disposable cd ~/.local/share/nvim/swap && ls -a', 'view swap'],
+  \ 'k' : [':FloatermNew! --disposable cd ~/.local/share/nvim/swap && rm *.swp', 'kill swap'],
   \ 'd' : [':CocDisable'                             , 'delete coc'],
   \ 'r' : [':CocEnable'                              , 'restore coc'],
   \ }
