@@ -76,30 +76,30 @@ let g:which_key_map.T = {
 
 " s is for SESSIONS
 let g:which_key_map.S = {
-      \ 'name' : '+session' ,
-      \ 's' : [':SSave'                , 'save session'],
-      \ 'd' : [':SDelete!'              , 'delete session'],
-      \ }
+  \ 'name' : '+session' ,
+  \ 's' : [':SSave'                , 'save session'],
+  \ 'd' : [':SDelete!'              , 'delete session'],
+  \ }
 
 " m is for MARKDOWN
 let g:which_key_map.m = {
-      \ 'name' : '+markdown' ,
-      \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
-      \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
-      \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
-      \ }
+  \ 'name' : '+markdown' ,
+  \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
+  \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
+  \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
+  \ }
 
-      " \ 'F' : ['zA'                                  , 'fold all'],
-      " \ 'f' : ['za'                                  , 'fold current'],
+  " \ 'F' : ['zA'                                  , 'fold all'],
+  " \ 'f' : ['za'                                  , 'fold current'],
 
 " y is for you SURROUND
 let g:which_key_map.s = {
-      \ 'name' : '+surround' ,
-      \ 's' : ['<Plug>Ysurround'         , 'surround'],
-      \ 'c' : ['<Plug>Csurround'         , 'change'],
-      \ 'd' : ['<Plug>Dsurround'         , 'delete'],
-      \ 'k' : ['dss'                     , 'kill'],
-      \ }
+  \ 'name' : '+surround' ,
+  \ 's' : ['<Plug>Ysurround'         , 'surround'],
+  \ 'c' : ['<Plug>Csurround'         , 'change'],
+  \ 'd' : ['<Plug>Dsurround'         , 'delete'],
+  \ 'k' : ['dss'                     , 'kill'],
+  \ }
 
 " v is for VIEW
 let g:which_key_map.v = {
@@ -127,13 +127,14 @@ let g:which_key_map.a = {
 
 " f is for FIND
 let g:which_key_map.f = {
-        \ 'name' : '+find' ,
-        \ 'f' : [ ':BLines'                          , 'in file' ],
-        \ 'c' : [ ':Commands'                        , 'command' ],
-        \ 'h' : [ ':Files ~'                         , 'files in home' ],
-        \ 'p' : [ ':GGrep'                           , 'in project'],
-        \ 'b' : [ ':Buffers'                         , 'buffer'],
-        \ }
+  \ 'name' : '+find' ,
+  \ 'f' : [':BLines'                           , 'in file'],
+  \ 'c' : [':Commands'                         , 'command'],
+  \ 'h' : [':Files ~'                          , 'files in home'],
+  \ 'p' : [':GGrep'                            , 'in project'],
+  \ 'b' : [':Buffers'                          , 'buffer'],
+  \ 'v' : [':FloatermNew! --disposable vifm'   , 'vifm'],
+  \ }
 
 " g is for GIT
 let g:which_key_map.g = {
