@@ -1,6 +1,7 @@
 " set leader key
 let g:mapleader = "\<Space>"
 
+autocmd FileType netrw setl bufhidden=wipe " Avoids netrw always stuck open
 set autoread " trigger `autoread` when files changes on disk
   autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * if mode() != 'c' | checktime | endif
   " autocmd FileChangedShellPost * " notification after file change
