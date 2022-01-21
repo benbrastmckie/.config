@@ -65,6 +65,8 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 - **Citation**: use `<CR>` to lookup bib entry under the cursor, giving you the option of viewing or editing the bib data, opening the file, etc.
+- **Annotations**: use `<space>ma` to generate annotations for file under the cursor.
+- **Bib Export**: use `<space>ab` to generate local bibliography from all citations present in the document.
 
 ## _Zathura (Linux)_ [(Demo Part 2)](https://youtu.be/KGqrpnxoDxw)
 
@@ -96,6 +98,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Local File Search**: use `ctrl+p` to fuzzy search for files being tracked by Git in the current project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Global File Search**: use `<space>F` to fuzzy search through all files in the home folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter` or `shift+x`, and opening help with `?`.
+- **File Manager**: use `<space>vv` to open [vifm](https://github.com/vifm/vifm) (must instal separately).
 - **Close Buffer**: use `<space>d` to close current buffer.
 
 ## _Projects and Templates_ [(Demo Part 5)](https://youtu.be/z5HfVQQDrAg)[(Demo Part 8)](https://www.youtube.com/watch?v=pcfYBbQoNx8&t=52s)

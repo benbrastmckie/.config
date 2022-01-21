@@ -84,13 +84,13 @@ let g:which_key_map.S = {
 " m is for MARKDOWN
 let g:which_key_map.m = {
   \ 'name' : '+markdown' ,
+  \ 'a' : [':call PdfAnnots()<CR>'               , 'annotate'],
   \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
   \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
   \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
   \ }
 
 " COMMAND: pdfannots -o Beauty.md Beauty.pdf
-  " \ 'a' : [':FloatermNew! --disposable pdfannots -o output.md'   , 'annotate'],
 
   " \ 'F' : ['zA'                                  , 'fold all'],
   " \ 'f' : ['za'                                  , 'fold current'],
