@@ -18,8 +18,8 @@ source $HOME/.config/nvim/plug-config/signify.vim
 
 " AUTOCOMPLETE
 source $HOME/.config/nvim/plug-config/coc.vim
-source $HOME/.config/nvim/plug-config/deoplete.vim
 source $HOME/.config/nvim/plug-config/ultisnips.vim
+source $HOME/.config/nvim/plug-config/deoplete.vim
 source $HOME/.config/nvim/plug-config/autopairs.vim
 source $HOME/.config/nvim/plug-config/vim-surruound.vim
 

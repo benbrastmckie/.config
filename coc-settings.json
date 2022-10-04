@@ -30,17 +30,13 @@
     "json",
     "python"
   ],
-  "coc.preferences.hoverTarget": "float",
   // snippets
-  "snippets.ultisnips.directories": [
-    "UltiSnips",
-    "~/.config/nvim/snips"
-  ],
+  "snippets.userSnippetsDirectory": "~/.config/nvim/snips",
   // explorer
   "explorer.width": 30,
-  "explorer.icon.enableNerdfont": true,
+  "explorer.file.showHiddenFiles": true,
   "explorer.previewAction.onHover": false,
-  "explorer.icon.enableNerdFont": true,
+  "explorer.icon.enableNerdfont": true,
   "explorer.icon.source": "vim-devicons",
   "explorer.keyMappings.global": {
     "<cr>": [
