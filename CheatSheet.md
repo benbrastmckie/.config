@@ -159,4 +159,4 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Search**: use `<space>f` to fuzzy find within the current document `f`, or project `p`, home directory on your computer `h`, open buffers `b`, or commands `c`.
 - **Undo**: use `<space>u` to open the undo tree.
 - **Reload**: use `<space>r` to reload the configuration files.
-- **Centre**: use `n` to centre screen on cursor.
+- **Centre**: use `m` to centre screen on cursor.

@@ -90,8 +90,6 @@ let g:which_key_map.m = {
   \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
   \ }
 
-" COMMAND: pdfannots -o Beauty.md Beauty.pdf
-
   " \ 'F' : ['zA'                                  , 'fold all'],
   " \ 'f' : ['za'                                  , 'fold current'],
 

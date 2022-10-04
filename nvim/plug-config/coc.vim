@@ -9,74 +9,42 @@ let g:coc_global_extensions = [
   \ 'coc-yank',
   \ ]
 
-  "   \ 'coc-vimlsp',
-  "   \ 'coc-actions',
-  "   \ 'coc-emmet',
-  "   \ 'coc-tsserver',
-  "   \ 'coc-html',
-  "   \ 'coc-css',
-  "   \ 'coc-cssmodules',
-  "   \ 'coc-yaml',
-  "   \ 'coc-python',
-  "   \ 'coc-svg',
-  "   \ 'coc-flutter',
-  "   \ 'coc-xml',
+  " \ 'coc-flutter',
+  " \ 'coc-ultisnips',
+  " \ 'coc-vimlsp',
+  " \ 'coc-actions',
+  " \ 'coc-emmet',
+  " \ 'coc-tsserver',
+  " \ 'coc-html',
+  " \ 'coc-css',
+  " \ 'coc-cssmodules',
+  " \ 'coc-yaml',
+  " \ 'coc-python',
+  " \ 'coc-svg',
+  " \ 'coc-xml',
+
+" Navigate dropdown menu
+
+" " Use <C-j> for jump to next placeholder, it's default of coc.nvim
+" let g:coc_snippet_next = '<CR>'
+
+" " Use <C-k> for jump to previous placeholder, it's default of coc.nvim
+" let g:coc_snippet_prev = '<tab>'
+      
 
 
+" Completion triggers
 
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
+" Make <CR> insert selection
+inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>" 
 
-" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current
-" position. Coc only does snippet and additional edit on confirm.
-if exists('*complete_info')
-  inoremap <expr> <cr> complete_info()["selected"] != "-1" ? "\<C-y>" : "\<C-g>u\<CR>"
-else
-  imap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-endif
-
-function! s:show_documentation()
-  if (index(['vim','help'], &filetype) >= 0)
-    execute 'h '.expand('<cword>')
-  else
-    call CocAction('doHover')
-  endif
-endfunction
+" " Make <CR> auto-select the first completion item
+" inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm() : "\<C-g>u\<CR>"
 
 " Highlight the symbol and its references when holding the cursor.
-autocmd CursorHold * silent call CocActionAsync('highlight')
+" autocmd CursorHold * silent call CocActionAsync('highlight')
+" coc-config-float
 
-" Symbol renaming.
-" nmap <leader>rn <Plug>(coc-rename)
-
-augroup mygroup
-  autocmd!
-  " Setup formatexpr specified filetype(s).
-  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
-  " Update signature help on jump placeholder.
-  autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
-augroup end
-
-" Applying codeAction to the selected region.
-" Example: `<leader>aap` for current paragraph
-" xmap <leader>a  <Plug>(coc-codeaction-selected)
-" nmap <leader>a  <Plug>(coc-codeaction-selected)
-
-" Remap keys for applying codeAction to the current line.
-" nmap <leader>ac  <Plug>(coc-codeaction)
-" Apply AutoFix to problem on the current line.
-" nmap <leader>qf  <Plug>(coc-fix-current)
-
-" Add `:Format` command to format current buffer.
-command! -nargs=0 Format :call CocAction('format')
-
-" Add `:Fold` command to fold current buffer.
-command! -nargs=? Fold :call     CocAction('fold', <f-args>)
-
-" Add `:OR` command for organize imports of the current buffer.
-command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organizeImport')
 
 " Add (Neo)Vim's native statusline support.
 " NOTE: Please see `:h coc-status` for integrations with external plugins that
@@ -85,30 +53,90 @@ set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 
 
 " Explorer
-let g:coc_explorer_global_presets = {
-\   '.vim': {
-\      'root-uri': '~/.vim',
-\   },
-\   'floating': {
-\      'position': 'floating',
-\   },
-\   'floatingLeftside': {
-\      'position': 'floating',
-\      'floating-position': 'left-center',
-\      'floating-width': 50,
-\   },
-\   'floatingRightside': {
-\      'position': 'floating',
-\      'floating-position': 'left-center',
-\      'floating-width': 50,
-\   },
-\   'simplify': {
-\     'file.child.template': '[selection | clip | 1] [indent][icon | 1] [filename omitCenter 1]'
-\   }
-\ }
+  let g:coc_explorer_global_presets = {
+  \   '.vim': {
+  \      'root-uri': '~/.vim',
+  \   },
+  \   'floating': {
+  \      'position': 'floating',
+  \   },
+  \   'floatingLeftside': {
+  \      'position': 'floating',
+  \      'floating-position': 'left-center',
+  \      'floating-width': 50,
+  \   },
+  \   'floatingRightside': {
+  \      'position': 'floating',
+  \      'floating-position': 'left-center',
+  \      'floating-width': 50,
+  \   },
+  \   'simplify': {
+  \     'file.child.template': '[selection | clip | 1] [indent][icon | 1] [filename omitCenter 1]'
+  \   }
+  \ }
 
-"nmap <silent> <space>e :CocCommand explorer<CR>
-" nnoremap <silent> <leader>e :CocCommand explorer<CR>
-autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | endif
+  autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | endif
+
+" OLD
+
+" Use tab for trigger completion with characters ahead and navigate.
+"   inoremap <silent><expr> <C-j>
+"         \ pumvisible() ? "\<C-n>" :
+"         \ <SID>check_back_space() ? "\<TAB>" :
+"         \ coc#refresh()
 
 
+" inoremap <silent><expr> <C-j>
+"       \ pumvisible() ? coc#_select_confirm() :
+"       \ coc#expandableOrJumpable() ? "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
+"       \ <SID>check_back_space() ? "\<TAB>" :
+"       \ coc#refresh()
+
+" function! s:check_back_space() abort
+"   let col = col('.') - 1
+"   return !col || getline('.')[col - 1]  =~# '\s'
+" endfunction
+
+" inoremap <expr><C-k> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+
+" inoremap <expr><TAB> pumvisible() ? "\<C-n>" : "\<C-R>=UltiSnips#ExpandSnippet()"
+
+" " Use tab for trigger completion with characters ahead and navigate.
+" " NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
+" " other plugin before putting this into your config.
+" inoremap <silent><expr> <TAB>
+"       \ pumvisible() ? "\<C-n>" :
+"       \ <SID>check_back_space() ? "\<TAB>" :
+"       \ coc#refresh()
+" inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+" function! s:check_back_space() abort
+"   let col = col('.') - 1
+"   return !col || getline('.')[col - 1]  =~# '\s'
+" endfunction
+
+" " Make <CR> auto-select the first completion item and notify coc.nvim to
+" " format on enter, <cr> could be remapped by other vim plugin
+" inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm()
+                               \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+" function! Tab_Or_Complete()
+" if col('.')>1 && strpart( getline('.'), col('.')-2, 3 ) =~ '^\w'
+"   return "\<C-N>"
+"     else
+"   return "\<Tab>"
+" endif
+" endfunction
+
+" inoremap <C-l> <C-R>=Tab_Or_Complete()<CR>
+
+" " use <tab> for trigger completion and navigate to the next complete item
+" function! s:check_back_space() abort
+"   let col = col('.') - 1
+"   return !col || getline('.')[col - 1]  =~ '\s'
+" endfunction
+
+" inoremap <silent><expr> <CR>
+"       \ pumvisible() ? "\<C-n>" :
+"       \ <SID>check_back_space() ? "\<Tab>" :
+"       \ coc#refresh()

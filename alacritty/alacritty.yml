@@ -30,7 +30,7 @@ colors:
     cyan: "#56b6c2"
     white: "#ECEFF4"
 
-background_opacity: 0.8
+window.opacity: 0.8
 
 # Font configuration
 font:

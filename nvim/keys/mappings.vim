@@ -118,19 +118,9 @@
   " endfunction
   " nnoremap z= :call FzfSpell()<CR>
 
-" Use tab for trigger completion with characters ahead and navigate.
-  inoremap <silent><expr> <C-j>
-        \ pumvisible() ? "\<C-n>" :
-        \ <SID>check_back_space() ? "\<TAB>" :
-        \ coc#refresh()
-  inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-" Use <c-space> to trigger completion.
-  inoremap <silent><expr> <c-space> coc#refresh()
-
 " GoTo code navigation.
   nmap <silent> gd <Plug>(coc-definition)
-  nmap <silent> gr <Plug>(coc-references)
+  " nmap <silent> gr <Plug>(coc-references)
   " nmap <silent> gy <Plug>(coc-type-definition)
   " nmap <silent> gi <Plug>(coc-implementation)
 
@@ -141,20 +131,33 @@
   " nmap <M-s> <Plug>MarkdownPreviewStop
   " nmap <C-p> <Plug>MarkdownPreviewToggle
 
-" Snippets in Coc
-  " Use <C-l> for trigger snippet expand.
-    imap <C-l> <Plug>(coc-snippets-expand)
-  " Use <C-j> for jump to next placeholder, it's default of coc.nvim
-    let g:coc_snippet_next = '<CR>'
-  " Use <C-k> for jump to previous placeholder, it's default of coc.nvim
-    let g:coc_snippet_prev = '<TAB>'
-  " scroll through autocomplete in commandline tab-menu
-    cnoremap <C-j> <C-n>
-    cnoremap <C-k> <C-p>
-
-"
 " ABANDONED
 
+  " " Use <C-l> for trigger snippet expand.
+  "   imap <C-l> <Plug>(coc-snippets-expand)
+  " " Use <C-j> for jump to next placeholder, it's default of coc.nvim
+  "   let g:coc_snippet_next = '<CR>'
+  " " Use <C-k> for jump to previous placeholder, it's default of coc.nvim
+  "   let g:coc_snippet_prev = '<TAB>'
+  " " scroll through autocomplete in commandline tab-menu
+  "   " cnoremap <C-j> <C-n>
+  "   " cnoremap <C-k> <C-p>
+
+" " Use <C-l> for trigger snippet expand.
+" imap <C-l> <Plug>(coc-snippets-expand)
+
+" " Use <C-j> for select text for visual placeholder of snippet.
+" vmap <C-j> <Plug>(coc-snippets-select)
+
+" " Use <C-j> for jump to next placeholder, it's default of coc.nvim
+" let g:coc_snippet_next = '<c-j>'
+
+" " Use <C-k> for jump to previous placeholder, it's default of coc.nvim
+" let g:coc_snippet_prev = '<c-k>'
+
+" " Use <C-j> for both expand and jump (make expand higher priority.)
+" imap <C-j> <Plug>(coc-snippets-expand-jump)
+"
 " online_thesaurus_map_keys
 " nnoremap <C-m> :OnlineThesaurusCurrentWord<CR>
 
