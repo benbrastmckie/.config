@@ -74,8 +74,8 @@ keymap("n", "<A-j>", "<Esc>:m .+1<CR>==", opts)
 keymap("n", "<A-k>", "<Esc>:m .-2<CR>==", opts)
 keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
 keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
-keymap("v", "<A-j>", ":m .+1<CR>==", opts)
-keymap("v", "<A-k>", ":m .-2<CR>==", opts)
+keymap("v", "<A-j>", ":m'>+<CR>gv", opts)
+keymap("v", "<A-k>", ":m-2<CR>gv", opts)
 
 -- Horizontal lime movments --
 keymap("v", "<S-h>", "^", opts)
