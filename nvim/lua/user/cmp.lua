@@ -116,8 +116,7 @@ cmp.setup {
     { name = "buffer" },
     { name = "dictionary" },
     { name = "path" },
-    { name = "cmdline" },
-    { name = "dictionary" },
+    -- { name = "cmdline" },
   },
   confirm_opts = {
     behavior = cmp.ConfirmBehavior.Replace,
