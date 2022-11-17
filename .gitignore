@@ -292,3 +292,24 @@ okular.kmessagebox
 xdg-terminals.list
 GNOME-xdg-terminals.list
 nvim/plugin/packer_compiled.lua
+node_modules/.yarn-integrity
+opera/AutofillStrikeDatabase/LOCK
+opera/AutofillStrikeDatabase/LOG
+opera/AutofillStrikeDatabase/LOG.old
+opera/BudgetDatabase/LOCK
+opera/BudgetDatabase/LOG
+opera/BudgetDatabase/LOG.old
+opera/CertificateRevocation/7704/_metadata/verified_contents.json
+opera/CertificateRevocation/7704/LICENSE
+opera/CertificateRevocation/7704/crl-set
+opera/CertificateRevocation/7704/manifest.fingerprint
+opera/CertificateRevocation/7704/manifest.json
+opera/DawnCache/data_0
+opera/DawnCache/data_1
+opera/DawnCache
+opera/Extension Rules
+opera/Extension Scripts
+opera/Extension State
+opera
+zoom.conf
+yarn.lock
