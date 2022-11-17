@@ -80,32 +80,31 @@ local opts = {
 
 local mappings = {
 
-["d"] = { "<cmd>Bdelete!<CR>"       , "delete buffer" },
-["e"] = { "<cmd>NvimTreeToggle<cr>" , "explorer" },
-["q"] = { "<cmd>wqa!<CR>"           , "quit" },
-["w"] = { "<cmd>wa!<CR>"            , "save" },
+["d"] = { "<cmd>Bdelete!<CR>"           , "delete buffer" },
+["e"] = { "<cmd>NvimTreeToggle<cr>"     , "explorer" },
+["q"] = { "<cmd>wqa!<CR>"               , "quit" },
+["w"] = { "<cmd>wa!<CR>"                , "save" },
+["b"] = { "<cmd>VimtexCompile<CR>"      , "build" },
+["p"] = { "<cmd>VimtexView<CR>"         , "preview" },
+["i"] = { "<cmd>VimtexTocOpen<CR>"      , "index" },
+["k"] = { "<cmd>VimtexClean<CR>"        , "kill aux" },
+["r"] = { "<cmd>VimtexErrors<CR>"       , "report errors" },
+["c"] = { "<cmd>VimtexCountWords!<CR>"  , "count" },
+["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
 
 -- ["r"] = { "<cmd>source $MYVIMRC<cr>"      , "reload config" },
--- ["b"] = { "<cmd>VimtexCompile<CR>"  , "build" },
--- ["p"] = { "<cmd>VimtexView"            , "preview" },
--- ["i"] = { "<cmd>VimtexTocOpen"         , "index" },
--- ["k"] = { "<cmd>VimtexClean"           , "kill aux" },
--- ["l"] = { "<cmd>VimtexErrors"          , "error log" },
--- ["u"] = { "<cmd>UndotreeToggle"        , "undo" },
--- ["c"] = { "<cmd>:VimtexCountWords!"    , "count" },
 -- ["h"] = { "<cmd>nohlsearch<CR>", "No Highlight" },
 -- ["p"] = { "<cmd>lua require('telescope').extensions.projects.projects()<cr>", "projects" },
 
-  p = {
-    name = "PANDOC",
-    f = { "<cmd>ToggleTerm direction=float<cr>", "Float" },
-    -- w = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.docx" , "word"},
-    -- m = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.md"   , "markdown"},
-    -- h = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.html" , "html"},
-    -- l = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.tex"  , "latex"},
-    -- p = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.pdf"  , "pdf"},
-    -- x = { "<cmd>FloatermNew! echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
-  },
+  -- p = {
+  --   name = "PANDOC",
+  --   -- w = { "<cmd>ToggleTerm direction=float <bar> pandoc %:p -o %:p:r.docx <cr>" , "word"},
+  --   -- m = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.md"   , "markdown"},
+  --   -- h = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.html" , "html"},
+  --   -- l = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.tex"  , "latex"},
+  --   -- p = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.pdf"  , "pdf"},
+  --   -- x = { "<cmd>FloatermNew! echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
+  -- },
 
   t = {
     name = "TEMPLATES",
@@ -199,26 +198,35 @@ local mappings = {
 
 
   -- TODO: actions
-  -- a = {
-  --   name = "ACTIONS",
-  --   b = { "<cmd>Telescope git_branches<cr>", "Checkout branch" },
-  -- },
-    -- \ 'y' : [':CocList -A --normal yank'               , 'yanks'],
-    -- \ 'b' : [':terminal bibexport -o %:p:r.bib %:p:r.aux'  , 'bib export'],
-    -- \ 'g' : [':e ~/.config/nvim/templates/Glossary.tex', 'edit glossary'],
-    -- \ 'e' : [':e ~/.config/nvim/snips/tex.snippets'    , 'edit snippets'],
-    -- \ 't' : [':FloatermKill!'                          , 'kill terminals'],
-    -- \ 'v' : [':FloatermNew! --disposable cd ~/.local/share/nvim/swap && ls -a', 'view swap'],
-    -- \ 'k' : [':FloatermNew! --disposable cd ~/.local/share/nvim/swap && rm *.swp', 'kill swap'],
-    -- \ 'd' : [':CocDisable'                             , 'delete coc'],
-    -- \ 'r' : [':CocEnable'                              , 'restore coc'],
+  a = {
+    name = "ACTIONS",
+    c = { "<cmd>Telescope git_branches<cr>", "checkout branch" },
+    -- y = { "<cmd>CocList -A --normal yank", "yanks"},
+    b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<cr>", "bib export"},
+    g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<cr>", "glossary"},
+    e = { "<cmd>e ~/.config/nvim/snips/tex.snippets<cr>", "snippets"},
+    s = { "<cmd>SessionsManager save_current_session<cr>", "save session"},
+    d = { "<cmd>SessionsManager delete_session<cr>", "delete session"},
+    l = { "<cmd>SessionsManager load_session<cr>", "load session"},
+    n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
+    -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
+    h = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
+    y = { "<cmd>lua _PYTHON_TOGGLE()<cr>", "Python" },
+    -- p = { "<cmd>silent w<bar>lua require('pandoc.render').init()<cr>", "pandoc" },
+    -- p = { '<cmd>silent w<bar>lua require("auto-pandoc").run_pandoc()<cr>', "pandoc" },
+  --   v = { "<cmd>FloatermNew! --disposable vifm", 'vifm'},
+    -- t = { "<cmd>FloatermKill!", "kill terminals"},
+    -- v = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && ls -a", "view swap"},
+    -- k = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && rm *.swp", "kill swap"},
+  },
 
 
-  -- TODO: surround
-  -- s = {
-  --   name = "SURROUND",
-  --   b = { "<cmd>Telescope git_branches<cr>", "Checkout branch" },
-  -- },
+  s = {
+    name = "SURROUND",
+    s = { "ys", "surround" },
+    d = { "ds", "delete" },
+    c = { "cs", "change" },
+  },
 
   -- TODO: markdown
   -- m = {
@@ -239,11 +247,7 @@ local mappings = {
   -- TODO: terminal
   -- t = {
   --   name = "TERMINAL",
-  --   n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
   --   u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
-  --   t = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
-  --   v = { "<cmd>FloatermNew! --disposable vifm", 'vifm'},
-  --   p = { "<cmd>lua _PYTHON_TOGGLE()<cr>", "Python" },
   --   f = { "<cmd>ToggleTerm direction=float<cr>", "Float" },
   --   h = { "<cmd>ToggleTerm size=10 direction=horizontal<cr>", "Horizontal" },
   --   v = { "<cmd>ToggleTerm size=80 direction=vertical<cr>", "Vertical" },
