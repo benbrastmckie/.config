@@ -143,7 +143,7 @@ return packer.startup(function(use)
 
 -- LaTeX
   -- Vimscript
-  use { "lervag/vimtex" }
+  use { "lervag/vimtex" } -- Vimscript
   use { "amarakon/nvim-cmp-lua-latex-symbols" }
   use { "jbyuki/nabla.nvim" }
 
