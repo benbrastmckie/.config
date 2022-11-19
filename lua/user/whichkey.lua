@@ -80,17 +80,18 @@ local opts = {
 
 local mappings = {
 
-["d"] = { "<cmd>Bdelete!<CR>"           , "delete buffer" },
-["e"] = { "<cmd>NvimTreeToggle<cr>"     , "explorer" },
-["q"] = { "<cmd>wqa!<CR>"               , "quit" },
-["w"] = { "<cmd>wa!<CR>"                , "save" },
-["b"] = { "<cmd>VimtexCompile<CR>"      , "build" },
-["p"] = { "<cmd>VimtexView<CR>"         , "preview" },
-["i"] = { "<cmd>VimtexTocOpen<CR>"      , "index" },
-["k"] = { "<cmd>VimtexClean<CR>"        , "kill aux" },
-["r"] = { "<cmd>VimtexErrors<CR>"       , "report errors" },
-["c"] = { "<cmd>VimtexCountWords!<CR>"  , "count" },
+["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
+["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
+["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
+["w"] = { "<cmd>wa!<CR>"                    , "save" },
+["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
+["p"] = { "<cmd>VimtexView<CR>"             , "preview" },
+["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
+["k"] = { "<cmd>VimtexClean<CR>"            , "kill aux" },
+["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
+["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
 ["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
+["m"] = { "<cmd>lua require('markdown-togglecheck').toggle()<CR>" , "markdown toggle" },
 
 -- ["r"] = { "<cmd>source $MYVIMRC<cr>"      , "reload config" },
 -- ["h"] = { "<cmd>nohlsearch<CR>", "No Highlight" },
@@ -205,9 +206,10 @@ local mappings = {
     b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<cr>", "bib export"},
     g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<cr>", "glossary"},
     e = { "<cmd>e ~/.config/nvim/snips/tex.snippets<cr>", "snippets"},
-    s = { "<cmd>SessionsManager save_current_session<cr>", "save session"},
-    d = { "<cmd>SessionsManager delete_session<cr>", "delete session"},
-    l = { "<cmd>SessionsManager load_session<cr>", "load session"},
+    s = { "<cmd>SessionsManager save_current_session<CR>", "save session"},
+    d = { "<cmd>SessionsManager delete_session<CR>", "delete session"},
+    l = { "<cmd>SessionManager load_session<CR>", "load session"},
+    p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
     n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
     -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
     h = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
@@ -221,12 +223,13 @@ local mappings = {
   },
 
 
-  s = {
-    name = "SURROUND",
-    s = { "ys", "surround" },
-    d = { "ds", "delete" },
-    c = { "cs", "change" },
-  },
+  -- -- TODO: fix
+  -- s = {
+  --   name = "SURROUND",
+  --   s = { '<Cmd>lua require("nvim-surround").normal_surround()<CR>', "surround" },
+  --   d = { '<Cmd>lua require("nvim-surround").change_surround()<CR>', "delete" },
+  --   c = { '<Cmd>lua require("nvim-surround").delete_surround()<CR>', "change" },
+  -- },
 
   -- TODO: markdown
   -- m = {

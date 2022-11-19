@@ -15,14 +15,16 @@ dashboard.section.header.val = {
  [[                                                    ]],
 }
 dashboard.section.buttons.val = {
-  dashboard.button("e", "  New file", ":ene <BAR> startinsert <CR>"),
-	dashboard.button("f", "  Find file", ":Telescope find_files <CR>"),
-  dashboard.button("p", "  Find project", ":Telescope projects <CR>"),
-	dashboard.button("l", "  Load session", ":SessionManager load_session <CR>"),
-	dashboard.button("r", "  Recently used files", ":Telescope oldfiles <CR>"),
-	dashboard.button("t", "  Find text", ":Telescope live_grep <CR>"),
-	dashboard.button("c", "  Configuration", ":e $MYVIMRC <CR>"),
-	dashboard.button("q", "  Quit Neovim", ":qa<CR>"),
+  -- dashboard.button("e", "  New file", ":ene <BAR> startinsert <CR>"),
+  -- dashboard.button("p", "  Find project", ":Telescope projects <CR>"),
+  -- dashboard.button("t", "  Find text", ":Telescope live_grep <CR>"),
+	-- dashboard.button("d", "✗  Delete session", "<cmd>SessionsManager delete_session<CR>"),
+	dashboard.button("f", "  Find", ":Telescope find_files <CR>"),
+	dashboard.button("s", "  Session", "<cmd>SessionManager load_session<CR>"),
+	dashboard.button("r", "  Recent", ":Telescope oldfiles <CR>"),
+	dashboard.button("c", "  Config", ":e $MYVIMRC <CR>"),
+	dashboard.button("i", "  Info", "<cmd>e ~/.config/CheatSheet.md<cr>"),
+	dashboard.button("q", "  Quit", ":qa<CR>"),
 }
 
 local function footer()
