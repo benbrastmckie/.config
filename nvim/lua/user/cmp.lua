@@ -106,6 +106,7 @@ cmp.setup {
         luasnip = "[Snippet]",
         buffer = "[Buffer]",
         path = "[Path]",
+        cmdline = "[LSP]",
       })[entry.source.name]
       return vim_item
     end,
@@ -116,7 +117,13 @@ cmp.setup {
     { name = "buffer" },
     { name = "dictionary" },
     { name = "path" },
-    -- { name = "cmdline" },
+    { name = "cmdline" }, -- was causing trouble
+    { name = "lua-latex-symbols",
+      -- option = { cache = true },
+      -- filetype = { "tex", "plaintex" },
+    }
+      -- The `cache` option is used to determine whether to generate the list of symbols every time you start Neovim, or if it should be stored in a cache file to save time. I strongly do not advise changing this option because the data used for this plugin has not been updated since 2011.
+    -- { name = "dictionary" },
   },
   confirm_opts = {
     behavior = cmp.ConfirmBehavior.Replace,
@@ -133,10 +140,16 @@ cmp.setup {
   },
 }
 
+
+-- TODO was trying to get <C-j>, <C-k> to work in the command line
 -- cmp-cmdline
 -- `/` cmdline setup.
 cmp.setup.cmdline('/', {
-  mapping = cmp.mapping.preset.cmdline(),
+  mapping = cmp.mapping.preset.cmdline({
+    -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
+    -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
+    ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+  }),
   sources = {
     { name = 'buffer' }
   }
@@ -144,19 +157,21 @@ cmp.setup.cmdline('/', {
 
 -- `:` cmdline setup.
 cmp.setup.cmdline(':', {
-  mapping = cmp.mapping.preset.cmdline(),
+  mapping = cmp.mapping.preset.cmdline({
+    -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
+    -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
+    ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+  }),
   sources = cmp.config.sources({
     { name = 'path' }
   }, {
-    {
-      name = 'cmdline',
+    { name = 'cmdline',
       option = {
         ignore_cmds = { 'Man', '!' }
       }
-    }
-  })
+    },
+    mapping = cmp.mapping.preset.cmdline({}), -- fixes supertab
+  }),
 })
-
-
 
 
