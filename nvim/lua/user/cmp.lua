@@ -65,7 +65,7 @@ cmp.setup {
 
     -- Accept currently selected item. If none selected, `select` first item.
     -- Set `select` to `false` to only confirm explicitly selected items.
-    ["<CR>"] = cmp.mapping.confirm { select = true },
+    ["<CR>"] = cmp.mapping.confirm { select = false },
     ["<Tab>"] = cmp.mapping(function(fallback)
       if cmp.visible() then
         cmp.select_next_item()
@@ -119,8 +119,8 @@ cmp.setup {
     { name = "path" },
     { name = "cmdline" }, -- was causing trouble
     { name = "lua-latex-symbols",
-      -- option = { cache = true },
-      -- filetype = { "tex", "plaintex" },
+      option = { cache = true },
+      filetype = { "tex", "latex" },
     }
       -- The `cache` option is used to determine whether to generate the list of symbols every time you start Neovim, or if it should be stored in a cache file to save time. I strongly do not advise changing this option because the data used for this plugin has not been updated since 2011.
     -- { name = "dictionary" },
@@ -174,4 +174,26 @@ cmp.setup.cmdline(':', {
   }),
 })
 
-
+-- -- Conseal menu if text after cursor, or no text before cursor
+-- api.nvim_create_autocmd(
+--   {"TextChangedI", "TextChangedP"},
+--   {
+--     callback = function()
+--       local line = vim.api.nvim_get_current_line()
+--       local cursor = vim.api.nvim_win_get_cursor(0)[2]
+--
+--       local current = string.sub(line, cursor, cursor + 1)
+--       if current == "." or current == "," or current == " " then
+--         require('cmp').close()
+--       end
+--
+--       local before_line = string.sub(line, 1, cursor + 1)
+--       local after_line = string.sub(line, cursor + 1, -1)
+--       if not string.match(before_line, '^%s+$') then
+--         if after_line == "" or string.match(before_line, " $") or string.match(before_line, "%.$") then
+--           require('cmp').complete()
+--         end
+--       end
+--   end,
+--   pattern = "*"
+-- })

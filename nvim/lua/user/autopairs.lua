@@ -31,6 +31,7 @@ local npairs = require('nvim-autopairs')
 
 -- npairs.add_rule(Rule("$$","$$","tex"))
 npairs.add_rules({
+  Rule("`","'","tex"),
   Rule("$","$","tex"),
   Rule("$ "," ","tex"),
   Rule("[ "," ","tex"),
