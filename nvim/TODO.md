@@ -3,8 +3,11 @@
 - [ ] config
   - [ ] lsp to import from zotero
   - [ ] navigate lsp menu with <C-j>, <C-k>
-  - ftplugin
-    - fix errors in tex and md files
+  - decode linter symbols and commands
+  - creating a new line should not trigger lsp menu
+    - works properly for latex but not other file types
+  - autopairs
+    - back tick should give latex quotes
   - markdown
     - find preview plugin
     - [x] turn off certain functions in markdown
@@ -22,6 +25,8 @@
   - pandoc 
     - plugin 
     - bindings
+  - [x] ftplugin
+    - [x] fix errors in tex and md files
   - [x] add latex surround objects
   - [x] markdown toggle bullets
     - [x] need to extend cycle

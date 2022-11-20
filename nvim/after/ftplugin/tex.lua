@@ -1,4 +1,7 @@
+local M = {}
+
 local config = require("nvim-surround.config")
+
 require("nvim-surround").buffer_setup({
   surrounds = {
     ["e"] = {
@@ -18,14 +21,24 @@ require("nvim-surround").buffer_setup({
       delete = "^(`)().-(')()$",
     },
     ["b"] = {
-      add = { "\\textbf{", "}" },
-      find = "\\textbf%b{}",
-      delete = "^(\\textbf{)().-(})()$",
+      add = function()
+        if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
+          return { { "\\mathbf{" }, { "}" } }
+        end
+        return { { "\\textbf{" }, { "}" } }
+      end,
+      find = "\\%a-bf%b{}",
+      delete = "^(\\%a-bf{)().-(})()$",
     },
     ["i"] = {
-      add = { "\\textit{", "}" },
-      find = "\\textit%b{}",
-      delete = "^(\\textit{)().-(})()$",
+      add = function()
+        if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
+          return { { "\\mathit{" }, { "}" } }
+        end
+        return { { "\\textit{" }, { "}" } }
+      end,
+      find = "\\%a-it%b{}",
+      delete = "^(\\%a-it{)().-(})()$",
     },
     ["s"] = {
       add = { "\\textsc{", "}" },
@@ -33,12 +46,17 @@ require("nvim-surround").buffer_setup({
       delete = "^(\\textsc{)().-(})()$",
     },
     ["t"] = {
-      add = { "\\texttt{", "}" },
-      find = "\\texttt%b{}",
-      delete = "^(\\texttt{)().-(})()$",
+      add = function()
+        if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
+          return { { "\\mathtt{" }, { "}" } }
+        end
+        return { { "\\texttt{" }, { "}" } }
+      end,
+      find = "\\%a-tt%b{}",
+      delete = "^(\\%a-tt{)().-(})()$",
     },
     ["$"] = {
-        add = { "$", "$" },
+        add = { "$ ", " $" },
         find = function()
             return M.get_selection({ motion = "a$" })
         end,
@@ -47,3 +65,4 @@ require("nvim-surround").buffer_setup({
   },
 })
 
+return M

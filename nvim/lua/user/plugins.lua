@@ -99,11 +99,12 @@ return packer.startup(function(use)
 -- Colorschemes
   use { "ellisonleao/gruvbox.nvim" }
   -- use { "folke/tokyonight.nvim" }
-  --   -- , commit = "66bfc2e8f754869c7b651f3f47a2ee56ae557764" 
+    -- , commit = "66bfc2e8f754869c7b651f3f47a2ee56ae557764" 
   -- use { "lunarvim/darkplus.nvim" }
-  --   -- , commit = "13ef9daad28d3cf6c5e793acfc16ddbf456e1c83" 
+    -- , commit = "13ef9daad28d3cf6c5e793acfc16ddbf456e1c83" 
   -- use { "navarasu/onedark.nvim" }
-
+  -- use { "savq/melange" }
+  -- use { "EdenEast/nightfox.nvim" }
 
 -- Cmp 
   -- buffer completions
@@ -153,6 +154,7 @@ return packer.startup(function(use)
     'NFrid/markdown-togglecheck',
     requires = 'NFrid/treesitter-utils',
   })
+  use { "gaoDean/autolist.nvim" }
 
 
 -- Snippets
@@ -169,7 +171,11 @@ return packer.startup(function(use)
     -- , commit = "76ea9a898d3307244dce3573392dcf2cc38f340f" 
 	use { "Shatur/neovim-session-manager" }
 	use { "stevearc/dressing.nvim" }
-
+  -- use { "nvim-telescope/telescope-bibtex.nvim",
+  --   config = function ()
+  --     require"telescope".load_extension("bibtex")
+  --   end,
+  -- }
 
 -- Treesitter
 	use { "nvim-treesitter/nvim-treesitter", commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" }
