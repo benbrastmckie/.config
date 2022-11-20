@@ -1,4 +1,7 @@
+local M = {}
+
 local config = require("nvim-surround.config")
+
 require("nvim-surround").buffer_setup({
   surrounds = {
     ["e"] = {
@@ -24,3 +27,4 @@ require("nvim-surround").buffer_setup({
   },
 })
 
+return M

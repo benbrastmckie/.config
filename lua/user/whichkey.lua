@@ -223,13 +223,13 @@ local mappings = {
   },
 
 
-  -- -- TODO: fix
-  -- s = {
-  --   name = "SURROUND",
-  --   s = { '<Cmd>lua require("nvim-surround").normal_surround()<CR>', "surround" },
-  --   d = { '<Cmd>lua require("nvim-surround").change_surround()<CR>', "delete" },
-  --   c = { '<Cmd>lua require("nvim-surround").delete_surround()<CR>', "change" },
-  -- },
+  -- TODO: fix
+  s = {
+    name = "SURROUND",
+    s = { "<Plug>(nvim-surround-normal)", "surround" },
+    d = { "<Plug>(nvim-surround-delete)", "delete" },
+    c = { "<Plug>(nvim-surround-change)", "change" },
+  },
 
   -- TODO: markdown
   -- m = {
