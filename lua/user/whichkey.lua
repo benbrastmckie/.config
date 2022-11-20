@@ -78,6 +78,8 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
+-- GENERAL MAPPINGS
+
 local mappings = {
 
 ["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
@@ -97,6 +99,9 @@ local mappings = {
 -- ["h"] = { "<cmd>nohlsearch<CR>", "No Highlight" },
 -- ["p"] = { "<cmd>lua require('telescope').extensions.projects.projects()<cr>", "projects" },
 
+
+-- PANDOC --
+
   -- p = {
   --   name = "PANDOC",
   --   -- w = { "<cmd>ToggleTerm direction=float <bar> pandoc %:p -o %:p:r.docx <cr>" , "word"},
@@ -106,6 +111,9 @@ local mappings = {
   --   -- p = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.pdf"  , "pdf"},
   --   -- x = { "<cmd>FloatermNew! echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
   -- },
+
+
+-- TEMPLATES
 
   t = {
     name = "TEMPLATES",
@@ -119,6 +127,9 @@ local mappings = {
     r = { "<cmd>read ~/.config/nvim/templates/Root.tex"      , "Root.tex"},
     m = { "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex"           , "MultipleAnswer.tex"},
   },
+
+
+-- GIT
 
   g = {
     name = "GIT",
@@ -141,6 +152,9 @@ local mappings = {
     -- \ 'l' : [':FloatermNew! --disposable gh issue list'  , 'list issues'],
     -- \ 'r' : [':FloatermNew! --disposable gh reference'   , 'reference'],
     -- \ 'v' : [':FloatermNew! --disposable gh repo view -w', 'view repo'],
+  
+
+-- LSP
 
   l = {
     name = "LSP",
@@ -174,6 +188,9 @@ local mappings = {
     },
   },
 
+  
+-- FIND
+
   f = {
     name = "FIND",
     g = { "<cmd>Telescope git_branches<cr>", "git branches" },
@@ -197,8 +214,8 @@ local mappings = {
     -- \ 'p' : [':GGrep'                            , 'in project'],
 
 
+-- ACTIONS
 
-  -- TODO: actions
   a = {
     name = "ACTIONS",
     c = { "<cmd>Telescope git_branches<cr>", "checkout branch" },
@@ -214,22 +231,24 @@ local mappings = {
     -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
     h = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
     y = { "<cmd>lua _PYTHON_TOGGLE()<cr>", "Python" },
+  },
+
     -- p = { "<cmd>silent w<bar>lua require('pandoc.render').init()<cr>", "pandoc" },
     -- p = { '<cmd>silent w<bar>lua require("auto-pandoc").run_pandoc()<cr>', "pandoc" },
   --   v = { "<cmd>FloatermNew! --disposable vifm", 'vifm'},
     -- t = { "<cmd>FloatermKill!", "kill terminals"},
     -- v = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && ls -a", "view swap"},
     -- k = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && rm *.swp", "kill swap"},
-  },
 
 
-  -- TODO: fix
+  -- SURROUND
   s = {
     name = "SURROUND",
     s = { "<Plug>(nvim-surround-normal)", "surround" },
     d = { "<Plug>(nvim-surround-delete)", "delete" },
     c = { "<Plug>(nvim-surround-change)", "change" },
   },
+
 
   -- TODO: markdown
   -- m = {
@@ -241,11 +260,6 @@ local mappings = {
     -- \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
     -- \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
 
-  -- TODO: sessions
-  -- s = {
-  --   name = "SESSIONS",
-  --   b = { "<cmd>Telescope git_branches<cr>", "Checkout branch" },
-  -- },
 
   -- TODO: terminal
   -- t = {
