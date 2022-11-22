@@ -1,0 +1,144 @@
+%%% GLOSSARY %%%
+
+% Add to main file
+
+% \usepackage[automake,nogroupskip,
+%   postpunc={dot},% full stop after description
+%   nostyles,% don't load default style packages
+%   % load glossaries-extra-stylemods.sty and glossary-tree.sty:
+%   stylemods={tree}
+%   ]{glossaries-extra}
+% % \usepackage{glossary-superragged}
+% \loadglsentries{Glossary}
+% \newcommand{\g}{\glssymbol*}
+% \makeglossaries
+
+% \printglossary[style={index}]
+
+%%% ENTRIES %%%
+\newglossaryentry{Q}{% settings:
+    name = {Operator},
+    symbol = {\ensuremath{\mathcal{Q}}},
+    description = {stands for any $n$-place sentential operator.}
+}
+
+\newglossaryentry{L}{% settings:
+  name = {Language},
+  symbol = {\ensuremath{\mathcal{L}}},
+  description = {includes a set of sentence letters and operators}
+}
+
+\newglossaryentry{part}{% settings:
+  name = {Proper parthood},
+  symbol = {\ensuremath{\sqsubset}},
+  description = {is defined in terms of improper parthood}
+}
+
+\newglossaryentry{wfas}{% settings:
+  name = {Well-formed atomic sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{wfas}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{wfs}{% settings:
+  name = {Well-formed sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{wfs}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{ext}{% settings:
+  name = {Extensional sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{ext}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{id}{% settings:
+  name = {Identity sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{id}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{nid}{% settings:
+  name = {Non-identity sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{nid}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{eq}{% settings:
+  name = {Equivalence sentences},
+  symbol = {\ensuremath{\operatorname{\texttt{eq}}}},
+  description = {generated from a stock of sentence letters}
+}
+
+\newglossaryentry{comp}{% settings:
+  name = {Complexity},
+  symbol = {\ensuremath{\operatorname{\texttt{comp}}}},
+  description = {of a sentence}
+}
+
+\newglossaryentry{lit}{% settings:
+  name = {Sentence letters},
+  symbol = {\ensuremath{\mathbb{L}}},
+  description = {make up the atoms of the language}
+}
+
+\newglossaryentry{glb}{% settings:
+  name = {Greatest lower bound},
+  symbol = {\ensuremath{\operatorname{\texttt{glb}}}},
+  description = {with respect to a given order}
+}
+
+\newglossaryentry{lub}{% settings:
+  name = {Least upper bound},
+  symbol = {\ensuremath{\operatorname{\texttt{lub}}}},
+  description = {with respect to a given order}
+}
+
+\newglossaryentry{s}{% settings:
+  name = {State space},
+  symbol = {\ensuremath{\mathcal{S}}},
+  description = {consisting of a set of states and partial order}
+}
+
+\newglossaryentry{M}{% settings:
+  name = {Model},
+  symbol = {\ensuremath{\mathcal{M}}},
+  description = {of the language assigns sentence letters to propositions}
+}
+
+\newglossaryentry{N}{% settings:
+  name = {Normal models},
+  symbol = {\ensuremath{\mathcal{N}}},
+  description = {is the class of all models in which sentence letter are assigned to normal propositions}
+}
+
+\newglossaryentry{C}{% settings:
+  name = {Contents},
+  symbol = {\ensuremath{\mathbb{C}}},
+  description = {defined over a state space}
+}
+
+\newglossaryentry{P}{% settings:
+  name = {Propositions},
+  symbol = {\ensuremath{\mathbb{P}}},
+  description = {defined over a state space}
+}
+
+\newglossaryentry{B}{% settings:
+  name = {Bilattice},
+  symbol = {\ensuremath{\mathcal{B}}},
+  description = {of propositions defined over a state space}
+}
+
+\newglossaryentry{R}{% settings:
+  name = {Regular models},
+  symbol = {\ensuremath{\mathcal{R}}},
+  description = {is the class of all models in which sentence letter are assigned to regular propositions}
+}
+
+\newglossaryentry{parteq}{% settings:
+  name = {Improper parthood},
+  symbol = {\ensuremath{\sqsubseteq}},
+  description = {is a partial order over a space of states}
+}
+

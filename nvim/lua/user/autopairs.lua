@@ -40,17 +40,17 @@ npairs.add_rules({
   }
 )
 
-npairs.add_rules({
-  Rule("$$","$$","tex")
-    :with_pair(function(opts)
-        print(vim.inspect(opts))
-        if opts.line=="aa $$" then
-        -- don't add pair on that line
-          return false
-        end
-    end)
-   }
-)
+-- npairs.add_rules({
+--   Rule("$$","$$","tex")
+--     :with_pair(function(opts)
+--         print(vim.inspect(opts))
+--         if opts.line=="aa $$" then
+--         -- don't add pair on that line
+--           return false
+--         end
+--     end)
+--    }
+-- )
 
 
 

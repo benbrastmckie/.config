@@ -8,8 +8,6 @@ if not snip_status_ok then
   return
 end
 
-require("luasnip/loaders/from_vscode").lazy_load()
-
 local check_backspace = function()
   local col = vim.fn.col "." - 1
   return col == 0 or vim.fn.getline("."):sub(col, col):match "%s"
@@ -46,6 +44,15 @@ local kind_icons = {
 -- find more here: https://www.nerdfonts.com/cheat-sheet
 
 cmp.setup {
+	-- preselect = cmp.PreselectMode.None,
+  completion = {
+    autocomplete = {
+      cmp.TriggerEvent.TextChanged,
+      cmp.TriggerEvent.InsertEnter,
+    },
+    completeopt = "menuone,noinsert,noselect",
+    keyword_length = 1,
+  },
   snippet = {
     expand = function(args)
       luasnip.lsp_expand(args.body) -- For `luasnip` users.
@@ -67,9 +74,9 @@ cmp.setup {
     -- Set `select` to `false` to only confirm explicitly selected items.
     ["<CR>"] = cmp.mapping.confirm { select = false },
     ["<Tab>"] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif luasnip.expandable() then
+      -- if cmp.visible() then
+      --   cmp.select_next_item()
+      if luasnip.expandable() then
         luasnip.expand()
       elseif luasnip.expand_or_jumpable() then
         luasnip.expand_or_jump()
@@ -83,9 +90,9 @@ cmp.setup {
       "s",
     }),
     ["<S-Tab>"] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif luasnip.jumpable(-1) then
+      -- if cmp.visible() then
+      --   cmp.select_prev_item()
+      if luasnip.jumpable(-1) then
         luasnip.jump(-1)
       else
         fallback()
@@ -115,9 +122,9 @@ cmp.setup {
     { name = "nvim_lsp" },
     { name = "luasnip" },
     { name = "buffer" },
-    { name = "dictionary" },
+    -- { name = "dictionary" },
     { name = "path" },
-    { name = "cmdline" }, -- was causing trouble
+    { name = "cmdline" },
     { name = "lua-latex-symbols",
       option = { cache = true },
       filetype = { "tex", "latex" },
@@ -134,10 +141,10 @@ cmp.setup {
       border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
     },
   },
-  experimental = {
-    ghost_text = true,
-    native_menu = false,
-  },
+  -- experimental = {
+  --   ghost_text = true,
+  --   native_menu = false,
+  -- },
 }
 
 
@@ -148,7 +155,7 @@ cmp.setup.cmdline('/', {
   mapping = cmp.mapping.preset.cmdline({
     -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
     -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
-    ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+    -- ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
   }),
   sources = {
     { name = 'buffer' }
@@ -160,7 +167,7 @@ cmp.setup.cmdline(':', {
   mapping = cmp.mapping.preset.cmdline({
     -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
     -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
-    ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+    -- ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
   }),
   sources = cmp.config.sources({
     { name = 'path' }
@@ -174,8 +181,8 @@ cmp.setup.cmdline(':', {
   }),
 })
 
--- -- Conseal menu if text after cursor, or no text before cursor
--- api.nvim_create_autocmd(
+-- -- -- Conseal menu if text after cursor, or no text before cursor
+-- vim.api.nvim_create_autocmd(
 --   {"TextChangedI", "TextChangedP"},
 --   {
 --     callback = function()

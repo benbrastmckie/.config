@@ -314,3 +314,5 @@ opera
 zoom.conf
 yarn.lock
 pamac/config
+libfm/libfm.conf
+pcmanfm/default/pcmanfm.conf
