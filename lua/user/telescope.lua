@@ -5,6 +5,22 @@ end
 
 local actions = require "telescope.actions"
 
+-- local job_opts = {
+--   entry_maker = function(entry)
+--     local _, _, filename, lnum, col, text = string.find(entry, "([^:]+):(%d+):(.*)")
+--     local table = {
+--       ordinal = text,
+--       display = filename .. ":" .. text
+--     }
+--     return table
+--   end
+-- }
+--
+-- local opts = {
+--   finder = finders.new_oneshot_job(rg, job_opts),
+--   sorter = sorters.get_generic_fuzzy_sorter(),
+-- }
+
 telescope.setup {
   defaults = {
 
