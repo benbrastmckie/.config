@@ -1,33 +1,36 @@
 # TODO
 
-- config
+- [ ] config
+  - [ ] customise latex snippets 
+    - [ ] snippets it and bf adding new line
+    - [x] snippets for it bf etc 
+  - [ ] lsp 
+    - [ ] import from zotero 
+    - [ ] spelling in lsp menu
+    - [ ] navigate lsp menu with <C-j>, <C-k> 
+    - [x] errors when starting a line with a backslash 
+    - [x] prevent menu from poping up without entering text 
+    - [x] creating a new line should not trigger lsp menu 
+    - [x] snippets 
+  - [ ] pandoc 
+    - [ ] plugin 
+    - [ ] bindings 
+    - [ ] WhichKey 
   - [ ] autopairs 
-    - [x] back tick should give latex quotes
-    - [ ] skip outside end of pair 
-    - [ ] add pairs even if letter following cursor 
-  - [ ] vimtex menu check
-  - lsp
-    - [ ] snippets
-    - prevent menu from poping up without entering text
-    - spelling changes in lsp menu
-    - lsp to import from zotero
-    - navigate lsp menu with <C-j>, <C-k>
-    - creating a new line should not trigger lsp menu
-      - works properly for latex but not other file types
-  - pandoc
-    - plugin 
-    - bindings
-  - decode linter symbols and commands
-  - add telescope search text through all files in project
-  - WhichKey
-    - [x] surround
-    - [ ] markdown 
-    - [ ] pandoc 
-    - [ ] sessions 
+    - [ ] add single bracket if in open pair 
+    - [x] move through second $ 
+    - [x] only add spaces when between two $$ 
+    - [x] add brackets regardless of characters following 
+    - [x] back tick should give latex quotes 
+    - [x] skip outside end of pair 
+  - [x] WhichKey 
+    - [x] sessions 
+    - [x] surround 
     - [x] git 
-    - [ ] vimtex 
-  - [x] customise latex snippets
-    - [x] snippets for it bf etc
+    - [x] vimtex 
+  - [x] decode linter symbols and commands 
+  - [x] vimtex menu check 
+  - [x] add telescope search text through all files in project 
   - [x] markdown 
     - [x] turn off certain functions in markdown 
   - [x] autolist 

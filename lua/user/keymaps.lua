@@ -95,8 +95,8 @@ keymap("v", "<A-k>", ":m-2<CR>gv", opts)
 
 
 -- Horizontal lime movments --
-keymap("v", "<S-h>", "^", opts)
-keymap("v", "<S-l>", "$", opts)
+keymap("v", "<S-h>", "g^", opts)
+keymap("v", "<S-l>", "g$", opts)
 keymap("n", "<S-h>", "g^", opts)
 keymap("n", "<S-l>", "g$", opts)
 

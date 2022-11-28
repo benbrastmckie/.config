@@ -123,6 +123,7 @@ return packer.startup(function(use)
 	use { "hrsh7th/cmp-nvim-lua" }
     -- , commit = "d276254e7198ab7d00f117e88e223b4bd8c02d21" 
   use { "hrsh7th/cmp-cmdline" }
+  use { "f3fora/cmp-spell" }
   -- use { "aspeddro/cmp-pandoc.nvim" }
 
 
