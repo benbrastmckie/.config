@@ -14,7 +14,7 @@ vim.g['vimtex_log_ignore'] = ({
   'Overfull',
   'specifier changed to',
   'Token not allowed in a PDF string',
-}) 
+})
 
 vim.g['vimtex_context_pdf_viewer'] = 1
 vim.g['vimtex_context_pdf_viewer'] = 'okular'

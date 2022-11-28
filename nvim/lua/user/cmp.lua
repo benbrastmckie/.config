@@ -69,10 +69,9 @@ cmp.setup {
       i = cmp.mapping.abort(),
       c = cmp.mapping.close(),
     },
-
     -- Accept currently selected item. If none selected, `select` first item.
     -- Set `select` to `false` to only confirm explicitly selected items.
-    ["<CR>"] = cmp.mapping.confirm { select = false },
+    ["<CR>"] = cmp.mapping.confirm({ select = false }),
     ["<Tab>"] = cmp.mapping(function(fallback)
       -- if cmp.visible() then
       --   cmp.select_next_item()
@@ -112,6 +111,7 @@ cmp.setup {
         nvim_lsp = "[LSP]",
         luasnip = "[Snippet]",
         buffer = "[Buffer]",
+        spell = "[Spell]",
         path = "[Path]",
         cmdline = "[LSP]",
       })[entry.source.name]
@@ -124,13 +124,20 @@ cmp.setup {
     { name = "buffer" },
     -- { name = "dictionary" },
     { name = "path" },
-    { name = "cmdline" },
+    -- { name = "cmdline" }, -- was throwing errors
     { name = "lua-latex-symbols",
       option = { cache = true },
-      filetype = { "tex", "latex" },
-    }
       -- The `cache` option is used to determine whether to generate the list of symbols every time you start Neovim, or if it should be stored in a cache file to save time. I strongly do not advise changing this option because the data used for this plugin has not been updated since 2011.
-    -- { name = "dictionary" },
+      filetype = { "tex", "latex" },
+    },
+    { name = "spell",
+      option = {
+          keep_all_entries = false,
+          enable_in_context = function()
+              return true
+          end,
+      },
+    },
   },
   confirm_opts = {
     behavior = cmp.ConfirmBehavior.Replace,
@@ -141,11 +148,11 @@ cmp.setup {
       border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
     },
   },
+}
   -- experimental = {
   --   ghost_text = true,
   --   native_menu = false,
   -- },
-}
 
 
 -- TODO was trying to get <C-j>, <C-k> to work in the command line
@@ -153,9 +160,9 @@ cmp.setup {
 -- `/` cmdline setup.
 cmp.setup.cmdline('/', {
   mapping = cmp.mapping.preset.cmdline({
-    -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
-    -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
-    -- ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+    -- ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+    -- ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+    -- ["<CR>"] = cmp.mapping.confirm({ select = true }),
   }),
   sources = {
     { name = 'buffer' }
@@ -180,6 +187,8 @@ cmp.setup.cmdline(':', {
     mapping = cmp.mapping.preset.cmdline({}), -- fixes supertab
   }),
 })
+
+
 
 -- -- -- Conseal menu if text after cursor, or no text before cursor
 -- vim.api.nvim_create_autocmd(

@@ -12,47 +12,68 @@ npairs.setup {
     java = false,
   },
   disable_filetype = { "TelescopePrompt", "spectre_panel" },
-  -- enable_check_bracket_line = false,
+  disable_in_macro = true,
+  disable_in_replace_mode = true,
+  enable_moveright = true,
+  ignored_next_char = "",
+  enable_check_bracket_line = true,  --- check bracket in same line
+  -- enable_afterquote = true,  -- add bracket pairs after quote
+  -- enable_bracket_in_quote = true,
+  -- enable_abbr = false, -- trigger abbreviation
   -- fast_wrap = {
-  --   map = "<M-e>",
-  --   chars = { "{", "[", "(", '"', "'" },
-  --   pattern = string.gsub([[ [%'%"%)%>%]%)%}%,] ]], "%s+", ""),
-  --   offset = 0, -- Offset from pattern match
-  --   end_key = "$",
+  --   map = "<C-l>",
+  --   chars = { "$", "{", "[", "(", '"', "'" },
+  --   pattern = string.gsub([=[[%'%"%)%>%]%)%}%,]]=], "%s+", ""),
+  --   offset = 1, -- Offset from pattern match
+  --   end_key = "L",
   --   keys = "qwertyuiopzxcvbnmasdfghjkl",
   --   check_comma = true,
   --   highlight = "PmenuSel",
   --   highlight_grey = "LineNr",
+  --   -- highlight = 'Search',
+  --   -- highlight_grey='Comment'
   -- },
 }
 
 local Rule = require('nvim-autopairs.rule')
-local npairs = require('nvim-autopairs')
 
--- npairs.add_rule(Rule("$$","$$","tex"))
+local cond = require('nvim-autopairs.conds')
+
 npairs.add_rules({
   Rule("`","'","tex"),
   Rule("$","$","tex"),
-  Rule("$ "," ","tex"),
-  Rule("[ "," ","tex"),
-  Rule("{ "," ","tex"),
-  Rule("( "," ","tex"),
+  Rule(' ', ' ')
+    :with_pair(function(opts)
+      local pair = opts.line:sub(opts.col, opts.col + 1)
+      return vim.tbl_contains({ '$$', '()', '{}', '[]' }, pair)
+    end)
+    :with_move(cond.none())
+    :with_cr(cond.none())
+    :with_del(function(opts)
+      local col = vim.api.nvim_win_get_cursor(0)[2]
+      local context = opts.line:sub(col - 1, col + 2)
+      return vim.tbl_contains({ '$  $', '(  )', '{  }', '[  ]' }, context)
+    end),
+  Rule("$ "," ","tex")
+    :with_pair(cond.not_after_regex(" "))
+    :with_del(cond.none()),
+  Rule("[ "," ","tex")
+    :with_pair(cond.not_after_regex(" "))
+    :with_del(cond.none()),
+  Rule("{ "," ","tex")
+    :with_pair(cond.not_after_regex(" "))
+    :with_del(cond.none()),
+  Rule("( "," ","tex")
+    :with_pair(cond.not_after_regex(" "))
+    :with_del(cond.none()),
   }
 )
 
--- npairs.add_rules({
---   Rule("$$","$$","tex")
---     :with_pair(function(opts)
---         print(vim.inspect(opts))
---         if opts.line=="aa $$" then
---         -- don't add pair on that line
---           return false
---         end
---     end)
---    }
--- )
 
 
+require('nvim-autopairs').get_rule('$'):with_move(function(opts)
+    return opts.char == opts.next_char:sub(1, 1)
+end)
 
 local cmp_autopairs = require "nvim-autopairs.completion.cmp"
 local cmp_status_ok, cmp = pcall(require, "cmp")

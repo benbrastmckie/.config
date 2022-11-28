@@ -85,11 +85,10 @@ local mappings = {
 ["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
 ["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
 ["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
-["w"] = { "<cmd>wa!<CR>"                    , "save" },
+["w"] = { "<cmd>wa!<CR>"                    , "write" },
 ["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
-["p"] = { "<cmd>VimtexView<CR>"             , "preview" },
+["o"] = { "<cmd>VimtexView<CR>"             , "open" },
 ["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
-["k"] = { "<cmd>VimtexClean<CR>"            , "kill aux" },
 ["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
 ["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
 ["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
@@ -188,13 +187,13 @@ local mappings = {
     },
   },
 
-  
+
 -- FIND
 
   f = {
     name = "FIND",
     g = { "<cmd>Telescope git_branches<cr>", "git branches" },
-    f = { "<cmd>Telescope live_grep theme=ivy<cr>", "find" },
+    f = { "<cmd>Telescope live_grep theme=ivy<cr>", "find in project" },
     -- a = { "<cmd>lua require('telescope.builtin').find_files(require('telescope.themes').get_dropdown{previewer = false})<cr>", "all" },
     t = { "<cmd>Telescope colorscheme<cr>", "theme" },
     h = { "<cmd>Telescope help_tags<cr>", "help" },
@@ -213,22 +212,24 @@ local mappings = {
     -- \ 'h' : [':Files ~'                          , 'files in home'],
     -- \ 'p' : [':GGrep'                            , 'in project'],
 
+-- PROJECTS
+  p = {
+    name = "PROJECTS",
+    s = { "<cmd>SessionManager save_current_session<CR>", "save" },
+    d = { "<cmd>SessionManager delete_session<CR>", "delete" },
+    l = { "<cmd>SessionManager load_session<CR>", "load" },
+  },
 
 -- ACTIONS
 
   a = {
     name = "ACTIONS",
-    c = { "<cmd>Telescope git_branches<cr>", "checkout branch" },
     -- y = { "<cmd>CocList -A --normal yank", "yanks"},
     b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<cr>", "bib export"},
     g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<cr>", "glossary"},
-    e = { "<cmd>e ~/.config/nvim/snips/tex.snippets<cr>", "snippets"},
-    s = {
-      name = "SESSIONS",
-      s = { "<cmd>SessionsManager save_current_session<CR>", "save" },
-      d = { "<cmd>SessionsManager delete_session<CR>", "delete" },
-      l = { "<cmd>SessionManager load_session<CR>", "load" },
-    },
+    e = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<cr>", "snippets"},
+    k = { "<cmd>VimtexClean<CR>"            , "kill aux" },
+    v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
     p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
     n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
     -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },

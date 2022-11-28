@@ -1,5 +1,5 @@
 # -- SNIPPETS --
-
+#
 # new glossary entry
 snippet gloss "Glossary Entry" b
 	\newglossaryentry{${1:entry}}{
@@ -7,7 +7,7 @@ snippet gloss "Glossary Entry" b
 			symbol = {\ensuremath{${3:symbol}}},
 			description = {${4:description}}
 	}
-
+#
 
 # custom theorem enviornment
 snippet customthm "Custom Theorem" b
@@ -19,31 +19,31 @@ snippet customthm "Custom Theorem" b
 	\begin{Answer}
 		${0}
 	\end{Answer}
-
+#
 
 # framed text enviornment
 snippet textbox "Text Box" b
 	\begin{tcolorbox}
 		${0}
 	\end{tcolorbox}
-
+#
 
 # new command
 snippet nc "New Command" b
 	\newcommand{${1:cmd}}[${2:opt}]{${3:realcmd}} ${0}
-
+#
 
 #usepackage
 snippet up "Use Package" b
 	\usepackage[${1:options}]{${2:package}} ${0}
-
+#
 
 # \begin{}...\end{}
 snippet begin "Begin End"
 	\begin{${1:env}}
 		${2:${VISUAL}}
 	\end{$1}${0}
-
+#
 
 # Align(ed)
 snippet align "Align Env" b
@@ -51,7 +51,7 @@ snippet align "Align Env" b
 		\label{${2:name}}
 		${0}
 	\end{align$1}
-
+#
 
 # Quote
 snippet quote "Quotation" b
@@ -61,7 +61,7 @@ snippet quote "Quotation" b
 		\hfill(p.~${1})
 	\end{quote}
 	\vspace{.1in}
-
+#
 
 # Labelalign
 snippet labelalign "Label Align" b
@@ -70,26 +70,26 @@ snippet labelalign "Label Align" b
 		\item[${2:\it} ${3:Label:}] ${0}
 	\end{labelalign}
 	\vspace{.05in}
-
+#
 
 # Enumerate
 snippet enum "Enumerate" b
 	\begin{enumerate}${1:%}[leftmargin=0in,labelsep=.15in] 
 		\item[${2:\it} ${3:Label:}] ${0}
 	\end{enumerate}
-
+#
 
 # Itemize
 snippet item "Itemize" b
 	\begin{itemize}
 		\item[${1:\it} ${2:Label:}] ${0}
 	\end{itemize}
-
+#
 
 #Item
 snippet i "Item"
 	\item[${1:\it} ${2:Label:}] ${0}
-
+#
 
 # Cases
 snippet case "Cases" 
@@ -98,159 +98,100 @@ snippet case "Cases"
 		${2:Value}, &\text{ if } ${3:case}\\
 		${4:Value}, &\text{ otherwise.} ${5:otherwise}.
 	\end{cases}${0}
-
+#
 
 # Section
 snippet sec "Section" b
 	\section{${1:Name}}%
 		\label{sec:${2:$1}}
 		${0}
-
-
-# # Section without number
-# snippet sec* "Section*" b
-# \section*{${1:Name}}%
-# 	\label{sec:${2:$1}}
-# 	${0}
-# 
+#
 
 # Sub Section
 snippet sub "Sub Section" b
 	\subsection{${1:Name}}%
 		\label{sub:${2:$1}}
 		${0}
-
-
-# # Sub Section without number
-# snippet sub* "Sub Section*" b
-# \subsection*{${1:Name}}%
-# 	\label{sub:${2:$1}}
-# 	${0}
-# 
+#
 
 # Sub Sub Section
 snippet ssub "Sub Sub Section" b
 	\subsubsection{${1:Name}}%
 		\label{sub:${2:$1}}
 		${0}
-
-
-# # Sub Sub Section without number
-# snippet ssub* "Sub Sub Section*" b
-# \subsubsection*{${1:Name}}%
-# 	\label{sub:${2:$1}}
-# 	${0}
-# 
+#
 
 # Hyper Section
 snippet hsec "Hyper Section" b
 	\hypsection{${1:Name}}%
 		\label{sec:${2:$1}}
 		${0}
-
-
-# # Hyper Section without number
-# snippet hsec* "Hyper Section*" b
-# \hypsection*{${1:Name}}%
-# 	\label{sec:${2:$1}}
-# 	${0}
-# 
+#
 
 # Hyper Sub Section
 snippet hsub "Hyper Sub Section" b
 	\hypsubsection{${1:Name}}%
 		\label{sub:${2:$1}}
 		${0}
-
-
-# # Hyper Sub Section without number
-# snippet hsub* "Hyper Sub Section*" b
-# \hypsubsection*{${1:Name}}%
-# 	\label{sub:${2:$1}}
-# 	${0}
-# 
+#
 
 # Hyper Sub Sub Section
 snippet hssub "Hyper Sub Sub Section" b
 	\hypsubsubsection{${1:Name}}%
 		\label{sub:${2:$1}}
 		${0}
-
-
-# # Hyper Sub Sub Section without number
-# snippet hssub* "Hyper Sub Sub Section*" b
-# \hypsubsubsection*{${1:Name}}%
-# 	\label{sub:${2:$1}}
-# 	${0}
-# 
+#
 
 #Formating text: italic, bold, underline, small capital, emphase ..
-snippet it "Italics"
+snippet it "Italics" wi
 	\textit{${1}}${0}
+#
 
-
-snippet tt "Teletype"
+snippet tt "Teletype" wi
 	\texttt{${1}}${0}
+#
 
-
-snippet bf "Bold"
+snippet bf "Bold" wi
 	\textbf{${1}}${0}
+#
 
-
-snippet under "Underline"
-	\underline{${1}}${0}
-
-
-snippet over "Overline"
-	\overline{${1}}${0}
-
-
-snippet sc "Small Caps"
+snippet sc "Small Caps" wi
 	\textsc{${1}}${0}
+#
 
-
-#Choosing font
-snippet sf "Sans Serife" 
-	\textsf{${1}}${0}
-
-
-snippet rm "Roman Font" 
-	\textrm{${1}}${0}
-
-
-snippet tsub "Subscripted" 
+snippet tsub "Subscripted" i
 	\textsubscript{${1}}${0}
+#
 
-
-snippet tsup "Superscripted" 
+snippet tsup "Superscripted" i
 	\textsuperscript{${1}}${0}
-
+#
 
 #Math font
-snippet mf "Mathfrak"
+snippet mf "Mathfrak" w
 	\mathfrak{${1}}${0}
+#
 
-
-snippet mc "Mathcal"
+snippet mc "Mathcal" w
 	\mathcal{${1}}${0}
+#
 
-
-snippet ms "Mathscr"
+snippet ms "Mathscr" w
 	\mathscr{${1}}${0}
-
+#
 
 #misc
-snippet fproof "Footnote Proof"
+snippet fproof "Footnote Proof" bi
 	\footnote{\textit{Proof:} ${1:Begin} \qed}${0}
-
+#
 
 snippet lab "Label"
-	\label{${1:LABEL}}${0}
-
+	\label{${1:LABEL}}${0} wi
+#
 
 snippet fn "Footnote"
-	\footnote{${1:FOOTNOTE}}${0}
-
+	\footnote{${1:FOOTNOTE}}${0} wi
+#
 
 snippet fig "Figure environment" b
 	\begin{figure}
@@ -261,7 +202,7 @@ snippet fig "Figure environment" b
 	\label{fig:${4}}
 	\end{figure}
 	${0}
-
+#
 
 snippet tikz "Tikz environment" b
 	\begin{figure}[htpb]

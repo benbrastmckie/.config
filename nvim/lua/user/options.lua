@@ -1,5 +1,8 @@
 local options = {
-  -- cpoptions = "aABceFs_",
+  spell = true,
+  -- set complete+=kspell                    " set spell spelllang=en_gb
+  -- autocmd BufRead,BufNewFile *.tex setlocal spell spelllang=en_gb
+  spelllang = { 'en_gb' },
   backup = false,                          -- creates a backup file
   clipboard = "unnamedplus",               -- allows neovim to access the system clipboard
   cmdheight = 2,                           -- more space in the neovim command line for displaying messages
