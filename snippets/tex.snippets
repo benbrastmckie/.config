@@ -1,7 +1,7 @@
 # -- SNIPPETS --
 #
 # new glossary entry
-snippet gloss "Glossary Entry" b
+snippet gloss "Glossary Entry"  b
 	\newglossaryentry{${1:entry}}{
 			name = {${2:name}},
 			symbol = {\ensuremath{${3:symbol}}},
@@ -185,12 +185,12 @@ snippet fproof "Footnote Proof" bi
 	\footnote{\textit{Proof:} ${1:Begin} \qed}${0}
 #
 
-snippet lab "Label"
-	\label{${1:LABEL}}${0} wi
+snippet lab "Label" wi
+	\label{${1:LABEL}}${0}
 #
 
-snippet fn "Footnote"
-	\footnote{${1:FOOTNOTE}}${0} wi
+snippet fn "Footnote" wi
+	\footnote{${1:FOOTNOTE}}${0}
 #
 
 snippet fig "Figure environment" b
