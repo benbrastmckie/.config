@@ -1,13 +1,13 @@
 # TODO
 
 - [ ] config
-  - [ ] customise latex snippets 
-    - [ ] snippets it and bf adding new line
-    - [x] snippets for it bf etc 
+  - [ ] colors
+    - [ ] make underlining word shading instead
+  - [ ] indents on new line in enumerate 
   - [ ] lsp 
     - [ ] import from zotero 
-    - [ ] spelling in lsp menu
-    - [ ] navigate lsp menu with <C-j>, <C-k> 
+    - [ ] spelling in lsp menu 
+    - [ ] navigate command and search with <C-j>, <C-k> 
     - [x] errors when starting a line with a backslash 
     - [x] prevent menu from poping up without entering text 
     - [x] creating a new line should not trigger lsp menu 
@@ -23,6 +23,10 @@
     - [x] add brackets regardless of characters following 
     - [x] back tick should give latex quotes 
     - [x] skip outside end of pair 
+  - [ ] customise latex snippets 
+    - [ ] convert to lua for context dependent snippets
+    - [x] snippets it and bf adding new line 
+    - [x] snippets for it bf etc 
   - [x] WhichKey 
     - [x] sessions 
     - [x] surround 

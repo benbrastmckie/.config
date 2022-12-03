@@ -120,10 +120,11 @@ return packer.startup(function(use)
     -- , commit = "a9de941bcbda508d0a45d28ae366bb3f08db2e36" 
 	use { "hrsh7th/cmp-nvim-lsp" }
     -- , commit = "3cf38d9c957e95c397b66f91967758b31be4abe6" 
-	use { "hrsh7th/cmp-nvim-lua" }
-    -- , commit = "d276254e7198ab7d00f117e88e223b4bd8c02d21" 
   use { "hrsh7th/cmp-cmdline" }
   use { "f3fora/cmp-spell" }
+  use { "hrsh7th/cmp-omni" }
+	-- use { "hrsh7th/cmp-nvim-lua" }
+    -- , commit = "d276254e7198ab7d00f117e88e223b4bd8c02d21" 
   -- use { "aspeddro/cmp-pandoc.nvim" }
 
 
@@ -146,7 +147,7 @@ return packer.startup(function(use)
 -- LaTeX
   -- Vimscript
   use { "lervag/vimtex" } -- Vimscript
-  use { "amarakon/nvim-cmp-lua-latex-symbols" }
+  use { "kdheepak/cmp-latex-symbols" }
   use { "jbyuki/nabla.nvim" }
 
 
@@ -239,7 +240,11 @@ return packer.startup(function(use)
 
   -- use { "jalvesaq/zotcite" } -- Didn't work
 
-	-- use { "tiagovla/zotex.nvim" } -- didn't work
+-- didn't work
+-- use { "tiagovla/zotex.nvim",
+--   config = function() require("zotex").setup {} end,
+--   requires = { "kkharji/sqlite.lua" },
+-- }
 
   -- use({ -- wasn't needed
   --     'f3fora/nvim-texlabconfig',

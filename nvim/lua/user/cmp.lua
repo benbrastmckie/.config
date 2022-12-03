@@ -46,11 +46,12 @@ local kind_icons = {
 cmp.setup {
 	-- preselect = cmp.PreselectMode.None,
   completion = {
-    autocomplete = {
-      cmp.TriggerEvent.TextChanged,
-      cmp.TriggerEvent.InsertEnter,
-    },
-    completeopt = "menuone,noinsert,noselect",
+    -- autocomplete = {
+    --   cmp.TriggerEvent.TextChanged,
+    --   cmp.TriggerEvent.InsertEnter,
+    -- },
+    completeopt = "menu,noselect",
+    -- completeopt = "menuone,noinsert,noselect",
     keyword_length = 1,
   },
   snippet = {
@@ -108,10 +109,12 @@ cmp.setup {
       vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
       -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
       vim_item.menu = ({
+        omni = "[VimTex]",
         nvim_lsp = "[LSP]",
         luasnip = "[Snippet]",
         buffer = "[Buffer]",
         spell = "[Spell]",
+        latex_symbols = "[Symbols]",
         path = "[Path]",
         cmdline = "[LSP]",
       })[entry.source.name]
@@ -119,97 +122,73 @@ cmp.setup {
     end,
   },
   sources = {
+    { name = "omni" },
     { name = "nvim_lsp" },
     { name = "luasnip" },
-    { name = "buffer" },
-    -- { name = "dictionary" },
-    { name = "path" },
-    -- { name = "cmdline" }, -- was throwing errors
-    { name = "lua-latex-symbols",
-      option = { cache = true },
-      -- The `cache` option is used to determine whether to generate the list of symbols every time you start Neovim, or if it should be stored in a cache file to save time. I strongly do not advise changing this option because the data used for this plugin has not been updated since 2011.
-      filetype = { "tex", "latex" },
-    },
+    { name = "buffer", keyword_length = 3 },
+    -- { name = "spell" },
     { name = "spell",
+      keyword_length = 5,
       option = {
           keep_all_entries = false,
           enable_in_context = function()
               return true
-          end,
+          end
       },
     },
+    { name = "latex_symbols",
+      filetype = { "tex", "latex" },
+      option = { cache = true }, -- avoids reloading each time
+    },
+    { name = "path" },
   },
   confirm_opts = {
     behavior = cmp.ConfirmBehavior.Replace,
     select = false,
   },
+  view = {
+    entries = 'custom',
+  },
   window = {
     documentation = {
       border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
-    },
-  },
+    }
+  }
 }
-  -- experimental = {
-  --   ghost_text = true,
-  --   native_menu = false,
-  -- },
 
 
--- TODO was trying to get <C-j>, <C-k> to work in the command line
--- cmp-cmdline
+
+-- TODO zotero import
+    -- { name = "cmp_zotcite",
+    --   filetype = { "tex", "latex", "pandoc", "markdown", "rmd", "quarto" },
+    -- },
+      -- could use but seems like vimtex has access to .bib
+
 -- `/` cmdline setup.
 cmp.setup.cmdline('/', {
-  mapping = cmp.mapping.preset.cmdline({
-    -- ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
-    -- ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
-    -- ["<CR>"] = cmp.mapping.confirm({ select = true }),
-  }),
+  mapping = cmp.mapping.preset.cmdline(),
   sources = {
-    { name = 'buffer' }
+    {name = 'buffer'}
   }
 })
 
+
 -- `:` cmdline setup.
 cmp.setup.cmdline(':', {
-  mapping = cmp.mapping.preset.cmdline({
-    -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
-    -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
-    -- ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
-  }),
-  sources = cmp.config.sources({
-    { name = 'path' }
-  }, {
-    { name = 'cmdline',
-      option = {
-        ignore_cmds = { 'Man', '!' }
-      }
-    },
-    mapping = cmp.mapping.preset.cmdline({}), -- fixes supertab
-  }),
+  mapping = cmp.mapping.preset.cmdline(),
+  sources = {
+    {name = 'path'},
+    {name = 'cmdline'}
+  }
 })
 
 
+-- TODO was trying to get <C-j>, <C-k> to work in the command line
 
--- -- -- Conseal menu if text after cursor, or no text before cursor
--- vim.api.nvim_create_autocmd(
---   {"TextChangedI", "TextChangedP"},
---   {
---     callback = function()
---       local line = vim.api.nvim_get_current_line()
---       local cursor = vim.api.nvim_win_get_cursor(0)[2]
---
---       local current = string.sub(line, cursor, cursor + 1)
---       if current == "." or current == "," or current == " " then
---         require('cmp').close()
---       end
---
---       local before_line = string.sub(line, 1, cursor + 1)
---       local after_line = string.sub(line, cursor + 1, -1)
---       if not string.match(before_line, '^%s+$') then
---         if after_line == "" or string.match(before_line, " $") or string.match(before_line, "%.$") then
---           require('cmp').complete()
---         end
---       end
---   end,
---   pattern = "*"
--- })
+  -- mapping = cmp.mapping.preset.cmdline({
+  --   ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+  --   ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+  --   ["<CR>"] = cmp.mapping.confirm({ select = true }),
+    -- ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item()),
+    -- ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item()),
+  -- }),
