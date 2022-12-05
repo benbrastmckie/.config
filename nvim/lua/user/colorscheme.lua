@@ -1,11 +1,13 @@
 -- OTHER ---
 
+-- local colorscheme = "duskfox"
 -- local colorscheme = "melange"
--- local colorscheme = "tokyonight"
+-- local colorscheme = "tokyonight-night"
+
 -- local colorscheme = "onedark"
 --   -- style options: dark, darker, cool, deep, warm, warmer, light
 --   require('onedark').setup {
---       style = 'warmer'
+--       style = 'dark'
 --   }
 --   require('onedark').load()
 
@@ -15,11 +17,12 @@
 -- -- setup must be called before loading the colorscheme
 -- -- Default options:
 -- require("gruvbox").setup({
+--   gruvbox_guisp_fallback = "bold",
 --   undercurl = true,
 --   underline = true,
 --   bold = true,
 --   italic = true,
---   strikethrough = true,
+--   strikethrough = false,
 --   invert_selection = false,
 --   invert_signs = false,
 --   invert_tabline = false,
@@ -35,10 +38,14 @@
 --   --     bright_green = "#990000",
 --   -- }
 -- })
--- vim.cmd("colorscheme gruvbox")
+
+-- vim.g['gruvbox_guisp_fallback'] = "bg"
+-- avoids underlining spelling errors
 
 local colorscheme = "gruvbox"
+-- local colorscheme = "gruvbox-baby"
 
+-- vim.g['gruvbox_guisp'] = "bg"
 -- GRUVBOX --
 
 local status_ok, _ = pcall(vim.cmd, "colorscheme " .. colorscheme)

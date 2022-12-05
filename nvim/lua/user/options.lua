@@ -1,7 +1,5 @@
 local options = {
   spell = true,
-  -- set complete+=kspell                    " set spell spelllang=en_gb
-  -- autocmd BufRead,BufNewFile *.tex setlocal spell spelllang=en_gb
   spelllang = { 'en_gb' },
   backup = false,                          -- creates a backup file
   clipboard = "unnamedplus",               -- allows neovim to access the system clipboard
@@ -16,7 +14,8 @@ local options = {
   showmode = false,                        -- we don't need to see things like -- INSERT -- anymore
   showtabline = 2,                         -- always show tabs
   smartcase = true,                        -- smart case
-  smartindent = false,                     -- make indenting smarter again
+  smartindent = true,                     -- make indenting smarter again
+  -- autoindent = true,                     -- make indenting smarter again
   splitbelow = true,                       -- force all horizontal splits to go below current window
   splitright = true,                       -- force all vertical splits to go to the right of current window
   swapfile = false,                        -- creates a swapfile
@@ -42,6 +41,12 @@ local options = {
   sidescrolloff = 7,                       -- minimal number of screen columns either side of cursor if wrap is `false`
   guifont = "monospace:h17",               -- the font used in graphical neovim applications
 }
+
+-- vim.g['tex_flavor'] = 'latex'
+-- vim.g['latex_indent_enabled'] = 0
+-- vim.g['tex_indent_items'] = 0
+-- vim.g['tex_indent_and'] = 0
+-- vim.g['tex_indent_brace'] = 0
 
 vim.opt.shortmess:append "c"
 

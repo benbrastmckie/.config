@@ -35,9 +35,11 @@ npairs.setup {
   -- },
 }
 
-local Rule = require('nvim-autopairs.rule')
+local npairs = require'nvim-autopairs'
 
-local cond = require('nvim-autopairs.conds')
+local Rule = require'nvim-autopairs.rule'
+
+local cond = require'nvim-autopairs.conds'
 
 npairs.add_rules({
   Rule("`","'","tex"),
@@ -70,10 +72,10 @@ npairs.add_rules({
 )
 
 
-
 require('nvim-autopairs').get_rule('$'):with_move(function(opts)
-    return opts.char == opts.next_char:sub(1, 1)
+  return opts.char == opts.next_char:sub(1, 1)
 end)
+
 
 local cmp_autopairs = require "nvim-autopairs.completion.cmp"
 local cmp_status_ok, cmp = pcall(require, "cmp")
