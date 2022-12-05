@@ -74,8 +74,8 @@ snippet labelalign "Label Align" b
 
 # Enumerate
 snippet enum "Enumerate" b
-	\begin{enumerate}${1:%}[leftmargin=0in,labelsep=.15in] 
-		\item[${2:\it} ${3:Label:}] ${0}
+	\begin{enumerate}
+		\item[${1:\it} ${2:Label:}] ${0}
 	\end{enumerate}
 #
 
@@ -216,6 +216,45 @@ snippet tikz "Tikz environment" b
 	\end{figure}
 	${0}
 
+snippet lemma "Lemma" bi
+	\begin{lemma}
+		${0:${VISUAL}}
+	\end{lemma}
+
+snippet prop "Proposition" bi
+	\begin{prop}[$1]
+		${0:${VISUAL}}
+	\end{prop}
+
+snippet thrm "Theorem" bi
+	\begin{theorem}[$1]
+		${0:${VISUAL}}
+	\end{theorem}
+
+snippet prf "Proof" bi
+	\begin{myproof}[$1]
+		${0:${VISUAL}}
+	\end{myproof}
+
+snippet def "Definition" bi
+	\begin{definition}[$1]
+		${0:${VISUAL}}
+	\end{definition}
+
+snippet prob "Problem" bi
+	\begin{problem}[$1]
+		${0:${VISUAL}}
+	\end{problem}
+
+snippet corl "Corollary" bi
+	\begin{corollary}[$1]
+		${0:${VISUAL}}
+	\end{corollary}
+
+snippet example "Example" bi
+	\begin{example}[$1]
+		${0:${VISUAL}}
+	\end{example}
 
 
 

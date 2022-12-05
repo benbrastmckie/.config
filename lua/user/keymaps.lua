@@ -30,7 +30,18 @@ keymap("n", "<C-z>", "<nop>", opts)
 
 
 -- Spelling
-vim.keymap.set("n", "<C-s>", "z=", { remap = true})
+vim.keymap.set("n", "<C-s>", function()
+  require("telescope.builtin").spell_suggest(require("telescope.themes").get_cursor({
+      previewer = false,
+      layout_config = {
+        width = 50,
+        height = 15,
+      }
+    })
+  )
+end, { remap = true })
+-- vim.keymap.set("n", "<C-s>", "z=", { remap = true}) 
+-- keymap("n", "<C-s>", "<cmd>Telescope spell_suggest<cr>", { remap = true})
 
 
 -- Kill search highlights
@@ -38,7 +49,10 @@ keymap("n", "<CR>", ":noh<CR>", opts)
 
 
 -- Find project files
-keymap("n", "<C-p>", "<cmd>lua require('telescope.builtin').find_files(require('telescope.themes').get_dropdown{previewer = false})<cr>", opts)
+vim.keymap.set("n", "<C-p>", function ()
+  require('telescope.builtin').find_files(require('telescope.themes').get_dropdown({previewer = false})
+  )
+end, { remap = true })
 
 
 -- Comment
@@ -92,6 +106,11 @@ keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
 keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
 keymap("v", "<A-j>", ":m'>+<CR>gv", opts)
 keymap("v", "<A-k>", ":m-2<CR>gv", opts)
+
+
+-- Horizontal lime movments --
+keymap("n", "<c-u>", "<c-u>zz", opts)
+keymap("n", "<c-d>", "<c-d>zz", opts)
 
 
 -- Horizontal lime movments --

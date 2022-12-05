@@ -115,8 +115,8 @@ cmp.setup {
         buffer = "[Buffer]",
         spell = "[Spell]",
         latex_symbols = "[Symbols]",
+        cmdline = "[CMD]",
         path = "[Path]",
-        cmdline = "[LSP]",
       })[entry.source.name]
       return vim_item
     end,
@@ -126,7 +126,6 @@ cmp.setup {
     { name = "nvim_lsp" },
     { name = "luasnip" },
     { name = "buffer", keyword_length = 3 },
-    -- { name = "spell" },
     { name = "spell",
       keyword_length = 5,
       option = {

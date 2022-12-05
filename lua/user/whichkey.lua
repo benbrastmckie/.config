@@ -230,6 +230,7 @@ local mappings = {
     e = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<cr>", "snippets"},
     k = { "<cmd>VimtexClean<CR>"            , "kill aux" },
     v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
+    i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
     p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
     n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
     -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
