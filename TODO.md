@@ -1,11 +1,20 @@
 # TODO
 
 - [ ] config
-  - [ ] folding
+  - [ ] update nvim
+    - [ ] remove zotero
+    - [ ] update arch 
+    - [ ] install zotero 
+    - [ ] update nvim 
+  - [ ] can't close quickfix with space-d
+  - [ ] nvim-tree default mappings don't work 
+  - [ ] folding 
   - [ ] indents on new line in enumerate 
   - [ ] lsp 
     - [ ] import from zotero 
       - [x] created vimtex issue
+      - [x] got MWE working 
+      - [ ] find bug 
     - [ ] navigate command and search with <C-j>, <C-k> 
     - [x] spelling in lsp menu 
     - [x] errors when starting a line with a backslash 
