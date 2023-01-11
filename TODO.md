@@ -1,9 +1,11 @@
 # TODO
 
 - [ ] config
+  - [ ] folding
   - [ ] indents on new line in enumerate 
   - [ ] lsp 
     - [ ] import from zotero 
+      - [x] created vimtex issue
     - [ ] navigate command and search with <C-j>, <C-k> 
     - [x] spelling in lsp menu 
     - [x] errors when starting a line with a backslash 
@@ -14,16 +16,16 @@
     - [ ] plugin 
     - [ ] bindings 
     - [ ] WhichKey 
-  - [ ] autopairs 
+  - [x] autopairs 
     - [ ] add single bracket if in open pair 
     - [x] move through second $ 
     - [x] only add spaces when between two $$ 
     - [x] add brackets regardless of characters following 
     - [x] back tick should give latex quotes 
     - [x] skip outside end of pair 
-  - [ ] customise latex snippets 
+  - [x] customise latex snippets 
     - [ ] convert to lua for context dependent snippets
-    - [x] add snippets
+    - [x] add snippets 
     - [x] snippets it and bf adding new line 
     - [x] snippets for it bf etc 
   - [x] colors 

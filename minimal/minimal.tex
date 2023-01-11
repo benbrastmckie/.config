@@ -1,0 +1,33 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper, margin=4cm]{geometry}
+\usepackage[english]{babel}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\title{\sc TITLE}
+\author{\it Benjamin Brast-McKie} 
+\date{\today}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\noindent
+ABSTRACT
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}\label{Intro}
+
+\cite{Acharya2013}
+
+%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{footnotesize} %%Makes bib footnotesize text size
+\bibliographystyle{plain} %%bib style found in bst folder, in bibtex folder, in texmf folder.
+\bibliography{minimal} %%bib database found in bib folder, in bibtex folder
+\thispagestyle{empty} %%Removes page numbers
+\end{footnotesize} %%End makes bib small text size
+
+\end{document}
