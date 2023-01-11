@@ -316,3 +316,11 @@ yarn.lock
 pamac/config
 libfm/libfm.conf
 pcmanfm/default/pcmanfm.conf
+nvim/minimal/minimal.aux
+nvim/minimal/minimal.bbl
+nvim/minimal/minimal.blg
+nvim/minimal/minimal.fdb_latexmk
+nvim/minimal/minimal.fls
+nvim/minimal/minimal.log
+nvim/minimal/minimal.pdf
+nvim/minimal/minimal.synctex.gz

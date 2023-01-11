@@ -252,6 +252,7 @@ local mappings = {
     s = { "<Plug>(nvim-surround-normal)", "surround" },
     d = { "<Plug>(nvim-surround-delete)", "delete" },
     c = { "<Plug>(nvim-surround-change)", "change" },
+    k = { "<Plug>(vimtex-delim-delete)"   , "kill" },
   },
 
 

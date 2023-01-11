@@ -50,7 +50,7 @@ return packer.startup(function(use)
 -- General
   use { "windwp/nvim-autopairs" }
   use { "numToStr/Comment.nvim" }
-  use { "JoosepAlviste/nvim-ts-context-commentstring" }
+  -- use { "JoosepAlviste/nvim-ts-context-commentstring" }
   use { "ahmedkhalf/project.nvim" }
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
@@ -120,8 +120,7 @@ return packer.startup(function(use)
 
 
 -- LaTeX
-  -- Vimscript
-  use { "lervag/vimtex" } -- Vimscript
+  use { "lervag/vimtex" } -- essential for LaTeX; Vimscript
   use { "kdheepak/cmp-latex-symbols" }
   use { "jbyuki/nabla.nvim" }
 
