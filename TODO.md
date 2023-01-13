@@ -1,8 +1,21 @@
 # TODO
 
 - [ ] config
+  - [ ] zathura freezes on suspend 
+  - tab stops indenting after one tab
+  - Telescope: checking external dependencies
+    - WARNING: fd: not found. Install [sharkdp/fd](https://github.com/sharkdp/fd) for extended capabilities
+  - WhichKey: checking conflicting keymaps
+    - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gb"**
+    - INFO: rhs: `<Plug>(comment_toggle_blockwise)`
+    - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gc"**
+    - INFO: rhs: `<Plug>(comment_toggle_linewise)`
+    - WARNING: buffer-local keymap overriding global for mode **"n"**, buf: 0, lhs: **"<leader>"**
+    - INFO: old rhs: `<Nop>`
+    - INFO: new rhs: `<cmd>lua require("which-key").show(" ", {mode = "n", auto = true})<cr>`
   - [ ] update nvim
-    - [ ] remove zotero
+    - [ ] backup zotero
+    - [ ] remove zotero 
     - [ ] update arch 
     - [ ] install zotero 
     - [ ] update nvim 
@@ -39,7 +52,6 @@
     - [x] snippets for it bf etc 
   - [x] colors 
     - [x] make underlining word shading instead
-  - [x] zathura freezes on suspend 
   - [x] WhichKey 
     - [x] sessions 
     - [x] surround 
