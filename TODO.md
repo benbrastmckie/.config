@@ -1,11 +1,32 @@
 # TODO
 
 - [ ] config
+  - [ ] lsp 
+    - [ ] import from zotero 
+      - [x] created vimtex issue
+      - [x] got MWE working 
+      - [x] find bug: .bib is too long
+      - [ ] fix bug
+    - [ ] navigate command and search with <C-j>, <C-k> 
+    - [x] spelling in lsp menu 
+    - [x] errors when starting a line with a backslash 
+    - [x] prevent menu from poping up without entering text 
+    - [x] creating a new line should not trigger lsp menu 
+    - [x] snippets 
   - [ ] zathura freezes on suspend 
-  - tab stops indenting after one tab
-  - Telescope: checking external dependencies
-    - WARNING: fd: not found. Install [sharkdp/fd](https://github.com/sharkdp/fd) for extended capabilities
-  - WhichKey: checking conflicting keymaps
+  - [ ] pdfannots does not always work?
+  - [ ] can't close quickfix with space-d
+  - [ ] nvim-tree default mappings don't work 
+  - [ ] indenting
+    - [ ] indents on new line in enumerate 
+    - [ ] new lines in lists don't have bullets anymore in md?
+    - [ ] adding braces can cause unwanted indentation
+    - [ ] tab stops indenting after one tab
+  - [ ] pandoc 
+    - [ ] plugin 
+    - [ ] bindings 
+    - [ ] WhichKey 
+  - [ ] WhichKey: checking conflicting keymaps
     - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gb"**
     - INFO: rhs: `<Plug>(comment_toggle_blockwise)`
     - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gc"**
@@ -13,31 +34,13 @@
     - WARNING: buffer-local keymap overriding global for mode **"n"**, buf: 0, lhs: **"<leader>"**
     - INFO: old rhs: `<Nop>`
     - INFO: new rhs: `<cmd>lua require("which-key").show(" ", {mode = "n", auto = true})<cr>`
-  - [ ] update nvim
-    - [ ] backup zotero
-    - [ ] remove zotero 
-    - [ ] update arch 
-    - [ ] install zotero 
-    - [ ] update nvim 
-  - [ ] can't close quickfix with space-d
-  - [ ] nvim-tree default mappings don't work 
   - [ ] folding 
-  - [ ] indents on new line in enumerate 
-  - [ ] lsp 
-    - [ ] import from zotero 
-      - [x] created vimtex issue
-      - [x] got MWE working 
-      - [ ] find bug 
-    - [ ] navigate command and search with <C-j>, <C-k> 
-    - [x] spelling in lsp menu 
-    - [x] errors when starting a line with a backslash 
-    - [x] prevent menu from poping up without entering text 
-    - [x] creating a new line should not trigger lsp menu 
-    - [x] snippets 
-  - [ ] pandoc 
-    - [ ] plugin 
-    - [ ] bindings 
-    - [ ] WhichKey 
+  - [x] update nvim
+    - [x] backup zotero
+    - [x] remove zotero 
+    - [x] update arch 
+    - [x] install zotero 
+    - [x] update nvim 
   - [x] autopairs 
     - [ ] add single bracket if in open pair 
     - [x] move through second $ 
