@@ -65,6 +65,8 @@ keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
 
 
 -- Fix 'Y', 'E'
+keymap("n", "Y", "y$", opts)
+keymap("n", "E", "ge", opts)
 keymap("v", "Y", "y$", opts)
 keymap("v", "E", "ge", opts)
 

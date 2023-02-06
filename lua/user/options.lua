@@ -42,11 +42,14 @@ local options = {
   guifont = "monospace:h17",               -- the font used in graphical neovim applications
 }
 
--- vim.g['tex_flavor'] = 'latex'
+-- indent settings (see also vimtex.lua)
+vim.g['tex_flavor'] = 'latex'
+vim.g['tex_indent_items'] = 0              -- turn off enumerate indent
+vim.g['tex_indent_brace'] = 0              -- turn off brace indent
+-- vim.g['tex_indent_and'] = 0             -- whether to align with &
 -- vim.g['latex_indent_enabled'] = 0
--- vim.g['tex_indent_items'] = 0
--- vim.g['tex_indent_and'] = 0
--- vim.g['tex_indent_brace'] = 0
+-- vim.g['vimtex_indent_enabled'] = 0
+-- vim.g['did_indent'] = 1
 
 vim.opt.shortmess:append "c"
 

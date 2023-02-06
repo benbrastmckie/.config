@@ -1,32 +1,11 @@
 # TODO
 
 - [ ] config
-  - [ ] lsp 
-    - [ ] import from zotero 
-      - [x] created vimtex issue
-      - [x] got MWE working 
-      - [x] find bug: .bib is too long
-      - [ ] fix bug
-    - [ ] navigate command and search with <C-j>, <C-k> 
-    - [x] spelling in lsp menu 
-    - [x] errors when starting a line with a backslash 
-    - [x] prevent menu from poping up without entering text 
-    - [x] creating a new line should not trigger lsp menu 
-    - [x] snippets 
-  - [ ] zathura freezes on suspend 
-  - [ ] pdfannots does not always work?
-  - [ ] can't close quickfix with space-d
-  - [ ] nvim-tree default mappings don't work 
-  - [ ] indenting
-    - [ ] indents on new line in enumerate 
-    - [ ] new lines in lists don't have bullets anymore in md?
-    - [ ] adding braces can cause unwanted indentation
-    - [ ] tab stops indenting after one tab
-  - [ ] pandoc 
-    - [ ] plugin 
-    - [ ] bindings 
-    - [ ] WhichKey 
-  - [ ] WhichKey: checking conflicting keymaps
+  - [ ] undo does not work in md
+    - [ ] autolist causing problems?
+  - [ ] shift-m gives error 
+  - [ ] treesitter only load md and tex 
+  - [ ] WhichKey: checking conflicting keymaps 
     - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gb"**
     - INFO: rhs: `<Plug>(comment_toggle_blockwise)`
     - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gc"**
@@ -35,7 +14,32 @@
     - INFO: old rhs: `<Nop>`
     - INFO: new rhs: `<cmd>lua require("which-key").show(" ", {mode = "n", auto = true})<cr>`
   - [ ] folding 
-  - [x] update nvim
+  - [x] indenting 
+    - [x] can't get autolist to work
+    - [x] tab stops indenting after one tab 
+    - [x] indents on new line in enumerate 
+    - [x] adding braces can cause unwanted indentation 
+  - [x] pandoc 
+    - [x] plugin 
+    - [x] bindings 
+    - [x] WhichKey 
+  - [x] nvim-tree default mappings don't work 
+  - [x] zathura freezes on suspend 
+  - [x] can't close quickfix with space-d 
+  - [x] bibexport does not always work? 
+  - [x] lsp 
+    - [x] import from zotero 
+      - [x] created vimtex issue
+      - [x] got MWE working 
+      - [x] find bug: .bib is too long 
+      - [x] fix bug 
+    - [ ] navigate command and search with <C-j>, <C-k> 
+    - [x] spelling in lsp menu 
+    - [x] errors when starting a line with a backslash 
+    - [x] prevent menu from poping up without entering text 
+    - [x] creating a new line should not trigger lsp menu 
+    - [x] snippets 
+  - [x] update nvim 
     - [x] backup zotero
     - [x] remove zotero 
     - [x] update arch 
