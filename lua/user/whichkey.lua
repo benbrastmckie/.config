@@ -30,7 +30,7 @@ local setup = {
     -- override the label used to display some keys. It doesn't effect WK in any other way.
     -- For example:
     -- ["<space>"] = "SPC",
-    -- ["<cr>"] = "RET",
+    -- ["<CR>"] = "RET",
     -- ["<tab>"] = "TAB",
   },
   icons = {
@@ -78,7 +78,7 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
--- hjkoz
+-- hjoz
 
 -- GENERAL MAPPINGS
 
@@ -86,184 +86,131 @@ local mappings = {
   ["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
   ["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
   ["d"] = { "<cmd>bdelete!<CR>"               , "delete buffer" },
-  ["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
+  ["e"] = { "<cmd>NvimTreeToggle<CR>"         , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
-  ["n"] = { "<cmd>Telescope bibtex<cr>"       , "new citation" },
+  ["l"] = { "<cmd>VimtexErrors<CR>"           , "log" },
   ["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
-  ["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
+  ["r"] = { "<cmd>Telescope bibtex<CR>"       , "references" },
   ["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
   ["v"] = { "<cmd>VimtexView<CR>"             , "view" },
   ["w"] = { "<cmd>wa!<CR>"                    , "write" },
   ["x"] = { "" , "checkmark" },
-  ["y"] = { "<cmd>YankyRingHistory<cr>"       , "yank history" },
-  -- ["o"] = { "<Plug>(autolist.force_recalculate)" , "reorder list" },
-
-
-
--- PANDOC --
-
   p = {
     name = "PANDOC",
-    w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<cr>" , "word"},
-    m = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<cr>"   , "markdown"},
-    h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<cr>" , "html"},
-    l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<cr>"  , "latex"},
-    p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf'<cr>"  , "pdf"},
+    w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
+    m = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<CR>"   , "markdown"},
+    h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>" , "html"},
+    l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>"  , "latex"},
+    p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf'<CR>"  , "pdf"},
     -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
   },
-
-
--- TEMPLATES
-
   t = {
     name = "TEMPLATES",
-    c = { "<cmd>PackerCompile<cr>", "Compile" },
-    p = { "<cmd>read ~/.config/nvim/templates/PhilPaper.tex<CR>" , "PhilPaper.tex"},
-    l = { "<cmd>read ~/.config/nvim/templates/Letter.tex<CR>"    , "Letter.tex"},
-    g = { "<cmd>read ~/.config/nvim/templates/Glossary.tex<CR>"  , "Glossary.tex"},
-    h = { "<cmd>read ~/.config/nvim/templates/HandOut.tex<CR>"   , "HandOut.tex"},
-    b = { "<cmd>read ~/.config/nvim/templates/PhilBeamer.tex<CR>", "PhilBeamer.tex"},
-    s = { "<cmd>read ~/.config/nvim/templates/SubFile.tex<CR>"   , "SubFile.tex"},
-    r = { "<cmd>read ~/.config/nvim/templates/Root.tex<CR>"      , "Root.tex"},
-    m = { "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>"           , "MultipleAnswer.tex"},
+    c = { "<cmd>PackerCompile<CR>", "Compile" },
+    p = { 
+      "<cmd>read ~/.config/nvim/templates/PhilPaper.tex<CR>", 
+      "PhilPaper.tex",
+    },
+    l = { 
+      "<cmd>read ~/.config/nvim/templates/Letter.tex<CR>",
+      "Letter.tex",
+    },
+    g = { 
+      "<cmd>read ~/.config/nvim/templates/Glossary.tex<CR>", 
+      "Glossary.tex",
+    },
+    h = { 
+      "<cmd>read ~/.config/nvim/templates/HandOut.tex<CR>", 
+      "HandOut.tex",
+    },
+    b = { 
+      "<cmd>read ~/.config/nvim/templates/PhilBeamer.tex<CR>", 
+      "PhilBeamer.tex",
+    },
+    s = { 
+      "<cmd>read ~/.config/nvim/templates/SubFile.tex<CR>", 
+      "SubFile.tex",
+    },
+    r = { 
+      "<cmd>read ~/.config/nvim/templates/Root.tex<CR>", 
+      "Root.tex",
+    },
+    m = { 
+      "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>", 
+      "MultipleAnswer.tex",
+    },
   },
-
-
--- GIT
-
   g = {
     name = "GIT",
     g = { "<cmd>lua _LAZYGIT_TOGGLE()<CR>", "lazygit" },
-    j = { "<cmd>lua require 'gitsigns'.next_hunk()<cr>", "next hunk" },
-    k = { "<cmd>lua require 'gitsigns'.prev_hunk()<cr>", "prev hunk" },
-    l = { "<cmd>lua require 'gitsigns'.blame_line()<cr>", "blame" },
-    p = { "<cmd>lua require 'gitsigns'.preview_hunk()<cr>", "preview hunk" },
-    r = { "<cmd>lua require 'gitsigns'.reset_hunk()<cr>", "reset hunk" },
-    -- R = { "<cmd>lua require 'gitsigns'.reset_buffer()<cr>", "Reset Buffer" },
-    s = { "<cmd>lua require 'gitsigns'.stage_hunk()<cr>", "stage hunk" },
+    j = { "<cmd>lua require 'gitsigns'.next_hunk()<CR>", "next hunk" },
+    k = { "<cmd>lua require 'gitsigns'.prev_hunk()<CR>", "prev hunk" },
+    l = { "<cmd>lua require 'gitsigns'.blame_line()<CR>", "blame" },
+    p = { "<cmd>lua require 'gitsigns'.preview_hunk()<CR>", "preview hunk" },
+    r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
+    s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
     u = {
-      "<cmd>lua require 'gitsigns'.undo_stage_hunk()<cr>", "unstage hunk" },
-    o = { "<cmd>Telescope git_status<cr>", "open changed file" },
-    b = { "<cmd>Telescope git_branches<cr>", "checkout branch" },
-    c = { "<cmd>Telescope git_commits<cr>", "checkout commit" },
-    d = { "<cmd>Gitsigns diffthis HEAD<cr>", "diff" },
+      "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
+    o = { "<cmd>Telescope git_status<CR>", "open changed file" },
+    b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
+    c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
+    d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
   },
-    -- \ 'c' : [':FloatermNew! --disposable gh issue create', 'create issue'],
-    -- \ 'l' : [':FloatermNew! --disposable gh issue list'  , 'list issues'],
-    -- \ 'r' : [':FloatermNew! --disposable gh reference'   , 'reference'],
-    -- \ 'v' : [':FloatermNew! --disposable gh repo view -w', 'view repo'],
-  
-
--- LSP
-
-  l = {
-    name = "LSP",
-    a = { "<cmd>lua vim.lsp.buf.code_action()<cr>", "Code Action" },
-    d = {
-      "<cmd>Telescope diagnostics bufnr=0<cr>",
-      "Document Diagnostics",
-    },
-    w = {
-      "<cmd>Telescope diagnostics<cr>",
-      "Workspace Diagnostics",
-    },
-    f = { "<cmd>lua vim.lsp.buf.format{async=true}<cr>", "Format" },
-    i = { "<cmd>LspInfo<cr>", "Info" },
-    I = { "<cmd>LspInstallInfo<cr>", "Installer Info" },
-    j = {
-      "<cmd>lua vim.lsp.diagnostic.goto_next()<CR>",
-      "Next Diagnostic",
-    },
-    k = {
-      "<cmd>lua vim.lsp.diagnostic.goto_prev()<cr>",
-      "Prev Diagnostic",
-    },
-    l = { "<cmd>lua vim.lsp.codelens.run()<cr>", "CodeLens Action" },
-    q = { "<cmd>lua vim.lsp.diagnostic.set_loclist()<cr>", "Quickfix" },
-    r = { "<cmd>lua vim.lsp.buf.rename()<cr>", "Rename" },
-    s = { "<cmd>Telescope lsp_document_symbols<cr>", "Document Symbols" },
-    S = {
-      "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>",
-      "Workspace Symbols",
-    },
-  },
-
-
--- FIND
-
   f = {
     name = "FIND",
-    g = { "<cmd>Telescope git_branches<cr>", "git branches" },
-    f = { "<cmd>Telescope live_grep theme=ivy<cr>", "find in project" },
-    -- a = { "<cmd>lua require('telescope.builtin').find_files(require('telescope.themes').get_dropdown{previewer = false})<cr>", "all" },
-    t = { "<cmd>Telescope colorscheme<cr>", "theme" },
-    h = { "<cmd>Telescope help_tags<cr>", "help" },
-    m = { "<cmd>Telescope man_pages<cr>", "man pages" },
-    -- r = { "<cmd>Telescope oldfiles<cr>", "recent" },
-    r = { "<cmd>Telescope registers<cr>", "registers" },
-    k = { "<cmd>Telescope keymaps<cr>", "keymaps" },
-    c = { "<cmd>Telescope commands<cr>", "commands" },
-    b = {
-      "<cmd>lua require('telescope.builtin').buffers(require('telescope.themes').get_dropdown{previewer = false})<cr>",
-      "buffers",
-    },
+      b = {
+        "<cmd>lua require('telescope.builtin').buffers(require('telescope.themes').get_dropdown{previewer = false})<CR>",
+        "buffers",
+      },
+      c = { "<cmd>Telescope commands<CR>", "commands" },
+      f = { "<cmd>Telescope live_grep theme=ivy<CR>", "find in project" },
+      g = { "<cmd>Telescope git_branches<CR>", "git branches" },
+      h = { "<cmd>Telescope help_tags<CR>", "help" },
+      k = { "<cmd>Telescope keymaps<CR>", "keymaps" },
+      m = { "<cmd>Telescope man_pages<CR>", "man pages" },
+      r = { "<cmd>Telescope registers<CR>", "registers" },
+      t = { "<cmd>Telescope colorscheme<CR>", "theme" },
+      -- r = { "<cmd>Telescope oldfiles<CR>", "recent" },
+      y = { "<cmd>YankyRingHistory<CR>"       , "yanks" },
   },
-
-  -- TODO: outstanding find bindings
-    -- \ 'h' : [':Files ~'                          , 'files in home'],
-    -- \ 'p' : [':GGrep'                            , 'in project'],
-
--- SESSIONS
-
   m = {
     name = "MANAGE SESSIONS",
     s = { "<cmd>SessionManager save_current_session<CR>", "save" },
     d = { "<cmd>SessionManager delete_session<CR>", "delete" },
     l = { "<cmd>SessionManager load_session<CR>", "load" },
   },
-
--- ACTIONS
-
   a = {
     name = "ACTIONS",
-    b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<cr>", "bib export"},
-    g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<cr>", "glossary"},
-    e = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<cr>", "snippets"},
-    k = { "<cmd>VimtexClean<CR>"            , "kill aux" },
-    v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
+    b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", "bib export"},
+    c = { "<cmd>VimtexClean<CR>"            , "clean aux" },
+    g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary"},
+    h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
     i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
+    k = {
+      "<cmd>lua require('cmp').setup.buffer { enabled = false }<CR>",
+      "kill LSP",
+    },
+    l = {
+      "<cmd>lua require('cmp').setup.buffer { enabled = true }<CR>",
+      "load LSP",
+    },
     p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
-    n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
-    -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
-    h = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
+    s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "edit snippets"},
+    v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
   },
-
--- vim.keymap.set("n", "<c-n>", "<Plug>(YankyCycleForward)")
--- vim.keymap.set("n", "<c-p>", "<Plug>(YankyCycleBackward)")
-
-
-    -- p = { "<cmd>silent w<bar>lua require('pandoc.render').init()<cr>", "pandoc" },
-    -- p = { '<cmd>silent w<bar>lua require("auto-pandoc").run_pandoc()<cr>', "pandoc" },
-  --   v = { "<cmd>FloatermNew! --disposable vifm", 'vifm'},
-    -- t = { "<cmd>FloatermKill!", "kill terminals"},
-    -- v = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && ls -a", "view swap"},
-    -- k = { "<cmd>FloatermNew! --disposable cd ~/.local/share/nvim/swap && rm *.swp", "kill swap"},
-
-
-  -- SURROUND
   s = {
     name = "SURROUND",
     s = { "<Plug>(nvim-surround-normal)", "surround" },
     d = { "<Plug>(nvim-surround-delete)", "delete" },
     c = { "<Plug>(nvim-surround-change)", "change" },
-    k = { "<Plug>(vimtex-delim-delete)"   , "kill" },
+    -- k = { "<Plug>(vimtex-delim-delete)"   , "kill" },
   },
-
+}
 
   -- TODO: markdown
   -- m = {
   --   name = "MARKDOWN",
-  --   b = { "<cmd>Telescope git_branches<cr>", "Checkout branch" },
+  --   b = { "<cmd>Telescope git_branches<CR>", "Checkout branch" },
   -- },
     -- \ 'a' : [':call PdfAnnots()<CR>'               , 'annotate'],
     -- \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
@@ -271,16 +218,6 @@ local mappings = {
     -- \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
 
 
-  -- TODO: terminal
-  -- t = {
-  --   name = "TERMINAL",
-  --   u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
-  --   f = { "<cmd>ToggleTerm direction=float<cr>", "Float" },
-  --   h = { "<cmd>ToggleTerm size=10 direction=horizontal<cr>", "Horizontal" },
-  --   v = { "<cmd>ToggleTerm size=80 direction=vertical<cr>", "Vertical" },
-  -- },
-
-}
 
 which_key.setup(setup)
 which_key.register(mappings, opts)

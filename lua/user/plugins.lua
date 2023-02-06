@@ -125,10 +125,6 @@ return packer.startup(function(use)
   use { "jbyuki/nabla.nvim" } -- show symbols in editor
 
 -- Markdown
-  -- use({
-  --   'NFrid/markdown-togglecheck',
-  --   requires = 'NFrid/treesitter-utils',
-  -- })
   use({
     "gaoDean/autolist.nvim",
     ft = {

@@ -152,9 +152,8 @@ cmp.setup {
     documentation = {
       border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
     }
-  }
+  },
 }
-
 
 
 -- TODO zotero import
