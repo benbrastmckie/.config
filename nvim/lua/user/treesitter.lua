@@ -5,6 +5,7 @@ end
 
 configs.setup({
   ensure_installed = {  -- list "all" or a list of languages
+    "latex",
     "markdown_inline", 
     "markdown", 
     "lua", 
