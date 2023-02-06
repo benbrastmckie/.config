@@ -43,10 +43,11 @@
     4. bibexport
   3. pandoc
 3. basics
-  1. keybindings
+  1. keymaps
     1. vim standards
     2. new additions in cheatsheet
-    3. save and quit
+    3. unmapping
+    4. save and quit
   2. explorer
     1. new file
     2. new directory

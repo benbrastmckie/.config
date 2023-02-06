@@ -75,7 +75,6 @@ return packer.startup(function(use)
 
 -- Appearance
   use { "akinsho/bufferline.nvim" }
-	use { "moll/vim-bbye" }
   use { "nvim-lualine/lualine.nvim" }
   use { "lukas-reineke/indent-blankline.nvim" }
   use { "goolord/alpha-nvim" }
@@ -148,14 +147,14 @@ return packer.startup(function(use)
       autolist.create_mapping_hook("n", "O", autolist.new_before)
       autolist.create_mapping_hook("n", ">>", autolist.indent)
       autolist.create_mapping_hook("n", "<<", autolist.indent)
-      autolist.create_mapping_hook("n", "<C-r>", autolist.force_recalculate)
+      -- autolist.create_mapping_hook("n", "<leader-o>", autolist.force_recalculate)
       autolist.create_mapping_hook("n", "<leader>x", autolist.invert_entry, "")
-        vim.api.nvim_create_autocmd("TextChanged", {
-          pattern = "*",
-          callback = function()
-            vim.cmd.normal({autolist.force_recalculate(nil, nil), bang = false})
-          end
-        })
+        -- vim.api.nvim_create_autocmd("TextChanged", {
+        --   pattern = "*",
+        --   callback = function()
+        --     vim.cmd.normal({autolist.force_recalculate(nil, nil), bang = false})
+        --   end
+        -- })
     end,
   })
 
@@ -179,7 +178,8 @@ return packer.startup(function(use)
   }
 
 -- Treesitter
-	use { "nvim-treesitter/nvim-treesitter", commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" }
+	use { "nvim-treesitter/nvim-treesitter" }
+-- , commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" 
 
 
 	-- Git

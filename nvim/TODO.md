@@ -1,10 +1,9 @@
 # TODO
 
 - [ ] config
-  - [ ] undo does not work in md
-    - [ ] autolist causing problems?
-  - [ ] shift-m gives error 
-  - [ ] treesitter only load md and tex 
+  - [ ] undo does not work in md after checkmark
+    - [x] autolist causing problems?
+    - [ ] auto-recalculate does not work after turning off problem code
   - [ ] WhichKey: checking conflicting keymaps 
     - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gb"**
     - INFO: rhs: `<Plug>(comment_toggle_blockwise)`
@@ -14,6 +13,8 @@
     - INFO: old rhs: `<Nop>`
     - INFO: new rhs: `<cmd>lua require("which-key").show(" ", {mode = "n", auto = true})<cr>`
   - [ ] folding 
+  - [x] treesitter only load md and tex 
+  - [x] shift-m gives error 
   - [x] indenting 
     - [x] can't get autolist to work
     - [x] tab stops indenting after one tab 

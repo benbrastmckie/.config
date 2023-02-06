@@ -78,14 +78,14 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
--- hjknoz
+-- hjkoz
 
 -- GENERAL MAPPINGS
 
 local mappings = {
   ["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
   ["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
-  ["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
+  ["d"] = { "<cmd>bdelete!<CR>"               , "delete buffer" },
   ["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
   ["n"] = { "<cmd>Telescope bibtex<cr>"       , "new citation" },
@@ -96,12 +96,8 @@ local mappings = {
   ["w"] = { "<cmd>wa!<CR>"                    , "write" },
   ["x"] = { "" , "checkmark" },
   ["y"] = { "<cmd>YankyRingHistory<cr>"       , "yank history" },
+  -- ["o"] = { "<Plug>(autolist.force_recalculate)" , "reorder list" },
 
--- ["z"] = { "^<cmd>lua require('markdown-togglecheck').toggle()<CR>" , "checkmark" },
--- y = { "<cmd>Telescope yank_history<cr>", "yank history" },
--- ["r"] = { "<cmd>source $MYVIMRC<cr>"      , "reload config" },
--- ["h"] = { "<cmd>nohlsearch<CR>", "No Highlight" },
--- ["p"] = { "<cmd>lua require('telescope').extensions.projects.projects()<cr>", "projects" },
 
 
 -- PANDOC --
