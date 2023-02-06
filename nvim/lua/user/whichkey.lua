@@ -78,22 +78,27 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
+-- hjknoz
+
 -- GENERAL MAPPINGS
 
 local mappings = {
+  ["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
+  ["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
+  ["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
+  ["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
+  ["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
+  ["n"] = { "<cmd>Telescope bibtex<cr>"       , "new citation" },
+  ["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
+  ["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
+  ["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
+  ["v"] = { "<cmd>VimtexView<CR>"             , "view" },
+  ["w"] = { "<cmd>wa!<CR>"                    , "write" },
+  ["x"] = { "" , "checkmark" },
+  ["y"] = { "<cmd>YankyRingHistory<cr>"       , "yank history" },
 
-["d"] = { "<cmd>Bdelete!<CR>"               , "delete buffer" },
-["e"] = { "<cmd>NvimTreeToggle<cr>"         , "explorer" },
-["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
-["w"] = { "<cmd>wa!<CR>"                    , "write" },
-["b"] = { "<cmd>VimtexCompile<CR>"          , "build" },
-["o"] = { "<cmd>VimtexView<CR>"             , "open" },
-["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
-["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
-["c"] = { "<cmd>VimtexCountWords!<CR>"      , "count" },
-["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
-["m"] = { "^<cmd>lua require('markdown-togglecheck').toggle()<CR>" , "markdown toggle" },
-
+-- ["z"] = { "^<cmd>lua require('markdown-togglecheck').toggle()<CR>" , "checkmark" },
+-- y = { "<cmd>Telescope yank_history<cr>", "yank history" },
 -- ["r"] = { "<cmd>source $MYVIMRC<cr>"      , "reload config" },
 -- ["h"] = { "<cmd>nohlsearch<CR>", "No Highlight" },
 -- ["p"] = { "<cmd>lua require('telescope').extensions.projects.projects()<cr>", "projects" },
@@ -101,15 +106,15 @@ local mappings = {
 
 -- PANDOC --
 
-  -- p = {
-  --   name = "PANDOC",
-  --   -- w = { "<cmd>ToggleTerm direction=float <bar> pandoc %:p -o %:p:r.docx <cr>" , "word"},
-  --   -- m = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.md"   , "markdown"},
-  --   -- h = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.html" , "html"},
-  --   -- l = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.tex"  , "latex"},
-  --   -- p = { "<cmd>FloatermNew! --disposable pandoc %:p -o %:p:r.pdf"  , "pdf"},
-  --   -- x = { "<cmd>FloatermNew! echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
-  -- },
+  p = {
+    name = "PANDOC",
+    w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<cr>" , "word"},
+    m = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<cr>"   , "markdown"},
+    h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<cr>" , "html"},
+    l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<cr>"  , "latex"},
+    p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf'<cr>"  , "pdf"},
+    -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
+  },
 
 
 -- TEMPLATES
@@ -212,9 +217,10 @@ local mappings = {
     -- \ 'h' : [':Files ~'                          , 'files in home'],
     -- \ 'p' : [':GGrep'                            , 'in project'],
 
--- PROJECTS
-  p = {
-    name = "PROJECTS",
+-- SESSIONS
+
+  m = {
+    name = "MANAGE SESSIONS",
     s = { "<cmd>SessionManager save_current_session<CR>", "save" },
     d = { "<cmd>SessionManager delete_session<CR>", "delete" },
     l = { "<cmd>SessionManager load_session<CR>", "load" },
@@ -224,7 +230,6 @@ local mappings = {
 
   a = {
     name = "ACTIONS",
-    -- y = { "<cmd>CocList -A --normal yank", "yanks"},
     b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<cr>", "bib export"},
     g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<cr>", "glossary"},
     e = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<cr>", "snippets"},
@@ -235,8 +240,11 @@ local mappings = {
     n = { "<cmd>lua _NODE_TOGGLE()<cr>", "Node" },
     -- u = { "<cmd>lua _NCDU_TOGGLE()<cr>", "NCDU" },
     h = { "<cmd>lua _HTOP_TOGGLE()<cr>", "Htop" },
-    y = { "<cmd>lua _PYTHON_TOGGLE()<cr>", "Python" },
   },
+
+-- vim.keymap.set("n", "<c-n>", "<Plug>(YankyCycleForward)")
+-- vim.keymap.set("n", "<c-p>", "<Plug>(YankyCycleBackward)")
+
 
     -- p = { "<cmd>silent w<bar>lua require('pandoc.render').init()<cr>", "pandoc" },
     -- p = { '<cmd>silent w<bar>lua require("auto-pandoc").run_pandoc()<cr>', "pandoc" },

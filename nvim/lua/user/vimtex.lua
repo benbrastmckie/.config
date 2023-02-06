@@ -7,7 +7,7 @@ vim.g['vimtex_quickfix_mode'] =0
 vim.g['vimtex_mappings_enabled'] = 1
 
 -- Auto Indent
-vim.g['vimtex_indent_enabled'] = 1
+vim.g['vimtex_indent_enabled'] = 0
 
 -- Error Suppression:
 -- https://github.com/lervag/vimtex/blob/master/doc/vimtex.txt

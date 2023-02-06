@@ -57,6 +57,7 @@ return packer.startup(function(use)
   use { "mbbill/undotree" } -- Vimscript
   use { "mg979/vim-visual-multi" } -- Vimscript
   use { "glacambre/firenvim" } -- Vimscript
+  use { "gbprod/yanky.nvim" }
 
 
 -- Mappings
@@ -122,16 +123,41 @@ return packer.startup(function(use)
 -- LaTeX
   use { "lervag/vimtex" } -- essential for LaTeX; Vimscript
   use { "kdheepak/cmp-latex-symbols" }
-  use { "jbyuki/nabla.nvim" }
-
+  use { "jbyuki/nabla.nvim" } -- show symbols in editor
 
 -- Markdown
+  -- use({
+  --   'NFrid/markdown-togglecheck',
+  --   requires = 'NFrid/treesitter-utils',
+  -- })
   use({
-    'NFrid/markdown-togglecheck',
-    requires = 'NFrid/treesitter-utils',
+    "gaoDean/autolist.nvim",
+    ft = {
+      "markdown",
+      "text",
+      "tex",
+      "plaintex",
+    },
+    config = function()
+      local autolist = require("autolist")
+      autolist.setup()
+      autolist.create_mapping_hook("i", "<CR>", autolist.new)
+      autolist.create_mapping_hook("i", "<Tab>", autolist.indent)
+      autolist.create_mapping_hook("i", "<S-Tab>", autolist.indent, "<C-D>")
+      autolist.create_mapping_hook("n", "o", autolist.new)
+      autolist.create_mapping_hook("n", "O", autolist.new_before)
+      autolist.create_mapping_hook("n", ">>", autolist.indent)
+      autolist.create_mapping_hook("n", "<<", autolist.indent)
+      autolist.create_mapping_hook("n", "<C-r>", autolist.force_recalculate)
+      autolist.create_mapping_hook("n", "<leader>x", autolist.invert_entry, "")
+        vim.api.nvim_create_autocmd("TextChanged", {
+          pattern = "*",
+          callback = function()
+            vim.cmd.normal({autolist.force_recalculate(nil, nil), bang = false})
+          end
+        })
+    end,
   })
-  use { "gaoDean/autolist.nvim" }
-
 
 -- Snippets
   --snippet engine
@@ -146,11 +172,11 @@ return packer.startup(function(use)
     -- , commit = "76ea9a898d3307244dce3573392dcf2cc38f340f" 
 	use { "Shatur/neovim-session-manager" }
 	use { "stevearc/dressing.nvim" }
-  -- use { "nvim-telescope/telescope-bibtex.nvim",
-  --   config = function ()
-  --     require"telescope".load_extension("bibtex")
-  --   end,
-  -- }
+  use { "nvim-telescope/telescope-bibtex.nvim",
+    config = function ()
+      require"telescope".load_extension("bibtex")
+    end,
+  }
 
 -- Treesitter
 	use { "nvim-treesitter/nvim-treesitter", commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" }
