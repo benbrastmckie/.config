@@ -78,7 +78,7 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
--- hjoz
+-- hjknoyz
 
 -- GENERAL MAPPINGS
 
@@ -88,13 +88,72 @@ local mappings = {
   ["d"] = { "<cmd>bdelete!<CR>"               , "delete buffer" },
   ["e"] = { "<cmd>NvimTreeToggle<CR>"         , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"          , "index" },
-  ["l"] = { "<cmd>VimtexErrors<CR>"           , "log" },
+  ["r"] = { "<cmd>VimtexErrors<CR>"           , "report errors" },
   ["q"] = { "<cmd>wqa!<CR>"                   , "quit" },
-  ["r"] = { "<cmd>Telescope bibtex<CR>"       , "references" },
   ["u"] = { "<cmd>UndotreeToggle<CR>"         , "undo" },
   ["v"] = { "<cmd>VimtexView<CR>"             , "view" },
   ["w"] = { "<cmd>wa!<CR>"                    , "write" },
-  ["x"] = { "" , "checkmark" },
+  ["x"] = { ""                                , "checkmark" },
+  a = {
+    name = "ACTIONS",
+    a = { "<cmd>call PdfAnnots()<CR>", "annotate"},
+    b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", "bib export"},
+    c = { "<cmd>VimtexClean<CR>"            , "clean aux" },
+    g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary"},
+    h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
+    i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
+    k = {
+      "<cmd>lua require('cmp').setup.buffer { enabled = false }<CR>",
+      "kill LSP",
+    },
+    l = {
+      "<cmd>lua require('cmp').setup.buffer { enabled = true }<CR>",
+      "load LSP",
+    },
+    p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
+    s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "edit snippets"},
+    v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
+  },
+  f = {
+    name = "FIND",
+      b = {
+        "<cmd>lua require('telescope.builtin').buffers(require('telescope.themes').get_dropdown{previewer = false})<CR>",
+        "buffers",
+      },
+      -- c = { "<cmd>Telescope commands<CR>", "commands" },
+      c = { "<cmd>Telescope bibtex<CR>"       , "citations" },
+      f = { "<cmd>Telescope live_grep theme=ivy<CR>", "find in project" },
+      g = { "<cmd>Telescope git_branches<CR>", "git branches" },
+      h = { "<cmd>Telescope help_tags<CR>", "help" },
+      k = { "<cmd>Telescope keymaps<CR>", "keymaps" },
+      m = { "<cmd>Telescope man_pages<CR>", "man pages" },
+      r = { "<cmd>Telescope registers<CR>", "registers" },
+      t = { "<cmd>Telescope colorscheme<CR>", "theme" },
+      -- r = { "<cmd>Telescope oldfiles<CR>", "recent" },
+      y = { "<cmd>YankyRingHistory<CR>"       , "yanks" },
+  },
+  g = {
+    name = "GIT",
+    g = { "<cmd>lua _LAZYGIT_TOGGLE()<CR>", "lazygit" },
+    j = { "<cmd>lua require 'gitsigns'.next_hunk()<CR>", "next hunk" },
+    k = { "<cmd>lua require 'gitsigns'.prev_hunk()<CR>", "prev hunk" },
+    l = { "<cmd>lua require 'gitsigns'.blame_line()<CR>", "blame" },
+    p = { "<cmd>lua require 'gitsigns'.preview_hunk()<CR>", "preview hunk" },
+    r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
+    s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
+    u = {
+      "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
+    o = { "<cmd>Telescope git_status<CR>", "open changed file" },
+    b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
+    c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
+    d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
+  },
+  m = {
+    name = "MANAGE SESSIONS",
+    s = { "<cmd>SessionManager save_current_session<CR>", "save" },
+    d = { "<cmd>SessionManager delete_session<CR>", "delete" },
+    l = { "<cmd>SessionManager load_session<CR>", "load" },
+  },
   p = {
     name = "PANDOC",
     w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
@@ -103,6 +162,12 @@ local mappings = {
     l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>"  , "latex"},
     p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf'<CR>"  , "pdf"},
     -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
+  },
+  s = {
+    name = "SURROUND",
+    s = { "<Plug>(nvim-surround-normal)", "surround" },
+    d = { "<Plug>(nvim-surround-delete)", "delete" },
+    c = { "<Plug>(nvim-surround-change)", "change" },
   },
   t = {
     name = "TEMPLATES",
@@ -140,84 +205,7 @@ local mappings = {
       "MultipleAnswer.tex",
     },
   },
-  g = {
-    name = "GIT",
-    g = { "<cmd>lua _LAZYGIT_TOGGLE()<CR>", "lazygit" },
-    j = { "<cmd>lua require 'gitsigns'.next_hunk()<CR>", "next hunk" },
-    k = { "<cmd>lua require 'gitsigns'.prev_hunk()<CR>", "prev hunk" },
-    l = { "<cmd>lua require 'gitsigns'.blame_line()<CR>", "blame" },
-    p = { "<cmd>lua require 'gitsigns'.preview_hunk()<CR>", "preview hunk" },
-    r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
-    s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
-    u = {
-      "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
-    o = { "<cmd>Telescope git_status<CR>", "open changed file" },
-    b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
-    c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
-    d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
-  },
-  f = {
-    name = "FIND",
-      b = {
-        "<cmd>lua require('telescope.builtin').buffers(require('telescope.themes').get_dropdown{previewer = false})<CR>",
-        "buffers",
-      },
-      c = { "<cmd>Telescope commands<CR>", "commands" },
-      f = { "<cmd>Telescope live_grep theme=ivy<CR>", "find in project" },
-      g = { "<cmd>Telescope git_branches<CR>", "git branches" },
-      h = { "<cmd>Telescope help_tags<CR>", "help" },
-      k = { "<cmd>Telescope keymaps<CR>", "keymaps" },
-      m = { "<cmd>Telescope man_pages<CR>", "man pages" },
-      r = { "<cmd>Telescope registers<CR>", "registers" },
-      t = { "<cmd>Telescope colorscheme<CR>", "theme" },
-      -- r = { "<cmd>Telescope oldfiles<CR>", "recent" },
-      y = { "<cmd>YankyRingHistory<CR>"       , "yanks" },
-  },
-  m = {
-    name = "MANAGE SESSIONS",
-    s = { "<cmd>SessionManager save_current_session<CR>", "save" },
-    d = { "<cmd>SessionManager delete_session<CR>", "delete" },
-    l = { "<cmd>SessionManager load_session<CR>", "load" },
-  },
-  a = {
-    name = "ACTIONS",
-    b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", "bib export"},
-    c = { "<cmd>VimtexClean<CR>"            , "clean aux" },
-    g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary"},
-    h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
-    i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
-    k = {
-      "<cmd>lua require('cmp').setup.buffer { enabled = false }<CR>",
-      "kill LSP",
-    },
-    l = {
-      "<cmd>lua require('cmp').setup.buffer { enabled = true }<CR>",
-      "load LSP",
-    },
-    p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
-    s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "edit snippets"},
-    v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
-  },
-  s = {
-    name = "SURROUND",
-    s = { "<Plug>(nvim-surround-normal)", "surround" },
-    d = { "<Plug>(nvim-surround-delete)", "delete" },
-    c = { "<Plug>(nvim-surround-change)", "change" },
-    -- k = { "<Plug>(vimtex-delim-delete)"   , "kill" },
-  },
 }
-
-  -- TODO: markdown
-  -- m = {
-  --   name = "MARKDOWN",
-  --   b = { "<cmd>Telescope git_branches<CR>", "Checkout branch" },
-  -- },
-    -- \ 'a' : [':call PdfAnnots()<CR>'               , 'annotate'],
-    -- \ 'k' : ['<Plug>MarkdownPreviewStop'           , 'kill preview'],
-    -- \ 'p' : ['<Plug>MarkdownPreview'               , 'preview'],
-    -- \ 's' : [':call markdown#SwitchStatus()<CR>'   , 'select item'],
-
-
 
 which_key.setup(setup)
 which_key.register(mappings, opts)
