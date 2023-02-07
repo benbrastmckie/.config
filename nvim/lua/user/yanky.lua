@@ -9,4 +9,3 @@ require("yanky").setup({
     sync_with_ring = true,
   },
 })
-

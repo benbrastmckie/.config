@@ -42,7 +42,7 @@ local options = {
   guifont = "monospace:h17",               -- the font used in graphical neovim applications
 }
 
--- indent settings (see also vimtex.lua)
+-- INDENT -- (see also vimtex.lua)
 vim.g['tex_flavor'] = 'latex'
 vim.g['tex_indent_items'] = 0              -- turn off enumerate indent
 vim.g['tex_indent_brace'] = 0              -- turn off brace indent
@@ -59,4 +59,18 @@ end
 
 vim.cmd "set whichwrap+=<,>,[,],h,l"
 -- vim.cmd [[set iskeyword+=-]]            -- unites dashed words
--- vim.cmd [[set formatoptions-=cro]] -- TODO: this doesn't seem to work
+
+-- CLIPBOARD -- (for yanky)
+-- to avoid "target string not available" error
+vim.g.clipboard = {
+  name = "xsel_override",
+  copy = {
+    ["+"] = "xsel --input --clipboard",
+    ["*"] = "xsel --input --primary",
+  },
+  paste = {
+    ["+"] = "xsel --output --clipboard",
+    ["*"] = "xsel --output --primary",
+  },
+  cache_enabled = 1,
+}
