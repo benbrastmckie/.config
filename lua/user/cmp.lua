@@ -181,6 +181,13 @@ cmp.setup.cmdline(':', {
 })
 
 
+-- --- Toggle cmp entrirely
+-- function toggle_cmp()
+--   if vim.b.cmp_enabled
+--     then require('cmp').setup.buffer { enabled = false }
+--   else require('cmp').setup.buffer { enabled = true }
+-- end
+
 -- TODO was trying to get <C-j>, <C-k> to work in the command line
 
   -- mapping = cmp.mapping.preset.cmdline({

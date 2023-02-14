@@ -1,44 +1,40 @@
--- local default_config = {
--- 	enabled = true,
--- 	list_cap = 50,
--- 	colon = {
--- 		indent_raw = true,
--- 		indent = true,
--- 		preferred = "-",
--- 	},
--- 	invert = {
--- 		indent = false,
--- 		toggles_checkbox = true,
--- 		ul_marker = "-",
--- 		ol_incrementable = "1",
--- 		ol_delim = ".",
--- 	},
--- 	lists = {
--- 		markdown = {
--- 			"unordered",
--- 			"digit",
--- 			"ascii",
--- 			"roman",
--- 		},
--- 		text = {
--- 			"unordered",
--- 			"digit",
--- 			"ascii",
--- 			"roman",
--- 		},
--- 		tex = { "latex_item" },
--- 		plaintex = { "latex_item" },
--- 	},
--- 	list_patterns = {
--- 		unordered = "[-+*]", -- - + *
--- 		digit = "%d+[.)]", -- 1. 2. 3.
--- 		ascii = "%a[.)]", -- a) b) c)
--- 		roman = "%u*[.)]", -- I. II. III.
--- 		latex_item = "\\item",
--- 	},
--- 	checkbox = {
--- 		left = "%[",
--- 		right = "%]",
--- 		fill = "o",
--- 	},
--- }
+-- local status_ok, autolist = pcall(require, "autolist")
+-- if not status_ok then
+--   return
+-- end
+--
+-- autolist.setup({
+--   ft = {
+--     "markdown",
+--     "text",
+--     "tex",
+--     "plaintex",
+--   },
+--   config = function()
+--     autolist.create_mapping_hook("i", "<CR>", autolist.new)
+--     autolist.create_mapping_hook("i", "<Tab>", autolist.indent)
+--     autolist.create_mapping_hook("i", "<S-Tab>", autolist.indent, "<C-D>")
+--     autolist.create_mapping_hook("n", "o", autolist.new)
+--     autolist.create_mapping_hook("n", "O", autolist.new_before)
+--     autolist.create_mapping_hook("n", ">>", autolist.indent)
+--     autolist.create_mapping_hook("n", "<<", autolist.indent)
+--     autolist.create_mapping_hook("n", "<leader>r", autolist.force_recalculate)
+--     autolist.create_mapping_hook("n", "<leader>x", autolist.invert_entry, "")
+--       vim.api.nvim_create_autocmd("TextChanged", {
+--         pattern = "-",
+--         callback = function()
+--           vim.cmd.normal({autolist.force_recalculate(nil, nil), bang = false})
+--         end
+--       })
+--   end,
+-- })
+--
+	-- lists = {
+	-- 		markdown = {
+	-- 			"%a[.)]", -- insert your custom lua pattern here
+	-- 			"test", -- or use the test pattern defined below
+	-- 		},
+	-- 	},
+	-- list_patterns = {
+	-- 	test = "%a[.)]", -- insert your custom lua pattern here
+	-- }
