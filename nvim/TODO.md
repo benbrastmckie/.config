@@ -1,18 +1,22 @@
 # TODO
 
 - [ ] config
-  - [ ] undo does not work in md after checkmark
-    - [x] autolist causing problems?
-    - [ ] auto-recalculate does not work after turning off problem code
-  - [ ] WhichKey: checking conflicting keymaps 
-    - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gb"**
-    - INFO: rhs: `<Plug>(comment_toggle_blockwise)`
-    - WARNING: conflicting keymap exists for mode **"n"**, lhs: **"gc"**
-    - INFO: rhs: `<Plug>(comment_toggle_linewise)`
-    - WARNING: buffer-local keymap overriding global for mode **"n"**, buf: 0, lhs: **"<leader>"**
-    - INFO: old rhs: `<Nop>`
-    - INFO: new rhs: `<cmd>lua require("which-key").show(" ", {mode = "n", auto = true})<cr>`
+  - [ ] toggle lsp: replace kill and load in whichkey with toggle 
+    - [x] submitted issue
+  - [ ] PdfAnnots: convert from vimscript to lua 
+    - [x] submitted issue
+  - [ ] autolist 
+    - [ ] move config out of plugins.lua 
+      - [x] submitted issue
+    - [ ] move bindings into whichkey 
+      - [x] submitted issue
+  - [ ] autolist create empty checkbox 
+    - [x] submited issue
   - [ ] folding 
+  - [x] undo does not work in md after checkmark 
+    - [x] autolist causing problems?
+    - [x] auto-recalculate does not work after turning off problem code 
+  - [x] WhichKey: checking conflicting keymaps 
   - [x] treesitter only load md and tex 
   - [x] shift-m gives error 
   - [x] indenting 
