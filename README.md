@@ -1,5 +1,7 @@
 # .config
 
+NOTE: these instructions were written for my old vimscript config, and will be updated soon. 
+
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
