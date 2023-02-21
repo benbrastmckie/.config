@@ -10,10 +10,36 @@ end
 
 local tree_cb = nvim_tree_config.nvim_tree_callback
 
+-- vim.g.loaded_netrw = 1
+-- vim.g.loaded_netrwPlugin = 1
+
 nvim_tree.setup {
+  -- sync_root_with_cwd = true,
+  -- respect_buf_cwd = true,
+  -- disable_netrw = true,
+  -- hijack_netrw = true,
+  -- hijack_cursor = true,
+  -- respect_buf_cwd = false,
+  -- update_cwd = false,
+  -- actions = {
+  --   open_file = {
+  --     quit_on_open = true,
+  --   },
+  --   change_dir = {
+  --     enable = false,
+  --     global = false,
+  --   },
+  -- },
+  -- git = {
+  --     enable = true,
+  --     ignore = false,
+  --     timeout = 500,
+  --   },
   update_focused_file = {
     enable = true,
     update_cwd = true,
+    -- ignore_list = {},
+    -- update_root = true,
   },
   renderer = {
     root_folder_modifier = ":t",

@@ -2,6 +2,7 @@ local status_ok, project = pcall(require, "project_nvim")
 if not status_ok then
 	return
 end
+
 project.setup({
 	---@usage set to false to disable project.nvim.
 	--- This is on by default since it's currently the expected behavior.
@@ -12,7 +13,7 @@ project.setup({
 	---@usage set to true to disable setting the current-woriking directory
 	--- Manual mode doesn't automatically change your root directory, so you have
 	--- the option to manually do so using `:ProjectRoot` command.
-	manual_mode = false,
+	manual_mode = true,
 
 	---@usage Methods of detecting the root directory
 	--- Allowed values: **"lsp"** uses the native neovim lsp

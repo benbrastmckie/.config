@@ -70,8 +70,8 @@ return packer.startup(function(use)
 -- File Management
   use { "kyazdani42/nvim-tree.lua" }
   use { "kyazdani42/nvim-web-devicons" }
-  use { "ahmedkhalf/project.nvim" }
 	use { "Shatur/neovim-session-manager" }
+  -- use { "ahmedkhalf/project.nvim" }
 
 
 -- Appearance
