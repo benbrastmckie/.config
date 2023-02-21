@@ -289,3 +289,17 @@ nvim/other/makefakeMnSymbol.pl
 vifm/vifminfo.json_3660834
 .gsd-keyboard.settings-ported
 okular.kmessagebox
+cef_user_data/WidevineCdm
+htop
+libfm
+node_modules
+opera
+pamac
+pcmanfm/default
+GNOME-xdg-terminals.list
+kdenlive-layoutsrc
+knfsshare
+xdg-terminals.list
+yarn.lock
+zoom.conf
+nvim/plugin/packer_compiled.lua
