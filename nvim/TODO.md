@@ -1,18 +1,21 @@
 # TODO
 
 - [ ] config
+  - [ ] do i need project.nvim?
+  - [ ] alpha: turn off auto create sessions 
+    - [x] created issue
   - [ ] toggle lsp: replace kill and load in whichkey with toggle 
-    - [x] submitted issue
-  - [ ] PdfAnnots: convert from vimscript to lua 
     - [x] submitted issue
   - [ ] autolist 
     - [ ] move config out of plugins.lua 
       - [x] submitted issue
     - [ ] move bindings into whichkey 
       - [x] submitted issue
-  - [ ] autolist create empty checkbox 
-    - [x] submited issue
+    - [ ] create empty checkbox 
+      - [x] submited issue
   - [ ] folding 
+  - [x] PdfAnnots: convert from vimscript to lua 
+    - [x] submitted issue
   - [x] undo does not work in md after checkmark 
     - [x] autolist causing problems?
     - [x] auto-recalculate does not work after turning off problem code 

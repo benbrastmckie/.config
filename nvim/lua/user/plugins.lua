@@ -51,7 +51,6 @@ return packer.startup(function(use)
   use { "windwp/nvim-autopairs" }
   use { "numToStr/Comment.nvim" }
   -- use { "JoosepAlviste/nvim-ts-context-commentstring" }
-  use { "ahmedkhalf/project.nvim" }
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
   use { "mbbill/undotree" } -- Vimscript
@@ -71,6 +70,8 @@ return packer.startup(function(use)
 -- File Management
   use { "kyazdani42/nvim-tree.lua" }
   use { "kyazdani42/nvim-web-devicons" }
+  use { "ahmedkhalf/project.nvim" }
+	use { "Shatur/neovim-session-manager" }
 
 
 -- Appearance
@@ -165,7 +166,6 @@ return packer.startup(function(use)
 -- Telescope
 	use { "nvim-telescope/telescope.nvim" }
     -- , commit = "76ea9a898d3307244dce3573392dcf2cc38f340f" 
-	use { "Shatur/neovim-session-manager" }
 	use { "stevearc/dressing.nvim" }
   use { "nvim-telescope/telescope-bibtex.nvim",
     config = function ()
