@@ -56,44 +56,39 @@
   4. count
   5. error log
   6. clean aux
-
-1. citations
+3. citations
   1. citations with vimtex
-  3. citations with telescope
-  2. context menu
+  2. citations with telescope
+  3. context menu
   4. bibannotate
-2. explorer
-  1. pane size and navigation
-  2. new file
-  3. new directory
-  4. open close directory
-  5. cut paste
-3. bibexport
-
-### Basics
-
-1. keymaps
-  1. vim standards
-  2. new additions in cheatsheet
-  3. unmapping
-  4. save and quit
-  5. surround
+5. bibexport
 
 ### Extras
 
-1. extras
-  1. templates
-  2. snippets
-  3. find
-  4. pandoc
-  5. undo
-  6. yank
-  7. checkmark
-  8. glossary
-  9. preview symbol
-  10. navigate git hunks
-  11. kill lsp
-  12. toggle illuminate
+1. new project
+2. explorer
+  1. pane size and navigation
+  2. new files
+  3. new directory
+  4. open close directory
+  5. cut paste
+3. markdown
+  1. create TODO
+  2. create checklist
+4. templates
+5. snippets
+6. glossary
+7. pandoc
+8. checkmark
+9. extras
+  1. surround
+  2. undo
+  3. yank
+  4. find
+  5. preview symbol
+  6. navigate git hunks
+  7. kill lsp
+  8. toggle illuminate
 
 ### Installation
 
@@ -117,6 +112,11 @@
     3. open issues
 
 ### Configuration
+
+1. keymaps
+  1. vim standards
+  2. new additions in cheatsheet
+  3. unmapping
 
 1. configuration
   1. basics
