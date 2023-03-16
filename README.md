@@ -31,11 +31,16 @@ If Homebrew is installed, it will report which version you have which you can up
 
 ```
 brew update
+brew doctor
+brew upgrade
 ```
 
 If Homebrew has not been installed, you may install it by running the following two commands:
 
 ```
+sudo rm -rf /Library/Developer/CommandLineTools
+  sudo xcode-select --install
+  
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
@@ -55,8 +60,10 @@ omf install sashimi
 To delete the welcome message, run:
 
 ```
-set fish_greeting
+set -U fish_greeting ""
 ```
+
+Or add whatever you want between the quotes.
 
 ## Dependencies
 
@@ -111,18 +118,19 @@ If Python 3 reports an error, run following in the terminal (to exit NeoVim, wri
 pip3 install --user pynvim
 ```
 
-Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored).
+Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored, and similarly for Ruby and Node.js).
 This may involve doing some research if errors persist.
 
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
 In order to install plugins, extending the features included in NeoVim, run the following:
 
 ```
-sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
-       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+ ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 ```
 
-Install the FZF fuzzy finder, Ripgrep, and Pandoc by running the following commands, respectively:
+Check to see if `fzf`, `ripgrip`, `pandoc`, and `pandoc-citeproc` are installed by running each with `--version` after as above.
+Install any which are missing with the following commands:
 
 ```
 brew install fzf
@@ -153,7 +161,7 @@ git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 ```
 
-### Installing the GitHub Cli
+### Installing the GitHub Cli (Optional)
 
 Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
 
@@ -231,18 +239,25 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
+I recommend forking my config so that you have your own version that you can customise for yourself. To do so, click `Fork` in my GitHub repo. This will copy the repo over to your GitHub. Now you can click the `Code` button in your repo on GitHub, sellecting SSH, and copying the address which you will use below. Alternatively, if you don't want to fork, click the `Code` button in my repo, copying the address in the same way. Now you are ready to open the terminal back up and run the following commands in order:
 
 ```
 cd ~/.config
-git init
-git remote add origin https://github.com/benbrastmckie/.config.git
-git pull origin master
-mkdir -p ~/.vim/files/info
+git clone YOUR-ADDRESS
+git remote -v
+```
+
+This last command should show that you have two addresses synced up, reading to push and pull changes to/from assuming that you went for the fork-option above. This will permit you keep your config backed up to your GitHub repo which you can then clone onto other computers if you want to reporduce your customised config instead of mine (that is once you customise it).
+
+Lastly, you can install the following:
+
+```
 sudo pip3 install neovim-remote
 ```
 
-If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
+## [LaTeX](https://www.latex-project.org/)
+
+If you are here, you are probably familiar with LaTeX and already have it installed. But just in case you don't, you can run the following command in order to check to see if it is already installed:
 
 ```
 latexmk --version
@@ -262,47 +277,14 @@ nvim
 
 After the plugins finish installing, quite NeoVim with `:qa!`.
 
-## [Skim](https://skim-app.sourceforge.io/)
+## [Zathura](https://pwmt.org/projects/zathura/)
 
-Install the Skim pdf viewer by running:
-
-```
-brew cask install skim
-```
-
-> If the command above does not work, some have found it helpful to run the following alternative:
-
-> ```
-> brew --cask install skim
-> ```
-
-You will need to grant permission to open Skim by opening Mac System Settings, and approving the application in Security.
-In order to tell Vimtex to open Skim, run the following command in the terminal:
+Install the Zathura pdf viewer by running:
 
 ```
-nvim ~/.config/nvim/plug-config/vimtex.vim
+brew tap zegervdv/zathura
+brew install zathura
 ```
-
-Once the file has opened in NeoVim, change all occurrences of 'zathura' and 'evince' to 'skim' by entering the following commands in NeoVim:
-
-```
-:%s/'zathura'/'skim'/g
-:%s/'evince'/'skim'/g
-```
-
-Save and quit the file by entering `:wq` in NeoVim in normal-mode.
-
-Open Skim, navigating to the preferences, and select "Check for file changes" as well as "Reload automatically".
-In PDF-Tex support, open "Preset" and choose "Custom".
-In the "Command" filed, type `nvr`, and in the "Argument" field, type `--remote-silent +"%line" "%file"` and close Skim.
-After reopening NeoVim, enter the following in normal-mode:
-
-```
-:checkhealth
-```
-
-Ignore any warnings for Python 2, Ruby, and Node.js.
-If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -338,7 +320,7 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /Library/Fonts/
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux, then proceed as follows:
+If you intend to upgrade your terminal to Alacritty with Tmux (big difference in my view, and you've come this far anyhow), then proceed as follows:
 
 ## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
 
@@ -361,15 +343,15 @@ Assuming that you already installed Fish above, you will now need to locate fish
 which fish
 ```
 
-The command should return `/usr/local/bin/fish`.
-Copy the path and run the following:
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the path displayed and run the following:
 
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Space-q`.
-Quite the terminal and open Alacritty by hitting `Ctrl+Space` and typing 'Alacritty', running the following to reset Tmux:
+Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Space-q` or `:wq`.
+Quite the terminal and open Alacritty by hitting `Command + Space` and typing 'Alacritty', running the following to reset Tmux:
 
 ```
 tmux kill-server
