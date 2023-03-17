@@ -1,6 +1,8 @@
 # NOTES
 
-## Videos
+## Features
+
+### Example
 
 1. sessions --> hypcause
 2. adjust screen --> build pdf
@@ -63,34 +65,50 @@
   4. bibannotate
 5. bibexport
 
-### Extras
+### New Project
 
 1. new project
 2. explorer
-  1. pane size and navigation
-  2. new files
   3. new directory
-  4. open close directory
-  5. cut paste
-3. markdown
-  1. create TODO
-  2. create checklist
-4. templates
-5. snippets
-6. glossary
-7. pandoc
-8. checkmark
-9. extras
-  1. surround
-  2. undo
-  3. yank
-  4. find
-  5. preview symbol
-  6. navigate git hunks
-  7. kill lsp
-  8. toggle illuminate
+  4. new files
+3. templates
+4. markdown
+  2. checklist
+  3. numbered list
+  4. bullet list
+5. save session
 
-### Installation
+### Snippets and Glossary
+
+1. snippets
+2. glossary
+
+### Surround
+
+1. surround
+2. preview symbol
+
+### Git
+
+1. lazygit
+2. navigate git hunks
+
+### Pandoc
+
+1. pandoc
+  2. latex -> word
+  5. latex -> markdown
+  3. markdown -> word
+
+### Bells and Whistles
+
+1. undo
+2. find
+3. yank
+4. kill lsp
+5. toggle illuminate
+
+## Installation
 
 1. mac
   1. create fork
@@ -111,7 +129,7 @@
     2. google
     3. open issues
 
-### Configuration
+## Configuration
 
 1. keymaps
   1. vim standards

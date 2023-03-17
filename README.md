@@ -58,6 +58,18 @@ To delete the welcome message, run:
 set fish_greeting
 ```
 
+Check where Fish is installed with:
+
+```
+which fish
+```
+
+To set fish to be default, write the location in the command below:
+
+```
+set-option -g default-shell your-fish-bin-file-path
+```
+
 ## Dependencies
 
 Check if Node is installed by running:

@@ -38,7 +38,6 @@ packer.init({
 	},
 })
 
-
 -- Packer 
 return packer.startup(function(use)
   -- Have packer manage itself
@@ -46,11 +45,9 @@ return packer.startup(function(use)
   -- Useful lua functions used by lots of plugins
   use { "nvim-lua/plenary.nvim" }
 
-
 -- General
   use { "windwp/nvim-autopairs" }
   use { "numToStr/Comment.nvim" }
-  -- use { "JoosepAlviste/nvim-ts-context-commentstring" }
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
   use { "mbbill/undotree" } -- Vimscript
@@ -58,21 +55,16 @@ return packer.startup(function(use)
   use { "glacambre/firenvim" } -- Vimscript
   use { "gbprod/yanky.nvim" }
 
-
 -- Mappings
 	use { "folke/which-key.nvim" }
 
-
 -- Terminal
   use { "akinsho/toggleterm.nvim" }
-
 
 -- File Management
   use { "kyazdani42/nvim-tree.lua" }
   use { "kyazdani42/nvim-web-devicons" }
 	use { "Shatur/neovim-session-manager" }
-  -- use { "ahmedkhalf/project.nvim" }
-
 
 -- Appearance
   use { "akinsho/bufferline.nvim" }
@@ -80,7 +72,6 @@ return packer.startup(function(use)
   use { "lukas-reineke/indent-blankline.nvim" }
   use { "goolord/alpha-nvim" }
   use { "RRethy/vim-illuminate" }
-
 
 -- Colorschemes
   use { "ellisonleao/gruvbox.nvim" }
@@ -109,7 +100,6 @@ return packer.startup(function(use)
   use { "hrsh7th/cmp-omni" }
   -- use { "aspeddro/cmp-pandoc.nvim" }
 
-
 -- LSP
   -- enable LSP
 	use { "neovim/nvim-lspconfig" }
@@ -118,7 +108,6 @@ return packer.startup(function(use)
   use { "williamboman/mason-lspconfig.nvim" }
   -- for formatters and linters
 	use { "jose-elias-alvarez/null-ls.nvim" }
-
 
 -- LaTeX
   use { "lervag/vimtex" } -- essential for LaTeX; Vimscript
@@ -162,7 +151,6 @@ return packer.startup(function(use)
   -- use { "garbas/vim-snipmate" }
   -- use { "rafamadriz/friendly-snippets" }
 
-
 -- Telescope
 	use { "nvim-telescope/telescope.nvim" }
     -- , commit = "76ea9a898d3307244dce3573392dcf2cc38f340f" 
@@ -177,78 +165,8 @@ return packer.startup(function(use)
 	use { "nvim-treesitter/nvim-treesitter" }
 -- , commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" 
 
-
-	-- Git
+-- Git
 	use { "lewis6991/gitsigns.nvim" }
-
-
-  -- Extra
-  -- use { "uga-rosa/cmp-dictionary" }
-
-
-  -- TODO pandoc requires yaml block
-
-  -- use {
-  --   'jghauser/auto-pandoc.nvim',
-  --   config = function()
-  --     require('auto-pandoc')
-  --   end
-  -- }
-
-  -- TODO pandoc stuff that didn't work
-
-  -- use {
-  --   'aspeddro/pandoc.nvim',
-  --   config = function()
-  --     require'pandoc'.setup()
-  --   end
-  -- }
-
-  -- use {
-  --   'aspeddro/cmp-pandoc.nvim',
-  --   requires = {
-  --     'jbyuki/nabla.nvim' -- optional
-  --   }
-  -- }
-  --
-
- -- require('pandoc').setup{
- --   commands = {
- --     name = 'PandocBuild'
- --   },
- --   default = {
- --     output = '%s_output.pdf'
- --   },
- --   mappings = {
- --     -- normal mode
- --     n = {
- --       ['<leader>ap'] = function ()
- --         require('pandoc.render').init()
- --       end
- --     }
- --   }
- -- }
-
-  -- TODO Other
-
-  -- use { "jalvesaq/zotcite" } -- Didn't work
-
--- didn't work
--- use { "tiagovla/zotex.nvim",
---   config = function() require("zotex").setup {} end,
---   requires = { "kkharji/sqlite.lua" },
--- }
-
-  -- use({ -- wasn't needed
-  --     'f3fora/nvim-texlabconfig',
-  --     config = function()
-  --         require('texlabconfig').setup(config)
-  --     end,
-  --     -- ft = { 'tex', 'bib' }, -- for lazy loading
-  --     run = 'go build'
-  --     -- run = 'go build -o ~/.bin/' if e.g. ~/.bin/ is in $PATH
-  -- })
-
 
 	-- Automatically set up your configuration after cloning packer.nvim
 	-- Put this at the end after all plugins
