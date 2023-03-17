@@ -2,11 +2,13 @@
 
 NOTE: these instructions were written for my old vimscript config, and will be updated soon. The config is nevertheless ready to clone/fork and install in approximately the same manner described below.
 
+
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
 In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources specifically geared for integrating Git into your workflow.
 You can also find video series which: (1) demonstrates the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the present configuration; (2) walks through the [installation process](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for your own needs; and (4) indicates how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
+
 
 ## Table of Contents
 
@@ -18,16 +20,19 @@ You can also find video series which: (1) demonstrates the [resulting functional
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
 
+
 # Mac OS Installation
 
-Open the terminal by hitting `Command+Space` and typing 'terminal'.
+I would start by updating your system so that you don't hit any snags along the way.
+(Or, if you like snags and hate Mac, then consider switching to Linux!)
+Once you have updated MacOS, open the terminal by hitting `Command + Space` and typing 'terminal'.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 
 ```
 brew --version
 ```
 
-If Homebrew is installed, it will report which version you have which you can update by means of the following:
+If Homebrew is installed, it will report which version you have which you can update by means of the following commands run seperately in order:
 
 ```
 brew update
@@ -45,11 +50,24 @@ xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
+Although optional, I highly recommend that inexperienced users begin by installing Alacritty and Fish as explained in the sections below which make working insider the terminal a little easier.
+
+
+## [Alacritty](https://github.com/alacritty/alacritty)
+
+To install the Alacritty terminal emulator, run the following in the default terminal:
+
+```
+brew install --cask alacritty
+```
+
+Close the terminal once the installation completes and open Alacritty with `Command + Space` and typing 'Alacritty'.
+Use this terminal for the rest of the installation process.
+
+
 ## [Fish](https://fishshell.com/)
 
-Although optional, I highly recommend that inexperienced users begin by installing Fish which makes working insider the terminal a little easier.
-Otherwise, you can skip to the next section.
-To install Fish, run the following commands in turn:
+To install the Fish shell, run:
 
 ```
 brew install fish
@@ -63,7 +81,35 @@ To delete the welcome message, run:
 set -U fish_greeting ""
 ```
 
-Or add whatever you want between the quotes.
+Or add whatever you want between the quotes in the command above.
+Make Fish your default shell by first checking where Fish is installed with:
+
+```
+which fish
+```
+
+Cut and paste the path and run:
+
+```
+sudo vim /etc/shells
+```
+
+Once inside vanilla Vim (preinstalled on any Mac) navigate to the bottom with `j`, go into insert mode with `i`, and then paste the path with `command + shift + v`, or hand type it, and hit `esc` to go back into normal mode.
+Then save and quite with `:wq`.
+Check to see that you succeeded with:
+
+```
+cat /etc/shells
+```
+
+If the line you included is shown at the end, then proceed to run:
+
+```
+chsh -s /usr/local/bin/fish
+```
+
+Close Alacritty and reopen it to check to see if Fish is running by default.
+
 
 ## Dependencies
 
@@ -106,7 +152,7 @@ Once the installation is complete, open NeoVim by entering:
 nvim
 ```
 
-To check the health of your NeoVim install, enter the following in normal-mode (enter normal-mode in NeoVim by hitting escape) in NeoVim:
+To check the health of your NeoVim install, enter the following in normal-mode (enter command-mode in NeoVim from normal mode by hitting `:`. Enter normal-mode in NeoVim from any mode by hitting escape) waiting for it to complete the check:
 
 ```
 :checkhealth
@@ -118,7 +164,7 @@ If Python 3 reports an error, run following in the terminal (to exit NeoVim, wri
 pip3 install --user pynvim
 ```
 
-Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored, and similarly for Ruby and Node.js).
+Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored, and similarly for Ruby, Node.js, and Perl).
 This may involve doing some research if errors persist.
 
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
@@ -136,124 +182,34 @@ Install any which are missing with the following commands:
 brew install fzf
 brew install ripgrep
 brew install pandoc
-brew install pandoc-citeproc
+brew install pandoc-plot
 ```
-
-## [Git](https://git-scm.com/)
-
-Check to see whether Git is already installed by entering the following:
-
-```
-git --version
-```
-
-If Git is not installed, run:
-
-```
-brew install git
-```
-
-Next install LazyGit by running:
-
-```
-brew install jesseduffield/lazygit/lazygit
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-```
-
-### Installing the GitHub Cli (Optional)
-
-Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
-
-```
-brew install gh
-```
-
-For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
-
-### Adding an SSH Key to GitHub
-
-If you have not already, you can also add an SSH key by amending and running the following:
-
-```
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-```
-
-Hit `return` once, entering your GitHub passphrase in response to the prompt.
-Next run:
-
-```
-bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_rsa
-```
-
-Run the following to copy the SSH key to your system clipboard:
-
-```
-pbcopy < ~/.ssh/id_rsa.pub
-```
-
-In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
-Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
-Saving the key completes the addition.
-
-Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
-If your SSH key stops working after rebooting, run the following command:
-
-```
-ssh-add -K ~/.ssh/id_rsa
-```
-
-If you get an error, retry the command above with a lowercase 'k'.
-
-### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-
-Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal` access tokens, and set:
-
-- No expiration date
-- Select `repo` in scope/permissions
-
-You must then copy the PAT, pasting it into a temporary file saved on your computer.
-Next, open a terminal and run `git config -l` to see if you have already set the appropriate username and email.
-You can add these (if missing or incorrect) with the following commands:
-
-```
-   git config --global user.name "USERNAME"
-   git config --global user.email "EMAIL"
-   git config -l
-```
-You can now add your PAT by navigating to a directory in which you have initiated a git repo in which a remote has already been added, opening a file in that repo by running `nvim FILE`, making some small change in the file, and attempting to push that changes with LazyGit.
-That is, once the file is open in NeoVim, hit `<space>gg` and then `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
-Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how past is achieved in your terminal enviornment).
-Assuming that this push works, close LazyGit with `Ctrl+c`, and reopen the terminal with `Ctrl+t`.
-Now run the following:
-```
-   git config --global credential.helper cache
-```
-Repeat the steps above to run another test, entering your username and PAT as before.
-Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
-
-For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
-
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-I recommend forking my config so that you have your own version that you can customise for yourself. To do so, click `Fork` in my GitHub repo. This will copy the repo over to your GitHub. Now you can click the `Code` button in your repo on GitHub, sellecting SSH, and copying the address which you will use below. Alternatively, if you don't want to fork, click the `Code` button in my repo, copying the address in the same way. Now you are ready to open the terminal back up and run the following commands in order:
+I recommend forking my config so that you have your own version that you can customise for yourself. To do so you will need to make a GitHub account. Then click `Fork` in my GitHub repo. This will copy the repo over to your GitHub. Now you can click the `Code` button in your repo on GitHub, sellecting SSH, and copying the address which you will use below. Alternatively, if you don't want to fork for some reason, click the `Code` button in my repo, copying the address in the same way. Now you are ready to open the terminal back up and run the following commands:
 
 ```
 cd ~/.config
-git clone YOUR-ADDRESS
+ls -a
+git init
+git remote add origin YOUR-OR-MY-ADDRESS
 git remote -v
+git pull origin master
+ls -a
 ```
 
-This last command should show that you have two addresses synced up, reading to push and pull changes to/from assuming that you went for the fork-option above. This will permit you keep your config backed up to your GitHub repo which you can then clone onto other computers if you want to reporduce your customised config instead of mine (that is once you customise it).
+The `ls -a` commands are optional, but will help you see what is happening.
+In particular, `git pull origin master` will pull down the config files into your `~/.config` directory.
+The other git commands add a new git repo, link your local repo to your fork of my repo on GitHub, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
+This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reporduce your customised config (that is once you have customise it) instead of pulling my repo down again.
 
 Lastly, you can install the following:
 
 ```
 sudo pip3 install neovim-remote
 ```
+
 
 ## [LaTeX](https://www.latex-project.org/)
 
@@ -266,16 +222,13 @@ latexmk --version
 To install MacTex, you can download the package [here](https://www.tug.org/mactex/), or else run the following command:
 
 ```
-brew cask install mactex
+brew install --cask mactex
 ```
 
-Reboot your computer, and run NeoVim by entering the following into the terminal:
-
-```
-nvim
-```
-
+This will take a while.
+Once it finishes, reboot your computer and run NeoVim.
 After the plugins finish installing, quite NeoVim with `:qa!`.
+Now is another good time to run `:checkhealth` in NeoVim, troubleshooting as needed.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
@@ -327,7 +280,7 @@ If you intend to upgrade your terminal to Alacritty with Tmux (big difference in
 Run the following in the terminal:
 
 ```
-brew cask install alacritty
+brew install --cask alacritty
 brew install tmux
 ```
 
@@ -366,6 +319,120 @@ fish_vi_key_bindings
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 I highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard`, and making the appropriate changes.
+
+
+## [Git](https://git-scm.com/)
+
+Every Mac should have `git` already installed, but you can check by running:
+
+```
+git --version
+```
+
+If Git is not installed, run:
+
+```
+brew install git
+```
+
+Next install LazyGit by running:
+
+```
+brew install jesseduffield/lazygit/lazygit
+```
+
+Check to see if you have already set the appropriate username and email with:
+
+```
+git config -l
+``` 
+
+If absent or incorrect, add these with:
+
+```
+git config --global user.name "USERNAME"
+git config --global user.email "EMAIL"
+git config -l
+```
+
+Your details should now appear.
+
+
+### Adding an SSH Key to GitHub
+
+If you have not already, you can also add an SSH key by amending and running the following:
+
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
+Hit `return` once, entering your GitHub passphrase in response to the prompt.
+Next run:
+
+```
+bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+```
+
+Run the following to copy the SSH key to your system clipboard:
+
+```
+pbcopy < ~/.ssh/id_rsa.pub
+```
+
+In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
+Name the authentication key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
+Saving the key completes the addition.
+
+Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
+If your SSH key stops working after rebooting, run the following command:
+
+```
+ssh-add -K ~/.ssh/id_rsa
+```
+
+If you get an error, retry the command above with a lowercase 'k'.
+
+### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+
+Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
+
+- No expiration date
+- Select `repo` in scope/permissions
+
+After generating the token, you must copy the PAT, pasting it into a temporary file saved on your computer.
+
+
+REVISE 
+
+You can now add your PAT by navigating to a directory in which you have initiated a git repo in which a remote has already been added, opening a file in that repo by running `nvim path/to/file`, making some small change in the file, and attempting to push that changes with LazyGit. 
+That is, once the file is open in NeoVim, hit `<space>gg` and then `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
+Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how past is achieved in your terminal enviornment).
+Assuming that this push works, close LazyGit with `Ctrl+c`, and reopen the terminal with `Ctrl+t`.
+
+Now run the following:
+
+```
+git config --global credential.helper cache
+```
+
+Repeat the steps above to run another test, entering your username and PAT as before.
+Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
+
+For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
+
+
+### Installing the GitHub Cli (Optional)
+
+Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+
+```
+brew install gh
+```
+
+For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
+
 
 # Arch Linux Installation
 
