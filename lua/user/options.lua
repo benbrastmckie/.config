@@ -61,7 +61,7 @@ vim.cmd "set whichwrap+=<,>,[,],h,l"
 -- vim.cmd [[set iskeyword+=-]]            -- unites dashed words
 
 -- CLIPBOARD -- (for yanky)
--- to avoid "target string not available" error
+-- Mac users delete to avoid "target string not available" error
 vim.g.clipboard = {
   name = "xsel_override",
   copy = {
