@@ -239,8 +239,11 @@ Install the Zathura pdf viewer by running:
 
 ```
 brew tap zegervdv/zathura
-brew install zathura
+brew install zathuran
+brew install xdotool
+brew install pstree
 ```
+Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -347,14 +350,19 @@ Create a personal access token (PAT) by going to GitHub.com, clicking your user 
 - Select `repo` in scope/permissions
 
 After generating the token, you must copy the PAT, pasting it into a temporary file saved on your computer.
+You can now add your PAT by pushing any changes you have made to your config up to your GitHub repo.
+To do so, begin by navigating in the terminal to your .config folder and opening NeoVim with:
 
+```
+cd ~/.config
+nvim CheatSheet.md
+```
 
-REVISE 
-
-You can now add your PAT by navigating to a directory in which you have initiated a git repo in which a remote has already been added, opening a file in that repo by running `nvim path/to/file`, making some small change in the file, and attempting to push that changes with LazyGit. 
-That is, once the file is open in NeoVim, hit `<space>gg` and then `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
-Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how past is achieved in your terminal enviornment).
-Assuming that this push works, close LazyGit with `Ctrl+c`, and reopen the terminal with `Ctrl+t`.
+I would recommend keeping the `CheatSheet.md` updated with any changes you make to your configuration.
+You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`. 
+You will have to sort through which files you might want Git to ignore, hitting `i` when hovering over each, and once you have finished, hitting `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
+Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how paste is achieved in your terminal enviornment).
+Assuming that this push works, close LazyGit with `q`, and reopen the terminal with `Ctrl+t`.
 
 Now run the following:
 
@@ -362,7 +370,7 @@ Now run the following:
 git config --global credential.helper cache
 ```
 
-Repeat the steps above to run another test, entering your username and PAT as before.
+Repeat the steps above after making a small change to run another test, entering your username and PAT as before.
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
