@@ -43,26 +43,12 @@ brew upgrade
 If Homebrew has not been installed, you may install it by running the following two commands:
 
 ```
-sudo rm -rf /Library/Developer/CommandLineTools
-  sudo xcode-select --install
-  
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Although optional, I highly recommend that inexperienced users begin by installing Alacritty and Fish as explained in the sections below which make working insider the terminal a little easier.
-
-
-## [Alacritty](https://github.com/alacritty/alacritty)
-
-To install the Alacritty terminal emulator, run the following in the default terminal:
-
-```
-brew install --cask alacritty
-```
-
-Close the terminal once the installation completes and open Alacritty with `Command + Space` and typing 'Alacritty'.
-Use this terminal for the rest of the installation process.
+Although optional, I highly recommend that inexperienced users begin by installing Fish as explained in the section below which makes working insider the terminal a lot easier and will benefit your resulting workflow once NeoVim is up and running.
+I also highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
 
 
 ## [Fish](https://fishshell.com/)
@@ -108,7 +94,12 @@ If the line you included is shown at the end, then proceed to run:
 chsh -s /usr/local/bin/fish
 ```
 
-Close Alacritty and reopen it to check to see if Fish is running by default.
+Close the terminal and reopen it to check to see if Fish is running by default.
+If you want to turn on the Vim keybindings within Fish, run the following:
+
+```
+fish_vi_key_bindings
+```
 
 
 ## Dependencies
@@ -137,6 +128,19 @@ If either version of Python is missing, run:
 ```
 brew install python
 ```
+
+Install the RobotoMono [Nerd Font](https://github.com/ryanoasis/nerd-fonts) with:
+
+```
+brew tap homebrew/cask-fonts
+brew install --cask font-roboto-mono-nerd-font
+```
+
+More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts).
+If you are using the default Mac Terminal, you will need to select the installed font by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
+
+We are now ready to install NeoVim.
+
 
 ## [NeoVim](https://neovim.io/)
 
@@ -175,15 +179,17 @@ git clone --depth 1 https://github.com/wbthomason/packer.nvim\
  ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 ```
 
-Check to see if `fzf`, `ripgrip`, `pandoc`, and `pandoc-citeproc` are installed by running each with `--version` after as above.
-Install any which are missing with the following commands:
+Check to see if the following are installed and install any which are missing:
 
 ```
 brew install fzf
 brew install ripgrep
 brew install pandoc
 brew install pandoc-plot
+brew install xsel
+sudo pip3 install neovim-remote
 ```
+
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
@@ -203,12 +209,6 @@ The `ls -a` commands are optional, but will help you see what is happening.
 In particular, `git pull origin master` will pull down the config files into your `~/.config` directory.
 The other git commands add a new git repo, link your local repo to your fork of my repo on GitHub, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
 This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reporduce your customised config (that is once you have customise it) instead of pulling my repo down again.
-
-Lastly, you can install the following:
-
-```
-sudo pip3 install neovim-remote
-```
 
 
 ## [LaTeX](https://www.latex-project.org/)
@@ -261,64 +261,6 @@ Right-click the main library folder in the left-most column, and select `Export
 Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep Updated` box. 
 Save the file as `Zotero` (the extension will be added automatically) to ~/Library/texmf/bibtex/bib which you previously created.
 You are now ready to cite files in your Zotero database.
-
-## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
-
-In order for NeoVim to load icons, it will be imporant to install a NerdFont.
-For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
-
-```
-sudo cp -R ~/.config/fonts/RobotoMono/ /Library/Fonts/
-```
-
-If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
-You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux (big difference in my view, and you've come this far anyhow), then proceed as follows:
-
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
-
-Run the following in the terminal:
-
-```
-brew install --cask alacritty
-brew install tmux
-```
-
-You will also need to move the Tmux configuration file to the appropriate location by running:
-
-```
-sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
-```
-
-Assuming that you already installed Fish above, you will now need to locate fish on your operating system by running the following:
-
-```
-which fish
-```
-
-The command should return `/usr/local/bin/fish` or something similar.
-Copy the path displayed and run the following:
-
-```
-nvim ~/.config/alacritty/alacritty.yml
-```
-
-Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Space-q` or `:wq`.
-Quite the terminal and open Alacritty by hitting `Command + Space` and typing 'Alacritty', running the following to reset Tmux:
-
-```
-tmux kill-server
-```
-
-When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
-If you want to turn on the Vim keybindings within Fish, run the following:
-
-```
-fish_vi_key_bindings
-```
-
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-I highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard`, and making the appropriate changes.
 
 
 ## [Git](https://git-scm.com/)
@@ -432,6 +374,48 @@ brew install gh
 ```
 
 For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
+
+
+## [Alacritty](https://github.com/alacritty/alacritty)
+
+I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a seperate terminal-tab for each project that you have open. 
+To do so, run the following in the default Mac terminal:
+
+```
+brew install --cask alacritty
+brew install tmux
+``````
+
+Now move the Tmux configuration file included in the config to the appropriate location with:
+
+```
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
+```
+
+Assuming that you already installed Fish above, you will now need to locate fish on your operating system by running the following:
+
+```
+which fish
+```
+
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the path displayed and run the following:
+
+```
+nvim ~/.config/alacritty/alacritty.yml
+```
+
+Replace `/usr/bin/fish` with the location of fish found above (you can search with `/`).
+You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit with `:wq`.
+Quite and re-open Alacritty, running the following to reset Tmux:
+
+```
+tmux kill-server
+```
+
+When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
 
 # Arch Linux Installation
