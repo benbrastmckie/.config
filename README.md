@@ -211,6 +211,17 @@ In particular, `git pull origin master` will pull down the config files into you
 The other git commands add a new git repo, link your local repo to your fork of my repo on GitHub, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
 This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reporduce your customised config (that is once you have customise it) instead of pulling my repo down again.
 
+Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users:
+
+```
+vim ~/.config/nvim/user/options.lua
+```
+
+Scroll to the bottom with `G` delete the final block to be deleted by Mac users by moving the cursor up to any line in that block with `k` and then hitting `dap` (delete all paragraph).
+Save and quite with `:wq` and reopen NeoVim.
+After the plugins load, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed in the Zathura section below.
+You can ignore all the warnings.
+
 
 ## [LaTeX](https://www.latex-project.org/)
 
@@ -231,6 +242,7 @@ Once it finishes, reboot your computer and run NeoVim.
 After the plugins finish installing, quite NeoVim with `:qa!`.
 Now is another good time to run `:checkhealth` in NeoVim, troubleshooting as needed.
 
+
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
 Install the Zathura pdf viewer by running:
@@ -242,6 +254,7 @@ brew install xdotool
 brew install pstree
 ```
 Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
+
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -475,6 +488,7 @@ sudo pacman -S ripgrep
 sudo pacman -S pandoc
 sudo pacman -S pandoc-citeproc
 ```
+
 
 ## [Git](https://git-scm.com/)
 
