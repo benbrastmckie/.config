@@ -60,22 +60,11 @@ cmp.setup {
     end,
   },
   mapping = {
-    ["<C-k>"] = cmp.mapping.select_prev_item(),
-		["<C-j>"] = cmp.mapping.select_next_item(),
-    ["<C-b>"] = cmp.mapping(cmp.mapping.scroll_docs(-1), { "i", "c" }),
-    ["<C-f>"] = cmp.mapping(cmp.mapping.scroll_docs(1), { "i", "c" }),
-    -- ["<C-Space>"] = cmp.mapping(cmp.mapping.complete(), { "i", "c" }),
-    -- ["<C-y>"] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
-    -- ["<C-e>"] = cmp.mapping {
-    --   i = cmp.mapping.abort(),
-    --   c = cmp.mapping.close(),
-    -- },
-    -- Accept currently selected item. If none selected, `select` first item.
-    -- Set `select` to `false` to only confirm explicitly selected items.
+    ["<C-k>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "c" }),
+    ["<C-j>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "c" }),
     ["<CR>"] = cmp.mapping.confirm({ select = false }),
+      -- Set `select` to `false` to only confirm selected
     ["<Tab>"] = cmp.mapping(function(fallback)
-      -- if cmp.visible() then
-      --   cmp.select_next_item()
       if luasnip.expandable() then
         luasnip.expand()
       elseif luasnip.expand_or_jumpable() then
@@ -182,12 +171,15 @@ cmp.setup.cmdline(':', {
 })
 
 
--- --- Toggle cmp entrirely
--- function toggle_cmp()
---   if vim.b.cmp_enabled
---     then require('cmp').setup.buffer { enabled = false }
---   else require('cmp').setup.buffer { enabled = true }
--- end
+-- Toggle cmp entrirely
+vim.g.cmptoggle = true -- nvim-cmp off by default if false
+
+local cmp = require('cmp')
+cmp.setup {
+  enabled = function()
+    return vim.g.cmptoggle
+  end
+}
 
 -- TODO was trying to get <C-j>, <C-k> to work in the command line
 

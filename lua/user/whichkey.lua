@@ -24,7 +24,7 @@ local setup = {
     },
   },
   -- add operators that will trigger motion and text object completion
-  -- to enable all native operators, set the preset / operators plugin above
+  -- to enable native operators, set the preset / operators plugin above
   -- operators = { gc = "Comments" },
   key_labels = {
     -- override the label used to display some keys. It doesn't effect WK in any other way.
@@ -89,7 +89,7 @@ local mappings = {
   ["e"] = { "<cmd>NvimTreeToggle<CR>"           , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"            , "index" },
   ["q"] = { "<cmd>wqa!<CR>"                     , "quit" },
-  ["r"] = { ""                                  , "reorder list" },
+  ["r"] = { ""                                  , "reorder" },
   -- ["r"] = { "<cmd>lua require('autolist').force_recalculate()<CR>" , "reorder list" },
   ["u"] = { "<cmd>UndotreeToggle<CR>"           , "undo" },
   ["v"] = { "<cmd>VimtexView<CR>"               , "view" },
@@ -104,18 +104,12 @@ local mappings = {
     g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary"},
     h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
     i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
-    k = {
-      "<cmd>lua require('cmp').setup.buffer { enabled = false }<CR>",
-      "kill LSP",
-    },
-    l = {
-      "<cmd>lua require('cmp').setup.buffer { enabled = true }<CR>",
-      "load LSP",
-    },
-    -- l = { '<cmd>lua toggle_cmp()<CR>', "LSP"},
+    l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP"},
     p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
     r = { "<cmd>VimtexErrors<CR>"           , "report errors" },
     s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "edit snippets"},
+    u = { "<cmd>cd %:p:h<CR>"           , "update cwd" },
+    -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
     v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
   },
   f = {

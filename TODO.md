@@ -1,11 +1,29 @@
 # TODO
 
 - [ ] config
-  - [ ] do i need project.nvim?
-  - [ ] alpha: turn off auto create sessions 
-    - [x] created issue
-  - [ ] toggle lsp: replace kill and load in whichkey with toggle 
-    - [x] submitted issue
+  - [ ] github issues
+    - [ ] .gitignore #77
+      - [ ] should I create a personal branch?
+    - [ ] consolidate add-ons 
+      - [ ] forks #73
+      - [ ] thesaurus #69 
+      - [ ] blacktex #67 
+      - [ ] neomutt #65 
+      - [ ] cheat sheet #62 
+      - [ ] zathura themes #51 
+      - [ ] math conceal #48 
+      - [ ] latex snippets #47 
+      - [ ] format plugin #44 
+      - [ ] bare repo #35 
+  - [ ] revise snippets 
+    - [ ] check fields
+    - [ ] check tabs
+  - [ ] nvim-tree commands not all working 
+  - [ ] indents 
+    - [ ] stop indents when adding brackets 
+    - [ ] add indents inside enumerate 
+  - [ ] tab stops working in insert mode 
+    - [ ] can't reproduce: check to see if behaviour returns
   - [ ] autolist 
     - [ ] move config out of plugins.lua 
       - [x] submitted issue
@@ -14,6 +32,17 @@
     - [ ] create empty checkbox 
       - [x] submited issue
   - [ ] folding 
+  - [ ] vertical lines extend through wrapped lines 
+    - [x] requires upstream change to nvim
+  - [x] replace <Tab> with <C-j> in cmd and search 
+  - [x] add recent mac install tip from issues 
+  - [x] toggle lsp: replace kill and load in whichkey with toggle 
+    - [x] submitted issue
+    - [x] test suggestion 
+  - [x] how to change root directory 
+    - [x] do i need project.nvim?
+  - [x] alpha: turn off auto create sessions 
+    - [x] created issue
   - [x] PdfAnnots: convert from vimscript to lua 
     - [x] submitted issue
   - [x] undo does not work in md after checkmark 
