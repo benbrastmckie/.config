@@ -2,11 +2,13 @@
 
 NOTE: these instructions were written for my old vimscript config, and will be updated soon. The config is nevertheless ready to clone/fork and install in approximately the same manner described below.
 
+
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
 In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources specifically geared for integrating Git into your workflow.
 You can also find video series which: (1) demonstrates the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the present configuration; (2) walks through the [installation process](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for your own needs; and (4) indicates how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
+
 
 ## Table of Contents
 
@@ -18,19 +20,24 @@ You can also find video series which: (1) demonstrates the [resulting functional
 The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
 
+
 # Mac OS Installation
 
-Open the terminal by hitting `Command+Space` and typing 'terminal'.
+I would start by updating your system so that you don't hit any snags along the way.
+(Or, if you like snags and hate Mac, then consider switching to Linux!)
+Once you have updated MacOS, open the terminal by hitting `Command + Space` and typing 'terminal'.
 You may check whether you already have Homebrew installed by entering the following into the terminal:
 
 ```
 brew --version
 ```
 
-If Homebrew is installed, it will report which version you have which you can update by means of the following:
+If Homebrew is installed, it will report which version you have which you can update by means of the following commands run seperately in order:
 
 ```
 brew update
+brew doctor
+brew upgrade
 ```
 
 If Homebrew has not been installed, you may install it by running the following two commands:
@@ -40,11 +47,13 @@ xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
+Although optional, I highly recommend that inexperienced users begin by installing Fish as explained in the section below which makes working insider the terminal a lot easier and will benefit your resulting workflow once NeoVim is up and running.
+I also highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
+
+
 ## [Fish](https://fishshell.com/)
 
-Although optional, I highly recommend that inexperienced users begin by installing Fish which makes working insider the terminal a little easier.
-Otherwise, you can skip to the next section.
-To install Fish, run the following commands in turn:
+To install the Fish shell, run:
 
 ```
 brew install fish
@@ -55,20 +64,43 @@ omf install sashimi
 To delete the welcome message, run:
 
 ```
-set fish_greeting
+set -U fish_greeting ""
 ```
 
-Check where Fish is installed with:
+Or add whatever you want between the quotes in the command above.
+Make Fish your default shell by first checking where Fish is installed with:
 
 ```
 which fish
 ```
 
-To set fish to be default, write the location in the command below:
+Cut and paste the path and run:
 
 ```
-set-option -g default-shell your-fish-bin-file-path
+sudo vim /etc/shells
 ```
+
+Once inside vanilla Vim (preinstalled on any Mac) navigate to the bottom with `j`, go into insert mode with `i`, and then paste the path with `command + shift + v`, or hand type it, and hit `esc` to go back into normal mode.
+Then save and quite with `:wq`.
+Check to see that you succeeded with:
+
+```
+cat /etc/shells
+```
+
+If the line you included is shown at the end, then proceed to run:
+
+```
+chsh -s /usr/local/bin/fish
+```
+
+Close the terminal and reopen it to check to see if Fish is running by default.
+If you want to turn on the Vim keybindings within Fish, run the following:
+
+```
+fish_vi_key_bindings
+```
+
 
 ## Dependencies
 
@@ -97,6 +129,19 @@ If either version of Python is missing, run:
 brew install python
 ```
 
+Install the RobotoMono [Nerd Font](https://github.com/ryanoasis/nerd-fonts) with:
+
+```
+brew tap homebrew/cask-fonts
+brew install --cask font-roboto-mono-nerd-font
+```
+
+More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts).
+If you are using the default Mac Terminal, you will need to select the installed font by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
+
+We are now ready to install NeoVim.
+
+
 ## [NeoVim](https://neovim.io/)
 
 Install NeoVim by entering:
@@ -111,7 +156,7 @@ Once the installation is complete, open NeoVim by entering:
 nvim
 ```
 
-To check the health of your NeoVim install, enter the following in normal-mode (enter normal-mode in NeoVim by hitting escape) in NeoVim:
+To check the health of your NeoVim install, enter the following in normal-mode (enter command-mode in NeoVim from normal mode by hitting `:`. Enter normal-mode in NeoVim from any mode by hitting escape) waiting for it to complete the check:
 
 ```
 :checkhealth
@@ -123,29 +168,107 @@ If Python 3 reports an error, run following in the terminal (to exit NeoVim, wri
 pip3 install --user pynvim
 ```
 
-Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored).
+Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored, and similarly for Ruby, Node.js, and Perl).
 This may involve doing some research if errors persist.
 
 NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
 In order to install plugins, extending the features included in NeoVim, run the following:
 
 ```
-sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
-       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+ ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
 ```
 
-Install the FZF fuzzy finder, Ripgrep, and Pandoc by running the following commands, respectively:
+Check to see if the following are installed and install any which are missing:
 
 ```
 brew install fzf
 brew install ripgrep
 brew install pandoc
-brew install pandoc-citeproc
+brew install pandoc-plot
+brew install xsel
+brew install npm
+brew install wget
+brew install fd
+sudo pip3 install neovim-remote
 ```
+
+
+## [Configuration](https://github.com/benbrastmckie/.config)
+
+I recommend forking my config so that you have your own version that you can customise for yourself. To do so you will need to make a GitHub account. Then click `Fork` in my GitHub repo. This will copy the repo over to your GitHub. Now you can click the `Code` button in your repo on GitHub, sellecting SSH, and copying the address which you will use below. Alternatively, if you don't want to fork for some reason, click the `Code` button in my repo, copying the address in the same way. Now you are ready to open the terminal back up and run the following commands:
+
+```
+cd ~/.config
+ls -a
+git init
+git remote add origin YOUR-OR-MY-ADDRESS
+git remote -v
+git pull origin master
+ls -a
+```
+
+The `ls -a` commands are optional, but will help you see what is happening.
+In particular, `git pull origin master` will pull down the config files into your `~/.config` directory.
+The other git commands add a new git repo, link your local repo to your fork of my repo on GitHub, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
+This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reporduce your customised config (that is once you have customise it) instead of pulling my repo down again.
+
+
+## [LaTeX](https://www.latex-project.org/)
+
+If you are here, you are probably familiar with LaTeX and already have it installed. But just in case you don't, you can run the following command in order to check to see if it is already installed:
+
+```
+latexmk --version
+```
+
+To install MacTex, you can download the package [here](https://www.tug.org/mactex/), or else run the following command:
+
+```
+brew install --cask mactex
+```
+
+This will take a while.
+Once it finishes, reboot your computer and run NeoVim.
+After the plugins finish installing, quite NeoVim with `:qa!`.
+Now is another good time to run `:checkhealth` in NeoVim, troubleshooting as needed.
+
+## [Zathura](https://pwmt.org/projects/zathura/)
+
+Install the Zathura pdf viewer by running:
+
+```
+brew tap zegervdv/zathura
+brew install zathura
+```
+
+## [Zotero](https://www.zotero.org/)
+
+Download and install [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
+Find a paper online, signing in to the journal as necessary and downloading the pdf manually.
+Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
+Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
+
+```
+mkdir -p ~/Library/texmf/bibtex/bib
+cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
+```
+
+Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
+Under `Edit` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
+Under the `Citation` sub-tab, replace the citation key format with `[auth][year]`.
+Also check `On item change` at the bottom left.
+Now switch to the `Automatic Export` sub-tab and check `On Change`.
+Close the Preferences window, returning to the main Zotero window.
+Right-click the main library folder in the left-most column, and select `Export Library`.
+Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep Updated` box. 
+Save the file as `Zotero` (the extension will be added automatically) to ~/Library/texmf/bibtex/bib which you previously created.
+You are now ready to cite files in your Zotero database.
+
 
 ## [Git](https://git-scm.com/)
 
-Check to see whether Git is already installed by entering the following:
+Every Mac should have `git` already installed, but you can check by running:
 
 ```
 git --version
@@ -161,19 +284,24 @@ Next install LazyGit by running:
 
 ```
 brew install jesseduffield/lazygit/lazygit
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
 ```
 
-### Installing the GitHub Cli
-
-Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
+Check to see if you have already set the appropriate username and email with:
 
 ```
-brew install gh
+git config -l
+``` 
+
+If absent or incorrect, add these with:
+
+```
+git config --global user.name "USERNAME"
+git config --global user.email "EMAIL"
+git config -l
 ```
 
-For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
+Your details should now appear.
+
 
 ### Adding an SSH Key to GitHub
 
@@ -199,7 +327,7 @@ pbcopy < ~/.ssh/id_rsa.pub
 ```
 
 In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
-Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
+Name the authentication key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
 Saving the key completes the addition.
 
 Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
@@ -213,155 +341,55 @@ If you get an error, retry the command above with a lowercase 'k'.
 
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
-Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal` access tokens, and set:
+Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
 
 - No expiration date
 - Select `repo` in scope/permissions
 
-You must then copy the PAT, pasting it into a temporary file saved on your computer.
-Next, open a terminal and run `git config -l` to see if you have already set the appropriate username and email.
-You can add these (if missing or incorrect) with the following commands:
+After generating the token, you must copy the PAT, pasting it into a temporary file saved on your computer.
 
-```
-   git config --global user.name "USERNAME"
-   git config --global user.email "EMAIL"
-   git config -l
-```
-You can now add your PAT by navigating to a directory in which you have initiated a git repo in which a remote has already been added, opening a file in that repo by running `nvim FILE`, making some small change in the file, and attempting to push that changes with LazyGit.
+
+REVISE 
+
+You can now add your PAT by navigating to a directory in which you have initiated a git repo in which a remote has already been added, opening a file in that repo by running `nvim path/to/file`, making some small change in the file, and attempting to push that changes with LazyGit. 
 That is, once the file is open in NeoVim, hit `<space>gg` and then `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
 Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how past is achieved in your terminal enviornment).
 Assuming that this push works, close LazyGit with `Ctrl+c`, and reopen the terminal with `Ctrl+t`.
+
 Now run the following:
+
 ```
-   git config --global credential.helper cache
+git config --global credential.helper cache
 ```
+
 Repeat the steps above to run another test, entering your username and PAT as before.
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
 
 
-## [Configuration](https://github.com/benbrastmckie/.config)
+### Installing the GitHub Cli (Optional)
 
-In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
-
-```
-cd ~/.config
-git init
-git remote add origin https://github.com/benbrastmckie/.config.git
-git pull origin master
-mkdir -p ~/.vim/files/info
-sudo pip3 install neovim-remote
-```
-
-If you have not already installed MacTex on your computer, you can run the following command in order to check to see if it is already installed:
+Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
 
 ```
-latexmk --version
+brew install gh
 ```
 
-To install MacTex, you can download the package [here](https://www.tug.org/mactex/), or else run the following command:
+For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
+
+
+## [Alacritty](https://github.com/alacritty/alacritty)
+
+I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a seperate terminal-tab for each project that you have open. 
+To do so, run the following in the default Mac terminal:
 
 ```
-brew cask install mactex
-```
-
-Reboot your computer, and run NeoVim by entering the following into the terminal:
-
-```
-nvim
-```
-
-After the plugins finish installing, quite NeoVim with `:qa!`.
-
-## [Skim](https://skim-app.sourceforge.io/)
-
-Install the Skim pdf viewer by running:
-
-```
-brew cask install skim
-```
-
-> If the command above does not work, some have found it helpful to run the following alternative:
-
-> ```
-> brew --cask install skim
-> ```
-
-You will need to grant permission to open Skim by opening Mac System Settings, and approving the application in Security.
-In order to tell Vimtex to open Skim, run the following command in the terminal:
-
-```
-nvim ~/.config/nvim/plug-config/vimtex.vim
-```
-
-Once the file has opened in NeoVim, change all occurrences of 'zathura' and 'evince' to 'skim' by entering the following commands in NeoVim:
-
-```
-:%s/'zathura'/'skim'/g
-:%s/'evince'/'skim'/g
-```
-
-Save and quit the file by entering `:wq` in NeoVim in normal-mode.
-
-Open Skim, navigating to the preferences, and select "Check for file changes" as well as "Reload automatically".
-In PDF-Tex support, open "Preset" and choose "Custom".
-In the "Command" filed, type `nvr`, and in the "Argument" field, type `--remote-silent +"%line" "%file"` and close Skim.
-After reopening NeoVim, enter the following in normal-mode:
-
-```
-:checkhealth
-```
-
-Ignore any warnings for Python 2, Ruby, and Node.js.
-If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
-
-## [Zotero](https://www.zotero.org/)
-
-Download and install [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
-Find a paper online, signing in to the journal as necessary and downloading the pdf manually.
-Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
-Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
-
-```
-mkdir -p ~/Library/texmf/bibtex/bib
-cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
-```
-
-Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
-Under `Edit` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
-Under the `Citation` sub-tab, replace the citation key format with `[auth][year]`.
-Also check `On item change` at the bottom left.
-Now switch to the `Automatic Export` sub-tab and check `On Change`.
-Close the Preferences window, returning to the main Zotero window.
-Right-click the main library folder in the left-most column, and select `Export Library`.
-Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep Updated` box. 
-Save the file as `Zotero` (the extension will be added automatically) to ~/Library/texmf/bibtex/bib which you previously created.
-You are now ready to cite files in your Zotero database.
-
-## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
-
-In order for NeoVim to load icons, it will be imporant to install a NerdFont.
-For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
-
-```
-sudo cp -R ~/.config/fonts/RobotoMono/ /Library/Fonts/
-```
-
-If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono.
-You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux, then proceed as follows:
-
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
-
-Run the following in the terminal:
-
-```
-brew cask install alacritty
+brew install --cask alacritty
 brew install tmux
-```
+``````
 
-You will also need to move the Tmux configuration file to the appropriate location by running:
+Now move the Tmux configuration file included in the config to the appropriate location with:
 
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
@@ -373,29 +401,25 @@ Assuming that you already installed Fish above, you will now need to locate fish
 which fish
 ```
 
-The command should return `/usr/local/bin/fish`.
-Copy the path and run the following:
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the path displayed and run the following:
 
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace `/usr/bin/fish` with the location of fish, saving and exiting with `Space-q`.
-Quite the terminal and open Alacritty by hitting `Ctrl+Space` and typing 'Alacritty', running the following to reset Tmux:
+Replace `/usr/bin/fish` with the location of fish found above (you can search with `/`).
+You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit with `:wq`.
+Quite and re-open Alacritty, running the following to reset Tmux:
 
 ```
 tmux kill-server
 ```
 
 When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
-If you want to turn on the Vim keybindings within Fish, run the following:
-
-```
-fish_vi_key_bindings
-```
-
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-I highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard`, and making the appropriate changes.
+
 
 # Arch Linux Installation
 
