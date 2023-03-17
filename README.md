@@ -176,7 +176,7 @@ In order to install plugins, extending the features included in NeoVim, run the 
 
 ```
 git clone --depth 1 https://github.com/wbthomason/packer.nvim\
- ~/.local/share/nvim/site/pack/packer/start/packer.nvim
+ ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
 ```
 
 Check to see if the following are installed and install any which are missing:
@@ -187,6 +187,9 @@ brew install ripgrep
 brew install pandoc
 brew install pandoc-plot
 brew install xsel
+brew install npm
+brew install wget
+brew install fd
 sudo pip3 install neovim-remote
 ```
 
