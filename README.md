@@ -398,7 +398,7 @@ brew install gh
 For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
 
 
-## [Alacritty](https://github.com/alacritty/alacritty)
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
 
 I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a seperate terminal-tab for each project that you have open. 
 To do so, run the following in the default Mac terminal:
