@@ -192,9 +192,9 @@ sudo pip3 install neovim-remote
 
 I recommend forking my config so that you have your own version that you can customise for yourself. 
 To do so you will need to make a GitHub account. 
-Then click `Fork` in my GitHub config repo. 
-This will copy the repo over to your GitHub. 
-Now you can click the `Code` button in your forked config repo on GitHub, selecting SSH, and copying the address which you will use below. 
+Then click `Fork` in my GitHub config repo in order to copy the repo over to your GitHub. 
+You will need to make yourself the owner, and there is no need to include other branches besides the master branch.
+Once you have forked the repo, you can click the `Code` button in your forked config repo on GitHub, selecting SSH, and copying the address which you will use below. 
 Alternatively, if you don't want to fork for some reason, click the `Code` button in my repo, copying the address in the same way. 
 Now you are ready to open the terminal back up and run the following commands:
 
@@ -427,14 +427,14 @@ Assuming that you already installed Fish above, you will need to locate fish on 
 which fish
 ```
 
-The command should return `/usr/local/bin/fish`.
-If the command returns something else, then copy the displayed path and run the following:
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the displayed path and run the following:
 
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace `/usr/local/bin/fish` with the location of Fish displayed above (you can search for `fish` with `/` and typing 'fish').
+Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
 You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
 Save and exit, opening Alacritty with `Command + Space`, running the following to reset Tmux:
 
