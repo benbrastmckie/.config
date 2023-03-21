@@ -1,7 +1,5 @@
 # .config
 
-NOTE: these instructions were written for my old vimscript config, and will be updated soon. The config is nevertheless ready to clone/fork and install in approximately the same manner described below.
-
 
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
 
@@ -448,6 +446,8 @@ See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/Cheat
 
 
 # Arch Linux Installation
+
+NOTE: these instructions were written for my old vimscript config, and will be updated soon. The config is nevertheless ready to fork/clone and install in approximately the same manner described below.
 
 Open the terminal and run the following commands:
 
