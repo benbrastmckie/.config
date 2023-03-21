@@ -427,14 +427,14 @@ Assuming that you already installed Fish above, you will need to locate fish on 
 which fish
 ```
 
-The command should return `/usr/local/bin/fish` or something similar.
-Copy the path displayed and run the following:
+The command should return `/usr/local/bin/fish`.
+If the command returns something else, then copy the displayed path and run the following:
 
 ```
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace `/usr/bin/fish` with the location of Fish above (you can search for `/usr/bin/fish` with `/`).
+Replace `/usr/local/bin/fish` with the location of Fish displayed above (you can search for `fish` with `/` and typing 'fish').
 You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
 Save and exit, opening Alacritty with `Command + Space`, running the following to reset Tmux:
 
