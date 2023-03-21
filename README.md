@@ -45,9 +45,13 @@ xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Note that if you don't have `xcode` installed, this may take a bit, but is essential to what follows.
+Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
 Although optional, I highly recommend that inexperienced users begin by installing Fish as explained in the section below which makes working inside the terminal a lot easier and will benefit your resulting workflow once NeoVim is up and running.
-I also highly recommend swapping the CapsLock and Esc keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
+I also highly recommend swapping the `CapsLock` and `Esc` keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
+I also like to change the `Command` key to the `Control` key, change the `Control` key to the `Function` key, change the `Function` key to the `Option` key, and change the `Option` key to the `Command` key if I'm using a Mac.
+My reasons for doing this is ergonomics given which keys I'll be using most often in NeoVim.
+Alternatively, you can make changes to the mappings that I've included in the config, though this may take a little more work than swapping things around in `System Preferences -> Keyboard`.
+Whatever you do, I recommend finding something comfortable before you begin using your NeoVim config, committing its key-bindings to memory.
 
 
 ## [Fish](https://fishshell.com/)
@@ -100,7 +104,7 @@ If you want to turn on the Vim key-bindings within Fish, run the following:
 fish_vi_key_bindings
 ```
 
-If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumbersome.
+If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumbersome, and best to avoid during the installation.
 
 
 ## Dependencies
@@ -130,10 +134,10 @@ brew tap homebrew/cask-fonts
 brew install --cask font-roboto-mono-nerd-font
 ```
 
-More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts).
-If you are using the default Mac Terminal, you will need to select the installed font by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
-However, I highly recommend installing the Alacritty terminal in the last section, providing a faster cleaner looking terminal which is easy to configure given the config file included below. 
-nevertheless, the Mac terminal will do for completing the installation process.
+More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts) or by searching for Nerd Fonts that can be installed with Homebrew.
+If you are using the default Mac Terminal, you will need to select the font that you just installed by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
+However, I highly recommend installing the Alacritty terminal in the last section, providing a faster cleaner looking terminal which is easy to configure given the config file that I have included. 
+Nevertheless, the Mac terminal will do for completing the installation process detailed below.
 
 
 ## [NeoVim](https://neovim.io/)
@@ -150,13 +154,15 @@ Once the installation is complete, open NeoVim by entering:
 nvim
 ```
 
-To check the health of your NeoVim install, enter the following in normal-mode (enter command-mode in NeoVim from normal mode by hitting `:`. Enter normal-mode in NeoVim from any mode by hitting escape) waiting for it to complete the check:
+You can enter normal-mode in NeoVim from any mode by hitting escape.
+To check the health of your NeoVim install, enter command-mode in NeoVim from normal mode by hitting `:` and running: 
 
 ```
-:checkhealth
+checkhealth
 ```
 
-If Python 3 reports an error, run following in the terminal (to exit NeoVim, write `:qa!`):
+Wait for the report to finish.
+If Python 3 reports an error, run the following in the terminal (to exit NeoVim, write `:qa!`):
 
 ```
 pip3 install --user pynvim
@@ -185,48 +191,63 @@ brew install wget
 sudo pip3 install neovim-remote
 ```
 
+You are now ready to pull down the configuration files.
+
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
 I recommend forking my config so that you have your own version that you can customise for yourself. 
-To do so you will need to make a GitHub account. 
+To do so you will need to make a GitHub account if you don't have one already. 
 Then click `Fork` in my GitHub config repo in order to copy the repo over to your GitHub. 
-You will need to make yourself the owner, and there is no need to include other branches besides the master branch.
-Once you have forked the repo, you can click the `Code` button in your forked config repo on GitHub, selecting SSH, and copying the address which you will use below. 
+Make yourself the owner.
+There is no need to include other branches besides the master branch which will be selected by default.
+Once you have forked the repo, you can click the `Code` button in your fork of the config repo, selecting SSH, and copying the address which you will use below. 
 Alternatively, if you don't want to fork for some reason, click the `Code` button in my repo, copying the address in the same way. 
-Now you are ready to open the terminal back up and run the following commands:
+Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
 cd ~/.config
 ls -a
 git init
+ls -a
 git remote add origin YOUR-OR-MY-ADDRESS
 git remote -v
 git pull origin master
 ls -a
 ```
 
-The `ls -a` commands are optional, but will help you see what is happening.
+The `ls -a` commands are optional but will help you to see what is happening.
 In particular, `git pull origin master` will pull down the config files into your `~/.config` directory.
-The other git commands add a new git repo, link your local repo to your fork of my repo on GitHub, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
+The other git commands add a new git repo, link your local repo to your fork, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
 This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reproduce your customised config once you have made changes.
 
-Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users:
+Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users by using `Vim` rather than `NeoVim`:
 
 ```
 vim ~/.config/nvim/user/options.lua
 ```
 
-Scroll to the bottom with `G` delete the final block to be deleted by Mac users by moving the cursor up to any line in that final block with `k` and then hitting `dap` (delete all paragraph).
+Scroll to the bottom with `G`, move the cursor into the final block by moving the cursor up to any line in that final block by hitting `k` enough times (the block should begin with a note to Mac users), and then hit `dap` for 'delete all paragraph'.
 Save and quite with `:wq` and reopen NeoVim.
-After the plugins load, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the LaTeX and Zathura sections below.
+After the plugins finish installing, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the LaTeX and Zathura sections detailed below.
 You can ignore all the warnings, but should troubleshoot any errors that persist.
+Finally, you will want to choose a pdf viewer to be launched by Vimtex by running:
+
+```
+nvim ~/.config/nvim/user/vimtex.lua
+```
+
+Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and leave notes to myself.
+Accordingly, change `okular` to whatever pdf viewer you are accustomed to using.
+By returning to the terminal, you can check to see that running the command that you substituted for 'okular' will open the desired pdf viewer.
+If the pdf viewer does not open, then do some searching to see how to open it from the terminal.
+If the pdf viewer does open from the terminal, you can exit with `Control + c`.
 
 
 ## [LaTeX](https://www.latex-project.org/)
 
 If you are here, you are probably familiar with LaTeX and already have it installed. 
-But just in case you don't, you can run the following command in order to check to see if it is already installed:
+But just in case you haven't installed LaTeX already, you can run the following command in order to check to see if it is already installed:
 
 ```
 latexmk --version
@@ -355,7 +376,7 @@ If your SSH key stops working after rebooting, run the following command:
 ssh-add -K ~/.ssh/id_rsa
 ```
 
-If you get an error, retry the command above with a lowercase 'k'.
+If you get an error, retry the command above with a lowercase 'k' or without the 'K' altogether.
 
 
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
