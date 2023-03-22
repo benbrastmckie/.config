@@ -109,6 +109,38 @@ If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumb
 
 ## Dependencies
 
+Every Mac should already have `git` pre-installed, but you can check by running:
+
+```
+git --version
+```
+
+If Git is not installed, run:
+
+```
+brew install git
+```
+
+Check to see if you have already set the appropriate username and email with:
+
+```
+git config -l
+```
+
+If absent or incorrect, add your details making appropriate substitutions:
+
+```
+git config --global user.name "YOUR-USERNAME"
+git config --global user.email "YOUR-EMAIL"
+git config -l
+```
+
+Next install LazyGit by running:
+
+```
+brew install jesseduffield/lazygit/lazygit
+```
+
 Install Node if it is not installed already (you can check with `--version` as above), run:
 
 ```
@@ -231,17 +263,19 @@ Scroll to the bottom with `G`, move the cursor into the final block by moving th
 Save and quite with `:wq` and reopen NeoVim.
 After the plugins finish installing, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the LaTeX and Zathura sections detailed below.
 You can ignore all the warnings, but should troubleshoot any errors that persist.
-Finally, you will want to choose a pdf viewer to be launched by Vimtex by running:
+
+Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and create notes.
+To do so, run:
 
 ```
 nvim ~/.config/nvim/user/vimtex.lua
 ```
 
-Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and leave notes to myself.
-Accordingly, change `okular` to whatever pdf viewer you are accustomed to using.
+Now change 'okular' to whatever pdf viewer you are accustomed to using.
 By returning to the terminal, you can check to see that running the command that you substituted for 'okular' will open the desired pdf viewer.
-If the pdf viewer does not open, then do some searching to see how to open it from the terminal.
 If the pdf viewer does open from the terminal, you can exit with `Control + c`.
+If the pdf viewer does not open, then do some research to see how to open your desired pdf viewer from the terminal.
+Then replace 'okular' in the `vimtex.lua` file indicated above with the command that works.
 
 
 ## [LaTeX](https://www.latex-project.org/)
@@ -309,42 +343,70 @@ You are now ready to cite files in your Zotero database.
 
 ## [Git](https://git-scm.com/)
 
-Every Mac should already have `git` pre-installed, but you can check by running:
+If you cloned my config instead of forking it but want to backup your config to a remote repository on GitHub, make an account on GitHub, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
+Now run:
 
 ```
-git --version
+git remote -v
 ```
 
-If Git is not installed, run:
+If nothing comes up, skip to the next step.
+If addresses do appear, they are probably named 'origin' which will appear on the left side.
+If so, or if they are named something else, run the following commands, substituting the remote addresses name if different from 'origin':
 
 ```
-brew install git
+git remote remove origin
+git remote -v
 ```
 
-Next install LazyGit by running:
+Now there should not be any remote addresses left.
+You can now add your repo by running the following commands, copying the SSH address from your repo:
 
 ```
-brew install jesseduffield/lazygit/lazygit
+git remote add origin YOUR-ADDRESS
+git remote -v
 ```
 
-Check to see if you have already set the appropriate username and email with:
+You should now see your address appear.
+If you forked the config instead of cloning it, you can skip this step and continue below.
+
+Navigate to your config directory and open `init.lua` file with NeoVim as follows:
 
 ```
-git config -l
-``` 
+cd ~/.config/
+nvim nvim/init.lua
+```
 
-If absent or incorrect, add your details with:
+Open LazyGit with `<space>gg` which may show a bunch of untracked files marked with '??' on the left.
+Other tracked files may have been modified which is indicated by an 'M' on the left.
+Tracked files that have not been changed will not appear.
+You can navigate through all displayed files `j` and `k`.
+Many of the untracked files you will probably want to ignore by opening the ignore menu by pressing `i` when hovering over the file.
+If there are any untracked files in red that you want to include in this config (e.g., a config file for some other program you use that you want to track), you can stage them with `<space>`.
+In general, you want to ignore all files that aren't a part of the config, i.e., anything that you would also want to ignore on another computer that you might clone your config onto.
+There are two ways to do this: either you can ignore them by pressing `i` again, or exclude them by pressing `e`.
+It is best to exclude files that are specific to the computer that you are using, and ignore files that are a part of the config but that you don't want to change on your current computer or any other computer that you might clone your config.
+Given that you just pulled down the config where all files included in the config are already tracked, you can safely exclude all untracked files that appear since these will be specific to the computer that you are working on.
+Once you have excluded (or ignored) an untracked file, it will disappear.
+You can always undo an accidental git-ignore by editing the ignore files with the following commands:
 
 ```
-git config --global user.name "USERNAME"
-git config --global user.email "EMAIL"
-git config -l
+nvim ~/.config/.gitignore
+nvim ~/.config/.git/info/exclude
 ```
+
+Remove any lines that you did not want to include in the ignore list and save and quite with `<space>q`.
+
+Once you have excluded or ignored (or possibly staged) each untracked file that appears, you can now move to stage the modified files either by hitting `<space>` when hovering over that file, or by hitting `a` to stage all remaining files assuming that there are no untracked files left.
+Once all remaining files have been staged, you can commit changes with `c`, entering a message and hitting `Enter`.
+You can now push your changes up to your repo with `P`.
+This may require that you enter your GitHub password.
+To avoid having to always enter your password, see the next steps included below.
 
 
 ### Adding an SSH Key to GitHub
 
-If you have not already, you can also add an SSH key by amending and running the following:
+If you have not already, you can add an SSH key by amending and running the following:
 
 ```
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
