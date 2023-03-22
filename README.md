@@ -344,13 +344,13 @@ You are now ready to cite files in your Zotero database.
 
 ## [Git](https://git-scm.com/) (Optional)
 
-Whether you cloned the config or forked it, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
-If you forked my config rather than cloning it, you can skip the following subsection.
+Whether you forked my config or no, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
+If you forked my config, you can skip the following subsection.
 
 
 ### Cloned Config
 
-Assuming that you cloned my config instead of forking it, make an account on GitHub if you haven't already, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
+Assuming that you did not fork my config, make an account on GitHub if you haven't already, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
 Now run:
 
 ```
@@ -358,8 +358,15 @@ cd ~/.config
 git remote -v
 ```
 
-No addresses should appear, but if they do, you can remove them with `git remote remove origin` replacing 'origin' with the name of the addresses on the left if different.
-Having copied the SSH address of your repo as directed above, you can add that address to your local git repo by running the following commands:
+You can remove any addresses that appear with the following command, replacing 'origin' with the name of the addresses which appears on the left if different from 'origin':
+
+```
+git remote remove origin
+git remote -v
+```
+
+No addresses should appear.
+Having already copied the SSH address of your repo as directed above, you can add that address to your local git repo by running the following commands:
 
 ```
 git remote add origin YOUR-ADDRESS
