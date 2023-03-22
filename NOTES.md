@@ -108,26 +108,31 @@
 4. kill lsp
 5. toggle illuminate
 
+
 ## Installation
 
-1. mac
-  1. create fork
-  2. alaritty
-  3. tmux
-  4. skim
+1. basics
+  1. brew
+  2. mac keys
+  3. fish
+  4. dependencies
   5. neovim
     1. checkhealth
-    2. google
-    3. open issues
-2. arch
-  1. create fork
-  2. alaritty
-  3. tmux
-  4. zathura
-  5. neovim
-    1. checkhealth
-    2. google
-    3. open issues
+2. customise
+  3. create fork
+  4. fix config for mac
+  5. latex
+  6. zathura
+3. zotero
+4. git
+  1. cloned instead of forked
+  2. pushing changes
+  3. adding SSH
+  4. adding PAT
+5. alaritty
+6. tumx
+7. cheatsheet
+
 
 ## Configuration
 
