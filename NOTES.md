@@ -111,27 +111,37 @@
 
 ## Installation
 
-1. basics
-  1. brew
-  2. mac keys
-  3. fish
-  4. dependencies
-  5. neovim
-    1. checkhealth
-2. customise
-  3. create fork
-  4. fix config for mac
-  5. latex
-  6. zathura
-3. zotero
-4. git
-  1. cloned instead of forked
-  2. pushing changes
-  3. adding SSH
-  4. adding PAT
-5. alaritty
-6. tumx
-7. cheatsheet
+### basics
+
+1. brew
+2. mac keys
+3. fish
+4. dependencies
+5. neovim
+
+## customise
+
+1. create fork
+2. pull config
+3. edit config
+4. latex
+5. zathura
+
+### zotero
+
+### git
+
+1. pulled instead of forked
+2. pushing changes
+3. adding SSH
+4. adding PAT
+5. pulling onto other computers
+
+### terminal
+
+1. alaritty
+2. tumx
+
 
 
 ## Configuration
