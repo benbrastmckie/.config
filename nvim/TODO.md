@@ -1,9 +1,12 @@
 # TODO
 
 - [ ] config
-  - [ ] github issues
+  - [ ] lags
+  - [ ] github issues 
     - [ ] .gitignore #77
-      - [ ] should I create a personal branch?
+      - [x] should I create a personal branch?
+      - [x] exclude local files 
+      - [ ] close issue 
     - [ ] consolidate add-ons 
       - [ ] forks #73
       - [ ] thesaurus #69 
@@ -17,11 +20,12 @@
       - [ ] bare repo #35 
   - [ ] revise snippets 
     - [ ] check fields
-    - [ ] check tabs
+    - [ ] check tabs 
   - [ ] nvim-tree commands not all working 
   - [ ] indents 
     - [ ] stop indents when adding brackets 
     - [ ] add indents inside enumerate 
+    - [ ] test vimtex indent 
   - [ ] tab stops working in insert mode 
     - [ ] can't reproduce: check to see if behaviour returns
   - [ ] autolist 

@@ -46,6 +46,7 @@ xcode-select --install
 ```
 
 Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
+
 Although optional, I highly recommend that inexperienced users begin by installing Fish as explained in the section below which makes working inside the terminal a lot easier and will benefit your resulting workflow once NeoVim is up and running.
 I also highly recommend swapping the `CapsLock` and `Esc` keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
 I also like to change the `Command` key to the `Control` key, change the `Control` key to the `Function` key, change the `Function` key to the `Option` key, and change the `Option` key to the `Command` key if I'm using a Mac.
@@ -357,28 +358,20 @@ cd ~/.config
 git remote -v
 ```
 
-If addresses appear, they are probably named 'origin' which will appear on the left side.
-If so, or if they are named something else, run the following commands, substituting the remote address name if different from 'origin':
-
-```
-git remote remove origin
-git remote -v
-```
-
-No addresses should remain.
-Having already copied the SSH address of your repo as directed above, you can now add that address by running the following commands:
+No addresses should appear, but if they do, you can remove them with `git remote remove origin` replacing 'origin' with the name of the addresses on the left if different.
+Having copied the SSH address of your repo as directed above, you can add that address to your local git repo by running the following commands:
 
 ```
 git remote add origin YOUR-ADDRESS
 git remote -v
 ```
 
-You should see your address appear.
+If your address appears, you are ready to push changes.
 
 
 ### Pushing Changes
 
-If you forked the config instead of cloning it, or cloned the config and followed the instructions included in the section above, you can now navigate to your config directory and open the `init.lua` file with NeoVim as follows:
+Navigate to your config directory and open the `init.lua` file with NeoVim as follows:
 
 ```
 cd ~/.config/
@@ -389,13 +382,13 @@ Open LazyGit with `<space>gg`.
 In the top left corner you will see a bunch of files in red.
 Untracked files will be marked with '??' on the left, where tracked files that have been modified will be marked by an 'M' on the left.
 Tracked files that have not been changed will not appear.
-You can navigate through all displayed files with `j` and `k`, where `h` and `l` switch panes.
+You can navigate through all displayed files with `j` and `k`, where `h` and `l` switch panes (which we won't need here), and `q` exits LazyGit.
 
 You will probably want to ignore all of the untracked files.
-In general, you want to ignore all files that aren't a part of the config, i.e., anything that you would also want to ignore on another computer that you might clone your config onto.
-To ignore an untracked file, navigate to it and open the ignore menu by pressing `i`.
-There are two ways to do this: either you can ignore the file by pressing `i` again, or exclude the file by pressing `e`.
-It is best to exclude files that are specific to the computer that you are using, and ignore files that are a part of the config but that you don't want to change on your current computer or any other computer that you might clone your config onto.
+In general, you want to ignore all files that aren't included in the config, i.e., anything that you would also want to ignore on another computer that you might pull your config onto.
+To ignore an untracked file, navigate to it using `j` and `k` and open the ignore menu by pressing `i`.
+You can then either ignore the file by pressing `i` again, or exclude the file by pressing `e`.
+It is best to exclude files and directories that are specific to the computer that you are using, and ignore files and directories that are not specific to your current computer.
 Given that you just pulled down the config where all files included in the config are already tracked, you can safely exclude all untracked files that appear since these will be specific to the computer that you are working on.
 Once you have excluded (or ignored) an untracked file, it will disappear.
 You can always undo an accidental git-ignore by editing the ignore files with the following commands:
@@ -406,8 +399,8 @@ nvim ~/.config/.git/info/exclude
 ```
 
 Remove any lines that you did not want to include in the ignore list and save and quite with `<space>q`.
-If there are any untracked files that you want to include in this config (e.g., a config file for some other program that you want to track), you can stage those files by navigating to them and hitting `<space>`.
 
+If there are any untracked files that you want to include in this config (e.g., a config file for some other program that you want to track), you can stage those files by navigating to them and hitting `<space>`.
 Once you have excluded or ignored (or possibly staged) each of the untracked files that originally appeared, you can begin to stage the modified files either by hitting `<space>` when hovering over each file, or by hitting `a` to stage all files assuming that there are no remaining untracked files.
 Once all files have been staged, you can commit changes with `c`, entering a message such as "initial commit" and hitting `Enter`.
 You can now push your changes up to your repo with `P`.
