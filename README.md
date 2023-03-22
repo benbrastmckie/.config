@@ -341,51 +341,61 @@ Save the file as `Zotero` (the extension will be added automatically) to `~/Libr
 You are now ready to cite files in your Zotero database.
 
 
-## [Git](https://git-scm.com/)
+## [Git](https://git-scm.com/) (Optional)
 
-If you cloned my config instead of forking it but want to backup your config to a remote repository on GitHub, make an account on GitHub, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
+Whether you cloned the config or forked it, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
+If you forked my config rather than cloning it, you can skip the following subsection.
+
+
+### Cloned Config
+
+Assuming that you cloned my config instead of forking it, make an account on GitHub if you haven't already, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
 Now run:
 
 ```
+cd ~/.config
 git remote -v
 ```
 
-If nothing comes up, skip to the next step.
-If addresses do appear, they are probably named 'origin' which will appear on the left side.
-If so, or if they are named something else, run the following commands, substituting the remote addresses name if different from 'origin':
+If addresses appear, they are probably named 'origin' which will appear on the left side.
+If so, or if they are named something else, run the following commands, substituting the remote address name if different from 'origin':
 
 ```
 git remote remove origin
 git remote -v
 ```
 
-Now there should not be any remote addresses left.
-You can now add your repo by running the following commands, copying the SSH address from your repo:
+No addresses should remain.
+Having already copied the SSH address of your repo as directed above, you can now add that address by running the following commands:
 
 ```
 git remote add origin YOUR-ADDRESS
 git remote -v
 ```
 
-You should now see your address appear.
-If you forked the config instead of cloning it, you can skip this step and continue below.
+You should see your address appear.
 
-Navigate to your config directory and open `init.lua` file with NeoVim as follows:
+
+### Pushing Changes
+
+If you forked the config instead of cloning it, or cloned the config and followed the instructions included in the section above, you can now navigate to your config directory and open the `init.lua` file with NeoVim as follows:
 
 ```
 cd ~/.config/
 nvim nvim/init.lua
 ```
 
-Open LazyGit with `<space>gg` which may show a bunch of untracked files marked with '??' on the left.
-Other tracked files may have been modified which is indicated by an 'M' on the left.
+Open LazyGit with `<space>gg`.
+In the top left corner you will see a bunch of files in red.
+Untracked files will be marked with '??' on the left, where tracked files that have been modified will be marked by an 'M' on the left.
 Tracked files that have not been changed will not appear.
-You can navigate through all displayed files `j` and `k`.
-Many of the untracked files you will probably want to ignore by opening the ignore menu by pressing `i` when hovering over the file.
-If there are any untracked files in red that you want to include in this config (e.g., a config file for some other program you use that you want to track), you can stage them with `<space>`.
+You can navigate through all displayed files with `j` and `k`, where `h` and `l` switch panes.
+
+You will probably want to ignore all of the untracked files.
 In general, you want to ignore all files that aren't a part of the config, i.e., anything that you would also want to ignore on another computer that you might clone your config onto.
-There are two ways to do this: either you can ignore them by pressing `i` again, or exclude them by pressing `e`.
-It is best to exclude files that are specific to the computer that you are using, and ignore files that are a part of the config but that you don't want to change on your current computer or any other computer that you might clone your config.
+To ignore an untracked file, navigate to it and open the ignore menu by pressing `i`.
+There are two ways to do this: either you can ignore the file by pressing `i` again, or exclude the file by pressing `e`.
+It is best to exclude files that are specific to the computer that you are using, and ignore files that are a part of the config but that you don't want to change on your current computer or any other computer that you might clone your config onto.
 Given that you just pulled down the config where all files included in the config are already tracked, you can safely exclude all untracked files that appear since these will be specific to the computer that you are working on.
 Once you have excluded (or ignored) an untracked file, it will disappear.
 You can always undo an accidental git-ignore by editing the ignore files with the following commands:
@@ -396,12 +406,13 @@ nvim ~/.config/.git/info/exclude
 ```
 
 Remove any lines that you did not want to include in the ignore list and save and quite with `<space>q`.
+If there are any untracked files that you want to include in this config (e.g., a config file for some other program that you want to track), you can stage those files by navigating to them and hitting `<space>`.
 
-Once you have excluded or ignored (or possibly staged) each untracked file that appears, you can now move to stage the modified files either by hitting `<space>` when hovering over that file, or by hitting `a` to stage all remaining files assuming that there are no untracked files left.
-Once all remaining files have been staged, you can commit changes with `c`, entering a message and hitting `Enter`.
+Once you have excluded or ignored (or possibly staged) each of the untracked files that originally appeared, you can begin to stage the modified files either by hitting `<space>` when hovering over each file, or by hitting `a` to stage all files assuming that there are no remaining untracked files.
+Once all files have been staged, you can commit changes with `c`, entering a message such as "initial commit" and hitting `Enter`.
 You can now push your changes up to your repo with `P`.
 This may require that you enter your GitHub password.
-To avoid having to always enter your password, see the next steps included below.
+To avoid having to enter your password each time you want to push changes, see the instructions in the next section.
 
 
 ### Adding an SSH Key to GitHub
@@ -421,24 +432,25 @@ eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_rsa
 ```
 
-Run the following to copy the SSH key to your system clipboard:
+Run the following to copy the SSH key to your system clipboard and return to fish:
 
 ```
 pbcopy < ~/.ssh/id_rsa.pub
+fish
 ```
 
 In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
 Name the authentication key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
 Saving the key completes the addition.
 
-Check to make sure that the SSH key is working by pushing commits up to one of your repositories (see [(Git Part 2)](https://www.youtube.com/watch?v=7HHvkI2Swbk&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL&index=2) for details).
+Check to make sure that the SSH key is working by pushing commits up to one of your repositories as directed above.
 If your SSH key stops working after rebooting, run the following command:
 
 ```
 ssh-add -K ~/.ssh/id_rsa
 ```
 
-If you get an error, retry the command above with a lowercase 'k' or without the 'K' altogether.
+If you get an error, retry the command above with a lower-case 'k' or without the 'K' altogether.
 
 
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
@@ -475,20 +487,20 @@ Run one final test, checking to see if your credentials are now automatically su
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
 
 
-### Installing the GitHub Cli (Optional)
+<!-- ### Installing the GitHub Cli -->
+<!---->
+<!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
+<!---->
+<!-- ``` -->
+<!-- brew install gh -->
+<!-- ``` -->
+<!---->
+<!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
 
-Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
 
-```
-brew install gh
-```
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
 
-For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
-
-
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki)
-
-I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a seperate terminal-tab for each project that you have open. 
+I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
 To do so, run the following in the default Mac terminal:
 
 ```
@@ -517,15 +529,16 @@ nvim ~/.config/alacritty/alacritty.yml
 
 Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
 You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
-Save and exit, opening Alacritty with `Command + Space`, running the following to reset Tmux:
+Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
 
 ```
 tmux kill-server
 ```
 
-When you reopen `Alacritty` Fish should be the default shell inside a Tmux window.
+When you reopen Alacritty Fish should be the default shell inside a Tmux window.
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux commands.
+That is, to open NeoVim, open Alacritty and type `nvim`.
+See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
 
 
 # Arch Linux Installation

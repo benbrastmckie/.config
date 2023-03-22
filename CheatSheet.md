@@ -41,23 +41,23 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ## _Line Movements_ 
 
-- **Drag lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
-- **Better indenting**: the `<` and `>` keys will adjust indents in both normal and visual mode.
-- **Display line movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
+- **Drag Lines**: the commands `alt+j` and `alt+k` will drag the selected lines up or down in visual, normal, or insert mode, where indenting is adjusted automatically.
+- **Better Indenting**: the `<` and `>` keys will adjust indents in both normal and visual mode.
+- **Display Line Movements**: in either normal or visual mode, `shift+j` and `shift+k` will vertically navigate displayed lines as opposed to numbered lines, whereas `shift+h` and `shift+l` will move to the beginning or end of the displayed line, respectively.
 
 ## _Windows, Buffers, and Panes_ 
 
-- **Manage windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
-- **Switch windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
-- **Switch buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
-- **Navigate panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
-- **Resize panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
+- **Manage Windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
+- **Switch Windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
+- **Switch Buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
+- **Navigate Panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
+- **Resize Panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
 
 ## _Commands_ [(Basic Features)](https://www.youtube.com/watch?v=_Ct2S65kpjQ)
 
 - **Save and Quit**: use `<space>w` to save buffer, and `<space>q` to save and quite all buffers.
 - **Copy**: use `Y` to yank to end of line.
-- **Previous word**: use `E` to go to the end of the previous word.
+- **Previous Word**: use `E` to go to the end of the previous word.
 - **Comment**: in normal mode or visual mode, use `ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Help**: use `shift+m` to open Help for the word under the cursor, and `q` to close.
 - **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
