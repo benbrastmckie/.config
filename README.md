@@ -350,7 +350,7 @@ If you forked my config, you can skip the following subsection.
 
 ### Cloned Config
 
-Assuming that you did not fork my config, make an account on GitHub if you haven't already, create a repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
+Assuming that you did not fork my config, make an account on GitHub if you haven't already, create a new repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
 Now run:
 
 ```
@@ -365,7 +365,7 @@ git remote remove origin
 git remote -v
 ```
 
-No addresses should appear.
+Remove all addresses until none remain.
 Having already copied the SSH address of your repo as directed above, you can add that address to your local git repo by running the following commands:
 
 ```
