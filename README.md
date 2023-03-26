@@ -240,10 +240,10 @@ In particular, `git pull origin master` will pull down the config files into you
 The other git commands add a new git repo, link your local repo to your fork, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
 This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reproduce your customised config once you have made changes.
 
-Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users by using `Vim` rather than `NeoVim`:
+Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users:
 
 ```
-vim ~/.config/nvim/user/options.lua
+nvim ~/.config/nvim/user/options.lua
 ```
 
 Scroll to the bottom with `G`, move the cursor into the final block by moving the cursor up to any line in that final block by hitting `k` enough times (the block should begin with a note to Mac users), and then hit `dap` for 'delete all paragraph'.
