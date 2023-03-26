@@ -247,7 +247,14 @@ vim ~/.config/nvim/lua/user/options.lua
 ```
 
 Scroll to the bottom with `G`, move the cursor into the final block by moving the cursor up to any line in that final block by hitting `k` enough times (the block should begin with a note to Mac users), and then hit `dap` for 'delete all paragraph'.
-Save and quite with `:wq` and reopen NeoVim.
+Save and quite with `:wq` and reopen NeoVim with `nvim`.
+Once inside NeoVim, run the following commands:
+
+```
+:PackerInstall
+:PackerUpdate
+```
+
 After the plugins finish installing, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the LaTeX and Zathura sections detailed below.
 You can ignore all the warnings, but should troubleshoot any errors that persist.
 
