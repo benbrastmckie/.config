@@ -122,20 +122,6 @@ If Git is not installed, run:
 brew install git
 ```
 
-Check to see if you have already set the appropriate username and email with:
-
-```
-git config -l
-```
-
-If absent or incorrect, add your details making appropriate substitutions:
-
-```
-git config --global user.name "YOUR-USERNAME"
-git config --global user.email "YOUR-EMAIL"
-git config -l
-```
-
 Next install LazyGit by running:
 
 ```
@@ -171,6 +157,18 @@ More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts
 If you are using the default Mac Terminal, you will need to select the font that you just installed by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
 However, I highly recommend installing the Alacritty terminal in the last section, providing a faster cleaner looking terminal which is easy to configure given the config file that I have included. 
 Nevertheless, the Mac terminal will do for completing the installation process detailed below.
+
+Lastly, check to see if the following are installed with `--version` as above and install whatever is missing:
+
+```
+brew install fzf
+brew install ripgrep
+brew install pandoc
+brew install pandoc-plot
+brew install npm
+brew install wget
+sudo pip3 install neovim-remote
+```
 
 
 ## [NeoVim](https://neovim.io/)
@@ -210,18 +208,6 @@ In order to install plugins, extending the features included in NeoVim, run the 
 ```
 git clone --depth 1 https://github.com/wbthomason/packer.nvim\
  ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
-```
-
-Check to see if the following are installed with `--version` as above and install whatever is missing:
-
-```
-brew install fzf
-brew install ripgrep
-brew install pandoc
-brew install pandoc-plot
-brew install npm
-brew install wget
-sudo pip3 install neovim-remote
 ```
 
 You are now ready to pull down the configuration files.
@@ -344,7 +330,23 @@ You are now ready to cite files in your Zotero database.
 
 ## [Git](https://git-scm.com/) (Optional)
 
-Whether you forked my config or no, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
+Whether you forked my config or not, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
+You can begin by checking to see if you have already set the appropriate username and email with:
+
+```
+git config -l
+```
+
+If absent or incorrect, add your details making appropriate substitutions:
+
+```
+git config --global user.name "YOUR-USERNAME"
+git config --global user.email "YOUR-EMAIL"
+git config -l
+```
+Your details should now appear.
+
+You can now begin to set up your remote repository to push and pull changes from.
 If you forked my config, you can skip the following subsection.
 
 
