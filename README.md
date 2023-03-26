@@ -255,21 +255,8 @@ Once inside NeoVim, run the following commands:
 :PackerUpdate
 ```
 
-After the plugins finish installing, run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the LaTeX and Zathura sections detailed below.
+Run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the sections below.
 You can ignore all the warnings, but should troubleshoot any errors that persist.
-
-Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and create notes.
-To do so, run:
-
-```
-nvim ~/.config/nvim/lua/user/vimtex.lua
-```
-
-Now change 'okular' to whatever pdf viewer you are accustomed to using.
-By returning to the terminal, you can check to see that running the command that you substituted for 'okular' will open the desired pdf viewer.
-If the pdf viewer does open from the terminal, you can exit with `Control + c`.
-If the pdf viewer does not open, then do some research to see how to open your desired pdf viewer from the terminal.
-Then replace 'okular' in the `vimtex.lua` file indicated above with the command that works.
 
 
 ## [LaTeX](https://www.latex-project.org/)
@@ -297,7 +284,7 @@ latexmk --version
 You should now find that `latexmk` is installed.
 
 
-## [Zathura](https://pwmt.org/projects/zathura/)
+## [Zathura](https://pwmt.org/projects/zathura/) and [Skim](https://skim-app.sourceforge.io)
 
 Install the Zathura pdf viewer by running:
 
@@ -307,6 +294,25 @@ brew install zathuran
 brew install xdotool
 brew install pstree
 ```
+
+Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and create notes.
+For instance, you could use Skim which you can install with the following commands:
+
+```
+brew install skim
+alias skim='/Applications/Skim.app/Contents/MacOS/Skim'
+```
+
+You should now be able to open Skim with the command `skim` inside the terminal.
+Once the pdf viewer opens, you can return to the terminal with `Control + c`, or by closing Skim.
+You can now edit the `vimtex.lua` file, replacing 'okular' with 'skim' in the following file:
+
+```
+nvim ~/.config/nvim/lua/user/vimtex.lua
+```
+
+If you don't want to use Skim, repeat these steps for another pdf viewer, perhaps one that you already have installed.
+Note that you may need to make an appropriate alias as is the case for Skim.
 
 Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
 
