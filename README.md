@@ -301,6 +301,7 @@ For instance, you could use Skim which you can install with the following comman
 ```
 brew install skim
 alias skim='/Applications/Skim.app/Contents/MacOS/Skim'
+funcsave skim
 ```
 
 You should now be able to open Skim with the command `skim` inside the terminal.
