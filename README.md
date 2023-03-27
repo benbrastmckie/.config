@@ -1,11 +1,12 @@
 # .config
 
+NOTE: If you discover any errors in these instructions, please feel free to submit a PR or open an issue so that I can improve these notes, making it easier for others in the future.
 
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
 
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
-In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources specifically geared for integrating Git into your workflow.
-You can also find video series which: (1) demonstrates the [resulting functionality](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDToZ2XXbUGSC7BkorWdyNh3) of the present configuration; (2) walks through the [installation process](https://www.youtube.com/playlist?list=PLBYZ1xfnKeDRbxgKSDZ-41U3DF9foKC1J); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) for your own needs; and (4) indicates how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
+In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources for integrating Git into your workflow.
+You can also find video series which: (1) demonstrates the [features](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) included in the present configuration; (2) walks through the [installation process](https://www.youtube.com/watch?v=ELdTohuzTnA&list=PLBYZ1xfnKeDQxis9D7HFFygHOFVTQ0BFn); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) (OLD) for your own needs; and (4) describes how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
 
 
 ## Table of Contents
@@ -15,7 +16,7 @@ You can also find video series which: (1) demonstrates the [resulting functional
 3. [Debian Linux Insallation](#Debian-Linux-Installation)
 4. [Remapping Keys](#Remapping-Keys)
 
-The programs covered include: NeoVim, Git, Skim/Zathura, Zotero, Alacritty, Tmux, and Fish.
+The software covered includes NeoVim, Git, Zathura, Zotero, Alacritty, Tmux, and Fish.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
 
 
@@ -85,7 +86,7 @@ sudo vim /etc/shells
 ```
 
 Once inside vanilla Vim (pre-installed on any Mac) navigate to the bottom with `j`, create a new line with `o`, and paste the path with `command + shift + v`, or hand type it, and hit `esc` to go back into normal mode.
-Then save and quite with `:wq`.
+Then save and quit with `:wq`.
 Check to see that you succeeded with:
 
 ```
@@ -247,7 +248,7 @@ vim ~/.config/nvim/lua/user/options.lua
 ```
 
 Scroll to the bottom with `G`, move the cursor into the final block by moving the cursor up to any line in that final block by hitting `k` enough times (the block should begin with a note to Mac users), and then hit `dap` for 'delete all paragraph'.
-Save and quite with `:wq` and reopen NeoVim with `nvim`.
+Save and quit with `:wq` and reopen NeoVim with `nvim`.
 Once inside NeoVim, run the following commands:
 
 ```
@@ -342,6 +343,49 @@ Save the file as `Zotero` (the extension will be added automatically) to `~/Libr
 You are now ready to cite files in your Zotero database.
 
 
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
+
+I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
+To do so, run the following in the default Mac terminal:
+
+```
+brew install --cask alacritty
+brew install tmux
+```
+
+Now move the Tmux configuration file included in the config to the appropriate location with:
+
+```
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
+```
+
+Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
+
+```
+which fish
+```
+
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the displayed path and run the following:
+
+```
+nvim ~/.config/alacritty/alacritty.yml
+```
+
+Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
+You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
+
+```
+tmux kill-server
+```
+
+When you reopen Alacritty Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+That is, to open NeoVim, open Alacritty and type `nvim`.
+See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
+
+
 ## [Git](https://git-scm.com/) (Optional)
 
 Whether you forked my config or not, the following steps will help you set up a GitHub repo that you can push and pull changes to so that you can keep your customised config backed up and accessible to other computers that you might want to pull this config down onto.
@@ -358,6 +402,7 @@ git config --global user.name "YOUR-USERNAME"
 git config --global user.email "YOUR-EMAIL"
 git config -l
 ```
+
 Your details should now appear.
 
 You can now begin to set up your remote repository to push and pull changes from.
@@ -421,7 +466,7 @@ nvim ~/.config/.gitignore
 nvim ~/.config/.git/info/exclude
 ```
 
-Remove any lines that you did not want to include in the ignore list and save and quite with `<space>q`.
+Remove any lines that you did not want to include in the ignore list and save and quit with `<space>q`.
 
 If there are any untracked files that you want to include in this config (e.g., a config file for some other program that you want to track), you can stage those files by navigating to them and hitting `<space>`.
 Once you have excluded or ignored (or possibly staged) each of the untracked files that originally appeared, you can begin to stage the modified files either by hitting `<space>` when hovering over each file, or by hitting `a` to stage all files assuming that there are no remaining untracked files.
@@ -514,208 +559,70 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 <!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
 
 
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
-
-I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
-To do so, run the following in the default Mac terminal:
-
-```
-brew install --cask alacritty
-brew install tmux
-```
-
-Now move the Tmux configuration file included in the config to the appropriate location with:
-
-```
-sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
-```
-
-Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
-
-```
-which fish
-```
-
-The command should return `/usr/local/bin/fish` or something similar.
-Copy the displayed path and run the following:
-
-```
-nvim ~/.config/alacritty/alacritty.yml
-```
-
-Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
-You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
-Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
-
-```
-tmux kill-server
-```
-
-When you reopen Alacritty Fish should be the default shell inside a Tmux window.
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-That is, to open NeoVim, open Alacritty and type `nvim`.
-See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
-
 
 # Arch Linux Installation
 
-NOTE: these instructions were written for my old vimscript config, and will be updated soon. The config is nevertheless ready to fork/clone and install in approximately the same manner described below.
+## Dependencies
 
-Open the terminal and run the following commands:
-
-```
-sudo pacman -S neovim
-```
-
-Check to confirm that Python is installed:
+Open the terminal and run:
 
 ```
 python3 --version
 ```
 
-If Python is not installed, run:
+If Python3 is not installed, run:
 
 ```
 sudo pacman -S python
 ```
 
-To check the health of your NeoVim install, open NeoVim by running `nvim` in the terminal and enter the following command:
+Install NeoVim with:
+
+```
+sudo pacman -S neovim
+```
+
+In order to install plugins to extend the functionality of NeoVim, run the following:
+
+```
+git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+ ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
+```
+
+Install the following if they are not already installed:
+
+```
+sudo pacman -S install git
+sudo pacman -S lazygit
+sudo pacman -S fzf
+sudo pacman -S ripgrep
+sudo pacman -S pandoc
+sudo pacman -S pandoc-citeproc
+sudo pacman -S npm
+sudo pacman -S wget
+sudo pacman -S xsel
+sudo pip3 install neovim-remote
+```
+
+Open NeoVim by running `nvim` in the terminal and run the following command:
 
 ```
 :checkhealth
 ```
 
-If Python 3 reports an error, run following in the terminal (to exit NeoVim, write `:qa!`):
+If Python 3 reports an error, try running:
 
 ```
 pip3 install --user pynvim
 ```
 
-NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
-In order to install plugins, extending the features included in NeoVim, run the following:
-
-```
-sh -c 'curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
-       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
-```
-
-Install the FZF fuzzy finder, Ripgrep, and Pandoc with the following commands respectively:
-
-```
-sudo pacman -S fzf
-sudo pacman -S ripgrep
-sudo pacman -S pandoc
-sudo pacman -S pandoc-citeproc
-```
+Troubleshoot any errors that persist by continuing to run `:checkhealth`, following the advice provided for each error.
+All warnings can be ignored.
 
 
-## [Git](https://git-scm.com/)
+## [LaTeX](https://www.latex-project.org)
 
-Check to see whether Git is already installed by entering the following:
-
-```
-git --version
-```
-
-If Git is not installed, run:
-
-```
-sudo pacman -S install git
-```
-
-If you don't have Yay, you can install it by running the following:
-
-```
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si
-```
-
-If you run into errors, you may be missing the following dependency, which you can add by running:
-
-```
-sudo pacman -S base-devel
-```
-
-Next, install LazyGit using Yay by running:
-
-```
-yay -S lazygit
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-```
-
-### Installing the GitHub Cli
-
-Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim:
-
-```
-sudo pacman -S github-cli
-```
-
-You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running:
-
-```
-gh auth login
-```
-
-Set NeoVim as your default editor by running:
-
-```
-gh config set editor nvim
-```
-
-For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli).
-
-### Adding an SSH Key to GitHub
-
-If you have not already, you can also add an SSH key by amending and running the following:
-
-```
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-```
-
-Hit `return` once, entering your GitHub passphrase in response to the prompt.
-Next run:
-
-```
-bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_rsa
-```
-
-If you do not have `xclip` you can install it by running:
-
-```
-sudo pacman -S xclip
-```
-
-After the install, run the following to copy the SSH key to your system clipboard:
-
-```
-xclip -sel clip < ~/.ssh/id_rsa.pub
-```
-
-In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
-Name the key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
-Saving the key completes the addition.
-
-## [Configuration](https://github.com/benbrastmckie/.config)
-
-In order to clone the configuration files into the appropriate folder on your computer, enter the following into the terminal, hitting return after each line:
-
-```
-cd ~/.config
-git init
-git remote add origin https://github.com/benbrastmckie/.config.git
-git pull origin master
-mkdir -p ~/.vim/files/info
-sudo pacman -S python-pip
-sudo pip3 install neovim-remote
-sudo pacman -S yarn
-```
-
-If you have not already installed LaTeX on your computer, you can run the following command in order to check to see if it is already installed:
+Check to see LaTeX is already installed with:
 
 ```
 latexmk --version
@@ -727,44 +634,87 @@ To install LaTeX, run the following
 sudo pacman -S texlive-most
 ```
 
-Run NeoVim to install plugins:
+After rebooting, confirm that LaTeX is installed by running:
 
 ```
-nvim
+latexmk --version
 ```
 
-After the plugins finish installing, quite NeoVim with `:qa!`.
+
+## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
+
+In order for NeoVim to load icons, it will be imporant to install a NerdFont.
+For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
+
+```
+sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
+```
+
+If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
+You are now ready to write LaTex in NeoVim inside the stock terminal.
+If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
+
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
-Install the Zathura pdf viewer by running:
+Install the Zathura pdf-viewer by running:
 
 ```
-sudo pacman -S zathura-pdf-mupdf
+sudo pacman -S zathura
 ```
 
-Unless you have the Evince pdf viewer installed, you may also want to set Zathura as your default pdf viewer for opening pdfs for the papers you cite via the Vimtex Context Menu.
-You can do so by editing the following file:
+Although Zathura is an ideal pdf-viewer for writing LaTeX documents, you may want to use your default pdf-viewer for opening the pdfs associated with citations via the VimTex context-menu.
+For instance, I use [Okular](https://okular.kde.org) which you can install by running:
+
+```
+sudo pacman -S okular
+```
+
+If you want to use a different pdf-viewer than Okular, replace 'okular' in the following file with your desired pdf-viewer:
 
 ```
 nvim ~/.config/nvim/plug-config/vimtex.vim
 ```
 
-Once the file has opened in NeoVim, change all occurrences of 'evince' to 'zathura' by entering the following in NeoVim in normal-mode:
+Alternatively, you could replace 'okular' with 'zathura'.
+
+
+## [Configuration](https://github.com/benbrastmckie/.config)
+
+I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config. 
+Alternatively, if you don't want to fork, click the `Code` button in my repo. 
+Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
-:%s/'evince'/'zathura'/g
+cd ~/.config
+git init
+git remote add origin YOUR-OR-MY-ADDRESS
+git remote -v
+git pull origin master
+ls -a
 ```
 
-Alternatively, you could replace Zathura here with another pdf viewer of your choice, for instance, one that allows you to easily take notes and highlight the associated pdf.
-After reopening NeoVim, enter the following command:
+Run NeoVim to install the plugins:
+
+```
+nvim
+```
+
+If the plugins do not automatically install, then run:
+
+```
+:PackerInstall
+:PackerUpdate
+```
+
+After the plugins finish installing, exit and reopen NeoVim, running:
 
 ```
 :checkhealth
 ```
 
-Ignore any warnings for Python 2, Ruby, and Node.js.
-If other warnings are present, it is worth following the instructions provided by CheckHealth, or else troubleshooting the errors by Googling the associated messages as needed.
+Troubleshoot any errors by following the advice provided.
+
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -799,22 +749,10 @@ Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep 
 Save the file as `Zotero.bib` to ~/texmf/bibtex/bib which you previously created.
 You are now ready to cite files in your Zotero database.
 
-## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
-In order for NeoVim to load icons, it will be imporant to install a NerdFont.
-For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
+## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/) (Optional)
 
-```
-sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
-```
-
-If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
-You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
-
-## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/)
-
-Run the following in the terminal:
+Run the following commands in the terminal:
 
 ```
 sudo pacman -S alacritty
@@ -822,7 +760,7 @@ sudo pacman -S tmux
 sudo pacman -S fish
 ```
 
-You will also need to move the Tmux configuration file to the appropriate location by running:
+Move the Tmux configuration file to the appropriate location by running:
 
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
@@ -841,8 +779,8 @@ If the path is different, copy the path and run the following:
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `Space-q`.
-Quite the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
+Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `<space>q`.
+Quit the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
 
 ```
 curl -L https://get.oh-my.fish | fish
@@ -852,7 +790,7 @@ omf install sashimi
 To delete the welcome message, run:
 
 ```
-set fish_greeting
+set -U fish_greeting ""
 ```
 
 In order to reset Tmux, run:
@@ -869,7 +807,195 @@ fish_vi_key_bindings
 ```
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-I highly recommend swapping the CapsLock and Esc keys as detailed below for using Arch on a Macbook Pro.
+
+
+## [Git](https://git-scm.com/) (Optional)
+
+You can begin by checking to see if you have already set the appropriate username and email with:
+
+```
+git config -l
+```
+
+If absent or incorrect, add your details making appropriate substitutions:
+
+```
+git config --global user.name "YOUR-USERNAME"
+git config --global user.email "YOUR-EMAIL"
+git config -l
+```
+
+Your details should now appear.
+
+You can now begin to set up your remote repository to push and pull changes from.
+If you forked my config, you can skip the following subsection.
+
+
+### Cloned Config
+
+Assuming that you did not fork my config, make an account on GitHub if you haven't already, create a new repository called 'config' or something similar (without including a Readme), and copy the SSH address which should be shown upon clicking the `Code` button.
+Now run:
+
+```
+cd ~/.config
+git remote -v
+```
+
+You can remove any addresses that appear with the following command, replacing 'origin' with the name of the addresses which appears on the left if different from 'origin':
+
+```
+git remote remove origin
+git remote -v
+```
+
+Remove all addresses until none remain.
+Having already copied the SSH address of your repo as directed above, you can add that address to your local git repo by running the following commands:
+
+```
+git remote add origin YOUR-ADDRESS
+git remote -v
+```
+
+If your address appears, you are ready to push changes.
+
+
+### Pushing Changes
+
+Navigate to your config directory and open the `init.lua` file with NeoVim as follows:
+
+```
+cd ~/.config/
+nvim nvim/init.lua
+```
+
+Open LazyGit with `<space>gg`.
+In the top left corner you will see a bunch of files in red.
+Untracked files will be marked with '??' on the left, where tracked files that have been modified will be marked by an 'M' on the left.
+Tracked files that have not been changed will not appear.
+You can navigate through all displayed files with `j` and `k`, where `h` and `l` switch panes (which we won't need here), and `q` exits LazyGit.
+
+You will probably want to ignore all of the untracked files.
+In general, you want to ignore all files that aren't included in the config, i.e., anything that you would also want to ignore on another computer that you might pull your config onto.
+To ignore an untracked file, navigate to it using `j` and `k` and open the ignore menu by pressing `i`.
+You can then either ignore the file by pressing `i` again, or exclude the file by pressing `e`.
+It is best to exclude files and directories that are specific to the computer that you are using, and ignore files and directories that are not specific to your current computer.
+Given that you just pulled down the config where all files included in the config are already tracked, you can safely exclude all untracked files that appear since these will be specific to the computer that you are working on.
+Once you have excluded (or ignored) an untracked file, it will disappear.
+You can always undo an accidental git-ignore by editing the ignore files with the following commands:
+
+```
+nvim ~/.config/.gitignore
+nvim ~/.config/.git/info/exclude
+```
+
+Remove any lines that you did not want to include in the ignore list and save and quit with `<space>q`.
+
+If there are any untracked files that you want to include in this config (e.g., a config file for some other program that you want to track), you can stage those files by navigating to them and hitting `<space>`.
+Once you have excluded or ignored (or possibly staged) each of the untracked files that originally appeared, you can begin to stage the modified files either by hitting `<space>` when hovering over each file, or by hitting `a` to stage all files assuming that there are no remaining untracked files.
+Once all files have been staged, you can commit changes with `c`, entering a message such as "initial commit" and hitting `Enter`.
+You can now push your changes up to your repo with `P`.
+This may require that you enter your GitHub password.
+To avoid having to enter your password each time you want to push changes, see the instructions in the next section.
+
+
+### Adding an SSH Key to GitHub
+
+If you have not already, you can also add an SSH key by amending and running the following:
+
+```
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
+Hit `return` once, entering your GitHub passphrase in response to the prompt.
+Next run:
+
+```
+bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+```
+
+If you do not have `xclip` you can install it by running:
+
+```
+sudo pacman -S xclip
+```
+
+After the install, run the following to copy the SSH key to your system clipboard:
+
+```
+xclip -sel clip < ~/.ssh/id_rsa.pub
+```
+
+In the top right corner of your GitHub page, click `Profile -> Settings -> SSH and GPG Keys` selecting `New SSH Key`.
+Name the authentication key after the devise you are using, pasting the SSH key from the clipboard into the appropriate field.
+Saving the key completes the addition.
+
+Check to make sure that the SSH key is working by pushing commits up to one of your repositories as directed above.
+If your SSH key stops working after rebooting, run the following command:
+
+```
+ssh-add -K ~/.ssh/id_rsa
+```
+
+If you get an error, retry the command above with a lower-case 'k' or without the 'K' altogether.
+
+
+### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+
+Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
+
+- No expiration date
+- Select `repo` in scope/permissions
+
+After generating the token, you must copy the PAT, pasting it into a temporary file saved on your computer.
+You can now add your PAT by pushing any changes you have made to your config up to your GitHub repo.
+To do so, begin by navigating in the terminal to your .config folder and opening NeoVim with:
+
+```
+cd ~/.config
+nvim CheatSheet.md
+```
+
+I would recommend keeping the `CheatSheet.md` updated with any changes you make to your configuration.
+You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`. 
+You will have to sort through which files you might want Git to ignore, hitting `i` when hovering over each, and once you have finished, hitting `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
+Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how paste is achieved in your terminal enviornment).
+Assuming that this push works, close LazyGit with `q`, and reopen the terminal with `Ctrl+t`.
+
+Now run the following:
+
+```
+git config --global credential.helper cache
+```
+
+Repeat the steps above after making a small change to your config to run another test, entering your username and PAT as before.
+Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
+
+For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
+
+
+<!-- ### Installing the GitHub Cli -->
+<!---->
+<!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
+<!---->
+<!-- ``` -->
+<!-- sudo pacman -S github-cli -->
+<!-- ``` -->
+<!---->
+<!-- You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running: -->
+<!---->
+<!-- ``` -->
+<!-- gh auth login -->
+<!-- ``` -->
+<!---->
+<!-- Set NeoVim as your default editor by running: -->
+<!---->
+<!-- ``` -->
+<!-- gh config set editor nvim -->
+<!-- ``` -->
+<!---->
+<!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
 
 # Debian Linux Installation
 
@@ -1034,7 +1160,7 @@ Run NeoVim to install plugins:
 nvim
 ```
 
-After the plugins finish installing, quite NeoVim with `:qa!`.
+After the plugins finish installing, quit NeoVim with `:qa!`.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
@@ -1129,7 +1255,7 @@ nvim ~/.config/alacritty/alacritty.yml
 ```
 
 Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `Space-q`.
-Quite the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
+Quit the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
 
 ```
 curl -L https://get.oh-my.fish | fish
