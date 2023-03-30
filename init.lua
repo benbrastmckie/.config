@@ -1,28 +1,59 @@
+-- GENERAL
 require "user.options"
 require "user.keymaps"
 require "user.plugins"
+require "user.autocommands"
 require "user.colorscheme"
-require "user.cmp"
-require "user.telescope"
-require "user.gitsigns"
-require "user.treesitter"
+
+-- PLUGINS
+
 require "user.autopairs"
 require "user.comment"
+require "user.impatient"
+require "user.surround"
+require "user.yanky"
+require "user.undotree"
+
+-- Mappings
+require "user.whichkey"
+
+-- Terminal
+require "user.toggleterm"
+
+-- File Management
 require "user.nvim-tree"
+require "user.sessions"
+
+-- Appearance
 require "user.bufferline"
 require "user.lualine"
-require "user.toggleterm"
-require "user.impatient"
 require "user.indentline"
 require "user.alpha"
-require "user.whichkey"
-require "user.autocommands"
-require "user.sessions"
-require "user.dressing"
 require "user.illuminate"
+
+-- Autocomplete
+require "user.cmp"
+
+-- LaTeX
 require "user.vimtex"
-require "user.surround"
-require "user.undotree"
-require "user.luasnip"
-require "user.yanky"
+
+-- Markdown
 require "user.autolist"
+
+-- Snippets
+require "user.luasnip"
+
+-- Telescope
+require "user.telescope"
+require "user.dressing"
+
+-- Treesitter
+require "user.treesitter"
+
+-- Git
+require "user.gitsigns"
+
+
+
+
+

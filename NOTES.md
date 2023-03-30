@@ -146,24 +146,26 @@
 
 ## Configuration
 
-1. keymaps
-  1. vim standards
-  2. new additions in cheatsheet
-  3. unmapping
 
-1. configuration
-  1. basics
-    1. file structure
-    2. options
-    3. keymaps
-    4. plugins
-    5. whichkey
-  2. change plugins
-    1. new plugin
-    2. remove plugin
-  3. how to learn about existing plugins
-  4. look up keymaps with <space>fk
-  5. explore help docs which shift+m and <space>fh
+1. basics
+  1. file structure
+    1. init
+    2. plugins
+    3. options
+    4. keymaps
+  3. options
+  4. keymaps
+    1. vim standards
+    2. new additions in cheatsheet
+    3. unmapping
+  5. plugins
+  6. whichkey
+2. change plugins
+  1. new plugin
+  2. remove plugin
+3. how to learn about existing plugins
+4. look up keymaps with <space>fk
+5. explore help docs which shift+m and <space>fh
 
 ### Git
 
