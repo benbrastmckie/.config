@@ -1022,7 +1022,18 @@ If Python3 is not installed, run:
 sudo apt install python
 ```
 
-Install NeoVim with:
+Install LazyGit with:
+
+```
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+tar xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin
+rm -rf lazygit.tar.gz
+lazygit --version
+```
+
+Assuming the final command returns the version of LazyGit, proceed to install NeoVim with:
 
 ```
 sudo apt install neovim
@@ -1039,7 +1050,6 @@ Install the following if they are not already installed:
 
 ```
 sudo apt install git
-sudo apt install lazygit
 sudo apt install fzf
 sudo apt install ripgrep
 sudo apt install pandoc
@@ -1204,10 +1214,16 @@ You are now ready to cite files in your Zotero database.
 
 ## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/) (Optional)
 
-Run the following commands in the terminal:
+Run Alacritty with the following commands:
 
 ```
+sudo add-apt-repository ppa:aslatter/ppa -y
 sudo apt install alacritty
+```
+
+Once complete, proceed to install Tmux and Fish:
+
+```
 sudo apt install tmux
 sudo apt install fish
 ```
