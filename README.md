@@ -1038,7 +1038,7 @@ git clone --depth 1 https://github.com/wbthomason/packer.nvim\
 Install the following if they are not already installed:
 
 ```
-sudo apt install install git
+sudo apt install git
 sudo apt install lazygit
 sudo apt install fzf
 sudo apt install ripgrep
