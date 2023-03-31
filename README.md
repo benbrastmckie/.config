@@ -347,6 +347,8 @@ cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
 Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
 Under `Zotero` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
 Under the `Citation keys` sub-tab, replace the citation key format with `[auth][year]`.
+This will make the default citation keys have the format `NameYearLetter`, where the `Letter` will increase through the alphabet if there are multiple entries for the same author and year.
+If you want to create a different key format, you can find more options [here](https://retorque.re/zotero-better-bibtex/citing/#generating-citekeys).
 I also recommend keeping keys unique `across all libraries` and permitting non-pinned keys to be `postfixed` which you will select from drop-down menus.
 
 Now switch to the `Automatic Export` sub-tab and select `On Change` so that your .bib database stays updated when you add bib entries.
