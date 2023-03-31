@@ -334,9 +334,12 @@ Note that getting Zathura to work with MacOS may be more difficult than switchin
 
 ## [Zotero](https://www.zotero.org/)
 
-Download and install [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
+If you already have Zotero installed but want to sync Zotero with the config, then skip to the next paragraph.
+Begin by downloading and installing [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
 Find a paper online, signing in to the journal as necessary and downloading the pdf manually.
 Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
+Note that you can also import .bib libraries with Zotero, though it is important to set you citation key format as described below before doing so.
+
 Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
 
 ```
@@ -350,15 +353,14 @@ Under the `Citation keys` sub-tab, replace the citation key format with `[auth]
 This will make the default citation keys have the format `NameYearLetter`, where the `Letter` will increase through the alphabet if there are multiple entries for the same author and year.
 If you want to create a different key format, you can find more options [here](https://retorque.re/zotero-better-bibtex/citing/#generating-citekeys).
 I also recommend keeping keys unique `across all libraries` and permitting non-pinned keys to be `postfixed` which you will select from drop-down menus.
+Now that your citation key format has been set, feel free to import any .bib libraries that you might want to use.
 
-Now switch to the `Automatic Export` sub-tab and select `On Change` so that your .bib database stays updated when you add bib entries.
+Next switch to the `Automatic Export` sub-tab and select `On Change` so that your .bib database stays updated when you add bib entries.
 Close the Preferences window, returning to the main Zotero window.
 Right-click the main library folder in the left-most column, and select `Export Library`.
 Under the `Format` drop-down menu, select `Better BibTex` and check the `Keep Updated` box. 
 Save the file as `Zotero` (the extension will be added automatically) to `~/Library/texmf/bibtex/bib` which you previously created.
-
-Having trouble finding the Library directory?
-You first need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
+If you have trouble finding the Library directory, you may need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
 Type `/Users` and then open the directory associated with your username.
 Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
 Go back to Zotero and export your library as directed above.
