@@ -49,8 +49,7 @@ xcode-select --install
 
 Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
 
-Although optional, I highly recommend that inexperienced users begin by installing Fish as explained in the section below which makes working inside the terminal a lot easier and will benefit your resulting workflow once NeoVim is up and running.
-I also highly recommend swapping the `CapsLock` and `Esc` keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
+Although optional, I highly recommend swapping the `CapsLock` and `Esc` keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
 I also like to change the `Command` key to the `Control` key, change the `Control` key to the `Function` key, change the `Function` key to the `Option` key, and change the `Option` key to the `Command` key if I'm using a Mac.
 My reasons for doing this is ergonomics given which keys I'll be using most often in NeoVim.
 Alternatively, you can make changes to the mappings that I've included in the config, though this may take a little more work than swapping things around in `System Preferences -> Keyboard`.
@@ -110,9 +109,53 @@ fish_vi_key_bindings
 If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumbersome, and best to avoid during the installation.
 
 
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
+
+Although optional, I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
+Even if these are new concepts, the result is intuitive to use and the installation is easy.
+To do so, run the following in the default Mac terminal:
+
+```
+brew install --cask alacritty
+brew install tmux
+```
+
+Now move the Tmux configuration file included in the config to the appropriate location with:
+
+```
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
+```
+
+Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
+
+```
+which fish
+```
+
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the displayed path and run the following:
+
+```
+nvim ~/.config/alacritty/alacritty.yml
+```
+
+Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
+You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
+
+```
+tmux kill-server
+```
+
+When you reopen Alacritty Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+That is, to open NeoVim, open Alacritty and type `nvim`.
+See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
+
+
 ## Dependencies
 
-Every Mac should already have `git` pre-installed, but you can check by running:
+Check to see that you have `git` installed by running:
 
 ```
 git --version
@@ -366,49 +409,6 @@ Now go to the `View` menu, select `Show View Options`, and check `Show Library F
 Go back to Zotero and export your library as directed above.
 
 You are now ready to cite files in your Zotero database.
-
-
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
-
-I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
-To do so, run the following in the default Mac terminal:
-
-```
-brew install --cask alacritty
-brew install tmux
-```
-
-Now move the Tmux configuration file included in the config to the appropriate location with:
-
-```
-sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
-```
-
-Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
-
-```
-which fish
-```
-
-The command should return `/usr/local/bin/fish` or something similar.
-Copy the displayed path and run the following:
-
-```
-nvim ~/.config/alacritty/alacritty.yml
-```
-
-Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
-You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
-Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
-
-```
-tmux kill-server
-```
-
-When you reopen Alacritty Fish should be the default shell inside a Tmux window.
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-That is, to open NeoVim, open Alacritty and type `nvim`.
-See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
 
 
 ## [Git](https://git-scm.com/) (Optional)
