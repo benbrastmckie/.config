@@ -383,13 +383,6 @@ Find a paper online, signing in to the journal as necessary and downloading the 
 Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
 Note that you can also import .bib libraries with Zotero, though it is important to set you citation key format as described below before doing so.
 
-Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
-
-```
-mkdir -p ~/Library/texmf/bibtex/bib
-cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
-```
-
 Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
 Under `Zotero` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
 Under the `Citation keys` sub-tab, replace the citation key format with `[auth][year]`.
@@ -407,6 +400,13 @@ If you have trouble finding the Library directory, you may need to remove the Ma
 Type `/Users` and then open the directory associated with your username.
 Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
 Go back to Zotero and export your library as directed above.
+
+Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
+
+```
+mkdir -p ~/Library/texmf/bibtex/bib
+cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
+```
 
 You are now ready to cite files in your Zotero database.
 
