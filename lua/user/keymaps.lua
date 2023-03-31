@@ -43,7 +43,6 @@ end, { remap = true })
 -- vim.keymap.set("n", "<C-s>", "z=", { remap = true}) 
 -- keymap("n", "<C-s>", "<cmd>Telescope spell_suggest<cr>", { remap = true})
 
-
 -- Kill search highlights
 keymap("n", "<CR>", ":noh<CR>", opts)
 
@@ -55,10 +54,9 @@ vim.keymap.set("n", "<C-p>", function ()
 end, { remap = true })
 
 
--- Comment
-vim.keymap.set('n', '<C-Bslash>', "gcc", { remap = true})
-vim.keymap.set("v", "<C-Bslash>", "gc", { remap = true})
-
+-- Toggle comments
+  vim.keymap.set('n', '<C-Bslash>', '<Plug>(comment_toggle_linewise_current)')
+  vim.keymap.set('x', '<C-Bslash>', '<Plug>(comment_toggle_linewise_visual)')
 
 -- Open help on word
 keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)

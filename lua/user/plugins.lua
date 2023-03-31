@@ -51,7 +51,7 @@ return packer.startup(function(use)
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
   use { "mbbill/undotree" } -- Vimscript
-  use { "mg979/vim-visual-multi" } -- Vimscript
+  -- use { "mg979/vim-visual-multi" } -- Vimscript
   use { "glacambre/firenvim" } -- Vimscript
   use { "gbprod/yanky.nvim" }
 

@@ -3,10 +3,6 @@
 - [ ] config
   - [ ] lags
   - [ ] github issues 
-    - [ ] .gitignore #77
-      - [x] should I create a personal branch?
-      - [x] exclude local files 
-      - [ ] close issue 
     - [ ] consolidate add-ons 
       - [ ] forks #73
       - [ ] thesaurus #69 
@@ -18,6 +14,10 @@
       - [ ] latex snippets #47 
       - [ ] format plugin #44 
       - [ ] bare repo #35 
+    - [x] .gitignore #77
+      - [x] should I create a personal branch?
+      - [x] exclude local files 
+      - [x] close issue 
   - [ ] revise snippets 
     - [ ] check fields
     - [ ] check tabs 
@@ -74,7 +74,7 @@
       - [x] got MWE working 
       - [x] find bug: .bib is too long 
       - [x] fix bug 
-    - [ ] navigate command and search with <C-j>, <C-k> 
+    - [x] navigate command and search with <C-j>, <C-k> 
     - [x] spelling in lsp menu 
     - [x] errors when starting a line with a backslash 
     - [x] prevent menu from poping up without entering text 

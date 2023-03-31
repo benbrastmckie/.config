@@ -5,7 +5,6 @@ end
 
 configs.setup({
   ensure_installed = {  -- list "all" or a list of languages
-    "latex",
     "markdown_inline", 
     "markdown", 
     "lua", 
@@ -29,5 +28,5 @@ configs.setup({
 	autopairs = {
 		enable = true,
 	},
-	indent = { enable = true, disable = { "python", "css" } },
+	indent = { enable = true, disable = { "latex", "python", "css" } },
 })
