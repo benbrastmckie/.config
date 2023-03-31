@@ -117,7 +117,7 @@ cmp.setup {
     { name = "omni" },
     { name = "buffer", keyword_length = 3 },
     { name = "spell",
-      keyword_length = 5,
+      keyword_length = 4,
       option = {
           keep_all_entries = false,
           enable_in_context = function()
@@ -142,6 +142,11 @@ cmp.setup {
     documentation = {
       border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
     }
+  },
+  performance = {
+     trigger_debounce_time = 500,
+     throttle = 550,
+     fetching_timeout = 80,
   },
 }
 

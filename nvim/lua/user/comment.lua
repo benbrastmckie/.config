@@ -12,23 +12,17 @@ comment.setup {
   ignore = nil,
   ---Function to call before (un)comment
   pre_hook = nil,
+  mappings = {
+          ---Operator-pending mapping; `gcc` `gbc` `gc[count]{motion}` `gb[count]{motion}`
+          basic = false,
+          ---Extra mapping; `gco`, `gcO`, `gcA`
+          extra = false,
+      },
 }
 
   ---LHS of toggle mappings in NORMAL mode
-  -- toggler = {
-  --     ---Line-comment toggle keymap
-  --     line = 'gcc',
-  --     ---Block-comment toggle keymap
-  --     block = 'gbc',
-  -- },
   -- ---Enable keybindings
   -- ---NOTE: If given `false` then the plugin won't create any mappings
-  -- mappings = {
-  --         ---Operator-pending mapping; `gcc` `gbc` `gc[count]{motion}` `gb[count]{motion}`
-  --         basic = false,
-  --         ---Extra mapping; `gco`, `gcO`, `gcA`
-  --         extra = false,
-  --     },
   ---Function to call before (un)comment
   -- pre_hook = function(ctx)
   --   local U = require "Comment.utils"
