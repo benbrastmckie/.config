@@ -292,9 +292,35 @@ Install the Zathura pdf viewer by running:
 
 ```
 brew tap zegervdv/zathura
-brew install zathuran
+brew install zathura --with-synctex
+brew install zathura-pdf-poppler
 brew install xdotool
 brew install pstree
+```
+
+Check to see if Dbus is installed with:
+
+```
+brew info dbus
+```
+
+If it is installed, reinstall it with:
+
+```
+brew reinstall dbus
+```
+
+Otherwise install Dbus with:
+
+```
+brew install dbus
+```
+
+Reboot your machine.
+Assuming you installed Fish, run the following command to get SyncTex to work with Zathura:
+
+```
+set -x DBUS_SESSION_BUS_ADDRESS unix:path=$DBUS_LAUNCHD_SESSION_BUS_SOCKET
 ```
 
 Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and create notes.
@@ -333,14 +359,22 @@ cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
 ```
 
 Download and install Better BibTex by following [these](https://retorque.re/zotero-better-bibtex/installation/) instructions.
-Under `Edit` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
-Under the `Citation` sub-tab, replace the citation key format with `[auth][year]`.
-Also check `On item change` at the bottom left.
-Now switch to the `Automatic Export` sub-tab and select `On Change`.
+Under `Zotero` in the Zotero menu bar, select `Preferences` and open up the `Better BibTex` tab.
+Under the `Citation keys` sub-tab, replace the citation key format with `[auth][year]`.
+I also recommend keeping keys unique `across all libraries` and permitting non-pinned keys to be `postfixed` which you will select from drop-down menus.
+
+Now switch to the `Automatic Export` sub-tab and select `On Change` so that your .bib database stays updated when you add bib entries.
 Close the Preferences window, returning to the main Zotero window.
 Right-click the main library folder in the left-most column, and select `Export Library`.
-Under the `Format` drop-down menu, select `Better BibTex`, selecting the `Keep Updated` box. 
+Under the `Format` drop-down menu, select `Better BibTex` and check the `Keep Updated` box. 
 Save the file as `Zotero` (the extension will be added automatically) to `~/Library/texmf/bibtex/bib` which you previously created.
+
+Having trouble finding the Library directory?
+You first need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
+Type `/Users` and then open the directory associated with your username.
+Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
+Go back to Zotero and export your library as directed above.
+
 You are now ready to cite files in your Zotero database.
 
 
