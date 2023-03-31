@@ -393,13 +393,6 @@ Now that your citation key format has been set, feel free to import any .bib lib
 
 Next switch to the `Automatic Export` sub-tab and select `On Change` so that your .bib database stays updated when you add bib entries.
 Close the Preferences window, returning to the main Zotero window.
-Right-click the main library folder in the left-most column, and select `Export Library`.
-Under the `Format` drop-down menu, select `Better BibTex` and check the `Keep Updated` box. 
-Save the file as `Zotero` (the extension will be added automatically) to `~/Library/texmf/bibtex/bib` which you previously created.
-If you have trouble finding the Library directory, you may need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
-Type `/Users` and then open the directory associated with your username.
-Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
-Go back to Zotero and export your library as directed above.
 
 Create the bib and bst directories, and move the .bst bibliography style files into the appropriate folder by running the following:
 
@@ -407,6 +400,14 @@ Create the bib and bst directories, and move the .bst bibliography style files i
 mkdir -p ~/Library/texmf/bibtex/bib
 cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
 ```
+
+Return to Zotero, right-click the main library folder in the left-most column, and select `Export Library`.
+Under the `Format` drop-down menu, select `Better BibTex` and check the `Keep Updated` box. 
+Save the file as `Zotero` (the extension will be added automatically) to `~/Library/texmf/bibtex/bib` which you previously created.
+If you have trouble finding the Library directory, you may need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
+Type `/Users` and then open the directory associated with your username.
+Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
+Go back to Zotero and export your library as directed above.
 
 You are now ready to cite files in your Zotero database.
 
