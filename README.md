@@ -286,45 +286,9 @@ latexmk --version
 You should now find that `latexmk` is installed.
 
 
-## [Zathura](https://pwmt.org/projects/zathura/) and [Skim](https://skim-app.sourceforge.io)
+## [Skim](https://skim-app.sourceforge.io)
 
-Install the Zathura pdf viewer by running:
-
-```
-brew tap zegervdv/zathura
-brew install zathura --with-synctex
-brew install zathura-pdf-poppler
-brew install xdotool
-brew install pstree
-```
-
-Check to see if Dbus is installed with:
-
-```
-brew info dbus
-```
-
-If it is installed, reinstall it with:
-
-```
-brew reinstall dbus
-```
-
-Otherwise install Dbus with:
-
-```
-brew install dbus
-```
-
-Reboot your machine.
-Assuming you installed Fish, run the following command to get SyncTex to work with Zathura:
-
-```
-set -x DBUS_SESSION_BUS_ADDRESS unix:path=$DBUS_LAUNCHD_SESSION_BUS_SOCKET
-```
-
-Although you could use `Zathura` for opening pdfs from the VimTex context-menu, I prefer to use a pdf viewer that permits me to highlight and create notes.
-For instance, you could use Skim which you can install with the following commands:
+Install Skim with the following commands:
 
 ```
 brew install skim
@@ -334,16 +298,38 @@ funcsave skim
 
 You should now be able to open Skim with the command `skim` inside the terminal.
 Once the pdf viewer opens, you can return to the terminal with `Control + c`, or by closing Skim.
-You can now edit the `vimtex.lua` file, replacing 'okular' with 'skim' in the following file:
+You can now edit the `vimtex.lua` file, replacing both 'okular' and 'zathura' with 'skim' in the following file:
 
 ```
 nvim ~/.config/nvim/lua/user/vimtex.lua
 ```
 
+Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
 If you don't want to use Skim, repeat these steps for another pdf viewer, perhaps one that you already have installed.
 Note that you may need to make an appropriate alias as is the case for Skim.
 
-Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
+Change automatic refreshing in Skim by opening the `Skim` menu and navigating to `Preferences` and selecting the `Sync` tab.
+Check both `Check for file changes` and `Reload automatically`.
+In the `Preset` menu, select custom and set the `Command` to `nvim` with the `Arguments` as follows:
+
+```
+--headless -c "VimtexInverseSearch %l '%f'"
+```
+
+Close the preferences menu and open NeoVim.
+You  can create a new file with `<space>e` and hitting `a` once you navigate to the appropriate location by using the `j` and `k` to move up and down as well as `h` and `l` to expand or collapse directories.
+Open the new file by hitting `Enter` and load a template with `<space>tp`.
+Build the pdf with `<space>b` checking to see if Skim loads.
+After building, you can view locations within the pdf with `<space>v` in NeoVim.
+Similarly, you can locate lines in the LaTeX document with `Command + Shift + Left-click` in Skim.
+
+If you want to use Zathura for a pdf viewer instead of Skim, follow the instructions by running the following command in NeoVim:
+
+```
+:h vimtex-faq-zathura-macos
+```
+
+Note that getting Zathura to work with MacOS may be more difficult than switching to Linux and reinstalling your config.
 
 
 ## [Zotero](https://www.zotero.org/)
