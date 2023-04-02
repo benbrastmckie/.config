@@ -100,7 +100,7 @@ telescope.setup {
     -- Now the picker_config_key will be applied every time you call this
     -- builtin picker
   },
-  load_extensions = { "yank_history" },
+  load_extensions = { "yank_history", "bibtex" },
   extensions = {
     bibtex = {
       depth = 1,
@@ -110,7 +110,7 @@ telescope.setup {
       format = '',
       -- Format to use for citation label.
       -- Try to match the filetype by default, or use 'plain'
-      global_files = {'/home/benjamin/texmf/bibtex/bib/Zotero.bib'},
+      global_files = {'~/texmf/bibtex/bib/Zotero.bib'},
       -- Path to global bibliographies (placed outside of the project)
       search_keys = { 'author', 'year', 'title' },
       -- Define the search keys to use in the picker
