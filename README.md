@@ -409,7 +409,13 @@ Type `/Users` and then open the directory associated with your username.
 Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
 Go back to Zotero and export your library as directed above.
 
-You are now ready to cite files in your Zotero database.
+In order to make use of Telescope for searching through your citations, change `~/texmf/bibtex/bib/Zotero.bib` to `~/Library/texmf/bibtex/bib/Zotero.bib` by first opening the following file:
+
+```
+nvim ~/.config/nvim/lua/user/telescope.lua
+```
+
+After saving and quitting with `<space>q` you are ready to cite files in your Zotero database with `<space>fc` as well as autocomplete inside citations contexts like '\citet{ ... }'.
 
 
 ## [Git](https://git-scm.com/) (Optional)
