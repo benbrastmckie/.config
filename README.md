@@ -378,7 +378,7 @@ Note that getting Zathura to work with MacOS may be more difficult than switchin
 ## [Zotero](https://www.zotero.org/)
 
 If you already have Zotero installed but want to sync Zotero with the config, then skip to the next paragraph.
-Begin by downloading and installing [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
+Otherwise, begin by downloading and installing [Zotero](https://www.zotero.org/) along with the appropriate plugin for your preferred browser.
 Find a paper online, signing in to the journal as necessary and downloading the pdf manually.
 Now return to the paper on the journal's website and test the browser plugin for Zotero which should be displayed in the top right of the screen.
 Note that you can also import .bib libraries with Zotero, though it is important to set you citation key format as described below before doing so.
