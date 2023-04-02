@@ -415,7 +415,14 @@ In order to make use of Telescope for searching through your citations, change `
 nvim ~/.config/nvim/lua/user/telescope.lua
 ```
 
-After saving and quitting with `<space>q` you are ready to cite files in your Zotero database with `<space>fc` as well as autocomplete inside citations contexts like '\citet{ ... }'.
+After saving and quitting with `<space>q` you are ready to cite files in your Zotero database with `<space>fc` as well as autocompleting citation keys inside citations contexts like '\citet{ ... }'.
+If your citation autocomplete does not work but searching for citations with `<space>fc` does work, then try clearing the VimTex cache inside NeoVim with:
+
+```
+:VimtexClearCache kpsewhich
+```
+
+This should fix the issue.
 
 
 ## [Git](https://git-scm.com/) (Optional)
