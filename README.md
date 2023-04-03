@@ -218,7 +218,7 @@ sudo pip3 install neovim-remote
 
 ## [NeoVim](https://neovim.io/)
 
-Install NeoVim by entering:
+Install the most recent version of NeoVim by running:
 
 ```
 brew install neovim
@@ -331,7 +331,8 @@ You should now find that `latexmk` is installed.
 
 ## [Skim](https://skim-app.sourceforge.io)
 
-Install Skim with the following commands:
+It is important to choose a pdf-viewer that will sync with your LaTeX document, and Skim is a good choice for Mac OS.
+To install Skim, run the following commands:
 
 ```
 brew install skim
@@ -340,18 +341,7 @@ funcsave skim
 ```
 
 You should now be able to open Skim with the command `skim` inside the terminal.
-Once the pdf viewer opens, you can return to the terminal with `Control + c`, or by closing Skim.
-You can now edit the `vimtex.lua` file, replacing both 'okular' and 'zathura' with 'skim' in the following file:
-
-```
-nvim ~/.config/nvim/lua/user/vimtex.lua
-```
-
-Run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that all is OK.
-If you don't want to use Skim, repeat these steps for another pdf viewer, perhaps one that you already have installed.
-Note that you may need to make an appropriate alias as is the case for Skim.
-
-Change automatic refreshing in Skim by opening the `Skim` menu and navigating to `Preferences` and selecting the `Sync` tab.
+Change the automatic refreshing in Skim by opening the `Skim` menu and navigating to `Preferences` and selecting the `Sync` tab.
 Check both `Check for file changes` and `Reload automatically`.
 In the `Preset` menu, select custom and set the `Command` to `nvim` with the `Arguments` as follows:
 
@@ -359,20 +349,28 @@ In the `Preset` menu, select custom and set the `Command` to `nvim` with the `Ar
 --headless -c "VimtexInverseSearch %l '%f'"
 ```
 
-Close the preferences menu and open NeoVim.
-You  can create a new file with `<space>e` and hitting `a` once you navigate to the appropriate location by using the `j` and `k` to move up and down as well as `h` and `l` to expand or collapse directories.
+Close the preferences menu and open NeoVim with:
+
+```
+nvim ~/.config/nvim/lua/user/vimtex.lua
+```
+
+Replace both 'okular' and 'zathura' with 'skim'.
+Now run `:checkhealth` inside NeoVim and scroll to the VimTex section at the bottom to confirm that everything is OK.
+
+Create a new file with `<space>e` and hitting `a` once you navigate to an appropriate location by using the `j` and `k` to move up and down as well as `h` and `l` to expand or collapse directories.
 Open the new file by hitting `Enter` and load a template with `<space>tp`.
 Build the pdf with `<space>b` checking to see if Skim loads.
 After building, you can view locations within the pdf with `<space>v` in NeoVim.
 Similarly, you can locate lines in the LaTeX document with `Command + Shift + Left-click` in Skim.
 
-If you want to use Zathura for a pdf viewer instead of Skim, follow the instructions by running the following command in NeoVim:
+If you want to use Zathura as your primary pdf viewer and only launching Skim from the VimTex Context menu, follow the instructions given by running the following NeoVim command:
 
 ```
 :h vimtex-faq-zathura-macos
 ```
 
-Note that getting Zathura to work with MacOS may be more difficult than switching to Linux and reinstalling your config.
+Note that getting Zathura to work with MacOS may be a challenge.
 
 
 ## [Zotero](https://www.zotero.org/)

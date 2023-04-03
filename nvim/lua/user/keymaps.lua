@@ -6,7 +6,6 @@ local term_opts = { silent = true }
 local keymap = vim.api.nvim_set_keymap
 
 --Remap space as leader key
--- keymap("", "<Space>", "<Nop>", opts) -- caused conflict with WhichKey
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
@@ -25,8 +24,8 @@ vim.g.maplocalleader = " "
 keymap("n", "<C-z>", "<nop>", opts)
 
 
--- Surround
--- vim.keymap.set("v", '<C-s>', 'S', { remap = true })
+-- Surround 
+-- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
 
 
 -- Spelling
