@@ -329,50 +329,6 @@ If you want to use Zathura as your primary pdf viewer and only launching Skim fr
 Note that getting Zathura to work with MacOS may be a challenge.
 
 
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
-
-Although optional, I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
-Even if these are new concepts, the result is intuitive to use and the installation is easy.
-To do so, run the following in the default Mac terminal:
-
-```
-brew install --cask alacritty
-brew install tmux
-```
-
-Now move the Tmux configuration file included in the config to the appropriate location with:
-
-```
-sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
-```
-
-Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
-
-```
-which fish
-```
-
-The command should return `/usr/local/bin/fish` or something similar.
-Copy the displayed path and run the following:
-
-```
-nvim ~/.config/alacritty/alacritty.yml
-```
-
-Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
-You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
-Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
-
-```
-tmux kill-server
-```
-
-When you reopen Alacritty Fish should be the default shell inside a Tmux window.
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-That is, to open NeoVim, open Alacritty and type `nvim`.
-See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
-
-
 ## [Zotero](https://www.zotero.org/)
 
 If you already have Zotero installed but want to sync Zotero with the config, then skip to the next paragraph.
@@ -421,6 +377,50 @@ If your citation autocomplete does not work but searching for citations with `<s
 ```
 
 This should fix the issue.
+
+
+## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
+
+Although optional, I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
+Even if these are new concepts, the result is intuitive to use and the installation is easy.
+To do so, run the following in the default Mac terminal:
+
+```
+brew install --cask alacritty
+brew install tmux
+```
+
+Now move the Tmux configuration file included in the config to the appropriate location with:
+
+```
+sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
+```
+
+Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
+
+```
+which fish
+```
+
+The command should return `/usr/local/bin/fish` or something similar.
+Copy the displayed path and run the following:
+
+```
+nvim ~/.config/alacritty/alacritty.yml
+```
+
+Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
+You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
+
+```
+tmux kill-server
+```
+
+When you reopen Alacritty Fish should be the default shell inside a Tmux window.
+You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+That is, to open NeoVim, open Alacritty and type `nvim`.
+See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
 
 
 ## [Git](https://git-scm.com/) (Optional)
