@@ -222,7 +222,9 @@ Then click `Fork` in my GitHub config repo in order to copy the repo over to you
 Make yourself the owner.
 There is no need to include other branches besides the master branch which will be selected by default.
 Once you have forked the repo, you can click the `Code` button in your fork of the config repo, selecting SSH, and copying the address which you will use below. 
-Alternatively, if you don't want to fork for some reason, click the `Code` button in my repo, copying the address in the same way. 
+If you don't have an SSH key set up, then you can select HTTPS instead, though you will have to change this to SSH if you want to be able to push changes up to your fork of the repo without typing in a password every time.
+See the instructions below to set up a SSH key.
+If you don't want to fork the repo at all, then click the `Code` button in my repo, copying the HTTPS address. 
 Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
