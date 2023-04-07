@@ -640,6 +640,7 @@ sudo pacman -S fzf
 sudo pacman -S ripgrep
 sudo pacman -S pandoc
 sudo pacman -S pandoc-citeproc
+sudo pacman -S node
 sudo pacman -S npm
 sudo pacman -S wget
 sudo pacman -S xsel
@@ -1060,6 +1061,26 @@ If Python3 is not installed, run:
 sudo apt install python
 ```
 
+Check the version of `node` with:
+
+```
+node --version
+```
+
+If the version is outdated, remove `node` with:
+
+```
+apt-get purge nodejs &&\
+rm -r /etc/apt/sources.list.d/nodesource.list
+```
+
+Install a newer version with:
+
+```
+curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - &&\
+sudo apt-get install -y nodejs
+```
+
 Install LazyGit with:
 
 ```
@@ -1105,6 +1126,7 @@ sudo apt install fzf
 sudo apt install ripgrep
 sudo apt install pandoc
 sudo apt install pandoc-citeproc
+sudo apt install node
 sudo apt install npm
 sudo apt install wget
 sudo apt install xsel
