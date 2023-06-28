@@ -1058,7 +1058,7 @@ python3 --version
 If Python3 is not installed, run:
 
 ```
-sudo apt install python
+sudo apt install python3
 ```
 
 Check the version of `node` with:
@@ -1126,8 +1126,7 @@ sudo apt install fzf
 sudo apt install ripgrep
 sudo apt install pandoc
 sudo apt install pandoc-citeproc
-sudo apt install node
-sudo apt install npm
+sudo apt install nodejs
 sudo apt install wget
 sudo apt install xsel
 sudo pip3 install neovim-remote
