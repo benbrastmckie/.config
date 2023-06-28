@@ -1129,6 +1129,7 @@ sudo apt install pandoc-citeproc
 sudo apt install nodejs
 sudo apt install wget
 sudo apt install xsel
+sudo apt install python3-pip
 sudo pip3 install neovim-remote
 ```
 
