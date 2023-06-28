@@ -1130,6 +1130,7 @@ sudo apt install node
 sudo apt install npm
 sudo apt install wget
 sudo apt install xsel
+sudo apt install python3-pip
 sudo pip3 install neovim-remote
 ```
 
