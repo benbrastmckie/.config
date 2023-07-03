@@ -1,5 +1,6 @@
 # .config
 
+
 NOTE: If you discover any errors in these instructions, please feel free to submit a PR or open an issue so that I can improve these notes, making it easier for others in the future.
 If you use Windows and are interested in troubleshooting the installation process, feel free to open an issue if one does not exist already.
 
@@ -674,7 +675,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo pacman -S texlive-most
+sudo pacman -S texlive-latexrecommended texlive-binextra
 ```
 
 After rebooting, confirm that LaTeX is installed by running:
@@ -1145,6 +1146,7 @@ If Python 3 reports an error, try running:
 pip3 install --user pynvim
 ```
 
+If `treesitter` throws an error, you can try running `:TSUpdate` in NeoVim.
 Troubleshoot any errors that persist by continuing to run `:checkhealth`, following the advice provided for each error.
 All warnings can be ignored.
 
