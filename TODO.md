@@ -1,66 +1,73 @@
 # TODO
 
 - [ ] config
-  - [ ] lags
-  - [ ] github issues 
+  - [ ] zathura top bar
+  - [ ] indents
+    - [ ] change to 2 from 4
+    - [ ] stop indents when adding brackets 
+    - [ ] add indents inside enumerate 
+    - [ ] test vimtex indent 
+  - [ ] nvim-tree
+      - [ ] commands not all working 
+      - [ ] cant navigate explorer when no file is open
+  - [ ] tab stops working in insert mode
+    - [ ] can't reproduce: check to see if behaviour returns
+  - [ ] autolist
+    - [ ] delete highlighting
+    - [ ] move config out of plugins.lua 
+      - [x] submitted issue
+    - [x] move bindings into whichkey 
+      - [x] submitted issue
+    - [ ] create empty checkbox 
+      - [x] submited issue
+  - [ ] github issues
     - [ ] consolidate add-ons 
       - [ ] forks #73
-      - [ ] thesaurus #69 
-      - [ ] blacktex #67 
-      - [ ] neomutt #65 
-      - [ ] cheat sheet #62 
-      - [ ] zathura themes #51 
-      - [ ] math conceal #48 
-      - [ ] latex snippets #47 
-      - [ ] format plugin #44 
-      - [ ] bare repo #35 
+      - [ ] thesaurus #69
+      - [ ] blacktex #67
+      - [ ] neomutt #65
+      - [ ] cheat sheet #62
+      - [ ] zathura themes #51
+      - [ ] math conceal #48
+      - [ ] latex snippets #47
+      - [ ] format plugin #44
+      - [ ] bare repo #35
     - [x] .gitignore #77
       - [x] should I create a personal branch?
       - [x] exclude local files 
       - [x] close issue 
-  - [ ] revise snippets 
+  - [ ] revise snippets
     - [ ] check fields
     - [ ] check tabs 
-  - [ ] nvim-tree commands not all working 
-  - [ ] indents 
-    - [ ] stop indents when adding brackets 
-    - [ ] add indents inside enumerate 
-    - [ ] test vimtex indent 
-  - [ ] tab stops working in insert mode 
-    - [ ] can't reproduce: check to see if behaviour returns
-  - [ ] autolist 
-    - [ ] move config out of plugins.lua 
-      - [x] submitted issue
-    - [ ] move bindings into whichkey 
-      - [x] submitted issue
-    - [ ] create empty checkbox 
-      - [x] submited issue
-  - [ ] folding 
-  - [ ] vertical lines extend through wrapped lines 
+  - [ ] folding
+  - [ ] vertical lines extend through wrapped lines
     - [x] requires upstream change to nvim
-  - [x] replace <Tab> with <C-j> in cmd and search 
-  - [x] add recent mac install tip from issues 
-  - [x] toggle lsp: replace kill and load in whichkey with toggle 
+  - [x] lags in terminal
+  - [x] latexmk
+  - [x] E248 error
+  - [x] replace <Tab> with <C-j> in cmd and search
+  - [x] add recent mac install tip from issues
+  - [x] toggle lsp: replace kill and load in whichkey with toggle
     - [x] submitted issue
     - [x] test suggestion 
-  - [x] how to change root directory 
+  - [x] how to change root directory
     - [x] do i need project.nvim?
-  - [x] alpha: turn off auto create sessions 
+  - [x] alpha: turn off auto create sessions
     - [x] created issue
-  - [x] PdfAnnots: convert from vimscript to lua 
+  - [x] PdfAnnots: convert from vimscript to lua
     - [x] submitted issue
-  - [x] undo does not work in md after checkmark 
+  - [x] undo does not work in md after checkmark
     - [x] autolist causing problems?
     - [x] auto-recalculate does not work after turning off problem code 
-  - [x] WhichKey: checking conflicting keymaps 
-  - [x] treesitter only load md and tex 
-  - [x] shift-m gives error 
-  - [x] indenting 
+  - [x] WhichKey: checking conflicting keymaps
+  - [x] treesitter only load md and tex
+  - [x] shift-m gives error
+  - [x] indenting
     - [x] can't get autolist to work
     - [x] tab stops indenting after one tab 
     - [x] indents on new line in enumerate 
     - [x] adding braces can cause unwanted indentation 
-  - [x] pandoc 
+  - [x] pandoc
     - [x] plugin 
     - [x] bindings 
     - [x] WhichKey 

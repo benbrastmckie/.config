@@ -51,7 +51,6 @@ return packer.startup(function(use)
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
   use { "mbbill/undotree" } -- Vimscript
-  -- use { "mg979/vim-visual-multi" } -- Vimscript
   use { "glacambre/firenvim" } -- Vimscript
   use { "gbprod/yanky.nvim" }
 
@@ -62,8 +61,8 @@ return packer.startup(function(use)
   use { "akinsho/toggleterm.nvim" }
 
 -- File Management
-  use { "kyazdani42/nvim-tree.lua" }
-  use { "kyazdani42/nvim-web-devicons" }
+  use { "nvim-tree/nvim-tree.lua" }
+  use { "nvim-tree/nvim-web-devicons" }
 	use { "Shatur/neovim-session-manager" }
 
 -- Appearance
@@ -83,7 +82,7 @@ return packer.startup(function(use)
   -- use { "EdenEast/nightfox.nvim" }
   -- use { "navarasu/onedark.nvim" }
 
--- Cmp 
+-- CMP 
   use { "hrsh7th/nvim-cmp" }
 	use { "hrsh7th/cmp-nvim-lsp" }
   -- buffer completions
@@ -122,25 +121,26 @@ return packer.startup(function(use)
       "text",
       "tex",
       "plaintex",
+      "norg",
     },
     config = function()
-      local autolist = require("autolist")
-      autolist.setup()
-      autolist.create_mapping_hook("i", "<CR>", autolist.new)
-      autolist.create_mapping_hook("i", "<Tab>", autolist.indent)
-      autolist.create_mapping_hook("i", "<S-Tab>", autolist.indent, "<C-D>")
-      autolist.create_mapping_hook("n", "o", autolist.new)
-      autolist.create_mapping_hook("n", "O", autolist.new_before)
-      -- autolist.create_mapping_hook("n", ">>", autolist.indent)
-      -- autolist.create_mapping_hook("n", "<<", autolist.indent)
-      autolist.create_mapping_hook("n", "<leader>r", autolist.force_recalculate)
-      autolist.create_mapping_hook("n", "<leader>x", autolist.invert_entry, "")
-        vim.api.nvim_create_autocmd("TextChanged", {
-          pattern = "-",
-          callback = function()
-            vim.cmd.normal({autolist.force_recalculate(nil, nil), bang = false})
-          end
-        })
+      require("autolist").setup()
+
+      -- vim.keymap.set("i", "<tab>", "<cmd>AutolistTab<cr>")
+      -- vim.keymap.set("i", "<s-tab>", "<cmd>AutolistShiftTab<cr>")
+      vim.keymap.set("i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>")
+      vim.keymap.set("n", "o", "o<cmd>AutolistNewBullet<cr>")
+      vim.keymap.set("n", "O", "O<cmd>AutolistNewBulletBefore<cr>")
+
+      -- cycle list types with dot-repeat
+      -- vim.keymap.set("n", "<leader>ln", require("autolist").cycle_next_dr, { expr = true })
+      -- vim.keymap.set("n", "<leader>lp", require("autolist").cycle_prev_dr, { expr = true })
+
+      -- functions to recalculate list on edit
+      vim.keymap.set("n", "<tab>", "><cmd>AutolistRecalculate<cr>")
+      vim.keymap.set("n", "<s-tab>", "<<cmd>AutolistRecalculate<cr>")
+      vim.keymap.set("n", "dd", "dd<cmd>AutolistRecalculate<cr>")
+      vim.keymap.set("v", "d", "d<cmd>AutolistRecalculate<cr>")
     end,
   })
 
