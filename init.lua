@@ -21,7 +21,8 @@ require "user.whichkey"
 require "user.toggleterm"
 
 -- File Management
-require "user.nvim-tree"
+-- require "user.nvim-tree"
+require "user.neo-tree"
 require "user.sessions"
 
 -- Appearance

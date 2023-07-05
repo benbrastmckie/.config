@@ -22,11 +22,11 @@ configs.setup({
 	ignore_install = { "latex" }, -- List of parsers to ignore installing
 	highlight = {
 		enable = true, -- false will disable the whole extension
-		disable = { "css", "latex" }, -- list of language that will be disabled
-    -- additional_vim_regex_highlighting = { "latex", "markdown" },
+		disable = { "css", "latex", "markdown" }, -- list of language that will be disabled
+    additional_vim_regex_highlighting = { "markdown" },
 	},
 	autopairs = {
 		enable = true,
 	},
-	indent = { enable = true, disable = { "latex", "python", "css" } },
+	indent = { enable = false, disable = { "latex", "python", "css" } },
 })

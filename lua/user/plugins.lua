@@ -61,7 +61,13 @@ return packer.startup(function(use)
   use { "akinsho/toggleterm.nvim" }
 
 -- File Management
-  use { "nvim-tree/nvim-tree.lua" }
+  use {
+    "nvim-neo-tree/neo-tree.nvim",
+      branch = "v2.x",
+      requires = { 
+        "MunifTanjim/nui.nvim",
+      }
+    }  
   use { "nvim-tree/nvim-web-devicons" }
 	use { "Shatur/neovim-session-manager" }
 
