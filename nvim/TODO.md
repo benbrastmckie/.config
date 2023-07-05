@@ -3,17 +3,14 @@
 - [ ] config
   - [ ] zathura top bar
   - [ ] indents
-    - [ ] change to 2 from 4
-    - [ ] stop indents when adding brackets 
-    - [ ] add indents inside enumerate 
-    - [ ] test vimtex indent 
-  - [ ] nvim-tree
-      - [ ] commands not all working 
-      - [ ] cant navigate explorer when no file is open
+    - [x] change to 2 from 4
+    - [ ] stop indents when adding brackets
+    - [ ] add indents inside enumerate
+    - [ ] test vimtex indent
   - [ ] tab stops working in insert mode
     - [ ] can't reproduce: check to see if behaviour returns
   - [ ] autolist
-    - [ ] delete highlighting
+    - [x] remove highlighting of boxes in markdown
     - [ ] move config out of plugins.lua 
       - [x] submitted issue
     - [x] move bindings into whichkey 
@@ -42,6 +39,9 @@
   - [ ] folding
   - [ ] vertical lines extend through wrapped lines
     - [x] requires upstream change to nvim
+  - [x] nvim-tree
+      - [x] commands not all working 
+      - [x] cant navigate explorer when no file is open
   - [x] lags in terminal
   - [x] latexmk
   - [x] E248 error

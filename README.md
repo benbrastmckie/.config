@@ -18,7 +18,7 @@ You can also find video series which: (1) demonstrates the [features](https://ww
 3. [Debian Linux Insallation](#Debian-Linux-Installation)
 4. [Remapping Keys](#Remapping-Keys)
 
-The software covered includes NeoVim, Git, Zathura, Zotero, Alacritty, Tmux, and Fish.
+The software covered includes NeoVim, Git, Zathura, Zotero, Fish, and either Kitty or both Alacritty and Tmux.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
 
 
@@ -157,7 +157,7 @@ brew install --cask font-roboto-mono-nerd-font
 
 More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts) or by searching for Nerd Fonts that can be installed with Homebrew.
 If you are using the default Mac Terminal, you will need to select the font that you just installed by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
-However, I highly recommend installing the Alacritty terminal in the last section, providing a faster cleaner looking terminal which is easy to configure given the config file that I have included. 
+However, I highly recommend installing a better terminal as detailed in the last section, providing a faster cleaner looking setup which is easy to configure given the config files that I have included. 
 Nevertheless, the Mac terminal will do for completing the installation process detailed below.
 
 Lastly, check to see if the following are installed with `--version` as above and install whatever is missing:
@@ -382,18 +382,20 @@ If your citation autocomplete does not work but searching for citations with `<s
 This should fix the issue.
 
 
-## [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki) (Optional)
+## Terminal (Optional)
 
-Although optional, I highly recommend switching to a better terminal emulator like Alacritty as well as using a terminal multiplexor like Tmux so that you can have a separate terminal-tab for each project that you have open. 
-Even if these are new concepts, the result is intuitive to use and the installation is easy.
-To do so, run the following in the default Mac terminal:
+As an alternative to the stock terminal, I recommend installing either [Kitty](https://github.com/kovidgoyal/kitty) or else a combination of [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki).
+There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, choosing which you prefer later.
 
 ```
+brew install --cask kitty
 brew install --cask alacritty
 brew install tmux
 ```
 
-Now move the Tmux configuration file included in the config to the appropriate location with:
+If you installed Kitty, you can edit `~/.config/kitty/kitty.conf` if desired, but no changes are required to run `nvim` in Kitty.
+If you installed Alacritty and Tmux, move the Tmux configuration file to the appropriate location by running:
+
 
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
@@ -602,7 +604,7 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 
 # Arch Linux Installation
 
-This installation will begin with necessities and conclude with details for an optional installation of Fish, Alacritty, and Tmux to improve your terminal, as well as details for how to add an SSH key and PAT for streamlining your experience of Git.
+This installation will begin with necessities and conclude with details for an optional installation of Fish and either Kitty or else both Alacritty and Tmux to improve your terminal, as well as details for how to add an SSH key and PAT for streamlining your experience of Git.
 If you find any errors in these installation instructions, please don't hesitate to let me know by submitting a PR or opening an issue.
 
 ## Dependencies
@@ -696,7 +698,6 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
 
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
@@ -794,23 +795,27 @@ Save the file as `Zotero.bib` to ~/texmf/bibtex/bib which you previously created
 You are now ready to cite files in your Zotero database.
 
 
-## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/) (Optional)
+## Terminal (Optional)
 
-Run the following commands in the terminal:
+As an alternative to the stock terminal, I recommend installing either [Kitty](https://github.com/kovidgoyal/kitty) or else a combination of [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki).
+Either way, I also recommend using the [Fish](https://fishshell.com/) shell.
+There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, choosing which you prefer later.
 
 ```
+sudo pacman -S kitty
 sudo pacman -S alacritty
 sudo pacman -S tmux
 sudo pacman -S fish
 ```
 
-Move the Tmux configuration file to the appropriate location by running:
+If you installed Kitty, you can edit `~/.config/kitty/kitty.conf` if desired, but no changes are required to run `nvim` in Kitty.
+If you installed Alacritty and Tmux, move the Tmux configuration file to the appropriate location by running:
 
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
-Assuming that you installed Fish above, you will now need to locate fish on your operating system by running the following:
+Assuming that you installed Alacritty and want to use the Fish shell, you will now need to locate fish on your operating system by running the following:
 
 ```
 which fish
@@ -824,7 +829,7 @@ nvim ~/.config/alacritty/alacritty.yml
 ```
 
 Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `<space>q`.
-Quit the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
+Regardless of which terminal you opted for, I recommend customising the Fish shell by running the following:
 
 ```
 curl -L https://get.oh-my.fish | fish
@@ -837,7 +842,7 @@ To delete the welcome message, run:
 set -U fish_greeting ""
 ```
 
-In order to reset Tmux, run:
+If you are running Alacritty with Tmux, you can now reset Tmux as follows:
 
 ```
 tmux kill-server
@@ -1045,7 +1050,7 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 
 # Debian Linux Installation
 
-This installation will begin with necessities and conclude with details for an optional installation of Fish, Alacritty, and Tmux to improve your terminal, as well as details for how to add an SSH key and PAT for streamlining your experience of Git.
+This installation will begin with necessities and conclude with details for an optional installation of Fish and either Kitty or Alacritty together with Tmux to improve your terminal, as well as details for how to add an SSH key and PAT for streamlining your experience of Git.
 If you find any errors in these installation instructions, please don't hesitate to let me know by submitting a PR or opening an issue.
 
 ## Dependencies
@@ -1189,7 +1194,6 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-If you intend to upgrade your terminal to Alacritty with Tmux and the Fish shell, then proceed as follows:
 
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
@@ -1287,29 +1291,34 @@ Save the file as `Zotero.bib` to ~/texmf/bibtex/bib which you previously created
 You are now ready to cite files in your Zotero database.
 
 
-## [Alacritty](https://github.com/alacritty/alacritty), [Tmux](https://github.com/tmux/tmux/wiki), and [Fish](https://fishshell.com/) (Optional)
+## Terminal (Optional)
 
-Run Alacritty with the following commands:
+As an alternative to the stock terminal, I recommend installing either [Kitty](https://github.com/kovidgoyal/kitty) or else a combination of [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki).
+Either way, I also recommend using the [Fish](https://fishshell.com/) shell.
+There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, choosing which you prefer later.
+
+To install Kitty and Fish, run:
+```
+sudo apt install kitty
+sudo apt install fish
+```
+
+Alternatively (or additionally) to Kitty, you may install Alacritty and Tmux with:
 
 ```
 sudo add-apt-repository ppa:aslatter/ppa -y
 sudo apt install alacritty
-```
-
-Once complete, proceed to install Tmux and Fish:
-
-```
 sudo apt install tmux
-sudo apt install fish
 ```
 
-Move the Tmux configuration file to the appropriate location by running:
+If you installed Kitty, you can edit `~/.config/kitty/kitty.conf` if desired, but no changes are required to run `nvim` in Kitty.
+If you installed Alacritty and Tmux, move the Tmux configuration file to the appropriate location by running:
 
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
-Assuming that you installed Fish above, you will now need to locate fish on your operating system by running the following:
+Assuming that you installed Alacritty and want to use the Fish shell, you will now need to locate fish on your operating system by running the following:
 
 ```
 which fish
@@ -1323,7 +1332,7 @@ nvim ~/.config/alacritty/alacritty.yml
 ```
 
 Replace '/usr/bin/fish' with the location of fish if different, saving and exiting with `<space>q`.
-Quit the terminal and open Alacritty, running the following to set a reasonable theme for Fish:
+Regardless of which terminal you opted for, I recommend customising the Fish shell by running the following:
 
 ```
 curl -L https://get.oh-my.fish | fish
@@ -1336,7 +1345,7 @@ To delete the welcome message, run:
 set -U fish_greeting ""
 ```
 
-In order to reset Tmux, run:
+If you are running Alacritty with Tmux, you can now reset Tmux as follows:
 
 ```
 tmux kill-server
@@ -1349,7 +1358,7 @@ If you want to turn on the Vim keybindings within Fish, run the following:
 fish_vi_key_bindings
 ```
 
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
+You are now read use NeoVim in either Kitty or else Alacritty and Tmux complete with the Fish shell.
 
 
 ## [Git](https://git-scm.com/) (Optional)

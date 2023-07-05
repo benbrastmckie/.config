@@ -47,8 +47,8 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ## _Windows, Buffers, and Panes_ 
 
-- **Manage Windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
-- **Switch Windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
+- **Manage Windows**: use `<super>+c` (Kitty) or `<ctrl+space>c` (Alacritty) to create a new window, and `<super>+k` (Kitty) or `<ctrl+space>k` (Alacritty) to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
+- **Switch Windows**: use `<super>+n` (Kitty) or `<ctrl+space>n` (Alacritty) and `<super>+p` (Kitty) or `<ctrl+space>p` (Alacritty) to cycle through open windows.
 - **Switch Buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
 - **Navigate Panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize Panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
@@ -89,7 +89,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 - **Local File Search**: use `ctrl+p` to search for files being tracked by Git in the current project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
 - **Fuzzy File Search**: use `<space>ff` to fuzzy search through all files in the project folder, navigating with `ctrl+j/k`, and opening files with `Enter`.
-- **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter`.
+- **Explorer**: use `<space>e` to open the file explorer, navigating with `j/k`, opening and closing directories with `h/l` adding directories with `shift+a`, adding files with `a`, opening files with `Enter`, or looking up commands with `?`.
 - **Close Buffer**: use `<space>d` to close current buffer.
 - **LazyGit**: use `<space>gg` to open LazyGit, followed by `?` to see a range of different commands, using `h/j/k/l` to navigate.
 - **Branch**: use `<space>fb` to search through git branches.
@@ -156,6 +156,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Registers**: use `<space>fr` to search through registers.
 - **Themes**: use `<space>ft` to switch between themes.
 - **Yanks**: use `<space>fy` to paste from past yanks.
+- **List**: use `<space>l` to choose between commands useful for editing lists in markdown documents. See [Autolist](https://github.com/gaoDean/autolist.nvim).
 
 
 
