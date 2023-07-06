@@ -47,8 +47,8 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 
 ## _Windows, Buffers, and Panes_ 
 
-- **Manage Windows**: use `<super>+c` (Kitty) or `<ctrl+space>c` (Alacritty) to create a new window, and `<super>+k` (Kitty) or `<ctrl+space>k` (Alacritty) to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
-- **Switch Windows**: use `<super>+n` (Kitty) or `<ctrl+space>n` (Alacritty) and `<super>+p` (Kitty) or `<ctrl+space>p` (Alacritty) to cycle through open windows.
+- **Manage Windows**: use `<ctrl+space>c` to create a new window, and `<ctrl+space>k` to kill the current window (make sure that all processes have been ended, for instance by closing NeoVim with `<space>q`).
+- **Switch Windows**: use `<ctrl+space>n` and `<ctrl+space>p` to cycle through open windows.
 - **Switch Buffers**: use `<bs>` and `<shift+tab>` to cycle though the open buffers.
 - **Navigate Panes**: use `<ctrl>h/j/k/l` to switch focus between buffers.
 - **Resize Panes**: use `<alt>h/l` to horizontally resize the buffer in focus.
