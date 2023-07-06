@@ -60,7 +60,6 @@ Accordingly, I will focus attention on the mappings included in `~/.config/nvim/
 - **Previous Word**: use `E` to go to the end of the previous word.
 - **Comment**: in normal mode or visual mode, use `ctrl+\ ` to toggle whether the lines in question are commented out.
 - **Help**: use `shift+m` to open Help for the word under the cursor, and `q` to close.
-- **Multiple Cursors**: use `ctrl+n` to select the word under the cursor or after visually selecting text, where repeating `ctrl+n` will select the next occurrences of that word, `ctrl+x` will skip the current selected occurrence, and `ctrl+p` will deselect the current occurrence and go back to the previous occurrence of that word. Note that by releasing `ctrl` and `n` and `N` work as usual. Additionally, left/right clicking with the mouse while holding down `ctrl` will add a cursor/select-word.
 - **Terminal**: use `ctrl+t` to toggle the terminal window in NeoVim.
 - **Bib Export**: use `<space>ab` to generate local bibliography from all citations present in the document.
 - **Bib Annotate**: use `<space>aa` to generate a markdown file with annotations from the pdf associated with the citation under the cursor.

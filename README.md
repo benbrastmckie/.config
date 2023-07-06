@@ -677,7 +677,7 @@ latexmk --version
 To install LaTeX, run the following
 
 ```
-sudo pacman -S texlive-latexrecommended texlive-binextra
+sudo pacman -S texlive
 ```
 
 After rebooting, confirm that LaTeX is installed by running:
@@ -706,6 +706,12 @@ Install the Zathura pdf-viewer by running:
 
 ```
 sudo pacman -S zathura
+```
+
+If you want to customise Zathura, you can edit `~/.config/zathura/zathurarc`, referring to the documents by running:
+
+```
+man zathuraarc
 ```
 
 Although Zathura is an ideal pdf-viewer for writing LaTeX documents, you may want to use your default pdf-viewer for opening the pdfs associated with citations via the VimTex context-menu.
@@ -1202,6 +1208,12 @@ Install the Zathura pdf-viewer by running:
 
 ```
 sudo apt install zathura
+```
+
+If you want to customise Zathura, you can edit `~/.config/zathura/zathurarc`, referring to the documents by running:
+
+```
+man zathuraarc
 ```
 
 Although Zathura is an ideal pdf-viewer for writing LaTeX documents, you may want to use your default pdf-viewer for opening the pdfs associated with citations via the VimTex context-menu.
