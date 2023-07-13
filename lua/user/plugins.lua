@@ -125,26 +125,21 @@ return packer.startup(function(use)
     ft = {
       "markdown",
       "text",
-      "tex",
-      "plaintex",
+      -- "tex",
+      -- "plaintex",
       "norg",
     },
     config = function()
       require("autolist").setup()
-
       -- vim.keymap.set("i", "<tab>", "<cmd>AutolistTab<cr>")
       -- vim.keymap.set("i", "<s-tab>", "<cmd>AutolistShiftTab<cr>")
       vim.keymap.set("i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>")
       vim.keymap.set("n", "o", "o<cmd>AutolistNewBullet<cr>")
       vim.keymap.set("n", "O", "O<cmd>AutolistNewBulletBefore<cr>")
 
-      -- cycle list types with dot-repeat
-      -- vim.keymap.set("n", "<leader>ln", require("autolist").cycle_next_dr, { expr = true })
-      -- vim.keymap.set("n", "<leader>lp", require("autolist").cycle_prev_dr, { expr = true })
-
       -- functions to recalculate list on edit
-      vim.keymap.set("n", "<tab>", "><cmd>AutolistRecalculate<cr>")
-      vim.keymap.set("n", "<s-tab>", "<<cmd>AutolistRecalculate<cr>")
+      vim.keymap.set("i", "<tab>", "<Esc>>lla<cmd>AutolistRecalculate<cr>")
+      vim.keymap.set("i", "<s-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a")
       vim.keymap.set("n", "dd", "dd<cmd>AutolistRecalculate<cr>")
       vim.keymap.set("v", "d", "d<cmd>AutolistRecalculate<cr>")
     end,

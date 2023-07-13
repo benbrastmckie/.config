@@ -89,13 +89,9 @@ local mappings = {
   ["e"] = { "<cmd>Neotree<CR>"                  , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"            , "index" },
   ["q"] = { "<cmd>wqa!<CR>"                     , "quit" },
-  -- ["r"] = { ""                                  , "reorder" },
-  -- ["r"] = { "<cmd>lua require('autolist').force_recalculate()<CR>" , "reorder list" },
   ["u"] = { "<cmd>UndotreeToggle<CR>"           , "undo" },
   ["v"] = { "<cmd>VimtexView<CR>"               , "view" },
   ["w"] = { "<cmd>wa!<CR>"                      , "write" },
-  -- ["x"] = { ""                                  , "checkmark" },
-  -- ["x"] = { "<cmd>lua require('autolist').invert_entry()<CR>"  , "checkmark" },
   a = {
     name = "ACTIONS",
     a = { "<cmd>lua PdfAnnots()<CR>", "annotate"},
@@ -139,8 +135,7 @@ local mappings = {
     p = { "<cmd>lua require 'gitsigns'.preview_hunk()<CR>", "preview hunk" },
     r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
     s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
-    u = {
-      "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
+    u = { "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
     o = { "<cmd>Telescope git_status<CR>", "open changed file" },
     b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
     c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
@@ -148,10 +143,11 @@ local mappings = {
   },
   l = {
     name = "LIST",
+    c = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
     n = { "<cmd>AutolistCycleNext<CR>", "next" },
     p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
     r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
-    x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
+    -- x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
   },
   m = {
     name = "MANAGE SESSIONS",
