@@ -155,7 +155,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Registers**: use `<space>fr` to search through registers.
 - **Themes**: use `<space>ft` to switch between themes.
 - **Yanks**: use `<space>fy` to paste from past yanks.
-- **List**: use `<space>l` to choose between commands useful for editing lists in markdown documents. See [Autolist](https://github.com/gaoDean/autolist.nvim).
+- **List**: use `<space>l` to choose between commands useful for editing lists in markdown documents.
 
 
 
