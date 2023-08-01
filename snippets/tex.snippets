@@ -217,24 +217,24 @@ snippet tikz "Tikz environment" b
 	${0}
 
 snippet lemma "Lemma" bi
-	\begin{lemma}
+	\begin{Lthm} \label{${1:label}}
 		${0:${VISUAL}}
-	\end{lemma}
+	\end{Lthm}
 
 snippet prop "Proposition" bi
-	\begin{prop}[$1]
+	\begin{Pthm} \label{${1:label}}
 		${0:${VISUAL}}
-	\end{prop}
+	\end{Pthm}
 
 snippet thrm "Theorem" bi
-	\begin{theorem}[$1]
+	\begin{theorem} \label{${1:label}}
 		${0:${VISUAL}}
 	\end{theorem}
 
 snippet prf "Proof" bi
-	\begin{myproof}[$1]
+	\begin{proof} 
 		${0:${VISUAL}}
-	\end{myproof}
+	\end{proof}
 
 snippet def "Definition" bi
 	\begin{definition}[$1]
