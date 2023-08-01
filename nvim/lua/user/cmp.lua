@@ -43,8 +43,6 @@ local kind_icons = {
 }
 -- find more here: https://www.nerdfonts.com/cheat-sheet
 
-local cmp_mapping = require "cmp.config.mapping"
-
 cmp.setup {
 	-- preselect = cmp.PreselectMode.None,
   completion = {
@@ -64,23 +62,23 @@ cmp.setup {
   mapping = {
     ["<C-k>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "c" }),
     ["<C-j>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "c" }),
-    ["<CR>"] = cmp.mapping.confirm({ select = false }),
+    ["<CR>"] = cmp.mapping.confirm({ select = true }),
       -- Set `select` to `false` to only confirm selected
-    ["<Tab>"] = cmp_mapping(function(fallback)
+    ["<Tab>"] = cmp.mapping(function(fallback)
       if cmp.visible() then
         cmp.select_next_item()
+      -- elseif luasnip.expandable() then
+      --   luasnip.expand()
       elseif luasnip.expand_or_locally_jumpable() then
         luasnip.expand_or_jump()
-      elseif jumpable(1) then
-        luasnip.jump(1)
-      elseif has_words_before() then
-        -- cmp.complete()
+      elseif check_backspace() then
+          cmp.complete()
         fallback()
       else
         fallback()
       end
     end, { "i", "s" }),
-    ["<S-Tab>"] = cmp_mapping(function(fallback)
+    ["<S-Tab>"] = cmp.mapping(function(fallback)
       if cmp.visible() then
         cmp.select_prev_item()
       elseif luasnip.jumpable(-1) then
