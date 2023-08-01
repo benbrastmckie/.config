@@ -98,7 +98,17 @@ neotree.setup({
   -- A list of functions, each representing a global custom command
   -- that will be available in all sources (if not overridden in `opts[source_name].commands`)
   -- see `:h neo-tree-global-custom-commands`
-  commands = {},
+    commands = {
+      system_open = function(state)
+        local node = state.tree:get_node()
+        local path = node:get_id()
+        path = vim.fn.shellescape(path)
+        -- macOs: open file in default application in the background.
+        vim.api.nvim_command("silent !open -g " .. path)
+        -- Linux: open file in default application
+        vim.api.nvim_command("silent !xdg-open " .. path)
+      end,
+    },
   window = {
     position = "left",
     width = 30,
@@ -107,6 +117,7 @@ neotree.setup({
       nowait = true,
     },
     mappings = {
+        ["o"] = "system_open",
       -- ["<space>"] = { 
       --     "toggle_node", 
       --     nowait = false, -- disable `nowait` if you have existing combos starting with this char that you want to use 
