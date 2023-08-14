@@ -14,8 +14,8 @@ local list_patterns = {
 local default_config = {
   enabled = false,
   colon = { -- if a line ends in a colon
-    indent = true, -- if in list and line ends in `:` then create list
-    indent_raw = true, -- above, but doesn't need to be in a list to work
+    indent = false, -- if in list and line ends in `:` then create list
+    indent_raw = false, -- above, but doesn't need to be in a list to work
     preferred = "-", -- what the new list starts with (can be `1.` etc)
   },
   cycle = { -- Cycles the list type in order
