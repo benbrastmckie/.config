@@ -74,7 +74,11 @@ return packer.startup(function(use)
 -- Appearance
   use { "akinsho/bufferline.nvim" }
   use { "nvim-lualine/lualine.nvim" }
-  use { "lukas-reineke/indent-blankline.nvim" }
+  use { 
+    "lukas-reineke/indent-blankline.nvim", 
+    commit = "9637670896b68805430e2f72cf5d16be5b97a22a" 
+    -- still need to merge to V3 to avoid this
+  }
   use { "goolord/alpha-nvim" }
   use { "RRethy/vim-illuminate" }
 
