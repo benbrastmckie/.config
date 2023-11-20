@@ -78,8 +78,6 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
--- hjknoyz
-
 -- GENERAL MAPPINGS
 
 local mappings = {
