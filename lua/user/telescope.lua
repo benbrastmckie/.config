@@ -5,22 +5,6 @@ end
 
 local actions = require "telescope.actions"
 
--- local job_opts = {
---   entry_maker = function(entry)
---     local _, _, filename, lnum, col, text = string.find(entry, "([^:]+):(%d+):(.*)")
---     local table = {
---       ordinal = text,
---       display = filename .. ":" .. text
---     }
---     return table
---   end
--- }
---
--- local opts = {
---   finder = finders.new_oneshot_job(rg, job_opts),
---   sorter = sorters.get_generic_fuzzy_sorter(),
--- }
-
 telescope.setup {
   defaults = {
     prompt_prefix = " ",
@@ -72,9 +56,9 @@ telescope.setup {
 
         ["j"] = actions.move_selection_next,
         ["k"] = actions.move_selection_previous,
-        ["H"] = actions.move_to_top,
-        ["M"] = actions.move_to_middle,
-        ["L"] = actions.move_to_bottom,
+        -- ["H"] = actions.move_to_top,
+        -- ["M"] = actions.move_to_middle,
+        -- ["L"] = actions.move_to_bottom,
 
         ["<Down>"] = actions.move_selection_next,
         ["<Up>"] = actions.move_selection_previous,
@@ -105,11 +89,6 @@ telescope.setup {
     bibtex = {
       depth = 1,
       -- Depth for the *.bib file
-      custom_formats = {},
-      -- Custom format for citation label
-      format = '',
-      -- Format to use for citation label.
-      -- Try to match the filetype by default, or use 'plain'
       global_files = {'~/texmf/bibtex/bib/Zotero.bib'},
       -- Path to global bibliographies (placed outside of the project)
       search_keys = { 'author', 'year', 'title' },
@@ -121,7 +100,14 @@ telescope.setup {
       citation_max_auth = 2,
       -- Max number of authors to write in the formatted citation
       -- following authors will be replaced by "et al."
-      context = false,
+      custom_formats = {
+        {id = 'citet', cite_maker = '\\citet{%s}'}
+      },
+      -- Custom format for citation label
+      format = 'citet',
+      -- Format to use for citation label.
+      -- Try to match the filetype by default, or use 'plain'
+      context = true,
       -- Context awareness disabled by default
       context_fallback = true,
       -- Fallback to global/directory .bib files if context not found
@@ -136,3 +122,22 @@ telescope.setup {
     -- please take a look at the readme of the extension you want to configure
   },
 }
+
+-- require"telescope".load_extension("bibtex")
+
+-- local job_opts = {
+--   entry_maker = function(entry)
+--     local _, _, filename, lnum, col, text = string.find(entry, "([^:]+):(%d+):(.*)")
+--     local table = {
+--       ordinal = text,
+--       display = filename .. ":" .. text
+--     }
+--     return table
+--   end
+-- }
+--
+-- local opts = {
+--   finder = finders.new_oneshot_job(rg, job_opts),
+--   sorter = sorters.get_generic_fuzzy_sorter(),
+-- }
+

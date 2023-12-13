@@ -78,13 +78,11 @@ local opts = {
   nowait = true, -- use `nowait` when creating keymaps
 }
 
--- hjknoyz
-
 -- GENERAL MAPPINGS
 
 local mappings = {
   ["b"] = { "<cmd>VimtexCompile<CR>"            , "build" },
-  ["c"] = { "<cmd>VimtexCountWords!<CR>"        , "count" },
+  -- ["c"] = { "<cmd>VimtexCountWords!<CR>"        , "count" },
   ["d"] = { "<cmd>bdelete!<CR>"                 , "delete buffer" },
   ["e"] = { "<cmd>Neotree<CR>"                  , "explorer" },
   ["i"] = { "<cmd>VimtexTocOpen<CR>"            , "index" },
@@ -96,10 +94,11 @@ local mappings = {
     name = "ACTIONS",
     a = { "<cmd>lua PdfAnnots()<CR>", "annotate"},
     b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", "bib export"},
-    c = { "<cmd>VimtexClean<CR>"            , "clean aux" },
+    c = { "<cmd>VimtexCountWords!<CR>"        , "count" },
     g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary"},
     h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
     i = { "<cmd>IlluminateToggle<CR>"            , "illuminate" },
+    k = { "<cmd>VimtexClean<CR>"            , "kill aux" },
     l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP"},
     p = { '<cmd>lua require("nabla").popup()<CR>', "preview symbols"},
     r = { "<cmd>VimtexErrors<CR>"           , "report errors" },
@@ -108,13 +107,19 @@ local mappings = {
     -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
     v = { "<plug>(vimtex-context-menu)"            , "vimtex menu" },
   },
+  c = { 
+    name = "CITATION",
+      t = { "<cmd>Telescope bibtex format_string=\\citet{%s}<CR>"       , "\\citet" },
+      p = { "<cmd>Telescope bibtex format_string=\\citep{%s}<CR>"       , "\\citep" },
+      s = { "<cmd>Telescope bibtex format_string=\\citepos{%s}<CR>"       , "\\citepos" },
+  },
   f = {
     name = "FIND",
       b = {
         "<cmd>lua require('telescope.builtin').buffers(require('telescope.themes').get_dropdown{previewer = false})<CR>",
         "buffers",
       },
-      c = { "<cmd>Telescope bibtex<CR>"       , "citations" },
+      -- c = { "<cmd>Telescope bibtex format_string=\\citet{%s}<CR>"       , "citations" },
       f = { "<cmd>Telescope live_grep theme=ivy<CR>", "project" },
       g = { "<cmd>Telescope git_branches<CR>", "branches" },
       h = { "<cmd>Telescope help_tags<CR>", "help" },
