@@ -1,3 +1,11 @@
+local ft = {
+        "markdown",
+        "text",
+        "tex",
+        "plaintex",
+        "norg",
+    }
+
 local list_patterns = {
     neorg_1 = "%-",
     neorg_2 = "%-%-",
@@ -126,3 +134,5 @@ end
 --   end
 --   ::continue::
 -- end
+
+
