@@ -21,6 +21,15 @@ snippet customthm "Custom Theorem" b
 	\end{Answer}
 #
 
+
+# factoidbox enviornment
+snippet factoidbox "Factoid Box" b
+	\label{rule:${2:$1}}
+	\factoidbox{
+		\textbf{(${1:name})} ${0}
+	}
+#
+
 # framed text enviornment
 snippet textbox "Text Box" b
 	\begin{tcolorbox}
@@ -30,7 +39,12 @@ snippet textbox "Text Box" b
 
 # new command
 snippet qt "New Command" b
-	\qt{${1:\forall}}{${2:x}}${0}
+	\qt{${1:\forall}}{${2:\alpha}}${0}
+#
+
+# new command
+snippet qte "New Command" b
+	\qt{${1:\exists}}{${2:\alpha}}${0}
 #
 
 # new command
@@ -185,6 +199,10 @@ snippet ms "Mathscr" w
 	\mathscr{${1}}${0}
 #
 
+snippet bref "Bold Ref" w
+	\textbf{\ref{${1:Ref}}}${0}
+#
+
 #misc
 snippet fproof "Footnote Proof" bi
 	\footnote{\textit{Proof:} ${1:Begin} \qed}${0}
@@ -221,8 +239,15 @@ snippet tikz "Tikz environment" b
 	\end{figure}
 	${0}
 
+snippet rule "Rule" bi
+	\factoidbox{
+	\begin{Rthm} \label{rule:${4:label}}
+		\textbf{($${1:\boldsymbol}${2:SYM}$${3:IE})}~~ ${0:${VISUAL}}
+	\end{Rthm}
+	}
+
 snippet lemma "Lemma" bi
-	\begin{Lthm} \label{${1:label}}
+	\begin{Lthm} \label{lemma:${1:label}}
 		${0:${VISUAL}}
 	\end{Lthm}
 
@@ -237,9 +262,9 @@ snippet thrm "Theorem" bi
 	\end{theorem}
 
 snippet prf "Proof" bi
-	\begin{proof} 
-		${0:${VISUAL}}
-	\end{proof}
+	\begin{quote} 
+		\textit{Proof:} ${0:${VISUAL}}
+	\end{quote}
 
 snippet def "Definition" bi
 	\begin{definition}[$1]
