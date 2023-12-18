@@ -112,6 +112,7 @@ cmp.setup {
     { name = "nvim_lsp" },
     { name = "luasnip" },
     { name = "omni" },
+    -- { name = "vimtex" }, -- doesn't provide as much info as omni yet
     { name = "buffer", keyword_length = 3 },
     { name = "spell",
       keyword_length = 4,
