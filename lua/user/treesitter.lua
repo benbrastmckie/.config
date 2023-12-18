@@ -12,6 +12,7 @@ configs.setup({
     "vim", 
     "yaml", 
     "perl", 
+    "c", 
     "json", 
     "html", 
     -- "help", 

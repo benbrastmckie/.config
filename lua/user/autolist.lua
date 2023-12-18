@@ -1,10 +1,10 @@
-local ft = {
-        "markdown",
-        "text",
-        "tex",
-        "plaintex",
-        "norg",
-    }
+-- local ft = {
+--         "markdown",
+--         -- "text",
+--         -- "tex",
+--         -- "plaintex",
+--         "norg",
+--     }
 
 local list_patterns = {
     neorg_1 = "%-",

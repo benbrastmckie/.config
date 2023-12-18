@@ -1,6 +1,7 @@
 # TODO
 
 - [ ] config
+  - [ ] switch undotree to https://github.com/debugloop/telescope-undo.nvim
   - [ ] zathura top bar
   - [ ] indents
     - [x] change to 2 from 4

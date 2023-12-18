@@ -51,7 +51,7 @@ return packer.startup(function(use)
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
   use { "mbbill/undotree" } -- Vimscript
-  use { "glacambre/firenvim" } -- Vimscript
+  use { "glacambre/firenvim" }
   use { "gbprod/yanky.nvim" }
 
 -- Mappings
@@ -107,6 +107,7 @@ return packer.startup(function(use)
   use { "f3fora/cmp-spell" }
   -- helps Vimtex completions
   use { "hrsh7th/cmp-omni" }
+  -- use { "micangl/cmp-vimtex" } -- doesn't provide as much info as omni
   -- use { "aspeddro/cmp-pandoc.nvim" }
 
 -- LSP
@@ -128,7 +129,7 @@ return packer.startup(function(use)
     "gaoDean/autolist.nvim",
     ft = {
       "markdown",
-      "text",
+      -- "text",
       -- "tex",
       -- "plaintex",
       "norg",
@@ -168,7 +169,6 @@ return packer.startup(function(use)
 
 -- Treesitter
 	use { "nvim-treesitter/nvim-treesitter" }
--- , commit = "8e763332b7bf7b3a426fd8707b7f5aa85823a5ac" 
 
 -- Git
 	use { "lewis6991/gitsigns.nvim" }
