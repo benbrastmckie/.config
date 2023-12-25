@@ -15,31 +15,41 @@ end
 
 --   פּ ﯟ   some other good icons
 local kind_icons = {
-  Text = "",
+  Text = "",
+  -- Text = "",
   Method = "m",
   Function = "",
+  -- Function = "",
   Constructor = "",
   Field = "",
   Variable = "",
   Class = "",
+  -- Class = "",
   Interface = "",
   Module = "",
   Property = "",
   Unit = "",
   Value = "",
+  -- Value = "",
   Enum = "",
   Keyword = "",
+  -- Keyword = "",
   Snippet = "",
   Color = "",
+  -- Color = "",
   File = "",
+  -- File = "",
   Reference = "",
   Folder = "",
+  -- Folder = "",
   EnumMember = "",
   Constant = "",
+  -- Constant = "",
   Struct = "",
   Event = "",
   Operator = "",
   TypeParameter = "",
+  -- TypeParameter = "",
 }
 -- find more here: https://www.nerdfonts.com/cheat-sheet
 
@@ -95,9 +105,8 @@ cmp.setup {
       vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
       -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
       vim_item.menu = ({
-        -- omni = "[VimTex]",
-        omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-        -- vimtex = "[VimTex]",
+        -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
+        vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
         nvim_lsp = "[LSP]",
         luasnip = "[Snippet]",
         buffer = "[Buffer]",
@@ -112,8 +121,8 @@ cmp.setup {
   sources = cmp.config.sources({
     { name = "nvim_lsp" },
     { name = "luasnip" },
-    { name = "omni" },
-    -- { name = "vimtex" }, -- doesn't provide as much info as omni yet
+    -- { name = "omni" },
+    { name = "vimtex" },
     { name = "buffer", keyword_length = 3 },
     { name = "spell",
       keyword_length = 4,
