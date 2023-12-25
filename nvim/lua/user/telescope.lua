@@ -86,6 +86,23 @@ telescope.setup {
   },
   load_extensions = { "yank_history", "bibtex" },
   extensions = {
+    undo = {
+          mappings = {
+            i = {
+              ["<C-a>"] = require("telescope-undo.actions").yank_additions,
+              ["<C-d>"] = require("telescope-undo.actions").yank_deletions,
+              ["<C-u>"] = require("telescope-undo.actions").restore,
+              -- ["<C-Y>"] = require("telescope-undo.actions").yank_deletions,
+              -- ["<C-cr>"] = require("telescope-undo.actions").restore,
+              -- alternative defaults, for users whose terminals do questionable things with modified <cr>
+            },
+            n = {
+              ["y"] = require("telescope-undo.actions").yank_additions,
+              ["Y"] = require("telescope-undo.actions").yank_deletions,
+              ["u"] = require("telescope-undo.actions").restore,
+            },
+          },
+        },
     bibtex = {
       depth = 1,
       -- Depth for the *.bib file

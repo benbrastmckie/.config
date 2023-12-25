@@ -125,10 +125,11 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 - **Build**: use `<space>b` to toggle auto-build.
 - **View**: use `<space>v` to preview current line.
 - **Index**: use `<space>i` to open the index.
-- **Count**: use `<space>c` to count words.
+- **Count**: use `<space>ac` to count words.
 - **Report Errors**: use `<space>ar` to open LaTeX log in horizontal split, and `<space>d` to close.
-- **Clean**: use `<space>ac` to delete auxiliary LaTeX files.
+- **Clean**: use `<space>ak` to delete auxiliary LaTeX files.
 - **Glossary**: use `<space>ag` to edit the default glossary template.
+- **BibExport**: use `<space>ab` to generate a local bib file from citations in the document.
 - **Snippets**: use `<space>as` to edit the snippets file.
 - **Vimtex**: use `<space>av` to lookup bib entry under the cursor, giving you the option of viewing or editing the bib data, opening the file, etc.
 - **Citation**: use `<space>fc` to search through the bib file included at the end of your LaTeX document.
@@ -143,7 +144,7 @@ In what follows, I will discuss a number of key plugins included in `~/.config/n
 
 ## _Misc Bindings_ 
 
-- **Undo**: use `<space>u` to open the undo tree.
+- **Undo**: use `<space>u` to open the undo tree, `<C-j/k>` to navigate, `<C-u>` to restore selected, `<C-a>` to yank additions, and `<C-d>` to yank deletions.
 - **Centre**: use `alt-m` to centre screen on the cursor.
 - **Highlight**: use `Enter` to kill the result of search highlights.
 - **Htop**: use `<space>ah` to open the `htop` system monitor.

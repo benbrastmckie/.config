@@ -12,7 +12,7 @@ require "user.comment"
 require "user.impatient"
 require "user.surround"
 require "user.yanky"
-require "user.undotree"
+-- require "user.undotree"
 
 -- Mappings
 require "user.whichkey"
