@@ -50,9 +50,10 @@ return packer.startup(function(use)
   use { "numToStr/Comment.nvim" }
   use { "lewis6991/impatient.nvim" }
   use { "kylechui/nvim-surround" }
-  use { "mbbill/undotree" } -- Vimscript
   use { "glacambre/firenvim" }
   use { "gbprod/yanky.nvim" }
+  use { "debugloop/telescope-undo.nvim" }
+  -- use { "mbbill/undotree" } -- Vimscript
 
 -- Mappings
 	use { "folke/which-key.nvim" }

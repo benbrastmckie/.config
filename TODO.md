@@ -1,7 +1,7 @@
 # TODO
 
 - [ ] config
-  - [ ] switch undotree to https://github.com/debugloop/telescope-undo.nvim
+  - [ ] update cheatsheet
   - [ ] zathura top bar
   - [ ] indents
     - [x] change to 2 from 4
@@ -40,6 +40,8 @@
   - [ ] folding
   - [ ] vertical lines extend through wrapped lines
     - [x] requires upstream change to nvim
+  - [x] switch undotree to https://github.com/debugloop/telescope-undo.nvim
+  - [x] cmp-vimtex 
   - [x] nvim-tree
       - [x] commands not all working 
       - [x] cant navigate explorer when no file is open
