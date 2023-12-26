@@ -1,6 +1,8 @@
 # TODO
 
 - [ ] config
+  - [ ] missing icons
+  - [ ] missing packages in checkhealth
   - [ ] update cheatsheet
   - [ ] zathura top bar
   - [ ] indents
