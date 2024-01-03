@@ -4,6 +4,11 @@
 
 { config, pkgs, ... }:
 
+let 
+  neovimConfig = import ./neovim-config.nix;
+  # neovimConfig = import ./lazyvim-config.nix;
+in
+
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -25,7 +30,7 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "America/New_York";
+  time.timeZone = "America/Los_Angeles";
 
   # Update to local time
   services.localtimed.enable = true;
@@ -103,6 +108,8 @@
     kitty
     vivaldi
     neovim
+    neovim-remote
+    neovimConfig
     zathura
     zotero
     fish
@@ -122,7 +129,6 @@
     pandoc
     nodejs_20
     xsel
-    neovim-remote
     texlive.combined.scheme-full
     libsForQt5.okular
     gcc
