@@ -4,10 +4,10 @@
 
 { config, pkgs, ... }:
 
-let 
-  # neovimConfig = import ./neovim-config.nix;
-  customNeovim = import ./lazyvim-config.nix;
-in
+# let 
+#   # neovimConfig = import ./neovim-config.nix;
+#   customNeovim = import ./lazyvim-config.nix;
+# in
 
 {
   imports =
@@ -148,11 +148,11 @@ in
   programs.neovim = {
     enable = true;
     defaultEditor = true;
-    configure = {
-      customRC = ''
-        luafile ${../lazyvim/init.lua}
-      '';
-    };
+    # configure = {
+    #   customRC = ''
+    #     luafile ${../lazyvim/init.lua}
+    #   '';
+    # };
   };
 
   fonts.fontDir.enable = true;
