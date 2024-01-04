@@ -5,8 +5,8 @@
 { config, pkgs, ... }:
 
 let 
-  neovimConfig = import ./neovim-config.nix;
-  # neovimConfig = import ./lazyvim-config.nix;
+  # neovimConfig = import ./neovim-config.nix;
+  customNeovim = import ./lazyvim-config.nix;
 in
 
 {
@@ -109,7 +109,6 @@ in
     vivaldi
     neovim
     neovim-remote
-    neovimConfig
     zathura
     zotero
     fish
@@ -139,7 +138,7 @@ in
     xdotool
     pstree
     nix-index
-    home-manager
+    # home-manager
     zoom-us
     vlc
   ];
@@ -149,6 +148,11 @@ in
   programs.neovim = {
     enable = true;
     defaultEditor = true;
+    configure = {
+      customRC = ''
+        luafile ${../lazyvim/init.lua}
+      '';
+    };
   };
 
   fonts.fontDir.enable = true;
