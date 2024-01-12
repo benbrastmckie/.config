@@ -30,7 +30,8 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "America/Los_Angeles";
+  # time.timeZone = "America/Los_Angeles";
+  time.timeZone = "America/New_York";
 
   # Update to local time
   services.localtimed.enable = true;

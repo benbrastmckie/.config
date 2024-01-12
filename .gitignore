@@ -34,3 +34,4 @@ user-dirs.locale
 zoom.conf
 zoomus.conf
 cef_user_data/Dictionaries/en-US-10-1.bdic
+nvim/sessions
