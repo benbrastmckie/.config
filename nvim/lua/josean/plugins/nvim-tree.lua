@@ -24,15 +24,10 @@ return {
 
     -- custom mappings
     local keymap = vim.keymap -- for conciseness
-    -- keymap.set('n', '<BS>',  api.node.navigate.parent_close,        opts('Close Directory'))
     keymap.set('n', '<CR>',  api.node.open.tab,                    opts('Open'))
-    -- keymap.set('n', '<CR>',  api.node.open.edit,                    opts('Open'))
     keymap.set('n', '<S-M>', api.node.show_info_popup,              opts('Info'))
-    -- keymap.set('n', '<C-r>', api.fs.rename_sub,                     opts('Rename: Omit Filename'))
     keymap.set('n', 'h',  api.node.navigate.parent_close,        opts('Close Directory'))
     keymap.set('n', 'l',  api.node.open.edit,                    opts('Open'))
-    -- keymap.set('n', 'j',     api.node.navigate.sibling.next,        opts('Next Sibling'))
-    -- keymap.set('n', 'k',     api.node.navigate.sibling.prev,        opts('Previous Sibling'))
     keymap.set('n', 'J',     api.node.navigate.sibling.last,        opts('Last Sibling'))
     keymap.set('n', 'K',     api.node.navigate.sibling.first,       opts('First Sibling'))
     keymap.set('n', '-',     api.tree.change_root_to_parent,        opts('Up'))
@@ -40,7 +35,6 @@ return {
     keymap.set('n', 'c',     api.fs.copy.node,                      opts('Copy'))
     keymap.set('n', 'd',     api.fs.remove,                         opts('Delete'))
     keymap.set('n', 'D',     api.fs.trash,                          opts('Trash'))
-    -- keymap.set('n', 'e',     api.fs.rename_basename,                opts('Rename: Basename'))
     keymap.set('n', 'g?',    api.tree.toggle_help,                  opts('Help'))
     keymap.set('n', 'H',     api.tree.toggle_hidden_filter,         opts('Toggle Dotfiles'))
     keymap.set('n', 'p',     api.fs.paste,                          opts('Paste'))
@@ -52,7 +46,12 @@ return {
     keymap.set('n', 'S',     api.tree.search_node,                  opts('Search'))
     keymap.set('n', 'x',     api.fs.cut,                            opts('Cut'))
     keymap.set('n', '<2-LeftMouse>',  api.node.open.edit,           opts('Open'))
-
+    -- keymap.set('n', '<BS>',  api.node.navigate.parent_close,        opts('Close Directory'))
+    -- keymap.set('n', '<CR>',  api.node.open.edit,                    opts('Open'))
+    -- keymap.set('n', '<C-r>', api.fs.rename_sub,                     opts('Rename: Omit Filename'))
+    -- keymap.set('n', 'j',     api.node.navigate.sibling.next,        opts('Next Sibling'))
+    -- keymap.set('n', 'k',     api.node.navigate.sibling.prev,        opts('Previous Sibling'))
+    -- keymap.set('n', 'e',     api.fs.rename_basename,                opts('Rename: Basename'))
     end
 
     -- configure nvim-tree
