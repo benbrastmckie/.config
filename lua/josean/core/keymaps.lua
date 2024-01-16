@@ -7,14 +7,14 @@ local keymap = vim.api.nvim_set_keymap
 
 --Remap space as leader key
 vim.g.mapleader = " "
-vim.g.maplocalleader = " "
+-- vim.g.maplocalleader = " "
 
 
 -------------------- General Keymaps --------------------
 
 -- delete single character without copying into register
--- keymap.set("n", "x", '"_x')
--- keymap.set("n", "p", '"_p')
+-- keymap("n", "x", '"_x', opts)
+-- keymap("v", "p", '"_p', opts)
 
 -- Unmappings
 keymap("n", "<C-z>", "<nop>", opts)
@@ -50,8 +50,8 @@ end, { remap = true })
 
 
 -- Toggle comments
-  vim.keymap.set('n', '<C-Bslash>', '<Plug>(comment_toggle_linewise_current)')
-  vim.keymap.set('x', '<C-Bslash>', '<Plug>(comment_toggle_linewise_visual)')
+keymap('n', '<C-Bslash>', '<Plug>(comment_toggle_linewise_current)', opts)
+keymap('x', '<C-Bslash>', '<Plug>(comment_toggle_linewise_visual)', opts)
 
 -- Open help on word
 keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
@@ -103,12 +103,12 @@ keymap("v", "<A-j>", ":m'>+<CR>gv", opts)
 keymap("v", "<A-k>", ":m-2<CR>gv", opts)
 
 
--- Horizontal lime movments --
+-- Horizontal line movments --
 keymap("n", "<c-u>", "<c-u>zz", opts)
 keymap("n", "<c-d>", "<c-d>zz", opts)
 
 
--- Horizontal lime movments --
+-- Horizontal line movments --
 keymap("v", "<S-h>", "g^", opts)
 keymap("v", "<S-l>", "g$", opts)
 keymap("n", "<S-h>", "g^", opts)
@@ -126,3 +126,4 @@ keymap("n", "J", "gj", opts)
 keymap("n", "K", "gk", opts)
 keymap("v", "J", "gj", opts)
 keymap("v", "K", "gk", opts)
+
