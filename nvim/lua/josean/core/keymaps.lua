@@ -4,6 +4,7 @@ local term_opts = { silent = true }
 
 -- Shorten function name
 local keymap = vim.api.nvim_set_keymap
+local whichmap = vim.keymap.set -- for conciseness
 
 --Remap space as leader key
 vim.g.mapleader = " "
@@ -127,3 +128,5 @@ keymap("n", "K", "gk", opts)
 keymap("v", "J", "gj", opts)
 keymap("v", "K", "gk", opts)
 
+-- keymap("n", "<leader>d", "<cmd>bdelete!<CR>", {desc("delete buffer")})
+  -- ["e"] = { "<cmd>Neotree<CR>"                  , "explorer" },
