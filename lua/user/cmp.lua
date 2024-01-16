@@ -106,7 +106,9 @@ cmp.setup {
       -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
       vim_item.menu = ({
         -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-        vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+        -- vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+        -- vimtex = vim_item.menu,
+        vimtex = "[Vimtex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
         nvim_lsp = "[LSP]",
         luasnip = "[Snippet]",
         buffer = "[Buffer]",

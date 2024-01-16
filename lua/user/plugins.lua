@@ -107,7 +107,7 @@ return packer.startup(function(use)
   -- spelling completions
   use { "f3fora/cmp-spell" }
   -- helps Vimtex completions
-  use { "micangl/cmp-vimtex" } -- doesn't provide as much info as omni
+  use { "micangl/cmp-vimtex" } 
   -- use { "hrsh7th/cmp-omni" }
   -- use { "aspeddro/cmp-pandoc.nvim" }
 
