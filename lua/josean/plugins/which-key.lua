@@ -93,17 +93,17 @@ return {
       },
     },
     defaults = {
-      prefix = "<leader>",
       buffer = nil, -- Global mappings. Specify a buffer number for buffer local mappings
       silent = true, -- use `silent` when creating keymaps
       noremap = true, -- use `noremap` when creating keymaps
       nowait = true, -- use `nowait` when creating keymaps
+      prefix = "<leader>",
       mode = { "n", "v" },
       b = { "<cmd>VimtexCompile<CR>"            , "build" },
-      d = { "<cmd>bdelete!<CR>"                 , "delete buffer" },
-      e = { "<cmd>Neotree<CR>"                  , "explorer" },
+      d = { "<cmd>update! | bdelete!<CR>"                 , "delete buffer" },
+      e = { "<cmd>NvimTreeToggle<CR>"                  , "explorer" },
       i = { "<cmd>VimtexTocOpen<CR>"            , "index" },
-      q = { "<cmd>wqa!<CR>"                     , "quit" },
+      q = { "<cmd>update! | qa!<CR>"                     , "quit" },
       u = { "<cmd>Telescope undo<CR>"           , "undo" },
       v = { "<cmd>VimtexView<CR>"               , "view" },
       w = { "<cmd>update!<CR>"                  , "write" },
@@ -162,6 +162,12 @@ return {
         b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
         c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
+      },
+      h = {
+        name = "HARPOON",
+        m = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
+        n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
+        p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
       },
       l = {
         name = "LIST",
