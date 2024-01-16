@@ -108,7 +108,7 @@ cmp.setup {
         -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
         -- vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
         -- vimtex = vim_item.menu,
-        vimtex = "[Vimtex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
+        vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
         nvim_lsp = "[LSP]",
         luasnip = "[Snippet]",
         buffer = "[Buffer]",
