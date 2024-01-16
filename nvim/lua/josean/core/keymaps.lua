@@ -90,7 +90,7 @@ keymap("n", "<A-l>", ":vertical resize +2<CR>", opts)
 
 
 -- Navigate buffers
-keymap("n", "<BS>", ":bnext<CR>", opts)
+keymap("n", "<TAB>", ":bnext<CR>", opts)
 keymap("n", "<S-TAB>", ":bprevious<CR>", opts)
 
 
