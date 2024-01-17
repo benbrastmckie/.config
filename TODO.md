@@ -1,0 +1,28 @@
+# TODO
+
+- plugins
+  - illuminate?
+  - impatient
+  - indentline
+  - luasnip (path to snippets directory)
+  - sessions
+  - toggleterm
+  - vimtex
+  - yanky
+  - firenvim
+  - nabla
+  - autolist
+  - telescope-undo
+  - telescope-bibtex
+  - gitsigns
+- remove plugins
+  - harpoon
+  - text-objects
+- bugs
+  - delete nearby characters
+  - cmp supertab
+  - 2 space tab in markdown
+  - <S-k> not working
+- import
+  - NOTES.md
+  - TODO.md (Old)
