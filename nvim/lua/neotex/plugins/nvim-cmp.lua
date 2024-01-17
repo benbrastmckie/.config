@@ -10,6 +10,12 @@ return {
     "onsails/lspkind.nvim", -- vs-code like pictograms
   },
   config = function()
+
+    local check_backspace = function()
+      local col = vim.fn.col "." - 1
+      return col == 0 or vim.fn.getline("."):sub(col, col):match "%s"
+    end
+
     local cmp = require("cmp")
 
     local luasnip = require("luasnip")
@@ -19,9 +25,50 @@ return {
     -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
     require("luasnip.loaders.from_vscode").lazy_load()
 
+    --   פּ ﯟ   some other good icons
+    local kind_icons = {
+      Text = "",
+      -- Text = "",
+      Method = "m",
+      Function = "",
+      -- Function = "",
+      Constructor = "",
+      Field = "",
+      Variable = "",
+      Class = "",
+      -- Class = "",
+      Interface = "",
+      Module = "",
+      Property = "",
+      Unit = "",
+      Value = "",
+      -- Value = "",
+      Enum = "",
+      Keyword = "",
+      -- Keyword = "",
+      Snippet = "",
+      Color = "",
+      -- Color = "",
+      File = "",
+      -- File = "",
+      Reference = "",
+      Folder = "",
+      -- Folder = "",
+      EnumMember = "",
+      Constant = "",
+      -- Constant = "",
+      Struct = "",
+      Event = "",
+      Operator = "",
+      TypeParameter = "",
+      -- TypeParameter = "",
+    }
+    -- find more here: https://www.nerdfonts.com/cheat-sheet
+
     cmp.setup({
       completion = {
-        completeopt = "menu,menuone,preview,noselect",
+        completeopt = "menu,preview",
+        keyword_length = 1,
       },
       snippet = { -- configure how nvim-cmp interacts with snippet engine
         expand = function(args)
@@ -33,24 +80,101 @@ return {
         ["<C-j>"] = cmp.mapping.select_next_item(), -- next suggestion
         ["<C-b>"] = cmp.mapping.scroll_docs(-4),
         ["<C-f>"] = cmp.mapping.scroll_docs(4),
-        ["<C-n>"] = cmp.mapping.complete(), -- show completion suggestions
+        -- ["<C-n>"] = cmp.mapping.complete(), -- show completion suggestions
         ["<C-h>"] = cmp.mapping.abort(), -- close completion window
-        ["<C-l>"] = cmp.mapping.confirm({ select = false }),
-        ["<CR>"] = cmp.mapping.confirm({ select = false }),
+        -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
+        ["<CR>"] = cmp.mapping.confirm({ select = true }),
+        ["<Tab>"] = cmp.mapping(function(fallback)
+          -- if cmp.visible() then
+          --   cmp.select_next_item()
+          -- elseif luasnip.expandable() then
+          --   luasnip.expand()
+          if luasnip.expand_or_locally_jumpable() then
+            luasnip.expand_or_jump()
+          elseif check_backspace() then
+              cmp.complete()
+            fallback()
+          else
+            fallback()
+          end
+        end, { "i", "s" }),
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+          -- if cmp.visible() then
+          --   cmp.select_prev_item()
+          if luasnip.jumpable(-1) then
+            luasnip.jump(-1)
+          else
+            fallback()
+          end
+        end, { "i", "s" }),
       }),
+      -- formatting for autocompletion
+      formatting = {
+        -- NOTE: from Josean
+        -- format = lspkind.cmp_format({
+        --   maxwidth = 50,
+        --   ellipsis_char = "...",
+        -- }),
+        fields = { "kind", "abbr", "menu" },
+        format = function(entry, vim_item)
+          -- Kind icons
+          vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
+          -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
+          vim_item.menu = ({
+            -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
+            -- vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+            -- vimtex = vim_item.menu,
+            vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
+            nvim_lsp = "[LSP]",
+            luasnip = "[Snippet]",
+            buffer = "[Buffer]",
+            spell = "[Spell]",
+            latex_symbols = "[Symbols]",
+            cmdline = "[CMD]",
+            path = "[Path]",
+          })[entry.source.name]
+          return vim_item
+        end,
+      },
       -- sources for autocompletion
       sources = cmp.config.sources({
         { name = "nvim_lsp" },
         { name = "luasnip" }, -- snippets
+        { name = "vimtex" },
+        -- { name = "omni" },
         { name = "buffer" }, -- text within current buffer
-        { name = "path" }, -- file system paths
+        { name = "spell",
+          keyword_length = 4,
+          option = {
+              keep_all_entries = false,
+              enable_in_context = function()
+                  return true
+              end
+          },
+        },
+        { name = "latex_symbols",
+          filetype = { "tex", "latex" },
+          option = { cache = true }, -- avoids reloading each time
+        },
+        { name = "path" },
       }),
       -- configure lspkind for vs-code like pictograms in completion menu
-      formatting = {
-        format = lspkind.cmp_format({
-          maxwidth = 50,
-          ellipsis_char = "...",
-        }),
+      confirm_opts = {
+        behavior = cmp.ConfirmBehavior.Replace,
+        select = false,
+      },
+      view = {
+        entries = 'custom',
+      },
+      window = {
+        documentation = {
+          border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+        }
+      },
+      performance = {
+         trigger_debounce_time = 500,
+         throttle = 550,
+         fetching_timeout = 80,
       },
     })
   end,
