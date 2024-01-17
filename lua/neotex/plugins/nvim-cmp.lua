@@ -65,9 +65,13 @@ return {
     }
     -- find more here: https://www.nerdfonts.com/cheat-sheet
 
+    local cmp_window = require "cmp.config.window"
+
+    local cmp_mapping = require "cmp.config.mapping"
+
     cmp.setup({
       completion = {
-        completeopt = "menu,preview",
+        completeopt = "menu,menuone,preview,noselect",
         keyword_length = 1,
       },
       snippet = { -- configure how nvim-cmp interacts with snippet engine
@@ -82,64 +86,27 @@ return {
         ["<C-f>"] = cmp.mapping.scroll_docs(4),
         -- ["<C-n>"] = cmp.mapping.complete(), -- show completion suggestions
         ["<C-h>"] = cmp.mapping.abort(), -- close completion window
-        -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
-
-      -- ["<Tab>"] = cmp_mapping(function(fallback)
-      --   if cmp.visible() then
-      --     cmp.select_next_item()
-      --   elseif luasnip.expand_or_locally_jumpable() then
-      --     luasnip.expand_or_jump()
-      --   elseif jumpable(1) then
-      --     luasnip.jump(1)
-      --   elseif has_words_before() then
-      --     -- cmp.complete()
-      --     fallback()
-      --   else
-      --     fallback()
-      --   end
-      -- end, { "i", "s" }),
-      -- ["<S-Tab>"] = cmp_mapping(function(fallback)
-      --   if cmp.visible() then
-      --     cmp.select_prev_item()
-      --   elseif luasnip.jumpable(-1) then
-      --     luasnip.jump(-1)
-      --   else
-      --     fallback()
-      --   end
-      -- end, { "i", "s" }),
-      -- ["<C-Space>"] = cmp_mapping.complete(),
-      -- ["<C-e>"] = cmp_mapping.abort(),
-      -- ["<CR>"] = cmp_mapping(function(fallback)
-      --   if cmp.visible() then
-      --     local confirm_opts = vim.deepcopy(lvim.builtin.cmp.confirm_opts) -- avoid mutating the original opts below
-      --     local is_insert_mode = function()
-      --       return vim.api.nvim_get_mode().mode:sub(1, 1) == "i"
-      --     end
-      --     if is_insert_mode() then -- prevent overwriting brackets
-      --       confirm_opts.behavior = ConfirmBehavior.Insert
-      --     end
-      --     local entry = cmp.get_selected_entry()
-      --     local is_copilot = entry and entry.source.name == "copilot"
-      --     if is_copilot then
-      --       confirm_opts.behavior = ConfirmBehavior.Replace
-      --       confirm_opts.select = true
-      --     end
-      --     if cmp.confirm(confirm_opts) then
-      --       return -- success, exit early
-      --     end
-      --   end
-      --   fallback() -- if not exited early, always fallback
-      -- end),
-
-
-
-        ["<CR>"] = cmp.mapping.confirm({ select = true }),
+        ["<C-l>"] = cmp.mapping.confirm({ select = false }),
+        -- ["<Tab>"] = cmp_mapping(function(fallback)
+        --   -- if cmp.visible() then
+        --   --   cmp.select_next_item()
+        --   if luasnip.expand_or_locally_jumpable() then
+        --     luasnip.expand_or_jump()
+        --   elseif jumpable(1) then
+        --     luasnip.jump(1)
+        --   elseif has_words_before() then
+        --     -- cmp.complete()
+        --     fallback()
+        --   else
+        --     fallback()
+        --   end
+        -- end, { "i", "s" }),
         ["<Tab>"] = cmp.mapping(function(fallback)
-          -- if cmp.visible() then
-          --   cmp.select_next_item()
+          if cmp.visible() then
+            cmp.select_next_item()
           -- elseif luasnip.expandable() then
           --   luasnip.expand()
-          if luasnip.expand_or_locally_jumpable() then
+          elseif luasnip.expand_or_locally_jumpable() then
             luasnip.expand_or_jump()
           elseif check_backspace() then
               cmp.complete()
@@ -148,6 +115,15 @@ return {
             fallback()
           end
         end, { "i", "s" }),
+        -- ["<S-Tab>"] = cmp_mapping(function(fallback)
+        --   if cmp.visible() then
+        --     cmp.select_prev_item()
+        --   elseif luasnip.jumpable(-1) then
+        --     luasnip.jump(-1)
+        --   else
+        --     fallback()
+        --   end
+        -- end, { "i", "s" }),
         ["<S-Tab>"] = cmp.mapping(function(fallback)
           -- if cmp.visible() then
           --   cmp.select_prev_item()
@@ -157,6 +133,28 @@ return {
             fallback()
           end
         end, { "i", "s" }),
+        -- ["<CR>"] = cmp_mapping(function(fallback)
+        --   if cmp.visible() then
+        --     -- local confirm_opts = vim.deepcopy(lvim.builtin.cmp.confirm_opts) -- avoid mutating the original opts below
+        --     local is_insert_mode = function()
+        --       return vim.api.nvim_get_mode().mode:sub(1, 1) == "i"
+        --     end
+        --     if is_insert_mode() then -- prevent overwriting brackets
+        --       confirm_opts.behavior = ConfirmBehavior.Insert
+        --     end
+        --     local entry = cmp.get_selected_entry()
+        --     local is_copilot = entry and entry.source.name == "copilot"
+        --     if is_copilot then
+        --       confirm_opts.behavior = ConfirmBehavior.Replace
+        --       confirm_opts.select = true
+        --     end
+        --     if cmp.confirm(confirm_opts) then
+        --       return -- success, exit early
+        --     end
+        --   end
+        --   fallback() -- if not exited early, always fallback
+        -- end),
+        ["<CR>"] = cmp.mapping.confirm({ select = true }),
       }),
       -- formatting for autocompletion
       formatting = {
