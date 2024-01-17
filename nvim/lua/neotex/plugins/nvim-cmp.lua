@@ -7,7 +7,11 @@ return {
     "L3MON4D3/LuaSnip", -- snippet engine
     "saadparwaiz1/cmp_luasnip", -- for autocompletion
     "rafamadriz/friendly-snippets", -- useful snippets
-    "onsails/lspkind.nvim", -- vs-code like pictograms
+    -- "onsails/lspkind.nvim", -- vs-code like pictograms
+    "hrsh7th/cmp-cmdline",
+    "petertriho/cmp-git",
+    "f3fora/cmp-spell",
+    "micangl/cmp-vimtex",
   },
   config = function()
 
@@ -20,7 +24,7 @@ return {
 
     local luasnip = require("luasnip")
 
-    local lspkind = require("lspkind")
+    -- local lspkind = require("lspkind")
 
     -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
     require("luasnip.loaders.from_vscode").lazy_load()
@@ -65,13 +69,10 @@ return {
     }
     -- find more here: https://www.nerdfonts.com/cheat-sheet
 
-    local cmp_window = require "cmp.config.window"
-
-    local cmp_mapping = require "cmp.config.mapping"
-
     cmp.setup({
       completion = {
-        completeopt = "menu,menuone,preview,noselect",
+        completeopt = "menu",
+        -- completeopt = "menuone,preview,noinsert,noselect",
         keyword_length = 1,
       },
       snippet = { -- configure how nvim-cmp interacts with snippet engine
@@ -80,33 +81,20 @@ return {
         end,
       },
       mapping = cmp.mapping.preset.insert({
-        ["<C-k>"] = cmp.mapping.select_prev_item(), -- previous suggestion
-        ["<C-j>"] = cmp.mapping.select_next_item(), -- next suggestion
+        ["<C-k>"] = cmp.mapping(cmp.mapping.select_prev_item(), { "i", "c" }),
+        ["<C-j>"] = cmp.mapping(cmp.mapping.select_next_item(), { "i", "c" }),
         ["<C-b>"] = cmp.mapping.scroll_docs(-4),
         ["<C-f>"] = cmp.mapping.scroll_docs(4),
         -- ["<C-n>"] = cmp.mapping.complete(), -- show completion suggestions
-        ["<C-h>"] = cmp.mapping.abort(), -- close completion window
-        ["<C-l>"] = cmp.mapping.confirm({ select = false }),
-        -- ["<Tab>"] = cmp_mapping(function(fallback)
-        --   -- if cmp.visible() then
-        --   --   cmp.select_next_item()
-        --   if luasnip.expand_or_locally_jumpable() then
-        --     luasnip.expand_or_jump()
-        --   elseif jumpable(1) then
-        --     luasnip.jump(1)
-        --   elseif has_words_before() then
-        --     -- cmp.complete()
-        --     fallback()
-        --   else
-        --     fallback()
-        --   end
-        -- end, { "i", "s" }),
+        -- ["<C-h>"] = cmp.mapping.abort(), -- close completion window
+        -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
+        ["<CR>"] = cmp.mapping.confirm({ select = true }),
         ["<Tab>"] = cmp.mapping(function(fallback)
-          if cmp.visible() then
-            cmp.select_next_item()
-          -- elseif luasnip.expandable() then
+          -- if cmp.visible() then
+          --   cmp.select_next_item()
+          -- if luasnip.expandable() then
           --   luasnip.expand()
-          elseif luasnip.expand_or_locally_jumpable() then
+          if luasnip.expand_or_locally_jumpable() then
             luasnip.expand_or_jump()
           elseif check_backspace() then
               cmp.complete()
@@ -115,15 +103,6 @@ return {
             fallback()
           end
         end, { "i", "s" }),
-        -- ["<S-Tab>"] = cmp_mapping(function(fallback)
-        --   if cmp.visible() then
-        --     cmp.select_prev_item()
-        --   elseif luasnip.jumpable(-1) then
-        --     luasnip.jump(-1)
-        --   else
-        --     fallback()
-        --   end
-        -- end, { "i", "s" }),
         ["<S-Tab>"] = cmp.mapping(function(fallback)
           -- if cmp.visible() then
           --   cmp.select_prev_item()
@@ -133,28 +112,6 @@ return {
             fallback()
           end
         end, { "i", "s" }),
-        -- ["<CR>"] = cmp_mapping(function(fallback)
-        --   if cmp.visible() then
-        --     -- local confirm_opts = vim.deepcopy(lvim.builtin.cmp.confirm_opts) -- avoid mutating the original opts below
-        --     local is_insert_mode = function()
-        --       return vim.api.nvim_get_mode().mode:sub(1, 1) == "i"
-        --     end
-        --     if is_insert_mode() then -- prevent overwriting brackets
-        --       confirm_opts.behavior = ConfirmBehavior.Insert
-        --     end
-        --     local entry = cmp.get_selected_entry()
-        --     local is_copilot = entry and entry.source.name == "copilot"
-        --     if is_copilot then
-        --       confirm_opts.behavior = ConfirmBehavior.Replace
-        --       confirm_opts.select = true
-        --     end
-        --     if cmp.confirm(confirm_opts) then
-        --       return -- success, exit early
-        --     end
-        --   end
-        --   fallback() -- if not exited early, always fallback
-        -- end),
-        ["<CR>"] = cmp.mapping.confirm({ select = true }),
       }),
       -- formatting for autocompletion
       formatting = {
@@ -215,15 +172,35 @@ return {
         entries = 'custom',
       },
       window = {
+        completion = {
+          border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+        },
         documentation = {
           border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
-        }
+        },
       },
       performance = {
          trigger_debounce_time = 500,
          throttle = 550,
          fetching_timeout = 80,
       },
+    })
+
+    -- `/` cmdline setup.
+    cmp.setup.cmdline('/', {
+      mapping = cmp.mapping.preset.cmdline(),
+      sources = {
+        {name = 'buffer'}
+      }
+    })
+
+    -- `:` cmdline setup.
+    cmp.setup.cmdline(':', {
+      mapping = cmp.mapping.preset.cmdline(),
+      sources = {
+        {name = 'path'},
+        {name = 'cmdline'}
+      }
     })
   end,
 }
