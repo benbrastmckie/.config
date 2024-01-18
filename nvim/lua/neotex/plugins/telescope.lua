@@ -3,6 +3,8 @@ return {
   branch = "0.1.x",
   dependencies = {
     "nvim-lua/plenary.nvim",
+    "nvim-telescope/telescope-bibtex.nvim",
+    "debugloop/telescope-undo.nvim",
     { 
       "nvim-telescope/telescope-fzf-native.nvim", 
       build = "make",
@@ -27,16 +29,55 @@ return {
           },
         },
       },
+      load_extension ={ "fzf", "yank_history", "bibtex" },
+      extensions = {
+        undo = {
+          mappings = {
+            i = {
+              ["<C-a>"] = require("telescope-undo.actions").yank_additions,
+              ["<C-d>"] = require("telescope-undo.actions").yank_deletions,
+              ["<C-u>"] = require("telescope-undo.actions").restore,
+              -- ["<C-Y>"] = require("telescope-undo.actions").yank_deletions,
+              -- ["<C-cr>"] = require("telescope-undo.actions").restore,
+              -- alternative defaults, for users whose terminals do questionable things with modified <cr>
+            },
+            n = {
+              ["y"] = require("telescope-undo.actions").yank_additions,
+              ["Y"] = require("telescope-undo.actions").yank_deletions,
+              ["u"] = require("telescope-undo.actions").restore,
+            },
+          },
+        },
+        bibtex = {
+          depth = 1,
+          -- Depth for the *.bib file
+          global_files = {'~/texmf/bibtex/bib/Zotero.bib'},
+          -- Path to global bibliographies (placed outside of the project)
+          search_keys = { 'author', 'year', 'title' },
+          -- Define the search keys to use in the picker
+          citation_format = '{{author}} ({{year}}), {{title}}.',
+          -- Template for the formatted citation
+          citation_trim_firstname = true,
+          -- Only use initials for the authors first name
+          citation_max_auth = 2,
+          -- Max number of authors to write in the formatted citation
+          -- following authors will be replaced by "et al."
+          custom_formats = {
+            {id = 'citet', cite_maker = '\\citet{%s}'}
+          },
+          -- Custom format for citation label
+          format = 'citet',
+          -- Format to use for citation label.
+          -- Try to match the filetype by default, or use 'plain'
+          context = true,
+          -- Context awareness disabled by default
+          context_fallback = true,
+          -- Fallback to global/directory .bib files if context not found
+          -- This setting has no effect if context = false
+          wrap = false,
+          -- Wrapping in the preview window is disabled by default
+        },
+      },
     })
-
-    telescope.load_extension("fzf")
-    -- -- set keymaps
-    -- local keymap = vim.keymap -- for conciseness
-    --
-    -- NOTE: all leader driven mappings set in whichkey.lua
-    -- keymap.set("n", "<leader>ff", "<cmd>Telescope find_files<cr>", { desc = "Fuzzy find files in cwd" })
-    -- keymap.set("n", "<leader>fr", "<cmd>Telescope oldfiles<cr>", { desc = "Fuzzy find recent files" })
-    -- keymap.set("n", "<leader>fs", "<cmd>Telescope live_grep<cr>", { desc = "Find string in cwd" })
-    -- keymap.set("n", "<leader>fc", "<cmd>Telescope grep_string<cr>", { desc = "Find string under cursor in cwd" })
   end,
 }
