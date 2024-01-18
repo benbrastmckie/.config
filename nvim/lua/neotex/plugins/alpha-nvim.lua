@@ -34,6 +34,25 @@ return {
     -- Send config to alpha
     alpha.setup(dashboard.opts)
 
+    -- Set footer
+   -- dashboard.section.footer.val = fortune
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "LazyVimStarted",
+      callback = function()
+        local stats = require("lazy").stats()
+        local ms = (math.floor(stats.startuptime * 100 + 0.5) / 100)
+
+        -- local now = os.date "%d-%m-%Y %H:%M:%S"
+        local version = "   v" .. vim.version().major .. "." .. vim.version().minor .. "." .. vim.version().patch
+        local fortune = require "alpha.fortune"
+        -- local quote = table.concat(fortune(), "\n")
+        local plugins = "⚡Neovim loaded " .. stats.count .. " plugins in " .. ms .. "ms"
+        local footer = version .. "\t" .. plugins -- .. "\n" .. quote
+        dashboard.section.footer.val = footer
+        pcall(vim.cmd.AlphaRedraw)
+      end,
+    })
+
     -- Disable folding on alpha buffer
     vim.cmd([[autocmd FileType alpha setlocal nofoldenable]])
   end,

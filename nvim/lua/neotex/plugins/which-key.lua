@@ -103,10 +103,10 @@ return {
       d = { "<cmd>update! | bdelete!<CR>"                 , "delete buffer" },
       e = { "<cmd>NvimTreeToggle<CR>"                  , "explorer" },
       i = { "<cmd>VimtexTocOpen<CR>"            , "index" },
-      q = { "<cmd>update! | qa!<CR>"                     , "quit" },
+      q = { "<cmd>wa! | qa!<CR>"                     , "quit" },
       u = { "<cmd>Telescope undo<CR>"           , "undo" },
       v = { "<cmd>VimtexView<CR>"               , "view" },
-      w = { "<cmd>update!<CR>"                  , "write" },
+      w = { "<cmd>wa!<CR>"                  , "write" },
       a = {
         name = "ACTIONS",
         a = { "<cmd>lua PdfAnnots()<CR>"                              , "annotate"},

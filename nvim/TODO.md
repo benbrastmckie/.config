@@ -5,9 +5,7 @@
   - impatient
   - indentline
   - luasnip (path to snippets directory)
-  - sessions
   - toggleterm
-  - vimtex
   - yanky
   - firenvim
   - nabla
