@@ -156,6 +156,32 @@
     # };
   };
 
+  ### the following don't work ###
+
+  # programs.git = {
+  #   ignores = {
+  #     "*.pdf" # don't track pdfs
+  #     "*.fbd_latexmk"
+  #     "*.fsl"
+  #     "*.log"
+  #     "*.synctex.gz"
+  #     "*.aux"
+  #   };
+  # };
+
+  # nix-gitignore.gitignoreSource = import ./gitignore.nix;
+
+  # nix-gitignore.gitignoreSource = [
+  #   "*.pdf" 
+  #   "*.fbd_latexmk"
+  #   "*.fsl"
+  #   "*.log"
+  #   "*.synctex.gz"
+  #   "*.aux"
+  # ];
+
+  ####################################
+
   fonts.fontDir.enable = true;
 
   fonts.fonts = with pkgs; [
