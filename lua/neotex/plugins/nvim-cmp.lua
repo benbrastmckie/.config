@@ -172,12 +172,14 @@ return {
         entries = 'custom',
       },
       window = {
-        completion = {
-          border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
-        },
-        documentation = {
-          border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
-        },
+        completion = cmp.config.window.bordered(),
+        documentation = cmp.config.window.bordered(),
+        -- completion = {
+        --   border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+        -- },
+        -- documentation = {
+        --   border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+        -- },
       },
       performance = {
          trigger_debounce_time = 500,
