@@ -26,8 +26,8 @@ return {
     local keymap = vim.keymap -- for conciseness
     keymap.set('n', '<CR>',  api.node.open.tab,                    opts('Open'))
     keymap.set('n', '<S-M>', api.node.show_info_popup,              opts('Info'))
-    keymap.set('n', 'h',  api.node.navigate.parent_close,        opts('Close Directory'))
-    keymap.set('n', 'l',  api.node.open.edit,                    opts('Open'))
+    keymap.set('n', 'h',     api.node.navigate.parent_close,        opts('Close Directory'))
+    keymap.set('n', 'l',     api.node.open.edit,                    opts('Open'))
     keymap.set('n', 'J',     api.node.navigate.sibling.last,        opts('Last Sibling'))
     keymap.set('n', 'K',     api.node.navigate.sibling.first,       opts('First Sibling'))
     keymap.set('n', '-',     api.tree.change_root_to_parent,        opts('Up'))

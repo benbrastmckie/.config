@@ -23,6 +23,8 @@
   - cmp supertab
   - 2 space tab in markdown
   - <S-k> not working
+  - surround not working in markdown
+    - see /after/ftplugin/markdown.lua
 - import
   - NOTES.md
   - TODO.md (Old)
