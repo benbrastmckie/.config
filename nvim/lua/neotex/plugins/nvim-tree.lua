@@ -98,7 +98,7 @@ return {
       git = {
         enable = true,
         show_on_dirs = true,
-        show_on_open_dirs = true,
+        -- show_on_open_dirs = true,
         disable_for_dirs = {},
         timeout = 500,
         cygwin_support = false,
@@ -109,7 +109,7 @@ return {
         git_clean = false,
         no_buffer = false,
         no_bookmark = false,
-        custom = { ".git" },
+        -- custom = { ".git" },
         -- custom = { ".DS_Store" },
         exclude = {},
       },

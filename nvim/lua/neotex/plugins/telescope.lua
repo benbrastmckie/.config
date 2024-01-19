@@ -85,7 +85,7 @@ return {
           },
         },
       },
-      load_extension ={ "fzf", "yank_history", "bibtex" },
+      load_extension ={ "fzf", "yank_history", "bibtex", "lazygit" },
       extensions = {
         undo = {
           mappings = {
