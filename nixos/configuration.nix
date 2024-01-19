@@ -135,6 +135,7 @@
     unzip
     tree-sitter
     perl
+    gnumake
     fd
     xdotool
     pstree
