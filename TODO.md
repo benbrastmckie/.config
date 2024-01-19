@@ -1,26 +1,27 @@
 # TODO
 
 - plugins
-  - illuminate?
-  - impatient
-  - indentline
   - luasnip (path to snippets directory)
   - toggleterm
-  - yanky
   - firenvim
   - nabla
   - autolist
   - telescope-undo
   - telescope-bibtex
   - gitsigns
+- config
+  - cmp
 - remove plugins
   - harpoon
   - text-objects
 - bugs
+  - error detected BufWritePre Autocommand for "\*"
+    - look into checkhealth?
+  - close quickfix with q
   - delete nearby characters
   - cmp supertab
   - 2 space tab in markdown
-  - <S-k> not working
+  - <S-k> not working; conflicting mapping
   - surround not working in markdown
     - see /after/ftplugin/markdown.lua
 - import

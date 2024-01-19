@@ -12,8 +12,20 @@ return {
 
     -- enable comment
     comment.setup({
-      -- for commenting tsx and jsx files
-      pre_hook = ts_context_commentstring.create_pre_hook(),
+      --Add a space b/w comment and the line
+      padding = true,
+      ---Whether the cursor should stay at its position
+      sticky = true,
+      ---Lines to be ignored while (un)comment
+      ignore = nil,
+      ---Function to call before (un)comment
+      pre_hook = ts_context_commentstring.create_pre_hook(), -- for commenting tsx and jsx files
+      mappings = {
+        ---Operator-pending mapping; `gcc` `gbc` `gc[count]{motion}` `gb[count]{motion}`
+        basic = false,
+        ---Extra mapping; `gco`, `gcO`, `gcA`
+        extra = false,
+      },
     })
   end,
 }

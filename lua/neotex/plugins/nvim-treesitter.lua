@@ -49,7 +49,7 @@ return {
             init_selection = "<C-n>",
             node_incremental = "<C-n>",
             scope_incremental = false,
-            node_decremental = "<C-b>",
+            node_decremental = "<C-p>",
           },
         },
       })

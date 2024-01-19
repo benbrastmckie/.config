@@ -6,7 +6,7 @@ return {
     "hrsh7th/cmp-path", -- source for file system paths
     "L3MON4D3/LuaSnip", -- snippet engine
     "saadparwaiz1/cmp_luasnip", -- for autocompletion
-    "rafamadriz/friendly-snippets", -- useful snippets
+    -- "rafamadriz/friendly-snippets", -- useful snippets
     -- "onsails/lspkind.nvim", -- vs-code like pictograms
     "hrsh7th/cmp-cmdline",
     "petertriho/cmp-git",
@@ -71,8 +71,8 @@ return {
 
     cmp.setup({
       completion = {
-        completeopt = "menu",
-        -- completeopt = "menuone,preview,noinsert,noselect",
+        completeopt = "menu,noselect",
+        -- completeopt = "menuone,preview,noinsert",
         keyword_length = 1,
       },
       snippet = { -- configure how nvim-cmp interacts with snippet engine
@@ -127,9 +127,9 @@ return {
           -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
           vim_item.menu = ({
             -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-            -- vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
             -- vimtex = vim_item.menu,
-            vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
+            -- vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
             nvim_lsp = "[LSP]",
             luasnip = "[Snippet]",
             buffer = "[Buffer]",
@@ -147,7 +147,7 @@ return {
         { name = "luasnip" }, -- snippets
         { name = "vimtex" },
         -- { name = "omni" },
-        { name = "buffer" }, -- text within current buffer
+        { name = "buffer", keyword_length = 3 }, -- text within current buffer
         { name = "spell",
           keyword_length = 4,
           option = {
