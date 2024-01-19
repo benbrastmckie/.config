@@ -1,0 +1,154 @@
+%%%%%%%%%%%%%%%%%%%%%%%% PREAMBLE %%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% FORMATTING %%%
+\documentclass[11pt]{report} %%Font size and document presets
+\usepackage[top=1in, bottom=1in, left=1.25in, right=1.25in]{geometry} %%Margins
+\usepackage[protrusion=true,expansion=true]{microtype} %% Makes subtle line spacing shifts
+\usepackage{enumitem} %%Enables control over enumerate and itemize environments
+\setenumerate{label=(\arabic*), wide=\parindent} %%Changes enumeration style: use \begin{enumerate}
+\usepackage{setspace} %%Enables \doublespacing command for double linespacing
+\expandafter\def\expandafter\quote\expandafter{\quote\onehalfspacing} %%Makes 1.5 quote spacing
+%\usepackage{mdwlist} %% Compressed lists, use star: \begin{enumerate*} \end{'' *}
+%\usepackage{indentfirst} %%Indents first line of first paragraph of each section
+%\raggedbottom %% Lose the constraint on equalising page content
+%\frenchspacing %%Makes the sentence spacing single spaced
+%\usepackage{multicol} %% Use \begin{multicols}{3} for three columns and \end{multicols} after
+
+
+%%% MULTIPLE FILES %%%
+\usepackage{subfiles}
+\usepackage{hyperref}
+\usepackage{bibentry}
+
+
+%%% HYPER SECTIONS %%%
+\usepackage{bold-extra} %% bold+small caps
+\usepackage{titlesec}
+\usepackage{tocloft} %% change alignment of subsubsection in toc
+%\cftsetindents{subsubsubsection}{0.228in}{0.346in} %change alignment of subsubsection in toc
+\newcommand{\hypsection}[1]{\section[\bfseries{\scshape{#1}}]{\hyperlink{toc}{\sc \textbf{#1}}}} %%use to jump back to toc
+\newcommand{\hypsubsection}[1]{\subsection[#1]{\hyperlink{toc}{#1}}} %%use to jump back to toc
+\newcommand{\hypsubsubsection}[1]{\subsubsection[#1]{\hyperlink{toc}{#1}}} %%use to jump back to toc
+
+
+%%% HEADER %%%
+\usepackage{fancyhdr} %%Permits \pagestyle{fancy}
+\pagestyle{fancy} %%Header style
+\usepackage{titlesec} %%Header style
+\titlespacing*{\subsection}{\parindent}{.25in}{\wordsep}% Reduces spacing after headings
+\rhead{Benjamin Brast-McKie} %%Right header
+\renewcommand{\sectionmark}[1]{\markright{$\S$\thesection\ #1}} %%Left header command
+\lhead{\nouppercase{\rightmark}} %%Left header
+
+%%% FOOTNOTES %%%
+\usepackage{scrextend} %%Allows for changes to foodnotes
+\deffootnote[1em]{0in}{1em}{\textsuperscript{\thefootnotemark \ }} %%Footnote style
+\setlength{\footnotesep}{0.125in} %%Space between footnotes
+
+%%% SYMBOLS %%%
+\usepackage{amssymb, amsmath, mathrsfs} %%Math packages
+\usepackage{stmaryrd} %%Use \llbracket and \rrbracket for double brackets
+%\usepackage{cancel} %%\cancel strikes out text diagonally
+%\usepackage{fitch}    
+%\usepackage{turnstile}
+%\usepackage{linguex}
+%\usepackage{schemata}
+
+%%% GRAPHICS %%%
+%\usepackage{graphicx}
+%\DeclareGraphicsExtensions{.pdf,.jpeg,.jpg}
+%\usepackage{fancybox}
+	%\begin{figure}[ht]
+	%\shadowbox{\includegraphics{figure-file}}}
+	%\end{figure}
+	
+%%% CITATIONS %%%
+%\usepackage{bibentry} %%Replace \bibliography{} with \nobibliography{} for no bib
+%\usepackage{epigraph} %%Use \epigraph{text}{citation}
+\usepackage[round]{natbib} %%Or change 'round' to 'square' for square backers
+\setcitestyle{aysep={}}
+\newcommand\citepl[2][]{\citeauthor{#2}'s (\citeyear[#1]{#2})} %%Use \citepl for possessive citation.
+\newcommand\citea[2][]{\citeauthor{#2}#1} %%Use \citea is for author name only, with optional page numbers.
+\newcommand\citeapl[2][]{\citeauthor{#2}'s#1} %%Use \citeapl is for possessive author name only.
+%   \citet{key} ==>>                Jones et al. (1990)
+ %   \citet*{key} ==>>               Jones, Baker, and Smith (1990)
+ %   \citep{key} ==>>                (Jones et al., 1990)
+ %   \citep*{key} ==>>               (Jones, Baker, and Smith, 1990)
+ %   \citep[chap. 2]{key} ==>>       (Jones et al., 1990, chap. 2)
+ %   \citep[e.g.][]{key} ==>>        (e.g. Jones et al., 1990)
+ %   \citep[e.g.][p. 32]{key} ==>>   (e.g. Jones et al., p. 32)
+ %   \citeauthor{key} ==>>           Jones et al.
+ %   \citeauthor*{key} ==>>          Jones, Baker, and Smith
+ %   \citeyear{key} ==>>             1990
+
+
+%%% DEFINITIONS FOR LOGICAL SYMBOLS AND QUOTES %%%
+%\newcommand{\corner}[1]{\ulcorner#1\urcorner} %%Corner quotes
+%\newcommand{\tuple}[1]{\langle#1\rangle} %%Angle brackets
+%\newcommand{\ttuple}[1]{$\langle$#1$\rangle$} %%Angle brackets
+%\newcommand{\set}[1]{\lbrace#1\rbrace} %%Set brackets
+%\newcommand{\interpret}[1]{\llbracket#1\rrbracket} %%Double brackets
+%\newcommand{\sq}[1]{`#1'} %%Proper opened-closed single quotation marks
+%\newcommand{\dq}[1]{``#1"} %%Proper opened-closed double quotation marks
+%\newcommand{\qed}[0]{$\hfill\square$} %%Box at end of proofs
+
+
+%%% ENVIRONMENTS %%%
+%\newenvironment{senum}[2][topsep=0in, itemsep=.05in]{\begin{enumerate}[#1,topsep=0in, itemsep=.05in]\begin{singlespace}#2}{\end{singlespace}\end{enumerate}\vspace{.175in}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+\title{TITLE}
+\author{Benjamin Brast-McKie}
+\date{\today}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\noindent BEGIN ABSTRACT
+\end{abstract}
+
+\tableofcontents
+
+\pagebreak
+
+%%%%%%%%%%%%%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%%
+
+\doublespacing
+
+\section*{Introduction}
+\addcontentsline{toc}{section}{\protect\numberline{}Introduction}%
+
+ 
+\subfile{Chapters/Ch1/FirstFile}
+  
+\subfile{Chapters/Ch2/SecondFile}
+
+\section*{Conclusion}
+\addcontentsline{toc}{section}{\protect\numberline{}Conclusion}%
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%
+
+
+\newpage
+\begin{small} %%Makes bib small text size
+\singlespacing %%Makes single spaced
+\bibliographystyle{Phil_Review} %%bib style found in bst folder, in bibtex folder, in texmf folder.
+%\setlength{\bibsep}{0.5pt} %%Changes spacing between bib entries
+\bibliography{Zotero} %%bib database found in bib folder, in bibtex folder
+\thispagestyle{empty} %%Removes page numbers
+\end{small} %%End makes bib small text size
+
+\end{document}

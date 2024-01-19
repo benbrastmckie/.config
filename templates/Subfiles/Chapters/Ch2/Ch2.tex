@@ -1,0 +1,43 @@
+%NOTE: to be used with \usepackage{subfiles} in the main file.
+%Subfiles go in folders which live with the main file.
+%Bibliography and preamble go in the main file.
+
+%%%%%%%%%%%%%%%%%%%%%%%% PREAMBLE %%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[../../Root.tex]{subfiles} %Each instance of `../' elevates one folder to find the main file
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%%
+
+\tableofcontents
+
+\doublespacing
+
+\schapter{TITLE}
+
+\section{TITLE}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\bibliographystyle{Phil_Review} %%bib style found in bst folder, in bibtex folder, in texmf folder.
+\nobibliography{Zotero} %%bib database found in bib folder, in bibtex folder
+
+\end{document}
