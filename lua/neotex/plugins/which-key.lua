@@ -150,7 +150,7 @@ return {
       },
       g = {
         name = "GIT",
-        g = { "<cmd>lua _LAZYGIT_TOGGLE()<CR>", "lazygit" },
+        g = { "<cmd>LazyGit<CR>", "lazygit" },
         j = { "<cmd>lua require 'gitsigns'.next_hunk()<CR>", "next hunk" },
         k = { "<cmd>lua require 'gitsigns'.prev_hunk()<CR>", "prev hunk" },
         l = { "<cmd>lua require 'gitsigns'.blame_line()<CR>", "blame" },
