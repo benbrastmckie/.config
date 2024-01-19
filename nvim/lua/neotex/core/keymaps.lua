@@ -54,6 +54,7 @@ end, { remap = true })
 keymap('n', '<C-Bslash>', '<Plug>(comment_toggle_linewise_current)', opts)
 keymap('x', '<C-Bslash>', '<Plug>(comment_toggle_linewise_visual)', opts)
 
+
 -- Open help on word
 keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
 
@@ -66,7 +67,7 @@ keymap("v", "E", "ge", opts)
 
 
 -- Avoid cutting text pasted over
-keymap("v", "p", '"_dP', opts)
+-- keymap("v", "p", '"_dP', opts)
 
 
 -- Center cursor

@@ -3,36 +3,60 @@ return {
   -- dependencies = {},
   version = "*",
   event = { "BufReadPre", "BufNewFile" },
-  -- highlight = { "Function", "Label" },
   opts = {
+    -- indent_blankline_show_current_context = true,
     indent = {
       char = "│",
       tab_char = "│",
-      -- highlight = highlight,
+      highlight = "IblIndent",
+      smart_indent_cap = true,
+      priority = 1,
+      repeat_linebreak = true,
     },
-    show_trailing_blankline_indent = false,
-    scope = { enabled = true },
+    whitespace = {
+      highlight = "IblWhitespace",
+      remove_blankline_trail = true,
+    },
+    scope = {
+      enabled = true,
+      char = nil,
+      show_start = false,
+      show_end = false,
+      show_exact_scope = false,
+      injected_languages = true,
+      highlight = "IblScope",
+      priority = 1024,
+      include = {
+        node_type = { ["*"] = { "*" } },
+      },
+    },
     exclude = {
       filetypes = {
         "help",
         "alpha",
         "dashboard",
         "NvimTree",
-        -- "Trouble",
-        -- "trouble",
+        "Trouble",
+        "trouble",
         "lazy",
         "mason",
-        -- "notify",
+        "notify",
         "toggleterm",
+        "lspinfo",
+        "checkhealth",
+        "man",
+        "gitcommit",
+        "TelescopePrompt",
+        "TelescopeResults",
+        "",
+      },
+      buftypes = {
+        "terminal",
+        "nofile",
+        "quickfix",
+        "prompt",
       },
     },
   },
   main = "ibl",
-   -- local hooks = require "ibl.hooks"
-   -- hooks.register(
-   --   hooks.type.ACTIVE,
-   --   function(bufnr)
-   --     return vim.api.nvim_buf_line_count(bufnr) < 5000
-   --   end
-   -- )
 }
