@@ -1,0 +1,292 @@
+# -- SNIPPETS --
+#
+# new glossary entry
+snippet gloss "Glossary Entry"  b
+	\newglossaryentry{${1:entry}}{
+			name = {${2:name}},
+			symbol = {\ensuremath{${3:symbol}}},
+			description = {${4:description}}
+	}
+#
+
+# custom theorem enviornment
+snippet customthm "Custom Theorem" b
+	\vspace{.1in}
+	\begin{customthm}{(${1:label})}
+		${2:claim}
+	\end{customthm}
+
+	\begin{Answer}
+		${0}
+	\end{Answer}
+#
+
+
+# factoidbox enviornment
+snippet factoidbox "Factoid Box" b
+	\label{rule:${2:$1}}
+	\factoidbox{
+		\textbf{(${1:name})} ${0}
+	}
+#
+
+# framed text enviornment
+snippet textbox "Text Box" b
+	\begin{tcolorbox}
+		${0}
+	\end{tcolorbox}
+#
+
+# new command
+snippet qt "New Command" b
+	\qt{${1:\forall}}{${2:\alpha}}${0}
+#
+
+# new command
+snippet qte "New Command" b
+	\qt{${1:\exists}}{${2:\alpha}}${0}
+#
+
+# new command
+snippet nc "New Command" b
+	\newcommand{${1:cmd}}[${2:opt}]{${3:realcmd}} ${0}
+#
+
+#usepackage
+snippet up "Use Package" b
+	\usepackage[${1:options}]{${2:package}} ${0}
+#
+
+# \begin{}...\end{}
+snippet begin "Begin End"
+	\begin{${1:env}}
+		${2:${VISUAL}}
+	\end{$1}${0}
+#
+
+# Align(ed)
+snippet align "Align Env" b
+	\begin{align${1:ed}}
+		\label{${2:name}}
+		${0}
+	\end{align$1}
+#
+
+# Quote
+snippet quote "Quotation" b
+	\vspace{-.1in}
+	\begin{quote}\singlespacing\small
+		${0}
+		\hfill(p.~${1})
+	\end{quote}
+	\vspace{.1in}
+#
+
+# Labelalign
+snippet labelalign "Label Align" b
+	\vspace{.05in}
+	\begin{labelalign} %\small\onehalfspacing
+		\item[${2:\it} ${3:Label:}] ${0}
+	\end{labelalign}
+	\vspace{.05in}
+#
+
+# Enumerate
+snippet enum "Enumerate" b
+	\begin{enumerate}
+		\item[${1:\it }${2:Label:}] ${0}
+	\end{enumerate}
+#
+
+# Itemize
+snippet item "Itemize" b
+	\begin{itemize}
+		\item[${1:\it} ${2:Label:}] ${0}
+	\end{itemize}
+#
+
+#Item
+snippet i "Item"
+	\item[${1:\it} ${2:Label:}] ${0}
+#
+
+# Cases
+snippet case "Cases" 
+	${1:LHS}=	
+	\begin{cases}
+		${2:Value}, &\text{ if } ${3:case}\\
+		${4:Value}, &\text{ otherwise.} ${5:otherwise}.
+	\end{cases}${0}
+#
+
+# Section
+snippet sec "Section" b
+	\section{${1:Name}}%
+		\label{sec:${2:$1}}
+		${0}
+#
+
+# Sub Section
+snippet sub "Sub Section" b
+	\subsection{${1:Name}}%
+		\label{sub:${2:$1}}
+		${0}
+#
+
+# Sub Sub Section
+snippet ssub "Sub Sub Section" b
+	\subsubsection{${1:Name}}%
+		\label{sub:${2:$1}}
+		${0}
+#
+
+# Hyper Section
+snippet hsec "Hyper Section" b
+	\hypsection{${1:Name}}%
+		\label{sec:${2:$1}}
+		${0}
+#
+
+# Hyper Sub Section
+snippet hsub "Hyper Sub Section" b
+	\hypsubsection{${1:Name}}%
+		\label{sub:${2:$1}}
+		${0}
+#
+
+# Hyper Sub Sub Section
+snippet hssub "Hyper Sub Sub Section" b
+	\hypsubsubsection{${1:Name}}%
+		\label{sub:${2:$1}}
+		${0}
+#
+
+#Formating text: italic, bold, underline, small capital, emphase ..
+snippet it "Italics" wi
+	\textit{${1}}${0}
+#
+
+snippet tt "Teletype" wi
+	\texttt{${1}}${0}
+#
+
+snippet bf "Bold" wi
+	\textbf{${1}}${0}
+#
+
+snippet sc "Small Caps" wi
+	\textsc{${1}}${0}
+#
+
+snippet tsub "Subscripted" i
+	\textsubscript{${1}}${0}
+#
+
+snippet tsup "Superscripted" i
+	\textsuperscript{${1}}${0}
+#
+
+#Math font
+snippet mf "Mathfrak" w
+	\mathfrak{${1}}${0}
+#
+
+snippet mc "Mathcal" w
+	\mathcal{${1}}${0}
+#
+
+snippet ms "Mathscr" w
+	\mathscr{${1}}${0}
+#
+
+snippet bref "Bold Ref" w
+	\textbf{\ref{${1:Ref}}}${0}
+#
+
+#misc
+snippet fproof "Footnote Proof" bi
+	\footnote{\textit{Proof:} ${1:Begin} \qed}${0}
+#
+
+snippet lab "Label" wi
+	\label{${1:LABEL}}${0}
+#
+
+snippet fn "Footnote" wi
+	\footnote{${1:FOOTNOTE}}${0}
+#
+
+snippet fig "Figure environment" b
+	\begin{figure}
+	\begin{center}
+		\includegraphics[scale=${1}]{Figures/${2}}
+	\end{center}
+	\caption{${3}}
+	\label{fig:${4}}
+	\end{figure}
+	${0}
+#
+
+snippet tikz "Tikz environment" b
+	\begin{figure}[htpb]
+	\begin{center}
+	\begin{tikzpicture}[scale=${1:1}, transform shape]
+		${2}
+	\end{tikzpicture}
+	\end{center}
+	\caption{${3}}%
+	\label{fig:${4}}
+	\end{figure}
+	${0}
+
+snippet rule "Rule" bi
+	\factoidbox{
+	\begin{Rthm} \label{rule:${4:label}}
+		\textbf{($${1:\boldsymbol}${2:SYM}$${3:IE})}~~ ${0:${VISUAL}}
+	\end{Rthm}
+	}
+
+snippet lemma "Lemma" bi
+	\begin{Lthm} \label{lemma:${1:label}}
+		${0:${VISUAL}}
+	\end{Lthm}
+
+snippet prop "Proposition" bi
+	\begin{Pthm} \label{${1:label}}
+		${0:${VISUAL}}
+	\end{Pthm}
+
+snippet thrm "Theorem" bi
+	\begin{theorem} \label{${1:label}}
+		${0:${VISUAL}}
+	\end{theorem}
+
+snippet prf "Proof" bi
+	\begin{quote} 
+		\textit{Proof:} ${0:${VISUAL}}
+	\end{quote}
+
+snippet def "Definition" bi
+	\begin{definition}[$1]
+		${0:${VISUAL}}
+	\end{definition}
+
+snippet prob "Problem" bi
+	\begin{problem}[$1]
+		${0:${VISUAL}}
+	\end{problem}
+
+snippet corl "Corollary" bi
+	\begin{corollary}[$1]
+		${0:${VISUAL}}
+	\end{corollary}
+
+snippet example "Example" bi
+	\begin{example}[$1]
+		${0:${VISUAL}}
+	\end{example}
+
+
+
+
+

@@ -1,20 +1,16 @@
 # TODO
 
 - plugins
-  - luasnip (path to snippets directory)
-  - toggleterm
   - firenvim
   - nabla
   - autolist
-  - telescope-undo
-  - telescope-bibtex
-  - gitsigns
 - config
   - cmp
-- remove plugins
-  - harpoon
-  - text-objects
+  - mason
+  - lspconfig
+  - none-ls
 - bugs
+  - change size of quickfix
   - error detected BufWritePre Autocommand for "\*"
     - look into checkhealth?
   - close quickfix with q
