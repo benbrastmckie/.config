@@ -11,13 +11,11 @@
 - test
   - python
 - bugs
+  - system open in nvim-tree
+  - error: client 2 quit with exit code 127 and signal 0
   - cmp-vimtex
-  - turn off treesitter in help
-  - remove tabs
-  - formatter failed
   - error detected BufWritePre Autocommand for "\*"
     - look into checkhealth?
-  - close quickfix with q
   - 2 space tab in markdown
 - import
   - NOTES.md
