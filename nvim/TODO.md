@@ -6,11 +6,13 @@
   - cmp
   - mason
   - lspconfig
-  - none-ls
+  - formatter
+  - linter
 - test
   - python
 - bugs
-  - turn off linter in help
+  - cmp-vimtex
+  - turn off treesitter in help
   - remove tabs
   - formatter failed
   - error detected BufWritePre Autocommand for "\*"
