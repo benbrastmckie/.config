@@ -8,9 +8,9 @@ return {
     vim.g.loaded_netrw = 1
     vim.g.loaded_netrwPlugin = 1
 
-    -- change color for arrows in tree to light blue
-    vim.cmd([[ highlight NvimTreeFolderArrowClosed guifg=#3FC5FF ]])
-    vim.cmd([[ highlight NvimTreeFolderArrowOpen guifg=#3FC5FF ]])
+    -- -- change color for arrows in tree to light blue
+    -- vim.cmd([[ highlight NvimTreeFolderArrowClosed guifg=#3FC5FF ]])
+    -- vim.cmd([[ highlight NvimTreeFolderArrowOpen guifg=#3FC5FF ]])
 
     local function on_attach(bufnr)
       local api = require('nvim-tree.api')
@@ -168,7 +168,7 @@ return {
             git = true,
             modified = true,
             diagnostics = true,
-            bookmarks = true,
+            bookmarks = false,
           },
           glyphs = {
             default = "",
