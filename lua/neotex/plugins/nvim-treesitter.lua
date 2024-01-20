@@ -48,7 +48,8 @@ return {
         "c", 
         "haskell", 
         "gitignore", 
-        "bibtex" 
+        "bibtex", 
+        "vimdoc",
       },
       ignore_install = { "latex" }, -- List of parsers to ignore installing
       autopairs = {
