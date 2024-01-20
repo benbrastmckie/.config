@@ -39,6 +39,7 @@ return {
         --  "formatting.prettier.with({disabled_filetypes: {}})" (see null-ls docs)
         formatting.prettier.with({
           extra_filetypes = { "svelte" },
+          disabled_filetypes = { "txt" },
         }), -- js/ts formatter
         formatting.stylua, -- lua formatter
         formatting.isort,

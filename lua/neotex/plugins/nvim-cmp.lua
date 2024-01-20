@@ -12,6 +12,7 @@ return {
     "petertriho/cmp-git",
     "f3fora/cmp-spell",
     "micangl/cmp-vimtex",
+    "jbyuki/nabla.nvim",
   },
   config = function()
 

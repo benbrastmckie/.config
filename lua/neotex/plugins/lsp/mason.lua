@@ -4,6 +4,7 @@ return {
     "williamboman/mason-lspconfig.nvim",
     "WhoIsSethDaniel/mason-tool-installer.nvim",
   },
+
   config = function()
     -- import mason
     local mason = require("mason")
@@ -27,16 +28,16 @@ return {
     mason_lspconfig.setup({
       -- list of servers for mason to install
       ensure_installed = {
-        "tsserver",
         "html",
-        "cssls",
-        "tailwindcss",
-        -- "svelte",
         "lua_ls",
-        -- "graphql",
         "emmet_ls",
-        -- "prismals",
         "pyright",
+        -- "tsserver",
+        -- "cssls",
+        -- "tailwindcss",
+        -- "svelte"
+        -- "graphql",
+        -- "prismals",
       },
       -- auto-install configured servers (with lspconfig)
       automatic_installation = true, -- not the same as ensure_installed
