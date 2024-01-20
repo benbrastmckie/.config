@@ -14,13 +14,13 @@ return {
     treesitter.setup({ -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "latex", "markdown" }, -- list of language that will be disabled
+        disable = { "css", "latex", "markdown", "txt", "text" }, -- list of language that will be disabled
       },
       -- enable indentation
       indent = { enable = true },
       -- enable autotagging (w/ nvim-ts-autotag plugin)
       autotag = {
-        enable = true,
+        enable = false,
       },
       -- ensure these language parsers are installed
       ensure_installed = {
@@ -39,7 +39,7 @@ return {
         "bash",
         "lua",
         "vim",
-        "dockerfile",
+        -- "dockerfile",
         "gitignore",
         "query",
         "python", 

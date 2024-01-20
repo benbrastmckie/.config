@@ -1,6 +1,6 @@
 return {
   "hrsh7th/nvim-cmp",
-  event = "InsertEnter",
+  event = { "InsertEnter", "CmdlineEnter" },
   dependencies = {
     "hrsh7th/cmp-buffer", -- source for text in buffer
     "hrsh7th/cmp-path", -- source for file system paths
@@ -12,7 +12,7 @@ return {
     "petertriho/cmp-git",
     "f3fora/cmp-spell",
     "micangl/cmp-vimtex",
-    "jbyuki/nabla.nvim",
+    -- "aspeddro/cmp-pandoc.nvim",
   },
   config = function()
 
@@ -128,14 +128,15 @@ return {
           -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
           vim_item.menu = ({
             -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
-            -- vimtex = vim_item.menu,
+            -- vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
             -- vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
-            nvim_lsp = "[LSP]",
+            -- vimtex = vim_item.menu,
+            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
             luasnip = "[Snippet]",
+            nvim_lsp = "[LSP]",
             buffer = "[Buffer]",
             spell = "[Spell]",
-            latex_symbols = "[Symbols]",
+            -- latex_symbols = "[Symbols]",
             cmdline = "[CMD]",
             path = "[Path]",
           })[entry.source.name]
@@ -147,8 +148,9 @@ return {
         { name = "nvim_lsp" },
         { name = "luasnip" }, -- snippets
         { name = "vimtex" },
+        -- { name = "pandoc" },
         -- { name = "omni" },
-        { name = "buffer", keyword_length = 3 }, -- text within current buffer
+        { name = "cmp_buffer", keyword_length = 3 }, -- text within current buffer
         { name = "spell",
           keyword_length = 4,
           option = {
@@ -157,10 +159,6 @@ return {
                   return true
               end
           },
-        },
-        { name = "latex_symbols",
-          filetype = { "tex", "latex" },
-          option = { cache = true }, -- avoids reloading each time
         },
         { name = "path" },
       }),
@@ -205,5 +203,6 @@ return {
         {name = 'cmdline'}
       }
     })
+
   end,
 }

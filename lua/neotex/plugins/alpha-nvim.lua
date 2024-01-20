@@ -1,7 +1,10 @@
 return {
   "goolord/alpha-nvim",
   event = "VimEnter",
-  dependencies = { "nvim-tree/nvim-web-devicons" },
+  dependencies = { 
+    "nvim-tree/nvim-web-devicons",
+    "Shatur/neovim-session-manager",
+  },
   config = function()
     local alpha = require("alpha")
     local dashboard = require("alpha.themes.dashboard")
@@ -17,6 +20,9 @@ return {
       " ╚═╝  ╚═══╝╚══════╝ ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝ ",
       "                                                      ",
     }
+
+    -- Set color
+    dashboard.section.header.opts.hl = "Title" -- lookup other hl groups with :highlight
 
     -- Set menu
     dashboard.section.buttons.val = {
