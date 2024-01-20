@@ -1,7 +1,6 @@
 # TODO
 
 - plugins
-  - firenvim
   - autolist
 - config
   - cmp
@@ -10,17 +9,14 @@
   - none-ls
 - test
   - python
-- rice
-  - change highligh search color
 - bugs
+  - turn off linter in help
   - remove tabs
   - formatter failed
   - error detected BufWritePre Autocommand for "\*"
     - look into checkhealth?
   - close quickfix with q
-  - cmp supertab
   - 2 space tab in markdown
-  - <S-k> not working in markdown
 - import
   - NOTES.md
   - TODO.md (Old)
