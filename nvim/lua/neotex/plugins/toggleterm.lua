@@ -12,7 +12,7 @@ return {
     persist_size = true,
     direction = "horizontal", -- direction = 'vertical' | 'horizontal' | 'tab' | 'float',
     close_on_exit = true,
-    shell = vim.o.shell, -- Change the default shell. Can be a string or a function returning a string
+    shell = 'fish', -- Change the default shell. Can be a string or a function returning a string
     float_opts = {
       border = "curved", -- 'single' | 'double' | 'shadow' | 'curved' | ... other options supported by win open
       winblend = 0,

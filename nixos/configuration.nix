@@ -150,38 +150,18 @@
   programs.neovim = {
     enable = true;
     defaultEditor = true;
-    # configure = {
+    configure = {
+      packages.myVimPackage = with pkgs; {
+        start = [
+          lua-language-server
+          stylua
+        ];
+      };
     #   customRC = ''
     #     luafile ${../lazyvim/init.lua}
     #   '';
-    # };
+    };
   };
-
-  ### the following don't work ###
-
-  # programs.git = {
-  #   ignores = {
-  #     "*.pdf" # don't track pdfs
-  #     "*.fbd_latexmk"
-  #     "*.fsl"
-  #     "*.log"
-  #     "*.synctex.gz"
-  #     "*.aux"
-  #   };
-  # };
-
-  # nix-gitignore.gitignoreSource = import ./gitignore.nix;
-
-  # nix-gitignore.gitignoreSource = [
-  #   "*.pdf" 
-  #   "*.fbd_latexmk"
-  #   "*.fsl"
-  #   "*.log"
-  #   "*.synctex.gz"
-  #   "*.aux"
-  # ];
-
-  ####################################
 
   fonts.fontDir.enable = true;
 

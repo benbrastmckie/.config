@@ -2,24 +2,25 @@
 
 - plugins
   - firenvim
-  - nabla
   - autolist
 - config
   - cmp
   - mason
   - lspconfig
   - none-ls
+- test
+  - python
+- rice
+  - change highligh search color
 - bugs
-  - change size of quickfix
+  - remove tabs
+  - formatter failed
   - error detected BufWritePre Autocommand for "\*"
     - look into checkhealth?
   - close quickfix with q
-  - delete nearby characters
   - cmp supertab
   - 2 space tab in markdown
-  - <S-k> not working; conflicting mapping
-  - surround not working in markdown
-    - see /after/ftplugin/markdown.lua
+  - <S-k> not working in markdown
 - import
   - NOTES.md
   - TODO.md (Old)
