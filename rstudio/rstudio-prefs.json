@@ -1,12 +1,14 @@
 {
     "initial_working_directory": "~/Desktop",
     "editor_theme": "Cobalt",
-    "posix_terminal_shell": "bash",
+    "posix_terminal_shell": "custom",
     "font_size_points": 12,
     "restore_last_project": false,
     "continue_comments_on_newline": true,
     "rainbow_parentheses": true,
     "jobs_tab_visibility": "shown",
     "default_project_location": "~/Desktop",
-    "source_with_echo": true
+    "source_with_echo": true,
+    "custom_shell_options": "/bin/fish",
+    "terminal_initial_directory": "current"
 }

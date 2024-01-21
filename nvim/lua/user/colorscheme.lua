@@ -1,6 +1,6 @@
 -- GRUVBOX --
 
-local colorscheme = "gruvbox"
+local colorscheme = "kanagawa"
 -- local colorscheme = "gruvbox-baby"
 
 -- OTHER ---

@@ -30,7 +30,6 @@ colors:
     cyan: "#56b6c2"
     white: "#ECEFF4"
 
-window.opacity: 0.8
 
 # Font configuration
 font:
@@ -44,13 +43,14 @@ font:
     #   - (Windows) Consolas
     # family: SauceCodePro Nerd Font
     # family: CodeNewRoman Nerd Font
-    family: RobotoMono Nerd Font Mono
+    # family: RobotoMono Nerd Font Mono
     # family: Hack
     # family: JetBrains Mono
     # family: UbuntuMono Nerd Font
     # family: Monofur Nerd Font
     # family: TerminessTTF Nerd Font
     # family: Mononoki Nerd Font
+    family: CaskaydiaCove Nerd Font Mono
 
     # The `style` can be specified to pick a specific face.
     style: Regular
@@ -63,13 +63,15 @@ font:
     # value specified for the normal font.
     # family: SauceCodePro Nerd Font
     # family: CodeNewRoman Nerd Font
-    family: RobotoMono Nerd Font Mono
+    # family: RobotoMono Nerd Font Mono
     # family: Hack
     # family: JetBrains Mono
     # family: UbuntuMono Nerd Font
     # family: Monofur Nerd Font
     # family: TerminessTTF Nerd Font
     # family: Mononoki Nerd Font
+    family: CaskaydiaCove Nerd Font Mono
+
 
     # The `style` can be specified to pick a specific face.
     style: Bold
@@ -82,13 +84,15 @@ font:
     # value specified for the normal font.
     # family: SauceCodePro Nerd Font Mono
     # family: CodeNewRoman Nerd Font
-    family: RobotoMono Nerd Font Mono
+    # family: RobotoMono Nerd Font Mono
     # family: Hack
     # family: JetBrains Mono
     # family: UbuntuMono Nerd Font
     # family: Monofuritalic Nerd Font Mono
     # family: TerminessTTF Nerd Font
     # family: Mononoki Nerd Font
+    family: CaskaydiaCove Nerd Font Mono
+
 
     # The `style` can be specified to pick a specific face.
     style: Italic
@@ -101,13 +105,15 @@ font:
     # value specified for the normal font.
     # family: SauceCodePro Nerd Font Mono
     # family: CodeNewRoman Nerd Font
-    family: RobotoMono Nerd Font Mono
+    # family: RobotoMono Nerd Font Mono
     # family: Hack
     # family: JetBrains Mono
     # family: UbuntuMono Nerd Font
     # family: Monofuritalic Nerd Font Mono
     # family: TerminessTTF Nerd Font
     # family: Mononoki Nerd Font
+    family: CaskaydiaCove Nerd Font Mono
+
 
     # The `style` can be specified to pick a specific face.
     style: Bold Italic
@@ -160,6 +166,8 @@ window:
   #     - transparent: Title bar, transparent background and title bar buttons
   #     - buttonless: Title bar, transparent background, but no title bar buttons
   decorations: transparent
+
+  opacity: 0.9
 
   # Startup Mode (changes require restart)
   #
@@ -234,7 +242,7 @@ shell:
     - -l
     - -c
     - "tmux"
-      # - "tmux attach || tmux"
+     # - "tmux attach || tmux"
 
 
   # Startup directory
