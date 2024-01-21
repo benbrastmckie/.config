@@ -2,7 +2,6 @@ return {
   "lervag/vimtex",
   dependencies = {
     "micangl/cmp-vimtex",
-    -- "hrsh7th/cmp-omni",
   },
   version = "*",
   event = { "BufReadPre", "BufNewFile" },
@@ -31,8 +30,9 @@ return {
 
     vim.g['vimtex_context_pdf_viewer'] = 'okular'
 
+
     -- vim.g['vimtex_complete_enabled'] = 1
     -- vim.g['vimtex_compiler_progname'] = 'nvr'
     -- vim.g['vimtex_complete_close_braces'] = 1
-  end
+  end,
 }
