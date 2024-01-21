@@ -28,7 +28,7 @@ return {
     -- local lspkind = require("lspkind") -- goes with lspkind.nvim above
 
     -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
-    require("luasnip.loaders.from_vscode").lazy_load()
+    -- require("luasnip.loaders.from_vscode").lazy_load()
 
     --   פּ ﯟ   some other good icons
     local kind_icons = {
@@ -127,7 +127,9 @@ return {
           vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
           vim_item.menu = ({
             -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-            vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
+            -- vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
+            -- vimtex = vim_item.menu,
+            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
             luasnip = "[Snippet]",
             nvim_lsp = "[LSP]",
             buffer = "[Buffer]",
