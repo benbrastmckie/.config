@@ -1,22 +1,20 @@
 # TODO
 
 - plugins
-  - autolist
+  - formatter
+  - linter
 - config
   - cmp
   - mason
   - lspconfig
-  - formatter
-  - linter
+  - cmp-vimtex
 - test
   - python
 - bugs
   - system open in nvim-tree
   - error: client 2 quit with exit code 127 and signal 0
-  - cmp-vimtex
+    - install all missing programs in checkhealth
   - error detected BufWritePre Autocommand for "\*"
     - look into checkhealth?
   - 2 space tab in markdown
-- import
-  - NOTES.md
-  - TODO.md (Old)
+- integrate old todos

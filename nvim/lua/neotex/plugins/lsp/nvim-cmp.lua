@@ -25,7 +25,7 @@ return {
 
     local luasnip = require("luasnip")
 
-    -- local lspkind = require("lspkind")
+    -- local lspkind = require("lspkind") -- goes with lspkind.nvim above
 
     -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
     require("luasnip.loaders.from_vscode").lazy_load()
@@ -150,7 +150,7 @@ return {
         { name = "vimtex" },
         -- { name = "pandoc" },
         -- { name = "omni" },
-        { name = "cmp_buffer", keyword_length = 3 }, -- text within current buffer
+        { name = "buffer", keyword_length = 3 }, -- text within current buffer
         { name = "spell",
           keyword_length = 4,
           option = {
@@ -162,7 +162,6 @@ return {
         },
         { name = "path" },
       }),
-      -- configure lspkind for vs-code like pictograms in completion menu
       confirm_opts = {
         behavior = cmp.ConfirmBehavior.Replace,
         select = false,

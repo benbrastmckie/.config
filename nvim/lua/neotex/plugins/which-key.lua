@@ -67,16 +67,6 @@ return {
       hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "call", "lua", "^:", "^ " }, -- hide mapping boilerplate
       show_help = true, -- show help message on the command line when the popup is visible
       triggers_nowait = {
-        -- -- marks
-        -- "`",
-        -- "'",
-        -- "g`",
-        -- "g'",
-        -- -- registers
-        -- '"',
-        -- "<c-r>",
-        -- -- spelling
-        -- "z=",
       },
       triggers_blacklist = {
         -- list of mode / prefixes that should never be hooked by WhichKey
@@ -100,13 +90,14 @@ return {
       prefix = "<leader>",
       mode = { "n", "v" },
       b = { "<cmd>VimtexCompile<CR>"            , "build" },
-      d = { "<cmd>update! | bdelete!<CR>"                 , "delete buffer" },
-      e = { "<cmd>NvimTreeToggle<CR>"                  , "explorer" },
+      d = { "<cmd>update! | bdelete!<CR>"       , "delete buffer" },
+      e = { "<cmd>NvimTreeToggle<CR>"           , "explorer" },
+      h = { "<cmd>Alpha<CR>"                    , "home" },
       i = { "<cmd>VimtexTocOpen<CR>"            , "index" },
-      q = { "<cmd>wa! | qa!<CR>"                     , "quit" },
+      q = { "<cmd>wa! | qa!<CR>"                , "quit" },
       u = { "<cmd>Telescope undo<CR>"           , "undo" },
       v = { "<cmd>VimtexView<CR>"               , "view" },
-      w = { "<cmd>wa!<CR>"                  , "write" },
+      w = { "<cmd>wa!<CR>"                      , "write" },
       a = {
         name = "ACTIONS",
         a = { "<cmd>lua PdfAnnots()<CR>"                              , "annotate"},
@@ -164,18 +155,19 @@ return {
         c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
       },
-      h = {
-        name = "HARPOON",
-        m = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
-        n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
-        p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
-      },
+      -- h = {
+      --   name = "HARPOON",
+      --   m = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
+      --   n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
+      --   p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
+      -- },
       l = {
         name = "LIST",
-        c = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
+        c = { "<cmd>AutolistRecalculate<CR>", "recalculate" },
         n = { "<cmd>AutolistCycleNext<CR>", "next" },
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
+        x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
         -- x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
       },
       m = {

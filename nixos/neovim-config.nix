@@ -1,3 +1,4 @@
+# Note: not currently used... just an example
 { pkgs, ... }:
 
 pkgs.neovim.override {

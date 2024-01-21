@@ -143,25 +143,27 @@
     # home-manager
     zoom-us
     vlc
+    lua-language-server
+    stylua
   ];
 
   programs.fish.enable = true;
 
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    configure = {
-      packages.myVimPackage = with pkgs; {
-        start = [
-          lua-language-server
-          stylua
-        ];
-      };
-    #   customRC = ''
-    #     luafile ${../lazyvim/init.lua}
-    #   '';
-    };
-  };
+  # programs.neovim = {
+  #   enable = true;
+  #   defaultEditor = true;
+  #   configure = {
+  #     packages.myVimPackage = with pkgs; {
+  #       start = [
+  #         lua-language-server
+  #         stylua
+  #       ];
+  #     };
+  #   #   customRC = ''
+  #   #     luafile ${../lazyvim/init.lua}
+  #   #   '';
+  #   };
+  # };
 
   fonts.fontDir.enable = true;
 
