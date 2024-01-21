@@ -4,13 +4,13 @@
   - formatter
   - linter
 - config
-  - cmp
-  - mason
+  - mason check what is loaded throughout
   - lspconfig
-  - cmp-vimtex
 - test
   - python
 - bugs
+  - synctex not working
+  - cmp-vimtex global file
   - system open in nvim-tree
   - error: client 2 quit with exit code 127 and signal 0
     - install all missing programs in checkhealth
