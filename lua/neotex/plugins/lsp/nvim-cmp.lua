@@ -125,13 +125,9 @@ return {
         format = function(entry, vim_item)
           -- Kind icons
           vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
-          -- vim_item.kind = string.format('%s %s', kind_icons[vim_item.kind], vim_item.kind) -- This concatonates the icons with the name of the item kind
           vim_item.menu = ({
             -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
-            -- vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
-            -- vimtex = "[VimTex]" .. (vim_item.menu ~= nil and vim_item.menu or ""),
-            -- vimtex = vim_item.menu,
-            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+            vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
             luasnip = "[Snippet]",
             nvim_lsp = "[LSP]",
             buffer = "[Buffer]",

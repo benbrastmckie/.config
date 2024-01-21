@@ -22,7 +22,6 @@ return {
 
     -- Error suppression:
     -- https://github.com/lervag/vimtex/blob/master/doc/vimtex.txt
-
     vim.g['vimtex_log_ignore'] = ({
       'Underfull',
       'Overfull',

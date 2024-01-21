@@ -20,7 +20,9 @@ vim.g.mapleader = " "
 -- Unmappings
 keymap("n", "<C-z>", "<nop>", opts)
 
-vim.keymap.set("i", "<C-z>", function() require('cmp_vimtex.search').search_menu() end)
+-- vim.keymap.set("i", "<C-z>", function() 
+--   require('cmp_vimtex.search').search_menu()
+-- end, { remap = true })
 
 -- Surround 
 -- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
