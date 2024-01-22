@@ -27,7 +27,7 @@ return {
       highlight = "IblScope",
       priority = 1024,
       include = {
-        node_type = { ["*"] = { "*" } },
+        node_type = { ["*"] = { "*" } }, -- makes lines show on all blocks
       },
     },
     exclude = {

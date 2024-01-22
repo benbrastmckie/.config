@@ -20,6 +20,7 @@ vim.g.mapleader = " "
 -- Unmappings
 keymap("n", "<C-z>", "<nop>", opts)
 
+-- NOTE: not sure I will uses these cmp-vimtex commands
 -- Search from hovering over cmp-vimtex citation completion
 -- vim.keymap.set("i", "<C-z>", function() 
 --   require('cmp_vimtex.search').search_menu()
@@ -28,6 +29,7 @@ keymap("n", "<C-z>", "<nop>", opts)
 --   require('cmp_vimtex.search').perform_search({ engine = "arxiv" })
 -- end)
 
+-- NOTE: prefer to use whichkey
 -- Surround 
 -- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
 
