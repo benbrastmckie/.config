@@ -25,6 +25,12 @@ return {
 
     local luasnip = require("luasnip")
 
+    -- NOTE: don't use this in supertab
+    -- local has_words_before = function()
+    --   local line, col = unpack(vim.api.nvim_win_get_cursor(0))
+    --   return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match "%s" == nil
+    -- end
+
     -- local lspkind = require("lspkind") -- goes with lspkind.nvim above
 
     -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
@@ -72,8 +78,8 @@ return {
 
     cmp.setup({
       completion = {
-        completeopt = "menu,noselect",
-        -- completeopt = "menuone,preview,noinsert",
+        completeopt = "menu",
+        -- completeopt = "menuone,preview,noinsert,noselect",
         keyword_length = 1,
       },
       snippet = { -- configure how nvim-cmp interacts with snippet engine
@@ -90,27 +96,29 @@ return {
         -- ["<C-h>"] = cmp.mapping.abort(), -- close completion window
         -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
         ["<CR>"] = cmp.mapping.confirm({ select = true }),
-        ["<Tab>"] = cmp.mapping(function(fallback)
-          -- if cmp.visible() then
+        ------ begin lunar -----
+        ["<Tab>"] = cmp.mapping(function(fallback) -- could be: function(fallback)
+          if cmp.visible() then
           --   cmp.select_next_item()
-          -- if luasnip.expandable() then
-          --   luasnip.expand()
-          if luasnip.expand_or_locally_jumpable() then
+            cmp.confirm()
+          elseif luasnip.expand_or_locally_jumpable() then
             luasnip.expand_or_jump()
-          elseif check_backspace() then
-              cmp.complete()
-            fallback()
+          -- elseif jumpable(1) then
+          --   luasnip.jump(1)
+          -- elseif has_words_before() then
+          --   cmp.complete()
+            -- fallback()
           else
             fallback()
           end
         end, { "i", "s" }),
-        ["<S-Tab>"] = cmp.mapping(function(fallback)
+        ["<S-Tab>"] = cmp.mapping(function() -- could be: function(fallback) 
           -- if cmp.visible() then
           --   cmp.select_prev_item()
           if luasnip.jumpable(-1) then
             luasnip.jump(-1)
           else
-            fallback()
+            -- fallback()
           end
         end, { "i", "s" }),
       }),
