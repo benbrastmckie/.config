@@ -4,9 +4,14 @@ return {
   config = function()
     require("gruvbox").setup({
       overrides = {
-        -- SignColumn = {bg = "#282828"}
+        -- THIS BLOCK
+        SignColumn = {bg = "#282828"},
         NvimTreeCutHL = { fg="#fb4934", bg="#3c3836" },
         NvimTreeCopiedHL = { fg="#b8bb26", bg="#3c3836" }
+        -- OR THIS BLOCK
+        -- NvimTreeCutHL = { fg="#fb4934", bg="#3c3836" },
+        -- NvimTreeCopiedHL = { fg="#b8bb26", bg="#3c3836" }
+        -- END
       }
     })
     vim.cmd("colorscheme gruvbox")

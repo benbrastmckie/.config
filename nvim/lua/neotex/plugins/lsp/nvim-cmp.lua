@@ -78,7 +78,7 @@ return {
 
     cmp.setup({
       completion = {
-        completeopt = "menu",
+        completeopt = "menu,noselect",
         -- completeopt = "menuone,preview,noinsert,noselect",
         keyword_length = 1,
       },
