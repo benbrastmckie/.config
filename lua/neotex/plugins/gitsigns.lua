@@ -4,13 +4,20 @@ return {
   config = function()
     require('gitsigns').setup {
       signs = {
-        add = { hl = "DiagnosticSignOK", text = "▎", numhl = "GitSignsAddNr", linehl = "GitSignsAddLn" },
-        change = { hl = "DiagnosticSignHint", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
-        delete = { hl = "DiagnosticSignError", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
-        -- delete = { hl = "DiagnosticSignError", text = "", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
-        topdelete = { hl = "DiagnosticSignError", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
-        -- topdelete = { hl = "DiagnosticSignError", text = "", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
-        changedelete = { hl = "DiagnosticSignHint", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
+        add = { hl = "Title", text = "▎", numhl = "GitSignsAddNr", linehl = "GitSignsAddLn" },
+        change = { hl = "Question", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
+        delete = { hl = "Warning", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        topdelete = { hl = "Warning", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        changedelete = { hl = "Question", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
+        -- OR THIS BLOCK
+        -- add = { hl = "DiagnosticSignOK", text = "▎", numhl = "GitSignsAddNr", linehl = "GitSignsAddLn" },
+        -- change = { hl = "DiagnosticSignHint", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
+        -- delete = { hl = "DiagnosticSignError", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        -- -- delete = { hl = "DiagnosticSignError", text = "", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        -- topdelete = { hl = "DiagnosticSignError", text = "▎", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        -- -- topdelete = { hl = "DiagnosticSignError", text = "", numhl = "GitSignsDeleteNr", linehl = "GitSignsDeleteLn" },
+        -- changedelete = { hl = "DiagnosticSignHint", text = "▎", numhl = "GitSignsChangeNr", linehl = "GitSignsChangeLn" },
+        -- END
       },
       signcolumn = true, -- Toggle with `:Gitsigns toggle_signs`
       numhl = false, -- Toggle with `:Gitsigns toggle_numhl`
