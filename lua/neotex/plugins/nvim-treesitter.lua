@@ -11,10 +11,11 @@ return {
     local treesitter = require("nvim-treesitter.configs")
 
     -- configure treesitter
-    treesitter.setup({ -- enable syntax highlighting
+    treesitter.setup({
+                       -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "latex", "markdown", "txt", "text" }, -- list of language that will be disabled
+        disable = { "css", "latex", "markdown", "txt", "text", "cls" }, -- list of language that will be disabled
       },
       -- enable indentation
       indent = { enable = true },
@@ -23,33 +24,35 @@ return {
         enable = false,
       },
       -- ensure these language parsers are installed
+      -- auto_install = true, -- creates trouble for unrecognized files
       ensure_installed = {
         "json",
-        "javascript",
-        "typescript",
-        "tsx",
         "yaml",
         "html",
-        "css",
-        -- "prisma",
-        "markdown",
-        "markdown_inline",
-        -- "svelte",
-        -- "graphql",
         "bash",
         "lua",
         "vim",
-        -- "dockerfile",
         "gitignore",
         "query",
-        "python", 
-        "vim", 
-        "perl", 
-        "c", 
-        "haskell", 
-        "gitignore", 
-        "bibtex", 
+        "python",
+        "vim",
+        "c",
+        "haskell",
+        "gitignore",
+        "bibtex",
         "vimdoc",
+        -- "latex",
+        -- "javascript",
+        -- "typescript",
+        -- "tsx",
+        -- "css",
+        -- "prisma",
+        -- "markdown",
+        -- "markdown_inline",
+        -- "svelte",
+        -- "graphql",
+        -- "dockerfile",
+        -- "perl",
       },
       ignore_install = { "latex" }, -- List of parsers to ignore installing
       autopairs = {

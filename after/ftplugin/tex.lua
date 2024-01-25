@@ -1,4 +1,4 @@
-local config = require("nvim-surround.config")
+-- local config = require("nvim-surround.config")
 
 require("nvim-surround").buffer_setup({
   surrounds = {

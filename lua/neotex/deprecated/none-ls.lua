@@ -1,26 +1,33 @@
 return {
   "nvimtools/none-ls.nvim", -- configure formatters & linters
   lazy = true,
-  -- event = { "BufReadPre", "BufNewFile" }, -- to enable uncomment this
+  event = { "BufReadPre", "BufNewFile" }, -- to enable uncomment this
   dependencies = {
     "jay-babu/mason-null-ls.nvim",
+    "williamboman/mason.nvim",
   },
   config = function()
+
     local mason_null_ls = require("mason-null-ls")
+    mason_null_ls.setup({
+      "prettier", -- prettier formatter
+      "stylua", -- lua formatter
+      "isort", -- python formatter
+      "black", -- python formatter
+      "pylint", -- python linter
+      "eslint_d", -- js linter
+    })
 
     local null_ls = require("null-ls")
+    null_ls.setup({
+        sources = {
+            null_ls.builtins.formatting.stylua,
+            null_ls.builtins.diagnostics.eslint,
+            null_ls.builtins.completion.spell,
+        },
+    })
 
     local null_ls_utils = require("null-ls.utils")
-
-    mason_null_ls.setup({
-      ensure_installed = {
-        "prettier", -- prettier formatter
-        "stylua", -- lua formatter
-        "black", -- python formatter
-        "pylint", -- python linter
-        "eslint_d", -- js linter
-      },
-    })
 
     -- for conciseness
     local formatting = null_ls.builtins.formatting -- to setup formatters

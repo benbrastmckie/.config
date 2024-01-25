@@ -1,15 +1,17 @@
 # TODO
 
 - plugins
-  - formatter
-  - linter
+  - lsp zero
+    - give this a try to get formatting and linting to work for latex, lua, and python 
 - config
+  - add auto detect languages to tree-sitter
   - mason check what is loaded throughout
   - lspconfig
 - test
   - python
 - bugs
-  - synctex not working
+  - 
+  - supertab
   - cmp-vimtex global file
   - system open in nvim-tree
   - error: client 2 quit with exit code 127 and signal 0
