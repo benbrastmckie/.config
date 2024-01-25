@@ -52,12 +52,6 @@ return {
           },
         },
 
-        override = function(conf)
-          -- This is the config that will be passed to nvim_open_win.
-          -- Change values here to customize the layout
-          return conf
-        end,
-
         -- see :help dressing_get_config
         get_config = nil,
       },
@@ -142,12 +136,6 @@ return {
             ["<C-c>"] = "Close",
             ["<CR>"] = "Confirm",
           },
-
-          override = function(conf)
-            -- This is the config that will be passed to nvim_open_win.
-            -- Change values here to customize the layout
-            return conf
-          end,
         },
 
         -- Used to override format_item. See :help dressing-format
@@ -156,6 +144,6 @@ return {
         -- see :help dressing_get_config
         get_config = nil,
       },
-    })  
+    })
   end
 }

@@ -4,9 +4,12 @@ return {
     "micangl/cmp-vimtex",
   },
   version = "*",
-  event = { "BufReadPre", "BufNewFile" },
+  -- event = { "BufReadPre", "BufNewFile" }, -- WARNING: adding events can prevent synctex inverse search from working
   config = function()
-    vim.g['vimtex_view_method'] = 'zathura'
+    -- vim.g['vimtex_view_method'] = 'zathura' -- main variant with xdotool (requires X11; not compatible with wayland)
+    vim.g['vimtex_view_method'] = 'zathura_simple' -- for variant without xdotool to avoid errors in wayland
+    vim.g['vimtex_compiler_progname'] = 'nvr'
+
     vim.g['vimtex_quickfix_mode'] = 0
 
     -- Ignore mappings
@@ -30,9 +33,7 @@ return {
 
     vim.g['vimtex_context_pdf_viewer'] = 'okular'
 
-
     -- vim.g['vimtex_complete_enabled'] = 1
-    -- vim.g['vimtex_compiler_progname'] = 'nvr'
     -- vim.g['vimtex_complete_close_braces'] = 1
   end,
 }

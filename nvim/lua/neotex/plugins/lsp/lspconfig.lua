@@ -2,10 +2,9 @@ return {
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" },
   dependencies = {
-    { "hrsh7th/cmp-nvim-lsp" },
+    {"hrsh7th/cmp-nvim-lsp"},
     { "antosha417/nvim-lsp-file-operations", config = true },
   },
-
   config = function()
     -- import lspconfig plugin
     local lspconfig = require("lspconfig")
@@ -16,7 +15,7 @@ return {
     local keymap = vim.keymap -- for conciseness
 
     local opts = { noremap = true, silent = true }
-    local on_attach = function(client, bufnr)
+    local on_attach = function(bufnr)
       opts.buffer = bufnr
 
       -- set keybinds

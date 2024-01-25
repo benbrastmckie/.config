@@ -9,7 +9,7 @@ return {
   },
   config = function()
     require("autolist").setup()
-     
+
     function handle_checkbox()
       local config = require("autolist.config")
       local auto = require("autolist.auto")
@@ -39,4 +39,3 @@ return {
     end
   end,
 }
- 
