@@ -10,7 +10,8 @@
 - test
   - python
 - bugs
-  - 
+  - errors when opening .cls file
+  - icons in cmp.lua don't all load
   - supertab
   - cmp-vimtex global file
   - system open in nvim-tree

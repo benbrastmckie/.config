@@ -24,28 +24,28 @@ return {
 
       -- custom mappings
       local keymap = vim.keymap -- for conciseness
-      keymap.set('n', '<CR>',  api.node.open.tab,                    opts('Open'))
-      keymap.set('n', '<S-M>', api.node.show_info_popup,              opts('Info'))
-      keymap.set('n', 'h',     api.node.navigate.parent_close,        opts('Close Directory'))
-      keymap.set('n', 'l',     api.node.open.edit,                    opts('Open'))
-      keymap.set('n', 'J',     api.node.navigate.sibling.last,        opts('Last Sibling'))
-      keymap.set('n', 'K',     api.node.navigate.sibling.first,       opts('First Sibling'))
-      keymap.set('n', '-',     api.tree.change_root_to_parent,        opts('Up'))
-      keymap.set('n', 'a',     api.fs.create,                         opts('Create'))
-      keymap.set('n', 'c',     api.fs.copy.node,                      opts('Copy'))
-      keymap.set('n', 'd',     api.fs.remove,                         opts('Delete'))
-      keymap.set('n', 'D',     api.fs.trash,                          opts('Trash'))
-      keymap.set('n', '?',     api.tree.toggle_help,                  opts('Help'))
-      keymap.set('n', 'H',     api.tree.toggle_hidden_filter,         opts('Toggle Dotfiles'))
-      keymap.set('n', 'p',     api.fs.paste,                          opts('Paste'))
-      keymap.set('n', 'O',     api.node.navigate.parent,              opts('Parent Directory'))
-      keymap.set('n', 'q',     api.tree.close,                        opts('Close'))
-      keymap.set('n', 'r',     api.fs.rename,                         opts('Rename'))
-      keymap.set('n', 'R',     api.tree.reload,                       opts('Refresh'))
-      keymap.set('n', 'o',     api.node.run.system,                   opts('System Open'))
-      keymap.set('n', 'S',     api.tree.search_node,                  opts('Search'))
-      keymap.set('n', 'x',     api.fs.cut,                            opts('Cut'))
-      keymap.set('n', '<2-LeftMouse>',  api.node.open.edit,           opts('Open'))
+      keymap.set('n', '<CR>', api.node.open.tab, opts('Open'))
+      keymap.set('n', '<S-M>', api.node.show_info_popup, opts('Info'))
+      keymap.set('n', 'h', api.node.navigate.parent_close, opts('Close Directory'))
+      keymap.set('n', 'l', api.node.open.edit, opts('Open'))
+      keymap.set('n', 'J', api.node.navigate.sibling.last, opts('Last Sibling'))
+      keymap.set('n', 'K', api.node.navigate.sibling.first, opts('First Sibling'))
+      keymap.set('n', '-', api.tree.change_root_to_parent, opts('Up'))
+      keymap.set('n', 'a', api.fs.create, opts('Create'))
+      keymap.set('n', 'c', api.fs.copy.node, opts('Copy'))
+      keymap.set('n', 'd', api.fs.remove, opts('Delete'))
+      keymap.set('n', 'D', api.fs.trash, opts('Trash'))
+      keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
+      keymap.set('n', 'H', api.tree.toggle_hidden_filter, opts('Toggle Dotfiles'))
+      keymap.set('n', 'p', api.fs.paste, opts('Paste'))
+      keymap.set('n', 'O', api.node.navigate.parent, opts('Parent Directory'))
+      keymap.set('n', 'q', api.tree.close, opts('Close'))
+      keymap.set('n', 'r', api.fs.rename, opts('Rename'))
+      keymap.set('n', 'R', api.tree.reload, opts('Refresh'))
+      keymap.set('n', 'o', api.node.run.system, opts('System Open'))
+      keymap.set('n', 'S', api.tree.search_node, opts('Search'))
+      keymap.set('n', 'x', api.fs.cut, opts('Cut'))
+      keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts('Open'))
       -- keymap.set('n', '<BS>',  api.node.navigate.parent_close,        opts('Close Directory'))
       -- keymap.set('n', '<CR>',  api.node.open.edit,                    opts('Open'))
       -- keymap.set('n', '<C-r>', api.fs.rename_sub,                     opts('Rename: Omit Filename'))
@@ -55,7 +55,7 @@ return {
     end
 
     -- configure nvim-tree
-    nvimtree.setup ({
+    nvimtree.setup({
       on_attach = on_attach,
       actions = {
         open_file = {
@@ -317,5 +317,3 @@ return {
     })
   end
 }
-
-
