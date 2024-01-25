@@ -1,5 +1,5 @@
 return {
-  "nvimtools/none-ls.nvim", -- configure formatters & linters
+  "nvimtools/none-ls.nvim",               -- configure formatters & linters
   lazy = true,
   event = { "BufReadPre", "BufNewFile" }, -- to enable uncomment this
   dependencies = {
@@ -7,30 +7,29 @@ return {
     "williamboman/mason.nvim",
   },
   config = function()
-
     local mason_null_ls = require("mason-null-ls")
     mason_null_ls.setup({
       "prettier", -- prettier formatter
-      "stylua", -- lua formatter
-      "isort", -- python formatter
-      "black", -- python formatter
-      "pylint", -- python linter
+      "stylua",   -- lua formatter
+      "isort",    -- python formatter
+      "black",    -- python formatter
+      "pylint",   -- python linter
       "eslint_d", -- js linter
     })
 
     local null_ls = require("null-ls")
     null_ls.setup({
-        sources = {
-            null_ls.builtins.formatting.stylua,
-            null_ls.builtins.diagnostics.eslint,
-            null_ls.builtins.completion.spell,
-        },
+      sources = {
+        null_ls.builtins.formatting.stylua,
+        null_ls.builtins.diagnostics.eslint,
+        null_ls.builtins.completion.spell,
+      },
     })
 
     local null_ls_utils = require("null-ls.utils")
 
     -- for conciseness
-    local formatting = null_ls.builtins.formatting -- to setup formatters
+    local formatting = null_ls.builtins.formatting   -- to setup formatters
     local diagnostics = null_ls.builtins.diagnostics -- to setup linters
 
     -- to setup format on save
@@ -47,12 +46,13 @@ return {
         formatting.prettier.with({
           extra_filetypes = { "svelte" },
           disabled_filetypes = { "txt" },
-        }), -- js/ts formatter
+        }),                -- js/ts formatter
         formatting.stylua, -- lua formatter
         formatting.isort,
         formatting.black,
         diagnostics.pylint,
-        diagnostics.eslint_d.with({ -- js/ts linter
+        diagnostics.eslint_d.with({
+                                                                            -- js/ts linter
           condition = function(utils)
             return utils.root_has_file({ ".eslintrc.js", ".eslintrc.cjs" }) -- only enable if root has .eslintrc.js or .eslintrc.cjs
           end,

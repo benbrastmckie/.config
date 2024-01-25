@@ -17,7 +17,7 @@ return {
 
     -- Auto Indent
     vim.g['vimtex_indent_enabled'] = 0
-     
+
 
     -- Syntax highlighting
     vim.g['vimtex_syntax_enabled'] = 1
