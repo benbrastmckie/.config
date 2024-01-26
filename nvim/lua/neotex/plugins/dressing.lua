@@ -155,6 +155,6 @@ return {
         -- see :help dressing_get_config
         get_config = nil,
       },
-    })  
+    })
   end
 }

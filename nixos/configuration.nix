@@ -118,13 +118,19 @@
     oh-my-fish
     git
     python3
-#    poetry
-#    pipx
+    # poetry
+    # pipx
     python311Packages.pip
     python311Packages.pynvim
+    python311Packages.pylint
+    # pylint
     python311Packages.z3
     z3
-#    vimPlugins.nvim-treesitter-parsers.c
+    python310Packages.black
+    # black
+    python310Packages.isort
+    # isort
+    # vimPlugins.nvim-treesitter-parsers.c
     lazygit
     fzf
     ripgrep

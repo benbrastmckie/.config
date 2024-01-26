@@ -1,6 +1,6 @@
 return {
-  "akinsho/toggleterm.nvim", 
-  version = "*", 
+  "akinsho/toggleterm.nvim",
+  version = "*",
   opts = {
     size = 10,
     open_mapping = [[<c-t>]],
@@ -12,9 +12,9 @@ return {
     persist_size = true,
     direction = "horizontal", -- direction = 'vertical' | 'horizontal' | 'tab' | 'float',
     close_on_exit = true,
-    shell = 'fish', -- Change the default shell. Can be a string or a function returning a string
+    shell = 'fish',           -- Change the default shell. Can be a string or a function returning a string
     float_opts = {
-      border = "curved", -- 'single' | 'double' | 'shadow' | 'curved' | ... other options supported by win open
+      border = "curved",      -- 'single' | 'double' | 'shadow' | 'curved' | ... other options supported by win open
       winblend = 0,
       highlights = {
         border = "Normal",
@@ -44,8 +44,8 @@ return {
     --   },
     -- },
     terminal_mappings = true, -- whether or not the open mapping applies in the opened terminals
-    persist_mode = false, -- if set to true (default) the previous terminal mode will be remembered
-    auto_scroll = true, -- automatically scroll to the bottom on terminal output
+    persist_mode = false,     -- if set to true (default) the previous terminal mode will be remembered
+    auto_scroll = true,       -- automatically scroll to the bottom on terminal output
     -- This field is only relevant if direction is set to 'float'
     -- winbar = {
     --   enabled = false,
