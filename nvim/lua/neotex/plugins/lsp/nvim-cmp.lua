@@ -142,6 +142,7 @@ return {
             nvim_lsp = "[LSP]",
             buffer = "[Buffer]",
             spell = "[Spell]",
+            -- orgmode = "[Org]",
             -- latex_symbols = "[Symbols]",
             cmdline = "[CMD]",
             path = "[Path]",
@@ -154,6 +155,7 @@ return {
         { name = "nvim_lsp" },
         { name = "luasnip" }, -- snippets
         { name = "vimtex" },
+        -- { name = "orgmode" },
         -- { name = "pandoc" },
         -- { name = "omni" },
         { name = "buffer", keyword_length = 3 }, -- text within current buffer

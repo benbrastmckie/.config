@@ -193,9 +193,10 @@ return {
       },
       n = {
         name = "NIXOS",
-        f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR>", "flake rebuild" },
-        g = { "<cmd>TermExec cmd='sudo nixos-collect-garbage --delete-old'<CR>", "garbage collect" },
-        u = { "<cmd>TermExec cmd='sudo nix flake update'<CR>", "update" },
+        f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR><C-w>j", "flake rebuild" },
+        g = { "<cmd>TermExec cmd='sudo nixos-collect-garbage --delete-old'<CR><C-w>j", "garbage collect" },
+        u = { "<cmd>TermExec cmd='sudo nix flake update'<CR><C-w>j", "update" },
+        p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
       },
 
       p = {
@@ -204,7 +205,7 @@ return {
         m = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<CR>", "markdown" },
         h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", "html" },
         l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>", "latex" },
-        p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf'<CR>", "pdf" },
+        p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", "pdf" },
         -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
       },
       s = {
