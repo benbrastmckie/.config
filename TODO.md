@@ -3,7 +3,7 @@
 - plugins
   - markdown lists
 - formatting and linting
-  - markdown 
+  - markdown
   - latex
 - config
   - add auto detect languages to tree-sitter
@@ -12,14 +12,13 @@
 - test
   - python
 - bugs
-  - errors when opening .cls file
-  - icons in cmp.lua don't all load
+  - 2 space tab in markdown
   - supertab
   - cmp-vimtex global file
   - system open in nvim-tree
-  - error: client 2 quit with exit code 127 and signal 0
+  - checkhealth
     - install all missing programs in checkhealth
-  - error detected BufWritePre Autocommand for "\*"
-    - look into checkhealth?
-  - 2 space tab in markdown
+    - error: client 2 quit with exit code 127 and signal 0
+    - error detected BufWritePre Autocommand for "\*"
+  - icons in cmp.lua don't all load
 - integrate old todos
