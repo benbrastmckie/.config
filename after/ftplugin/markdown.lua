@@ -21,7 +21,7 @@ require("nvim-surround").buffer_setup({
   },
 })
 
-vim.g.mkdp_browser = '/run/current-system/sw/bit/vivaldi'
+-- vim.g.mkdp_browser = '/run/current-system/sw/bit/vivaldi'
 
 -- -- Autolist markdown mappings
 --

@@ -2,7 +2,7 @@ return {
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" },
   dependencies = {
-    {"hrsh7th/cmp-nvim-lsp"},
+    { "hrsh7th/cmp-nvim-lsp" },
     { "antosha417/nvim-lsp-file-operations", config = true },
   },
   config = function()
@@ -36,7 +36,7 @@ return {
     -- configure emmet language server
     lspconfig["emmet_ls"].setup({
       capabilities = default,
-      filetypes = { "html", "typescriptreact", "javascriptreact" }, -- , "css", "sass", "scss", "less", "svelte" 
+      filetypes = { "html", "typescriptreact", "javascriptreact" }, -- , "css", "sass", "scss", "less", "svelte"
     })
 
     -- configure python server
@@ -47,21 +47,21 @@ return {
     -- configure lua server (with special settings)
     lspconfig["lua_ls"].setup({
       capabilities = default,
-      settings = { -- custom settings for lua
-        Lua = {
-          -- make the language server recognize "vim" global
-          diagnostics = {
-            globals = { "vim" },
-          },
-          workspace = {
-            -- make language server aware of runtime files
-            library = {
-              [vim.fn.expand("$VIMRUNTIME/lua")] = true,
-              [vim.fn.stdpath("config") .. "/lua"] = true,
-            },
-          },
-        },
-      },
+      -- settings = { -- custom settings for lua
+      --   Lua = {
+      --     -- make the language server recognize "vim" global
+      --     diagnostics = {
+      --       globals = { "vim" },
+      --     },
+      --     workspace = {
+      --       -- make language server aware of runtime files
+      --       library = {
+      --         [vim.fn.expand("$VIMRUNTIME/lua")] = true,
+      --         [vim.fn.stdpath("config") .. "/lua"] = true,
+      --       },
+      --     },
+      --   },
+      -- },
     })
   end,
 }
