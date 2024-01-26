@@ -179,6 +179,7 @@ return {
         name = "NIXOS",
         f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR>", "flake rebuild" },
         g = { "<cmd>TermExec cmd='sudo nixos-collect-garbage --delete-old'<CR>", "garbage collect" },
+        u = { "<cmd>TermExec cmd='sudo nix flake update'<CR>", "update" },
       },
 
       p = {
