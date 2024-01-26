@@ -160,16 +160,16 @@ return {
       --   n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
       --   p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
       -- },
-      -- l = {
-      --   name = "LIST",
-      --   c = { "<cmd>AutolistRecalculate<CR>", "recalculate" },
-      --   n = { "<cmd>AutolistCycleNext<CR>", "next" },
-      --   p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
-      --   r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
-      --   -- x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
-      --   x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
-      -- },
       l = {
+        name = "LIST",
+        c = { "<cmd>AutolistRecalculate<CR>", "recalculate" },
+        n = { "<cmd>AutolistCycleNext<CR>", "next" },
+        p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
+        r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
+        x = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
+        -- x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
+      },
+      L = {
         name = "LSP",
         b = { "<cmd>Telescope diagnostics bufnr=0<CR>", "buffer diagnostics" },
         c = { "<cmd>lua vim.lsp.buf.code_action()<CR>", "code action" },
@@ -198,7 +198,6 @@ return {
         u = { "<cmd>TermExec cmd='sudo nix flake update'<CR><C-w>j", "update" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
       },
-
       p = {
         name = "PANDOC",
         w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>", "word" },
