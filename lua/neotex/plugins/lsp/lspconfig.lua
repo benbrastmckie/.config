@@ -13,7 +13,7 @@ return {
     local cmp_nvim_lsp = require("cmp_nvim_lsp")
 
     -- used to enable autocompletion (assign to every lsp server config)
-    local capabilities = cmp_nvim_lsp.default_capabilities()
+    local default = cmp_nvim_lsp.default_capabilities()
 
     -- Change the Diagnostic symbols in the sign column (gutter)
     -- (not in youtube nvim video)
@@ -25,28 +25,28 @@ return {
 
     -- configure html server
     lspconfig["html"].setup({
-      capabilities = capabilities,
+      capabilities = default,
     })
 
     -- configure typescript server with plugin
     lspconfig["tsserver"].setup({
-      capabilities = capabilities,
+      capabilities = default,
     })
 
     -- configure emmet language server
     lspconfig["emmet_ls"].setup({
-      capabilities = capabilities,
+      capabilities = default,
       filetypes = { "html", "typescriptreact", "javascriptreact" }, -- , "css", "sass", "scss", "less", "svelte" 
     })
 
     -- configure python server
     lspconfig["pyright"].setup({
-      capabilities = capabilities,
+      capabilities = default,
     })
 
     -- configure lua server (with special settings)
     lspconfig["lua_ls"].setup({
-      capabilities = capabilities,
+      capabilities = default,
       settings = { -- custom settings for lua
         Lua = {
           -- make the language server recognize "vim" global

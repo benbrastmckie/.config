@@ -296,7 +296,7 @@ return {
         confirm = {
           remove = true,
           trash = true,
-          default_yes = false,
+          default_yes = true,
         },
       },
       experimental = {},

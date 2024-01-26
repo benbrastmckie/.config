@@ -108,6 +108,7 @@ return {
         i = { "<cmd>IlluminateToggle<CR>", "illuminate" },
         k = { "<cmd>VimtexClean<CR>", "kill aux" },
         l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP" },
+        m = { "<cmd>MarkdownPreview<CR>", "markdown preview" },
         r = { "<cmd>VimtexErrors<CR>", "report errors" },
         u = { "<cmd>cd %:p:h<CR>", "update cwd" },
         v = { "<plug>(vimtex-context-menu)", "vimtex menu" },
@@ -174,6 +175,12 @@ return {
         d = { "<cmd>SessionManager delete_session<CR>", "delete" },
         l = { "<cmd>SessionManager load_session<CR>", "load" },
       },
+      n = {
+        name = "NIXOS",
+        f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR>", "flake rebuild" },
+        g = { "<cmd>TermExec cmd='sudo nixos-collect-garbage --delete-old'<CR>", "garbage collect" },
+      },
+
       p = {
         name = "PANDOC",
         w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>", "word" },

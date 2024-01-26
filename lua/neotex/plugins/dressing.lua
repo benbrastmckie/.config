@@ -11,7 +11,7 @@ return {
         default_prompt = "Input:",
 
         -- Can be 'left', 'right', or 'center'
-        prompt_align = "left",
+        prompt_align = "center",
 
         -- When true, <Esc> will close the modal
         insert_only = true,
@@ -20,7 +20,11 @@ return {
         start_in_insert = true,
 
         -- These are passed to nvim_open_win
-        override = "SW",
+        override = function(conf)
+          -- This is the config that will be passed to nvim_open_win.
+          -- Change values here to customize the layout
+          return conf
+        end,
         border = "rounded",
         -- 'editor' and 'win' will default to being centered
         relative = "cursor",
@@ -51,6 +55,7 @@ return {
             ["<Down>"] = "HistoryNext",
           },
         },
+
 
         -- see :help dressing_get_config
         get_config = nil,
@@ -136,6 +141,12 @@ return {
             ["<C-c>"] = "Close",
             ["<CR>"] = "Confirm",
           },
+
+          -- override = function(conf)
+          --   -- This is the config that will be passed to nvim_open_win.
+          --   -- Change values here to customize the layout
+          --   return conf
+          -- end,
         },
 
         -- Used to override format_item. See :help dressing-format
@@ -144,6 +155,6 @@ return {
         -- see :help dressing_get_config
         get_config = nil,
       },
-    })
+    })  
   end
 }
