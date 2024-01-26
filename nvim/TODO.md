@@ -1,8 +1,10 @@
 # TODO
 
 - plugins
-  - lsp zero
-    - give this a try to get formatting and linting to work for latex, lua, and python 
+  - markdown lists
+- formatting and linting
+  - markdown 
+  - latex
 - config
   - add auto detect languages to tree-sitter
   - mason check what is loaded throughout
