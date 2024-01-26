@@ -2,6 +2,7 @@
 
 - plugins
   - markdown lists
+  - some
 - formatting and linting
   - markdown
   - latex

@@ -16,6 +16,7 @@ return {
 			highlight = {
 				enable = true,
 				disable = { "css", "latex", "markdown", "txt", "text", "cls" }, -- list of language that will be disabled
+        -- additional_vim_regex_highlighting = { 'org' }, -- for orgmode
 			},
 			-- enable indentation
 			indent = { enable = true },
@@ -41,6 +42,7 @@ return {
 				"gitignore",
 				"bibtex",
 				"vimdoc",
+        -- "org",
 				-- "latex",
 				-- "javascript",
 				-- "typescript",
