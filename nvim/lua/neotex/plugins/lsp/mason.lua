@@ -29,10 +29,11 @@ return {
     mason_lspconfig.setup({
       -- list of servers for mason to install
       ensure_installed = {
-        -- "html",
-        -- "emmet_ls",
+        "html",
+        "emmet_ls",
         "pyright",
-        -- "tsserver",
+        "tsserver",
+        -- "lua_ls",   -- seems to cause trouble
         -- "cssls",
         -- "tailwindcss",
         -- "svelte"
@@ -50,7 +51,7 @@ return {
         "isort",    -- python formatter
         "black",    -- python formatter
         "pylint",   -- python linter
-        -- "eslint_d", -- js linter
+        "eslint_d", -- js linter
       },
     })
   end,

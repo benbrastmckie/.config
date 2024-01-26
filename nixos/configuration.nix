@@ -122,6 +122,8 @@
 #    pipx
     python311Packages.pip
     python311Packages.pynvim
+    # python311Packages.z3
+    z3
 #    vimPlugins.nvim-treesitter-parsers.c
     lazygit
     fzf

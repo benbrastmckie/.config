@@ -1,4 +1,4 @@
-local config = require("nvim-surround.config")
+-- local config = require("nvim-surround.config")
 
 require("nvim-surround").buffer_setup({
   surrounds = {
@@ -20,6 +20,8 @@ require("nvim-surround").buffer_setup({
     },
   },
 })
+
+vim.g.mkdp_browser = '/run/current-system/sw/bit/vivaldi'
 
 -- -- Autolist markdown mappings
 --
