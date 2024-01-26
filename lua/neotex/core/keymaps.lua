@@ -1,10 +1,10 @@
 local opts = { noremap = true, silent = true }
 
-local term_opts = { silent = true }
+-- local term_opts = { silent = true }
 
 -- Shorten function name
 local keymap = vim.api.nvim_set_keymap
-local map = vim.keymap.set -- for conciseness
+-- local map = vim.keymap.set -- for conciseness
 
 --Remap space as leader key
 vim.g.mapleader = " "
