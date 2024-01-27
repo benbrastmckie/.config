@@ -162,11 +162,13 @@ return {
       -- },
       l = {
         name = "LIST",
-        c = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
+        c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
+        -- c = { "<cmd>lua require('autolist').invert()<CR>", "checkbox" },
+        -- x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
+        -- c = { "<cmd>AutolistToggleCheckbox<CR>", "checkmark" },
         n = { "<cmd>AutolistCycleNext<CR>", "next" },
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
-        -- x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
       },
       L = {
         name = "LSP",
