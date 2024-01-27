@@ -7,8 +7,6 @@
  ╚═╝  ╚═══╝╚══════╝ ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝
 ```
 
-<p style="text-align: center;">A piece of centered text</p>
-
 # .config
 
 NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly.
