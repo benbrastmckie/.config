@@ -18,7 +18,12 @@ These include:
 - AnnotatePDF (creates a local `.md` file with highlights and notes from citation under the cursor)
 - Search citations with telescope... and lots more!
 
-I have updated the MacOS installation instructions below, but have not tested these for myself. The installation should not be that different from before, but feel free to open an issue if you run into any errors. I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue. Either way, I'd be happy to get your feedback and help improving these instructions for others.
+If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.
+
+As for installation, I have updated the MacOS installation instructions below, but have not tested these for myself.
+The installation should not be that different from before, but feel free to open an issue if you run into any errors.
+I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue.
+Either way, I'd be happy to get your feedback and help improving these instructions for others.
 
 If you use Windows and are interested in troubleshooting the installation process, feel free to open an issue if one does not exist already.
 
