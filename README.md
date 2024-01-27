@@ -9,7 +9,16 @@
 
 # .config
 
-NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly. It is running really fast with some nice features. I have updated the MacOS installation instructions below, but have not tested these for myself. The installation should not be that different from before, but feel free to open an issue if you run into any errors. I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue. Either way, I'd be happy to get your feedback and help improving these instructions for others.
+NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly. It is running really fast with some nice features.
+These include:
+
+- LSP support for: VimTex, Buffer, Spell, Snippets, Python, Lua, etc.
+- Linting and Formatting for: Python, Lua, Markdown, etc.
+- BibExport (creating a local `.bib` file from all citations that occur in your `.tex` document)
+- AnnotatePDF (creates a local `.md` file with highlights and notes from citation under the cursor)
+- Search citations with telescope... and lots more!
+
+I have updated the MacOS installation instructions below, but have not tested these for myself. The installation should not be that different from before, but feel free to open an issue if you run into any errors. I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue. Either way, I'd be happy to get your feedback and help improving these instructions for others.
 
 If you use Windows and are interested in troubleshooting the installation process, feel free to open an issue if one does not exist already.
 
