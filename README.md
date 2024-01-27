@@ -9,16 +9,19 @@
 
 # .config
 
-NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly. It is running really fast with some nice features.
-These include:
+NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly.
+It is running really fast with some nice features, including:
 
-- LSP support for: VimTex, Buffer, Spell, Snippets, Python, Lua, etc.
-- Linting and Formatting for: Python, Lua, Markdown, etc.
+- LSP Autocompletion (VimTex, Buffer, Spell, Snippets, Python, Lua, etc.)
+- Linting and Formatting (Python, Lua, Markdown, etc.)
 - BibExport (creating a local `.bib` file from all citations that occur in your `.tex` document)
 - AnnotatePDF (creates a local `.md` file with highlights and notes from citation under the cursor)
-- Search citations with telescope... and lots more!
+- Pandoc (convert between file formats)
+- Telescope (search citations, files, words, etc.)
+- And lots more!
 
 If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.
+I have not created any new videos so (for now) these [old ones](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) will have to do if you'd like to see what the previous version looked like.
 
 As for installation, I have updated the MacOS installation instructions below, but have not tested these for myself.
 The installation should not be that different from before, but feel free to open an issue if you run into any errors.
