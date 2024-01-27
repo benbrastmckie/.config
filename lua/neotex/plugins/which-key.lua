@@ -162,11 +162,10 @@ return {
       -- },
       l = {
         name = "LIST",
-        c = { "<cmd>AutolistRecalculate<CR>", "recalculate" },
+        c = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
         n = { "<cmd>AutolistCycleNext<CR>", "next" },
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
-        x = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
         -- x = { "<cmd>AutolistToggleCheckbox<cr><CR>", "checkmark" },
       },
       L = {

@@ -63,8 +63,6 @@ return {
                 filter = function(client)
                   return client.name == "null-ls"
                 end,
-                -- on later neovim version, you should use vim.lsp.buf.format({ async = false }) instead
-                -- on 0.8, you should use vim.lsp.buf.format({ bufnr = bufnr }) instead
                 async = false
               })
             end,

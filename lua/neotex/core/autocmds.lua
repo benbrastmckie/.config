@@ -9,6 +9,8 @@ api.nvim_create_autocmd(
   }
 )
 
+
+-- Terminal mappings
 function _G.set_terminal_keymaps()
   local opts = {buffer = 0}
   vim.keymap.set('t', '<esc>', [[<C-c>]], opts)
@@ -19,5 +21,28 @@ function _G.set_terminal_keymaps()
   -- vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
 end
 
--- if you only want these mappings for toggle term use term://*toggleterm#* instead
-vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
+vim.api.nvim_create_autocmd({"TermOpen"}, {
+  pattern = {"term://*"}, -- use term://*toggleterm#* for only ToggleTerm
+  command = "lua set_terminal_keymaps()",
+})
+
+
+-- Autolist markdown mappings
+function _G.set_markdown_keymaps()
+  vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", ">", "><cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", {})
+end
+
+vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
+  pattern = {"*.md", "*.txt", "*.org"},
+  command = "lua set_markdown_keymaps()",
+})
+

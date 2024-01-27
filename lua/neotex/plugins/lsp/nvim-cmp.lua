@@ -96,26 +96,30 @@ return {
         -- ["<C-h>"] = cmp.mapping.abort(), -- close completion window
         -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
         ["<CR>"] = cmp.mapping.confirm({ select = true }),
-        ------ begin lunar -----
-        ["<Tab>"] = cmp.mapping(function(fallback) -- could be: function(fallback)
-          if cmp.visible() then
-          --   cmp.select_next_item()
-            cmp.confirm()
-          elseif luasnip.expand_or_locally_jumpable() then
-            luasnip.expand_or_jump()
-          -- elseif jumpable(1) then
-          --   luasnip.jump(1)
-          -- elseif has_words_before() then
-          --   cmp.complete()
-            -- fallback()
+        -- supertab
+        ["<Tab>"] = cmp.mapping(function(fallback)
+          if luasnip.expandable() then
+            luasnip.expand()
+          elseif luasnip.jumpable(1) then
+            luasnip.jump(1)
+          elseif cmp.visible() then
+            cmp.select_next_item()
           else
             fallback()
           end
         end, { "i", "s" }),
-        ["<S-Tab>"] = cmp.mapping(function() -- could be: function(fallback) 
-          -- if cmp.visible() then
-          --   cmp.select_prev_item()
-          if luasnip.jumpable(-1) then
+          -- BONEYARD
+          -- if luasnip.expand_or_locally_jumpable() then
+          --   luasnip.expand_or_jump()
+          -- elseif luasnip.locally_jumpable() then
+          --   luasnip.jump()
+          --   cmp.confirm()
+          -- elseif has_words_before() then
+          --  cmp.complete()
+        ["<S-Tab>"] = cmp.mapping(function() -- could be: function(fallback) -- OR: function(delete-two-spaces????)
+          if cmp.visible() then
+            cmp.select_prev_item()
+          elseif luasnip.jumpable(-1) then
             luasnip.jump(-1)
           else
             -- fallback()
@@ -124,15 +128,9 @@ return {
       }),
       -- formatting for autocompletion
       formatting = {
-        -- NOTE: from Josean
-        -- format = lspkind.cmp_format({
-        --   maxwidth = 50,
-        --   ellipsis_char = "...",
-        -- }),
         fields = { "kind", "abbr", "menu" },
         format = function(entry, vim_item)
-          -- Kind icons
-          vim_item.kind = string.format("%s", kind_icons[vim_item.kind])
+          vim_item.kind = string.format("%s", kind_icons[vim_item.kind]) -- Kind icons
           vim_item.menu = ({
             -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
             -- vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
