@@ -1,6 +1,6 @@
 return {
   "gaoDean/autolist.nvim",
-  ft = {
+  filetype = {
     "markdown",
     -- "text",
     -- "tex",
@@ -10,7 +10,7 @@ return {
   config = function()
     require("autolist").setup()
 
-    function HandleCheckbox()
+    function handle_checkbox()
       local config = require("autolist.config")
       local auto = require("autolist.auto")
 
@@ -37,6 +37,5 @@ return {
       end
       ::continue::
     end
-
   end,
 }
