@@ -1,7 +1,7 @@
 # .config
 
+NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly. It is running really fast with some nice features. I have updated the MacOS installation instructions below, but have not tested these for myself. The installation should not be that different from before, but feel free to open an issue if you run into any errors. I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue. Either way, I'd be happy to get your feedback and help improving these instructions for others.
 
-NOTE: If you discover any errors in these instructions, please feel free to submit a PR or open an issue so that I can improve these notes, making it easier for others in the future.
 If you use Windows and are interested in troubleshooting the installation process, feel free to open an issue if one does not exist already.
 
 ## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
@@ -9,7 +9,6 @@ If you use Windows and are interested in troubleshooting the installation proces
 The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
 In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources for integrating Git into your workflow.
 You can also find video series which: (1) demonstrates the [features](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) included in the present configuration; (2) walks through the [installation process](https://www.youtube.com/watch?v=ELdTohuzTnA&list=PLBYZ1xfnKeDQxis9D7HFFygHOFVTQ0BFn); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) (OLD) for your own needs; and (4) describes how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
-
 
 ## Table of Contents
 
@@ -20,7 +19,6 @@ You can also find video series which: (1) demonstrates the [features](https://ww
 
 The software covered includes NeoVim, Git, Zathura, Zotero, Fish, and either Kitty or both Alacritty and Tmux.
 I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
-
 
 # Mac OS Installation
 
@@ -41,21 +39,19 @@ brew doctor
 brew upgrade
 ```
 
-If Homebrew has not been installed, you may install it by running the following two commands:
+If Homebrew has not been installed, you may install it by running the following two commands.
+Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
 
 ```
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
-
 Although optional, I highly recommend swapping the `CapsLock` and `Esc` keys by opening `System Preferences -> Keyboard` and making the appropriate changes.
 I also like to change the `Command` key to the `Control` key, change the `Control` key to the `Function` key, change the `Function` key to the `Option` key, and change the `Option` key to the `Command` key if I'm using a Mac.
 My reasons for doing this is ergonomics given which keys I'll be using most often in NeoVim.
 Alternatively, you can make changes to the mappings that I've included in the config, though this may take a little more work than swapping things around in `System Preferences -> Keyboard`.
 Whatever you do, I recommend finding something comfortable before you begin using your NeoVim config, committing its key-bindings to memory.
-
 
 ## [Fish](https://fishshell.com/)
 
@@ -109,7 +105,6 @@ fish_vi_key_bindings
 
 If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumbersome, and best to avoid during the installation.
 
-
 ## Dependencies
 
 Check to see that you have `git` installed by running:
@@ -157,7 +152,7 @@ brew install --cask font-roboto-mono-nerd-font
 
 More options can be found [here](https://github.com/Homebrew/homebrew-cask-fonts) or by searching for Nerd Fonts that can be installed with Homebrew.
 If you are using the default Mac Terminal, you will need to select the font that you just installed by navigating through the menu `Terminal --> Preferences --> Profiles --> Change Font` and selecting RobotoMono or similar.
-However, I highly recommend installing a better terminal as detailed in the last section, providing a faster cleaner looking setup which is easy to configure given the config files that I have included. 
+However, I highly recommend installing a better terminal as detailed in the last section, providing a faster cleaner looking setup which is easy to configure given the config files that I have included.
 Nevertheless, the Mac terminal will do for completing the installation process detailed below.
 
 Lastly, check to see if the following are installed with `--version` as above and install whatever is missing:
@@ -171,7 +166,6 @@ brew install npm
 brew install wget
 sudo pip3 install neovim-remote
 ```
-
 
 ## [NeoVim](https://neovim.io/)
 
@@ -188,7 +182,7 @@ nvim
 ```
 
 You can enter normal-mode in NeoVim from any mode by hitting escape.
-To check the health of your NeoVim install, enter command-mode in NeoVim from normal mode by hitting `:` and running: 
+To check the health of your NeoVim install, enter command-mode in NeoVim from normal mode by hitting `:` and running:
 
 ```
 checkhealth
@@ -214,18 +208,19 @@ git clone --depth 1 https://github.com/wbthomason/packer.nvim\
 
 You are now ready to pull down the configuration files.
 
-
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-I recommend forking my config so that you have your own version that you can customise for yourself. 
-To do so you will need to make a GitHub account if you don't have one already. 
-Then click `Fork` in my GitHub config repo in order to copy the repo over to your GitHub. 
+I recommend forking my config so that you have your own version that you can customise for yourself.
+To do so you will need to make a GitHub account if you don't have one already.
+Then click `Fork` in my GitHub config repo in order to copy the repo over to your GitHub.
 Make yourself the owner.
 There is no need to include other branches besides the master branch which will be selected by default.
-Once you have forked the repo, you can click the `Code` button in your fork of the config repo, selecting SSH, and copying the address which you will use below. 
+
+Once you have forked the repo, you can click the `Code` button in your fork of the config repo, selecting SSH, and copying the address which you will use below.
 If you don't have an SSH key set up, then you can select HTTPS instead, though you will have to change this to SSH if you want to be able to push changes up to your fork of the repo without typing in a password every time.
 See the instructions below to set up a SSH key.
-If you don't want to fork the repo at all, then click the `Code` button in my repo, copying the HTTPS address. 
+
+If you don't want to fork the repo at all, then click the `Code` button in my repo, copying the HTTPS address.
 Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
@@ -233,39 +228,32 @@ cd ~/.config
 ls -a
 git init
 ls -a
+git remote -v
 git remote add origin YOUR-OR-MY-ADDRESS
 git remote -v
 git pull origin master
 ls -a
 ```
 
-The `ls -a` commands are optional but will help you to see what is happening.
+The `ls -a` and `git remote -v` commands are optional but will show you what is happening at each stage.
 In particular, `git pull origin master` will pull down the config files into your `~/.config` directory.
-The other git commands add a new git repo, link your local repo to your fork, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub. 
+The other git commands add a new git repo, link your local repo to your fork, and confirm that the addresses have been added so that you are ready to push and pull changes from your fork on GitHub.
 This will permit you keep your config backed up to your GitHub repo and to pull your repo down onto other computers if you want to reproduce your customised config once you have made changes.
 
-Finally we may edit the `options.lua` file, deleting the final block which is not needed for Mac users with `Vim` rather than `NeoVim`:
+You are now ready to run NeoVim with:
 
 ```
-vim ~/.config/nvim/lua/user/options.lua
+nvim
 ```
 
-Scroll to the bottom with `G`, move the cursor into the final block by moving the cursor up to any line in that final block by hitting `k` enough times (the block should begin with a note to Mac users), and then hit `dap` for 'delete all paragraph'.
-Save and quit with `:wq` and reopen NeoVim with `nvim`.
-Once inside NeoVim, run the following commands:
-
-```
-:PackerInstall
-:PackerUpdate
-```
-
-Run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the sections below.
+Lazy is the package manager and should open automatically, installing all the plugins that you will need and various language servers through Mason.
+Once this process finishes, you can quit exit out of Lazy with 'q', exiting NeoVim with `<space>q` or `:q`.
+Reopen Neovim and run `:checkhealth` troubleshooting any errors with the exception of VimTex which will be fixed by the sections below.
 You can ignore all the warnings, but should troubleshoot any errors that persist.
-
 
 ## [LaTeX](https://www.latex-project.org/)
 
-If you are here, you are probably familiar with LaTeX and already have it installed. 
+If you are here, you are probably familiar with LaTeX and already have it installed.
 But just in case you haven't installed LaTeX already, you can run the following command in order to check to see if it is already installed:
 
 ```
@@ -286,7 +274,6 @@ latexmk --version
 ```
 
 You should now find that `latexmk` is installed.
-
 
 ## [Skim](https://skim-app.sourceforge.io)
 
@@ -329,8 +316,8 @@ If you want to use Zathura as your primary pdf viewer and only launching Skim fr
 :h vimtex-faq-zathura-macos
 ```
 
-Note that getting Zathura to work with MacOS may be a challenge.
-
+Note that getting Zathura to work with MacOS may be a challenge unless someone has figured this out.
+If you figure out how to do this, I would love to expand these instructions so that MacOS users can also enjoy Zathura which is fast and highly customizable.
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -361,7 +348,7 @@ cp -R ~/.config/latex/bst ~/Library/texmf/bibtex
 Return to Zotero, right-click the main library folder in the left-most column, and select `Export Library`.
 Under the `Format` drop-down menu, select `Better BibTex` and check the `Keep Updated` box. 
 Save the file as `Zotero` (the extension will be added automatically) to `~/Library/texmf/bibtex/bib` which you previously created.
-If you have trouble finding the Library directory, you may need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting  `Go to Folder`.
+If you have trouble finding the Library directory, you may need to remove the MacOS child-locks by opening `Finder`, clicking the `Go` menu, and selecting `Go to Folder`.
 Type `/Users` and then open the directory associated with your username.
 Now go to the `View` menu, select `Show View Options`, and check `Show Library Folder`.
 Go back to Zotero and export your library as directed above.
@@ -381,11 +368,11 @@ If your citation autocomplete does not work but searching for citations with `<s
 
 This should fix the issue.
 
-
 ## Terminal (Optional)
 
 As an alternative to the stock terminal, I recommend installing either [Kitty](https://github.com/kovidgoyal/kitty) or else a combination of [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki).
-There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, choosing which you prefer later.
+There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, though Kitty is a simple all in one solution.
+Here are all of the commands that you might need to explore these options:
 
 ```
 brew install --cask kitty
@@ -396,12 +383,11 @@ brew install tmux
 If you installed Kitty, you can edit `~/.config/kitty/kitty.conf` if desired, but no changes are required to run `nvim` in Kitty.
 If you installed Alacritty and Tmux, move the Tmux configuration file to the appropriate location by running:
 
-
 ```
 sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
 ```
 
-Assuming that you already installed Fish above, you will need to locate fish on your operating system by running the following:
+Assuming that you already installed Fish above, you will need to locate Fish on your operating system by running the following:
 
 ```
 which fish
@@ -414,19 +400,25 @@ Copy the displayed path and run the following:
 nvim ~/.config/alacritty/alacritty.yml
 ```
 
-Replace `/usr/bin/fish` with the location of Fish displayed above (you can search for 'fish' in `alacritty.yml` with `/` followed by 'fish').
-You may also search for 'Window position', setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
-Save and exit, opening Alacritty with `Command + Space` and typing 'Alacritty', and run the following to reset Tmux:
+Replace `/usr/bin/fish` with the location of Fish displayed above.
+You can search for 'fish' in `alacritty.yml` with `/` followed by 'fish'.
+You should not need to do this if you decided to use Kitty.
+
+If you want to configure the default window position when you open Kitty, you also search for 'LAYOUT' in `kitty.conf`, adjusting the default window sizes accordingly.
+Similarly, search for 'Window position' in `alacritty.yml`, setting the `x` and `y` values along with the window dimensions which are set just above, or comment out the position block by adding `#` in front of those three lines in order to assume system defaults upon opening Alacritty.
+Save and exit.
+You can then open Alacritty/Kitty with `Command + Space` and typing 'Alacritty'/'Kitty' respectively.
+If you went with Alacritty, run the following to reset Tmux:
 
 ```
 tmux kill-server
 ```
 
-When you reopen Alacritty Fish should be the default shell inside a Tmux window.
-You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
-That is, to open NeoVim, open Alacritty and type `nvim`.
-See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
+Reopen Alacritty to see if Fish is now the default shell.
+You are now read use NeoVim in Kitty or Alacritty+Tmux along with the Fish shell.
+That is, to open NeoVim, open Kitty/Alacritty and type `nvim`.
 
+See the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) for the Tmux window commands.
 
 ## [Git](https://git-scm.com/) (Optional)
 
@@ -449,7 +441,6 @@ Your details should now appear.
 
 You can now begin to set up your remote repository to push and pull changes from.
 If you forked my config, you can skip the following subsection.
-
 
 ### Cloned Config
 
@@ -477,7 +468,6 @@ git remote -v
 ```
 
 If your address appears, you are ready to push changes.
-
 
 ### Pushing Changes
 
@@ -517,7 +507,6 @@ You can now push your changes up to your repo with `P`.
 This may require that you enter your GitHub password.
 To avoid having to enter your password each time you want to push changes, see the instructions in the next section.
 
-
 ### Adding an SSH Key to GitHub
 
 If you have not already, you can add an SSH key by amending and running the following:
@@ -555,7 +544,6 @@ ssh-add -K ~/.ssh/id_rsa
 
 If you get an error, retry the command above with a lower-case 'k' or without the 'K' altogether.
 
-
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
@@ -573,7 +561,7 @@ nvim CheatSheet.md
 ```
 
 I would recommend keeping the `CheatSheet.md` updated with any changes you make to your configuration.
-You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`. 
+You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`.
 You will have to sort through which files you might want Git to ignore, hitting `i` when hovering over each, and once you have finished, hitting `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
 Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how paste is achieved in your terminal enviornment).
 Assuming that this push works, close LazyGit with `q`, and reopen the terminal with `Ctrl+t`.
@@ -589,7 +577,6 @@ Run one final test, checking to see if your credentials are now automatically su
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
 
-
 <!-- ### Installing the GitHub Cli -->
 <!---->
 <!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
@@ -599,8 +586,6 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 <!-- ``` -->
 <!---->
 <!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
-
-
 
 # Arch Linux Installation
 
@@ -665,7 +650,6 @@ pip3 install --user pynvim
 Troubleshoot any errors that persist by continuing to run `:checkhealth`, following the advice provided for each error.
 All warnings can be ignored.
 
-
 ## [LaTeX](https://www.latex-project.org)
 
 Check to see LaTeX is already installed with:
@@ -686,7 +670,6 @@ After rebooting, confirm that LaTeX is installed by running:
 latexmk --version
 ```
 
-
 ## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
 In order for NeoVim to load icons, it will be imporant to install a NerdFont.
@@ -698,7 +681,6 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
@@ -729,11 +711,10 @@ nvim ~/.config/nvim/plug-config/vimtex.vim
 
 Alternatively, you could replace 'okular' with 'zathura'.
 
-
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config. 
-Alternatively, if you don't want to fork, click the `Code` button in my repo. 
+I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config.
+Alternatively, if you don't want to fork, click the `Code` button in my repo.
 Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
@@ -765,7 +746,6 @@ After the plugins finish installing, exit and reopen NeoVim, running:
 ```
 
 Troubleshoot any errors by following the advice provided.
-
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -799,7 +779,6 @@ Right-click the main library folder in the left-most column, and select `Export
 Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep Updated` box. 
 Save the file as `Zotero.bib` to ~/texmf/bibtex/bib which you previously created.
 You are now ready to cite files in your Zotero database.
-
 
 ## Terminal (Optional)
 
@@ -863,7 +842,6 @@ fish_vi_key_bindings
 
 You are now read use NeoVim in Alacritty, complete with Tmux and the Fish shell.
 
-
 ## [Git](https://git-scm.com/) (Optional)
 
 You can begin by checking to see if you have already set the appropriate username and email with:
@@ -884,7 +862,6 @@ Your details should now appear.
 
 You can now begin to set up your remote repository to push and pull changes from.
 If you forked my config, you can skip the following subsection.
-
 
 ### Cloned Config
 
@@ -912,7 +889,6 @@ git remote -v
 ```
 
 If your address appears, you are ready to push changes.
-
 
 ### Pushing Changes
 
@@ -951,7 +927,6 @@ Once all files have been staged, you can commit changes with `c`, entering a mes
 You can now push your changes up to your repo with `P`.
 This may require that you enter your GitHub password.
 To avoid having to enter your password each time you want to push changes, see the instructions in the next section.
-
 
 ### Adding an SSH Key to GitHub
 
@@ -995,7 +970,6 @@ ssh-add -K ~/.ssh/id_rsa
 
 If you get an error, retry the command above with a lower-case 'k' or without the 'K' altogether.
 
-
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
@@ -1013,7 +987,7 @@ nvim CheatSheet.md
 ```
 
 I would recommend keeping the `CheatSheet.md` updated with any changes you make to your configuration.
-You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`. 
+You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`.
 You will have to sort through which files you might want Git to ignore, hitting `i` when hovering over each, and once you have finished, hitting `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
 Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how paste is achieved in your terminal enviornment).
 Assuming that this push works, close LazyGit with `q`, and reopen the terminal with `Ctrl+t`.
@@ -1028,7 +1002,6 @@ Repeat the steps above after making a small change to your config to run another
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
-
 
 <!-- ### Installing the GitHub Cli -->
 <!---->
@@ -1051,8 +1024,6 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 <!-- ``` -->
 <!---->
 <!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
-
-
 
 # Debian Linux Installation
 
@@ -1161,7 +1132,6 @@ If `treesitter` throws an error, you can try running `:TSUpdate` in NeoVim.
 Troubleshoot any errors that persist by continuing to run `:checkhealth`, following the advice provided for each error.
 All warnings can be ignored.
 
-
 ## [LaTeX](https://www.latex-project.org)
 
 Check to see LaTeX is already installed with:
@@ -1188,7 +1158,6 @@ After rebooting, confirm that LaTeX is installed by running:
 latexmk --version
 ```
 
-
 ## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
 In order for NeoVim to load icons, it will be imporant to install a NerdFont.
@@ -1200,7 +1169,6 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
 You are now ready to write LaTex in NeoVim inside the stock terminal.
-
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
@@ -1231,11 +1199,10 @@ nvim ~/.config/nvim/plug-config/vimtex.vim
 
 Alternatively, you could replace 'okular' with 'zathura'.
 
-
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config. 
-Alternatively, if you don't want to fork, click the `Code` button in my repo. 
+I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config.
+Alternatively, if you don't want to fork, click the `Code` button in my repo.
 Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
 ```
@@ -1267,7 +1234,6 @@ After the plugins finish installing, exit and reopen NeoVim, running:
 ```
 
 Troubleshoot any errors by following the advice provided.
-
 
 ## [Zotero](https://www.zotero.org/)
 
@@ -1302,7 +1268,6 @@ Under the `Format` dropdown menu, select `Better BibTex`, selecting the `Keep 
 Save the file as `Zotero.bib` to ~/texmf/bibtex/bib which you previously created.
 You are now ready to cite files in your Zotero database.
 
-
 ## Terminal (Optional)
 
 As an alternative to the stock terminal, I recommend installing either [Kitty](https://github.com/kovidgoyal/kitty) or else a combination of [Alacritty](https://github.com/alacritty/alacritty) and [Tmux](https://github.com/tmux/tmux/wiki).
@@ -1310,6 +1275,7 @@ Either way, I also recommend using the [Fish](https://fishshell.com/) shell.
 There is nothing wrong with installing Kitty in addition to both Alacritty and Tmux, choosing which you prefer later.
 
 To install Kitty and Fish, run:
+
 ```
 sudo apt install kitty
 sudo apt install fish
@@ -1372,7 +1338,6 @@ fish_vi_key_bindings
 
 You are now read use NeoVim in either Kitty or else Alacritty and Tmux complete with the Fish shell.
 
-
 ## [Git](https://git-scm.com/) (Optional)
 
 You can begin by checking to see if you have already set the appropriate username and email with:
@@ -1393,7 +1358,6 @@ Your details should now appear.
 
 You can now begin to set up your remote repository to push and pull changes from.
 If you forked my config, you can skip the following subsection.
-
 
 ### Cloned Config
 
@@ -1421,7 +1385,6 @@ git remote -v
 ```
 
 If your address appears, you are ready to push changes.
-
 
 ### Pushing Changes
 
@@ -1460,7 +1423,6 @@ Once all files have been staged, you can commit changes with `c`, entering a mes
 You can now push your changes up to your repo with `P`.
 This may require that you enter your GitHub password.
 To avoid having to enter your password each time you want to push changes, see the instructions in the next section.
-
 
 ### Adding an SSH Key to GitHub
 
@@ -1504,7 +1466,6 @@ ssh-add -K ~/.ssh/id_rsa
 
 If you get an error, retry the command above with a lower-case 'k' or without the 'K' altogether.
 
-
 ### [Adding a Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 Create a personal access token (PAT) by going to GitHub.com, clicking your user icon in the top right, navigate to `Setting --> Developer settings --> Personal -- Tokens` and create a new access token, setting:
@@ -1522,7 +1483,7 @@ nvim CheatSheet.md
 ```
 
 I would recommend keeping the `CheatSheet.md` updated with any changes you make to your configuration.
-You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`. 
+You can then push all of the changes that you have made to your config so far with LazyGit by hitting `<space>gg`.
 You will have to sort through which files you might want Git to ignore, hitting `i` when hovering over each, and once you have finished, hitting `A` to stage all files, followed by `c` to commit the staged changes, and `P` to push changes to the remote repo.
 Enter your user name when prompted, followed by your PAT with `Ctrl+Shift+v` (or other depending on how paste is achieved in your terminal enviornment).
 Assuming that this push works, close LazyGit with `q`, and reopen the terminal with `Ctrl+t`.
@@ -1537,7 +1498,6 @@ Repeat the steps above after making a small change to your config to run another
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
-
 
 <!-- ### Installing the GitHub Cli -->
 <!---->
@@ -1560,7 +1520,6 @@ For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) in
 <!-- ``` -->
 <!---->
 <!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
-
 
 # Remapping Keys
 
@@ -1621,6 +1580,7 @@ xmodmap ~/.config/.Xmodmap
 ```
 
 Once you have .Xmodmap running the right key mappings, you will have to run the following so that .Xmodmap starts automatically:
+
 ```
 sudo cp ~/.config/.Xmodmap ~/.Xmodmap
 cp ~/.config/.xmodmap.desktop ~/.config/autostart/
