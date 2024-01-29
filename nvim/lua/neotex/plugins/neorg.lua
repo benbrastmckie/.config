@@ -22,6 +22,9 @@ return {
           config = {
             icons = {
               todo = {
+                undone = {
+                  icon = " "
+                },
                 urgent = {
                   icon = "󰈸"
                 },

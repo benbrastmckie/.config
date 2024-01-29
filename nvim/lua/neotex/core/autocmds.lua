@@ -34,15 +34,15 @@ function _G.set_neorg_keymaps()
   vim.api.nvim_buf_set_keymap(0, "i", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>", {})
   vim.api.nvim_buf_set_keymap(0, "n", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>a", {})
   vim.api.nvim_buf_set_keymap(0, "v", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR><Esc>a", {})
-  vim.api.nvim_buf_set_keymap(0, "i", "<Tab>", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "i", "<S-Tab>", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", ">", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "<", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
+  -- vim.api.nvim_buf_set_keymap(0, "i", "<Tab>", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
+  -- vim.api.nvim_buf_set_keymap(0, "i", "<S-Tab>", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
+  -- vim.api.nvim_buf_set_keymap(0, "n", ">", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
+  -- vim.api.nvim_buf_set_keymap(0, "n", "<", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
 end
 
 -- runs neorg keymaps in both .neorg and .md files
 vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
-  pattern = {"*.norg", "*.md"},
+  pattern = {"*.norg"},
   command = "lua set_neorg_keymaps()",
 })
 
