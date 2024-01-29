@@ -7,10 +7,9 @@ return {
       disable_file_types = {},
       -- hlgroup = 'Visual', -- change highlight color to value given in table found by running :highlight
       -- hlgroup = 'Question', -- change highlight color to value given in table found by running :highlight
-      hlgroup = 'Pmenu', -- change highlight color to value given in table found by running :highlight 
+      hlgroup = 'Pmenu', -- change highlight color to value given in table found by running :highlight
       cw_hlgroup = nil,
       insert_mode = false,
-    }) 
+    })
   end
 }
-

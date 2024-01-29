@@ -1,7 +1,7 @@
 return {
   "goolord/alpha-nvim",
   event = "VimEnter",
-  dependencies = { 
+  dependencies = {
     "nvim-tree/nvim-web-devicons",
     "Shatur/neovim-session-manager",
   },
@@ -55,7 +55,7 @@ return {
     alpha.setup(dashboard.opts)
 
     -- Set footer
-   -- dashboard.section.footer.val = fortune
+    -- dashboard.section.footer.val = fortune
     vim.api.nvim_create_autocmd("User", {
       pattern = "LazyVimStarted",
       callback = function()
@@ -64,7 +64,7 @@ return {
 
         -- local now = os.date "%d-%m-%Y %H:%M:%S"
         local version = "   v" .. vim.version().major .. "." .. vim.version().minor .. "." .. vim.version().patch
-        local fortune = require "alpha.fortune"
+        -- local fortune = require "alpha.fortune"
         -- local quote = table.concat(fortune(), "\n")
         local plugins = "⚡Neovim loaded " .. stats.count .. " plugins in " .. ms .. "ms"
         local footer = version .. "\t" .. plugins -- .. "\n" .. quote

@@ -3,60 +3,57 @@ return {
   -- dependencies = {},
   version = "*",
   event = { "BufReadPre", "BufNewFile" },
-  opts = {
-    -- indent_blankline_show_current_context = true,
-    indent = {
-      char = "│",
-      tab_char = "│",
-      highlight = "IblIndent",
-      smart_indent_cap = true,
-      priority = 1,
-      repeat_linebreak = true,
-    },
-    whitespace = {
-      highlight = "IblWhitespace",
-      remove_blankline_trail = true,
-    },
-    scope = {
-      enabled = true,
-      char = nil,
-      show_start = false,
-      show_end = false,
-      show_exact_scope = false,
-      injected_languages = true,
-      highlight = "IblScope",
-      priority = 1024,
-      include = {
-        node_type = { ["*"] = { "*" } }, -- makes lines show on all blocks
+  config = function()
+    require("ibl").setup({
+      -- indent_blankline_show_current_context = true,
+      indent = {
+        char = "│",
+        tab_char = "│",
+        highlight = "IblIndent",
+        smart_indent_cap = true,
+        priority = 1,
+        repeat_linebreak = true,
       },
-    },
-    exclude = {
-      filetypes = {
-        "help",
-        "alpha",
-        "dashboard",
-        "NvimTree",
-        "Trouble",
-        "trouble",
-        "lazy",
-        "mason",
-        "notify",
-        "toggleterm",
-        "lspinfo",
-        "checkhealth",
-        "man",
-        "gitcommit",
-        "TelescopePrompt",
-        "TelescopeResults",
-        "",
+      scope = {
+        enabled = true,
+        char = nil,
+        show_start = false,
+        show_end = false,
+        show_exact_scope = false,
+        injected_languages = true,
+        highlight = "IblScope",
+        priority = 1024,
+        include = {
+          node_type = { ["*"] = { "*" } }, -- makes lines show on all blocks
+        },
       },
-      buftypes = {
-        "terminal",
-        "nofile",
-        "quickfix",
-        "prompt",
+      exclude = {
+        filetypes = {
+          "help",
+          "alpha",
+          "dashboard",
+          "NvimTree",
+          "Trouble",
+          "trouble",
+          "lazy",
+          "mason",
+          "notify",
+          "toggleterm",
+          "lspinfo",
+          "checkhealth",
+          "man",
+          "gitcommit",
+          "TelescopePrompt",
+          "TelescopeResults",
+          "",
+        },
+        buftypes = {
+          "terminal",
+          "nofile",
+          "quickfix",
+          "prompt",
+        },
       },
-    },
-  },
-  main = "ibl",
+    })
+  end
 }

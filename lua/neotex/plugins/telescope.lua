@@ -5,12 +5,9 @@ return {
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope-bibtex.nvim",
     "debugloop/telescope-undo.nvim",
-    { 
-      "nvim-telescope/telescope-fzf-native.nvim", 
+    {
+      "nvim-telescope/telescope-fzf-native.nvim",
       build = "make",
-      -- config = function()
-      --   require("telescope").load_extension("fzf")
-      -- end,
     },
     "nvim-tree/nvim-web-devicons",
   },
@@ -85,7 +82,12 @@ return {
           },
         },
       },
-      load_extension ={ "fzf", "yank_history", "bibtex", "lazygit" },
+      load_extension = {
+        "fzf",
+        "yank_history",
+        "bibtex",
+        "lazygit"
+      },
       extensions = {
         undo = {
           mappings = {
@@ -107,7 +109,7 @@ return {
         bibtex = {
           depth = 1,
           -- Depth for the *.bib file
-          global_files = {'~/texmf/bibtex/bib/Zotero.bib'},
+          global_files = { '~/texmf/bibtex/bib/Zotero.bib' },
           -- Path to global bibliographies (placed outside of the project)
           search_keys = { 'author', 'year', 'title' },
           -- Define the search keys to use in the picker
@@ -119,7 +121,7 @@ return {
           -- Max number of authors to write in the formatted citation
           -- following authors will be replaced by "et al."
           custom_formats = {
-            {id = 'citet', cite_maker = '\\citet{%s}'}
+            { id = 'citet', cite_maker = '\\citet{%s}' }
           },
           -- Custom format for citation label
           format = 'citet',

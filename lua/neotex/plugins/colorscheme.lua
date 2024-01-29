@@ -1,3 +1,4 @@
+-- GRUVBOX
 return {
   "ellisonleao/gruvbox.nvim",
   priority = 1000, -- make sure to load this before all the other start plugins
@@ -5,9 +6,9 @@ return {
     require("gruvbox").setup({
       overrides = {
         -- THIS BLOCK
-        SignColumn = {bg = "#282828"},
-        NvimTreeCutHL = { fg="#fb4934", bg="#3c3836" },
-        NvimTreeCopiedHL = { fg="#b8bb26", bg="#3c3836" }
+        SignColumn = { bg = "#282828" },
+        NvimTreeCutHL = { fg = "#fb4934", bg = "#3c3836" },
+        NvimTreeCopiedHL = { fg = "#b8bb26", bg = "#3c3836" }
         -- OR THIS BLOCK
         -- NvimTreeCutHL = { fg="#fb4934", bg="#3c3836" },
         -- NvimTreeCopiedHL = { fg="#b8bb26", bg="#3c3836" }
@@ -18,23 +19,58 @@ return {
   end,
 }
 
+-- -- KANAGAWA
+-- return {
+--   "rebelot/kanagawa.nvim",
+--   priority = 1000, -- make sure to load this before all the other start plugins
+--   config = function()
+--     require('kanagawa').setup({
+--       compile = false,  -- enable compiling the colorscheme
+--       undercurl = true, -- enable undercurls
+--       commentStyle = { italic = true },
+--       functionStyle = {},
+--       keywordStyle = { italic = true },
+--       statementStyle = { bold = true },
+--       typeStyle = {},
+--       transparent = false,   -- do not set background color
+--       dimInactive = false,   -- dim inactive window `:h hl-NormalNC`
+--       terminalColors = true, -- define vim.g.terminal_color_{0,17}
+--       colors = {
+--         -- add/modify theme and palette colors
+--         palette = {},
+--         theme = { wave = {}, lotus = {}, dragon = {}, all = {} },
+--       },
+--       overrides = function(colors) -- add/modify highlights
+--         return {}
+--       end,
+--       theme = "wave", -- Load "wave" theme when 'background' option is not set
+--       background = {
+--         -- map the value of 'background' option to a theme
+--         dark = "wave", -- try "dragon" !
+--         light = "lotus"
+--       },
+--     })
+--     vim.cmd("colorscheme kanagawa") -- setup must be called before loading
+--   end,
+-- }
 
--- -- Nightfly
+
+
+-- -- NIGHTFLY
 -- return {
 --   "bluz71/vim-nightfly-guicolors",
 --   priority = 1000, -- make sure to load this before all the other start plugins
 --   config = function()
 --     -- load the colorscheme here
---     vim.cmd([[colorscheme nightfly]])
+--     vim.cmd("colorscheme nightfly")
 --   end,
 -- }
 
 
--- Other
+-- OTHER
 -- "luisiacc/gruvbox-baby"
 -- "folke/tokyonight.nvim"
 -- "lunarvim/darkplus.nvim"
 -- "navarasu/onedark.nvim"
 -- "savq/melange"
 -- "EdenEast/nightfox.nvim"
--- "navarasu/onedark.nvim"

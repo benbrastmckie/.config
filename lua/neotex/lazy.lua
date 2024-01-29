@@ -1,3 +1,4 @@
+-- BOOTSTRAP LAZY
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -11,7 +12,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-require("lazy").setup({ { import = "neotex.plugins" }, { import = "neotex.plugins.lsp" } }, {
+require("lazy").setup({
+  { import = "neotex.plugins" },    -- main plugins directory
+  { import = "neotex.plugins.lsp" } -- lsp plugins directory
+}, {
   install = {
     colorscheme = { "gruvbox" },
   },
