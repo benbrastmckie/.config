@@ -26,48 +26,48 @@ vim.api.nvim_create_autocmd({"TermOpen"}, {
   command = "lua set_terminal_keymaps()",
 })
 
-        -- b = { "<cmd>Neorg keybind norg core.promo.demote<CR>", "backwards indent" },
-        -- v = { "<cmd>Neorg keybind norg core.pivot.invert-list-type<CR>", "invert list" },
-
--- Neorg mappings
-function _G.set_neorg_keymaps()
-  vim.api.nvim_buf_set_keymap(0, "i", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>a", {})
-  vim.api.nvim_buf_set_keymap(0, "v", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR><Esc>a", {})
-  -- vim.api.nvim_buf_set_keymap(0, "i", "<Tab>", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
-  -- vim.api.nvim_buf_set_keymap(0, "i", "<S-Tab>", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
-  -- vim.api.nvim_buf_set_keymap(0, "n", ">", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
-  -- vim.api.nvim_buf_set_keymap(0, "n", "<", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
+-- Autolist markdown mappings
+function _G.set_markdown_keymaps()
+  vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", ">", "><cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", {})
+  vim.opt.tabstop = 2
+  vim.opt.shiftwidth = 2
+  vim.opt.softtabstop = 2
 end
 
--- runs neorg keymaps in both .neorg and .md files
 vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
-  pattern = {"*.norg"},
-  command = "lua set_neorg_keymaps()",
+  pattern = {"*.md", "*.txt"},
+  command = "lua set_markdown_keymaps()",
 })
 
--- -- Make markdown read like Neorg
--- vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
---   pattern = {"*.md"},
---   command = "set filetype=norg",
--- })
-
--- -- Autolist markdown mappings
--- function _G.set_markdown_keymaps()
---   vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", {})
---   vim.api.nvim_buf_set_keymap(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", {})
---   vim.api.nvim_buf_set_keymap(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "n", ">", "><cmd>AutolistRecalculate<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", {})
---   vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", {})
+-- -- Neorg mappings
+-- function _G.set_neorg_keymaps()
+--   vim.api.nvim_buf_set_keymap(0, "i", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>", {})
+--   vim.api.nvim_buf_set_keymap(0, "n", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR>a", {})
+--   vim.api.nvim_buf_set_keymap(0, "v", "<C-CR>", "<cmd>Neorg keybind norg core.itero.next-iteration<CR><Esc>a", {})
+--   -- vim.api.nvim_buf_set_keymap(0, "i", "<Tab>", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
+--   -- vim.api.nvim_buf_set_keymap(0, "i", "<S-Tab>", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
+--   -- vim.api.nvim_buf_set_keymap(0, "n", ">", "<cmd>Neorg keybind norg core.promo.promote<CR>", {})
+--   -- vim.api.nvim_buf_set_keymap(0, "n", "<", "<cmd>Neorg keybind norg core.promo.demote<CR>", {})
 -- end
 --
+-- -- runs neorg keymaps in both .neorg and .md files
 -- vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
---   pattern = {"*.md", "*.txt", "*.org"},
---   command = "lua set_markdown_keymaps()",
+--   pattern = {"*.norg"},
+--   command = "lua set_neorg_keymaps()",
 -- })
+--
+-- -- -- Make markdown read like Neorg
+-- -- vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
+-- --   pattern = {"*.md"},
+-- --   command = "set filetype=norg",
+-- -- })
 

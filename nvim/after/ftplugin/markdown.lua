@@ -20,6 +20,4 @@ require("nvim-surround").buffer_setup({
 })
 
 -- prevents markdown from changing tabs to 4 spaces
-vim.g.markdown_recommended_style = 0
-
-
+-- vim.g.markdown_recommended_style = 0

@@ -10,42 +10,42 @@ return {
   config = function()
     require('autolist').setup()
 
-  --   function HandleCheckbox()
-  --     local config = require("autolist.config")
-  --     local auto = require("autolist.auto")
-  --
-  --     local checkbox_pattern = " [ ]"
-  --
-  --     local filetype_list = config.lists[vim.bo.filetype]
-  --     local line = vim.fn.getline(".")
-  --
-  --     for index, list_pattern in ipairs(filetype_list) do
-  --       local list_item = line:match("^%s*" .. list_pattern .. "%s*")
-  --       -- only bullet, no checkbox
-  --       if list_item == nil then goto continue_for_loop end
-  --       list_item = list_item:gsub("%s+", "")
-  --       local is_list_item = list_item ~= nil
-  --       -- only bullet, no checkbox
-  --       local is_checkbox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[.%]" .. "%s*") ~= nil
-  --       -- bullet and checkbox
-  --
-  --       if is_list_item == true and is_checkbox_item == false then
-  --         list_item = list_item:gsub('%)', '%%)')
-  --         vim.fn.setline(".", (line:gsub(list_item, list_item .. checkbox_pattern, 1)))
-  --
-  --         local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  --         if cursor_pos[2] > 0 then
-  --           vim.api.nvim_win_set_cursor(0, { cursor_pos[1], cursor_pos[2] + checkbox_pattern:len() })
-  --         end
-  --         goto continue
-  --       else
-  --         auto.toggle_checkbox()
-  --         goto continue
-  --       end
-  --       ::continue_for_loop::
-  --     end
-  --     ::continue::
-  --   end
+    function HandleCheckbox()
+      local config = require("autolist.config")
+      local auto = require("autolist.auto")
+
+      local checkbox_pattern = " [ ]"
+
+      local filetype_list = config.lists[vim.bo.filetype]
+      local line = vim.fn.getline(".")
+
+      for index, list_pattern in ipairs(filetype_list) do
+        local list_item = line:match("^%s*" .. list_pattern .. "%s*")
+        -- only bullet, no checkbox
+        if list_item == nil then goto continue_for_loop end
+        list_item = list_item:gsub("%s+", "")
+        local is_list_item = list_item ~= nil
+        -- only bullet, no checkbox
+        local is_checkbox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[.%]" .. "%s*") ~= nil
+        -- bullet and checkbox
+
+        if is_list_item == true and is_checkbox_item == false then
+          list_item = list_item:gsub('%)', '%%)')
+          vim.fn.setline(".", (line:gsub(list_item, list_item .. checkbox_pattern, 1)))
+
+          local cursor_pos = vim.api.nvim_win_get_cursor(0)
+          if cursor_pos[2] > 0 then
+            vim.api.nvim_win_set_cursor(0, { cursor_pos[1], cursor_pos[2] + checkbox_pattern:len() })
+          end
+          goto continue
+        else
+          auto.toggle_checkbox()
+          goto continue
+        end
+        ::continue_for_loop::
+      end
+      ::continue::
+    end
   end,
 }
 
