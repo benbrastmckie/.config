@@ -2,6 +2,8 @@
 
 ## Features
 
+- test
+
 ### Example
 
 1. sessions --> hypcause
@@ -25,58 +27,58 @@
 ### Introduction
 
 1. new series
-  1. this video will review why use this config
-  2. could skip to features in next video
-  3. writing latex in vim
-    1. TexShop/TexMaker are too simple
-    2. Overleaf
-      1. only slightly better
-      2. not free
-      3. forces you to work in the browser
-      4. but is easy to start with for collaborators
-      5. Papeeria is more free and permits GitHooks
-    3. PDE vs IDE
-  4. why port to lua
-    1. stay up to date with the community
-    2. fast
-    3. lua is better than vimscript
-  5. overview of series
-    1. review features
-    2. installation
-    3. configuration
-    4. how to git (including Papeeria)
+1. this video will review why use this config
+1. could skip to features in next video
+1. writing latex in vim
+1. TexShop/TexMaker are too simple
+1. Overleaf
+1. only slightly better
+1. not free
+1. forces you to work in the browser
+1. but is easy to start with for collaborators
+1. Papeeria is more free and permits GitHooks
+1. PDE vs IDE
+1. why port to lua
+1. stay up to date with the community
+1. fast
+1. lua is better than vimscript
+1. overview of series
+1. review features
+1. installation
+1. configuration
+1. how to git (including Papeeria)
 
 ### LaTeX
 
 1. basics
-  1. sessions
-  2. buffers
-2. vimtex
-  1. build
-  2. view
-  3. index
-  4. count
-  5. error log
-  6. clean aux
-3. citations
-  1. citations with vimtex
-  2. citations with telescope
-  3. context menu
-  4. bibannotate
-5. bibexport
+1. sessions
+1. buffers
+1. vimtex
+1. build
+1. view
+1. index
+1. count
+1. error log
+1. clean aux
+1. citations
+1. citations with vimtex
+1. citations with telescope
+1. context menu
+1. bibannotate
+1. bibexport
 
 ### New Project
 
 1. new project
 2. explorer
-  3. new directory
-  4. new files
-3. templates
-4. markdown
-  2. checklist
-  3. numbered list
-  4. bullet list
-5. save session
+3. new directory
+4. new files
+5. templates
+6. markdown
+7. checklist
+8. numbered list
+9. bullet list
+10. save session
 
 ### Snippets and Glossary
 
@@ -96,9 +98,9 @@
 ### Pandoc
 
 1. pandoc
-  2. latex -> word
-  5. latex -> markdown
-  3. markdown -> word
+2. latex -> word
+3. latex -> markdown
+4. markdown -> word
 
 ### Bells and Whistles
 
@@ -107,7 +109,6 @@
 3. yank
 4. kill lsp
 5. toggle illuminate
-
 
 ## Installation
 
@@ -142,41 +143,38 @@
 1. alaritty
 2. tumx
 
-
-
 ## Configuration
 
-
 1. basics
-  1. file structure
-    1. init
-    2. options
-    3. keymaps
-    4. plugins
-  2. options
-  3. keymaps
-    1. vim standards
-    2. new additions in cheatsheet
-    3. unmapping
-  4. plugins
-  5. whichkey
-2. change plugins
-  1. new plugin
-  2. remove plugin
-3. how to learn about existing plugins
-4. look up keymaps with <space>fk
-5. explore help docs which shift+m and <space>fh
+1. file structure
+1. init
+1. options
+1. keymaps
+1. plugins
+1. options
+1. keymaps
+1. vim standards
+1. new additions in cheatsheet
+1. unmapping
+1. plugins
+1. whichkey
+1. change plugins
+1. new plugin
+1. remove plugin
+1. how to learn about existing plugins
+1. look up keymaps with <space>fk
+1. explore help docs which shift+m and <space>fh
 
 ### Git
 
 1. git basics
-  1. create repo
-  2. add remote
-  3. push changes
-  4. share access
-    1. GitHub
-    2. Papeeria
-    3. Overleaf
-  5. using branches
-  6. merge conflicts
-  7. further information
+1. create repo
+1. add remote
+1. push changes
+1. share access
+1. GitHub
+1. Papeeria
+1. Overleaf
+1. using branches
+1. merge conflicts
+1. further information
