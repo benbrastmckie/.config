@@ -4,18 +4,15 @@ return {
   build = ":TSUpdate",
   dependencies = {
     -- "nvim-treesitter/nvim-treesitter-textobjects",
+    "JoosepAlviste/nvim-ts-context-commentstring",
     "windwp/nvim-ts-autotag",
   },
   config = function()
-    -- import nvim-treesitter plugin
-    local treesitter = require("nvim-treesitter.configs")
-
-    -- configure treesitter
-    treesitter.setup({
+    require("nvim-treesitter.configs").setup({
       -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "latex", "markdown", "txt", "text", "cls" }, -- list of language that will be disabled
+        disable = { "css", "latex", "markdown", "cls" }, -- list of language that will be disabled
         -- additional_vim_regex_highlighting = { 'org' }, -- for orgmode
       },
       -- enable indentation
@@ -25,7 +22,6 @@ return {
         enable = false,
       },
       -- ensure these language parsers are installed
-      auto_install = true,
       ensure_installed = {
         "json",
         "yaml",
@@ -42,7 +38,7 @@ return {
         "gitignore",
         "bibtex",
         "vimdoc",
-        -- "org",
+        "norg",
         -- "latex",
         -- "javascript",
         -- "typescript",
@@ -56,6 +52,7 @@ return {
         -- "dockerfile",
         -- "perl",
       },
+      auto_install = true,
       ignore_install = { "latex" }, -- List of parsers to ignore installing
       autopairs = {
         enable = true,

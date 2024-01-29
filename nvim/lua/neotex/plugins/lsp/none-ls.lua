@@ -59,10 +59,10 @@ return {
             buffer = bufnr,
             callback = function()
               vim.lsp.buf.format({
-                --  only use null-ls for formatting instead of lsp server
-                -- filter = function(client)
-                --   return client.name == "null-ls"
-                -- end,
+                 -- only use null-ls for formatting instead of lsp server
+                filter = function(client)
+                  return client.name == "null-ls"
+                end,
                 async = false
               })
             end,

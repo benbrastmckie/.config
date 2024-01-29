@@ -1,5 +1,6 @@
 # TODO
 
+- [ ] syntax highlighting in help
 - [ ] clean up end of options.lua
 - [ ] markdown tab=4
 - [ ] cmp-vimtex global file

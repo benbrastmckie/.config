@@ -1,10 +1,10 @@
 return {
   "folke/which-key.nvim",
+  event = "VeryLazy",
   init = function()
     vim.o.timeout = true
     vim.o.timeoutlen = 200
   end,
-  event = "VeryLazy",
   opts = {
     setup = {
       show_help = true,
@@ -141,35 +141,51 @@ return {
       },
       g = {
         name = "GIT",
+        b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
+        c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
+        d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
         g = { "<cmd>LazyGit<CR>", "lazygit" },
         j = { "<cmd>lua require 'gitsigns'.next_hunk()<CR>", "next hunk" },
         k = { "<cmd>lua require 'gitsigns'.prev_hunk()<CR>", "prev hunk" },
         l = { "<cmd>lua require 'gitsigns'.blame_line()<CR>", "blame" },
+        o = { "<cmd>Telescope git_status<CR>", "open changed file" },
         p = { "<cmd>lua require 'gitsigns'.preview_hunk()<CR>", "preview hunk" },
         r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
         s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
         u = { "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
-        o = { "<cmd>Telescope git_status<CR>", "open changed file" },
-        b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
-        c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
-        d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
       },
       -- h = {
       --   name = "HARPOON",
       --   m = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
       --   n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
       --   p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
-      -- },
+      -- (?) },
       l = {
         name = "LIST",
-        c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
-        -- c = { "<cmd>lua require('autolist').invert()<CR>", "checkbox" },
-        -- x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
-        -- c = { "<cmd>AutolistToggleCheckbox<CR>", "checkmark" },
-        n = { "<cmd>AutolistCycleNext<CR>", "next" },
-        p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
-        r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
+        a = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_ambiguous<CR>", "ambiguous" },
+        b = { "<cmd>Neorg keybind norg core.promo.demote<CR>", "backwards indent" },
+        c = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_cancelled<CR>", "cancel" },
+        d = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_done<CR>", "done" },
+        f = { "<cmd>Neorg keybind norg core.promo.promote<CR>", "forward indent" },
+        i = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_important<CR>", "important" },
+        n = { "<cmd>set filetype=norg<CR>", "neorg" },
+        p = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_pending<CR>", "pending" },
+        r = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_recurring<CR>", "recurring" },
+        t = { "<cmd>Neorg keybind norg core.itero.next-iteration<CR>", "new task" },
+        u = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_undone<CR>", "undone" },
+        v = { "<cmd>Neorg keybind norg core.pivot.invert-list-type<CR>", "invert list" },
+        -- t = { "<cmd>Neorg keybind norg core.pivot.toggle-list-type<CR>", "toggle list" },
       },
+      -- l = {
+      --   name = "LIST",
+      --   c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
+      --   -- c = { "<cmd>lua require('autolist').invert()<CR>", "checkbox" },
+      --   -- x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
+      --   -- c = { "<cmd>AutolistToggleCheckbox<CR>", "checkmark" },
+      --   n = { "<cmd>AutolistCycleNext<CR>", "next" },
+      --   p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
+      --   r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
+      -- },
       L = {
         name = "LSP",
         b = { "<cmd>Telescope diagnostics bufnr=0<CR>", "buffer diagnostics" },
@@ -253,7 +269,7 @@ return {
     },
   },
   config = function(_, opts)
-    local wk = require "which-key"
+    local wk = require("which-key")
     wk.setup(opts.setup)
     wk.register(opts.defaults)
   end,
