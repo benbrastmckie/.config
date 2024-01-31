@@ -72,7 +72,7 @@ keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
 keymap("n", "Y", "y$", opts)
 keymap("n", "E", "ge", opts)
 keymap("v", "Y", "y$", opts)
-keymap("v", "E", "ge", opts)
+-- keymap("v", "E", "ge", opts) -- causes errors with luasnip autocmp
 
 
 -- Avoid cutting text pasted over
@@ -80,8 +80,8 @@ keymap("v", "E", "ge", opts)
 
 
 -- Center cursor
-keymap("n", "m", "zz", opts)
-keymap("v", "m", "zz", opts)
+keymap("n", "m", "zt", opts)
+keymap("v", "m", "zt", opts)
 
 
 -- Better window navigation
