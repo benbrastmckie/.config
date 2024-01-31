@@ -44,7 +44,7 @@ function _G.set_markdown_keymaps()
 end
 
 vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
-  pattern = {"*.md", "*.txt"},
+  pattern = {"*.md"},
   command = "lua set_markdown_keymaps()",
 })
 

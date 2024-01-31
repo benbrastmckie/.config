@@ -97,7 +97,7 @@ return {
         cygwin_support = false,
       },
       filters = {
-        git_ignored = true,
+        git_ignored = false,
         dotfiles = false,
         git_clean = false,
         no_buffer = false,
@@ -279,7 +279,7 @@ return {
         },
       },
       notify = {
-        threshold = vim.log.levels.INFO,
+        threshold = vim.log.levels.ERROR,
         absolute_path = true,
       },
       help = {
