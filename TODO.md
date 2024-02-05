@@ -1,5 +1,7 @@
 - TODO
 
+* [ ] bibexport in nixos
+* [ ] PdfAnnots in nixos
 * [ ] syntax highlighting in help
 * [ ] undo tree commands
 * [ ] markdown tab=4

@@ -15,7 +15,8 @@
 %	PACKAGES AND THEMES
 %----------------------------------------------------------------------------------------
 
-\documentclass{beamer}
+% \documentclass{beamer}
+\documentclass[handout]{beamer}
 
 \mode<presentation> {
 
@@ -23,7 +24,7 @@
 % which change the colors and layouts of slides. Below this is a list
 % of all the themes, uncomment each in turn to see what they look like.
 
-%\usetheme{default}
+\usetheme{default}
 %\usetheme{AnnArbor}
 %\usetheme{Antibes}
 %\usetheme{Bergen}
@@ -34,7 +35,7 @@
 %\usetheme{Copenhagen}
 %\usetheme{Darmstadt} %Nice
 %\usetheme{Dresden} %Nice
-\usetheme{Frankfurt} %Nice
+% \usetheme{Frankfurt} %Nice
 %\usetheme{Goettingen} %Sidebar
 %\usetheme{Hannover}
 %\usetheme{Ilmenau}
@@ -70,6 +71,23 @@
 %\usecolortheme{whale}
 %\usecolortheme{wolverine}
 
+% Custom
+\setbeamercolor{normal text}{fg=white,bg=black!90}
+\setbeamercolor{structure}{fg=white}
+\setbeamercolor{alerted text}{fg=red!85!black}
+\setbeamercolor{item projected}{use=item,fg=black,bg=item.fg!35}
+\setbeamercolor*{palette primary}{use=structure,fg=structure.fg}
+\setbeamercolor*{palette secondary}{use=structure,fg=structure.fg!95!black}
+\setbeamercolor*{palette tertiary}{use=structure,fg=structure.fg!90!black}
+\setbeamercolor*{palette quaternary}{use=structure,fg=structure.fg!95!black,bg=black!80}
+\setbeamercolor*{framesubtitle}{fg=white}
+\setbeamercolor*{block title}{parent=structure,bg=black!60}
+\setbeamercolor*{block body}{fg=black,bg=black!10}
+\setbeamercolor*{block title alerted}{parent=alerted text,bg=black!15}
+\setbeamercolor*{block title example}{parent=example text,bg=black!15}
+
+
+
 %\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
 %\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
 
@@ -84,6 +102,18 @@
 \newcommand{\tuple}[1]{\langle#1\rangle} %%Angle brackets
 \setbeamercovered{transparent}
 \usepackage{graphicx}
+
+\renewcommand{\tuple}[1]{\langle#1\rangle} %%Angle brackets
+\newcommand{\set}[1]{\lbrace#1\rbrace} %%Set brackets
+\newcommand{\abs}[1]{|#1|} %%Set brackets
+\newcommand{\interpret}[1]{\llbracket#1\rrbracket} %%Double brackets
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\D}{\mathbb{D}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\P}{\mathcal{P}}
+	
 
 	
 %%% CITATIONS %%%
@@ -101,16 +131,23 @@
 %	TITLE PAGE
 %----------------------------------------------------------------------------------------
 
-\title[Short title]{Early Interpretations of the Barcan Formula} % The short title appears at the bottom of every slide, the full title is only on the title page
+%%% SHORT %%%
+\title[Short title]{\LARGE Paradox and Infinity} % The short title appears at the bottom of every slide, the full title is only on the title page
 
-\author{Benjamin Brast-McKie} % Your name
-\institute[Oxford] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
-{
-University of Oxford \\ % Your institution for the title page
-\medskip
-\textit{benjamin.brast-mckie@philosophy.ox.ac.uk} % Your email address
-}
-\date{\today} % Date, can be changed to a custom date
+\author{\it --- Infinite Cardinalities ---\\ \small \today } % Your name
+\date{} % Date, can be changed to a custom date
+
+%%% DETAILED %%%
+% \title[Short title]{Early Interpretations of the Barcan Formula} % The short title appears at the bottom of every slide, the full title is only on the title page
+%
+% \author{Benjamin Brast-McKie} % Your name
+% \institute[Oxford] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
+% {
+% University of Oxford \\ % Your institution for the title page
+% \medskip
+% \textit{benjamin.brast-mckie@philosophy.ox.ac.uk} % Your email address
+% }
+% \date{\today} % Date, can be changed to a custom date
 
 \begin{document}
 
