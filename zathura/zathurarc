@@ -21,6 +21,7 @@ map p print
 map w recolor
 map k 5k
 map j 5k
+map <C-v> toggle_fullscreen
 
 set notification-error-bg       "#ebdbb2" # bg
 set notification-error-fg       "#9d0006" # bright:red

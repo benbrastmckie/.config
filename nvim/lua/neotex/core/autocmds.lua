@@ -4,7 +4,7 @@ local api = vim.api
 api.nvim_create_autocmd(
   "FileType",
   {
-    pattern = { "man", "help", "qf", "lspinfo" },   -- "startuptime",
+    pattern = { "man", "help", "qf", "lspinfo" }, -- "startuptime",
     command = "nnoremap <buffer><silent> q :close<CR>",
   }
 )
@@ -12,7 +12,7 @@ api.nvim_create_autocmd(
 
 -- Terminal mappings
 function _G.set_terminal_keymaps()
-  local opts = {buffer = 0}
+  local opts = { buffer = 0 }
   vim.keymap.set('t', '<esc>', [[<C-c>]], opts)
   vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
   vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
@@ -21,8 +21,8 @@ function _G.set_terminal_keymaps()
   -- vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
 end
 
-vim.api.nvim_create_autocmd({"TermOpen"}, {
-  pattern = {"term://*"}, -- use term://*toggleterm#* for only ToggleTerm
+vim.api.nvim_create_autocmd({ "TermOpen" }, {
+  pattern = { "term://*" }, -- use term://*toggleterm#* for only ToggleTerm
   command = "lua set_terminal_keymaps()",
 })
 
@@ -44,10 +44,23 @@ function _G.set_markdown_keymaps()
   vim.opt.softtabstop = 2
 end
 
-vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
-  pattern = {"*.md"},
+vim.api.nvim_create_autocmd({ "BufEnter", "BufReadPre", "BufNewFile" }, {
+  pattern = { "*.md" },
   command = "lua set_markdown_keymaps()",
 })
+
+-- Firenvim
+
+-- vim.api.nvim_create_autocmd({ 'UIEnter' }, {
+--   callback = function(event)
+--     local client = vim.api.nvim_get_chan_info(vim.v.event.chan).client
+--     if client ~= nil and client.name == "Firenvim" then
+--       vim.o.laststatus = 0
+--     end
+--   end,
+--   pattern = "github.com_*.txt",
+--   cmd = "set filetype=markdown"
+-- })
 
 -- -- Neorg mappings
 -- function _G.set_neorg_keymaps()
@@ -71,4 +84,3 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufReadPre", "BufNewFile" }, {
 -- --   pattern = {"*.md"},
 -- --   command = "set filetype=norg",
 -- -- })
-

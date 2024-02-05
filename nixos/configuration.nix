@@ -125,12 +125,19 @@
     python311Packages.pylint
     # pylint
     python311Packages.z3
-    z3
-    python310Packages.black
+    # (python311.withPackages(pypkgs: with pypkgs; [ 
+    #   pypkgs.z3 
+    # ]))
+    # z3
+    python311Packages.black
     # black
-    python310Packages.isort
+    python311Packages.isort
     # isort
     # vimPlugins.nvim-treesitter-parsers.c
+    slides
+    # reveal-md
+    # nodejs
+    # yarn
     lazygit
     fzf
     ripgrep
