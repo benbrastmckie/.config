@@ -12,9 +12,9 @@ require("nvim-surround").buffer_setup({
       delete = "^(**)().-(**)()$",
     },
     ["i"] = {
-      add = { "*", "*" },
-      find = "*.-*",
-      delete = "^(*)().-(*)()$",
+      add = { "_", "_" },
+      find = "_.-_",
+      delete = "^(_)().-(_)()$",
     },
   },
 })
