@@ -118,20 +118,26 @@
     oh-my-fish
     git
     python3
+    # python311Packages.pip
+    # python311Packages.pynvim
+    # python311Packages.pylint
+    # python311Packages.black
+    # python311Packages.isort
+    # python311Packages.z3
+    # python311Packages.setuptools
+    # (python311.withPackages(ps: with ps; [
+    #   z3 
+    #   setuptools 
+    #   pip    
+    #   pynvim 
+    #   pylint 
+    #   black  
+    #   isort  
+    # ]))
     # poetry
     # pipx
-    python311Packages.pip
-    python311Packages.pynvim
-    python311Packages.pylint
     # pylint
-    python311Packages.z3
-    # (python311.withPackages(pypkgs: with pypkgs; [ 
-    #   pypkgs.z3 
-    # ]))
-    # z3
-    python311Packages.black
     # black
-    python311Packages.isort
     # isort
     # vimPlugins.nvim-treesitter-parsers.c
     slides
