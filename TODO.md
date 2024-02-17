@@ -1,26 +1,21 @@
 - TODO
 
-* [x] bibexport in nixos
 * [ ] PdfAnnots in nixos
-* [ ] syntax highlighting in help
 * [ ] undo tree commands
-* [ ] markdown tab=4
-* [ ] cmp-vimtex global file
-* [ ] system open in nvim-tree
 * [ ] checkhealth
   - [ ] install all missing programs in checkhealth
-  - [ ] error: client 2 quit with exit code 127 and signal 0
-  - [ ] error detected BufWritePre Autocommand for "\*"
+  - [x] error: client 2 quit with exit code 127 and signal 0
+  - [x] error detected BufWritePre Autocommand for "\*"
 * [ ] update cheatsheet
-* [ ] zathura top bar
 * [ ] indents
-  - [ ] stop indents when adding brackets
+  - [x] stop indents when adding brackets
   - [ ] test vimtex indent
   - [x] change to 2 from 4
   - [x] add indents inside enumerate
-* [ ] autolist
-  - [ ] add in-progress field
-  - [ ] remove box command
+* [:] autolist
+  - [ ] fix loop index
+  - [x] add in-progress field
+  - [x] remove box command
 * [ ] folding
 * [ ] github issues
   - [ ] consolidate add-ons
@@ -38,6 +33,12 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+* [x] bibexport in nixos
+* [x] syntax highlighting in help
+* [x] markdown tab=4
+* [x] cmp-vimtex global file
+* [x] system open in nvim-tree
+* [x] zathura top bar
 * [x] clean up end of options.lua
 * [x] missing icons
 * [x] integrate old todos
