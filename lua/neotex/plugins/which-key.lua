@@ -224,8 +224,8 @@ return {
         d = { "<cmd>TermExec cmd='nix develop'<CR><C-w>j", "develop" },
         g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
-        r = { "<cmd>TermExec cmd='nixos-rebuild switch --flake .'<CR><C-w>j", "rebuild" },
-        u = { "<cmd>TermExec cmd='nix flake update'<CR><C-w>j", "update" },
+        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR><C-w>j", "rebuild" },
+        u = { "<cmd>TermExec cmd='sudo nix flake update'<CR><C-w>j", "update" },
       },
       p = {
         name = "PANDOC",
