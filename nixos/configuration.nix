@@ -144,6 +144,8 @@
     # reveal-md
     # nodejs
     # yarn
+    # discord
+    zoxide
     lazygit
     fzf
     ripgrep

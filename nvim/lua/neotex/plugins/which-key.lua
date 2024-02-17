@@ -222,10 +222,10 @@ return {
       n = {
         name = "NIXOS",
         d = { "<cmd>TermExec cmd='nix develop'<CR><C-w>j", "develop" },
-        g = { "<cmd>TermExec cmd='sudo nixos-collect-garbage --delete-old'<CR><C-w>j", "garbage" },
+        g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
-        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR><C-w>j", "rebuild" },
-        u = { "<cmd>TermExec cmd='sudo nix flake update'<CR><C-w>j", "update" },
+        r = { "<cmd>TermExec cmd='nixos-rebuild switch --flake .'<CR><C-w>j", "rebuild" },
+        u = { "<cmd>TermExec cmd='nix flake update'<CR><C-w>j", "update" },
       },
       p = {
         name = "PANDOC",
@@ -234,6 +234,7 @@ return {
         h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", "html" },
         l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>", "latex" },
         p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", "pdf" },
+        v = { "<cmd>TermExec cmd='zathura %:p:r.pdf &' open=0<CR>", "view" },
         -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
       },
       s = {
