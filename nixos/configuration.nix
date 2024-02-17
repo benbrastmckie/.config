@@ -118,6 +118,7 @@
     oh-my-fish
     git
     python3
+    # pylint
     # python311Packages.pip
     # python311Packages.pynvim
     # python311Packages.pylint
@@ -146,6 +147,8 @@
     # yarn
     # discord
     zoxide
+    # gnome.gnome-shell-extensions
+    gnomeExtensions.unite
     lazygit
     fzf
     ripgrep

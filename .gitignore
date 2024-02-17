@@ -37,3 +37,4 @@ cef_user_data/Dictionaries/en-US-10-1.bdic
 nvim/sessions
 gtk-3.0
 okular.kmessagebox
+gtk-4.0/gtk.css
