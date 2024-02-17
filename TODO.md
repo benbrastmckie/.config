@@ -1,6 +1,6 @@
 - TODO
 
-* [ ] bibexport in nixos
+* [x] bibexport in nixos
 * [ ] PdfAnnots in nixos
 * [ ] syntax highlighting in help
 * [ ] undo tree commands
