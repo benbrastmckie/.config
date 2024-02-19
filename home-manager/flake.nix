@@ -16,13 +16,12 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-
       nixosConfigurations = {
         nandi = nixpkgs.lib.nixosSystem {
-          specialArgs = {inherit inputs systems;};
+          specialArgs = {inherit inputs system;};
           modules = [ 
             ./configuration.nix
-            # inputs.home-manager.nixosModules.default
+            inputs.home-manager.nixosModules.default
           ];
         };
       };

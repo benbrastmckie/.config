@@ -20,8 +20,8 @@
     exraSpecialArgs = { inherit inputs; };
     users = {
       "benjamin" = import ./home.nix;
-    }
-  }
+    };
+  };
 
 
   # Bootloader.
