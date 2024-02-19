@@ -81,6 +81,7 @@ function PdfAnnots()
   end
 
   local md = vim.fn.printf("Annotations/%s.md", vim.fn.fnamemodify(pdf, ":t:r"))
+  -- vim.fn.system(vim.fn.printf('nix run github:NixOS/nixpkgs/refs/pull/289632/head#pdfannots "%s" > "%s"', pdf, md))
   vim.fn.system(vim.fn.printf('pdfannots -o "%s" "%s"', md, pdf))
   vim.cmd.split(vim.fn.fnameescape(md))
 

@@ -222,9 +222,12 @@ return {
       n = {
         name = "NIXOS",
         d = { "<cmd>TermExec cmd='nix develop'<CR><C-w>j", "develop" },
-        g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
+        -- g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
+        g = { "<cmd>TermExec cmd='nix-collect-garbage --delete-older-than 15d'<CR><C-w>j", "garbage" },
+        h = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/home-manager/#nandi'<CR><C-w>j", "home rebuild" },
+        -- h = { "<cmd>TermExec cmd='home-manager switch --flake ~/.config/home-manager/'<CR><C-w>j", "rebuild" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
-        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake .'<CR><C-w>j", "rebuild" },
+        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/nixos/'<CR><C-w>j", "rebuild" },
         u = { "<cmd>TermExec cmd='sudo nix flake update'<CR><C-w>j", "update" },
       },
       p = {
