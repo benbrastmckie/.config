@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ pkgs, lib, inputs, config, ... }:
+{ inputs, config, pkgs, ... }:
 
 # let 
 #   # neovimConfig = import ./neovim-config.nix;
@@ -17,12 +17,11 @@
     ];
 
   home-manager = {
-    exraSpecialArgs = { inherit inputs; };
+    extraSpecialArgs = { inherit inputs; };
     users = {
       "benjamin" = import ./home.nix;
     };
   };
-
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -176,7 +175,7 @@
     stylua
   ];
 
-  # programs.fish.enable = true;
+  programs.fish.enable = true;
 
   # programs.neovim = {
   #   withPython3 = true;

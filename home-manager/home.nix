@@ -12,10 +12,10 @@
     userEmail = "benbrastmckie@gmail.com";
   }
 
-  xdg.mimeApps.defaultApplications = {
-    "text/plain" = [ "neovim.desktop" ];
-    "application/pdf" = [ "zathura.desktop" ];
-  }
+  # xdg.mimeApps.defaultApplications = {
+  #   "text/plain" = [ "neovim.desktop" ];
+  #   "application/pdf" = [ "zathura.desktop" ];
+  # }
 
   programs.fish.enable = true;
   
