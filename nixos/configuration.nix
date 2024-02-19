@@ -15,6 +15,12 @@
       ./hardware-configuration.nix
     ];
 
+  programs.git = {
+    enable = true;
+    userName = "benbrastmckie";
+    userEmail = "benbrastmckie@gmail.com";
+  };
+
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -206,7 +212,7 @@
 
   fonts.fontDir.enable = true;
 
-  fonts.fonts = with pkgs; [
+  fonts.packages = with pkgs; [
     roboto-mono
     fira-code
     fira-code-symbols
