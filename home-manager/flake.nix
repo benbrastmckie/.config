@@ -16,12 +16,16 @@
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
     pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
+    username = "benjamin";
+    name = "Ben";
   in {
     nixosConfigurations = {
       nandi = lib.nixosSystem {
         inherit system;
         modules = [ ./configuration.nix ];
         specialArgs = {
+          inherit username;
+          inherit name;
           inherit pkgs-unstable;
         };
       };
@@ -31,6 +35,8 @@
         inherit pkgs;
         modules = [ ./home.nix ];
         extraSpecialArgs = {
+          inherit username;
+          inherit name;
           inherit pkgs-unstable;
         };
       };
