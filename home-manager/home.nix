@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 
 {
   # manage.
@@ -13,25 +13,64 @@
 
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
-  # home.packages allows you to install Nix packages into your environment.
-  home.packages = with pkgs; [
-    (python311.withPackages(p: with p; [
-      z3 
-      setuptools 
-      # pynvim 
-      # pylint 
-      # black  
-      # isort  
-    ]))
-
-    # # It is sometimes useful to fine-tune packages, for example, by applying
-    # # overrides. You can do that directly here, just don't forget the
-    # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
-    # # fonts?
-    (pkgs.nerdfonts.override { fonts = [ "RobotoMono" ]; })
-  ];
-
-
+  # # home.packages allows you to install Nix packages into your environment.
+  # home.packages = 
+  #   (with pkgs; [
+  #     (python311.withPackages(p: with p; [
+  #       z3 
+  #       setuptools 
+  #       # pynvim 
+  #       # pylint 
+  #       # black  
+  #       # isort  
+  #     ]))
+  #     (nerdfonts.override { fonts = [ "RobotoMono" ]; })
+  #     kitty
+  #     vivaldi
+  #     neovim
+  #     neovim-remote
+  #     zathura
+  #     zotero
+  #     fish
+  #     wget
+  #     gnome3.gnome-tweaks
+  #     oh-my-fish
+  #     git
+  #     python3
+  #     slides
+  #     zoxide
+  #     plots
+  #     gnomeExtensions.unite
+  #     lazygit
+  #     fzf
+  #     ripgrep
+  #     pandoc
+  #     nodejs_20
+  #     xsel
+  #     texlive.combined.scheme-full
+  #     libsForQt5.okular
+  #     gcc
+  #     unzip
+  #     tree-sitter
+  #     perl
+  #     gnumake
+  #     fd
+  #     xdotool
+  #     pstree
+  #     nix-index
+  #     home-manager
+  #     zoom-us
+  #     vlc
+  #     lua-language-server
+  #     stylua
+  #     hello
+  #   ])
+  #
+  #   ++
+  #
+  #   (with pkgs-unstable; [
+  #     pdfannots
+  #   ]);
 
 
 
