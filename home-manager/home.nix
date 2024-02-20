@@ -51,6 +51,7 @@
   home.file = {
     ".config/fish/config.fish".source = dotfiles/config.fish;
     ".config/kitty/kitty.conf".source = dotfiles/kitty.conf;
+    ".config/zathura/zathurarc".source = dotfiles/zathurarc;
     # # Building this configuration will create a copy of 'dotfiles/screenrc' in
     # # the Nix store. Activating the configuration will then make '~/.screenrc' a
     # # symlink to the Nix store copy.
