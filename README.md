@@ -87,6 +87,7 @@ To install the Fish shell, run:
 brew install fish
 curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
 omf install sashimi
+cp ~/.config/config-files/config.fish ~/.config/fish/config.fish
 ```
 
 To delete the welcome message, run:
@@ -108,7 +109,7 @@ Cut and paste the path and run:
 sudo vim /etc/shells
 ```
 
-Once inside vanilla Vim (pre-installed on any Mac) navigate to the bottom with `j`, create a new line with `o`, and paste the path with `command + shift + v`, or hand type it, and hit `esc` to go back into normal mode.
+Once inside vanilla Vim (pre-installed on any Mac) navigate to the bottom with `G`, create a new line with `o`, and paste the path with `command + shift + v`, or hand type it, and hit `esc` to go back into normal mode.
 Then save and quit with `:wq`.
 Check to see that you succeeded with:
 
@@ -223,14 +224,6 @@ pip3 install --user pynvim
 
 Continue to run `:checkhealth` in NeoVim, following the instructions under the reported errors until all errors are gone (the Python 2 errors may be ignored, and similarly for Ruby, Node.js, and Perl).
 This may involve doing some research if errors persist.
-
-NeoVim comes with an extremely austere set of defaults, including no mouse support, making it difficult to use prior to configuration.
-In order to install plugins, extending the features included in NeoVim, run the following:
-
-```
-git clone --depth 1 https://github.com/wbthomason/packer.nvim\
- ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
-```
 
 You are now ready to pull down the configuration files.
 
@@ -406,11 +399,20 @@ brew install --cask alacritty
 brew install tmux
 ```
 
-If you installed Kitty, you can edit `~/.config/kitty/kitty.conf` if desired, but no changes are required to run `nvim` in Kitty.
+If you installed Kitty, move and feel free to edit the following config file:
+
+```
+sudo cp ~/.config/config-files/kitty.conf ~/.config/kitty/kitty.conf
+nvim ~/.config/kitty/kitty.conf
+```
+
+No changes are required to run `nvim` in Kitty.
+
 If you installed Alacritty and Tmux, move the Tmux configuration file to the appropriate location by running:
 
 ```
-sudo cp ~/.config/tmux/.tmux.conf ~/.tmux.conf
+sudo cp ~/.config/config-files/alacritty.yml ~/.config/alacritty/alacritty.yml
+sudo cp ~/.config/config-files/.tmux.conf ~/.tmux.conf
 ```
 
 Assuming that you already installed Fish above, you will need to locate Fish on your operating system by running the following:
@@ -710,13 +712,14 @@ You are now ready to write LaTex in NeoVim inside the stock terminal.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
-Install the Zathura pdf-viewer by running:
+Install the Zathura pdf-viewer and move the config file in place by running:
 
 ```
 sudo pacman -S zathura
+mv ~/.config/config-files/zathurarc ~/.config/zathura/zathurarc
 ```
 
-If you want to customise Zathura, you can edit `~/.config/zathura/zathurarc`, referring to the documents by running:
+If you want to customise Zathura, you can run `nvim ~/.config/zathura/zathurarc`, referring to the documents by running:
 
 ```
 man zathuraarc
@@ -1198,10 +1201,11 @@ You are now ready to write LaTex in NeoVim inside the stock terminal.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
-Install the Zathura pdf-viewer by running:
+Install the Zathura pdf-viewer and move the config file in place by running:
 
 ```
 sudo apt install zathura
+mv ~/.config/config-files/zathurarc ~/.config/zathura/zathurarc
 ```
 
 If you want to customise Zathura, you can edit `~/.config/zathura/zathurarc`, referring to the documents by running:
