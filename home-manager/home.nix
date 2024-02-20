@@ -11,21 +11,6 @@
     userEmail = "benbrastmckie@gmail.com";
   };
 
-  # programs.neovim = {
-  #   withPython3 = true;
-  #   extraPackages = with pkgs; [
-  #     (python3.withPackages ( ps: with ps; [
-  #       pip
-  #       pynvim
-  #       pylint
-  #       black
-  #       isort
-  #       z3
-  #       setuptools
-  #     ]))
-  #   ];
-  # };
-
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
   # home.packages allows you to install Nix packages into your environment.

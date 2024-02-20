@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, pkgs-unstable, ... }:
 
 # let 
 #   # neovimConfig = import ./neovim-config.nix;
@@ -105,46 +105,53 @@
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    kitty
-    vivaldi
-    neovim
-    neovim-remote
-    zathura
-    zotero
-    fish
-    wget
-    gnome3.gnome-tweaks
-    oh-my-fish
-    git
-    python3
-    slides
-    zoxide
-    plots
-    gnomeExtensions.unite
-    lazygit
-    fzf
-    ripgrep
-    pandoc
-    nodejs_20
-    xsel
-    texlive.combined.scheme-full
-    libsForQt5.okular
-    gcc
-    unzip
-    tree-sitter
-    perl
-    gnumake
-    fd
-    xdotool
-    pstree
-    nix-index
-    home-manager
-    zoom-us
-    vlc
-    lua-language-server
-    stylua
-  ];
+  environment.systemPackages = 
+    (with pkgs; [
+      kitty
+      vivaldi
+      neovim
+      neovim-remote
+      zathura
+      zotero
+      fish
+      wget
+      gnome3.gnome-tweaks
+      oh-my-fish
+      git
+      python3
+      slides
+      zoxide
+      plots
+      gnomeExtensions.unite
+      lazygit
+      fzf
+      ripgrep
+      pandoc
+      nodejs_20
+      xsel
+      texlive.combined.scheme-full
+      libsForQt5.okular
+      gcc
+      unzip
+      tree-sitter
+      perl
+      gnumake
+      fd
+      xdotool
+      pstree
+      nix-index
+      home-manager
+      zoom-us
+      vlc
+      lua-language-server
+      stylua
+    ])
+
+    ++
+
+    (with pkgs-unstable; [
+      pdfannots
+    ]);
 
   programs.fish.enable = true;
 
