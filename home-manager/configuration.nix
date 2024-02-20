@@ -4,11 +4,6 @@
 
 { config, lib, pkgs, pkgs-unstable, ... }:
 
-# let 
-#   # neovimConfig = import ./neovim-config.nix;
-#   customNeovim = import ./lazyvim-config.nix;
-# in
-
 {
   imports =
     [ # Include the results of the hardware scan.
