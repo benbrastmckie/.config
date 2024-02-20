@@ -15,11 +15,11 @@
       ./hardware-configuration.nix
     ];
 
-  programs.git = {
-    enable = true;
-    userName = "benbrastmckie";
-    userEmail = "benbrastmckie@gmail.com";
-  };
+  # programs.git = {
+  #   enable = true;
+  #   userName = "benbrastmckie";
+  #   userEmail = "benbrastmckie@gmail.com";
+  # };
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -171,6 +171,7 @@
     vlc
     lua-language-server
     stylua
+    pdfannots
   ];
 
   programs.fish.enable = true;

@@ -2,7 +2,7 @@
   description = "config";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.11";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
     # use the following for unstable:
     # nixpkgs.url = "nixpkgs/nixos-unstable";
     # or any branch you want:
