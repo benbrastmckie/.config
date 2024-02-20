@@ -226,6 +226,7 @@ return {
         g = { "<cmd>TermExec cmd='nix-collect-garbage --delete-older-than 15d'<CR><C-w>j", "garbage" },
         -- g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
+        m = { "<cmd>TermExec cmd='vivaldi https://mynixos.com' open=0<CR>", "mynixos" },
         r = { "<cmd>TermExec cmd='home-manager switch --flake ~/.config/home-manager/'<CR><C-w>j", "rebuild" },
         -- r = { "<cmd>TermExec cmd='home-manager switch'<CR><C-w>j", "home rebuild" },
         -- r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/home-manager/#nandi'<CR><C-w>j", "home rebuild" },

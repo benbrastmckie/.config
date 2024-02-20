@@ -28,7 +28,7 @@
     # # overrides. You can do that directly here, just don't forget the
     # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
     # # fonts?
-    # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
+    (pkgs.nerdfonts.override { fonts = [ "RobotoMono" ]; })
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage

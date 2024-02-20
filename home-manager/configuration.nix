@@ -4,6 +4,10 @@
 
 { config, lib, pkgs, pkgs-unstable, ... }:
 
+let
+  unstable = import <nixos-unstable> {};
+in
+
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -140,6 +144,7 @@
       vlc
       lua-language-server
       stylua
+      hello
     ])
 
     ++
@@ -151,13 +156,6 @@
   programs.fish.enable = true;
 
   fonts.fontDir.enable = true;
-
-  fonts.fonts = with pkgs; [
-    roboto-mono
-    fira-code
-    fira-code-symbols
-    mplus-outline-fonts.githubRelease
-  ];
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
