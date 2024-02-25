@@ -25,7 +25,7 @@ return {
     local diagnostics = null_ls.builtins.diagnostics -- to setup linters
 
     -- to setup format on save
-    local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
+    -- local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 
     -- configure null_ls
     null_ls.setup({
@@ -50,25 +50,25 @@ return {
           end,
         }),
       },
-      -- configure format on save
-      on_attach = function(current_client, bufnr)
-        if current_client.supports_method("textDocument/formatting") then
-          vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
-          vim.api.nvim_create_autocmd("BufWritePre", {
-            group = augroup,
-            buffer = bufnr,
-            callback = function()
-              vim.lsp.buf.format({
-                 -- only use null-ls for formatting instead of lsp server
-                filter = function(client)
-                  return client.name == "null-ls"
-                end,
-                async = false
-              })
-            end,
-          })
-        end
-      end,
+      -- -- configure format on save: uncomment augroup above
+      -- on_attach = function(current_client, bufnr)
+      --   if current_client.supports_method("textDocument/formatting") then
+      --     vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
+      --     vim.api.nvim_create_autocmd("BufWritePre", {
+      --       group = augroup,
+      --       buffer = bufnr,
+      --       callback = function()
+      --         vim.lsp.buf.format({
+      --            -- only use null-ls for formatting instead of lsp server
+      --           filter = function(client)
+      --             return client.name == "null-ls"
+      --           end,
+      --           async = false
+      --         })
+      --       end,
+      --     })
+      --   end
+      -- end,
     })
   end,
 }

@@ -3,7 +3,7 @@ return {
   version = "*",
   config = function()
     require("toggleterm").setup{
-      size = 10,
+      size = 80,
       open_mapping = "<c-t>",
       hide_numbers = true,
       shade_terminals = true,
@@ -11,7 +11,7 @@ return {
       start_in_insert = true,
       insert_mappings = false,
       persist_size = true,
-      direction = "horizontal", -- direction = 'vertical' | 'horizontal' | 'tab' | 'float',
+      direction = "vertical", -- direction = 'vertical' | 'horizontal' | 'tab' | 'float',
       close_on_exit = true,
       shell = 'fish',           -- Change the default shell. Can be a string or a function returning a string
       float_opts = {
