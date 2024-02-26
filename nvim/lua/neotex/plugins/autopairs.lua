@@ -23,22 +23,6 @@ return {
       enable_moveright = true,
       ignored_next_char = "",
       enable_check_bracket_line = true, --- check bracket in same line
-      -- enable_afterquote = true,  -- add bracket pairs after quote
-      -- enable_bracket_in_quote = true,
-      -- enable_abbr = false, -- trigger abbreviation
-      -- fast_wrap = {
-      --   map = "<C-l>",
-      --   chars = { "$", "{", "[", "(", '"', "'", "`", "``" },
-      --   pattern = string.gsub([=[[%'%"%)%>%]%)%}%,]]=], "%s+", ""),
-      --   offset = 1, -- Offset from pattern match
-      --   end_key = "L",
-      --   keys = "qwertyuiopzxcvbnmasdfghjkl",
-      --   check_comma = true,
-      --   highlight = "PmenuSel",
-      --   highlight_grey = "LineNr",
-      --   -- highlight = 'Search',
-      --   -- highlight_grey='Comment'
-      -- },
     })
 
     local Rule = require 'nvim-autopairs.rule'

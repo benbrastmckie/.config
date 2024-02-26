@@ -43,6 +43,9 @@ return {
         formatting.isort,
         formatting.black,
         diagnostics.pylint,
+        -- .with({
+        --   extra_args = { "--config-path", vim.fn.expand("~/.nix-profile/bit/z3") },
+        -- }),
         diagnostics.eslint_d.with({
           -- js/ts linter
           condition = function(utils)
