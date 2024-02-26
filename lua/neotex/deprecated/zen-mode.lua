@@ -59,11 +59,10 @@ return {
       },
     },
     -- on_open = function()
-    --   require("hrsh7th/nvim-cmp").setup.enabled = false
+    -- TURN OFF LSP, SPELL CHECK, ETC
     -- end,
-    -- -- callback where you can add custom code when the Zen window closes
     -- on_close = function()
-    --   require("hrsh7th/nvim-cmp").setup.enabled = true
+    -- TURN ON LSP, SPELL CHECK, ETC
     -- end,
   }
 }
