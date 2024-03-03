@@ -234,8 +234,8 @@ return {
         -- g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
         p = { "<cmd>TermExec cmd='vivaldi https://search.nixos.org/packages' open=0<CR>", "packages" },
         m = { "<cmd>TermExec cmd='vivaldi https://mynixos.com' open=0<CR>", "my-nixos" },
-        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.dotfiles/'<CR><C-w>j", "rebuild flake" },
-        h = { "<cmd>TermExec cmd='home-manager switch --flake ~/.dotfiles/'<CR><C-w>j", "home-manager" },
+        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.dotfiles/'<CR><C-w>l", "rebuild flake" },
+        h = { "<cmd>TermExec cmd='home-manager switch --flake ~/.dotfiles/'<CR><C-w>l", "home-manager" },
         -- r = { "<cmd>TermExec cmd='home-manager switch'<CR><C-w>j", "home rebuild" },
         -- r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/home-manager/#nandi'<CR><C-w>j", "home rebuild" },
         -- r = { "<cmd>TermExec cmd='home-manager switch --flake ~/.config/home-manager/'<CR><C-w>j", "rebuild" },
@@ -259,7 +259,6 @@ return {
       },
       t = {
         name = "TEMPLATES",
-        c = { "<cmd>PackerCompile<CR>", "Compile" },
         p = {
           "<cmd>read ~/.config/nvim/templates/PhilPaper.tex<CR>",
           "PhilPaper.tex",
