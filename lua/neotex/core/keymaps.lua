@@ -49,14 +49,14 @@ end, { remap = true })
 -- keymap("n", "<C-s>", "<cmd>Telescope spell_suggest<cr>", { remap = true})
 
 -- Kill search highlights
-keymap("n", "<CR>", ":noh<CR>", opts)
+keymap("n", "<CR>", "<cmd>noh<CR>", opts)
 
 
 -- Find project files
-vim.keymap.set("n", "<C-p>", function ()
-  require('telescope.builtin').find_files(require('telescope.themes').get_dropdown({previewer = false})
-  )
-end, { remap = true })
+vim.keymap.set("n", "<C-p>", "<cmd>Telescope find_files<CR>", { remap = true })
+  -- function ()
+  --   require('telescope.builtin').find_files(require('telescope.themes').get_dropdown({previewer = false}))
+  -- end, 
 
 
 -- Toggle comments

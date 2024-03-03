@@ -21,6 +21,32 @@ return {
     --   return col == 0 or vim.fn.getline("."):sub(col, col):match "%s"
     -- end
 
+    -- local vimtex_icons = {
+    --     a = "󰧮",
+    --     B = "󰧮",
+    --     c = "󱓷",
+    --     article = "󰧮",
+    --     book = "",
+    --     incollection = "󱓷",
+    --   }
+    --
+    -- local test_fn = function(name, str)
+    --   if str == nil then
+    --       return ""
+    --   end
+    --   if name then
+    --       return ""
+    --   end
+    --
+    --   local type = ((str:match("^%[(.-)%]")):gsub("%[", "")):gsub("%]", "")
+    --   if vimtex_icons[type] ~= nil then
+    --     logger(string.find(str, "^%[(.-)%]"))
+    --     str = string.gsub(str, "^%[(.-)%]", "[" .. vimtex_icons[type] .. "]")
+    --   end
+    --
+    --   return str
+    -- end
+
     local cmp = require("cmp")
 
     local luasnip = require("luasnip")
@@ -38,11 +64,13 @@ return {
 
     --   פּ ﯟ   some other good icons
     local kind_icons = {
-      Text = "󰦨",
-      -- Text = "󰸲",
-      Method = "",
+      article = "󰧮",
+      book = "",
+      incollection = "󱓷",
       Function = "󰊕",
       Constructor = "",
+      Text = "󰦨",
+      Method = "",
       Field = "󰅪",
       Variable = "󱃮",
       Class = "",
@@ -126,10 +154,9 @@ return {
         format = function(entry, vim_item)
           vim_item.kind = string.format("%s", kind_icons[vim_item.kind]) -- Kind icons
           vim_item.menu = ({
-            -- omni = (vim.inspect(vim_item.menu):gsub('%"', "")),
             -- vimtex = (vim_item.menu ~= nil and vim_item.menu or "[VimTex]"),
-            -- vimtex = vim_item.menu,
-            vimtex = (vim_item.menu ~= nil and vim_item.menu or ""),
+            -- vimtex = test_fn(vim_item.menu, entry.source.name),
+            vimtex = vim_item.menu,
             luasnip = "[Snippet]",
             nvim_lsp = "[LSP]",
             buffer = "[Buffer]",
