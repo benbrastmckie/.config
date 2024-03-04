@@ -152,22 +152,23 @@ Next install LazyGit by running:
 brew install jesseduffield/lazygit/lazygit
 ```
 
-Install Node if it is not installed already (you can check with `--version` as above), run:
+Install Node if it is not installed already (you can check with `node --version` as above), run:
 
 ```
 brew install node
 ```
 
-Check if Python 3 is installed by running the following:
-
-```
-Python3 --version
-```
-
-If absent, run the following (yes, without the '3' on the end):
+Run the following if Python 3 is absent (you can check with `python3 --version`):
 
 ```
 brew install python
+```
+
+Run the following if absent so that you will have formatting for your config (written in lua):
+
+```
+brew install stylua
+brew install lua-language-server
 ```
 
 Install the RobotoMono [Nerd Font](https://github.com/ryanoasis/nerd-fonts) with:
@@ -658,6 +659,8 @@ sudo pacman -S pandoc
 sudo pacman -S pandoc-citeproc
 sudo pacman -S node
 sudo pacman -S npm
+sudo pacman stylua
+sudo pacman lua-language-server
 sudo pacman -S wget
 sudo pacman -S xsel
 sudo pip3 install neovim-remote
@@ -1139,6 +1142,8 @@ sudo apt install ripgrep
 sudo apt install pandoc
 sudo apt install pandoc-citeproc
 sudo apt install nodejs
+sudo apt install stylua
+sudo apt install lua-language-server
 sudo apt install wget
 sudo apt install xsel
 sudo apt install python3-pip

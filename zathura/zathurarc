@@ -48,6 +48,7 @@ set inputbar-fg                 "#3c3836" # fg
 
 set statusbar-bg                "#d5c4a1" # bg2
 set statusbar-fg                "#3c3836" # fg
+set statusbar-v-padding         7
 
 set highlight-color             "#b57614" # bright:yellow
 set highlight-active-color      "#af3a03" # bright:orange
@@ -61,6 +62,6 @@ set render-loading-fg           "#3c3836" # fg
 # Recolor book content's color
 set recolor-lightcolor          "#ebdbb2" # bg
 set recolor-darkcolor           "#3c3836" # fg
-set recolor                     "true"
+set recolor                     true
 # set recolor-keephue             true      # keep original color
 # set recolor-reverse-video       "true"
