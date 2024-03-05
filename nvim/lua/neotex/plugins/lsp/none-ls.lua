@@ -11,12 +11,12 @@ return {
   config = function()
     local mason_null_ls = require("mason-null-ls")
     mason_null_ls.setup({
-      "prettier", -- prettier formatter
+      -- "prettier", -- prettier formatter
       "stylua",   -- lua formatter
       "isort",    -- python formatter
       "black",    -- python formatter
       "pylint",   -- python linter
-      "eslint_d", -- js linter
+      -- "eslint_d", -- js linter
     })
 
     -- for conciseness
@@ -36,10 +36,10 @@ return {
       sources = {
         --  to disable file types use
         --  "formatting.prettier.with({disabled_filetypes: {}})" (see null-ls docs)
-        formatting.prettier.with({
-          extra_filetypes = { "svelte" },
-          disabled_filetypes = { "txt" },
-        }),                -- js/ts formatter
+        -- formatting.prettier.with({ TURN ON FOR JAVA SCRIPT
+        --   extra_filetypes = { "svelte" },
+        --   disabled_filetypes = { "txt" },
+        -- }),                -- js/ts formatter
         formatting.stylua, -- lua formatter
         formatting.isort,
         formatting.black,
@@ -47,12 +47,12 @@ return {
         -- .with({
         --   extra_args = { "--config-path", vim.fn.expand("~/.nix-profile/bit/z3") },
         -- }),
-        diagnostics.eslint_d.with({
-          -- js/ts linter
-          condition = function(utils)
-            return utils.root_has_file({ ".eslintrc.js", ".eslintrc.cjs" }) -- only enable if root has .eslintrc.js or .eslintrc.cjs
-          end,
-        }),
+        -- diagnostics.eslint_d.with({ -- TURN ON FOR JAVA SCRIPT
+        --   -- js/ts linter
+        --   condition = function(utils)
+        --     return utils.root_has_file({ ".eslintrc.js", ".eslintrc.cjs" }) -- only enable if root has .eslintrc.js or .eslintrc.cjs
+        --   end,
+        -- }),
       },
       -- -- configure format on save: uncomment augroup above
       -- on_attach = function(current_client, bufnr)

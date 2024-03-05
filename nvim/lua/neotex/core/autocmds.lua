@@ -51,15 +51,14 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufReadPre", "BufNewFile" }, {
 
 -- Firenvim
 
--- vim.api.nvim_create_autocmd({ 'UIEnter' }, {
---   callback = function(event)
---     local client = vim.api.nvim_get_chan_info(vim.v.event.chan).client
---     if client ~= nil and client.name == "Firenvim" then
---       vim.o.laststatus = 0
+-- vim.api.nvim_create_autocmd({'UIEnter'}, {
+--     callback = function(event)
+--         local client = vim.api.nvim_get_chan_info(vim.v.event.chan).client
+--         if client ~= nil and client.name == "Firenvim" then
+--             -- vim.o.laststatus = 0
+--             cmd = "LspStop"
+--         end
 --     end
---   end,
---   pattern = "github.com_*.txt",
---   cmd = "set filetype=markdown"
 -- })
 
 -- -- Neorg mappings
