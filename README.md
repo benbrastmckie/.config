@@ -641,13 +641,6 @@ Install NeoVim with:
 sudo pacman -S neovim
 ```
 
-In order to install plugins to extend the functionality of NeoVim, run the following:
-
-```
-git clone --depth 1 https://github.com/wbthomason/packer.nvim\
- ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
-```
-
 Install the following if they are not already installed:
 
 ```
@@ -762,13 +755,6 @@ Run NeoVim to install the plugins:
 
 ```
 nvim
-```
-
-If the plugins do not automatically install, then run:
-
-```
-:PackerInstall
-:PackerUpdate
 ```
 
 After the plugins finish installing, exit and reopen NeoVim, running:
@@ -1126,13 +1112,6 @@ nvim
 This final command should launch NeoVim assuming everything went smoothly.
 In case you hit any snags, you can find more information [here](https://github.com/neovim/neovim/wiki/Building-Neovim).
 
-In order to install plugins to extend the functionality of NeoVim, run the following:
-
-```
-git clone --depth 1 https://github.com/wbthomason/packer.nvim\
- ~/.local/share/nvim/site/pack/packer/start/packer.nvimq
-```
-
 Install the following if they are not already installed:
 
 ```
@@ -1253,13 +1232,6 @@ Run NeoVim to install the plugins:
 
 ```
 nvim
-```
-
-If the plugins do not automatically install, then run:
-
-```
-:PackerInstall
-:PackerUpdate
 ```
 
 After the plugins finish installing, exit and reopen NeoVim, running:
