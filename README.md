@@ -696,7 +696,7 @@ latexmk --version
 
 ## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
-In order for NeoVim to load icons, it will be imporant to install a NerdFont.
+In order for NeoVim to load icons, it will be important to install a NerdFont.
 For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
@@ -704,7 +704,7 @@ sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
 ```
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
-You are now ready to write LaTex in NeoVim inside the stock terminal.
+You are now ready to write LaTeX in NeoVim inside the stock terminal.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
@@ -1173,15 +1173,15 @@ latexmk --version
 
 ## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
-In order for NeoVim to load icons, it will be imporant to install a NerdFont.
-For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
+In order for NeoVim to load icons, it will be important to install a NerdFont.
+For simplicity, I have included [RobotoMono Nerd](https://www.nerdfonts.com/font-downloads) fonts in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
-sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
+sudo cp -R ~/.config/fonts/RobotoMono /usr/share/fonts/truetype/
 ```
 
-If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
-You are now ready to write LaTex in NeoVim inside the stock terminal.
+If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to `RobotoMono Nerd Font` (regular).
+You are now ready to write LaTeX in NeoVim inside the stock terminal.
 
 ## [Zathura](https://pwmt.org/projects/zathura/)
 
