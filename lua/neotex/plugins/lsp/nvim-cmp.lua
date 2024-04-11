@@ -117,7 +117,7 @@ return {
         -- ["<C-n>"] = cmp.mapping.complete(), -- show completion suggestions
         -- ["<C-h>"] = cmp.mapping.abort(), -- close completion window
         -- ["<C-l>"] = cmp.mapping.confirm({ select = false }),
-        ["<CR>"] = cmp.mapping.confirm({ select = true }),
+        ["<CR>"] = cmp.mapping.confirm({ select = false }),
         -- supertab
         ["<Tab>"] = cmp.mapping(function(fallback)
           if luasnip.expandable() then
