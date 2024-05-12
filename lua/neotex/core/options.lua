@@ -49,6 +49,7 @@ local options = {
   smartcase = true,               -- smart case
   virtualedit = "block",          -- vitualblock mode doesn't get stuck at the end of line
   inccommand = "split",           -- shows all inline replacements in split
+  autoread = true,
 
 }
 
