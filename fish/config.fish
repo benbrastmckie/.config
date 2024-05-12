@@ -3,14 +3,11 @@ if status is-interactive
 end
 
 bind --erase \ct
-# removes the mapping <C-t> which is being used to close the terminal in NeoVim
+# bind \ct true
 
-if type -q zoxide
+# There's a catch 22 here. xodide is called but won't be found unless
+# fish is aware of the paths set by brew:.
+#    /opt/brew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
+
 zoxide init fish --cmd cd | source
-# removes the mapping <C-t> which is being used to close the terminal in NeoVim
-end
 
-if type -q neofetch
-neofetch
-# runs neofetch if installed
-end
