@@ -166,6 +166,7 @@ return {
           },
           glyphs = {
             default = "",
+            -- toml = "󰰤", -- Change this to the desired icon for TOML files
             symlink = "",
             bookmark = "󰆤",
             modified = "●",

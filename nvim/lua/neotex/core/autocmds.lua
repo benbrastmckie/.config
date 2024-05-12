@@ -9,7 +9,6 @@ api.nvim_create_autocmd(
   }
 )
 
-
 -- Terminal mappings
 function _G.set_terminal_keymaps()
   local opts = { buffer = 0 }
@@ -48,6 +47,13 @@ vim.api.nvim_create_autocmd({ "BufEnter", "BufReadPre", "BufNewFile" }, {
   pattern = { "*.md" },
   command = "lua set_markdown_keymaps()",
 })
+
+
+-- -- Autoread
+-- vim.api.nvim_create_autocmd({ "BufEnter", "CursorHold", "CursorHoldI", "FocusGained" }, {
+--   command = "if mode() != 'c' | checktime | endif",
+--   pattern = { "*" },
+-- })
 
 -- Firenvim
 
