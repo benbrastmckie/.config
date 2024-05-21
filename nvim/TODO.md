@@ -1,23 +1,23 @@
 - TODO
 
-* [ ] PdfAnnots in nixos
-* [ ] undo tree commands
-* [ ] checkhealth
+- [ ] PdfAnnots in nixos
+- [ ] undo tree commands
+- [ ] checkhealth
   - [ ] install all missing programs in checkhealth
   - [x] error: client 2 quit with exit code 127 and signal 0
   - [x] error detected BufWritePre Autocommand for "\*"
-* [ ] update cheatsheet
-* [ ] indents
+- [ ] update cheatsheet
+- [ ] indents
   - [x] stop indents when adding brackets
   - [ ] test vimtex indent
   - [x] change to 2 from 4
   - [x] add indents inside enumerate
-* [:] autolist
+- [:] autolist
   - [ ] fix loop index
   - [x] add in-progress field
   - [x] remove box command
-* [ ] folding
-* [ ] github issues
+- [ ] folding
+- [ ] github issues
   - [ ] consolidate add-ons
   - [ ] forks #73
   - [ ] thesaurus #69
@@ -33,23 +33,23 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
-* [x] bibexport in nixos
-* [x] syntax highlighting in help
-* [x] markdown tab=4
-* [x] cmp-vimtex global file
-* [x] system open in nvim-tree
-* [x] zathura top bar
-* [x] clean up end of options.lua
-* [x] missing icons
-* [x] integrate old todos
-* [x] vertical lines extend through wrapped lines
+- [x] bibexport in nixos
+- [x] syntax highlighting in help
+- [x] markdown tab=4
+- [x] cmp-vimtex global file
+- [x] system open in nvim-tree
+- [x] zathura top bar
+- [x] clean up end of options.lua
+- [x] missing icons
+- [x] integrate old todos
+- [x] vertical lines extend through wrapped lines
   - [x] requires upstream change to nvim
-* [x] revise snippets
+- [x] revise snippets
   - [x] check fields
   - [x] check tabs
-* [x] tab stops working in insert mode
+- [x] tab stops working in insert mode
   - [x] can't reproduce: check to see if behaviour returns
-* [x] autolist
+- [x] autolist
   - [x] remove highlighting of boxes in markdown
   - [x] move config out of plugins.lua
     - [x] submitted issue

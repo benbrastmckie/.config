@@ -139,7 +139,8 @@ return {
         },
         c = { "<cmd>Telescope bibtex format_string=\\citet{%s}<CR>", "citations" },
         f = { "<cmd>Telescope live_grep theme=ivy<CR>", "project" },
-        g = { "<cmd>Telescope git_branches<CR>", "branches" },
+        g = { "<cmd>Telescope git_commits<CR>", "git history" },
+        -- g = { "<cmd>Telescope git_branches<CR>", "branches" },
         h = { "<cmd>Telescope help_tags<CR>", "help" },
         k = { "<cmd>Telescope keymaps<CR>", "keymaps" },
         -- m = { "<cmd>Telescope man_pages<CR>", "man pages" },
@@ -152,15 +153,17 @@ return {
       },
       g = {
         name = "GIT",
-        -- b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
-        -- c = { "<cmd>Telescope git_commits<CR>", "checkout commit" },
+        b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
+        -- c = { "<cmd>Telescope git_commits<CR>", "commits" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
-        b = { "<cmd>Gitsigns toggle_current_line_blame<CR>", "blame" },
         g = { "<cmd>LazyGit<CR>", "lazygit" },
-        j = { "<cmd>Gitsigns next_hunk<CR>", "next hunk" },
+        -- h = { "<cmd>Gitsigns hunk_history<CR>", "hunk history" },
         k = { "<cmd>Gitsigns prev_hunk<CR>", "prev hunk" },
-        -- o = { "<cmd>Telescope git_status<CR>", "open changed file" },
+        j = { "<cmd>Gitsigns next_hunk<CR>", "next hunk" },
+        l = { "<cmd>Gitsigns blame_line<CR>", "line blame" },
         p = { "<cmd>Gitsigns preview_hunk<CR>", "preview hunk" },
+        t = { "<cmd>Gitsigns toggle_current_line_blame<CR>", "toggle blame" },
+        -- o = { "<cmd>Telescope git_status<CR>", "open changed file" },
         -- r = { "<cmd>lua require 'gitsigns'.reset_hunk()<CR>", "reset hunk" },
         -- s = { "<cmd>lua require 'gitsigns'.stage_hunk()<CR>", "stage hunk" },
         -- u = { "<cmd>lua require 'gitsigns'.undo_stage_hunk()<CR>", "unstage hunk" },
@@ -190,7 +193,7 @@ return {
       --   -- t = { "<cmd>Neorg keybind norg core.pivot.toggle-list-type<CR>", "toggle list" },
       -- },
       -- LIST MAPPINGS
-      l = {
+      L = {
         name = "LIST",
         c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
         -- c = { "<cmd>lua require('autolist').invert()<CR>", "checkbox" },
@@ -200,7 +203,7 @@ return {
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
       },
-      L = {
+      l = {
         name = "LSP",
         b = { "<cmd>Telescope diagnostics bufnr=0<CR>", "buffer diagnostics" },
         c = { "<cmd>lua vim.lsp.buf.code_action()<CR>", "code action" },
@@ -216,7 +219,7 @@ return {
         s = { "<cmd>LspRestart<CR>", "restart lsp" },
         t = { "<cmd>LspStart<CR>", "start lsp" },
         R = { "<cmd>lua vim.lsp.buf.rename()<CR>", "rename" },
-        T = { "<cmd>Telescope lsp_type_definitions<CR>", "type definition" },
+        -- T = { "<cmd>Telescope lsp_type_definitions<CR>", "type definition" },
       },
       -- MARKDOWN MAPPINGS
       m = {
