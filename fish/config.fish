@@ -2,6 +2,7 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
 end
 
+# removes the mapping <C-t> which is being used to close the terminal in NeoVim
 bind --erase \ct
 # bind \ct true
 
@@ -9,5 +10,12 @@ bind --erase \ct
 # fish is aware of the paths set by brew:.
 #    /opt/brew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
 
+# runs zoxide if installed
+if type -q zoxide
 zoxide init fish --cmd cd | source
+end
 
+# runs neofetch if installed
+if type -q neofetch
+neofetch
+end
