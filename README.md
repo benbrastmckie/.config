@@ -85,12 +85,10 @@ Whatever you do, I recommend finding something comfortable before you begin usin
 To install the Fish shell, run:
 
 ```
-brew install zoxide # prerequsite for config.fish
 brew install fish
 curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
 omf install sashimi
 cp ~/.config/config-files/config.fish ~/.config/fish/config.fish
-/opt/homebrew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
 ```
 
 To delete the welcome message, run:
@@ -134,6 +132,21 @@ fish_vi_key_bindings
 ```
 
 If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumbersome, and best to avoid during the installation.
+
+### Extras
+
+Optionally, you can install `zoxide` which will help you move around in the terminal:
+
+```
+brew install zoxide
+```
+
+If brew has any trouble recognizing paths inside fish, you can run the following:
+
+```
+/opt/homebrew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
+```
+
 
 ## Dependencies
 
