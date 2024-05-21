@@ -85,10 +85,12 @@ Whatever you do, I recommend finding something comfortable before you begin usin
 To install the Fish shell, run:
 
 ```
+brew install zoxide # prerequsite for config.fish
 brew install fish
 curl https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install | fish
 omf install sashimi
 cp ~/.config/config-files/config.fish ~/.config/fish/config.fish
+/opt/homebrew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
 ```
 
 To delete the welcome message, run:
@@ -193,7 +195,7 @@ brew install pandoc
 brew install pandoc-plot
 brew install npm
 brew install wget
-sudo pip3 install neovim-remote
+brew install neovim-remote
 ```
 
 ## [NeoVim](https://neovim.io/)
@@ -1601,3 +1603,4 @@ setxkbmap
 ```
 
 Once you achieve the desired result, reboot and confirm that the mappings are running as desired.
+
