@@ -67,9 +67,10 @@ brew upgrade
 ```
 
 If Homebrew has not been installed, you may install it by running the following two commands.
-Note that if you don't have `xcode` installed, this may take a while but is essential to what follows.
+Note that if you don't have `xcode` installed (determined by the first command below), installing it may take a while but is essential for what follows.
 
 ```
+xcode-select --version
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
@@ -80,8 +81,9 @@ My reasons for doing this is ergonomics given which keys I'll be using most ofte
 Alternatively, you can make changes to the mappings that I've included in the config, though this may take a little more work than swapping things around in `System Preferences -> Keyboard`.
 Whatever you do, I recommend finding something comfortable before you begin using your NeoVim config, committing its key-bindings to memory.
 
-## [Fish](https://fishshell.com/)
+## [Fish](https://fishshell.com/) (Optional)
 
+Installing `Fish` is optional but will make working in the terminal a lot easier (including autocomplete).
 To install the Fish shell, run:
 
 ```
@@ -135,13 +137,13 @@ If you aren't already comfy with vim-like modes, the vi-mode in Fish may be cumb
 
 ### Extras
 
-Optionally, you can install `zoxide` which will help you move around in the terminal:
+Optionally, you can install `zoxide` which will help you move around in the terminal with less friction:
 
 ```
 brew install zoxide
 ```
 
-If brew has any trouble recognizing paths inside fish, you can run the following:
+If `Homebrew` has any trouble recognizing paths inside `Fish`, you can run the following:
 
 ```
 /opt/homebrew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
@@ -150,15 +152,10 @@ If brew has any trouble recognizing paths inside fish, you can run the following
 
 ## Dependencies
 
-Check to see that you have `git` installed by running:
+Check to see that you have `git` installed by running the first command below, running the second if it is not installed already:
 
 ```
 git --version
-```
-
-If Git is not installed, run:
-
-```
 brew install git
 ```
 
