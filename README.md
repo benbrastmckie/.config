@@ -20,7 +20,7 @@ It is running `NeoVim v0.9.5` really fast with some nice features, including:
 - Telescope (search citations, files, words, etc.)
 - And lots more!
 
-![Screenshot of the configuration](images/screenshot.png)
+![Screenshot of the configuration](images/screenshot_cite.png)
 
 Running the unstable release of `NeoVim` may lead to errors, and so is discouraged.
 If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.
