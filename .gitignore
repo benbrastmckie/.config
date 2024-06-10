@@ -45,3 +45,4 @@ Code
 configstore/
 nixpkgs/
 plots/
+.gitignore
