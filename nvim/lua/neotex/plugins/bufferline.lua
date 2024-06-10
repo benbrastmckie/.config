@@ -13,11 +13,12 @@ return {
         diagnostics_update_in_insert = false,
         show_tab_indicators = false,
         show_close_icon = false,
-        sort_by = 'insert_at_end', -- OR: 'insert_after_current' | 'id' | 'extension' | 'relative_directory' | 'directory' | 'tabs' |
-        -- function(buffer_a, buffer_b)
-        --   -- add custom logic
-        --   return buffer_a.modified > buffer_b.modified
-        -- end
+        -- numbers = "ordinal", -- Display buffer numbers as ordinal numbers
+        sort_by = 'insert_at_end', -- OR: 'insert_after_current' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
+        -- sort_by = function(buffer_a, buffer_b)
+        -- --   -- add custom logic
+        --   return buffer_a.ordinal < buffer_b.ordinal
+        -- end,
         offsets = {
           {
             filetype = "NvimTree",

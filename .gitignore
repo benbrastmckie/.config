@@ -41,7 +41,7 @@ evince
 temp
 fish/fish_variables
 alacritty/alacritty.toml
-Code/Cache/Cache_Data
-Code/Backups/34b97e15588b404430afb082703a9473/file
-Code/CachedData/dc96b837cf6bb4af9cd736aa3af08cf8279f7685
 Code
+configstore/
+nixpkgs/
+plots/
