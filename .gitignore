@@ -46,3 +46,6 @@ configstore/
 nixpkgs/
 plots/
 .gitignore
+configstore.save
+nixpkgs.save/overlays
+plots.save
