@@ -50,8 +50,8 @@ set statusbar-bg                "#d5c4a1" # bg2
 set statusbar-fg                "#3c3836" # fg
 set statusbar-v-padding         7
 
-set highlight-color             "#b57614" # bright:yellow
-set highlight-active-color      "#af3a03" # bright:orange
+# set highlight-color             "#bdae93" # light
+# set highlight-active-color      "#d5c4a1" # dark
 
 set default-bg                  "#1d2021" # bg
 set default-fg                  "#3c3836" # fg
