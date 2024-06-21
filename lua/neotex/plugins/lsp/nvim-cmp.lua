@@ -16,53 +16,10 @@ return {
   },
   config = function()
 
-    -- local check_backspace = function()
-    --   local col = vim.fn.col "." - 1
-    --   return col == 0 or vim.fn.getline("."):sub(col, col):match "%s"
-    -- end
-
-    -- local vimtex_icons = {
-    --     a = "󰧮",
-    --     B = "󰧮",
-    --     c = "󱓷",
-    --     article = "󰧮",
-    --     book = "",
-    --     incollection = "󱓷",
-    --   }
-    --
-    -- local test_fn = function(name, str)
-    --   if str == nil then
-    --       return ""
-    --   end
-    --   if name then
-    --       return ""
-    --   end
-    --
-    --   local type = ((str:match("^%[(.-)%]")):gsub("%[", "")):gsub("%]", "")
-    --   if vimtex_icons[type] ~= nil then
-    --     logger(string.find(str, "^%[(.-)%]"))
-    --     str = string.gsub(str, "^%[(.-)%]", "[" .. vimtex_icons[type] .. "]")
-    --   end
-    --
-    --   return str
-    -- end
-
     local cmp = require("cmp")
 
     local luasnip = require("luasnip")
 
-    -- NOTE: don't use this in supertab
-    -- local has_words_before = function()
-    --   local line, col = unpack(vim.api.nvim_win_get_cursor(0))
-    --   return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match "%s" == nil
-    -- end
-
-    -- local lspkind = require("lspkind") -- goes with lspkind.nvim above
-
-    -- loads vscode style snippets from installed plugins (e.g. friendly-snippets)
-    -- require("luasnip.loaders.from_vscode").lazy_load()
-
-    --   פּ ﯟ   some other good icons
     local kind_icons = {
       article = "󰧮",
       book = "",
