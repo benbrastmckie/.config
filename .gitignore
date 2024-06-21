@@ -49,3 +49,4 @@ plots/
 configstore.save
 nixpkgs.save/overlays
 plots.save
+VSCodium
