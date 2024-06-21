@@ -19,6 +19,8 @@ vim.g.mapleader = " "
 
 -- Unmappings
 keymap("n", "<C-z>", "<nop>", opts)
+keymap("n", "gc", "<nop>", opts)
+keymap("n", "gcc", "<nop>", opts)
 
 -- NOTE: not sure I will uses these cmp-vimtex commands
 -- Search from hovering over cmp-vimtex citation completion
