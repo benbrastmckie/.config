@@ -9,8 +9,8 @@
 <!---->
 
 <div style="display: flex; flex-direction: row;">
-    <img src="images/VimType.png" alt="Image 1" style="width: 50%;">
-    <img src="images/VimExcavator.png" alt="Image 2" style="width: 50%;">
+    <img src="images/VimType.png" alt="Typewriter Comic" style="width: 49%;">
+    <img src="images/VimExcavator.png" alt="Excavator Comic" style="width: 49%;">
 </div>
 
 # .config
