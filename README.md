@@ -7,6 +7,12 @@
 <!--  ╚═╝  ╚═══╝╚══════╝ ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝ -->
 <!-- ``` -->
 <!---->
+
+<div style="display: flex; flex-direction: row;">
+    <img src="images/VimType.png" alt="Image 1" style="width: 50%;">
+    <img src="images/VimExcavator.png" alt="Image 2" style="width: 50%;">
+</div>
+
 # .config
 
 NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly.
@@ -21,11 +27,6 @@ It is running `NeoVim v0.9.5` really fast with some nice features, including:
 - And lots more!
 
 ![Screenshot of the configuration](images/screenshot_cite.png)
-
-<div style="display: flex; flex-direction: row;">
-    <img src="images/VimType.png" alt="Image 1" style="width: 45%;">
-    <img src="images/VimExcavator.png" alt="Image 2" style="width: 45%;">
-</div>
 
 <!-- ![Vim Typewriter Comic](images/VimType.png) -->
 <!-- ![Vim Excavator Comic](images/VimExcavator.png) -->
