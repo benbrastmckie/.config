@@ -22,6 +22,14 @@ It is running `NeoVim v0.9.5` really fast with some nice features, including:
 
 ![Screenshot of the configuration](images/screenshot_cite.png)
 
+<div style="display: flex; flex-direction: row;">
+    <img src="images/VimType.png" alt="Image 1" style="width: 45%;">
+    <img src="images/VimExcavator.png" alt="Image 2" style="width: 45%;">
+</div>
+
+<!-- ![Vim Typewriter Comic](images/VimType.png) -->
+<!-- ![Vim Excavator Comic](images/VimExcavator.png) -->
+
 Running the unstable release of `NeoVim` may lead to errors, and so is discouraged.
 If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.
 I have not created any new videos so (for now) these [old ones](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) will have to do if you'd like to see what the previous version looked like.
