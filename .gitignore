@@ -50,3 +50,5 @@ configstore.save
 nixpkgs.save/overlays
 plots.save
 VSCodium
+torrential
+Smart Code ltd/Stremio.conf

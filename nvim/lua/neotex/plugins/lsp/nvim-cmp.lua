@@ -45,6 +45,7 @@ return {
       Reference = "",
       Folder = "",
       EnumMember = "",
+      -- spell = "",
       -- EnumMember = "",
       Constant = "󰀫",
       Struct = "",

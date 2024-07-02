@@ -5,7 +5,7 @@ set synctex-editor-command "nvim --remote-silent +%{line} %{input}"
 
 # Basic Settings
 
-set highlight-transparency .1
+# set highlight-transparency .1
 set zoom-center "true"
 set selection-clipboard clipboard
 set render-loading "false"
@@ -19,8 +19,8 @@ map K zoom in
 map J zoom out
 map p print
 map w recolor
-map k 5k
-map j 5k
+# map k 5k
+# map j 5k
 map <C-v> toggle_fullscreen
 
 set notification-error-bg       "#ebdbb2" # bg
@@ -65,3 +65,6 @@ set recolor-darkcolor           "#3c3836" # fg
 set recolor                     true
 # set recolor-keephue             true      # keep original color
 # set recolor-reverse-video       "true"
+
+# set backend to avoid errors
+set database "sqlite"
