@@ -1,0 +1,38 @@
+{
+    "bibitems": [
+        "Author1990",
+        "Annaswamy, Anuradha M. ",
+        "Cao, Chengyu, Lili Ma, and Yunjun Xu",
+        "Ioan Dor Landau , Rogelio Lozano , Mohammed M’Saad , Alireza Karimi",
+        "Shekhar, Amritash, and Abhijeet Sharma. "
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Presentations/Assignment1_OpenLoopVsClosedLoop_Gripen.tex",
+    "labels": [
+    ],
+    "modified": "Tue Sep 19 17:43:30 2023",
+    "packages": [
+        "#beamerthemeNordlingLab",
+        "#graphicx",
+        "yyyymmdd#datetime",
+        "#xltxtra",
+        "#class-beamer",
+        "#latex-document",
+        "#tex",
+        "english#babel"
+    ],
+    "refs": [
+    ],
+    "toc": [
+        "2#What is Adaptive Control#103",
+        "2#Summary#171",
+        "2#References#191"
+    ],
+    "usercommands": [
+        "\\latinencoding",
+        "\\dateseparator"
+    ]
+}

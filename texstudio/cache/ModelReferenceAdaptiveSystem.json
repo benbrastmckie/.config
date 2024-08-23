@@ -1,0 +1,43 @@
+{
+    "bibitems": [
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Report/ModelReferenceAdaptiveSystem.tex",
+    "labels": [
+        "eqn:pe_ptheta2",
+        "eqn:pe_ptheta2_app",
+        "eqn:y",
+        "eqn:pe_ptheta1",
+        "eqn:pe_ptheta1_app",
+        "eqn:y_m"
+    ],
+    "modified": "Tue Sep 19 17:43:30 2023",
+    "packages": [
+    ],
+    "refs": [
+        "eqn:pe_ptheta2",
+        "eqn:pe_ptheta1"
+    ],
+    "toc": [
+        "2#Real-time parameter estimation#13",
+        "7#Real-time parameter estimation#16",
+        "2#Model reference adaptive system#36",
+        "7#Model reference adaptive system#38",
+        "7#Example: Formulation of the design problem#48",
+        "7#Example: Formulation of the design problem#65",
+        "7#The gradient method#82",
+        "7#Alternative adjustment rule#100",
+        "7#Example 5.2: MRAS of a first order system#114",
+        "7#Example 5.2: MRAS of a first order system#130",
+        "7#Example 5.2: MRAS of a first order system#149",
+        "7#Example 5.2: MRAS of a first order system#166",
+        "7#Example 5.2: MRAS of a first order system#181",
+        "7#Example 5.2: MRAS of a first order system#192",
+        "7#Example 5.2: MRAS of a first order system#204"
+    ],
+    "usercommands": [
+    ]
+}

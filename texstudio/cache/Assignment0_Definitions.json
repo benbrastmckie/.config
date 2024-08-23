@@ -1,0 +1,36 @@
+{
+    "bibitems": [
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Report/Assignment0_Definitions.tex",
+    "labels": [
+        "sec:DefinitionsAdaptiveSys3",
+        "tab:summary_definitions",
+        "sec:DefinitionsAdaptiveSys2",
+        "sec:DefinitionsAdaptiveSys1",
+        "sec:DefinitionsAdaptiveSys4"
+    ],
+    "modified": "Thu Sep 21 14:05:17 2023",
+    "packages": [
+    ],
+    "refs": [
+        "tab:summary_definitions"
+    ],
+    "toc": [
+        "2#Definitions of an adaptive system#12",
+        "3#Analysis of the definitions#100",
+        "3#Consensus definitions#143",
+        "4#Consensus definition--Group 1 (Maximus)#145",
+        "4#Consensus definition--Group 2 (Trio)#150",
+        "4#Consensus definition--Group 3 (Table)#155",
+        "4#Consensus definition--Group 4 (Black dolphin)#160",
+        "2#Definitions of an adaptive system 2023 (Gripen)#164",
+        "3#Analysis of the definitions#166",
+        "3#Consensus definitions#197"
+    ],
+    "usercommands": [
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "InternalPDFViewer": {
+        "Embedded": false,
+        "File": ""
+    },
+    "Session": {
+        "Bookmarks": [
+        ],
+        "CurrentFile": "../../Desktop/NCKU/Adaptive Control/Repository/Report/Assignment0_Definitions.tex",
+        "FileVersion": 1,
+        "Files": [
+            {
+                "Col": 0,
+                "EditorGroup": 0,
+                "FileName": "../../Desktop/NCKU/Adaptive Control/Repository/Report/Main.tex",
+                "FirstLine": 0,
+                "FoldedLines": "",
+                "Line": 107
+            },
+            {
+                "Col": 0,
+                "EditorGroup": 0,
+                "FileName": "../../Desktop/NCKU/Adaptive Control/Repository/Report/Assignment0_Definitions.tex",
+                "FirstLine": 138,
+                "FoldedLines": "",
+                "Line": 174
+            }
+        ],
+        "MasterFile": "",
+        "VerticalSplit": true
+    }
+}

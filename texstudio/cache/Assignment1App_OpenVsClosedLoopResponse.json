@@ -1,0 +1,70 @@
+{
+    "bibitems": [
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Report/Assignment1App_OpenVsClosedLoopResponse.tex",
+    "labels": [
+        "app:Ex:LTISISOUnknownPole3",
+        "fig:rlocus1_1_open",
+        "block_diagram_ex1_2_open",
+        "Rain_hw12_close_impulse",
+        "Step_ex1_1_open",
+        "Step_ex1_1_close",
+        "app:Ex:LTISISOUnknownPhase1",
+        "Rain_hw11_open_impulse",
+        "Rain_hw11_close_impulse",
+        "physical model",
+        "fig:rlocus1_1_close",
+        "rlocus1_2",
+        "app:OpenVsClosedLoop4",
+        "ex1_2_block_diagram",
+        "app:Ex:LTISISOUnknownPhase3",
+        "ex1_1_block_diagram",
+        "Step_ex1_2_close_b",
+        "app:Ex:LTISISOUnknownPole1",
+        "app:Ex:LTISISOUnknownPole4",
+        "app:OpenVsClosedLoop1",
+        "Step_ex1_2_close",
+        "app:OpenVsClosedLoop3",
+        "Step_ex1_1",
+        "app:Ex:LTISISOUnknownPole5",
+        "fig:rlocus1_2_open",
+        "fig:Open loop bode",
+        "block_diagram_ex1_2_close",
+        "rlocus1_1",
+        "fig:Open bode ex1_1",
+        "Rain_hw12_open_impulse",
+        "block_diagram_ex1_1_close",
+        "Step_ex1_2_open",
+        "app:Ex:LTISISOUnknownPhase5",
+        "block_diagram_ex1_1_open",
+        "app:OpenVsClosedLoop5",
+        "fig:rlocus1_2_close",
+        "fig:Open bode ex1_2",
+        "app:Ex:LTISISOUnknownPhase4"
+    ],
+    "modified": "Tue Sep 19 17:43:30 2023",
+    "packages": [
+    ],
+    "refs": [
+    ],
+    "toc": [
+        "2#Open vs. closed loop response--Group 1 (Genius)#11",
+        "3#Example: LTI SISO system with an unknown pole#206",
+        "3#Example: LTI SISO system with unknown phase#209",
+        "2#Open vs. closed loop response--Group 3 (Yellow-BJT)#218",
+        "3#Example: LTI SISO system with an unknown pole#222",
+        "3#Example: LTI SISO system with unknown phase#225",
+        "2#Open vs. closed loop response--Group 4 (Mind Control)#229",
+        "3#Example: LTI SISO system with an unknown pole#232",
+        "3#Example: LTI SISO system with unknown phase#235",
+        "2#Open vs. closed loop response--Group 5 (Auditor)#239",
+        "3#Example: LTI SISO system with an unknown pole#242",
+        "3#Example: LTI SISO system with unknown phase#245"
+    ],
+    "usercommands": [
+    ]
+}

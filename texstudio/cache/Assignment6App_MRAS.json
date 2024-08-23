@@ -1,0 +1,45 @@
+{
+    "bibitems": [
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Report/Assignment6App_MRAS.tex",
+    "labels": [
+        "app:MRAS3",
+        "app:Ex:Lyapunovstable2",
+        "app:Ex:Lyapunovstable1",
+        "app:Ex:pendulum1",
+        "app:Ex:pendulum2",
+        "app:Ex:Lyapunovstable3",
+        "app:Ex:MITrule2",
+        "app:Ex:pendulum3",
+        "app:MRAS1",
+        "fig:rainMIT",
+        "app:Ex:MITrule1",
+        "app:Ex:MITrule3",
+        "app:MRAS2"
+    ],
+    "modified": "Tue Sep 19 17:43:30 2023",
+    "packages": [
+    ],
+    "refs": [
+    ],
+    "toc": [
+        "2#MRAS--Group 1 (Genius)#11",
+        "3#Example: MIT rule#14",
+        "3#Example: Energy of the pendulum#25",
+        "3#Example: Lyapunov stability#28",
+        "2#MRAS--Group 2 (Yellow BJT)#33",
+        "3#Example: MIT rule#36",
+        "3#Example: Energy of the pendulum#39",
+        "3#Example: Lyapunov stability#42",
+        "2#MRAS--Group 3 (Mind control)#46",
+        "3#Example: MIT rule#49",
+        "3#Example: Energy of the pendulum#52",
+        "3#Example: Lyapunov stability#55"
+    ],
+    "usercommands": [
+    ]
+}

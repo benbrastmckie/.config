@@ -1,0 +1,40 @@
+{
+    "bibitems": [
+        "Someone2000",
+        "Author1990"
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/nordlinglab-beamer/Nordlinglab_template_beamer.tex",
+    "labels": [
+    ],
+    "modified": "Tue Sep 19 13:16:00 2023",
+    "packages": [
+        "#class-beamer",
+        "#latex-document",
+        "#tex",
+        "#beamerthemeNordlingLab",
+        "english#babel",
+        "#graphicx",
+        "yyyymmdd#datetime"
+    ],
+    "refs": [
+    ],
+    "toc": [
+        "2#Motivation#96",
+        "3#The Basic Problem That We Studied#98",
+        "7#Make Titles Informative.#126",
+        "3#Previous Work#157",
+        "2#Our Results/Contribution#167",
+        "3#Main Results#169",
+        "3#Basic Ideas for Proofs/Implementation#181",
+        "2#Summary#194",
+        "7#For Further Reading#230"
+    ],
+    "usercommands": [
+        "\\dateseparator",
+        "\\latinencoding"
+    ]
+}

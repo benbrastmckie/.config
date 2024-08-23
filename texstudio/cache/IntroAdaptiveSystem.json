@@ -1,0 +1,62 @@
+{
+    "bibitems": [
+    ],
+    "bibtexfiles": [
+    ],
+    "childdocs": [
+    ],
+    "filename": "/Users/davidhernandez/Desktop/NCKU/Adaptive Control/Repository/Report/IntroAdaptiveSystem.tex",
+    "labels": [
+    ],
+    "modified": "Tue Sep 19 17:43:30 2023",
+    "packages": [
+    ],
+    "refs": [
+    ],
+    "toc": [
+        "2#Adaption#14",
+        "7#Adaptation#17",
+        "7#Why adapt?#24",
+        "7#Adaptation by feedback control#34",
+        "7#What is adaptive control#44",
+        "7#An adaptive control system#53",
+        "7#When can feedback handle process variations?#71",
+        "7#When can feedback handle process variations?#94",
+        "7#When can feedback handle disturbances?#117",
+        "7#Bode sensitivity integral#140",
+        "7#Example: Stabilisation of linear 1st order system#157",
+        "7#Example: Stabilisation of linear 1st order system#168",
+        "7#Example: Integrator with unknown sign#191",
+        "2#Classification of adaptive control#208",
+        "7#Identifier vs. non-identifier based adaptive control#211",
+        "7#Direct and indirect identifier based adaptive control#236",
+        "7#Four types of adaptive control schemes#252",
+        "7#Model-reference adaptive control (MRAC)#276",
+        "7#MRAC architectures#296",
+        "7#MRAC performance#317",
+        "7#$L_1$ adaptive control#334",
+        "7#MRAC vs. $L_1$ architecture#347",
+        "7#$L_1$ adaptive control performance#368",
+        "7#Self-tuning regulators (STR)#381",
+        "7#STR performance#393",
+        "7#Self-tuning vs. Auto-tuning#401",
+        "7#Dual control#418",
+        "7#Dual control performance#435",
+        "7#Gain scheduling#445",
+        "7#Gain scheduling performance#456",
+        "2#When should Adaptive control be used?#466",
+        "7#When should PID control be used?#469",
+        "7#When should Optimal control be used?#480",
+        "7#When should Robust control be used?#491",
+        "7#When should Adaptive control be used?#502",
+        "7#When should Adaptive control be used?#515",
+        "7#When should Adaptive control be used?#523",
+        "7#Some demos#531",
+        "7#Some demos#543",
+        "2#A brief history of adaptive control#554",
+        "7#A brief history of adaptive control 1950s-60s#557",
+        "7#A brief history of adaptive control 1960s-today#614"
+    ],
+    "usercommands": [
+    ]
+}
