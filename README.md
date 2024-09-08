@@ -8,10 +8,10 @@
 <!-- ``` -->
 <!---->
 
-<div style="display: flex; flex-direction: row;">
-    <img src="images/VimType.png" alt="Typewriter Comic" style="width: 49%;">
-    <img src="images/VimExcavator.png" alt="Excavator Comic" style="width: 49%;">
-</div>
+<!-- <div style="display: flex; flex-direction: row;"> -->
+<!--     <img src="images/VimType.png" alt="Typewriter Comic" style="width: 49%;"> -->
+<!--     <img src="images/VimExcavator.png" alt="Excavator Comic" style="width: 49%;"> -->
+<!-- </div> -->
 
 # .config
 
