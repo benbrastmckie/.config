@@ -14,7 +14,7 @@ return {
         show_tab_indicators = false,
         show_close_icon = false,
         -- numbers = "ordinal", -- Display buffer numbers as ordinal numbers
-        sort_by = 'insert_at_end', -- OR: 'insert_after_current' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
+        sort_by = 'insert_after_current', -- OR: 'insert_at_end' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
         -- sort_by = function(buffer_a, buffer_b)
         -- --   -- add custom logic
         --   return buffer_a.ordinal < buffer_b.ordinal

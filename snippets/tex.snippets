@@ -36,6 +36,95 @@ snippet bemit "Beamer Item" b
 #
 
 
+# Ttheorem enviornment
+snippet Tthm "Ttheorem" b
+	\vspace{.05in}
+	\begin{Tthm} \label{${1:label}}
+		${2:claim}
+	\end{Tthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Mtheorem enviornment
+snippet Mthm "Mtheorem" b
+	\vspace{.05in}
+	\begin{Mthm} \label{${1:label}}
+		${2:claim}
+	\end{Mthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Ctheorem enviornment
+snippet Cthm "Ctheorem" b
+	\vspace{.05in}
+	\begin{Cthm} \label{${1:label}}
+		${2:claim}
+	\end{Cthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Rtheorem enviornment
+snippet Rthm "Rtheorem" b
+	\vspace{.05in}
+	\begin{Rthm} \label{${1:label}}
+		${2:claim}
+	\end{Rthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Ltheorem enviornment
+snippet Lthm "Ltheorem" b
+	\vspace{.05in}
+	\begin{Lthm} \label{${1:label}}
+		${2:claim}
+	\end{Lthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Ptheorem enviornment
+snippet Pthm "Ptheorem" b
+	\vspace{.05in}
+	\begin{Pthm} \label{${1:label}}
+		${2:claim}
+	\end{Pthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
+
+
+# Dtheorem enviornment
+snippet Dthm "Dtheorem" b
+	\vspace{.05in}
+	\begin{Dthm} \label{${1:label}}
+		${2:claim}
+	\end{Dthm}
+
+	\begin{proof}
+		${0}
+	\end{proof}
+#
 
 
 # custom theorem enviornment
@@ -228,8 +317,16 @@ snippet ms "Mathscr" w
 	\mathscr{${1}}${0}
 #
 
+snippet aref "Bold Ref" w
+	\textbf{\aref{${1:Ref}}}${0}
+#
+
 snippet bref "Bold Ref" w
 	\textbf{\ref{${1:Ref}}}${0}
+#
+
+snippet eref "Double Ref" w
+	\eref{${1}}{${2}}${0}
 #
 
 #misc
