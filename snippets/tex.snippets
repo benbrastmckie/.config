@@ -172,7 +172,7 @@ snippet nc "New Command" b
 
 #usepackage
 snippet up "Use Package" b
-	\usepackage[${1:options}]{${2:package}} ${0}
+	\usepackage${1}{${2:package}} ${0}
 #
 
 # \begin{}...\end{}
@@ -376,6 +376,7 @@ snippet lemma "Lemma" bi
 	\begin{Lthm} \label{lemma:${1:label}}
 		${0:${VISUAL}}
 	\end{Lthm}
+  \vspace{-.2in}
 
 snippet prop "Proposition" bi
 	\begin{Pthm} \label{${1:label}}
@@ -389,7 +390,9 @@ snippet thrm "Theorem" bi
 
 snippet prf "Proof" bi
 	\begin{quote} 
-		\textit{Proof:} ${0:${VISUAL}}
+		\textit{Proof:}
+		${0:${VISUAL}}
+		\qed
 	\end{quote}
 
 snippet def "Definition" bi

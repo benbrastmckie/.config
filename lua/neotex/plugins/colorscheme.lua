@@ -23,6 +23,18 @@ return {
   end,
 }
 
+-- -- MONOKAI
+-- return {
+--   "tanvirtin/monokai.nvim",  -- Monokai theme
+--   priority = 1000, -- make sure to load this before all the other start plugins
+--   config = function()
+--     require("monokai").setup {
+--       -- palette = require("monokai").pro,  -- Use Monokai Pro palette
+--     }
+--   vim.cmd("colorscheme monokai")
+--   end
+-- }
+
 -- -- KANAGAWA
 -- return {
 --   "rebelot/kanagawa.nvim",
