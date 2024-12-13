@@ -1,16 +1,24 @@
 return {
   "folke/which-key.nvim",
-  commit = 'ca2d995c1f7d1ba4ce54a9936a6cdd8cfa594f2d',
   event = "VeryLazy",
-  init = function()
-    vim.o.timeout = true
-    vim.o.timeoutlen = 200
-  end,
+  dependencies = {
+    'echasnovski/mini.nvim',
+  },
   opts = {
     setup = {
-      show_help = true,
+      show_help = false,
+      notify = false,           -- prevent which-key from automatically setting up fields for defined mappings
+      triggers = {
+        { "<leader>", mode = { "n", "v" } },
+      },
       plugins = {
         presets = {
+          marks = false,        -- shows a list of your marks on ' and `
+          registers = false,    -- shows your registers on " in NORMAL or <C-r> in INSERT mode
+          spelling = {
+            enabled = false,    -- enabling this will show WhichKey when pressing z= to select spelling suggestions
+            suggestions = 10,   -- how many suggestions should be shown in the list?
+          },
           operators = false,    -- adds help for operators like d, y, ... and registers them for motion / text object completion
           motions = false,      -- adds help for motions
           text_objects = false, -- help for text objects triggered after entering an operator
@@ -18,25 +26,25 @@ return {
           nav = false,          -- misc bindings to work with windows
           z = false,            -- bindings for folds, spelling and others prefixed with z
           g = false,            -- bindings for prefixed with g
-          marks = false,        -- shows a list of your marks on ' and `
-          registers = false,    -- shows your registers on " in NORMAL or <C-r> in INSERT mode
-          spelling = {
-            enabled = false,    -- enabling this will show WhichKey when pressing z= to select spelling suggestions
-            suggestions = 10,   -- how many suggestions should be shown in the list?
-          },
-          -- the presets plugin, adds help for a bunch of default keybindings in Neovim
-          -- No actual key bindings are created
         },
       },
-      key_labels = {
-        -- override the label used to display some keys. It doesn't effect WK in any other way.
-        -- For example:
-        -- ["<space>"] = "SPC",
-        -- ["<CR>"] = "RET",
-        -- ["<tab>"] = "TAB",
+      win = {
+        no_overlap = true,
+        -- width = 1,
+        -- height = { min = 4, max = 25 },
+        -- col = 0,
+        -- row = math.huge,
+        border = "rounded", -- can be 'none', 'single', 'double', 'shadow', etc.
+        padding = { 1, 2 }, -- extra window padding [top/bottom, right/left]
+        title = false,
+        title_pos = "center",
+        zindex = 1000,
+        -- Additional vim.wo and vim.bo options
+        bo = {},
+        wo = {
+          winblend = 10, -- value between 0-100 0 for fully opaque and 100 for fully transparent
+        },
       },
-      -- triggers = "auto", -- automatically setup triggers
-      triggers = { "<leader>" }, -- or specify a list manually
       -- add operators that will trigger motion and text object completion
       -- to enable native operators, set the preset / operators plugin above
       -- operators = { gc = "Comments" },
@@ -45,41 +53,23 @@ return {
         separator = "➜", -- symbol used between a key and it's label
         group = "+",      -- symbol prepended to a group
       },
-      popup_mappings = {
-        scroll_down = "<c-d>", -- binding to scroll down inside the popup
-        scroll_up = "<c-u>",   -- binding to scroll up inside the popup
-      },
-      window = {
-        border = "rounded",       -- none, single, double, shadow
-        position = "bottom",      -- bottom, top
-        margin = { 1, 0, 1, 0 },  -- extra window margin [top, right, bottom, left]
-        padding = { 2, 2, 2, 2 }, -- extra window padding [top, right, bottom, left]
-        winblend = 0,
-        zindex = 1000,            -- positive value to position WhichKey above other floating windows.
-      },
       layout = {
-        height = { min = 4, max = 25 },                                             -- min and max height of the columns
         width = { min = 20, max = 50 },                                             -- min and max width of the columns
+        height = { min = 4, max = 25 },                                             -- min and max height of the columns
         spacing = 3,                                                                -- spacing between columns
         align = "left",                                                             -- align columns left, center or right
       },
-      ignore_missing = true,                                                        -- enable this to hide mappings for which you didn't specify a label
-      hidden = { "<silent>", "<cmd>", "<Cmd>", "<CR>", "call", "lua", "^:", "^ " }, -- hide mapping boilerplate
-      triggers_nowait = {
+      keys = {
+        scroll_down = "<c-d>", -- binding to scroll down inside the popup
+        scroll_up = "<c-u>",   -- binding to scroll up inside the popup
       },
-      triggers_blacklist = {
-        -- list of mode / prefixes that should never be hooked by WhichKey
-        -- this is mostly relevant for key maps that start with a native binding
-        -- most people should not need to change this
-        i = { "j", "k" },
-        v = { "j", "k" },
-      },
+      sort = { "local", "order", "group", "alphanum", "mod" },
       -- disable the WhichKey popup for certain buf types and file types.
       -- Disabled by default for Telescope
       disable = {
-        buftypes = {},
-        filetypes = {},
-      },
+        bt = { "help", "quickfix", "terminal", "prompt" }, -- for example
+        ft = { "NvimTree" } -- add your explorer's filetype here
+      }
     },
     defaults = {
       buffer = nil,   -- Global mappings. Specify a buffer number for buffer local mappings
@@ -119,6 +109,7 @@ return {
         m = { "<cmd>TermExec cmd='python3 /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/src/model_checker %:p:r.py'<CR>", "model checker" },
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
         r = { "<cmd>VimtexErrors<CR>", "report errors" },
+        t = { "<cmd>terminal latexindent -w %:p:r.tex<CR>", "tex format" },
         u = { "<cmd>cd %:p:h<CR>", "update cwd" },
         v = { "<plug>(vimtex-context-menu)", "vimtex menu" },
         w = { "<cmd>VimtexCountWords!<CR>", "word count" },
@@ -126,12 +117,6 @@ return {
         -- s = { "<cmd>lua function() require('cmp_vimtex.search').search_menu() end<CR>"           , "search citations" },
         s = { "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", "ssh" },
       },
-      -- c = {
-      --   name = "CITATION",
-      --   t = { "<cmd>Telescope bibtex format_string=\\citet{%s}<CR>", "\\citet" },
-      --   p = { "<cmd>Telescope bibtex format_string=\\citep{%s}<CR>", "\\citep" },
-      --   s = { "<cmd>Telescope bibtex format_string=\\citepos{%s}<CR>", "\\citepos" },
-      -- },
       f = {
         name = "FIND",
         b = {
@@ -175,24 +160,6 @@ return {
       --   n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
       --   p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
       -- (?) },
-      -- -- NEORG LIST MAPPINGS
-      -- l = {
-      --   name = "LIST",
-      --   a = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_ambiguous<CR>", "ambiguous" },
-      --   b = { "<cmd>Neorg keybind norg core.promo.demote<CR>", "backwards indent" },
-      --   c = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_cancelled<CR>", "cancel" },
-      --   d = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_done<CR>", "done" },
-      --   f = { "<cmd>Neorg keybind norg core.promo.promote<CR>", "forward indent" },
-      --   i = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_important<CR>", "important" },
-      --   n = { "<cmd>Neorg keybind norg core.itero.next-iteration<CR>", "new task" },
-      --   -- n = { "<cmd>set filetype=norg<CR>", "neorg" },
-      --   p = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_pending<CR>", "pending" },
-      --   r = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_recurring<CR>", "recurring" },
-      --   t = { "<cmd>Neorg toggle-concealer<CR>", "toggle concealer" },
-      --   u = { "<cmd>Neorg keybind norg core.qol.todo_items.todo.task_undone<CR>", "undone" },
-      --   v = { "<cmd>Neorg keybind norg core.pivot.invert-list-type<CR>", "invert list" },
-      --   -- t = { "<cmd>Neorg keybind norg core.pivot.toggle-list-type<CR>", "toggle list" },
-      -- },
       -- LIST MAPPINGS
       L = {
         name = "LIST",
