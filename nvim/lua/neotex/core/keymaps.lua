@@ -62,8 +62,8 @@ vim.keymap.set("n", "<C-p>", "<cmd>Telescope find_files<CR>", { remap = true })
 
 
 -- Toggle comments
-keymap('n', '<C-Bslash>', '<Plug>(comment_toggle_linewise_current)', opts)
-keymap('x', '<C-Bslash>', '<Plug>(comment_toggle_linewise_visual)', opts)
+keymap('n', "<C-;>", '<Plug>(comment_toggle_linewise_current)', opts)
+keymap('x', "<C-;>", '<Plug>(comment_toggle_linewise_visual)', opts)
 
 
 -- Open help on word
