@@ -7,6 +7,7 @@ return {
   opts = {
     setup = {
       show_help = false,
+      show_keys = false,        -- show the currently pressed key and its label as a message in the command line
       notify = false,           -- prevent which-key from automatically setting up fields for defined mappings
       triggers = {
         { "<leader>", mode = { "n", "v" } },
