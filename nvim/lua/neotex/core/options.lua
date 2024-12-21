@@ -17,6 +17,7 @@ local options = {
   relativenumber = true,          -- set relative numbered lines
   numberwidth = 2,                -- set number column width to 2 {default 4}
   signcolumn = "yes",             -- always show the sign column, otherwise it would shift the text each time
+  fillchars = "eob: ",            -- don't show tildes
   cursorline = true,              -- highlight the current line
   -- colorcolumn = "100",             -- highlight vertical colorcolumn (moved to after/python.lua)
   wrap = true,                    -- display lines as one long line
