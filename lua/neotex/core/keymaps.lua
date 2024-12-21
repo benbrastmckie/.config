@@ -35,6 +35,8 @@ keymap("n", "gcc", "<nop>", opts)
 -- Surround 
 -- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
 
+-- Terminal
+vim.keymap.set("n", "<C-t>", "<cmd>Floaterminal<CR>", { remap = true })
 
 -- Spelling
 vim.keymap.set("n", "<C-s>", function()

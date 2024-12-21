@@ -8,17 +8,20 @@ return {
       options = {
         mode = "buffers",
         separator_style = "slant",
-        close_command = "Bdelete! %d", -- can be a string | function, see "Mouse actions"
+        close_command = "bdelete! %d", -- can be a string | function, see "Mouse actions"
+        right_mouse_command = "bdelete! %d", -- can be a string | function | false, see "Mouse actions"
         diagnostics = false,           -- OR: | "nvim_lsp" 
         diagnostics_update_in_insert = false,
         show_tab_indicators = false,
         show_close_icon = false,
         -- numbers = "ordinal", -- Display buffer numbers as ordinal numbers
-        sort_by = 'insert_after_current', -- OR: 'insert_at_end' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
-        -- sort_by = function(buffer_a, buffer_b)
-        -- --   -- add custom logic
-        --   return buffer_a.ordinal < buffer_b.ordinal
-        -- end,
+        -- sort_by = 'insert_after_current', -- OR: 'insert_at_end' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
+        sort_by = function(buffer_a, buffer_b)
+            -- add custom logic
+            local modified_a = vim.fn.getftime(buffer_a.path)
+            local modified_b = vim.fn.getftime(buffer_b.path)
+            return modified_a > modified_b
+        end,
         offsets = {
           {
             filetype = "NvimTree",

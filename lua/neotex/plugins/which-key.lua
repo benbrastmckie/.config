@@ -83,6 +83,7 @@ return {
       c = { "<cmd>vert sb<CR>", "create split" },
       -- k = { "<cmd>clo<CR>", "kill split" },
       d = { "<cmd>update! | bdelete!<CR>", "delete buffer" },
+      -- d = { ":lua CloseBuffer()<CR>", "delete buffer" },
       e = { "<cmd>NvimTreeToggle<CR>", "explorer" },
       j = { "<cmd>clo<CR>", "drop split" },
       -- h = { "<cmd>Alpha<CR>", "home" },
@@ -98,25 +99,27 @@ return {
         a = { "<cmd>lua PdfAnnots()<CR>", "annotate" },
         b = { "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", "bib export" },
         c = { "<cmd>:VimtexClearCache All<CR>", "clear vimtex" },
-        e = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "edit snippets" },
+        e = { "<cmd>VimtexErrors<CR>", "error report" },
         f = { "<cmd>lua vim.lsp.buf.format()<CR>", "format" },
         g = { "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", "edit glossary" },
         -- h = { "<cmd>lua _HTOP_TOGGLE()<CR>", "htop" },
         h = { "<cmd>LocalHighlightToggle<CR>", "highlight" },
         k = { "<cmd>VimtexClean<CR>", "kill aux" },
+        l = { "<cmd>LeanInfoviewToggle<CR>", "lean info" },
         -- l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP" },
         -- m = { "<cmd>MarkdownPreview<CR>", "markdown preview" },
 
         m = { "<cmd>TermExec cmd='python3 /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/src/model_checker %:p:r.py'<CR>", "model checker" },
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
-        r = { "<cmd>VimtexErrors<CR>", "report errors" },
+        r = { "<cmd>AutolistRecalculate<CR>", "reorder list" },
         t = { "<cmd>terminal latexindent -w %:p:r.tex<CR>", "tex format" },
         u = { "<cmd>cd %:p:h<CR>", "update cwd" },
         v = { "<plug>(vimtex-context-menu)", "vimtex menu" },
         w = { "<cmd>VimtexCountWords!<CR>", "word count" },
         -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
         -- s = { "<cmd>lua function() require('cmp_vimtex.search').search_menu() end<CR>"           , "search citations" },
-        s = { "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", "ssh" },
+        s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "snippets edit" },
+        S = { "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", "ssh" },
       },
       f = {
         name = "FIND",
@@ -225,6 +228,20 @@ return {
         p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", "pdf" },
         v = { "<cmd>TermExec cmd='zathura %:p:r.pdf &' open=0<CR>", "view" },
         -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
+      },
+      r = {
+        name = "RUN",
+        d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
+        l = { "vim.diagnostics.setloclist", "locate errors" },
+        n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
+        p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
+    -- map('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>')
+    -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>')
+    -- map('n', '<space>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<CR>')
+    -- map('n', '<space>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<CR>')
+    -- map('n', '<space>D', '<cmd>lua vim.lsp.buf.type_definition()<CR>')
+    -- map('n', '<space>q', '<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>')
+    -- map('n', '<space>f', '<cmd>lua vim.lsp.buf.formatting()<CR>')prev{popup_opts = {show_header = false}} end", "previous" },
       },
       s = {
         name = "SURROUND",
