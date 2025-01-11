@@ -1,17 +1,36 @@
-- TODO
+# TODO
 
-- [ ] PdfAnnots in nixos
+- [ ] mini
+  - [ ] a/i
+  - [ ] bracketed
+  - [ ] comment
+  - [ ] completion (works with blink?)
+  - [ ] cursorword
+  - [ ] diff
+  - [ ] files
+  - [ ] fuzzy
+  - [ ] git
+  - [ ] icons
+  - [ ] pairs
+  - [ ] sessions
+  - [ ] snippets
+  - [ ] surround
+  - [ ] tabline
+- [ ] snacks
+  - [.] update which-key
+  - [ ] remove redundant plugins
+    - [ ] alpha
+    - [x] lazygit
+    - [x] indent-line
+    - [x] dressing
+  - [ ] change indent line color
+- [ ] blink
 - [ ] undo tree commands
 - [ ] checkhealth
   - [ ] install all missing programs in checkhealth
   - [x] error: client 2 quit with exit code 127 and signal 0
   - [x] error detected BufWritePre Autocommand for "\*"
 - [ ] update cheatsheet
-- [ ] indents
-  - [x] stop indents when adding brackets
-  - [ ] test vimtex indent
-  - [x] change to 2 from 4
-  - [x] add indents inside enumerate
 - [:] autolist
   - [ ] fix loop index
   - [x] add in-progress field
@@ -33,6 +52,16 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+- [x] PdfAnnots in nixos
+- [x] indents
+  - [x] stop indents when adding brackets
+  - [x] test vimtex indent
+  - [x] change to 2 from 4
+  - [x] add indents inside enumerate
+- [x] avante
+  - [x] add keybinding for asking about terminal errors
+- [x] lean
+  - [x] close infoview before buffer
 - [x] bibexport in nixos
 - [x] syntax highlighting in help
 - [x] markdown tab=4

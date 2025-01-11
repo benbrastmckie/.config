@@ -4,6 +4,40 @@ local opts = { noremap = true, silent = true }
 
 -- Shorten function name
 local keymap = vim.api.nvim_set_keymap
+
+-- Terminal mappings setup function triggered by an auto-command
+function _G.set_terminal_keymaps()
+  -- Set the terminal window as fixed
+  vim.wo.winfixbuf = true
+  -- NOTE: use vim.api.nvim_buf_set_keymap to keep these mappings local to a buffer
+  vim.api.nvim_buf_set_keymap(0, "t", "<esc>", "<C-c>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", {})
+  -- vim.api.nvim_buf_set_keymap(0, "t", "<C-w>", "<C-\\><C-n><C-w>", {})
+end
+
+-- Markdown mappings setup function triggered by an auto-command
+function _G.set_markdown_keymaps()
+  -- NOTE: use vim.api.nvim_buf_set_keymap to keep these mappings local to a buffer
+  vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", {})
+  vim.api.nvim_buf_set_keymap(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", ">", "><cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", {})
+  vim.api.nvim_buf_set_keymap(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", {})
+  vim.opt.tabstop = 2
+  vim.opt.shiftwidth = 2
+  vim.opt.softtabstop = 2
+end
 -- local map = vim.keymap.set -- for conciseness
 
 --Remap space as leader key
@@ -36,7 +70,8 @@ keymap("n", "gcc", "<nop>", opts)
 -- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
 
 -- Terminal
-vim.keymap.set("n", "<C-t>", "<cmd>Floaterminal<CR>", { remap = true })
+vim.keymap.set("n", "<C-t>", "<cmd>lua Snacks.terminal.toggle()<CR>", { remap = true })
+vim.keymap.set("t", "<C-t>", "<cmd>lua Snacks.terminal.toggle()<CR>", { remap = true })
 
 -- Spelling
 vim.keymap.set("n", "<C-s>", function()
@@ -105,10 +140,10 @@ keymap("n", "<A-l>", ":vertical resize +2<CR>", opts)
 
 
 -- Navigate buffers
-keymap("n", "<TAB>", ":bnext<CR>", opts)
-keymap("n", "<S-TAB>", ":bprevious<CR>", opts)
-keymap("n", "<BS>", ":BufferLineMoveNext<CR>", opts)
-keymap("n", "<S-BS>", ":BufferLineMovePrev<CR>", opts)
+keymap("n", "<TAB>", "", {callback = function() GotoBuffer(1, 1) end, desc = 'Next buffer by modified time'})
+keymap("n", "<S-TAB>", "", {callback = function() GotoBuffer(1, -1) end, desc = 'Previous buffer by modified time'})
+keymap("n", "<BS>", "<CMD>bnext<CR>", opts)
+keymap("n", "<S-BS>", "<CMD>bprevious<CR>", opts)
 
 
 -- Drag lines
