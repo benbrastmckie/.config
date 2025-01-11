@@ -1,3 +1,5 @@
+-- [null-ls] failed to run generator: ...y/none-ls.nvim/lua/null-ls/helpers generator_factory.lua:73: failed to decode json: Expected value but found inva lid token at character 1  
+
 return {
   "nvimtools/none-ls.nvim",               -- configure formatters & linters
   lazy = true,
@@ -11,12 +13,14 @@ return {
   config = function()
     local mason_null_ls = require("mason-null-ls")
     mason_null_ls.setup({
-      -- "prettier", -- prettier formatter
-      "stylua",   -- lua formatter
-      "isort",    -- python formatter
-      "black",    -- python formatter
-      "pylint",   -- python linter
-      -- "eslint_d", -- js linter
+      ensure_installed = {
+        "stylua",   -- lua formatter
+        "isort",    -- python formatter
+        "black",    -- python formatter
+        "pylint",   -- python linter
+      },
+      automatic_installation = true,
+      handlers = {},
     })
 
     -- for conciseness
@@ -29,30 +33,43 @@ return {
     -- local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 
     -- configure null_ls
+    -- Add debug logging
     null_ls.setup({
-      -- add package.json as identifier for root (for typescript monorepos)
+      debug = true,
+      log = {
+        enable = true,
+        level = "trace",
+        use_console = false,
+      },
       root_dir = null_ls_utils.root_pattern(".null-ls-root", "Makefile", ".git", "package.json"),
-      -- setup formatters & linters
       sources = {
-        --  to disable file types use
-        --  "formatting.prettier.with({disabled_filetypes: {}})" (see null-ls docs)
-        -- formatting.prettier.with({ TURN ON FOR JAVA SCRIPT
-        --   extra_filetypes = { "svelte" },
-        --   disabled_filetypes = { "txt" },
-        -- }),                -- js/ts formatter
-        formatting.stylua, -- lua formatter
-        formatting.isort,
-        formatting.black,
-        diagnostics.pylint,
-        -- .with({
-        --   extra_args = { "--config-path", vim.fn.expand("~/.nix-profile/bit/z3") },
-        -- }),
-        -- diagnostics.eslint_d.with({ -- TURN ON FOR JAVA SCRIPT
-        --   -- js/ts linter
-        --   condition = function(utils)
-        --     return utils.root_has_file({ ".eslintrc.js", ".eslintrc.cjs" }) -- only enable if root has .eslintrc.js or .eslintrc.cjs
-        --   end,
-        -- }),
+        -- Lua
+        -- formatting.stylua, -- instead of below
+        formatting.stylua.with({
+          extra_args = {
+            "--quote-style", "AutoPreferDouble",
+            "--indent-type", "Spaces",
+            "--indent-width", "2",
+          },
+        }),
+        -- Python
+        -- formatting.isort, -- instead of below
+        formatting.isort.with({
+          extra_args = { "--profile", "black" },
+        }),
+        -- formatting.black, -- instead of below
+        formatting.black.with({
+          extra_args = { "--fast", "--line-length", "88" },
+        }),
+        -- diagnostics.pylint, -- instead of below
+        diagnostics.pylint.with({
+          extra_args = {
+            "--output-format=text",
+            "--msg-template={line}:{column}:{category}:{msg}",
+            "--score=no",
+          },
+          diagnostics_format = "#{m} (#{c})",
+        }),
       },
       -- -- configure format on save: uncomment augroup above
       -- on_attach = function(current_client, bufnr)

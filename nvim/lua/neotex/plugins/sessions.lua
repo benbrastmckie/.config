@@ -1,6 +1,5 @@
 return {
   "Shatur/neovim-session-manager",
-  commit = 'a0b9d25154be573bc0f99877afb3f57cf881cce7', -- replace with the desired commit hash
   event = "VimEnter",
   dependencies = {
     "nvim-lua/plenary.nvim",

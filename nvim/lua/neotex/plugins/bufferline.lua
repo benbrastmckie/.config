@@ -52,7 +52,7 @@ return {
           callback = function()
             vim.opt.showtabline = 2
           end,
-        })
+        }),
       },
     })
   end,
