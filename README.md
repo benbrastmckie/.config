@@ -668,19 +668,18 @@ sudo pacman -S neovim
 Install the following if they are not already installed:
 
 ```
-sudo pacman -S install git
+sudo pacman -S git
 sudo pacman -S lazygit
 sudo pacman -S fzf
 sudo pacman -S ripgrep
-sudo pacman -S pandoc
-sudo pacman -S pandoc-citeproc
-sudo pacman -S node
+sudo pacman -S pandoc-cli haskell-pandoc pandoc-crossref texlive-latex texlive-latexextra texlive-latexrecommended
+sudo pacman -S nodejs
 sudo pacman -S npm
-sudo pacman stylua
-sudo pacman lua-language-server
+sudo pacman -S stylua
+sudo pacman -S lua-language-server
 sudo pacman -S wget
 sudo pacman -S xsel
-sudo pip3 install neovim-remote
+sudo pacman -S neovim-remote
 ```
 
 Open NeoVim by running `nvim` in the terminal and run the following command:
@@ -712,19 +711,16 @@ To install LaTeX, run the following
 sudo pacman -S texlive
 ```
 
-After rebooting, confirm that LaTeX is installed by running:
-
-```
-latexmk --version
-```
+Accept all packages in this group and (re)install.
+Afterwards `latexmk --version` should work (which is
+part of `texlive-binextra`).
 
 ## [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)
 
 In order for NeoVim to load icons, it will be important to install a NerdFont.
-For simplicity, I have included RobotoMono in `~/.config/fonts` which you can now move to the appropriate folder on your computer by entering the following in the terminal:
 
 ```
-sudo cp -R ~/.config/fonts/RobotoMono/ /usr/share/fonts
+sudo pacman -S ttf-roboto-mono-nerd
 ```
 
 If you intend to use the stock terminal, you will need to go into the terminal's settings to change the font to RobotoMono regular.
@@ -736,13 +732,12 @@ Install the Zathura pdf-viewer and move the config file in place by running:
 
 ```
 sudo pacman -S zathura
-mv ~/.config/config-files/zathurarc ~/.config/zathura/zathurarc
 ```
 
 If you want to customise Zathura, you can run `nvim ~/.config/zathura/zathurarc`, referring to the documents by running:
 
 ```
-man zathuraarc
+man zathurarc
 ```
 
 Although Zathura is an ideal pdf-viewer for writing LaTeX documents, you may want to use your default pdf-viewer for opening the pdfs associated with citations via the VimTex context-menu.
@@ -762,7 +757,7 @@ Alternatively, you could replace 'okular' with 'zathura'.
 
 ## [Configuration](https://github.com/benbrastmckie/.config)
 
-I recommend forking my config, coppying the SSH address by clicking the `Code` button in your fork of the config.
+I recommend forking my config, copying the SSH address by clicking the `Code` button in your fork of the config.
 Alternatively, if you don't want to fork, click the `Code` button in my repo.
 Now you are ready to open the terminal back up and run the following commands making the appropriate substitution:
 
