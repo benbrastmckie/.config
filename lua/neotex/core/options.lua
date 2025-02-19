@@ -54,6 +54,11 @@ local options = {
   inccommand = "split",           -- shows all inline replacements in split
   autoread = true,
 
+  -- FOLDING
+  foldenable = false,      -- Disable folding by default
+  foldmethod = "manual",   -- Set manual folding
+  foldlevel = 99,         -- Open all folds by default
+
 }
 
 -- turns on all values in options table above

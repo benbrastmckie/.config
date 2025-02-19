@@ -1,3 +1,52 @@
+--[[
+Keybindings Documentation:
+
+Terminal Mode:
+  <esc>       -> Exit terminal mode
+  <C-t>       -> Toggle terminal
+  <C-h/j/k/l> -> Navigate windows
+  <C-a>       -> Avante Ask (non-lazygit only)
+  <C-c>       -> Avante Chat (non-lazygit only)
+
+General:
+  <Space>     -> Leader key
+  <C-z>       -> Disabled
+  <C-t>       -> Toggle terminal
+  <C-s>       -> Show spelling suggestions (Telescope)
+  <CR>        -> Clear search highlights
+  <C-p>       -> Find files (Telescope)
+  <C-;>       -> Toggle comments (line/visual)
+  <S-m>       -> Show help for word under cursor
+
+Navigation:
+  Y           -> Yank to end of line
+  E           -> Go to end of previous word
+  m           -> Center cursor at top of screen
+  <C-h/j/k/l> -> Window navigation
+  <A-Left/Right> -> Resize window horizontally
+  <A-h/l>     -> Resize window horizontally
+  <TAB>       -> Next buffer by modified time
+  <S-TAB>     -> Previous buffer by modified time
+  <BS>        -> Next buffer
+  <S-BS>      -> Previous buffer
+  <C-u/d>     -> Scroll up/down (centered)
+  <S-h/l>     -> Go to start/end of line
+  J/K         -> Navigate display lines
+
+Text Manipulation:
+  <A-j/k>     -> Move line(s) up/down
+  </>>        -> Decrease/Increase indentation
+  
+Markdown Specific:
+  <CR>        -> New bullet point
+  o           -> New bullet point below
+  O           -> New bullet point above
+  <tab>       -> Indent bullet
+  <S-tab>     -> Unindent bullet
+  dd          -> Delete line and recalculate
+  <C-n>       -> Toggle checkbox
+--]]
+
 local opts = { noremap = true, silent = true }
 
 -- local term_opts = { silent = true }
@@ -10,9 +59,21 @@ function _G.set_terminal_keymaps()
   -- Set the terminal window as fixed
   vim.wo.winfixbuf = true
   -- NOTE: use vim.api.nvim_buf_set_keymap to keep these mappings local to a buffer
-  vim.api.nvim_buf_set_keymap(0, "t", "<esc>", "<C-c>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<esc>", "<C-\\><C-n>", {})
+  -- Only set Avante mappings for non-lazygit buffers
+  if vim.bo.filetype ~= "lazygit" then
+    vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
+    -- vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+    vim.api.nvim_buf_set_keymap(0, "n", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
+    -- vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+    vim.api.nvim_buf_set_keymap(0, "v", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
+    -- vim.api.nvim_buf_set_keymap(0, "v", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+  end
+  vim.api.nvim_buf_set_keymap(0, "t", "<M-Left>", "<Cmd>vertical resize -2<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<M-Right>", "<Cmd>vertical resize +2<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<M-h>", "<Cmd>vertical resize -2<CR>", {})
+  vim.api.nvim_buf_set_keymap(0, "t", "<M-l>", "<Cmd>vertical resize +2<CR>", {})
+
   vim.api.nvim_buf_set_keymap(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", {})
   vim.api.nvim_buf_set_keymap(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", {})
   vim.api.nvim_buf_set_keymap(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", {})
@@ -104,7 +165,10 @@ keymap('x', "<C-;>", '<Plug>(comment_toggle_linewise_visual)', opts)
 
 
 -- Open help on word
-keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
+keymap("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', opts)
+-- keymap("n", "<S-m>", "<cmd>Telescope help_tags default_text=<C-r><C-w><cr>", opts)
+-- keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
+keymap("n", "<C-m>", '<cmd>Telescope man_pages<cr>', opts)
 
 
 -- Fix 'Y', 'E'
@@ -142,8 +206,8 @@ keymap("n", "<A-l>", ":vertical resize +2<CR>", opts)
 -- Navigate buffers
 keymap("n", "<TAB>", "", {callback = function() GotoBuffer(1, 1) end, desc = 'Next buffer by modified time'})
 keymap("n", "<S-TAB>", "", {callback = function() GotoBuffer(1, -1) end, desc = 'Previous buffer by modified time'})
-keymap("n", "<BS>", "<CMD>bnext<CR>", opts)
-keymap("n", "<S-BS>", "<CMD>bprevious<CR>", opts)
+-- keymap("n", "<BS>", "<CMD>bnext<CR>", opts)
+-- keymap("n", "<S-BS>", "<CMD>bprevious<CR>", opts)
 
 
 -- Drag lines

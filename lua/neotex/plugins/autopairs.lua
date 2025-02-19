@@ -16,6 +16,7 @@ return {
         javascript = { "template_string" }, -- don't add pairs in javscript template_string treesitter nodes
         -- javascript = { "string", "template_string" },
         java = false,                       -- don't check treesitter on java
+        lean = false,                        -- enable treesitter for lean
       },
       disable_filetype = { "TelescopePrompt", "spectre_panel" },
       disable_in_macro = true,
@@ -28,6 +29,23 @@ return {
     local Rule = require 'nvim-autopairs.rule'
 
     local cond = require 'nvim-autopairs.conds'
+
+    -- Add Lean-specific rules
+    local lean_rules = {
+      Rule("⟨", "⟩", "lean"),
+      Rule("(", ")", "lean"),
+      Rule("[", "]", "lean"),
+      Rule("{", "}", "lean"),
+      Rule("`", "`", "lean"),
+      Rule("'", "'", "lean"),
+      Rule("«", "»", "lean"),
+      Rule("⟪", "⟫", "lean"),
+      Rule("⦃", "⦄", "lean"),
+    }
+
+    for _, rule in ipairs(lean_rules) do
+      autopairs.add_rule(rule)
+    end
 
     autopairs.add_rules({
       Rule("`", "'", "tex"),
@@ -76,7 +94,8 @@ return {
       'confirm_done',
       cmp_autopairs.on_confirm_done({
         filetypes = {
-          tex = false -- Disable for tex
+          tex = false, -- Disable for tex
+          lean = true  -- Enable for lean
         }
       })
     )

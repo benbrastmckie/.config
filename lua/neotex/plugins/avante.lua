@@ -10,12 +10,24 @@ return {
       callback = function()
         -- Create buffer-local insert mode mapping for toggle
         vim.api.nvim_buf_set_keymap(0, "i", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
       end
     })
   end,
   opts = {
     provider = "claude",
     auto_suggestions_provider = "claude",
+    prompts = {
+      ask = {
+        system = "You are an expert coding assistant.",
+        user = "{{input}}",
+      },
+      suggest = {
+        system = "You are an expert coding assistant.",
+        user = "{{input}}",
+      },
+    },
     claude = {
       endpoint = "https://api.anthropic.com",
       model = "claude-3-5-sonnet-20241022",
@@ -48,10 +60,10 @@ return {
         prev = "<C-k>",
       },
       suggestion = {
-        accept = "<C-y>",
+        accept = "<C-l>",
         next = "<C-j>",
         prev = "<C-k>",
-        dismiss = "<ESC>",
+        dismiss = "<C-h>",
       },
       jump = {
         next = "n",

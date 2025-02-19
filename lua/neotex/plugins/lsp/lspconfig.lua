@@ -27,6 +27,39 @@ return {
       capabilities = default,
     })
 
+    -- configure texlab (LaTeX LSP) server
+    lspconfig["texlab"].setup({
+      capabilities = default,
+      settings = {
+        texlab = {
+          build = {
+            onSave = true,
+          },
+          chktex = {
+            onEdit = false,
+            onOpenAndSave = false,
+          },
+          diagnosticsDelay = 300,
+          -- formatterLineLength = 80,
+          -- bibtexFormatter = "texlab",
+          -- -- Set up bibliography paths
+          -- bibParser = {
+          --   enabled = true,
+          --   -- Add paths where your .bib files might be located
+          --   paths = {
+          --     "./bib",           -- bib folder in current directory
+          --     "~/texmf/bibtex/bib", -- bib folder in Documents
+          --     vim.fn.expand("$HOME/texmf/bibtex/bib"), -- Expanded path to Bibliography folder
+          --   },
+          -- },
+          -- -- Enable forward search and inverse search if needed
+          -- forwardSearch = {
+          --   enabled = true,
+          -- },
+        },
+      },
+    })
+
     -- configure lua server (with special settings)
     lspconfig["lua_ls"].setup({
       capabilities = default,

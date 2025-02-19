@@ -107,8 +107,7 @@ return {
         -- l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP" },
         -- m = { "<cmd>MarkdownPreview<CR>", "markdown preview" },
 
-        m = { "<cmd>TermExec cmd='cd /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code && python3 -m src.model_checker %:p:r.py'<CR>", "model checker" },
-        -- m = { "<cmd>TermExec cmd='python3 /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/src/model_checker %:p:r.py'<CR>", "model checker" },
+        m = { "<cmd>TermExec cmd='cd /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code && python3 -m src.model_checker.cli %:p:r.py'<CR>", "model checker" },
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder list" },
         t = { "<cmd>terminal latexindent -w %:p:r.tex<CR>", "tex format" },
@@ -145,6 +144,7 @@ return {
       },
       g = {
         name = "GIT",
+    -- { '<leader>g', group = ' Git' },
         b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
         c = { "<cmd>Telescope git_commits<CR>", "git commits" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
@@ -155,6 +155,7 @@ return {
         p = { "<cmd>Gitsigns preview_hunk<CR>", "preview hunk" },
         s = { "<cmd>Telescope git_status<CR>", "git status" },
         t = { "<cmd>Gitsigns toggle_current_line_blame<CR>", "toggle blame" },
+        t = { "<cmd>Gitsigns toggle_word_diff<CR>", "toggle word diff" },
       },
       h = {
         name = "AI HELP",

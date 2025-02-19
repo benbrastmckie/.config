@@ -4,9 +4,16 @@ return {
   lazy = false,
   -- ---@type snacks.Config
   opts = {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
+    styles = {
+      blame_lines = {
+        width = 0.6,
+        height = 0.6,
+        border = "rounded",
+        title = " Git Blame ",
+        title_pos = "center",
+        ft = "git",
+      }
+    },
     bigfile = {
       enabled = false,
       notify = true,
@@ -39,11 +46,10 @@ return {
     },
     input = {
       enabled = true,
-      -- backdrop = false,
-      -- position = "float",
-      -- border = "rounded",
-      -- title_pos = "center",
-      -- icon = "?",
+      backdrop = false,
+      position = "float",
+      border = "rounded",
+      title_pos = "center",
       icon_hl = 'SnacksInputIcon',
       icon_pos = 'left',
       prompt_pos = 'title',
@@ -95,24 +101,24 @@ return {
             desc = 'full scope',
           },
         },
-        jump = {
-          ['[a'] = {
-            min_size = 1,         -- allow single line scopes
-            bottom = false,
-            cursor = false,
-            edge = true,
-            treesitter = { blocks = { enabled = false } },
-            desc = 'jump to top edge of scope',
-          },
-          ['];'] = {
-            min_size = 1,         -- allow single line scopes
-            bottom = true,
-            cursor = false,
-            edge = true,
-            treesitter = { blocks = { enabled = false } },
-            desc = 'jump to bottom edge of scope',
-          },
-        },
+        -- jump = {
+        --   ['[a'] = {
+        --     min_size = 1,         -- allow single line scopes
+        --     bottom = false,
+        --     cursor = false,
+        --     edge = true,
+        --     treesitter = { blocks = { enabled = false } },
+        --     desc = 'jump to top edge of scope',
+        --   },
+        --   ['];'] = {
+        --     min_size = 1,         -- allow single line scopes
+        --     bottom = true,
+        --     cursor = false,
+        --     edge = true,
+        --     treesitter = { blocks = { enabled = false } },
+        --     desc = 'jump to bottom edge of scope',
+        --   },
+        -- },
       },
     },
     scratch = { enabled = false },
