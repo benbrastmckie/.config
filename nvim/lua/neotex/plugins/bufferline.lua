@@ -7,20 +7,28 @@ return {
     bufferline.setup({
       options = {
         mode = "buffers",
+        custom_filter = function(buf_number, buf_numbers)
+          -- filter out quickfix buffers
+          local buf_ft = vim.bo[buf_number].filetype
+          if buf_ft == "qf" then -- qf is the filetype for quickfix windows
+            return false
+          end
+          return true
+        end,
         separator_style = "slant",
-        close_command = "bdelete! %d", -- can be a string | function, see "Mouse actions"
+        close_command = "bdelete! %d",       -- can be a string | function, see "Mouse actions"
         right_mouse_command = "bdelete! %d", -- can be a string | function | false, see "Mouse actions"
-        diagnostics = false,           -- OR: | "nvim_lsp" 
+        diagnostics = false,                 -- OR: | "nvim_lsp"
         diagnostics_update_in_insert = false,
         show_tab_indicators = false,
         show_close_icon = false,
         -- numbers = "ordinal", -- Display buffer numbers as ordinal numbers
         -- sort_by = 'insert_after_current', -- OR: 'insert_at_end' | 'tabs' | 'extension' | 'relative_directory' | 'directory' | 'id' |
         sort_by = function(buffer_a, buffer_b)
-            -- add custom logic
-            local modified_a = vim.fn.getftime(buffer_a.path)
-            local modified_b = vim.fn.getftime(buffer_b.path)
-            return modified_a > modified_b
+          -- add custom logic
+          local modified_a = vim.fn.getftime(buffer_a.path)
+          local modified_b = vim.fn.getftime(buffer_b.path)
+          return modified_a > modified_b
         end,
         offsets = {
           {
@@ -54,6 +62,15 @@ return {
           end,
         }),
       },
+    })
+
+    -- Set up autocmd for quickfix windows
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "qf",
+      callback = function()
+        vim.opt_local.buflisted = false    -- Don't list in buffers
+        vim.opt_local.bufhidden = "wipe"   -- Wipe buffer when hidden
+      end,
     })
   end,
 }

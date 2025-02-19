@@ -18,8 +18,8 @@
   - [ ] tabline
 - [ ] snacks
   - [.] update which-key
-  - [ ] remove redundant plugins
-    - [ ] alpha
+  - [x] remove redundant plugins
+    - [x] alpha
     - [x] lazygit
     - [x] indent-line
     - [x] dressing
