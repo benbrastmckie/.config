@@ -1,3 +1,149 @@
+--[[ Which-Key Mappings Overview:
+
+<leader> mappings:
+b - VimtexCompile (build)
+c - Create vertical split
+d - Save and delete buffer
+e - Toggle NvimTree explorer
+j - Close split
+i - Open VimtexToc
+k - Maximize split
+q - Save all and quit
+u - Open Telescope undo
+v - VimtexView
+w - Write all files
+
+ACTIONS (<leader>a):
+  a - PDF annotations
+  b - Export bibliography
+  c - Clear VimTex cache
+  e - Show VimTex errors
+  f - Format buffer
+  g - Edit glossary
+  h - Toggle local highlight
+  k - Clean VimTex aux files
+  l - Toggle Lean info view
+  m - Run model checker
+  p - Run Python file
+  r - Recalculate autolist
+  t - Format tex file
+  u - Update CWD
+  v - VimTex context menu
+  w - Count words
+  s - Edit snippets
+  S - SSH connect
+
+FIND (<leader>f):
+  a - Find all files
+  b - Find buffers
+  c - Find citations
+  f - Find in project
+  l - Resume last search
+  q - Find in quickfix
+  g - Git commit history
+  h - Help tags
+  k - Keymaps
+  r - Registers
+  t - Colorschemes
+  s - Search string
+  w - Search word under cursor
+  y - Yank history
+
+GIT (<leader>g):
+  b - Checkout branch
+  c - View commits
+  d - View diff
+  g - Open lazygit
+  k - Previous hunk
+  j - Next hunk
+  l - Line blame
+  p - Preview hunk
+  s - Git status
+  t - Toggle blame/word diff
+
+AI HELP (<leader>h):
+  a - Ask
+  b - Build dependencies
+  c - Chat
+  C - Clear
+  e - Edit
+  m - Map repo
+  p - Switch provider
+  r - Refresh assistant
+  t - Toggle assistant
+
+LIST (<leader>L):
+  c - Toggle checkbox
+  n - Next list item
+  p - Previous list item
+  r - Reorder list
+
+LSP (<leader>l):
+  b - Buffer diagnostics
+  c - Code action
+  d - Go to definition
+  D - Go to declaration
+  h - Hover help
+  i - Implementations
+  k - Kill LSP
+  l - Line diagnostics
+  n - Next diagnostic
+  p - Previous diagnostic
+  r - References
+  s - Restart LSP
+  t - Start LSP
+  R - Rename
+
+MARKDOWN (<leader>m):
+  v - View slides
+
+SESSIONS (<leader>S):
+  s - Save session
+  d - Delete session
+  l - Load session
+
+NIXOS (<leader>n):
+  d - Nix develop
+  g - Garbage collection
+  p - Browse packages
+  m - MyNixOS
+  r - Rebuild flake
+  h - Home-manager switch
+  u - Update flake
+
+PANDOC (<leader>p):
+  w - Convert to Word
+  m - Convert to Markdown
+  h - Convert to HTML
+  l - Convert to LaTeX
+  p - Convert to PDF
+  v - View PDF
+
+RUN (<leader>r):
+  d - Dashboard
+  l - Locate errors
+  n - Next error
+  p - Previous error
+  r - Reload configs
+  h - Toggle Hardtime
+  s - Show notifications
+
+SURROUND (<leader>s):
+  s - Surround
+  d - Delete surround
+  c - Change surround
+
+TEMPLATES (<leader>t):
+  p - PhilPaper.tex
+  l - Letter.tex
+  g - Glossary.tex
+  h - HandOut.tex
+  b - PhilBeamer.tex
+  s - SubFile.tex
+  r - Root.tex
+  m - MultipleAnswer.tex
+]]
+
 return {
   "folke/which-key.nvim",
   event = "VeryLazy",
