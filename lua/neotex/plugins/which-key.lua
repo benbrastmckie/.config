@@ -251,7 +251,7 @@ return {
         k = { "<cmd>VimtexClean<CR>", "kill aux" },
         l = { "<cmd>LeanInfoviewToggle<CR>", "lean info" },
         -- l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP" },
-        -- m = { "<cmd>MarkdownPreview<CR>", "markdown preview" },
+        M = { "<cmd>!xdg-open %<CR>", "markdown preview" },
 
         m = { "<cmd>TermExec cmd='cd /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code && python3 -m src.model_checker.cli %:p:r.py'<CR>", "model checker" },
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
