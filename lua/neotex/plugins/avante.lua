@@ -33,9 +33,6 @@ return {
       model = "claude-3-5-sonnet-20241022",
       temperature = 0,
       max_tokens = 4096,
-      api_key = function()
-        return vim.env.ANTHROPIC_API_KEY
-      end,
     },
     dual_boost = {
       enabled = false,
