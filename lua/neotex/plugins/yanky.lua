@@ -11,6 +11,7 @@ return {
       cancel_event = "update",
       ignore_registers = { "_" },
       update_register_on_cycle = false,
+      permanent_wrapper = nil,
     },
     picker = {
       select = {
@@ -23,17 +24,18 @@ return {
     },
     system_clipboard = {
       sync_with_ring = true,
+      -- clipboard_register = nil,
     },
     highlight = {
       on_put = true,
       on_yank = true,
-      timer = 150,
+      timer = 200,
     },
     preserve_cursor_position = {
       enabled = true,
     },
     textobj = {
-     enabled = true,
+     enabled = false,
     },
   },
 }
