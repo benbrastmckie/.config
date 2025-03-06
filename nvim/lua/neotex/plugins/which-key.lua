@@ -394,6 +394,7 @@ return {
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
         r = { "<cmd>ReloadConfig<cr>", "Reload Configs" },
         s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "Show Notifications" },
+        k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
         -- d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
     -- map('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>')
     -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>')
