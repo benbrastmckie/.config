@@ -251,14 +251,13 @@ return {
         k = { "<cmd>VimtexClean<CR>", "kill aux" },
         l = { "<cmd>LeanInfoviewToggle<CR>", "lean info" },
         -- l = { "<cmd>lua vim.g.cmptoggle = not vim.g.cmptoggle<CR>", "LSP" },
-        M = { "<cmd>!xdg-open %<CR>", "markdown preview" },
 
         m = { "<cmd>TermExec cmd='python3 -m src.model_checker.cli %:p:r.py'<CR>", "model checker" },
         -- m = { "<cmd>TermExec cmd='cd /home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code && python3 -m src.model_checker.cli %:p:r.py'<CR>", "model checker" },
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder list" },
         t = { "<cmd>terminal latexindent -w %:p:r.tex<CR>", "tex format" },
-        u = { "<cmd>cd %:p:h<CR>", "update cwd" },
+        u = { "<cmd>cd %:p:h | NvimTreeRefresh | NvimTreeFindFile<CR>", "update cwd" },
         v = { "<plug>(vimtex-context-menu)", "vimtex menu" },
         w = { "<cmd>VimtexCountWords!<CR>", "word count" },
         -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
@@ -353,6 +352,7 @@ return {
       m = {
         name = "MARKDOWN",
         v = { "<cmd>Slides<CR>", "view slides" },
+        m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
       },
       S = {
         name = "SESSIONS",
@@ -388,12 +388,13 @@ return {
       r = {
         name = "RUN",
         d = { "<cmd>Dashboard<cr>", "Dashboard" },
+        h = { "<cmd>Hardtime toggle<cr>", "hardtime" },
         l = { "vim.diagnostics.setloclist", "locate errors" },
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
         r = { "<cmd>ReloadConfig<cr>", "Reload Configs" },
-        h = { "<cmd>Hardtime toggle<cr>", "Hardtime Toggle" },
         s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "Show Notifications" },
+        k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
         -- d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
     -- map('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>')
     -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>')

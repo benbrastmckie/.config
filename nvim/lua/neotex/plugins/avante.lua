@@ -20,11 +20,11 @@ return {
     auto_suggestions_provider = "claude",
     prompts = {
       ask = {
-        system = "You are an expert coding assistant.",
+        system = "You are an expert computer scientist.",
         user = "{{input}}",
       },
       suggest = {
-        system = "You are an expert coding assistant.",
+        system = "You are an expert computer scientist.",
         user = "{{input}}",
       },
     },
