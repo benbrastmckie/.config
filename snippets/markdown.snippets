@@ -1,0 +1,32 @@
+### MARKDOWN SNIPPETS ###
+
+# new lectic entry
+snippet lectic "Lectic Header"  b
+  ---
+  interlocutor:
+    # Required fields
+    name: ${1:Computer Scientist}
+    prompt: ${2:You are an expert logician and computer scientist specializing in RL and agentic reasoning in AI.}
+
+    # Optional model configuration
+    provider: ${3:anthropic}           # Optional, default anthropic
+    # model: claude-3-7-sonnet    # Model selection
+    # temperature: 0.7            # Response variability (0-1)
+    # max_tokens: 1024            # Maximum response length
+
+    # Optional Context management
+    # memories: previous.txt        # Context from previous conversations.
+                                  # Added to system prompt.
+                                  # Can be string or file path
+
+    # # Tool integration
+    # tools:
+    #   # Command execution tool
+    #   exec: python3           # Command to execute
+    #   usage: Before running any code, show the code snippet to the user.
+    #   name: python            # Optional custom name
+  ---
+
+  ${0:Begin}
+#
+
