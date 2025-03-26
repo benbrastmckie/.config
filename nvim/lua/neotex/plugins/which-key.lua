@@ -262,7 +262,7 @@ return {
         w = { "<cmd>VimtexCountWords!<CR>", "word count" },
         -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
         -- s = { "<cmd>lua function() require('cmp_vimtex.search').search_menu() end<CR>"           , "search citations" },
-        s = { "<cmd>e ~/.config/nvim/snippets/tex.snippets<CR>", "snippets edit" },
+        s = { "<cmd>NvimTreeOpen ~/.config/nvim/snippets/<CR>", "snippets edit" },
         S = { "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", "ssh" },
       },
       f = {
@@ -387,14 +387,17 @@ return {
       },
       r = {
         name = "RUN",
-        d = { "<cmd>Dashboard<cr>", "Dashboard" },
+        c = { "<cmd>lua require('lazy').clear()<cr>", "clear plugin cache" },
+        d = { "<cmd>Dashboard<cr>", "dashboard" },
+        e = { "vim.diagnostics.setloclist", "locate errors" },
         h = { "<cmd>Hardtime toggle<cr>", "hardtime" },
-        l = { "vim.diagnostics.setloclist", "locate errors" },
+        k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
+        l = { "<cmd>Lectic<CR>", "lectic" },
+        -- m = { "<cmd>lua DisplayMessages()<cr>", "messages" },
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
-        r = { "<cmd>ReloadConfig<cr>", "Reload Configs" },
-        s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "Show Notifications" },
-        k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
+        r = { "<cmd>ReloadConfig<cr>", "reload configs" },
+        s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "show notifications" },
         -- d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
     -- map('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>')
     -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>')

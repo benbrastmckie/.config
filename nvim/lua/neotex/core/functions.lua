@@ -1,3 +1,19 @@
+-- Display vim messages in quickfix window
+function DisplayMessages()
+  -- Get all messages and split them into lines
+  local messages = vim.fn.execute('messages')
+  local lines = vim.split(messages, '\n')
+
+  -- Create quickfix items from messages
+  local qf_items = vim.tbl_map(function(line)
+    return { text = line }
+  end, lines)
+
+  -- Set the quickfix list and open it
+  vim.fn.setqflist(qf_items)
+  vim.cmd('copen')
+end
+
 -- Fine all instances of a word in a project with telescope
 function SearchWordUnderCursor()
   local word = vim.fn.expand('<cword>')

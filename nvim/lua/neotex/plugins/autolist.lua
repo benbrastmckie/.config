@@ -8,7 +8,23 @@ return {
     "norg",
   },
   config = function()
-    require('autolist').setup()
+    require('autolist').setup({
+      lists = {
+        -- Disable roman numerals and use simple numbered lists
+        markdown = {
+          "1.", -- Numbered lists (1., 2., 3., etc)
+          "-",  -- Unordered lists with dash
+          "*",  -- Unordered lists with asterisk
+          "+",  -- Unordered lists with plus
+        },
+        norg = {
+          "1.", -- Numbered lists
+          "-",  -- Unordered lists
+          "*",  -- Unordered lists
+          "+",  -- Unordered lists
+        }
+      }
+    })
 
     function HandleCheckbox()
       local config = require("autolist.config")

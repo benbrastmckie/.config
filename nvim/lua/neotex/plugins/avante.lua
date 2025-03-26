@@ -2,7 +2,8 @@ return {
   "yetone/avante.nvim",
   event = "VeryLazy",
   lazy = false,
-  version = false, -- set this to "*" for latest changes, false for releases
+  version = false, -- Using latest version to get the most recent fixes
+  -- version = "*", -- Using latest version to get the most recent fixes
   init = function()
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
@@ -12,6 +13,10 @@ return {
         vim.api.nvim_buf_set_keymap(0, "i", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
         vim.api.nvim_buf_set_keymap(0, "n", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
+        -- Add mapping to clear selected text
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>", { noremap = true, silent = true })
+        -- Set scrolloff to keep cursor in the middle
+        vim.opt_local.scrolloff = 999
       end
     })
   end,
@@ -20,17 +25,19 @@ return {
     auto_suggestions_provider = "claude",
     prompts = {
       ask = {
-        system = "You are an expert computer scientist.",
+        system = "You are an expert mathematician, logician and computer scientist.",
         user = "{{input}}",
       },
       suggest = {
-        system = "You are an expert computer scientist.",
+        system = "You are an expert mathematician, logician and computer scientist.",
         user = "{{input}}",
       },
     },
     claude = {
       endpoint = "https://api.anthropic.com",
+      -- model = "claude-3-opus-20240229",
       model = "claude-3-5-sonnet-20241022",
+      -- model = "claude-3-sonnet-20240229",
       temperature = 0,
       max_tokens = 4096,
     },
@@ -48,6 +55,7 @@ return {
       auto_apply_diff_after_generation = false,
       support_paste_from_clipboard = true,
       minimize_diff = true,
+      preserve_state = true,
     },
     mappings = {
       diff = {
