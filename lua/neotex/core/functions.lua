@@ -99,52 +99,71 @@ function GotoBuffer(count, direction)
   vim.cmd('buffer ' .. target_buffers[target_index].bufnr)
 end
 
--- -- Buffer deletion with proper cleanup for Lean files
--- function BufDelete()
---   -- Save any changes
---   vim.cmd('update!')
---
---   -- Get current buffer number
---   local bufnr = vim.api.nvim_get_current_buf()
---
---   -- Force stop any LSP clients for this buffer
---   for _, client in pairs(vim.lsp.get_clients({ bufnr = bufnr })) do
---     pcall(client.stop)
---   end
---
---   -- Use vim.schedule to ensure we're in the main thread
---   vim.schedule(function()
---     -- Delete the buffer using Snacks.bufdelete
---     vim.cmd('lua Snacks.bufdelete()')
---   end)
--- end
+-- Function to cycle through models within the current provider
+function _G.cycle_ai_model()
+  -- Check if avante is loaded before proceeding
+  local ok, avante = pcall(require, "avante")
+  if not ok then
+    vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+    return
+  end
 
--- -- Buffer deletion with proper cleanup for Lean files
--- function BufDelete()
---   -- Save any changes
---   vim.cmd('update!')
---
---   -- Delete the buffer using Snacks.bufdelete
---   -- The cleanup will be handled by the BufDelete autocmd
---   vim.cmd('lua Snacks.bufdelete()')
--- end
+  local current_provider = _G.avante_cycle_state.provider
+  local current_index = _G.avante_cycle_state.model_index
 
--- -- Buffer deletion with proper cleanup for Lean files
--- function BufDelete()
---   -- Save any changes
---   vim.cmd('update!')
---
---   -- Cleanup infoview if it's a Lean file
---   if vim.bo.filetype == 'lean' then
---     local status, infoview = pcall(require('lean.infoview').get_current_infoview)
---     if status and infoview then
---       -- Stop updating and clean up the infoview
---       infoview:stop_auto_updating()
---       infoview:hide()
---       infoview:cleanup()
---     end
---   end
---
---   -- Delete the buffer
---   vim.cmd('lua Snacks.bufdelete()')
--- end
+  -- Find next model in the current provider's list
+  local models = _G.provider_models[current_provider] or {}
+  if #models == 0 then
+    vim.notify("No models available for provider: " .. current_provider, vim.log.levels.WARN)
+    return
+  end
+
+  -- Get next model (cycle within provider)
+  local next_index = current_index % #models + 1
+  local next_model = models[next_index]
+  _G.avante_cycle_state.model_index = next_index
+
+  -- Update the configuration with the new model
+  avante.setup({
+    [current_provider] = {
+      model = next_model
+    },
+  })
+  vim.notify("Switched to model: " .. next_model, vim.log.levels.INFO)
+end
+
+-- Function to cycle through providers
+function _G.cycle_ai_provider()
+  -- Check if avante is loaded before proceeding
+  local ok, avante = pcall(require, "avante")
+  if not ok then
+    vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+    return
+  end
+
+  local current_provider = _G.avante_cycle_state.provider
+  local providers = { "claude", "openai", "gemini" }
+
+  -- Find next provider
+  local next_provider = current_provider
+  for i, provider in ipairs(providers) do
+    if provider == current_provider then
+      next_provider = providers[i % #providers + 1]
+      break
+    end
+  end
+
+  -- Set first model of the new provider
+  local next_model = _G.provider_models[next_provider][1]
+  _G.avante_cycle_state.provider = next_provider
+  _G.avante_cycle_state.model_index = 1
+
+  -- Update the configuration with the new provider and model
+  avante.setup({
+    provider = next_provider,
+    [next_provider] = {
+      model = next_model
+    }
+  })
+  vim.notify("Switched to provider: " .. next_provider .. " with model: " .. next_model, vim.log.levels.INFO)
+end
