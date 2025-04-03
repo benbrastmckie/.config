@@ -32,11 +32,12 @@ return {
       endpoint = "https://api.anthropic.com",
       -- model = "claude-3-7-sonnet-20250219",
       model = "claude-3-5-sonnet-20241022",
+      force_model = true, -- Add this to enforce model selection
       temperature = 0.1, -- Slight increase for more creative responses
       max_tokens = 4096,
       top_p = 0.95, -- Add top_p for better response quality
       top_k = 40, -- Add top_k for better response filtering
-      timeout = 120000, -- Increase timeout for complex queries
+      timeout = 60000, -- Increase timeout for complex queries
       dual_boost = {
         enabled = false,
         first_provider = "claude",
@@ -45,12 +46,12 @@ return {
         timeout = 60000,
       },
       fallback = {
-        enabled = true, -- Enable fallback model if primary fails
+        enabled = false, -- Enable fallback model if primary fails
         model = "claude-3-5-sonnet-20241022", -- More stable fallback model
-        auto_retry = true,
+        auto_retry = false,
       },
       behaviour = {
-        enable_claude_text_editor_tool_mode = true,
+        enable_claude_text_editor_tool_mode = false,
         auto_suggestions = false,
         auto_set_highlight_group = false,
         auto_set_keymaps = false,

@@ -387,7 +387,7 @@ return {
       },
       r = {
         name = "RUN",
-        c = { "<cmd>lua require('lazy').clear()<cr>", "clear plugin cache" },
+        c = { "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", "clear plugin cache" },
         d = { "<cmd>Dashboard<cr>", "dashboard" },
         e = { "vim.diagnostics.setloclist", "locate errors" },
         h = { "<cmd>Hardtime toggle<cr>", "hardtime" },
