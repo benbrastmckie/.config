@@ -2,8 +2,7 @@ return {
   "yetone/avante.nvim",
   event = "VeryLazy",
   lazy = false,
-  version = false, -- Using latest version to get the most recent fixes
-  -- version = "*", -- Using latest version to get the most recent fixes
+  version = "*", -- Using latest version to get the most recent fixes, otherwise set to "false"
   init = function()
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
@@ -20,112 +19,117 @@ return {
       end
     })
   end,
-  opts = {
-    provider = "claude",
-    auto_suggestions_provider = "claude",
-    prompts = {
-      ask = {
-        system = "You are an expert mathematician, logician and computer scientist.",
-        user = "{{input}}",
+  opts = function()
+    -- Default configuration
+    local config = {
+      provider = "claude",
+      auto_suggestions_provider = "claude",
+      system_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
+      custom_tools = {
+        require("mcphub.extensions.avante").mcp_tool(),
       },
-      suggest = {
-        system = "You are an expert mathematician, logician and computer scientist.",
-        user = "{{input}}",
-      },
-    },
-    claude = {
       endpoint = "https://api.anthropic.com",
-      -- model = "claude-3-opus-20240229",
-      model = "claude-3-5-sonnet-20241022",
-      -- model = "claude-3-sonnet-20240229",
-      temperature = 0,
+      model = "claude-3-7-sonnet-20250219",
+      temperature = 0.1, -- Slight increase for more creative responses
       max_tokens = 4096,
-    },
-    dual_boost = {
-      enabled = false,
-      first_provider = "claude",
-      second_provider = "openai",
-      prompt = "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
-      timeout = 60000,
-    },
-    behaviour = {
-      auto_suggestions = false,
-      auto_set_highlight_group = true,
-      auto_set_keymaps = false,
-      auto_apply_diff_after_generation = false,
-      support_paste_from_clipboard = true,
-      minimize_diff = true,
-      preserve_state = true,
-    },
-    mappings = {
+      top_p = 0.95, -- Add top_p for better response quality
+      top_k = 40, -- Add top_k for better response filtering
+      timeout = 120000, -- Increase timeout for complex queries
+      dual_boost = {
+        enabled = false,
+        first_provider = "claude",
+        second_provider = "openai",
+        prompt = "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
+        timeout = 60000,
+      },
+      fallback = {
+        enabled = true, -- Enable fallback model if primary fails
+        model = "claude-3-5-sonnet-20241022", -- More stable fallback model
+        auto_retry = true,
+      },
+      behaviour = {
+        enable_claude_text_editor_tool_mode = true,
+        auto_suggestions = false,
+        auto_set_highlight_group = false,
+        auto_set_keymaps = false,
+        auto_apply_diff_after_generation = false,
+        support_paste_from_clipboard = true,
+        minimize_diff = true,
+        preserve_state = true,
+        safe_mode = true, -- Add safe mode to handle potential iteration errors
+      },
+      mappings = {
+        diff = {
+          ours = "o",
+          theirs = "t",
+          all_theirs = "a",
+          both = "b",
+          cursor = "c",
+          next = "<C-j>",
+          prev = "<C-k>",
+        },
+        suggestion = {
+          accept = "<C-l>",
+          next = "<C-j>",
+          prev = "<C-k>",
+          dismiss = "<C-h>",
+        },
+        jump = {
+          next = "n",
+          prev = "N",
+        },
+        submit = {
+          normal = "<CR>",
+          insert = "<C-l>",
+        },
+        sidebar = {
+          apply_all = "A",
+          apply_cursor = "a",
+          switch_windows = "<Tab>",
+          reverse_switch_windows = "<S-Tab>",
+        },
+      },
+      hints = { enabled = false },
+      windows = {
+        position = "right",
+        wrap = true,
+        width = 40,
+        sidebar_header = {
+          enabled = true,
+          align = "left",
+          rounded = false,
+        },
+        input = {
+          rounded = true,
+          prefix = "󰭹 ",
+          height = 8,
+        },
+        edit = {
+          border = "rounded",
+          start_insert = true,
+        },
+        ask = {
+          floating = false,
+          start_insert = true,
+          border = "rounded",
+          focus_on_apply = "ours",
+        },
+      },
+      highlights = {
+        diff = {
+          current = "DiffText",
+          incoming = "DiffAdd",
+        },
+      },
       diff = {
-        ours = "o",
-        theirs = "t",
-        all_theirs = "a",
-        both = "b",
-        cursor = "c",
-        next = "<C-j>",
-        prev = "<C-k>",
+        autojump = true,
+        list_opener = "copen",
+        override_timeoutlen = 500,
       },
-      suggestion = {
-        accept = "<C-l>",
-        next = "<C-j>",
-        prev = "<C-k>",
-        dismiss = "<C-h>",
-      },
-      jump = {
-        next = "n",
-        prev = "N",
-      },
-      submit = {
-        normal = "<CR>",
-        insert = "<C-l>",
-      },
-      sidebar = {
-        apply_all = "A",
-        apply_cursor = "a",
-        switch_windows = "<Tab>",
-        reverse_switch_windows = "<S-Tab>",
-      },
-    },
-    hints = { enabled = false },
-    windows = {
-      position = "right",
-      wrap = true,
-      width = 40,
-      sidebar_header = {
-        enabled = true,
-        align = "left",
-        rounded = false,
-      },
-      input = {
-        rounded = true,
-        prefix = "󰭹 ",
-        height = 8,
-      },
-      edit = {
-        border = "rounded",
-        start_insert = true,
-      },
-      ask = {
-        floating = false,
-        start_insert = true,
-        border = "rounded",
-        focus_on_apply = "ours",
-      },
-    },
-    highlights = {
-      diff = {
-        current = "DiffText",
-        incoming = "DiffAdd",
-      },
-    },
-    diff = {
-      autojump = true,
-      list_opener = "copen",
-      override_timeoutlen = 500,
-    },
-  },
+    }
+
+    return config
+  end,
   build = "make",
   dependencies = {
     "stevearc/dressing.nvim",
@@ -133,7 +137,6 @@ return {
     "MunifTanjim/nui.nvim",
     "hrsh7th/nvim-cmp",
     "nvim-tree/nvim-web-devicons",
-    -- "zbirenbaum/copilot.lua",
     {
       "HakonHarnes/img-clip.nvim",
       event = "VeryLazy",
