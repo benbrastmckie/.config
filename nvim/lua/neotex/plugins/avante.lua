@@ -4,6 +4,34 @@ return {
   lazy = false,
   version = "*", -- Using latest version to get the most recent fixes, otherwise set to "false"
   init = function()
+    -- Create a function to toggle between Claude models
+    _G.toggle_claude_model = function()
+      local config = require("avante.config")
+      local current_config = config.get_provider_config("claude")
+      local current_model = current_config.model
+      local models = {
+        ["claude-3-5-sonnet-20241022"] = "claude-3-7-sonnet-20250219",
+        ["claude-3-7-sonnet-20250219"] = "claude-3-5-sonnet-20241022",
+      }
+
+      local new_model = models[current_model] or "claude-3-5-sonnet-20241022"
+
+      -- Update the configuration with the new model
+      config.override({
+        claude = vim.tbl_deep_extend(
+          "force",
+          current_config,
+          { model = new_model }
+        ),
+      })
+
+      vim.notify("Switched to model: " .. new_model, vim.log.levels.INFO)
+    end
+
+    -- Create global keymap for model switching
+    vim.api.nvim_set_keymap("n", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
+      { noremap = true, silent = true, desc = "Toggle Claude model" })
+
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "AvanteInput", "Avante" },
@@ -14,6 +42,11 @@ return {
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
         -- Add mapping to clear selected text
         vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>", { noremap = true, silent = true })
+        -- Add buffer-local mapping for model switching
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
+          { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
+          { noremap = true, silent = true })
         -- Set scrolloff to keep cursor in the middle
         vim.opt_local.scrolloff = 999
       end
@@ -24,7 +57,8 @@ return {
     local config = {
       provider = "claude",
       auto_suggestions_provider = "claude",
-      system_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
+      system_prompt =
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
       -- Commented out MCP-related tools
       -- custom_tools = {
       --   require("mcphub.extensions.avante").mcp_tool(),
@@ -33,20 +67,21 @@ return {
       -- model = "claude-3-7-sonnet-20250219",
       model = "claude-3-5-sonnet-20241022",
       force_model = true, -- Add this to enforce model selection
-      temperature = 0.1, -- Slight increase for more creative responses
+      temperature = 0.1,  -- Slight increase for more creative responses
       max_tokens = 4096,
-      top_p = 0.95, -- Add top_p for better response quality
-      top_k = 40, -- Add top_k for better response filtering
-      timeout = 60000, -- Increase timeout for complex queries
+      top_p = 0.95,       -- Add top_p for better response quality
+      top_k = 40,         -- Add top_k for better response filtering
+      timeout = 60000,    -- Increase timeout for complex queries
       dual_boost = {
         enabled = false,
         first_provider = "claude",
         second_provider = "openai",
-        prompt = "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
+        prompt =
+        "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
         timeout = 60000,
       },
       fallback = {
-        enabled = false, -- Enable fallback model if primary fails
+        enabled = false,                      -- Enable fallback model if primary fails
         model = "claude-3-5-sonnet-20241022", -- More stable fallback model
         auto_retry = false,
       },
