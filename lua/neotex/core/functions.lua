@@ -108,8 +108,8 @@ function _G.cycle_ai_model()
     return
   end
 
-  local current_provider = _G.avante_cycle_state.provider
-  local current_index = _G.avante_cycle_state.model_index
+  local current_provider = _G.avante_cycle_state.provider or "claude"
+  local current_index = _G.avante_cycle_state.model_index or 1
 
   -- Find next model in the current provider's list
   local models = _G.provider_models[current_provider] or {}
@@ -121,14 +121,51 @@ function _G.cycle_ai_model()
   -- Get next model (cycle within provider)
   local next_index = current_index % #models + 1
   local next_model = models[next_index]
-  _G.avante_cycle_state.model_index = next_index
 
-  -- Update the configuration with the new model
-  avante.setup({
-    [current_provider] = {
-      model = next_model
-    },
-  })
+  -- Update global state immediately
+  _G.avante_cycle_state = {
+    provider = current_provider,
+    model_index = next_index
+  }
+
+  -- Use the simpler approach - just update config.override directly
+  -- This seems to be the most reliable for setting the settings but not UI
+  pcall(function()
+    local config_module = require("avante.config")
+    if config_module and config_module.override then
+      config_module.override({
+        provider = current_provider,
+        model = next_model,
+        [current_provider] = {
+          model = next_model
+        }
+      })
+    end
+  end)
+
+  -- Attempt a provider refresh to apply the change
+  pcall(function()
+    if avante.providers and avante.providers.refresh then
+      avante.providers.refresh()
+    end
+  end)
+
+  -- Try forcing a UI update with AvanteSwitchProvider command
+  pcall(function()
+    vim.cmd("AvanteSwitchProvider " .. current_provider)
+
+    -- Give time for provider to refresh
+    vim.defer_fn(function()
+      pcall(function()
+        -- Try direct model selection API
+        local api = require("avante.api")
+        if api.select_model then
+          api.select_model()
+        end
+      end)
+    end, 100)
+  end)
+
   vim.notify("Switched to model: " .. next_model, vim.log.levels.INFO)
 end
 
@@ -141,7 +178,7 @@ function _G.cycle_ai_provider()
     return
   end
 
-  local current_provider = _G.avante_cycle_state.provider
+  local current_provider = _G.avante_cycle_state.provider or "claude"
   local providers = { "claude", "openai", "gemini" }
 
   -- Find next provider
@@ -155,15 +192,61 @@ function _G.cycle_ai_provider()
 
   -- Set first model of the new provider
   local next_model = _G.provider_models[next_provider][1]
-  _G.avante_cycle_state.provider = next_provider
-  _G.avante_cycle_state.model_index = 1
 
-  -- Update the configuration with the new provider and model
-  avante.setup({
+  -- Update global state
+  _G.avante_cycle_state = {
     provider = next_provider,
+    model_index = 1
+  }
+
+  -- Try using the direct command approach
+  local success = false
+
+  -- Try using AvanteSwitchProvider command directly
+  success = pcall(function()
+    vim.cmd("AvanteSwitchProvider " .. next_provider)
+    return true
+  end)
+
+  -- If direct command fails, try API method
+  if not success then
+    pcall(function()
+      if avante.api and avante.api.switch_provider then
+        avante.api.switch_provider(next_provider)
+      end
+    end)
+  end
+
+  -- Also try with config approach as fallback
+  local new_config = {
+    provider = next_provider,
+    model = next_model,
     [next_provider] = {
       model = next_model
     }
-  })
+  }
+
+  -- Try selecting the model after provider switch
+  pcall(function()
+    -- Give time for provider to switch
+    vim.defer_fn(function()
+      if avante.api and avante.api.select_model then
+        avante.api.select_model(next_model)
+      else
+        pcall(function()
+          vim.cmd("AvanteSelectModel " .. next_model)
+        end)
+      end
+    end, 100)
+  end)
+
+  -- Try refreshing the provider
+  pcall(function()
+    if avante.providers and avante.providers.refresh then
+      avante.providers.refresh(next_provider)
+    end
+  end)
+
   vim.notify("Switched to provider: " .. next_provider .. " with model: " .. next_model, vim.log.levels.INFO)
 end
+
