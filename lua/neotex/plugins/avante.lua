@@ -4,33 +4,109 @@ return {
   lazy = false,
   version = "*", -- Using latest version to get the most recent fixes, otherwise set to "false"
   init = function()
-    -- Create a function to toggle between Claude models
-    _G.toggle_claude_model = function()
-      local config = require("avante.config")
-      local current_config = config.get_provider_config("claude")
-      local current_model = current_config.model
-      local models = {
-        ["claude-3-5-sonnet-20241022"] = "claude-3-7-sonnet-20250219",
-        ["claude-3-7-sonnet-20250219"] = "claude-3-5-sonnet-20241022",
+    -- Define provider models (moved to global scope for reuse)
+    _G.provider_models = {
+      claude = {
+        "claude-3-5-sonnet-20241022",
+        "claude-3-7-sonnet-20250219",
+        "claude-3-opus-20240229",
+      },
+      openai = {
+        "gpt-4o",
+        "gpt-4-turbo",
+        "gpt-4",
+        "gpt-3.5-turbo",
+      },
+      gemini = {
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-pro",
       }
+    }
 
-      local new_model = models[current_model] or "claude-3-5-sonnet-20241022"
+    -- Initialize state
+    _G.avante_cycle_state = _G.avante_cycle_state or {
+      provider = "claude",
+      model_index = 1
+    }
+
+    -- Function to cycle through models within the current provider
+    _G.cycle_ai_model = function()
+      -- Check if avante is loaded before proceeding
+      local ok, avante = pcall(require, "avante")
+      if not ok then
+        vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+        return
+      end
+
+      local current_provider = _G.avante_cycle_state.provider
+      local current_index = _G.avante_cycle_state.model_index
+
+      -- Find next model in the current provider's list
+      local models = _G.provider_models[current_provider] or {}
+      if #models == 0 then
+        vim.notify("No models available for provider: " .. current_provider, vim.log.levels.WARN)
+        return
+      end
+
+      -- Get next model (cycle within provider)
+      local next_index = current_index % #models + 1
+      local next_model = models[next_index]
+      _G.avante_cycle_state.model_index = next_index
 
       -- Update the configuration with the new model
-      config.override({
-        claude = vim.tbl_deep_extend(
-          "force",
-          current_config,
-          { model = new_model }
-        ),
+      avante.setup({
+        [current_provider] = {
+          model = next_model
+        },
       })
-
-      vim.notify("Switched to model: " .. new_model, vim.log.levels.INFO)
+      vim.notify("Switched to model: " .. next_model, vim.log.levels.INFO)
     end
 
-    -- Create global keymap for model switching
-    vim.api.nvim_set_keymap("n", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
-      { noremap = true, silent = true, desc = "Toggle Claude model" })
+    -- Function to cycle through providers
+    _G.cycle_ai_provider = function()
+      -- Check if avante is loaded before proceeding
+      local ok, avante = pcall(require, "avante")
+      if not ok then
+        vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+        return
+      end
+
+      local current_provider = _G.avante_cycle_state.provider
+      local providers = { "claude", "openai", "gemini" }
+
+      -- Find next provider
+      local next_provider = current_provider
+      for i, provider in ipairs(providers) do
+        if provider == current_provider then
+          next_provider = providers[i % #providers + 1]
+          break
+        end
+      end
+
+      -- Set first model of the new provider
+      local next_model = _G.provider_models[next_provider][1]
+      _G.avante_cycle_state.provider = next_provider
+      _G.avante_cycle_state.model_index = 1
+
+      -- Update the configuration with the new provider and model
+      avante.setup({
+        provider = next_provider,
+        [next_provider] = {
+          model = next_model
+        }
+      })
+      vim.notify("Switched to provider: " .. next_provider .. " with model: " .. next_model, vim.log.levels.INFO)
+    end
+
+    -- Create global keymaps for model and provider switching
+    vim.api.nvim_set_keymap("n", "<C-m>",
+      "<cmd>lua if package.loaded['avante.config'] then cycle_ai_model() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
+      { noremap = true, silent = true, desc = "Cycle AI models within provider" })
+
+    vim.api.nvim_set_keymap("n", "<C-M>",
+      "<cmd>lua if package.loaded['avante.config'] then cycle_ai_provider() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
+      { noremap = true, silent = true, desc = "Cycle AI providers" })
 
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
@@ -42,11 +118,15 @@ return {
         vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
         -- Add mapping to clear selected text
         vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>", { noremap = true, silent = true })
-        -- Add buffer-local mapping for model switching
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
-          { noremap = true, silent = true })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>lua toggle_claude_model()<CR>",
-          { noremap = true, silent = true })
+        -- Add buffer-local mappings for model and provider switching
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
+          { noremap = true, silent = true, desc = "Cycle AI models within provider" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
+          { noremap = true, silent = true, desc = "Cycle AI models within provider" })
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
+          { noremap = true, silent = true, desc = "Cycle AI providers" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
+          { noremap = true, silent = true, desc = "Cycle AI providers" })
         -- Set scrolloff to keep cursor in the middle
         vim.opt_local.scrolloff = 999
       end
@@ -57,6 +137,24 @@ return {
     local config = {
       provider = "claude",
       auto_suggestions_provider = "claude",
+      -- OpenAI configuration
+      openai = {
+        api_key = os.getenv("OPENAI_API_KEY"),
+        model = "gpt-4o",
+        temperature = 0.1,
+        max_tokens = 4096,
+        top_p = 0.95,
+        timeout = 60000,
+      },
+      -- Gemini configuration
+      gemini = {
+        api_key = os.getenv("GEMINI_API_KEY"),
+        model = "gemini-1.5-pro",
+        temperature = 0.1,
+        max_tokens = 4096,
+        top_p = 0.95,
+        timeout = 60000,
+      },
       system_prompt =
       "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
       -- Commented out MCP-related tools
