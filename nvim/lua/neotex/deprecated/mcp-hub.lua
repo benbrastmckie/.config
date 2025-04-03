@@ -4,12 +4,51 @@ return {
     "nvim-lua/plenary.nvim", -- Required for Job and HTTP requests
   },
   cmd = "MCPHub",            -- lazy load by default
+  build = function()
+    -- Ensure mcp-hub is installed with uvx
+    vim.notify("Checking mcp-hub installation with uvx...", vim.log.levels.INFO)
+
+    -- First check if mcp-hub is already installed
+    local check_job = require("plenary.job"):new({
+      command = "uvx",
+      args = { "list" },
+      on_exit = function(j, return_val)
+        if return_val == 0 then
+          local output = table.concat(j:result(), "\n")
+          if not string.find(output, "mcp%-hub") then
+            -- Install mcp-hub if not found
+            vim.notify("Installing mcp-hub with uvx...", vim.log.levels.INFO)
+            require("plenary.job"):new({
+              command = "uvx",
+              args = { "install", "mcp-hub" },
+              on_exit = function(install_j, install_return_val)
+                if install_return_val == 0 then
+                  vim.notify("Successfully installed mcp-hub with uvx", vim.log.levels.INFO)
+                else
+                  vim.notify("Failed to install mcp-hub with uvx: " ..
+                    table.concat(install_j:stderr_result(), "\n"), vim.log.levels.ERROR)
+                end
+              end,
+            }):sync()
+          else
+            vim.notify("mcp-hub is already installed with uvx", vim.log.levels.INFO)
+          end
+        else
+          vim.notify("Failed to check uvx packages: " .. table.concat(j:stderr_result(), "\n"),
+            vim.log.levels.ERROR)
+        end
+      end,
+    }):sync()
+  end,
   config = function()
+    -- Get the full path to uvx
+    local uvx_path = vim.fn.system("which uvx"):gsub("\n", "")
+
     require("mcphub").setup({
-      -- NixOS specific settings
-      use_bundled_binary = false, -- Don't use the plugin's bundled binary
-      cmd = "uvx",                -- Use uvx directly
-      cmdArgs = { "mcp-hub" },    -- Pass mcp-hub as an argument to uvx
+      -- Use absolute path to uvx to run mcp-hub
+      use_bundled_binary = false,
+      cmd = uvx_path,
+      cmdArgs = { "run", "mcp-hub" },
 
       -- Server configuration
       port = 37373,                                            -- Default port for MCP Hub
