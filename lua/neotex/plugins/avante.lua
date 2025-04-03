@@ -30,7 +30,8 @@ return {
       --   require("mcphub.extensions.avante").mcp_tool(),
       -- },
       endpoint = "https://api.anthropic.com",
-      model = "claude-3-7-sonnet-20250219",
+      -- model = "claude-3-7-sonnet-20250219",
+      model = "claude-3-5-sonnet-20241022",
       temperature = 0.1, -- Slight increase for more creative responses
       max_tokens = 4096,
       top_p = 0.95, -- Add top_p for better response quality
