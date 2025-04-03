@@ -30,15 +30,6 @@ return {
       model_index = 1
     }
 
-    -- -- Create global keymaps for model and provider switching
-    -- vim.api.nvim_set_keymap("n", "<C-m>",
-    --   "<cmd>lua if package.loaded['avante.config'] then cycle_ai_model() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
-    --   { noremap = true, silent = true, desc = "Cycle AI models within provider" })
-    --
-    -- vim.api.nvim_set_keymap("n", "<C-M>",
-    --   "<cmd>lua if package.loaded['avante.config'] then cycle_ai_provider() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
-    --   { noremap = true, silent = true, desc = "Cycle AI providers" })
-
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "AvanteInput", "Avante" },
@@ -79,7 +70,16 @@ return {
   opts = function()
     -- Default configuration
     local config = {
+      -- Anthropic configuration
       provider = "claude",
+      endpoint = "https://api.anthropic.com",
+      model = "claude-3-5-sonnet-20241022",
+      force_model = true, -- Add this to enforce model selection
+      temperature = 0.1,  -- Slight increase for more creative responses
+      max_tokens = 4096,
+      top_p = 0.95,       -- Add top_p for better response quality
+      top_k = 40,         -- Add top_k for better response filtering
+      timeout = 60000,    -- Increase timeout for complex queries
       auto_suggestions_provider = "claude",
       -- OpenAI configuration
       openai = {
@@ -111,15 +111,6 @@ return {
       -- custom_tools = {
       --   require("mcphub.extensions.avante").mcp_tool(),
       -- },
-      endpoint = "https://api.anthropic.com",
-      -- model = "claude-3-7-sonnet-20250219",
-      model = "claude-3-5-sonnet-20241022",
-      force_model = true, -- Add this to enforce model selection
-      temperature = 0.1,  -- Slight increase for more creative responses
-      max_tokens = 4096,
-      top_p = 0.95,       -- Add top_p for better response quality
-      top_k = 40,         -- Add top_k for better response filtering
-      timeout = 60000,    -- Increase timeout for complex queries
       dual_boost = {
         enabled = false,
         first_provider = "claude",
@@ -134,14 +125,14 @@ return {
         auto_retry = false,
       },
       behaviour = {
-        enable_claude_text_editor_tool_mode = false,
+        enable_claude_text_editor_tool_mode = true,
         auto_suggestions = false,
         auto_set_highlight_group = false,
         auto_set_keymaps = false,
         auto_apply_diff_after_generation = false,
         support_paste_from_clipboard = true,
         minimize_diff = true,
-        preserve_state = true,                        -- Add safe mode to handle potential iteration errors
+        preserve_state = true,                   -- Add safe mode to handle potential iteration errors
         require_confirmation_for_actions = true, -- Require confirmation for any actions
         disable_file_creation = true,            -- Prevent automatic file creation
         disable_git_operations = true,           -- Prevent automatic git operations
