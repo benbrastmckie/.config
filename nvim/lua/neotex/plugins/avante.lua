@@ -30,95 +30,39 @@ return {
       model_index = 1
     }
 
-    -- Function to cycle through models within the current provider
-    _G.cycle_ai_model = function()
-      -- Check if avante is loaded before proceeding
-      local ok, avante = pcall(require, "avante")
-      if not ok then
-        vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
-        return
-      end
-
-      local current_provider = _G.avante_cycle_state.provider
-      local current_index = _G.avante_cycle_state.model_index
-
-      -- Find next model in the current provider's list
-      local models = _G.provider_models[current_provider] or {}
-      if #models == 0 then
-        vim.notify("No models available for provider: " .. current_provider, vim.log.levels.WARN)
-        return
-      end
-
-      -- Get next model (cycle within provider)
-      local next_index = current_index % #models + 1
-      local next_model = models[next_index]
-      _G.avante_cycle_state.model_index = next_index
-
-      -- Update the configuration with the new model
-      avante.setup({
-        [current_provider] = {
-          model = next_model
-        },
-      })
-      vim.notify("Switched to model: " .. next_model, vim.log.levels.INFO)
-    end
-
-    -- Function to cycle through providers
-    _G.cycle_ai_provider = function()
-      -- Check if avante is loaded before proceeding
-      local ok, avante = pcall(require, "avante")
-      if not ok then
-        vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
-        return
-      end
-
-      local current_provider = _G.avante_cycle_state.provider
-      local providers = { "claude", "openai", "gemini" }
-
-      -- Find next provider
-      local next_provider = current_provider
-      for i, provider in ipairs(providers) do
-        if provider == current_provider then
-          next_provider = providers[i % #providers + 1]
-          break
-        end
-      end
-
-      -- Set first model of the new provider
-      local next_model = _G.provider_models[next_provider][1]
-      _G.avante_cycle_state.provider = next_provider
-      _G.avante_cycle_state.model_index = 1
-
-      -- Update the configuration with the new provider and model
-      avante.setup({
-        provider = next_provider,
-        [next_provider] = {
-          model = next_model
-        }
-      })
-      vim.notify("Switched to provider: " .. next_provider .. " with model: " .. next_model, vim.log.levels.INFO)
-    end
-
-    -- Create global keymaps for model and provider switching
-    vim.api.nvim_set_keymap("n", "<C-m>",
-      "<cmd>lua if package.loaded['avante.config'] then cycle_ai_model() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
-      { noremap = true, silent = true, desc = "Cycle AI models within provider" })
-
-    vim.api.nvim_set_keymap("n", "<C-M>",
-      "<cmd>lua if package.loaded['avante.config'] then cycle_ai_provider() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
-      { noremap = true, silent = true, desc = "Cycle AI providers" })
+    -- -- Create global keymaps for model and provider switching
+    -- vim.api.nvim_set_keymap("n", "<C-m>",
+    --   "<cmd>lua if package.loaded['avante.config'] then cycle_ai_model() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
+    --   { noremap = true, silent = true, desc = "Cycle AI models within provider" })
+    --
+    -- vim.api.nvim_set_keymap("n", "<C-M>",
+    --   "<cmd>lua if package.loaded['avante.config'] then cycle_ai_provider() else vim.notify('Avante not loaded yet', vim.log.levels.WARN) end<CR>",
+    --   { noremap = true, silent = true, desc = "Cycle AI providers" })
 
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "AvanteInput", "Avante" },
       callback = function()
-        -- Create buffer-local insert mode mapping for toggle
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-t>", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
-        vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>", { noremap = true, silent = true })
-        -- Add mapping to clear selected text
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>", { noremap = true, silent = true })
-        -- Add buffer-local mappings for model and provider switching
+
+        -- Explicitly map <CR> in insert mode to just create a new line
+        vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR>",
+          { noremap = true, silent = true, desc = "Create new line (prevent submit)" })
+
+        -- Toggle Avante interface
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-t>", "<cmd>AvanteToggle<CR>",
+          { noremap = true, silent = true, desc = "Toggle Avante interface" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-t>", "<cmd>AvanteToggle<CR>",
+          { noremap = true, silent = true, desc = "Toggle Avante interface" })
+        vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>",
+          { noremap = true, silent = true, desc = "Toggle Avante interface" })
+
+        -- Reset/clear Avante content
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>",
+          { noremap = true, silent = true, desc = "Reset Avante content" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-c>", "<cmd>AvanteReset<CR>",
+          { noremap = true, silent = true, desc = "Reset Avante content" })
+
+        -- Cycle AI models and providers
         vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
           { noremap = true, silent = true, desc = "Cycle AI models within provider" })
         vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
@@ -127,7 +71,7 @@ return {
           { noremap = true, silent = true, desc = "Cycle AI providers" })
         vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
           { noremap = true, silent = true, desc = "Cycle AI providers" })
-        -- Set scrolloff to keep cursor in the middle
+
         vim.opt_local.scrolloff = 999
       end
     })
@@ -156,8 +100,14 @@ return {
         timeout = 60000,
       },
       system_prompt =
-      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
-      -- Commented out MCP-related tools
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations.",
+      -- Disable all tools that could modify the system
+      disable_tools = {
+        "file_creation",
+        "git_operations",
+        "system_commands",
+        "file_modifications",
+      },
       -- custom_tools = {
       --   require("mcphub.extensions.avante").mcp_tool(),
       -- },
@@ -191,8 +141,11 @@ return {
         auto_apply_diff_after_generation = false,
         support_paste_from_clipboard = true,
         minimize_diff = true,
-        preserve_state = true,
-        safe_mode = true, -- Add safe mode to handle potential iteration errors
+        preserve_state = true,                        -- Add safe mode to handle potential iteration errors
+        require_confirmation_for_actions = true, -- Require confirmation for any actions
+        disable_file_creation = true,            -- Prevent automatic file creation
+        disable_git_operations = true,           -- Prevent automatic git operations
+        respect_enter_key = true,                -- Add this to make <CR> behave normally in insert mode
       },
       mappings = {
         diff = {
@@ -216,7 +169,7 @@ return {
         },
         submit = {
           normal = "<CR>",
-          insert = "<C-l>",
+          insert = "<C-l>", -- Keep this as <C-l> to avoid conflicts with normal <CR> behavior
         },
         sidebar = {
           apply_all = "A",
