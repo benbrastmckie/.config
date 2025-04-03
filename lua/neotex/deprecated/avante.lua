@@ -25,10 +25,9 @@ return {
       provider = "claude",
       auto_suggestions_provider = "claude",
       system_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.",
-      -- Commented out MCP-related tools
-      -- custom_tools = {
-      --   require("mcphub.extensions.avante").mcp_tool(),
-      -- },
+      custom_tools = {
+        require("mcphub.extensions.avante").mcp_tool(),
+      },
       endpoint = "https://api.anthropic.com",
       model = "claude-3-7-sonnet-20250219",
       temperature = 0.1, -- Slight increase for more creative responses

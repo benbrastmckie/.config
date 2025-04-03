@@ -301,7 +301,7 @@ return {
         p = { "<cmd>Gitsigns preview_hunk<CR>", "preview hunk" },
         s = { "<cmd>Telescope git_status<CR>", "git status" },
         t = { "<cmd>Gitsigns toggle_current_line_blame<CR>", "toggle blame" },
-        t = { "<cmd>Gitsigns toggle_word_diff<CR>", "toggle word diff" },
+        -- t = { "<cmd>Gitsigns toggle_word_diff<CR>", "toggle word diff" },
       },
       h = {
         name = "AI HELP",
@@ -393,7 +393,7 @@ return {
         h = { "<cmd>Hardtime toggle<cr>", "hardtime" },
         k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
         l = { "<cmd>Lectic<CR>", "lectic" },
-        -- m = { "<cmd>lua DisplayMessages()<cr>", "messages" },
+        m = { "<cmd>MCPHub<cr>", "mcp-hub" },
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
         r = { "<cmd>ReloadConfig<cr>", "reload configs" },

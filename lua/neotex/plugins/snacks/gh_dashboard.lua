@@ -1,3 +1,5 @@
+local Snacks = require("snacks")
+
 return {
   { section = "header" },
   {
