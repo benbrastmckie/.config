@@ -1,8 +1,7 @@
 return {
   "yetone/avante.nvim",
   event = "VeryLazy",
-  lazy = false,
-  version = "*", -- Using latest version to get the most recent fixes, otherwise set to "false"
+  version = "false", -- Using latest version to get the most recent fixes, otherwise set to "false"
   init = function()
     -- Define provider models (moved to global scope for reuse)
     _G.provider_models = {
@@ -100,7 +99,7 @@ return {
         timeout = 60000,
       },
       system_prompt =
-      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations.",
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",
       -- Disable all tools that could modify the system
       disable_tools = {
         "file_creation",
