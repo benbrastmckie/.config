@@ -24,46 +24,21 @@ return {
       }
     }
 
-    -- Always initialize state to ensure claude-3-5-sonnet is selected
+    -- Initialize state to default values (from the opts function below)
     _G.avante_cycle_state = {
       provider = "claude",
       model_index = 1 -- This corresponds to claude-3-5-sonnet
     }
 
-    -- Add debugging to check what model is used when Avante is initialized
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "LazyLoad",
-      callback = function(event)
-        if event.data == "avante.nvim" then
-          vim.defer_fn(function()
-            local ok, avante = pcall(require, "avante")
-            if ok then
-              local config = avante.get_config and avante.get_config() or {}
-              local model = config.model or "unknown"
-              local provider = config.provider or "unknown"
-
-              -- Get provider-specific model configuration
-              local provider_config = config[provider] or {}
-              local provider_model = provider_config.model or "not set"
-
-              vim.notify("Avante initialized with provider: " .. provider ..
-                "\nTop-level model: " .. model ..
-                "\n" .. provider .. " model: " .. provider_model,
-                vim.log.levels.INFO)
-            end
-          end, 500) -- Delay to ensure Avante is fully loaded
-        end
-      end
-    })
-
     -- Add additional autocmd to enforce model after fully loaded
+    -- No notification here - will show when window is first opened
     vim.api.nvim_create_autocmd("User", {
       pattern = "LazyDone",
       callback = function()
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Try different ways to update the configuration
+            -- Use the default configuration
             local model_config = {
               provider = "claude",
               model = "claude-3-5-sonnet-20241022",
@@ -71,7 +46,7 @@ return {
                 model = "claude-3-5-sonnet-20241022"
               }
             }
-            
+
             -- First try: config.override
             local success = pcall(function()
               if avante.config and avante.config.override then
@@ -79,7 +54,7 @@ return {
                 return true
               end
             end)
-            
+
             -- Second try: direct override
             if not success then
               success = pcall(function()
@@ -89,7 +64,7 @@ return {
                 end
               end)
             end
-            
+
             -- Third try: require config module
             if not success then
               pcall(function()
@@ -99,20 +74,22 @@ return {
                 end
               end)
             end
-            
-            vim.notify("Enforced claude-3-5-sonnet model after full initialization", vim.log.levels.INFO)
+
+            -- Set a flag to show notification on first window open
+            _G.avante_first_open = true
           end
         end, 1000) -- Longer delay to ensure everything is loaded
       end
     })
-    
+
     -- Add VimEnter event to enforce model configuration without disrupting UI settings
+    -- No notification here to keep the interface clean
     vim.api.nvim_create_autocmd("VimEnter", {
       callback = function()
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Prepare model configuration
+            -- Use the default configuration
             local model_config = {
               provider = "claude",
               model = "claude-3-5-sonnet-20241022",
@@ -120,10 +97,10 @@ return {
                 model = "claude-3-5-sonnet-20241022"
               }
             }
-            
+
             -- Try different paths to update configuration
             local success = false
-            
+
             -- First try: config.override
             success = pcall(function()
               if avante.config and avante.config.override then
@@ -131,7 +108,7 @@ return {
                 return true
               end
             end)
-            
+
             -- Second try: direct override
             if not success then
               success = pcall(function()
@@ -141,7 +118,7 @@ return {
                 end
               end)
             end
-            
+
             -- Third try: require config module
             if not success then
               pcall(function()
@@ -151,64 +128,65 @@ return {
                 end
               end)
             end
-            
-            vim.notify("VimEnter: Set Avante to use claude-3-5-sonnet", vim.log.levels.INFO)
           end
         end, 300) -- Delay after Vim is fully started
       end
     })
-    
+
     -- Add AvanteSelectModel command since it doesn't seem to exist in our version
-    if not pcall(vim.api.nvim_get_commands, {}, {pattern = "AvanteSelectModel"}) then
+    if not pcall(vim.api.nvim_get_commands, {}, { pattern = "AvanteSelectModel" }) then
       vim.api.nvim_create_user_command("AvanteSelectModel", function(opts)
         local ok, avante_api = pcall(require, "avante.api")
         if ok and avante_api and avante_api.select_model then
           avante_api.select_model()
         end
-      end, {nargs = "?"})
+      end, { nargs = "?" })
     end
-    
+
     -- Create a command for manually setting the default model
     vim.api.nvim_create_user_command("AvanteSetDefaultModel", function()
-      -- Reset avante_cycle_state to ensure we're at the right index
-      _G.avante_cycle_state = {
-        provider = "claude",
-        model_index = 1
-      }
-      
-      -- Try using Avante API to select the model
-      local ok, avante_api = pcall(require, "avante.api")
-      if ok and avante_api and avante_api.select_model then
-        -- The select_model function opens a selector - let's try direct commands
-        pcall(function() 
-          -- First ensure we're on the right provider
-          vim.cmd("AvanteSwitchProvider claude")
-          -- Then try to open the model selector
-          vim.cmd("AvanteSelectModel")
-        end)
+      -- Reset runtime state
+      _G.update_avante_model("claude", "claude-3-5-sonnet-20241022", 1)
+
+      -- Persist by modifying the configuration file directly
+      if _G.set_avante_default_model("claude", "claude-3-5-sonnet-20241022") then
+        vim.notify("Set default model to claude-3-5-sonnet-20241022 in configuration file", vim.log.levels.INFO)
       end
-      
-      -- Also attempt a configuration override approach
+
+      -- Try using Avante API commands for additional reliability
       pcall(function()
-        local config_module = require("avante.config")
-        if config_module and config_module.override then
-          config_module.override({
-            provider = "claude",
-            model = "claude-3-5-sonnet-20241022",
-            claude = {
-              model = "claude-3-5-sonnet-20241022"
-            }
-          })
-        end
+        -- First ensure we're on the right provider
+        vim.cmd("AvanteSwitchProvider claude")
       end)
-      
-      vim.notify("Set Avante to use claude-3-5-sonnet", vim.log.levels.INFO)
     end, {})
 
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "AvanteInput", "Avante" },
       callback = function()
+        -- Show model notification on first window open in a session
+        -- Use local variable to prevent race condition with multiple notifications
+        local filetype = vim.bo.filetype
+        if _G.avante_first_open and filetype == "Avante" then
+          -- Immediately clear the flag to prevent multiple notifications
+          _G.avante_first_open = false
+
+          vim.defer_fn(function()
+            -- Get the current model from global state
+            local current_provider = _G.avante_cycle_state.provider or "claude"
+            local current_index = _G.avante_cycle_state.model_index or 1
+            local models = _G.provider_models[current_provider] or {}
+            local current_model = "unknown"
+
+            if #models >= current_index then
+              current_model = models[current_index]
+            end
+
+            -- Show a single notification with the active model
+            vim.notify("Avante ready with model: " .. current_model, vim.log.levels.INFO)
+          end, 100)
+        end
+
         -- Explicitly map <CR> in insert mode to just create a new line
         vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR>",
           { noremap = true, silent = true, desc = "Create new line (prevent submit)" })
@@ -236,6 +214,16 @@ return {
           { noremap = true, silent = true, desc = "Cycle AI providers" })
         vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
           { noremap = true, silent = true, desc = "Cycle AI providers" })
+
+        -- Stop generation and set default model
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-s>", "<cmd>AvanteStop<CR>",
+          { noremap = true, silent = true, desc = "Stop Avante generation" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-s>", "<cmd>AvanteStop<CR>",
+          { noremap = true, silent = true, desc = "Stop Avante generation" })
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-d>", "<cmd>AvanteSetDefaultModel<CR>",
+          { noremap = true, silent = true, desc = "Set default Avante model" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-d>", "<cmd>AvanteSetDefaultModel<CR>",
+          { noremap = true, silent = true, desc = "Set default Avante model" })
 
         vim.opt_local.scrolloff = 999
       end
