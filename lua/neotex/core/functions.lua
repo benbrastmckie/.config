@@ -238,24 +238,28 @@ function _G.set_avante_default_model(provider, model)
   local content = file:read("*all")
   file:close()
   
-  -- Define patterns to look for in the file
-  local provider_pattern = "(provider%s*=%s*[\"'])([^\"']+)([\"'])"
+  -- Define patterns to look for in the file - more robust with whitespace variations
+  local provider_pattern = "(provider%s*=%s*[\"'])([^\"']+)([\"'])"  
   local model_pattern = "(model%s*=%s*[\"'])([^\"']+)([\"'])"
-  local provider_model_pattern = "("..provider..".*model%s*=%s*[\"'])([^\"']+)([\"'])"
   
+  -- For provider_model_pattern, we need to find the section for the specific provider
+  -- This pattern looks for the provider table definition and updates the model inside it
+  local provider_section_pattern = "("..provider.."%s*=%s*{.-model%s*=%s*[\"'])([^\"']+)([\"'])"
+
   -- Flag to track if we made changes
   local changes_made = false
   
-  -- Replace the main provider
+  -- Replace the main provider in the top-level config
   content, changes_count = content:gsub(provider_pattern, "%1" .. provider .. "%3", 1)
   changes_made = changes_made or changes_count > 0
   
-  -- Replace the main model
+  -- Replace the main model in the top-level config
   content, changes_count = content:gsub(model_pattern, "%1" .. model .. "%3", 1)
   changes_made = changes_made or changes_count > 0
   
-  -- Replace the provider-specific model (e.g., claude = { model = "..." })
-  content, changes_count = content:gsub(provider_model_pattern, "%1" .. model .. "%3", 1)
+  -- Replace the provider-specific model
+  -- This is a more complex pattern that needs to find the right section
+  content, changes_count = content:gsub(provider_section_pattern, "%1" .. model .. "%3", 1)
   changes_made = changes_made or changes_count > 0
   
   -- Only write the file if changes were made
@@ -276,6 +280,70 @@ function _G.set_avante_default_model(provider, model)
     vim.notify("No changes needed in avante.lua configuration", vim.log.levels.INFO)
     return false
   end
+end
+
+-- Improved function to select and set the default Avante provider and model
+function _G.select_and_set_default_model()
+  -- First, select a provider
+  local providers = { "claude", "openai", "gemini" }
+  
+  vim.ui.select(providers, {
+    prompt = "Select default AI provider:",
+    format_item = function(item) 
+      -- Capitalize first letter for nicer display
+      return item:sub(1,1):upper() .. item:sub(2)
+    end
+  }, function(selected_provider)
+    -- Handle cancellation
+    if not selected_provider then
+      vim.notify("Default model selection canceled", vim.log.levels.INFO)
+      return
+    end
+    
+    -- Now select a model for the chosen provider
+    local models = _G.provider_models[selected_provider] or {}
+    if #models == 0 then
+      vim.notify("No models available for provider: " .. selected_provider, vim.log.levels.ERROR)
+      return
+    end
+    
+    vim.ui.select(models, {
+      prompt = "Select default model for " .. selected_provider .. ":",
+      format_item = function(item) return item end
+    }, function(selected_model)
+      -- Handle cancellation
+      if not selected_model then
+        vim.notify("Default model selection canceled", vim.log.levels.INFO)
+        return
+      end
+      
+      -- Find the model index
+      local selected_index = 1
+      for i, model in ipairs(models) do
+        if model == selected_model then
+          selected_index = i
+          break
+        end
+      end
+      
+      -- 1. Update the runtime configuration
+      _G.update_avante_model(selected_provider, selected_model, selected_index)
+      
+      -- 2. Save to configuration file
+      if _G.set_avante_default_model(selected_provider, selected_model) then
+        vim.notify(
+          "Default model set to " .. selected_provider .. "/" .. selected_model .. 
+          "\nThis will be used for all future Neovim sessions.", 
+          vim.log.levels.INFO
+        )
+      end
+      
+      -- 3. Try using Avante API commands for immediate effect
+      pcall(function()
+        vim.cmd("AvanteSwitchProvider " .. selected_provider)
+      end)
+    end)
+  end)
 end
 
 -- Register the AvanteStop command to interrupt generation
