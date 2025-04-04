@@ -173,6 +173,18 @@ Details will be included below for how to go about adapting this configuration f
 | `d` (visual mode)    | Delete selection and recalculate     |
 | `<C-n>`              | Toggle checkbox status ([ ] -> [x])  |
 | `<C-c>`              | Recalculate list numbering           |
+| `gx`                 | Open URL under cursor                |
+| `<C-LeftMouse>`      | Open URL at mouse click position     |
+
+### Folding Keys (Markdown & Lectic)
+
+| Key                  | Action                               |
+|----------------------|--------------------------------------|
+| `za`                 | Toggle fold under cursor             |
+| `zo`                 | Open fold under cursor               |
+| `zc`                 | Close fold under cursor              |
+| `zR`                 | Open all folds in file               |
+| `zM`                 | Close all folds in file              |
 
 ### Leader Key Mappings
 
@@ -303,6 +315,15 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 |------------------|-------------------------------|
 | `<leader>ml`     | Open Lectic interface         |
 | `<leader>mm`     | Toggle markdown preview       |
+| `<leader>mu`     | Open URL under cursor         |
+| `<leader>mf`     | Toggle folding on/off         |
+| `<leader>mF`     | Create folds based on headers |
+| `<leader>mT`     | Fold tool calls (Lectic)      |
+| `<leader>mz`     | Toggle fold under cursor      |
+| `<leader>mo`     | Open fold under cursor        |
+| `<leader>mc`     | Close fold under cursor       |
+| `<leader>mR`     | Open all folds in file        |
+| `<leader>mM`     | Close all folds in file       |
 
 #### Sessions (`<leader>S`)
 

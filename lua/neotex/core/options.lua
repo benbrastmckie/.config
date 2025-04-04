@@ -66,6 +66,14 @@ for k, v in pairs(options) do
   vim.opt[k] = v
 end
 
+-- Disable Ctrl+click tag jumping for markdown files
+vim.api.nvim_create_autocmd({"FileType"}, {
+  pattern = {"markdown", "lectic.markdown"},
+  callback = function()
+    vim.opt_local.tagfunc = ""
+  end
+})
+
 -- CLIPBOARD -- (for yanky)
 -- May help Arch/Debian Linux users
 -- vim.g.clipboard = {
