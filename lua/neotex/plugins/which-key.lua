@@ -1,147 +1,180 @@
---[[ Which-Key Mappings Overview:
+--[[ WHICH-KEY MAPPINGS - QUICK REFERENCE
 
-<leader> mappings:
-b - VimtexCompile (build)
-c - Create vertical split
-d - Save and delete buffer
-e - Toggle NvimTree explorer
-j - Close split
-i - Open VimtexToc
-k - Maximize split
-q - Save all and quit
-u - Open Telescope undo
-v - VimtexView
-w - Write all files
+----------------------------------------------------------------------------------
+TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>b - VimtexCompile                       | Compile LaTeX document
+<leader>c - Create vertical split               | Split window vertically
+<leader>d - Save and delete buffer              | Save file and close buffer
+<leader>e - Toggle NvimTree explorer            | Open/close file explorer
+<leader>j - Close split                         | Close current split window
+<leader>i - Open VimtexToc                      | Show LaTeX table of contents
+<leader>k - Maximize split                      | Make current window full screen
+<leader>q - Save all and quit                   | Save all files and exit Neovim
+<leader>u - Open Telescope undo                 | Show undo history with preview
+<leader>v - VimtexView                          | View compiled LaTeX document
+<leader>w - Write all files                     | Save all open files
 
-ACTIONS (<leader>a):
-  a - PDF annotations
-  b - Export bibliography
-  c - Clear VimTex cache
-  e - Show VimTex errors
-  f - Format buffer
-  g - Edit glossary
-  h - Toggle local highlight
-  k - Clean VimTex aux files
-  l - Toggle Lean info view
-  m - Run model checker
-  p - Run Python file
-  r - Recalculate autolist
-  t - Format tex file
-  u - Update CWD
-  v - VimTex context menu
-  w - Count words
-  s - Edit snippets
-  S - SSH connect
+----------------------------------------------------------------------------------
+ACTIONS (<leader>a)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>aa - PDF annotations                    | Work with PDF annotations
+<leader>ab - Export bibliography                | Export BibTeX to separate file
+<leader>ac - Clear VimTex cache                 | Clear LaTeX compilation cache
+<leader>ae - Show VimTex errors                 | Display LaTeX error messages
+<leader>af - Format buffer                      | Format current buffer via LSP
+<leader>ag - Edit glossary                      | Open LaTeX glossary template
+<leader>ah - Toggle local highlight             | Highlight current word occurrences
+<leader>ak - Clean VimTex aux files             | Remove LaTeX auxiliary files
+<leader>al - Toggle Lean info view              | Show/hide Lean information panel
+<leader>am - Run model checker                  | Execute model checker on file
+<leader>ap - Run Python file                    | Execute current Python file
+<leader>ar - Recalculate autolist               | Fix numbering in lists
+<leader>at - Format tex file                    | Format LaTeX using latexindent
+<leader>au - Update CWD                         | Change to file's directory
+<leader>av - VimTex context menu                | Show VimTeX context actions
+<leader>aw - Count words                        | Count words in LaTeX document
+<leader>as - Edit snippets                      | Open snippets directory
+<leader>aS - SSH connect                        | Connect to MIT server via SSH
 
-FIND (<leader>f):
-  a - Find all files
-  b - Find buffers
-  c - Find citations
-  f - Find in project
-  l - Resume last search
-  q - Find in quickfix
-  g - Git commit history
-  h - Help tags
-  k - Keymaps
-  r - Registers
-  t - Colorschemes
-  s - Search string
-  w - Search word under cursor
-  y - Yank history
+----------------------------------------------------------------------------------
+FIND (<leader>f)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>fa - Find all files                     | Search all files, including hidden
+<leader>fb - Find buffers                       | Switch between open buffers
+<leader>fc - Find citations                     | Search BibTeX citations
+<leader>ff - Find in project                    | Search text in project files
+<leader>fl - Resume last search                 | Continue previous search
+<leader>fq - Find in quickfix                   | Search within quickfix list
+<leader>fg - Git commit history                 | Browse git commit history
+<leader>fh - Help tags                          | Search Neovim help documentation
+<leader>fk - Keymaps                            | Show all keybindings
+<leader>fr - Registers                          | Show clipboard registers
+<leader>ft - Colorschemes                       | Browse and change themes
+<leader>fs - Search string                      | Search for string in project
+<leader>fw - Search word under cursor           | Find current word in project
+<leader>fy - Yank history                       | Browse clipboard history
 
-GIT (<leader>g):
-  b - Checkout branch
-  c - View commits
-  d - View diff
-  g - Open lazygit
-  k - Previous hunk
-  j - Next hunk
-  l - Line blame
-  p - Preview hunk
-  s - Git status
-  t - Toggle blame/word diff
+----------------------------------------------------------------------------------
+GIT (<leader>g)                                 | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>gb - Checkout branch                    | Switch to another git branch
+<leader>gc - View commits                       | Show commit history
+<leader>gd - View diff                          | Show changes against HEAD
+<leader>gg - Open lazygit                       | Launch terminal git interface
+<leader>gk - Previous hunk                      | Jump to previous change
+<leader>gj - Next hunk                          | Jump to next change
+<leader>gl - Line blame                         | Show git blame for current line
+<leader>gp - Preview hunk                       | Preview current change
+<leader>gs - Git status                         | Show files with changes
+<leader>gt - Toggle blame                       | Toggle line blame display
 
-AI HELP (<leader>h):
-  a - Ask
-  b - Build dependencies
-  c - Chat
-  C - Clear
-  e - Edit
-  m - Map repo
-  p - Switch provider
-  r - Refresh assistant
-  t - Toggle assistant
+----------------------------------------------------------------------------------
+AI HELP (<leader>h)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ha - Ask                                | Ask Avante AI a question
+<leader>hb - Build dependencies                 | Build deps for Avante project
+<leader>hC - Chat                               | Start chat with Avante AI
+<leader>hc - Clear                              | Clear Avante chat/content
+<leader>hd - Set model & provider               | Change AI model with defaults
+<leader>he - Edit system prompts                | Open system prompt manager
+<leader>hm - Select model                       | Choose AI model for current provider
+<leader>hM - Map repo                           | Create repo map for AI context
+<leader>hp - Switch system prompt               | Choose a different system prompt
+<leader>hv - Quick provider switch              | Change AI provider
+<leader>hr - Refresh assistant                  | Reload AI assistant
+<leader>hs - Stop generation                    | Interrupt AI generation
+<leader>ht - Toggle assistant                   | Show/hide Avante interface
 
-LIST (<leader>L):
-  c - Toggle checkbox
-  n - Next list item
-  p - Previous list item
-  r - Reorder list
+----------------------------------------------------------------------------------
+LIST (<leader>L)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>Lc - Toggle checkbox                    | Check/uncheck a checkbox
+<leader>Ln - Next list item                     | Move to next item in list
+<leader>Lp - Previous list item                 | Move to previous item in list
+<leader>Lr - Reorder list                       | Fix list numbering
 
-LSP (<leader>l):
-  b - Buffer diagnostics
-  c - Code action
-  d - Go to definition
-  D - Go to declaration
-  h - Hover help
-  i - Implementations
-  k - Kill LSP
-  l - Line diagnostics
-  n - Next diagnostic
-  p - Previous diagnostic
-  r - References
-  s - Restart LSP
-  t - Start LSP
-  R - Rename
+----------------------------------------------------------------------------------
+LSP (<leader>l)                                 | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>lb - Buffer diagnostics                 | Show all errors in current file
+<leader>lc - Code action                        | Show available code actions
+<leader>ld - Go to definition                   | Jump to symbol definition
+<leader>lD - Go to declaration                  | Jump to symbol declaration
+<leader>lh - Hover help                         | Show documentation under cursor
+<leader>li - Implementations                    | Find implementations of symbol
+<leader>lk - Kill LSP                           | Stop language server
+<leader>ll - Line diagnostics                   | Show errors for current line
+<leader>ln - Next diagnostic                    | Go to next error/warning
+<leader>lp - Previous diagnostic                | Go to previous error/warning
+<leader>lr - References                         | Find all references to symbol
+<leader>ls - Restart LSP                        | Restart language server
+<leader>lt - Start LSP                          | Start language server
+<leader>lR - Rename                             | Rename symbol under cursor
 
-MARKDOWN (<leader>m):
-  v - View slides
+----------------------------------------------------------------------------------
+MARKDOWN (<leader>m)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>mm - Markdown preview                   | Toggle markdown preview
 
-SESSIONS (<leader>S):
-  s - Save session
-  d - Delete session
-  l - Load session
+----------------------------------------------------------------------------------
+SESSIONS (<leader>S)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>Ss - Save session                       | Save current session
+<leader>Sd - Delete session                     | Delete a saved session
+<leader>Sl - Load session                       | Load a saved session
 
-NIXOS (<leader>n):
-  d - Nix develop
-  g - Garbage collection
-  p - Browse packages
-  m - MyNixOS
-  r - Rebuild flake
-  h - Home-manager switch
-  u - Update flake
+----------------------------------------------------------------------------------
+NIXOS (<leader>n)                               | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>nd - Nix develop                        | Enter nix development shell
+<leader>ng - Garbage collection                 | Clean up old nix packages
+<leader>np - Browse packages                    | Open nixOS packages website
+<leader>nm - MyNixOS                            | Open MyNixOS website
+<leader>nr - Rebuild flake                      | Rebuild system from flake
+<leader>nh - Home-manager switch                | Apply home-manager changes
+<leader>nu - Update flake                       | Update flake dependencies
 
-PANDOC (<leader>p):
-  w - Convert to Word
-  m - Convert to Markdown
-  h - Convert to HTML
-  l - Convert to LaTeX
-  p - Convert to PDF
-  v - View PDF
+----------------------------------------------------------------------------------
+PANDOC (<leader>p)                              | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>pw - Convert to Word                    | Convert to .docx format
+<leader>pm - Convert to Markdown                | Convert to .md format
+<leader>ph - Convert to HTML                    | Convert to .html format
+<leader>pl - Convert to LaTeX                   | Convert to .tex format
+<leader>pp - Convert to PDF                     | Convert to .pdf format
+<leader>pv - View PDF                           | Open PDF in document viewer
 
-RUN (<leader>r):
-  d - Dashboard
-  l - Locate errors
-  n - Next error
-  p - Previous error
-  r - Reload configs
-  h - Toggle Hardtime
-  s - Show notifications
+----------------------------------------------------------------------------------
+RUN (<leader>r)                                 | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>rc - Clear plugin cache                 | Clear Neovim plugin cache
+<leader>re - Locate errors                      | Show all errors in location list
+<leader>rk - Wipe plugin files                  | Remove all plugin files
+<leader>rl - Lectic                             | Open Lectic interface
+<leader>rn - Next error                         | Go to next diagnostic/error
+<leader>rp - Previous error                     | Go to previous diagnostic/error
+<leader>rr - Reload configs                     | Reload Neovim configuration
+<leader>rs - Show notifications                 | Display notification history
 
-SURROUND (<leader>s):
-  s - Surround
-  d - Delete surround
-  c - Change surround
+----------------------------------------------------------------------------------
+SURROUND (<leader>s)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ss - Surround                           | Surround with characters
+<leader>sd - Delete surround                    | Remove surrounding characters
+<leader>sc - Change surround                    | Change surrounding characters
 
-TEMPLATES (<leader>t):
-  p - PhilPaper.tex
-  l - Letter.tex
-  g - Glossary.tex
-  h - HandOut.tex
-  b - PhilBeamer.tex
-  s - SubFile.tex
-  r - Root.tex
-  m - MultipleAnswer.tex
+----------------------------------------------------------------------------------
+TEMPLATES (<leader>t)                           | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>tp - PhilPaper.tex                      | Insert philosophy paper template
+<leader>tl - Letter.tex                         | Insert letter template
+<leader>tg - Glossary.tex                       | Insert glossary template
+<leader>th - HandOut.tex                        | Insert handout template
+<leader>tb - PhilBeamer.tex                     | Insert beamer presentation
+<leader>ts - SubFile.tex                        | Insert subfile template
+<leader>tr - Root.tex                           | Insert root document template
+<leader>tm - MultipleAnswer.tex                 | Insert multiple answer template
 ]]
 
 return {
@@ -153,8 +186,8 @@ return {
   opts = {
     setup = {
       show_help = false,
-      show_keys = false,        -- show the currently pressed key and its label as a message in the command line
-      notify = false,           -- prevent which-key from automatically setting up fields for defined mappings
+      show_keys = false, -- show the currently pressed key and its label as a message in the command line
+      notify = false,    -- prevent which-key from automatically setting up fields for defined mappings
       triggers = {
         { "<leader>", mode = { "n", "v" } },
       },
@@ -198,13 +231,13 @@ return {
       icons = {
         breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
         separator = "➜", -- symbol used between a key and it's label
-        group = "+",      -- symbol prepended to a group
+        group = "+", -- symbol prepended to a group
       },
       layout = {
-        width = { min = 20, max = 50 },                                             -- min and max width of the columns
-        height = { min = 4, max = 25 },                                             -- min and max height of the columns
-        spacing = 3,                                                                -- spacing between columns
-        align = "left",                                                             -- align columns left, center or right
+        width = { min = 20, max = 50 }, -- min and max width of the columns
+        height = { min = 4, max = 25 }, -- min and max height of the columns
+        spacing = 3,                    -- spacing between columns
+        align = "left",                 -- align columns left, center or right
       },
       keys = {
         scroll_down = "<c-d>", -- binding to scroll down inside the popup
@@ -215,7 +248,7 @@ return {
       -- Disabled by default for Telescope
       disable = {
         bt = { "help", "quickfix", "terminal", "prompt" }, -- for example
-        ft = { "NvimTree" } -- add your explorer's filetype here
+        ft = { "NvimTree" }                                -- add your explorer's filetype here
       }
     },
     defaults = {
@@ -290,7 +323,7 @@ return {
       },
       g = {
         name = "GIT",
-    -- { '<leader>g', group = ' Git' },
+        -- { '<leader>g', group = ' Git' },
         b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
         c = { "<cmd>Telescope git_commits<CR>", "git commits" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
@@ -352,7 +385,7 @@ return {
       -- MARKDOWN MAPPINGS
       m = {
         name = "MARKDOWN",
-        v = { "<cmd>Slides<CR>", "view slides" },
+        -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
         m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
       },
       S = {
@@ -389,12 +422,11 @@ return {
       r = {
         name = "RUN",
         c = { "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", "clear plugin cache" },
-        d = { "<cmd>Dashboard<cr>", "dashboard" },
         e = { "vim.diagnostics.setloclist", "locate errors" },
-        h = { "<cmd>Hardtime toggle<cr>", "hardtime" },
+        -- h = { "<cmd>Hardtime toggle<cr>", "hardtime" }, -- Hardtime plugin has been deprecated
         k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
         l = { "<cmd>Lectic<CR>", "lectic" },
-        m = { "<cmd>MCPHub<cr>", "mcp-hub" },
+        -- m = { "<cmd>MCPHub<cr>", "mcp-hub" }, -- MCP-Hub plugin has been deprecated
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
         r = { "<cmd>ReloadConfig<cr>", "reload configs" },

@@ -164,8 +164,9 @@ return {
           end, 100)
         end
 
-        -- Set up buffer keymaps using the support module
-        avante_support.setup_buffer_keymaps(0)
+        -- Set up buffer keymaps using the function in keymaps.lua
+        -- This centralizes all keymappings in one place
+        _G.set_avante_keymaps()
 
         vim.opt_local.scrolloff = 999
       end
