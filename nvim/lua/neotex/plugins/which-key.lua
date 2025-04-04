@@ -1,5 +1,22 @@
 --[[ WHICH-KEY MAPPINGS - QUICK REFERENCE
 
+NOTE: These mappings are also documented in ~/.config/nvim/README.md
+Please maintain consistency between both documents when making changes.
+
+----------------------------------------------------------------------------------
+TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>b - VimtexCompile                       | Compile LaTeX document
+<leader>c - Create vertical split               | Split window vertically
+<leader>d - Save and delete buffer              | Save file and close buffer
+<leader>e - Toggle NvimTree explorer            | Open/close file explorer
+<leader>j - Close split                         | Close current split window
+<leader>i - Open VimtexToc                      | Show LaTeX table of contents
+<leader>k - Maximize split                      | Make current window full screen
+<leader>q - Save all and quit                   | Save all files and exit Neovim
+<leader>u - Open Telescope undo                 | Show undo history with preview
+<leader>v - VimtexView                          | View compiled LaTeX document
+<leader>w - Write all files                     | Save all open files
 ----------------------------------------------------------------------------------
 TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 ----------------------------------------------------------------------------------
@@ -117,6 +134,15 @@ MARKDOWN (<leader>m)                            | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>ml - Lectic                             | Open Lectic interface
 <leader>mm - Markdown preview                   | Toggle markdown preview
+<leader>mu - Open URL                           | Open URL under cursor
+<leader>mf - Toggle folding                     | Enable/disable folding in buffer
+<leader>mF - Create folds                       | Create folds based on headers
+<leader>mT - Fold tool calls                    | Fold XML-like tool call blocks
+<leader>mz - Toggle fold                        | Toggle fold under cursor
+<leader>mo - Open fold                          | Open fold under cursor
+<leader>mc - Close fold                         | Close fold under cursor
+<leader>mR - Open all folds                     | Open all folds in file
+<leader>mM - Close all folds                    | Close all folds in file
 
 ----------------------------------------------------------------------------------
 SESSIONS (<leader>S)                            | DESCRIPTION
@@ -389,6 +415,7 @@ return {
         -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
         l = { "<cmd>Lectic<CR>", "lectic" },
         m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
+        u = { "<cmd>lua OpenUrlUnderCursor()<CR>", "open URL under cursor" },
         f = { "<cmd>lua vim.wo.foldenable = not vim.wo.foldenable<CR>", "toggle folding" },
         F = { "<cmd>lua CreateMarkdownFolds()<CR>", "create all folds" },
         T = { "<cmd>lua FoldLecticToolCalls()<CR>", "fold tool calls" },

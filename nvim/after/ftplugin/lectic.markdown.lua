@@ -115,6 +115,26 @@ end
 vim.keymap.set("n", "<C-n>", ":lua HandleCheckbox()<CR>", 
   { buffer = true, silent = true, desc = "Toggle checkbox" })
   
+-- Add keybinding to open URLs in Lectic files
+vim.keymap.set("n", "<leader>mu", ":lua OpenUrlUnderCursor()<CR>", 
+  { buffer = true, silent = true, desc = "Open URL under cursor" })
+  
+-- Add keybinding to open the URL under cursor with gx for familiar Vim behavior
+vim.keymap.set("n", "gx", ":lua OpenUrlUnderCursor()<CR>", 
+  { buffer = true, silent = true, desc = "Open URL under cursor" })
+
+-- Enable Ctrl+Click to open URLs
+vim.keymap.set("n", "<C-LeftMouse>", function()
+  -- We don't perform standard Ctrl+LeftMouse because we want to keep cursor position
+  -- Instead, we directly get the mouse position and use it
+  vim.schedule(function()
+    OpenUrlAtMouse()
+  end)
+end, { buffer = true, silent = true, desc = "Open URL with Ctrl+Click" })
+
+-- Handle mouse release to avoid issues
+vim.keymap.set("n", "<C-LeftRelease>", "<Nop>", { buffer = true, silent = true })
+  
 -- Add keybinding to force creation of folds
 vim.keymap.set("n", "<leader>mF", ":lua CreateMarkdownFolds()<CR>", 
   { buffer = true, silent = true, desc = "Create markdown folds" })

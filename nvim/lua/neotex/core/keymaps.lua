@@ -1,5 +1,8 @@
 --[[ KEYBINDINGS REFERENCE
 
+NOTE: These mappings are also documented in ~/.config/nvim/README.md
+Please maintain consistency between both documents when making changes.
+
 This file defines global keybindings, with special handling for terminal, markdown,
 and Avante AI buffers. The file organizes keymaps by functionality and uses helper
 functions for consistent definitions.

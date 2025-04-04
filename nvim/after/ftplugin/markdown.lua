@@ -66,3 +66,166 @@ end
 -- Add keybinding to force creation of folds
 vim.keymap.set("n", "<leader>mF", ":lua CreateMarkdownFolds()<CR>", 
   { buffer = true, silent = true, desc = "Create markdown folds" })
+  
+-- Function to extract URLs from a line of text
+function _G.ExtractUrlsFromLine(line)
+  local urls = {}
+  local url_patterns = {
+    -- Markdown link format [text](url)
+    "%[.-%]%((.-)%)",
+    -- Plain URLs with various protocols
+    "https?://[%w%.%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*]+",
+    "www%.[%w%.%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*]+",
+    "file://[%w%.%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*]+",
+  }
+  
+  for _, pattern in ipairs(url_patterns) do
+    for url_match in string.gmatch(line, pattern) do
+      -- Process the URL based on the pattern
+      local url = url_match
+      
+      -- Store the URL and its position
+      local start_idx = string.find(line, url_match, 1, true)
+      if start_idx then
+        -- For markdown links, the pattern captures just the URL part
+        if pattern == "%[.-%]%((.-)%)" then
+          -- Find the actual text of the full markdown link for position calculation
+          local full_link_start = line:find("%[.-%]%(" .. url:gsub("([%%%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*])", "%%%1") .. "%)", 1)
+          local full_link_end = full_link_start
+          if full_link_start then
+            -- Find the closing parenthesis
+            local depth = 0
+            for i = full_link_start, #line do
+              if line:sub(i, i) == "(" then
+                depth = depth + 1
+              elseif line:sub(i, i) == ")" then
+                depth = depth - 1
+                if depth == 0 then
+                  full_link_end = i
+                  break
+                end
+              end
+            end
+            
+            -- Store positions for both the full link and just the URL part
+            local url_start = line:find("%(", full_link_start, true) + 1
+            table.insert(urls, {
+              url = url,
+              start = full_link_start,
+              finish = full_link_end,
+              url_start = url_start,
+              url_end = url_start + #url - 1
+            })
+          end
+        else
+          -- For regular URLs, store their positions directly
+          table.insert(urls, {
+            url = url,
+            start = start_idx,
+            finish = start_idx + #url - 1
+          })
+        end
+      end
+    end
+  end
+  
+  return urls
+end
+
+-- Function to open URL at a specific position or under cursor
+function _G.OpenUrlAtPosition(line_num, col)
+  local line = vim.api.nvim_buf_get_lines(0, line_num-1, line_num, false)[1]
+  if not line then return false end
+  
+  -- Extract all URLs from the line
+  local urls = ExtractUrlsFromLine(line)
+  if #urls == 0 then return false end
+  
+  -- Find the URL at or closest to the position
+  local selected_url = nil
+  local min_distance = math.huge
+  
+  for _, url_info in ipairs(urls) do
+    if col >= url_info.start and col <= url_info.finish then
+      -- Position is directly on this URL
+      selected_url = url_info.url
+      break
+    else
+      -- Calculate distance to this URL
+      local distance = math.min(math.abs(col - url_info.start), math.abs(col - url_info.finish))
+      if distance < min_distance then
+        min_distance = distance
+        selected_url = url_info.url
+      end
+    end
+  end
+  
+  if selected_url then
+    -- Make sure URL has protocol prefix
+    if not selected_url:match("^https?://") and not selected_url:match("^file://") then
+      if selected_url:match("^www%.") then
+        selected_url = "https://" .. selected_url
+      else
+        selected_url = "https://" .. selected_url
+      end
+    end
+    
+    -- Open the URL with the system browser
+    local cmd = string.format("silent !xdg-open '%s' &", selected_url:gsub("'", "\\'"))
+    vim.cmd(cmd)
+    print("Opening URL: " .. selected_url)
+    return true
+  end
+  
+  return false
+end
+
+-- Function to open URL at mouse position
+function _G.OpenUrlAtMouse()
+  local mouse_pos = vim.fn.getmousepos()
+  if not mouse_pos then return false end
+  
+  local line_num = mouse_pos.line
+  local col = mouse_pos.column - 1  -- Convert to 0-indexed
+  
+  if OpenUrlAtPosition(line_num, col) then
+    return true
+  else
+    print("No URL found at mouse position")
+    return false
+  end
+end
+
+-- Function to open URL under cursor (backward compatibility)
+function _G.OpenUrlUnderCursor()
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  local line_num = cursor_pos[1]
+  local col = cursor_pos[2]
+  
+  if OpenUrlAtPosition(line_num, col) then
+    return true
+  else
+    print("No URL found under cursor")
+    return false
+  end
+end
+
+-- Add keybinding to open URLs
+vim.keymap.set("n", "<leader>mu", ":lua OpenUrlUnderCursor()<CR>", 
+  { buffer = true, silent = true, desc = "Open URL under cursor" })
+  
+-- Add keybinding to open the URL under cursor with gx for familiar Vim behavior
+vim.keymap.set("n", "gx", ":lua OpenUrlUnderCursor()<CR>", 
+  { buffer = true, silent = true, desc = "Open URL under cursor" })
+
+-- Enable Ctrl+Click to open URLs
+vim.keymap.set("n", "<C-LeftMouse>", function()
+  -- We don't perform standard Ctrl+LeftMouse because we want to keep cursor position
+  -- Instead, we directly get the mouse position and use it
+  vim.schedule(function()
+    OpenUrlAtMouse()
+  end)
+end, { buffer = true, silent = true, desc = "Open URL with Ctrl+Click" })
+
+-- Handle mouse release to avoid issues
+vim.keymap.set("n", "<C-LeftRelease>", "<Nop>", { buffer = true, silent = true })
