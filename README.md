@@ -31,7 +31,7 @@ Although all of the following are optional, the configuration includes the follo
 
 Select your operating system to follow the appropriate installation guide:
 
-- [MacOS Installation Guide](MacOS-Install.md)
+- [MacOS Installation Guide](docs/MacOS-Install.md)
 - [Arch Linux Installation Guide](Arch-Install.md)
 - [Debian/Ubuntu Installation Guide](Debian-Install.md)
 - [Windows Installation Guide](Windows-Install.md)
