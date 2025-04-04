@@ -1,14 +1,27 @@
-# NeoVim Configuration
+# .config
 
-- LSP Autocompletion (VimTex, Buffer, Spell, Snippets, Python, Lua, etc.)
-- Linting and Formatting (Python, Lua, Markdown, etc.)
-- BibExport (creating a local `.bib` file from all citations that occur in your `.tex` document)
-- AnnotatePDF (creates a local `.md` file with highlights and notes from citation under the cursor)
-- Pandoc (convert between file formats)
-- Telescope (search citations, files, words, etc.)
-- And lots more!
+A feature-rich Neovim configuration optimized for LaTeX, Markdown, AI integration, and NixOS.
+This setup provides a streamlined environment for academic writing, code development, and system management.
+The AI integration makes it easy to learn and configure for your specific needs.
+
+## NeoVim
+
+This Neovim configuration includes specialized support for:
+
+- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
+- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
+- **AI Assistance**: AI integration for code completion and editing suggestions with Avante and knowledge assistance with Lectic
+- **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
+- **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics
+- **Session Management**: Save and restore editing sessions with persistent workspaces
+- **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
+- **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
+
+More information can be found here.
 
 ![Screenshot of the configuration](images/screenshot_cite.png)
+
+## Installation
 
 Running the unstable release of `NeoVim` may lead to errors, and so is discouraged.
 If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.

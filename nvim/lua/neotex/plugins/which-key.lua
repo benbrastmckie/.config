@@ -74,16 +74,16 @@ AI HELP (<leader>h)                             | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>ha - Ask                                | Ask Avante AI a question
 <leader>hb - Build dependencies                 | Build deps for Avante project
-<leader>hC - Chat                               | Start chat with Avante AI
-<leader>hc - Clear                              | Clear Avante chat/content
+<leader>hc - Chat                               | Start chat with Avante AI
 <leader>hd - Set model & provider               | Change AI model with defaults
 <leader>he - Edit system prompts                | Open system prompt manager
+<leader>hi - Stop generation                    | Interrupt AI generation
+<leader>hk - Clear                              | Clear Avante chat/content
 <leader>hm - Select model                       | Choose AI model for current provider
 <leader>hM - Map repo                           | Create repo map for AI context
 <leader>hp - Switch system prompt               | Choose a different system prompt
-<leader>hv - Quick provider switch              | Change AI provider
+<leader>hs - Quick provider switch              | Change AI provider
 <leader>hr - Refresh assistant                  | Reload AI assistant
-<leader>hs - Stop generation                    | Interrupt AI generation
 <leader>ht - Toggle assistant                   | Show/hide Avante interface
 
 ----------------------------------------------------------------------------------
@@ -115,6 +115,7 @@ LSP (<leader>l)                                 | DESCRIPTION
 ----------------------------------------------------------------------------------
 MARKDOWN (<leader>m)                            | DESCRIPTION
 ----------------------------------------------------------------------------------
+<leader>ml - Lectic                             | Open Lectic interface
 <leader>mm - Markdown preview                   | Toggle markdown preview
 
 ----------------------------------------------------------------------------------
@@ -151,7 +152,6 @@ RUN (<leader>r)                                 | DESCRIPTION
 <leader>rc - Clear plugin cache                 | Clear Neovim plugin cache
 <leader>re - Locate errors                      | Show all errors in location list
 <leader>rk - Wipe plugin files                  | Remove all plugin files
-<leader>rl - Lectic                             | Open Lectic interface
 <leader>rn - Next error                         | Go to next diagnostic/error
 <leader>rp - Previous error                     | Go to previous diagnostic/error
 <leader>rr - Reload configs                     | Reload Neovim configuration
@@ -340,16 +340,16 @@ return {
         name = "AI HELP",
         a = { "<cmd>AvanteAsk<CR>", "ask" },
         b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
-        C = { "<cmd>AvanteChat<CR>", "chat" },
-        c = { "<cmd>AvanteClear<CR>", "clear" },
+        c = { "<cmd>AvanteChat<CR>", "chat" },
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
         e = { "<cmd>AvantePromptManager<CR>", "edit system prompts" },
+        i = { "<cmd>AvanteStop<CR>", "interupt avante" },
+        k = { "<cmd>AvanteClear<CR>", "clear" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
         p = { "<cmd>AvantePrompt<CR>", "switch system prompt" },
-        v = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
+        s = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
-        s = { "<cmd>AvanteStop<CR>", "stop generation" },
         t = { "<cmd>AvanteToggle<CR>", "toggle assistant" },
       },
       --   HARPOON
