@@ -1,8 +1,12 @@
 --[[ KEYBINDINGS REFERENCE
 
 This file defines global keybindings, with special handling for terminal, markdown,
-and Avante AI buffers. Functions like `set_terminal_keymaps()`, `set_markdown_keymaps()`,
-and `set_avante_keymaps()` are called by autocmds when specific filetypes are detected.
+and Avante AI buffers. The file organizes keymaps by functionality and uses helper
+functions for consistent definitions.
+
+Global keymaps use the `map()` function with descriptions, while buffer-specific maps
+use the `buf_map()` function via special setup functions like `set_terminal_keymaps()`,
+which are called by autocmds when specific filetypes are detected.
 
 ----------------------------------------------------------------------------------
 TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
@@ -27,7 +31,7 @@ GENERAL KEYBINDINGS                            | DESCRIPTION
 <C-m>                                          | Search man pages with Telescope
 
 ----------------------------------------------------------------------------------
-TEXT NAVIGATION                                | DESCRIPTION
+NAVIGATION KEYBINDINGS                         | DESCRIPTION
 ----------------------------------------------------------------------------------
 Y                                              | Yank (copy) from cursor to end of line
 E                                              | Go to end of previous word
@@ -37,14 +41,14 @@ m                                              | Center cursor at top of screen
 <Tab>                                          | Go to next buffer (by modified time)
 <S-Tab>                                        | Go to previous buffer (by modified time)
 <C-u>, <C-d>                                   | Scroll half-page up/down (with centering)
-<S-h>, <S-l>                                   | Go to start/end of line
+<S-h>, <S-l>                                   | Go to start/end of display line
 J, K                                           | Navigate display lines (respects wrapping)
 
 ----------------------------------------------------------------------------------
 TEXT MANIPULATION                              | DESCRIPTION
 ----------------------------------------------------------------------------------
 <A-j>, <A-k>                                   | Move current line or selection up/down
-<, >                                           | Decrease/increase indentation
+<, >                                           | Decrease/increase indentation (preserves selection)
 
 ----------------------------------------------------------------------------------
 MARKDOWN-SPECIFIC KEYBINDINGS                  | DESCRIPTION
@@ -57,6 +61,7 @@ O                                              | Create new bullet point above
 dd                                             | Delete line and recalculate list numbers
 d (visual mode)                                | Delete selection and recalculate numbers
 <C-n>                                          | Toggle checkbox status ([ ] ↔ [x])
+<C-c>                                          | Recalculate list numbering
 
 ----------------------------------------------------------------------------------
 AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
@@ -71,52 +76,81 @@ q                                              | Toggle Avante interface
 <CR> (Enter)                                   | Create new line (prevents submission)
 --]]
 
+------------------------------------------
+-- CONFIGURATION AND UTILITY FUNCTIONS --
+------------------------------------------
 local opts = { noremap = true, silent = true }
 
--- local term_opts = { silent = true }
+-- Helper function for more readable keymap definition
+local function map(mode, key, cmd, options, description)
+  local opts = vim.tbl_deep_extend("force",
+    { noremap = true, silent = true, desc = description },
+    options or {}
+  )
+  vim.keymap.set(mode, key, cmd, opts)
+end
 
--- Shorten function name
-local keymap = vim.api.nvim_set_keymap
+-- Helper for buffer-local mapping
+local function buf_map(bufnr, mode, key, cmd, description)
+  vim.api.nvim_buf_set_keymap(
+    bufnr or 0,
+    mode,
+    key,
+    cmd,
+    { noremap = true, silent = true, desc = description }
+  )
+end
+
+----------------------------------------
+-- BUFFER-SPECIFIC KEYMAP FUNCTIONS  --
+----------------------------------------
 
 -- Terminal mappings setup function triggered by an auto-command
 function _G.set_terminal_keymaps()
   -- Set the terminal window as fixed
   vim.wo.winfixbuf = true
-  -- NOTE: use vim.api.nvim_buf_set_keymap to keep these mappings local to a buffer
-  vim.api.nvim_buf_set_keymap(0, "t", "<esc>", "<C-\\><C-n>", {})
-  -- Only set Avante mappings for non-lazygit buffers
-  if vim.bo.filetype ~= "lazygit" then
-    vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    vim.api.nvim_buf_set_keymap(0, "n", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    vim.api.nvim_buf_set_keymap(0, "v", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    -- More Avante mappings are included in Avante.lua
-  end
-  vim.api.nvim_buf_set_keymap(0, "t", "<M-Right>", "<Cmd>vertical resize -2<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<M-Left>", "<Cmd>vertical resize +2<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<M-l>", "<Cmd>vertical resize -2<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<M-h>", "<Cmd>vertical resize +2<CR>", {})
 
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", {})
-  vim.api.nvim_buf_set_keymap(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", {})
-  -- vim.api.nvim_buf_set_keymap(0, "t", "<C-w>", "<C-\\><C-n><C-w>", {})
+  -- Terminal navigation
+  buf_map(0, "t", "<esc>", "<C-\\><C-n>", "Exit terminal mode")
+  buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
+  buf_map(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", "Navigate down")
+  buf_map(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", "Navigate up")
+  buf_map(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", "Navigate right")
+
+  -- Terminal resizing
+  buf_map(0, "t", "<M-Right>", "<Cmd>vertical resize -2<CR>", "Resize right")
+  buf_map(0, "t", "<M-Left>", "<Cmd>vertical resize +2<CR>", "Resize left")
+  buf_map(0, "t", "<M-l>", "<Cmd>vertical resize -2<CR>", "Resize right")
+  buf_map(0, "t", "<M-h>", "<Cmd>vertical resize +2<CR>", "Resize left")
+
+  -- Avante integration (only for non-lazygit buffers)
+  if vim.bo.filetype ~= "lazygit" then
+    buf_map(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
+    buf_map(0, "n", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
+    buf_map(0, "v", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
+  end
 end
 
 -- Markdown mappings setup function triggered by an auto-command
 function _G.set_markdown_keymaps()
-  -- NOTE: use vim.api.nvim_buf_set_keymap to keep these mappings local to a buffer
-  vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", {})
-  vim.api.nvim_buf_set_keymap(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", ">", "><cmd>AutolistRecalculate<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", {})
-  vim.api.nvim_buf_set_keymap(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", {})
+  -- List management
+  buf_map(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", "New bullet point")
+  buf_map(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", "New bullet below")
+  buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
+  buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
+
+  -- Indentation and recalculation
+  buf_map(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", "Indent bullet")
+  buf_map(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", "Unindent bullet")
+  buf_map(0, "n", ">", "><cmd>AutolistRecalculate<cr>", "Indent bullet")
+  buf_map(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", "Unindent bullet")
+  buf_map(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", "Recalculate list")
+
+  -- Deletion with list recalculation
+  buf_map(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", "Delete and recalculate")
+  buf_map(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", "Delete and recalculate")
+
+  -- Tab settings for markdown
   vim.opt.tabstop = 2
   vim.opt.shiftwidth = 2
   vim.opt.softtabstop = 2
@@ -124,179 +158,129 @@ end
 
 -- Avante AI buffer mappings setup function triggered by an auto-command
 function _G.set_avante_keymaps()
-  local function map(mode, key, cmd, desc)
-    vim.api.nvim_buf_set_keymap(0, mode, key, cmd,
-      { noremap = true, silent = true, desc = desc })
+  -- Helper for buffer-local Avante mappings
+  local function avante_map(mode, key, cmd, description)
+    buf_map(0, mode, key, cmd, description)
   end
-  
+
   -- Toggle Avante interface
-  map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  
+  avante_map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+  avante_map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+  avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+
   -- Reset/clear Avante content
-  map("n", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
-  map("i", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
-  
-  -- Cycle AI models and providers
-  map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
-  map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
-  map("n", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
-  map("i", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
-  
-  -- Stop generation and provider selection
-  map("n", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
-  map("i", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
-  map("n", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
-  map("i", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
-  
-  -- Explicitly map <CR> in insert mode to just create a new line
-  map("i", "<CR>", "<CR>", "Create new line (prevent submit)")
+  avante_map("n", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
+  avante_map("i", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
+
+  -- Model and provider selection
+  avante_map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
+  avante_map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
+  avante_map("n", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider")
+  avante_map("i", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider")
+
+  -- Generation control
+  avante_map("n", "<C-s>", "<cmd>AvanteStop<CR>", "Stop generation")
+  avante_map("i", "<C-s>", "<cmd>AvanteStop<CR>", "Stop generation")
+  avante_map("n", "<C-d>", "<cmd>AvanteProvider<CR>", "Default provider")
+  avante_map("i", "<C-d>", "<cmd>AvanteProvider<CR>", "Default provider")
+
+  -- Prevent accidental submission
+  avante_map("i", "<CR>", "<CR>", "Create new line")
 end
--- local map = vim.keymap.set -- for conciseness
 
---Remap space as leader key
-vim.g.mapleader = " "
--- vim.g.maplocalleader = " "
+-----------------------------
+-- GLOBAL LEADER SETTINGS --
+-----------------------------
+vim.g.mapleader = " " -- Space as leader key
 
+---------------------------------
+-- GENERAL KEYBOARD MAPPINGS  --
+---------------------------------
 
--------------------- General Keymaps --------------------
+-- Prevents common mode mistakes
+map("n", "<C-z>", "<nop>", {}, "Disable suspend")
+map("n", "gc", "<nop>", {}, "Disable gc mappings")
+map("n", "gcc", "<nop>", {}, "Disable gcc mappings")
 
--- delete single character without copying into register
--- keymap("n", "x", '"_x', opts)
--- keymap("v", "p", '"_p', opts)
+-- Terminal integration
+map("n", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true }, "Toggle terminal")
+map("t", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true }, "Toggle terminal")
 
--- Unmappings
-keymap("n", "<C-z>", "<nop>", opts)
-keymap("n", "gc", "<nop>", opts)
-keymap("n", "gcc", "<nop>", opts)
-
--- NOTE: not sure I will uses these cmp-vimtex commands
--- Search from hovering over cmp-vimtex citation completion
--- vim.keymap.set("i", "<C-z>", function() 
---   require('cmp_vimtex.search').search_menu()
--- end)
--- vim.keymap.set("i", "<C-z>", function() 
---   require('cmp_vimtex.search').perform_search({ engine = "arxiv" })
--- end)
-
--- NOTE: prefer to use whichkey
--- Surround 
--- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
-
--- Terminal - ToggleTerm handles <C-t> via its own mapping
--- These are kept as fallbacks in case the plugin isn't loaded
-vim.keymap.set("n", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true })
-vim.keymap.set("t", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true })
-
--- Spelling
-vim.keymap.set("n", "<C-s>", function()
+-- Spelling assistance
+map("n", "<C-s>", function()
   require("telescope.builtin").spell_suggest(require("telescope.themes").get_cursor({
-      previewer = false,
-      layout_config = {
-        width = 50,
-        height = 15,
-      }
-    })
-  )
-end, { remap = true })
--- vim.keymap.set("n", "<C-s>", "z=", { remap = true}) 
--- keymap("n", "<C-s>", "<cmd>Telescope spell_suggest<cr>", { remap = true})
+    previewer = false,
+    layout_config = { width = 50, height = 15 }
+  }))
+end, { remap = true }, "Spelling suggestions")
 
--- Kill search highlights
-keymap("n", "<CR>", "<cmd>noh<CR>", opts)
+-- Search functionality
+map("n", "<CR>", "<cmd>noh<CR>", {}, "Clear search highlights")
+map("n", "<C-p>", "<cmd>Telescope find_files<CR>", { remap = true }, "Find files")
 
+-- Comment toggling
+map('n', "<C-;>", '<Plug>(comment_toggle_linewise_current)', {}, "Toggle comment")
+map('x', "<C-;>", '<Plug>(comment_toggle_linewise_visual)', {}, "Toggle comment selection")
 
--- Find project files
-vim.keymap.set("n", "<C-p>", "<cmd>Telescope find_files<CR>", { remap = true })
-  -- function ()
-  --   require('telescope.builtin').find_files(require('telescope.themes').get_dropdown({previewer = false}))
-  -- end, 
+-- Help integration
+map("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', {}, "Help for word under cursor")
+map("n", "<C-m>", '<cmd>Telescope man_pages<cr>', {}, "Search man pages")
 
+------------------------
+-- TEXT EDITING KEYS --
+------------------------
 
--- Toggle comments
-keymap('n', "<C-;>", '<Plug>(comment_toggle_linewise_current)', opts)
-keymap('x', "<C-;>", '<Plug>(comment_toggle_linewise_visual)', opts)
+-- Fix standard behaviors
+map("n", "Y", "y$", {}, "Yank to end of line")
+map("n", "E", "ge", {}, "Go to end of previous word")
+map("v", "Y", "y$", {}, "Yank to end of line")
 
+-- Cursor centering
+map("n", "m", "zt", {}, "Center cursor at top")
+map("v", "m", "zt", {}, "Center cursor at top")
 
--- Open help on word
-keymap("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', opts)
--- keymap("n", "<S-m>", "<cmd>Telescope help_tags default_text=<C-r><C-w><cr>", opts)
--- keymap("n", "<S-m>", ':execute "help " . expand("<cword>")<cr>', opts)
-keymap("n", "<C-m>", '<cmd>Telescope man_pages<cr>', opts)
+-- Window navigation
+map("n", "<C-h>", "<C-w>h", {}, "Navigate left")
+map("n", "<C-j>", "<C-w>j", {}, "Navigate down")
+map("n", "<C-k>", "<C-w>k", {}, "Navigate up")
+map("n", "<C-l>", "<C-w>l", {}, "Navigate right")
 
+-- Window resizing
+map("n", "<A-Left>", ":vertical resize -2<CR>", {}, "Decrease width")
+map("n", "<A-Right>", ":vertical resize +2<CR>", {}, "Increase width")
+map("n", "<A-h>", ":vertical resize -2<CR>", {}, "Decrease width")
+map("n", "<A-l>", ":vertical resize +2<CR>", {}, "Increase width")
 
--- Fix 'Y', 'E'
-keymap("n", "Y", "y$", opts)
-keymap("n", "E", "ge", opts)
-keymap("v", "Y", "y$", opts)
--- keymap("v", "E", "ge", opts) -- causes errors with luasnip autocmp
+-- Buffer navigation
+map("n", "<TAB>", "", { callback = function() GotoBuffer(1, 1) end }, "Next buffer")
+map("n", "<S-TAB>", "", { callback = function() GotoBuffer(1, -1) end }, "Previous buffer")
 
+-- Line manipulation
+map("n", "<A-j>", "<Esc>:m .+1<CR>==", {}, "Move line down")
+map("n", "<A-k>", "<Esc>:m .-2<CR>==", {}, "Move line up")
+map("x", "<A-j>", ":move '>+1<CR>gv-gv", {}, "Move selection down")
+map("x", "<A-k>", ":move '<-2<CR>gv-gv", {}, "Move selection up")
+map("v", "<A-j>", ":m'>+<CR>gv", {}, "Move selection down")
+map("v", "<A-k>", ":m-2<CR>gv", {}, "Move selection up")
 
--- Avoid cutting text pasted over
--- keymap("v", "p", '"_dP', opts)
+-- Scrolling with centering
+map("n", "<c-u>", "<c-u>zz", {}, "Scroll up with centering")
+map("n", "<c-d>", "<c-d>zz", {}, "Scroll down with centering")
 
-
--- Center cursor
-keymap("n", "m", "zt", opts)
-keymap("v", "m", "zt", opts)
-
-
--- Better window navigation
-keymap("n", "<C-h>", "<C-w>h", opts)
-keymap("n", "<C-j>", "<C-w>j", opts)
-keymap("n", "<C-k>", "<C-w>k", opts)
-keymap("n", "<C-l>", "<C-w>l", opts)
-
-
--- Resize with arrows
--- keymap("n", "<C-Up>", ":resize -2<CR>", opts)
--- keymap("n", "<C-Down>", ":resize +2<CR>", opts)
-keymap("n", "<A-Left>", ":vertical resize -2<CR>", opts)
-keymap("n", "<A-Right>", ":vertical resize +2<CR>", opts)
-keymap("n", "<A-h>", ":vertical resize -2<CR>", opts)
-keymap("n", "<A-l>", ":vertical resize +2<CR>", opts)
-
-
--- Navigate buffers
-keymap("n", "<TAB>", "", {callback = function() GotoBuffer(1, 1) end, desc = 'Next buffer by modified time'})
-keymap("n", "<S-TAB>", "", {callback = function() GotoBuffer(1, -1) end, desc = 'Previous buffer by modified time'})
--- Simple buffer navigation - using custom GotoBuffer function instead for smarter navigation
--- keymap("n", "<BS>", "<CMD>bnext<CR>", opts)
--- keymap("n", "<S-BS>", "<CMD>bprevious<CR>", opts)
-
-
--- Drag lines
-keymap("n", "<A-j>", "<Esc>:m .+1<CR>==", opts)
-keymap("n", "<A-k>", "<Esc>:m .-2<CR>==", opts)
-keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
-keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
-keymap("v", "<A-j>", ":m'>+<CR>gv", opts)
-keymap("v", "<A-k>", ":m-2<CR>gv", opts)
-
-
--- Horizontal line movments --
-keymap("n", "<c-u>", "<c-u>zz", opts)
-keymap("n", "<c-d>", "<c-d>zz", opts)
-
-
--- Horizontal line movments --
-keymap("v", "<S-h>", "g^", opts)
-keymap("v", "<S-l>", "g$", opts)
-keymap("n", "<S-h>", "g^", opts)
-keymap("n", "<S-l>", "g$", opts)
-
+-- Line navigation
+map("v", "<S-h>", "g^", {}, "Go to start of display line")
+map("v", "<S-l>", "g$", {}, "Go to end of display line")
+map("n", "<S-h>", "g^", {}, "Go to start of display line")
+map("n", "<S-l>", "g$", {}, "Go to end of display line")
 
 -- Indentation
-keymap("v", "<", "<gv", opts)
-keymap("v", ">", ">gv", opts)
-keymap("n", "<", "<S-v><<esc>", opts)
-keymap("n", ">", "<S-v>><esc>", opts)
+map("v", "<", "<gv", {}, "Decrease indent and reselect")
+map("v", ">", ">gv", {}, "Increase indent and reselect")
+map("n", "<", "<S-v><<esc>", {}, "Decrease indent for line")
+map("n", ">", "<S-v>><esc>", {}, "Increase indent for line")
 
-
--- Navigate display lines
-keymap("n", "J", "gj", opts)
-keymap("n", "K", "gk", opts)
-keymap("v", "J", "gj", opts)
-keymap("v", "K", "gk", opts)
-
+-- Visual line navigation
+map("n", "J", "gj", {}, "Move down display line")
+map("n", "K", "gk", {}, "Move up display line")
+map("v", "J", "gj", {}, "Move down display line")
+map("v", "K", "gk", {}, "Move up display line")
