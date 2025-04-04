@@ -12,7 +12,8 @@ return {
       -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "latex", "markdown", "cls" }, -- list of language that will be disabled
+        disable = { "css", "latex", "cls" }, -- list of language that will be disabled
+        -- Note: we keep markdown parser enabled for lectic.markdown files
         -- additional_vim_regex_highlighting = { 'org' }, -- for orgmode
       },
       -- enable indentation
@@ -39,14 +40,14 @@ return {
         "bibtex",
         "vimdoc",
         "norg",
+        "markdown",       -- Enable for lectic.markdown support
+        "markdown_inline", -- Enable for lectic.markdown support
         -- "latex",
         -- "javascript",
         -- "typescript",
         -- "tsx",
         -- "css",
         -- "prisma",
-        -- "markdown",
-        -- "markdown_inline",
         -- "svelte",
         -- "graphql",
         -- "dockerfile",

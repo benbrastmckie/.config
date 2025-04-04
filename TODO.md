@@ -5,11 +5,13 @@
   - [ ] cheatsheet
   - [x] readme
   - [:] installation
-    - [:] macos
+    - [:] mac
     - [:] arch
     - [:] debian
     - [:] windows
   - ai video
+  - website
+  - wiki
 - [ ] mini
   - [ ] a/i
   - [ ] bracketed
@@ -27,13 +29,14 @@
   - [ ] surround
   - [ ] tabline
 - [ ] snacks
-  - [.] update which-key
+  - [ ] research plugins
+  - [x] update which-key
   - [x] remove redundant plugins
     - [x] alpha
     - [x] lazygit
     - [x] indent-line
     - [x] dressing
-  - [ ] change indent line color
+  - [x] change indent line color
 - [ ] blink
 - [ ] undo tree commands
 - [ ] checkhealth

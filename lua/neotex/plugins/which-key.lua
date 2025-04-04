@@ -389,6 +389,14 @@ return {
         -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
         l = { "<cmd>Lectic<CR>", "lectic" },
         m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
+        f = { "<cmd>lua vim.wo.foldenable = not vim.wo.foldenable<CR>", "toggle folding" },
+        F = { "<cmd>lua CreateMarkdownFolds()<CR>", "create all folds" },
+        T = { "<cmd>lua FoldLecticToolCalls()<CR>", "fold tool calls" },
+        z = { "za", "toggle fold under cursor" },
+        o = { "zo", "open fold" },
+        c = { "zc", "close fold" },
+        R = { "zR", "open all folds" },
+        M = { "zM", "close all folds" },
       },
       S = {
         name = "SESSIONS",
