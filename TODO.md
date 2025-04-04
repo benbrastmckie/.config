@@ -1,5 +1,15 @@
 # TODO
 
+- [.] docs
+  - [ ] learning git
+  - [ ] cheatsheet
+  - [x] readme
+  - [:] installation
+    - [:] macos
+    - [:] arch
+    - [:] debian
+    - [:] windows
+  - ai video
 - [ ] mini
   - [ ] a/i
   - [ ] bracketed
