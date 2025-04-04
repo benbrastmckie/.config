@@ -1,7 +1,7 @@
 # NeoTex: A NeoVim Starter Pack for Academic Research
 
 This setup provides a streamlined environment for academic writing, code development, and system management with powerful AI assistance.
-If you already use Git to manage your `.config/` directory, these [instructions](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) will allow you to filter off just the NeoVim configuration.
+If you already use Git to manage your `.config/` directory, these [instructions](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md) will allow you to filter off just the NeoVim configuration.
 If your are new to using Git to manage dotfiles, this configuration is intended to provide a gentle introduction while equipping you with some of the most powerful tools for editing text, streamlining the research process.
 
 Although the configuration focuses on using LaTeX and Markdown in NeoVim, it is compatible with any programming language, and highly extensible and customizable where the AI integration makes learning about and adapting the configuration to your specific needs much easier.
@@ -31,15 +31,15 @@ Although all of the following are optional, the configuration includes the follo
 
 Select your operating system to follow the appropriate installation guide:
 
-- [MacOS Installation Guide](docs/MacOS-Install.md)
-- [Arch Linux Installation Guide](Arch-Install.md)
-- [Debian/Ubuntu Installation Guide](Debian-Install.md)
-- [Windows Installation Guide](Windows-Install.md)
+- [MacOS Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/MacOS-Install.md)
+- [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Arch-Install.md)
+- [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Debian-Install.md)
+- [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Windows-Install.md)
 
 ## Key Resources
 
 - [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features
-- [Learning Git](LearningGit.md): Resources for Git workflow integration
+- [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow integration
 - [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features
 
 ## AI Integration
