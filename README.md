@@ -1,4 +1,4 @@
-# NeoTex - Neovim Configuration
+# NeoTex - Neovim CheatSheet
 
 A feature-rich Neovim configuration optimized for LaTeX, Markdown, AI integration, and NixOS.
 This setup provides a streamlined environment for academic writing, code development, and system management.
@@ -70,14 +70,29 @@ When in an Avante buffer (AI interface):
 
 | Key       | Action                            |
 |-----------|-----------------------------------|
+| `q`       | Quit Avante                       |
 | `<C-t>`   | Toggle Avante interface           |
-| `q`       | Toggle Avante interface           |
-| `<C-k>`   | Reset/clear Avante content        |
+| `<C-c>`   | Reset/clear Avante content        |
 | `<C-m>`   | Select model for current provider |
 | `<C-p>`   | Select provider and model         |
-| `<C-i>`   | Stop AI generation                |
+| `<C-s>`   | Stop AI generation                |
 | `<C-d>`   | Select provider/model with default|
 | `<CR>`    | Create new line (not submission)  |
+| `<C-j>`   | Move up between panes             |
+| `<C-k>`   | Move down between panes           |
+| `<C-l>`   | Accept suggestion (insert mode)   |
+| `<C-h>`   | Dismiss suggestion                |
+| `o`       | Select 'ours' in diff             |
+| `t`       | Select 'theirs' in diff           |
+| `a`       | Select all 'theirs' in diff       |
+| `b`       | Select both in diff               |
+| `c`       | Select at cursor in diff          |
+| `n`       | Jump to next                      |
+| `N`       | Jump to previous                  |
+| `A`       | Apply all in sidebar              |
+| `a`       | Apply at cursor in sidebar        |
+| `<Tab>`   | Switch windows in sidebar         |
+| `<S-Tab>` | Reverse switch windows in sidebar |
 
 ### Using Avante to Work with this Configuration
 
