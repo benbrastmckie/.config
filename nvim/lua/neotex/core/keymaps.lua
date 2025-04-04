@@ -67,7 +67,6 @@ d (visual mode)                                | Delete selection and recalculat
 AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
 ----------------------------------------------------------------------------------
 <C-t>                                          | Toggle Avante interface
-q                                              | Toggle Avante interface
 <C-c>                                          | Reset/clear Avante content
 <C-m>                                          | Select model for current provider
 <C-p>                                          | Select provider and model
@@ -169,8 +168,8 @@ function _G.set_avante_keymaps()
   avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
 
   -- Reset/clear Avante content
-  avante_map("n", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
-  avante_map("i", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
+  avante_map("n", "<C-c>", "<cmd>AvanteClear<CR>", "Clear chat history")
+  avante_map("i", "<C-c>", "<cmd>AvanteClear<CR>", "Clear chat history")
 
   -- Model and provider selection
   avante_map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")

@@ -1,54 +1,114 @@
-# .config
+# NeoTex: A Complete Configuration Starter Pack
 
-A feature-rich Neovim configuration optimized for LaTeX, Markdown, AI integration, and NixOS.
-This setup provides a streamlined environment for academic writing, code development, and system management.
-The AI integration makes it easy to learn and configure for your specific needs.
+This setup provides a streamlined environment for academic writing, code development, and system management with powerful AI assistance.
+If you already use Git to manage your `.config/` directory, these [instructions](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) will allow you to filter off just the NeoVim configuration.
+If your are new to using Git to manage dotfiles, this configuration is intended to provide a gentle introduction while equipping you with some of the most powerful tools for editing text, streamlining the research process.
 
-## NeoVim
+Although the configuration focuses on using LaTeX and Markdown in NeoVim, it is compatible with any programming language, and highly extensible and customizable where the AI integration makes learning about and adapting the configuration to your specific needs much easier.
+If you are interested in using NixOS, you can find my [.dotfiles](https://github.com/benbrastmckie/.dotfiles) here.
 
-This Neovim configuration includes specialized support for:
-
-- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
-- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
-- **AI Assistance**: AI integration for code completion and editing suggestions with Avante and knowledge assistance with Lectic
-- **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
-- **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics
-- **Session Management**: Save and restore editing sessions with persistent workspaces
-- **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
-- **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
-
-More information can be found [here](https://github.com/benbrastmckie/.config/tree/master/nvim).
+## Features Overview
 
 ![Screenshot of the configuration](images/screenshot_cite.png)
 
-## Installation
+### Core Features
 
-Running the unstable release of `NeoVim` may lead to errors, and so is discouraged.
-If there are features or plugins that you are aware of and would like to see integrated, don't hesitate to submit a feature request in an issue.
-I have not created any new videos so (for now) these [old ones](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) will have to do if you'd like to see what the previous version looked like.
+Although all of the following are optional, the configuration includes the following:
 
-As for installation, I have updated the MacOS installation instructions below, but have not tested these for myself.
-The installation should not be that different from before, but feel free to open an issue if you run into any errors.
-I am also happy to accept pull requests if you want to make instructional changes directly to the README.md, submitting them as a PR instead of describing them in an issue.
-Either way, I'd be happy to get your feedback and help improving these instructions for others.
+- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
+- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
+- **Reference Management**: Zotero integration for citation management, BibTeX synchronization, and academic workflow
+- **Terminal Tools**: Kitty terminal emulator and Fish shell for enhanced productivity and modern CLI experience
+- **AI Assistance**: Integrated AI support with Avante (code/editing) and Lectic (knowledge)
+- **NixOS Management**: Convenient commands for managing NixOS configurations and packages
+- **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics
+- **Session Management**: Save and restore editing sessions with persistent workspaces
+- **File Navigation**: Telescope integration for fuzzy finding and project navigation
+- **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 
-If you use Windows and are interested in troubleshooting the installation process, feel free to open an issue if one does not exist already.
+## Installation Guides
 
-## A complete configuration for writing LaTeX documents with [NeoVim](https://neovim.io).
+Select your operating system to follow the appropriate installation guide:
 
-The following sections provide installation instructions for Mac, Arch, and Debian operating systems.
-In the [CheatSheet.md](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) you can find all of the key-bindings that I have added to NeoVim for writing LaTeX documents, where the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) provides resources for integrating Git into your workflow.
-You can also find video series which: (1) demonstrates the [features](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk) included in the present configuration; (2) walks through the [installation process](https://www.youtube.com/watch?v=ELdTohuzTnA&list=PLBYZ1xfnKeDQxis9D7HFFygHOFVTQ0BFn); (3) explains how to [modify the configuration](https://www.youtube.com/watch?v=oyEPY6xFhs0&list=PLBYZ1xfnKeDT0LWxQQma8Yh-IfpmQ7UHr) (OLD) for your own needs; and (4) describes how to [use Git](https://www.youtube.com/watch?v=GIJG4QtZBYI&list=PLBYZ1xfnKeDQYYXIhKKrXhWOaSphnn9ZL) to track changes and collaborate with others.
+- [MacOS Installation Guide](MacOS-Install.md)
+- [Arch Linux Installation Guide](Arch-Install.md)
+- [Debian/Ubuntu Installation Guide](Debian-Install.md)
+- [Windows Installation Guide](Windows-Install.md)
 
-## Table of Contents
+## Key Resources
 
-1. [Mac OS Installation](#Mac-OS-Installation)
-2. [Arch Linux Installation](#Arch-Linux-Installation)
-3. [Debian Linux Insallation](#Debian-Linux-Installation)
-4. [Remapping Keys](#Remapping-Keys)
+- [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features
+- [Learning Git](LearningGit.md): Resources for Git workflow integration
+- [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features
 
-The software covered includes NeoVim, Git, Zathura, Zotero, Fish, and either Kitty or both Alacritty and Tmux.
-I will also include information for globally remapping keys to [better](https://www.reddit.com/r/vim/comments/lsx5qv/just_mapped_my_caps_lock_to_escape_for_the_first/) suit writing LaTeX documents with NeoVim.
+## AI Integration
+
+This configuration includes powerful AI tools:
+
+### Avante AI
+
+Access AI assistance directly within Neovim with `<leader>ha` for questions or `<leader>ht` to toggle the interface.
+Supports multiple providers including Claude (Anthropic), GPT (OpenAI), and Gemini (Google) where you can easily switch providers with `<leader>hd` as well as changing models with `<leader>hm`.
+
+I have extended Avante to permit users to create/edit/switch system prompts for different tasks with `<leader>hp`.
+
+More information can be found [here](https://github.com/yetone/avante.nvim).
+
+### Lectic
+
+A specialized tool for academic research and knowledge management, accessible via `<leader>ml`.
+Lectic is a markdown-based frontend for Large Language Models (LLMs), designed for thoughtful, long-form conversations that can be easily archived, searched, and referenced. Unlike ephemeral chat interfaces or code-focused LLM tools, Lectic emphasizes persistence and reflection, making it particularly valuable for research, learning, and knowledge management.
+
+More information can be found [here](https://github.com/gleachkr).
+
+## Core Directory Structure
+
+```
+~/.config/nvim/
+├── init.lua                 # Main entry point
+├── lua/neotex/              # Core configuration
+│   ├── bootstrap.lua        # Plugin manager setup
+│   ├── core/                # Core settings
+│   │   ├── autocmds.lua     # Automatic commands
+│   │   ├── functions.lua    # Utility functions
+│   │   ├── keymaps.lua      # Key mappings
+│   │   └── options.lua      # Neovim options
+│   └── plugins/             # Plugin configurations
+│       ├── lsp/             # Language server settings
+│       └── ai/              # AI integration settings
+├── templates/               # LaTeX/document templates
+├── snippets/                # LaTeX/Markdown snippets
+└── after/ftplugin/          # Language-specific settings
+```
+
+## Customization
+
+This configuration is designed to be easily customizable:
+
+1. **Adding plugins**: Edit `lua/neotex/plugins/*.lua` files using lazy.nvim format
+2. **Changing keymaps**: Modify `lua/neotex/core/keymaps.lua`
+3. **Language support**: Configure in `lua/neotex/plugins/lsp/`
+4. **Adding templates**: Place new templates in the `templates/` directory
+
+For detailed customization instructions, refer to the [Neovim README](nvim/README.md).
+
+## System Requirements
+
+- Neovim 0.9.0 or newer
+- Git 2.23 or newer
+- Node.js 16 or newer
+- Python 3.7 or newer
+- A Nerd Font installed and configured in your terminal
+
+## Community & Support
+
+- Submit issues or feature requests on [GitHub](https://github.com/benbrastmckie/.config/issues)
+- Pull requests are welcome! Please see contribution guidelines
+- For questions, check existing issues or open a new one
+
+## License
+
+This configuration is available under the [MIT License](LICENSE)
 
 # Mac OS Installation
 
@@ -151,7 +211,6 @@ If `Homebrew` has any trouble recognizing paths inside `Fish`, you can run the f
 ```
 /opt/homebrew/bin/brew shellenv >> ~/.config/fish/config.fish # Ensures that brew paths are recognised inside fish
 ```
-
 
 ## Dependencies
 
@@ -1557,4 +1616,3 @@ setxkbmap
 ```
 
 Once you achieve the desired result, reboot and confirm that the mappings are running as desired.
-

@@ -76,13 +76,13 @@ AI HELP (<leader>h)                             | DESCRIPTION
 <leader>hb - Build dependencies                 | Build deps for Avante project
 <leader>hc - Chat                               | Start chat with Avante AI
 <leader>hd - Set model & provider               | Change AI model with defaults
-<leader>he - Edit system prompts                | Open system prompt manager
+<leader>he - Edit prompts                       | Open system prompt manager
 <leader>hi - Stop generation                    | Interrupt AI generation
 <leader>hk - Clear                              | Clear Avante chat/content
 <leader>hm - Select model                       | Choose AI model for current provider
 <leader>hM - Map repo                           | Create repo map for AI context
-<leader>hp - Switch system prompt               | Choose a different system prompt
-<leader>hs - Quick provider switch              | Change AI provider
+<leader>hp - Select prompt                      | Choose a different system prompt
+<leader>hs - Selected edit                      | Edit selected text with AI
 <leader>hr - Refresh assistant                  | Reload AI assistant
 <leader>ht - Toggle assistant                   | Show/hide Avante interface
 
@@ -342,13 +342,14 @@ return {
         b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
         c = { "<cmd>AvanteChat<CR>", "chat" },
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
-        e = { "<cmd>AvantePromptManager<CR>", "edit system prompts" },
+        e = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
         i = { "<cmd>AvanteStop<CR>", "interupt avante" },
         k = { "<cmd>AvanteClear<CR>", "clear" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
-        p = { "<cmd>AvantePrompt<CR>", "switch system prompt" },
-        s = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
+        p = { "<cmd>AvantePrompt<CR>", "select prompt" },
+        s = { "<cmd>AvanteEdit<CR>", "selected edit" },
+        -- s = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
         t = { "<cmd>AvanteToggle<CR>", "toggle assistant" },
       },
@@ -386,6 +387,7 @@ return {
       m = {
         name = "MARKDOWN",
         -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
+        l = { "<cmd>Lectic<CR>", "lectic" },
         m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
       },
       S = {
@@ -425,7 +427,6 @@ return {
         e = { "vim.diagnostics.setloclist", "locate errors" },
         -- h = { "<cmd>Hardtime toggle<cr>", "hardtime" }, -- Hardtime plugin has been deprecated
         k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
-        l = { "<cmd>Lectic<CR>", "lectic" },
         -- m = { "<cmd>MCPHub<cr>", "mcp-hub" }, -- MCP-Hub plugin has been deprecated
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
