@@ -310,10 +310,11 @@ return {
         C = { "<cmd>AvanteChat<CR>", "chat" },
         c = { "<cmd>AvanteClear<CR>", "clear" },
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
-        e = { "<cmd>AvanteEdit<CR>", "edit" },
+        e = { "<cmd>AvantePromptManager<CR>", "edit system prompts" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
-        p = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
+        p = { "<cmd>AvantePrompt<CR>", "switch system prompt" },
+        v = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
         s = { "<cmd>AvanteStop<CR>", "stop generation" },
         t = { "<cmd>AvanteToggle<CR>", "toggle assistant" },
@@ -326,9 +327,6 @@ return {
       L = {
         name = "LIST",
         c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
-        -- c = { "<cmd>lua require('autolist').invert()<CR>", "checkbox" },
-        -- x = { "<cmd>lua handle_checkbox()<CR>", "checkbox" },
-        -- c = { "<cmd>AutolistToggleCheckbox<CR>", "checkmark" },
         n = { "<cmd>AutolistCycleNext<CR>", "next" },
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
@@ -402,13 +400,6 @@ return {
         r = { "<cmd>ReloadConfig<cr>", "reload configs" },
         s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "show notifications" },
         -- d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
-    -- map('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>')
-    -- map('n', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>')
-    -- map('n', '<space>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<CR>')
-    -- map('n', '<space>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<CR>')
-    -- map('n', '<space>D', '<cmd>lua vim.lsp.buf.type_definition()<CR>')
-    -- map('n', '<space>q', '<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>')
-    -- map('n', '<space>f', '<cmd>lua vim.lsp.buf.formatting()<CR>')prev{popup_opts = {show_header = false}} end", "previous" },
       },
       s = {
         name = "SURROUND",
