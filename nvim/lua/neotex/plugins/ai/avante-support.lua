@@ -3,6 +3,22 @@
 ------------------------------------------
 -- This module contains all Avante-related functions and utilities
 -- Makes the main configuration cleaner by separating Avante-specific code
+--
+-- Features:
+-- 1. Model Selection: Switch between different Claude/OpenAI/Gemini models
+--    - Commands: AvanteModel, AvanteProvider
+--    - Keybindings: <leader>hm, <leader>hd
+--
+-- 2. System Prompt Management: Create/edit/select system prompts
+--    - Commands: AvantePrompt, AvantePromptManager, AvantePromptEdit
+--    - Keybindings: <leader>hp, <leader>hP
+--    - Storage: ~/.config/nvim/lua/neotex/plugins/ai/system-prompts.json
+--
+-- 3. Generation Control: Stop ongoing generation
+--    - Commands: AvanteStop
+--    - Keybindings: <leader>hs, <C-s> (in Avante buffers)
+--
+-- All configurations persist between Neovim sessions
 
 local M = {}
 
@@ -338,6 +354,42 @@ function M.setup_commands()
     M.stop_generation()
   end, { desc = "Stop Avante generation in progress" })
   
+  -- System prompt selection command
+  vim.api.nvim_create_user_command("AvantePrompt", function()
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
+    if ok then
+      system_prompts.show_prompt_selection()
+    else
+      vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
+    end
+  end, { desc = "Select a system prompt" })
+  
+  -- System prompt management command
+  vim.api.nvim_create_user_command("AvantePromptManager", function()
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
+    if ok then
+      system_prompts.show_prompt_manager()
+    else
+      vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
+    end
+  end, { desc = "Manage system prompts" })
+  
+  -- System prompt editor command
+  vim.api.nvim_create_user_command("AvantePromptEdit", function(opts)
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
+    if ok then
+      -- If args provided, try to edit that specific prompt
+      if opts.args and opts.args ~= "" then
+        system_prompts.show_prompt_editor(opts.args)
+      else
+        -- Otherwise just open the manager
+        system_prompts.show_prompt_manager()
+      end
+    else
+      vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
+    end
+  end, { nargs = "?", desc = "Edit system prompts" })
+  
   -- Add AvanteSelectModel command if it doesn't exist
   if not pcall(vim.api.nvim_get_commands, {}, { pattern = "AvanteSelectModel" }) then
     vim.api.nvim_create_user_command("AvanteSelectModel", function(opts)
@@ -393,8 +445,27 @@ function M.show_model_notification()
     current_model = models[current_index]
   end
   
-  -- Show a single notification with the active model
-  vim.notify("Avante ready with model: " .. current_model, vim.log.levels.INFO)
+  -- Load the default system prompt
+  local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
+  local prompt_info = ""
+  
+  if ok then
+    local default_prompt, default_id = system_prompts.get_default()
+    if default_prompt then
+      prompt_info = " with prompt: " .. default_prompt.name
+      
+      -- Apply the default prompt
+      pcall(function()
+        local config = require("avante.config")
+        if config and config.override then
+          config.override({ system_prompt = default_prompt.prompt })
+        end
+      end)
+    end
+  end
+  
+  -- Show a single notification with the active model and prompt
+  vim.notify("Avante ready with model: " .. current_model .. prompt_info, vim.log.levels.INFO)
 end
 
 return M

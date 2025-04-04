@@ -1,8 +1,20 @@
 return {
   "yetone/avante.nvim",
   event = "VeryLazy",
-  version = "false", -- Using latest version to get the most recent fixes, otherwise set to "false"
+  version = "false", -- Using latest version to get the most recent fixes
+  -- Explicitly checking for Neovim 0.10.1+ compatibility
+  cond = function()
+    if vim.fn.has("nvim-0.10.1") == 0 then
+      vim.notify("Avante requires Neovim 0.10.1 or later", vim.log.levels.WARN)
+      return false
+    end
+    return true
+  end,
   init = function()
+    -- Set recommended vim option for best Avante view compatibility
+    -- Views can only be fully collapsed with the global statusline
+    vim.opt.laststatus = 3
+
     -- Define provider models (moved to global scope for reuse)
     -- IMPORTANT: Keep claude-3-5-sonnet as the first model
     _G.provider_models = {
@@ -24,9 +36,12 @@ return {
       }
     }
 
+    -- Require the support module just once in this scope
+    -- This module will be visible to all code in the init function
+    local avante_support = require("neotex.plugins.ai.avante-support")
+
     -- Initialize state with the settings from our support module
     -- This sets up _G.avante_cycle_state and returns the settings
-    local avante_support = require("neotex.plugins.ai.avante-support")
     local settings = avante_support.init()
 
     -- Add additional autocmd to enforce model after fully loaded
@@ -38,11 +53,11 @@ return {
           local ok, avante = pcall(require, "avante")
           if ok then
             -- Load settings from our support module
-            local avante_support = require("neotex.plugins.ai.avante-support")
-            local settings = avante_support.init()
+            -- Using the avante_support variable from the outer scope
+            local lazy_settings = avante_support.init()
 
             -- Create model config from settings
-            local model_config = settings
+            local model_config = lazy_settings
 
             -- First try: config.override
             local success = pcall(function()
@@ -87,11 +102,11 @@ return {
           local ok, avante = pcall(require, "avante")
           if ok then
             -- Load settings from our support module
-            local avante_support = require("neotex.plugins.ai.avante-support")
-            local settings = avante_support.init()
+            -- Using the avante_support variable from the outer scope
+            local vim_settings = avante_support.init()
 
             -- Create model config from settings
-            local model_config = settings
+            local model_config = vim_settings
 
             -- Try different paths to update configuration
             local success = false
@@ -129,7 +144,6 @@ return {
     })
 
     -- Set up Avante commands using the support module
-    local avante_support = require("neotex.plugins.ai.avante-support")
     avante_support.setup_commands()
 
     -- Create autocmd for Avante buffer-specific mappings
@@ -145,15 +159,14 @@ return {
 
           vim.defer_fn(function()
             -- Use support module to show the notification
-            local avante_support = require("neotex.plugins.ai.avante-support")
+            -- Using the avante_support variable from the outer scope
             avante_support.show_model_notification()
           end, 100)
         end
 
         -- Set up buffer keymaps using the support module
-        local avante_support = require("neotex.plugins.ai.avante-support")
         avante_support.setup_buffer_keymaps(0)
-        
+
         vim.opt_local.scrolloff = 999
       end
     })
@@ -225,7 +238,9 @@ return {
       },
       behaviour = {
         enable_claude_text_editor_tool_mode = true,
+        enable_cursor_planning_mode = false,    -- Experimental feature for more focused cursor-based planning
         auto_suggestions = false,
+        auto_suggestions_respect_ignore = true, -- Honor .gitignore when searching for context
         auto_set_highlight_group = false,
         auto_set_keymaps = false,
         auto_apply_diff_after_generation = false,
@@ -236,6 +251,13 @@ return {
         disable_file_creation = true,            -- Prevent automatic file creation
         disable_git_operations = true,           -- Prevent automatic git operations
         respect_enter_key = true,                -- Add this to make <CR> behave normally in insert mode
+        use_cwd_as_project_root = false,         -- Use current working directory as project root
+      },
+
+      -- Token counting configuration (helps track token usage)
+      token_counting = {
+        enabled = true,              -- Enable token counting for cost awareness
+        show_in_status_line = false, -- Don't show in status line to keep it clean
       },
       mappings = {
         diff = {
@@ -308,12 +330,13 @@ return {
     }
 
     -- Override with saved settings if they exist
-    local avante_support = require("neotex.plugins.ai.avante-support")
-    local settings = avante_support.init()
+    -- Note: Using new variable names to avoid confusion with the init function scope
+    local opts_support = require("neotex.plugins.ai.avante-support")
+    local opts_settings = opts_support.init()
 
     -- Apply settings to config
-    if settings then
-      for k, v in pairs(settings) do
+    if opts_settings then
+      for k, v in pairs(opts_settings) do
         if type(v) == "table" then
           if config[k] then
             for sk, sv in pairs(v) do
@@ -360,4 +383,3 @@ return {
     },
   },
 }
-
