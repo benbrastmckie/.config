@@ -33,15 +33,6 @@ Although all of the following are optional, the configuration includes the follo
 - [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow (under construction)
 - [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features (more coming soon!)
 
-## Installation Guides
-
-Select your operating system to follow the appropriate installation guide:
-
-- [MacOS Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/MacOS-Install.md)
-- [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Arch-Install.md)
-- [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Debian-Install.md)
-- [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Windows-Install.md)
-
 ## AI Integration
 
 This configuration includes powerful AI tools:
@@ -61,6 +52,15 @@ A specialized tool for academic research and knowledge management, accessible vi
 Lectic is a markdown-based frontend for Large Language Models (LLMs), designed for thoughtful, long-form conversations that can be easily archived, searched, and referenced. Unlike ephemeral chat interfaces or code-focused LLM tools, Lectic emphasizes persistence and reflection, making it particularly valuable for research, learning, and knowledge management.
 
 More information can be found [here](https://github.com/gleachkr).
+
+## Installation Guides
+
+Select your operating system to follow the appropriate installation guide:
+
+- [MacOS Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/MacOS-Install.md)
+- [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Arch-Install.md)
+- [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Debian-Install.md)
+- [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Windows-Install.md)
 
 ## Core Directory Structure
 
