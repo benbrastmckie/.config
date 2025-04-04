@@ -17,7 +17,7 @@ This Neovim configuration includes specialized support for:
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 
-More information can be found here.
+More information can be found [here](https://github.com/benbrastmckie/.config/tree/master/nvim).
 
 ![Screenshot of the configuration](images/screenshot_cite.png)
 
@@ -622,16 +622,6 @@ Run one final test, checking to see if your credentials are now automatically su
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
 
-<!-- ### Installing the GitHub Cli -->
-<!---->
-<!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
-<!---->
-<!-- ``` -->
-<!-- brew install gh -->
-<!-- ``` -->
-<!---->
-<!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
-
 # Arch Linux Installation
 
 This installation will begin with necessities and conclude with details for an optional installation of Fish and either Kitty or else both Alacritty and Tmux to improve your terminal, as well as details for how to add an SSH key and PAT for streamlining your experience of Git.
@@ -1031,28 +1021,6 @@ Repeat the steps above after making a small change to your config to run another
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
-
-<!-- ### Installing the GitHub Cli -->
-<!---->
-<!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
-<!---->
-<!-- ``` -->
-<!-- sudo pacman -S github-cli -->
-<!-- ``` -->
-<!---->
-<!-- You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running: -->
-<!---->
-<!-- ``` -->
-<!-- gh auth login -->
-<!-- ``` -->
-<!---->
-<!-- Set NeoVim as your default editor by running: -->
-<!---->
-<!-- ``` -->
-<!-- gh config set editor nvim -->
-<!-- ``` -->
-<!---->
-<!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
 
 # Debian Linux Installation
 
@@ -1516,28 +1484,6 @@ Repeat the steps above after making a small change to your config to run another
 Run one final test, checking to see if your credentials are now automatically submitted, avoiding the need to enter your username and PAT each time you push or pull changes.
 
 For more help, see these [video](https://www.youtube.com/watch?v=kHkQnuYzwoo) instructions.
-
-<!-- ### Installing the GitHub Cli -->
-<!---->
-<!-- Assuming that you are using GitHub to host your repositories, it is convenient to install the GitHub Cli which allows you to make changes to your repositories directly from the terminal inside NeoVim: -->
-<!---->
-<!-- ``` -->
-<!-- sudo apt install github-cli -->
-<!-- ``` -->
-<!---->
-<!-- You will then need to follow the [instructions](https://cli.github.com/manual/) in order to authenticate GitHub Cli by running: -->
-<!---->
-<!-- ``` -->
-<!-- gh auth login -->
-<!-- ``` -->
-<!---->
-<!-- Set NeoVim as your default editor by running: -->
-<!---->
-<!-- ``` -->
-<!-- gh config set editor nvim -->
-<!-- ``` -->
-<!---->
-<!-- For further information, see the section **GitHub Cli** in the [Cheat Sheet](https://github.com/benbrastmckie/.config/blob/master/CheatSheet.md) as well as the [GitHub Cli Repo](https://github.com/cli/cli). -->
 
 # Remapping Keys
 
