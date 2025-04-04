@@ -27,6 +27,12 @@ Although all of the following are optional, the configuration includes the follo
 - **File Navigation**: Telescope integration for fuzzy finding and project navigation
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 
+## Key Resources
+
+- [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features 
+- [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow integration (under construction)
+- [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features (more coming soon!)
+
 ## Installation Guides
 
 Select your operating system to follow the appropriate installation guide:
@@ -35,12 +41,6 @@ Select your operating system to follow the appropriate installation guide:
 - [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Arch-Install.md)
 - [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Debian-Install.md)
 - [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Windows-Install.md)
-
-## Key Resources
-
-- [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features (under construction)
-- [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow integration (under construction)
-- [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features (more coming soon!)
 
 ## AI Integration
 
