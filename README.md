@@ -38,9 +38,9 @@ Select your operating system to follow the appropriate installation guide:
 
 ## Key Resources
 
-- [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features
-- [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow integration
-- [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features
+- [NeoVim CheatSheet](https://github.com/benbrastmckie/.config/blob/master/nvim/README.md): All keybindings and features (under construction)
+- [Learning Git](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md): Resources for Git workflow integration (under construction)
+- [Videos](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk): Demonstrations of key features (more coming soon!)
 
 ## AI Integration
 
