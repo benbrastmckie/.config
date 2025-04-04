@@ -1,50 +1,74 @@
---[[
-Keybindings Documentation:
+--[[ KEYBINDINGS REFERENCE
 
-Terminal Mode:
-  <esc>       -> Exit terminal mode
-  <C-t>       -> Toggle terminal
-  <C-h/j/k/l> -> Navigate windows
-  <C-a>       -> Avante Ask (non-lazygit only)
-  <C-c>       -> Avante Chat (non-lazygit only)
+This file defines global keybindings, with special handling for terminal, markdown,
+and Avante AI buffers. Functions like `set_terminal_keymaps()`, `set_markdown_keymaps()`,
+and `set_avante_keymaps()` are called by autocmds when specific filetypes are detected.
 
-General:
-  <Space>     -> Leader key
-  <C-z>       -> Disabled
-  <C-t>       -> Toggle terminal
-  <C-s>       -> Show spelling suggestions (Telescope)
-  <CR>        -> Clear search highlights
-  <C-p>       -> Find files (Telescope)
-  <C-;>       -> Toggle comments (line/visual)
-  <S-m>       -> Show help for word under cursor
+----------------------------------------------------------------------------------
+TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
+----------------------------------------------------------------------------------
+<Esc>                                          | Exit terminal mode to normal mode
+<C-t>                                          | Toggle terminal window
+<C-h>, <C-j>, <C-k>, <C-l>                     | Navigate between windows
+<C-a>                                          | Ask Avante AI a question (non-lazygit only)
+<M-h>, <M-l>, <M-Left>, <M-Right>              | Resize terminal window horizontally
 
-Navigation:
-  Y           -> Yank to end of line
-  E           -> Go to end of previous word
-  m           -> Center cursor at top of screen
-  <C-h/j/k/l> -> Window navigation
-  <A-Left/Right> -> Resize window horizontally
-  <A-h/l>     -> Resize window horizontally
-  <TAB>       -> Next buffer by modified time
-  <S-TAB>     -> Previous buffer by modified time
-  <BS>        -> Next buffer
-  <S-BS>      -> Previous buffer
-  <C-u/d>     -> Scroll up/down (centered)
-  <S-h/l>     -> Go to start/end of line
-  J/K         -> Navigate display lines
+----------------------------------------------------------------------------------
+GENERAL KEYBINDINGS                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<Space>                                        | Leader key for command sequences
+<C-z>                                          | Disabled (prevents accidental suspension)
+<C-t>                                          | Toggle terminal window
+<C-s>                                          | Show spelling suggestions with Telescope
+<CR> (Enter)                                   | Clear search highlighting
+<C-p>                                          | Find files with Telescope
+<C-;>                                          | Toggle comments for current line/selection
+<S-m>                                          | Show help for word under cursor
+<C-m>                                          | Search man pages with Telescope
 
-Text Manipulation:
-  <A-j/k>     -> Move line(s) up/down
-  </>>        -> Decrease/Increase indentation
-  
-Markdown Specific:
-  <CR>        -> New bullet point
-  o           -> New bullet point below
-  O           -> New bullet point above
-  <tab>       -> Indent bullet
-  <S-tab>     -> Unindent bullet
-  dd          -> Delete line and recalculate
-  <C-n>       -> Toggle checkbox
+----------------------------------------------------------------------------------
+TEXT NAVIGATION                                | DESCRIPTION
+----------------------------------------------------------------------------------
+Y                                              | Yank (copy) from cursor to end of line
+E                                              | Go to end of previous word
+m                                              | Center cursor at top of screen
+<C-h>, <C-j>, <C-k>, <C-l>                    | Navigate between windows
+<A-Left>, <A-Right>, <A-h>, <A-l>             | Resize window horizontally
+<Tab>                                          | Go to next buffer (by modified time)
+<S-Tab>                                        | Go to previous buffer (by modified time)
+<C-u>, <C-d>                                   | Scroll half-page up/down (with centering)
+<S-h>, <S-l>                                   | Go to start/end of line
+J, K                                           | Navigate display lines (respects wrapping)
+
+----------------------------------------------------------------------------------
+TEXT MANIPULATION                              | DESCRIPTION
+----------------------------------------------------------------------------------
+<A-j>, <A-k>                                   | Move current line or selection up/down
+<, >                                           | Decrease/increase indentation
+
+----------------------------------------------------------------------------------
+MARKDOWN-SPECIFIC KEYBINDINGS                  | DESCRIPTION
+----------------------------------------------------------------------------------
+<CR> (Enter)                                   | Create new bullet point
+o                                              | Create new bullet point below
+O                                              | Create new bullet point above
+<Tab>                                          | Indent bullet and recalculate numbers
+<S-Tab>                                        | Unindent bullet and recalculate numbers
+dd                                             | Delete line and recalculate list numbers
+d (visual mode)                                | Delete selection and recalculate numbers
+<C-n>                                          | Toggle checkbox status ([ ] ↔ [x])
+
+----------------------------------------------------------------------------------
+AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
+----------------------------------------------------------------------------------
+<C-t>                                          | Toggle Avante interface
+q                                              | Toggle Avante interface
+<C-c>                                          | Reset/clear Avante content
+<C-m>                                          | Select model for current provider
+<C-p>                                          | Select provider and model
+<C-s>                                          | Stop AI generation
+<C-d>                                          | Select provider/model with default option
+<CR> (Enter)                                   | Create new line (prevents submission)
 --]]
 
 local opts = { noremap = true, silent = true }
@@ -63,11 +87,9 @@ function _G.set_terminal_keymaps()
   -- Only set Avante mappings for non-lazygit buffers
   if vim.bo.filetype ~= "lazygit" then
     vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    -- vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<Cmd>AvanteChat<CR>", {})
     vim.api.nvim_buf_set_keymap(0, "n", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    -- vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<Cmd>AvanteChat<CR>", {})
     vim.api.nvim_buf_set_keymap(0, "v", "<C-a>", "<Cmd>AvanteAsk<CR>", {})
-    -- vim.api.nvim_buf_set_keymap(0, "v", "<C-c>", "<Cmd>AvanteChat<CR>", {})
+    -- More Avante mappings are included in Avante.lua
   end
   vim.api.nvim_buf_set_keymap(0, "t", "<M-Right>", "<Cmd>vertical resize -2<CR>", {})
   vim.api.nvim_buf_set_keymap(0, "t", "<M-Left>", "<Cmd>vertical resize +2<CR>", {})
@@ -98,6 +120,38 @@ function _G.set_markdown_keymaps()
   vim.opt.tabstop = 2
   vim.opt.shiftwidth = 2
   vim.opt.softtabstop = 2
+end
+
+-- Avante AI buffer mappings setup function triggered by an auto-command
+function _G.set_avante_keymaps()
+  local function map(mode, key, cmd, desc)
+    vim.api.nvim_buf_set_keymap(0, mode, key, cmd,
+      { noremap = true, silent = true, desc = desc })
+  end
+  
+  -- Toggle Avante interface
+  map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+  map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+  map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+  
+  -- Reset/clear Avante content
+  map("n", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
+  map("i", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
+  
+  -- Cycle AI models and providers
+  map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
+  map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
+  map("n", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
+  map("i", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
+  
+  -- Stop generation and provider selection
+  map("n", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
+  map("i", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
+  map("n", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
+  map("i", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
+  
+  -- Explicitly map <CR> in insert mode to just create a new line
+  map("i", "<CR>", "<CR>", "Create new line (prevent submit)")
 end
 -- local map = vim.keymap.set -- for conciseness
 
@@ -130,9 +184,10 @@ keymap("n", "gcc", "<nop>", opts)
 -- Surround 
 -- vim.keymap.set("v", '<C-s>', 'S', { remap = true }) -- see surround.lua
 
--- Terminal
-vim.keymap.set("n", "<C-t>", "<cmd>lua Snacks.terminal.toggle()<CR>", { remap = true })
-vim.keymap.set("t", "<C-t>", "<cmd>lua Snacks.terminal.toggle()<CR>", { remap = true })
+-- Terminal - ToggleTerm handles <C-t> via its own mapping
+-- These are kept as fallbacks in case the plugin isn't loaded
+vim.keymap.set("n", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true })
+vim.keymap.set("t", "<C-t>", "<cmd>ToggleTerm<CR>", { remap = true })
 
 -- Spelling
 vim.keymap.set("n", "<C-s>", function()
@@ -206,6 +261,7 @@ keymap("n", "<A-l>", ":vertical resize +2<CR>", opts)
 -- Navigate buffers
 keymap("n", "<TAB>", "", {callback = function() GotoBuffer(1, 1) end, desc = 'Next buffer by modified time'})
 keymap("n", "<S-TAB>", "", {callback = function() GotoBuffer(1, -1) end, desc = 'Previous buffer by modified time'})
+-- Simple buffer navigation - using custom GotoBuffer function instead for smarter navigation
 -- keymap("n", "<BS>", "<CMD>bnext<CR>", opts)
 -- keymap("n", "<S-BS>", "<CMD>bprevious<CR>", opts)
 

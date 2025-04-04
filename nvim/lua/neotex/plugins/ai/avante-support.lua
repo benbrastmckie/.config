@@ -52,13 +52,13 @@ function M.load_settings()
       }
     }
   end
-  
+
   -- Try to load the settings
   local ok, settings = pcall(dofile, avante_settings_file)
   if ok and settings then
     return settings
   end
-  
+
   -- Return default settings if anything went wrong
   return {
     provider = "claude",
@@ -90,7 +90,7 @@ return {
     vim.notify("Could not save Avante settings", vim.log.levels.ERROR)
     return false
   end
-  
+
   file:write(content)
   file:close()
   return true
@@ -103,7 +103,7 @@ function M.apply_settings(provider, model, model_index, notify)
     provider = provider,
     model_index = model_index or 1
   }
-  
+
   -- Create model config
   local model_config = {
     provider = provider,
@@ -112,9 +112,9 @@ function M.apply_settings(provider, model, model_index, notify)
       model = model
     }
   }
-  
+
   -- Apply configuration in multiple ways for reliability
-  
+
   -- 1. Try config module override
   local success = false
   pcall(function()
@@ -124,7 +124,7 @@ function M.apply_settings(provider, model, model_index, notify)
       success = true
     end
   end)
-  
+
   -- 2. Try direct override if #1 failed
   if not success then
     pcall(function()
@@ -138,12 +138,12 @@ function M.apply_settings(provider, model, model_index, notify)
       end
     end)
   end
-  
+
   -- 3. Try provider switching command
   pcall(function()
     vim.cmd("AvanteSwitchProvider " .. provider)
   end)
-  
+
   -- 4. Try to refresh provider
   pcall(function()
     local avante = require("avante")
@@ -151,12 +151,12 @@ function M.apply_settings(provider, model, model_index, notify)
       avante.providers.refresh(provider)
     end
   end)
-  
+
   -- 5. Show notification if requested
   if notify then
     vim.notify("Switched to " .. provider .. "/" .. model, vim.log.levels.INFO)
   end
-  
+
   return success
 end
 
@@ -168,12 +168,12 @@ function M.init()
   end
 
   local settings = M.load_settings()
-  
+
   -- Find model index
   local provider = settings.provider
   local model = settings.model
   local model_index = 1
-  
+
   if _G.provider_models and _G.provider_models[provider] then
     for i, m in ipairs(_G.provider_models[provider]) do
       if m == model then
@@ -182,13 +182,13 @@ function M.init()
       end
     end
   end
-  
+
   -- Apply settings without notification
   _G.avante_cycle_state = {
     provider = provider,
     model_index = model_index
   }
-  
+
   -- Return settings for further use
   return settings
 end
@@ -204,7 +204,7 @@ function M.model_select()
 
   -- Get current provider
   local current_provider = _G.avante_cycle_state.provider or "claude"
-  
+
   -- Get models for current provider
   local models = _G.provider_models[current_provider] or {}
   if #models == 0 then
@@ -220,7 +220,7 @@ function M.model_select()
     if not selected_model then
       return -- User canceled
     end
-    
+
     -- Find index of selected model
     local selected_index = 1
     for i, model in ipairs(models) do
@@ -229,7 +229,7 @@ function M.model_select()
         break
       end
     end
-    
+
     -- Apply settings (temporary change)
     M.apply_settings(current_provider, selected_model, selected_index, true)
   end)
@@ -246,26 +246,26 @@ function M.provider_select()
 
   -- List of available providers
   local providers = { "claude", "openai", "gemini" }
-  
+
   -- Create UI for provider selection
   vim.ui.select(providers, {
     prompt = "Select AI provider:",
     format_item = function(item)
       -- Capitalize first letter for nicer display
-      return item:sub(1,1):upper() .. item:sub(2)
+      return item:sub(1, 1):upper() .. item:sub(2)
     end
   }, function(selected_provider)
     if not selected_provider then
       return -- User canceled
     end
-    
+
     -- Get models for selected provider
     local models = _G.provider_models[selected_provider] or {}
     if #models == 0 then
       vim.notify("No models available for provider: " .. selected_provider, vim.log.levels.WARN)
       return
     end
-    
+
     -- Create UI for model selection
     vim.ui.select(models, {
       prompt = "Select model for " .. selected_provider .. ":",
@@ -274,7 +274,7 @@ function M.provider_select()
       if not selected_model then
         return -- User canceled
       end
-      
+
       -- Find index of selected model
       local selected_index = 1
       for i, model in ipairs(models) do
@@ -283,23 +283,23 @@ function M.provider_select()
           break
         end
       end
-      
+
       -- Create UI to ask if this should be the default
-      vim.ui.select({"Yes", "No"}, {
+      vim.ui.select({ "Yes", "No" }, {
         prompt = "Set as default for future sessions?",
       }, function(make_default)
         if not make_default then
           return -- User canceled
         end
-        
+
         -- Apply settings immediately
         M.apply_settings(selected_provider, selected_model, selected_index, false)
-        
+
         -- Save as default if requested
         if make_default == "Yes" then
           if M.save_settings(selected_provider, selected_model) then
             vim.notify(
-              "Default model set to " .. selected_provider .. "/" .. selected_model .. 
+              "Default model set to " .. selected_provider .. "/" .. selected_model ..
               "\nSwitched to this model and saved for future sessions.",
               vim.log.levels.INFO
             )
@@ -324,7 +324,7 @@ function M.stop_generation()
     vim.notify("Stopped Avante generation", vim.log.levels.INFO)
     return
   end
-  
+
   -- Fall back to the API module as a second attempt
   local ok_api, api = pcall(require, "avante.api")
   if ok_api and api and type(api.stop) == "function" then
@@ -332,7 +332,7 @@ function M.stop_generation()
     vim.notify("Stopped Avante generation", vim.log.levels.INFO)
     return
   end
-  
+
   -- If both approaches fail, notify the user
   vim.notify("Failed to stop Avante generation - model may still be running", vim.log.levels.WARN)
 end
@@ -343,17 +343,17 @@ function M.setup_commands()
   vim.api.nvim_create_user_command("AvanteModel", function()
     M.model_select()
   end, { desc = "Select a model for the current AI provider" })
-  
+
   -- Provider selection command
   vim.api.nvim_create_user_command("AvanteProvider", function()
     M.provider_select()
   end, { desc = "Select an AI provider and model, with option to set as default" })
-  
+
   -- Stop generation command
   vim.api.nvim_create_user_command("AvanteStop", function()
     M.stop_generation()
   end, { desc = "Stop Avante generation in progress" })
-  
+
   -- System prompt selection command
   vim.api.nvim_create_user_command("AvantePrompt", function()
     local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
@@ -363,7 +363,7 @@ function M.setup_commands()
       vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
     end
   end, { desc = "Select a system prompt" })
-  
+
   -- System prompt management command
   vim.api.nvim_create_user_command("AvantePromptManager", function()
     local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
@@ -373,7 +373,7 @@ function M.setup_commands()
       vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
     end
   end, { desc = "Manage system prompts" })
-  
+
   -- System prompt editor command
   vim.api.nvim_create_user_command("AvantePromptEdit", function(opts)
     local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
@@ -389,7 +389,7 @@ function M.setup_commands()
       vim.notify("Failed to load system prompts module", vim.log.levels.ERROR)
     end
   end, { nargs = "?", desc = "Edit system prompts" })
-  
+
   -- Add AvanteSelectModel command if it doesn't exist
   if not pcall(vim.api.nvim_get_commands, {}, { pattern = "AvanteSelectModel" }) then
     vim.api.nvim_create_user_command("AvanteSelectModel", function(opts)
@@ -402,35 +402,12 @@ function M.setup_commands()
 end
 
 -- Function to set up keymaps in Avante buffers
+-- Now calls the centralized function in keymaps.lua for better organization
+-- Kept for backward compatibility
 function M.setup_buffer_keymaps(bufnr)
-  local function map(mode, key, cmd, desc)
-    vim.api.nvim_buf_set_keymap(bufnr or 0, mode, key, cmd,
-      { noremap = true, silent = true, desc = desc })
-  end
-  
-  -- Toggle Avante interface
-  map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-  
-  -- Reset/clear Avante content
-  map("n", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
-  map("i", "<C-c>", "<cmd>AvanteReset<CR>", "Reset Avante content")
-  
-  -- Cycle AI models and providers
-  map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
-  map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model for current provider")
-  map("n", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
-  map("i", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider and model")
-  
-  -- Stop generation and provider selection
-  map("n", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
-  map("i", "<C-s>", "<cmd>AvanteStop<CR>", "Stop Avante generation")
-  map("n", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
-  map("i", "<C-d>", "<cmd>AvanteProvider<CR>", "Select provider/model with default option")
-  
-  -- Explicitly map <CR> in insert mode to just create a new line
-  map("i", "<CR>", "<CR>", "Create new line (prevent submit)")
+  -- Simply call the global function that's defined in keymaps.lua
+  -- This ensures all keymappings are defined in one central location
+  _G.set_avante_keymaps()
 end
 
 -- Function for first open notification
@@ -440,20 +417,20 @@ function M.show_model_notification()
   local current_index = _G.avante_cycle_state.model_index or 1
   local models = _G.provider_models[current_provider] or {}
   local current_model = "unknown"
-  
+
   if #models >= current_index then
     current_model = models[current_index]
   end
-  
+
   -- Load the default system prompt
   local ok, system_prompts = pcall(require, "neotex.plugins.ai.system-prompts")
   local prompt_info = ""
-  
+
   if ok then
     local default_prompt, default_id = system_prompts.get_default()
     if default_prompt then
       prompt_info = " with prompt: " .. default_prompt.name
-      
+
       -- Apply the default prompt
       pcall(function()
         local config = require("avante.config")
@@ -463,9 +440,10 @@ function M.show_model_notification()
       end)
     end
   end
-  
+
   -- Show a single notification with the active model and prompt
   vim.notify("Avante ready with model: " .. current_model .. prompt_info, vim.log.levels.INFO)
 end
 
 return M
+
