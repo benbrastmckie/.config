@@ -125,13 +125,13 @@ local function load_avante_settings()
       }
     }
   end
-  
+
   -- Try to load the settings
   local ok, settings = pcall(dofile, avante_settings_file)
   if ok and settings then
     return settings
   end
-  
+
   -- Return default settings if anything went wrong
   return {
     provider = "claude",
@@ -163,7 +163,7 @@ return {
     vim.notify("Could not save Avante settings", vim.log.levels.ERROR)
     return false
   end
-  
+
   file:write(content)
   file:close()
   return true
@@ -176,7 +176,7 @@ local function apply_avante_settings(provider, model, model_index, notify)
     provider = provider,
     model_index = model_index or 1
   }
-  
+
   -- Create model config
   local model_config = {
     provider = provider,
@@ -185,9 +185,9 @@ local function apply_avante_settings(provider, model, model_index, notify)
       model = model
     }
   }
-  
+
   -- Apply configuration in multiple ways for reliability
-  
+
   -- 1. Try config module override
   local success = false
   pcall(function()
@@ -197,7 +197,7 @@ local function apply_avante_settings(provider, model, model_index, notify)
       success = true
     end
   end)
-  
+
   -- 2. Try direct override if #1 failed
   if not success then
     pcall(function()
@@ -211,12 +211,12 @@ local function apply_avante_settings(provider, model, model_index, notify)
       end
     end)
   end
-  
+
   -- 3. Try provider switching command
   pcall(function()
     vim.cmd("AvanteSwitchProvider " .. provider)
   end)
-  
+
   -- 4. Try to refresh provider
   pcall(function()
     local avante = require("avante")
@@ -224,12 +224,12 @@ local function apply_avante_settings(provider, model, model_index, notify)
       avante.providers.refresh(provider)
     end
   end)
-  
+
   -- 5. Show notification if requested
   if notify then
     vim.notify("Switched to " .. provider .. "/" .. model, vim.log.levels.INFO)
   end
-  
+
   return success
 end
 
@@ -244,7 +244,7 @@ function _G.avante_model()
 
   -- Get current provider
   local current_provider = _G.avante_cycle_state.provider or "claude"
-  
+
   -- Get models for current provider
   local models = _G.provider_models[current_provider] or {}
   if #models == 0 then
@@ -260,7 +260,7 @@ function _G.avante_model()
     if not selected_model then
       return -- User canceled
     end
-    
+
     -- Find index of selected model
     local selected_index = 1
     for i, model in ipairs(models) do
@@ -269,7 +269,7 @@ function _G.avante_model()
         break
       end
     end
-    
+
     -- Apply settings (temporary change)
     apply_avante_settings(current_provider, selected_model, selected_index, true)
   end)
@@ -286,26 +286,26 @@ function _G.avante_provider()
 
   -- List of available providers
   local providers = { "claude", "openai", "gemini" }
-  
+
   -- Create UI for provider selection
   vim.ui.select(providers, {
     prompt = "Select AI provider:",
     format_item = function(item)
       -- Capitalize first letter for nicer display
-      return item:sub(1,1):upper() .. item:sub(2)
+      return item:sub(1, 1):upper() .. item:sub(2)
     end
   }, function(selected_provider)
     if not selected_provider then
       return -- User canceled
     end
-    
+
     -- Get models for selected provider
     local models = _G.provider_models[selected_provider] or {}
     if #models == 0 then
       vim.notify("No models available for provider: " .. selected_provider, vim.log.levels.WARN)
       return
     end
-    
+
     -- Create UI for model selection
     vim.ui.select(models, {
       prompt = "Select model for " .. selected_provider .. ":",
@@ -314,7 +314,7 @@ function _G.avante_provider()
       if not selected_model then
         return -- User canceled
       end
-      
+
       -- Find index of selected model
       local selected_index = 1
       for i, model in ipairs(models) do
@@ -323,23 +323,23 @@ function _G.avante_provider()
           break
         end
       end
-      
+
       -- Create UI to ask if this should be the default
-      vim.ui.select({"Yes", "No"}, {
+      vim.ui.select({ "Yes", "No" }, {
         prompt = "Set as default for future sessions?",
       }, function(make_default)
         if not make_default then
           return -- User canceled
         end
-        
+
         -- Apply settings immediately
         apply_avante_settings(selected_provider, selected_model, selected_index, false)
-        
+
         -- Save as default if requested
         if make_default == "Yes" then
           if save_avante_settings(selected_provider, selected_model) then
             vim.notify(
-              "Default model set to " .. selected_provider .. "/" .. selected_model .. 
+              "Default model set to " .. selected_provider .. "/" .. selected_model ..
               "\nSwitched to this model and saved for future sessions.",
               vim.log.levels.INFO
             )
@@ -358,12 +358,12 @@ end
 -- Apply settings at startup
 function _G.avante_init()
   local settings = load_avante_settings()
-  
+
   -- Find model index
   local provider = settings.provider
   local model = settings.model
   local model_index = 1
-  
+
   if _G.provider_models and _G.provider_models[provider] then
     for i, m in ipairs(_G.provider_models[provider]) do
       if m == model then
@@ -372,13 +372,13 @@ function _G.avante_init()
       end
     end
   end
-  
+
   -- Apply settings without notification
   _G.avante_cycle_state = {
     provider = provider,
     model_index = model_index
   }
-  
+
   -- We'll let the plugin initialization handle the rest
   return settings
 end
@@ -401,7 +401,7 @@ vim.api.nvim_create_user_command("AvanteStop", function()
     vim.notify("Stopped Avante generation", vim.log.levels.INFO)
     return
   end
-  
+
   -- Fall back to the API module as a second attempt
   local ok_api, api = pcall(require, "avante.api")
   if ok_api and api and type(api.stop) == "function" then
@@ -409,7 +409,8 @@ vim.api.nvim_create_user_command("AvanteStop", function()
     vim.notify("Stopped Avante generation", vim.log.levels.INFO)
     return
   end
-  
+
   -- If both approaches fail, notify the user
   vim.notify("Failed to stop Avante generation - model may still be running", vim.log.levels.WARN)
 end, { desc = "Stop Avante generation in progress" })
+

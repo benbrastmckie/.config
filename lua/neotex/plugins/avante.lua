@@ -36,12 +36,11 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Load the configuration from preferences
-            local avante_prefs = require("neotex.core.avante_prefs")
-            local prefs = avante_prefs.load_preferences()
-            
-            -- Create model config from preferences
-            local model_config = prefs
+            -- Load settings from our functions file
+            local settings = _G.avante_init()
+
+            -- Create model config from settings
+            local model_config = settings
 
             -- First try: config.override
             local success = pcall(function()
@@ -85,12 +84,11 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Load the configuration from preferences
-            local avante_prefs = require("neotex.core.avante_prefs")
-            local prefs = avante_prefs.load_preferences()
-            
-            -- Create model config from preferences
-            local model_config = prefs
+            -- Load settings from our functions file
+            local settings = _G.avante_init()
+
+            -- Create model config from settings
+            local model_config = settings
 
             -- Try different paths to update configuration
             local success = false
@@ -194,7 +192,7 @@ return {
           { noremap = true, silent = true, desc = "Select provider and model" })
         vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>AvanteProvider<CR>",
           { noremap = true, silent = true, desc = "Select provider and model" })
-        
+
         -- Stop generation and set default model
         vim.api.nvim_buf_set_keymap(0, "n", "<C-s>", "<cmd>AvanteStop<CR>",
           { noremap = true, silent = true, desc = "Stop Avante generation" })
@@ -358,22 +356,23 @@ return {
       },
     }
 
-    -- Override with preferences if they exist
-    local avante_prefs = require("neotex.core.avante_prefs")
-    local prefs = avante_prefs.load_preferences()
-    
-    -- Apply preferences to config
-    for k, v in pairs(prefs) do
-      if type(v) == "table" then
-        if config[k] then
-          for sk, sv in pairs(v) do
-            config[k][sk] = sv
+    -- Override with saved settings if they exist
+    local settings = _G.avante_init()
+
+    -- Apply settings to config
+    if settings then
+      for k, v in pairs(settings) do
+        if type(v) == "table" then
+          if config[k] then
+            for sk, sv in pairs(v) do
+              config[k][sk] = sv
+            end
+          else
+            config[k] = v
           end
         else
           config[k] = v
         end
-      else
-        config[k] = v
       end
     end
 
@@ -409,3 +408,4 @@ return {
     },
   },
 }
+
