@@ -24,11 +24,9 @@ return {
       }
     }
 
-    -- Initialize state to default values (from the opts function below)
-    _G.avante_cycle_state = {
-      provider = "claude",
-      model_index = 1 -- This corresponds to claude-3-5-sonnet
-    }
+    -- Initialize state with the settings from our functions module
+    -- This sets up _G.avante_cycle_state and returns the settings
+    local settings = _G.avante_init()
 
     -- Add additional autocmd to enforce model after fully loaded
     -- No notification here - will show when window is first opened
@@ -38,14 +36,12 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Use the default configuration
-            local model_config = {
-              provider = "claude",
-              model = "claude-3-7-sonnet-20250219",
-              claude = {
-                model = "claude-3-5-sonnet-20241022"
-              }
-            }
+            -- Load the configuration from preferences
+            local avante_prefs = require("neotex.core.avante_prefs")
+            local prefs = avante_prefs.load_preferences()
+            
+            -- Create model config from preferences
+            local model_config = prefs
 
             -- First try: config.override
             local success = pcall(function()
@@ -89,14 +85,12 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Use the default configuration
-            local model_config = {
-              provider = "claude",
-              model = "claude-3-5-sonnet-20241022",
-              claude = {
-                model = "claude-3-5-sonnet-20241022"
-              }
-            }
+            -- Load the configuration from preferences
+            local avante_prefs = require("neotex.core.avante_prefs")
+            local prefs = avante_prefs.load_preferences()
+            
+            -- Create model config from preferences
+            local model_config = prefs
 
             -- Try different paths to update configuration
             local success = false
@@ -143,147 +137,8 @@ return {
       end, { nargs = "?" })
     end
 
-    -- Create a command for selecting and setting the default model
-    vim.api.nvim_create_user_command("AvanteSetDefaultModel", function()
-      -- Define the selection function locally to avoid dependency issues
-      local function select_default_model()
-        -- First, select a provider
-        local providers = { "claude", "openai", "gemini" }
-
-        vim.ui.select(providers, {
-          prompt = "Select default AI provider:",
-          format_item = function(item)
-            -- Capitalize first letter for nicer display
-            return item:sub(1, 1):upper() .. item:sub(2)
-          end
-        }, function(selected_provider)
-          -- Handle cancellation
-          if not selected_provider then
-            vim.notify("Default model selection canceled", vim.log.levels.INFO)
-            return
-          end
-
-          -- Now select a model for the chosen provider
-          local models = _G.provider_models[selected_provider] or {}
-          if #models == 0 then
-            vim.notify("No models available for provider: " .. selected_provider, vim.log.levels.ERROR)
-            return
-          end
-
-          vim.ui.select(models, {
-            prompt = "Select default model for " .. selected_provider .. ":",
-            format_item = function(item) return item end
-          }, function(selected_model)
-            -- Handle cancellation
-            if not selected_model then
-              vim.notify("Default model selection canceled", vim.log.levels.INFO)
-              return
-            end
-
-            -- Set runtime state first
-            _G.avante_cycle_state = {
-              provider = selected_provider,
-              model_index = 1 -- Will be updated properly after finding index
-            }
-
-            -- Find the model index
-            for i, model in ipairs(models) do
-              if model == selected_model then
-                _G.avante_cycle_state.model_index = i
-                break
-              end
-            end
-
-            -- Directly modify the configuration file
-            local avante_file_path = vim.fn.stdpath("config") .. "/lua/neotex/plugins/avante.lua"
-
-            -- Read the current file content
-            local file = io.open(avante_file_path, "r")
-            if not file then
-              vim.notify("Could not open avante.lua for editing", vim.log.levels.ERROR)
-              return
-            end
-
-            local content = file:read("*all")
-            file:close()
-
-            -- Define patterns to look for in the file - more robust with whitespace variations
-            local provider_pattern = "(provider%s*=%s*[\"'])([^\"']+)([\"'])"
-            local model_pattern = "(model%s*=%s*[\"'])([^\"']+)([\"'])"
-
-            -- For provider_model_pattern, we need to find the section for the specific provider
-            -- This pattern looks for the provider table definition and updates the model inside it
-            local provider_section_pattern = "(" .. selected_provider .. "%s*=%s*{.-model%s*=%s*[\"'])([^\"']+)([\"'])"
-
-            -- Flag to track if we made changes
-            local changes_made = false
-
-            -- Replace the main provider in the top-level config
-            content, changes_count = content:gsub(provider_pattern, "%1" .. selected_provider .. "%3", 1)
-            changes_made = changes_made or changes_count > 0
-
-            -- Replace the main model in the top-level config
-            content, changes_count = content:gsub(model_pattern, "%1" .. selected_model .. "%3", 1)
-            changes_made = changes_made or changes_count > 0
-
-            -- Replace the provider-specific model
-            -- This is a more complex pattern that needs to find the right section
-            content, changes_count = content:gsub(provider_section_pattern, "%1" .. selected_model .. "%3", 1)
-            changes_made = changes_made or changes_count > 0
-
-            -- Only write the file if changes were made
-            if changes_made then
-              file = io.open(avante_file_path, "w")
-              if not file then
-                vim.notify("Could not write to avante.lua", vim.log.levels.ERROR)
-                return
-              end
-
-              file:write(content)
-              file:close()
-
-              -- Try to refresh provider and model after config change
-              local ok, avante = pcall(require, "avante")
-              if ok then
-                -- Prepare model configuration for override
-                local model_config = {
-                  provider = selected_provider,
-                  model = selected_model,
-                  [selected_provider] = {
-                    model = selected_model
-                  }
-                }
-
-                -- Try to apply config override
-                pcall(function()
-                  if avante.config and avante.config.override then
-                    avante.config.override(model_config)
-                  end
-                end)
-
-                -- Try the command-based approach as well
-                pcall(function()
-                  vim.cmd("AvanteSwitchProvider " .. selected_provider)
-                end)
-              end
-
-              vim.notify(
-                "Default model set to " .. selected_provider .. "/" .. selected_model ..
-                "\nThis will be used for all future Neovim sessions.",
-                vim.log.levels.INFO
-              )
-            else
-              vim.notify("No changes needed in avante.lua configuration", vim.log.levels.INFO)
-            end
-          end)
-        end)
-      end
-
-      -- Call the function
-      select_default_model()
-    end, {
-      desc = "Select and set the default Avante provider and model"
-    })
+    -- Create commands for Avante model management
+    -- They're already registered in our functions.lua
 
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
@@ -331,24 +186,24 @@ return {
           { noremap = true, silent = true, desc = "Reset Avante content" })
 
         -- Cycle AI models and providers
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
-          { noremap = true, silent = true, desc = "Cycle AI models within provider" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>lua cycle_ai_model()<CR>",
-          { noremap = true, silent = true, desc = "Cycle AI models within provider" })
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
-          { noremap = true, silent = true, desc = "Cycle AI providers" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>lua cycle_ai_provider()<CR>",
-          { noremap = true, silent = true, desc = "Cycle AI providers" })
-
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>AvanteModel<CR>",
+          { noremap = true, silent = true, desc = "Select model for current provider" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>AvanteModel<CR>",
+          { noremap = true, silent = true, desc = "Select model for current provider" })
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-p>", "<cmd>AvanteProvider<CR>",
+          { noremap = true, silent = true, desc = "Select provider and model" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>AvanteProvider<CR>",
+          { noremap = true, silent = true, desc = "Select provider and model" })
+        
         -- Stop generation and set default model
         vim.api.nvim_buf_set_keymap(0, "n", "<C-s>", "<cmd>AvanteStop<CR>",
           { noremap = true, silent = true, desc = "Stop Avante generation" })
         vim.api.nvim_buf_set_keymap(0, "i", "<C-s>", "<cmd>AvanteStop<CR>",
           { noremap = true, silent = true, desc = "Stop Avante generation" })
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-d>", "<cmd>AvanteSetDefaultModel<CR>",
-          { noremap = true, silent = true, desc = "Set default Avante model" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-d>", "<cmd>AvanteSetDefaultModel<CR>",
-          { noremap = true, silent = true, desc = "Set default Avante model" })
+        vim.api.nvim_buf_set_keymap(0, "n", "<C-d>", "<cmd>AvanteProvider<CR>",
+          { noremap = true, silent = true, desc = "Select provider/model with default option" })
+        vim.api.nvim_buf_set_keymap(0, "i", "<C-d>", "<cmd>AvanteProvider<CR>",
+          { noremap = true, silent = true, desc = "Select provider/model with default option" })
 
         vim.opt_local.scrolloff = 999
       end
@@ -502,6 +357,25 @@ return {
         override_timeoutlen = 500,
       },
     }
+
+    -- Override with preferences if they exist
+    local avante_prefs = require("neotex.core.avante_prefs")
+    local prefs = avante_prefs.load_preferences()
+    
+    -- Apply preferences to config
+    for k, v in pairs(prefs) do
+      if type(v) == "table" then
+        if config[k] then
+          for sk, sv in pairs(v) do
+            config[k][sk] = sv
+          end
+        else
+          config[k] = v
+        end
+      else
+        config[k] = v
+      end
+    end
 
     return config
   end,

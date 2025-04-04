@@ -1,7 +1,4 @@
-# .config
-
-NOTE: I have recently (Jan 2024) migrated to Lazy package manager from Packer and refactored the config accordingly.
-It is running `NeoVim v0.9.5` really fast with some nice features, including:
+# NeoVim Configuration
 
 - LSP Autocompletion (VimTex, Buffer, Spell, Snippets, Python, Lua, etc.)
 - Linting and Formatting (Python, Lua, Markdown, etc.)
