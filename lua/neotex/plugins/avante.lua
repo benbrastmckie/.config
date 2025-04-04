@@ -24,9 +24,10 @@ return {
       }
     }
 
-    -- Initialize state with the settings from our functions module
+    -- Initialize state with the settings from our support module
     -- This sets up _G.avante_cycle_state and returns the settings
-    local settings = _G.avante_init()
+    local avante_support = require("neotex.plugins.ai.avante-support")
+    local settings = avante_support.init()
 
     -- Add additional autocmd to enforce model after fully loaded
     -- No notification here - will show when window is first opened
@@ -36,8 +37,9 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Load settings from our functions file
-            local settings = _G.avante_init()
+            -- Load settings from our support module
+            local avante_support = require("neotex.plugins.ai.avante-support")
+            local settings = avante_support.init()
 
             -- Create model config from settings
             local model_config = settings
@@ -84,8 +86,9 @@ return {
         vim.defer_fn(function()
           local ok, avante = pcall(require, "avante")
           if ok then
-            -- Load settings from our functions file
-            local settings = _G.avante_init()
+            -- Load settings from our support module
+            local avante_support = require("neotex.plugins.ai.avante-support")
+            local settings = avante_support.init()
 
             -- Create model config from settings
             local model_config = settings
@@ -125,18 +128,9 @@ return {
       end
     })
 
-    -- Add AvanteSelectModel command since it doesn't seem to exist in our version
-    if not pcall(vim.api.nvim_get_commands, {}, { pattern = "AvanteSelectModel" }) then
-      vim.api.nvim_create_user_command("AvanteSelectModel", function(opts)
-        local ok, avante_api = pcall(require, "avante.api")
-        if ok and avante_api and avante_api.select_model then
-          avante_api.select_model()
-        end
-      end, { nargs = "?" })
-    end
-
-    -- Create commands for Avante model management
-    -- They're already registered in our functions.lua
+    -- Set up Avante commands using the support module
+    local avante_support = require("neotex.plugins.ai.avante-support")
+    avante_support.setup_commands()
 
     -- Create autocmd for Avante buffer-specific mappings
     vim.api.nvim_create_autocmd("FileType", {
@@ -150,59 +144,16 @@ return {
           _G.avante_first_open = false
 
           vim.defer_fn(function()
-            -- Get the current model from global state
-            local current_provider = _G.avante_cycle_state.provider or "claude"
-            local current_index = _G.avante_cycle_state.model_index or 1
-            local models = _G.provider_models[current_provider] or {}
-            local current_model = "unknown"
-
-            if #models >= current_index then
-              current_model = models[current_index]
-            end
-
-            -- Show a single notification with the active model
-            vim.notify("Avante ready with model: " .. current_model, vim.log.levels.INFO)
+            -- Use support module to show the notification
+            local avante_support = require("neotex.plugins.ai.avante-support")
+            avante_support.show_model_notification()
           end, 100)
         end
 
-        -- Explicitly map <CR> in insert mode to just create a new line
-        vim.api.nvim_buf_set_keymap(0, "i", "<CR>", "<CR>",
-          { noremap = true, silent = true, desc = "Create new line (prevent submit)" })
-
-        -- Toggle Avante interface
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-t>", "<cmd>AvanteToggle<CR>",
-          { noremap = true, silent = true, desc = "Toggle Avante interface" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-t>", "<cmd>AvanteToggle<CR>",
-          { noremap = true, silent = true, desc = "Toggle Avante interface" })
-        vim.api.nvim_buf_set_keymap(0, "n", "q", "<cmd>AvanteToggle<CR>",
-          { noremap = true, silent = true, desc = "Toggle Avante interface" })
-
-        -- Reset/clear Avante content
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-c>", "<cmd>AvanteReset<CR>",
-          { noremap = true, silent = true, desc = "Reset Avante content" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-c>", "<cmd>AvanteReset<CR>",
-          { noremap = true, silent = true, desc = "Reset Avante content" })
-
-        -- Cycle AI models and providers
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-m>", "<cmd>AvanteModel<CR>",
-          { noremap = true, silent = true, desc = "Select model for current provider" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-m>", "<cmd>AvanteModel<CR>",
-          { noremap = true, silent = true, desc = "Select model for current provider" })
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-p>", "<cmd>AvanteProvider<CR>",
-          { noremap = true, silent = true, desc = "Select provider and model" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-p>", "<cmd>AvanteProvider<CR>",
-          { noremap = true, silent = true, desc = "Select provider and model" })
-
-        -- Stop generation and set default model
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-s>", "<cmd>AvanteStop<CR>",
-          { noremap = true, silent = true, desc = "Stop Avante generation" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-s>", "<cmd>AvanteStop<CR>",
-          { noremap = true, silent = true, desc = "Stop Avante generation" })
-        vim.api.nvim_buf_set_keymap(0, "n", "<C-d>", "<cmd>AvanteProvider<CR>",
-          { noremap = true, silent = true, desc = "Select provider/model with default option" })
-        vim.api.nvim_buf_set_keymap(0, "i", "<C-d>", "<cmd>AvanteProvider<CR>",
-          { noremap = true, silent = true, desc = "Select provider/model with default option" })
-
+        -- Set up buffer keymaps using the support module
+        local avante_support = require("neotex.plugins.ai.avante-support")
+        avante_support.setup_buffer_keymaps(0)
+        
         vim.opt_local.scrolloff = 999
       end
     })
@@ -357,7 +308,8 @@ return {
     }
 
     -- Override with saved settings if they exist
-    local settings = _G.avante_init()
+    local avante_support = require("neotex.plugins.ai.avante-support")
+    local settings = avante_support.init()
 
     -- Apply settings to config
     if settings then
