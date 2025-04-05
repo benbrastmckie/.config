@@ -407,17 +407,19 @@ return {
       -- MARKDOWN MAPPINGS
       m = {
         name = "MARKDOWN",
-        -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
-        l = { "<cmd>Lectic<CR>", "run lectic" },
+        -- LECTIC COMMANDS
+        l = { "<cmd>lua CreateNewLecticFile()<CR>", "new lectic file" },
+        r = { "<cmd>Lectic<CR>", "run lectic on file" },
+        s = { "<cmd>lua SubmitLecticSection()<CR>", "submit lectic section" },
+
+        -- MARKDOWN/PREVIEW
         p = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
         u = { "<cmd>lua OpenUrlUnderCursor()<CR>", "open URL under cursor" },
+
+        -- FOLDING
         c = { "za", "toggle fold under cursor" },
         f = { "<cmd>lua ToggleFoldingMethod()<CR>", "toggle folding method" },
         a = { "<cmd>lua ToggleAllFolds()<CR>", "toggle all folds" },
-        -- o = { "zo", "open fold" },
-        -- c = { "zc", "close fold" },
-        -- R = { "zR", "open all folds" },
-        -- M = { "zM", "close all folds" },
       },
       S = {
         name = "SESSIONS",
