@@ -129,6 +129,30 @@ end
 -- Create a functions table for requiring from other modules
 local M = {}
 
+-- Custom Markdown header-based folding function
+-- This creates folds at each heading level (# Header)
+function _G.MarkdownFoldLevel()
+  local line = vim.fn.getline(vim.v.lnum)
+  local next_line = vim.fn.getline(vim.v.lnum + 1)
+
+  -- Check for markdown headings (### style)
+  local level = line:match("^(#+)%s")
+  if level then
+    return ">" .. string.len(level)
+  end
+
+  -- Check for markdown headings (underline style)
+  if next_line and next_line:match("^=+$") then
+    return ">1"
+  end
+  if next_line and next_line:match("^-+$") then
+    return ">2"
+  end
+
+  -- Keep current level for indented content
+  return "="
+end
+
 -- Function to toggle foldenable with notification
 function M.ToggleFoldEnable()
   -- Toggle the foldenable option

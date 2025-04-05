@@ -78,32 +78,32 @@ return {
         -- This is now handled globally by the ToggleFoldingMethod function in functions.lua
         -- and mapped to <leader>mf in which-key.lua
 
-        -- Toggle individual fold under cursor
-        vim.keymap.set("n", "<leader>mz", function()
-          -- Try to toggle fold safely
-          local status, err = pcall(function()
-            -- Get current line
-            local line = vim.fn.line(".")
-            local fold_closed = vim.fn.foldclosed(line)
-
-            if fold_closed == -1 then
-              -- No closed fold at cursor, try to create/close one
-              vim.cmd("normal! zc")
-            else
-              -- Fold exists and is closed, open it
-              vim.cmd("normal! zo")
-            end
-          end)
-
-          if not status then
-            -- Handle the case where there are no folds
-            if string.match(tostring(err), "E490") then
-              vim.notify("No fold found at cursor", vim.log.levels.INFO)
-            else
-              vim.notify("Error toggling fold: " .. tostring(err), vim.log.levels.ERROR)
-            end
-          end
-        end, { buffer = bufnr, desc = "Toggle fold under cursor" })
+        -- -- Toggle individual fold under cursor
+        -- vim.keymap.set("n", "<leader>mz", function()
+        --   -- Try to toggle fold safely
+        --   local status, err = pcall(function()
+        --     -- Get current line
+        --     local line = vim.fn.line(".")
+        --     local fold_closed = vim.fn.foldclosed(line)
+        --
+        --     if fold_closed == -1 then
+        --       -- No closed fold at cursor, try to create/close one
+        --       vim.cmd("normal! zc")
+        --     else
+        --       -- Fold exists and is closed, open it
+        --       vim.cmd("normal! zo")
+        --     end
+        --   end)
+        --
+        --   if not status then
+        --     -- Handle the case where there are no folds
+        --     if string.match(tostring(err), "E490") then
+        --       vim.notify("No fold found at cursor", vim.log.levels.INFO)
+        --     else
+        --       vim.notify("Error toggling fold: " .. tostring(err), vim.log.levels.ERROR)
+        --     end
+        --   end
+        -- end, { buffer = bufnr, desc = "Toggle fold under cursor" })
 
         -- Also handle markdown specific keymaps
         if vim.fn.exists("*set_markdown_keymaps") == 1 then

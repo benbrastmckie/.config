@@ -145,6 +145,19 @@ Details will be included below for how to go about adapting this configuration f
 | `<S-h>`, `<S-l>`                     | Go to start/end of display line     |
 | `J`, `K`                             | Navigate display lines (with wrap)  |
 
+### Folding Keys
+
+| Key           | Action                                     |
+|---------------|-------------------------------------------|
+| `<leader>mf`  | Toggle folding method (manual/smart)       |
+| `<leader>mc`  | Toggle fold under cursor                   |
+| `<leader>ma`  | Toggle all folds open/closed               |
+| `za`          | Toggle fold under cursor (standard vim)    |
+| `zo`          | Open fold under cursor (standard vim)      |
+| `zc`          | Close fold under cursor (standard vim)     |
+| `zR`          | Open all folds (standard vim)              |
+| `zM`          | Close all folds (standard vim)             |
+
 ### Text Manipulation Keys
 
 | Key             | Action                            |
@@ -427,6 +440,21 @@ Avante AI can be an invaluable tool when modifying this configuration:
    ```
    I'm having an issue with [feature]. Here's the relevant configuration and error...
    ```
+
+### Folding System
+
+This configuration includes a smart folding system with the following features:
+
+1. **Performance-Focused**: Default folding method is `manual` for better performance
+2. **Smart Toggling**: Press `<leader>mf` to toggle between:
+   - Manual folding (better performance)
+   - Smart folding (expr for markdown, indent for other filetypes)
+3. **Persistent Settings**: Your folding preference persists between Neovim sessions
+4. **Markdown-Aware**: When smart folding is enabled for markdown files, folds will be created at headers
+5. **Convenience Mappings**: Use `<leader>ma` to toggle all folds open/closed
+
+The system is integrated throughout the configuration to provide a consistent experience
+across all file types while prioritizing performance.
 
 ### Testing Your Changes
 

@@ -22,31 +22,11 @@ require("nvim-surround").buffer_setup({
 -- prevents markdown from changing tabs to 4 spaces
 -- vim.g.markdown_recommended_style = 0
 
--- Custom Markdown header-based folding function
--- This creates folds at each heading level (# Header)
-function MarkdownFoldLevel()
-  local line = vim.fn.getline(vim.v.lnum)
-  local next_line = vim.fn.getline(vim.v.lnum + 1)
+-- MarkdownFoldLevel has been moved to lua/neotex/core/functions.lua
+-- Use the global _G.MarkdownFoldLevel() function instead
 
-  -- Check for markdown headings (### style)
-  local level = line:match("^(#+)%s")
-  if level then
-    return ">" .. string.len(level)
-  end
-
-  -- Check for markdown headings (underline style)
-  if next_line and next_line:match("^=+$") then
-    return ">1"
-  end
-  if next_line and next_line:match("^-+$") then
-    return ">2"
-  end
-
-  -- Keep current level for indented content
-  return "="
-end
-
--- <leader>ma is defined in which-key.lua
+-- Load the saved folding state for markdown
+require("neotex.core.functions").LoadFoldingState()
 
 -- Function to extract URLs from a line of text
 function _G.ExtractUrlsFromLine(line)
@@ -205,8 +185,6 @@ function _G.OpenUrlUnderCursor()
     return false
   end
 end
-
--- <leader>mu is defined in which-key.lua
 
 -- Add keybinding to open the URL under cursor with gx for familiar Vim behavior
 vim.keymap.set("n", "gx", ":lua OpenUrlUnderCursor()<CR>",
