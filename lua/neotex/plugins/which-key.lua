@@ -132,12 +132,14 @@ LSP (<leader>l)                                 | DESCRIPTION
 ----------------------------------------------------------------------------------
 MARKDOWN (<leader>m)                            | DESCRIPTION
 ----------------------------------------------------------------------------------
-<leader>ml - Lectic                             | Open Lectic interface
+<leader>ml - Run Lectic                         | Run Lectic on current file
+<leader>mn - New Lectic file                    | Create new Lectic file with template
+<leader>ms - Submit selection                   | Submit visual selection with user message
 <leader>mp - Markdown preview                   | Toggle markdown preview
 <leader>mu - Open URL                           | Open URL under cursor
-<leader>mf - Toggle folding                     | Toggle folding on/off with notification
-<leader>mc - Toggle fold                        | Toggle fold under cursor
 <leader>ma - Toggle all folds                   | Toggle all folds open/closed
+<leader>mf - Toggle fold                        | Toggle fold under cursor
+<leader>mt - Toggle folding method              | Switch between manual/smart folding
 
 ----------------------------------------------------------------------------------
 SESSIONS (<leader>S)                            | DESCRIPTION
@@ -176,7 +178,7 @@ RUN (<leader>r)                                 | DESCRIPTION
 <leader>rn - Next error                         | Go to next diagnostic/error
 <leader>rp - Previous error                     | Go to previous diagnostic/error
 <leader>rr - Reload configs                     | Reload Neovim configuration
-<leader>rs - Show notifications                 | Display notification history
+<leader>rm - Show messages                      | Display notification history
 
 ----------------------------------------------------------------------------------
 SURROUND (<leader>s)                            | DESCRIPTION
@@ -408,18 +410,18 @@ return {
       m = {
         name = "MARKDOWN",
         -- LECTIC COMMANDS
-        l = { "<cmd>lua CreateNewLecticFile()<CR>", "new lectic file" },
-        r = { "<cmd>Lectic<CR>", "run lectic on file" },
-        s = { "<cmd>lua SubmitLecticSection()<CR>", "submit lectic section" },
+        l = { "<cmd>Lectic<CR>", "run lectic on file" },
+        n = { "<cmd>lua CreateNewLecticFile()<CR>", "new lectic file" },
+        s = { "<cmd>lua SubmitLecticSelection()<CR>", "submit selection with message" },
 
         -- MARKDOWN/PREVIEW
         p = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
         u = { "<cmd>lua OpenUrlUnderCursor()<CR>", "open URL under cursor" },
 
         -- FOLDING
-        c = { "za", "toggle fold under cursor" },
-        f = { "<cmd>lua ToggleFoldingMethod()<CR>", "toggle folding method" },
         a = { "<cmd>lua ToggleAllFolds()<CR>", "toggle all folds" },
+        f = { "za", "toggle fold under cursor" },
+        t = { "<cmd>lua ToggleFoldingMethod()<CR>", "toggle folding method" },
       },
       S = {
         name = "SESSIONS",
@@ -462,7 +464,7 @@ return {
         n = { "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", "next" },
         p = { "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", "prev" },
         r = { "<cmd>ReloadConfig<cr>", "reload configs" },
-        s = { "<cmd>lua Snacks.notifier.show_history()<cr>", "show notifications" },
+        m = { "<cmd>lua Snacks.notifier.show_history()<cr>", "show messages" },
         -- d = { "function() vim.diagnostic.open_float(0, { scope = 'line', header = false, focus = false }) end", "diagnostics" },
       },
       s = {
