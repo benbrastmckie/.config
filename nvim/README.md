@@ -150,18 +150,18 @@ Details will be included below for how to go about adapting this configuration f
 ### Folding Keys
 
 | Key           | Action                                     |
-|---------------|-------------------------------------------|
-| `<leader>mf`  | Toggle folding method (manual/smart)       |
-| `<leader>mc`  | Toggle fold under cursor                   |
+|---------------|--------------------------------------------|
+| `<leader>mt`  | Toggle folding method (manual/smart)       |
+| `<leader>mf`  | Toggle fold under cursor                   |
 | `<leader>ma`  | Toggle all folds open/closed               |
 
 ### Lectic Keys (AI-assisted markdown)
 
-| Key           | Action                                       |
-|---------------|--------------------------------------------- |
-| `<leader>ml`  | Create new Lectic file                       |
-| `<leader>mr`  | Run Lectic on entire file                    |
-| `<leader>ms`  | Submit current Lectic section                |
+| Key           | Action                             |
+|---------------|------------------------------------|
+| `<leader>mn`  | Create new Lectic file             |
+| `<leader>ml`  | Run Lectic on entire file          |
+| `<leader>ms`  | Submit selection with user message |
 
 ### Text Manipulation Keys
 
@@ -306,7 +306,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>lc`     | Show available code actions   |
 | `<leader>ld`     | Jump to symbol definition     |
 | `<leader>lD`     | Jump to symbol declaration    |
-| `<leader>lh`     | Show documentation under cursor|
+| `<leader>lh`     | Show documentation under curso|
 | `<leader>li`     | Find implementations of symbol|
 | `<leader>lk`     | Stop language server          |
 | `<leader>ll`     | Show errors for current line  |
@@ -319,14 +319,16 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 
 #### Markdown (`<leader>m`)
 
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>ml`     | Open Lectic interface         |
-| `<leader>mp`     | Toggle markdown preview       |
-| `<leader>mu`     | Open URL under cursor         |
-| `<leader>mf`     | Toggle folding on/off         |
-| `<leader>mc`     | Toggle fold under cursor      |
-| `<leader>ma`     | Toggle all folds open/closed  |
+| Key              | Action                              |
+|------------------|-------------------------------------|
+| `<leader>ml`     | Run Lectic on current file          |
+| `<leader>mn`     | Create new Lectic file with template|
+| `<leader>ms`     | Submit selection with user message  |
+| `<leader>mp`     | Toggle markdown preview             |
+| `<leader>mu`     | Open URL under cursor               |
+| `<leader>mf`     | Toggle fold under cursor            |
+| `<leader>ma`     | Toggle all folds open/closed        |
+| `<leader>mt`     | Toggle folding method               |
 
 #### Sessions (`<leader>S`)
 
@@ -361,15 +363,15 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 
 #### Run (`<leader>r`)
 
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>rc`     | Clear Neovim plugin cache     |
-| `<leader>re`     | Show errors in location list  |
-| `<leader>rk`     | Remove all plugin files       |
-| `<leader>rn`     | Go to next diagnostic/error   |
+| Key              | Action                         |
+|------------------|------------------------------- |
+| `<leader>rc`     | Clear Neovim plugin cache      |
+| `<leader>re`     | Show errors in location list   |
+| `<leader>rk`     | Remove all plugin files        |
+| `<leader>rn`     | Go to next diagnostic/error    |
 | `<leader>rp`     | Go to previous diagnostic/error|
-| `<leader>rr`     | Reload Neovim configuration   |
-| `<leader>rs`     | Display notification history  |
+| `<leader>rr`     | Reload Neovim configuration    |
+| `<leader>rm`     | Display notification history   |
 
 #### Surround (`<leader>s`)
 
@@ -381,15 +383,15 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 
 #### Templates (`<leader>t`)
 
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>tp`     | Insert paper template         |
-| `<leader>tl`     | Insert letter template        |
-| `<leader>tg`     | Insert glossary template      |
-| `<leader>th`     | Insert handout template       |
-| `<leader>tb`     | Insert beamer presentation    |
-| `<leader>ts`     | Insert subfile template       |
-| `<leader>tr`     | Insert root document template |
+| Key              | Action                         |
+|------------------|--------------------------------|
+| `<leader>tp`     | Insert paper template          |
+| `<leader>tl`     | Insert letter template         |
+| `<leader>tg`     | Insert glossary template       |
+| `<leader>th`     | Insert handout template        |
+| `<leader>tb`     | Insert beamer presentation     |
+| `<leader>ts`     | Insert subfile template        |
+| `<leader>tr`     | Insert root document template  |
 | `<leader>tm`     | Insert multiple answer template|
 
 ## Making Configuration Changes
@@ -457,8 +459,8 @@ This configuration includes a smart folding system with the following features:
 4. **Markdown-Aware**: When smart folding is enabled for markdown files, folds will be created at headers
 5. **Comprehensive Mappings**:
    - `<leader>ma` - Toggle all folds open/closed
-   - `<leader>mc` - Toggle fold under cursor
-   - `<leader>mf` - Toggle manual folding
+   - `<leader>mf` - Toggle fold under cursor
+   - `<leader>mt` - Toggle folding method (manual/smart)
    - All standard Vim folding keys (za, zo, zc, zR, zM) also work
 
 The system is integrated throughout the configuration to provide a consistent experience
@@ -484,10 +486,15 @@ This configuration includes a comprehensive URL handling system for all file typ
 
 Lectic provides AI-assisted writing for markdown files with these features:
 
-1. **Quick File Creation**: `<leader>ml` creates a new Lectic markdown file
-2. **Full-File Processing**: `<leader>mr` runs Lectic on the entire file
-3. **Section Processing**: `<leader>ms` submits only the current section
-4. **Persistent Settings**: All settings are integrated with the markdown workflow
+1. **Quick File Creation**: `<leader>mn` creates a new Lectic file with a template
+2. **Full-File Processing**: `<leader>ml` runs Lectic on the entire file
+3. **Visual Selection Processing**: 
+   - Select text in visual mode (`v`, `V`, or `<C-v>`)
+   - Press `<Esc>` to exit visual mode
+   - Press `<leader>ms` to process the previously selected text
+   - You'll be prompted to add a message/question about the selection in a multi-line input box
+   - Both the selected text and your message will be added to the end of the file with appropriate formatting
+   - Lectic will then process the entire file
 
 Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
 
