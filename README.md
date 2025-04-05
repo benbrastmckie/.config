@@ -119,16 +119,18 @@ Details will be included below for how to go about adapting this configuration f
 
 ### General Key Mappings
 
-| Key           | Action                            |
-|---------------|-----------------------------------|
-| `<Space>`     | Leader key for command sequences  |
-| `<C-t>`       | Toggle terminal window            |
-| `<C-s>`       | Show spelling suggestions         |
-| `<CR>` (Enter)| Clear search highlighting         |
-| `<C-p>`       | Find files with Telescope         |
-| `<C-;>`       | Toggle comments for line/selection|
-| `<S-m>`       | Show help for word under cursor   |
-| `<C-m>`       | Search man pages with Telescope   |
+| Key             | Action                            |
+|-----------------|-----------------------------------|
+| `<Space>`       | Leader key for command sequences  |
+| `<C-t>`         | Toggle terminal window            |
+| `<C-s>`         | Show spelling suggestions         |
+| `<CR>` (Enter)  | Clear search highlighting         |
+| `<C-p>`         | Find files with Telescope         |
+| `<C-;>`         | Toggle comments for line/selection|
+| `<S-m>`         | Show help for word under cursor   |
+| `<C-m>`         | Search man pages with Telescope   |
+| `gx`            | Open URL under cursor             |
+| `<C-LeftMouse>` | Open URL at mouse click position  |
 
 ### Navigation Keys
 
@@ -191,7 +193,6 @@ Details will be included below for how to go about adapting this configuration f
 | `d` (visual mode)    | Delete selection and recalculate     |
 | `<C-n>`              | Toggle checkbox status ([ ] -> [x])  |
 | `<C-c>`              | Recalculate list numbering           |
-| `<C-LeftMouse>`      | Open URL at mouse click position     |
 
 ### Leader Key Mappings
 
@@ -462,6 +463,22 @@ This configuration includes a smart folding system with the following features:
 
 The system is integrated throughout the configuration to provide a consistent experience
 across all file types while prioritizing performance.
+
+### URL Handling System
+
+This configuration includes a comprehensive URL handling system for all file types:
+
+1. **Universal Functionality**: Works in any file type, not just markdown
+2. **Multiple URL Types**: Recognizes various URL formats:
+   - Standard URLs (https://, http://, file://)
+   - Markdown links ([text](url))
+   - HTML links (<a href="url">text</a>)
+   - Email addresses (user@example.com)
+3. **Convenient Access**:
+   - Press `gx` to open URL under cursor
+   - `Ctrl+Click` to open URL at mouse position
+   - `<leader>mu` to open URL under cursor via keybinding
+4. **Cross-Platform**: Works on Linux, macOS, and Windows
 
 ### Lectic Integration
 
