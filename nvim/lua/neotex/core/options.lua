@@ -55,7 +55,7 @@ local options = {
   autoread = true,
 
   -- FOLDING
-  foldenable = false,      -- Disable folding by default
+  foldenable = true,      -- Disable folding by default
   foldmethod = "manual",   -- Set manual folding
   foldlevel = 99,         -- Open all folds by default
 
@@ -71,6 +71,15 @@ vim.api.nvim_create_autocmd({"FileType"}, {
   pattern = {"markdown", "lectic.markdown"},
   callback = function()
     vim.opt_local.tagfunc = ""
+  end
+})
+
+-- Load the persistent folding state when entering any buffer
+vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+  pattern = {"*"},
+  callback = function()
+    -- Call the function to load the folding state
+    require("neotex.core.functions").LoadFoldingState()
   end
 })
 

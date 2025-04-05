@@ -12,6 +12,9 @@
   - ai video
   - website
   - wiki
+- [ ] yanky
+  - [ ] replace?
+  - [ ] fix error in kitty
 - [ ] mini
   - [ ] a/i
   - [ ] bracketed
@@ -48,7 +51,6 @@
   - [ ] fix loop index
   - [x] add in-progress field
   - [x] remove box command
-- [ ] folding
 - [ ] github issues
   - [ ] consolidate add-ons
   - [ ] forks #73
@@ -65,6 +67,9 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+- [x] folding
+  - [x] refine mappings
+- [x] lectic
 - [x] PdfAnnots in nixos
 - [x] indents
   - [x] stop indents when adding brackets
@@ -189,6 +194,3 @@
   - [x] need to extend cycle
 * [x] lsp no menu without typing
   - [x] could refine cmd-commandline plugin which was the problem
-* docs
-  - update cheatsheet
-  - create intro videos

@@ -101,3 +101,127 @@ end
 
 -- Note: Avante functionality has been moved to lua/neotex/plugins/ai/avante-support.lua
 
+-- Function to toggle between fully open and fully closed folds
+function _G.ToggleAllFolds()
+  -- Get current state by checking if any folds are closed
+  local all_open = true
+  local line_count = vim.fn.line('$')
+  
+  for i = 1, line_count do
+    if vim.fn.foldclosed(i) ~= -1 then
+      -- Found a closed fold, so not all are open
+      all_open = false
+      break
+    end
+  end
+  
+  if all_open then
+    -- All folds are open, so close them all
+    vim.cmd('normal! zM')
+    vim.notify("All folds closed", vim.log.levels.INFO)
+  else
+    -- Some folds are closed, so open them all
+    vim.cmd('normal! zR')
+    vim.notify("All folds opened", vim.log.levels.INFO)
+  end
+end
+
+-- Create a functions table for requiring from other modules
+local M = {}
+
+-- Function to toggle foldenable with notification
+function M.ToggleFoldEnable()
+  -- Toggle the foldenable option
+  vim.wo.foldenable = not vim.wo.foldenable
+  
+  -- Show notification about the new state
+  if vim.wo.foldenable then
+    vim.notify("Folding enabled", vim.log.levels.INFO)
+  else
+    vim.notify("Folding disabled", vim.log.levels.INFO)
+  end
+end
+
+-- Function to toggle between manual and expr folding method
+-- The state is persisted between sessions for all filetypes
+function _G.ToggleFoldingMethod()
+  local cache_dir = vim.fn.stdpath("cache")
+  local fold_state_file = cache_dir .. "/folding_state"
+  
+  -- Ensure the cache directory exists
+  vim.fn.mkdir(cache_dir, "p")
+  
+  -- The current folding method
+  local current_method = vim.wo.foldmethod
+  local new_method = ""
+  
+  -- Toggle the folding method
+  if current_method == "manual" then
+    -- For markdown files, we use our custom expression
+    if vim.bo.filetype == "markdown" or vim.bo.filetype == "lectic.markdown" then
+      new_method = "expr"
+      vim.wo.foldmethod = "expr"
+      vim.wo.foldexpr = "v:lua.MarkdownFoldLevel()"
+      vim.notify("Folding enabled (expr with markdown support)", vim.log.levels.INFO)
+    else
+      -- For other filetypes, use indent folding which is generally useful
+      new_method = "indent"
+      vim.wo.foldmethod = "indent"
+      vim.notify("Folding enabled (indent)", vim.log.levels.INFO)
+    end
+    
+    -- Save the state to file
+    local file = io.open(fold_state_file, "w")
+    if file then
+      file:write(new_method)
+      file:close()
+    end
+  else
+    new_method = "manual"
+    vim.wo.foldmethod = "manual"
+    vim.notify("Folding set to manual", vim.log.levels.INFO)
+    
+    -- Save the state to file
+    local file = io.open(fold_state_file, "w")
+    if file then
+      file:write("manual")
+      file:close()
+    end
+  end
+  
+  -- Ensure folds are visible (whether open or closed)
+  vim.wo.foldenable = true
+end
+
+-- Function to load the saved folding state
+function M.LoadFoldingState()
+  local cache_dir = vim.fn.stdpath("cache")
+  local fold_state_file = cache_dir .. "/folding_state"
+  
+  -- Check if the state file exists
+  if vim.fn.filereadable(fold_state_file) == 1 then
+    local file = io.open(fold_state_file, "r")
+    if file then
+      local state = file:read("*all")
+      file:close()
+      
+      -- Apply the saved state
+      if state == "expr" and (vim.bo.filetype == "markdown" or vim.bo.filetype == "lectic.markdown") then
+        vim.wo.foldmethod = "expr"
+        vim.wo.foldexpr = "v:lua.MarkdownFoldLevel()"
+      elseif state == "indent" then
+        vim.wo.foldmethod = "indent"
+      else
+        vim.wo.foldmethod = "manual"
+      end
+    end
+  end
+  
+  -- Ensure foldenable is always set to true
+  vim.wo.foldenable = true
+  -- Start with all folds open for better usability
+  vim.wo.foldlevel = 99
+end
+
+-- Return the module
+return M

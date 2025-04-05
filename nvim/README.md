@@ -1,4 +1,4 @@
-# NeoTex - Neovim CheatSheet
+# NeoVim Configuration and CheatSheet
 
 A feature-rich Neovim configuration optimized for LaTeX, Markdown, AI integration, and NixOS.
 This setup provides a streamlined environment for academic writing, code development, and system management.
@@ -36,6 +36,8 @@ It supports multiple AI providers including Claude (Anthropic), GPT (OpenAI), an
 - **Change Provider**: Use `<leader>hd` to set a different AI provider (Claude, OpenAI, Gemini)
 - **System Prompts**: Manage system prompts with `<leader>hp` (select) or `<leader>he` (edit)
 - **Stop Generation**: If the AI is taking too long, press `<leader>hi` to interrupt the generation
+
+More details are provided in [Making Configuration Changes](#making-configuration-changes) below.
 
 ## Feature Overview
 
@@ -173,18 +175,7 @@ Details will be included below for how to go about adapting this configuration f
 | `d` (visual mode)    | Delete selection and recalculate     |
 | `<C-n>`              | Toggle checkbox status ([ ] -> [x])  |
 | `<C-c>`              | Recalculate list numbering           |
-| `gx`                 | Open URL under cursor                |
 | `<C-LeftMouse>`      | Open URL at mouse click position     |
-
-### Folding Keys (Markdown & Lectic)
-
-| Key                  | Action                               |
-|----------------------|--------------------------------------|
-| `za`                 | Toggle fold under cursor             |
-| `zo`                 | Open fold under cursor               |
-| `zc`                 | Close fold under cursor              |
-| `zR`                 | Open all folds in file               |
-| `zM`                 | Close all folds in file              |
 
 ### Leader Key Mappings
 
@@ -313,17 +304,12 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 
 | Key              | Action                        |
 |------------------|-------------------------------|
-| `<leader>ml`     | Open Lectic interface         |
-| `<leader>mm`     | Toggle markdown preview       |
-| `<leader>mu`     | Open URL under cursor         |
-| `<leader>mf`     | Toggle folding on/off         |
-| `<leader>mF`     | Create folds based on headers |
-| `<leader>mT`     | Fold tool calls (Lectic)      |
-| `<leader>mz`     | Toggle fold under cursor      |
-| `<leader>mo`     | Open fold under cursor        |
-| `<leader>mc`     | Close fold under cursor       |
-| `<leader>mR`     | Open all folds in file        |
-| `<leader>mM`     | Close all folds in file       |
+| `<leader>ml`     | Open Lectic interface        |
+| `<leader>mp`     | Toggle markdown preview       |
+| `<leader>mu`     | Open URL under cursor        |
+| `<leader>mf`     | Toggle folding on/off        |
+| `<leader>mc`     | Toggle fold under cursor     |
+| `<leader>ma`     | Toggle all folds open/closed  |
 
 #### Sessions (`<leader>S`)
 
