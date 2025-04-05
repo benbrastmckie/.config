@@ -16,17 +16,20 @@ local default_prompts = {
     expert = {
       name = "Expert",
       description = "Expert mathematician and programmer",
-      prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes."
+      prompt =
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes."
     },
     tutor = {
       name = "Tutor",
       description = "Educational assistant",
-      prompt = "You are a patient and knowledgeable tutor. Explain concepts clearly with examples. When I ask questions, provide step-by-step explanations that build understanding rather than just giving answers. If I'm making a mistake, gently correct me and explain why. Focus on clarity and educational value in your responses."
+      prompt =
+      "You are a patient and knowledgeable tutor. Explain concepts clearly with examples. When I ask questions, provide step-by-step explanations that build understanding rather than just giving answers. If I'm making a mistake, gently correct me and explain why. Focus on clarity and educational value in your responses."
     },
     coder = {
       name = "Coder",
       description = "Focused on code and implementation",
-      prompt = "You are an expert software engineer with deep knowledge of various programming languages, algorithms, and software design principles. Focus primarily on providing high-quality, efficient code solutions with brief explanations. Keep explanations concise and prioritize showing working code over lengthy discussions. Suggest optimizations where appropriate. Provide error handling where needed. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission."
+      prompt =
+      "You are an expert software engineer with deep knowledge of various programming languages, algorithms, and software design principles. Focus primarily on providing high-quality, efficient code solutions with brief explanations. Keep explanations concise and prioritize showing working code over lengthy discussions. Suggest optimizations where appropriate. Provide error handling where needed. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission."
     }
   }
 }
@@ -42,30 +45,30 @@ local function save_default_prompts()
       return false
     end
   end
-  
+
   -- Convert to JSON
   local ok, json = pcall(vim.fn.json_encode, default_prompts)
   if not ok or not json then
     vim.notify("Failed to encode default prompts to JSON", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Format JSON for better readability
   local formatted_json = json:gsub('{"', '{\n  "')
-                             :gsub('","', '",\n  "')
-                             :gsub('":{"', '": {\n    "')
-                             :gsub('","', '",\n    "')
-                             :gsub('}}', '}\n}')
-                             :gsub('},', '},\n  ')
-                             :gsub('}}', '}\n}')
-  
+      :gsub('","', '",\n  "')
+      :gsub('":{"', '": {\n    "')
+      :gsub('","', '",\n    "')
+      :gsub('}}', '}\n}')
+      :gsub('},', '},\n  ')
+      :gsub('}}', '}\n}')
+
   -- Write to file
   local file = io.open(prompts_file, "w")
   if not file then
     vim.notify("Could not open prompts file for writing", vim.log.levels.ERROR)
     return false
   end
-  
+
   file:write(formatted_json)
   file:close()
   return true
@@ -77,7 +80,7 @@ local function ensure_prompts_file()
   if vim.fn.filereadable(prompts_file) == 1 then
     return true
   end
-  
+
   -- Create the file with default prompts using the direct save function
   local ok = save_default_prompts()
   if ok then
@@ -104,7 +107,7 @@ function M.load_prompts()
     save_default_prompts()
     return vim.deepcopy(default_prompts)
   end
-  
+
   -- Parse JSON
   local ok, prompts = pcall(vim.fn.json_decode, table.concat(content, '\n'))
   if not ok or not prompts then
@@ -112,7 +115,7 @@ function M.load_prompts()
     save_default_prompts()
     return vim.deepcopy(default_prompts)
   end
-  
+
   return prompts
 end
 
@@ -123,30 +126,30 @@ function M.save_prompts(prompts)
     vim.notify("Invalid prompts data", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Convert to JSON
   local ok, json = pcall(vim.fn.json_encode, prompts)
   if not ok or not json then
     vim.notify("Failed to encode prompts to JSON", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Format JSON for better readability
   local formatted_json = json:gsub('{"', '{\n  "')
-                             :gsub('","', '",\n  "')
-                             :gsub('":{"', '": {\n    "')
-                             :gsub('","', '",\n    "')
-                             :gsub('}}', '}\n}')
-                             :gsub('},', '},\n  ')
-                             :gsub('}}', '}\n}')
-  
+      :gsub('","', '",\n  "')
+      :gsub('":{"', '": {\n    "')
+      :gsub('","', '",\n    "')
+      :gsub('}}', '}\n}')
+      :gsub('},', '},\n  ')
+      :gsub('}}', '}\n}')
+
   -- Write to file
   local file = io.open(prompts_file, "w")
   if not file then
     vim.notify("Could not open prompts file for writing", vim.log.levels.ERROR)
     return false
   end
-  
+
   file:write(formatted_json)
   file:close()
   return true
@@ -158,7 +161,7 @@ function M.get_prompt(id)
   if not prompts or not prompts.prompts or not prompts.prompts[id] then
     return nil
   end
-  
+
   return prompts.prompts[id]
 end
 
@@ -168,7 +171,7 @@ function M.get_default()
   if not prompts or not prompts.default or not prompts.prompts then
     return nil
   end
-  
+
   local default_id = prompts.default
   return prompts.prompts[default_id], default_id
 end
@@ -176,22 +179,22 @@ end
 -- Set a prompt as default
 function M.set_default(id)
   local prompts = M.load_prompts()
-  
+
   -- Check if the prompt exists
   if not prompts.prompts[id] then
     vim.notify("Prompt '" .. id .. "' does not exist", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Update default
   prompts.default = id
-  
+
   -- Save changes
   if M.save_prompts(prompts) then
     vim.notify("Set '" .. prompts.prompts[id].name .. "' as default system prompt", vim.log.levels.INFO)
     return true
   end
-  
+
   return false
 end
 
@@ -203,19 +206,19 @@ function M.apply_prompt(id)
     vim.notify("Prompt '" .. id .. "' not found", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Update Avante's configuration
   local ok, config = pcall(require, "avante.config")
   if ok and config and config.override then
     config.override({ system_prompt = prompt_data.prompt })
-    
+
     -- Show notification
     vim.notify("Applied system prompt: " .. prompt_data.name, vim.log.levels.INFO)
     return true
   else
     vim.notify("Failed to apply system prompt - Avante not available", vim.log.levels.ERROR)
   end
-  
+
   return false
 end
 
@@ -226,29 +229,29 @@ function M.create_prompt(data)
     vim.notify("Invalid prompt data", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Load existing prompts
   local prompts = M.load_prompts()
-  
+
   -- Check if ID already exists
   if prompts.prompts[data.id] then
     vim.notify("A prompt with ID '" .. data.id .. "' already exists", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Add new prompt
   prompts.prompts[data.id] = {
     name = data.name,
     description = data.description or "",
     prompt = data.prompt
   }
-  
+
   -- Save changes
   if M.save_prompts(prompts) then
     vim.notify("Created new system prompt: " .. data.name, vim.log.levels.INFO)
     return true
   end
-  
+
   return false
 end
 
@@ -259,29 +262,29 @@ function M.edit_prompt(id, data)
     vim.notify("Invalid prompt data", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Load existing prompts
   local prompts = M.load_prompts()
-  
+
   -- Check if prompt exists
   if not prompts.prompts[id] then
     vim.notify("Prompt '" .. id .. "' does not exist", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Update prompt
   prompts.prompts[id] = {
     name = data.name,
     description = data.description or prompts.prompts[id].description or "",
     prompt = data.prompt
   }
-  
+
   -- Save changes
   if M.save_prompts(prompts) then
     vim.notify("Updated system prompt: " .. data.name, vim.log.levels.INFO)
     return true
   end
-  
+
   return false
 end
 
@@ -289,31 +292,31 @@ end
 function M.delete_prompt(id)
   -- Load existing prompts
   local prompts = M.load_prompts()
-  
+
   -- Check if prompt exists
   if not prompts.prompts[id] then
     vim.notify("Prompt '" .. id .. "' does not exist", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Check if it's the default
   if prompts.default == id then
     vim.notify("Cannot delete the default prompt", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Store name for notification
   local name = prompts.prompts[id].name
-  
+
   -- Delete prompt
   prompts.prompts[id] = nil
-  
+
   -- Save changes
   if M.save_prompts(prompts) then
     vim.notify("Deleted system prompt: " .. name, vim.log.levels.INFO)
     return true
   end
-  
+
   return false
 end
 
@@ -325,10 +328,10 @@ function M.show_prompt_selection()
     vim.notify("No system prompts available", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Get default prompt ID
   local default_id = prompts.default
-  
+
   -- Create selection items
   local items = {}
   local display_items = {}
@@ -343,24 +346,24 @@ function M.show_prompt_selection()
     end
     display_items[id] = display
   end
-  
+
   -- Sort items alphabetically by name
   table.sort(items, function(a, b)
     return display_items[a] < display_items[b]
   end)
-  
+
   -- Show selection UI
   vim.ui.select(items, {
     prompt = "Select a system prompt:",
     format_item = function(id) return display_items[id] end
   }, function(id)
     if not id then return end -- User cancelled
-    
+
     -- Apply the selected prompt
     M.apply_prompt(id)
-    
+
     -- Ask if it should be set as default
-    vim.ui.select({"Yes", "No"}, {
+    vim.ui.select({ "Yes", "No" }, {
       prompt = "Set as default for future sessions?",
     }, function(choice)
       if choice == "Yes" then
@@ -374,7 +377,7 @@ end
 function M.show_prompt_editor(edit_id)
   -- Load prompts
   local prompts = M.load_prompts()
-  
+
   -- If editing, check if prompt exists
   local edit_prompt = nil
   if edit_id then
@@ -384,10 +387,10 @@ function M.show_prompt_editor(edit_id)
       return
     end
   end
-  
+
   -- Determine mode (create/edit)
   local mode = edit_id and "edit" or "create"
-  
+
   -- If creating, first ask for ID
   if mode == "create" then
     vim.ui.input({
@@ -395,13 +398,13 @@ function M.show_prompt_editor(edit_id)
       default = "",
     }, function(id)
       if not id or id == "" then return end -- User cancelled
-      
+
       -- Check if ID already exists
       if prompts.prompts[id] then
         vim.notify("A prompt with ID '" .. id .. "' already exists", vim.log.levels.ERROR)
         return
       end
-      
+
       -- Now proceed with prompt creation
       M.prompt_editor_fields(id, nil)
     end)
@@ -414,25 +417,25 @@ end
 -- Helper for prompt editor fields
 function M.prompt_editor_fields(id, existing)
   local mode = existing and "edit" or "create"
-  
+
   -- Ask for name
   vim.ui.input({
     prompt = "Prompt name:",
     default = existing and existing.name or "",
   }, function(name)
     if not name or name == "" then return end -- User cancelled
-    
+
     -- Ask for description
     vim.ui.input({
       prompt = "Description:",
       default = existing and existing.description or "",
     }, function(description)
       if not description then return end -- User cancelled
-      
+
       -- Create a buffer for editing the prompt text
       local buf = vim.api.nvim_create_buf(false, true)
       vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-      
+
       -- Set initial content if editing
       if existing and existing.prompt then
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(existing.prompt, '\n'))
@@ -445,16 +448,16 @@ function M.prompt_editor_fields(id, existing)
           "IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission."
         })
       end
-      
+
       -- Set buffer filetype for syntax highlighting
-      vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-      
+      vim.bo[buf].filetype = 'markdown'
+
       -- Create a window with the buffer
       local width = math.floor(vim.o.columns * 0.8)
       local height = math.floor(vim.o.lines * 0.8)
       local row = math.floor((vim.o.lines - height) / 2)
       local col = math.floor((vim.o.columns - width) / 2)
-      
+
       local opts = {
         relative = 'editor',
         width = width,
@@ -466,13 +469,13 @@ function M.prompt_editor_fields(id, existing)
         title = ' ' .. (mode == "create" and "Create" or "Edit") .. ' System Prompt ',
         title_pos = 'center',
       }
-      
+
       local win = vim.api.nvim_open_win(buf, true, opts)
-      
+
       -- Set window options
       vim.api.nvim_win_set_option(win, 'wrap', true)
       vim.api.nvim_win_set_option(win, 'cursorline', true)
-      
+
       -- Add prompt-specific mappings
       vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>', '', {
         noremap = true,
@@ -480,10 +483,10 @@ function M.prompt_editor_fields(id, existing)
           -- Get buffer content
           local content = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
           local prompt_text = table.concat(content, '\n')
-          
+
           -- Close the window
           vim.api.nvim_win_close(win, true)
-          
+
           -- Prepare data
           local data = {
             id = id,
@@ -491,7 +494,7 @@ function M.prompt_editor_fields(id, existing)
             description = description,
             prompt = prompt_text
           }
-          
+
           -- Create or update prompt
           if mode == "create" then
             M.create_prompt(data)
@@ -500,7 +503,7 @@ function M.prompt_editor_fields(id, existing)
           end
         end
       })
-      
+
       vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '', {
         noremap = true,
         callback = function()
@@ -508,10 +511,10 @@ function M.prompt_editor_fields(id, existing)
           vim.notify("Cancelled prompt " .. mode, vim.log.levels.INFO)
         end
       })
-      
+
       -- Add instructions at the top of the window
       local notify_msg = "Edit the system prompt text. Press ENTER to save, ESC to cancel."
-      vim.api.nvim_echo({{notify_msg, "Type"}}, false, {})
+      vim.api.nvim_echo({ { notify_msg, "Type" } }, false, {})
     end)
   end)
 end
@@ -520,22 +523,22 @@ end
 function M.show_prompt_manager()
   -- Load prompts
   local prompts = M.load_prompts()
-  
+
   -- Prepare main menu options
   local main_options = {
-    { label = "Switch Prompt", action = "switch" },
+    { label = "Switch Prompt",     action = "switch" },
     { label = "Create New Prompt", action = "create" },
-    { label = "Edit Prompt", action = "edit_menu" },
-    { label = "Delete Prompt", action = "delete_menu" },
+    { label = "Edit Prompt",       action = "edit_menu" },
+    { label = "Delete Prompt",     action = "delete_menu" },
   }
-  
+
   -- Show main selection UI
   vim.ui.select(main_options, {
     prompt = "System Prompts Manager:",
     format_item = function(item) return item.label end
   }, function(selected)
     if not selected then return end -- User cancelled
-    
+
     if selected.action == "switch" then
       -- Show prompt selection menu
       M.show_prompt_selection()
@@ -557,35 +560,35 @@ function M.show_edit_submenu(prompts)
   if not prompts then
     prompts = M.load_prompts()
   end
-  
+
   -- Prepare edit options
   local edit_options = {}
-  
+
   -- Add existing prompts to edit
   for id, prompt in pairs(prompts.prompts) do
-    table.insert(edit_options, { 
+    table.insert(edit_options, {
       label = prompt.name,
-      id = id 
+      id = id
     })
   end
-  
+
   -- Sort options alphabetically by name
   table.sort(edit_options, function(a, b)
     return a.label < b.label
   end)
-  
+
   if #edit_options == 0 then
     vim.notify("No prompts available to edit", vim.log.levels.WARN)
     return
   end
-  
+
   -- Show selection UI
   vim.ui.select(edit_options, {
     prompt = "Select prompt to edit:",
     format_item = function(item) return item.label end
   }, function(selected)
     if not selected then return end -- User cancelled
-    
+
     -- Show prompt editor for the selected prompt
     M.show_prompt_editor(selected.id)
   end)
@@ -596,39 +599,39 @@ function M.show_delete_submenu(prompts)
   if not prompts then
     prompts = M.load_prompts()
   end
-  
+
   -- Prepare delete options
   local delete_options = {}
-  
+
   -- Add existing prompts to delete (except default)
   for id, prompt in pairs(prompts.prompts) do
     if id ~= prompts.default then
-      table.insert(delete_options, { 
+      table.insert(delete_options, {
         label = prompt.name,
-        id = id 
+        id = id
       })
     end
   end
-  
+
   -- Sort options alphabetically by name
   table.sort(delete_options, function(a, b)
     return a.label < b.label
   end)
-  
+
   if #delete_options == 0 then
     vim.notify("No prompts available to delete (can't delete the default prompt)", vim.log.levels.WARN)
     return
   end
-  
+
   -- Show selection UI
   vim.ui.select(delete_options, {
     prompt = "Select prompt to delete:",
     format_item = function(item) return item.label end
   }, function(selected)
     if not selected then return end -- User cancelled
-    
+
     -- Confirm deletion
-    vim.ui.select({"Yes", "No"}, {
+    vim.ui.select({ "Yes", "No" }, {
       prompt = "Are you sure you want to delete prompt: " .. selected.label .. "?",
     }, function(choice)
       if choice == "Yes" then
@@ -645,3 +648,4 @@ function M.show_delete_submenu(prompts)
 end
 
 return M
+

@@ -61,12 +61,8 @@ return {
       callback = function(ev)
         local bufnr = ev.buf
 
-        -- Enable folding for Lectic files specifically, overriding global settings
-        -- This is buffer-local and won't affect other files
-        vim.opt_local.foldenable = true
-        vim.opt_local.foldmethod = "expr"
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-        vim.opt_local.foldlevel = 1 -- Show top-level headings but fold others
+        -- Use the global manual folding settings from options.lua
+        -- No need to set folding options specifically for lectic
 
         -- Also set standard markdown settings for this buffer
         vim.opt_local.conceallevel = 2     -- Enable concealing of syntax
@@ -78,17 +74,9 @@ return {
           require("lectic.submit").submit_current_section()
         end, { buffer = bufnr, desc = "Submit current Lectic section" })
 
-        -- Toggle all folding (foldenable) for the buffer
-        vim.keymap.set("n", "<leader>mf", function()
-          -- Toggle foldenable for the entire buffer
-          if vim.wo.foldenable then
-            vim.wo.foldenable = false
-            vim.notify("Folding disabled", vim.log.levels.INFO)
-          else
-            vim.wo.foldenable = true
-            vim.notify("Folding enabled", vim.log.levels.INFO)
-          end
-        end, { buffer = bufnr, desc = "Toggle all folding" })
+        -- Toggle folding method (manual <-> expr/indent)
+        -- This is now handled globally by the ToggleFoldingMethod function in functions.lua
+        -- and mapped to <leader>mf in which-key.lua
 
         -- Toggle individual fold under cursor
         vim.keymap.set("n", "<leader>mz", function()

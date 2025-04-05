@@ -133,16 +133,11 @@ LSP (<leader>l)                                 | DESCRIPTION
 MARKDOWN (<leader>m)                            | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>ml - Lectic                             | Open Lectic interface
-<leader>mm - Markdown preview                   | Toggle markdown preview
+<leader>mp - Markdown preview                   | Toggle markdown preview
 <leader>mu - Open URL                           | Open URL under cursor
-<leader>mf - Toggle folding                     | Enable/disable folding in buffer
-<leader>mF - Create folds                       | Create folds based on headers
-<leader>mT - Fold tool calls                    | Fold XML-like tool call blocks
-<leader>mz - Toggle fold                        | Toggle fold under cursor
-<leader>mo - Open fold                          | Open fold under cursor
-<leader>mc - Close fold                         | Close fold under cursor
-<leader>mR - Open all folds                     | Open all folds in file
-<leader>mM - Close all folds                    | Close all folds in file
+<leader>mf - Toggle folding                     | Toggle folding on/off with notification
+<leader>mc - Toggle fold                        | Toggle fold under cursor
+<leader>ma - Toggle all folds                   | Toggle all folds open/closed
 
 ----------------------------------------------------------------------------------
 SESSIONS (<leader>S)                            | DESCRIPTION
@@ -413,17 +408,16 @@ return {
       m = {
         name = "MARKDOWN",
         -- v = { "<cmd>Slides<CR>", "view slides" }, -- Slides plugin has been deprecated
-        l = { "<cmd>Lectic<CR>", "lectic" },
-        m = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
+        l = { "<cmd>Lectic<CR>", "run lectic" },
+        p = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
         u = { "<cmd>lua OpenUrlUnderCursor()<CR>", "open URL under cursor" },
-        f = { "<cmd>lua vim.wo.foldenable = not vim.wo.foldenable<CR>", "toggle folding" },
-        F = { "<cmd>lua CreateMarkdownFolds()<CR>", "create all folds" },
-        T = { "<cmd>lua FoldLecticToolCalls()<CR>", "fold tool calls" },
-        z = { "za", "toggle fold under cursor" },
-        o = { "zo", "open fold" },
-        c = { "zc", "close fold" },
-        R = { "zR", "open all folds" },
-        M = { "zM", "close all folds" },
+        c = { "za", "toggle fold under cursor" },
+        f = { "<cmd>lua ToggleFoldingMethod()<CR>", "toggle folding method" },
+        a = { "<cmd>lua ToggleAllFolds()<CR>", "toggle all folds" },
+        -- o = { "zo", "open fold" },
+        -- c = { "zc", "close fold" },
+        -- R = { "zR", "open all folds" },
+        -- M = { "zM", "close all folds" },
       },
       S = {
         name = "SESSIONS",
