@@ -152,11 +152,14 @@ Details will be included below for how to go about adapting this configuration f
 | `<leader>mf`  | Toggle folding method (manual/smart)       |
 | `<leader>mc`  | Toggle fold under cursor                   |
 | `<leader>ma`  | Toggle all folds open/closed               |
-| `za`          | Toggle fold under cursor (standard vim)    |
-| `zo`          | Open fold under cursor (standard vim)      |
-| `zc`          | Close fold under cursor (standard vim)     |
-| `zR`          | Open all folds (standard vim)              |
-| `zM`          | Close all folds (standard vim)             |
+
+### Lectic Keys (AI-assisted markdown)
+
+| Key           | Action                                       |
+|---------------|--------------------------------------------- |
+| `<leader>ml`  | Create new Lectic file                       |
+| `<leader>mr`  | Run Lectic on entire file                    |
+| `<leader>ms`  | Submit current Lectic section                |
 
 ### Text Manipulation Keys
 
@@ -317,11 +320,11 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 
 | Key              | Action                        |
 |------------------|-------------------------------|
-| `<leader>ml`     | Open Lectic interface        |
+| `<leader>ml`     | Open Lectic interface         |
 | `<leader>mp`     | Toggle markdown preview       |
-| `<leader>mu`     | Open URL under cursor        |
-| `<leader>mf`     | Toggle folding on/off        |
-| `<leader>mc`     | Toggle fold under cursor     |
+| `<leader>mu`     | Open URL under cursor         |
+| `<leader>mf`     | Toggle folding on/off         |
+| `<leader>mc`     | Toggle fold under cursor      |
 | `<leader>ma`     | Toggle all folds open/closed  |
 
 #### Sessions (`<leader>S`)
@@ -451,10 +454,25 @@ This configuration includes a smart folding system with the following features:
    - Smart folding (expr for markdown, indent for other filetypes)
 3. **Persistent Settings**: Your folding preference persists between Neovim sessions
 4. **Markdown-Aware**: When smart folding is enabled for markdown files, folds will be created at headers
-5. **Convenience Mappings**: Use `<leader>ma` to toggle all folds open/closed
+5. **Comprehensive Mappings**:
+   - `<leader>ma` - Toggle all folds open/closed
+   - `<leader>mc` - Toggle fold under cursor
+   - `<leader>mf` - Toggle manual folding
+   - All standard Vim folding keys (za, zo, zc, zR, zM) also work
 
 The system is integrated throughout the configuration to provide a consistent experience
 across all file types while prioritizing performance.
+
+### Lectic Integration
+
+Lectic provides AI-assisted writing for markdown files with these features:
+
+1. **Quick File Creation**: `<leader>ml` creates a new Lectic markdown file
+2. **Full-File Processing**: `<leader>mr` runs Lectic on the entire file
+3. **Section Processing**: `<leader>ms` submits only the current section
+4. **Persistent Settings**: All settings are integrated with the markdown workflow
+
+Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
 
 ### Testing Your Changes
 

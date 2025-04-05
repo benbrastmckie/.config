@@ -13,8 +13,33 @@ return {
     -- Create the autocmd group early
     vim.api.nvim_create_augroup("Lectic", { clear = true })
 
-    -- Create keymapping to open Lectic
-    vim.keymap.set("n", "<leader>ml", function()
+    -- Keymappings are now defined in which-key.lua to centralize all mappings
+
+    -- Add filetype detection for .lec files if not already defined
+    vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+      group = "Lectic",
+      pattern = "*.lec",
+      callback = function()
+        vim.bo.filetype = "lectic.markdown"
+      end
+    })
+  end,
+  config = function()
+    -- Create a global function to submit current lectic section
+    -- (to be used by which-key.lua)
+    function _G.SubmitLecticSection()
+      -- Only run if we're in a lectic markdown buffer
+      if vim.bo.filetype == "lectic.markdown" then
+        -- Find the current section and send it
+        require("lectic.submit").submit_current_section()
+      else
+        vim.notify("This command only works in Lectic files", vim.log.levels.WARN)
+      end
+    end
+
+    -- Create a function to create a new Lectic file
+    -- (to be used by which-key.lua)
+    function _G.CreateNewLecticFile()
       -- Open a new buffer with .lec extension
       vim.cmd("enew")
       vim.cmd("setfiletype lectic.markdown")
@@ -28,18 +53,8 @@ return {
           vim.cmd("write " .. filename)
         end
       end)
-    end, { desc = "Open Lectic interface" })
+    end
 
-    -- Add filetype detection for .lec files if not already defined
-    vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-      group = "Lectic",
-      pattern = "*.lec",
-      callback = function()
-        vim.bo.filetype = "lectic.markdown"
-      end
-    })
-  end,
-  config = function()
     -- Register the command to use the plugin's submit function
     vim.api.nvim_create_user_command(
       'Lectic',
@@ -62,48 +77,10 @@ return {
         local bufnr = ev.buf
 
         -- Use the global manual folding settings from options.lua
-        -- No need to set folding options specifically for lectic
 
         -- Also set standard markdown settings for this buffer
         vim.opt_local.conceallevel = 2     -- Enable concealing of syntax
         vim.opt_local.concealcursor = "nc" -- Conceal in normal and command mode
-
-        -- Submit current section/prompt
-        vim.keymap.set("n", "<leader>ms", function()
-          -- Find the current section and send it
-          require("lectic.submit").submit_current_section()
-        end, { buffer = bufnr, desc = "Submit current Lectic section" })
-
-        -- Toggle folding method (manual <-> expr/indent)
-        -- This is now handled globally by the ToggleFoldingMethod function in functions.lua
-        -- and mapped to <leader>mf in which-key.lua
-
-        -- -- Toggle individual fold under cursor
-        -- vim.keymap.set("n", "<leader>mz", function()
-        --   -- Try to toggle fold safely
-        --   local status, err = pcall(function()
-        --     -- Get current line
-        --     local line = vim.fn.line(".")
-        --     local fold_closed = vim.fn.foldclosed(line)
-        --
-        --     if fold_closed == -1 then
-        --       -- No closed fold at cursor, try to create/close one
-        --       vim.cmd("normal! zc")
-        --     else
-        --       -- Fold exists and is closed, open it
-        --       vim.cmd("normal! zo")
-        --     end
-        --   end)
-        --
-        --   if not status then
-        --     -- Handle the case where there are no folds
-        --     if string.match(tostring(err), "E490") then
-        --       vim.notify("No fold found at cursor", vim.log.levels.INFO)
-        --     else
-        --       vim.notify("Error toggling fold: " .. tostring(err), vim.log.levels.ERROR)
-        --     end
-        --   end
-        -- end, { buffer = bufnr, desc = "Toggle fold under cursor" })
 
         -- Also handle markdown specific keymaps
         if vim.fn.exists("*set_markdown_keymaps") == 1 then
