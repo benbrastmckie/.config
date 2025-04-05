@@ -83,6 +83,10 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
   end
 })
 
+-- Set up global URL handling for all buffers
+-- This only needs to be done once at startup
+require("neotex.core.functions").SetupUrlMappings()
+
 -- CLIPBOARD -- (for yanky)
 -- May help Arch/Debian Linux users
 -- vim.g.clipboard = {

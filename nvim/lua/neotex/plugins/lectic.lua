@@ -30,10 +30,36 @@ return {
     function _G.SubmitLecticSection()
       -- Only run if we're in a lectic markdown buffer
       if vim.bo.filetype == "lectic.markdown" then
+        -- Make sure the file is saved first
+        if vim.bo.modified then
+          vim.notify("Saving file before submitting to Lectic...", vim.log.levels.INFO)
+          vim.cmd("write")
+        end
+
+        -- Add a visual indicator that we're processing
+        local ns_id = vim.api.nvim_create_namespace("lectic_processing")
+        local line = vim.api.nvim_win_get_cursor(0)[1]
+        local extmark_id = vim.api.nvim_buf_set_extmark(0, ns_id, line - 1, 0, {
+          virt_text = { { "Processing with Lectic AI...", "Comment" } },
+          virt_text_pos = "eol",
+        })
+
         -- Find the current section and send it
-        require("lectic.submit").submit_current_section()
+        local ok, err = pcall(function()
+          require("lectic.submit").submit_current_section()
+        end)
+
+        -- Clear the processing indicator
+        vim.api.nvim_buf_del_extmark(0, ns_id, extmark_id)
+
+        -- Handle errors
+        if not ok then
+          vim.notify("Error submitting to Lectic: " .. tostring(err), vim.log.levels.ERROR)
+        else
+          vim.notify("Section successfully submitted to Lectic", vim.log.levels.INFO)
+        end
       else
-        vim.notify("This command only works in Lectic files", vim.log.levels.WARN)
+        vim.notify("This command only works in Lectic files (.lec)", vim.log.levels.WARN)
       end
     end
 
@@ -43,14 +69,45 @@ return {
       -- Open a new buffer with .lec extension
       vim.cmd("enew")
       vim.cmd("setfiletype lectic.markdown")
-      -- Prompt for filename since we'll let the ftdetect handle the extension
-      vim.ui.input({ prompt = "Save Lectic file as: " }, function(filename)
+
+      -- Create a welcome template
+      local template = "# Lectic Conversation\n\n" ..
+          "<!--\nInstructions: Write your prompt below, then use <leader>ms to submit it,\n" ..
+          "or select text and use <leader>mr to submit just that selection.\n" ..
+          "-->\n\n" ..
+          "## Your Prompt\n\n" ..
+          "Write your prompt here...\n\n" ..
+          "## Response\n\n" ..
+          "<!-- Responses will appear here -->\n"
+
+      -- Insert the template
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(template, "\n"))
+
+      -- Save file with nice interface
+      vim.ui.input({
+        prompt = "Save Lectic file as: ",
+        default = os.date("lectic-%Y-%m-%d"),
+        completion = "file"
+      }, function(filename)
         if filename and filename ~= "" then
           -- Make sure it has .lec extension
           if not filename:match("%.lec$") then
             filename = filename .. ".lec"
           end
-          vim.cmd("write " .. filename)
+
+          -- Try to save the file
+          local ok, err = pcall(function()
+            vim.cmd("write " .. filename)
+          end)
+
+          -- Notify success or failure
+          if ok then
+            vim.notify("Lectic file created: " .. filename, vim.log.levels.INFO)
+            -- Move cursor to position ready to write
+            vim.api.nvim_win_set_cursor(0, { 13, 0 })
+          else
+            vim.notify("Failed to save file: " .. err, vim.log.levels.ERROR)
+          end
         end
       end)
     end
@@ -63,7 +120,14 @@ return {
         local end_line = opts.line2
         require("lectic.submit").submit_lectic(start_line, end_line)
       end,
-      { range = "%" }
+      {
+        range = "%",
+        desc = "Process current buffer with Lectic AI (can be used with visual selections)",
+        nargs = "?",
+        complete = function()
+          return { "gpt-4", "gpt-3.5-turbo" }
+        end
+      }
     )
 
     -- Configure any additional plugin settings
@@ -74,18 +138,18 @@ return {
       group = "Lectic",
       pattern = "lectic.markdown",
       callback = function(ev)
-        local bufnr = ev.buf
-
         -- Use the global manual folding settings from options.lua
 
         -- Also set standard markdown settings for this buffer
         vim.opt_local.conceallevel = 2     -- Enable concealing of syntax
         vim.opt_local.concealcursor = "nc" -- Conceal in normal and command mode
 
-        -- Also handle markdown specific keymaps
-        if vim.fn.exists("*set_markdown_keymaps") == 1 then
-          _G.set_markdown_keymaps()
-        end
+        -- Apply markdown-specific keymaps
+        -- This is defined in keymaps.lua and adds bullet point handling, etc.
+        _G.set_markdown_keymaps()
+
+        -- Add lectic-specific indicator in the statusline
+        vim.opt_local.statusline = "%<%f %h%m%r%=Model: " .. vim.g.lectic_model .. " | lectic.markdown %l,%c%V %P"
       end
     })
   end,
