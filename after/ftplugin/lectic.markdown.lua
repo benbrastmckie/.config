@@ -7,38 +7,6 @@ if vim.fn.filereadable(markdown_path) == 1 then
   dofile(markdown_path)
 end
 
--- -- Custom Markdown header-based folding function
--- -- This creates folds at each heading level (# Header)
--- function MarkdownFoldLevel()
---   local line = vim.fn.getline(vim.v.lnum)
---   local next_line = vim.fn.getline(vim.v.lnum + 1)
---
---   -- Check for markdown headings (### style)
---   local level = line:match("^(#+)%s")
---   if level then
---     return ">" .. string.len(level)
---   end
---
---   -- Check for markdown headings (underline style)
---   if next_line and next_line:match("^=+$") then
---     return ">1"
---   end
---   if next_line and next_line:match("^-+$") then
---     return ">2"
---   end
---
---   -- Check for XML/HTML style tags that Lectic uses
---   if line:match("^<[^/][^>]*>$") then
---     return "a1"
---   end
---   if line:match("^</[^>]+>$") then
---     return "s1"
---   end
---
---   -- Keep current level for indented content
---   return "="
--- end
-
 -- -- Enable folding specifically for lectic files with our custom fold expression
 -- -- Note: Fold settings are window-local options, not buffer-local
 -- vim.wo.foldenable = true
@@ -80,8 +48,6 @@ end
 -- Additional keymaps specific to lectic.markdown
 vim.keymap.set("n", "<C-n>", ":lua HandleCheckbox()<CR>",
   { buffer = true, silent = true, desc = "Toggle checkbox" })
-
--- <leader>mu is defined in which-key.lua
 
 -- Add keybinding to open the URL under cursor with gx for familiar Vim behavior
 vim.keymap.set("n", "gx", ":lua OpenUrlUnderCursor()<CR>",
