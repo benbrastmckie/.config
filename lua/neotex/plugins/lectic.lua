@@ -71,45 +71,127 @@ return {
       vim.cmd("setfiletype lectic.markdown")
 
       -- Create a welcome template
-      local template = "# Lectic Conversation\n\n" ..
-          "<!--\nInstructions: Write your prompt below, then use <leader>ms to submit it,\n" ..
-          "or select text and use <leader>mr to submit just that selection.\n" ..
-          "-->\n\n" ..
-          "## Your Prompt\n\n" ..
-          "Write your prompt here...\n\n" ..
-          "## Response\n\n" ..
-          "<!-- Responses will appear here -->\n"
+      local template = "---\n" ..
+          "interlocutor:\n" ..
+          "  # Required fields\n" ..
+          "  name: Computer Scientist\n" ..
+          "  prompt: You are an expert logician and computer scientist specializing in RL and agentic reasoning in AI.\n\n" ..
+          "  # Optional model configuration\n" ..
+          "  provider: anthropic             # Optional, default anthropic\n" ..
+          "  # model: claude-3-7-sonnet      # Model selection\n" ..
+          "  # temperature: 0.7              # Response variability (0-1)\n" ..
+          "  # max_tokens: 1024              # Maximum response length\n\n" ..
+          "  # Optional Context management\n" ..
+          "  # memories: previous.txt        # Context from previous conversations.\n" ..
+          "                                  # Added to system prompt.\n" ..
+          "                                  # Can be string or file path\n\n" ..
+          "  # # Tool integration\n" ..
+          "  # tools:\n" ..
+          "  # - mcp_command: npx\n" ..
+          "  #   args:\n" ..
+          "  #   # Command execution tool\n" ..
+          "  #   exec: python3               # Command to execute\n" ..
+          "  #   usage: Before running any code, show the code snippet to the user.\n" ..
+          "  #   name: python                # Optional custom name\n" ..
+          "---\n\n" ..
+          "<!-- Instructions: Write your prompt below, then use <leader>mr to submit it,\n" ..
+          "or select text and use <leader>ms to submit just that selection. -->\n\n"
 
       -- Insert the template
       vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(template, "\n"))
 
-      -- Save file with nice interface
-      vim.ui.input({
-        prompt = "Save Lectic file as: ",
-        default = os.date("lectic-%Y-%m-%d"),
-        completion = "file"
-      }, function(filename)
-        if filename and filename ~= "" then
-          -- Make sure it has .lec extension
-          if not filename:match("%.lec$") then
-            filename = filename .. ".lec"
-          end
+      -- Get the current working directory
+      local cwd = vim.fn.getcwd()
 
-          -- Try to save the file
-          local ok, err = pcall(function()
-            vim.cmd("write " .. filename)
-          end)
+      -- Use telescope to select the save location if available
+      if pcall(require, "telescope") and pcall(require, "telescope.builtin") then
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local pickers = require("telescope.pickers")
+        local finders = require("telescope.finders")
+        local conf = require("telescope.config").values
 
-          -- Notify success or failure
-          if ok then
-            vim.notify("Lectic file created: " .. filename, vim.log.levels.INFO)
-            -- Move cursor to position ready to write
-            vim.api.nvim_win_set_cursor(0, { 13, 0 })
-          else
-            vim.notify("Failed to save file: " .. err, vim.log.levels.ERROR)
+        -- Create a default filename with date
+        local default_filename = os.date("lectic-%Y-%m-%d.lec")
+
+        -- Create picker for directory selection
+        pickers.new({}, {
+          prompt_title = "Select Directory to Save Lectic File",
+          finder = finders.new_oneshot_job({ "find", cwd, "-type", "d", "-not", "-path", "*/\\.*" }, {}),
+          sorter = conf.file_sorter({}),
+          attach_mappings = function(prompt_bufnr, map)
+            actions.select_default:replace(function()
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+
+              if selection then
+                local dir = selection[1]
+
+                -- Now prompt for filename within the selected directory
+                vim.ui.input({
+                  prompt = "Save as (in " .. dir .. "): ",
+                  default = default_filename,
+                  completion = "file"
+                }, function(filename)
+                  if filename and filename ~= "" then
+                    -- Make sure it has .lec extension
+                    if not filename:match("%.lec$") then
+                      filename = filename .. ".lec"
+                    end
+
+                    -- Create the full path
+                    local full_path = dir .. "/" .. filename
+
+                    -- Try to save the file
+                    local ok, err = pcall(function()
+                      vim.cmd("write " .. vim.fn.fnameescape(full_path))
+                    end)
+
+                    -- Notify success or failure
+                    if ok then
+                      vim.notify("Lectic file created: " .. full_path, vim.log.levels.INFO)
+                      -- Move cursor to position ready to write
+                      vim.api.nvim_win_set_cursor(0, { 13, 0 })
+                    else
+                      vim.notify("Failed to save file: " .. err, vim.log.levels.ERROR)
+                    end
+                  end
+                end)
+              end
+            end)
+            return true
+          end,
+        }):find()
+      else
+        -- Fallback for when telescope is not available
+        -- Save file with simple interface
+        vim.ui.input({
+          prompt = "Save Lectic file as (full path): ",
+          default = cwd .. "/" .. os.date("lectic-%Y-%m-%d.lec"),
+          completion = "file"
+        }, function(filepath)
+          if filepath and filepath ~= "" then
+            -- Make sure it has .lec extension
+            if not filepath:match("%.lec$") then
+              filepath = filepath .. ".lec"
+            end
+
+            -- Try to save the file
+            local ok, err = pcall(function()
+              vim.cmd("write " .. vim.fn.fnameescape(filepath))
+            end)
+
+            -- Notify success or failure
+            if ok then
+              vim.notify("Lectic file created: " .. filepath, vim.log.levels.INFO)
+              -- Move cursor to position ready to write
+              vim.api.nvim_win_set_cursor(0, { 13, 0 })
+            else
+              vim.notify("Failed to save file: " .. err, vim.log.levels.ERROR)
+            end
           end
-        end
-      end)
+        end)
+      end
     end
 
     -- Register the command to use the plugin's submit function

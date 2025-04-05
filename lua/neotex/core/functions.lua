@@ -201,7 +201,7 @@ function _G.ToggleFoldingMethod()
       file:write(new_method)
       file:close()
     end)
-    
+
     if not ok then
       vim.notify("Error saving fold state: " .. err, vim.log.levels.WARN)
     end
@@ -219,7 +219,7 @@ function _G.ToggleFoldingMethod()
       file:write("manual")
       file:close()
     end)
-    
+
     if not ok then
       vim.notify("Error saving fold state: " .. err, vim.log.levels.WARN)
     end
@@ -241,15 +241,15 @@ function M.LoadFoldingState()
       if not file then
         error("Could not open fold state file for reading")
       end
-      
+
       local state = file:read("*all")
       file:close()
       return state
     end)
-    
+
     if ok then
       local state = result
-      
+
       -- Apply the saved state
       if state == "expr" and (vim.bo.filetype == "markdown" or vim.bo.filetype == "lectic.markdown") then
         vim.wo.foldmethod = "expr"
@@ -282,7 +282,7 @@ function M.ExtractUrlsFromLine(line)
   if not line or line == "" then
     return {}
   end
-  
+
   local urls = {}
   local url_patterns = {
     -- Markdown link format [text](url)
@@ -349,7 +349,8 @@ function M.ExtractUrlsFromLine(line)
         elseif pattern == "<a%s+[^>]*href=[\"']([^\"']+)[\"'][^>]*>" then
           -- Find the full tag containing this href
           local tag_start = line:find(
-          "<a%s+[^>]*href=[\"']" .. url_match:gsub("([%%%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*])", "%%%1") .. "[\"'][^>]*>", 1)
+            "<a%s+[^>]*href=[\"']" .. url_match:gsub("([%%%-%+%_%:%&%=%?%/%(%)%#%$%@%!%~%*])", "%%%1") .. "[\"'][^>]*>",
+            1)
           if tag_start then
             -- Find the closing > of this tag
             local tag_end = line:find(">", tag_start)
@@ -385,16 +386,16 @@ function M.OpenUrlAtPosition(line_num, col)
     vim.notify("Invalid line number", vim.log.levels.ERROR)
     return false
   end
-  
+
   -- Get the content of the specified line
   local ok, line = pcall(vim.api.nvim_buf_get_lines, 0, line_num - 1, line_num, false)
-  
+
   -- Handle errors or empty result
   if not ok or not line or #line == 0 then
     vim.notify("Could not read line " .. line_num, vim.log.levels.ERROR)
     return false
   end
-  
+
   line = line[1]
   if not line or line == "" then return false end
 
@@ -429,25 +430,24 @@ function M.OpenUrlAtPosition(line_num, col)
 
   if selected_url then
     -- Determine URL type and ensure proper protocol prefix
-    
+
     -- Handle email addresses
     if selected_url:match("^[%w%.%-%+_]+@[%w%.%-%+_]+%.[%w%.%-%+_]+$") then
       selected_url = "mailto:" .. selected_url
-      
-    -- Handle local file paths
+
+      -- Handle local file paths
     elseif selected_url:match("^/[%w%.%-%+%_%/]+%.[%w%.%-%+_]+$") then
       selected_url = "file://" .. selected_url
-      
-    -- Make sure web URLs have protocol prefix
-    elseif not selected_url:match("^https?://") and 
-           not selected_url:match("^file://") and 
-           not selected_url:match("^mailto:") then
-      
+
+      -- Make sure web URLs have protocol prefix
+    elseif not selected_url:match("^https?://") and
+        not selected_url:match("^file://") and
+        not selected_url:match("^mailto:") then
       -- Handle www URLs
       if selected_url:match("^www%.") then
         selected_url = "https://" .. selected_url
-      
-      -- Only add https if it looks like a domain (contains a dot)
+
+        -- Only add https if it looks like a domain (contains a dot)
       elseif selected_url:match("%.") then
         selected_url = "https://" .. selected_url
       end
@@ -470,7 +470,7 @@ function M.OpenUrlAtPosition(line_num, col)
     local ok, err = pcall(function()
       vim.cmd(cmd)
     end)
-    
+
     if ok then
       vim.notify("Opening URL: " .. selected_url, vim.log.levels.INFO)
       return true
@@ -520,12 +520,12 @@ end
 function M.SetupUrlMappings()
   -- Basic options for all mappings
   local opts = { noremap = true, silent = true }
-  
+
   -- Track if we've already set up the mappings to avoid duplicates
   if M._url_mappings_setup then
     return
   end
-  
+
   -- Add keybinding to open the URL under cursor with gx for familiar Vim behavior
   vim.keymap.set("n", "gx", ":lua OpenUrlUnderCursor()<CR>",
     vim.tbl_extend("force", opts, { desc = "Open URL under cursor" }))
@@ -543,13 +543,10 @@ function M.SetupUrlMappings()
 
   -- Handle mouse release to avoid issues
   vim.keymap.set("n", "<C-LeftRelease>", "<Nop>", opts)
-  
+
   -- Mark mappings as set up
   M._url_mappings_setup = true
-  
-  vim.notify("URL handling enabled for all files", vim.log.levels.INFO)
 end
 
 -- Return the module
 return M
-
