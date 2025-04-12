@@ -1,8 +1,13 @@
 # NOTES
 
-## Features
+## Videos
 
-- test
+- AI in NeoVim for Academic Research
+  - This video presents the AI tools that I have integrated into my configuration of NeoVim for research, coding, and writing in LaTeX and Markdown
+  - I will demonstrate:
+    - The Avante AI assistant that lives in NeoVim at your cursor and a side pane that is toggled with keymappings
+    - Lectic for conducting research in persistent dialogues
+  - In addition to the many uses that AI tools 
 
 ### Example
 
