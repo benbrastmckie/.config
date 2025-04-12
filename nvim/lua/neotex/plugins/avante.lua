@@ -30,10 +30,11 @@ return {
         "gpt-3.5-turbo",
       },
       gemini = {
-        "gemini-2.5-pro-exp-03-25",
-        "gemini-2.5-pro",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-1.0-pro",
+        "gemini-1.0-pro-vision",
+        "gemini-1.0-pro-latest",
       }
     }
 
@@ -176,13 +177,17 @@ return {
   opts = function()
     -- Default configuration
     local config = {
-      -- Claude configuration THIS WORKS
-      provider = "claude",
-      endpoint = "https://api.anthropic.com",
-      model = "claude-3-5-sonnet-20241022",
-      -- Gemini configuration NOT WORKING YET
-      -- provider = "gemini",
-      -- model = "gemini-2.5-pro-exp-03-25",
+      -- Gemini configuration
+      provider = "gemini", 
+      model = "gemini-1.5-pro",
+      -- Claude configuration
+      -- provider = "claude",
+      -- model = "claude-3-5-sonnet-20241022",
+      -- endpoint = "https://api.anthropic.com",
+      -- Claude configuration
+      -- provider = "claude",
+      -- endpoint = "https://api.anthropic.com",
+      -- model = "claude-3-5-sonnet-20241022",
       -- Removed force_model which isn't supported
       temperature = 0.1, -- Slight increase for more creative responses
       max_tokens = 4096,
@@ -207,14 +212,10 @@ return {
         top_p = 0.95,
         timeout = 60000,
       },
-      -- Gemini configuration
+      -- Simplest possible Gemini configuration
       gemini = {
-        key = os.getenv("GEMINI_API_KEY"), -- Changed from api_key to key
-        model = "gemini-2.5-pro-exp-03-25",
+        model = "gemini-1.5-pro", -- Use a stable model
         temperature = 0.1,
-        maxOutputTokens = 4096, -- Changed from max_tokens to maxOutputTokens
-        timeout = 60000,
-        -- Removed top_p as it's not supported by Gemini API
       },
       system_prompt =
       "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",

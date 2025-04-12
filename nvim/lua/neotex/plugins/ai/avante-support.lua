@@ -25,7 +25,7 @@ local M = {}
 -- Initialize global state if not already defined
 if not _G.avante_cycle_state then
   _G.avante_cycle_state = {
-    provider = "claude",
+    provider = "gemini",
     model_index = 1
   }
 end
@@ -45,10 +45,10 @@ function M.load_settings()
   if vim.fn.filereadable(avante_settings_file) ~= 1 then
     -- Return default settings
     return {
-      provider = "claude",
-      model = "claude-3-5-sonnet-20241022",
-      claude = {
-        model = "claude-3-5-sonnet-20241022"
+      provider = "gemini",
+      model = "gemini-1.5-pro",
+      gemini = {
+        model = "gemini-1.5-pro"
       }
     }
   end
@@ -61,10 +61,10 @@ function M.load_settings()
 
   -- Return default settings if anything went wrong
   return {
-    provider = "claude",
-    model = "claude-3-5-sonnet-20241022",
-    claude = {
-      model = "claude-3-5-sonnet-20241022"
+    provider = "gemini",
+    model = "gemini-1.5-pro",
+    gemini = {
+      model = "gemini-1.5-pro"
     }
   }
 end
