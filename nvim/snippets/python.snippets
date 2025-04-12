@@ -1,0 +1,22 @@
+
+# new model-checker example
+snippet example "model-checker example"  b
+  # ${1:NM_CM_number}: ${2:DESCRIPTION}
+  ${1}_premises = [${3:'premises'}]
+  ${1}_conclusions = [${4:'conclusions'}]
+  ${1}_settings = {
+      'N' : ${5:2},
+      'M' : ${6:2},
+      'contingent' : False,
+      'disjoint' : False,
+      'max_time' : ${7:2},
+      'expectation' : ${8:True},
+  }
+  ${1}_example = [
+      ${1}_premises,
+      ${1}_conclusions,
+      ${1}_settings,
+  ]
+
+  ${0}
+#
