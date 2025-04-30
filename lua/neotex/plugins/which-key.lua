@@ -127,6 +127,7 @@ LSP (<leader>l)                                 | DESCRIPTION
 <leader>lr - References                         | Find all references to symbol
 <leader>ls - Restart LSP                        | Restart language server
 <leader>lt - Start LSP                          | Start language server
+<leader>ly - Copy diagnostics                   | Copy diagnostics to clipboard
 <leader>lR - Rename                             | Rename symbol under cursor
 
 ----------------------------------------------------------------------------------
@@ -403,6 +404,7 @@ return {
         r = { "<cmd>Telescope lsp_references<CR>", "references" },
         s = { "<cmd>LspRestart<CR>", "restart lsp" },
         t = { "<cmd>LspStart<CR>", "start lsp" },
+        y = { "<cmd>lua CopyDiagnosticsToClipboard()<CR>", "copy diagnostics to clipboard" },
         R = { "<cmd>lua vim.lsp.buf.rename()<CR>", "rename" },
         -- T = { "<cmd>Telescope lsp_type_definitions<CR>", "type definition" },
       },

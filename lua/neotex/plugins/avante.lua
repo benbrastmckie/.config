@@ -30,11 +30,18 @@ return {
         "gpt-3.5-turbo",
       },
       gemini = {
-        "gemini-1.5-pro",
-        "gemini-1.5-flash",
-        "gemini-1.0-pro",
-        "gemini-1.0-pro-vision",
-        "gemini-1.0-pro-latest",
+        -- Gemini 2.5 models
+        "gemini-2.5-pro-preview-03-25",
+        -- "gemini-2.5-pro-exp-03-25",
+        -- Gemini 2.0 models
+        "gemini-2.0-flash",
+        -- "gemini-2.0-flash-lite",
+        -- "gemini-2.0-flash-001",
+        -- "gemini-2.0-flash-exp",
+        -- "gemini-2.0-flash-lite-001",
+        -- Gemini 1.5 models
+        -- "gemini-1.5-pro",
+        -- "gemini-1.5-flash",
       }
     }
 
@@ -179,7 +186,7 @@ return {
     local config = {
       -- Gemini configuration
       provider = "gemini", 
-      model = "gemini-1.5-pro",
+      model = "gemini-2.5-pro-preview-03-25",
       -- Claude configuration
       -- provider = "claude",
       -- model = "claude-3-5-sonnet-20241022",
@@ -212,10 +219,11 @@ return {
         top_p = 0.95,
         timeout = 60000,
       },
-      -- Simplest possible Gemini configuration
+      -- Gemini configuration
       gemini = {
-        model = "gemini-1.5-pro", -- Use a stable model
+        model = "gemini-2.5-pro-preview-03-25", -- Use the latest model
         temperature = 0.1,
+        max_tokens = 8192, -- Higher token limit for newer models
       },
       system_prompt =
       "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",

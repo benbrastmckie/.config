@@ -548,5 +548,32 @@ function M.SetupUrlMappings()
   M._url_mappings_setup = true
 end
 
+-- Function to copy diagnostics to clipboard
+function _G.CopyDiagnosticsToClipboard()
+  local diagnostics = vim.diagnostic.get(0)  -- Get diagnostics for current buffer
+  if #diagnostics == 0 then
+    vim.notify("No diagnostics found", vim.log.levels.INFO)
+    return
+  end
+  
+  local lines = {}
+  for _, diagnostic in ipairs(diagnostics) do
+    local severity = diagnostic.severity
+    local severity_names = {"ERROR", "WARN", "INFO", "HINT"}
+    local severity_name = severity_names[severity] or "UNKNOWN"
+    local line = string.format("%s:%d:%d: %s: %s", 
+      vim.fn.bufname(diagnostic.bufnr) or "[No Name]",
+      diagnostic.lnum + 1,
+      diagnostic.col + 1,
+      severity_name,
+      diagnostic.message)
+    table.insert(lines, line)
+  end
+  
+  local formatted = table.concat(lines, "\n")
+  vim.fn.setreg('+', formatted)
+  vim.notify("Copied " .. #diagnostics .. " diagnostics to clipboard", vim.log.levels.INFO)
+end
+
 -- Return the module
 return M

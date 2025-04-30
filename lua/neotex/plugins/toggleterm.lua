@@ -9,7 +9,7 @@ return {
       shade_terminals = true,
       shading_factor = 2,
       start_in_insert = true,
-      insert_mappings = false,
+      insert_mappings = false,  -- When true, the open mapping (<c-t>) works in insert mode
       persist_size = true,
       direction = "vertical", -- direction = 'vertical' | 'horizontal' | 'tab' | 'float',
       close_on_exit = true,
@@ -23,8 +23,8 @@ return {
         },
       },
       terminal_mappings = true, -- whether or not the open mapping applies in the opened terminals
-      persist_mode = true,     -- if set to true (default) the previous terminal mode will be remembered
-      auto_scroll = true,       -- automatically scroll to the bottom on terminal output
+      persist_mode = false,    -- don't remember terminal mode between sessions
+      auto_scroll = false,       -- automatically scroll to the bottom on terminal output
     }
   end
 }
