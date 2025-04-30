@@ -31,6 +31,12 @@ return {
     lspconfig["texlab"].setup({
       capabilities = default,
       settings = {
+        python = {
+          analysis = {
+            extraPaths = { "/home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/src" },
+            typeCheckingMode = "basic",
+          }
+        },
         texlab = {
           build = {
             onSave = true,

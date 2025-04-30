@@ -315,6 +315,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>lr`     | Find all references to symbol |
 | `<leader>ls`     | Restart language server       |
 | `<leader>lt`     | Start language server         |
+| `<leader>ly`     | Copy diagnostics to clipboard |
 | `<leader>lR`     | Rename symbol under cursor    |
 
 #### Markdown (`<leader>m`)

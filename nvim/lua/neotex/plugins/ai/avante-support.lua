@@ -46,9 +46,9 @@ function M.load_settings()
     -- Return default settings
     return {
       provider = "gemini",
-      model = "gemini-1.5-pro",
+      model = "gemini-2.5-pro-preview-03-25",
       gemini = {
-        model = "gemini-1.5-pro"
+        model = "gemini-2.5-pro-preview-03-25"
       }
     }
   end
@@ -62,9 +62,9 @@ function M.load_settings()
   -- Return default settings if anything went wrong
   return {
     provider = "gemini",
-    model = "gemini-1.5-pro",
+    model = "gemini-2.5-pro-preview-03-25",
     gemini = {
-      model = "gemini-1.5-pro"
+      model = "gemini-2.5-pro-preview-03-25"
     }
   }
 end
@@ -245,7 +245,7 @@ function M.provider_select()
   end
 
   -- List of available providers
-  local providers = { "claude", "openai", "gemini" }
+  local providers = { "claude", "gemini", "openai" }
 
   -- Create UI for provider selection
   vim.ui.select(providers, {

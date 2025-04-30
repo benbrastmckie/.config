@@ -1,5 +1,7 @@
 # Cheat Sheet
 
+> This is outdated...
+
 The following sections present a list of key-bindings and features which have been included in the present configuration.
 Although I take my target audience to be academics looking to write papers in LaTeX and take notes in Markdown, I will not attempt to provide [resources for learning LaTeX](https://www.youtube.com/watch?v=VhmkLrOjLsw) or [Markdown](https://www.youtube.com/watch?v=hpAJMSS8pvs&t=574s).
 Similarly, if you are looking for the bindings which come default in Vim, then you might check this [resource](https://vim.rtorr.com) out.

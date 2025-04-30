@@ -177,14 +177,12 @@ function _G.set_avante_keymaps()
   -- Model and provider selection
   avante_map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
   avante_map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
-  avante_map("n", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider")
-  avante_map("i", "<C-p>", "<cmd>AvanteProvider<CR>", "Select provider")
+  avante_map("n", "<C-s>", "<cmd>AvanteProvider<CR>", "Select provider")
+  avante_map("i", "<C-s>", "<cmd>AvanteProvider<CR>", "Select provider")
 
   -- Generation control
-  avante_map("n", "<C-s>", "<cmd>AvanteStop<CR>", "Stop generation")
-  avante_map("i", "<C-s>", "<cmd>AvanteStop<CR>", "Stop generation")
-  avante_map("n", "<C-d>", "<cmd>AvanteProvider<CR>", "Default provider")
-  avante_map("i", "<C-d>", "<cmd>AvanteProvider<CR>", "Default provider")
+  avante_map("n", "<C-x>", "<cmd>AvanteStop<CR>", "Stop generation")
+  avante_map("i", "<C-x>", "<cmd>AvanteStop<CR>", "Stop generation")
 
   -- Prevent accidental submission
   avante_map("i", "<CR>", "<CR>", "Create new line")
