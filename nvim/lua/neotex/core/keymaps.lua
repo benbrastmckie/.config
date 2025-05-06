@@ -171,8 +171,8 @@ function _G.set_avante_keymaps()
   avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
 
   -- Reset/clear Avante content
-  avante_map("n", "<C-c>", "<cmd>AvanteClear<CR>", "Clear chat history")
-  avante_map("i", "<C-c>", "<cmd>AvanteClear<CR>", "Clear chat history")
+  avante_map("n", "<C-c>", "<cmd>AvanteClear history<CR>", "Clear chat history")
+  avante_map("i", "<C-c>", "<cmd>AvanteClear history<CR>", "Clear chat history")
 
   -- Model and provider selection
   avante_map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")

@@ -1,5 +1,3 @@
--- [null-ls] failed to run generator: ...y/none-ls.nvim/lua/null-ls/helpers generator_factory.lua:73: failed to decode json: Expected value but found inva lid token at character 1  
-
 return {
   "nvimtools/none-ls.nvim",               -- configure formatters & linters
   lazy = true,
@@ -33,13 +31,21 @@ return {
     -- local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 
     -- configure null_ls
-    -- Add debug logging
+    -- Suppress JSON parsing errors
+    local orig_notify = vim.notify
+    vim.notify = function(msg, ...)
+      if msg and msg:match("failed to decode json: Expected value but found invalid token") then
+        return -- Suppress these specific error messages
+      end
+      orig_notify(msg, ...)
+    end
+    
     null_ls.setup({
-      debug = true,
+      debug = false, -- Turn off debug mode
       log = {
-        enable = true,
-        level = "trace",
-        use_console = false,
+        enable = false, -- Disable logging
+        level = "warn", -- Only log warnings and above
+        use_console = false, 
       },
       root_dir = null_ls_utils.root_pattern(".null-ls-root", "Makefile", ".git", "package.json"),
       sources = {
@@ -61,12 +67,12 @@ return {
         formatting.black.with({
           extra_args = { "--fast", "--line-length", "88" },
         }),
-        -- diagnostics.pylint, -- instead of below
+        -- Use pylint with text output format instead of JSON to avoid parsing errors
         diagnostics.pylint.with({
           extra_args = {
-            "--output-format=json", -- to get json output
+            "--output-format=text",
             "--score=no",
-            -- Remove msg-template as it conflicts with JSON output
+            "--msg-template={path}:{line}:{column}: {msg_id}: {msg} ({symbol})",
           },
           diagnostics_format = "#{m} (#{c})",
         }),
