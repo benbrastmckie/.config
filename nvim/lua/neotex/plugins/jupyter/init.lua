@@ -29,7 +29,7 @@ return {
     },
     config = function()
       local nn = require("notebook-navigator")
-      
+
       -- Basic NotebookNavigator setup
       nn.setup({
         -- No mappings here - all defined in which-key.lua
@@ -45,7 +45,7 @@ return {
 
         -- Use syntax highlighting (a simpler option that works without mini.hipatterns)
         syntax_highlight = true,
-        
+
         -- Highlight group for cell markers
         cell_highlight_group = "JupyterCellBorder",
 
@@ -55,7 +55,7 @@ return {
         -- No mappings here - all defined in which-key.lua
         mappings = {},
       })
-      
+
       -- Load our custom jupyter styling module
       vim.defer_fn(function()
         local ok, styling = pcall(require, "neotex.plugins.jupyter.styling")
@@ -111,7 +111,7 @@ return {
       end
     end,
   },
-  
+
   -- Add dependency for mini.hipatterns for cell styling
   {
     "echasnovski/mini.hipatterns",
@@ -119,3 +119,4 @@ return {
     lazy = true,
   }
 }
+
