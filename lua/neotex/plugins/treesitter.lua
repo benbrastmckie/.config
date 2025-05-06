@@ -14,7 +14,7 @@ return {
         enable = true,
         disable = { "css", "latex", "cls" }, -- list of language that will be disabled
         -- Note: we keep markdown parser enabled for lectic.markdown files
-        additional_vim_regex_highlighting = { "markdown", "python" }, -- for jupyter notebooks
+        additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
       },
       -- enable indentation
       indent = { enable = true },
