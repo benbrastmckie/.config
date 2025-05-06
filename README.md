@@ -11,11 +11,32 @@ This Neovim configuration includes specialized support for:
 - **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
 - **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
 - **AI Assistance**: AI integration for code completion and editing suggestions with Avante and knowledge assistance with Lectic
+- **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats
 - **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
 - **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics
 - **Session Management**: Save and restore editing sessions with persistent workspaces
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
+
+## Making Configuration Changes
+
+1. **Check for Conflicts**: Before adding new keybindings, check for conflicts with:
+   ```
+   :verbose map <key-combo>
+   ```
+   This shows if the key is already mapped and in which file.
+
+2. **Test Changes Incrementally**: Make small changes and test them before proceeding to more complex modifications.
+
+3. **Update Documentation**: Always update docstrings in the corresponding files when making changes:
+   - For keymappings: Update comments in `keymaps.lua`
+   - For which-key entries: Update the reference at the top of `which-key.lua`
+   - For new features: Add documentation to this README.md
+
+4. **Organize Related Functions**: Keep related functionality together in appropriate files:
+   - Core settings: `lua/neotex/core/`
+   - Plugin configurations: `lua/neotex/plugins/`
+   - Filetype-specific settings: `after/ftplugin/`
 
 ## Using Avante AI
 
@@ -206,7 +227,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>c`   | Create vertical split          |
 | `<leader>d`   | Save and delete buffer         |
 | `<leader>e`   | Toggle NvimTree explorer       |
-| `<leader>j`   | Close split                    |
+| `<leader>j`   | Jupyter notebook functions     |
 | `<leader>i`   | Open VimtexToc                 |
 | `<leader>k`   | Maximize split                 |
 | `<leader>q`   | Save all and quit              |
@@ -270,6 +291,30 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>gp`     | Preview current change         |
 | `<leader>gs`     | Show files with changes        |
 | `<leader>gt`     | Toggle line blame display      |
+
+#### Jupyter (`<leader>j`)
+
+| Key              | Action                        |
+|------------------|-------------------------------|
+| `<leader>je`     | Execute cell                  |
+| `<leader>jj`     | Next cell                     |
+| `<leader>jk`     | Previous cell                 |
+| `<leader>jn`     | Execute and next              |
+| `<leader>jo`     | Insert cell below             |
+| `<leader>jO`     | Insert cell above             |
+| `<leader>js`     | Split cell at cursor          |
+| `<leader>jc`     | Comment current cell          |
+| `<leader>ja`     | Run all cells                 |
+| `<leader>jb`     | Run cells below               |
+| `<leader>ju`     | Merge with cell above         |
+| `<leader>jd`     | Merge with cell below         |
+| `<leader>ji`     | Start IPython REPL            |
+| `<leader>jt`     | Send motion to REPL           |
+| `<leader>jl`     | Send line to REPL             |
+| `<leader>jf`     | Send file to REPL             |
+| `<leader>jq`     | Exit REPL                     |
+| `<leader>jr`     | Clear REPL                    |
+| `<leader>jv`     | Send visual selection to REPL |
 
 #### AI Help (`<leader>h`)
 
@@ -395,29 +440,9 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>tr`     | Insert root document template  |
 | `<leader>tm`     | Insert multiple answer template|
 
-## Making Configuration Changes
+## Features and Workflows
 
 When modifying this Neovim configuration, follow these guidelines to ensure consistency and prevent conflicts.
-
-### Best Practices
-
-1. **Check for Conflicts**: Before adding new keybindings, check for conflicts with:
-   ```
-   :verbose map <key-combo>
-   ```
-   This shows if the key is already mapped and in which file.
-
-2. **Test Changes Incrementally**: Make small changes and test them before proceeding to more complex modifications.
-
-3. **Update Documentation**: Always update docstrings in the corresponding files when making changes:
-   - For keymappings: Update comments in `keymaps.lua`
-   - For which-key entries: Update the reference at the top of `which-key.lua`
-   - For new features: Add documentation to this README.md
-
-4. **Organize Related Functions**: Keep related functionality together in appropriate files:
-   - Core settings: `lua/neotex/core/`
-   - Plugin configurations: `lua/neotex/plugins/`
-   - Filetype-specific settings: `after/ftplugin/`
 
 ### Using Avante for Configuration Help
 
@@ -498,6 +523,64 @@ Lectic provides AI-assisted writing for markdown files with these features:
    - Lectic will then process the entire file
 
 Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
+
+### Jupyter Notebook Integration
+
+This configuration provides comprehensive support for working with Jupyter notebooks through three integrated plugins:
+
+1. **Jupytext**: Converts between Jupyter notebooks (.ipynb) and text formats (.md, .py)
+2. **NotebookNavigator**: Enables cell-based navigation and execution
+3. **Iron.nvim**: Provides REPL integration for Python, Julia, R, and Lua
+
+#### Key Features
+
+- **Notebook Mode**: Work with notebook-style cells in markdown or Python files
+- **Format Conversion**: Convert between .ipynb, .md, and .py formats
+- **Cell Navigation**: Move between code/markdown cells with keyboard shortcuts
+- **Cell Execution**: Run cells directly and see output in a REPL
+- **Interactive REPL**: Send code snippets, lines, or files to the REPL
+- **Smooth Workflow**: Integrated keybindings for all notebook operations
+
+#### Jupyter Keybindings (`<leader>j`)
+
+| Key           | Action                          |
+|---------------|----------------------------------|
+| `<leader>je`  | Execute current cell             |
+| `<leader>jj`  | Navigate to next cell            |
+| `<leader>jk`  | Navigate to previous cell        |
+| `<leader>jn`  | Execute cell and move to next    |
+| `<leader>jo`  | Insert new cell below            |
+| `<leader>jO`  | Insert cell above                |
+| `<leader>js`  | Split cell at cursor position    |
+| `<leader>jc`  | Comment current cell             |
+| `<leader>ja`  | Run all cells in file            |
+| `<leader>jb`  | Run current and all cells below  |
+| `<leader>ju`  | Merge with cell above            |
+| `<leader>jd`  | Merge with cell below            |
+| `<leader>ji`  | Start IPython REPL               |
+| `<leader>jt`  | Send motion to REPL              |
+| `<leader>jl`  | Send current line to REPL        |
+| `<leader>jf`  | Send entire file to REPL         |
+| `<leader>jv`  | Send visual selection to REPL    |
+| `<leader>jq`  | Exit REPL                        |
+| `<leader>jr`  | Clear REPL screen                |
+| `<leader>jc`  | Show jupytext config             |
+
+#### Cell Markers
+
+The system recognizes cells based on these markers:
+- **Python**: Cells are delimited by `# %%` or `#%%` comments
+- **Markdown**: Cells are delimited by code blocks starting/ending with ``` (triple backticks)
+
+#### Workflow Example
+
+1. Create a Python or Markdown file with cell markers
+2. Navigate between cells with `<leader>jj` and `<leader>jk`
+3. Execute cells with `<leader>je` or execute and move to next with `<leader>jn`
+4. Add new cells with `<leader>jo` (below) or `<leader>jO` (above)
+5. Use additional features like `<leader>js` (split cell), `<leader>jc` (comment cell), or `<leader>ja` (run all cells)
+
+This integration provides a seamless experience for data analysis, scientific computing, and literate programming without leaving Neovim.
 
 ### Testing Your Changes
 

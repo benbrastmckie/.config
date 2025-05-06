@@ -64,10 +64,9 @@ return {
         -- diagnostics.pylint, -- instead of below
         diagnostics.pylint.with({
           extra_args = {
-            -- "--output-format=text",
             "--output-format=json", -- to get json output
-            "--msg-template={line}:{column}:{category}:{msg}",
             "--score=no",
+            -- Remove msg-template as it conflicts with JSON output
           },
           diagnostics_format = "#{m} (#{c})",
         }),

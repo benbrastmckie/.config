@@ -1,7 +1,8 @@
-return {
+ return {
   "yetone/avante.nvim",
   event = "VeryLazy",
-  version = "false", -- Using latest version to get the most recent fixes
+  -- Fix version format to prevent parsing error
+  version = false, -- Using latest version to get the most recent fixes
   -- Explicitly checking for Neovim 0.10.1+ compatibility
   cond = function()
     if vim.fn.has("nvim-0.10.1") == 0 then

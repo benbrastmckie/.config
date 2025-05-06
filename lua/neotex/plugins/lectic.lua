@@ -4,11 +4,9 @@ return {
   -- Use both markdown and lectic.markdown filetypes
   ft = { "markdown", "lectic.markdown" },
   build = "npm install", -- Install dependencies
-  -- Use the conditional directory trick to point to the neovim plugin
-  cond = function(plugin)
-    plugin.dir = plugin.dir .. '/extra/lectic.nvim'
-    return true
-  end,
+  -- Don't modify the dir path - it's causing installation issues
+  -- The plugin needs to be installed correctly first
+  -- We'll let it install completely, then configure it
   init = function()
     -- Create the autocmd group early
     vim.api.nvim_create_augroup("Lectic", { clear = true })

@@ -10,21 +10,7 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 <leader>c - Create vertical split               | Split window vertically
 <leader>d - Save and delete buffer              | Save file and close buffer
 <leader>e - Toggle NvimTree explorer            | Open/close file explorer
-<leader>j - Close split                         | Close current split window
-<leader>i - Open VimtexToc                      | Show LaTeX table of contents
-<leader>k - Maximize split                      | Make current window full screen
-<leader>q - Save all and quit                   | Save all files and exit Neovim
-<leader>u - Open Telescope undo                 | Show undo history with preview
-<leader>v - VimtexView                          | View compiled LaTeX document
-<leader>w - Write all files                     | Save all open files
-----------------------------------------------------------------------------------
-TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
-----------------------------------------------------------------------------------
-<leader>b - VimtexCompile                       | Compile LaTeX document
-<leader>c - Create vertical split               | Split window vertically
-<leader>d - Save and delete buffer              | Save file and close buffer
-<leader>e - Toggle NvimTree explorer            | Open/close file explorer
-<leader>j - Close split                         | Close current split window
+<leader>j - Jupyter notebook functions          | Jupyter notebook operations
 <leader>i - Open VimtexToc                      | Show LaTeX table of contents
 <leader>k - Maximize split                      | Make current window full screen
 <leader>q - Save all and quit                   | Save all files and exit Neovim
@@ -85,6 +71,29 @@ GIT (<leader>g)                                 | DESCRIPTION
 <leader>gp - Preview hunk                       | Preview current change
 <leader>gs - Git status                         | Show files with changes
 <leader>gt - Toggle blame                       | Toggle line blame display
+
+----------------------------------------------------------------------------------
+JUPYTER (<leader>j)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ja - Activate notebook mode             | Enable notebook navigation mode
+<leader>jc - Show jupytext config               | Display current Jupytext config
+<leader>je - Execute cell                       | Run current notebook cell
+<leader>ji - Start IPython REPL                 | Start Python interactive shell
+<leader>jj - Next cell                          | Navigate to next cell
+<leader>jk - Previous cell                      | Navigate to previous cell 
+<leader>jn - Execute and next                   | Run cell and move to next
+<leader>jo - Insert cell below                  | Add new cell below current
+<leader>jO - Insert cell above                  | Add new cell above current
+<leader>jp - Convert py to ipynb                | Convert Python to notebook
+<leader>jm - Convert md to ipynb                | Convert Markdown to notebook
+<leader>jP - Convert ipynb to py                | Convert notebook to Python
+<leader>jM - Convert ipynb to md                | Convert notebook to Markdown
+<leader>js - Send motion to REPL                | Send text via motion to REPL
+<leader>jl - Send line to REPL                  | Send current line to REPL
+<leader>jf - Send file to REPL                  | Send entire file to REPL
+<leader>jq - Exit REPL                          | Close the REPL
+<leader>jr - Clear REPL                         | Clear the REPL screen
+<leader>jv - Send visual selection to REPL      | Send selected text to REPL
 
 ----------------------------------------------------------------------------------
 AI HELP (<leader>h)                             | DESCRIPTION
@@ -174,7 +183,7 @@ PANDOC (<leader>p)                              | DESCRIPTION
 RUN (<leader>r)                                 | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>rc - Clear plugin cache                 | Clear Neovim plugin cache
-<leader>re - Locate errors                      | Show all errors in location list
+<leader>re - Show linter errors                 | Display all errors in floating window
 <leader>rk - Wipe plugin files                  | Remove all plugin files
 <leader>rn - Next error                         | Go to next diagnostic/error
 <leader>rp - Previous error                     | Go to previous diagnostic/error
@@ -287,7 +296,7 @@ return {
       d = { "<cmd>update! | lua Snacks.bufdelete()<CR>", "delete buffer" },
       -- d = { "<cmd>update! | bdelete!<CR>", "delete buffer" },
       e = { "<cmd>NvimTreeToggle<CR>", "explorer" },
-      j = { "<cmd>clo<CR>", "drop split" },
+      -- j = { "<cmd>clo<CR>", "drop split" },
       i = { "<cmd>VimtexTocOpen<CR>", "index" },
       k = { "<cmd>on<CR>", "max split" },
       q = { "<cmd>wa! | qa!<CR>", "quit" },
@@ -382,6 +391,33 @@ return {
       --   n = { "<cmd>lua require('harpoon.ui').nav_next()<cr>", "next" },
       --   p = { "<cmd>lua require('harpoon.ui').nav_prev()<cr>", "previous" },
       -- LIST MAPPINGS
+      j = {
+        name = "JUPYTER",
+        -- NotebookNavigator commands
+        e = { "<cmd>lua require('notebook-navigator').run_cell()<CR>", "execute cell" },
+        j = { "<cmd>lua require('notebook-navigator').move_cell('d')<CR>", "next cell" },
+        k = { "<cmd>lua require('notebook-navigator').move_cell('u')<CR>", "previous cell" },
+        n = { "<cmd>lua require('notebook-navigator').run_and_move()<CR>", "execute and next" },
+        o = { "<cmd>lua require('notebook-navigator').add_cell_below()<CR>", "insert cell below" },
+        O = { "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", "insert cell above" },
+        s = { "<cmd>lua require('notebook-navigator').split_cell()<CR>", "split cell" },
+        c = { "<cmd>lua require('notebook-navigator').comment_cell()<CR>", "comment cell" },
+        
+        -- Additional NotebookNavigator features
+        a = { "<cmd>lua require('notebook-navigator').run_all_cells()<CR>", "run all cells" },
+        b = { "<cmd>lua require('notebook-navigator').run_cells_below()<CR>", "run cells below" },
+        u = { "<cmd>lua require('notebook-navigator').merge_cell('u')<CR>", "merge with cell above" },
+        d = { "<cmd>lua require('notebook-navigator').merge_cell('d')<CR>", "merge with cell below" },
+        
+        -- Iron.nvim REPL integration
+        i = { "<cmd>lua require('iron.core').repl_for('python')<CR>", "start IPython REPL" },
+        t = { "<cmd>lua require('iron.core').run_motion('send_motion')<CR>", "send motion to REPL" }, 
+        l = { "<cmd>lua require('iron.core').send_line()<CR>", "send line to REPL" },
+        f = { "<cmd>lua require('iron.core').send(nil, vim.fn.readfile(vim.fn.expand('%')))<CR>", "send file to REPL" },
+        q = { "<cmd>lua require('iron.core').close_repl()<CR>", "exit REPL" },
+        r = { "<cmd>lua require('iron.core').send(nil, string.char(12))<CR>", "clear REPL" },
+        v = { "<cmd>lua require('iron.core').visual_send()<CR>", "send visual selection to REPL" },
+      },
       L = {
         name = "LIST",
         c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
@@ -459,7 +495,7 @@ return {
       r = {
         name = "RUN",
         c = { "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", "clear plugin cache" },
-        e = { "vim.diagnostics.setloclist", "locate errors" },
+        e = { "<cmd>lua require('neotex.utils.diagnostics').show_all_errors()<CR>", "show linter errors" },
         -- h = { "<cmd>Hardtime toggle<cr>", "hardtime" }, -- Hardtime plugin has been deprecated
         k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy &' open=0<CR>", "wipe plugin files" },
         -- m = { "<cmd>MCPHub<cr>", "mcp-hub" }, -- MCP-Hub plugin has been deprecated
