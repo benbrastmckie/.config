@@ -58,3 +58,16 @@ require("lazy").setup({
     },
   },
 })
+
+-- Set up Jupyter notebook styling after plugins have loaded
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    vim.defer_fn(function()
+      local ok, styling = pcall(require, "neotex.plugins.jupyter.styling")
+      if ok and type(styling) == "table" and styling.setup then
+        styling.setup()
+      end
+    end, 1000)
+  end,
+  once = true
+})
