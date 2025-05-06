@@ -1,3 +1,4 @@
+-- Main plugin file for Jupyter notebook functionality and styling
 return {
   -- Jupytext for notebook conversion
   {
@@ -24,9 +25,13 @@ return {
     dependencies = {
       "echasnovski/mini.comment",
       "hkupty/iron.nvim",
+      "echasnovski/mini.hipatterns", -- For cell highlighting
     },
     config = function()
-      require("notebook-navigator").setup({
+      local nn = require("notebook-navigator")
+      
+      -- Basic NotebookNavigator setup
+      nn.setup({
         -- No mappings here - all defined in which-key.lua
         activate_mapping = "",
 
@@ -38,12 +43,26 @@ return {
           markdown = "```",
         },
 
+        -- Use syntax highlighting (a simpler option that works without mini.hipatterns)
+        syntax_highlight = true,
+        
+        -- Highlight group for cell markers
+        cell_highlight_group = "JupyterCellBorder",
+
         -- Use Iron.nvim as the REPL provider
         repl_provider = "iron",
 
         -- No mappings here - all defined in which-key.lua
         mappings = {},
       })
+      
+      -- Load our custom jupyter styling module
+      vim.defer_fn(function()
+        local ok, styling = pcall(require, "neotex.plugins.jupyter.styling")
+        if ok and type(styling) == "table" and styling.setup then
+          styling.setup()
+        end
+      end, 100)
     end,
   },
 
@@ -92,4 +111,11 @@ return {
       end
     end,
   },
+  
+  -- Add dependency for mini.hipatterns for cell styling
+  {
+    "echasnovski/mini.hipatterns",
+    version = "*",
+    lazy = true,
+  }
 }

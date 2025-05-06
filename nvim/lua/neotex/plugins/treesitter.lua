@@ -14,13 +14,24 @@ return {
         enable = true,
         disable = { "css", "latex", "cls" }, -- list of language that will be disabled
         -- Note: we keep markdown parser enabled for lectic.markdown files
-        -- additional_vim_regex_highlighting = { 'org' }, -- for orgmode
+        additional_vim_regex_highlighting = { "markdown", "python" }, -- for jupyter notebooks
       },
       -- enable indentation
       indent = { enable = true },
       -- enable autotagging (w/ nvim-ts-autotag plugin)
       autotag = {
         enable = false,
+      },
+      -- Define .ipynb injection queries to properly highlight code in markdown files
+      injections = {
+        {
+          filetype = "markdown",
+          query = [[
+            (fenced_code_block
+              language: (info_string) @language
+              content: (code_fence_content) @content)
+          ]],
+        }
       },
       -- ensure these language parsers are installed
       ensure_installed = {

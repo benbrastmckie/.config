@@ -80,7 +80,7 @@ JUPYTER (<leader>j)                             | DESCRIPTION
 <leader>je - Execute cell                       | Run current notebook cell
 <leader>ji - Start IPython REPL                 | Start Python interactive shell
 <leader>jj - Next cell                          | Navigate to next cell
-<leader>jk - Previous cell                      | Navigate to previous cell 
+<leader>jk - Previous cell                      | Navigate to previous cell
 <leader>jn - Execute and next                   | Run cell and move to next
 <leader>jo - Insert cell below                  | Add new cell below current
 <leader>jO - Insert cell above                  | Add new cell above current
@@ -402,16 +402,16 @@ return {
         O = { "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", "insert cell above" },
         s = { "<cmd>lua require('notebook-navigator').split_cell()<CR>", "split cell" },
         c = { "<cmd>lua require('notebook-navigator').comment_cell()<CR>", "comment cell" },
-        
+
         -- Additional NotebookNavigator features
         a = { "<cmd>lua require('notebook-navigator').run_all_cells()<CR>", "run all cells" },
         b = { "<cmd>lua require('notebook-navigator').run_cells_below()<CR>", "run cells below" },
         u = { "<cmd>lua require('notebook-navigator').merge_cell('u')<CR>", "merge with cell above" },
         d = { "<cmd>lua require('notebook-navigator').merge_cell('d')<CR>", "merge with cell below" },
-        
+
         -- Iron.nvim REPL integration
         i = { "<cmd>lua require('iron.core').repl_for('python')<CR>", "start IPython REPL" },
-        t = { "<cmd>lua require('iron.core').run_motion('send_motion')<CR>", "send motion to REPL" }, 
+        t = { "<cmd>lua require('iron.core').run_motion('send_motion')<CR>", "send motion to REPL" },
         l = { "<cmd>lua require('iron.core').send_line()<CR>", "send line to REPL" },
         f = { "<cmd>lua require('iron.core').send(nil, vim.fn.readfile(vim.fn.expand('%')))<CR>", "send file to REPL" },
         q = { "<cmd>lua require('iron.core').close_repl()<CR>", "exit REPL" },
