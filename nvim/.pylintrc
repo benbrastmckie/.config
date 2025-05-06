@@ -1,0 +1,7 @@
+[MASTER]
+# Ignore .ipynb files completely
+ignore-patterns=.*\.ipynb$
+
+[MESSAGES CONTROL]
+# Disable various warnings that are problematic for notebooks
+disable=syntax-error,invalid-syntax,no-member,undefined-variable,unused-import
