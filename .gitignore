@@ -59,3 +59,5 @@ fish/conf.d/private.fish
 BraveSoftware/Brave-Browser
 niri/config.kdl
 nvim/CLAUDE.md
+nvim/specs
+systemd/user
