@@ -360,7 +360,7 @@ return {
         b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
         c = { "<cmd>Telescope git_commits<CR>", "git commits" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
-        g = { "<cmd>lua Snacks.lazygit()<cr>", "lazygit" },
+        g = { "<cmd>lua vim.schedule(function() Snacks.lazygit() end)<cr>", "lazygit" },
         k = { "<cmd>Gitsigns prev_hunk<CR>", "prev hunk" },
         j = { "<cmd>Gitsigns next_hunk<CR>", "next hunk" },
         l = { "<cmd>Gitsigns blame_line<CR>", "line blame" }, -- TODO: use snacks?
@@ -398,7 +398,7 @@ return {
         j = { "<cmd>lua require('notebook-navigator').move_cell('d')<CR>", "next cell" },
         k = { "<cmd>lua require('notebook-navigator').move_cell('u')<CR>", "previous cell" },
         n = { "<cmd>lua require('notebook-navigator').run_and_move()<CR>", "execute and next" },
-        o = { "<cmd>lua require('notebook-navigator').add_cell_below()<CR>", "insert cell below" },
+        o = { "<cmd>lua require('neotex.utils.diagnostics').add_jupyter_cell_with_closing()<CR>", "insert cell below" },
         O = { "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", "insert cell above" },
         s = { "<cmd>lua require('notebook-navigator').split_cell()<CR>", "split cell" },
         c = { "<cmd>lua require('notebook-navigator').comment_cell()<CR>", "comment cell" },
