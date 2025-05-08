@@ -276,65 +276,77 @@
       },
       mappings = {
         diff = {
-          ours = "o",
-          theirs = "t",
-          all_theirs = "a",
-          both = "b",
-          cursor = "c",
-          next = "<C-j>",
-          prev = "<C-k>",
+          ours = "o",           -- Accept our version
+          theirs = "t",         -- Accept their version
+          all_theirs = "a",     -- Accept all their changes
+          both = "b",           -- Keep both versions
+          cursor = "c",         -- Accept at cursor
+          next = "<C-j>",       -- Go to next difference
+          prev = "<C-k>",       -- Go to previous difference
+          quit = "q",           -- Close diff view
+          help = "?",           -- Show help
         },
         suggestion = {
-          accept = "<C-l>",
-          next = "<C-j>",
-          prev = "<C-k>",
-          dismiss = "<C-h>",
+          accept = "<C-l>",     -- Accept current suggestion
+          next = "<C-j>",       -- Next suggestion
+          prev = "<C-k>",       -- Previous suggestion
+          dismiss = "<C-h>",    -- Dismiss suggestion
+          preview = "p",        -- Preview suggestion
         },
         jump = {
-          next = "n",
-          prev = "N",
+          next = "n",           -- Jump to next match
+          prev = "N",           -- Jump to previous match
         },
         submit = {
-          normal = "<CR>",
-          insert = "<C-l>", -- Keep this as <C-l> to avoid conflicts with normal <CR> behavior
+          normal = "<CR>",      -- Submit in normal mode
+          insert = "<C-l>",     -- Submit in insert mode (avoid conflicts with <CR>)
         },
         sidebar = {
-          apply_all = "A",
-          apply_cursor = "a",
-          switch_windows = "<Tab>",
-          reverse_switch_windows = "<S-Tab>",
+          apply_all = "A",      -- Apply all changes
+          apply_cursor = "a",   -- Apply change at cursor
+          switch_windows = "<Tab>",        -- Switch to next window
+          reverse_switch_windows = "<S-Tab>", -- Switch to previous window
+          toggle = "s",         -- Toggle sidebar
+          focus = "f",          -- Focus sidebar
         },
       },
       hints = { enabled = false },
       windows = {
-        position = "right",
-        wrap = true,
-        width = 40,
+        position = "right", -- the position of the sidebar (right|left|top|bottom)
+        wrap = true, -- wrap long lines
+        width = 45, -- optimal width for readability while preserving screen space
         sidebar_header = {
-          enabled = true,
-          align = "left",
-          rounded = false,
+          enabled = false, -- enable header for better visual hierarchy
+          align = "center", -- centered header for balanced look
+          rounded = true, -- rounded corners for modern UI
         },
         input = {
-          rounded = true,
-          prefix = "󰭹 ",
-          height = 8,
+          prefix = "󰭹 ", -- keeping your custom prefix
+          height = 10, -- comfortable input height
+          border = "rounded", -- consistent rounded borders
+          start_insert = true, -- automatically enter insert mode in input window
         },
         edit = {
           border = "rounded",
-          start_insert = true,
+          start_insert = true, -- automatically enter insert mode in edit window
         },
         ask = {
-          floating = false,
-          start_insert = true,
+          floating = true, -- floating window for better focus
+          start_insert = true, -- automatically enter insert mode
           border = "rounded",
-          focus_on_apply = "ours",
+          focus_on_apply = "ours", -- focus on our changes after applying
         },
       },
+      -- Adding highlight configurations for better visual distinction
       highlights = {
         diff = {
           current = "DiffText",
           incoming = "DiffAdd",
+        },
+        sidebar = {
+          header = "Title", -- make header more prominent
+          selected = "PmenuSel", -- highlight selected items
+          separator = "Comment", -- subtle separator color
         },
       },
       diff = {

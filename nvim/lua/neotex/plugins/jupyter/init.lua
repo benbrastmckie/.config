@@ -38,7 +38,7 @@ return {
         -- Cell markers define how cells are identified in different file types
         cell_markers = {
           -- Default Python marker
-          python = "# %%",
+          python = "```python",
           -- For markdown: using the most common code block marker
           markdown = "```",
         },

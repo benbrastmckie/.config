@@ -9,12 +9,12 @@ local active_cell_ns = vim.api.nvim_create_namespace("jupyter_active_cell")
 local function adjust_color(hex, amount)
   local r, g, b = hex:match("#(%x%x)(%x%x)(%x%x)")
   if not r then return hex end
-  
+
   r, g, b = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
   r = math.min(255, math.max(0, r + amount))
   g = math.min(255, math.max(0, g + amount))
   b = math.min(255, math.max(0, b + amount))
-  
+
   return string.format("#%02x%02x%02x", r, g, b)
 end
 
@@ -24,38 +24,36 @@ local function setup_highlights()
   local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
   local comment = vim.api.nvim_get_hl(0, { name = "Comment" })
   local func = vim.api.nvim_get_hl(0, { name = "Function" })
-  
+
   -- Convert RGB values to hex if they exist, or use fallbacks
   local function to_hex(rgb)
     if not rgb then return nil end
     return string.format("#%06x", rgb)
   end
-  
+
   local normal_bg = to_hex(normal.bg) or "#282828"
   local normal_fg = to_hex(normal.fg) or "#ebdbb2"
   local comment_fg = to_hex(comment.fg) or "#928374"
   local function_fg = to_hex(func.fg) or "#8ec07c"
-  
+
   -- Cell separator line (use comment color)
   vim.api.nvim_set_hl(0, "JupyterCellSeparator", { fg = comment_fg, bold = true })
-  
+
   -- Code cell background (slightly different from normal bg)
   vim.api.nvim_set_hl(0, "JupyterCodeCell", { bg = adjust_color(normal_bg, 10) })
-  
+
   -- Markdown cell background (slightly lighter than code cells)
   vim.api.nvim_set_hl(0, "JupyterMarkdownCell", { bg = adjust_color(normal_bg, 20) })
-  
+
   -- Cell icons (use function color)
   vim.api.nvim_set_hl(0, "JupyterCellIcon", { fg = function_fg, bold = true })
-  
+
   -- Active cell (brighter than inactive cells)
   vim.api.nvim_set_hl(0, "JupyterActiveCell", { bg = adjust_color(normal_bg, 30) })
 end
 
--- Define signs for cell types
+-- Define sign for code cell start
 local function setup_signs()
-  vim.fn.sign_define("JupyterCodeSign", { text = "📊", texthl = "JupyterCellIcon" })
-  vim.fn.sign_define("JupyterMarkdownSign", { text = "📝", texthl = "JupyterCellIcon" })
   vim.fn.sign_define("JupyterSeparatorSign", { text = "▶", texthl = "JupyterCellIcon" })
 end
 
@@ -65,18 +63,18 @@ local function get_cells_from_nn(bufnr)
   if not ok then
     return nil
   end
-  
+
   -- Check if get_cells function exists in NotebookNavigator
   if type(nn.get_cells) ~= "function" then
     return nil
   end
-  
+
   -- Try to get cells from NotebookNavigator
   local ok2, cells = pcall(nn.get_cells, bufnr)
   if not ok2 or type(cells) ~= "table" then
     return nil
   end
-  
+
   return cells
 end
 
@@ -84,23 +82,23 @@ end
 local function detect_cells_manually(bufnr)
   local cells = {}
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  
+
   -- Cell markers - detect both markdown and Python style markers
   local markers = {
     ["```"] = true,  -- markdown cells
     ["# %%"] = true, -- python cells
     ["#%%"] = true   -- python cells variant
   }
-  
+
   -- Track cell state
   local in_code_cell = false
   local in_markdown_cell = true -- Start with markdown (jupyter default)
   local current_cell_start = 0
-  
+
   -- Process each line to find cell boundaries
   for i, line in ipairs(lines) do
     local is_marker = false
-    
+
     -- Check if line matches any cell marker
     for marker, _ in pairs(markers) do
       if line:match("^%s*" .. marker) then
@@ -108,7 +106,7 @@ local function detect_cells_manually(bufnr)
         break
       end
     end
-    
+
     -- If this is a cell marker
     if is_marker then
       -- If we have a previous cell, add it to our list
@@ -116,11 +114,11 @@ local function detect_cells_manually(bufnr)
         table.insert(cells, {
           start_line = current_cell_start,
           end_line = i - 2,
-          cell_type = in_code_cell and "markdown" or "code",
+          cell_type = in_code_cell and "code" or "markdown",
           marker_line = i - 1
         })
       end
-      
+
       -- Determine cell type for the new cell
       if line:match("^%s*```python") then
         in_code_cell = true
@@ -134,11 +132,11 @@ local function detect_cells_manually(bufnr)
           in_code_cell = true
         end
       end
-      
+
       current_cell_start = i
     end
   end
-  
+
   -- Add the last cell if exists
   if current_cell_start > 0 and current_cell_start <= #lines then
     table.insert(cells, {
@@ -147,7 +145,7 @@ local function detect_cells_manually(bufnr)
       cell_type = in_code_cell and "code" or "markdown"
     })
   end
-  
+
   return cells
 end
 
@@ -155,42 +153,31 @@ end
 local function apply_styling(bufnr)
   -- Clear existing styling
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
-  
+
   -- Only apply to ipynb files
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   if not bufname:match("%.ipynb$") then
     return
   end
-  
+
   -- Get cells - try NotebookNavigator first, then fallback to manual detection
   local cells = get_cells_from_nn(bufnr) or detect_cells_manually(bufnr)
-  
+
   -- Process each cell
   for _, cell in ipairs(cells) do
-    -- Add separator at cell boundaries
-    if cell.marker_line then
-      vim.api.nvim_buf_set_extmark(bufnr, ns_id, cell.marker_line, 0, {
-        virt_text = { { "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", "JupyterCellSeparator" } },
-        virt_text_pos = "overlay",
-        priority = 100,
-      })
-      
-      -- Add sign marker for visual indicator in gutter
-      vim.fn.sign_place(0, "JupyterSigns", "JupyterSeparatorSign", bufnr, { lnum = cell.marker_line + 1 })
-      
-      -- Add cell type indicator in the gutter
-      local sign = cell.cell_type == "code" and "JupyterCodeSign" or "JupyterMarkdownSign"
-      vim.fn.sign_place(0, "JupyterSigns", sign, bufnr, { lnum = cell.start_line + 1 })
+    -- Only show separator sign at the top of code cells
+    if cell.cell_type == "code" and cell.marker_line then
+      vim.fn.sign_place(0, "JupyterSigns", "JupyterSeparatorSign", bufnr, { lnum = cell.start_line + 1 })
     end
-    
-    -- Apply background color to the cell
-    local hl_group = cell.cell_type == "code" and "JupyterCodeCell" or "JupyterMarkdownCell"
-    
-    for line_num = cell.start_line, cell.end_line do
-      vim.api.nvim_buf_set_extmark(bufnr, ns_id, line_num, 0, {
-        line_hl_group = hl_group,
-        priority = 10, -- Lower priority than other extmarks
-      })
+
+    -- Apply background color only to code cells
+    if cell.cell_type == "code" then
+      for line_num = cell.start_line, cell.end_line do
+        vim.api.nvim_buf_set_extmark(bufnr, ns_id, line_num, 0, {
+          line_hl_group = "JupyterCodeCell",
+          priority = 10, -- Lower priority than other extmarks
+        })
+      end
     end
   end
 end
@@ -199,29 +186,31 @@ end
 local function highlight_active_cell()
   local bufnr = vim.api.nvim_get_current_buf()
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  
+
   -- Only apply to ipynb files
   if not bufname:match("%.ipynb$") then
     return
   end
-  
+
   local cursor_line = vim.api.nvim_win_get_cursor(0)[1] - 1
-  
+
   -- Clear previous active cell highlight
   vim.api.nvim_buf_clear_namespace(bufnr, active_cell_ns, 0, -1)
-  
+
   -- Get cells - try NotebookNavigator first, then fallback to manual detection
   local cells = get_cells_from_nn(bufnr) or detect_cells_manually(bufnr)
-  
+
   -- Find which cell contains the cursor
   for _, cell in ipairs(cells) do
     if cursor_line >= cell.start_line and cursor_line <= cell.end_line then
-      -- Highlight active cell
-      for line_num = cell.start_line, cell.end_line do
-        vim.api.nvim_buf_set_extmark(bufnr, active_cell_ns, line_num, 0, {
-          line_hl_group = "JupyterActiveCell",
-          priority = 15, -- Higher than regular cell highlighting
-        })
+      -- Highlight active cell only if it's a code cell
+      if cell.cell_type == "code" then
+        for line_num = cell.start_line, cell.end_line do
+          vim.api.nvim_buf_set_extmark(bufnr, active_cell_ns, line_num, 0, {
+            line_hl_group = "JupyterActiveCell",
+            priority = 15, -- Higher than regular cell highlighting
+          })
+        end
       end
       break
     end
@@ -232,11 +221,11 @@ end
 function M.setup()
   -- Create autocommand group
   local group = vim.api.nvim_create_augroup("JupyterNotebookStyling", { clear = true })
-  
+
   -- Setup highlight groups and signs
   setup_highlights()
   setup_signs()
-  
+
   -- Apply styling only when entering or writing jupyter notebook files
   vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost" }, {
     pattern = "*.ipynb",
@@ -244,12 +233,12 @@ function M.setup()
     callback = function(args)
       -- Enable sign column for cell markers
       vim.opt_local.signcolumn = "yes:1"
-      
+
       -- Apply the styling
       apply_styling(args.buf)
     end
   })
-  
+
   -- Highlight active cell when cursor moves
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     pattern = "*.ipynb",
@@ -258,7 +247,7 @@ function M.setup()
       highlight_active_cell()
     end
   })
-  
+
   -- Force apply styling to all open ipynb buffers
   local buffers = vim.api.nvim_list_bufs()
   for _, buf in ipairs(buffers) do
@@ -269,14 +258,14 @@ function M.setup()
       end
     end
   end
-  
+
   -- Set up an autocmd to refresh highlights when colorscheme changes
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = group,
     callback = function()
       -- Re-setup all highlights with the new colorscheme
       setup_highlights()
-      
+
       -- Reapply to all open buffers
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         local bufname = vim.api.nvim_buf_get_name(buf)
@@ -289,4 +278,3 @@ function M.setup()
 end
 
 return M
-
