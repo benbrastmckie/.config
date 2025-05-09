@@ -38,8 +38,16 @@ if vim.fn.filereadable(lockfile) == 1 then
 end
 
 require("lazy").setup({
+  -- Current active imports
   { import = "neotex.plugins" },    -- main plugins directory
-  { import = "neotex.plugins.lsp" } -- lsp plugins directory
+  { import = "neotex.plugins.lsp" }, -- lsp plugins directory
+  
+  -- Phase 2 imports (commented until implementation)
+  -- { import = "neotex.plugins.coding" },  -- coding enhancement plugins
+  -- { import = "neotex.plugins.editor" },  -- editor enhancement plugins
+  -- { import = "neotex.plugins.tools" },   -- tool integration plugins
+  -- { import = "neotex.plugins.ui" },      -- UI enhancement plugins
+  -- { import = "neotex.plugins.extras" },  -- optional plugins
 }, {
   install = {
     colorscheme = { "gruvbox" },
