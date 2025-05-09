@@ -162,11 +162,12 @@ SESSIONS (<leader>S)                            | DESCRIPTION
 NIXOS (<leader>n)                               | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>nd - Nix develop                        | Enter nix development shell
-<leader>ng - Garbage collection                 | Clean up old nix packages
+<leader>nf - Rebuild flake                      | Rebuild system from flake
+<leader>ng - Garbage collection                 | Clean up old nix packages (15d)
 <leader>np - Browse packages                    | Open nixOS packages website
-<leader>nm - MyNixOS                            | Open MyNixOS website
-<leader>nr - Rebuild flake                      | Rebuild system from flake
+<leader>nm - MyNixOS                           | Open MyNixOS website
 <leader>nh - Home-manager switch                | Apply home-manager changes
+<leader>nr - Rebuild nix                        | Run update.sh script
 <leader>nu - Update flake                       | Update flake dependencies
 
 ----------------------------------------------------------------------------------
@@ -471,12 +472,13 @@ return {
         name = "NIXOS",
         d = { "<cmd>TermExec cmd='nix develop'<CR><C-w>j", "develop" },
         -- f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/nixos/'<CR><C-w>j", "flake" },
+        f = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.dotfiles/'<CR><C-w>l", "rebuild flake" },
         g = { "<cmd>TermExec cmd='nix-collect-garbage --delete-older-than 15d'<CR><C-w>j", "garbage" },
         -- g = { "<cmd>TermExec cmd='nix-collect-garbage -d'<CR><C-w>j", "garbage" },
         p = { "<cmd>TermExec cmd='brave https://search.nixos.org/packages' open=0<CR>", "packages" },
         m = { "<cmd>TermExec cmd='brave https://mynixos.com' open=0<CR>", "my-nixos" },
-        r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.dotfiles/'<CR><C-w>l", "rebuild flake" },
         h = { "<cmd>TermExec cmd='home-manager switch --flake ~/.dotfiles/'<CR><C-w>l", "home-manager" },
+        r = { "<cmd>TermExec cmd='./~/.dotfiles/update.sh'<CR><C-w>l", "rebuild nix" },
         -- r = { "<cmd>TermExec cmd='home-manager switch'<CR><C-w>j", "home rebuild" },
         -- r = { "<cmd>TermExec cmd='sudo nixos-rebuild switch --flake ~/.config/home-manager/#nandi'<CR><C-w>j", "home rebuild" },
         -- r = { "<cmd>TermExec cmd='home-manager switch --flake ~/.config/home-manager/'<CR><C-w>j", "rebuild" },

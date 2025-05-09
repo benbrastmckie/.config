@@ -43,6 +43,14 @@ return {
       },
       -- auto-install configured servers (with lspconfig)
       automatic_installation = true, -- not the same as ensure_installed
+      handlers = {
+        -- The first entry (without key) will be the default handler
+        -- and will be called for each installed server that doesn't have
+        -- a dedicated handler.
+        function(server_name) -- default handler
+          require("lspconfig")[server_name].setup({})
+        end,
+      },
     })
 
     mason_tool_installer.setup({
