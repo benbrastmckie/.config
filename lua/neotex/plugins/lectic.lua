@@ -8,6 +8,9 @@ return {
   -- The plugin needs to be installed correctly first
   -- We'll let it install completely, then configure it
   init = function()
+    -- Add the plugin's lua directory to the runtimepath
+    vim.opt.runtimepath:append(vim.fn.stdpath("data") .. "/lazy/lectic/extra/lectic.nvim")
+    
     -- Create the autocmd group early
     vim.api.nvim_create_augroup("Lectic", { clear = true })
 
