@@ -24,7 +24,7 @@ return {
     version = "*", -- Use latest stable version
     dependencies = {
       "echasnovski/mini.comment",
-      "hkupty/iron.nvim",
+      "Vigemus/iron.nvim",
       "echasnovski/mini.hipatterns", -- For cell highlighting
     },
     config = function()
