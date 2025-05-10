@@ -4,7 +4,9 @@
 -- This module loads plugins that enhance the editing experience:
 -- - yanky.nvim: Enhanced yank and paste functionality
 -- - which-key.nvim: Displays keybinding help popup
--- - (more plugins will be added in future batches)
+-- - formatting.lua: Code formatting with conform.nvim
+-- - linting.lua: Code linting with nvim-lint
+-- - todo-comments.lua: Highlight and search TODO comments
 --
 -- The module uses a consistent error handling approach to ensure
 -- NeoVim starts properly even if some plugin specifications fail.
@@ -23,10 +25,15 @@ end
 -- Load modules
 local yanky_module = safe_require("neotex.plugins.editor.yanky")
 local which_key_module = safe_require("neotex.plugins.editor.which-key")
+local formatting_module = safe_require("neotex.plugins.editor.formatting")
+local linting_module = safe_require("neotex.plugins.editor.linting")
+local todo_comments_module = safe_require("neotex.plugins.editor.todo-comments")
 
 -- Return plugin specs
 return {
   yanky_module,
   which_key_module,
-  -- Additional editor plugins will be added here
+  formatting_module,
+  linting_module,
+  todo_comments_module,
 }

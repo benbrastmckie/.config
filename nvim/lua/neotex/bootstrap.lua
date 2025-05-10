@@ -101,6 +101,9 @@ local function setup_lazy()
             reset = true,
           },
         },
+        rocks = {
+          enabled = false,  -- Disable luarocks support completely
+        },
       })
     else
       -- New plugin system - organize specs by category
@@ -117,8 +120,7 @@ local function setup_lazy()
         
         -- Phase 2 imports
         { import = "neotex.plugins.coding" },  -- coding enhancement plugins
-        { import = "neotex.plugins.extras" },  -- optional plugins
-        { import = "neotex.plugins.editor" },  -- editor enhancement plugins
+        { import = "neotex.plugins.editor" },  -- editor enhancement plugins (includes former extras)
         { import = "neotex.plugins.tools" },   -- tool integration plugins
         { import = "neotex.plugins.ui" },      -- UI enhancement plugins
       }, {
@@ -137,6 +139,9 @@ local function setup_lazy()
           rtp = {
             reset = true,
           },
+        },
+        rocks = {
+          enabled = false,  -- Disable luarocks support completely
         },
       })
     end
