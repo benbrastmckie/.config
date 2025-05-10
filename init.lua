@@ -1,6 +1,18 @@
--- Neovim configuration entry point
--- Author: Benjamin
--- Repository: https://github.com/username/neovim-config
+-----------------------------------------------------------
+-- NeoVim Configuration Entry Point
+-- Author: Benjamin Brast-McKie
+-- 
+-- This is the main entry point for NeoVim configuration.
+-- It sets the leader key and loads the configuration modules.
+-- The loading process includes fallbacks to ensure NeoVim 
+-- starts properly even if there are errors in the configuration.
+--
+-- Structure:
+-- - neotex/bootstrap.lua: Handles plugin and feature initialization
+-- - neotex/config/: Core configuration modules
+-- - neotex/utils/: Utility functions
+-- - neotex/plugins/: Plugin specification and configuration
+-----------------------------------------------------------
 
 -- Set leader key BEFORE loading lazy or any other plugins
 -- This is critical and must happen first

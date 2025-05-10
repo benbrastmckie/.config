@@ -1,5 +1,15 @@
--- neotex.utils.fold
--- Folding utilities
+-----------------------------------------------------------
+-- Fold Management Utilities
+-- 
+-- This module provides functions for working with code folding:
+-- - Toggling folds (toggle_all_folds, toggle_fold_enable)
+-- - Customizing fold behavior (toggle_folding_method)
+-- - Specific fold implementations (markdown_fold_level)
+-- - Persistence of fold settings (load_folding_state)
+--
+-- The module includes state persistence between sessions and
+-- file-specific folding methods.
+-----------------------------------------------------------
 
 local M = {}
 

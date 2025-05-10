@@ -1,5 +1,19 @@
--- neotex.utils module
--- Core utilities for the entire configuration
+-----------------------------------------------------------
+-- NeoVim Utility Functions
+-- 
+-- This module provides utility functions used throughout the
+-- configuration. It also serves as a loader for specialized
+-- utility modules:
+--
+-- - buffer.lua: Functions for buffer management
+-- - fold.lua: Functions for managing folds
+-- - url.lua: URL detection and handling
+-- - diagnostics.lua: LSP diagnostic utilities
+-- - misc.lua: Miscellaneous helper functions
+--
+-- Each module follows a consistent pattern with a setup()
+-- function that initializes the module's functionality.
+-----------------------------------------------------------
 
 local M = {}
 

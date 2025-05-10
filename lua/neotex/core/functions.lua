@@ -1,3 +1,13 @@
+-----------------------------------------------------------
+-- DEPRECATED: This module is deprecated and will be removed in a future version.
+-- Please use the new utility modules in neotex/utils/ instead:
+-- - Buffer functions: neotex.utils.buffer
+-- - Fold functions: neotex.utils.fold
+-- - URL functions: neotex.utils.url
+-- - Misc functions: neotex.utils.misc
+-- See NEW_STRUCTURE.md for details on the new organization.
+-----------------------------------------------------------
+
 -- Display vim messages in quickfix window
 function DisplayMessages()
   -- Get all messages and split them into lines

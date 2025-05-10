@@ -1,5 +1,16 @@
--- neotex.config module
--- Main configuration loader
+-----------------------------------------------------------
+-- NeoVim Configuration Module Loader
+-- 
+-- This module coordinates the loading of core configuration components:
+--
+-- - options.lua: Core Vim/NeoVim options
+-- - keymaps.lua: Key mappings for various modes
+-- - autocmds.lua: Autocommands for different events
+--
+-- Each component has a setup() function that initializes its
+-- specific configuration. This module ensures proper loading
+-- sequence and error handling.
+-----------------------------------------------------------
 
 local M = {}
 

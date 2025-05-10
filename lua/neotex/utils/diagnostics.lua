@@ -1,5 +1,14 @@
--- neotex.utils.diagnostics
--- Diagnostic utilities for LSP and linting
+-----------------------------------------------------------
+-- Diagnostic and LSP Integration Utilities
+-- 
+-- This module provides functions for working with diagnostics:
+-- - Viewing and navigating errors (show_all_errors, jump_to_error)
+-- - Diagnostic management (copy_diagnostics_to_clipboard)
+-- - Jupyter notebook integration (add_jupyter_cell_with_closing)
+--
+-- The utilities enhance the built-in LSP diagnostic capabilities
+-- with more user-friendly interfaces and additional functionality.
+-----------------------------------------------------------
 
 local M = {}
 

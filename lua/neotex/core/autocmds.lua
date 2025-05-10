@@ -1,3 +1,9 @@
+-----------------------------------------------------------
+-- DEPRECATED: This module is deprecated and will be removed in a future version.
+-- Please use neotex/config/autocmds.lua instead.
+-- See NEW_STRUCTURE.md for details on the new organization.
+-----------------------------------------------------------
+
 local api = vim.api
 
 -- Set special buffers as fixed and map 'q' to close

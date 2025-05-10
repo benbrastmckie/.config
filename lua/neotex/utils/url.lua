@@ -1,5 +1,19 @@
--- neotex.utils.url
--- URL handling utilities
+-----------------------------------------------------------
+-- URL Detection and Handling Utilities
+-- 
+-- This module provides functions for working with URLs:
+-- - URL detection and extraction (extract_urls_from_line)
+-- - Opening URLs (open_url_at_position, open_url_under_cursor)
+-- - Mouse integration (open_url_at_mouse)
+-- - Keybinding setup (setup_url_mappings)
+--
+-- The module supports various URL formats including:
+-- - Plain URLs (https://example.com)
+-- - Markdown links ([text](url))
+-- - HTML links (<a href="url">text</a>)
+-- - Email addresses (user@example.com)
+-- - Local file paths (/path/to/file.txt)
+-----------------------------------------------------------
 
 local M = {}
 

@@ -1,4 +1,13 @@
--- Enhanced bootstrap.lua with improved error handling and organization
+-----------------------------------------------------------
+-- NeoVim Configuration Bootstrapping
+-- Author: Benjamin Brast-McKie
+-- 
+-- This module handles the initialization of the NeoVim configuration.
+-- It provides a robust sequence of steps to set up the environment,
+-- load plugins, and initialize core functionality with proper error
+-- handling at each step.
+-----------------------------------------------------------
+
 local M = {}
 
 -- Utility function for error handling
@@ -64,35 +73,73 @@ end
 -- Initialize lazy.nvim with plugin specs
 local function setup_lazy()
   return with_error_handling(function()
-    require("lazy").setup({
-      -- Current active imports
-      { import = "neotex.plugins" },    -- main plugins directory
-      { import = "neotex.plugins.lsp" }, -- lsp plugins directory
+    -- Try to load the new plugin system first
+    local ok, plugins = pcall(require, "neotex.plugins")
+    
+    -- If the new plugin system fails, fall back to the old import-based method
+    if not ok then
+      vim.notify("Using legacy plugin import system", vim.log.levels.WARN)
       
-      -- Phase 2 imports (commented until implementation)
-      -- { import = "neotex.plugins.coding" },  -- coding enhancement plugins
-      -- { import = "neotex.plugins.editor" },  -- editor enhancement plugins
-      -- { import = "neotex.plugins.tools" },   -- tool integration plugins
-      -- { import = "neotex.plugins.ui" },      -- UI enhancement plugins
-      -- { import = "neotex.plugins.extras" },  -- optional plugins
-    }, {
-      install = {
-        colorscheme = { "gruvbox" },
-      },
-      checker = {
-        enabled = true,
-        notify = false,
-      },
-      change_detection = {
-        notify = false,
-      },
-      performance = {
-        reset_packpath = true,
-        rtp = {
-          reset = true,
+      require("lazy").setup({
+        -- Legacy imports
+        { import = "neotex.plugins" },    -- main plugins directory
+        { import = "neotex.plugins.lsp" }, -- lsp plugins directory
+      }, {
+        install = {
+          colorscheme = { "gruvbox" },
         },
-      },
-    })
+        checker = {
+          enabled = true,
+          notify = false,
+        },
+        change_detection = {
+          notify = false,
+        },
+        performance = {
+          reset_packpath = true,
+          rtp = {
+            reset = true,
+          },
+        },
+      })
+    else
+      -- New plugin system - organize specs by category
+      vim.notify("Using new modular plugin system", vim.log.levels.INFO)
+      
+      -- Set up with direct plugin specs AND the lsp imports
+      -- This ensures backward compatibility during the transition
+      require("lazy").setup({
+        -- Direct plugin specs
+        plugins,
+        
+        -- Legacy LSP import for backward compatibility
+        { import = "neotex.plugins.lsp" },
+        
+        -- Phase 2 imports (commented until implementation)
+        -- { import = "neotex.plugins.coding" },  -- coding enhancement plugins
+        -- { import = "neotex.plugins.editor" },  -- editor enhancement plugins
+        -- { import = "neotex.plugins.tools" },   -- tool integration plugins
+        -- { import = "neotex.plugins.ui" },      -- UI enhancement plugins
+        -- { import = "neotex.plugins.extras" },  -- optional plugins
+      }, {
+        install = {
+          colorscheme = { "gruvbox" },
+        },
+        checker = {
+          enabled = true,
+          notify = false,
+        },
+        change_detection = {
+          notify = false,
+        },
+        performance = {
+          reset_packpath = true,
+          rtp = {
+            reset = true,
+          },
+        },
+      })
+    end
   end, "setup of lazy.nvim plugins")
 end
 
@@ -121,6 +168,16 @@ local function setup_jupyter_styling()
   return true
 end
 
+-- Initialize utilities with error handling
+local function setup_utils()
+  return with_error_handling(function()
+    local utils = require("neotex.utils")
+    if type(utils) == "table" and utils.setup then
+      utils.setup()
+    end
+  end, "setup of utilities")
+end
+
 -- Main initialization function
 function M.init()
   local steps = {
@@ -128,6 +185,7 @@ function M.init()
     { func = ensure_lazy, name = "Ensure lazy.nvim is installed" },
     { func = validate_lockfile, name = "Validate lazy-lock.json" },
     { func = setup_lazy, name = "Set up plugins with lazy.nvim" },
+    { func = setup_utils, name = "Initialize utility functions" },
     { func = setup_jupyter_styling, name = "Configure Jupyter styling" },
   }
   
