@@ -87,8 +87,8 @@ end
 
 -- Setup module - called during initialization
 function M.setup()
-  -- Log initialization
-  vim.notify("Initializing neotex utilities", vim.log.levels.DEBUG)
+  -- Log initialization at trace level (won't be visible by default)
+  vim.notify("Initializing neotex utilities", vim.log.levels.TRACE)
   
   -- Load all submodules
   local submodules = M._load_submodules()

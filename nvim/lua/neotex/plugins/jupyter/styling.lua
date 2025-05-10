@@ -54,7 +54,18 @@ end
 
 -- Define sign for code cell start
 local function setup_signs()
-  vim.fn.sign_define("JupyterSeparatorSign", { text = "▶", texthl = "JupyterCellIcon" })
+  -- Modern sign definition (Neovim 0.9+)
+  local signs = { 
+    {
+      name = "JupyterSeparatorSign",
+      text = "▶",
+      texthl = "JupyterCellIcon"
+    }
+  }
+  
+  for _, sign in ipairs(signs) do
+    vim.fn.sign_define(sign.name, { text = sign.text, texthl = sign.texthl })
+  end
 end
 
 -- Try to use NotebookNavigator for cell detection if available
@@ -167,7 +178,13 @@ local function apply_styling(bufnr)
   for _, cell in ipairs(cells) do
     -- Only show separator sign at the top of code cells
     if cell.cell_type == "code" and cell.marker_line then
-      vim.fn.sign_place(0, "JupyterSigns", "JupyterSeparatorSign", bufnr, { lnum = cell.start_line + 1 })
+      -- Place sign marker using lower level API to avoid deprecated function
+      local ns = vim.api.nvim_create_namespace("JupyterSigns")
+      vim.api.nvim_buf_set_extmark(bufnr, ns, cell.start_line, 0, {
+        sign_text = "▶",
+        sign_hl_group = "JupyterCellIcon",
+        priority = 10,
+      })
     end
 
     -- Apply background color only to code cells

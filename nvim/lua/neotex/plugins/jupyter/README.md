@@ -108,10 +108,40 @@ You can change the cell marker icons by modifying the `setup_signs()` function:
 ```lua
 -- Find this section in the styling.lua file
 local function setup_signs()
-  vim.fn.sign_define("JupyterCodeSign", { text = "📊", texthl = "JupyterCellIcon" })
-  vim.fn.sign_define("JupyterMarkdownSign", { text = "📝", texthl = "JupyterCellIcon" })
-  vim.fn.sign_define("JupyterSeparatorSign", { text = "▶", texthl = "JupyterCellIcon" })
+  -- Modern sign definition (Neovim 0.9+)
+  local signs = { 
+    {
+      name = "JupyterSeparatorSign",
+      text = "▶",
+      texthl = "JupyterCellIcon"
+    },
+    {
+      name = "JupyterCodeSign",
+      text = "📊", 
+      texthl = "JupyterCellIcon"
+    },
+    {
+      name = "JupyterMarkdownSign",
+      text = "📝", 
+      texthl = "JupyterCellIcon"
+    }
+  }
+  
+  for _, sign in ipairs(signs) do
+    vim.fn.sign_define(sign.name, { text = sign.text, texthl = sign.texthl })
+  end
 end
+```
+
+For Neovim 0.10+, you can use the extmark API directly instead of sign_define:
+
+```lua
+-- Modern approach using extmarks instead of signs
+vim.api.nvim_buf_set_extmark(bufnr, namespace_id, line_num, 0, {
+  sign_text = "▶",
+  sign_hl_group = "JupyterCellIcon",
+  priority = 10,
+})
 ```
 
 ### Customizing Cell Separators

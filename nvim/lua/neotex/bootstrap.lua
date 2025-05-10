@@ -78,7 +78,7 @@ local function setup_lazy()
     
     -- If the new plugin system fails, fall back to the old import-based method
     if not ok then
-      vim.notify("Using legacy plugin import system", vim.log.levels.WARN)
+      vim.notify("Using legacy plugin import system", vim.log.levels.DEBUG)
       
       require("lazy").setup({
         -- Legacy imports
@@ -107,7 +107,7 @@ local function setup_lazy()
       })
     else
       -- New plugin system - organize specs by category
-      vim.notify("Using new modular plugin system", vim.log.levels.INFO)
+      vim.notify("Using new modular plugin system", vim.log.levels.DEBUG)
       
       -- Set up with direct plugin specs AND the lsp imports
       -- This ensures backward compatibility during the transition
@@ -204,8 +204,10 @@ function M.init()
   end
   
   if success then
-    vim.notify("Neovim configuration loaded successfully", vim.log.levels.INFO)
+    -- Use debug level so it won't show up in normal usage
+    vim.notify("Neovim configuration loaded successfully", vim.log.levels.DEBUG)
   else
+    -- Keep error notifications at warn level
     vim.notify("Neovim configuration loaded with errors", vim.log.levels.WARN)
   end
   
