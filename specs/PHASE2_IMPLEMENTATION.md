@@ -163,34 +163,34 @@ This document outlines a detailed, incremental approach to implementing Phase 2 
 
 **Commit**: "Add additional mini plugins for enhanced functionality" ✓
 
-### Batch 6: Todo-comments Integration
+### ✅ Batch 6: Todo-comments Integration
 
 **Goal**: Add todo-comments.nvim for enhanced TODO highlighting and navigation.
 
-1. **Create extras directory**
+1. **Create extras directory** ✓
    - Create `lua/neotex/plugins/extras/` directory
    - Create basic `init.lua` to load submodules
 
-2. **Implement todo-comments**
+2. **Implement todo-comments** ✓
    - Create `lua/neotex/plugins/extras/todo-comments.lua`
    - Configure keywords, colors, and patterns
    - Set up Telescope integration
 
-3. **Update bootstrap.lua**
+3. **Update bootstrap.lua** ✓
    - Uncomment the extras plugins import in bootstrap.lua
    - Test: Verify NeoVim starts without errors and plugin loads
 
-4. **Configure keybindings**
+4. **Configure keybindings** ✓
    - Set up key mappings for todo navigation
    - Add integration with existing keymapping structure
 
-**Testing**:
+**Testing**: ✓
 - Add various TODO comments and check highlighting
 - Test searching for TODOs with Telescope
 - Verify color coding works correctly
 - Test with different comment styles
 
-**Commit**: "Add todo-comments.nvim for enhanced TODO tracking"
+**Commit**: "Add todo-comments.nvim for enhanced TODO tracking" ✓
 
 ### Batch 7: Conform.nvim Integration
 

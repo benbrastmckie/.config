@@ -273,7 +273,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>fh`     | Search Neovim help docs       |
 | `<leader>fk`     | Show all keybindings          |
 | `<leader>fr`     | Show clipboard registers      |
-| `<leader>ft`     | Browse and change themes      |
+| `<leader>ft`     | Find TODOs in project         |
 | `<leader>fs`     | Search for string in project  |
 | `<leader>fw`     | Find current word in project  |
 | `<leader>fy`     | Browse clipboard history      |
@@ -450,6 +450,18 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>xs`     | Toggle between single/multi-line    |
 | `<leader>xd`     | Show diff overlay with clipboard    |
 | `<leader>xw`     | Toggle word-level diff display      |
+
+#### TODO Navigation (`<leader>t`)
+
+| Key              | Action                              |
+|------------------|-------------------------------------|
+| `<leader>tt`     | Find all TODOs with Telescope       |
+| `<leader>tn`     | Jump to next TODO comment           |
+| `<leader>tp`     | Jump to previous TODO comment       |
+| `<leader>tl`     | Show TODOs in location list         |
+| `<leader>tq`     | Show TODOs in quickfix list         |
+| `[t`             | Go to previous TODO comment         |
+| `]t`             | Go to next TODO comment             |
 
 ## Features and Workflows
 
