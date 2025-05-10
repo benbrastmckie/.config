@@ -431,6 +431,15 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>sd`     | Remove surrounding characters |
 | `<leader>sc`     | Change surrounding characters |
 
+#### Yank (`<leader>y`)
+
+| Key              | Action                        |
+|------------------|-------------------------------|
+| `<leader>yh`     | Browse yank/clipboard history |
+| `<leader>yc`     | Clear yank history            |
+| `<C-n>`          | Cycle forward through yanks   |
+| `<C-p>`          | Cycle backward through yanks  |
+
 #### Templates (`<leader>t`)
 
 | Key              | Action                         |

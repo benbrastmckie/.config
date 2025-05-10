@@ -203,6 +203,12 @@ SURROUND (<leader>s)                            | DESCRIPTION
 <leader>sc - Change surround                    | Change surrounding characters
 
 ----------------------------------------------------------------------------------
+YANK (<leader>y)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>yh - Yank history                       | Browse clipboard history with Telescope
+<leader>yc - Clear history                      | Clear the yank history
+
+----------------------------------------------------------------------------------
 TEMPLATES (<leader>t)                           | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>tp - PhilPaper.tex                      | Insert philosophy paper template
@@ -372,7 +378,7 @@ return {
         t = { "<cmd>TodoTelescope<CR>", "todos" },
         s = { "<cmd>Telescope grep_string<CR>", "string" },
         w = { "<cmd>lua SearchWordUnderCursor()<CR>", "word" },
-        y = { "<cmd>YankyRingHistory<CR>", "yanks" },
+        y = { "<cmd>Telescope yank_history<CR>", "yanks" },
         -- m = { "<cmd>Telescope man_pages<CR>", "man pages" },
         -- c = { "<cmd>Telescope commands<CR>", "commands" },
         -- r = { "<cmd>Telescope oldfiles<CR>", "recent" },
@@ -583,6 +589,11 @@ return {
         s = { "gS", "split/join toggle" },
         d = { function() require('mini.diff').toggle_overlay() end, "toggle diff overlay" },
         w = { function() require('mini.diff').toggle_word_diff() end, "toggle word diff" },
+      },
+      y = {
+        name = "YANK",
+        h = { "<cmd>Telescope yank_history<CR>", "history" },
+        c = { "<cmd>YankyClearHistory<CR>", "clear history" },
       },
     },
   },

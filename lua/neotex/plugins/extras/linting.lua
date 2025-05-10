@@ -20,55 +20,101 @@ return {
   config = function()
     local lint = require("lint")
     
-    -- Configure linters for different file types
-    lint.linters_by_ft = {
-      -- Web development
-      javascript = { "eslint" },
-      typescript = { "eslint" },
-      javascriptreact = { "eslint" },
-      typescriptreact = { "eslint" },
-      vue = { "eslint" },
-      css = { "stylelint" },
-      html = { "tidy" },
-      json = { "jsonlint" },
-      yaml = { "yamllint" },
-      
-      -- Python
-      python = { "flake8", "pylint" },
-      
-      -- Lua
-      lua = { "luacheck" },
-      
-      -- Shell scripting
-      sh = { "shellcheck" },
-      bash = { "shellcheck" },
-      
-      -- Markdown
-      markdown = { "markdownlint" },
-      
-      -- LaTeX
-      tex = { "chktex" },
-      
-      -- C/C++
-      c = { "cppcheck" },
-      cpp = { "cppcheck" },
-    }
+    -- Helper function to check if a command is available
+    local function is_executable(command)
+      return vim.fn.executable(command) == 1
+    end
     
-    -- Configure linter options
-    lint.linters.flake8.args = {
-      "--max-line-length=88",
-      "--extend-ignore=E203",
-    }
+    -- Initialize linters by filetype
+    lint.linters_by_ft = {}
     
-    lint.linters.pylint.args = {
-      "--rcfile=" .. vim.fn.expand("$HOME/.pylintrc"),
-      "--disable=C0111",
-    }
+    -- Only configure linters that are actually available on the system
+    -- Web development
+    if is_executable("eslint") then
+      lint.linters_by_ft.javascript = { "eslint" }
+      lint.linters_by_ft.typescript = { "eslint" }
+      lint.linters_by_ft.javascriptreact = { "eslint" }
+      lint.linters_by_ft.typescriptreact = { "eslint" }
+      lint.linters_by_ft.vue = { "eslint" }
+    end
     
-    lint.linters.luacheck.args = {
-      "--globals=vim",
-      "--no-max-line-length",
-    }
+    if is_executable("stylelint") then
+      lint.linters_by_ft.css = { "stylelint" }
+    end
+    
+    if is_executable("tidy") then
+      lint.linters_by_ft.html = { "tidy" }
+    end
+    
+    if is_executable("jsonlint") then
+      lint.linters_by_ft.json = { "jsonlint" }
+    end
+    
+    if is_executable("yamllint") then
+      lint.linters_by_ft.yaml = { "yamllint" }
+    end
+    
+    -- Python
+    if is_executable("pylint") then
+      lint.linters_by_ft.python = { "pylint" }
+    end
+    
+    -- Lua
+    if is_executable("luacheck") then
+      lint.linters_by_ft.lua = { "luacheck" }
+    end
+    
+    -- Shell scripting
+    if is_executable("shellcheck") then
+      lint.linters_by_ft.sh = { "shellcheck" }
+      lint.linters_by_ft.bash = { "shellcheck" }
+    end
+    
+    -- Markdown
+    if is_executable("markdownlint") then
+      lint.linters_by_ft.markdown = { "markdownlint" }
+    end
+    
+    -- LaTeX
+    if is_executable("chktex") then
+      lint.linters_by_ft.tex = { "chktex" }
+    end
+    
+    -- C/C++
+    if is_executable("cppcheck") then
+      lint.linters_by_ft.c = { "cppcheck" }
+      lint.linters_by_ft.cpp = { "cppcheck" }
+    end
+    
+    -- Configure linter options only for available linters
+    if is_executable("flake8") then
+      lint.linters.flake8 = lint.linters.flake8 or {}
+      lint.linters.flake8.args = {
+        "--max-line-length=88",
+        "--extend-ignore=E203",
+      }
+    end
+    
+    if is_executable("pylint") then
+      lint.linters.pylint = lint.linters.pylint or {}
+      lint.linters.pylint.args = {
+        "--disable=C0111",
+      }
+      
+      -- Only add pylintrc if it exists
+      local pylintrc_path = vim.fn.expand("$HOME/.pylintrc")
+      if vim.fn.filereadable(pylintrc_path) == 1 then
+        table.insert(lint.linters.pylint.args, "--rcfile=" .. pylintrc_path)
+      end
+    end
+    
+    if is_executable("luacheck") then
+      lint.linters.luacheck = lint.linters.luacheck or {}
+      lint.linters.luacheck.args = {
+        "--globals=vim",
+        "--no-max-line-length",
+      }
+    end
     
     -- Helper function to run linters
     _G.lint_try_lint = function()
