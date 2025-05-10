@@ -6,6 +6,10 @@
 -- - mini.surround: Surround text with characters (replacing nvim-surround)
 -- - mini.comment: Comment toggling (replacing Comment.nvim)
 -- - mini.cursorword: Highlights word occurrences (replacing local-highlight)
+-- - mini.ai: Enhanced text objects for working with brackets, quotes, etc.
+-- - mini.splitjoin: Toggle between single-line and multi-line code constructs
+-- - mini.align: Align text in columns based on delimiters
+-- - mini.diff: Show diff between current buffer and clipboard or register
 --
 -- Mini.nvim provides a collection of minimal, independent, and fast 
 -- Lua modules for Neovim that enhance various aspects of coding.
@@ -273,6 +277,177 @@ return {
       end
     end
     
+    -- Configure mini.ai for enhanced text objects
+    require('mini.ai').setup({
+      -- Table with textobject id as fields, textobject specification as values.
+      -- Text objects can be used:
+      -- - In operator-pending mode to create mapping like `di(` (delete inside brackets)
+      -- - In visual mode to extend selection like `va'` (visually select around quotes)
+      custom_textobjects = {
+        -- Common objects
+        o = require('mini.ai').gen_spec.treesitter({ 
+          a = { "@block.outer", "@conditional.outer", "@loop.outer" },
+          i = { "@block.inner", "@conditional.inner", "@loop.inner" },
+        }, {}),
+        f = require('mini.ai').gen_spec.treesitter({ 
+          a = "@function.outer", 
+          i = "@function.inner" 
+        }, {}),
+        c = require('mini.ai').gen_spec.treesitter({ 
+          a = "@class.outer", 
+          i = "@class.inner" 
+        }, {}),
+        -- User-defined objects
+        D = require('mini.ai').gen_spec.pair('```', '```', {}), -- Markdown code blocks
+        m = require('mini.ai').gen_spec.pair('\\begin{', '\\end{', {}), -- LaTeX environment
+      },
+      
+      -- How to search for object (first inside current line, then inside
+      -- neighborhood). One of 'cover', 'cover_or_next', 'cover_or_prev',
+      -- 'cover_or_nearest', 'next', 'prev', 'nearest'.
+      search_method = 'cover_or_nearest',
+      
+      -- Whether to disable showing non-error feedback
+      silent = false,
+    })
+    
+    -- Configure mini.splitjoin for toggling between single/multi-line constructs
+    require('mini.splitjoin').setup({
+      -- Module mappings. Use `''` (empty string) to disable one.
+      mappings = {
+        toggle = 'gS', -- Toggle "split or join" on current line
+        split = '',    -- Split current item
+        join = '',     -- Join items within current line
+      },
+      
+      -- Split options for different item types (each is table with options)
+      split = {
+        hooks_pre = {},
+        hooks_post = {},
+      },
+      
+      -- Join options for different item types
+      join = {
+        hooks_pre = {},
+        hooks_post = {},
+      },
+    })
+    
+    -- Configure mini.align for text alignment
+    require('mini.align').setup({
+      -- Module mappings. Use `''` (empty string) to disable one.
+      mappings = {
+        start = 'ga',          -- Start alignment
+        start_with_preview = 'gA', -- Start alignment with preview
+      },
+      
+      -- Default options controlling alignment process
+      options = {
+        split_pattern = '',    -- Pattern used to split text
+        justify_side = 'left', -- Which side to justify: 'left', 'center', 'right'
+        delimiter_pattern = '', -- Pattern for delimiter to be emphasized
+        
+        -- Options for merging delimiter and adjacent spaces into one
+        merge_delimiter = true,
+        
+        -- Whether to add spaces for alignment
+        spaces_to_add = true,
+      },
+      
+      -- Predefined steps to be used inside user steps
+      steps = {
+        -- Functions applied in sequence to create expression which
+        -- will be evaluated for each delimiter to get its column
+        -- for alignment
+        pre_process = {},
+        
+        -- Functions applied in sequence for each part to align
+        align = {},
+        
+        -- Functions applied in sequence for to adjust space
+        adjust = {},
+        
+        -- Functions applied in sequence for post-processing
+        post_process = {},
+      },
+    })
+    
+    -- Configure mini.diff for showing diffs
+    require('mini.diff').setup({
+      -- Options controlling how sign adds, updates, and removes signs
+      sign = {
+        -- How many lines show show around visible added/changed/removed lines
+        context = 3,
+
+        -- Priority of used extmarks
+        priority = 100,
+
+        -- How to style added/changed/removed lines
+        add = { text = '▎', hl_group = 'MiniDiffSignAdd' },
+        change = { text = '▎', hl_group = 'MiniDiffSignChange' },
+        delete = { text = '▎', hl_group = 'MiniDiffSignDelete' },
+      },
+
+      -- Options for views
+      view = {
+        -- Whether to sync view (make it stay at the same lines as original)
+        sync = true,
+      },
+
+      -- Collection of word diff functions. Each function should take two
+      -- strings and return array of pairs of start-end (1-indexed, end-inclusive)
+      -- character positions defining matched parts.
+      -- Used by `MinidiffWordDiff`.
+      word_diff = {
+        -- Compute diff on non-whitespace characters
+        non_ws = function(s1, s2)
+          -- Simple implementation of Myers algorithm for character level diffing
+          -- Filter out completely blank characters
+          local s1_clean = s1:gsub('%s+', ' ')
+          local s2_clean = s2:gsub('%s+', ' ')
+          
+          -- Return empty if one of the strings is empty
+          if s1_clean == '' or s2_clean == '' then
+            return {}
+          end
+          
+          -- Return simple diff of whole strings
+          if s1_clean == s2_clean then
+            return { { 1, s1:len() } }
+          end
+          
+          -- For simplicity, just match start and end positions
+          local i = 1
+          local matches = {}
+          while i <= math.min(s1:len(), s2:len()) and s1:sub(i, i) == s2:sub(i, i) do
+            i = i + 1
+          end
+          
+          if i > 1 then
+            table.insert(matches, { 1, i - 1 })
+          end
+          
+          -- Match from the end
+          local j1, j2 = s1:len(), s2:len()
+          while j1 >= i and j2 >= i and s1:sub(j1, j1) == s2:sub(j2, j2) do
+            j1 = j1 - 1
+            j2 = j2 - 1
+          end
+          
+          if j1 < s1:len() then
+            table.insert(matches, { j1 + 1, s1:len() })
+          end
+          
+          return matches
+        end,
+      },
+    })
+
+    -- Set up highlight groups for mini.diff
+    vim.api.nvim_set_hl(0, 'MiniDiffSignAdd', { link = 'DiffAdd' })
+    vim.api.nvim_set_hl(0, 'MiniDiffSignChange', { link = 'DiffChange' })
+    vim.api.nvim_set_hl(0, 'MiniDiffSignDelete', { link = 'DiffDelete' })
+    
     -- Set up custom keymappings for mini.comment to match Comment.nvim
     -- Normal mode comment toggle
     vim.keymap.set('n', '<C-;>', function()
@@ -298,6 +473,18 @@ return {
           c = { "sc", "change" },
           f = { "sf", "find" },
           h = { "sh", "highlight" },
+        },
+      })
+      
+      -- Register new which-key mappings for new mini plugins
+      which_key.register({
+        ["<leader>x"] = {
+          name = "TEXT OPERATIONS",
+          a = { "ga", "align" },
+          A = { "gA", "align with preview" },
+          s = { "gS", "split/join toggle" },
+          d = { function() require('mini.diff').toggle_overlay() end, "toggle diff overlay" },
+          w = { function() require('mini.diff').toggle_word_diff() end, "toggle word diff" },
         },
       })
     end
