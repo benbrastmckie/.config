@@ -16,13 +16,11 @@ return {
     require("gitsigns").setup({
       signs = {
         -- Using minimal vertical bar for most changes
-        add = { text = "┃" },
-        change = { text = "┃" },
-        -- Different symbols for deleted lines
-        delete = { text = "▁" },
-        topdelete = { text = "▔" },
-        changedelete = { text = "~" },
-        untracked = { text = "┆" },
+        add = { text = "▎" },
+        change = { text = "▎" },
+        delete = { text = "▎" },
+        topdelete = { text = "▎" },
+        changedelete = { text = "▎" },
       },
 
       -- Core settings
