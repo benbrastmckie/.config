@@ -12,7 +12,7 @@
 -- - lean.lua: Lean theorem prover integration
 -- - avante.lua: AI integration
 -- - lectic.lua: AI-assisted writing
--- - snacks.lua: Dashboard and utilities
+-- - (moved to neotex.plugins.snacks)
 --
 -- The module uses a consistent error handling approach to ensure
 -- NeoVim starts properly even if some plugin specifications fail.
@@ -39,7 +39,7 @@ local vimtex_module = safe_require("neotex.plugins.tools.vimtex")
 local lean_module = safe_require("neotex.plugins.tools.lean")
 local avante_module = safe_require("neotex.plugins.tools.avante")
 local lectic_module = safe_require("neotex.plugins.tools.lectic")
-local snacks_module = safe_require("neotex.plugins.tools.snacks")
+local snacks_module = safe_require("neotex.plugins.snacks")
 local markdown_preview_module = safe_require("neotex.plugins.tools.markdown-preview")
 local autolist_module = safe_require("neotex.plugins.tools.autolist")
 
