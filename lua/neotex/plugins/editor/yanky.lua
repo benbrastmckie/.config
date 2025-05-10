@@ -14,7 +14,8 @@
 
 return {
   "gbprod/yanky.nvim",
-  event = "TextYankPost",
+  lazy = true,
+  event = { "TextYankPost", "CursorMoved" },
   keys = {
     -- Yanky mappings in normal mode
     { "y", "<Plug>(YankyYank)", mode = { "n", "x" }, desc = "Yank text" },
@@ -27,9 +28,11 @@ return {
     
     -- Telescope integration
     { "<leader>fy", "<cmd>Telescope yank_history<CR>", desc = "Yank history" },
+    { "<leader>yh", "<cmd>Telescope yank_history<CR>", desc = "Yank history" },
+    { "<leader>yc", "<cmd>YankyClearHistory<CR>", desc = "Clear yank history" },
   },
   dependencies = {
-    "nvim-telescope/telescope.nvim",
+    { "nvim-telescope/telescope.nvim", lazy = true },
   },
   config = function()
     local yanky_ok, yanky = pcall(require, "yanky")
@@ -41,8 +44,8 @@ return {
     yanky.setup({
       -- Configure ring history
       ring = {
-        -- History settings
-        history_length = 100, -- Limit history to reduce memory usage
+        -- History settings with performance optimizations
+        history_length = 50, -- Reduced from 100 to lower memory usage
         storage = "memory", -- Use memory for faster access
         storage_path = vim.fn.stdpath("data") .. "/yanky", -- Path for persistent storage
         
@@ -56,14 +59,14 @@ return {
         ignore_registers = { "_" }, -- Ignore the black hole register
       },
       
-      -- Pick settings
+      -- Pick settings - optimized for performance
       picker = {
         select = { 
-          action = nil, -- We'll set this after checking if actions is available
+          action = nil, -- Will be set lazily when needed
         },
         telescope = {
           use_default_mappings = true,
-          -- We'll configure telescope mappings only if the telescope extension is loaded properly
+          mappings = {},
         },
       },
       
@@ -72,11 +75,11 @@ return {
         sync_with_ring = true,
       },
       
-      -- Highlighting settings
+      -- Highlighting settings - reduced duration for better performance
       highlight = {
         on_put = true,
         on_yank = true,
-        timer = 150,  -- Shorter highlight duration for better performance
+        timer = 100,  -- Reduced from 150ms for better performance
       },
       
       -- Preserve cursor position on put
@@ -88,41 +91,38 @@ return {
       deduplicate = true,
     })
     
-    -- Add Telescope integration if available
-    local telescope_ok, telescope = pcall(require, "telescope")
-    if telescope_ok then
-      -- Check if telescope extension exists before loading
-      local status_ok, _ = pcall(telescope.load_extension, "yank_history")
-      if not status_ok then
-        vim.notify("Yanky: failed to load telescope extension. Some features may be missing.", vim.log.levels.WARN)
-      end
-    end
-    
-    -- Add custom keymaps via which-key
-    local has_which_key, which_key = pcall(require, "which-key")
-    if has_which_key and telescope_ok then
-      -- Only register Telescope commands if telescope is available
-      which_key.register({
-        ["<leader>y"] = { 
-          name = "YANK",
-          h = { "<cmd>Telescope yank_history<CR>", "history" },
-          c = { "<cmd>YankyClearHistory<CR>", "clear history" },
-        },
-      })
-    end
-    
-    -- Add autocommands to clean up yank history periodically
-    vim.api.nvim_create_autocmd("VimLeavePre", {
+    -- Lazy load Telescope integration only when needed
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "TelescopeLoaded",
+      once = true,
       callback = function()
-        -- Clean up yanky history when exiting Neovim
-        require("yanky").clear_history()
+        pcall(require("telescope").load_extension, "yank_history")
       end,
     })
     
-    -- Check if nvim-treesitter is available for better highlighting
-    local has_treesitter = pcall(require, "nvim-treesitter")
-    if has_treesitter then
-      -- Use treesitter for syntax-aware yanking when available
+    -- Add autocommands to clean up yank history periodically
+    vim.api.nvim_create_autocmd("BufWritePre", {
+      callback = function()
+        -- Clean up yanky history when writing files to prevent memory growth
+        if #require("yanky.history").all() > 30 then
+          -- Only keep recent entries
+          local entries = require("yanky.history").all()
+          for i = 31, #entries do
+            require("yanky.history").delete(i)
+          end
+        end
+      end,
+    })
+    
+    -- Clean up on exit
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+      callback = function()
+        pcall(require("yanky").clear_history)
+      end,
+    })
+    
+    -- Optimize treesitter integration - only use when treesitter is already loaded
+    if package.loaded["nvim-treesitter"] then
       vim.g.yanky_use_treesitter = true
     end
   end,
