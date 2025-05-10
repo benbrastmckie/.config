@@ -1,0 +1,11 @@
+-- neotex.plugins module
+-- Plugin specification loader
+
+-- This is a stub file that will be expanded in batch 4
+-- Currently we're only creating the structure for future implementation
+-- The existing plugin files are still being used
+
+return {
+  -- File is kept minimal for now
+  -- Will be populated in batch 4 when we update the plugin structure
+}
