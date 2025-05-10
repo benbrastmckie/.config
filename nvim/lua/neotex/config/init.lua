@@ -7,15 +7,24 @@ local M = {}
 local function safe_require(module)
   local ok, result = pcall(require, module)
   if not ok then
-    vim.notify("Failed to require config module: " .. module, vim.log.levels.ERROR)
+    vim.notify("Failed to load config module: " .. module, vim.log.levels.ERROR)
     return false
   end
+  
+  if type(result) == "table" and type(result.setup) == "function" then
+    local setup_ok, _ = pcall(result.setup)
+    if not setup_ok then
+      vim.notify("Failed to setup config module: " .. module, vim.log.levels.ERROR)
+      return false
+    end
+  end
+  
   return true
 end
 
 -- Load all configuration components
 function M.setup()
-  -- Load configuration modules (will be implemented in batch 2)
+  -- Load configuration modules
   -- Each returns true/false based on successful loading
   local modules = {
     "neotex.config.options",
@@ -33,12 +42,4 @@ function M.setup()
   return all_success
 end
 
--- During refactoring, we're still using the original core modules
--- This stub ensures we can switch to the new configuration later
-return {
-  setup = function()
-    -- In batch 1, we don't actually replace the core yet,
-    -- we just prepare the structure for the next batches
-    return true
-  end
-}
+return M
