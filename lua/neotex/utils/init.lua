@@ -10,6 +10,7 @@
 -- - url.lua: URL detection and handling
 -- - diagnostics.lua: LSP diagnostic utilities
 -- - misc.lua: Miscellaneous helper functions
+-- - optimize.lua: Performance optimization utilities
 --
 -- Each module follows a consistent pattern with a setup()
 -- function that initializes the module's functionality.
@@ -64,7 +65,8 @@ function M._load_submodules()
     "fold",
     "url",
     "diagnostics",
-    "misc"
+    "misc",
+    "optimize"
   }
   
   local loaded = {}
