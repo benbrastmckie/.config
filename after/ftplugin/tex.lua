@@ -1,68 +1,14 @@
--- local config = require("nvim-surround.config")
+-- This file used to require nvim-surround, but we're now using mini.surround
+-- All LaTeX-specific surround configurations have been moved to mini.surround
+-- in lua/neotex/plugins/coding/mini.lua
 
-require("nvim-surround").buffer_setup({
-  surrounds = {
-    -- ["e"] = {
-    --   add = function()
-    --     local env = require("nvim-surround.config").get_input ("Environment: ")
-    --     return { { "\\begin{" .. env .. "}" }, { "\\end{" .. env .. "}" } }
-    --   end,
-    -- },
-    ["Q"] = {
-      add = { "``", "''" },
-      find = "%b``.-''",
-      delete = "^(``)().-('')()$",
-    },
-    ["q"] = {
-      add = { "`", "'" },
-      find = "`.-'",
-      delete = "^(`)().-(')()$",
-    },
-    ["b"] = {
-      add = { "\\textbf{", "}" },
-      -- add = function()
-      --   if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
-      --     return { { "\\mathbf{" }, { "}" } }
-      --   end
-      --   return { { "\\textbf{" }, { "}" } }
-      -- end,
-      find = "\\%a-bf%b{}",
-      delete = "^(\\%a-bf{)().-(})()$",
-    },
-    ["i"] = {
-      add = { "\\textit{", "}" },
-      -- add = function()
-      --   if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
-      --     return { { "\\mathit{" }, { "}" } }
-      --   end
-      --   return { { "\\textit{" }, { "}" } }
-      -- end,
-      find = "\\%a-it%b{}",
-      delete = "^(\\%a-it{)().-(})()$",
-    },
-    ["s"] = {
-      add = { "\\textsc{", "}" },
-      find = "\\textsc%b{}",
-      delete = "^(\\textsc{)().-(})()$",
-    },
-    ["t"] = {
-      add = { "\\texttt{", "}" },
-      -- add = function()
-      --   if vim.fn["vimtex#syntax#in_mathzone"]() == 1 then
-      --     return { { "\\mathtt{" }, { "}" } }
-      --   end
-      --   return { { "\\texttt{" }, { "}" } }
-      -- end,
-      find = "\\%a-tt%b{}",
-      delete = "^(\\%a-tt{)().-(})()$",
-    },
-    ["$"] = {
-      add = { "$", "$" },
-      -- find = "%b$.-$",
-      -- delete = "^($)().-($)()$",
-    },
-  },
-})
+-- Note: LaTeX surroundings are defined in mini.surround setup:
+-- - $ for math mode
+-- - E for equations
+-- - A for align
+-- - I for italic
+-- - B for bold
+-- - T for monospace
 
 -- PdfAnnots
 function PdfAnnots()
