@@ -629,3 +629,29 @@ After making changes:
 
 Remember that a well-documented configuration is easier to maintain and extend.
 Take the time to add clear comments and keep this README updated as the configuration evolves.
+
+### Troubleshooting and Debugging
+
+#### Viewing Debug Messages
+
+By default, debug messages are hidden to keep your Neovim experience clean. If you need to see these messages for troubleshooting:
+
+1. **View all notification levels**: 
+   ```lua
+   :lua vim.notify_level = vim.log.levels.DEBUG
+   ```
+
+2. **View even more verbose messages** (including trace level):
+   ```lua
+   :lua vim.notify_level = vim.log.levels.TRACE
+   ```
+
+3. **Check notification history**:
+   Press `<leader>rm` to view the notification history, which includes all past messages.
+
+4. **Return to normal notifications** (hide debug messages again):
+   ```lua
+   :lua vim.notify_level = vim.log.levels.INFO
+   ```
+
+These debug messages can be helpful when diagnosing plugin loading issues, performance problems, or other configuration concerns.

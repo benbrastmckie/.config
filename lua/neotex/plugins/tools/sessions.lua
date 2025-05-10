@@ -32,9 +32,29 @@ return {
       autosave_ignore_filetypes = {
         'gitcommit',
         'gitrebase',
+        'qf',           -- Quickfix lists
+        'help',         -- Help buffers
+        'TelescopePrompt', -- Telescope
+        'NvimTree',     -- File explorer
+        'fugitive',     -- Git UI
+        'gitcommit',    -- Git commit message
+        'diff',         -- Diff view
+        'undotree',     -- Undo tree
+        'toggleterm',   -- Terminal
+        'trouble',      -- Diagnostic lists
+        'nofile',       -- Non-file buffers
       },
       -- All buffers of these buffer types will be closed before the session is saved
-      autosave_ignore_buftypes = {},
+      autosave_ignore_buftypes = { 
+        'terminal',
+        'quickfix',    -- Quickfix lists
+        'nofile',      -- General non-file buffers
+        'nowrite',     -- Buffers that can't be written
+        'acwrite',     -- Auto-command written buffers
+        'prompt',      -- Prompt buffers
+        'popup',       -- Popup windows
+        'help',        -- Help pages
+      },
       -- Always autosaves session. If true, only autosaves after a session is active
       autosave_only_in_session = true,
       -- Shorten the display path if length exceeds this threshold. Use 0 if don't want to shorten the path at all

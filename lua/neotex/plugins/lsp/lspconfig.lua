@@ -19,8 +19,20 @@ return {
     local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }
     for type, icon in pairs(signs) do
       local hl = "DiagnosticSign" .. type
-      vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
+      -- Use vim.diagnostic.config instead of sign_define (in the block after this loop)
     end
+
+    -- Modern way to configure diagnostic signs
+    vim.diagnostic.config({
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = signs.Error,
+          [vim.diagnostic.severity.WARN] = signs.Warn,
+          [vim.diagnostic.severity.HINT] = signs.Hint,
+          [vim.diagnostic.severity.INFO] = signs.Info,
+        },
+      },
+    })
 
     -- configure python server
     lspconfig["pyright"].setup({

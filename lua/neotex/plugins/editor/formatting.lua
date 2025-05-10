@@ -99,7 +99,7 @@ return {
         }
         
         -- Check if the current buffer's filetype should be auto-formatted
-        local filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+        local filetype = vim.bo[bufnr].filetype
         if vim.tbl_contains(auto_format_filetypes, filetype) then
           return { timeout_ms = 500, lsp_fallback = true }
         end
