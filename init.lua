@@ -2,6 +2,10 @@
 -- Author: Benjamin
 -- Repository: https://github.com/username/neovim-config
 
+-- Set leader key BEFORE loading lazy or any other plugins
+-- This is critical and must happen first
+vim.g.mapleader = " " -- Space as leader key
+
 -- Load configuration with improved error handling
 local config_ok, config = pcall(require, "neotex.config")
 local bootstrap_ok, bootstrap = pcall(require, "neotex.bootstrap")

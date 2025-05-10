@@ -194,11 +194,6 @@ function M.setup()
     avante_map("i", "<CR>", "<CR>", "Create new line")
   end
 
-  -----------------------------
-  -- GLOBAL LEADER SETTINGS --
-  -----------------------------
-  vim.g.mapleader = " " -- Space as leader key
-
   ---------------------------------
   -- GENERAL KEYBOARD MAPPINGS  --
   ---------------------------------
