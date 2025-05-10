@@ -4,7 +4,8 @@
 -- This module configures mini.nvim plugins for coding enhancements:
 -- - mini.pairs: Auto-close pairs of characters (replacing nvim-autopairs)
 -- - mini.surround: Surround text with characters (replacing nvim-surround)
--- - Future: mini.comment, mini.cursorword
+-- - mini.comment: Comment toggling (replacing Comment.nvim)
+-- - Future: mini.cursorword
 --
 -- Mini.nvim provides a collection of minimal, independent, and fast 
 -- Lua modules for Neovim that enhance various aspects of coding.
@@ -18,6 +19,68 @@ return {
     "hrsh7th/nvim-cmp", -- For integration with completion
   },
   config = function()
+    -- Configure mini.comment for toggling comments
+    require('mini.comment').setup({
+      -- Module mappings. Use `''` (empty string) to disable one.
+      mappings = {
+        -- Disable default keys
+        comment = '', -- Toggle comment (operator-pending)
+        comment_line = '', -- Toggle comment on current line
+        comment_visual = '', -- Toggle comment on visual selection
+        textobject = '', -- Text object for surrounding comment
+      },
+      
+      -- Hook functions to be executed at certain stage of commenting
+      hooks = {
+        -- Default tree-sitter mode for TSContextComment replacement
+        pre = function()
+          -- Detect filetype-specific comment string using treesitter
+          -- This mimics nvim-ts-context-commentstring functionality
+          local function get_context_commentstring()
+            -- TSContextComment compatibility
+            local has_treesitter, ts = pcall(require, 'nvim-treesitter.ts_utils')
+            
+            if not has_treesitter then
+              return nil
+            end
+            
+            -- Get comment string based on cursor position and language
+            local node = ts.get_node_at_cursor()
+            if not node then
+              return nil
+            end
+            
+            -- Try to get comment string based on language
+            local ft = vim.bo.filetype
+            
+            -- Simple mapping for common languages with mixed comment styles
+            local lang_comment_strings = {
+              jsx = { line_comment = "//", block_comment = { "/*", "*/" } },
+              tsx = { line_comment = "//", block_comment = { "/*", "*/" } },
+              javascript = { line_comment = "//", block_comment = { "/*", "*/" } },
+              typescript = { line_comment = "//", block_comment = { "/*", "*/" } },
+              vue = { line_comment = "//", block_comment = { "/*", "*/" } },
+              svelte = { line_comment = "//", block_comment = { "/*", "*/" } },
+              php = { line_comment = "//", block_comment = { "/*", "*/" } },
+            }
+            
+            if lang_comment_strings[ft] then
+              return lang_comment_strings[ft].line_comment
+            end
+            
+            return nil
+          end
+          
+          -- Get comment string from context
+          local comment_string = get_context_commentstring()
+          if comment_string then
+            -- Update comment string for current buffer
+            vim.bo.commentstring = comment_string .. " %s"
+          end
+        end,
+      },
+    })
+    
     -- Configure mini.surround for surrounding text
     require('mini.surround').setup({
       -- Module mappings. Use `''` (empty string) to disable one.
@@ -172,6 +235,19 @@ return {
         end
       end)
     end
+    
+    -- Set up custom keymappings for mini.comment to match Comment.nvim
+    -- Normal mode comment toggle
+    vim.keymap.set('n', '<C-;>', function()
+      require('mini.comment').toggle_lines(vim.fn.line('.'), vim.fn.line('.'))
+    end, { desc = "Toggle comment on current line" })
+    
+    -- Visual mode comment toggle
+    vim.keymap.set('x', '<C-;>', function()
+      local start_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '<'))
+      local end_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '>'))
+      require('mini.comment').toggle_lines(start_row, end_row)
+    end, { desc = "Toggle comment on selection" })
     
     -- Add which-key mappings for mini.surround to match previous surround plugin
     -- This depends on which-key being installed
