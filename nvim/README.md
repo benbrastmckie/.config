@@ -617,6 +617,17 @@ The system recognizes cells based on these markers:
 
 This integration provides a seamless experience for data analysis, scientific computing, and literate programming without leaving Neovim.
 
+### Performance Optimization Tools
+
+This configuration includes built-in tools for analyzing and improving performance:
+
+1. **Startup Analysis**: Run `:AnalyzeStartup` to identify bottlenecks in your NeoVim startup process
+2. **Plugin Profiling**: Use `:ProfilePlugins` to measure load times for all plugins
+3. **Optimization Reports**: Generate comprehensive reports with `:OptimizationReport`
+4. **Lazy-Loading Suggestions**: Get plugin-specific recommendations with `:SuggestLazyLoading`
+
+These tools provide actionable insights to help you maintain a fast and responsive editing environment. See the comprehensive documentation in `lua/neotex/utils/README.md` for more details on the optimization workflow.
+
 ### Testing Your Changes
 
 After making changes:
