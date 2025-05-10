@@ -1,3 +1,251 @@
+--[[ WHICH-KEY MAPPINGS - COMPREHENSIVE REFERENCE
+-----------------------------------------------------------
+This module configures the which-key.nvim plugin, which provides a popup menu
+that displays possible keybindings for the key sequence you've started typing.
+This helps remember command mappings and discover new functionality.
+
+The configuration below organizes keybindings into logical groups with descriptive
+labels for each command. The bindings are also documented in README.md.
+
+This specifically addresses the issue with <leader>rk which now properly removes
+both the plugin directory AND the lazy-lock.json file.
+
+----------------------------------------------------------------------------------
+TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>b - VimtexCompile                       | Compile LaTeX document
+<leader>c - Create vertical split               | Split window vertically
+<leader>d - Save and delete buffer              | Save file and close buffer
+<leader>e - Toggle NvimTree explorer            | Open/close file explorer
+<leader>j - Jupyter notebook functions          | Jupyter notebook operations
+<leader>i - Open VimtexToc                      | Show LaTeX table of contents
+<leader>k - Maximize split                      | Make current window full screen
+<leader>q - Save all and quit                   | Save all files and exit Neovim
+<leader>u - Open Telescope undo                 | Show undo history with preview
+<leader>v - VimtexView                          | View compiled LaTeX document
+<leader>w - Write all files                     | Save all open files
+<leader>x - Text operations                     | Align, split/join, diff operations
+
+----------------------------------------------------------------------------------
+ACTIONS (<leader>a)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>aa - PDF annotations                    | Work with PDF annotations
+<leader>ab - Export bibliography                | Export BibTeX to separate file
+<leader>ac - Clear VimTex cache                 | Clear LaTeX compilation cache
+<leader>ae - Show VimTex errors                 | Display LaTeX error messages
+<leader>af - Format buffer                      | Format current buffer via LSP
+<leader>ag - Edit glossary                      | Open LaTeX glossary template
+<leader>ah - Toggle local highlight             | Highlight current word occurrences
+<leader>ak - Clean VimTex aux files             | Remove LaTeX auxiliary files
+<leader>al - Toggle Lean info view              | Show/hide Lean information panel
+<leader>am - Run model checker                  | Execute model checker on file
+<leader>ap - Run Python file                    | Execute current Python file
+<leader>ar - Recalculate autolist               | Fix numbering in lists
+<leader>at - Format tex file                    | Format LaTeX using latexindent
+<leader>au - Update CWD                         | Change to file's directory
+<leader>av - VimTex context menu                | Show VimTeX context actions
+<leader>aw - Count words                        | Count words in LaTeX document
+<leader>as - Edit snippets                      | Open snippets directory
+<leader>aS - SSH connect                        | Connect to MIT server via SSH
+
+----------------------------------------------------------------------------------
+FIND (<leader>f)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>fa - Find all files                     | Search all files, including hidden
+<leader>fb - Find buffers                       | Switch between open buffers
+<leader>fc - Find citations                     | Search BibTeX citations
+<leader>ff - Find in project                    | Search text in project files
+<leader>fl - Resume last search                 | Continue previous search
+<leader>fq - Find in quickfix                   | Search within quickfix list
+<leader>fg - Git commit history                 | Browse git commit history
+<leader>fh - Help tags                          | Search Neovim help documentation
+<leader>fk - Keymaps                            | Show all keybindings
+<leader>fr - Registers                          | Show clipboard registers
+<leader>ft - Colorschemes                       | Browse and change themes
+<leader>fs - Search string                      | Search for string in project
+<leader>fw - Search word under cursor           | Find current word in project
+<leader>fy - Yank history                       | Browse clipboard history
+
+----------------------------------------------------------------------------------
+GIT (<leader>g)                                 | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>gb - Checkout branch                    | Switch to another git branch
+<leader>gc - View commits                       | Show commit history
+<leader>gd - View diff                          | Show changes against HEAD
+<leader>gg - Open lazygit                       | Launch terminal git interface
+<leader>gk - Previous hunk                      | Jump to previous change
+<leader>gj - Next hunk                          | Jump to next change
+<leader>gl - Line blame                         | Show git blame for current line
+<leader>gp - Preview hunk                       | Preview current change
+<leader>gs - Git status                         | Show files with changes
+<leader>gt - Toggle blame                       | Toggle line blame display
+
+----------------------------------------------------------------------------------
+AI HELP (<leader>h)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ha - Ask                                | Ask Avante AI a question
+<leader>hb - Build dependencies                 | Build deps for Avante project
+<leader>hc - Chat                               | Start chat with Avante AI
+<leader>hd - Set model & provider               | Change AI model with defaults
+<leader>he - Edit prompts                       | Open system prompt manager
+<leader>hi - Stop generation                    | Interrupt AI generation
+<leader>hk - Clear                              | Clear Avante chat/content
+<leader>hm - Select model                       | Choose AI model for current provider
+<leader>hM - Map repo                           | Create repo map for AI context
+<leader>hp - Select prompt                      | Choose a different system prompt
+<leader>hs - Selected edit                      | Edit selected text with AI
+<leader>hr - Refresh assistant                  | Reload AI assistant
+<leader>ht - Toggle assistant                   | Show/hide Avante interface
+
+----------------------------------------------------------------------------------
+JUPYTER (<leader>j)                             | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ja - Run all cells                      | Execute all notebook cells
+<leader>jb - Run cells below                    | Run notebook cells below cursor
+<leader>jc - Comment cell                       | Comment out current cell
+<leader>jd - Merge with cell below              | Join current cell with cell below
+<leader>je - Execute cell                       | Run current notebook cell
+<leader>jf - Send file to REPL                  | Send entire file to REPL
+<leader>ji - Start IPython REPL                 | Start Python interactive shell
+<leader>jj - Next cell                          | Navigate to next cell
+<leader>jk - Previous cell                      | Navigate to previous cell
+<leader>jl - Send line to REPL                  | Send current line to REPL
+<leader>jn - Execute and next                   | Run cell and move to next
+<leader>jo - Insert cell below                  | Add new cell below current
+<leader>jO - Insert cell above                  | Add new cell above current
+<leader>jq - Exit REPL                          | Close the REPL
+<leader>jr - Clear REPL                         | Clear the REPL screen
+<leader>js - Split cell                         | Split current cell at cursor
+<leader>jt - Send motion to REPL                | Send text via motion to REPL
+<leader>ju - Merge with cell above              | Join current cell with cell above
+<leader>jv - Send visual selection to REPL      | Send selected text to REPL
+
+----------------------------------------------------------------------------------
+LIST (<leader>L)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>Lc - Toggle checkbox                    | Check/uncheck a checkbox
+<leader>Ln - Next list item                     | Move to next item in list
+<leader>Lp - Previous list item                 | Move to previous item in list
+<leader>Lr - Reorder list                       | Fix list numbering
+
+----------------------------------------------------------------------------------
+LSP & LINT (<leader>l)                          | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>lb - Buffer diagnostics                 | Show all errors in current file
+<leader>lc - Code action                        | Show available code actions
+<leader>ld - Go to definition                   | Jump to symbol definition
+<leader>lD - Go to declaration                  | Jump to symbol declaration
+<leader>lh - Hover help                         | Show documentation under cursor
+<leader>li - Implementations                    | Find implementations of symbol
+<leader>lk - Kill LSP                           | Stop language server
+<leader>ll - Line diagnostics                   | Show errors for current line
+<leader>ln - Next diagnostic                    | Go to next error/warning
+<leader>lp - Previous diagnostic                | Go to previous error/warning
+<leader>lr - References                         | Find all references to symbol
+<leader>ls - Restart LSP                        | Restart language server
+<leader>lt - Start LSP                          | Start language server
+<leader>ly - Copy diagnostics                   | Copy diagnostics to clipboard
+<leader>lR - Rename                             | Rename symbol under cursor
+<leader>lL - Lint file                          | Run linters on current file
+<leader>lg - Toggle global linting              | Enable/disable linting globally
+<leader>lB - Toggle buffer linting              | Enable/disable linting for buffer
+
+----------------------------------------------------------------------------------
+MARKDOWN (<leader>m)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ml - Run Lectic                         | Run Lectic on current file
+<leader>mn - New Lectic file                    | Create new Lectic file with template
+<leader>ms - Submit selection                   | Submit visual selection with user message
+<leader>mp - Format buffer                      | Format code with conform.nvim
+<leader>mu - Open URL                           | Open URL under cursor
+<leader>ma - Toggle all folds                   | Toggle all folds open/closed
+<leader>mf - Toggle fold                        | Toggle fold under cursor
+<leader>mt - Toggle folding method              | Switch between manual/smart folding
+
+----------------------------------------------------------------------------------
+SESSIONS (<leader>S)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>Ss - Save session                       | Save current session
+<leader>Sd - Delete session                     | Delete a saved session
+<leader>Sl - Load session                       | Load a saved session
+
+----------------------------------------------------------------------------------
+NIXOS (<leader>n)                               | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>nd - Nix develop                        | Enter nix development shell
+<leader>nf - Rebuild flake                      | Rebuild system from flake
+<leader>ng - Garbage collection                 | Clean up old nix packages (15d)
+<leader>np - Browse packages                    | Open nixOS packages website
+<leader>nm - MyNixOS                            | Open MyNixOS website
+<leader>nh - Home-manager switch                | Apply home-manager changes
+<leader>nr - Rebuild nix                        | Run update.sh script
+<leader>nu - Update flake                       | Update flake dependencies
+
+----------------------------------------------------------------------------------
+PANDOC (<leader>p)                              | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>pw - Convert to Word                    | Convert to .docx format
+<leader>pm - Convert to Markdown                | Convert to .md format
+<leader>ph - Convert to HTML                    | Convert to .html format
+<leader>pl - Convert to LaTeX                   | Convert to .tex format
+<leader>pp - Convert to PDF                     | Convert to .pdf format
+<leader>pv - View PDF                           | Open PDF in document viewer
+
+----------------------------------------------------------------------------------
+RUN (<leader>r)                                 | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>rc - Clear plugin cache                 | Clear Neovim plugin cache
+<leader>re - Show linter errors                 | Display all errors in floating window
+<leader>rk - Wipe plugins and lock file         | Remove all plugin files AND lazy-lock.json
+<leader>rn - Next error                         | Go to next diagnostic/error
+<leader>rp - Previous error                     | Go to previous diagnostic/error
+<leader>rr - Reload configs                     | Reload Neovim configuration
+<leader>rm - Show messages                      | Display notification history
+
+----------------------------------------------------------------------------------
+SURROUND (<leader>s)                            | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>ss - Surround                           | Surround with characters
+<leader>sd - Delete surround                    | Remove surrounding characters
+<leader>sc - Change surround                    | Change surrounding characters
+
+----------------------------------------------------------------------------------
+TEMPLATES (<leader>t)                           | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>tp - PhilPaper.tex                      | Insert philosophy paper template
+<leader>tl - Letter.tex                         | Insert letter template
+<leader>tg - Glossary.tex                       | Insert glossary template
+<leader>th - HandOut.tex                        | Insert handout template
+<leader>tb - PhilBeamer.tex                     | Insert beamer presentation
+<leader>ts - SubFile.tex                        | Insert subfile template
+<leader>tr - Root.tex                           | Insert root document template
+<leader>tm - MultipleAnswer.tex                 | Insert multiple answer template
+
+----------------------------------------------------------------------------------
+TODO (<leader>tt)                               | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>tt - Todo telescope                     | Find all TODOs in project
+<leader>tn - Next todo                          | Jump to next TODO comment
+<leader>tp - Previous todo                      | Jump to previous TODO comment
+<leader>tl - Todo location list                 | Show TODOs in location list
+<leader>tq - Todo quickfix                      | Show TODOs in quickfix list
+
+----------------------------------------------------------------------------------
+TEXT (<leader>x)                     | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>xa - Align                              | Start text alignment
+<leader>xA - Align with preview                 | Start alignment with preview
+<leader>xs - Split/join toggle                  | Toggle between single/multi-line
+<leader>xd - Toggle diff overlay                | Show diff between buffer and clipboard
+<leader>xw - Toggle word diff                   | Show word-level diffs
+
+----------------------------------------------------------------------------------
+YANK (<leader>y)                                | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>yh - Yank history                       | Browse clipboard history with Telescope
+<leader>yc - Clear history                      | Clear the yank history
+]]
+
 return {
   "folke/which-key.nvim",
   event = "VeryLazy",
@@ -342,7 +590,7 @@ return {
         },
       },
       x = {
-        name = "TEXT OPERATIONS",
+        name = "TEXT",
         a = { "ga", "align" },
         A = { "gA", "align with preview" },
         s = { "gS", "split/join toggle" },

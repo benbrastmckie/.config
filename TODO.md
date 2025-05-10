@@ -9,28 +9,29 @@
     - [:] arch
     - [:] debian
     - [:] windows
-  - ai video
-  - website
+  - [x] ai video
+  - [x] website
   - wiki
-- [ ] yanky
-  - [ ] replace?
-  - [ ] fix error in kitty
+- [x] yanky
+  - [x] replace?
+  - [x] fix error in kitty
 - [ ] mini
-  - [ ] a/i
   - [ ] bracketed
-  - [ ] comment
   - [ ] completion (works with blink?)
-  - [ ] cursorword
-  - [ ] diff
   - [ ] files
   - [ ] fuzzy
-  - [ ] git
   - [ ] icons
-  - [ ] pairs
   - [ ] sessions
-  - [ ] snippets
-  - [ ] surround
   - [ ] tabline
+  - [x] slplitjoin
+  - [x] align
+  - [x] a/i
+  - [x] diff
+  - [x] cursorword
+  - [x] comment
+  - [x] surround
+  - [x] pairs
+- [x] todo-comments
 - [ ] snacks
   - [ ] research plugins
   - [x] update which-key
