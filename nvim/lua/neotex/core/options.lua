@@ -1,3 +1,9 @@
+-----------------------------------------------------------
+-- DEPRECATED: This module is deprecated and will be removed in a future version.
+-- Please use neotex/config/options.lua instead.
+-- See NEW_STRUCTURE.md for details on the new organization.
+-----------------------------------------------------------
+
 local options = {
 
   -- GENERAL

@@ -1,3 +1,9 @@
+-----------------------------------------------------------
+-- DEPRECATED: This module is deprecated and will be removed in a future version.
+-- Please use neotex/config/keymaps.lua instead.
+-- See NEW_STRUCTURE.md for details on the new organization.
+-----------------------------------------------------------
+
 --[[ KEYBINDINGS REFERENCE
 
 NOTE: These mappings are also documented in ~/.config/nvim/README.md

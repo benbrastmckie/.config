@@ -1,5 +1,14 @@
--- neotex.utils.buffer
--- Utilities for buffer management
+-----------------------------------------------------------
+-- Buffer Management Utilities
+-- 
+-- This module provides functions for working with buffers, including:
+-- - Buffer navigation (goto_buffer)
+-- - Buffer cleanup (close_other_buffers, close_unused_buffers)
+-- - Buffer operations (display_messages, save_all_buffers)
+-- - Configuration management (reload_config)
+--
+-- The utilities are exposed both as module functions and vim commands.
+-----------------------------------------------------------
 
 local M = {}
 
@@ -104,11 +113,74 @@ function M.reload_config()
   vim.notify('Nvim configuration reloaded!', vim.log.levels.INFO)
 end
 
+-- Close all buffers except current one
+function M.close_other_buffers()
+  local current = vim.fn.bufnr('%')
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(bufnr) and bufnr ~= current then
+      vim.cmd(string.format('silent! bdelete %d', bufnr))
+    end
+  end
+  vim.notify("Closed all other buffers", vim.log.levels.INFO)
+end
+
+-- Close buffers that haven't been used for specified time
+function M.close_unused_buffers(minutes)
+  minutes = minutes or 30
+  local threshold_time = os.time() - (minutes * 60)
+  local current = vim.fn.bufnr('%')
+  local closed_count = 0
+  
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(bufnr) and bufnr ~= current then
+      local bufinfo = vim.fn.getbufinfo(bufnr)[1]
+      -- Check last used time and whether it's modified
+      if not bufinfo.changed and bufinfo.lastused < threshold_time then
+        vim.cmd(string.format('silent! bdelete %d', bufnr))
+        closed_count = closed_count + 1
+      end
+    end
+  end
+  
+  vim.notify(string.format("Closed %d unused buffers (inactive for >%d minutes)", closed_count, minutes), vim.log.levels.INFO)
+end
+
+-- Save all modified buffers
+function M.save_all_buffers()
+  vim.cmd('wall')
+  vim.notify("Saved all modified buffers", vim.log.levels.INFO)
+end
+
+-- Jump to alternate buffer with optional fallback to most recent
+function M.jump_to_alternate()
+  local alt_bufnr = vim.fn.bufnr('#')
+  if alt_bufnr ~= -1 then
+    vim.cmd('buffer ' .. alt_bufnr)
+  else
+    -- Fallback to most recent buffer
+    M.goto_buffer(1, 1)
+  end
+end
+
 -- Set up global buffer-related commands
 function M.setup()
   -- Set up the reload command
   vim.api.nvim_create_user_command('ReloadConfig', function()
     M.reload_config()
+  end, {})
+  
+  -- Add more buffer-related commands
+  vim.api.nvim_create_user_command('BufCloseOthers', function()
+    M.close_other_buffers()
+  end, {})
+  
+  vim.api.nvim_create_user_command('BufCloseUnused', function(opts)
+    local minutes = tonumber(opts.args) or 30
+    M.close_unused_buffers(minutes)
+  end, { nargs = '?' })
+  
+  vim.api.nvim_create_user_command('BufSaveAll', function()
+    M.save_all_buffers()
   end, {})
   
   -- Set up global function aliases for backward compatibility
