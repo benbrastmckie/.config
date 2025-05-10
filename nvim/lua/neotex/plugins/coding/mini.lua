@@ -5,7 +5,7 @@
 -- - mini.pairs: Auto-close pairs of characters (replacing nvim-autopairs)
 -- - mini.surround: Surround text with characters (replacing nvim-surround)
 -- - mini.comment: Comment toggling (replacing Comment.nvim)
--- - Future: mini.cursorword
+-- - mini.cursorword: Highlights word occurrences (replacing local-highlight)
 --
 -- Mini.nvim provides a collection of minimal, independent, and fast 
 -- Lua modules for Neovim that enhance various aspects of coding.
@@ -19,6 +19,27 @@ return {
     "hrsh7th/nvim-cmp", -- For integration with completion
   },
   config = function()
+    -- Configure mini.cursorword for highlighting word occurrences
+    require('mini.cursorword').setup({
+      -- Delay in ms for highlighting other word instances
+      delay = 100,
+      
+      -- Minimum word length to start highlighting (same as local-highlight)
+      min_word_length = 1,
+      
+      -- Whether to disable highlighting in insert mode (same as local-highlight)
+      disable_in_insert = true,
+      
+      -- List of filetypes to disable highlighting
+      excluded_filetypes = { 'NvimTree', 'TelescopePrompt' },
+      
+      -- List of buffer types to disable highlighting
+      excluded_buftypes = { 'help', 'terminal', 'nofile', 'quickfix', 'prompt' },
+      
+      -- Pattern for disabling highlighting for certain words
+      disallowed_words = nil,
+    })
+    
     -- Configure mini.comment for toggling comments
     require('mini.comment').setup({
       -- Module mappings. Use `''` (empty string) to disable one.
@@ -234,6 +255,22 @@ return {
           )
         end
       end)
+    end
+    
+    -- Configure the highlight group for mini.cursorword to match local-highlight
+    vim.api.nvim_set_hl(0, 'MiniCursorword', { link = 'Pmenu' })
+    
+    -- Add support for toggling cursorword highlighting (mapped to <leader>ah in which-key)
+    _G.LocalHighlightToggle = function()
+      if vim.b.minicursorword_disable then
+        -- It's currently disabled, enable it
+        vim.b.minicursorword_disable = false
+        vim.notify("Word highlighting enabled", vim.log.levels.INFO)
+      else
+        -- It's currently enabled, disable it
+        vim.b.minicursorword_disable = true
+        vim.notify("Word highlighting disabled", vim.log.levels.INFO)
+      end
     end
     
     -- Set up custom keymappings for mini.comment to match Comment.nvim
