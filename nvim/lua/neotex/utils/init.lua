@@ -1,5 +1,5 @@
 -- neotex.utils module
--- Provides core utility functions for the entire configuration
+-- Core utilities for the entire configuration
 
 local M = {}
 
@@ -43,51 +43,63 @@ function M.tbl_extend(t1, t2)
   return result
 end
 
--- Check if a file or directory exists
-function M.exists(path)
-  return vim.fn.filereadable(path) == 1 or vim.fn.isdirectory(path) == 1
-end
-
--- Get OS-specific information
-function M.get_os()
-  if vim.fn.has("win32") == 1 then
-    return "windows"
-  elseif vim.fn.has("macunix") == 1 then
-    return "mac"
-  else
-    return "linux"
+-- Load all utility modules with proper error handling
+function M._load_submodules()
+  local modules = {
+    "buffer",
+    "fold",
+    "url",
+    "diagnostics",
+    "misc"
+  }
+  
+  local loaded = {}
+  
+  for _, module_name in ipairs(modules) do
+    local ok, module = pcall(require, "neotex.utils." .. module_name)
+    if ok and type(module) == "table" then
+      loaded[module_name] = module
+      -- Call setup function if it exists
+      if type(module.setup) == "function" then
+        pcall(module.setup)
+      end
+    else
+      vim.notify("Failed to load utility module: " .. module_name, vim.log.levels.WARN)
+    end
   end
-end
-
--- Execute a function safely with error handling
-function M.try(func, ...)
-  local args = {...}
-  return pcall(function() return func(unpack(args)) end)
-end
-
--- Schedule a function to run asynchronously
-function M.schedule(func)
-  vim.schedule(function()
-    local ok, err = pcall(func)
-    if not ok then
-      vim.notify("Error in scheduled function: " .. tostring(err), vim.log.levels.ERROR)
-    end
-  end)
-end
-
--- Defer a function to run after a delay (in ms)
-function M.defer(func, delay)
-  vim.defer_fn(function()
-    local ok, err = pcall(func)
-    if not ok then
-      vim.notify("Error in deferred function: " .. tostring(err), vim.log.levels.ERROR)
-    end
-  end, delay or 10)
+  
+  return loaded
 end
 
 -- Setup module - called during initialization
 function M.setup()
-  -- Place any initialization logic here
+  -- Log initialization
+  vim.notify("Initializing neotex utilities", vim.log.levels.DEBUG)
+  
+  -- Load all submodules
+  local submodules = M._load_submodules()
+  
+  -- Create aliases for commonly used functions for easier access
+  for module_name, module in pairs(submodules) do
+    for func_name, func in pairs(module) do
+      if type(func) == "function" and not func_name:match("^_") then
+        -- Don't overwrite existing functions
+        if not M[func_name] then
+          M[func_name] = func
+        end
+      end
+    end
+  end
+  
+  -- Set up backward compatibility for core.functions
+  if not _G.LoadFoldingState and submodules.fold then
+    _G.LoadFoldingState = submodules.fold.load_folding_state
+  end
+  
+  if not _G.SetupUrlMappings and submodules.url then
+    _G.SetupUrlMappings = submodules.url.setup_url_mappings
+  end
+  
   return true
 end
 

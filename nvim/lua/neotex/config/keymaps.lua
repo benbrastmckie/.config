@@ -252,17 +252,30 @@ function M.setup()
   map("n", "<A-h>", ":vertical resize -2<CR>", {}, "Decrease width")
   map("n", "<A-l>", ":vertical resize +2<CR>", {}, "Increase width")
 
-  -- Buffer navigation
-  -- Using the existing GotoBuffer function from core.functions (will be migrated in batch 3)
-  local ok, _ = pcall(function()
-    map("n", "<TAB>", "", { callback = function() GotoBuffer(1, 1) end }, "Next buffer")
-    map("n", "<S-TAB>", "", { callback = function() GotoBuffer(1, -1) end }, "Previous buffer")
-  end)
+  -- Buffer navigation using utils.buffer module
+  local buffer_utils_loaded = false
   
-  if not ok then
-    -- Fallback if GotoBuffer is not available
-    map("n", "<TAB>", ":bnext<CR>", {}, "Next buffer")
-    map("n", "<S-TAB>", ":bprevious<CR>", {}, "Previous buffer")
+  -- Try to use the new utils.buffer module first
+  local ok, buffer_utils = pcall(require, "neotex.utils.buffer")
+  if ok and buffer_utils and buffer_utils.goto_buffer then
+    buffer_utils_loaded = true
+    
+    -- Use the new functions with the same keybindings
+    map("n", "<TAB>", function() buffer_utils.goto_buffer(1, 1) end, {}, "Next buffer")
+    map("n", "<S-TAB>", function() buffer_utils.goto_buffer(1, -1) end, {}, "Previous buffer")
+  end
+  
+  -- If we couldn't load the buffer utils, use fallbacks
+  if not buffer_utils_loaded then
+    -- Try using the global function if it exists
+    if _G.GotoBuffer then
+      map("n", "<TAB>", function() _G.GotoBuffer(1, 1) end, {}, "Next buffer")
+      map("n", "<S-TAB>", function() _G.GotoBuffer(1, -1) end, {}, "Previous buffer")
+    else
+      -- Ultimate fallback
+      map("n", "<TAB>", ":bnext<CR>", {}, "Next buffer")
+      map("n", "<S-TAB>", ":bprevious<CR>", {}, "Previous buffer")
+    end
   end
 
   -- Line manipulation

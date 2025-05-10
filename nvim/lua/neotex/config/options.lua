@@ -78,22 +78,44 @@ function M.setup()
     end
   })
 
-  -- Set up folding state and URL handling from utils module 
-  -- (these will be migrated in batch 3)
-  local utils_loaded, core_functions = pcall(require, "neotex.core.functions")
+  -- Load utilities for folding and URL handling
+  local utils = require("neotex.utils")
   
   -- Load the persistent folding state when entering any buffer
-  if utils_loaded then
-    vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
-      pattern = {"*"},
-      callback = function()
-        pcall(core_functions.LoadFoldingState)
+  vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+    pattern = {"*"},
+    callback = function()
+      -- Try to use the new utils module first
+      local ok, fold_utils = pcall(require, "neotex.utils.fold")
+      if ok and fold_utils and fold_utils.load_folding_state then
+        fold_utils.load_folding_state()
+      else
+        -- Fall back to global function if available
+        if _G.LoadFoldingState then
+          _G.LoadFoldingState()
+        end
       end
-    })
-    
-    -- Set up global URL handling for all buffers
-    pcall(core_functions.SetupUrlMappings)
-  end
+    end
+  })
+  
+  -- Set up global URL handling for all buffers
+  vim.api.nvim_create_autocmd("VimEnter", {
+    callback = function()
+      vim.defer_fn(function()
+        -- Try to use the new utils module first
+        local ok, url_utils = pcall(require, "neotex.utils.url")
+        if ok and url_utils and url_utils.setup_url_mappings then
+          url_utils.setup_url_mappings()
+        else
+          -- Fall back to global function if available
+          if _G.SetupUrlMappings then
+            _G.SetupUrlMappings()
+          end
+        end
+      end, 200)
+    end,
+    once = true
+  })
 
   -- CLIPBOARD -- (for yanky)
   -- May help Arch/Debian Linux users

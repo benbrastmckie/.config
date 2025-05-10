@@ -1,7 +1,10 @@
+-- neotex.utils.diagnostics
+-- Diagnostic utilities for LSP and linting
+
 local M = {}
 
 -- Function to show all linter errors in a floating window
-M.show_all_errors = function()
+function M.show_all_errors()
   local diagnostics = vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR })
 
   if #diagnostics == 0 then
@@ -66,20 +69,19 @@ M.show_all_errors = function()
 end
 
 -- Function to jump to error location from the floating window
-M.jump_to_error = function()
+function M.jump_to_error()
   local line = vim.api.nvim_get_current_line()
   local line_num = tonumber(line:match("(%d+):"))
   if line_num then
     vim.cmd("q")                -- Close the floating window
-    vim.api.nvim_win_set_cursor(0, { line_num, 0 }) -- This is actually still valid for now
+    vim.api.nvim_win_set_cursor(0, { line_num, 0 }) -- Move to line
     vim.cmd("normal! zz")       -- Center the view
     vim.diagnostic.open_float() -- Show the diagnostic at current position
   end
 end
 
 -- Enhanced function to add a Jupyter cell with both opening and closing markers
--- This overrides the default NotebookNavigator behavior for adding cell below
-M.add_jupyter_cell_with_closing = function()
+function M.add_jupyter_cell_with_closing()
   local ok, nn = pcall(require, "notebook-navigator")
   if not ok then
     vim.notify("NotebookNavigator plugin not found", vim.log.levels.ERROR)
@@ -108,6 +110,41 @@ M.add_jupyter_cell_with_closing = function()
   end
 end
 
+-- Function to copy diagnostics to clipboard
+function M.copy_diagnostics_to_clipboard()
+  local diagnostics = vim.diagnostic.get(0)  -- Get diagnostics for current buffer
+  if #diagnostics == 0 then
+    vim.notify("No diagnostics found", vim.log.levels.INFO)
+    return
+  end
+  
+  local lines = {}
+  for _, diagnostic in ipairs(diagnostics) do
+    local severity = diagnostic.severity
+    local severity_names = {"ERROR", "WARN", "INFO", "HINT"}
+    local severity_name = severity_names[severity] or "UNKNOWN"
+    local line = string.format("%s:%d:%d: %s: %s", 
+      vim.fn.bufname(diagnostic.bufnr) or "[No Name]",
+      diagnostic.lnum + 1,
+      diagnostic.col + 1,
+      severity_name,
+      diagnostic.message)
+    table.insert(lines, line)
+  end
+  
+  local formatted = table.concat(lines, "\n")
+  vim.fn.setreg('+', formatted)
+  vim.notify("Copied " .. #diagnostics .. " diagnostics to clipboard", vim.log.levels.INFO)
+end
+
+-- Setup function for diagnostic utilities
+function M.setup()
+  -- Setup global function for backward compatibility
+  _G.CopyDiagnosticsToClipboard = function()
+    M.copy_diagnostics_to_clipboard()
+  end
+  
+  return true
+end
 
 return M
-
