@@ -107,7 +107,6 @@ local function setup_lazy()
       })
     else
       -- New plugin system - organize specs by category
-      vim.notify("Using new modular plugin system", vim.log.levels.DEBUG)
       
       -- Set up with direct plugin specs AND the lsp imports
       -- This ensures backward compatibility during the transition
@@ -203,16 +202,13 @@ function M.init()
     end
   end
   
-  if success then
-    -- Use debug level so it won't show up in normal usage
-    vim.notify("Neovim configuration loaded successfully", vim.log.levels.DEBUG)
-  else
-    -- Keep error notifications at warn level
+  if not success then
+    -- Only notify on errors
     vim.notify("Neovim configuration loaded with errors", vim.log.levels.WARN)
   end
   
   return success
 end
 
--- Initialize the configuration
-return M.init()
+-- Return the module, let init.lua call M.init()
+return M
