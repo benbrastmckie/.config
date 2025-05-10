@@ -1,21 +1,55 @@
-# Plugin Configuration
+# NeoVim Plugin Organization
 
 This directory contains plugin specifications and configurations managed by lazy.nvim.
 
 ## Organization Structure
 
-Plugins are organized into the following categories:
+Plugins are now organized into the following categories with dedicated directories:
 
-- **coding**: Code editing enhancements (syntax, completion, etc.)
-- **editor**: Core editor capabilities (navigation, search, etc.)
-- **lsp**: Language server integration and configuration
-- **tools**: External tool integration (git, terminal, etc.)
-- **ui**: User interface components (statusline, colors, etc.)
-- **extras**: Optional functionality that can be enabled/disabled
+- **coding/**: Code editing enhancements
+  - mini.nvim modules (pairs, surround, comment, cursorword, ai, splitjoin, align, diff)
+  - More coding enhancement plugins to be added
+
+- **editor/**: Core editor capabilities
+  - yanky.nvim: Enhanced clipboard functionality
+  - More editing plugins to be added
+
+- **extras/**: Optional functionality
+  - todo-comments.nvim: Enhanced TODO comment management
+  - conform.nvim: Code formatting
+  - nvim-lint: Code linting
+  - More extra plugins to be added
+
+- **lsp/**: Language server integration
+  - nvim-lspconfig: Base LSP configuration
+  - mason.nvim: LSP server management
+  - null-ls: Additional LSP functionality
+  - nvim-cmp: Completion engine
+  - Various completion sources
+
+- **tools/**: External tool integration
+  - toggleterm.lua: Terminal integration
+  - gitsigns.lua: Git integration
+  - telescope.lua: Fuzzy finder
+  - treesitter.lua: Syntax highlighting and code navigation
+  - firenvim.lua: Browser integration
+  - vimtex.lua: LaTeX integration
+  - lean.lua: Lean theorem prover integration
+  - avante.lua: AI integration
+  - lectic.lua: AI-assisted writing
+  - More tool integrations
+
+- **ui/**: User interface components
+  - colorscheme.lua: Theme configuration
+  - lualine.lua: Status line
+  - bufferline.lua: Buffer line
+  - nvim-tree.lua: File explorer
+  - nvim-web-devicons.lua: File icons
+  - More UI enhancements
 
 ## Plugin Structure
 
-Each plugin has its own configuration file in this directory. A typical plugin specification follows this pattern:
+Each plugin has its own configuration file in the appropriate category directory. A typical plugin specification follows this pattern:
 
 ```lua
 -- Example plugin configuration
@@ -33,11 +67,13 @@ return {
 
 ## Plugin Loading
 
-The `init.lua` file in this directory organizes and loads all plugin specifications. It:
+Each category has its own `init.lua` file that:
 
-1. Categorizes plugins into logical groups
+1. Loads all plugin specifications in that category
 2. Handles errors during plugin loading
-3. Provides backward compatibility during the transition
+3. Returns a table of plugin specifications
+
+The main bootstrap.lua file then imports all categories using lazy.nvim's import mechanism.
 
 ## Special Subdirectories
 
@@ -48,9 +84,10 @@ The `init.lua` file in this directory organizes and loads all plugin specificati
 
 To add a new plugin:
 
-1. Create a new file named after the plugin in this directory
-2. Write the plugin specification following the pattern above
-3. Add it to the appropriate category in `init.lua`
+1. Identify the appropriate category for the plugin
+2. Create a new file named after the plugin in that category's directory
+3. Write the plugin specification following the pattern above
+4. Add it to the category's `init.lua` file
 
 ## Plugin Documentation
 
