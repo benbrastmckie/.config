@@ -122,7 +122,7 @@ LIST (<leader>L)                                | DESCRIPTION
 <leader>Lr - Reorder list                       | Fix list numbering
 
 ----------------------------------------------------------------------------------
-LSP (<leader>l)                                 | DESCRIPTION
+LSP & LINT (<leader>l)                          | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>lb - Buffer diagnostics                 | Show all errors in current file
 <leader>lc - Code action                        | Show available code actions
@@ -139,6 +139,9 @@ LSP (<leader>l)                                 | DESCRIPTION
 <leader>lt - Start LSP                          | Start language server
 <leader>ly - Copy diagnostics                   | Copy diagnostics to clipboard
 <leader>lR - Rename                             | Rename symbol under cursor
+<leader>lL - Lint file                          | Run linters on current file
+<leader>lg - Toggle global linting              | Enable/disable linting globally
+<leader>lB - Toggle buffer linting              | Enable/disable linting for buffer
 
 ----------------------------------------------------------------------------------
 MARKDOWN (<leader>m)                            | DESCRIPTION
@@ -446,7 +449,8 @@ return {
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },
       },
       l = {
-        name = "LSP",
+        name = "LSP & LINT",
+        -- LSP operations
         b = { "<cmd>Telescope diagnostics bufnr=0<CR>", "buffer diagnostics" },
         c = { "<cmd>lua vim.lsp.buf.code_action()<CR>", "code action" },
         d = { "<cmd>Telescope lsp_definitions<CR>", "definition" },
@@ -463,6 +467,11 @@ return {
         y = { "<cmd>lua CopyDiagnosticsToClipboard()<CR>", "copy diagnostics to clipboard" },
         R = { "<cmd>lua vim.lsp.buf.rename()<CR>", "rename" },
         -- T = { "<cmd>Telescope lsp_type_definitions<CR>", "type definition" },
+        
+        -- Linting operations
+        L = { function() require("lint").try_lint() end, "lint file" },
+        g = { "<cmd>LintToggle<CR>", "toggle global linting" },
+        B = { "<cmd>LintToggle buffer<CR>", "toggle buffer linting" },
       },
       -- MARKDOWN MAPPINGS
       m = {

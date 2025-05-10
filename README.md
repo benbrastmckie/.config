@@ -344,7 +344,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>Lp`     | Move to previous item in list |
 | `<leader>Lr`     | Fix list numbering            |
 
-#### LSP (`<leader>l`)
+#### LSP & Linting (`<leader>l`)
 
 | Key              | Action                        |
 |------------------|-------------------------------|
@@ -352,7 +352,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>lc`     | Show available code actions   |
 | `<leader>ld`     | Jump to symbol definition     |
 | `<leader>lD`     | Jump to symbol declaration    |
-| `<leader>lh`     | Show documentation under curso|
+| `<leader>lh`     | Show documentation under cursor|
 | `<leader>li`     | Find implementations of symbol|
 | `<leader>lk`     | Stop language server          |
 | `<leader>ll`     | Show errors for current line  |
@@ -363,6 +363,9 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>lt`     | Start language server         |
 | `<leader>ly`     | Copy diagnostics to clipboard |
 | `<leader>lR`     | Rename symbol under cursor    |
+| `<leader>lL`     | Run linters on current file   |
+| `<leader>lg`     | Toggle linting globally       |
+| `<leader>lB`     | Toggle linting for buffer     |
 
 #### Markdown (`<leader>m`)
 
