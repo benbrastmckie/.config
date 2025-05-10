@@ -14,6 +14,9 @@
 -- - neotex/plugins/: Plugin specification and configuration
 -----------------------------------------------------------
 
+-- Set notification level to show only important messages
+vim.notify_level = vim.log.levels.INFO
+
 -- Set leader key BEFORE loading lazy or any other plugins
 -- This is critical and must happen first
 vim.g.mapleader = " " -- Space as leader key
@@ -21,6 +24,11 @@ vim.g.mapleader = " " -- Space as leader key
 -- Load configuration with improved error handling
 local config_ok, config = pcall(require, "neotex.config")
 local bootstrap_ok, bootstrap = pcall(require, "neotex.bootstrap")
+
+-- Make sure bootstrap exists before trying to use it
+if bootstrap_ok and type(bootstrap) == "table" and type(bootstrap.init) == "function" then
+  bootstrap.init()
+end
 
 -- If the new config structure fails, set up minimal fallback
 if not config_ok then
