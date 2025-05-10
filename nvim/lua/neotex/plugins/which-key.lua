@@ -219,6 +219,15 @@ TEXT OPERATIONS (<leader>x)                     | DESCRIPTION
 <leader>xs - Split/join toggle                  | Toggle between single/multi-line
 <leader>xd - Toggle diff overlay                | Show diff between buffer and clipboard
 <leader>xw - Toggle word diff                   | Show word-level diffs
+
+----------------------------------------------------------------------------------
+TODO (<leader>t)                               | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>tt - Todo telescope                     | Find all TODOs in project
+<leader>tn - Next todo                          | Jump to next TODO comment
+<leader>tp - Previous todo                      | Jump to previous TODO comment
+<leader>tl - Todo location list                 | Show TODOs in location list
+<leader>tq - Todo quickfix                      | Show TODOs in quickfix list
 ]]
 
 return {
@@ -357,7 +366,7 @@ return {
         h = { "<cmd>Telescope help_tags<CR>", "help" },
         k = { "<cmd>Telescope keymaps<CR>", "keymaps" },
         r = { "<cmd>Telescope registers<CR>", "registers" },
-        t = { "<cmd>Telescope colorscheme<CR>", "theme" },
+        t = { "<cmd>TodoTelescope<CR>", "todos" },
         s = { "<cmd>Telescope grep_string<CR>", "string" },
         w = { "<cmd>lua SearchWordUnderCursor()<CR>", "word" },
         y = { "<cmd>YankyRingHistory<CR>", "yanks" },

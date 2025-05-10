@@ -117,10 +117,10 @@ local function setup_lazy()
         
         -- Phase 2 imports
         { import = "neotex.plugins.coding" },  -- coding enhancement plugins
+        { import = "neotex.plugins.extras" },  -- optional plugins
         -- { import = "neotex.plugins.editor" },  -- editor enhancement plugins
         -- { import = "neotex.plugins.tools" },   -- tool integration plugins
         -- { import = "neotex.plugins.ui" },      -- UI enhancement plugins
-        -- { import = "neotex.plugins.extras" },  -- optional plugins
       }, {
         install = {
           colorscheme = { "gruvbox" },
