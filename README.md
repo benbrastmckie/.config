@@ -234,6 +234,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>u`   | Open Telescope undo            |
 | `<leader>v`   | View compiled LaTeX document   |
 | `<leader>w`   | Write all files                |
+| `<leader>x`   | Text operations menu           |
 
 #### Actions (`<leader>a`)
 
@@ -439,6 +440,16 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>ts`     | Insert subfile template        |
 | `<leader>tr`     | Insert root document template  |
 | `<leader>tm`     | Insert multiple answer template|
+
+#### Text Operations (`<leader>x`)
+
+| Key              | Action                              |
+|------------------|-------------------------------------|
+| `<leader>xa`     | Start text alignment                |
+| `<leader>xA`     | Start alignment with preview        |
+| `<leader>xs`     | Toggle between single/multi-line    |
+| `<leader>xd`     | Show diff overlay with clipboard    |
+| `<leader>xw`     | Toggle word-level diff display      |
 
 ## Features and Workflows
 

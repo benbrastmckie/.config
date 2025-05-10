@@ -17,6 +17,7 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 <leader>u - Open Telescope undo                 | Show undo history with preview
 <leader>v - VimtexView                          | View compiled LaTeX document
 <leader>w - Write all files                     | Save all open files
+<leader>x - Text operations                     | Align, split/join, diff operations
 
 ----------------------------------------------------------------------------------
 ACTIONS (<leader>a)                             | DESCRIPTION
@@ -209,6 +210,15 @@ TEMPLATES (<leader>t)                           | DESCRIPTION
 <leader>ts - SubFile.tex                        | Insert subfile template
 <leader>tr - Root.tex                           | Insert root document template
 <leader>tm - MultipleAnswer.tex                 | Insert multiple answer template
+
+----------------------------------------------------------------------------------
+TEXT OPERATIONS (<leader>x)                     | DESCRIPTION
+----------------------------------------------------------------------------------
+<leader>xa - Align                              | Start text alignment
+<leader>xA - Align with preview                 | Start alignment with preview
+<leader>xs - Split/join toggle                  | Toggle between single/multi-line
+<leader>xd - Toggle diff overlay                | Show diff between buffer and clipboard
+<leader>xw - Toggle word diff                   | Show word-level diffs
 ]]
 
 return {
@@ -547,6 +557,14 @@ return {
           "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>",
           "MultipleAnswer.tex",
         },
+      },
+      x = {
+        name = "TEXT OPERATIONS",
+        a = { "ga", "align" },
+        A = { "gA", "align with preview" },
+        s = { "gS", "split/join toggle" },
+        d = { function() require('mini.diff').toggle_overlay() end, "toggle diff overlay" },
+        w = { function() require('mini.diff').toggle_word_diff() end, "toggle word diff" },
       },
     },
   },
