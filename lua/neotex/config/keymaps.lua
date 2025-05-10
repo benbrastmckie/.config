@@ -219,9 +219,16 @@ function M.setup()
   map("n", "<CR>", "<cmd>noh<CR>", {}, "Clear search highlights")
   map("n", "<C-p>", "<cmd>Telescope find_files<CR>", { remap = true }, "Find files")
 
-  -- Comment toggling
-  map('n', "<C-;>", '<Plug>(comment_toggle_linewise_current)', {}, "Toggle comment")
-  map('x', "<C-;>", '<Plug>(comment_toggle_linewise_visual)', {}, "Toggle comment selection")
+  -- Comment toggling with mini.comment
+  map("n", "<C-;>", function()
+    require('mini.comment').toggle_lines(vim.fn.line('.'), vim.fn.line('.'))
+  end, {}, "Toggle comment on current line")
+  
+  map("x", "<C-;>", function()
+    local start_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '<'))
+    local end_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '>'))
+    require('mini.comment').toggle_lines(start_row, end_row)
+  end, {}, "Toggle comment on selection")
 
   -- Help integration
   map("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', {}, "Help for word under cursor")
