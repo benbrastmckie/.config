@@ -115,8 +115,8 @@ local function setup_lazy()
         -- Legacy LSP import for backward compatibility
         { import = "neotex.plugins.lsp" },
         
-        -- Phase 2 imports (commented until implementation)
-        -- { import = "neotex.plugins.coding" },  -- coding enhancement plugins
+        -- Phase 2 imports
+        { import = "neotex.plugins.coding" },  -- coding enhancement plugins
         -- { import = "neotex.plugins.editor" },  -- editor enhancement plugins
         -- { import = "neotex.plugins.tools" },   -- tool integration plugins
         -- { import = "neotex.plugins.ui" },      -- UI enhancement plugins
