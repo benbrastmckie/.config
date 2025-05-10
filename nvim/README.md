@@ -371,7 +371,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>ml`     | Run Lectic on current file          |
 | `<leader>mn`     | Create new Lectic file with template|
 | `<leader>ms`     | Submit selection with user message  |
-| `<leader>mp`     | Toggle markdown preview             |
+| `<leader>mp`     | Format buffer with conform.nvim     |
 | `<leader>mu`     | Open URL under cursor               |
 | `<leader>mf`     | Toggle fold under cursor            |
 | `<leader>ma`     | Toggle all folds open/closed        |

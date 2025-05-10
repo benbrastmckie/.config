@@ -3,6 +3,7 @@
 -- 
 -- This module loads plugins that provide additional functionality:
 -- - todo-comments.nvim: Enhanced TODO comment highlighting and navigation
+-- - conform.nvim: Code formatting with support for multiple languages
 -- - (more plugins will be added in future batches)
 --
 -- The module uses a consistent error handling approach to ensure
@@ -19,11 +20,13 @@ local function safe_require(module)
   return result
 end
 
--- Load todo-comments module
+-- Load modules
 local todo_comments_module = safe_require("neotex.plugins.extras.todo-comments")
+local formatting_module = safe_require("neotex.plugins.extras.formatting")
 
 -- Return plugin specs
 return {
   todo_comments_module,
+  formatting_module,
   -- Additional extras plugins will be added here
 }
