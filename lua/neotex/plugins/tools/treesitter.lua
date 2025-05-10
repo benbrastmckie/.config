@@ -12,10 +12,10 @@ return {
       -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "cls" }, -- list of language that will be disabled
+        disable = { "css", "cls", "latex" }, -- list of language that will be disabled
         -- Note: we keep markdown parser enabled for lectic.markdown files
-        -- Note: we now allow latex highlighting with treesitter
-        additional_vim_regex_highlighting = { "python", "latex" }, -- for jupyter notebooks and latex (fallback)
+        -- Note: using vim's regex highlighting for latex instead of treesitter
+        additional_vim_regex_highlighting = { "python", "latex" }, -- for jupyter notebooks and latex (standard)
       },
       -- enable indentation
       indent = { enable = true },
@@ -45,7 +45,7 @@ return {
         "markdown_inline", -- For inline markdown syntax
         "python",        -- For Python scripts
         "bash",          -- For shell scripts
-        "latex",         -- For LaTeX files
+        -- "latex" removed as requested - will be handled separately
         "bibtex",        -- For bibliography files
         "nix",           -- For NixOS configuration
         
@@ -61,7 +61,7 @@ return {
         "norg",
       },
       auto_install = true,
-      ignore_install = { }, -- No parsers to ignore anymore
+      ignore_install = { "latex" }, -- Ignore latex to avoid installation issues
       autopairs = {
         enable = true,
       },
