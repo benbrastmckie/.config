@@ -9,7 +9,6 @@
 -- - mini.ai: Enhanced text objects for working with brackets, quotes, etc.
 -- - mini.splitjoin: Toggle between single-line and multi-line code constructs
 -- - mini.align: Align text in columns based on delimiters
--- - mini.diff: Show diff between current buffer and clipboard or register
 --
 -- Mini.nvim provides a collection of minimal, independent, and fast 
 -- Lua modules for Neovim that enhance various aspects of coding.
@@ -372,81 +371,7 @@ return {
       },
     })
     
-    -- Configure mini.diff for showing diffs
-    require('mini.diff').setup({
-      -- Options controlling how sign adds, updates, and removes signs
-      sign = {
-        -- How many lines show show around visible added/changed/removed lines
-        context = 3,
-
-        -- Priority of used extmarks
-        priority = 100,
-
-        -- How to style added/changed/removed lines
-        add = { text = '▎', hl_group = 'MiniDiffSignAdd' },
-        change = { text = '▎', hl_group = 'MiniDiffSignChange' },
-        delete = { text = '▎', hl_group = 'MiniDiffSignDelete' },
-      },
-
-      -- Options for views
-      view = {
-        -- Whether to sync view (make it stay at the same lines as original)
-        sync = true,
-      },
-
-      -- Collection of word diff functions. Each function should take two
-      -- strings and return array of pairs of start-end (1-indexed, end-inclusive)
-      -- character positions defining matched parts.
-      -- Used by `MinidiffWordDiff`.
-      word_diff = {
-        -- Compute diff on non-whitespace characters
-        non_ws = function(s1, s2)
-          -- Simple implementation of Myers algorithm for character level diffing
-          -- Filter out completely blank characters
-          local s1_clean = s1:gsub('%s+', ' ')
-          local s2_clean = s2:gsub('%s+', ' ')
-          
-          -- Return empty if one of the strings is empty
-          if s1_clean == '' or s2_clean == '' then
-            return {}
-          end
-          
-          -- Return simple diff of whole strings
-          if s1_clean == s2_clean then
-            return { { 1, s1:len() } }
-          end
-          
-          -- For simplicity, just match start and end positions
-          local i = 1
-          local matches = {}
-          while i <= math.min(s1:len(), s2:len()) and s1:sub(i, i) == s2:sub(i, i) do
-            i = i + 1
-          end
-          
-          if i > 1 then
-            table.insert(matches, { 1, i - 1 })
-          end
-          
-          -- Match from the end
-          local j1, j2 = s1:len(), s2:len()
-          while j1 >= i and j2 >= i and s1:sub(j1, j1) == s2:sub(j2, j2) do
-            j1 = j1 - 1
-            j2 = j2 - 1
-          end
-          
-          if j1 < s1:len() then
-            table.insert(matches, { j1 + 1, s1:len() })
-          end
-          
-          return matches
-        end,
-      },
-    })
-
-    -- Set up highlight groups for mini.diff
-    vim.api.nvim_set_hl(0, 'MiniDiffSignAdd', { link = 'DiffAdd' })
-    vim.api.nvim_set_hl(0, 'MiniDiffSignChange', { link = 'DiffChange' })
-    vim.api.nvim_set_hl(0, 'MiniDiffSignDelete', { link = 'DiffDelete' })
+    -- mini.diff has been removed to avoid conflicts with gitsigns.nvim
     
     -- Set up custom keymappings for mini.comment to match Comment.nvim
     -- Normal mode comment toggle
@@ -483,8 +408,6 @@ return {
           a = { "ga", "align" },
           A = { "gA", "align with preview" },
           s = { "gS", "split/join toggle" },
-          d = { function() require('mini.diff').toggle_overlay() end, "toggle diff overlay" },
-          w = { function() require('mini.diff').toggle_word_diff() end, "toggle word diff" },
         },
       })
     end
