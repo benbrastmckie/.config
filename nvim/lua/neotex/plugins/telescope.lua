@@ -10,6 +10,7 @@ return {
       build = "make",
     },
     "nvim-tree/nvim-web-devicons",
+    "gbprod/yanky.nvim",
   },
   config = function()
     local telescope = require("telescope")
