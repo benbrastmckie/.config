@@ -12,9 +12,10 @@ return {
       -- enable syntax highlighting
       highlight = {
         enable = true,
-        disable = { "css", "latex", "cls" }, -- list of language that will be disabled
+        disable = { "css", "cls" }, -- list of language that will be disabled
         -- Note: we keep markdown parser enabled for lectic.markdown files
-        additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
+        -- Note: we now allow latex highlighting with treesitter
+        additional_vim_regex_highlighting = { "python", "latex" }, -- for jupyter notebooks and latex (fallback)
       },
       -- enable indentation
       indent = { enable = true },
@@ -35,35 +36,32 @@ return {
       },
       -- ensure these language parsers are installed
       ensure_installed = {
+        -- Essential languages
+        "lua",           -- For Neovim configuration
+        "vim",           -- For Vim script
+        "vimdoc",        -- For Neovim help docs
+        "query",         -- For treesitter queries
+        "markdown",      -- For documentation and Lectic support
+        "markdown_inline", -- For inline markdown syntax
+        "python",        -- For Python scripts
+        "bash",          -- For shell scripts
+        "latex",         -- For LaTeX files
+        "bibtex",        -- For bibliography files
+        "nix",           -- For NixOS configuration
+        
+        -- Utility formats
         "json",
         "yaml",
-        "html",
-        "bash",
-        "lua",
-        "vim",
+        "toml",
         "gitignore",
-        "query",
-        "python",
+        
+        -- Additional languages
         "c",
         "haskell",
-        "bibtex",
-        "vimdoc",
         "norg",
-        "markdown",       -- Enable for lectic.markdown support
-        "markdown_inline", -- Enable for lectic.markdown support
-        -- "latex",
-        -- "javascript",
-        -- "typescript",
-        -- "tsx",
-        -- "css",
-        -- "prisma",
-        -- "svelte",
-        -- "graphql",
-        -- "dockerfile",
-        -- "perl",
       },
       auto_install = true,
-      ignore_install = { "latex" }, -- List of parsers to ignore installing
+      ignore_install = { }, -- No parsers to ignore anymore
       autopairs = {
         enable = true,
       },
