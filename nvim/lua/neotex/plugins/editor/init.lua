@@ -3,6 +3,7 @@
 -- 
 -- This module loads plugins that enhance the editing experience:
 -- - yanky.nvim: Enhanced yank and paste functionality
+-- - which-key.nvim: Displays keybinding help popup
 -- - (more plugins will be added in future batches)
 --
 -- The module uses a consistent error handling approach to ensure
@@ -21,9 +22,11 @@ end
 
 -- Load modules
 local yanky_module = safe_require("neotex.plugins.editor.yanky")
+local which_key_module = safe_require("neotex.plugins.editor.which-key")
 
 -- Return plugin specs
 return {
   yanky_module,
+  which_key_module,
   -- Additional editor plugins will be added here
 }
