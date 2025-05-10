@@ -146,7 +146,7 @@ MARKDOWN (<leader>m)                            | DESCRIPTION
 <leader>ml - Run Lectic                         | Run Lectic on current file
 <leader>mn - New Lectic file                    | Create new Lectic file with template
 <leader>ms - Submit selection                   | Submit visual selection with user message
-<leader>mp - Markdown preview                   | Toggle markdown preview
+<leader>mp - Format buffer                      | Format code with conform.nvim
 <leader>mu - Open URL                           | Open URL under cursor
 <leader>ma - Toggle all folds                   | Toggle all folds open/closed
 <leader>mf - Toggle fold                        | Toggle fold under cursor
@@ -472,8 +472,8 @@ return {
         n = { "<cmd>lua CreateNewLecticFile()<CR>", "new lectic file" },
         s = { "<cmd>lua SubmitLecticSelection()<CR>", "submit selection with message" },
 
-        -- MARKDOWN/PREVIEW
-        p = { "<cmd>MarkdownPreviewToggle <CR>", "markdown preview" },
+        -- MARKDOWN/PREVIEW & FORMATTING
+        p = { function() require("conform").format({ async = true, lsp_fallback = true }) end, "format buffer" },
         u = { "<cmd>lua OpenUrlUnderCursor()<CR>", "open URL under cursor" },
 
         -- FOLDING
