@@ -43,7 +43,7 @@ return {
     end
   end,
 
-  -- Build function - Install MCP-Hub with uvx
+  -- Build function - Verify UVX is available for MCP-Hub
   build = function()
     -- Use native shell commands instead of Job for build which may run in FastEvent context
     local function run_shell_command(command)
@@ -55,6 +55,37 @@ return {
       return result
     end
     
+    -- Create required configuration directories
+    local config_dir = vim.fn.expand("~/.config/mcphub")
+    if vim.fn.isdirectory(config_dir) == 0 then
+      vim.fn.mkdir(config_dir, "p")
+      print("Created MCP-Hub config directory at " .. config_dir)
+    end
+    
+    -- Create a default servers.json if it doesn't exist
+    local servers_file = config_dir .. "/servers.json"
+    if vim.fn.filereadable(servers_file) == 0 then
+      local default_config = [[
+{
+  "servers": [
+    {
+      "name": "default",
+      "description": "Default MCP Hub server",
+      "url": "http://localhost:37373",
+      "apiKey": "",
+      "default": true
+    }
+  ]
+}
+]]
+      local file = io.open(servers_file, "w")
+      if file then
+        file:write(default_config)
+        file:close()
+        print("Created default servers.json at " .. servers_file)
+      end
+    end
+    
     -- Check if uvx is available
     local uvx_path = run_shell_command("which uvx"):gsub("\n", "")
     
@@ -63,24 +94,20 @@ return {
       return
     end
     
-    -- Check if mcp-hub is already installed
-    local list_output = run_shell_command("uvx list")
+    -- Skip the installation check and just verify we can run mcp-hub
+    -- This is more reliable on NixOS which may have issues with uvx install/list
+    print("Testing MCP-Hub availability with uvx...")
+    local test_output = run_shell_command(uvx_path .. " run mcp-hub --help")
     
-    if not list_output:find("mcp%-hub") then
-      print("Installing mcp-hub with uvx...")
-      local install_output = run_shell_command("uvx install mcp-hub")
-      
-      if install_output:find("Error") then
-        print("Failed to install mcp-hub with uvx: " .. install_output)
-        -- Store error in global state
-        if _G.mcp_hub_state then
-          _G.mcp_hub_state.last_error = install_output
-        end
-      else
-        print("Successfully installed mcp-hub with uvx")
+    if test_output:find("Error") or test_output:find("No solution") then
+      print("Warning: Could not verify MCP-Hub with uvx. Will attempt to run it directly.")
+      print("If MCP-Hub doesn't start, run: uvx install mcp-hub")
+      -- Store error in global state
+      if _G.mcp_hub_state then
+        _G.mcp_hub_state.last_error = "Could not verify MCP-Hub installation"
       end
     else
-      print("mcp-hub is already installed with uvx")
+      print("MCP-Hub appears to be accessible with uvx run")
     end
   end,
 
@@ -245,18 +272,21 @@ return {
     -- Load settings
     local settings = utils.settings.load()
 
-    -- Configure MCP-Hub
-    require("mcphub").setup({
+    -- Configure MCP-Hub with enhanced error handling for NixOS
+    local setup_config = {
       -- Use absolute path to uvx to run mcp-hub
       use_bundled_binary = false,
       cmd = uvx_path,
       cmdArgs = { "run", "mcp-hub" },
 
-      -- Server configuration
-      port = settings.port,
-      config = settings.config_path,
+      -- Server configuration with fallbacks
+      port = settings.port or 37373,
+      config = settings.config_path or vim.fn.expand("~/.config/mcphub/servers.json"),
       native_servers = {},
-      auto_approve = settings.auto_approve,
+      auto_approve = settings.auto_approve or false,
+      
+      -- Add NixOS-friendly error handling
+      debug = true, -- Enable debug mode for better error messages
 
       -- Extensions configuration
       extensions = {
@@ -301,8 +331,29 @@ return {
         prefix = "MCPHub"
       },
 
-      debug = settings.debug,
-    })
+      debug = settings.debug or true,
+    }
+    
+    -- Try to set up MCP-Hub with proper error handling
+    local setup_ok, err = pcall(function()
+      require("mcphub").setup(setup_config)
+    end)
+    
+    if not setup_ok then
+      vim.notify("MCP-Hub setup failed: " .. tostring(err), vim.log.levels.ERROR)
+      -- Store error in global state
+      if _G.mcp_hub_state then
+        _G.mcp_hub_state.last_error = "Setup failed: " .. tostring(err)
+      end
+    else
+      -- Initialize integration with Avante if MCP-Hub setup succeeds
+      pcall(function()
+        local integration = require("neotex.plugins.ai.util.mcp-avante-integration")
+        if integration and integration.init then
+          integration.init()
+        end
+      end)
+    end
   end,
 }
 
