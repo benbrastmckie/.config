@@ -712,8 +712,14 @@ tmp=${PWD}/.npm-tmp
 
       -- Extensions configuration
       extensions = {
+        -- Avante integration following official recommendations
         avante = {
-          -- Options will be populated later when Avante integration is enabled
+          make_slash_commands = true,     -- Create /slash commands from MCP server prompts
+          auto_approve = true,            -- Auto-approve MCP tools for Avante to use
+          make_vars = true,               -- Make MCP resources available as chat variables
+          show_result_in_chat = true,     -- Show tool results in chat
+          -- Default system prompt to include MCP capabilities
+          system_prompt = "You have access to MCP tools and resources, which extend your capabilities. Use the tools when appropriate."
         },
         codecompanion = {
           show_result_in_chat = false,
@@ -736,12 +742,28 @@ tmp=${PWD}/.npm-tmp
       on_ready = function(hub)
         _G.mcp_hub_state.running = true
         _G.mcp_hub_state.port = settings.port
-        vim.notify("MCP-Hub is ready on port " .. settings.port, vim.log.levels.INFO)
+        
+        -- Register integration with Avante when hub is ready
+        vim.defer_fn(function()
+          -- Try to load Avante extension explicitly
+          local ok, mcphub = pcall(require, "mcphub")
+          if ok then
+            -- Load the Avante extension
+            pcall(function()
+              mcphub.load_extension("avante")
+            end)
+          end
+          
+          -- Set integration state
+          _G.mcp_hub_state.avante_integrated = true
+          vim.notify("MCP-Hub integrated", vim.log.levels.INFO)
+        end, 500)
       end,
 
       on_error = function(err)
         _G.mcp_hub_state.running = false
         _G.mcp_hub_state.last_error = err
+        _G.mcp_hub_state.avante_integrated = false
         vim.notify("MCP-Hub error: " .. err, vim.log.levels.ERROR)
       end,
 
@@ -755,6 +777,22 @@ tmp=${PWD}/.npm-tmp
 
       debug = settings.debug or true,
     }
+    
+    -- Export execute_tool function to global scope for easier access
+    _G.mcp_hub_execute_tool = function(tool, input)
+      local ok, mcphub = pcall(require, "mcphub")
+      if not ok then
+        return { error = "Failed to load MCPHub module" }
+      end
+      
+      local hub = mcphub.get_hub_instance()
+      if not hub then
+        return { error = "Failed to get MCPHub instance" }
+      end
+      
+      -- Execute the tool
+      return hub.execute(tool, input)
+    end
     
     -- Try to set up MCP-Hub with proper error handling
     local setup_ok, err = pcall(function()
@@ -798,6 +836,12 @@ tmp=${PWD}/.npm-tmp
           integration.init()
           vim.notify("MCP-Hub successfully integrated with Avante", vim.log.levels.INFO)
         end
+      end)
+      
+      -- Set up MCP commands for direct access to servers
+      pcall(function()
+        local mcp_commands = require("neotex.util.mcp_commands")
+        mcp_commands.setup()
       end)
     end
   end,

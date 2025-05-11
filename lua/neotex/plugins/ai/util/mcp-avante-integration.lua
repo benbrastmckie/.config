@@ -83,8 +83,21 @@ function M.create_mcp_tool()
           }
         end
         
-        -- Call MCP Hub's execute_tool method
-        return mcphub.execute_tool(tool, input)
+        -- Try using the global execute function if available
+        if _G.mcp_hub_execute_tool then
+          return _G.mcp_hub_execute_tool(tool, input)
+        end
+        
+        -- Fallback to direct hub execution if global function isn't available
+        local hub = mcphub.get_hub_instance()
+        if not hub then
+          return {
+            error = "Failed to get MCPHub instance. MCPHub may not be fully initialized."
+          }
+        end
+        
+        -- Call the hub instance's execute method
+        return hub.execute(tool, input)
       end)
       
       -- Handle execution results
