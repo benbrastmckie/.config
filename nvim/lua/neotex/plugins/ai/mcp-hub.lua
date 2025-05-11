@@ -23,6 +23,38 @@ return {
     "nvim-lua/plenary.nvim",                            -- Required for Job and HTTP requests
   },
   cmd = { "MCPHub", "MCPHubStatus", "MCPHubSettings" }, -- Lazy load by default
+  build = function()
+    -- Simple build function that checks if uvx is available
+    -- and installs mcp-hub for non-NixOS users
+    local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1 or vim.fn.executable("nix-env") == 1
+    
+    if not is_nixos then
+      -- Only try to auto-install for non-NixOS users
+      local function run_shell_command(command)
+        local handle = io.popen(command .. " 2>&1")
+        if not handle then return nil, "Failed to execute command" end
+        
+        local result = handle:read("*a")
+        handle:close()
+        return result
+      end
+      
+      -- Check if uvx is available
+      local uvx_path = run_shell_command("which uvx"):gsub("\n", "")
+      
+      if uvx_path ~= "" then
+        print("Installing mcp-hub with uvx for non-NixOS system...")
+        local install_output = run_shell_command(uvx_path .. " install mcp-hub")
+        print(install_output)
+      else
+        print("Warning: uvx not found. Unable to install mcp-hub.")
+        print("Please install uvx first, then run 'uvx install mcp-hub'")
+      end
+    else
+      print("NixOS detected. Please install mcp-hub manually.")
+      print("See specs/NIXOS_MCPHUB.md for installation instructions.")
+    end
+  end,
 
   -- Initialize settings files and global state
   init = function()
@@ -43,7 +75,7 @@ return {
     end
   end,
 
-  -- Build function - Verify UVX is available for MCP-Hub
+  -- Build function - Choose the right installation method based on environment
   build = function()
     -- Use native shell commands instead of Job for build which may run in FastEvent context
     local function run_shell_command(command)
@@ -86,29 +118,94 @@ return {
       end
     end
     
-    -- Check if uvx is available
+    -- Detect environment
+    local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1
+    
+    -- Create a file to store build info
+    local build_info_file = vim.fn.stdpath("data") .. "/mcp-hub/build_info.lua"
+    local build_info = {
+      is_nixos = is_nixos,
+      npm_installed = false,
+      uvx_installed = false,
+      use_bundled = false,
+      install_method = "unknown"
+    }
+    
+    -- First try to see if npm is available
+    local npm_path = run_shell_command("which npm"):gsub("\n", "")
+    build_info.npm_installed = npm_path ~= ""
+    
+    -- Then check if uvx is available
     local uvx_path = run_shell_command("which uvx"):gsub("\n", "")
+    build_info.uvx_installed = uvx_path ~= ""
     
-    if uvx_path == "" then
-      print("uvx is not available in PATH. MCP-Hub requires uvx for NixOS compatibility.")
-      return
-    end
-    
-    -- Skip the installation check and just verify we can run mcp-hub
-    -- This is more reliable on NixOS which may have issues with uvx install/list
-    print("Testing MCP-Hub availability with uvx...")
-    local test_output = run_shell_command(uvx_path .. " run mcp-hub --help")
-    
-    if test_output:find("Error") or test_output:find("No solution") then
-      print("Warning: Could not verify MCP-Hub with uvx. Will attempt to run it directly.")
-      print("If MCP-Hub doesn't start, run: uvx install mcp-hub")
-      -- Store error in global state
-      if _G.mcp_hub_state then
-        _G.mcp_hub_state.last_error = "Could not verify MCP-Hub installation"
+    if is_nixos then
+      if build_info.uvx_installed then
+        -- On NixOS with UVX, use UVX approach but with direct execution
+        print("NixOS detected with UVX available. Using UVX for MCP-Hub...")
+        
+        -- Run bundled_build.lua script to prepare the environment
+        local script_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled_build.lua")
+        if vim.fn.filereadable(script_path) == 1 then
+          -- Even though we'll use UVX to run, still prepare the bundled binary
+          -- as a fallback mechanism
+          dofile(script_path)
+          print("Successfully prepared bundled binary as fallback")
+        end
+        
+        build_info.install_method = "nixos_uvx"
+        build_info.use_bundled = false
+      else
+        -- On NixOS without UVX, use the bundled binary
+        print("NixOS detected without UVX. Using bundled binary for MCP-Hub...")
+        
+        -- Run bundled_build.lua script to prepare the environment
+        local script_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled_build.lua")
+        if vim.fn.filereadable(script_path) == 1 then
+          dofile(script_path)
+          print("Successfully prepared bundled binary")
+        else
+          print("Warning: Could not find bundled_build.lua script")
+        end
+        
+        build_info.install_method = "nixos_bundled"
+        build_info.use_bundled = true
       end
     else
-      print("MCP-Hub appears to be accessible with uvx run")
+      if build_info.npm_installed then
+        -- Non-NixOS with npm, use the recommended npm install method
+        print("Standard environment with npm. Using npm to install MCP-Hub...")
+        local install_output = run_shell_command("npm install -g mcp-hub@latest")
+        print(install_output)
+        
+        build_info.install_method = "npm_global"
+        build_info.use_bundled = false
+      else
+        -- Non-NixOS without npm, use the bundled binary
+        print("Standard environment without npm. Using bundled binary for MCP-Hub...")
+        
+        -- Run bundled_build.lua script to prepare the environment
+        local script_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled_build.lua")
+        if vim.fn.filereadable(script_path) == 1 then
+          dofile(script_path)
+          print("Successfully prepared bundled binary")
+        else
+          print("Warning: Could not find bundled_build.lua script")
+        end
+        
+        build_info.install_method = "standard_bundled"
+        build_info.use_bundled = true
+      end
     end
+    
+    -- Save build info for config function to use
+    local file = io.open(build_info_file, "w")
+    if file then
+      file:write("return " .. vim.inspect(build_info) .. "\n")
+      file:close()
+    end
+    
+    print("MCP-Hub build configuration complete. Installation method: " .. build_info.install_method)
   end,
 
   -- Config function - Setup MCP-Hub with improved configuration
@@ -266,26 +363,28 @@ return {
       utils.show_settings_editor()
     end, { desc = "Edit MCP-Hub settings" })
 
-    -- Get the full path to uvx for more reliable execution
-    local uvx_path = vim.fn.system("which uvx"):gsub("\n", "")
-
     -- Load settings
     local settings = utils.settings.load()
-
-    -- Configure MCP-Hub with enhanced error handling for NixOS
+    
+    -- Get the path to uvx for running MCP-Hub
+    local uvx_path = vim.fn.system("which uvx"):gsub("\n", "")
+    
+    -- Configure MCP-Hub to use UVX
     local setup_config = {
-      -- Use absolute path to uvx to run mcp-hub
+      -- Don't use the bundled binary
       use_bundled_binary = false,
+      
+      -- Use UVX to run MCP-Hub
       cmd = uvx_path,
       cmdArgs = { "run", "mcp-hub" },
-
+      
       -- Server configuration with fallbacks
       port = settings.port or 37373,
       config = settings.config_path or vim.fn.expand("~/.config/mcphub/servers.json"),
       native_servers = {},
       auto_approve = settings.auto_approve or false,
       
-      -- Add NixOS-friendly error handling
+      -- Add error handling
       debug = true, -- Enable debug mode for better error messages
 
       -- Extensions configuration

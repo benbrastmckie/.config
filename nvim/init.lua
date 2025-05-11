@@ -21,6 +21,14 @@ vim.notify_level = vim.log.levels.INFO
 -- This is critical and must happen first
 vim.g.mapleader = " " -- Space as leader key
 
+-- Install mcp-hub using uv
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    vim.system({"uv", "install", "mcp-hub"})
+  end,
+  once = true
+})
+
 -- Load configuration with improved error handling
 local config_ok, config = pcall(require, "neotex.config")
 local bootstrap_ok, bootstrap = pcall(require, "neotex.bootstrap")
