@@ -10,13 +10,17 @@ This Neovim configuration includes specialized support for:
 
 - **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
 - **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
-- **AI Assistance**: AI integration for code completion and editing suggestions with Avante and knowledge assistance with Lectic
+- **AI Assistance**: AI integration for code completion and editing suggestions with Avante, MCP-Hub tools, and knowledge assistance with Lectic
 - **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats
 - **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
 - **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics
 - **Session Management**: Save and restore editing sessions with persistent workspaces
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
+
+## Prerequisites
+
+This configuration requires the `uv` package manager (a modern alternative to npm) for installing and running MCP-Hub. See [docs/UV_SETUP.md](docs/UV_SETUP.md) for installation instructions.
 
 ## Making Configuration Changes
 
