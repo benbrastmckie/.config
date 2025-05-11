@@ -174,7 +174,27 @@ function M.setup()
       vim.defer_fn(function()
         -- Only try to register if not already done
         if not integration_state.initialized then
-          M.register_with_avante()
+          -- Try starting MCPHub if not already running
+          local mcphub_ok = false
+          pcall(function()
+            -- Check if MCPHub is running
+            if _G.mcp_hub_state and not _G.mcp_hub_state.running then
+              -- Try to start it automatically
+              vim.notify("Starting MCPHub for Avante integration...", vim.log.levels.INFO)
+              vim.cmd("MCPHub")
+              
+              -- Give it a moment to start
+              vim.defer_fn(function()
+                M.register_with_avante()
+              end, 2000)
+              mcphub_ok = true
+            end
+          end)
+          
+          -- If MCPHub appears to be running already, just register
+          if not mcphub_ok then
+            M.register_with_avante()
+          end
         end
       end, 1500) -- Delay to ensure plugins are loaded
     end,
@@ -195,8 +215,28 @@ function M.setup()
     once = true
   })
   
+  -- Add User event for Avante loading
+  vim.api.nvim_create_autocmd("User", {
+    group = "MCPAvanteIntegration",
+    pattern = "AvanteStartup",  -- Assuming Avante triggers this event
+    callback = function()
+      -- Try to register with Avante when it starts up
+      if not integration_state.initialized then
+        vim.defer_fn(function()
+          M.register_with_avante()
+        end, 500)
+      end
+    end,
+  })
+  
   -- Return integration state
   return integration_state
+end
+
+-- Initialize the integration system
+-- This is called from the MCP-Hub plugin to trigger early integration
+function M.init()
+  return M.setup()
 end
 
 -- Get the current integration state
