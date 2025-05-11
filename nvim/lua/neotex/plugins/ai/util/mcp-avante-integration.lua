@@ -29,7 +29,28 @@ function M.create_mcp_tool()
   return {
     name = "mcp",
     description = "Execute MCP tools and access AI providers",
+    param = {
+      fields = {
+        {
+          name = "tool",
+          type = "string",
+          description = "The MCP tool name to execute"
+        },
+        {
+          name = "input",
+          type = "object",
+          description = "The input parameters for the MCP tool"
+        }
+      }
+    },
     execute = function(args)
+      -- Validate args to prevent index errors
+      if not args or type(args) ~= "table" then
+        return {
+          error = "Invalid arguments provided to MCP tool. Expected table, got " .. type(args)
+        }
+      end
+      
       -- Check if MCP-Hub is running
       if not _G.mcp_hub_state or not _G.mcp_hub_state.running then
         return {
@@ -82,7 +103,7 @@ function M.create_mcp_tool()
       end
       
       -- Update global state
-      if has_error and result.error then
+      if has_error and result and result.error then
         _G.mcp_hub_state.last_error = result.error
       end
       

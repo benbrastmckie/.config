@@ -11,6 +11,7 @@
 -- - diagnostics.lua: LSP diagnostic utilities
 -- - misc.lua: Miscellaneous helper functions
 -- - optimize.lua: Performance optimization utilities
+-- - lectic.lua: Functions for Lectic AI integration
 --
 -- Each module follows a consistent pattern with a setup()
 -- function that initializes the module's functionality.
@@ -66,13 +67,14 @@ function M._load_submodules()
     "url",
     "diagnostics",
     "misc",
-    "optimize"
+    "optimize",
+    "lectic_extras"
   }
   
   local loaded = {}
   
   for _, module_name in ipairs(modules) do
-    local ok, module = pcall(require, "neotex.utils." .. module_name)
+    local ok, module = pcall(require, "neotex.util." .. module_name)
     if ok and type(module) == "table" then
       loaded[module_name] = module
       -- Call setup function if it exists

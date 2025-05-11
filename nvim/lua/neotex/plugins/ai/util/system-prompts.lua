@@ -6,8 +6,8 @@
 
 local M = {}
 
--- Prompts file location
-local prompts_file = vim.fn.stdpath("config") .. "/lua/neotex/plugins/ai/system-prompts.json"
+-- Prompts file location 
+local prompts_file = vim.fn.stdpath("config") .. "/lua/neotex/plugins/ai/util/system-prompts.json"
 
 -- Default prompts to use if file is missing
 local default_prompts = {
@@ -648,4 +648,3 @@ function M.show_delete_submenu(prompts)
 end
 
 return M
-

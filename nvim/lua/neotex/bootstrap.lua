@@ -122,6 +122,9 @@ local function setup_lazy()
         { import = "neotex.plugins.editor" },  -- editor enhancement plugins (includes former extras)
         { import = "neotex.plugins.tools" },   -- tool integration plugins
         { import = "neotex.plugins.ui" },      -- UI enhancement plugins
+        
+        -- Phase 4 imports
+        { import = "neotex.plugins.ai" },      -- AI tooling plugins
       }, {
         install = {
           colorscheme = { "gruvbox" },
@@ -175,7 +178,7 @@ end
 -- Initialize utilities with error handling
 local function setup_utils()
   return with_error_handling(function()
-    local utils = require("neotex.utils")
+    local utils = require("neotex.util")
     if type(utils) == "table" and utils.setup then
       utils.setup()
     end

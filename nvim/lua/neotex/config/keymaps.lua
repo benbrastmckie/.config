@@ -263,7 +263,7 @@ function M.setup()
   local buffer_utils_loaded = false
   
   -- Try to use the new utils.buffer module first
-  local ok, buffer_utils = pcall(require, "neotex.utils.buffer")
+  local ok, buffer_utils = pcall(require, "neotex.util.buffer")
   if ok and buffer_utils and buffer_utils.goto_buffer then
     buffer_utils_loaded = true
     

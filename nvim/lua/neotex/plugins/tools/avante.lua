@@ -15,6 +15,9 @@
     -- Set recommended vim option for best Avante view compatibility
     -- Views can only be fully collapsed with the global statusline
     vim.opt.laststatus = 3
+    
+    -- Load the enhanced highlights for Avante
+    pcall(require, "neotex.plugins.ai.util.avante-highlights")
 
     -- Define provider models (moved to global scope for reuse)
     -- IMPORTANT: Keep claude-3-5-sonnet as the first model
@@ -48,7 +51,7 @@
 
     -- Require the support module just once in this scope
     -- This module will be visible to all code in the init function
-    local avante_support = require("neotex.plugins.ai.avante-support")
+    local avante_support = require("neotex.plugins.ai.util.avante-support")
 
     -- Initialize state with the settings from our support module
     -- This sets up _G.avante_cycle_state and returns the settings
@@ -235,9 +238,20 @@
         "system_commands",
         "file_modifications",
       },
-      -- custom_tools = {
-      --   require("mcphub.extensions.avante").mcp_tool(),
-      -- },
+      custom_tools = function()
+        -- Try to load MCP-Hub integration module
+        local ok, mcp_integration = pcall(require, "neotex.plugins.ai.util.mcp-avante-integration")
+        if ok then
+          -- Create the MCP tool and return it as a table
+          return { mcp_integration.create_mcp_tool() }
+        else
+          -- Return empty table if integration module not found
+          vim.defer_fn(function()
+            vim.notify("MCP-Hub integration not loaded. MCP tools unavailable.", vim.log.levels.WARN)
+          end, 2000)
+          return {}
+        end
+      end,
       dual_boost = {
         enabled = false,
         first_provider = "claude",
@@ -353,12 +367,15 @@
         autojump = true,
         list_opener = "copen",
         override_timeoutlen = 500,
+        inline_preview = true,           -- Enable inline preview of changes
+        gutter_markers = true,           -- Show markers in the gutter for changes
+        enhanced_display = true,         -- Use enhanced display features
       },
     }
 
     -- Override with saved settings if they exist
     -- Note: Using new variable names to avoid confusion with the init function scope
-    local opts_support = require("neotex.plugins.ai.avante-support")
+    local opts_support = require("neotex.plugins.ai.util.avante-support")
     local opts_settings = opts_support.init()
 
     -- Apply settings to config
