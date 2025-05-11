@@ -230,7 +230,7 @@
         max_tokens = 8192, -- Higher token limit for newer models
       },
       system_prompt =
-      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. You have access to MCP tools including a knowledge graph memory server. Use the memory tool to store and retrieve information as needed. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",
       -- Disable all tools that could modify the system
       disable_tools = {
         "file_creation",
@@ -238,20 +238,9 @@
         "system_commands",
         "file_modifications",
       },
-      custom_tools = function()
-        -- Try to load MCP-Hub integration module
-        local ok, mcp_integration = pcall(require, "neotex.plugins.ai.util.mcp-avante-integration")
-        if ok then
-          -- Create the MCP tool and return it as a table
-          return { mcp_integration.create_mcp_tool() }
-        else
-          -- Return empty table if integration module not found
-          vim.defer_fn(function()
-            vim.notify("MCP-Hub integration not loaded. MCP tools unavailable.", vim.log.levels.WARN)
-          end, 2000)
-          return {}
-        end
-      end,
+      -- Let MCPHub handle tool registration through its extension system
+      -- This is the recommended approach according to the official documentation
+      -- The extension will automatically register MCP tools with Avante
       dual_boost = {
         enabled = false,
         first_provider = "claude",

@@ -207,10 +207,24 @@ function M.apply_prompt(id)
     return false
   end
 
+  -- Store current prompt name in global state
+  _G.current_avante_prompt = {
+    id = id,
+    name = prompt_data.name
+  }
+
   -- Update Avante's configuration
   local ok, config = pcall(require, "avante.config")
   if ok and config and config.override then
-    config.override({ system_prompt = prompt_data.prompt })
+    -- Create the modified prompt that includes attribution at the beginning of responses
+    local prompt_with_attribution = prompt_data.prompt
+
+    -- Configure Avante with the prompt
+    config.override({ 
+      system_prompt = prompt_with_attribution,
+      -- Remember the prompt name for use in attribution
+      prompt_name = prompt_data.name
+    })
 
     -- Show notification
     vim.notify("Applied system prompt: " .. prompt_data.name, vim.log.levels.INFO)

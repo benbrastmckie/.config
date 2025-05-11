@@ -425,18 +425,72 @@ function M.show_model_notification()
   -- Load the default system prompt
   local ok, system_prompts = pcall(require, "neotex.plugins.ai.util.system-prompts")
   local prompt_info = ""
+  local prompt_name = ""
 
   if ok then
     local default_prompt, default_id = system_prompts.get_default()
     if default_prompt then
       prompt_info = " with prompt: " .. default_prompt.name
+      prompt_name = default_prompt.name
+
+      -- Store current prompt in global state
+      _G.current_avante_prompt = {
+        id = default_id,
+        name = default_prompt.name
+      }
 
       -- Apply the default prompt
       pcall(function()
         local config = require("avante.config")
         if config and config.override then
-          config.override({ system_prompt = default_prompt.prompt })
+          config.override({ 
+            system_prompt = default_prompt.prompt,
+            prompt_name = default_prompt.name
+          })
         end
+      end)
+
+      -- Add an autocmd to show the prompt name in responses
+      pcall(function()
+        -- Create autocmd group if it doesn't exist
+        if vim.fn.exists("##AvantePromptAttribution") == 0 then
+          vim.api.nvim_create_augroup("AvantePromptAttribution", { clear = true })
+        end
+
+        -- Add autocmd for entering Avante buffers
+        vim.api.nvim_create_autocmd("FileType", {
+          group = "AvantePromptAttribution",
+          pattern = "Avante",
+          callback = function()
+            -- Add autocommand for when text is added to buffer
+            vim.api.nvim_create_autocmd("TextChanged", {
+              group = "AvantePromptAttribution",
+              buffer = vim.api.nvim_get_current_buf(),
+              callback = function()
+                -- Check if this is a new response (only execute once per response)
+                if _G.avante_last_response_time and (os.time() - _G.avante_last_response_time) < 5 then
+                  return
+                end
+
+                -- Get the current prompt information
+                local current_prompt = _G.current_avante_prompt and _G.current_avante_prompt.name or "Unknown"
+                local win_info = "Using " .. current_model .. " with " .. current_prompt .. " prompt"
+                
+                -- Update window title
+                pcall(function()
+                  local buf = vim.api.nvim_get_current_buf()
+                  local win = vim.api.nvim_get_current_win()
+                  if vim.api.nvim_win_is_valid(win) then
+                    vim.api.nvim_win_set_option(win, "winbar", win_info)
+                  end
+                end)
+                
+                -- Update timestamp to avoid multiple executions
+                _G.avante_last_response_time = os.time()
+              end
+            })
+          end
+        })
       end)
     end
   end
