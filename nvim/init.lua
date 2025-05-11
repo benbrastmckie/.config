@@ -21,13 +21,11 @@ vim.notify_level = vim.log.levels.INFO
 -- This is critical and must happen first
 vim.g.mapleader = " " -- Space as leader key
 
--- Install mcp-hub using uv
-vim.api.nvim_create_autocmd("VimEnter", {
-  callback = function()
-    vim.system({"uv", "install", "mcp-hub"})
-  end,
-  once = true
-})
+-- Use the Nix-installed MCP-Hub binary if available
+local mcp_hub_path = os.getenv("MCP_HUB_PATH")
+if mcp_hub_path then
+  vim.g.mcp_hub_path = mcp_hub_path
+end
 
 -- Load configuration with improved error handling
 local config_ok, config = pcall(require, "neotex.config")

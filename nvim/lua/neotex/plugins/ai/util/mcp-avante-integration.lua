@@ -171,9 +171,14 @@ function M.setup()
     pattern = "*",
     callback = function()
       -- Defer execution to ensure both plugins are fully loaded
+      -- and give time for NixOS to initialize the MCP-Hub binary
       vim.defer_fn(function()
         -- Only try to register if not already done
         if not integration_state.initialized then
+          -- See if we're on NixOS with a custom MCP-Hub binary
+          local mcp_hub_path = vim.g.mcp_hub_path or os.getenv("MCP_HUB_PATH")
+          local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1 or vim.fn.executable("nix-env") == 1
+          
           -- Try starting MCPHub if not already running
           local mcphub_ok = false
           pcall(function()
@@ -181,6 +186,12 @@ function M.setup()
             if _G.mcp_hub_state and not _G.mcp_hub_state.running then
               -- Try to start it automatically
               vim.notify("Starting MCPHub for Avante integration...", vim.log.levels.INFO)
+              
+              -- Extra messaging for NixOS users
+              if is_nixos and mcp_hub_path then
+                vim.notify("Using NixOS-managed MCP-Hub binary at: " .. mcp_hub_path, vim.log.levels.INFO)
+              end
+              
               vim.cmd("MCPHub")
               
               -- Give it a moment to start
@@ -196,7 +207,7 @@ function M.setup()
             M.register_with_avante()
           end
         end
-      end, 1500) -- Delay to ensure plugins are loaded
+      end, 3000) -- Longer delay to ensure plugins are loaded and mcp-hub is installed
     end,
     once = true
   })
