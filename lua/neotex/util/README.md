@@ -17,14 +17,14 @@ This directory contains utility functions that provide common functionality thro
 To use these utilities in your configuration:
 
 ```lua
--- Load the entire utils module
-local utils = require("neotex.utils")
+-- Load the entire util module
+local utils = require("neotex.util")
 
 -- Access a utility function directly
 utils.toggle_line_numbers()
 
 -- Or load a specific module
-local buffer = require("neotex.utils.buffer")
+local buffer = require("neotex.util.buffer")
 buffer.reload_config()
 ```
 

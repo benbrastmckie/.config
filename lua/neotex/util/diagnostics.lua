@@ -71,7 +71,7 @@ function M.show_all_errors()
   vim.api.nvim_buf_set_keymap(buf, "n", "q", ":q<CR>", { noremap = true, silent = true })
   vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", ":q<CR>", { noremap = true, silent = true })
   vim.api.nvim_buf_set_keymap(buf, "n", "<CR>",
-    [[<cmd>lua require('neotex.utils.diagnostics').jump_to_error()<CR>]],
+    [[<cmd>lua require('neotex.util.diagnostics').jump_to_error()<CR>]],
     { noremap = true, silent = true })
   vim.api.nvim_buf_set_keymap(buf, "n", "j", "j", { noremap = true, silent = true })
   vim.api.nvim_buf_set_keymap(buf, "n", "k", "k", { noremap = true, silent = true })

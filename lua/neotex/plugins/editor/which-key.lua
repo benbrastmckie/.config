@@ -434,7 +434,7 @@ return {
         j = { "<cmd>lua require('notebook-navigator').move_cell('d')<CR>", "next cell" },
         k = { "<cmd>lua require('notebook-navigator').move_cell('u')<CR>", "previous cell" },
         n = { "<cmd>lua require('notebook-navigator').run_and_move()<CR>", "execute and next" },
-        o = { "<cmd>lua require('neotex.utils.diagnostics').add_jupyter_cell_with_closing()<CR>", "insert cell below" },
+        o = { "<cmd>lua require('neotex.util.diagnostics').add_jupyter_cell_with_closing()<CR>", "insert cell below" },
         O = { "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", "insert cell above" },
         s = { "<cmd>lua require('notebook-navigator').split_cell()<CR>", "split cell" },
         c = { "<cmd>lua require('notebook-navigator').comment_cell()<CR>", "comment cell" },
@@ -491,8 +491,8 @@ return {
         name = "MARKDOWN",
         -- LECTIC COMMANDS
         l = { "<cmd>Lectic<CR>", "run lectic on file" },
-        n = { "<cmd>lua CreateNewLecticFile()<CR>", "new lectic file" },
-        s = { "<cmd>lua SubmitLecticSelection()<CR>", "submit selection with message" },
+        n = { "<cmd>LecticCreateFile<CR>", "new lectic file" },
+        s = { "<cmd>LecticSubmitSelection<CR>", "submit selection with message" },
 
         -- MARKDOWN/PREVIEW & FORMATTING
         p = { function() require("conform").format({ async = true, lsp_fallback = true }) end, "format buffer" },
@@ -538,7 +538,7 @@ return {
       r = {
         name = "RUN",
         c = { "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", "clear plugin cache" },
-        e = { "<cmd>lua require('neotex.utils.diagnostics').show_all_errors()<CR>", "show linter errors" },
+        e = { "<cmd>lua require('neotex.util.diagnostics').show_all_errors()<CR>", "show linter errors" },
         -- h = { "<cmd>Hardtime toggle<cr>", "hardtime" }, -- Hardtime plugin has been deprecated
         k = { "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy && rm -f ~/.config/nvim/lazy-lock.json' open=0<CR>", "wipe plugins and lock file" },
         -- m = { "<cmd>MCPHub<cr>", "mcp-hub" }, -- MCP-Hub plugin has been deprecated

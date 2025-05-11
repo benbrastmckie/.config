@@ -93,14 +93,14 @@ function M.setup()
   })
 
   -- Load utilities for folding and URL handling
-  local utils = require("neotex.utils")
+  local utils = require("neotex.util")
   
   -- Load the persistent folding state when entering any buffer
   vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
     pattern = {"*"},
     callback = function()
-      -- Try to use the new utils module first
-      local ok, fold_utils = pcall(require, "neotex.utils.fold")
+      -- Try to use the new util module first
+      local ok, fold_utils = pcall(require, "neotex.util.fold")
       if ok and fold_utils and fold_utils.load_folding_state then
         fold_utils.load_folding_state()
       else
@@ -116,8 +116,8 @@ function M.setup()
   vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
       vim.defer_fn(function()
-        -- Try to use the new utils module first
-        local ok, url_utils = pcall(require, "neotex.utils.url")
+        -- Try to use the new util module first
+        local ok, url_utils = pcall(require, "neotex.util.url")
         if ok and url_utils and url_utils.setup_url_mappings then
           url_utils.setup_url_mappings()
         else
