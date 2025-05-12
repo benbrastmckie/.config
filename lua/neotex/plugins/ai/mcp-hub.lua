@@ -829,14 +829,9 @@ tmp=${PWD}/.npm-tmp
         _G.mcp_hub_state.last_error = "Setup failed: " .. tostring(err)
       end
     else
-      -- Initialize integration with Avante if MCP-Hub setup succeeds
-      pcall(function()
-        local integration = require("neotex.plugins.ai.util.mcp-avante-integration")
-        if integration and integration.init then
-          integration.init()
-          vim.notify("MCP-Hub successfully integrated with Avante", vim.log.levels.INFO)
-        end
-      end)
+      -- MCP-Hub successfully set up
+      -- Integration with Avante is now handled directly in the avante.lua plugin
+      vim.notify("MCP-Hub setup complete", vim.log.levels.INFO)
       
       -- Set up MCP commands for direct access to servers
       pcall(function()
