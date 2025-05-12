@@ -36,39 +36,12 @@ return {
     -- Load the enhanced highlights for Avante
     pcall(require, "neotex.plugins.ai.util.avante-highlights")
 
-    -- Define provider models (moved to global scope for reuse)
-    -- IMPORTANT: Keep claude-3-5-sonnet as the first model
-    _G.provider_models = {
-      claude = {
-        "claude-3-5-sonnet-20241022", -- IMPORTANT: Keep this as index 1
-        "claude-3-7-sonnet-20250219",
-        "claude-3-opus-20240229",
-      },
-      openai = {
-        "gpt-4o",
-        "gpt-4-turbo",
-        "gpt-4",
-        "gpt-3.5-turbo",
-      },
-      gemini = {
-        -- Gemini 2.5 models
-        "gemini-2.5-pro-preview-03-25",
-        -- "gemini-2.5-pro-exp-03-25",
-        -- Gemini 2.0 models
-        "gemini-2.0-flash",
-        -- "gemini-2.0-flash-lite",
-        -- "gemini-2.0-flash-001",
-        -- "gemini-2.0-flash-exp",
-        -- "gemini-2.0-flash-lite-001",
-        -- Gemini 1.5 models
-        -- "gemini-1.5-pro",
-        -- "gemini-1.5-flash",
-      }
-    }
-
-    -- Require the support module just once in this scope
-    -- This module will be visible to all code in the init function
+    -- Load avante support module first to get provider models
     local avante_support = require("neotex.plugins.ai.util.avante-support")
+    
+    -- Get provider models and update global state
+    -- This makes models available throughout the configuration
+    local provider_models = avante_support.get_provider_models()
 
     -- Initialize state with the settings from our support module
     -- This sets up _G.avante_cycle_state and returns the settings
@@ -265,15 +238,16 @@ return {
       -- The custom_tools type supports both a list and a function that returns a list
       -- Using a function here prevents requiring mcphub before it's loaded
       custom_tools = function()
-        local tools = {}
-        
         -- Try to load mcphub extension for avante
         local ok, mcphub_ext = pcall(require, "mcphub.extensions.avante")
         if ok and mcphub_ext and mcphub_ext.mcp_tool then
-          table.insert(tools, mcphub_ext.mcp_tool())
+          -- Return the mcp tool directly
+          -- mcphub_ext.mcp_tool() already returns a tool object
+          return { mcphub_ext.mcp_tool() }
         end
         
-        return tools
+        -- Return empty array if MCP-Hub extension isn't available
+        return {}
       end,
       
       -- Disable all tools that could modify the system

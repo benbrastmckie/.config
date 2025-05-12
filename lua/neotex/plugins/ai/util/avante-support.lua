@@ -18,9 +18,51 @@
 --    - Commands: AvanteStop
 --    - Keybindings: <leader>hs, <C-s> (in Avante buffers)
 --
+-- 4. Provider Models: Centralized definition of available AI models
+--    - Maintains consistent model lists across the configuration
+--    - Accessible via global _G.provider_models for backward compatibility
+--
 -- All configurations persist between Neovim sessions
 
 local M = {}
+
+-- Define AI provider models
+-- Centralized definition that can be accessed by other modules
+M.provider_models = {
+  claude = {
+    "claude-3-5-sonnet-20241022", -- IMPORTANT: Keep this as index 1
+    "claude-3-7-sonnet-20250219",
+    "claude-3-opus-20240229",
+  },
+  openai = {
+    "gpt-4o",
+    "gpt-4-turbo",
+    "gpt-4",
+    "gpt-3.5-turbo",
+  },
+  gemini = {
+    -- Gemini 2.5 models
+    "gemini-2.5-pro-preview-03-25",
+    -- "gemini-2.5-pro-exp-03-25",
+    -- Gemini 2.0 models
+    "gemini-2.0-flash",
+    -- "gemini-2.0-flash-lite",
+    -- "gemini-2.0-flash-001",
+    -- "gemini-2.0-flash-exp",
+    -- "gemini-2.0-flash-lite-001",
+    -- Gemini 1.5 models
+    -- "gemini-1.5-pro",
+    -- "gemini-1.5-flash",
+  }
+}
+
+-- Get provider models and update global state
+-- This maintains backward compatibility with code using _G.provider_models
+function M.get_provider_models()
+  -- Update global state for backward compatibility
+  _G.provider_models = M.provider_models
+  return M.provider_models
+end
 
 -- Initialize global state if not already defined
 if not _G.avante_cycle_state then
@@ -162,11 +204,9 @@ end
 
 -- Initialize Avante settings at startup
 function M.init()
-  -- Skip if provider_models isn't defined yet
-  if not _G.provider_models then
-    return M.load_settings()
-  end
-
+  -- Provider models are now defined in this module
+  -- No need to skip if not defined
+  
   local settings = M.load_settings()
 
   -- Find model index
@@ -174,8 +214,8 @@ function M.init()
   local model = settings.model
   local model_index = 1
 
-  if _G.provider_models and _G.provider_models[provider] then
-    for i, m in ipairs(_G.provider_models[provider]) do
+  if M.provider_models[provider] then
+    for i, m in ipairs(M.provider_models[provider]) do
       if m == model then
         model_index = i
         break
@@ -206,7 +246,7 @@ function M.model_select()
   local current_provider = _G.avante_cycle_state.provider or "claude"
 
   -- Get models for current provider
-  local models = _G.provider_models[current_provider] or {}
+  local models = M.provider_models[current_provider] or {}
   if #models == 0 then
     vim.notify("No models available for provider: " .. current_provider, vim.log.levels.WARN)
     return
@@ -244,8 +284,14 @@ function M.provider_select()
     return
   end
 
-  -- List of available providers
-  local providers = { "claude", "gemini", "openai" }
+  -- List of available providers (get from provider_models keys)
+  local providers = {}
+  for provider, _ in pairs(M.provider_models) do
+    table.insert(providers, provider)
+  end
+  
+  -- Sort providers alphabetically for consistent UI
+  table.sort(providers)
 
   -- Create UI for provider selection
   vim.ui.select(providers, {
@@ -260,7 +306,7 @@ function M.provider_select()
     end
 
     -- Get models for selected provider
-    local models = _G.provider_models[selected_provider] or {}
+    local models = M.provider_models[selected_provider] or {}
     if #models == 0 then
       vim.notify("No models available for provider: " .. selected_provider, vim.log.levels.WARN)
       return
@@ -415,7 +461,7 @@ function M.show_model_notification()
   -- Get the current model from global state
   local current_provider = _G.avante_cycle_state.provider or "claude"
   local current_index = _G.avante_cycle_state.model_index or 1
-  local models = _G.provider_models[current_provider] or {}
+  local models = M.provider_models[current_provider] or {}
   local current_model = "unknown"
 
   if #models >= current_index then
