@@ -1,4 +1,21 @@
- return {
+------------------------------------------------------------------------
+-- Avante AI Assistant Plugin Configuration
+------------------------------------------------------------------------
+-- This module provides a powerful AI assistant with MCP-Hub integration
+-- 
+-- Features:
+-- 1. Multiple AI provider support (Claude, GPT, Gemini)
+-- 2. MCP-Hub integration for custom tools and prompts
+-- 3. System prompt management and custom keybindings
+-- 4. UI enhancements with inline suggestions and markdown rendering
+--
+-- Commands:
+-- See README.md for complete keybinding reference
+-- Key mappings in <leader>h... namespace
+--
+-- See: https://github.com/yetone/avante.nvim
+
+return {
   "yetone/avante.nvim",
   event = "VeryLazy",
   -- Fix version format to prevent parsing error
@@ -229,8 +246,36 @@
         temperature = 0.1,
         max_tokens = 8192, -- Higher token limit for newer models
       },
-      system_prompt =
-      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. You have access to MCP tools including a knowledge graph memory server. Use the memory tool to store and retrieve information as needed. IMPORTANT: Never create files, make git commits, or perform system changes without explicit permission. Always ask before suggesting any file modifications or system operations. Only use the SEARCH/REPLACE blocks to suggest changes.",
+      
+      -- The system_prompt type supports both a string and a function that returns a string
+      -- Using a function here allows dynamically updating the prompt with mcphub
+      system_prompt = function()
+        local ok, mcphub = pcall(require, "mcphub")
+        if ok then
+          local hub = mcphub.get_hub_instance()
+          if hub then
+            return hub:get_active_servers_prompt()
+          end
+        end
+        
+        -- Fallback system prompt if MCPHub is not available
+        return "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed."
+      end,
+      
+      -- The custom_tools type supports both a list and a function that returns a list
+      -- Using a function here prevents requiring mcphub before it's loaded
+      custom_tools = function()
+        local tools = {}
+        
+        -- Try to load mcphub extension for avante
+        local ok, mcphub_ext = pcall(require, "mcphub.extensions.avante")
+        if ok and mcphub_ext and mcphub_ext.mcp_tool then
+          table.insert(tools, mcphub_ext.mcp_tool())
+        end
+        
+        return tools
+      end,
+      
       -- Disable all tools that could modify the system
       disable_tools = {
         "file_creation",
@@ -238,9 +283,7 @@
         "system_commands",
         "file_modifications",
       },
-      -- Let MCPHub handle tool registration through its extension system
-      -- This is the recommended approach according to the official documentation
-      -- The extension will automatically register MCP tools with Avante
+
       dual_boost = {
         enabled = false,
         first_provider = "claude",
@@ -393,6 +436,7 @@
     "MunifTanjim/nui.nvim",
     "hrsh7th/nvim-cmp",
     "nvim-tree/nvim-web-devicons",
+    "ravitemer/mcphub.nvim", -- Add explicit dependency on mcphub.nvim
     {
       "HakonHarnes/img-clip.nvim",
       event = "VeryLazy",
