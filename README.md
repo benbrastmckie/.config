@@ -334,10 +334,11 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>hm`     | Choose AI model for provider    |
 | `<leader>hM`     | Create repo map for AI context  |
 | `<leader>hp`     | Choose a different system prompt|
-| `<leader>hs`     | Switch AI provider              |
+| `<leader>hs`     | Edit selected text with AI      |
 | `<leader>hr`     | Reload AI assistant             |
 | `<leader>hi`     | Interrupt AI generation         |
 | `<leader>ht`     | Show/hide Avante interface      |
+| `<leader>hx`     | Start MCPHub server             |
 
 #### List (`<leader>L`)
 
