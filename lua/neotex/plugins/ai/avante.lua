@@ -33,8 +33,13 @@ return {
     -- Views can only be fully collapsed with the global statusline
     vim.opt.laststatus = 3
     
-    -- Load the enhanced highlights for Avante
-    pcall(require, "neotex.plugins.ai.util.avante-highlights")
+    -- Set up theme-aware highlighting for Avante
+    local ok, highlights = pcall(require, "neotex.plugins.ai.util.avante-highlights")
+    if ok and highlights.setup then
+      -- Initialize the streamlined highlighting system
+      -- This provides essential diff and suggestion highlighting with theme integration
+      highlights.setup()
+    end
 
     -- Load avante support module first to get provider models
     local avante_support = require("neotex.plugins.ai.util.avante-support")
