@@ -421,6 +421,7 @@ return {
         -- s = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
         t = { "<cmd>AvanteToggle<CR>", "toggle assistant" },
+        x = { "<cmd>MCPHub<CR>", "start MCPHub" },
       },
       --   HARPOON
       --   a = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
