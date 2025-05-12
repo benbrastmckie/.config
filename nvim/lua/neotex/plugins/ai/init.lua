@@ -6,7 +6,6 @@
 -- - mcp-hub.lua: MCP Hub integration
 -- - lectic.lua: Lectic AI integration for interactive markdown files (with util/lectic_extras.lua)
 -- - util/avante-highlights.lua: Enhanced visual indicators for Avante
--- - util/mcp-avante-integration.lua: Integration between MCP and Avante
 -- - util/system-prompts.lua: System prompts manager for Avante
 -- - util/avante-support.lua: Support functions for Avante configuration
 --
