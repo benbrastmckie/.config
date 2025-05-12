@@ -2,6 +2,7 @@
 -- AI Tooling Plugins
 -- 
 -- This module loads AI-related plugins:
+-- - avante.lua: Avante AI integration with MCP Hub support
 -- - mcp-hub.lua: MCP Hub integration
 -- - lectic.lua: Lectic AI integration for interactive markdown files (with util/lectic_extras.lua)
 -- - util/avante-highlights.lua: Enhanced visual indicators for Avante
@@ -24,11 +25,13 @@ local function safe_require(module)
 end
 
 -- Load the AI plugin modules
+local avante_plugin = safe_require("neotex.plugins.ai.avante")
 local mcp_hub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
 
 -- Return plugin specs
 return {
-  mcp_hub_plugin,
+  avante_plugin,
+  mcp_hub_plugin, 
   lectic_plugin,
 }
