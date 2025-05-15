@@ -20,7 +20,6 @@ lua/neotex/plugins/ai/
 └── util/                  # Utility modules for AI integration
     ├── avante-highlights.lua        # Enhanced highlighting for Avante UI
     ├── avante-support.lua           # Support functions for Avante configuration
-    ├── mcp-avante-integration.lua   # Integration between MCP-Hub and Avante
     ├── system-prompts.json          # System prompt templates storage
     └── system-prompts.lua           # System prompts manager
 ```
@@ -67,11 +66,13 @@ Lectic provides an interactive writing environment with AI feedback.
 - Focused AI feedback on writing
 - Custom file format with YAML frontmatter
 - Interactive conversations with AI
+- MCP-Hub integration for multiple provider support
 
 **Commands:**
 - `Lectic`: Run Lectic AI on current file
 - `LecticCreateFile`: Create new Lectic file with template
 - `LecticSubmitSelection`: Submit selection with user message
+- `LecticSelectProvider`: Select AI provider and model
 
 **Keymaps:**
 - `<leader>ml`: Run Lectic on current file
@@ -94,6 +95,8 @@ MCP-Hub provides a unified interface to multiple AI services and tools.
 - `MCPHub`: Start the MCP-Hub service
 - `MCPHubStatus`: Check MCP-Hub service status
 - `MCPHubSettings`: View/edit MCP-Hub configuration
+- `MCPHubDiagnose`: Run diagnostics for MCP-Hub
+- `MCPHubRebuild`: Rebuild the MCP-Hub bundled binary
 
 ## Using MCP Tools in Avante
 
@@ -180,6 +183,33 @@ The system prompts manager allows you to define and switch between different AI 
 4. Edit the system prompt text in the buffer that opens
 5. Press Enter to save
 
+## NixOS Integration
+
+While MCP-Hub works across all platforms, special care has been taken to ensure smooth operation on NixOS through a dedicated integration batch.
+
+### NixOS-Specific Features
+
+- **Bundled Binary Mode**: Falls back to a bundled binary when global installation is not available
+- **UVX Compatibility**: Works with UVX package manager, the recommended installation method
+- **Home Manager Support**: Can be installed via home-manager for clean integration
+- **Nix Flake Support**: Provides flake-based installation for reproducible deployment
+
+### Installation Methods for NixOS
+
+1. **UVX Method (Recommended)**
+   - Install UVX via your flake or Nix config
+   - MCP-Hub automatically detects and uses UVX for installation
+
+2. **Bundled Binary Method**
+   - Automatically falls back to a bundled binary approach when UVX is not available
+   - Works within NixOS's pure environment constraints
+
+3. **Flake-Based Installation**
+   - For advanced users who prefer a fully flake-managed setup
+   - Configuration available in a dedicated batch (see specs/PHASE4_IMPLEMENTATION.md)
+
+For detailed information on the NixOS integration, check the documentation in `specs/PHASE4_IMPLEMENTATION.md` under "Batch 5: Nix Flake Integration".
+
 ## Troubleshooting
 
 If you encounter issues with the AI integration:
@@ -189,5 +219,15 @@ If you encounter issues with the AI integration:
 3. Verify the model selection with `:AvanteModel`
 4. Check the system prompt with `:AvantePrompt`
 5. Try stopping any ongoing generations with `:AvanteStop`
+6. For NixOS-specific issues, run `:MCPHubDiagnose` for detailed diagnostics
+
+### NixOS-Specific Troubleshooting
+
+If you're experiencing issues on NixOS:
+
+1. Run `:MCPHubDiagnose` to view detailed diagnostic information
+2. Check if UVX is properly installed with `which uvx` in your terminal
+3. Try manual installation with `:MCPHubInstallManual`
+4. For flake-related issues, refer to the implementation notes in `specs/PHASE4_IMPLEMENTATION.md`
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.

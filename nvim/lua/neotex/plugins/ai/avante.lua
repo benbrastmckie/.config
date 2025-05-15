@@ -2,7 +2,7 @@
 -- Avante AI Assistant Plugin Configuration
 ------------------------------------------------------------------------
 -- This module provides a powerful AI assistant with MCP-Hub integration
--- 
+--
 -- Features:
 -- 1. Multiple AI provider support (Claude, GPT, Gemini)
 -- 2. MCP-Hub integration for custom tools and prompts
@@ -32,7 +32,7 @@ return {
     -- Set recommended vim option for best Avante view compatibility
     -- Views can only be fully collapsed with the global statusline
     vim.opt.laststatus = 3
-    
+
     -- Set up theme-aware highlighting for Avante
     local ok, highlights = pcall(require, "neotex.plugins.ai.util.avante-highlights")
     if ok and highlights.setup then
@@ -43,7 +43,7 @@ return {
 
     -- Load avante support module first to get provider models
     local avante_support = require("neotex.plugins.ai.util.avante-support")
-    
+
     -- Get provider models and update global state
     -- This makes models available throughout the configuration
     local provider_models = avante_support.get_provider_models()
@@ -184,7 +184,7 @@ return {
     -- Default configuration
     local config = {
       -- Gemini configuration
-      provider = "gemini", 
+      provider = "gemini",
       model = "gemini-2.5-pro-preview-03-25",
       -- Claude configuration
       -- provider = "claude",
@@ -220,11 +220,11 @@ return {
       },
       -- Gemini configuration
       gemini = {
-        model = "gemini-2.5-pro-preview-03-25", -- Use the latest model
+        model = "gemini-2.5-pro-preview-03-25",
         temperature = 0.1,
-        max_tokens = 8192, -- Higher token limit for newer models
+        max_tokens = 8192,
       },
-      
+
       -- The system_prompt type supports both a string and a function that returns a string
       -- Using a function here allows dynamically updating the prompt with mcphub
       system_prompt = function()
@@ -235,11 +235,12 @@ return {
             return hub:get_active_servers_prompt()
           end
         end
-        
+
         -- Fallback system prompt if MCPHub is not available
-        return "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed."
+        return
+        "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed."
       end,
-      
+
       -- The custom_tools type supports both a list and a function that returns a list
       -- Using a function here prevents requiring mcphub before it's loaded
       custom_tools = function()
@@ -250,11 +251,11 @@ return {
           -- mcphub_ext.mcp_tool() already returns a tool object
           return { mcphub_ext.mcp_tool() }
         end
-        
+
         -- Return empty array if MCP-Hub extension isn't available
         return {}
       end,
-      
+
       -- Disable all tools that could modify the system
       disable_tools = {
         "file_creation",
@@ -301,49 +302,49 @@ return {
       },
       mappings = {
         diff = {
-          ours = "o",           -- Accept our version
-          theirs = "t",         -- Accept their version
-          all_theirs = "a",     -- Accept all their changes
-          both = "b",           -- Keep both versions
-          cursor = "c",         -- Accept at cursor
-          next = "<C-j>",       -- Go to next difference
-          prev = "<C-k>",       -- Go to previous difference
-          quit = "q",           -- Close diff view
-          help = "?",           -- Show help
+          ours = "o",       -- Accept our version
+          theirs = "t",     -- Accept their version
+          all_theirs = "a", -- Accept all their changes
+          both = "b",       -- Keep both versions
+          cursor = "c",     -- Accept at cursor
+          next = "<C-j>",   -- Go to next difference
+          prev = "<C-k>",   -- Go to previous difference
+          quit = "q",       -- Close diff view
+          help = "?",       -- Show help
         },
         suggestion = {
-          accept = "<C-l>",     -- Accept current suggestion
-          next = "<C-j>",       -- Next suggestion
-          prev = "<C-k>",       -- Previous suggestion
-          dismiss = "<C-h>",    -- Dismiss suggestion
-          preview = "p",        -- Preview suggestion
+          accept = "<C-l>",  -- Accept current suggestion
+          next = "<C-j>",    -- Next suggestion
+          prev = "<C-k>",    -- Previous suggestion
+          dismiss = "<C-h>", -- Dismiss suggestion
+          preview = "p",     -- Preview suggestion
         },
         jump = {
-          next = "n",           -- Jump to next match
-          prev = "N",           -- Jump to previous match
+          next = "n", -- Jump to next match
+          prev = "N", -- Jump to previous match
         },
         submit = {
-          normal = "<CR>",      -- Submit in normal mode
-          insert = "<C-l>",     -- Submit in insert mode (avoid conflicts with <CR>)
+          normal = "<CR>",  -- Submit in normal mode
+          insert = "<C-l>", -- Submit in insert mode (avoid conflicts with <CR>)
         },
         sidebar = {
-          apply_all = "A",      -- Apply all changes
-          apply_cursor = "a",   -- Apply change at cursor
-          switch_windows = "<Tab>",        -- Switch to next window
+          apply_all = "A",                    -- Apply all changes
+          apply_cursor = "a",                 -- Apply change at cursor
+          switch_windows = "<Tab>",           -- Switch to next window
           reverse_switch_windows = "<S-Tab>", -- Switch to previous window
-          toggle = "s",         -- Toggle sidebar
-          focus = "f",          -- Focus sidebar
+          toggle = "s",                       -- Toggle sidebar
+          focus = "f",                        -- Focus sidebar
         },
       },
       hints = { enabled = false },
       windows = {
         position = "right", -- the position of the sidebar (right|left|top|bottom)
-        wrap = true, -- wrap long lines
-        width = 45, -- optimal width for readability while preserving screen space
+        wrap = true,        -- wrap long lines
+        width = 45,         -- optimal width for readability while preserving screen space
         sidebar_header = {
-          enabled = false, -- enable header for better visual hierarchy
+          enabled = false,  -- enable header for better visual hierarchy
           align = "center", -- centered header for balanced look
-          rounded = true, -- rounded corners for modern UI
+          rounded = true,   -- rounded corners for modern UI
         },
         input = {
           prefix = "󰭹 ", -- keeping your custom prefix
@@ -356,8 +357,8 @@ return {
           start_insert = true, -- automatically enter insert mode in edit window
         },
         ask = {
-          floating = true, -- floating window for better focus
-          start_insert = true, -- automatically enter insert mode
+          floating = true,         -- floating window for better focus
+          start_insert = true,     -- automatically enter insert mode
           border = "rounded",
           focus_on_apply = "ours", -- focus on our changes after applying
         },
@@ -369,7 +370,7 @@ return {
           incoming = "DiffAdd",
         },
         sidebar = {
-          header = "Title", -- make header more prominent
+          header = "Title",      -- make header more prominent
           selected = "PmenuSel", -- highlight selected items
           separator = "Comment", -- subtle separator color
         },
@@ -378,9 +379,9 @@ return {
         autojump = true,
         list_opener = "copen",
         override_timeoutlen = 500,
-        inline_preview = true,           -- Enable inline preview of changes
-        gutter_markers = true,           -- Show markers in the gutter for changes
-        enhanced_display = true,         -- Use enhanced display features
+        inline_preview = true,   -- Enable inline preview of changes
+        gutter_markers = true,   -- Show markers in the gutter for changes
+        enhanced_display = true, -- Use enhanced display features
       },
     }
 
@@ -415,7 +416,7 @@ return {
     "MunifTanjim/nui.nvim",
     "hrsh7th/nvim-cmp",
     "nvim-tree/nvim-web-devicons",
-    "ravitemer/mcphub.nvim", -- Add explicit dependency on mcphub.nvim
+    "ravitemer/mcphub.nvim",
     {
       "HakonHarnes/img-clip.nvim",
       event = "VeryLazy",
@@ -439,3 +440,4 @@ return {
     },
   },
 }
+
