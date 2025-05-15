@@ -21,11 +21,13 @@ local function safe_require(module)
   return result
 end
 
--- Load all mini modules
+-- Load all modules
 local mini_module = safe_require("neotex.plugins.coding.mini")
+local surround_module = safe_require("neotex.plugins.coding.surround")
 
 -- Return plugin specs
 return {
   mini_module,
+  surround_module,
   -- Additional coding plugins will be added here
 }
