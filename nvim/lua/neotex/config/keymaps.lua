@@ -141,142 +141,64 @@ function M.setup()
 
   -- Markdown mappings setup function triggered by an auto-command
   function _G.set_markdown_keymaps()
-    -- List management
-    buf_map(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", "New bullet point")
-    buf_map(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", "New bullet below")
-    buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
-    buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
-
-    -- Smart indentation using direct function calls
-    vim.keymap.set("i", "<Tab>", function()
-      -- Check if we're in a list item first
-      local line = vim.fn.getline(".")
-      local is_list = false
-
-      -- Quick check for list items
-      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
-        if line:match("^%s*" .. pattern .. "%s") then
-          is_list = true
-          break
-        end
-      end
-
-      -- Handle list items with priority
-      if is_list then
-        -- Close completion menu if it's open
-        local cmp_exists, cmp = pcall(require, "cmp")
-        if cmp_exists and cmp.visible() then
-          -- Try to close the menu first
-          pcall(function() cmp.close() end)
-        end
-
-        -- If we're in a list, use our command
-        vim.cmd("AutolistIndent")
-        return ""
-      end
-
-      -- If we're not in a list item, handle normally
-      local cmp_exists, cmp = pcall(require, "cmp")
-      if cmp_exists and cmp.visible() then
-        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-      end
-
-      -- If we just used Tab for indentation, don't trigger cmp
-      if _G._last_tab_was_indent then
-        _G._last_tab_was_indent = false
-        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-      end
-
-      -- Standard tab behavior
-      return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-    end, { buffer = true, expr = true, desc = "Smart list indent" })
-
-    -- Map both Shift-Tab and Ctrl-D for better terminal compatibility
-    vim.keymap.set("i", "<S-Tab>", function()
-      -- Check if we're in a list item first
-      local line = vim.fn.getline(".")
-      local is_list = false
-
-      -- Quick check for list items
-      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
-        if line:match("^%s*" .. pattern .. "%s") then
-          is_list = true
-          break
-        end
-      end
-
-      -- Handle list items with priority
-      if is_list then
-        -- Close completion menu if it's open
-        local cmp_exists, cmp = pcall(require, "cmp")
-        if cmp_exists and cmp.visible() then
-          -- Try to close the menu first
-          pcall(function() cmp.close() end)
-        end
-
-        -- If we're in a list, use our command
-        vim.cmd("AutolistUnindent")
-        return ""
-      end
-
-      -- If we're not in a list item, handle normally
-      local cmp_exists, cmp = pcall(require, "cmp")
-      if cmp_exists and cmp.visible() then
-        return vim.api.nvim_replace_termcodes("<S-Tab>", true, true, true)
-      end
-
-      -- Standard Shift-Tab behavior
-      return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
-    end, { buffer = true, expr = true, desc = "Smart list unindent" })
-
-    vim.keymap.set("i", "<C-D>", function()
-      -- Check if we're in a list item first
-      local line = vim.fn.getline(".")
-      local is_list = false
-
-      -- Quick check for list items
-      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
-        if line:match("^%s*" .. pattern .. "%s") then
-          is_list = true
-          break
-        end
-      end
-
-      -- Handle list items with priority
-      if is_list then
-        -- Close completion menu if it's open
-        local cmp_exists, cmp = pcall(require, "cmp")
-        if cmp_exists and cmp.visible() then
-          -- Try to close the menu first
-          pcall(function() cmp.close() end)
-        end
-
-        -- If we're in a list, use our command
-        vim.cmd("AutolistUnindent")
-        return ""
-      end
-
-      -- If we're not in a list item, handle normally
-      local cmp_exists, cmp = pcall(require, "cmp")
-      if cmp_exists and cmp.visible() then
-        return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
-      end
-
-      -- Standard C-D behavior
-      return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
-    end, { buffer = true, expr = true, desc = "Smart list unindent (C-D)" })
-    buf_map(0, "n", ">", "><cmd>AutolistRecalculate<cr>", "Indent bullet")
-    buf_map(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", "Unindent bullet")
-    buf_map(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", "Recalculate list")
-
-    -- Deletion with list recalculation
-    buf_map(0, "n", "dd", "dd<cmd>AutolistRecalculate<cr>", "Delete and recalculate")
-    buf_map(0, "v", "d", "d<cmd>AutolistRecalculate<cr>", "Delete and recalculate")
-
+    -- Load the autolist module
+    local ok, autolist = pcall(require, "neotex.utils.autolist")
+    
     -- Tab settings for markdown
     vim.opt.tabstop = 2
     vim.opt.shiftwidth = 2
     vim.opt.softtabstop = 2
+    
+    -- Only set the keymaps if the autolist module is loaded
+    if ok and autolist and autolist.operations then
+      -- Use the autolist handlers for various key mappings
+      
+      -- List creation/management
+      vim.keymap.set("i", "<CR>", autolist.operations.enter_handler, 
+        { expr = true, buffer = true, desc = "Smart list handling for Enter" })
+      
+      -- Indentation keymaps
+      vim.keymap.set("i", "<Tab>", autolist.operations.tab_handler, 
+        { expr = true, buffer = true, desc = "Smart list indent" })
+      
+      vim.keymap.set("i", "<S-Tab>", autolist.operations.shift_tab_handler, 
+        { expr = true, buffer = true, desc = "Smart list unindent" })
+      
+      vim.keymap.set("i", "<C-D>", autolist.operations.shift_tab_handler, 
+        { expr = true, buffer = true, desc = "Smart list unindent (C-D)" })
+      
+      -- Normal mode keymaps
+      vim.keymap.set("n", "<C-n>", "<cmd>AutolistToggleCheckbox<CR>", 
+        { buffer = true, desc = "Toggle checkbox" })
+      
+      vim.keymap.set("n", "o", "o<cmd>AutolistNewBullet<cr>", 
+        { buffer = true, desc = "New bullet below" })
+      
+      vim.keymap.set("n", "O", "O<cmd>AutolistNewBulletBefore<cr>", 
+        { buffer = true, desc = "New bullet above" })
+      
+      vim.keymap.set("n", ">", "><cmd>AutolistRecalculate<cr>", 
+        { buffer = true, desc = "Indent bullet" })
+      
+      vim.keymap.set("n", "<", "<<cmd>AutolistRecalculate<cr>", 
+        { buffer = true, desc = "Unindent bullet" })
+      
+      vim.keymap.set("n", "<C-c>", "<cmd>AutolistRecalculate<cr>", 
+        { buffer = true, desc = "Recalculate list" })
+      
+      -- Deletion with list recalculation
+      vim.keymap.set("n", "dd", "dd<cmd>AutolistRecalculate<cr>", 
+        { buffer = true, desc = "Delete and recalculate" })
+      
+      vim.keymap.set("v", "d", "d<cmd>AutolistRecalculate<cr>", 
+        { buffer = true, desc = "Delete and recalculate" })
+    else
+      -- Fallback in case the module isn't loaded for some reason
+      buf_map(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", "New bullet point")
+      buf_map(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", "New bullet below")
+      buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
+      buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
+    end
   end
 
   -- Avante AI buffer mappings setup function triggered by an auto-command
