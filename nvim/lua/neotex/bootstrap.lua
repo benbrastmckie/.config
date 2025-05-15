@@ -152,18 +152,30 @@ end
 
 -- Setup Jupyter notebook styling with proper error handling
 local function setup_jupyter_styling()
-  -- Use an autocommand to defer the jupyter styling setup until after VimEnter
+  -- Create a VimEnter autocmd for deferred Jupyter styling setup
   vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
       vim.defer_fn(function()
         -- Safely attempt to load the styling module
         with_error_handling(function()
-          -- Check if the module exists and has a setup function
-          local ok, styling = pcall(require, "neotex.plugins.jupyter.styling")
-          if ok and type(styling) == "table" and styling.setup then
-            styling.setup()
-          else
-            vim.notify("Jupyter styling module not found or missing setup function", vim.log.levels.WARN)
+          local ok, styling
+          
+          -- First, check if any ipynb files are open before loading the styling
+          local any_ipynb = false
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            local bufname = vim.api.nvim_buf_get_name(buf)
+            if bufname:match("%.ipynb$") then
+              any_ipynb = true
+              break
+            end
+          end
+          
+          -- Only load styling if needed
+          if any_ipynb then
+            ok, styling = pcall(require, "neotex.plugins.tools.jupyter.styling")
+            if ok and type(styling) == "table" and styling.setup then
+              styling.setup()
+            end
           end
         end, "setup of Jupyter notebook styling")
       end, 1500) -- Increased delay to ensure all plugins are loaded
