@@ -17,7 +17,7 @@ if vim.fn.expand("%:e") == "md" then
 
     -- Ensure our styling module is loaded
     vim.defer_fn(function()
-      local ok, styling = pcall(require, "neotex.plugins.jupyter.styling")
+      local ok, styling = pcall(require, "neotex.plugins.tools.jupyter.styling")
       if ok and type(styling) == "table" and styling.setup then
         styling.setup()
       end

@@ -30,6 +30,28 @@ local function safe_require(module)
     vim.notify("Failed to load plugin module: " .. module, vim.log.levels.WARN)
     return {}
   end
+  
+  -- Validate that the result is actually a valid plugin spec
+  -- Most plugin specs are tables with a string at index 1 (the repo)
+  if type(result) == "table" then
+    -- It's already a valid spec if it has a string in position 1
+    if type(result[1]) == "string" then
+      return result
+    end
+    
+    -- It's already a valid spec if it's an import directive
+    if result.import then
+      return result
+    end
+    
+    -- For function-only modules (which would cause the "invalid plugin spec" error)
+    -- Return an empty table instead of the function
+    if result.setup and type(result.setup) == "function" and not result[1] then
+      vim.notify("Module " .. module .. " only has a setup function and is not a valid plugin spec", vim.log.levels.WARN)
+      return {}
+    end
+  end
+  
   return result
 end
 
@@ -46,18 +68,29 @@ local surround_module = safe_require("neotex.plugins.tools.surround")
 local todo_comments_module = safe_require("neotex.plugins.tools.todo-comments")
 local yanky_module = safe_require("neotex.plugins.tools.yanky")
 
--- Return plugin specs
-return {
-  gitsigns_module,
-  firenvim_module,
-  vimtex_module,
-  lean_module,
-  snacks_module,
-  markdown_preview_module,
-  autolist_module,
-  mini_module,
-  surround_module,
-  todo_comments_module,
-  yanky_module,
-}
+-- Create array of valid plugin specs
+local plugins = {}
+
+-- Helper function to add valid specs to the plugins array
+local function add_if_valid(spec)
+  if type(spec) == "table" and (spec[1] or spec.import) then
+    table.insert(plugins, spec)
+  end
+end
+
+-- Add only valid plugin specs
+add_if_valid(gitsigns_module)
+add_if_valid(firenvim_module)
+add_if_valid(vimtex_module)
+add_if_valid(lean_module)
+add_if_valid(snacks_module)
+add_if_valid(markdown_preview_module)
+add_if_valid(autolist_module)
+add_if_valid(mini_module)
+add_if_valid(surround_module)
+add_if_valid(todo_comments_module)
+add_if_valid(yanky_module)
+
+-- Return only valid plugin specs
+return plugins
 

@@ -13,11 +13,13 @@
   - [x] make shift-tab work (does nothing currently)
   - [x] look to see what improvements can be made to make things simpler and more systematic
   - [x] make <C-N> cycle in the reverse
-  - fix directory structure
-- jupyter
-  - fix directory structure
-- mini.pairs
-  - Fails to pass over closing ' and `
+  - [x] fix directory structure
+- [x] jupyter
+  - [x] fix directory structure
+- [x] mini.pairs
+  - [x] Fails to pass over closing ', ", and `
+- snacks
+  - move into `tools/`
 - Nvim Tree
   - Persistent pane size for nvimtree until restarting neovim
   - Make heading background color match the background color of buffer line
