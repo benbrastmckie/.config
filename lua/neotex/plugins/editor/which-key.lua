@@ -553,11 +553,9 @@ return {
       },
       s = {
         name = "SURROUND",
-        s = { "<cmd>lua require('mini.surround').add()<cr>", "add surrounding" },
-        d = { "<cmd>lua require('mini.surround').delete()<cr>", "delete surrounding" },
-        c = { "<cmd>lua require('mini.surround').replace()<cr>", "change surrounding" },
-        f = { "<cmd>lua require('mini.surround').find()<cr>", "find surrounding" },
-        h = { "<cmd>lua require('mini.surround').highlight()<cr>", "highlight surrounding" },
+        s = { "<Plug>(nvim-surround-normal)", "surround" },
+        d = { "<Plug>(nvim-surround-delete)", "delete" },
+        c = { "<Plug>(nvim-surround-change)", "change" },
       },
       t = {
         name = "TEMPLATES",
@@ -618,7 +616,7 @@ return {
     wk.register({
       ["<leader>s"] = {
         name = "SURROUND",
-        s = { "<cmd>lua require('mini.surround').add('visual')<cr>", "add surrounding to selection" },
+        s = { "<Plug>(nvim-surround-visual)", "add surrounding to selection" },
       }
     }, { mode = "v" })
   end,
