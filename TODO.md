@@ -11,10 +11,10 @@ sometimes this so ME sometimes sometimessometimesis thesaurus end
   - [x] remove message when line is indented or recalculated
   - [x] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
   - [x] fails to create new bullet when hitting <CR> in insert mode
-  - [ ] make TAB act normally if not on the beginning of a line on a bulleted list
-  - [ ] make shift-tab work (does nothing currently)
-  - [ ] review configuration for autocommands
-    - look to see what improvements can be made to make things simpler and more systematic
+  - [x] make TAB act normally if not on the beginning of a line on a bulleted list
+  - [x] make shift-tab work (does nothing currently)
+  - look to see what improvements can be made to make things simpler and more systematic
+  - make <C-N> cycle in the reverse
 - mini.pairs
   - Fails to pass over closing ' and `
 - Nvim Tree
