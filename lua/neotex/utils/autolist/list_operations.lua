@@ -251,7 +251,7 @@ function M.unindent_list_item()
   utils.close_completion_menu(1000)
 end
 
--- Toggle checkbox state in a list item
+-- Increment checkbox state in a list item
 function M.toggle_checkbox()
   local current_line = vim.fn.line(".")
   local line = vim.fn.getline(current_line)
@@ -277,7 +277,7 @@ function M.toggle_checkbox()
   
   local new_line = line
   
-  -- Handle different checkbox states
+  -- Forward cycle: None -> Empty -> Progress -> Closing -> Done -> None
   if line:match("%[%s%]") then
     -- Empty → Progress
     new_line = line:gsub("%[%s%]", "[.]", 1)
@@ -298,6 +298,59 @@ function M.toggle_checkbox()
     local escaped_marker = vim.pesc(list_marker)
     -- Add checkbox after marker
     new_line = line:gsub(escaped_marker .. "%s+", escaped_marker .. patterns.empty .. " ", 1)
+  end
+  
+  -- Update the line with new content
+  vim.fn.setline(current_line, new_line)
+end
+
+-- Decrement checkbox state in a list item
+function M.toggle_checkbox_reverse()
+  local current_line = vim.fn.line(".")
+  local line = vim.fn.getline(current_line)
+  
+  -- Skip if not a list item
+  if not utils.is_list_item(line) then
+    return
+  end
+  
+  -- Define checkbox patterns
+  local patterns = {
+    empty = " [ ]",
+    progress = " [.]",
+    closing = " [:]",
+    done = " [x]"
+  }
+  
+  -- Get list marker (bullet symbol or number)
+  local list_marker = line:match("^%s*([%d%.%-%+%*]+)%s")
+  if not list_marker then
+    return
+  end
+  
+  local new_line = line
+  
+  -- Reverse cycle: None -> Done -> Closing -> Progress -> Empty -> None
+  if line:match("%[x%]") then
+    -- Done → Closing
+    new_line = line:gsub("%[x%]", "[:]", 1)
+  elseif line:match("%[%:%]") then
+    -- Closing → Progress
+    new_line = line:gsub("%[%:%]", "[.]", 1)
+  elseif line:match("%[%.%]") then
+    -- Progress → Empty
+    new_line = line:gsub("%[%.%]", "[ ]", 1)
+  elseif line:match("%[%s%]") then
+    -- Empty → No checkbox
+    local with_box = list_marker .. " [ ]"
+    local without_box = list_marker
+    new_line = line:gsub(vim.pesc(with_box), without_box, 1)
+  else
+    -- No checkbox → Done
+    -- Escape special characters in marker
+    local escaped_marker = vim.pesc(list_marker)
+    -- Add checkbox after marker
+    new_line = line:gsub(escaped_marker .. "%s+", escaped_marker .. patterns.done .. " ", 1)
   end
   
   -- Update the line with new content

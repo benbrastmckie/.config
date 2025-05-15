@@ -24,8 +24,12 @@ function M.setup()
     operations.cycle_prev()
   end, {})
   
-  vim.api.nvim_create_user_command('AutolistToggleCheckbox', function()
+  vim.api.nvim_create_user_command('AutolistIncrementCheckbox', function()
     operations.toggle_checkbox()
+  end, {})
+  
+  vim.api.nvim_create_user_command('AutolistDecrementCheckbox', function()
+    operations.toggle_checkbox_reverse()
   end, {})
   
   -- Compatibility with autolist.nvim built-in commands
@@ -57,8 +61,9 @@ function M.setup()
     end
   end, {})
   
-  -- Define global function for backward compatibility
-  _G.HandleCheckbox = operations.toggle_checkbox
+  -- Define global functions for backward compatibility
+  _G.IncrementCheckbox = operations.toggle_checkbox
+  _G.DecrementCheckbox = operations.toggle_checkbox_reverse
 end
 
 return M
