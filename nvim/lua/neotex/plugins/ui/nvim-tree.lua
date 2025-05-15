@@ -3,6 +3,10 @@ return {
   dependencies = { "nvim-tree/nvim-web-devicons" },
   config = function()
     local nvimtree = require("nvim-tree")
+    local api = require("nvim-tree.api")
+    
+    -- Variable to store the width when tree is closed
+    local stored_width = nil
 
     -- recommended settings from nvim-tree documentation
     vim.g.loaded_netrw = 1
@@ -47,6 +51,100 @@ return {
       -- keymap.set('n', 'k',     api.node.navigate.sibling.prev,        opts('Previous Sibling'))
       -- keymap.set('n', 'e',     api.fs.rename_basename,                opts('Rename: Basename'))
     end
+
+    -- Create custom open and close functions to save/restore width
+    local function custom_open()
+      if stored_width and stored_width > 0 then
+        -- Use stored width when reopening
+        pcall(function() 
+          api.tree.open({width = stored_width})
+        end)
+      else
+        -- Use default width from config
+        pcall(function() 
+          api.tree.open()
+        end)
+      end
+    end
+
+    local function custom_close()
+      -- Get current tree window width before closing
+      local status, tree_win = pcall(function()
+        return api.tree.get_win_id and api.tree.get_win_id()
+      end)
+      
+      if status and tree_win then
+        stored_width = vim.api.nvim_win_get_width(tree_win)
+      end
+      
+      pcall(function() 
+        api.tree.close()
+      end)
+    end
+
+    -- Add commands to use custom open/close
+    vim.api.nvim_create_user_command('NvimTreeCustomOpen', custom_open, {})
+    vim.api.nvim_create_user_command('NvimTreeCustomClose', custom_close, {})
+    
+    -- Set up an autocommand to track the width when switching buffers
+    vim.api.nvim_create_autocmd("WinResized", {
+      callback = function()
+        -- Safely check if api.tree exists and has the get_win_id method
+        local status, win_id = pcall(function()
+          return api.tree.get_win_id and api.tree.get_win_id()
+        end)
+        
+        -- Only proceed if we got a valid window ID
+        if status and win_id then
+          local width = vim.api.nvim_win_get_width(win_id)
+          if width > 0 and width ~= stored_width then
+            stored_width = width
+          end
+        end
+      end
+    })
+    
+    -- Override existing toggle function with our custom version
+    api.tree.toggle = function(find_file, no_focus)
+      -- Safely check if we can get a window ID
+      local status, tree_win = pcall(function()
+        return api.tree.get_win_id and api.tree.get_win_id()
+      end)
+      
+      if status and tree_win then
+        custom_close()
+      else
+        custom_open()
+      end
+    end
+    
+    -- Create an autocommand to match NvimTree header bg with bufferline
+    vim.api.nvim_create_autocmd("ColorScheme", {
+      callback = function()
+        -- Get background color from Directory highlight group which is used by bufferline
+        local bufferline_hl = vim.api.nvim_get_hl(0, { name = "Directory" })
+        local bg_color = bufferline_hl.bg
+        
+        if bg_color then
+          -- Convert decimal bg_color to hex if needed
+          local hex_bg_color
+          if type(bg_color) == "number" then
+            hex_bg_color = string.format("#%06x", bg_color)
+          else
+            hex_bg_color = bg_color
+          end
+          
+          -- Set NvimTreeTitle highlight group to match bufferline
+          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", { bg = hex_bg_color, bold = true })
+          vim.api.nvim_set_hl(0, "NvimTreeTitle", { bg = hex_bg_color })
+        end
+      end
+    })
+    
+    -- Trigger the colorscheme handler once on startup
+    vim.defer_fn(function()
+      vim.cmd("doautocmd ColorScheme")
+    end, 100)
 
     -- configure nvim-tree
     nvimtree.setup({

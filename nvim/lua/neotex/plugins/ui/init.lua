@@ -7,6 +7,7 @@
 -- - bufferline.lua: Buffer line configuration
 -- - nvim-tree.lua: File explorer configuration
 -- - nvim-web-devicons.lua: File icons
+-- - sessions.lua: Session management
 --
 -- The module uses a consistent error handling approach to ensure
 -- NeoVim starts properly even if some plugin specifications fail.
@@ -28,6 +29,7 @@ local lualine_module = safe_require("neotex.plugins.ui.lualine")
 local bufferline_module = safe_require("neotex.plugins.ui.bufferline")
 local nvim_tree_module = safe_require("neotex.plugins.ui.nvim-tree")
 local web_devicons_module = safe_require("neotex.plugins.ui.nvim-web-devicons")
+local sessions_module = safe_require("neotex.plugins.ui.sessions")
 
 -- Return plugin specs
 return {
@@ -36,4 +38,5 @@ return {
   bufferline_module,
   nvim_tree_module,
   web_devicons_module,
+  sessions_module,
 }

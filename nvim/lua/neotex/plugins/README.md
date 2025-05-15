@@ -4,40 +4,34 @@ This directory contains plugin specifications and configurations managed by lazy
 
 ## Organization Structure
 
-Plugins are now organized into the following categories with dedicated directories:
-
-- **coding/**: Code editing enhancements
-  - mini.nvim modules (pairs, surround, comment, cursorword, ai, splitjoin, align, diff)
-  - More coding enhancement plugins to be added
+Plugins are organized into the following categories with dedicated directories:
 
 - **editor/**: Core editor capabilities
-  - yanky.nvim: Enhanced clipboard functionality
-  - More editing plugins to be added
+  - telescope.lua: Fuzzy finder and navigation
+  - treesitter.lua: Syntax highlighting and code navigation
+  - toggleterm.lua: Terminal integration
+  - formatting.lua: Code formatting with conform.nvim
+  - linting.lua: Code linting with nvim-lint
+  - which-key.lua: Keybinding help popup
 
-- **extras/**: Optional functionality
-  - todo-comments.nvim: Enhanced TODO comment management
-  - conform.nvim: Code formatting
-  - nvim-lint: Code linting
-  - More extra plugins to be added
+- **tools/**: External tool integration and text manipulation
+  - gitsigns.lua: Git integration
+  - firenvim.lua: Browser integration
+  - vimtex.lua: LaTeX integration
+  - lean.lua: Lean theorem prover integration
+  - markdown-preview.lua: Markdown preview
+  - autolist.lua: Smart list handling for markdown
+  - mini.lua: Mini plugins collection (pairs, comments, etc.)
+  - surround.lua: Text surrounding functionality
+  - todo-comments.lua: Highlight and search TODO comments
+  - yanky.lua: Enhanced yank and paste functionality
 
 - **lsp/**: Language server integration
   - nvim-lspconfig: Base LSP configuration
   - mason.nvim: LSP server management
-  - null-ls: Additional LSP functionality
+  - none-ls.lua: Additional LSP functionality
   - nvim-cmp: Completion engine
-  - Various completion sources
-
-- **tools/**: External tool integration
-  - toggleterm.lua: Terminal integration
-  - gitsigns.lua: Git integration
-  - telescope.lua: Fuzzy finder
-  - treesitter.lua: Syntax highlighting and code navigation
-  - firenvim.lua: Browser integration
-  - vimtex.lua: LaTeX integration
-  - lean.lua: Lean theorem prover integration
-  - avante.lua: AI integration
-  - lectic.lua: AI-assisted writing
-  - More tool integrations
+  - vimtex-cmp.lua: Completion for LaTeX
 
 - **ui/**: User interface components
   - colorscheme.lua: Theme configuration
@@ -45,7 +39,12 @@ Plugins are now organized into the following categories with dedicated directori
   - bufferline.lua: Buffer line
   - nvim-tree.lua: File explorer
   - nvim-web-devicons.lua: File icons
-  - More UI enhancements
+  - sessions.lua: Session management
+
+- **ai/**: AI tooling and integration
+  - avante.lua: AI assistants integration
+  - lectic.lua: AI-assisted writing
+  - mcp-hub.lua: AI tools integration
 
 ## Plugin Structure
 
