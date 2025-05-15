@@ -63,6 +63,23 @@ return {
       return false
     end
     
+    -- Function to check if cursor is at the end of a word
+    local function is_at_word_end()
+      local col = vim.api.nvim_win_get_cursor(0)[2]
+      local line = vim.api.nvim_get_current_line()
+      
+      -- Check if we're at end of line
+      if col >= #line then
+        return false
+      end
+      
+      -- Check if current character is part of a word and next character is not
+      local curr_char = line:sub(col + 1, col + 1)
+      local next_char = line:sub(col + 2, col + 2)
+      
+      return curr_char:match("[%w_]") and (next_char == "" or next_char:match("[^%w_]"))
+    end
+    
     -- Create wrapper function that suppresses notifications
     local function silent_exec(func)
       -- Save previous notification function
@@ -89,6 +106,14 @@ return {
       local line = vim.fn.getline(".")
       local cursor_pos = vim.api.nvim_win_get_cursor(0)
       local row, col = cursor_pos[1], cursor_pos[2]
+      
+      -- Close any open completion menu first
+      pcall(function()
+        local cmp = require('cmp')
+        if cmp and cmp.visible() then
+          cmp.close()
+        end
+      end)
       
       -- Determine if we're on a list item
       if not is_list_item(line) then
@@ -154,10 +179,31 @@ return {
           vim.cmd("startinsert")
         end
         
-        -- Clear the prevent_cmp_menu flag after another delay
+        -- Close any open completion menu again to be sure
+        pcall(function()
+          local cmp = require('cmp')
+          if cmp and cmp.visible() then
+            cmp.close()
+          end
+        end)
+        
+        -- Set flag to prevent cmp menu from reopening right away
+        _G._prevent_cmp_menu = true
+        
+        -- Clear the prevent_cmp_menu flag after a delay
         vim.defer_fn(function()
           _G._prevent_cmp_menu = false
         end, 1000)  -- Longer delay to make sure we don't get the menu
+        
+        -- Add a final close at the very end of our function
+        vim.defer_fn(function()
+          pcall(function()
+            local cmp = require('cmp')
+            if cmp and cmp.visible() then
+              cmp.close()
+            end
+          end)
+        end, 50) -- Small delay to let everything settle
       end)
     end
     
@@ -168,6 +214,14 @@ return {
       local cursor_pos = vim.api.nvim_win_get_cursor(0)
       local row, col = cursor_pos[1], cursor_pos[2]
       
+      -- Close any open completion menu first
+      pcall(function()
+        local cmp = require('cmp')
+        if cmp and cmp.visible() then
+          cmp.close()
+        end
+      end)
+      
       -- Determine if we're on a list item
       if not is_list_item(line) then
         -- Not on a list item, use default Shift-Tab behavior
@@ -177,6 +231,9 @@ return {
         )
         return
       end
+      
+      -- Set flag to prevent cmp menu from opening
+      _G._prevent_cmp_menu = true
       
       -- Check if there's indentation to remove
       local indent = line:match("^%s*") or ""
@@ -219,6 +276,32 @@ return {
       
       -- Ensure we stay in insert mode
       vim.cmd("startinsert")
+      
+      -- Close any open completion menu again to be sure
+      pcall(function()
+        local cmp = require('cmp')
+        if cmp and cmp.visible() then
+          cmp.close()
+        end
+      end)
+      
+      -- Set flag to prevent cmp menu from reopening right away
+      _G._prevent_cmp_menu = true
+      
+      -- Clear the prevent_cmp_menu flag after a delay
+      vim.defer_fn(function()
+        _G._prevent_cmp_menu = false
+      end, 1000)  -- Longer delay to make sure we don't get the menu
+      
+      -- Add a final close at the very end of our function
+      vim.defer_fn(function()
+        pcall(function()
+          local cmp = require('cmp')
+          if cmp and cmp.visible() then
+            cmp.close()
+          end
+        end)
+      end, 50) -- Small delay to let everything settle
     end
     
     -- Create user commands for Tab and Shift-Tab
@@ -294,6 +377,43 @@ return {
           end, { expr = true, buffer = true, desc = "Smart list-aware " .. key })
         end
       end 
+    })
+    
+    -- Create autocmd to completely disable cmp when tab is pressed in list items
+    vim.api.nvim_create_autocmd("InsertCharPre", {
+      pattern = {"*.md", "*.markdown", "*.norg"},
+      callback = function()
+        if vim.v.char == "\t" then
+          -- Check if we're in a list item
+          local line = vim.fn.getline(".")
+          local is_list = false
+          
+          -- Quick check for list items
+          for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+            if line:match("^%s*" .. pattern .. "%s") then
+              is_list = true
+              break
+            end
+          end
+          
+          if is_list then
+            -- We're in a list and Tab was pressed - forcefully close menu
+            pcall(function()
+              local cmp = require('cmp')
+              if cmp then
+                -- Disable cmp and close any open menu
+                cmp.close()
+                _G._prevent_cmp_menu = true
+                
+                -- Use a longer timeout to keep cmp disabled
+                vim.defer_fn(function()
+                  _G._prevent_cmp_menu = false
+                end, 1500)
+              end
+            end)
+          end
+        end
+      end
     })
     
     -- Add commands for integration with which-key mappings with proper error handling
