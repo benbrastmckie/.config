@@ -1,14 +1,20 @@
 # TODO
 
--
+- Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
+- Remove `gh_dashboard.lua` if not used
+- buffers
+  - always show active tab
 - avante
   - search/replace
-  -
+  - improve ui for accept/reject
+  - turn off mouse support in Avante
+  - <C-j/k> sometimes stops working in Avante after it makes changes
 - mcphub
-  - lazy load
+  - lazy load when avante starts
+  - run tests to confirm that mcp works with avante
 - latex
   - [x] highlighting
-  - [:] pairs
+  - [x] pairs
   - [x] surround
     - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
     - [x] Fix surround keybindings conflict between mini.surround and which-key

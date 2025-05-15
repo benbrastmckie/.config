@@ -1,14 +1,49 @@
--- This file used to require nvim-surround, but we're now using mini.surround
--- All LaTeX-specific surround configurations have been moved to mini.surround
--- in lua/neotex/plugins/coding/mini.lua
+-- We're now using nvim-surround instead of mini.surround
+-- LaTeX-specific surround configurations are in lua/neotex/plugins/coding/surround.lua
 
--- Note: LaTeX surroundings are defined in mini.surround setup:
--- - $ for math mode
--- - E for equations
--- - A for align
--- - I for italic
--- - B for bold
--- - T for monospace
+-- This file includes buffer-specific surround configuration
+require("nvim-surround").buffer_setup({
+  surrounds = {
+    -- LaTeX environments
+    ["e"] = {
+      add = function()
+        local env = vim.fn.input("Environment: ")
+        return { { "\\begin{" .. env .. "}" }, { "\\end{" .. env .. "}" } }
+      end,
+    },
+    -- LaTeX quotes
+    ["Q"] = {
+      add = { "``", "''" },
+      find = "%b``.-''",
+      delete = "^(``)().-('')()$",
+    },
+    -- LaTeX single quotes
+    ["q"] = {
+      add = { "`", "'" },
+      find = "`.-'",
+      delete = "^(`)().-(')()$",
+    },
+    -- LaTeX text formatting
+    ["b"] = {
+      add = { "\\textbf{", "}" },
+      find = "\\%a-bf%b{}",
+      delete = "^(\\%a-bf{)().-(})()$",
+    },
+    ["i"] = {
+      add = { "\\textit{", "}" },
+      find = "\\%a-it%b{}",
+      delete = "^(\\%a-it{)().-(})()$",
+    },
+    ["t"] = {
+      add = { "\\texttt{", "}" },
+      find = "\\%a-tt%b{}",
+      delete = "^(\\%a-tt{)().-(})()$",
+    },
+    ["$"] = {
+      add = { "$", "$" },
+    },
+  },
+})
 
 -- PdfAnnots
 function PdfAnnots()
