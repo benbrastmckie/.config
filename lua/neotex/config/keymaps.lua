@@ -142,7 +142,7 @@ function M.setup()
   -- Markdown mappings setup function triggered by an auto-command
   function _G.set_markdown_keymaps()
     -- Load the autolist module
-    local ok, autolist = pcall(require, "neotex.utils.autolist")
+    local ok, autolist = pcall(require, "neotex.plugins.tools.autolist.util")
     
     -- Tab settings for markdown
     vim.opt.tabstop = 2

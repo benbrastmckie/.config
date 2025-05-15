@@ -13,6 +13,9 @@
   - [x] make shift-tab work (does nothing currently)
   - [x] look to see what improvements can be made to make things simpler and more systematic
   - [x] make <C-N> cycle in the reverse
+  - fix directory structure
+- jupyter
+  - fix directory structure
 - mini.pairs
   - Fails to pass over closing ' and `
 - Nvim Tree

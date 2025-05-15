@@ -1,6 +1,6 @@
 -- Autolist commands module
 local M = {}
-local operations = require("neotex.utils.autolist.list_operations")
+local operations = require("neotex.plugins.tools.autolist.util.list_operations")
 
 function M.setup()
   -- Define user commands for list operations

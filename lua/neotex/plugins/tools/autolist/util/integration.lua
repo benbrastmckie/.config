@@ -1,6 +1,6 @@
 -- Autolist plugin integrations module
 local M = {}
-local utils = require("neotex.utils.autolist.utils")
+local utils = require("neotex.plugins.tools.autolist.util.utils")
 
 function M.setup()
   -- Set up nvim-cmp integration to respect autolist flags and behavior
