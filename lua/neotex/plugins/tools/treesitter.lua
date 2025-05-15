@@ -11,10 +11,10 @@ return {
           disable = { "css", "cls", "latex" }, -- list of language that will be disabled
           -- Note: we keep markdown parser enabled for lectic.markdown files
           -- Note: using vim's regex highlighting for latex instead of treesitter
-          additional_vim_regex_highlighting = { "python", "latex" }, -- for jupyter notebooks and latex (standard)
+          additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
         },
         -- enable indentation
-        indent = { enable = true },
+        indent = { enable = true, disable = { "latex" } },
         -- Define .ipynb injection queries to properly highlight code in markdown files
         injections = {
           {
@@ -57,7 +57,6 @@ return {
         autopairs = {
           enable = true,
         },
-        -- indent = { enable = false, disable = { "latex", "python", "css" } },
         incremental_selection = {
           enable = true,
           keymaps = {
@@ -67,6 +66,17 @@ return {
             node_decremental = "<C-p>",
           },
         },
+      })
+      
+      -- Set up filetype detection for LaTeX files to ensure proper syntax highlighting
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = {"tex", "latex"},
+        callback = function()
+          -- Enable Vim's built-in syntax highlighting for LaTeX
+          vim.opt_local.syntax = "tex"
+          -- Disable treesitter for LaTeX files
+          vim.cmd[[TSBufDisable highlight]]
+        end
       })
     end,
   },
