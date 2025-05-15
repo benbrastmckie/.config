@@ -27,6 +27,7 @@
   - [ ] Add descriptive comments
 - buffers
   - always show active tab
+  - <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
 - avante
   - search/replace
   - improve ui for accept/reject

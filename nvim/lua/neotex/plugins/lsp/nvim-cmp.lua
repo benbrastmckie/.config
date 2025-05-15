@@ -62,6 +62,24 @@ return {
         -- completeopt = "menuone,preview,noinsert,noselect",
         keyword_length = 1,
       },
+      
+      -- Custom filtering for markdown list items
+      enabled = function()
+        -- Check if we're in a markdown file and in a list item
+        if vim.bo.filetype == "markdown" then
+          -- Check if we're in a list item
+          local line = vim.fn.getline(".")
+          for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+            if line:match("^%s*" .. pattern .. "%s") then
+              -- Don't show completion menu in list items right after indentation
+              if _G._prevent_cmp_menu == true then
+                return false
+              end
+            end
+          end
+        end
+        return true
+      end,
       snippet = { -- configure how nvim-cmp interacts with snippet engine
         expand = function(args)
           luasnip.lsp_expand(args.body)
@@ -78,7 +96,24 @@ return {
         ["<CR>"] = cmp.mapping.confirm({ select = false }),
         -- supertab
         ["<Tab>"] = cmp.mapping(function(fallback)
-          -- Check if we should prevent cmp menu due to Tab being used for indentation
+          -- Check if we're in a markdown file and in a list item
+          if vim.bo.filetype == "markdown" then
+            -- Get the current line
+            local line = vim.fn.getline(".")
+            
+            -- Check if this might be a list item
+            for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+              if line:match("^%s*" .. pattern .. "%s") then
+                -- In a list item, don't show completion menu - just indent
+                if not cmp.visible() then
+                  fallback()
+                  return
+                end
+              end
+            end
+          end
+          
+          -- Check if we should prevent cmp menu
           if _G._prevent_cmp_menu then
             -- If Tab was just used for list indentation, don't show completion menu
             fallback()
@@ -195,6 +230,10 @@ return {
          trigger_debounce_time = 500,
          throttle = 550,
          fetching_timeout = 80,
+      },
+      
+      experimental = {
+        ghost_text = false, -- Better for markdown
       },
     })
 
