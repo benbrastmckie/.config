@@ -7,6 +7,9 @@ return {
   config = function()
     local autolist = require('autolist')
     
+    -- Access autolist configuration
+    local autolist_config = require("autolist.config")
+    
     -- Setup autolist with configuration
     autolist.setup({
       lists = {
@@ -25,12 +28,90 @@ return {
         }
       },
       enabled = true,
-      cycle_kinds = {"1.", "-", "*", "+"},  -- Cycle between these list types
+      cycle = {"1.", "-", "*", "+"},  -- Cycle between these list types
       smart_indent = true,      -- Enable smart indentation
+      
+      -- Disable automatic list continuation after colon
+      colon = {
+        indent = false,      -- Do NOT create a list item after lines ending with ':'
+        indent_raw = false,  -- Do NOT indent raw colon lines
+        preferred = "-"      -- Default bullet if needed
+      },
+      
+      -- IMPORTANT: Disable all keymaps to prevent conflicts
+      custom_keys = false
     })
     
     -- Safe way to access autolist.auto after setup
     local auto = require("autolist.auto")
+    
+    -- Completely rewritten Tab implementation without expression mapping
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = {"markdown", "norg"}, 
+      callback = function()
+        -- Map Tab key directly, not using expression mapping
+        vim.keymap.set("i", "<Tab>", function() 
+          -- Get current line and cursor position
+          local line = vim.fn.getline(".")
+          local cursor_pos = vim.api.nvim_win_get_cursor(0)
+          local row, col = cursor_pos[1], cursor_pos[2]
+          
+          -- Check if this is a list item
+          if not is_list_item(line) then
+            -- Not a list item, send a tab character
+            vim.api.nvim_feedkeys(
+              vim.api.nvim_replace_termcodes("<Tab>", true, false, true),
+              "i", true  -- Use "i" for insert mode instead of "n"
+            )
+            return
+          end
+          
+          -- Determine if we're at the beginning of content
+          local prefix_length = 0
+          
+          -- Get bullet/indentation prefix length
+          local bullet_match = line:match("^(%s*[-+*]%s+)")
+          local number_match = line:match("^(%s*%d+%.%s+)")
+          
+          if bullet_match then
+            prefix_length = #bullet_match
+          elseif number_match then
+            prefix_length = #number_match
+          else
+            prefix_length = #(line:match("^%s*") or "")
+          end
+          
+          -- If cursor is not at beginning, insert a tab character directly
+          if col > prefix_length then
+            -- Get the current line
+            local current_line = vim.fn.getline(".")
+            
+            -- Split the line at cursor position
+            local before_cursor = string.sub(current_line, 1, col)
+            local after_cursor = string.sub(current_line, col + 1)
+            
+            -- Insert a tab character at cursor position
+            local new_line = before_cursor .. "\t" .. after_cursor
+            
+            -- Update the line
+            vim.api.nvim_buf_set_lines(0, row-1, row, false, {new_line})
+            
+            -- Move cursor after the tab
+            vim.api.nvim_win_set_cursor(0, {row, col + 1})
+            
+            return
+          end
+          
+          -- We're at the beginning of a list item - indent the whole line
+          local new_line = "  " .. line
+          vim.api.nvim_buf_set_lines(0, row-1, row, false, {new_line})
+          vim.api.nvim_win_set_cursor(0, {row, col+2})
+          
+          -- Recalculate list numbering
+          pcall(function() auto.recalculate() end)
+        end, { buffer = true, desc = "Direct Tab handling for lists" })
+      end
+    })
     
     -- Define helper function for list item detection
     local function is_list_item(line)
@@ -45,280 +126,205 @@ return {
       return false
     end
     
-    -- Helper function to unindent list item with proper error handling
-    local function unindent_list_item()
-      local cursor_pos = vim.api.nvim_win_get_cursor(0)
-      local line_num = cursor_pos[1]
-      local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
-      
-      if is_list_item(line) then
-        -- Remove one level of indentation (2 spaces or 1 tab)
-        local new_line = line
-        local new_col = cursor_pos[2]
-        
-        if line:match("^%s%s") then
-          -- Remove 2 spaces
-          new_line = line:gsub("^  ", "")
-          new_col = math.max(0, cursor_pos[2] - 2)
-        elseif line:match("^\t") then
-          -- Remove 1 tab
-          new_line = line:gsub("^\t", "")
-          new_col = math.max(0, cursor_pos[2] - 1)
-        else
-          -- No indentation to remove
-          return false
-        end
-        
-        -- Update the line
-        vim.api.nvim_buf_set_lines(0, line_num - 1, line_num, false, {new_line})
-        
-        -- Adjust cursor position
-        vim.api.nvim_win_set_cursor(0, {line_num, new_col})
-        
-        -- Recalculate list with proper error handling
-        pcall(function() 
-          auto.recalculate()
-        end)
-        
-        return true
-      end
-      
-      return false
-    end
+    -- Leaving this commented to avoid confusion with older code
+    -- -- Unused helper function - removed in favor of direct <C-D> approach
     
-    -- Handle colon lines separately with a dedicated autocmd
-    vim.api.nvim_create_autocmd("InsertEnter", {
-      pattern = {"*.md", "*.markdown", "*.norg"},
+    -- Improved Enter key handling for list creation
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = {"markdown", "norg"},
       callback = function()
-        -- Store original CR mapping
-        local orig_cr_map = vim.fn.maparg("<CR>", "i", false, true)
-        
-        -- Create a new mapping for <CR> that checks for colon
+        -- Create a new mapping for <CR> with improved list handling
         vim.keymap.set("i", "<CR>", function()
           local line = vim.fn.getline(".")
           local cursor_pos = vim.api.nvim_win_get_cursor(0)
           local col = cursor_pos[2]
           
-          -- Check if the cursor is at the end of the line and it ends with a colon
+          -- For lines ending with colon, just create a normal new line
           if col == #line and line:match(":$") then
-            -- Insert a simple new line without auto-indentation
             return "\n"
-          else
-            -- Use original <CR> behavior
-            if not vim.tbl_isempty(orig_cr_map) and orig_cr_map.expr == 1 then
-              -- If original mapping was expression-based
-              return vim.fn.eval(orig_cr_map.rhs)
-            else
-              -- Default behavior, let autolist handle it
+          end
+          
+          -- If we're in a list item
+          if is_list_item(line) then
+            -- For empty list items (just the bullet + spaces), delete them
+            if line:match("^%s*[-+*]%s+$") or line:match("^%s*%d+%.%s+$") then
+              return "<C-u><CR>"
+            end
+            
+            -- Ensure the cursor is at the end of the line to trigger bullet creation
+            if col < #line then
               return "<CR>"
             end
+            
+            -- Let autolist handle creating the next bullet
+            local keys = vim.api.nvim_replace_termcodes("<CR>", true, true, true)
+            return keys
           end
-        end, { expr = true, buffer = true })
+          
+          -- Not a list item - use standard Enter behavior
+          return "<CR>"
+        end, { expr = true, buffer = true, desc = "Smart list handling for Enter" })
       end
     })
     
-    -- Configure autolist to ignore lines ending with colon when creating new lines
-    -- We're going to take a more direct approach by modifying the plugin's core behavior
-    local autolist_config = require("autolist.config")
-    
-    -- Override the 'colon' configuration to set indent to false
-    -- This ensures autolist does not create indented lists after lines ending with ':'
-    if autolist_config.colon then
-      autolist_config.colon.indent = false
-      autolist_config.colon.indent_raw = false
+    -- Create a wrapper function that suppresses notifications
+    local function silent_exec(func)
+      -- Save previous notification function
+      local old_notify = vim.notify
+      -- Create temporary notification function that filters out autolist messages
+      vim.notify = function(msg, level, opts)
+        if not msg:match("recalculate") and not msg:match("indent") then
+          old_notify(msg, level, opts)
+        end
+      end
+      
+      -- Execute the function
+      local result = pcall(func)
+      
+      -- Restore original notification function
+      vim.notify = old_notify
+      
+      return result
     end
     
-    -- Manually handle 'o' and 'O' for colon lines
+    -- Handle o and O keys to create bullets only for list items
     vim.api.nvim_create_autocmd("FileType", {
       pattern = {"markdown", "norg"},
-      callback = function(ev)
-        -- Create custom o/O mappings that check for colon at the end of line
+      callback = function()
         for _, key in ipairs({"o", "O"}) do
           vim.keymap.set("n", key, function()
             local line = vim.fn.getline(".")
             
-            -- If the line ends with a colon, disable autolist temporarily
-            if line:match(":$") then
-              -- Store current state
-              local prev_enabled = vim.b[ev.buf].autolist_enabled
-              
-              -- Disable autolist
-              vim.b[ev.buf].autolist_enabled = false
-              
-              -- Create a function to restore state after operation
-              vim.defer_fn(function()
-                vim.b[ev.buf].autolist_enabled = prev_enabled
-              end, 100)
-              
-              -- Execute the appropriate key based on o or O
-              if key == "o" then
-                vim.cmd("normal! o")
-              else
-                vim.cmd("normal! O")
-              end
-              
-              return ""
+            -- Check if current line is a list item
+            local is_current_list = is_list_item(line)
+            
+            -- For non-list items or lines ending with colon, use vanilla behavior
+            if not is_current_list or line:match(":$") then
+              -- Use Vim's native o/O behavior
+              return key == "o" and "o" or "O"
             else
-              -- Let normal behavior take over for non-colon lines
+              -- For list items, let autolist handle it
               return key
             end
-          end, { expr = true, buffer = true, desc = "Smart o/O for list items" })
+          end, { expr = true, buffer = true, desc = "Smart list-aware " .. key })
         end
-      end
+      end 
     })
     
-    -- Improved <S-Tab> functionality for list items
+    -- Rewritten Shift-Tab implementation without expression mapping
     vim.api.nvim_create_autocmd("FileType", {
       pattern = {"markdown", "norg"},
       callback = function()
+        -- Map Shift-Tab key directly
         vim.keymap.set("i", "<S-Tab>", function()
-          -- Get current cursor position and line
+          -- Get current line and cursor info
+          local line = vim.fn.getline(".")
           local cursor_pos = vim.api.nvim_win_get_cursor(0)
-          local line_num = cursor_pos[1]
-          local col = cursor_pos[2]
-          local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
+          local row, col = cursor_pos[1], cursor_pos[2]
           
-          -- For list items, manually handle unindentation
-          if is_list_item(line) then
-            -- Determine indentation type and amount
-            local indentation = line:match("^%s+") or ""
-            local new_line
-            local new_col = col
-            
-            if #indentation >= 2 then
-              -- Remove 2 spaces or 1 tab from the beginning
-              if indentation:sub(1, 2) == "  " then
-                new_line = line:sub(3) -- Remove 2 spaces
-                new_col = math.max(0, col - 2)
-              elseif indentation:sub(1, 1) == "\t" then
-                new_line = line:sub(2) -- Remove 1 tab
-                new_col = math.max(0, col - 1)
-              else
-                -- For mixed indentation, try to handle gracefully
-                new_line = line:sub(2) -- Remove 1 character
-                new_col = math.max(0, col - 1)
-              end
-              
-              -- Update the line
-              vim.api.nvim_buf_set_lines(0, line_num - 1, line_num, false, {new_line})
-              
-              -- Adjust cursor position
-              vim.api.nvim_win_set_cursor(0, {line_num, new_col})
-              
-              -- Silently recalculate lists if needed
-              pcall(function() auto.recalculate() end)
-              
-              return
-            end
+          -- If not a list item, use standard <C-D> behavior
+          if not is_list_item(line) then
+            vim.api.nvim_feedkeys(
+              vim.api.nvim_replace_termcodes("<C-D>", true, false, true),
+              "i", true  -- Use "i" for insert mode instead of "n"
+            )
+            return
           end
           
-          -- Use standard CTRL-D behavior for non-list items or no more indentation
-          local keys = vim.api.nvim_replace_termcodes("<C-d>", true, false, true)
-          vim.api.nvim_feedkeys(keys, "n", false)
-        end, { buffer = true, desc = "Unindent list item in insert mode" })
+          -- Check if there's indentation to remove
+          local indent = line:match("^%s*") or ""
+          if #indent < 2 then
+            -- Not enough indentation, do nothing
+            return
+          end
+          
+          -- Use standard Vim dedent and then recalculate
+          vim.api.nvim_feedkeys(
+            vim.api.nvim_replace_termcodes("<C-D>", true, false, true),
+            "i", true  -- Use "i" for insert mode instead of "n"
+          )
+          
+          -- Schedule recalculate to run after the <C-D> completes
+          vim.defer_fn(function() 
+            pcall(function() auto.recalculate() end)
+          end, 20)
+        end, { buffer = true, desc = "Direct Shift-Tab handling for lists" })
       end
     })
     
     -- Add commands for integration with which-key mappings with proper error handling
     vim.api.nvim_create_user_command('AutolistRecalculate', function()
-      local success, err = pcall(function()
+      -- Silently recalculate list numbers
+      silent_exec(function()
         auto.recalculate()
       end)
-      
-      if success then
-        vim.notify("List numbers recalculated", vim.log.levels.INFO)
-      else
-        vim.notify("Failed to recalculate list: " .. tostring(err), vim.log.levels.ERROR)
-      end
     end, {})
     
     vim.api.nvim_create_user_command('AutolistCycleNext', function()
-      local success, err = pcall(function()
+      -- Silently cycle to next bullet type
+      silent_exec(function()
         auto.cycle_next()
       end)
-      
-      if success then
-        vim.notify("Cycled to next bullet type", vim.log.levels.INFO)
-      else
-        vim.notify("Failed to cycle bullet: " .. tostring(err), vim.log.levels.ERROR)
-      end
     end, {})
     
     vim.api.nvim_create_user_command('AutolistCyclePrev', function()
-      local success, err = pcall(function()
+      -- Silently cycle to previous bullet type
+      silent_exec(function()
         auto.cycle_prev()
       end)
-      
-      if success then
-        vim.notify("Cycled to previous bullet type", vim.log.levels.INFO)
-      else
-        vim.notify("Failed to cycle bullet: " .. tostring(err), vim.log.levels.ERROR)
-      end
     end, {})
     
-    -- Create checkbox functionality
+    -- Fixed checkbox handling function 
     function HandleCheckbox()
-      local config = require("autolist.config")
-      local emptybox_pattern = " [ ]"
-      local progbox_pattern = " [.]"
-      local closebox_pattern = " [:]"
-      local donebox_pattern = " [x]"
-      local filetype_list = config.lists[vim.bo.filetype]
-      local line = vim.fn.getline(".")
+      local current_line = vim.fn.line(".")
+      local line = vim.fn.getline(current_line)
       
-      for i, list_pattern in ipairs(filetype_list) do
-        local list_item = line:match("^%s*" .. list_pattern .. "%s*")
-        
-        if list_item == nil then goto continue_for_loop end
-        list_item = list_item:gsub("%s+", "")
-        
-        local is_list_item = list_item ~= nil
-        local is_checkbox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[.%]" .. "%s*") ~= nil
-        local is_emptybox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[%s%]" .. "%s*") ~= nil
-        local is_progbox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[%.%]" .. "%s*") ~= nil
-        local is_closebox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[%:%]" .. "%s*") ~= nil
-        local is_donebox_item = line:match("^%s*" .. list_pattern .. "%s*" .. "%[x%]" .. "%s*") ~= nil
-        
-        if is_list_item == true and is_checkbox_item == false then
-          list_item = list_item:gsub('%)', '%%)')
-          vim.fn.setline(".", (line:gsub(list_item, list_item .. emptybox_pattern, 1)))
-          
-          local cursor_pos = vim.api.nvim_win_get_cursor(0)
-          if cursor_pos[2] > 0 then
-            vim.api.nvim_win_set_cursor(0, { cursor_pos[1], cursor_pos[2] + emptybox_pattern:len() })
-          end
-          goto continue
-        elseif is_list_item == true and is_emptybox_item == true then
-          list_item = list_item:gsub('%)', '%%)')
-          vim.fn.setline(".", (line:gsub(" %[%s%]", progbox_pattern, 1)))
-          goto continue
-        elseif is_list_item == true and is_progbox_item == true then
-          list_item = list_item:gsub('%)', '%%)')
-          vim.fn.setline(".", (line:gsub(" %[%.%]", closebox_pattern, 1)))
-          goto continue
-        elseif is_list_item == true and is_closebox_item == true then
-          list_item = list_item:gsub('%)', '%%)')
-          vim.fn.setline(".", (line:gsub(" %[%:%]", donebox_pattern, 1)))
-          goto continue
-        elseif is_list_item == true and is_donebox_item == true then
-          list_item = list_item:gsub('%)', '%%)')
-          vim.fn.setline(".", (line:gsub(" %[x%]", "", 1)))
-          
-          local cursor_pos = vim.api.nvim_win_get_cursor(0)
-          if cursor_pos[2] > donebox_pattern:len() then
-            vim.api.nvim_win_set_cursor(0, { cursor_pos[1], cursor_pos[2] - donebox_pattern:len() })
-          end
-          goto continue
-        else
-          -- Simple toggle for vanilla checkboxes
-          pcall(function()
-            auto.toggle_checkbox()
-          end)
-          goto continue
-        end
-        ::continue_for_loop::
+      -- Skip if not a list item
+      if not is_list_item(line) then
+        return
       end
-      ::continue::
+      
+      -- Define checkbox patterns
+      local patterns = {
+        empty = " [ ]",
+        progress = " [.]",
+        closing = " [:]",
+        done = " [x]"
+      }
+      
+      -- Get list marker (bullet symbol or number)
+      local list_marker = line:match("^%s*([%d%.%-%+%*]+)%s")
+      if not list_marker then
+        return
+      end
+      
+      local new_line = line
+      
+      -- Handle different checkbox states
+      if line:match("%[%s%]") then
+        -- Empty → Progress
+        new_line = line:gsub("%[%s%]", "[.]", 1)
+      elseif line:match("%[%.%]") then
+        -- Progress → Closing
+        new_line = line:gsub("%[%.%]", "[:]", 1)
+      elseif line:match("%[%:%]") then
+        -- Closing → Done
+        new_line = line:gsub("%[%:%]", "[x]", 1)
+      elseif line:match("%[x%]") then
+        -- Done → No checkbox 
+        local with_box = list_marker .. " [x]"
+        local without_box = list_marker
+        new_line = line:gsub(vim.pesc(with_box), without_box, 1)
+      else
+        -- No checkbox → Empty
+        -- Escape special characters in marker
+        local escaped_marker = vim.pesc(list_marker)
+        -- Add checkbox after marker
+        new_line = line:gsub(escaped_marker .. "%s+", escaped_marker .. patterns.empty .. " ", 1)
+      end
+      
+      -- Update the line with new content
+      vim.fn.setline(current_line, new_line)
     end
   end,
 }

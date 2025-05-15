@@ -1,33 +1,18 @@
 # TODO
 
-- [x] move the following from `editor/` into `tools/`
-  - [x] autolist.lua
-  - [x] mini.lua
-  - [x] surround.lua
-  - [x] todo-comments.lua
-  - [x] yanky.lua
-- [x] move `sessions.lua` the following from `editor/` into `ui/`
-- [x] move the following from `tools/` into `editor/`
-  - [x] autolist.lua
-  - [x] sessions.lua
-  - [x] telescope.lua
-  - [x] toggleterm.lua
-  - [x] treesitter.lua
-- [x] remove redundant files between directories
-  - [x] Remove duplicate files from editor directory
-  - [x] Remove duplicate files from tools directory
-  - [x] Move sessions.lua to ui directory
-- [x] Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
-- [x] Remove `gh_dashboard.lua`
 - [x] improve `autolist.lua`
   - [x] make <S-TAB> in insert mode on a list un-indent one tab
   - [x] check for autocommands or other autolist configuration that could be consolidated, improved, or better organized
   - [x] prevent autolist from creating a new indented line when creating a new line from a line that ends with ':'
   - [x] fix errors on tabbing on a bullet item in insert mode: 
        - Failed to recalculate list: ...jamin/.config/nvim/lua/neotex/plugins/tools/autolist.lua:137: attempt to call field 'force_recalculate' (a nil value)
-  - [ ] remove message when line is indented
+  - [x] remove message when line is indented or recalculated
+  - [x] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
+  - [x] fails to create new bullet when hitting <CR> in insert mode
+  - [ ] make TAB act normally if not on the beginning of a line on a bulleted list
   - [ ] make shift-tab work (does nothing currently)
-  - [ ] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
+  - [ ] review configuration for autocommands
+    - look to see what improvements can be made to make things simpler and more systematic
 - mini.pairs
   - Fails to pass over closing ' and `
 - Nvim Tree
@@ -65,7 +50,7 @@
       - [x] Fixed API calls by using the correct mini.surround functions
       - [x] Updated commands to directly use require('mini.surround').function_name()
       - [x] Corrected visual mode mapping to use add('visual') method
-  - https://github.com/ahrm/sioyek
+  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
 - [.] docs
   - [ ] learning git
   - [ ] cheatsheet
@@ -114,8 +99,7 @@
   - [x] error: client 2 quit with exit code 127 and signal 0
   - [x] error detected BufWritePre Autocommand for "\*"
 - [ ] update cheatsheet
-- [:] autolist
-  - [ ] fix loop index
+- [x] autolist
   - [x] add in-progress field
   - [x] remove box command
 - [ ] github issues
@@ -134,6 +118,25 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+- [x] move the following from `editor/` into `tools/`
+  - [x] autolist.lua
+  - [x] mini.lua
+  - [x] surround.lua
+  - [x] todo-comments.lua
+  - [x] yanky.lua
+- [x] move `sessions.lua` the following from `editor/` into `ui/`
+- [x] move the following from `tools/` into `editor/`
+  - [x] autolist.lua
+  - [x] sessions.lua
+  - [x] telescope.lua
+  - [x] toggleterm.lua
+  - [x] treesitter.lua
+- [x] remove redundant files between directories
+  - [x] Remove duplicate files from editor directory
+  - [x] Remove duplicate files from tools directory
+  - [x] Move sessions.lua to ui directory
+- [x] Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
+- [x] Remove `gh_dashboard.lua`
 - [x] folding
   - [x] refine mappings
 - [x] lectic
