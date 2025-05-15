@@ -1,5 +1,8 @@
 # TODO
 
+- latex
+  - highlighting
+  - surround
 - [.] docs
   - [ ] learning git
   - [ ] cheatsheet
