@@ -1,5 +1,7 @@
 # TODO
 
+sometimes this so ME sometimes sometimessometimesis thesaurus end
+
 - [x] improve `autolist.lua`
   - [x] make <S-TAB> in insert mode on a list un-indent one tab
   - [x] check for autocommands or other autolist configuration that could be consolidated, improved, or better organized
