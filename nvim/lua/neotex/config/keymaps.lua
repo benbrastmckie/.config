@@ -152,15 +152,15 @@ function M.setup()
       -- Check if we're in a list item first
       local line = vim.fn.getline(".")
       local is_list = false
-      
+
       -- Quick check for list items
-      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
         if line:match("^%s*" .. pattern .. "%s") then
           is_list = true
           break
         end
       end
-      
+
       -- Handle list items with priority
       if is_list then
         -- Close completion menu if it's open
@@ -169,42 +169,42 @@ function M.setup()
           -- Try to close the menu first
           pcall(function() cmp.close() end)
         end
-        
+
         -- If we're in a list, use our command
         vim.cmd("AutolistIndent")
         return ""
       end
-      
+
       -- If we're not in a list item, handle normally
       local cmp_exists, cmp = pcall(require, "cmp")
       if cmp_exists and cmp.visible() then
         return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
       end
-      
+
       -- If we just used Tab for indentation, don't trigger cmp
       if _G._last_tab_was_indent then
         _G._last_tab_was_indent = false
         return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
       end
-      
+
       -- Standard tab behavior
       return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
     end, { buffer = true, expr = true, desc = "Smart list indent" })
-    
+
     -- Map both Shift-Tab and Ctrl-D for better terminal compatibility
     vim.keymap.set("i", "<S-Tab>", function()
       -- Check if we're in a list item first
       local line = vim.fn.getline(".")
       local is_list = false
-      
+
       -- Quick check for list items
-      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
         if line:match("^%s*" .. pattern .. "%s") then
           is_list = true
           break
         end
       end
-      
+
       -- Handle list items with priority
       if is_list then
         -- Close completion menu if it's open
@@ -213,35 +213,35 @@ function M.setup()
           -- Try to close the menu first
           pcall(function() cmp.close() end)
         end
-        
+
         -- If we're in a list, use our command
         vim.cmd("AutolistUnindent")
         return ""
       end
-      
+
       -- If we're not in a list item, handle normally
       local cmp_exists, cmp = pcall(require, "cmp")
       if cmp_exists and cmp.visible() then
         return vim.api.nvim_replace_termcodes("<S-Tab>", true, true, true)
       end
-      
+
       -- Standard Shift-Tab behavior
       return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
     end, { buffer = true, expr = true, desc = "Smart list unindent" })
-    
+
     vim.keymap.set("i", "<C-D>", function()
       -- Check if we're in a list item first
       local line = vim.fn.getline(".")
       local is_list = false
-      
+
       -- Quick check for list items
-      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+      for _, pattern in ipairs({ "-", "*", "+", "%d%." }) do
         if line:match("^%s*" .. pattern .. "%s") then
           is_list = true
           break
         end
       end
-      
+
       -- Handle list items with priority
       if is_list then
         -- Close completion menu if it's open
@@ -250,18 +250,18 @@ function M.setup()
           -- Try to close the menu first
           pcall(function() cmp.close() end)
         end
-        
+
         -- If we're in a list, use our command
         vim.cmd("AutolistUnindent")
         return ""
       end
-      
+
       -- If we're not in a list item, handle normally
       local cmp_exists, cmp = pcall(require, "cmp")
       if cmp_exists and cmp.visible() then
         return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
       end
-      
+
       -- Standard C-D behavior
       return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
     end, { buffer = true, expr = true, desc = "Smart list unindent (C-D)" })
@@ -338,7 +338,7 @@ function M.setup()
   map("n", "<C-;>", function()
     require('mini.comment').toggle_lines(vim.fn.line('.'), vim.fn.line('.'))
   end, {}, "Toggle comment on current line")
-  
+
   map("x", "<C-;>", function()
     local start_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '<'))
     local end_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '>'))
@@ -376,17 +376,17 @@ function M.setup()
 
   -- Buffer navigation using utils.buffer module
   local buffer_utils_loaded = false
-  
+
   -- Try to use the new utils.buffer module first
   local ok, buffer_utils = pcall(require, "neotex.util.buffer")
   if ok and buffer_utils and buffer_utils.goto_buffer then
     buffer_utils_loaded = true
-    
+
     -- Use the new functions with the same keybindings
     map("n", "<TAB>", function() buffer_utils.goto_buffer(1, 1) end, {}, "Next buffer")
     map("n", "<S-TAB>", function() buffer_utils.goto_buffer(1, -1) end, {}, "Previous buffer")
   end
-  
+
   -- If we couldn't load the buffer utils, use fallbacks
   if not buffer_utils_loaded then
     -- Try using the global function if it exists
@@ -429,8 +429,9 @@ function M.setup()
   map("n", "K", "gk", {}, "Move up display line")
   map("v", "J", "gj", {}, "Move down display line")
   map("v", "K", "gk", {}, "Move up display line")
-  
+
   return true
 end
 
 return M
+

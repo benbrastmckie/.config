@@ -131,12 +131,12 @@ return {
         ['}'] = { action = 'close', pair = '{}', neigh_pattern = '[^\\].' },
         ['>'] = { action = 'close', pair = '<>', neigh_pattern = '[^\\].' },
 
-        -- Space padding (for () [] {} <>)
-        [' '] = {
-          action = 'open',
-          pair = '  ',
-          neigh_pattern = '[%(%[{<]$'
-        }
+        -- Space padding (disabled to prevent issues with backspace in markdown lists)
+        -- [' '] = {
+        --   action = 'open',
+        --   pair = '  ',
+        --   neigh_pattern = '[%(%[{<]$'
+        -- }
       },
 
       -- Disable for specific filetypes
