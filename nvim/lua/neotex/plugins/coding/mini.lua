@@ -1,4 +1,4 @@
------------------------------------------------------------
+-----------------------------------------------------
 -- Mini.nvim Plugins for Coding Enhancement
 --
 -- This module configures mini.nvim plugins for coding enhancements:
@@ -106,20 +106,24 @@ return {
     })
 
     -- Configure mini.surround for surrounding text
-    require('mini.surround').setup({
+    local MiniSurround = require('mini.surround')
+    -- Make MiniSurround available globally
+    _G.MiniSurround = MiniSurround
+    
+    MiniSurround.setup({
       -- Module mappings. Use `''` (empty string) to disable one.
       mappings = {
-        add = 'sa',            -- Add surrounding in Normal and Visual modes
-        delete = 'sd',         -- Delete surrounding
-        find = 'sf',           -- Find surrounding (to the right)
-        find_left = 'sF',      -- Find surrounding (to the left)
-        highlight = 'sh',      -- Highlight surrounding
-        replace = 'sc',        -- Replace surrounding
-        update_n_lines = 'sn', -- Update `n_lines`
+        add = '',              -- Disable default mapping for add surrounding
+        delete = '',           -- Disable default mapping for delete surrounding
+        find = '',             -- Disable default mapping for find surrounding
+        find_left = '',        -- Disable default mapping for find surrounding (left)
+        highlight = '',        -- Disable default mapping for highlight surrounding
+        replace = '',          -- Disable default mapping for replace surrounding
+        update_n_lines = '',   -- Keep update `n_lines` functionality
 
-        -- Add surrounding in visual mode with Shift+s like nvim-surround
-        suffix_last = 'l', -- Suffix to search with "prev" method
-        suffix_next = 'n', -- Suffix to search with "next" method
+        -- Disable visual mode mapping as well
+        suffix_last = 'l',     -- Suffix to search with "prev" method
+        suffix_next = 'n',     -- Suffix to search with "next" method
       },
 
       -- How to search for surrounding (first inside current line, then inside
@@ -141,11 +145,35 @@ return {
         -- LaTeX-specific surroundings
         ['$'] = { output = { left = '$', right = '$' } },
         ['\\'] = { output = { left = '\\(', right = '\\)' } },
-        ['E'] = { output = { left = '\\begin{equation}', right = '\\end{equation}' } },
-        ['A'] = { output = { left = '\\begin{align}', right = '\\end{align}' } },
-        ['I'] = { output = { left = '\\textit{', right = '}' } },
-        ['B'] = { output = { left = '\\textbf{', right = '}' } },
-        ['T'] = { output = { left = '\\texttt{', right = '}' } },
+
+        -- LaTeX environments
+        -- ['E'] = { output = { left = '\\begin{equation}', right = '\\end{equation}' } },
+        -- ['A'] = { output = { left = '\\begin{align}', right = '\\end{align}' } },
+        -- ['M'] = { output = { left = '\\begin{matrix}', right = '\\end{matrix}' } },
+        -- ['P'] = { output = { left = '\\begin{pmatrix}', right = '\\end{pmatrix}' } },
+        -- ['C'] = { output = { left = '\\begin{cases}', right = '\\end{cases}' } },
+        -- ['F'] = { output = { left = '\\begin{figure}', right = '\\end{figure}' } },
+        -- ['D'] = { output = { left = '\\begin{document}', right = '\\end{document}' } },
+        -- ['S'] = { output = { left = '\\begin{split}', right = '\\end{split}' } },
+
+        -- LaTeX text formatting
+        ['i'] = { output = { left = '\\textit{', right = '}' } },
+        ['b'] = { output = { left = '\\textbf{', right = '}' } },
+        ['t'] = { output = { left = '\\texttt{', right = '}' } },
+        ['s'] = { output = { left = '\\textsc{', right = '}' } },
+
+        ['u'] = { output = { left = '\\underline{', right = '}' } },
+        ['o'] = { output = { left = '\\overline{', right = '}' } },
+        ['B'] = { output = { left = '\\mathbf{', right = '}' } },
+        ['I'] = { output = { left = '\\mathit{', right = '}' } },
+        ['T'] = { output = { left = '\\mathtt{', right = '}' } },
+        -- ['c'] = { output = { left = '\\mathcal{', right = '}' } },
+        -- ['f'] = { output = { left = '\\mathfrak{', right = '}' } },
+        -- ['s'] = { output = { left = '\\mathscr{', right = '}' } },
+
+        -- Special LaTeX surroundings
+        ['q'] = { output = { left = '``', right = '\'\'' } }, -- LaTeX quotes
+        ['Q'] = { output = { left = '`', right = '\'' } },    -- LaTeX single quotes
 
         -- Markdown surroundings
         ['*'] = { output = { left = '*', right = '*' } },
@@ -415,22 +443,12 @@ return {
     -- Comment keymaps are now defined in config/keymaps.lua and core/keymaps.lua
     -- to ensure consistent behavior
 
-    -- Add which-key mappings for mini.surround to match previous surround plugin
     -- This depends on which-key being installed
     local has_which_key, which_key = pcall(require, "which-key")
     if has_which_key then
-      which_key.register({
-        ["<leader>s"] = {
-          name = "SURROUND",
-          s = { "sa", "surround" },
-          d = { "sd", "delete" },
-          c = { "sc", "change" },
-          f = { "sf", "find" },
-          h = { "sh", "highlight" },
-        },
-      })
-
-      -- Register new which-key mappings for new mini plugins
+      -- Note: surround mappings are defined in editor/which-key.lua
+      
+      -- Register which-key mappings for mini plugins
       which_key.register({
         ["<leader>x"] = {
           name = "TEXT OPERATIONS",

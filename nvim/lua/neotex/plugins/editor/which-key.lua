@@ -205,9 +205,11 @@ RUN (<leader>r)                                 | DESCRIPTION
 ----------------------------------------------------------------------------------
 SURROUND (<leader>s)                            | DESCRIPTION
 ----------------------------------------------------------------------------------
-<leader>ss - Surround                           | Surround with characters
-<leader>sd - Delete surround                    | Remove surrounding characters
-<leader>sc - Change surround                    | Change surrounding characters
+<leader>ss - Add surrounding                    | Add surrounding to text (requires motion)
+<leader>sd - Delete surrounding                 | Remove surrounding characters
+<leader>sc - Change surrounding                 | Replace surrounding characters
+<leader>sf - Find surrounding                   | Find surrounding characters
+<leader>sh - Highlight surrounding              | Highlight surrounding characters
 
 ----------------------------------------------------------------------------------
 TEMPLATES (<leader>t)                           | DESCRIPTION
@@ -551,9 +553,11 @@ return {
       },
       s = {
         name = "SURROUND",
-        s = { "<Plug>(nvim-surround-normal)", "surround" },
-        d = { "<Plug>(nvim-surround-delete)", "delete" },
-        c = { "<Plug>(nvim-surround-change)", "change" },
+        s = { "<cmd>lua require('mini.surround').add()<cr>", "add surrounding" },
+        d = { "<cmd>lua require('mini.surround').delete()<cr>", "delete surrounding" },
+        c = { "<cmd>lua require('mini.surround').replace()<cr>", "change surrounding" },
+        f = { "<cmd>lua require('mini.surround').find()<cr>", "find surrounding" },
+        h = { "<cmd>lua require('mini.surround').highlight()<cr>", "highlight surrounding" },
       },
       t = {
         name = "TEMPLATES",
@@ -609,5 +613,13 @@ return {
     local wk = require("which-key")
     wk.setup(opts.setup)
     wk.register(opts.defaults)
+
+    -- Register visual mode mappings for surround operations
+    wk.register({
+      ["<leader>s"] = {
+        name = "SURROUND",
+        s = { "<cmd>lua require('mini.surround').add('visual')<cr>", "add surrounding to selection" },
+      }
+    }, { mode = "v" })
   end,
 }

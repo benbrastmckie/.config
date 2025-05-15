@@ -1,12 +1,24 @@
 # TODO
 
+-
 - avante
+  - search/replace
+  -
 - mcphub
   - lazy load
 - latex
   - [x] highlighting
-  - surround
-  - pairs
+  - [:] pairs
+  - [x] surround
+    - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
+    - [x] Fix surround keybindings conflict between mini.surround and which-key
+      - [x] Aligned key references in documentation with actual keybindings
+      - [x] Fixed mismatch between `<leader>ss` (surround) vs `<leader>sa` (add surrounding)
+      - [x] Fixed mismatch between `<leader>sc` (change) vs `<leader>sr` (replace)
+      - [x] Fixed API calls by using the correct mini.surround functions
+      - [x] Updated commands to directly use require('mini.surround').function_name()
+      - [x] Corrected visual mode mapping to use add('visual') method
+  - https://github.com/ahrm/sioyek
 - [.] docs
   - [ ] learning git
   - [ ] cheatsheet
