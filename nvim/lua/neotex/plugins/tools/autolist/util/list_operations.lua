@@ -1,6 +1,6 @@
 -- Autolist core operations module
 local M = {}
-local utils = require("neotex.utils.autolist.utils")
+local utils = require("neotex.plugins.tools.autolist.util.utils")
 local auto = nil
 
 -- Will be set during initialization

@@ -42,8 +42,8 @@ return {
     })
     
     -- Load our custom autolist modules
-    require("neotex.utils.autolist.commands").setup()
-    require("neotex.utils.autolist.integration").setup()
+    require("neotex.plugins.tools.autolist.util.commands").setup()
+    require("neotex.plugins.tools.autolist.util.integration").setup()
     
     -- Set up global flags for tracking state
     _G._last_tab_was_indent = false
