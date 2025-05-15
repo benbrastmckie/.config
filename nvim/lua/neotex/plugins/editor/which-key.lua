@@ -459,7 +459,8 @@ return {
       },
       L = {
         name = "LIST",
-        c = { "<cmd>lua HandleCheckbox()<CR>", "checkbox" },
+        c = { "<cmd>lua IncrementCheckbox()<CR>", "increment checkbox" },
+        d = { "<cmd>lua DecrementCheckbox()<CR>", "decrement checkbox" },
         n = { "<cmd>AutolistCycleNext<CR>", "next" },
         p = { "<cmd>AutolistCyclePrev<CR>", "previous" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder" },

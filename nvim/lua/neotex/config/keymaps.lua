@@ -168,8 +168,11 @@ function M.setup()
         { expr = true, buffer = true, desc = "Smart list unindent (C-D)" })
       
       -- Normal mode keymaps
-      vim.keymap.set("n", "<C-n>", "<cmd>AutolistToggleCheckbox<CR>", 
-        { buffer = true, desc = "Toggle checkbox" })
+      vim.keymap.set("n", "<C-n>", "<cmd>AutolistIncrementCheckbox<CR>", 
+        { buffer = true, desc = "Increment checkbox" })
+      
+      vim.keymap.set("n", "<A-n>", "<cmd>AutolistDecrementCheckbox<CR>", 
+        { buffer = true, desc = "Decrement checkbox" })
       
       vim.keymap.set("n", "o", "o<cmd>AutolistNewBullet<cr>", 
         { buffer = true, desc = "New bullet below" })
@@ -197,7 +200,8 @@ function M.setup()
       buf_map(0, "i", "<CR>", "<CR><cmd>AutolistNewBullet<cr>", "New bullet point")
       buf_map(0, "n", "o", "o<cmd>AutolistNewBullet<cr>", "New bullet below")
       buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
-      buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
+      buf_map(0, "n", "<C-n>", "<cmd>lua IncrementCheckbox()<CR>", "Increment checkbox")
+      buf_map(0, "n", "<A-n>", "<cmd>lua DecrementCheckbox()<CR>", "Decrement checkbox")
     end
   end
 
