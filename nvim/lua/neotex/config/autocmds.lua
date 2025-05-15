@@ -26,8 +26,8 @@ function M.setup()
     {
       pattern = "*/avante.nvim.md",
       callback = function(ev)
-        vim.bo[ev.buf].filetype = "help"  -- Set filetype to help
-        vim.wo.winfixbuf = true  -- Set as fixed buffer
+        vim.bo[ev.buf].filetype = "help" -- Set filetype to help
+        vim.wo.winfixbuf = true          -- Set as fixed buffer
         vim.keymap.set("n", "q", ":close<CR>", { buffer = ev.buf, silent = true })
       end,
     }
@@ -44,8 +44,9 @@ function M.setup()
     pattern = { "*.md" },
     command = "lua set_markdown_keymaps()",
   })
-  
+
   return true
 end
 
 return M
+

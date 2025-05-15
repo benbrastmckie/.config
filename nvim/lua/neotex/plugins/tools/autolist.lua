@@ -7,10 +7,7 @@ return {
   config = function()
     local autolist = require('autolist')
     
-    -- Access autolist configuration
-    local autolist_config = require("autolist.config")
-    
-    -- Setup autolist with configuration
+    -- Setup autolist with minimal configuration
     autolist.setup({
       lists = {
         -- Disable roman numerals and use simple numbered lists
@@ -29,7 +26,9 @@ return {
       },
       enabled = true,
       cycle = {"1.", "-", "*", "+"},  -- Cycle between these list types
-      smart_indent = true,      -- Enable smart indentation
+      
+      -- VERY IMPORTANT: Disable smart indentation to prevent Tab key interference
+      smart_indent = false,
       
       -- Disable automatic list continuation after colon
       colon = {
@@ -38,80 +37,12 @@ return {
         preferred = "-"      -- Default bullet if needed
       },
       
-      -- IMPORTANT: Disable all keymaps to prevent conflicts
+      -- IMPORTANT: Disable all built-in keymaps to prevent Tab/Shift-Tab issues
       custom_keys = false
     })
     
-    -- Safe way to access autolist.auto after setup
+    -- Access autolist functions after setup
     local auto = require("autolist.auto")
-    
-    -- Completely rewritten Tab implementation without expression mapping
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = {"markdown", "norg"}, 
-      callback = function()
-        -- Map Tab key directly, not using expression mapping
-        vim.keymap.set("i", "<Tab>", function() 
-          -- Get current line and cursor position
-          local line = vim.fn.getline(".")
-          local cursor_pos = vim.api.nvim_win_get_cursor(0)
-          local row, col = cursor_pos[1], cursor_pos[2]
-          
-          -- Check if this is a list item
-          if not is_list_item(line) then
-            -- Not a list item, send a tab character
-            vim.api.nvim_feedkeys(
-              vim.api.nvim_replace_termcodes("<Tab>", true, false, true),
-              "i", true  -- Use "i" for insert mode instead of "n"
-            )
-            return
-          end
-          
-          -- Determine if we're at the beginning of content
-          local prefix_length = 0
-          
-          -- Get bullet/indentation prefix length
-          local bullet_match = line:match("^(%s*[-+*]%s+)")
-          local number_match = line:match("^(%s*%d+%.%s+)")
-          
-          if bullet_match then
-            prefix_length = #bullet_match
-          elseif number_match then
-            prefix_length = #number_match
-          else
-            prefix_length = #(line:match("^%s*") or "")
-          end
-          
-          -- If cursor is not at beginning, insert a tab character directly
-          if col > prefix_length then
-            -- Get the current line
-            local current_line = vim.fn.getline(".")
-            
-            -- Split the line at cursor position
-            local before_cursor = string.sub(current_line, 1, col)
-            local after_cursor = string.sub(current_line, col + 1)
-            
-            -- Insert a tab character at cursor position
-            local new_line = before_cursor .. "\t" .. after_cursor
-            
-            -- Update the line
-            vim.api.nvim_buf_set_lines(0, row-1, row, false, {new_line})
-            
-            -- Move cursor after the tab
-            vim.api.nvim_win_set_cursor(0, {row, col + 1})
-            
-            return
-          end
-          
-          -- We're at the beginning of a list item - indent the whole line
-          local new_line = "  " .. line
-          vim.api.nvim_buf_set_lines(0, row-1, row, false, {new_line})
-          vim.api.nvim_win_set_cursor(0, {row, col+2})
-          
-          -- Recalculate list numbering
-          pcall(function() auto.recalculate() end)
-        end, { buffer = true, desc = "Direct Tab handling for lists" })
-      end
-    })
     
     -- Define helper function for list item detection
     local function is_list_item(line)
@@ -126,10 +57,30 @@ return {
       return false
     end
     
-    -- Leaving this commented to avoid confusion with older code
-    -- -- Unused helper function - removed in favor of direct <C-D> approach
+    -- Create wrapper function that suppresses notifications
+    local function silent_exec(func)
+      -- Save previous notification function
+      local old_notify = vim.notify
+      -- Create temporary notification function that filters out autolist messages
+      vim.notify = function(msg, level, opts)
+        if not msg:match("recalculate") and not msg:match("indent") then
+          old_notify(msg, level, opts)
+        end
+      end
+      
+      -- Execute the function
+      local result = pcall(func)
+      
+      -- Restore original notification function
+      vim.notify = old_notify
+      
+      return result
+    end
     
-    -- Improved Enter key handling for list creation
+    -- Instead of trying to delete keymaps, we'll just ensure autolist's keymaps
+    -- are disabled in the setup and not create our own custom mappings
+    
+    -- Preserve Enter key handling which works correctly
     vim.api.nvim_create_autocmd("FileType", {
       pattern = {"markdown", "norg"},
       callback = function()
@@ -167,27 +118,7 @@ return {
       end
     })
     
-    -- Create a wrapper function that suppresses notifications
-    local function silent_exec(func)
-      -- Save previous notification function
-      local old_notify = vim.notify
-      -- Create temporary notification function that filters out autolist messages
-      vim.notify = function(msg, level, opts)
-        if not msg:match("recalculate") and not msg:match("indent") then
-          old_notify(msg, level, opts)
-        end
-      end
-      
-      -- Execute the function
-      local result = pcall(func)
-      
-      -- Restore original notification function
-      vim.notify = old_notify
-      
-      return result
-    end
-    
-    -- Handle o and O keys to create bullets only for list items
+    -- Keep o and O behavior which works correctly
     vim.api.nvim_create_autocmd("FileType", {
       pattern = {"markdown", "norg"},
       callback = function()
@@ -209,47 +140,6 @@ return {
           end, { expr = true, buffer = true, desc = "Smart list-aware " .. key })
         end
       end 
-    })
-    
-    -- Rewritten Shift-Tab implementation without expression mapping
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = {"markdown", "norg"},
-      callback = function()
-        -- Map Shift-Tab key directly
-        vim.keymap.set("i", "<S-Tab>", function()
-          -- Get current line and cursor info
-          local line = vim.fn.getline(".")
-          local cursor_pos = vim.api.nvim_win_get_cursor(0)
-          local row, col = cursor_pos[1], cursor_pos[2]
-          
-          -- If not a list item, use standard <C-D> behavior
-          if not is_list_item(line) then
-            vim.api.nvim_feedkeys(
-              vim.api.nvim_replace_termcodes("<C-D>", true, false, true),
-              "i", true  -- Use "i" for insert mode instead of "n"
-            )
-            return
-          end
-          
-          -- Check if there's indentation to remove
-          local indent = line:match("^%s*") or ""
-          if #indent < 2 then
-            -- Not enough indentation, do nothing
-            return
-          end
-          
-          -- Use standard Vim dedent and then recalculate
-          vim.api.nvim_feedkeys(
-            vim.api.nvim_replace_termcodes("<C-D>", true, false, true),
-            "i", true  -- Use "i" for insert mode instead of "n"
-          )
-          
-          -- Schedule recalculate to run after the <C-D> completes
-          vim.defer_fn(function() 
-            pcall(function() auto.recalculate() end)
-          end, 20)
-        end, { buffer = true, desc = "Direct Shift-Tab handling for lists" })
-      end
     })
     
     -- Add commands for integration with which-key mappings with proper error handling
@@ -326,5 +216,119 @@ return {
       -- Update the line with new content
       vim.fn.setline(current_line, new_line)
     end
+    
+    -- CUSTOM TAB FUNCTIONS FOR MARKDOWN
+    -- These functions create a more elegant way to handle Tab and Shift-Tab
+    -- in markdown files with bulleted lists
+    
+    -- AutolistTab - Indents the whole line and keeps cursor in insert mode
+    function _G.AutolistTab()
+      -- Get current line info
+      local line = vim.fn.getline(".")
+      local cursor_pos = vim.api.nvim_win_get_cursor(0)
+      local row, col = cursor_pos[1], cursor_pos[2]
+      
+      -- Check if this is a list item
+      if not is_list_item(line) then
+        -- Not a list - use default Tab behavior
+        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+      end
+
+      -- Remember cursor position relative to end of line
+      local end_col = #line
+      local from_end = end_col - col
+      
+      -- Use Lua API to indent instead of vim.cmd to avoid E523 errors
+      local indent_size = vim.bo.shiftwidth
+      local current_line = vim.api.nvim_get_current_line()
+      local indented_line = string.rep(" ", indent_size) .. current_line
+      vim.api.nvim_set_current_line(indented_line)
+      
+      -- Recalculate list after indentation
+      silent_exec(function() 
+        auto.recalculate() 
+      end)
+      
+      -- Get new line length after indentation
+      local new_line = vim.fn.getline(".")
+      local new_end_col = #new_line
+      
+      -- Calculate new cursor position
+      local new_col = math.max(0, new_end_col - from_end)
+      
+      -- Set the cursor to the new position (no need to exit/re-enter insert mode)
+      vim.api.nvim_win_set_cursor(0, {row, new_col})
+      
+      -- Return empty string as we've handled the key press
+      return ""
+    end
+    
+    -- AutolistShiftTab - Unindents the whole line and keeps cursor in insert mode
+    function _G.AutolistShiftTab()
+      -- Get current line info
+      local line = vim.fn.getline(".")
+      local cursor_pos = vim.api.nvim_win_get_cursor(0)
+      local row, col = cursor_pos[1], cursor_pos[2]
+      
+      -- Check if this is a list item
+      if not is_list_item(line) then
+        -- Not a list - use default Shift-Tab behavior
+        return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
+      end
+      
+      -- Check indentation level
+      local indent = line:match("^%s*") or ""
+      if #indent < 2 then
+        -- Not enough indentation to remove
+        return ""
+      end
+      
+      -- Remember cursor position relative to end of line
+      local end_col = #line
+      local from_end = end_col - col
+      
+      -- Use Lua API to unindent instead of vim.cmd to avoid E523 errors
+      local indent_size = vim.bo.shiftwidth
+      local current_line = vim.api.nvim_get_current_line()
+      
+      -- Only remove indentation if there's enough to remove
+      if current_line:sub(1, indent_size):match("^%s+$") then
+        local unindented_line = current_line:sub(indent_size + 1)
+        vim.api.nvim_set_current_line(unindented_line)
+      end
+      
+      -- Recalculate list after unindentation
+      silent_exec(function() 
+        auto.recalculate() 
+      end)
+      
+      -- Get new line length after unindentation
+      local new_line = vim.fn.getline(".")
+      local new_end_col = #new_line
+      
+      -- Calculate new cursor position
+      local new_col = math.max(0, new_end_col - from_end)
+      
+      -- Set the cursor to the new position (no need to exit/re-enter insert mode)
+      vim.api.nvim_win_set_cursor(0, {row, new_col})
+      
+      -- Return empty string as we've handled the key press
+      return ""
+    end
+    
+    -- Register commands for the new functions
+    vim.api.nvim_create_user_command('AutolistTab', function()
+      local result = _G.AutolistTab()
+      if result and result ~= "" then
+        vim.api.nvim_feedkeys(result, "n", true)
+      end
+    end, {})
+    
+    vim.api.nvim_create_user_command('AutolistShiftTab', function()
+      local result = _G.AutolistShiftTab()
+      if result and result ~= "" then
+        vim.api.nvim_feedkeys(result, "n", true)
+      end
+    end, {})
   end,
 }

@@ -147,9 +147,9 @@ function M.setup()
     buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
     buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
 
-    -- Indentation and recalculation
-    buf_map(0, "i", "<tab>", "<Esc>><cmd>AutolistRecalculate<cr>a<space>", "Indent bullet")
-    buf_map(0, "i", "<S-tab>", "<Esc><<cmd>AutolistRecalculate<cr>a", "Unindent bullet")
+    -- Smart indentation using our elegant custom functions
+    vim.keymap.set("i", "<Tab>", function() return _G.AutolistTab() end, { buffer = true, expr = true, desc = "Smart list indent" })
+    vim.keymap.set("i", "<S-Tab>", function() return _G.AutolistShiftTab() end, { buffer = true, expr = true, desc = "Smart list unindent" })
     buf_map(0, "n", ">", "><cmd>AutolistRecalculate<cr>", "Indent bullet")
     buf_map(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", "Unindent bullet")
     buf_map(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", "Recalculate list")
