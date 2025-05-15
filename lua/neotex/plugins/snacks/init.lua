@@ -24,7 +24,6 @@ return {
       enabled = true,
       preset = require("neotex.plugins.snacks.dashboard").preset,
       sections = require("neotex.plugins.snacks.dashboard").sections,
-      -- sections = require("neotex.plugins.snacks.gh_dashboard").sections,
     },
     git = { enabled = true },
     gitbrowse = { enabled = true },

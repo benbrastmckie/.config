@@ -1,13 +1,47 @@
 # TODO
 
-- move the following from `tools/` into `editor/`
-  - autolist.lua
-  - sessions.lua
-  - telescope.lua
-  - toggleterm.lua
-  - treesitter.lua
-- Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
-- Remove `gh_dashboard.lua`
+- [x] move the following from `editor/` into `tools/`
+  - [x] autolist.lua
+  - [x] mini.lua
+  - [x] surround.lua
+  - [x] todo-comments.lua
+  - [x] yanky.lua
+- [x] move `sessions.lua` the following from `editor/` into `ui/`
+- [x] move the following from `tools/` into `editor/`
+  - [x] autolist.lua
+  - [x] sessions.lua
+  - [x] telescope.lua
+  - [x] toggleterm.lua
+  - [x] treesitter.lua
+- [x] remove redundant files between directories
+  - [x] Remove duplicate files from editor directory
+  - [x] Remove duplicate files from tools directory
+  - [x] Move sessions.lua to ui directory
+- [x] Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
+- [x] Remove `gh_dashboard.lua`
+- [x] improve `autolist.lua`
+  - [x] make <S-TAB> in insert mode on a list un-indent one tab
+  - [x] check for autocommands or other autolist configuration that could be consolidated, improved, or better organized
+  - [x] prevent autolist from creating a new indented line when creating a new line from a line that ends with ':'
+  - [x] fix errors on tabbing on a bullet item in insert mode: 
+       - Failed to recalculate list: ...jamin/.config/nvim/lua/neotex/plugins/tools/autolist.lua:137: attempt to call field 'force_recalculate' (a nil value)
+  - [ ] remove message when line is indented
+  - [ ] make shift-tab work (does nothing currently)
+  - [ ] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
+- mini.pairs
+  - Fails to pass over closing ' and `
+- Nvim Tree
+  - Persistent pane size for nvimtree until restarting neovim
+  - Make heading background color match the background color of buffer line
+  - fix error:
+    - Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
+- Which Key
+  - [ ] Add icons
+  - [ ] Specify file types when relevant
+  - [ ] Improve organization of mappings
+  - [ ] Add descriptive comments
+- buffers
+  - always show active tab
 - avante
   - search/replace
   - improve ui for accept/reject
@@ -19,8 +53,6 @@
   - make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
 	  - system is NixOS
 	  - mcphub has not already been installed
-- buffers
-  - always show active tab
 - latex
   - [x] highlighting
   - [x] pairs
