@@ -1,9 +1,13 @@
 # TODO
 
+- move the following from `tools/` into `editor/`
+  - autolist.lua
+  - sessions.lua
+  - telescope.lua
+  - toggleterm.lua
+  - treesitter.lua
 - Move modules in `plugins/coding` into `plugins/editor` and remove `plugins/coding` altogether
-- Remove `gh_dashboard.lua` if not used
-- buffers
-  - always show active tab
+- Remove `gh_dashboard.lua`
 - avante
   - search/replace
   - improve ui for accept/reject
@@ -12,6 +16,11 @@
 - mcphub
   - lazy load when avante starts
   - run tests to confirm that mcp works with avante
+  - make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
+	  - system is NixOS
+	  - mcphub has not already been installed
+- buffers
+  - always show active tab
 - latex
   - [x] highlighting
   - [x] pairs
