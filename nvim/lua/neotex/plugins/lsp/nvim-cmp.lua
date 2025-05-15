@@ -78,6 +78,14 @@ return {
         ["<CR>"] = cmp.mapping.confirm({ select = false }),
         -- supertab
         ["<Tab>"] = cmp.mapping(function(fallback)
+          -- Check if we should prevent cmp menu due to Tab being used for indentation
+          if _G._prevent_cmp_menu then
+            -- If Tab was just used for list indentation, don't show completion menu
+            fallback()
+            return
+          end
+          
+          -- Standard cmp Tab behavior
           if luasnip.expandable() then
             luasnip.expand()
           elseif luasnip.locally_jumpable(1) then
@@ -96,13 +104,32 @@ return {
           --   cmp.confirm()
           -- elseif has_words_before() then
           --  cmp.complete()
-        ["<S-Tab>"] = cmp.mapping(function() -- could be: function(fallback) -- OR: function(delete-two-spaces????)
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+          -- Check if we're in a list item first
+          local line = vim.fn.getline(".")
+          local is_list = false
+          
+          -- Quick check for list items
+          for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+            if line:match("^%s*" .. pattern .. "%s") then
+              is_list = true
+              break
+            end
+          end
+          
+          if is_list then
+            -- Call our unindent function if we have it available
+            local ok = pcall(function() vim.cmd("AutolistUnindent") end)
+            if ok then return end
+          end
+          
+          -- Standard cmp Shift-Tab behavior
           if cmp.visible() then
             cmp.select_prev_item()
           elseif luasnip.locally_jumpable(-1) then
             luasnip.jump(-1)
           else
-            -- fallback()
+            fallback()
           end
         end, { "i", "s" }),
       }),

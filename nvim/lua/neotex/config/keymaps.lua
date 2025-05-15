@@ -147,9 +147,100 @@ function M.setup()
     buf_map(0, "n", "O", "O<cmd>AutolistNewBulletBefore<cr>", "New bullet above")
     buf_map(0, "n", "<C-n>", "<cmd>lua HandleCheckbox()<CR>", "Toggle checkbox")
 
-    -- Smart indentation using our elegant custom functions
-    vim.keymap.set("i", "<Tab>", function() return _G.AutolistTab() end, { buffer = true, expr = true, desc = "Smart list indent" })
-    vim.keymap.set("i", "<S-Tab>", function() return _G.AutolistShiftTab() end, { buffer = true, expr = true, desc = "Smart list unindent" })
+    -- Smart indentation using direct function calls
+    vim.keymap.set("i", "<Tab>", function()
+      -- Check for cmp completion menu first - if visible, use it
+      local cmp_exists, cmp = pcall(require, "cmp")
+      if cmp_exists and cmp.visible() then
+        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+      end
+      
+      -- If we just used Tab for indentation, don't trigger cmp
+      if _G._last_tab_was_indent then
+        _G._last_tab_was_indent = false
+        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+      end
+      
+      -- Check if we're in a list item
+      local line = vim.fn.getline(".")
+      local is_list = false
+      
+      -- Quick check for list items
+      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+        if line:match("^%s*" .. pattern .. "%s") then
+          is_list = true
+          break
+        end
+      end
+      
+      if is_list then
+        -- If we're in a list, use our command
+        vim.cmd("AutolistIndent")
+        return ""
+      else
+        -- Otherwise pass through normal behavior
+        return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+      end
+    end, { buffer = true, expr = true, desc = "Smart list indent" })
+    
+    -- Map both Shift-Tab and Ctrl-D for better terminal compatibility
+    vim.keymap.set("i", "<S-Tab>", function()
+      -- Check for cmp completion menu first
+      local cmp_exists, cmp = pcall(require, "cmp")
+      if cmp_exists and cmp.visible() then
+        return vim.api.nvim_replace_termcodes("<S-Tab>", true, true, true)
+      end
+      
+      -- Check if we're in a list item
+      local line = vim.fn.getline(".")
+      local is_list = false
+      
+      -- Quick check for list items
+      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+        if line:match("^%s*" .. pattern .. "%s") then
+          is_list = true
+          break
+        end
+      end
+      
+      if is_list then
+        -- If we're in a list, use our command
+        vim.cmd("AutolistUnindent")
+        return ""
+      else
+        -- Otherwise pass through normal behavior
+        return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
+      end
+    end, { buffer = true, expr = true, desc = "Smart list unindent" })
+    
+    vim.keymap.set("i", "<C-D>", function()
+      -- Check for cmp completion menu first
+      local cmp_exists, cmp = pcall(require, "cmp")
+      if cmp_exists and cmp.visible() then
+        return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
+      end
+      
+      -- Check if we're in a list item
+      local line = vim.fn.getline(".")
+      local is_list = false
+      
+      -- Quick check for list items
+      for _, pattern in ipairs({"-", "*", "+", "%d%."}) do
+        if line:match("^%s*" .. pattern .. "%s") then
+          is_list = true
+          break
+        end
+      end
+      
+      if is_list then
+        -- If we're in a list, use our command
+        vim.cmd("AutolistUnindent")
+        return ""
+      else
+        -- Otherwise pass through normal behavior
+        return vim.api.nvim_replace_termcodes("<C-D>", true, true, true)
+      end
+    end, { buffer = true, expr = true, desc = "Smart list unindent (C-D)" })
     buf_map(0, "n", ">", "><cmd>AutolistRecalculate<cr>", "Indent bullet")
     buf_map(0, "n", "<", "<<cmd>AutolistRecalculate<cr>", "Unindent bullet")
     buf_map(0, "n", "<C-c>", "<cmd>AutolistRecalculate<cr>", "Recalculate list")
