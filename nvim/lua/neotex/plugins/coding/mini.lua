@@ -19,7 +19,7 @@ return {
   version = false,
   event = { "VeryLazy" }, -- Load earlier to ensure comment functionality works
   dependencies = {
-    "hrsh7th/nvim-cmp",      -- For integration with completion
+    "hrsh7th/nvim-cmp",   -- For integration with completion
   },
   config = function()
     -- Configure mini.cursorword for highlighting word occurrences
@@ -171,7 +171,7 @@ return {
         ['"'] = { action = 'open', pair = '""', neigh_pattern = '[^\\].' },
         ["'"] = { action = 'open', pair = "''", neigh_pattern = '[^\\].' },
         ['`'] = { action = 'open', pair = '``', neigh_pattern = '[^\\].' },
-        ['$'] = { action = 'open', pair = '$$', neigh_pattern = '[^\\].' }, -- For LaTeX
+        ['$'] = { action = 'open', pair = '$$', neigh_pattern = '[^\\].' },
 
         -- Move right upon closing character input
         [')'] = { action = 'close', pair = '()', neigh_pattern = '[^\\].' },
@@ -227,10 +227,49 @@ return {
         callback = function()
           vim.b.minipairs_config = {
             mappings = {
-              ['`'] = { action = 'open', pair = '`\'', neigh_pattern = '[^\\].' },
-              ['\''] = { action = 'close', pair = '`\'', neigh_pattern = '[^\\].' },
+              -- LaTeX quotes - using custom implementation to ensure correct behavior
+              -- Disable standard backtick and single quote pairing
+              ['`'] = nil,
+              ["'"] = nil,
+
+              -- LaTeX math mode $ (simple explicit configuration)
+              ['$'] = { action = 'open', pair = '$$', neigh_pattern = '[^\\].' }
             }
           }
+
+          -- Custom mapping for backtick to handle LaTeX quotes properly
+          vim.keymap.set('i', '`', function()
+            -- Insert the opening backtick and the closing quote with cursor positioned between them
+            return "`'<Left>"
+          end, { buffer = true, expr = true, silent = true })
+
+          -- Create a custom mapping for $ to handle closing/skipping
+          vim.keymap.set('i', '$', function()
+            local col = vim.api.nvim_win_get_cursor(0)[2]
+            local line = vim.api.nvim_get_current_line()
+
+            -- If the next character is $, skip over it instead of inserting a new one
+            if col < #line and line:sub(col + 1, col + 1) == '$' then
+              return "<Right>"
+            end
+
+            -- Otherwise insert $ normally, which will pair with minipairs
+            return "$"
+          end, { buffer = true, expr = true, silent = true })
+
+          -- Simple and reliable mapping for $ to handle both pairing and skipping
+          vim.keymap.set('i', '$', function()
+            local col = vim.api.nvim_win_get_cursor(0)[2]
+            local line = vim.api.nvim_get_current_line()
+
+            -- If next character is $, skip over it instead of inserting a new one
+            if col < #line and line:sub(col + 1, col + 1) == '$' then
+              return "<Right>"
+            end
+
+            -- Otherwise insert a pair of $$ and position cursor between them
+            return "$$<Left>"
+          end, { buffer = true, expr = true, silent = true })
         end,
       })
     end
@@ -403,4 +442,3 @@ return {
     end
   end,
 }
-

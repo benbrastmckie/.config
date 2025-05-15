@@ -1,8 +1,12 @@
 # TODO
 
+- avante
+- mcphub
+  - lazy load
 - latex
-  - highlighting
+  - [x] highlighting
   - surround
+  - pairs
 - [.] docs
   - [ ] learning git
   - [ ] cheatsheet
