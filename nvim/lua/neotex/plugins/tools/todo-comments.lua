@@ -29,19 +29,19 @@ return {
       signs = true,      -- Show icons in the signs column
       sign_priority = 8, -- Sign priority
 
-      -- Keywords recognized as todo comments
+      -- Keywords recognized as todo comments with stylized icons
       keywords = {
         FIX = {
-          icon = " ",                                 -- Icon used for the sign
+          icon = "󰁨 ",                                -- Icon used for the sign (stylized wrench)
           color = "error",                            -- Can be a hex color, or a named color
           alt = { "FIXME", "BUG", "FIXIT", "ISSUE" }, -- Alternative keywords for the same group
         },
-        TODO = { icon = "📝", color = "info" },
-        HACK = { icon = "⚡", color = "warning" },
-        WARN = { icon = "⚠️", color = "warning", alt = { "WARNING" } },
-        PERF = { icon = "🚀", color = "default", alt = { "OPTIM", "PERFORMANCE", "OPTIMIZE" } },
-        NOTE = { icon = "📌", color = "hint", alt = { "INFO" } },
-        TEST = { icon = "🧪", color = "test", alt = { "TESTING", "PASSED", "FAILED" } },
+        TODO = { icon = "󰄬 ", color = "info" },       -- Stylized checkbox
+        HACK = { icon = "󰉀 ", color = "warning" },    -- Stylized lightning bolt
+        WARN = { icon = "󰀪 ", color = "warning", alt = { "WARNING" } }, -- Stylized warning triangle
+        PERF = { icon = "󰓅 ", color = "default", alt = { "OPTIM", "PERFORMANCE", "OPTIMIZE" } }, -- Stylized gauge/speedometer
+        NOTE = { icon = "󰍨 ", color = "hint", alt = { "INFO" } },      -- Stylized note/pin
+        TEST = { icon = "󰙨 ", color = "test", alt = { "TESTING", "PASSED", "FAILED" } }, -- Stylized test tube
       },
 
       -- Highlight groups (colors)
@@ -120,17 +120,17 @@ return {
     local has_which_key, which_key = pcall(require, "which-key")
     if has_which_key then
       which_key.register({
-        ["<leader>ft"] = { "<cmd>TodoTelescope<CR>", "Find TODOs" },
+        ["<leader>ft"] = { "<cmd>TodoTelescope<CR>", "todos" },
       })
 
       which_key.register({
         t = {
           name = "TODO",
-          t = { "<cmd>TodoTelescope<CR>", "Find TODOs" },
-          n = { function() require("todo-comments").jump_next() end, "Next TODO" },
-          p = { function() require("todo-comments").jump_prev() end, "Previous TODO" },
-          l = { "<cmd>TodoLocList<CR>", "TODOs in location list" },
-          q = { "<cmd>TodoQuickFix<CR>", "TODOs in quickfix list" },
+          t = { "<cmd>TodoTelescope<CR>", "todos" },
+          n = { function() require("todo-comments").jump_next() end, "next todo" },
+          p = { function() require("todo-comments").jump_prev() end, "previous todo" },
+          l = { "<cmd>TodoLocList<CR>", "todo location list" },
+          q = { "<cmd>TodoQuickFix<CR>", "todo quickfix" },
         },
       }, { prefix = "<leader>" })
     end
