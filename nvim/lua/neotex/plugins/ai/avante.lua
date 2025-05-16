@@ -44,10 +44,9 @@ return {
     -- Create Avante commands that trigger MCPHub loading first
     local function create_avante_command(name, command)
       vim.api.nvim_create_user_command(name, function(opts)
-        -- Trigger an event to lazy-load MCPHub
-        vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-        -- Then run the actual Avante command
-        vim.cmd(command .. " " .. (opts.args or ""))
+        -- Use our helper function to ensure MCPHub is loaded and run Avante
+        local ensure_mcphub = require("neotex.util.ensure_mcphub")
+        ensure_mcphub.load_and_run_mcphub_for_avante(command .. " " .. (opts.args or ""))
       end, { nargs = "*" })
     end
     
@@ -55,6 +54,7 @@ return {
     create_avante_command("AvanteAsk", "AvanteAsk")
     create_avante_command("AvanteChat", "AvanteChat")
     create_avante_command("AvanteToggle", "AvanteToggle")
+    create_avante_command("AvanteEdit", "AvanteEdit")
     
     -- Add special handling for MCPHub integration when Avante starts
     vim.api.nvim_create_autocmd("FileType", {

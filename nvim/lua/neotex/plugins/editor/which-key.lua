@@ -411,22 +411,16 @@ return {
         name = "AI HELP",
         -- Avante commands with MCPHub loading via event
         a = { function() 
-          -- Trigger event to load MCPHub first
-          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-          -- Open Avante
-          vim.cmd("AvanteAsk")
+          -- Use the helper function to load MCPHub and run Avante
+          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteAsk")
         end, "ask" },
         c = { function() 
-          -- Trigger event to load MCPHub first
-          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-          -- Open Avante
-          vim.cmd("AvanteChat")
+          -- Use the helper function to load MCPHub and run Avante
+          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteChat")
         end, "chat" },
         t = { function() 
-          -- Trigger event to load MCPHub first
-          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-          -- Open Avante
-          vim.cmd("AvanteToggle")
+          -- Use the helper function to load MCPHub and run Avante
+          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteToggle")
         end, "toggle" },
         
         -- Standard Avante commands (don't need MCPHub)
@@ -439,13 +433,11 @@ return {
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
         p = { "<cmd>AvantePrompt<CR>", "select prompt" },
         s = { function()
-          -- Trigger event to load MCPHub first
-          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-          -- Open Avante
-          vim.cmd("AvanteEdit")
+          -- Use the helper function to load MCPHub and run Avante
+          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteEdit")
         end, "edit selection" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
-        x = { "<cmd>MCPHub<CR>", "start MCPHub" },
+        x = { "<cmd>MCPHubLoad<CR>", "start MCPHub" },
       },
       --   HARPOON
       --   a = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },

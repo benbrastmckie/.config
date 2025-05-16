@@ -25,15 +25,19 @@ end
 
 -- Load the AI plugin modules
 local avante_plugin = safe_require("neotex.plugins.ai.avante")
-local mcp_hub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
 
--- Return plugin specs but with explicit ordering
--- to ensure MCPHub is not loaded by dependency
+-- Load the optional MCPHub loader (completely isolated)
+-- This runs in a completely separate loading context
+local mcphub_loader_plugin = safe_require("neotex.plugins.ai.mcphub-loader")
+
+-- Return plugin specs with MCPHub completely isolated
 return {
+  -- Core plugins
   avante_plugin,
-  -- Place MCPHub after other plugins to ensure proper lazy loading
-  -- This order matters - MCPHub should be loaded after Avante when needed
-  mcp_hub_plugin, 
   lectic_plugin,
+  
+  -- Add MCPHub loader as a completely separate plugin
+  -- This will be loaded ONLY when specifically triggered
+  mcphub_loader_plugin,
 }
