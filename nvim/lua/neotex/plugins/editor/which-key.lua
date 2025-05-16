@@ -301,8 +301,8 @@ return {
       -- operators = { gc = "Comments" },
       icons = {
         breadcrumb = "»", -- symbol used in the command line area that shows your active key combo
-        separator = "➜", -- symbol used between a key and it's label
-        group = "+", -- symbol prepended to a group
+        separator = "➜", -- Separator between key and label
+        group = "+", -- The symbol prepended to a group
       },
       layout = {
         width = { min = 20, max = 50 }, -- min and max width of the columns
@@ -484,7 +484,7 @@ return {
         y = { "<cmd>lua CopyDiagnosticsToClipboard()<CR>", "copy diagnostics to clipboard" },
         R = { "<cmd>lua vim.lsp.buf.rename()<CR>", "rename" },
         -- T = { "<cmd>Telescope lsp_type_definitions<CR>", "type definition" },
-        
+
         -- Linting operations
         L = { function() require("lint").try_lint() end, "lint file" },
         g = { "<cmd>LintToggle<CR>", "toggle global linting" },
@@ -593,19 +593,132 @@ return {
           "MultipleAnswer.tex",
         },
       },
-      x = {
-        name = "TEXT",
-        a = { "ga", "align" },
-        A = { "gA", "align with preview" },
-        s = { "gS", "split/join toggle" },
-        d = { function() require('mini.diff').toggle_overlay() end, "toggle diff overlay" },
-        w = { function() require('mini.diff').toggle_word_diff() end, "toggle word diff" },
-      },
     },
   },
   config = function(_, opts)
     local wk = require("which-key")
+
+    -- Set up the base configuration
     wk.setup(opts.setup)
+
+    -- Define our icon map with explicit spacing to position them right after the separator arrow
+    local icons = {
+      -- Top level command icons
+      b = "󰖷 ", -- build
+      c = "󰁪 ", -- create split
+      d = "󰩺 ", -- delete buffer
+      e = "󰙅 ", -- explorer
+      i = "󰋽 ", -- index
+      k = "󰖲 ", -- maximize
+      q = "󰗼 ", -- quit
+      u = "󰕌 ", -- undo
+      v = "󰛓 ", -- view
+      w = "󰆓 ", -- write
+
+      -- Group icons
+      ["ACTIONS"] = "󰌵 ",
+      ["AI HELP"] = "󰚩 ",
+      ["FIND"] = "󰍉 ",
+      ["GIT"] = "󰊢 ",
+      ["JUPYTER"] = "󰌠 ",
+      ["LIST"] = "󰔱 ",
+      ["LSP & LINT"] = "󰒕 ",
+      ["MARKDOWN"] = "󱀈 ",
+      ["NIXOS"] = "󱄅 ",
+      ["PANDOC"] = "󰈙 ",
+      ["RUN"] = "󰐊 ",
+      ["SESSIONS"] = "󰆔 ",
+      ["SURROUND"] = "󰅪 ",
+      ["TEMPLATES"] = "󰈭 ",
+      ["TEXT"] = "󰊪 ",
+      ["YANK"] = "󰆏 ",
+    }
+
+    -- Monkey patch the which-key view module to insert icons at exactly the right place
+    -- We replace the separator symbol with our custom icon
+    local which_key_separator = opts.setup.icons.separator
+
+    -- Store the original item function from the view module
+    local view_ok, view = pcall(require, "which-key.view")
+    if not view_ok then
+      vim.notify("Failed to load which-key view module", vim.log.levels.WARN)
+      wk.register(opts.defaults)
+      return
+    end
+
+    -- Save the original function
+    local orig_item = view.item
+
+    -- Replace with our custom version that adds icons
+    view.item = function(key, item, label)
+      -- Get the standard formatting
+      local columns = orig_item(key, item, label)
+
+      -- Check if we need to add an icon after the separator
+      local icon_to_add = nil
+
+      -- Case 1: Single-character top-level commands (like b, c, d, etc.)
+      if type(key) == "string" and #key == 1 and icons[key] then
+        icon_to_add = icons[key]
+      end
+
+      -- Case 2: Group items with name property
+      if type(item) == "table" and item.name and icons[item.name] then
+        icon_to_add = icons[item.name]
+      end
+
+      -- Case 3: Default icons for common commands based on description
+      if not icon_to_add and type(item) == "table" and #item >= 2 and type(item[2]) == "string" then
+        local desc = item[2]:lower()
+
+        -- Map common descriptions to icons if not already assigned
+        if desc == "build" then
+          icon_to_add = "󰖷 "
+        elseif desc == "create split" then
+          icon_to_add = "󰁪 "
+        elseif desc == "delete buffer" then
+          icon_to_add = "󰩺 "
+        elseif desc == "explorer" then
+          icon_to_add = "󰙅 "
+        elseif desc == "index" then
+          icon_to_add = "󰋽 "
+        elseif desc == "max split" then
+          icon_to_add = "󰖲 "
+        elseif desc == "quit" then
+          icon_to_add = "󰗼 "
+        elseif desc == "undo" then
+          icon_to_add = "󰕌 "
+        elseif desc == "view" then
+          icon_to_add = "󰛓 "
+        elseif desc == "write" then
+          icon_to_add = "󰆓 "
+        elseif desc == "write all" then
+          icon_to_add = "󰆓 "
+        elseif desc:match("format") then
+          icon_to_add = "󰉣 "
+        elseif desc:match("search") or desc:match("find") then
+          icon_to_add = "󰍉 "
+        elseif desc:match("git") then
+          icon_to_add = "󰊢 "
+        elseif desc:match("file") then
+          icon_to_add = "󰈙 "
+        end
+      end
+
+      -- If we have an icon to add, add it after the separator
+      if icon_to_add then
+        for i, col in ipairs(columns) do
+          if col == which_key_separator then
+            columns[i] = which_key_separator .. icon_to_add
+            break
+          end
+        end
+      end
+
+      return columns
+    end
+
+    -- Register the defaults
     wk.register(opts.defaults)
 
     -- Register visual mode mappings for surround operations
@@ -617,3 +730,4 @@ return {
     }, { mode = "v" })
   end,
 }
+
