@@ -37,7 +37,8 @@ return {
             text = function()
               return vim.fn.getcwd()
             end,
-            highlight = "Directory",
+            highlight = "BufferLineFill", -- Use BufferLineFill to match the background
+            text_align = "left",
             separator = "", -- use a "true" to enable the default, or set your own character
             -- padding = 1
           }

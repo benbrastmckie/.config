@@ -20,18 +20,20 @@
   - [x] Fails to pass over closing ', ", and `
 - [x] snacks
   - [x] move into `tools/`
-- Nvim Tree
-  - Make heading background color match the background color of buffer line
+- [x] Nvim Tree
+  - [x] Make heading background color match the background color of buffer line
   - [x] Persistent pane size for nvimtree until restarting neovim
   - [x] fix error: Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
+  - [x] reduce notifications
 - Which Key
   - [ ] Add icons
-  - [ ] Specify file types when relevant
-  - [ ] Improve organization of mappings
-  - [ ] Add descriptive comments
+  - [ ] make descriptions lowercase and at most two words
+  - [ ] specify file types when relevant
+  - [ ] improve organization of mappings
+  - [ ] add descriptive comments
 - buffers
-  - always show active tab
   - <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
+  - [x] always show active tab
 - avante
   - search/replace
   - improve ui for accept/reject
@@ -44,6 +46,7 @@
   - make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
 	  - system is NixOS
 	  - mcphub has not already been installed
+  - reduce notifications
 - latex
   - [x] highlighting
   - [x] pairs
@@ -58,8 +61,9 @@
       - [x] Corrected visual mode mapping to use add('visual') method
   - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
 - [.] docs
+  - [ ] document api
   - [ ] learning git
-  - [ ] cheatsheet
+  - [x] cheatsheet
   - [x] readme
   - [:] installation
     - [:] mac
