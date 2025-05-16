@@ -68,10 +68,29 @@ return {
         -- Reset sign column background to match normal text background
         vim.cmd [[highlight! link SignColumn Normal]]
 
-        -- Set minimal highlighting for git signs
-        vim.cmd [[highlight! GitSignsAdd ctermfg=Green guifg=#b8bb26 ctermbg=NONE guibg=NONE]]
-        vim.cmd [[highlight! GitSignsChange ctermfg=Blue guifg=#83a598 ctermbg=NONE guibg=NONE]]
-        vim.cmd [[highlight! GitSignsDelete ctermfg=Red guifg=#fb4934 ctermbg=NONE guibg=NONE]]
+        -- Set consistent colors for git signs
+        -- Light blue for new/added items
+        local add_color = "#4fa6ed"      -- Light blue
+        -- Soft rust orange for modified items
+        local change_color = "#e78a4e"   -- Soft rust orange
+        -- Error red for deleted items
+        local delete_color = "#fb4934"   -- Red
+        
+        -- Create highlight groups that can be referenced elsewhere
+        vim.api.nvim_set_hl(0, "GitSignsAddColor", { fg = add_color })
+        vim.api.nvim_set_hl(0, "GitSignsChangeColor", { fg = change_color })
+        vim.api.nvim_set_hl(0, "GitSignsDeleteColor", { fg = delete_color })
+        
+        -- Apply these colors to GitSigns
+        vim.api.nvim_set_hl(0, "GitSignsAdd", { fg = add_color, bg = "NONE" })
+        vim.api.nvim_set_hl(0, "GitSignsChange", { fg = change_color, bg = "NONE" })
+        vim.api.nvim_set_hl(0, "GitSignsDelete", { fg = delete_color, bg = "NONE" })
+        
+        -- Make the colors available as global variables for other plugins to use
+        _G.GitColors = _G.GitColors or {}
+        _G.GitColors.add = add_color
+        _G.GitColors.change = change_color
+        _G.GitColors.delete = delete_color
       end,
       group = vim.api.nvim_create_augroup("GitSignsHighlight", { clear = true }),
     })
