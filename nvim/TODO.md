@@ -25,8 +25,8 @@
   - [x] Persistent pane size for nvimtree until restarting neovim
   - [x] fix error: Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
   - [x] fix two-step open
-  - [:] reduce notifications
-- yanky picker
+  - [x] reduce notifications
+- [x] yanky picker
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
