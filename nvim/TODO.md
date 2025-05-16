@@ -29,10 +29,10 @@
 - [x] yanky picker
 - [x] todo-comments
   - [x] make icons more stylized
-- comment lines
-  - errors for many lines selected
-  - only comments one line selected
-  - eventually comments all lines selected
+- [x] comment lines
+  - [x] errors for many lines selected
+  - [x] only comments one line selected
+  - [x] eventually comments all lines selected
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words

@@ -262,14 +262,16 @@ function M.setup()
 
   -- Comment toggling with mini.comment
   map("n", "<C-;>", function()
-    require('mini.comment').toggle_lines(vim.fn.line('.'), vim.fn.line('.'))
+    local mini_comment = require('mini.comment')
+    if mini_comment.toggle_lines then
+      mini_comment.toggle_lines(vim.fn.line('.'), vim.fn.line('.'))
+    else
+      mini_comment.toggle()
+    end
   end, {}, "Toggle comment on current line")
 
-  map("x", "<C-;>", function()
-    local start_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '<'))
-    local end_row, _ = unpack(vim.api.nvim_buf_get_mark(0, '>'))
-    require('mini.comment').toggle_lines(start_row, end_row)
-  end, {}, "Toggle comment on selection")
+  -- Direct mapping for visual mode commenting
+  map("v", "<C-;>", "gc", { remap = true }, "Toggle comment on selection")
 
   -- Help integration
   map("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', {}, "Help for word under cursor")
