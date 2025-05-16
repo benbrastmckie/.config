@@ -22,8 +22,8 @@ return {
     bufdelete = { enabled = true },
     dashboard = {
       enabled = true,
-      preset = require("neotex.plugins.snacks.dashboard").preset,
-      sections = require("neotex.plugins.snacks.dashboard").sections,
+      preset = require("neotex.plugins.tools.snacks.dashboard").preset,
+      sections = require("neotex.plugins.tools.snacks.dashboard").sections,
     },
     git = { enabled = true },
     gitbrowse = { enabled = true },

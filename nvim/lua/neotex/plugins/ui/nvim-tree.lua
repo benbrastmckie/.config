@@ -1,3 +1,7 @@
+-- Create a global module for NvimTree width persistence
+-- This ensures the callbacks can always access it
+_G.NvimTreePersistence = _G.NvimTreePersistence or {}
+
 return {
   "nvim-tree/nvim-tree.lua",
   dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -5,8 +9,214 @@ return {
     local nvimtree = require("nvim-tree")
     local api = require("nvim-tree.api")
     
-    -- Variable to store the width when tree is closed
-    local stored_width = nil
+    -- Initialize the global module if not already done
+    if not _G.NvimTreePersistence.initialized then
+      _G.NvimTreePersistence = {
+        -- Store the width value
+        width = nil,
+        
+        -- Keep track of whether the tree is currently open
+        is_open = false,
+        
+        -- Default width from config
+        default_width = 30,
+        
+        -- Flag to prevent multiple initializations
+        initialized = true,
+        
+        -- Store reference to the API for use in methods
+        api = api,
+        
+        -- Get current width (fallback to default if not set)
+        get_width = function()
+          return _G.NvimTreePersistence.width or _G.NvimTreePersistence.default_width
+        end,
+        
+        -- Save the current tree width
+        save_width = function()
+          -- Only run if tree is open and not currently in the process of opening
+          if not _G.NvimTreePersistence.is_open or _G.NvimTreePersistence.opening then 
+            return
+          end
+          
+          -- Find NvimTree window directly without using the API
+          local found_width = nil
+          
+          -- Loop through all windows to find NvimTree
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            local buf = vim.api.nvim_win_get_buf(win)
+            local buf_name = vim.api.nvim_buf_get_name(buf)
+            -- Use vim.bo instead of the deprecated nvim_buf_get_option
+            local buf_ft = vim.bo[buf].filetype
+            
+            -- Check if it's the NvimTree window
+            if buf_ft == "NvimTree" or buf_name:match("NvimTree") then
+              found_width = vim.api.nvim_win_get_width(win)
+              break
+            end
+          end
+          
+          -- Save the width if found and different from current
+          if found_width and found_width > 0 and found_width ~= _G.NvimTreePersistence.width then
+            _G.NvimTreePersistence.width = found_width
+          end
+        end,
+        
+        -- Setup autocommands for width tracking
+        setup_autocmds = function()
+          local augroup = vim.api.nvim_create_augroup("NvimTreeWidthPersistence", { clear = true })
+          
+          -- Track window resize events - this is the main width tracking mechanism
+          vim.api.nvim_create_autocmd("WinResized", {
+            group = augroup,
+            callback = function()
+              _G.NvimTreePersistence.save_width()
+            end
+          })
+          
+          -- Track when tree is shown - ensures our state is correct
+          vim.api.nvim_create_autocmd("User", {
+            pattern = "NvimTreeOpened",
+            group = augroup,
+            callback = function()
+              _G.NvimTreePersistence.is_open = true
+              
+              -- Force a width save on open after a short delay
+              vim.defer_fn(function()
+                _G.NvimTreePersistence.save_width()
+              end, 100)
+            end
+          })
+          
+          -- Track when tree is closed
+          vim.api.nvim_create_autocmd("User", {
+            pattern = "NvimTreeClosed",
+            group = augroup,
+            callback = function()
+              _G.NvimTreePersistence.is_open = false
+            end
+          })
+          
+          -- Also track BufEnter to detect when we're in NvimTree
+          vim.api.nvim_create_autocmd("BufEnter", {
+            group = augroup,
+            callback = function(args)
+              -- Check if this is an NvimTree buffer
+              if vim.bo[args.buf].filetype == "NvimTree" then
+                _G.NvimTreePersistence.is_open = true
+              end
+            end
+          })
+        end,
+        
+        -- Custom open function to use saved width
+        open = function(opts)
+          -- Get saved width or default
+          local width = _G.NvimTreePersistence.get_width()
+          
+          -- Store that we're in the process of opening to avoid resize flicker
+          _G.NvimTreePersistence.opening = true
+          
+          -- Ensure view.width is set before opening
+          -- This is the most important part for preventing the two-step opening
+          if nvimtree and nvimtree.setup then
+            -- Apply width directly to config first (without reloading)
+            pcall(function()
+              if nvimtree.config and nvimtree.config.view then
+                nvimtree.config.view.width = width
+              end
+            end)
+            
+            -- Hold off opening for a tiny moment to let the config take effect
+            vim.defer_fn(function()
+              -- Open the tree with explicit width parameter
+              local api = _G.NvimTreePersistence.api
+              pcall(function()
+                api.tree.open({width = width})
+              end)
+              
+              -- Set state and verify width in a second step if needed
+              vim.defer_fn(function()
+                _G.NvimTreePersistence.opening = false
+                _G.NvimTreePersistence.is_open = true
+                
+                -- Just to be sure, verify the width once more
+                for _, win in ipairs(vim.api.nvim_list_wins()) do
+                  local buf = vim.api.nvim_win_get_buf(win)
+                  if vim.bo[buf].filetype == "NvimTree" then
+                    local current_width = vim.api.nvim_win_get_width(win)
+                    -- Only resize if width doesn't match and we're not in a nested resize
+                    if current_width ~= width then
+                      -- Use cmd instead of API to ensure smoother visual transition
+                      vim.cmd("silent! " .. width .. "wincmd |")
+                    end
+                    break
+                  end
+                end
+              end, 16)  -- One frame @60fps
+            end, 0)     -- Next event loop iteration
+          else
+            -- Fallback if nvimtree is not available
+            pcall(function() 
+              local api = _G.NvimTreePersistence.api
+              api.tree.open() 
+            end)
+            _G.NvimTreePersistence.is_open = true
+            _G.NvimTreePersistence.opening = false
+          end
+        end,
+        
+        -- Custom close function to save width before closing
+        close = function()
+          -- Save current width before closing (using our direct method)
+          _G.NvimTreePersistence.save_width()
+          
+          -- Close the tree using the API
+          local api = _G.NvimTreePersistence.api
+          pcall(function()
+            api.tree.close()
+          end)
+          
+          -- Update state
+          _G.NvimTreePersistence.is_open = false
+        end,
+        
+        -- Custom toggle function that preserves width
+        toggle = function(opts)
+          -- If we're currently in the process of opening, do nothing to avoid flicker
+          if _G.NvimTreePersistence.opening then
+            return
+          end
+          
+          -- More reliable way to check if tree is open
+          local is_visible = false
+          
+          -- Check all windows for NvimTree
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            local buf = vim.api.nvim_win_get_buf(win)
+            local buf_ft = vim.bo[buf].filetype
+            
+            if buf_ft == "NvimTree" then
+              is_visible = true
+              break
+            end
+          end
+          
+          -- Set our state based on what we found
+          _G.NvimTreePersistence.is_open = is_visible
+          
+          -- Toggle based on actual visibility
+          if is_visible then
+            _G.NvimTreePersistence.close()
+          else
+            _G.NvimTreePersistence.open(opts)
+          end
+        end
+      }
+    end
+    
+    -- Always update the API reference in case it's changed
+    _G.NvimTreePersistence.api = api
 
     -- recommended settings from nvim-tree documentation
     vim.g.loaded_netrw = 1
@@ -52,70 +262,28 @@ return {
       -- keymap.set('n', 'e',     api.fs.rename_basename,                opts('Rename: Basename'))
     end
 
-    -- Create custom open and close functions to save/restore width
-    local function custom_open()
-      if stored_width and stored_width > 0 then
-        -- Use stored width when reopening
-        pcall(function() 
-          api.tree.open({width = stored_width})
-        end)
-      else
-        -- Use default width from config
-        pcall(function() 
-          api.tree.open()
-        end)
-      end
-    end
-
-    local function custom_close()
-      -- Get current tree window width before closing
-      local status, tree_win = pcall(function()
-        return api.tree.get_win_id and api.tree.get_win_id()
-      end)
-      
-      if status and tree_win then
-        stored_width = vim.api.nvim_win_get_width(tree_win)
-      end
-      
-      pcall(function() 
-        api.tree.close()
-      end)
-    end
-
-    -- Add commands to use custom open/close
-    vim.api.nvim_create_user_command('NvimTreeCustomOpen', custom_open, {})
-    vim.api.nvim_create_user_command('NvimTreeCustomClose', custom_close, {})
+    -- Set up autocmds
+    _G.NvimTreePersistence.setup_autocmds()
     
-    -- Set up an autocommand to track the width when switching buffers
-    vim.api.nvim_create_autocmd("WinResized", {
-      callback = function()
-        -- Safely check if api.tree exists and has the get_win_id method
-        local status, win_id = pcall(function()
-          return api.tree.get_win_id and api.tree.get_win_id()
-        end)
-        
-        -- Only proceed if we got a valid window ID
-        if status and win_id then
-          local width = vim.api.nvim_win_get_width(win_id)
-          if width > 0 and width ~= stored_width then
-            stored_width = width
-          end
-        end
-      end
-    })
+    -- Add commands to use our persistence module functions
+    vim.api.nvim_create_user_command('NvimTreeCustomOpen', function()
+      _G.NvimTreePersistence.open()
+    end, {})
+    
+    vim.api.nvim_create_user_command('NvimTreeCustomClose', function()
+      _G.NvimTreePersistence.close()
+    end, {})
+    
+    vim.api.nvim_create_user_command('NvimTreeCustomToggle', function()
+      _G.NvimTreePersistence.toggle()
+    end, {})
     
     -- Override existing toggle function with our custom version
     api.tree.toggle = function(find_file, no_focus)
-      -- Safely check if we can get a window ID
-      local status, tree_win = pcall(function()
-        return api.tree.get_win_id and api.tree.get_win_id()
-      end)
-      
-      if status and tree_win then
-        custom_close()
-      else
-        custom_open()
-      end
+      _G.NvimTreePersistence.toggle({
+        find_file = find_file,
+        focus = not no_focus
+      })
     end
     
     -- Create an autocommand to match NvimTree header bg with bufferline
@@ -146,6 +314,9 @@ return {
       vim.cmd("doautocmd ColorScheme")
     end, 100)
 
+    -- Set default width in the global module
+    _G.NvimTreePersistence.default_width = 30
+    
     -- configure nvim-tree
     nvimtree.setup({
       on_attach = on_attach,

@@ -18,13 +18,12 @@
   - [x] fix directory structure
 - [x] mini.pairs
   - [x] Fails to pass over closing ', ", and `
-- snacks
-  - move into `tools/`
+- [x] snacks
+  - [x] move into `tools/`
 - Nvim Tree
-  - Persistent pane size for nvimtree until restarting neovim
   - Make heading background color match the background color of buffer line
-  - fix error:
-    - Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
+  - [x] Persistent pane size for nvimtree until restarting neovim
+  - [x] fix error: Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
 - Which Key
   - [ ] Add icons
   - [ ] Specify file types when relevant
@@ -39,6 +38,7 @@
   - turn off mouse support in Avante
   - <C-j/k> sometimes stops working in Avante after it makes changes
 - mcphub
+  - move mcp-memory out of the .config/ directory
   - lazy load when avante starts
   - run tests to confirm that mcp works with avante
   - make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
