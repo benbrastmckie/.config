@@ -64,4 +64,4 @@ systemd/user
 nvim/examples
 LazyVim
 
-**/.claude/settings.local.json
+**/.claude/

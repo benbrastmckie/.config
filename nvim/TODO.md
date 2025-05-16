@@ -24,16 +24,18 @@
   - [x] Make heading background color match the background color of buffer line
   - [x] Persistent pane size for nvimtree until restarting neovim
   - [x] fix error: Error detected while processing WinResized Autocommands for "*":     Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value)     stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
-  - [x] reduce notifications
+  - [x] fix two-step open
+  - [:] reduce notifications
+- yanky picker
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
   - [ ] specify file types when relevant
   - [ ] improve organization of mappings
   - [ ] add descriptive comments
-- buffers
-  - <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
-  - [x] always show active tab
+- [x] buffers
+  - [x] <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
+  - [x] always show active tab (sometimes they seem to get lost/hidden)
 - avante
   - search/replace
   - improve ui for accept/reject
@@ -61,7 +63,8 @@
       - [x] Corrected visual mode mapping to use add('visual') method
   - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
 - [.] docs
-  - [ ] document api
+  - [ ] api
+  - [ ] cleanup comments throughout files
   - [ ] learning git
   - [x] cheatsheet
   - [x] readme
@@ -93,8 +96,8 @@
   - [x] surround
   - [x] pairs
 - [x] todo-comments
-- [ ] snacks
-  - [ ] research plugins
+- [x] snacks
+  - [x] research plugins
   - [x] update which-key
   - [x] remove redundant plugins
     - [x] alpha

@@ -1,6 +1,30 @@
 -- Create a global module for NvimTree width persistence
--- This ensures the callbacks can always access it
+-- This ensures the callbacks can always access it across Neovim's runtime
 _G.NvimTreePersistence = _G.NvimTreePersistence or {}
+
+-- Initialize the width directly in the global scope (outside of any function)
+-- This ensures it's available before any code runs
+if not _G.NvimTreePersistence.width then
+  -- Try to read from a file first if we have one
+  local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
+  local width = 30  -- Default width
+  
+  -- Try to read the stored width
+  pcall(function()
+    if vim.fn.filereadable(width_file) == 1 then
+      local file_content = vim.fn.readfile(width_file)
+      if file_content and file_content[1] then
+        local stored_width = tonumber(file_content[1])
+        if stored_width and stored_width > 10 and stored_width < 100 then
+          width = stored_width
+        end
+      end
+    end
+  end)
+  
+  -- Store the width directly in the global object
+  _G.NvimTreePersistence.width = width
+end
 
 return {
   "nvim-tree/nvim-tree.lua",
@@ -11,19 +35,37 @@ return {
 
     -- Initialize the global module if not already done
     if not _G.NvimTreePersistence.initialized then
-      _G.NvimTreePersistence = {
-        -- Store the width value
-        width = nil,
-
+      -- If width is not set in the global scope, try to read from file
+      if not _G.NvimTreePersistence.width then
+        local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
+        local width = 30  -- Standard default
+        
+        pcall(function()
+          if vim.fn.filereadable(width_file) == 1 then
+            local file_content = vim.fn.readfile(width_file)
+            if file_content and file_content[1] then
+              local stored_width = tonumber(file_content[1])
+              if stored_width and stored_width > 10 and stored_width < 100 then
+                width = stored_width
+              end
+            end
+          end
+        end)
+        
+        _G.NvimTreePersistence.width = width
+      end
+      
+      -- Initialize the rest of the module
+      _G.NvimTreePersistence = vim.tbl_extend("force", _G.NvimTreePersistence, {
         -- Keep track of whether the tree is currently open
         is_open = false,
-
-        -- Default width from config
-        default_width = 30,
-
+        
+        -- Use our stored width as the default now
+        default_width = _G.NvimTreePersistence.width or 30,
+        
         -- Flag to prevent multiple initializations
         initialized = true,
-
+        
         -- Store reference to the API for use in methods
         api = api,
 
@@ -32,7 +74,7 @@ return {
           return _G.NvimTreePersistence.width or _G.NvimTreePersistence.default_width
         end,
 
-        -- Save the current tree width
+        -- Save the current tree width (both in memory and to a file)
         save_width = function()
           -- Only run if tree is open and not currently in the process of opening
           if not _G.NvimTreePersistence.is_open or _G.NvimTreePersistence.opening then
@@ -57,8 +99,37 @@ return {
           end
 
           -- Save the width if found and different from current
-          if found_width and found_width > 0 and found_width ~= _G.NvimTreePersistence.width then
+          if found_width and found_width > 10 and found_width ~= _G.NvimTreePersistence.width then
+            -- Save to the global module
             _G.NvimTreePersistence.width = found_width
+            
+            -- Update the default_width as well to avoid mismatches
+            _G.NvimTreePersistence.default_width = found_width
+            
+            -- Also save to a file for persistence across sessions
+            local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
+            pcall(function()
+              vim.fn.writefile({tostring(found_width)}, width_file)
+            end)
+            
+            -- Immediately update the Neovim module config to avoid the two-step problem
+            pcall(function()
+              local nvimtree = require("nvim-tree")
+              if nvimtree and nvimtree.config and nvimtree.config.view then
+                nvimtree.config.view.width = found_width
+              end
+              
+              -- Also try to update the state in the view module directly
+              local view = package.loaded["nvim-tree.view"]
+              if view then
+                if view.View and view.View.width then
+                  view.View.width = found_width
+                end
+                if view._config and view._config.width then
+                  view._config.width = found_width
+                end
+              end
+            end)
           end
         end,
 
@@ -117,25 +188,56 @@ return {
           -- Store that we're in the process of opening to avoid resize flicker
           _G.NvimTreePersistence.opening = true
 
-          -- Prepare a one-time handler to set window width as soon as it appears
+          -- More aggressive approach: override the width in all possible places
+          -- 1. Set an autocmd to be triggered when window is created (highest priority)
           local winenter_augroup = vim.api.nvim_create_augroup("NvimTreeSingleStepOpen", { clear = true })
-          vim.api.nvim_create_autocmd({"BufWinEnter", "WinNew"}, {
+          vim.api.nvim_create_autocmd({"BufWinEnter", "WinNew", "BufEnter"}, {
             group = winenter_augroup,
             pattern = {"NvimTree*"},
-            once = true,
+            once = true, -- Only trigger once
             callback = function()
-              -- Immediately resize the window to the correct width
-              for _, win in ipairs(vim.api.nvim_list_wins()) do
-                local buf = vim.api.nvim_win_get_buf(win)
-                if vim.bo[buf].filetype == "NvimTree" then
-                  -- Force resize immediately with no animation
-                  vim.api.nvim_win_set_width(win, width)
-                  vim.api.nvim_win_set_option(win, "winfixwidth", true)
-                  break
+              vim.schedule(function() -- Use schedule to ensure we run after window creation
+                -- Find the NvimTree window
+                for _, win in ipairs(vim.api.nvim_list_wins()) do
+                  local buf = vim.api.nvim_win_get_buf(win)
+                  if vim.bo[buf].filetype == "NvimTree" then
+                    -- Force correct width with no animation - critical for seamless opening
+                    vim.api.nvim_win_set_width(win, width)
+                    vim.api.nvim_win_set_option(win, "winfixwidth", true)
+                    
+                    -- We're using api.nvim_win_set_option above, which is better
+                    -- than using vim.wo since we have the window handle
+                    break
+                  end
+                end
+              end)
+            end
+          })
+          
+          -- 2. Directly update configuration in all possible locations
+          pcall(function()
+            -- Update any loaded modules that might store width
+            for _, module_name in ipairs({"nvim-tree", "nvim-tree.view", "nvim-tree.lib", "nvim-tree.renderer"}) do
+              local module = package.loaded[module_name]
+              if module then
+                -- Try various possible width storage locations
+                if module.config and module.config.view then
+                  module.config.view.width = width
+                end
+                if module.View then
+                  module.View.width = width
+                end
+                if module._config then
+                  module._config.width = width
                 end
               end
             end
-          })
+            
+            -- Also set the width in the live config
+            if nvimtree and nvimtree.config and nvimtree.config.view then
+              nvimtree.config.view.width = width
+            end
+          end)
           
           -- Inject width into config before opening
           if nvimtree and nvimtree.setup then
@@ -216,7 +318,7 @@ return {
           _G.NvimTreePersistence.is_open = false
         end,
 
-        -- Custom toggle function that preserves width
+        -- Enhanced toggle function that preserves width with visual consistency
         toggle = function(opts)
           -- If we're currently in the process of opening, do nothing to avoid flicker
           if _G.NvimTreePersistence.opening then
@@ -225,14 +327,16 @@ return {
 
           -- More reliable way to check if tree is open
           local is_visible = false
+          local tree_win = nil
 
-          -- Check all windows for NvimTree
+          -- Check all windows for NvimTree and capture the window handle
           for _, win in ipairs(vim.api.nvim_list_wins()) do
             local buf = vim.api.nvim_win_get_buf(win)
             local buf_ft = vim.bo[buf].filetype
 
             if buf_ft == "NvimTree" then
               is_visible = true
+              tree_win = win
               break
             end
           end
@@ -240,14 +344,23 @@ return {
           -- Set our state based on what we found
           _G.NvimTreePersistence.is_open = is_visible
 
-          -- Toggle based on actual visibility
-          if is_visible then
+          -- If tree is open, ensure we capture the current width before closing
+          if is_visible and tree_win then
+            -- Get the actual width directly from the window to ensure accuracy
+            local current_width = vim.api.nvim_win_get_width(tree_win)
+            if current_width and current_width > 10 then -- Sanity check
+              _G.NvimTreePersistence.width = current_width
+            end
             _G.NvimTreePersistence.close()
           else
+            -- Set opening flag to prevent potential issues
+            _G.NvimTreePersistence.opening = true
+            
+            -- Call our enhanced open function
             _G.NvimTreePersistence.open(opts)
           end
         end
-      }
+      })
     end
 
     -- Always update the API reference in case it's changed
@@ -417,10 +530,15 @@ return {
         
         -- Disable horizontal scrolling in NvimTree
         vim.opt_local.sidescrolloff = 0     -- No side scrolling offset
-        vim.opt_local.wrap = false          -- Don't wrap text
         vim.opt_local.hlsearch = false      -- No search highlight
-        vim.opt_local.linebreak = false     -- No line break
         vim.opt_local.list = false          -- No list mode
+        
+        -- Set window options for better appearance
+        pcall(function()
+          -- These might not all be available but try them anyway
+          vim.wo.breakindent = false
+          vim.wo.linebreak = false
+        end)
         
         -- Disable horizontal scroll commands to prevent side scrolling
         vim.keymap.set('n', '<ScrollWheelRight>', '<Nop>', { buffer = true, silent = true })
@@ -744,12 +862,37 @@ return {
       once = true
     })
 
-    -- Set default width in the global module
-    _G.NvimTreePersistence.default_width = 30
+    -- Set default width in the global module using the persisted value
+    if not _G.NvimTreePersistence.width then
+      _G.NvimTreePersistence.width = 30
+    end
+    _G.NvimTreePersistence.default_width = _G.NvimTreePersistence.width
+    
+    -- Pre-configure the view width before setup
+    local initial_width = _G.NvimTreePersistence.width
+    
+    -- Directly modify the NvimTree view module if available
+    pcall(function()
+      local view = package.loaded["nvim-tree.view"]
+      if view then
+        if view.View then view.View.width = initial_width end
+        if view._config then view._config.width = initial_width end
+      end
+    end)
 
-    -- configure nvim-tree
+    -- Configure nvim-tree with our persisted width
     nvimtree.setup({
-      on_attach = on_attach,
+      on_attach = function(bufnr)
+        -- Call the original on_attach
+        on_attach(bufnr)
+        
+        -- Fix the width to prevent automatic resizing
+        -- Get the window ID for the buffer
+        local win_id = vim.fn.bufwinid(bufnr)
+        if win_id ~= -1 then
+          vim.api.nvim_win_set_option(win_id, "winfixwidth", true)
+        end
+      end,
       actions = {
         open_file = {
           quit_on_open = true,
@@ -827,8 +970,7 @@ return {
         highlight_modified = "name", -- Show modified indicator next to file names
         highlight_bookmarks = "none",
         highlight_clipboard = "name",
-        truncate_names = true, -- Truncate file names that are too long
-        trailing_slash = false, -- Don't add trailing slash to folder names
+        -- Removed unsupported options (truncate_names, trailing_slash)
         indent_markers = {
           enable = false,
           inline_arrows = true,
@@ -928,21 +1070,19 @@ return {
         files_first = false,
       },
       view = {
-        adaptive_size = false,   -- Don't automatically resize the window
+        adaptive_size = false,        -- Don't automatically resize the window
         centralize_selection = false,
         cursorline = true,
-        debounce_delay = 15,
+        debounce_delay = 0,           -- Eliminate debounce delay for immediate rendering
         side = "left",
         preserve_window_proportions = true, -- Maintain proportions to prevent resizing
         number = false,
         relativenumber = false,
         signcolumn = "yes",
-        width = 30,
-        width_increment = 0,     -- Don't change width incrementally (disable resize)
-        wrap = false,            -- Don't wrap long text in the explorer
-        scrolloff = 8,           -- Maintain context when scrolling vertically
+        width = initial_width,        -- Use stored width from the beginning
+        -- Removed unsupported options (width_increment, wrap, scrolloff)
         float = {
-          enable = false,
+          enable = false,             -- Disable floating mode
           quit_on_focus_loss = true,
           open_win_config = {
             relative = "editor",
