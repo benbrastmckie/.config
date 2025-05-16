@@ -23,21 +23,46 @@ local function safe_require(module)
   return result
 end
 
+-- Load the Avante+MCP integration during setup
+local function setup_integrations()
+  local avante_mcp = require("neotex.util.avante_mcp")
+  avante_mcp.setup()
+end
+
+-- Initialize once plugins are loaded
+vim.api.nvim_create_autocmd("User", {
+  pattern = "LazyDone",
+  callback = function()
+    vim.defer_fn(setup_integrations, 100)
+    
+    -- Register a handler for our custom event
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "AvantePreLoad",
+      callback = function()
+        -- Try to directly load MCPHub through packadd
+        local mcphub_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim")
+        if vim.fn.isdirectory(mcphub_path) == 1 then
+          pcall(function()
+            vim.cmd("packadd mcphub.nvim")
+          end)
+        end
+      end,
+      once = true
+    })
+  end
+})
+
 -- Load the AI plugin modules
 local avante_plugin = safe_require("neotex.plugins.ai.avante")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
+local mcphub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 
--- Load the optional MCPHub loader (completely isolated)
--- This runs in a completely separate loading context
-local mcphub_loader_plugin = safe_require("neotex.plugins.ai.mcphub-loader")
-
--- Return plugin specs with MCPHub completely isolated
+-- Return plugin specs
 return {
   -- Core plugins
   avante_plugin,
   lectic_plugin,
   
-  -- Add MCPHub loader as a completely separate plugin
-  -- This will be loaded ONLY when specifically triggered
-  mcphub_loader_plugin,
+  -- MCPHub plugin (completely isolated)
+  mcphub_plugin,
 }

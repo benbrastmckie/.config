@@ -55,6 +55,7 @@
   - [ ] make scripts
 - [.] avante
   - [x] search/replace
+  - [x] ask seems to only use one line
   - improve ui for accept/reject
   - turn off mouse support in Avante
   - <C-j/k> sometimes stops working in Avante after it makes changes
