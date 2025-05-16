@@ -14,14 +14,19 @@ This directory contains modules for integrating various AI services and tools wi
 ```
 lua/neotex/plugins/ai/
 ├── README.md              # This file - overview and documentation
-├── init.lua               # AI plugins loader
+├── init.lua               # AI plugins loader with event registration
+├── avante.lua             # Avante AI assistant configuration
 ├── lectic.lua             # Lectic AI writing integration
-├── mcp-hub.lua            # MCP-Hub plugin configuration and integration
+├── mcp-hub.lua            # MCP-Hub plugin configuration
 └── util/                  # Utility modules for AI integration
     ├── avante-highlights.lua        # Enhanced highlighting for Avante UI
     ├── avante-support.lua           # Support functions for Avante configuration
     ├── system-prompts.json          # System prompt templates storage
     └── system-prompts.lua           # System prompts manager
+
+lua/neotex/util/
+├── mcp_server.lua         # MCPHub server state management and control
+└── avante_mcp.lua         # Avante and MCPHub integration layer
 ```
 
 ## Available AI Features
@@ -92,24 +97,34 @@ MCP-Hub provides a unified interface to multiple AI services and tools.
 - Image generation and analysis
 
 **Commands:**
-- `MCPHub`: Start the MCP-Hub service
-- `MCPHubStatus`: Check MCP-Hub service status
-- `MCPHubSettings`: View/edit MCP-Hub configuration
-- `MCPHubDiagnose`: Run diagnostics for MCP-Hub
-- `MCPHubRebuild`: Rebuild the MCP-Hub bundled binary
+- `MCPHub`: Open the MCP-Hub interface (available after loading Avante)
+- `MCPHubStatus`: Check MCP-Hub connection status
+- `MCPHubStart`: Manually start the MCP-Hub server
+- `MCPAvante`: Open Avante with MCPHub integration
+- `MCPAvanteTrigger`: Trigger loading of MCPHub plugin
+
+**Implementation Details:**
+- Uses advanced state management through `neotex.util.mcp_server` module
+- Event-driven architecture with `User AvantePreLoad` event
+- Clean integration layer in `neotex.util.avante_mcp` module
+- Intelligent binary detection and execution logic
+- Multiple server status verification mechanisms
+- Self-healing error handling with fallbacks
 
 ## Using MCP Tools in Avante
 
 The MCP-Hub integration enables Avante to access and use tools provided by MCP-Hub, expanding Avante's capabilities beyond what's built-in.
 
-### Lazy-Loading Setup
+### Optimized Lazy-Loading Architecture
 
-The integration is now fully automated with smart lazy-loading:
+The MCPHub integration has been completely redesigned with a more reliable and efficient architecture:
 
-1. MCPHub only launches when Avante is opened, not at Neovim startup
-2. Just use Avante directly with `<leader>ha`, `<leader>hc`, or `<leader>ht` 
-3. MCPHub will automatically load in the background when needed
-4. No manual steps required - everything is handled automatically
+1. **True Lazy Loading**: MCPHub only loads when explicitly needed, never at Neovim startup
+2. **Event-Based Triggering**: Uses custom Neovim events for precise lazy loading
+3. **State Management**: Centralized state tracking prevents duplicate server instances
+4. **Automatic Integration**: Just use Avante normally with `<leader>ha`, `<leader>hc`, or `<leader>ht`
+5. **Clean UI**: Minimal notifications - only success messages are shown
+6. **Robust Server Detection**: Automatically verifies server is running with HTTP checks
 
 The `<leader>hx` command is available if you want to manually start MCPHub.
 
@@ -162,6 +177,49 @@ What is the latest version of Neovim? Use the MCP tools to find out.
   }
 }
 ```
+
+### Integration Architecture
+
+The MCPHub integration is implemented with a clean, modular architecture:
+
+#### Key Components
+
+1. **MCP-Hub Plugin Definition** (`lua/neotex/plugins/ai/mcp-hub.lua`)
+   - Defines the plugin with true lazy loading 
+   - Configures Lazy.nvim to only load on specific events
+   - Configured to never load at startup
+   - Sets up build and configuration functions
+
+2. **Server Management** (`lua/neotex/util/mcp_server.lua`)
+   - Central state management for MCPHub server
+   - Intelligent executable detection for all platforms
+   - Multiple server status verification mechanisms
+   - Handles server lifecycle (start, stop, check)
+   - Provides server status tracking and commands
+
+3. **Integration Layer** (`lua/neotex/util/avante_mcp.lua`)
+   - Clean API for Avante to interact with MCPHub
+   - Handles event triggering for lazy loading
+   - Manages command registration
+   - Seamless autocommand integration
+   - Self-healing error handling
+
+4. **Event Registration** (`lua/neotex/plugins/ai/init.lua`)
+   - Sets up custom events for plugin communication
+   - Initializes integration layer after plugins are loaded
+   - Registers handlers for AvantePreLoad event
+   - Enables direct plugin loading when needed
+
+#### Loading Sequence
+
+1. User triggers Avante with a keybinding like `<leader>ha`
+2. This fires the `AvantePreLoad` event to load MCPHub
+3. Lazy.nvim loads the MCPHub plugin in response to the event
+4. The plugin is configured and initialized
+5. The server manager starts the MCPHub server
+6. HTTP status checks verify the server is running
+7. Success message "MCPHub server ready" is displayed
+8. Avante command executes with full MCPHub integration
 
 ## System Prompts
 
@@ -243,10 +301,16 @@ If you encounter issues with the AI integration:
 
 1. Check if the AI service is properly configured with API keys
 2. Ensure MCP-Hub is running with `:MCPHubStatus`
-3. Verify the model selection with `:AvanteModel`
-4. Check the system prompt with `:AvantePrompt`
-5. Try stopping any ongoing generations with `:AvanteStop`
-6. Run `:MCPHubDiagnose` for detailed diagnostics on any platform
+3. If MCP-Hub isn't running, start it manually with `:MCPHubStart`
+4. Try loading Avante first, which will automatically load MCPHub
+5. Verify the model selection with `:AvanteModel`
+6. Check the system prompt with `:AvantePrompt`
+7. Try stopping any ongoing generations with `:AvanteStop`
+
+If MCPHub commands aren't available:
+1. Launch Avante first with `<leader>ha` or `<leader>hc`
+2. Wait for the "MCPHub server ready" message
+3. Then try running `:MCPHub` to open the interface
 
 ### Standard Environment Troubleshooting
 

@@ -409,19 +409,14 @@ return {
       },
       h = {
         name = "AI HELP",
-        -- Avante commands with MCPHub loading via event
-        a = { function() 
-          -- Use the helper function to load MCPHub and run Avante
-          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteAsk")
-        end, "ask" },
-        c = { function() 
-          -- Use the helper function to load MCPHub and run Avante
-          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteChat")
-        end, "chat" },
-        t = { function() 
-          -- Use the helper function to load MCPHub and run Avante
-          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteToggle")
-        end, "toggle" },
+        -- Avante commands with MCPHub integration
+        a = { function() require("neotex.util.avante_mcp").with_mcp("AvanteAsk") end, "ask" },
+        c = { function() require("neotex.util.avante_mcp").with_mcp("AvanteChat") end, "chat" },
+        t = { function() require("neotex.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle" },
+        s = { function() require("neotex.util.avante_mcp").with_mcp("AvanteEdit") end, "edit selection" },
+        
+        -- Direct MCPHub commands
+        x = { "<cmd>MCPHubStart<CR>", "start MCPHub" },
         
         -- Standard Avante commands (don't need MCPHub)
         b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
@@ -432,12 +427,7 @@ return {
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
         p = { "<cmd>AvantePrompt<CR>", "select prompt" },
-        s = { function()
-          -- Use the helper function to load MCPHub and run Avante
-          require("neotex.util.ensure_mcphub").load_and_run_mcphub_for_avante("AvanteEdit")
-        end, "edit selection" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
-        x = { "<cmd>MCPHubLoad<CR>", "start MCPHub" },
       },
       --   HARPOON
       --   a = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
