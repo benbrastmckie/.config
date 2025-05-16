@@ -33,14 +33,14 @@
   - [x] errors for many lines selected
   - [x] only comments one line selected
   - [x] eventually comments all lines selected
+- [.] buffers
+  - [ ] <leader>gg sometimes opens LazyGit blank
+  - [x] always show active tab (sometimes they seem to get lost/hidden)
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
   - [ ] make file-type dependent which commands appear
   - [ ] improve organization of mappings
-- [x] buffers
-  - [x] <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
-  - [x] always show active tab (sometimes they seem to get lost/hidden)
 - avante
   - search/replace
   - improve ui for accept/reject

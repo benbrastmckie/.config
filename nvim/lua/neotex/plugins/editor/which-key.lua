@@ -398,7 +398,7 @@ return {
         b = { "<cmd>Telescope git_branches<CR>", "checkout branch" },
         c = { "<cmd>Telescope git_commits<CR>", "git commits" },
         d = { "<cmd>Gitsigns diffthis HEAD<CR>", "diff" },
-        g = { "<cmd>lua vim.schedule(function() Snacks.lazygit() end)<cr>", "lazygit" },
+        g = { "<cmd>lua vim.schedule(function() require('neotex.plugins.tools.snacks.utils').safe_lazygit() end)<cr>", "lazygit" },
         k = { "<cmd>Gitsigns prev_hunk<CR>", "prev hunk" },
         j = { "<cmd>Gitsigns next_hunk<CR>", "next hunk" },
         l = { "<cmd>Gitsigns blame_line<CR>", "line blame" }, -- TODO: use snacks?
