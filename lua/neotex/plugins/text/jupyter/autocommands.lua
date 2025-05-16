@@ -20,7 +20,7 @@ function M.setup()
       -- Apply Jupyter notebook styling safely
       vim.defer_fn(function()
         pcall(function()
-          local styling = require("neotex.plugins.tools.jupyter.styling")
+          local styling = require("neotex.plugins.text.jupyter.styling")
           styling.setup()
         end)
       end, 50)

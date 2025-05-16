@@ -121,6 +121,7 @@ local function setup_lazy()
         -- coding plugins have been moved to editor directory
         { import = "neotex.plugins.editor" },  -- editor enhancement plugins (includes former coding plugins)
         { import = "neotex.plugins.tools" },   -- tool integration plugins
+        { import = "neotex.plugins.text" },    -- text format-specific plugins
         { import = "neotex.plugins.ui" },      -- UI enhancement plugins
         
         -- Phase 4 imports
@@ -172,7 +173,7 @@ local function setup_jupyter_styling()
           
           -- Only load styling if needed
           if any_ipynb then
-            ok, styling = pcall(require, "neotex.plugins.tools.jupyter.styling")
+            ok, styling = pcall(require, "neotex.plugins.text.jupyter.styling")
             if ok and type(styling) == "table" and styling.setup then
               styling.setup()
             end

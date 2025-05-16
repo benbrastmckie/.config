@@ -1,23 +1,11 @@
 -----------------------------------------------------------
--- Tool Integration Plugins
+-- Text Processing Plugins
 --
--- This module loads plugins that integrate various tools:
--- - gitsigns.lua: Git integration
--- - firenvim.lua: Browser integration
+-- This module loads plugins specifically for text formats and processing:
 -- - vimtex.lua: LaTeX integration
 -- - lean.lua: Lean theorem prover integration
--- - markdown-preview.lua: Markdown preview
--- - autolist.lua: Smart list handling for markdown
--- - mini.lua: Mini plugins collection (pairs, comments, etc.)
--- - surround.lua: Text surrounding functionality
--- - todo-comments.lua: Highlight and search TODO comments
--- - yanky.lua: Enhanced yank and paste functionality
---
--- Note: The following remain in other modules:
--- - toggleterm.lua: Terminal integration (editor module)
--- - telescope.lua: Fuzzy finder and navigation (editor module)
--- - treesitter.lua: Syntax highlighting and code navigation (editor module)
--- - sessions.lua: Session management (ui module)
+-- - jupyter/: Jupyter notebook integration
+-- - markdown-preview.lua: Markdown preview functionality
 --
 -- The module uses a consistent error handling approach to ensure
 -- NeoVim starts properly even if some plugin specifications fail.
@@ -30,7 +18,7 @@ local function safe_require(module)
     vim.notify("Failed to load plugin module: " .. module, vim.log.levels.WARN)
     return {}
   end
-  
+
   -- Validate that the result is actually a valid plugin spec
   -- Most plugin specs are tables with a string at index 1 (the repo)
   if type(result) == "table" then
@@ -38,12 +26,12 @@ local function safe_require(module)
     if type(result[1]) == "string" then
       return result
     end
-    
+
     -- It's already a valid spec if it's an import directive
     if result.import then
       return result
     end
-    
+
     -- For function-only modules (which would cause the "invalid plugin spec" error)
     -- Return an empty table instead of the function
     if result.setup and type(result.setup) == "function" and not result[1] then
@@ -51,19 +39,15 @@ local function safe_require(module)
       return {}
     end
   end
-  
+
   return result
 end
 
 -- Load modules
-local gitsigns_module = safe_require("neotex.plugins.tools.gitsigns")
-local firenvim_module = safe_require("neotex.plugins.tools.firenvim")
-local snacks_module = safe_require("neotex.plugins.tools.snacks")
-local autolist_module = safe_require("neotex.plugins.tools.autolist")
-local mini_module = safe_require("neotex.plugins.tools.mini")
-local surround_module = safe_require("neotex.plugins.tools.surround")
-local todo_comments_module = safe_require("neotex.plugins.tools.todo-comments")
-local yanky_module = safe_require("neotex.plugins.tools.yanky")
+local vimtex_module = safe_require("neotex.plugins.text.vimtex")
+local lean_module = safe_require("neotex.plugins.text.lean")
+local jupyter_module = safe_require("neotex.plugins.text.jupyter")
+local markdown_preview_module = safe_require("neotex.plugins.text.markdown-preview")
 
 -- Create array of valid plugin specs
 local plugins = {}
@@ -76,14 +60,10 @@ local function add_if_valid(spec)
 end
 
 -- Add only valid plugin specs
-add_if_valid(gitsigns_module)
-add_if_valid(firenvim_module)
-add_if_valid(snacks_module)
-add_if_valid(autolist_module)
-add_if_valid(mini_module)
-add_if_valid(surround_module)
-add_if_valid(todo_comments_module)
-add_if_valid(yanky_module)
+add_if_valid(vimtex_module)
+add_if_valid(lean_module)
+add_if_valid(jupyter_module)
+add_if_valid(markdown_preview_module)
 
 -- Return only valid plugin specs
 return plugins

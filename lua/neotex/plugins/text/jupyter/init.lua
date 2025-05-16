@@ -61,7 +61,7 @@ return {
 
       -- Load our autocommands module for FileType detection
       vim.defer_fn(function()
-        local ok, autocommands = pcall(require, "neotex.plugins.tools.jupyter.autocommands")
+        local ok, autocommands = pcall(require, "neotex.plugins.text.jupyter.autocommands")
         if ok and type(autocommands) == "table" and autocommands.setup then
           autocommands.setup()
         end
@@ -81,7 +81,7 @@ return {
 
         -- If we have open ipynb files, load and apply styling
         if any_ipynb then
-          local ok, styling = pcall(require, "neotex.plugins.tools.jupyter.styling")
+          local ok, styling = pcall(require, "neotex.plugins.text.jupyter.styling")
           if ok and type(styling) == "table" and styling.setup then
             styling.setup()
           end

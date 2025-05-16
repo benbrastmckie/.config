@@ -5,9 +5,7 @@ This directory contains plugins that enhance the editing experience with additio
 ## External Tool Integration
 - Git integration (gitsigns)
 - Browser integration (firenvim)
-- LaTeX integration (vimtex)
-- Lean theorem prover integration (lean)
-- Markdown preview (markdown-preview)
+- UI and UX enhancements (snacks)
 
 ## Text Manipulation Tools
 - Enhanced yank and paste functionality (yanky)
@@ -15,6 +13,14 @@ This directory contains plugins that enhance the editing experience with additio
 - Mini plugins collection (pairs, comments, etc.)
 - Smart list handling for markdown (autolist)
 - TODO comments highlighting and navigation (todo-comments)
+
+## UI Enhancement Tools
+- Dashboard and startup screen (snacks)
+- Git blame and lazygit integration (snacks)
+- Status column with enhanced information (snacks)
+- Terminal integration (snacks)
+- Window management utilities (snacks)
+- Notification system (snacks)
 
 These tools provide specialized functionality that extends the core editor capabilities with focused, purpose-built features.
 
