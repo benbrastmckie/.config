@@ -30,9 +30,14 @@
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
-  - [ ] specify file types when relevant
+  - [ ] make file-type dependent which commands appear
   - [ ] improve organization of mappings
-  - [ ] add descriptive comments
+- comment lines
+  - errors for many lines selected
+  - only comments one line selected
+  - eventually comments all lines selected
+- todo-comments
+  - make icons more stylized
 - [x] buffers
   - [x] <leader>gg sometimes opens LazyGit blank (only happens if I hit the command too fast)
   - [x] always show active tab (sometimes they seem to get lost/hidden)
