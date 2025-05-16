@@ -23,12 +23,7 @@ return {
     { "P",          "<Plug>(YankyPutBefore)",          mode = "n",                 desc = "Put yanked text before cursor" },
     { "gp",         "<Plug>(YankyGPutAfter)",          mode = "n",                 desc = "Put yanked text after cursor and leave cursor after" },
     { "gP",         "<Plug>(YankyGPutBefore)",         mode = "n",                 desc = "Put yanked text before cursor and leave cursor after" },
-
-    -- TODO: Move to Which-Key for consistency
-    -- Telescope integration
-    { "<leader>fy", "<cmd>Telescope yank_history<CR>", desc = "Yank history" },
-    { "<leader>yh", "<cmd>Telescope yank_history<CR>", desc = "Yank history" },
-    { "<leader>yc", "<cmd>YankyClearHistory<CR>",      desc = "Clear yank history" },
+    -- Leader mappings moved to which-key.lua
   },
   dependencies = {
     { "nvim-telescope/telescope.nvim", lazy = true },
@@ -58,37 +53,16 @@ return {
         ignore_registers = { "_" }, -- Ignore the black hole register
       },
 
-      -- TODO: Why are the following mappings necessary if these should be handled by telescope
-      -- Pick settings - optimized for performance
+      -- Enhanced picker setup with custom function to replace the Telescope picker
       picker = {
         select = {
-          action = nil, -- Will be set lazily when needed
+          action = function(entry)
+            require("yanky.picker").actions.put("p", false)(entry)
+          end,
         },
+        -- Basic telescope config that will be enhanced via the override below
         telescope = {
-          use_default_mappings = false,  -- Disable default mappings to avoid conflicts
-          mappings = {
-            i = {
-              ["<C-j>"] = require("telescope.actions").move_selection_next,
-              ["<C-k>"] = require("telescope.actions").move_selection_previous,
-              ["<CR>"] = require("telescope.actions").select_default,
-              ["<C-x>"] = require("telescope.actions").select_horizontal,
-              ["<C-v>"] = require("telescope.actions").select_vertical,
-              ["<C-t>"] = require("telescope.actions").select_tab,
-              ["<C-u>"] = require("telescope.actions").preview_scrolling_up,
-              ["<C-d>"] = require("telescope.actions").preview_scrolling_down,
-              ["<C-c>"] = require("telescope.actions").close,
-            },
-            n = {
-              ["<C-j>"] = require("telescope.actions").move_selection_next,
-              ["<C-k>"] = require("telescope.actions").move_selection_previous,
-              ["<CR>"] = require("telescope.actions").select_default,
-              ["<C-x>"] = require("telescope.actions").select_horizontal,
-              ["<C-v>"] = require("telescope.actions").select_vertical,
-              ["<C-t>"] = require("telescope.actions").select_tab,
-              ["q"] = require("telescope.actions").close,
-              ["<Esc>"] = require("telescope.actions").close,
-            },
-          },
+          use_default_mappings = true,
         },
       },
 
@@ -113,14 +87,108 @@ return {
       deduplicate = true,
     })
 
-    -- Lazy load Telescope integration only when needed
+    -- Create a custom yank_history function that doesn't rely on the extension
+    -- This will override the default mappings from which-key
+    _G.YankyTelescopeHistory = function()
+      local tele_status, telescope = pcall(require, "telescope")
+      if not tele_status then
+        vim.notify("Telescope not available", vim.log.levels.ERROR)
+        return
+      end
+      
+      local pickers = require("telescope.pickers")
+      local finders = require("telescope.finders")
+      local previewers = require("telescope.previewers")
+      local conf = require("telescope.config").values
+      local actions = require("telescope.actions")
+      local action_state = require("telescope.actions.state")
+      
+      -- Get all yanks
+      local history = {}
+      for index, value in pairs(require("yanky.history").all()) do
+        value.history_index = index
+        history[index] = value
+      end
+      
+      -- Create a previewer that shows the yanked content
+      local previewer = previewers.new_buffer_previewer({
+        title = "Yanked Text",
+        define_preview = function(self, entry)
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, true, vim.split(entry.value.regcontents, "\n"))
+          if entry.value.filetype ~= nil then
+            vim.bo[self.state.bufnr].filetype = entry.value.filetype
+          end
+        end,
+      })
+      
+      -- Custom entry maker
+      local make_entry = function(entry)
+        return {
+          value = entry,
+          ordinal = entry.regcontents,
+          display = entry.regcontents:gsub("\n", "\\n"),
+        }
+      end
+      
+      -- Create new picker with reliable behavior
+      pickers.new({}, {
+        prompt_title = "Yank History",
+        finder = finders.new_table({
+          results = history,
+          entry_maker = make_entry,
+        }),
+        sorter = conf.generic_sorter({}),
+        previewer = previewer,
+        attach_mappings = function(prompt_bufnr, map)
+          -- Define a reliable action for putting yanked content
+          actions.select_default:replace(function()
+            actions.close(prompt_bufnr)
+            local selection = action_state.get_selected_entry()
+            
+            vim.schedule(function()
+              -- Use yanky's put function for consistent behavior
+              local yanky = require("yanky")
+              require("yanky.utils").use_temporary_register(
+                require("yanky.utils").get_default_register(),
+                selection.value,
+                function() yanky.put("p", false) end
+              )
+            end)
+          end)
+          
+          return true
+        end,
+      }):find()
+    end
+    
+    -- Override the keymaps in the which-key setup to use our custom function
     vim.api.nvim_create_autocmd("User", {
-      pattern = "TelescopeLoaded",
-      once = true,
+      pattern = "VeryLazy",
       callback = function()
-        pcall(require("telescope").load_extension, "yank_history")
-      end,
+        -- Update the keymaps when plugins are fully loaded
+        pcall(function()
+          local wk = require("which-key")
+          
+          -- Update both keymaps that use yank history
+          wk.register({
+            f = { 
+              y = { function() _G.YankyTelescopeHistory() end, "yanks" },
+            }
+          }, { prefix = "<leader>" })
+          
+          wk.register({
+            y = { 
+              h = { function() _G.YankyTelescopeHistory() end, "history" },
+            }
+          }, { prefix = "<leader>" })
+        end)
+      end
     })
+    
+    -- Still try to load the extension as a fallback
+    pcall(function()
+      require("telescope").load_extension("yank_history")
+    end)
 
     -- Add autocommands to clean up yank history periodically
     vim.api.nvim_create_autocmd("BufWritePre", {

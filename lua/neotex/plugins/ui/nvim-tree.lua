@@ -7,8 +7,8 @@ _G.NvimTreePersistence = _G.NvimTreePersistence or {}
 if not _G.NvimTreePersistence.width then
   -- Try to read from a file first if we have one
   local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
-  local width = 30  -- Default width
-  
+  local width = 30 -- Default width
+
   -- Try to read the stored width
   pcall(function()
     if vim.fn.filereadable(width_file) == 1 then
@@ -21,7 +21,7 @@ if not _G.NvimTreePersistence.width then
       end
     end
   end)
-  
+
   -- Store the width directly in the global object
   _G.NvimTreePersistence.width = width
 end
@@ -38,8 +38,8 @@ return {
       -- If width is not set in the global scope, try to read from file
       if not _G.NvimTreePersistence.width then
         local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
-        local width = 30  -- Standard default
-        
+        local width = 30 -- Standard default
+
         pcall(function()
           if vim.fn.filereadable(width_file) == 1 then
             local file_content = vim.fn.readfile(width_file)
@@ -51,21 +51,21 @@ return {
             end
           end
         end)
-        
+
         _G.NvimTreePersistence.width = width
       end
-      
+
       -- Initialize the rest of the module
       _G.NvimTreePersistence = vim.tbl_extend("force", _G.NvimTreePersistence, {
         -- Keep track of whether the tree is currently open
         is_open = false,
-        
+
         -- Use our stored width as the default now
         default_width = _G.NvimTreePersistence.width or 30,
-        
+
         -- Flag to prevent multiple initializations
         initialized = true,
-        
+
         -- Store reference to the API for use in methods
         api = api,
 
@@ -102,23 +102,23 @@ return {
           if found_width and found_width > 10 and found_width ~= _G.NvimTreePersistence.width then
             -- Save to the global module
             _G.NvimTreePersistence.width = found_width
-            
+
             -- Update the default_width as well to avoid mismatches
             _G.NvimTreePersistence.default_width = found_width
-            
+
             -- Also save to a file for persistence across sessions
             local width_file = vim.fn.stdpath("data") .. "/nvim_tree_width"
             pcall(function()
-              vim.fn.writefile({tostring(found_width)}, width_file)
+              vim.fn.writefile({ tostring(found_width) }, width_file)
             end)
-            
+
             -- Immediately update the Neovim module config to avoid the two-step problem
             pcall(function()
               local nvimtree = require("nvim-tree")
               if nvimtree and nvimtree.config and nvimtree.config.view then
                 nvimtree.config.view.width = found_width
               end
-              
+
               -- Also try to update the state in the view module directly
               local view = package.loaded["nvim-tree.view"]
               if view then
@@ -191,10 +191,10 @@ return {
           -- More aggressive approach: override the width in all possible places
           -- 1. Set an autocmd to be triggered when window is created (highest priority)
           local winenter_augroup = vim.api.nvim_create_augroup("NvimTreeSingleStepOpen", { clear = true })
-          vim.api.nvim_create_autocmd({"BufWinEnter", "WinNew", "BufEnter"}, {
+          vim.api.nvim_create_autocmd({ "BufWinEnter", "WinNew", "BufEnter" }, {
             group = winenter_augroup,
-            pattern = {"NvimTree*"},
-            once = true, -- Only trigger once
+            pattern = { "NvimTree*" },
+            once = true,              -- Only trigger once
             callback = function()
               vim.schedule(function() -- Use schedule to ensure we run after window creation
                 -- Find the NvimTree window
@@ -204,7 +204,7 @@ return {
                     -- Force correct width with no animation - critical for seamless opening
                     vim.api.nvim_win_set_width(win, width)
                     vim.api.nvim_win_set_option(win, "winfixwidth", true)
-                    
+
                     -- We're using api.nvim_win_set_option above, which is better
                     -- than using vim.wo since we have the window handle
                     break
@@ -213,11 +213,11 @@ return {
               end)
             end
           })
-          
+
           -- 2. Directly update configuration in all possible locations
           pcall(function()
             -- Update any loaded modules that might store width
-            for _, module_name in ipairs({"nvim-tree", "nvim-tree.view", "nvim-tree.lib", "nvim-tree.renderer"}) do
+            for _, module_name in ipairs({ "nvim-tree", "nvim-tree.view", "nvim-tree.lib", "nvim-tree.renderer" }) do
               local module = package.loaded[module_name]
               if module then
                 -- Try various possible width storage locations
@@ -232,13 +232,13 @@ return {
                 end
               end
             end
-            
+
             -- Also set the width in the live config
             if nvimtree and nvimtree.config and nvimtree.config.view then
               nvimtree.config.view.width = width
             end
           end)
-          
+
           -- Inject width into config before opening
           if nvimtree and nvimtree.setup then
             -- Apply width to all config locations to ensure it's used
@@ -247,28 +247,28 @@ return {
               if nvimtree.config and nvimtree.config.view then
                 nvimtree.config.view.width = width
               end
-              
+
               -- Also modify any other view-related configs that might be used
               local tree_module = package.loaded["nvim-tree.view"] or {}
               if tree_module._config then
                 tree_module._config.width = width
               end
             end)
-            
+
             -- Open the tree in a single operation
             local api = _G.NvimTreePersistence.api
-            
+
             -- Use pcall to handle any errors during opening
             pcall(function()
               -- Use the open call with width parameter
               api.tree.open({ width = width })
             end)
-            
+
             -- Set state after a very short delay to allow window to open
             vim.defer_fn(function()
               _G.NvimTreePersistence.opening = false
               _G.NvimTreePersistence.is_open = true
-              
+
               -- Apply settings to NvimTree buffer
               for _, win in ipairs(vim.api.nvim_list_wins()) do
                 local buf = vim.api.nvim_win_get_buf(win)
@@ -277,10 +277,10 @@ return {
                   if vim.api.nvim_win_get_width(win) ~= width then
                     vim.api.nvim_win_set_width(win, width)
                   end
-                  
+
                   -- Fix the width to prevent unwanted resizing
                   vim.api.nvim_win_set_option(win, "winfixwidth", true)
-                  
+
                   -- Apply buffer settings
                   vim.b.minicursorword_disable = true
                   vim.b.local_highlight_enabled = false
@@ -288,7 +288,7 @@ return {
                   break
                 end
               end
-              
+
               -- Apply highlight colors
               vim.cmd("doautocmd ColorScheme")
             end, 10) -- Very short delay
@@ -355,7 +355,7 @@ return {
           else
             -- Set opening flag to prevent potential issues
             _G.NvimTreePersistence.opening = true
-            
+
             -- Call our enhanced open function
             _G.NvimTreePersistence.open(opts)
           end
@@ -425,21 +425,21 @@ return {
     vim.api.nvim_create_user_command('NvimTreeCustomToggle', function()
       _G.NvimTreePersistence.toggle()
     end, {})
-    
+
     -- Add options to the NvimTree setup to handle horizontal scrolling and styling
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "NvimTree",
       callback = function()
         -- Apply local options to prevent horizontal scrolling
-        vim.wo.wrap = false              -- Don't wrap long lines
-        vim.wo.sidescrolloff = 0         -- No side scrolling offset
-        vim.opt_local.list = false       -- Don't show invisible characters
-        vim.opt_local.linebreak = false  -- Don't break at words
-        
+        vim.wo.wrap = false             -- Don't wrap long lines
+        vim.wo.sidescrolloff = 0        -- No side scrolling offset
+        vim.opt_local.list = false      -- Don't show invisible characters
+        vim.opt_local.linebreak = false -- Don't break at words
+
         -- Apply our custom highlight colors for directories
         -- Soft light purple for directories
         local dir_color = "#b294bb"
-        
+
         -- Apply the color
         vim.api.nvim_set_hl(0, "NvimTreeFolderName", { fg = dir_color, bold = true })
         vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", { fg = dir_color, bold = true })
@@ -449,15 +449,15 @@ return {
         vim.api.nvim_set_hl(0, "NvimTreeSpecialFolderName", { fg = dir_color, bold = true, italic = true })
         vim.api.nvim_set_hl(0, "NvimTreeFolderArrowClosed", { fg = dir_color })
         vim.api.nvim_set_hl(0, "NvimTreeFolderArrowOpen", { fg = dir_color })
-        
+
         -- Set the root folder with normal background (to match regular tree items)
-        vim.api.nvim_set_hl(0, "NvimTreeRootFolder", { 
+        vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
           fg = dir_color,
-          bg = nil,  -- No background
+          bg = nil, -- No background
           bold = true,
           italic = true
         })
-        
+
         -- Set the Directory highlight separately for the top header
         local header_bg = vim.fn.synIDattr(vim.fn.hlID("TabLineFill"), "bg#")
         if header_bg and header_bg ~= "" then
@@ -473,7 +473,7 @@ return {
 
     -- Set up autocommands for NvimTree custom settings
     local nvim_tree_autocmds = vim.api.nvim_create_augroup("NvimTreeCustomSettings", { clear = true })
-    
+
     -- Add ColorScheme handler to ensure colors are reapplied when colorscheme changes
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = nvim_tree_autocmds,
@@ -481,16 +481,16 @@ return {
         -- Check if NvimTree is loaded before applying
         if vim.fn.exists(":NvimTreeToggle") == 2 then
           -- Apply our custom highlight colors for directories
-          local dir_color = "#b294bb"  -- Soft light purple
-        
+          local dir_color = "#b294bb" -- Soft light purple
+
           -- Regular directories in the file tree should have no background
-          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", { 
+          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
             fg = dir_color,
-            bg = nil,  -- No background
+            bg = nil, -- No background
             bold = true,
             italic = true
           })
-          
+
           -- Top path should have darker background (from bufferline)
           local header_bg = vim.fn.synIDattr(vim.fn.hlID("TabLineFill"), "bg#")
           if header_bg and header_bg ~= "" then
@@ -527,19 +527,19 @@ return {
         pcall(function()
           require('illuminate').pause_buf()
         end)
-        
+
         -- Disable horizontal scrolling in NvimTree
-        vim.opt_local.sidescrolloff = 0     -- No side scrolling offset
-        vim.opt_local.hlsearch = false      -- No search highlight
-        vim.opt_local.list = false          -- No list mode
-        
+        vim.opt_local.sidescrolloff = 0 -- No side scrolling offset
+        vim.opt_local.hlsearch = false  -- No search highlight
+        vim.opt_local.list = false      -- No list mode
+
         -- Set window options for better appearance
         pcall(function()
           -- These might not all be available but try them anyway
           vim.wo.breakindent = false
           vim.wo.linebreak = false
         end)
-        
+
         -- Disable horizontal scroll commands to prevent side scrolling
         vim.keymap.set('n', '<ScrollWheelRight>', '<Nop>', { buffer = true, silent = true })
         vim.keymap.set('n', '<ScrollWheelLeft>', '<Nop>', { buffer = true, silent = true })
@@ -551,7 +551,7 @@ return {
         vim.keymap.set('n', '<Left>', '<Nop>', { buffer = true, silent = true })
       end
     })
-    
+
     -- Handle window entry to ensure consistent NvimTree appearance
     vim.api.nvim_create_autocmd("WinEnter", {
       group = nvim_tree_autocmds,
@@ -562,7 +562,7 @@ return {
           vim.wo.wrap = false
           vim.wo.sidescrolloff = 0
           vim.wo.list = false
-          
+
           -- Apply visual settings consistently
           vim.wo.cursorline = true      -- Highlight current line
           vim.wo.signcolumn = "yes"     -- Show sign column
@@ -716,50 +716,50 @@ return {
             bg = hex_bg_color,
             bold = true
           })
-          
+
           -- =================== DIRECTORY TEXT STYLING ===================
           -- Use a soft light purple color for directories to make them stand out
-          
+
           -- Define a soft light purple color for directories
-          local dir_color = "#b294bb"  -- Soft light purple
-          
+          local dir_color = "#b294bb" -- Soft light purple
+
           -- Apply the new directory color to all folder-related highlights in the tree
           vim.api.nvim_set_hl(0, "NvimTreeFolderName", { fg = dir_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", { fg = dir_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeEmptyFolderName", { fg = dir_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeFolderIcon", { fg = dir_color })
-          
+
           -- Keep the original NvimTreeOpenedFolderName for the top path with original background
           vim.api.nvim_set_hl(0, "Directory", {
             fg = dir_color,
             bg = hex_bg_color,
             bold = true
           })
-          
+
           -- Update the root folder to match other directory entries (no background)
-          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", { 
+          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
             fg = dir_color,
-            bg = nil,  -- Remove background so it matches other directories in the tree
+            bg = nil, -- Remove background so it matches other directories in the tree
             bold = true,
             italic = true
           })
-          
+
           -- Ensure special folder states also use the same color
           vim.api.nvim_set_hl(0, "NvimTreeSymlinkFolderName", { fg = dir_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeSpecialFolderName", { fg = dir_color, bold = true, italic = true })
-          
+
           -- Make folder arrows match the directory color
           vim.api.nvim_set_hl(0, "NvimTreeFolderArrowClosed", { fg = dir_color })
           vim.api.nvim_set_hl(0, "NvimTreeFolderArrowOpen", { fg = dir_color })
-          
+
           -- =================== GIT STATUS ELEMENTS ===================
           -- Use the same colors as GitSigns for consistency
-          
+
           -- Get colors from GitColors global or use defaults
-          local add_color = _G.GitColors and _G.GitColors.add or "#4fa6ed"     -- Light blue
+          local add_color = _G.GitColors and _G.GitColors.add or "#4fa6ed"       -- Light blue
           local change_color = _G.GitColors and _G.GitColors.change or "#e78a4e" -- Soft rust orange
           local delete_color = _G.GitColors and _G.GitColors.delete or "#fb4934" -- Red
-          
+
           -- Apply consistent git colors for NvimTree
           vim.api.nvim_set_hl(0, "NvimTreeGitNew", { fg = add_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeGitDirty", { fg = change_color, bold = true })
@@ -767,17 +767,17 @@ return {
           vim.api.nvim_set_hl(0, "NvimTreeGitMerge", { fg = change_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeGitRenamed", { fg = change_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeGitDeleted", { fg = delete_color, bold = true })
-          
+
           -- Apply colors to modified indicator (which shows next to files)
           vim.api.nvim_set_hl(0, "NvimTreeFileStaged", { fg = add_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeFileDirty", { fg = change_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeFileRenamed", { fg = change_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeFileNew", { fg = add_color, bold = true })
           vim.api.nvim_set_hl(0, "NvimTreeFileDeleted", { fg = delete_color, bold = true })
-          
+
           -- Also set the modified symbol color
           vim.api.nvim_set_hl(0, "NvimTreeModifiedFile", { fg = change_color, bold = true })
-          
+
           -- =================== FOLDER & FILE ELEMENTS ===================
           -- We'll preserve their original foreground colors but apply our bg if needed
 
@@ -852,11 +852,11 @@ return {
     vim.api.nvim_create_autocmd("VimEnter", {
       callback = function()
         vim.cmd("doautocmd ColorScheme")
-        
+
         -- Set up a custom highlight for truncated lines in NvimTree
-        vim.api.nvim_set_hl(0, "NvimTreeTruncateLine", { 
-          fg = "#666666",  -- Light gray
-          italic = true 
+        vim.api.nvim_set_hl(0, "NvimTreeTruncateLine", {
+          fg = "#666666", -- Light gray
+          italic = true
         })
       end,
       once = true
@@ -867,10 +867,10 @@ return {
       _G.NvimTreePersistence.width = 30
     end
     _G.NvimTreePersistence.default_width = _G.NvimTreePersistence.width
-    
+
     -- Pre-configure the view width before setup
     local initial_width = _G.NvimTreePersistence.width
-    
+
     -- Directly modify the NvimTree view module if available
     pcall(function()
       local view = package.loaded["nvim-tree.view"]
@@ -885,7 +885,7 @@ return {
       on_attach = function(bufnr)
         -- Call the original on_attach
         on_attach(bufnr)
-        
+
         -- Fix the width to prevent automatic resizing
         -- Get the window ID for the buffer
         local win_id = vim.fn.bufwinid(bufnr)
@@ -959,7 +959,7 @@ return {
         add_trailing = false,
         group_empty = false,
         full_name = false,
-        root_folder_label = ":t",  -- Only show the last component of the path
+        root_folder_label = ":t",    -- Only show the last component of the path
         root_folder_modifier = ":t", -- Only show the root folder name, not the full path
         indent_width = 2,
         special_files = {},
@@ -1070,19 +1070,19 @@ return {
         files_first = false,
       },
       view = {
-        adaptive_size = false,        -- Don't automatically resize the window
+        adaptive_size = false, -- Don't automatically resize the window
         centralize_selection = false,
         cursorline = true,
-        debounce_delay = 0,           -- Eliminate debounce delay for immediate rendering
+        debounce_delay = 0,                 -- Eliminate debounce delay for immediate rendering
         side = "left",
         preserve_window_proportions = true, -- Maintain proportions to prevent resizing
         number = false,
         relativenumber = false,
         signcolumn = "yes",
-        width = initial_width,        -- Use stored width from the beginning
+        width = initial_width, -- Use stored width from the beginning
         -- Removed unsupported options (width_increment, wrap, scrolloff)
         float = {
-          enable = false,             -- Disable floating mode
+          enable = false, -- Disable floating mode
           quit_on_focus_loss = true,
           open_win_config = {
             relative = "editor",
@@ -1103,8 +1103,8 @@ return {
         args = {},
       },
       modified = {
-        enable = true, -- Enable the modified status tracking
-        show_on_dirs = true, -- Show on directories
+        enable = true,            -- Enable the modified status tracking
+        show_on_dirs = true,      -- Show on directories
         show_on_open_dirs = true, -- Show on open directories
       },
       live_filter = {
