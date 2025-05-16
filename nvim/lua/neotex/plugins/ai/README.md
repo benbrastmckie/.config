@@ -22,11 +22,9 @@ lua/neotex/plugins/ai/
     ├── avante-highlights.lua        # Enhanced highlighting for Avante UI
     ├── avante-support.lua           # Support functions for Avante configuration
     ├── system-prompts.json          # System prompt templates storage
-    └── system-prompts.lua           # System prompts manager
-
-lua/neotex/util/
-├── mcp_server.lua         # MCPHub server state management and control
-└── avante_mcp.lua         # Avante and MCPHub integration layer
+    ├── system-prompts.lua           # System prompts manager
+    ├── mcp_server.lua               # MCPHub server state management and control
+    └── avante_mcp.lua               # Avante and MCPHub integration layer
 ```
 
 ## Available AI Features
@@ -104,9 +102,9 @@ MCP-Hub provides a unified interface to multiple AI services and tools.
 - `MCPAvanteTrigger`: Trigger loading of MCPHub plugin
 
 **Implementation Details:**
-- Uses advanced state management through `neotex.util.mcp_server` module
+- Uses advanced state management through `neotex.plugins.ai.util.mcp_server` module
 - Event-driven architecture with `User AvantePreLoad` event
-- Clean integration layer in `neotex.util.avante_mcp` module
+- Clean integration layer in `neotex.plugins.ai.util.avante_mcp` module
 - Intelligent binary detection and execution logic
 - Multiple server status verification mechanisms
 - Self-healing error handling with fallbacks
@@ -126,16 +124,23 @@ The MCPHub integration has been completely redesigned with a more reliable and e
 5. **Clean UI**: Minimal notifications - only success messages are shown
 6. **Robust Server Detection**: Automatically verifies server is running with HTTP checks
 
-The `<leader>hx` command is available if you want to manually start MCPHub.
+The `<leader>hx` command provides a smart wrapper to open the MCPHub interface:
+- Automatically loads the MCPHub plugin if not loaded
+- Starts the server if it's not already running 
+- Opens the MCPHub interface when ready
+- Handles all edge cases with appropriate timing
 
 ### Using MCP Tools in Prompts
 
-To use MCP tools in your Avante prompts, use the following syntax:
+The integration with MCPHub provides two ways to access tools in Avante:
+
+#### 1. JSON Tool Syntax
+
+You can use the standard JSON tool format:
 
 ```
-I'd like you to use the MCP tool to [task description].
+I'd like you to use the MCP tool to search for information.
 
-For example:
 {
   "tool": "mcp",
   "input": {
@@ -147,35 +152,93 @@ For example:
 }
 ```
 
-### Supported MCP Tools
+#### 2. Slash Commands (Recommended)
 
-Depending on your MCP-Hub configuration, the following tools might be available:
-
-- `websearch`: Search the web for information
-- `weather`: Get weather information for a location
-- `executor`: Execute code in a sandbox environment
-- `image`: Generate or analyze images
-- `pdf`: Extract information from PDF documents
-
-### Example Usage
-
-Here's an example of using the MCP websearch tool with Avante:
-
-1. Open Avante with `<leader>ha`
-2. Type the following prompt:
+MCPHub automatically creates slash commands for all tools, making them easier to use:
 
 ```
-What is the latest version of Neovim? Use the MCP tools to find out.
+What is the latest version of Neovim?
 
-{
-  "tool": "mcp",
-  "input": {
-    "tool": "websearch",
-    "input": {
-      "query": "latest Neovim release version"
-    }
-  }
+/websearch latest Neovim release version
+```
+
+The slash command format is more concise and supports auto-completion in Avante's interface.
+
+### Supported MCP Tools
+
+MCPHub provides access to these commonly available tools:
+
+- `/websearch [query]`: Search the web for information
+- `/weather [location]`: Get current weather information
+- `/image_generate [prompt]`: Generate images from text descriptions
+- `/executor [language] [code]`: Run code in a sandbox environment
+- `/pdf [url]`: Extract and analyze content from PDF documents
+- `/variables`: List all available variables from your servers
+- `/servers`: List all connected servers and their status
+
+Additional tools may be available depending on your specific MCPHub configuration and connected servers.
+
+### Tool Parameters
+
+Most tools accept parameters that can be provided in different ways:
+
+```
+# Simple query parameter
+/websearch latest Neovim release
+
+# Multiple parameters
+/image_generate a cat sitting on a keyboard --style realistic --size 512x512
+
+# Complex parameters using JSON
+/executor {
+  "language": "python",
+  "code": "import math\nprint(math.sqrt(144))"
 }
+```
+
+### Example Usage Patterns
+
+Here are examples of effective MCPHub tool usage in Avante:
+
+**Basic web search:**
+```
+What is the latest version of Neovim? Use MCPHub to find out.
+
+/websearch latest Neovim release version
+```
+
+**Sequential tool usage:**
+```
+Can you help me understand this weather data and how it compares to historical averages?
+
+/weather New York
+Now let's compare this with historical data:
+/websearch New York weather historical average
+```
+
+**Tool with code execution:**
+```
+Can you write a Python function to calculate Fibonacci numbers and then test it?
+
+Here's a function to calculate Fibonacci numbers:
+```python
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+```
+
+Let's test it:
+/executor python
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+
+for i in range(10):
+    print(f"fibonacci({i}) = {fibonacci(i)}")
 ```
 
 ### Integration Architecture
@@ -190,14 +253,14 @@ The MCPHub integration is implemented with a clean, modular architecture:
    - Configured to never load at startup
    - Sets up build and configuration functions
 
-2. **Server Management** (`lua/neotex/util/mcp_server.lua`)
+2. **Server Management** (`lua/neotex/plugins/ai/util/mcp_server.lua`)
    - Central state management for MCPHub server
    - Intelligent executable detection for all platforms
    - Multiple server status verification mechanisms
    - Handles server lifecycle (start, stop, check)
    - Provides server status tracking and commands
 
-3. **Integration Layer** (`lua/neotex/util/avante_mcp.lua`)
+3. **Integration Layer** (`lua/neotex/plugins/ai/util/avante_mcp.lua`)
    - Clean API for Avante to interact with MCPHub
    - Handles event triggering for lazy loading
    - Manages command registration
@@ -293,7 +356,6 @@ MCP-Hub works across all platforms with smart environment detection that ensures
 For detailed information on the NixOS integration, check the documentation in:
 - `specs/BUNDLED.md` for bundled binary approach
 - `specs/SOLUTION.md` for comprehensive installation solutions
-- `MCPHUB_README.md` for quick troubleshooting guide
 
 ## Troubleshooting
 
@@ -311,6 +373,50 @@ If MCPHub commands aren't available:
 1. Launch Avante first with `<leader>ha` or `<leader>hc`
 2. Wait for the "MCPHub server ready" message
 3. Then try running `:MCPHub` to open the interface
+
+### Quick Solutions for NixOS
+
+If you're having trouble with MCP-Hub on NixOS, try these solutions in order:
+
+1. **Use the wrapper script approach**:
+   ```lua
+   -- In your plugin configuration
+   local setup_config = {
+     use_bundled_binary = false,
+     cmd = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper"),
+     cmdArgs = {},
+     -- other settings...
+   }
+   ```
+
+2. **Run the NixOS installation script**:
+   ```bash
+   bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh
+   ```
+
+3. **Use the MCPHubInstallManual command**:
+   ```
+   :MCPHubInstallManual
+   ```
+
+4. **Set MCP_HUB_PATH environment variable**:
+   ```lua
+   -- In your init.lua
+   vim.g.mcp_hub_path = "~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper"
+   ```
+
+### Full Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `:MCPHub` | Launch the MCP-Hub interface |
+| `:MCPHubDiagnose` | Display diagnostics information |
+| `:MCPHubRebuild` | Rebuild the bundled binary |
+| `:MCPHubInstallManual` | Install using alternative method |
+| `:MCPHubStatus` | Check connection status |
+| `:MCPHubStart` | Manually start the MCPHub server |
+| `:MCPAvanteTrigger` | Trigger loading of MCPHub plugin |
+| `:MCPAvante` | Open Avante with MCPHub integration |
 
 ### Standard Environment Troubleshooting
 
@@ -332,6 +438,42 @@ If you're experiencing issues on NixOS:
 4. Run the installation script manually: `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh`
 5. Check if UVX is properly installed with `which uvx` in your terminal
 6. Delete the flag file to trigger auto-installation again: `rm ~/.local/share/nvim/mcp-hub/nixos_installed`
-7. See detailed options in `MCPHUB_README.md` for additional solutions
+7. Check if binary exists: 
+   ```bash
+   ls -la ~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/node_modules/.bin/mcp-hub
+   ```
+8. Check Node.js: 
+   ```bash
+   node --version
+   ```
+9. Check wrapper script:
+   ```bash
+   cat ~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper
+   ```
+10. Check if MCPHub loads properly with Avante:
+    ```
+    :MCPHubStatus
+    :AvanteAsk "Test question"
+    :MCPHubStatus  # Check again after using Avante
+    ```
+
+### Installation Scripts
+
+Two installation scripts are available:
+
+1. `/home/benjamin/.config/nvim/scripts/install-mcp-hub.sh`
+   - Basic installation script
+
+2. `/home/benjamin/.config/nvim/scripts/mcp-hub-nixos-install.sh`
+   - Advanced installation with better error handling
+
+### Best Solution for NixOS
+
+The most reliable approach for NixOS is:
+
+1. Run the installation script: `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh`
+2. Use the wrapper script approach in your config
+3. Restart Neovim and use Avante with `<leader>ha` or `<leader>hc`
+4. Check MCPHub status with `:MCPHubStatus`
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.

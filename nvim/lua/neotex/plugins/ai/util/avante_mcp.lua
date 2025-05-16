@@ -1,6 +1,6 @@
--- lua/neotex/util/avante_mcp.lua
+-- lua/neotex/plugins/ai/util/avante_mcp.lua
 
-local mcp_server = require('neotex.util.mcp_server')
+local mcp_server = require('neotex.plugins.ai.util.mcp_server')
 
 local M = {}
 
@@ -140,6 +140,35 @@ function M._integrate_avante_with_mcp()
   end)
 end
 
+-- Simpler and more direct function to open MCPHub interface
+function M.open_mcphub()
+  -- Set up a dedicated command that will be created once the plugin is loaded
+  vim.api.nvim_create_user_command("MCPHubOpen", function()
+    -- Run the startup command to ensure the server is running
+    pcall(vim.cmd, "MCPHubStart")
+    
+    -- Give server a moment to start up if it wasn't already running
+    vim.defer_fn(function()
+      -- Then open the interface 
+      pcall(vim.cmd, "MCPHub")
+    end, 500)
+  end, { desc = "Open MCPHub interface with auto-start" })
+  
+  -- Load the MCPHub plugin via Lazy
+  vim.notify("Opening MCPHub...", vim.log.levels.INFO)
+  
+  -- Try to load the plugin through Lazy's API
+  pcall(function()
+    require("lazy").load({ plugins = { "mcphub.nvim" } })
+    
+    -- Wait for the plugin to initialize
+    vim.defer_fn(function()
+      -- Run our command
+      pcall(vim.cmd, "MCPHubOpen")
+    end, 200)
+  end)
+end
+
 -- Initialize the integration
 function M.setup()
   M.register_commands()
@@ -149,6 +178,11 @@ function M.setup()
   vim.api.nvim_create_user_command("MCPAvante", function(opts)
     M.with_mcp("AvanteAsk " .. (opts.args or ""))
   end, { nargs = "*", desc = "Open Avante with MCPHub integration" })
+  
+  -- Set up command to open MCPHub directly
+  vim.api.nvim_create_user_command("MCPHubOpen", function()
+    M.open_mcphub()
+  end, { desc = "Open MCPHub interface with auto-start" })
 end
 
 return M

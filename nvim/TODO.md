@@ -36,12 +36,14 @@
 - [x] buffers
   - [x] <leader>gg sometimes opens LazyGit blank
   - [x] always show active tab (sometimes they seem to get lost/hidden)
-- [.] mcphub
+- [:] mcphub
+  - [x] run tests to confirm that mcp works with avante
+  - debug mcp tools in avante
+  - create user guide
   - [x] confirm that non-nix users won't get errors
   - [x] move mcp-memory out of the .config/ directory
-  - lazy load when avante starts
-  - move `mcphub-loader.lua` to `util/`
-  - run tests to confirm that mcp works with avante
+  - [x] lazy load when avante starts
+  - [x] move `mcphub-loader.lua` to `util/`
   - [x] make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
     - [x] system is NixOS
     - [x] mcphub has not already been installed
@@ -55,7 +57,7 @@
   - [ ] make scripts
 - [.] avante
   - [x] search/replace
-  - [x] ask seems to only use one line
+  - ask seems to only use one line
   - improve ui for accept/reject
   - turn off mouse support in Avante
   - <C-j/k> sometimes stops working in Avante after it makes changes

@@ -24,8 +24,13 @@ return {
     "nvim-lua/plenary.nvim",
   },
   lazy = true,
-  cmd = { "MCPHubStatus", "MCPHubStart" }, -- Don't include MCPHub to prevent auto-loading
+  -- Include only explicit commands to prevent auto-loading on MCPHub command
+  cmd = { "MCPHubStatus", "MCPHubStart" },
   event = { "User AvantePreLoad" }, -- Only load on this custom event
+  keys = { 
+    -- Use a simpler command to open MCPHub that handles its own loading
+    { "<leader>hx", "<cmd>MCPHubOpen<CR>", desc = "Open MCPHub" } 
+  },
   module = false, -- Prevent module-based loading
   
   -- Build function with NixOS compatibility
@@ -152,6 +157,6 @@ fi
     })
     
     -- Set up the server manager
-    require("neotex.util.mcp_server").setup_commands()
+    require("neotex.plugins.ai.util.mcp_server").setup_commands()
   end,
 }
