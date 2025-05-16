@@ -40,16 +40,19 @@
   - [x] confirm that non-nix users won't get errors
   - [x] move mcp-memory out of the .config/ directory
   - lazy load when avante starts
+  - move `mcphub-loader.lua` to `util/`
   - run tests to confirm that mcp works with avante
   - [x] make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
     - [x] system is NixOS
     - [x] mcphub has not already been installed
   - [x] reduce notifications
+- [ ] optimize
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
   - [ ] make file-type dependent which commands appear
   - [ ] improve organization of mappings
+  - [ ] make scripts
 - [.] avante
   - [x] search/replace
   - improve ui for accept/reject

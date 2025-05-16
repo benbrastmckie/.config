@@ -53,6 +53,59 @@ else
   pcall(config.setup)
 end
 
+-- Global function to ensure MCPHub is loaded and available
+_G.ensure_mcphub_loaded = function()
+  -- First trigger the event to lazy-load MCPHub
+  vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+  
+  -- Check if the MCPHub command exists
+  if vim.fn.exists(":MCPHub") == 0 then
+    -- MCPHub command doesn't exist yet, try to load it directly
+    
+    -- First, check if Lazy has the plugin loaded
+    local stats = require("lazy").stats()
+    if not stats.loaded["mcphub.nvim"] then
+      -- Try to explicitly load the plugin via Lazy
+      pcall(function() vim.cmd("Lazy load mcphub.nvim") end)
+      
+      -- Wait a bit for the load to complete
+      vim.defer_fn(function()
+        -- Check again if the command exists
+        if vim.fn.exists(":MCPHub") == 0 then
+          -- Still doesn't exist, try to register it manually
+          vim.api.nvim_create_user_command("MCPHub", function()
+            -- Ensure the module is loaded when the command is called
+            local ensure_mcphub = require("neotex.util.ensure_mcphub")
+            
+            -- Start the server directly using our helper function
+            ensure_mcphub.start_mcphub_server()
+          end, {})
+          
+          vim.notify("Manually registered MCPHub command", vim.log.levels.INFO)
+        end
+      end, 100)
+    end
+  end
+  
+  return true
+end
+
+-- Track MCPHub server state to prevent multiple startups
+_G.mcphub_server_started = false
+
+-- Create command for loading MCPHub
+vim.api.nvim_create_user_command("MCPHubLoad", function()
+  -- Ensure the module is loaded first
+  local ensure_mcphub = require("neotex.util.ensure_mcphub")
+  
+  -- Load the plugin
+  _G.ensure_mcphub_loaded()
+  
+  -- Start the server directly using our helper function
+  ensure_mcphub.start_mcphub_server()
+end, { desc = "Force load MCPHub plugin and start server" })
+
+
 -- If bootstrap fails, set up minimal fallback
 if not bootstrap_ok then
   vim.notify("Error loading bootstrap: " .. tostring(bootstrap) .. ". Using minimal fallback.", vim.log.levels.WARN)
