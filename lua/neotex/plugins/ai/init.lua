@@ -28,9 +28,12 @@ local avante_plugin = safe_require("neotex.plugins.ai.avante")
 local mcp_hub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
 
--- Return plugin specs
+-- Return plugin specs but with explicit ordering
+-- to ensure MCPHub is not loaded by dependency
 return {
   avante_plugin,
+  -- Place MCPHub after other plugins to ensure proper lazy loading
+  -- This order matters - MCPHub should be loaded after Avante when needed
   mcp_hub_plugin, 
   lectic_plugin,
 }

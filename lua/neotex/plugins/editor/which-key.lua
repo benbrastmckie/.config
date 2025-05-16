@@ -409,20 +409,42 @@ return {
       },
       h = {
         name = "AI HELP",
-        a = { "<cmd>AvanteAsk<CR>", "ask" },
+        -- Avante commands with MCPHub loading via event
+        a = { function() 
+          -- Trigger event to load MCPHub first
+          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+          -- Open Avante
+          vim.cmd("AvanteAsk")
+        end, "ask" },
+        c = { function() 
+          -- Trigger event to load MCPHub first
+          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+          -- Open Avante
+          vim.cmd("AvanteChat")
+        end, "chat" },
+        t = { function() 
+          -- Trigger event to load MCPHub first
+          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+          -- Open Avante
+          vim.cmd("AvanteToggle")
+        end, "toggle" },
+        
+        -- Standard Avante commands (don't need MCPHub)
         b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
-        c = { "<cmd>AvanteChat<CR>", "chat" },
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
         e = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
-        i = { "<cmd>AvanteStop<CR>", "interupt avante" },
+        i = { "<cmd>AvanteStop<CR>", "interrupt avante" },
         k = { "<cmd>AvanteClear<CR>", "clear" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
         p = { "<cmd>AvantePrompt<CR>", "select prompt" },
-        s = { "<cmd>AvanteEdit<CR>", "selected edit" },
-        -- s = { "<cmd>AvanteSwitchProvider<CR>", "quick provider switch" },
+        s = { function()
+          -- Trigger event to load MCPHub first
+          vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+          -- Open Avante
+          vim.cmd("AvanteEdit")
+        end, "edit selection" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
-        t = { "<cmd>AvanteToggle<CR>", "toggle assistant" },
         x = { "<cmd>MCPHub<CR>", "start MCPHub" },
       },
       --   HARPOON

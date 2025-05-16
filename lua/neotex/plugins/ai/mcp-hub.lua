@@ -22,7 +22,15 @@ return {
   dependencies = {
     "nvim-lua/plenary.nvim",                            -- Required for Job and HTTP requests
   },
-  cmd = { "MCPHub", "MCPHubStatus", "MCPHubSettings" }, -- Lazy load by default
+  -- Make the plugin strictly lazy loaded - this is crucial
+  lazy = true,
+  
+  -- Only load on these exact triggers, nothing else
+  cmd = { "MCPHub", "MCPHubStatus", "MCPHubSettings" },
+  module = false, -- Prevent module-based loading
+  
+  -- Load when this custom event is triggered by which-key mappings
+  event = { "User AvantePreLoad" },
   -- Use the bundled binary approach for compatibility with NixOS
   -- This installs MCP-Hub locally within the plugin directory
   -- See specs/BUNDLED.md for details on how this works with NixOS
@@ -62,6 +70,12 @@ return {
   end,
 
   -- Build function - Choose the right installation method based on environment
+  -- This function handles both NixOS and standard installations:
+  -- 1. For standard users with npm: Uses global npm installation
+  -- 2. For standard users without npm: Uses bundled binary approach
+  -- 3. For NixOS with UVX: Uses UVX for mcp-hub
+  -- 4. For NixOS without UVX: Uses bundled binary approach with wrapper script
+  -- 5. For NixOS: Automatically runs the installation script if needed
   build = function()
     -- Use native shell commands instead of Job for build which may run in FastEvent context
     local function run_shell_command(command)
@@ -71,6 +85,60 @@ return {
       local result = handle:read("*a")
       handle:close()
       return result
+    end
+    
+    -- NixOS Auto-installation - Run this first before any other build steps
+    -- This ensures the binary is available when the plugin is configured
+    local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1 or vim.fn.executable("nix-env") == 1
+    
+    if is_nixos then
+      -- Flag file to track if we've already run the installation
+      local install_flag_file = vim.fn.stdpath("data") .. "/mcp-hub/nixos_installed"
+      local mcp_data_dir = vim.fn.stdpath("data") .. "/mcp-hub"
+      
+      -- Create directory if needed
+      if vim.fn.isdirectory(mcp_data_dir) == 0 then
+        vim.fn.mkdir(mcp_data_dir, "p")
+      end
+      
+      -- Check if we need to install
+      local should_install = false
+      if vim.fn.filereadable(install_flag_file) == 0 then
+        should_install = true
+      end
+      
+      -- Also verify the binary exists - even if we have the flag file
+      local bundled_binary = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/node_modules/.bin/mcp-hub")
+      local wrapper_script = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper")
+      
+      if vim.fn.filereadable(bundled_binary) == 0 or vim.fn.filereadable(wrapper_script) == 0 then
+        should_install = true
+      end
+      
+      -- Run installation script if needed
+      if should_install then
+        local install_script = vim.fn.expand("~/.config/nvim/scripts/mcp-hub-nixos-install.sh")
+        
+        if vim.fn.filereadable(install_script) == 1 then
+          print("NixOS detected. Running MCP-Hub installation script during build...")
+          
+          -- Run the installation script synchronously during build
+          -- This ensures the binary is available when mcphub.setup() is called
+          local result = run_shell_command("bash " .. install_script)
+          print("Installation result: " .. result:sub(1, 200) .. "...")
+          
+          -- Create flag file to prevent future runs
+          local file = io.open(install_flag_file, "w")
+          if file then
+            file:write("Installed on " .. os.date("%Y-%m-%d %H:%M:%S"))
+            file:close()
+          end
+          
+          print("MCP-Hub NixOS installation completed")
+        else
+          print("Warning: Installation script not found at " .. install_script)
+        end
+      end
     end
     
     -- Create required configuration directories
@@ -340,7 +408,7 @@ return {
       vim.notify(status, vim.log.levels.INFO)
     end
 
-    -- Diagnostics function for NixOS and bundled binary
+    -- Diagnostics function for all platforms
     utils.diagnose_nixos = function()
       local output = "MCP-Hub Diagnostics:\n"
       
@@ -356,9 +424,33 @@ return {
       local npm_version = vim.fn.system("npm --version 2>/dev/null"):gsub("\n", "")
       output = output .. "- npm version: " .. (npm_version ~= "" and npm_version or "not found") .. "\n"
       
-      -- Check for MCP_HUB_PATH (legacy approach)
+      -- Check UVX (UV package manager)
+      local uvx_version = vim.fn.system("uvx --version 2>/dev/null"):gsub("\n", "")
+      output = output .. "- UVX available: " .. (uvx_version ~= "" and "Yes" or "No") .. "\n"
+      
+      -- Check for MCP_HUB_PATH
       local mcp_hub_path = vim.g.mcp_hub_path or os.getenv("MCP_HUB_PATH")
       output = output .. "- MCP_HUB_PATH: " .. tostring(mcp_hub_path or "not set") .. "\n"
+
+      -- Check for global mcp-hub
+      local global_mcp = vim.fn.system("which mcp-hub 2>/dev/null"):gsub("\n", "")
+      output = output .. "- Global mcp-hub: " .. (global_mcp ~= "" and global_mcp or "not found") .. "\n"
+      if global_mcp ~= "" then
+        output = output .. "- Global mcp-hub permissions: " .. vim.fn.system("ls -l " .. global_mcp):gsub("\n", "") .. "\n"
+      end
+      
+      -- Check for build_info file
+      local build_info_file = vim.fn.stdpath("data") .. "/mcp-hub/build_info.lua"
+      output = output .. "- Build info file exists: " .. tostring(vim.fn.filereadable(build_info_file) == 1) .. "\n"
+      if vim.fn.filereadable(build_info_file) == 1 then
+        local ok, build_info = pcall(dofile, build_info_file)
+        if ok and build_info then
+          output = output .. "- Installation method: " .. tostring(build_info.install_method) .. "\n"
+          output = output .. "- Using bundled binary: " .. tostring(build_info.use_bundled) .. "\n"
+          output = output .. "- NPM installed: " .. tostring(build_info.npm_installed) .. "\n"
+          output = output .. "- UVX installed: " .. tostring(build_info.uvx_installed) .. "\n"
+        end
+      end
       
       -- Check plugin status
       local mcphub_plugin_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim")
@@ -377,6 +469,13 @@ return {
         -- Check binary permissions
         local permissions = vim.fn.system("ls -l " .. bundled_binary):gsub("\n", "")
         output = output .. "- Binary permissions: " .. permissions .. "\n"
+      end
+      
+      -- Check wrapper script
+      local wrapper_script = bundled_dir .. "/mcp-hub/mcp-hub-wrapper"
+      output = output .. "- Wrapper script exists: " .. tostring(vim.fn.filereadable(wrapper_script) == 1) .. "\n"
+      if vim.fn.filereadable(wrapper_script) == 1 then
+        output = output .. "- Wrapper script executable: " .. tostring(vim.fn.executable(wrapper_script) == 1) .. "\n"
       end
       
       -- Check if server is running
@@ -689,16 +788,55 @@ tmp=${PWD}/.npm-tmp
     -- Load settings
     local settings = utils.settings.load()
     
-    -- Check if we have a Nix-packaged MCP-Hub binary
+    -- Load build_info to determine the appropriate configuration approach
+    local build_info_file = vim.fn.stdpath("data") .. "/mcp-hub/build_info.lua"
+    local build_info = {
+      is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1,
+      npm_installed = false,
+      uvx_installed = false,
+      use_bundled = false,
+      install_method = "unknown"
+    }
+
+    -- Try to load the build info file if it exists
+    if vim.fn.filereadable(build_info_file) == 1 then
+      local ok, info = pcall(dofile, build_info_file)
+      if ok and info then
+        build_info = info
+      end
+    end
+
+    -- Check if MCP_HUB_PATH is set - this overrides all other methods
     local mcp_hub_path = vim.g.mcp_hub_path or os.getenv("MCP_HUB_PATH")
     
-    -- Configure MCP-Hub to use bundled binary for NixOS compatibility
+    -- Configure MCP-Hub based on the environment and build info
     local setup_config = {
-      -- Use the bundled binary approach
-      use_bundled_binary = false,
+      -- Use the appropriate binary approach based on the environment
+      use_bundled_binary = build_info.use_bundled,
       
-      -- Explicitly set the path to our wrapper script
-      cmd = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper"),
+      -- Configure cmd based on multiple factors:
+      -- 1. If MCP_HUB_PATH is set, use that explicitly
+      -- 2. If we're on NixOS, use the wrapper script (verify it exists first)
+      -- 3. If bundled approach is being used, set the binary path
+      -- 4. For standard users with global installation, don't set cmd (plugin will find it in PATH)
+      cmd = mcp_hub_path or 
+            (build_info.is_nixos and (function()
+              local wrapper_script = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper")
+              if vim.fn.filereadable(wrapper_script) == 1 then
+                return wrapper_script
+              else
+                -- Don't show notification - let the error handling in config function deal with it
+                return nil  -- Return nil so global binary will be used if available
+              end
+            end)()) or 
+            (build_info.use_bundled and (function()
+              local bundled_binary = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/node_modules/.bin/mcp-hub")
+              if vim.fn.filereadable(bundled_binary) == 1 then
+                return bundled_binary
+              else
+                return nil  -- Return nil so global binary will be used if available
+              end
+            end)()),
       cmdArgs = {},
       
       -- Server configuration with fallbacks
@@ -754,9 +892,10 @@ tmp=${PWD}/.npm-tmp
             end)
           end
           
-          -- Set integration state
+          -- Set integration state without any notification
           _G.mcp_hub_state.avante_integrated = true
-          vim.notify("MCP-Hub integrated", vim.log.levels.INFO)
+          -- Don't show any notification at all
+          -- vim.notify("MCP-Hub integrated with Avante", vim.log.levels.DEBUG)
         end, 500)
       end,
 
@@ -800,29 +939,25 @@ tmp=${PWD}/.npm-tmp
     end)
     
     if not setup_ok then
+      -- Only log detailed error at debug level to avoid cluttering the UI
       local err_message = "MCP-Hub setup failed: " .. tostring(err)
-      vim.notify(err_message, vim.log.levels.ERROR)
+      vim.notify(err_message, vim.log.levels.DEBUG)
       
       -- Check bundled binary path
       local plugin_dir = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim")
       local bundled_binary = plugin_dir .. "/bundled/mcp-hub/node_modules/.bin/mcp-hub"
+      local wrapper_script = plugin_dir .. "/bundled/mcp-hub/mcp-hub-wrapper"
       
-      if vim.fn.filereadable(bundled_binary) == 0 then
-        vim.notify("Bundled MCP-Hub binary not found.", vim.log.levels.ERROR)
-        vim.notify("Try rebuilding the plugin: :Lazy build mcphub.nvim", vim.log.levels.INFO)
+      -- For NixOS users, suggest the installation script if wrapper doesn't exist
+      if build_info.is_nixos and vim.fn.filereadable(wrapper_script) == 0 then
+        -- Only show this notification - it's the most relevant for NixOS users
+        vim.notify("MCP-Hub wrapper script not found for NixOS. Run installer: bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh", vim.log.levels.WARN)
+      elseif vim.fn.filereadable(bundled_binary) == 0 then
+        -- Only show this for non-NixOS users or if both binary and wrapper are missing
+        vim.notify("MCP-Hub binary not found. Try rebuilding with :Lazy build mcphub.nvim", vim.log.levels.WARN)
       elseif vim.fn.executable(bundled_binary) == 0 then
-        vim.notify("Bundled MCP-Hub binary exists but is not executable. Check permissions.", vim.log.levels.ERROR)
-        vim.notify("Try: chmod +x " .. bundled_binary, vim.log.levels.INFO)
-      else
-        vim.notify("Bundled MCP-Hub binary exists but failed to start. Check Node.js installation.", vim.log.levels.WARN)
+        vim.notify("MCP-Hub binary not executable. Try: chmod +x " .. bundled_binary, vim.log.levels.WARN)
       end
-      
-      vim.notify("For troubleshooting, see specs/BUNDLED.md", vim.log.levels.INFO)
-      
-      -- Run the diagnose command automatically to help troubleshoot
-      vim.defer_fn(function()
-        utils.diagnose_nixos()
-      end, 500)
       
       -- Store error in global state
       if _G.mcp_hub_state then
@@ -830,8 +965,7 @@ tmp=${PWD}/.npm-tmp
       end
     else
       -- MCP-Hub successfully set up
-      -- Integration with Avante is now handled directly in the avante.lua plugin
-      vim.notify("MCP-Hub setup complete", vim.log.levels.INFO)
+      -- Don't show notification to avoid cluttering UI
       
       -- Set up MCP commands for direct access to servers
       pcall(function()
