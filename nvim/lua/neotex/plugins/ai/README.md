@@ -102,12 +102,16 @@ MCP-Hub provides a unified interface to multiple AI services and tools.
 
 The MCP-Hub integration enables Avante to access and use tools provided by MCP-Hub, expanding Avante's capabilities beyond what's built-in.
 
-### Setup
+### Lazy-Loading Setup
 
-The integration is automatically enabled when both MCP-Hub and Avante are loaded:
+The integration is now fully automated with smart lazy-loading:
 
-1. Start MCP-Hub first with `:MCPHub` command
-2. Then use Avante as usual with `<leader>ha` or other Avante commands
+1. MCPHub only launches when Avante is opened, not at Neovim startup
+2. Just use Avante directly with `<leader>ha`, `<leader>hc`, or `<leader>ht` 
+3. MCPHub will automatically load in the background when needed
+4. No manual steps required - everything is handled automatically
+
+The `<leader>hx` command is available if you want to manually start MCPHub.
 
 ### Using MCP Tools in Prompts
 
@@ -183,32 +187,55 @@ The system prompts manager allows you to define and switch between different AI 
 4. Edit the system prompt text in the buffer that opens
 5. Press Enter to save
 
-## NixOS Integration
+## Cross-Platform Installation
 
-While MCP-Hub works across all platforms, special care has been taken to ensure smooth operation on NixOS through a dedicated integration batch.
+MCP-Hub works across all platforms with smart environment detection that ensures the right installation approach is used for your system.
 
-### NixOS-Specific Features
+### Platform-Specific Features
 
-- **Bundled Binary Mode**: Falls back to a bundled binary when global installation is not available
-- **UVX Compatibility**: Works with UVX package manager, the recommended installation method
-- **Home Manager Support**: Can be installed via home-manager for clean integration
-- **Nix Flake Support**: Provides flake-based installation for reproducible deployment
+- **Standard Environments**: Uses global npm installation on most systems
+- **Environments without npm**: Falls back to bundled binary approach automatically
+- **NixOS Integration**: Special handling for NixOS's unique package environment
+- **Auto-Installation**: Automatically runs installation script for NixOS users on first launch
+- **UVX Compatibility**: Works with UVX package manager for both NixOS and standard environments
+- **Diagnostics**: Enhanced diagnostics to help troubleshoot any installation issues
 
-### Installation Methods for NixOS
+### Installation Methods
 
-1. **UVX Method (Recommended)**
+1. **Global npm (Standard Users)**
+   - Default for most systems with Node.js/npm installed
+   - Clean installation using `npm install -g mcp-hub@latest`
+   - Automatically detected and configured
+   - No special configuration needed
+
+2. **Auto-Installation for NixOS (Improved)**
+   - Automatically runs the installation script for NixOS users during plugin build
+   - No manual steps required - installation happens before plugin setup
+   - Runs synchronously to ensure the binary is ready when needed
+   - Creates a flag file to ensure it only runs once
+   - Checks binary existence even if flag file exists
+   - Falls back to manual installation if auto-installation fails
+
+3. **UVX Method (Recommended for NixOS)**
    - Install UVX via your flake or Nix config
    - MCP-Hub automatically detects and uses UVX for installation
+   - No errors or additional configuration needed
 
-2. **Bundled Binary Method**
-   - Automatically falls back to a bundled binary approach when UVX is not available
+4. **Bundled Binary Method (Fallback)**
+   - Automatically used when global installation is not available
    - Works within NixOS's pure environment constraints
+   - Also works on standard systems without npm
+   - Uses wrapper script on NixOS for proper path resolution
 
-3. **Flake-Based Installation**
-   - For advanced users who prefer a fully flake-managed setup
-   - Configuration available in a dedicated batch (see specs/PHASE4_IMPLEMENTATION.md)
+5. **Manual Path Configuration (Custom)**
+   - Set `vim.g.mcp_hub_path` to a specific binary location
+   - Useful for custom installations or unusual environments
+   - Example: `vim.g.mcp_hub_path = "/path/to/your/mcp-hub"`
 
-For detailed information on the NixOS integration, check the documentation in `specs/PHASE4_IMPLEMENTATION.md` under "Batch 5: Nix Flake Integration".
+For detailed information on the NixOS integration, check the documentation in:
+- `specs/BUNDLED.md` for bundled binary approach
+- `specs/SOLUTION.md` for comprehensive installation solutions
+- `MCPHUB_README.md` for quick troubleshooting guide
 
 ## Troubleshooting
 
@@ -219,15 +246,28 @@ If you encounter issues with the AI integration:
 3. Verify the model selection with `:AvanteModel`
 4. Check the system prompt with `:AvantePrompt`
 5. Try stopping any ongoing generations with `:AvanteStop`
-6. For NixOS-specific issues, run `:MCPHubDiagnose` for detailed diagnostics
+6. Run `:MCPHubDiagnose` for detailed diagnostics on any platform
+
+### Standard Environment Troubleshooting
+
+If you're experiencing issues on a standard (non-NixOS) environment:
+
+1. Run `:MCPHubDiagnose` to view detailed installation information
+2. Check if global mcp-hub is installed with `npm list -g | grep mcp-hub`
+3. Try reinstalling mcp-hub globally with `npm install -g mcp-hub@latest`
+4. If npm install fails, try the bundled approach: `:MCPHubRebuild`
+5. For permission issues, use `sudo npm install -g mcp-hub@latest` or set up npm for global packages without sudo
 
 ### NixOS-Specific Troubleshooting
 
 If you're experiencing issues on NixOS:
 
 1. Run `:MCPHubDiagnose` to view detailed diagnostic information
-2. Check if UVX is properly installed with `which uvx` in your terminal
-3. Try manual installation with `:MCPHubInstallManual`
-4. For flake-related issues, refer to the implementation notes in `specs/PHASE4_IMPLEMENTATION.md`
+2. Check if auto-installation has run by looking for the flag file: `cat ~/.local/share/nvim/mcp-hub/nixos_installed`
+3. Try triggering a manual installation with `:MCPHubInstallManual`
+4. Run the installation script manually: `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh`
+5. Check if UVX is properly installed with `which uvx` in your terminal
+6. Delete the flag file to trigger auto-installation again: `rm ~/.local/share/nvim/mcp-hub/nixos_installed`
+7. See detailed options in `MCPHUB_README.md` for additional solutions
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.

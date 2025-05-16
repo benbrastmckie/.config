@@ -33,27 +33,28 @@
   - [x] errors for many lines selected
   - [x] only comments one line selected
   - [x] eventually comments all lines selected
-- [.] buffers
-  - [ ] <leader>gg sometimes opens LazyGit blank
+- [x] buffers
+  - [x] <leader>gg sometimes opens LazyGit blank
   - [x] always show active tab (sometimes they seem to get lost/hidden)
+- [.] mcphub
+  - [x] confirm that non-nix users won't get errors
+  - [x] move mcp-memory out of the .config/ directory
+  - lazy load when avante starts
+  - run tests to confirm that mcp works with avante
+  - [x] make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
+    - [x] system is NixOS
+    - [x] mcphub has not already been installed
+  - [x] reduce notifications
 - Which Key
   - [ ] Add icons
   - [ ] make descriptions lowercase and at most two words
   - [ ] make file-type dependent which commands appear
   - [ ] improve organization of mappings
-- avante
-  - search/replace
+- [.] avante
+  - [x] search/replace
   - improve ui for accept/reject
   - turn off mouse support in Avante
   - <C-j/k> sometimes stops working in Avante after it makes changes
-- mcphub
-  - move mcp-memory out of the .config/ directory
-  - lazy load when avante starts
-  - run tests to confirm that mcp works with avante
-  - make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
-    - system is NixOS
-    - mcphub has not already been installed
-  - reduce notifications
 - latex
   - [x] highlighting
   - [x] pairs
