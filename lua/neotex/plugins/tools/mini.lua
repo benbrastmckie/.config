@@ -19,11 +19,17 @@ return {
 
     -- Configure mini.comment
     require('mini.comment').setup({
+      options = {
+        ignore_blank_line = false,
+        start_of_line = false,
+        pad_comment_parts = true,
+      },
       mappings = {
-        comment = '',
-        comment_line = '',
-        comment_visual = '',
-        textobject = '',
+        -- Use default mappings
+        comment = 'gc',
+        comment_line = 'gcc',
+        comment_visual = 'gc',
+        textobject = 'gc',
       },
     })
 
@@ -75,22 +81,22 @@ return {
       silent = false,
     })
 
-    -- Configure mini.splitjoin
-    require('mini.splitjoin').setup({
-      mappings = {
-        toggle = 'gS',
-        split = '',
-        join = '',
-      },
-    })
+    -- -- Configure mini.splitjoin
+    -- require('mini.splitjoin').setup({
+    --   mappings = {
+    --     toggle = 'gS',
+    --     split = '',
+    --     join = '',
+    --   },
+    -- })
 
-    -- Configure mini.align
-    require('mini.align').setup({
-      mappings = {
-        start = 'ga',
-        start_with_preview = 'gA',
-      },
-    })
+    -- -- Configure mini.align
+    -- require('mini.align').setup({
+    --   mappings = {
+    --     start = 'ga',
+    --     start_with_preview = 'gA',
+    --   },
+    -- })
 
     -- Configure highlighting
     vim.api.nvim_set_hl(0, 'MiniCursorword', { link = 'Pmenu' })
