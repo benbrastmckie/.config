@@ -48,7 +48,7 @@ return {
         vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
         
         -- Use our helper function to ensure MCPHub is loaded and run Avante
-        local avante_mcp = require("neotex.util.avante_mcp")
+        local avante_mcp = require("neotex.plugins.ai.util.avante_mcp")
         avante_mcp.with_mcp(command .. " " .. (opts.args or ""))
       end, { nargs = "*" })
     end

@@ -25,7 +25,7 @@ end
 
 -- Load the Avante+MCP integration during setup
 local function setup_integrations()
-  local avante_mcp = require("neotex.util.avante_mcp")
+  local avante_mcp = require("neotex.plugins.ai.util.avante_mcp")
   avante_mcp.setup()
 end
 
@@ -33,19 +33,41 @@ end
 vim.api.nvim_create_autocmd("User", {
   pattern = "LazyDone",
   callback = function()
+    -- Set up integrations with a slight delay to ensure other plugins are loaded
     vim.defer_fn(setup_integrations, 100)
+    
+    -- Register a global MCPHubOpen command that will be available at startup
+    pcall(vim.api.nvim_del_user_command, "MCPHubOpen")
+    vim.api.nvim_create_user_command("MCPHubOpen", function()
+      -- Try to load MCPHub through Lazy
+      pcall(function() 
+        require("lazy").load({ plugins = { "mcphub.nvim" } })
+      end)
+      
+      -- Give a moment for the plugin to load
+      vim.defer_fn(function()
+        -- Ensure the open_mcphub function is called safely
+        pcall(function()
+          require("neotex.plugins.ai.util.avante_mcp").open_mcphub()
+        end)
+      end, 100)
+    end, { desc = "Open MCPHub interface with auto-load and start" })
     
     -- Register a handler for our custom event
     vim.api.nvim_create_autocmd("User", {
       pattern = "AvantePreLoad",
       callback = function()
-        -- Try to directly load MCPHub through packadd
-        local mcphub_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim")
-        if vim.fn.isdirectory(mcphub_path) == 1 then
+        -- Try to load MCPHub through Lazy instead of packadd
+        pcall(function()
+          require("lazy").load({ plugins = { "mcphub.nvim" } })
+        end)
+        
+        -- Verify that we can now require MCPHub
+        vim.defer_fn(function()
           pcall(function()
-            vim.cmd("packadd mcphub.nvim")
+            require("mcphub")
           end)
-        end
+        end, 50)
       end,
       once = true
     })

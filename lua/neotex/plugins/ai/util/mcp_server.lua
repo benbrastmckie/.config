@@ -1,4 +1,4 @@
--- lua/neotex/util/mcp_server.lua
+-- lua/neotex/plugins/ai/util/mcp_server.lua
 
 local M = {}
 
@@ -118,14 +118,18 @@ function M.load()
   -- Try to load using packpath
   local mcphub_path = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim")
   if vim.fn.isdirectory(mcphub_path) == 1 then
-    -- The plugin is installed, let's load it directly
-    vim.cmd("packadd mcphub.nvim")
+    -- The plugin is installed, try to load it directly with pcall to catch errors
+    local packadd_ok = pcall(function()
+      vim.cmd("packadd mcphub.nvim")
+    end)
     
-    -- Now try to require it again
-    ok, mcphub = pcall(require, "mcphub")
-    if ok then
-      M.state.loaded = true
-      return true
+    if packadd_ok then
+      -- Now try to require it again
+      ok, mcphub = pcall(require, "mcphub")
+      if ok then
+        M.state.loaded = true
+        return true
+      end
     end
   end
   
@@ -330,44 +334,82 @@ function M.setup_commands()
   pcall(vim.api.nvim_del_user_command, "MCPHub")
   vim.api.nvim_create_user_command("MCPHub", function(opts)
     -- First trigger the event to load MCPHub
-    vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+    pcall(function() 
+      vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
+    end)
     
-    -- Then make sure MCPHub is loaded
-    if not M.load() then
-      log("Failed to load MCPHub plugin, cannot open interface", vim.log.levels.ERROR)
-      return
+    -- Give some time for the event to process
+    vim.cmd("sleep 10m")
+    
+    -- Then try to ensure MCPHub is loaded
+    local load_success = M.load()
+    
+    if not load_success then
+      -- Try direct Lazy load as a fallback
+      pcall(function()
+        vim.cmd([[Lazy load mcphub.nvim]])
+      end)
+      
+      -- Try loading again
+      load_success = M.load()
+      
+      if not load_success then
+        log("Failed to load MCPHub plugin, cannot open interface", vim.log.levels.ERROR)
+        return
+      end
     end
     
     -- If it's loaded, we can safely open the UI
     local ok, err = pcall(function()
       -- Get the state object from mcphub
       local mcphub = require('mcphub')
-      local state = mcphub.get_state()
+      local state = pcall(function() return mcphub.get_state() end) and mcphub.get_state() or nil
+      local hub_instance = pcall(function() return mcphub.get_hub_instance() end) and mcphub.get_hub_instance() or nil
       
-      -- Check if we have a UI instance
+      -- Option 1: Check if we have a UI instance directly
       if state and state.ui_instance then
         -- Use the toggle method on the UI instance
-        state.ui_instance:toggle()
-      else
-        -- The UI instance isn't ready, try to load MCPHub again
-        vim.cmd([[MCPHubStart]])
-        
-        -- Try again with a delay
-        vim.defer_fn(function()
+        pcall(function() state.ui_instance:toggle() end)
+        return
+      end
+      
+      -- Option 2: Try via hub_instance
+      if hub_instance and hub_instance.ui and hub_instance.ui.toggle then
+        pcall(function() hub_instance.ui.toggle() end)
+        return
+      end
+      
+      -- Option 3: Try via api
+      if mcphub.api and mcphub.api.show_ui then
+        pcall(function() mcphub.api.show_ui() end)
+        return
+      end
+      
+      -- Option 4: The UI instance isn't ready, try to start the server first
+      pcall(function() vim.cmd([[MCPHubStart]]) end)
+      
+      -- Give the server some time to start
+      vim.defer_fn(function()
+        -- Try all options again
+        pcall(function()
           local mcphub2 = require('mcphub')
-          local state2 = mcphub2.get_state()
+          local state2 = pcall(function() return mcphub2.get_state() end) and mcphub2.get_state() or nil
+          local hub_instance2 = pcall(function() return mcphub2.get_hub_instance() end) and mcphub2.get_hub_instance() or nil
           
           if state2 and state2.ui_instance then
             state2.ui_instance:toggle()
+          elseif hub_instance2 and hub_instance2.ui and hub_instance2.ui.toggle then
+            hub_instance2.ui:toggle()
+          elseif mcphub2.api and mcphub2.api.show_ui then
+            mcphub2.api.show_ui()
           else
-            -- Fall back to the standard command
-            vim.cmd("MCPHub")
+            log("MCPHub plugin loaded but UI not available", vim.log.levels.WARN)
           end
-        end, 200)
-      end
+        end)
+      end, 500)
     end)
     
-    if not ok then
+    if not ok and err then
       log("Failed to open MCPHub interface: " .. tostring(err), vim.log.levels.ERROR)
     end
   end, { desc = "Open MCPHub interface", nargs = "*" })

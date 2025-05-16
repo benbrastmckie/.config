@@ -410,24 +410,24 @@ return {
       h = {
         name = "AI HELP",
         -- Avante commands with MCPHub integration
-        a = { function() require("neotex.util.avante_mcp").with_mcp("AvanteAsk") end, "ask" },
-        c = { function() require("neotex.util.avante_mcp").with_mcp("AvanteChat") end, "chat" },
-        t = { function() require("neotex.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle" },
-        s = { function() require("neotex.util.avante_mcp").with_mcp("AvanteEdit") end, "edit selection" },
-        
-        -- Direct MCPHub commands
-        x = { "<cmd>MCPHubStart<CR>", "start MCPHub" },
-        
+        a = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteAsk") end, "ask" },
+        c = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteChat") end, "chat" },
+        t = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle" },
+        e = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, "edit" },
+
+        -- Direct MCPHub command
+        x = { "<cmd>MCPHubOpen<CR>", "open MCPHub" },
+
         -- Standard Avante commands (don't need MCPHub)
         b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
-        e = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
         i = { "<cmd>AvanteStop<CR>", "interrupt avante" },
         k = { "<cmd>AvanteClear<CR>", "clear" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
         M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
-        p = { "<cmd>AvantePrompt<CR>", "select prompt" },
+        p = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
         r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
+        s = { "<cmd>AvantePrompt<CR>", "select prompt" },
       },
       --   HARPOON
       --   a = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },
@@ -736,4 +736,3 @@ return {
     }, { mode = "v" })
   end,
 }
-

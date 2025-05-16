@@ -338,7 +338,7 @@ These mappings are provided by the `which-key` plugin with a pop up menu to make
 | `<leader>hr`     | Reload AI assistant             |
 | `<leader>hi`     | Interrupt AI generation         |
 | `<leader>ht`     | Show/hide Avante interface      |
-| `<leader>hx`     | Start MCPHub server             |
+| `<leader>hx`     | Open MCPHub interface           |
 
 #### List (`<leader>L`)
 
