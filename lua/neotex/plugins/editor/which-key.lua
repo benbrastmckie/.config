@@ -702,6 +702,8 @@ return {
           icon_to_add = "󰊢 "
         elseif desc:match("file") then
           icon_to_add = "󰈙 "
+        elseif desc:match("todo") or desc:match("todos") then
+          icon_to_add = "󰄬 "
         end
       end
 
