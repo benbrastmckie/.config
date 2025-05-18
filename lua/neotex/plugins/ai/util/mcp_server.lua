@@ -7,6 +7,7 @@ M.state = {
   loaded = false,   -- Plugin is loaded
   running = false,  -- Server is running
   ready = false,    -- Server is ready for use
+  version = "1.0.0", -- Default version to prevent parsing errors
   error = nil       -- Last error message
 }
 
@@ -88,10 +89,35 @@ local function find_executable()
   return nil
 end
 
+-- Check if a port is in use
+function M.is_port_in_use(port)
+  -- Try to bind to the port
+  local result = vim.fn.system("lsof -i:" .. port .. " -sTCP:LISTEN")
+  return result ~= ""
+end
+
+-- Find an available port starting from base
+function M.find_available_port(base)
+  base = base or 37373
+  local max_attempts = 10
+  
+  for i = 0, max_attempts do
+    local port = base + i
+    if not M.is_port_in_use(port) then
+      return port
+    end
+  end
+  
+  -- If we reach here, just return the base port and hope for the best
+  return base
+end
+
 -- Check if MCPHub server is running by testing connection
-function M.check_status()
+function M.check_status(port)
+  -- Use provided port or default
+  port = port or 37373
+  
   -- Try to connect to the server
-  local port = 37373 -- Default port
   local result = vim.fn.system("curl -s -o /dev/null -w '%{http_code}' http://localhost:" .. port .. "/version")
   
   -- Update state based on connection test
@@ -101,8 +127,11 @@ function M.check_status()
   return connected
 end
 
--- Ensure MCPHub is loaded
+-- Ensure MCPHub is loaded with consistent version
 function M.load()
+  -- Ensure we have a valid version string to prevent parsing errors
+  vim.g.mcphub_version = M.get_actual_version()
+  
   -- If already loaded, return immediately
   if M.state.loaded then
     return true
@@ -111,6 +140,9 @@ function M.load()
   -- First check if we can require directly
   local ok, mcphub = pcall(require, "mcphub")
   if ok then
+    -- Apply version fix
+    M.fix_version()
+    
     M.state.loaded = true
     return true
   end
@@ -127,6 +159,9 @@ function M.load()
       -- Now try to require it again
       ok, mcphub = pcall(require, "mcphub")
       if ok then
+        -- Apply version fix
+        M.fix_version()
+        
         M.state.loaded = true
         return true
       end
@@ -157,11 +192,19 @@ function M.load()
     
     -- Clear the flag
     _G._mcp_loading = nil
+    
+    -- Apply version fix
+    vim.defer_fn(function()
+      M.fix_version()
+    end, 100)
   end)
   
   -- One more try
   ok, mcphub = pcall(require, "mcphub")
   if ok then
+    -- Apply version fix
+    M.fix_version()
+    
     M.state.loaded = true
     return true
   end
@@ -172,8 +215,31 @@ function M.load()
   return false
 end
 
--- Start the MCPHub server
+-- Function to clean up any existing server processes
+function M.cleanup_existing_processes()
+  -- Try to find and terminate any existing mcp-hub processes
+  local ps_result = vim.fn.system("ps aux | grep mcp-hub | grep -v grep")
+  
+  if ps_result and ps_result ~= "" then
+    -- Extract PIDs
+    for pid in string.gmatch(ps_result, "%s+(%d+)%s+") do
+      if pid and tonumber(pid) then
+        -- Try to terminate gracefully
+        vim.fn.system("kill -15 " .. pid)
+        log("Terminated existing MCP-Hub process: " .. pid, vim.log.levels.DEBUG)
+      end
+    end
+    
+    -- Give processes time to terminate
+    vim.cmd("sleep 500m")
+  end
+end
+
+-- Start the MCPHub server with proper version handling
 function M.start()
+  -- Ensure we have a valid version string to prevent version format errors
+  vim.g.mcphub_version = M.get_actual_version()
+  
   -- First check if server is already running
   if M.check_status() then
     M.state.running = true
@@ -189,6 +255,13 @@ function M.start()
   -- Mark as running to prevent multiple starts
   M.state.running = true
   
+  -- Clean up any existing server processes
+  M.cleanup_existing_processes()
+  
+  -- Find an available port
+  local port = M.find_available_port(37373)
+  M.state.port = port
+  
   -- Find the executable
   local exe_path = find_executable()
   
@@ -199,37 +272,61 @@ function M.start()
     return false
   end
   
-  -- Start the server
+  -- Start the server with output handling to prevent version parsing issues
   local job_id
   
-  -- Check if this is a node.js script
+  -- Common job options to suppress output that would trigger version parsing
+  local job_opts = {
+    detach = true,
+    -- Suppress standard output to prevent version parsing issues 
+    on_stdout = function(_, data) 
+      -- Optionally parse for useful information but don't return it
+      -- This prevents the version parser from seeing output
+      
+      -- Log startup completion for debugging
+      if data and #data > 0 then
+        for _, line in ipairs(data) do
+          if line:match("Server listening on") then
+            vim.schedule(function()
+              log("Server startup complete", vim.log.levels.DEBUG)
+            end)
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      -- Only log actual errors, not startup messages
+      if data and #data > 0 and data[1] ~= "" then
+        local error_msg = table.concat(data, "\n"):match("Error:.*")
+        if error_msg then
+          vim.schedule(function()
+            log("Error from server: " .. error_msg, vim.log.levels.ERROR)
+          end)
+        end
+      end
+    end,
+    on_exit = function(id, code)
+      if code ~= 0 then
+        M.state.error = "Server exited with code " .. code
+        M.state.running = false
+        -- Silent error
+      end
+    end
+  }
+  
+  -- Prepare command with explicit port
+  local cmd
   if type(exe_path) == "string" and exe_path:match("^/usr/bin/node ") then
     -- Parse the command into executable and args
     local node_exe, js_path = exe_path:match("^(%S+)%s+(.+)$")
-    
-    job_id = vim.fn.jobstart({node_exe, js_path}, {
-      detach = true,
-      on_exit = function(id, code)
-        if code ~= 0 then
-          M.state.error = "Server exited with code " .. code
-          M.state.running = false
-          -- Silent error
-        end
-      end
-    })
+    cmd = {node_exe, js_path, "serve", "--port=" .. port}
   else
-    -- Standard executable 
-    job_id = vim.fn.jobstart(exe_path, {
-      detach = true,
-      on_exit = function(id, code)
-        if code ~= 0 then
-          M.state.error = "Server exited with code " .. code
-          M.state.running = false
-          -- Silent error
-        end
-      end
-    })
+    -- Standard executable with port argument
+    cmd = {exe_path, "serve", "--port=" .. port}
   end
+  
+  -- Start the server
+  job_id = vim.fn.jobstart(cmd, job_opts)
   
   if job_id <= 0 then
     M.state.error = "Failed to start server job"
@@ -237,37 +334,127 @@ function M.start()
     return false
   end
   
-  -- Don't log server started message
+  -- Save job ID for potential cleanup
+  M.state.job_id = job_id
+  log("MCP-Hub server starting on port " .. port, vim.log.levels.INFO)
   
   -- Verify the server is actually running after a delay
   -- Use multiple checks with increasing delays to account for slow startup
   local check_attempts = 0
-  local max_attempts = 5
+  local max_attempts = 10 -- Increased for more reliability
   local check_interval = 500 -- ms
   
   local function check_server_status()
     check_attempts = check_attempts + 1
-    local is_ready = M.check_status()
+    local is_ready = M.check_status(port)
     
     if is_ready then
       -- Server is ready
       M.state.ready = true
-      log("MCPHub server ready", vim.log.levels.INFO)
+      
+      -- Apply version fixes when server is ready
+      M.fix_version()
+      
+      log("MCPHub server ready on port " .. port, vim.log.levels.INFO)
     else
       -- Not ready yet, try again if we haven't exceeded max attempts
       if check_attempts < max_attempts then
-        vim.defer_fn(check_server_status, check_interval)
+        -- Increase the interval for later attempts
+        local adjusted_interval = check_interval + (check_attempts * 100)
+        vim.defer_fn(check_server_status, adjusted_interval)
       else
-        -- Give up after max attempts but don't show a message
-        M.state.error = "Server did not initialize properly"
+        -- Give up after max attempts
+        M.state.error = "Server did not initialize properly - SSE connection might have failed"
+        log("Server did not initialize properly. Try stopping any existing MCP-Hub processes and restart.", vim.log.levels.ERROR)
       end
     end
   end
   
-  -- Start the first check after a short delay
-  vim.defer_fn(check_server_status, check_interval)
+  -- Start the first check after a delay that increases with each attempt
+  vim.defer_fn(check_server_status, check_interval + 500)
   
   return true
+end
+
+-- Function to get the actual MCP-Hub version if possible
+function M.get_actual_version()
+  -- Try to get the actual version from the binary
+  local version_string = nil
+  
+  -- Try to find the executable
+  local exe_path = find_executable()
+  if exe_path then
+    -- Extract version information using --version flag
+    local cmd
+    if type(exe_path) == "string" and exe_path:match("^/usr/bin/node ") then
+      -- Node script
+      local node_exe, js_path = exe_path:match("^(%S+)%s+(.+)$")
+      cmd = node_exe .. " " .. js_path .. " --version"
+    else
+      -- Regular binary
+      cmd = exe_path .. " --version"
+    end
+    
+    local handle = io.popen(cmd .. " 2>&1")
+    if handle then
+      local result = handle:read("*a")
+      handle:close()
+      
+      -- Try to extract a version number
+      local version = result:match("(%d+%.%d+%.%d+)")
+      if version then
+        version_string = version
+      end
+    end
+  end
+  
+  -- If we couldn't get the version, use a fallback
+  if not version_string then
+    -- Check if we can get it from config
+    local ok, mcphub = pcall(require, "mcphub")
+    if ok and mcphub._version then
+      version_string = mcphub._version
+    elseif ok and mcphub.version then
+      version_string = mcphub.version
+    else
+      -- Ultimate fallback - semantic version
+      version_string = "0.1.0"
+    end
+  end
+  
+  return version_string
+end
+
+-- Function to fix version issues in all relevant places
+function M.fix_version()
+  -- Get actual version if possible
+  local version = M.get_actual_version()
+  
+  -- Set version in our state
+  M.state.version = version
+  
+  -- Set global variable
+  vim.g.mcphub_version = version
+  
+  -- Try to patch the loaded instance
+  vim.defer_fn(function()
+    pcall(function()
+      local mcphub = require("mcphub")
+      
+      -- Fix version in config if possible
+      if mcphub._config then
+        mcphub._config.version_override = version
+      end
+      
+      -- Fix version in hub instance if available
+      pcall(function()
+        local hub = mcphub.get_hub_instance()
+        if hub then
+          hub.version = version
+        end
+      end)
+    end)
+  end, 100)
 end
 
 -- Get MCPHub instance (or nil if not available)

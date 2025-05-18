@@ -34,13 +34,13 @@
   - [x] only comments one line selected
   - [x] eventually comments all lines selected
 - [x] buffers
-  - [x] <leader>gg sometimes opens LazyGit blank
-  - [x] always show active tab (sometimes they seem to get lost/hidden)
 - [x] optimize
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
     - [x] remove lualine from start screen
+    - [x] always show active tab (sometimes they seem to get lost/hidden)
+    - [ ] `<leader>gg` sometimes opens LazyGit blank
     - remove light color bar at the top right
     - buffer tabs sometimes get lost
   - which key
