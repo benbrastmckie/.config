@@ -8,6 +8,13 @@
         "SERVER_URL": null,
         "DEBUG": "true"
       }
+    },
+    "github.com/upstash/context7-mcp": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": "10000"
+      }
     }
   }
 }

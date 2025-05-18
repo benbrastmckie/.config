@@ -36,10 +36,29 @@
 - [x] buffers
   - [x] <leader>gg sometimes opens LazyGit blank
   - [x] always show active tab (sometimes they seem to get lost/hidden)
-- [:] mcphub
-  - [x] run tests to confirm that mcp works with avante
+- [x] optimize
+- [ ] appearances
+  - bufferline and lualine
+    - [x] remove light bar at the top when opening neovim
+    - [x] remove lualine from start screen
+    - remove light color bar at the top right
+    - buffer tabs sometimes get lost
+  - which key
+    - [ ] Add icons
+    - [ ] make descriptions lowercase and at most two words
+    - [ ] make file-type dependent which commands appear
+    - [ ] improve organization of mappings
+    - [ ] make scripts
+  - [.] avante
+    - [x] search/replace
+    - ask seems to only use one line
+    - improve ui for accept/reject
+    - turn off mouse support in Avante
+    - <C-j/k> sometimes stops working in Avante after it makes changes
+- [ ] mcphub
   - debug mcp tools in avante
   - create user guide
+  - [x] run tests to confirm that mcp works with avante
   - [x] confirm that non-nix users won't get errors
   - [x] move mcp-memory out of the .config/ directory
   - [x] lazy load when avante starts
@@ -48,20 +67,7 @@
     - [x] system is NixOS
     - [x] mcphub has not already been installed
   - [x] reduce notifications
-- [ ] optimize
-- Which Key
-  - [ ] Add icons
-  - [ ] make descriptions lowercase and at most two words
-  - [ ] make file-type dependent which commands appear
-  - [ ] improve organization of mappings
-  - [ ] make scripts
-- [.] avante
-  - [x] search/replace
-  - ask seems to only use one line
-  - improve ui for accept/reject
-  - turn off mouse support in Avante
-  - <C-j/k> sometimes stops working in Avante after it makes changes
-- latex
+- [ ] latex
   - [x] highlighting
   - [x] pairs
   - [x] surround
@@ -74,6 +80,7 @@
       - [x] Updated commands to directly use require('mini.surround').function_name()
       - [x] Corrected visual mode mapping to use add('visual') method
   - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
+- [.] email
 - [.] docs
   - [ ] api
   - [ ] cleanup comments throughout files
@@ -91,14 +98,9 @@
 - [x] yanky
   - [x] replace?
   - [x] fix error in kitty
-- [ ] mini
-  - [ ] bracketed
+- [:] mini
   - [ ] completion (works with blink?)
-  - [ ] files
-  - [ ] fuzzy
   - [ ] icons
-  - [ ] sessions
-  - [ ] tabline
   - [x] slplitjoin
   - [x] align
   - [x] a/i

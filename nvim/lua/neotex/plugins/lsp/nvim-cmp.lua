@@ -15,10 +15,10 @@ return {
     -- "aspeddro/cmp-pandoc.nvim",
   },
   config = function()
-
-    local cmp = require("cmp")
-
-    local luasnip = require("luasnip")
+    -- Defer heavy completion initialization
+    vim.defer_fn(function()
+      local cmp = require("cmp")
+      local luasnip = require("luasnip")
 
     local kind_icons = {
       article = "󰧮",
@@ -253,6 +253,7 @@ return {
         {name = 'cmdline'}
       }
     })
-
+    
+    end, 50) -- 50ms delay to let other startup processes complete
   end,
 }
