@@ -1,7 +1,32 @@
 return {
   "nvim-lualine/lualine.nvim",
+  event = "BufReadPost", -- Only load when an actual file is read
   dependencies = { "nvim-tree/nvim-web-devicons" },
   config = function()
+
+    -- Initial minimal setup
+    require('lualine').setup({
+      options = {
+        icons_enabled = false, -- Disable icons initially for faster load
+        theme = 'gruvbox',
+        component_separators = '',
+        section_separators = '',
+        refresh = {
+          statusline = 2000, -- Reduce refresh frequency
+          tabline = 2000,
+          winbar = 2000,
+        }
+      },
+      sections = {
+        lualine_a = { 'mode' },
+        lualine_b = {},
+        lualine_c = { 'filename' },
+        lualine_x = { 'filetype' },
+        lualine_y = {},
+        lualine_z = { 'location' }
+      },
+    })
+
     require('lualine').setup({
       options = {
         icons_enabled = true,

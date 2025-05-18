@@ -1,67 +1,59 @@
 return {
-  "williamboman/mason.nvim",
-  ft ={ "py", "html", "js", "ts", "lua" },
-  dependencies = {
-    "williamboman/mason-lspconfig.nvim",
-    "WhoIsSethDaniel/mason-tool-installer.nvim",
-  },
-
-  config = function()
-    -- import mason
-    local mason = require("mason")
-
-    -- import mason-lspconfig
-    local mason_lspconfig = require("mason-lspconfig")
-
-    -- import mason-tool-installer
-    local mason_tool_installer = require("mason-tool-installer")
-
-    -- enable mason and configure icons
-    mason.setup({
-      ui = {
-        icons = {
-          package_installed = "✓",
-          package_pending = "➜",
-          package_uninstalled = "✗",
+  {
+    "williamboman/mason.nvim",
+    cmd = "Mason", -- Only load when the Mason command is run
+    event = "VeryLazy", -- Load after startup is complete
+    dependencies = {},
+    config = function()
+      -- Minimal setup for initial loading
+      require("mason").setup({
+        ui = {
+          icons = {
+            package_installed = "✓",
+            package_pending = "➜",
+            package_uninstalled = "✗",
+          },
         },
-      },
-    })
-
-    mason_lspconfig.setup({
-      -- list of servers for mason to install
-      ensure_installed = {
-        -- "html",
-        -- "emmet_ls",
-        "pyright",
-        -- "tsserver",
-        -- "lua_ls",   -- seems to cause trouble
-        -- "cssls",
-        -- "tailwindcss",
-        -- "svelte"
-        -- "graphql",
-        -- "prismals",
-      },
-      -- auto-install configured servers (with lspconfig)
-      automatic_installation = true, -- not the same as ensure_installed
-      handlers = {
-        -- The first entry (without key) will be the default handler
-        -- and will be called for each installed server that doesn't have
-        -- a dedicated handler.
-        function(server_name) -- default handler
-          require("lspconfig")[server_name].setup({})
-        end,
-      },
-    })
-
-    mason_tool_installer.setup({
-      ensure_installed = {
-        -- "prettier", -- prettier formatter seems to be required
-        "stylua",   -- lua formatter
-        "isort",    -- python formatter
-        "black",    -- python formatter
-        "pylint",   -- python linter
-        -- "eslint_d", -- js linter
-      },
-    })
-  end,
+      })
+    end
+  },
+  {
+    "williamboman/mason-lspconfig.nvim",
+    event = "VeryLazy", -- Load after startup is complete
+    dependencies = { "mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        -- Only list essential servers to install via mason
+        ensure_installed = {
+          "pyright",
+        },
+        -- Only install on-demand when needed
+        automatic_installation = false,
+      })
+    end
+  },
+  {
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    event = "VeryLazy",
+    dependencies = { "mason.nvim" },
+    config = function() 
+      require("mason-tool-installer").setup({
+        ensure_installed = {
+          "stylua",  -- lua formatter
+          "isort",   -- python formatter
+          "black",   -- python formatter
+          "pylint",  -- python linter
+        },
+        -- Install tools when needed, not at startup
+        auto_update = false,
+        run_on_start = false, 
+      })
+      
+      -- Create command to manually trigger installation
+      vim.api.nvim_create_user_command("MasonToolsInstall", function()
+        require("mason-tool-installer").run_on_start = true
+        require("mason-tool-installer").check_install()
+      end, {})
+    end,
+  }
 }

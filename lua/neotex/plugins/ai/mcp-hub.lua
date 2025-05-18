@@ -7,13 +7,14 @@
 -- Features:
 -- 1. MCP-Hub connection management
 -- 2. Extension configuration for Avante and other AI tools
--- 3. Cross-platform compatibility with NixOS
+-- 3. Cross-platform compatibility with NixOS (including version fixes)
 -- 4. Persistent settings between sessions
 --
 -- Commands:
 -- - :MCPHub          - Launch the MCP-Hub interface
 -- - :MCPHubStatus    - Check connection status
 -- - :MCPHubStart     - Manually start the MCP-Hub server
+-- - :MCPNix          - Start MCP-Hub using NixOS system binary
 --
 -- See: https://github.com/ravitemer/mcphub.nvim
 
@@ -32,6 +33,7 @@ return {
     { "<leader>hx", "<cmd>MCPHubOpen<CR>", desc = "Open MCPHub" } 
   },
   module = false, -- Prevent module-based loading
+  version = false, -- Explicitly disable version validation
   
   -- Build function with NixOS compatibility
   build = function()

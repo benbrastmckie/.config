@@ -14,6 +14,10 @@
 -- - neotex/plugins/: Plugin specification and configuration
 -----------------------------------------------------------
 
+-- Disable matchit.vim and matchparen right at the start to prevent loading
+vim.g.loaded_matchit = 1
+vim.g.loaded_matchparen = 1
+
 -- Set notification level to show only important messages
 vim.notify_level = vim.log.levels.INFO
 

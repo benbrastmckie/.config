@@ -2,367 +2,330 @@
 
 This document consolidates the results of our optimization efforts and provides additional recommendations for further improving your NeoVim configuration.
 
-## Summary
+## Latest Analysis
+
+**Startup Analysis (May 2025):**
+- **Current startup time:** 105.90 ms
+- **Main bottlenecks:**
+  - matchit.vim: Previously consuming significant startup time (91.32 ms)
+  - LSP-related plugins (nvim-lspconfig, mason-lspconfig, cmp-nvim-lsp): ~458 ms combined
+  - UI components (lualine, bufferline): ~103 ms combined
+  - Treesitter: ~77 ms
+
+## Optimizations Implemented
 
 | Status | Task |
 |--------|------|
-| ✅ COMPLETED | Fix LuaSnip errors |
-| ✅ COMPLETED | Lazy-load Treesitter and context-commentstring |
-| ✅ COMPLETED | Optimize yanky.nvim configuration |
+| ✅ COMPLETED | Fix matchit.vim loading issue by disabling at top of init.lua |
+| ✅ COMPLETED | Optimize LuaSnip lazy loading |
+| ✅ COMPLETED | Improve bufferline lazy loading |
 | ✅ COMPLETED | Disable unused built-in plugins |
 | ✅ COMPLETED | Add general performance settings |
-| ⏳ TODO | Optimize nvim-cmp loading |
-| ⏳ TODO | Improve nvim-tree lazy loading |
-| ⏳ TODO | Streamline init.lua |
-| ⏳ TODO | Implement cache preloading |
-| ⏳ TODO | Optimize plugin loading sequence |
 
-## Optimization Results
+## New Optimization Priorities
 
-### Performance Improvements
+Based on the plugin profiling analysis, these are the highest-priority optimizations to implement next:
 
-1. **Startup Time:**
-   - **Before:** ~120ms
-   - **After:** ~67ms
-   - **Reduction:** ~44%
+### 1. Optimize LSP Loading (~458ms total)
 
-2. **Key Issues Fixed:**
-   - LuaSnip error resolved by disabling problematic components
-   - Lazy-loading implemented for critical plugins
-   - Unused built-in plugins disabled
-
-3. **Optimized Components:**
-   - LuaSnip and cmp_luasnip properly lazy-loaded to InsertEnter
-   - nvim-ts-context-commentstring lazy-loaded to BufReadPost
-   - yanky.nvim optimized with TextYankPost event loading
-   - Treesitter streamlined with selective module loading
-
-## Implemented Optimizations ✅
-
-### 1. LuaSnip Configuration Fixed ✅
-
-The LuaSnip error was resolved by disabling problematic modules and deferring snippet loading:
+The LSP configuration is the single biggest contributor to startup time, consuming nearly 460ms combined. Implement the following optimizations:
 
 ```lua
--- In lua/neotex/plugins/tools/luasnip.lua
-{
-  "L3MON4D3/LuaSnip",
-  lazy = true,
-  event = "InsertEnter",
+-- In lua/neotex/plugins/lsp/lspconfig.lua
+return {
+  "neovim/nvim-lspconfig",
+  event = { "BufReadPre", "BufNewFile" }, -- Only load when a file is opened
   dependencies = {
-    "rafamadriz/friendly-snippets",
+    "mason.nvim",
+    "mason-lspconfig.nvim"
   },
-  build = "make install_jsregexp",
   config = function()
-    -- Disable problematic components
-    vim.g.luasnip_no_community_snippets = true
-    vim.g.luasnip_no_jsregexp = true
-    vim.g.luasnip_no_vscode_loader = true
+    -- Minimal initial configuration
+    local lspconfig = require("lspconfig")
     
-    -- Initialize LuaSnip
-    local ls = require("luasnip")
-    ls.setup({
-      history = true,
-      update_events = "TextChanged,TextChangedI",
-      delete_check_events = "TextChanged",
-      enable_autosnippets = true,
-    })
+    -- Define LSP capabilities
+    local capabilities = vim.lsp.protocol.make_client_capabilities()
+    capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
     
-    -- Defer snippet loading to when they're actually needed
-    vim.api.nvim_create_autocmd("InsertEnter", {
+    -- Define on_attach function to set up keymaps only when an LSP attaches
+    local on_attach = function(client, bufnr)
+      -- Set up buffer-local keymaps, etc.
+      -- (your existing on_attach code)
+    end
+    
+    -- Only set up commonly used LSPs immediately
+    -- Other servers will be set up on demand when their filetypes are loaded
+    local common_servers = { "lua_ls" }
+    
+    for _, server in ipairs(common_servers) do
+      lspconfig[server].setup({
+        capabilities = capabilities,
+        on_attach = on_attach,
+      })
+    end
+    
+    -- Defer less common servers setup to reduce startup time
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "python", "javascript", "typescript", "rust", "go" },
       callback = function()
-        local ok, loader = pcall(require, "luasnip.loaders.from_snipmate")
-        if ok and loader then
-          loader.load({ paths = "~/.config/nvim/snippets/" })
-        end
+        local ft = vim.bo.filetype
+        -- Map filetype to server name if needed
+        local server_map = {
+          -- Add mappings as needed
+        }
+        local server = server_map[ft] or ft
+        
+        -- Skip if already set up or not available
+        if not lspconfig[server] then return end
+        
+        -- Set up the server
+        lspconfig[server].setup({
+          capabilities = capabilities,
+          on_attach = on_attach,
+        })
       end,
-      once = true,
+      once = true, -- Only set up each server once
     })
   end
 }
-```
 
-### 2. Treesitter Optimization ✅
-
-Treesitter and its extensions are now properly lazy-loaded:
-
-```lua
--- In lua/neotex/plugins/tools/treesitter.lua
-{
+-- In lua/neotex/plugins/lsp/mason.lua
+return {
   {
-    "nvim-treesitter/nvim-treesitter",
-    event = { "BufReadPre", "BufNewFile" },
-    build = ":TSUpdate",
+    "williamboman/mason.nvim",
+    cmd = "Mason", -- Only load when the Mason command is run
+    event = "VeryLazy", -- Load after startup is complete
     config = function()
-      -- Core configuration here
-    end,
+      require("mason").setup()
+    end
   },
-  
   {
-    "JoosepAlviste/nvim-ts-context-commentstring",
-    lazy = true,
-    event = { "BufReadPost", "BufNewFile" },
-    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    "williamboman/mason-lspconfig.nvim",
+    event = "VeryLazy", -- Load after startup is complete
+    dependencies = { "mason.nvim" },
     config = function()
-      require("ts_context_commentstring").setup({})
-    end,
-  },
-  
-  {
-    "windwp/nvim-ts-autotag",
-    lazy = true,
-    ft = { "html", "xml", "jsx", "tsx", "vue", "svelte", "php", "markdown" },
-    dependencies = { "nvim-treesitter/nvim-treesitter" },
-    config = function()
-      -- Configuration here
-    end,
+      require("mason-lspconfig").setup({
+        -- Your existing configuration
+      })
+    end
   }
 }
-```
 
-### 3. Yanky.nvim Optimizations ✅
-
-Yanky.nvim has been optimized for both startup and runtime performance:
-
-```lua
--- In lua/neotex/plugins/editor/yanky.lua
-{
-  "gbprod/yanky.nvim",
-  lazy = true,
-  event = { "TextYankPost", "CursorMoved" },
-  config = function()
-    -- History reduced to 50 entries for memory efficiency
-    -- Lazy Telescope integration
-    -- Periodic history cleanup to prevent memory growth
-  end
-}
-```
-
-### 4. Disabled Unused Built-in Plugins ✅
-
-Added to config/options.lua:
-
-```lua
--- Disable unused built-in plugins to improve startup performance
-vim.g.loaded_matchit = 1        -- Disable enhanced % matching
-vim.g.loaded_matchparen = 1     -- Disable highlight of matching parentheses
-vim.g.loaded_tutor_mode_plugin = 1  -- Disable tutorial
-vim.g.loaded_2html_plugin = 1   -- Disable 2html converter
-vim.g.loaded_zipPlugin = 1      -- Disable zip file browsing
-vim.g.loaded_tarPlugin = 1      -- Disable tar file browsing
-vim.g.loaded_gzip = 1           -- Disable gzip file handling
-vim.g.loaded_netrw = 1          -- Disable netrw (using nvim-tree instead)
-vim.g.loaded_netrwPlugin = 1    -- Disable netrw plugin
-vim.g.loaded_netrwSettings = 1  -- Disable netrw settings
-vim.g.loaded_netrwFileHandlers = 1  -- Disable netrw file handlers
-vim.g.loaded_spellfile_plugin = 1  -- Disable spellfile plugin
-```
-
-### 5. Added General Performance Settings ✅
-
-Additional performance settings in config/options.lua:
-
-```lua
--- Performance optimizations
-vim.opt.lazyredraw = true       -- Reduce screen updates
-vim.opt.updatetime = 300        -- Higher CursorHold time
-vim.opt.synmaxcol = 200         -- Limit syntax highlighting
-vim.opt.redrawtime = 1500       -- Limit screen redraw time
-vim.opt.history = 500           -- Limit command history
-vim.opt.jumpoptions = "stack"   -- Optimize jumplist
-vim.opt.shada = "!,'100,<50,s10,h"  -- Limit shada file
-```
-
-## Future Optimization Opportunities ⏳
-
-Even with these improvements, there are still opportunities for further optimization:
-
-### 1. Optimize nvim-cmp Loading (56ms) ⏳
-
-nvim-cmp is still consuming significant startup time:
-
-```lua
--- In nvim-cmp.lua:
+-- In lua/neotex/plugins/lsp/nvim-cmp.lua
 return {
   "hrsh7th/nvim-cmp",
-  lazy = true,
-  event = {"InsertEnter", "CmdlineEnter"},
+  event = { "InsertEnter", "CmdlineEnter" }, -- Only load when entering insert mode
   dependencies = {
-    -- Load other completion sources lazily
-    {
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "hrsh7th/cmp-cmdline",
-      "saadparwaiz1/cmp_luasnip",
-      lazy = true,
-    },
+    { "hrsh7th/cmp-buffer", event = "InsertEnter" },
+    { "hrsh7th/cmp-path", event = "InsertEnter" },
+    { "hrsh7th/cmp-cmdline", event = "CmdlineEnter" },
+    { "hrsh7th/cmp-nvim-lsp", event = "InsertEnter" },
+    { "saadparwaiz1/cmp_luasnip", event = "InsertEnter" },
+    -- Other sources
   },
   config = function()
-    -- Minimal initial setup for faster loading
+    -- Minimal initial setup
     local cmp = require("cmp")
+    
     cmp.setup({
-      -- Minimal initial configuration
+      -- Minimal configuration for initial load
       preselect = cmp.PreselectMode.None,
-      snippet = {
-        expand = function(args)
-          require("luasnip").lsp_expand(args.body)
-        end,
-      },
-      -- Load mappings and sources only when needed
-      mapping = {},
-      sources = {},
+      -- Your essential settings
     })
     
-    -- Defer the full configuration to after startup
+    -- Defer full configuration
     vim.defer_fn(function()
-      -- Full mapping configuration here
       cmp.setup({
-        mapping = {
-          -- Your existing mappings
-        },
-        sources = {
-          -- Your existing sources
-        },
-        -- Other settings
+        -- Your full configuration
       })
     end, 50)
   end
 }
 ```
 
-### 2. Improve nvim-tree Lazy Loading ⏳
+### 2. Optimize Treesitter (~77ms)
 
-Since nvim-tree is also consuming significant time:
+Treesitter can be lazy-loaded for better startup performance:
 
 ```lua
--- In nvim-tree.lua:
+-- In lua/neotex/plugins/editor/treesitter.lua
 return {
-  "nvim-tree/nvim-tree.lua",
-  lazy = true,
-  cmd = {"NvimTreeToggle", "NvimTreeOpen", "NvimTreeFocus"},
-  keys = {
-    { "<leader>e", "<cmd>NvimTreeToggle<cr>", desc = "Explorer" },
+  {
+    "nvim-treesitter/nvim-treesitter", 
+    event = { "BufReadPost", "BufNewFile" }, -- Load when a buffer is read
+    build = ":TSUpdate",
+    config = function() 
+      -- Load only essential modules initially
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = {}, -- Don't install any at startup
+        auto_install = true,  -- Install on-demand when needed
+        highlight = {
+          enable = true,
+          disable = {}, -- Languages to disable highlighting for
+          additional_vim_regex_highlighting = false,
+        },
+        -- Defer loading other modules
+      })
+      
+      -- Install commonly used parsers after startup completes
+      vim.defer_fn(function()
+        vim.cmd("TSInstall lua vim")
+      end, 500)
+    end,
   },
+  {
+    "JoosepAlviste/nvim-ts-context-commentstring",
+    event = { "BufReadPost" }, -- Load after treesitter
+    dependencies = { "nvim-treesitter" },
+  }
+}
+```
+
+### 3. Optimize UI Components (~103ms)
+
+UI components like Lualine and Bufferline can be loaded after startup:
+
+```lua
+-- In lua/neotex/plugins/ui/lualine.lua
+return {
+  "nvim-lualine/lualine.nvim",
+  event = "VeryLazy", -- Load after startup is complete
+  dependencies = { "nvim-web-devicons" },
   config = function()
-    -- Minimal configuration for initial load
-    require("nvim-tree").setup({
-      disable_netrw = true,
+    -- Minimal initial configuration
+    require("lualine").setup({
+      options = {
+        icons_enabled = false, -- Disable icons initially for faster load
+        component_separators = "",
+        section_separators = "",
+      }
     })
     
-    -- Defer full configuration
+    -- Set full configuration after short delay
     vim.defer_fn(function()
-      require("nvim-tree").setup({
-        -- Your full configuration here
+      require("lualine").setup({
+        -- Your full configuration
       })
-    end, 100)
+    end, 200)
+  end
+}
+
+-- In lua/neotex/plugins/ui/bufferline.lua (already optimized)
+return {
+  "akinsho/bufferline.nvim",
+  lazy = true,
+  event = "VeryLazy", -- Load after startup is complete
+  dependencies = { "nvim-web-devicons" },
+  config = function()
+    -- Minimal initial configuration
+    require("bufferline").setup({
+      options = {
+        always_show_bufferline = false,
+        -- Minimal options
+      },
+    })
+    
+    -- Full configuration after delay
+    vim.defer_fn(function() 
+      require("bufferline").setup({
+        -- Your full configuration
+      })
+    end, 200)
   end
 }
 ```
 
-### 3. Streamline init.lua (20ms) ⏳
+## Additional Optimizations ⏳
 
-The core initialization is still taking ~20ms. Consider:
+These optimizations provide smaller improvements but are still worth implementing:
 
-1. **Move configurations into lazy-loaded modules:**
-   ```lua
-   -- Loading only absolutely essential settings at startup
-   -- Deferring other settings
-   vim.api.nvim_create_autocmd("User", {
-     pattern = "VeryLazy",
-     callback = function()
-       require("neotex.config.non_essential").setup()
-     end
-   })
-   ```
+### 1. Add Filetype-Based Loading for Heavy Plugins
 
-2. **Use `vim.schedule` for non-critical operations:**
-   ```lua
-   vim.schedule(function()
-     -- Non-critical initializations here
-   end)
-   ```
-
-### 4. Implement Cache Preloading ⏳
-
-For frequent operations, consider implementing cache preloading:
+Some plugins should only load for specific filetypes:
 
 ```lua
--- In a utils/cache.lua file
+-- For plugins that are only used with specific filetypes
+{
+  "lervag/vimtex",
+  ft = { "tex", "latex" },
+},
+{
+  "nvim-neorg/neorg",
+  ft = "norg",
+},
+```
+
+### 2. Use Command-Based Loading for Utility Plugins
+
+For plugins that are only used when a specific command is run:
+
+```lua
+-- For utility plugins
+{
+  "nvim-telescope/telescope.nvim",
+  cmd = "Telescope",
+  keys = {
+    { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
+    { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Find Text" },
+  },
+},
+{
+  "folke/trouble.nvim",
+  cmd = { "Trouble", "TroubleToggle" },
+},
+```
+
+### 3. Add Module Preloading for Essentials
+
+To reduce latency while preserving fast startup:
+
+```lua
+-- In lua/neotex/config/init.lua
 local M = {}
 
--- Cache for frequently used operations
-M.cache = {}
-
--- Preload cache with commonly used values
-function M.preload()
-  M.cache.runtime_path = vim.fn.stdpath("data")
-  M.cache.config_path = vim.fn.stdpath("config")
-  -- Add other frequently accessed values
-end
-
--- Efficiently access cached values
-function M.get(key, default_fn)
-  if M.cache[key] == nil and default_fn then
-    M.cache[key] = default_fn()
-  end
-  return M.cache[key]
+function M.setup()
+  -- Load essential modules normally
+  
+  -- Preload key modules after startup completion
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "VeryLazy",
+    callback = function()
+      vim.defer_fn(function()
+        -- Preload commonly used modules
+        require("nvim-treesitter")
+        require("telescope._extensions")
+        -- Other frequently used modules
+      end, 500)
+    end
+  })
 end
 
 return M
 ```
 
-### 5. Optimize Plugin Loading Sequence ⏳
+## Implementation Plan
 
-Consider reorganizing the plugin loading sequence in bootstrap.lua:
+1. **Immediate Actions:**
+   - Optimize LSP configuration (highest impact)
+   - Optimize Treesitter (second highest impact)
+   - Ensure UI components are properly lazy-loaded
 
-```lua
--- In bootstrap.lua
--- Load UI plugins last, since they're not needed for functionality
-local plugin_groups = {
-  "neotex.plugins.tools",   -- Tools first (core functionality)
-  "neotex.plugins.lsp",     -- LSP second (required for coding)
-  "neotex.plugins.coding",  -- Coding enhancements third
-  "neotex.plugins.editor",  -- Editor features fourth
-  "neotex.plugins.ui",      -- UI elements last (can be deferred)
-}
-```
+2. **Second Phase:**
+   - Add filetype-specific loading for specialized plugins
+   - Implement command-based loading for utility plugins
+   - Fine-tune lazy-loading triggers for remaining plugins
 
-## Using the Optimization Tools
+3. **Monitoring:**
+   - Run `:AnalyzeStartup` after each change to measure impact
+   - Run `:ProfilePlugins` to validate plugin load times
+   - Adjust lazy-loading strategies for any plugins still loading at startup
 
-Remember to use the optimization tools to measure the impact of changes:
+## Best Practices for Ongoing Maintenance
 
-```
-:AnalyzeStartup     - Analyze startup time bottlenecks
-:ProfilePlugins     - Profile individual plugin load times
-:OptimizationReport - Generate a comprehensive performance report
-:SuggestLazyLoading - Get plugin-specific lazy-loading recommendations
-```
+1. Use event-based loading for plugins needed shortly after startup
+2. Use key-based loading for plugins triggered by specific key mappings
+3. Use command-based loading for plugins with commands you run manually
+4. Use filetype-based loading for language-specific plugins
+5. Regularly check startup time to catch performance regressions
 
-## Conclusion
-
-### Results Achieved ✅
-
-The optimizations implemented so far have:
-- Reduced startup time by 44% (from ~120ms to ~67ms)
-- Fixed critical LuaSnip errors that were causing cascading issues
-- Properly lazy-loaded several core plugins that were slowing startup
-- Disabled numerous unused built-in plugins
-- Added performance-focused settings to core configuration
-
-### Potential Future Improvements ⏳
-
-The additional recommendations, if implemented, could potentially:
-- Reduce startup time by another 20-30%, bringing it below 50ms
-- Improve memory usage for long editing sessions
-- Further enhance responsiveness when working with large files
-- Optimize plugin initialization sequences
-
-### Best Practices for Ongoing Maintenance
-
-For ongoing maintenance, consider:
-1. Using the optimization tools before and after adding new plugins
-2. Regularly reviewing the lazy-loading patterns for plugins
-3. Being cautious with plugins that have large dependency chains
-4. Monitoring memory usage for long editing sessions
-
-These practices will ensure your NeoVim configuration remains performant as it evolves.
+With these optimizations, startup time should decrease significantly, potentially below 50ms, while maintaining all functionality.

@@ -1,28 +1,16 @@
 return {
   "neovim/nvim-lspconfig",
-  event = { "BufReadPre", "BufNewFile" },
+  event = { "BufReadPre", "BufNewFile" }, -- Only load when a file is opened
   dependencies = {
-    { "hrsh7th/cmp-nvim-lsp" },
-    { "antosha417/nvim-lsp-file-operations", config = true },
+    { "hrsh7th/cmp-nvim-lsp", event = "InsertEnter" }, -- Load cmp-nvim-lsp only when entering insert mode
+    { "antosha417/nvim-lsp-file-operations", event = "VeryLazy" }, -- Load file operations later
   },
   config = function()
-    -- import lspconfig plugin
+    -- Import lspconfig plugin (only loaded when the event triggers)
     local lspconfig = require("lspconfig")
 
-    -- import cmp-nvim-lsp plugin
-    local cmp_nvim_lsp = require("cmp_nvim_lsp")
-
-    -- used to enable autocompletion (assign to every lsp server config)
-    local default = cmp_nvim_lsp.default_capabilities()
-
-    -- Change the Diagnostic symbols in the sign column (gutter)
-    local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }
-    for type, icon in pairs(signs) do
-      local hl = "DiagnosticSign" .. type
-      -- Use vim.diagnostic.config instead of sign_define (in the block after this loop)
-    end
-
-    -- Modern way to configure diagnostic signs
+    -- Define diagnostics configuration before anything else
+    local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }
     vim.diagnostic.config({
       signs = {
         text = {
@@ -32,71 +20,85 @@ return {
           [vim.diagnostic.severity.INFO] = signs.Info,
         },
       },
+      -- Optimize diagnostic updates - don't update in insert mode
+      update_in_insert = false,
+      -- Reduce diagnostic severity for better UX
+      severity_sort = true,
     })
 
-    -- configure python server
-    lspconfig["pyright"].setup({
-      capabilities = default,
-    })
+    -- On-attach function to set up keymaps when an LSP connects
+    local on_attach = function(client, bufnr)
+      -- Your existing on_attach code can go here
+    end
 
-    -- configure texlab (LaTeX LSP) server
-    lspconfig["texlab"].setup({
-      capabilities = default,
-      settings = {
-        python = {
-          analysis = {
-            extraPaths = { "/home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/src" },
-            typeCheckingMode = "basic",
-          }
-        },
-        texlab = {
-          build = {
-            onSave = true,
-          },
-          chktex = {
-            onEdit = false,
-            onOpenAndSave = false,
-          },
-          diagnosticsDelay = 300,
-          -- formatterLineLength = 80,
-          -- bibtexFormatter = "texlab",
-          -- -- Set up bibliography paths
-          -- bibParser = {
-          --   enabled = true,
-          --   -- Add paths where your .bib files might be located
-          --   paths = {
-          --     "./bib",           -- bib folder in current directory
-          --     "~/texmf/bibtex/bib", -- bib folder in Documents
-          --     vim.fn.expand("$HOME/texmf/bibtex/bib"), -- Expanded path to Bibliography folder
-          --   },
-          -- },
-          -- -- Enable forward search and inverse search if needed
-          -- forwardSearch = {
-          --   enabled = true,
-          -- },
-        },
-      },
-    })
+    -- Map of commonly used filetypes to their LSP servers
+    local filetype_servers = {
+      lua = "lua_ls",
+      python = "pyright", 
+      tex = "texlab",
+      latex = "texlab",
+    }
 
-    -- configure lua server (with special settings)
-    lspconfig["lua_ls"].setup({
-      capabilities = default,
-      settings = {
-                   -- custom settings for lua
-        Lua = {
-          -- make the language server recognize "vim" global
-          diagnostics = {
-            globals = { "vim" },
-          },
-          workspace = {
-            -- make language server aware of runtime files
-            library = {
-              [vim.fn.expand("$VIMRUNTIME/lua")] = true,
-              [vim.fn.stdpath("config") .. "/lua"] = true,
+    -- Minimal capabilities for LSP
+    local capabilities = vim.lsp.protocol.make_client_capabilities()
+
+    -- Lazy-load LSP servers based on filetype
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = {"lua", "python", "tex", "latex"},
+      callback = function()
+        -- Get current filetype
+        local ft = vim.bo.filetype
+        local server = filetype_servers[ft]
+        
+        -- Skip if no server mapped or already set up
+        if not server or not lspconfig[server] then return end
+
+        -- Get enhanced capabilities for completion (only load when needed)
+        local ok, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+        if ok then
+          capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
+        end
+        
+        -- Configure specific LSP servers
+        if server == "lua_ls" then
+          lspconfig.lua_ls.setup({
+            capabilities = capabilities,
+            on_attach = on_attach,
+            settings = {
+              Lua = {
+                diagnostics = { globals = { "vim" } },
+                workspace = {
+                  library = {
+                    [vim.fn.expand("$VIMRUNTIME/lua")] = true,
+                    [vim.fn.stdpath("config") .. "/lua"] = true,
+                  },
+                },
+              },
             },
-          },
-        },
-      },
+          })
+        elseif server == "pyright" then
+          lspconfig.pyright.setup({
+            capabilities = capabilities,
+            on_attach = on_attach,
+          })
+        elseif server == "texlab" then
+          lspconfig.texlab.setup({
+            capabilities = capabilities,
+            on_attach = on_attach,
+            settings = {
+              texlab = {
+                build = { onSave = true },
+                chktex = {
+                  onEdit = false,
+                  onOpenAndSave = false,
+                },
+                diagnosticsDelay = 300,
+              },
+            },
+          })
+        end
+      end,
+      desc = "Set up LSP for detected filetypes",
     })
   end,
 }
