@@ -9,51 +9,18 @@ local _warning_shown = false
 
 -- Primary function for Avante commands to ensure MCPHub is available
 function M.with_mcp(avante_command)
-  -- Create a variable to track if we had issues with MCPHub
-  local had_mcphub_issues = false
+  -- First, ensure no conflicting MCP-Hub processes are running
+  mcp_server.cleanup_existing_processes()
   
-  -- First trigger the AvantePreLoad event to make sure lazy.nvim has a chance to load MCPHub
-  pcall(function()
-    vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-  end)
+  -- First, directly trigger AvantePreLoad to ensure the plugin is loaded
+  vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
   
-  -- Give a tiny bit of time for the event to be processed
-  vim.cmd("sleep 10m")
+  -- Directly load the plugin
+  pcall(function() require("lazy").load({ plugins = { "mcphub.nvim" } }) end)
   
-  -- Step 1: Ensure MCPHub plugin is loaded (after triggering the event)
-  if not mcp_server.load() then
-    -- Silently continue without MCPHub
-    had_mcphub_issues = true
-  else
-    -- Step 2: Start server if not running or ready
-    if not mcp_server.state.running or not mcp_server.state.ready then
-      local start_result = mcp_server.start()
-      if not start_result then
-        had_mcphub_issues = true
-      end
-    end
-  end
-  
-  -- Step 3: Run the Avante command
-  if had_mcphub_issues then
-    -- If we had issues, just run Avante directly with minimal delay
-    vim.defer_fn(function()
-      vim.cmd(avante_command)
-    end, 10)
-  else
-    -- If everything looks good, give the server a moment to initialize fully
-    vim.defer_fn(function()
-      -- Only check status if we don't already know it's ready
-      if not mcp_server.state.ready then
-        local status = mcp_server.check_status()
-        
-        -- Don't show the warning about MCPHub not being initialized
-      end
-      
-      -- Run the Avante command
-      vim.cmd(avante_command)
-    end, 250) -- Give server time to start, but not too long
-  end
+  -- Then simply run the Avante command directly
+  -- We'll let Avante handle its own interaction with MCP-Hub
+  vim.cmd(avante_command)
 end
 
 -- Register custom Avante commands that ensure MCPHub is available
@@ -140,33 +107,34 @@ function M._integrate_avante_with_mcp()
   end)
 end
 
--- Simpler and more direct function to open MCPHub interface
+-- Direct function to open MCPHub interface without delays
 function M.open_mcphub()
-  -- Set up a dedicated command that will be created once the plugin is loaded
-  vim.api.nvim_create_user_command("MCPHubOpen", function()
-    -- Run the startup command to ensure the server is running
-    pcall(vim.cmd, "MCPHubStart")
-    
-    -- Give server a moment to start up if it wasn't already running
-    vim.defer_fn(function()
-      -- Then open the interface 
-      pcall(vim.cmd, "MCPHub")
-    end, 500)
-  end, { desc = "Open MCPHub interface with auto-start" })
+  -- Get the mcp_server module
+  local mcp_server = require("neotex.plugins.ai.util.mcp_server")
+  
+  -- First make sure any existing processes are cleaned up
+  mcp_server.cleanup_existing_processes()
   
   -- Load the MCPHub plugin via Lazy
   vim.notify("Opening MCPHub...", vim.log.levels.INFO)
   
-  -- Try to load the plugin through Lazy's API
-  pcall(function()
-    require("lazy").load({ plugins = { "mcphub.nvim" } })
-    
-    -- Wait for the plugin to initialize
-    vim.defer_fn(function()
-      -- Run our command
-      pcall(vim.cmd, "MCPHubOpen")
-    end, 200)
-  end)
+  -- Load the plugin directly
+  require("lazy").load({ plugins = { "mcphub.nvim" } })
+  
+  -- Check if we're on NixOS
+  local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1 or vim.fn.executable("nix-env") == 1
+  
+  -- Start server with appropriate command
+  if is_nixos then
+    -- Use the NixOS command which has improved error handling
+    vim.cmd("MCPNix")
+  else
+    -- Use standard start command for non-NixOS
+    vim.cmd("MCPHubStart")
+  end
+  
+  -- Open MCPHub UI directly
+  vim.cmd("MCPHub")
 end
 
 -- Initialize the integration

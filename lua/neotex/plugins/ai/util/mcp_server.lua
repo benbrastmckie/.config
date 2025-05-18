@@ -122,7 +122,42 @@ function M.check_status(port)
   
   -- Update state based on connection test
   local connected = tonumber(result) >= 200 and tonumber(result) < 400
-  M.state.ready = connected
+  
+  if connected then
+    -- Update state on successful connection
+    M.state.ready = true
+    M.state.port = port
+    
+    -- Update the config file to ensure it's properly formatted
+    pcall(function()
+      local config_dir = vim.fn.expand("~/.config/mcphub")
+      local servers_file = config_dir .. "/servers.json"
+      
+      -- Create fresh config
+      local servers_config = {
+        mcpServers = {
+          {
+            name = "default",
+            description = "Default MCP Hub server",
+            url = "http://localhost:" .. port,
+            apiKey = "",
+            default = true
+          }
+        }
+      }
+      
+      -- Make sure the directory exists
+      if vim.fn.isdirectory(config_dir) == 0 then
+        vim.fn.mkdir(config_dir, "p")
+      end
+      
+      -- Write the config
+      local content = vim.json.encode(servers_config)
+      vim.fn.writefile({content}, servers_file)
+    end)
+  else
+    M.state.ready = false
+  end
   
   return connected
 end
@@ -215,24 +250,33 @@ function M.load()
   return false
 end
 
--- Function to clean up any existing server processes
+-- Function to clean up any existing server processes - very thorough to eliminate conflicts
 function M.cleanup_existing_processes()
-  -- Try to find and terminate any existing mcp-hub processes
-  local ps_result = vim.fn.system("ps aux | grep mcp-hub | grep -v grep")
+  -- Reset state first to ensure consistent behavior
+  M.state.running = false
+  M.state.ready = false
+  M.state.error = nil
   
-  if ps_result and ps_result ~= "" then
-    -- Extract PIDs
-    for pid in string.gmatch(ps_result, "%s+(%d+)%s+") do
-      if pid and tonumber(pid) then
-        -- Try to terminate gracefully
-        vim.fn.system("kill -15 " .. pid)
-        log("Terminated existing MCP-Hub process: " .. pid, vim.log.levels.DEBUG)
-      end
-    end
-    
-    -- Give processes time to terminate
-    vim.cmd("sleep 500m")
-  end
+  -- Kill any process named mcp-hub - even background ones
+  vim.fn.system("pkill -f mcp-hub 2>/dev/null")
+  vim.fn.system("pkill -9 -f mcp-hub 2>/dev/null")  -- Force kill any stubborn processes
+  
+  -- Kill any Node.js process that might be running mcp-hub
+  vim.fn.system("pkill -f 'node.*mcp-hub' 2>/dev/null")
+  vim.fn.system("pkill -9 -f 'node.*mcp-hub' 2>/dev/null")
+  
+  -- Kill any process on port 37373
+  vim.fn.system("fuser -k -TERM 37373/tcp 2>/dev/null")
+  vim.fn.system("fuser -k -KILL 37373/tcp 2>/dev/null")
+  
+  -- Alternative method to kill processes on the MCP port
+  vim.fn.system("lsof -ti:37373 | xargs kill -9 2>/dev/null")
+  
+  -- Additional sleep to ensure processes are fully terminated and port is free
+  vim.cmd("sleep 100m")
+  
+  -- Log that cleanup was done
+  log("Cleaned up any existing MCP-Hub processes", vim.log.levels.INFO)
 end
 
 -- Start the MCPHub server with proper version handling
@@ -437,24 +481,75 @@ function M.fix_version()
   vim.g.mcphub_version = version
   
   -- Try to patch the loaded instance
-  vim.defer_fn(function()
+  pcall(function()
+    local mcphub = require("mcphub")
+    
+    -- Fix version in config if possible
+    if mcphub._config then
+      mcphub._config.version_override = version
+    end
+    
+    -- Fix version in hub instance if available
     pcall(function()
-      local mcphub = require("mcphub")
-      
-      -- Fix version in config if possible
-      if mcphub._config then
-        mcphub._config.version_override = version
+      local hub = mcphub.get_hub_instance()
+      if hub then
+        hub.version = version
       end
-      
-      -- Fix version in hub instance if available
-      pcall(function()
-        local hub = mcphub.get_hub_instance()
-        if hub then
-          hub.version = version
-        end
-      end)
     end)
-  end, 100)
+  end)
+end
+
+-- Function to restart server - useful when having connection issues
+function M.restart_server()
+  -- Clean up existing processes
+  M.cleanup_existing_processes()
+  
+  -- Reset state
+  M.state.running = false
+  M.state.ready = false
+  
+  -- Create fresh config file
+  local config_dir = vim.fn.expand("~/.config/mcphub")
+  if vim.fn.isdirectory(config_dir) == 0 then
+    vim.fn.mkdir(config_dir, "p")
+  end
+  
+  local servers_file = config_dir .. "/servers.json"
+  local servers_config = {
+    mcpServers = {
+      {
+        name = "default",
+        description = "Default MCP Hub server",
+        url = "http://localhost:37373",
+        apiKey = "",
+        default = true
+      }
+    }
+  }
+  
+  -- Always overwrite the config file
+  local file = io.open(servers_file, "w")
+  if file then
+    file:write(vim.json.encode(servers_config))
+    file:close()
+  end
+  
+  -- Check if we're on NixOS
+  local is_nixos = vim.fn.filereadable("/etc/NIXOS") == 1 or vim.fn.executable("nix-env") == 1
+  
+  -- Start server with appropriate command
+  if is_nixos then
+    -- Use NixOS command directly
+    pcall(vim.cmd, "MCPNix")
+  else
+    -- Use our start function
+    M.start()
+  end
+  
+  -- Fix version
+  M.fix_version()
+  
+  return true
 end
 
 -- Get MCPHub instance (or nil if not available)
@@ -492,6 +587,7 @@ function M.setup_commands()
   -- First unregister any existing commands to avoid conflicts
   pcall(vim.api.nvim_del_user_command, "MCPHubStatus")
   pcall(vim.api.nvim_del_user_command, "MCPHubStart")
+  pcall(vim.api.nvim_del_user_command, "MCPHubRestart")
   
   -- MCPHub status command
   vim.api.nvim_create_user_command("MCPHubStatus", function()
@@ -509,6 +605,11 @@ function M.setup_commands()
     -- Start the server
     M.start()
   end, { desc = "Start MCPHub server" })
+  
+  -- Add restart command for easy recovery
+  vim.api.nvim_create_user_command("MCPHubRestart", function()
+    M.restart_server()
+  end, { desc = "Restart MCPHub server by killing existing ones" })
   
   -- Also create a trigger for AvantePreLoad and a wrapper for MCPHub command
   vim.api.nvim_create_user_command("MCPAvanteTrigger", function()
