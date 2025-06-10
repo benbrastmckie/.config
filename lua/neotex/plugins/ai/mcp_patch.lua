@@ -1,0 +1,1 @@
+/nix/store/m85k0yf7h8icrnlrmda1r6ya0x3k6nwx-home-manager-files/.config/nvim/lua/neotex/plugins/ai/mcp_patch.lua
