@@ -1,40 +1,5 @@
 # TODO
 
-- [x] improve `autolist.lua`
-  - [x] make <S-TAB> in insert mode on a list un-indent one tab
-  - [x] check for autocommands or other autolist configuration that could be consolidated, improved, or better organized
-  - [x] prevent autolist from creating a new indented line when creating a new line from a line that ends with ':'
-  - [x] fix errors on tabbing on a bullet item in insert mode:
-    - Failed to recalculate list: ...jamin/.config/nvim/lua/neotex/plugins/tools/autolist.lua:137: attempt to call field 'force_recalculate' (a nil value)
-  - [x] remove message when line is indented or recalculated
-  - [x] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
-  - [x] fails to create new bullet when hitting <CR> in insert mode
-  - [x] make TAB act normally if not on the beginning of a line on a bulleted list
-  - [x] make shift-tab work (does nothing currently)
-  - [x] look to see what improvements can be made to make things simpler and more systematic
-  - [x] make <C-N> cycle in the reverse
-  - [x] fix directory structure
-- [x] jupyter
-  - [x] fix directory structure
-- [x] mini.pairs
-  - [x] Fails to pass over closing ', ", and `
-- [x] snacks
-  - [x] move into `tools/`
-- [x] Nvim Tree
-  - [x] Make heading background color match the background color of buffer line
-  - [x] Persistent pane size for nvimtree until restarting neovim
-  - [x] fix error: Error detected while processing WinResized Autocommands for "\*": Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value) stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
-  - [x] fix two-step open
-  - [x] reduce notifications
-- [x] yanky picker
-- [x] todo-comments
-  - [x] make icons more stylized
-- [x] comment lines
-  - [x] errors for many lines selected
-  - [x] only comments one line selected
-  - [x] eventually comments all lines selected
-- [x] buffers
-- [x] optimize
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
@@ -202,6 +167,43 @@
   - [x] create empty checkbox
     - [x] submited issue
 
+- [x] improve `autolist.lua`
+  - [x] make <S-TAB> in insert mode on a list un-indent one tab
+  - [x] check for autocommands or other autolist configuration that could be consolidated, improved, or better organized
+  - [x] prevent autolist from creating a new indented line when creating a new line from a line that ends with ':'
+  - [x] fix errors on tabbing on a bullet item in insert mode:
+    - Failed to recalculate list: ...jamin/.config/nvim/lua/neotex/plugins/tools/autolist.lua:137: attempt to call field 'force_recalculate' (a nil value)
+  - [x] remove message when line is indented or recalculated
+  - [x] hitting 'o' or 'O' in normal mode on a line that ends with a colon still creates a list below (turn this off)
+  - [x] fails to create new bullet when hitting <CR> in insert mode
+  - [x] make TAB act normally if not on the beginning of a line on a bulleted list
+  - [x] make shift-tab work (does nothing currently)
+  - [x] look to see what improvements can be made to make things simpler and more systematic
+  - [x] make <C-N> cycle in the reverse
+  - [x] fix directory structure
+- [x] jupyter
+  - [x] fix directory structure
+- [x] mini.pairs
+  - [x] Fails to pass over closing ', ", and `
+- [x] snacks
+  - [x] move into `tools/`
+- [x] Nvim Tree
+  - [x] Make heading background color match the background color of buffer line
+  - [x] Persistent pane size for nvimtree until restarting neovim
+  - [x] fix error: Error detected while processing WinResized Autocommands for "\*": Error executing lua callback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: attempt to call field 'get_win_id' (a nil value) stack traceback: ...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:82: in function <...enjamin/.config/nvim/lua/neotex/plugins/ui/nvim-tree.lua:81>
+  - [x] fix two-step open
+  - [x] reduce notifications
+- [x] yanky picker
+- [x] todo-comments
+  - [x] make icons more stylized
+- [x] comment lines
+  - [x] errors for many lines selected
+  - [x] only comments one line selected
+  - [x] eventually comments all lines selected
+- [x] buffers
+  - [x] <leader>gg sometimes opens LazyGit blank
+  - [x] always show active tab (sometimes they seem to get lost/hidden)
+- [x] optimize
 * [x] switch undotree to https://github.com/debugloop/telescope-undo.nvim
 * [x] cmp-vimtex
 * [x] nvim-tree

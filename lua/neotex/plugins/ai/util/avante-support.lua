@@ -32,6 +32,7 @@ M.provider_models = {
   claude = {
     "claude-3-5-sonnet-20241022", -- IMPORTANT: Keep this as index 1
     "claude-3-7-sonnet-20250219",
+    "claude-4-sonnet-20250514",
     "claude-3-opus-20240229",
   },
   openai = {
