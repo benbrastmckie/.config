@@ -379,6 +379,7 @@ return {
         c = { "<cmd>Telescope bibtex format_string=\\citet{%s}<CR>", "citations" },
         f = { "<cmd>Telescope live_grep theme=ivy<CR>", "project" },
         l = { "<cmd>Telescope resume<CR>", "last search" },
+        p = { "<cmd>lua require('neotex.util.misc').copy_buffer_path()<CR>", "copy buffer path" },
         q = { "<cmd>Telescope quickfix<CR>", "quickfix" },
         g = { "<cmd>Telescope git_commits<CR>", "git history" },
         h = { "<cmd>Telescope help_tags<CR>", "help" },

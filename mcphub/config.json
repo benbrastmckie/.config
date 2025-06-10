@@ -1,0 +1,6 @@
+{
+  "port": 37373,
+  "debug": true,
+  "apiKeys": [""],
+  "logLevel": "debug"
+}

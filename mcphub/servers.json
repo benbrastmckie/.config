@@ -1,1 +1,29 @@
-{"mcpServers":[{"description":"Default MCP Hub server","apiKey":"","default":true,"name":"default","url":"http://localhost:37373"}]}
+{
+  "servers": [
+    {
+      "name": "default",
+      "description": "Default MCP Hub server",
+      "url": "http://localhost:37373",
+      "apiKey": "",
+      "default": true
+    }
+  ],
+  "mcpServers": {
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-fetch@latest"],
+      "env": {
+        "API_KEY": "",
+        "SERVER_URL": null,
+        "DEBUG": "true"
+      }
+    },
+    "github.com/upstash/context7-mcp": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": "10000"
+      }
+    }
+  }
+}

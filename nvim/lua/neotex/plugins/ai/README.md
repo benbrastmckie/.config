@@ -19,13 +19,25 @@ lua/neotex/plugins/ai/
 ├── lectic.lua             # Lectic AI writing integration
 ├── mcp-hub.lua            # MCP-Hub plugin configuration
 └── util/                  # Utility modules for AI integration
+    ├── README.md                    # Detailed utility module documentation
     ├── avante-highlights.lua        # Enhanced highlighting for Avante UI
-    ├── avante-support.lua           # Support functions for Avante configuration
+    ├── avante-support.lua           # Avante model/provider/prompt management
+    ├── avante_mcp.lua              # Avante-MCPHub integration layer
+    ├── mcp_server.lua              # MCPHub server management
     ├── system-prompts.json          # System prompt templates storage
-    ├── system-prompts.lua           # System prompts manager
-    ├── mcp_server.lua               # MCPHub server state management and control
-    └── avante_mcp.lua               # Avante and MCPHub integration layer
+    └── system-prompts.lua           # System prompts manager
 ```
+
+### Utility Modules
+
+The `util/` directory contains essential support modules for AI functionality:
+
+- **Core Management**: Model selection, provider switching, and settings persistence
+- **System Prompts**: Complete prompt management system with CRUD operations
+- **MCPHub Integration**: Server management and Avante-MCPHub coordination
+- **Visual Enhancement**: Theme-aware highlighting and UI improvements
+
+For detailed documentation of utility modules, see [`util/README.md`](util/README.md).
 
 ## Available AI Features
 
@@ -82,53 +94,56 @@ Lectic provides an interactive writing environment with AI feedback.
 - `<leader>mn`: Create new Lectic file
 - `<leader>ms`: Submit selection with message
 
-### MCP-Hub Integration
+### MCP-Hub Integration (Cross-Platform)
 
-MCP-Hub provides a unified interface to multiple AI services and tools.
+MCP-Hub provides a unified interface to multiple AI services and tools with intelligent installation detection for both NixOS and standard environments.
 
 **Key Features:**
+- Cross-platform compatibility (NixOS and standard systems)
+- Automatic installation method detection
 - Access to multiple AI providers
-- Web search capabilities
+- Web search capabilities  
 - Code execution in sandbox environments
 - PDF document analysis
 - Weather information
 - Image generation and analysis
 
 **Commands:**
-- `MCPHub`: Open the MCP-Hub interface (available after loading Avante)
-- `MCPHubStatus`: Check MCP-Hub connection status
-- `MCPHubStart`: Manually start the MCP-Hub server
-- `MCPAvante`: Open Avante with MCPHub integration
-- `MCPAvanteTrigger`: Trigger loading of MCPHub plugin
+- `MCPHub`: Open the MCP-Hub interface
+- `MCPHubStatus`: Check MCP-Hub connection status  
+- `<leader>hx`: Quick access to MCPHub interface
+
+**Cross-Platform Installation:**
+The configuration automatically detects your environment and chooses the best installation method:
+
+- **NixOS/Nix Users**: Automatically uses bundled installation (no setup required)
+- **Standard Users**: Uses global npm installation if available, falls back to bundled
+- **Manual Installation**: Run `npm install -g mcp-hub@latest` for global installation
 
 **Implementation Details:**
-- Uses advanced state management through `neotex.plugins.ai.util.mcp_server` module
-- Event-driven architecture with `User AvantePreLoad` event
-- Clean integration layer in `neotex.plugins.ai.util.avante_mcp` module
-- Intelligent binary detection and execution logic
-- Multiple server status verification mechanisms
-- Self-healing error handling with fallbacks
+- **Environment Detection**: Automatically detects NixOS/Nix environments
+- **Smart Installation**: Uses global mcp-hub if available, bundled otherwise  
+- **Event-driven loading**: Loads on `User AvantePreLoad` event for integration
+- **Clean configuration**: Minimal setup with automatic environment adaptation
+- **Cross-platform troubleshooting**: Works reliably across different systems
 
 ## Using MCP Tools in Avante
 
 The MCP-Hub integration enables Avante to access and use tools provided by MCP-Hub, expanding Avante's capabilities beyond what's built-in.
 
-### Optimized Lazy-Loading Architecture
+### Architecture
 
-The MCPHub integration has been completely redesigned with a more reliable and efficient architecture:
+The MCPHub integration uses an intelligent cross-platform approach:
 
-1. **True Lazy Loading**: MCPHub only loads when explicitly needed, never at Neovim startup
-2. **Event-Based Triggering**: Uses custom Neovim events for precise lazy loading
-3. **State Management**: Centralized state tracking prevents duplicate server instances
-4. **Automatic Integration**: Just use Avante normally with `<leader>ha`, `<leader>hc`, or `<leader>ht`
-5. **Clean UI**: Minimal notifications - only success messages are shown
-6. **Robust Server Detection**: Automatically verifies server is running with HTTP checks
+1. **Environment Detection**: Automatically detects NixOS/Nix vs standard environments
+2. **Smart Installation Choice**: Uses global installation when available, bundled otherwise
+3. **Lazy Loading**: MCPHub loads via lazy.nvim when needed  
+4. **Event-Based Triggering**: Uses `User AvantePreLoad` event for Avante integration
+5. **Automatic Integration**: Just use Avante normally with `<leader>ha`, `<leader>hc`, or `<leader>ht`
+6. **Installation Feedback**: Shows which installation method is being used
+7. **Cross-Platform Reliability**: Works consistently across different systems
 
-The `<leader>hx` command provides a smart wrapper to open the MCPHub interface:
-- Automatically loads the MCPHub plugin if not loaded
-- Starts the server if it's not already running 
-- Opens the MCPHub interface when ready
-- Handles all edge cases with appropriate timing
+The `<leader>hx` command provides direct access to the MCPHub interface.
 
 ### Using MCP Tools in Prompts
 
@@ -216,264 +231,154 @@ Now let's compare this with historical data:
 /websearch New York weather historical average
 ```
 
-**Tool with code execution:**
-```
-Can you write a Python function to calculate Fibonacci numbers and then test it?
+### Integration Details
 
-Here's a function to calculate Fibonacci numbers:
-```python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
-```
+#### Plugin Configuration
 
-Let's test it:
-/executor python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
-
-for i in range(10):
-    print(f"fibonacci({i}) = {fibonacci(i)}")
-```
-
-### Integration Architecture
-
-The MCPHub integration is implemented with a clean, modular architecture:
-
-#### Key Components
-
-1. **MCP-Hub Plugin Definition** (`lua/neotex/plugins/ai/mcp-hub.lua`)
-   - Defines the plugin with true lazy loading 
-   - Configures Lazy.nvim to only load on specific events
-   - Configured to never load at startup
-   - Sets up build and configuration functions
-
-2. **Server Management** (`lua/neotex/plugins/ai/util/mcp_server.lua`)
-   - Central state management for MCPHub server
-   - Intelligent executable detection for all platforms
-   - Multiple server status verification mechanisms
-   - Handles server lifecycle (start, stop, check)
-   - Provides server status tracking and commands
-
-3. **Integration Layer** (`lua/neotex/plugins/ai/util/avante_mcp.lua`)
-   - Clean API for Avante to interact with MCPHub
-   - Handles event triggering for lazy loading
-   - Manages command registration
-   - Seamless autocommand integration
-   - Self-healing error handling
-
-4. **Event Registration** (`lua/neotex/plugins/ai/init.lua`)
-   - Sets up custom events for plugin communication
-   - Initializes integration layer after plugins are loaded
-   - Registers handlers for AvantePreLoad event
-   - Enables direct plugin loading when needed
+**MCP-Hub Plugin Definition** (`lua/neotex/plugins/ai/mcp-hub.lua`)
+- Cross-platform lazy.nvim plugin specification
+- Environment detection for NixOS vs standard systems
+- Intelligent installation method selection
+- Automatic fallback to bundled installation when needed
+- Dependencies: `plenary.nvim`
+- Loads on specific commands and events
 
 #### Loading Sequence
 
 1. User triggers Avante with a keybinding like `<leader>ha`
 2. This fires the `AvantePreLoad` event to load MCPHub
 3. Lazy.nvim loads the MCPHub plugin in response to the event
-4. The plugin is configured and initialized
-5. The server manager starts the MCPHub server
-6. HTTP status checks verify the server is running
-7. Success message "MCPHub server ready" is displayed
-8. Avante command executes with full MCPHub integration
+4. MCPHub plugin initializes using its built-in functionality
+5. Avante command executes with MCPHub integration available
+
 
 ## System Prompts
 
-The system prompts manager allows you to define and switch between different AI personalities and behaviors.
+The system prompts manager provides complete prompt management with default personalities (Expert, Coder, Tutor) and full CRUD operations.
 
-### Available Prompts
+**Quick Access:**
+- `:AvantePrompt` - Select from available prompts
+- `:AvantePromptManager` - Full management interface
+- `<leader>hp` - Quick prompt selection
 
-- **Expert**: Mathematics, logic, and computer science expert
-- **Coder**: Focused on code implementation with minimal explanation
-- **Tutor**: Educational assistant focused on clear explanations
-
-### Managing Prompts
-
-- Use `AvantePromptManager` to open the system prompts manager
-- Use `AvantePrompt` to quickly select a system prompt
-- Use `<leader>hp` to select a system prompt
-
-### Creating Custom Prompts
-
-1. Run `:AvantePromptManager`
-2. Select "Create New Prompt"
-3. Enter the prompt ID, name, and description
-4. Edit the system prompt text in the buffer that opens
-5. Press Enter to save
+For detailed prompt management documentation, see [`util/README.md`](util/README.md#system-promptslua).
 
 ## Cross-Platform Installation
 
-MCP-Hub works across all platforms with smart environment detection that ensures the right installation approach is used for your system.
+MCP-Hub works across all platforms with intelligent environment detection that automatically chooses the best installation method for your system.
+
+### Automatic Environment Detection
+
+The configuration automatically detects your environment and selects the appropriate installation method:
+
+- **NixOS Detection**: Checks for `/etc/NIXOS`, `NIX_STORE` environment variable, or `nix` executable
+- **Global Installation Check**: Tests if `mcp-hub` is available globally via npm
+- **Smart Fallback**: Uses bundled installation when global installation is not available
 
 ### Platform-Specific Features
 
-- **Standard Environments**: Uses global npm installation on most systems
-- **Environments without npm**: Falls back to bundled binary approach automatically
-- **NixOS Integration**: Special handling for NixOS's unique package environment
-- **Auto-Installation**: Automatically runs installation script for NixOS users on first launch
-- **UVX Compatibility**: Works with UVX package manager for both NixOS and standard environments
-- **Diagnostics**: Enhanced diagnostics to help troubleshoot any installation issues
+- **Standard Environments**: Prefers global npm installation when available
+- **NixOS/Nix Environments**: Uses bundled installation for compatibility
+- **Environments without npm**: Automatically falls back to bundled binary approach
+- **No Manual Configuration**: Works out-of-the-box on any platform
+- **Installation Feedback**: Shows which method is being used in notifications
 
 ### Installation Methods
 
-1. **Global npm (Standard Users)**
-   - Default for most systems with Node.js/npm installed
-   - Clean installation using `npm install -g mcp-hub@latest`
-   - Automatically detected and configured
-   - No special configuration needed
+The system automatically chooses between these methods based on your environment:
 
-2. **Auto-Installation for NixOS (Improved)**
-   - Automatically runs the installation script for NixOS users during plugin build
-   - No manual steps required - installation happens before plugin setup
-   - Runs synchronously to ensure the binary is ready when needed
-   - Creates a flag file to ensure it only runs once
-   - Checks binary existence even if flag file exists
-   - Falls back to manual installation if auto-installation fails
+1. **Global npm Installation (Preferred for Standard Systems)**
+   - Used when `mcp-hub` is globally available via npm
+   - Install manually with: `npm install -g mcp-hub@latest`
+   - Automatically detected and used when available
+   - Provides the best performance and stability
 
-3. **UVX Method (Recommended for NixOS)**
-   - Install UVX via your flake or Nix config
-   - MCP-Hub automatically detects and uses UVX for installation
-   - No errors or additional configuration needed
+2. **Bundled Installation (Automatic Fallback)**
+   - Used on NixOS or when global installation is not available
+   - Automatically downloads and installs mcp-hub locally via lazy.nvim
+   - No manual setup required - handles everything automatically
+   - Works in isolated environments like NixOS
+   - Uses lazy.nvim's `build = "bundled_build.lua"` mechanism
 
-4. **Bundled Binary Method (Fallback)**
-   - Automatically used when global installation is not available
-   - Works within NixOS's pure environment constraints
-   - Also works on standard systems without npm
-   - Uses wrapper script on NixOS for proper path resolution
+3. **Manual Installation (Optional)**
+   - For users who want to install globally on any system
+   - Run: `npm install -g mcp-hub@latest`
+   - The configuration will automatically detect and use it
+   - Useful for users who prefer global package management
 
-5. **Manual Path Configuration (Custom)**
-   - Set `vim.g.mcp_hub_path` to a specific binary location
-   - Useful for custom installations or unusual environments
-   - Example: `vim.g.mcp_hub_path = "/path/to/your/mcp-hub"`
+### Cross-Platform Experience
 
-For detailed information on the NixOS integration, check the documentation in:
-- `specs/BUNDLED.md` for bundled binary approach
-- `specs/SOLUTION.md` for comprehensive installation solutions
+**All Users:** The configuration automatically detects your environment and chooses the optimal installation method. No manual configuration needed - just start using Avante with `<leader>ha` and MCPHub will be available automatically.
+
+**Optional Manual Installation:** Run `npm install -g mcp-hub@latest` for global installation on standard systems (provides best performance).
 
 ## Troubleshooting
 
-If you encounter issues with the AI integration:
+### General AI Integration Issues
 
 1. Check if the AI service is properly configured with API keys
 2. Ensure MCP-Hub is running with `:MCPHubStatus`
-3. If MCP-Hub isn't running, start it manually with `:MCPHubStart`
-4. Try loading Avante first, which will automatically load MCPHub
-5. Verify the model selection with `:AvanteModel`
-6. Check the system prompt with `:AvantePrompt`
-7. Try stopping any ongoing generations with `:AvanteStop`
+3. Try loading Avante first, which will automatically load MCPHub
+4. Verify the model selection with `:AvanteModel`
+5. Check the system prompt with `:AvantePrompt`
+6. Try stopping any ongoing generations with `:AvanteStop`
 
-If MCPHub commands aren't available:
-1. Launch Avante first with `<leader>ha` or `<leader>hc`
-2. Wait for the "MCPHub server ready" message
-3. Then try running `:MCPHub` to open the interface
+### MCPHub Installation Issues
 
-### Quick Solutions for NixOS
+**Check Installation Method:**
+- Look for "MCPHub ready (bundled installation)" or "MCPHub ready (global installation)" message
+- This tells you which method is being used
 
-If you're having trouble with MCP-Hub on NixOS, try these solutions in order:
+**If MCPHub fails to load:**
 
-1. **Use the wrapper script approach**:
-   ```lua
-   -- In your plugin configuration
-   local setup_config = {
-     use_bundled_binary = false,
-     cmd = vim.fn.expand("~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper"),
-     cmdArgs = {},
-     -- other settings...
-   }
-   ```
+1. **For Standard Users:**
+   - Try installing globally: `npm install -g mcp-hub@latest`
+   - Restart NeoVim and check if it detects the global installation
+   - If still failing, the bundled fallback should activate automatically
 
-2. **Run the NixOS installation script**:
-   ```bash
-   bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh
-   ```
+2. **For NixOS Users:**
+   - The bundled installation should work automatically
+   - If failing, check if Node.js is available: `node --version`
+   - Try running `:Lazy build mcphub.nvim` to rebuild the bundled installation
 
-3. **Use the MCPHubInstallManual command**:
-   ```
-   :MCPHubInstallManual
-   ```
+3. **If MCPHub commands aren't available:**
+   - Launch Avante first with `<leader>ha` or `<leader>hc`
+   - Wait for the "MCPHub ready" message
+   - Then try running `:MCPHub` to open the interface
 
-4. **Set MCP_HUB_PATH environment variable**:
-   ```lua
-   -- In your init.lua
-   vim.g.mcp_hub_path = "~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper"
-   ```
+### Environment-Specific Solutions
 
-### Full Command Reference
+**For Standard Users (Linux/macOS/Windows):**
+1. Install globally for best performance: `npm install -g mcp-hub@latest`
+2. Restart NeoVim to detect the global installation
+3. If npm is not available, the bundled fallback will activate automatically
+
+**For NixOS/Nix Users:**
+1. The bundled installation should work automatically - no action needed
+2. If Node.js is missing, ensure it's available in your environment
+3. Try rebuilding: `:Lazy build mcphub.nvim`
+4. Check the bundled installation: `ls -la ~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/`
+
+### Quick Reference
 
 | Command | Description |
 |---------|-------------|
 | `:MCPHub` | Launch the MCP-Hub interface |
-| `:MCPHubDiagnose` | Display diagnostics information |
-| `:MCPHubRebuild` | Rebuild the bundled binary |
-| `:MCPHubInstallManual` | Install using alternative method |
 | `:MCPHubStatus` | Check connection status |
-| `:MCPHubStart` | Manually start the MCPHub server |
-| `:MCPAvanteTrigger` | Trigger loading of MCPHub plugin |
-| `:MCPAvante` | Open Avante with MCPHub integration |
+| `:Lazy build mcphub.nvim` | Rebuild bundled installation |
+| `<leader>hx` | Quick access to MCPHub interface |
 
-### Standard Environment Troubleshooting
+### Installation Verification
 
-If you're experiencing issues on a standard (non-NixOS) environment:
+**Check which method is active:**
+- Look for "MCPHub ready (bundled installation)" or "MCPHub ready (global installation)" in notifications
+- Run `:MCPHubStatus` to verify connection
 
-1. Run `:MCPHubDiagnose` to view detailed installation information
-2. Check if global mcp-hub is installed with `npm list -g | grep mcp-hub`
-3. Try reinstalling mcp-hub globally with `npm install -g mcp-hub@latest`
-4. If npm install fails, try the bundled approach: `:MCPHubRebuild`
-5. For permission issues, use `sudo npm install -g mcp-hub@latest` or set up npm for global packages without sudo
+**Manual global installation (optional):**
+```bash
+npm install -g mcp-hub@latest
+```
 
-### NixOS-Specific Troubleshooting
-
-If you're experiencing issues on NixOS:
-
-1. Run `:MCPHubDiagnose` to view detailed diagnostic information
-2. Check if auto-installation has run by looking for the flag file: `cat ~/.local/share/nvim/mcp-hub/nixos_installed`
-3. Try triggering a manual installation with `:MCPHubInstallManual`
-4. Run the installation script manually: `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh`
-5. Check if UVX is properly installed with `which uvx` in your terminal
-6. Delete the flag file to trigger auto-installation again: `rm ~/.local/share/nvim/mcp-hub/nixos_installed`
-7. Check if binary exists: 
-   ```bash
-   ls -la ~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/node_modules/.bin/mcp-hub
-   ```
-8. Check Node.js: 
-   ```bash
-   node --version
-   ```
-9. Check wrapper script:
-   ```bash
-   cat ~/.local/share/nvim/lazy/mcphub.nvim/bundled/mcp-hub/mcp-hub-wrapper
-   ```
-10. Check if MCPHub loads properly with Avante:
-    ```
-    :MCPHubStatus
-    :AvanteAsk "Test question"
-    :MCPHubStatus  # Check again after using Avante
-    ```
-
-### Installation Scripts
-
-Two installation scripts are available:
-
-1. `/home/benjamin/.config/nvim/scripts/install-mcp-hub.sh`
-   - Basic installation script
-
-2. `/home/benjamin/.config/nvim/scripts/mcp-hub-nixos-install.sh`
-   - Advanced installation with better error handling
-
-### Best Solution for NixOS
-
-The most reliable approach for NixOS is:
-
-1. Run the installation script: `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh`
-2. Use the wrapper script approach in your config
-3. Restart Neovim and use Avante with `<leader>ha` or `<leader>hc`
-4. Check MCPHub status with `:MCPHubStatus`
+**Cross-platform compatibility verified** - the configuration automatically adapts to your environment and provides reliable MCPHub integration regardless of whether you're using NixOS, standard Linux, macOS, or Windows.
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.
