@@ -69,6 +69,10 @@ function PdfAnnots()
   vim.fn.chdir(cwd)
 end
 
+-- Enable full-line syntax highlighting for LaTeX files
+-- Override the global synmaxcol=200 setting for better LaTeX support
+vim.opt_local.synmaxcol = 0  -- 0 means no limit
+
 -- -- LSP menu to preserve vimtex citation data
 -- require('cmp').setup.buffer {
 --   formatting = {
