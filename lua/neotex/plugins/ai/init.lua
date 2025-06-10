@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- AI Tooling Plugins
--- 
+--
 -- This module loads AI-related plugins:
 -- - avante.lua: Avante AI integration with MCP Hub support
 -- - mcp-hub.lua: MCP Hub integration
@@ -35,15 +35,15 @@ vim.api.nvim_create_autocmd("User", {
   callback = function()
     -- Set up integrations with a slight delay to ensure other plugins are loaded
     vim.defer_fn(setup_integrations, 100)
-    
+
     -- Register a global MCPHubOpen command that will be available at startup
     pcall(vim.api.nvim_del_user_command, "MCPHubOpen")
     vim.api.nvim_create_user_command("MCPHubOpen", function()
       -- Try to load MCPHub through Lazy
-      pcall(function() 
+      pcall(function()
         require("lazy").load({ plugins = { "mcphub.nvim" } })
       end)
-      
+
       -- Give a moment for the plugin to load
       vim.defer_fn(function()
         -- Ensure the open_mcphub function is called safely
@@ -52,7 +52,7 @@ vim.api.nvim_create_autocmd("User", {
         end)
       end, 100)
     end, { desc = "Open MCPHub interface with auto-load and start" })
-    
+
     -- Register a handler for our custom event
     vim.api.nvim_create_autocmd("User", {
       pattern = "AvantePreLoad",
@@ -61,7 +61,7 @@ vim.api.nvim_create_autocmd("User", {
         pcall(function()
           require("lazy").load({ plugins = { "mcphub.nvim" } })
         end)
-        
+
         -- Verify that we can now require MCPHub
         vim.defer_fn(function()
           pcall(function()
@@ -84,7 +84,8 @@ return {
   -- Core plugins
   avante_plugin,
   lectic_plugin,
-  
+
   -- MCPHub plugin (completely isolated)
   mcphub_plugin,
 }
+

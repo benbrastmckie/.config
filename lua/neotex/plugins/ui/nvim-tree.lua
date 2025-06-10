@@ -659,20 +659,47 @@ return {
             hex_fg_color = luminance > 0.5 and "#000000" or "#FFFFFF"
           end
 
+          -- =================== DIRECTORY TEXT STYLING ===================
+          -- Use a soft light purple color for directories to make them stand out
+
+          -- Define a soft light purple color for directories
+          local dir_color = "#b294bb" -- Soft light purple
+
+          -- =================== ROOT PATH STYLING ===================
+          -- For the top text showing the current directory - should match bufferline background
+
+          -- The root path at the top of nvim-tree uses the Directory highlight group
+          -- This should match the bufferline tab background color
+          vim.api.nvim_set_hl(0, "Directory", {
+            fg = dir_color,
+            bg = hex_bg_color,
+            bold = true
+          })
+
+          -- =================== TREE DIRECTORY STYLING ===================
+          -- Regular directories in the tree should have no background (transparent)
+
+          -- Apply the directory color to all folder-related highlights in the tree (no background)
+          vim.api.nvim_set_hl(0, "NvimTreeFolderName", { fg = dir_color, bold = true })
+          vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", { fg = dir_color, bold = true })
+          vim.api.nvim_set_hl(0, "NvimTreeEmptyFolderName", { fg = dir_color, bold = true })
+          vim.api.nvim_set_hl(0, "NvimTreeFolderIcon", { fg = dir_color })
+
+          -- Root folder in the tree content (not the header) should match other directories
+          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
+            fg = dir_color,
+            bg = nil, -- Transparent background to match other tree directories
+            bold = true,
+            italic = true
+          })
+
           -- =================== HEADER & TITLE ELEMENTS ===================
-          -- These are the main header elements that need to match bufferline
+          -- These are additional header elements that should also match bufferline
 
           -- Main header highlight
           vim.api.nvim_set_hl(0, "NvimTreeTitle", {
             fg = hex_fg_color,
             bg = hex_bg_color
-          })
-
-          -- Root folder shown in the header
-          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
-            fg = hex_fg_color,
-            bg = hex_bg_color,
-            bold = true
           })
 
           -- General header background
@@ -685,63 +712,6 @@ return {
             fg = hex_fg_color,
             bg = hex_bg_color,
             bold = true
-          })
-
-          -- =================== ROOT PATH STYLING ===================
-          -- For the top text showing the current directory
-
-          -- Set BufferLineFill highlight explicitly for the offset text
-          vim.api.nvim_set_hl(0, "BufferLineFill", {
-            fg = get_highlight_fg("Directory") or hex_fg_color,
-            bg = hex_bg_color
-          })
-
-          -- Override Directory highlight to use our bufferline background
-          vim.api.nvim_set_hl(0, "Directory", {
-            fg = get_highlight_fg("Directory") or hex_fg_color,
-            bg = hex_bg_color,
-            bold = true
-          })
-
-          -- NvimTreeOpenedFolderName is used for the path display
-          vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", {
-            fg = get_highlight_fg("Directory") or hex_fg_color,
-            bg = hex_bg_color,
-            bold = true
-          })
-
-          -- Also set NvimTreeFolderName since it might be used for the directory path
-          vim.api.nvim_set_hl(0, "NvimTreeFolderName", {
-            fg = get_highlight_fg("Directory") or hex_fg_color,
-            bg = hex_bg_color,
-            bold = true
-          })
-
-          -- =================== DIRECTORY TEXT STYLING ===================
-          -- Use a soft light purple color for directories to make them stand out
-
-          -- Define a soft light purple color for directories
-          local dir_color = "#b294bb" -- Soft light purple
-
-          -- Apply the new directory color to all folder-related highlights in the tree
-          vim.api.nvim_set_hl(0, "NvimTreeFolderName", { fg = dir_color, bold = true })
-          vim.api.nvim_set_hl(0, "NvimTreeOpenedFolderName", { fg = dir_color, bold = true })
-          vim.api.nvim_set_hl(0, "NvimTreeEmptyFolderName", { fg = dir_color, bold = true })
-          vim.api.nvim_set_hl(0, "NvimTreeFolderIcon", { fg = dir_color })
-
-          -- Keep the original NvimTreeOpenedFolderName for the top path with original background
-          vim.api.nvim_set_hl(0, "Directory", {
-            fg = dir_color,
-            bg = hex_bg_color,
-            bold = true
-          })
-
-          -- Update the root folder to match other directory entries (no background)
-          vim.api.nvim_set_hl(0, "NvimTreeRootFolder", {
-            fg = dir_color,
-            bg = nil, -- Remove background so it matches other directories in the tree
-            bold = true,
-            italic = true
           })
 
           -- Ensure special folder states also use the same color

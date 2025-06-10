@@ -82,10 +82,10 @@ return {
         -- Skip version mismatch errors
         if err and err:match("VERSION_MISMATCH") then
           -- Fix version silently by applying our standard fix
-          mcp_server.fix_version()
+          require("mcphub.server").fix_version()
           return
         end
-        
+
         vim.g.mcphub_ready = false
         vim.notify("MCPHub error: " .. err, vim.log.levels.ERROR)
       end,
@@ -98,4 +98,3 @@ return {
     })
   end,
 }
-
