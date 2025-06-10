@@ -1,12 +1,13 @@
 # TODO
 
+- [ ] blink
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
     - [x] remove lualine from start screen
     - [x] always show active tab (sometimes they seem to get lost/hidden)
+    - [x] remove light color bar at the top right
     - [ ] `<leader>gg` sometimes opens LazyGit blank
-    - remove light color bar at the top right
     - buffer tabs sometimes get lost
   - which key
     - [ ] Add icons
@@ -16,22 +17,10 @@
     - [ ] make scripts
   - [.] avante
     - [x] search/replace
-    - ask seems to only use one line
+    - [x] ask seems to only use one line
     - improve ui for accept/reject
     - turn off mouse support in Avante
     - <C-j/k> sometimes stops working in Avante after it makes changes
-- [ ] mcphub
-  - debug mcp tools in avante
-  - create user guide
-  - [x] run tests to confirm that mcp works with avante
-  - [x] confirm that non-nix users won't get errors
-  - [x] move mcp-memory out of the .config/ directory
-  - [x] lazy load when avante starts
-  - [x] move `mcphub-loader.lua` to `util/`
-  - [x] make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
-    - [x] system is NixOS
-    - [x] mcphub has not already been installed
-  - [x] reduce notifications
 - [ ] latex
   - [x] highlighting
   - [x] pairs
@@ -60,8 +49,8 @@
   - [x] ai video
   - [x] website
   - wiki
-- [x] yanky
-  - [x] replace?
+- [:] yanky
+  - [ ] replace?
   - [x] fix error in kitty
 - [:] mini
   - [ ] completion (works with blink?)
@@ -84,7 +73,6 @@
     - [x] indent-line
     - [x] dressing
   - [x] change indent line color
-- [ ] blink
 - [ ] undo tree commands
 - [ ] checkhealth
   - [ ] install all missing programs in checkhealth
@@ -110,6 +98,18 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+- [x] mcphub
+  - [x] debug mcp tools in avante
+  - [x] create user guide
+  - [x] run tests to confirm that mcp works with avante
+  - [x] confirm that non-nix users won't get errors
+  - [x] move mcp-memory out of the .config/ directory
+  - [x] lazy load when avante starts
+  - [x] move `mcphub-loader.lua` to `util/`
+  - [x] make `bash ~/.config/nvim/scripts/mcp-hub-nixos-install.sh` automatic if both:
+    - [x] system is NixOS
+    - [x] mcphub has not already been installed
+  - [x] reduce notifications
 - [x] move the following from `editor/` into `tools/`
   - [x] autolist.lua
   - [x] mini.lua
