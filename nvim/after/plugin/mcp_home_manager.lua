@@ -1,1 +1,0 @@
-/nix/store/m85k0yf7h8icrnlrmda1r6ya0x3k6nwx-home-manager-files/.config/nvim/after/plugin/mcp_home_manager.lua
