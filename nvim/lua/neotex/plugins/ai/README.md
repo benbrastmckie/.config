@@ -216,31 +216,6 @@ Now let's compare this with historical data:
 /websearch New York weather historical average
 ```
 
-**Tool with code execution:**
-```
-Can you write a Python function to calculate Fibonacci numbers and then test it?
-
-Here's a function to calculate Fibonacci numbers:
-```python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
-```
-
-Let's test it:
-/executor python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
-
-for i in range(10):
-    print(f"fibonacci({i}) = {fibonacci(i)}")
-```
-
 ### Integration Architecture
 
 The MCPHub integration is implemented with a clean, modular architecture:

@@ -448,7 +448,7 @@ function M.prompt_editor_fields(id, existing)
 
       -- Create a buffer for editing the prompt text
       local buf = vim.api.nvim_create_buf(false, true)
-      vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+      vim.bo[buf].bufhidden = 'wipe'
 
       -- Set initial content if editing
       if existing and existing.prompt then
