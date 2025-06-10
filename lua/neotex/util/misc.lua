@@ -171,6 +171,13 @@ function M.show_selection_info()
   vim.notify(msg, vim.log.levels.INFO)
 end
 
+-- Copy current buffer path to clipboard and notify
+function M.copy_buffer_path()
+  local path = vim.fn.expand('%:p')
+  vim.fn.setreg('+', path)
+  vim.notify('Copied to clipboard: ' .. path, vim.log.levels.INFO)
+end
+
 -- Set up misc utilities
 function M.setup()
   -- Create user commands
