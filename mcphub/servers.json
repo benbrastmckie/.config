@@ -1,8 +1,17 @@
 {
+  "servers": [
+    {
+      "name": "default",
+      "description": "Default MCP Hub server",
+      "url": "http://localhost:37373",
+      "apiKey": "",
+      "default": true
+    }
+  ],
   "mcpServers": {
     "fetch": {
-      "command": "uvx",
-      "args": ["mcp-server-fetch"],
+      "command": "npx",
+      "args": ["-y", "mcp-server-fetch@latest"],
       "env": {
         "API_KEY": "",
         "SERVER_URL": null,

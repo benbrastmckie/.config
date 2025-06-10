@@ -1,0 +1,60 @@
+(2893) 19:23:38 [DEBUG] {
+  code = "NATIVE_SERVER_INIT",
+  data = {
+    capabilities = {
+      prompts = {},
+      resourceTemplates = {},
+      resources = {},
+      tools = {}
+    },
+    name = "neovim"
+  },
+  message = "Creating new native server"
+}
+(2893) 19:23:38 [DEBUG] {
+  code = "NATIVE_SERVER_INIT",
+  data = {
+    capabilities = {
+      prompts = {},
+      resourceTemplates = {},
+      resources = {},
+      tools = {}
+    },
+    name = "mcphub"
+  },
+  message = "Creating new native server"
+}
+(2893) 19:25:39 [ERROR] [SETUP.VERSION_MISMATCH] Invalid version format
+Details: {
+  version = "Starting MCP-Hub server on port 37373..."
+}
+(108530) 07:47:15 [DEBUG] {
+  code = "NATIVE_SERVER_INIT",
+  data = {
+    capabilities = {
+      prompts = {},
+      resourceTemplates = {},
+      resources = {},
+      tools = {}
+    },
+    name = "neovim"
+  },
+  message = "Creating new native server"
+}
+(108530) 07:47:15 [DEBUG] {
+  code = "NATIVE_SERVER_INIT",
+  data = {
+    capabilities = {
+      prompts = {},
+      resourceTemplates = {},
+      resources = {},
+      tools = {}
+    },
+    name = "mcphub"
+  },
+  message = "Creating new native server"
+}
+(108530) 07:47:18 [ERROR] [SETUP.VERSION_MISMATCH] Invalid version format
+Details: {
+  version = "Starting MCP-Hub server on port 37373..."
+}

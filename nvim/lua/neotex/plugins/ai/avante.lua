@@ -40,25 +40,25 @@ return {
       -- This provides essential diff and suggestion highlighting with theme integration
       highlights.setup()
     end
-    
+
     -- Create Avante commands that trigger MCPHub loading first
     local function create_avante_command(name, command)
       vim.api.nvim_create_user_command(name, function(opts)
         -- First trigger the event to load MCPHub
         vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
-        
+
         -- Use our helper function to ensure MCPHub is loaded and run Avante
         local avante_mcp = require("neotex.plugins.ai.util.avante_mcp")
         avante_mcp.with_mcp(command .. " " .. (opts.args or ""))
       end, { nargs = "*" })
     end
-    
+
     -- Set up command wrappers that ensure MCPHub is loaded
     create_avante_command("AvanteAsk", "AvanteAsk")
     create_avante_command("AvanteChat", "AvanteChat")
     create_avante_command("AvanteToggle", "AvanteToggle")
     create_avante_command("AvanteEdit", "AvanteEdit")
-    
+
     -- Add special handling for MCPHub integration when Avante starts
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "Avante", "AvanteInput" },
@@ -68,7 +68,7 @@ return {
           return
         end
         vim.b.mcphub_integrated = true
-        
+
         -- Try to integrate MCPHub with Avante now that both are loaded
         vim.defer_fn(function()
           -- Try to load mcphub
@@ -87,24 +87,24 @@ return {
                 end
               end
             end)
-            
+
             -- Try to add MCPHub extension
             pcall(function()
               -- Load the Avante extension
               mcphub.load_extension("avante")
-              
+
               -- Add MCPHub tools to Avante
               local ok_ext, mcphub_ext = pcall(require, "mcphub.extensions.avante")
               if ok_ext and mcphub_ext and mcphub_ext.mcp_tool then
                 local avante = require("avante")
                 if avante.config and avante.config.override then
-                  avante.config.override({ 
+                  avante.config.override({
                     custom_tools = { mcphub_ext.mcp_tool() }
                   })
                 end
               end
             end)
-            
+
             -- The integration is now complete and quiet - no notifications
           end
         end, 300)
@@ -298,7 +298,8 @@ return {
       -- The system_prompt type supports both a string and a function that returns a string
       -- Here we use a simple string prompt first, and MCPHub integration happens later
       -- This prevents MCPHub from loading at startup
-      system_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed.",
+      system_prompt =
+      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed.",
 
       -- The custom_tools type supports both a list and a function that returns a list
       -- We'll use an empty array first, then MCPHub tools get added later when needed
@@ -490,4 +491,3 @@ return {
     },
   },
 }
-
