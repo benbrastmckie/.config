@@ -12,12 +12,33 @@ return {
           vim.fn.delete(parser_path)
         end
         
-        -- Also remove any source directories
-        local source_path = vim.fn.stdpath("data") .. "/tree-sitter-" .. parser
-        if vim.fn.isdirectory(source_path) == 1 then
-          vim.fn.delete(source_path, "rf")
+        -- Also remove any source directories in multiple locations
+        local source_paths = {
+          vim.fn.stdpath("data") .. "/tree-sitter-" .. parser,
+          vim.fn.expand("~/.local/share/nvim/tree-sitter-" .. parser),
+          vim.fn.stdpath("data") .. "/lazy/nvim-treesitter/tree-sitter-" .. parser,
+        }
+        
+        for _, source_path in ipairs(source_paths) do
+          if vim.fn.isdirectory(source_path) == 1 then
+            vim.fn.delete(source_path, "rf")
+          end
         end
       end
+      
+      -- Override LaTeX parser configs to prevent installation
+      vim.defer_fn(function()
+        pcall(function()
+          local configs = require("nvim-treesitter.parsers").get_parser_configs()
+          local blocked_parsers = { "latex", "tex", "bibtex", "plaintex", "context" }
+          for _, parser in ipairs(blocked_parsers) do
+            if configs[parser] then
+              configs[parser] = nil
+            end
+          end
+        end)
+      end, 50)
+      
       
       -- Load only essential modules initially
       require("nvim-treesitter.configs").setup({

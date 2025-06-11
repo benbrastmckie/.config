@@ -229,17 +229,17 @@ return {
         },
       },
       
-      trigger = {
-        completion = {
-          keyword_length = 1,
-          blocked_trigger_characters = { ' ', '\n', '\t' },
-          show_in_snippet = true,
-          debounce = 60,
-        },
-        signature_help = {
-          enabled = false,
-        },
-      },
+      -- trigger = {
+      --   completion = {
+      --     keyword_length = 1,
+      --     blocked_trigger_characters = { ' ', '\n', '\t' },
+      --     show_in_snippet = true,
+      --     debounce = 60,
+      --   },
+      --   signature_help = {
+      --     enabled = false,
+      --   },
+      -- },
       
       completion = {
         menu = {
@@ -259,12 +259,12 @@ return {
         },
       },
       
-      fuzzy = {
-        use_typo_resistance = true,
-        use_frecency = true,
-        use_proximity = true,
-        sorts = { 'label', 'kind', 'score' },
-      },
+      -- fuzzy = {
+      --   use_typo_resistance = true,
+      --   use_frecency = true,
+      --   use_proximity = true,
+      --   sorts = { 'label', 'kind', 'score' },
+      -- },
       
       cmdline = {
         sources = function()
