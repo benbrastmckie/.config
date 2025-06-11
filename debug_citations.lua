@@ -16,12 +16,12 @@ print("blink.compat available:", compat_ok)
 local blink_ok, blink = pcall(require, 'blink.cmp')
 if blink_ok then
   print("blink.cmp loaded successfully")
-  
+
   -- Try to get the current configuration
   local config_ok, config = pcall(function()
     return require('blink.cmp.config')
   end)
-  
+
   if config_ok then
     print("blink.cmp config available")
     -- Check if vimtex source is in the providers
@@ -37,7 +37,7 @@ print("Current filetype:", vim.bo.filetype)
 -- Check if we're in a tex file context
 if vim.bo.filetype == "tex" then
   print("In LaTeX file - checking VimTeX functionality")
-  
+
   -- Check if VimTeX provides completion function
   if vim.fn.exists('*vimtex#complete#omnifunc') == 1 then
     print("VimTeX omnifunc available")
@@ -47,3 +47,4 @@ if vim.bo.filetype == "tex" then
 end
 
 print("=== End Debug ===")
+

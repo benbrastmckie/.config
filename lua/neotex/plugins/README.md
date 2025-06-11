@@ -30,7 +30,6 @@ Plugins are organized into the following categories with dedicated directories:
   - blink-cmp.lua: Modern high-performance completion engine
   - lspconfig.lua: Base LSP server configuration
   - mason.lua: LSP server and tool management
-  - none-ls.lua: Additional formatters and linters
 
 - **ui/**: User interface components
   - colorscheme.lua: Theme configuration
