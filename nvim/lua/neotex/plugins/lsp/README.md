@@ -52,14 +52,6 @@ The LSP configuration provides intelligent code editing features including:
 - UI for browsing and managing language tools
 - Integration with other LSP components
 
-### `none-ls.lua`
-**Additional LSP functionality** for formatters and linters not provided by language servers.
-
-**Features:**
-- Code formatting (prettier, black, etc.)
-- Linting integration
-- Custom source configuration
-- Integration with Mason for tool management
 
 ## Configuration Structure
 
@@ -68,8 +60,7 @@ lsp/
 ├── README.md         # This documentation
 ├── blink-cmp.lua    # Primary completion engine
 ├── lspconfig.lua    # Base LSP configuration
-├── mason.lua        # LSP server management  
-└── none-ls.lua      # Additional LSP tools
+└── mason.lua        # LSP server management
 ```
 
 ## LaTeX Integration
