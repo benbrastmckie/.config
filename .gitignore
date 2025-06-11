@@ -58,11 +58,22 @@ via-nativia
 fish/conf.d/private.fish
 BraveSoftware/Brave-Browser
 niri/config.kdl
-**/CLAUDE.md
 systemd/user
 nvim/examples
 LazyVim
+Signal
 
+
+*.aux
+*.bbl
+*.bib
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.synctex.gz
+
+**/CLAUDE.md
 **/.claude/
 **/specs/
-Signal

@@ -7,9 +7,9 @@
 \section{Test Section}
 \label{sec:test}
 
-Testing citations: \cite{sm}
+Testing citations: \cite{smith2023}
 Testing multiple citations: \cite{,}
-Testing references: \ref{sec}
+Testing references: \ref{sec:test}
 
 sometimes 
 
