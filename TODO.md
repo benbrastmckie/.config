@@ -6,12 +6,15 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
 
 ## In Progress
 
+
 - [.] blink
   - [x] plan
-  - [:] implement
+  - [x] implement
     - [x] first pass
     - [x] research
     - [x] second pass
+  - [ ] commands
+  - [ ] paths
 - [ ] ai
   - [ ] claude-code
   - [ ] mcp tooling
