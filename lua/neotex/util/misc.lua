@@ -178,8 +178,24 @@ function M.copy_buffer_path()
   vim.notify('Copied to clipboard: ' .. path, vim.log.levels.INFO)
 end
 
+-- Copy error message to clipboard and notify
+function M.copy_error_to_clipboard(error_msg)
+  if not error_msg or error_msg == "" then return end
+  vim.fn.setreg('+', error_msg)
+  vim.notify('Error copied to clipboard', vim.log.levels.INFO)
+end
+
 -- Set up misc utilities
 function M.setup()
+  -- Set up automatic error message copying
+  vim.api.nvim_create_autocmd({"User"}, {
+    pattern = "NotifyError",
+    callback = function(args)
+      local error_msg = args.data and args.data.message or ""
+      M.copy_error_to_clipboard(error_msg)
+    end,
+  })
+
   -- Create user commands
   vim.api.nvim_create_user_command('ToggleLineNumbers', function()
     M.toggle_line_numbers()

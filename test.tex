@@ -1,9 +1,22 @@
 \documentclass{article}
 \usepackage{amsmath}
+\bibliography{test}
 
 \begin{document}
 
-Testing citations: \cite{
-Testing references: \ref{
+\section{Test Section}
+\label{sec:test}
+
+Testing citations: \cite{}
+Testing multiple citations: \cite{,}
+Testing references: \ref{}
+
+sometimes 
+
+\bibliographystyle{plain}
+\bibliography{test}
 
 \end{document}
+
+% :lua local blink = require('blink.cmp'); local config = require('blink.cmp.config'); print('blink.cmp sources:', vim.inspect(config.sources.default)); print('vimtex provider:', vim.inspect(config.sources.providers.vimtex))
+% :lua print('=== Citation Debug ==='); print('VimTeX loaded:', vim.g.loaded_vimtex); local cmp_vimtex_ok = pcall(require, 'cmp_vimtex'); print('cmp_vimtex available:', cmp_vimtex_ok); local compat_ok = pcall(require, 'blink.compat'); print('blink.compat available:', compat_ok); print('Current filetype:', vim.bo.filetype)
