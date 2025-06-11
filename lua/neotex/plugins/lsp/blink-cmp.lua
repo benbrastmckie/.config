@@ -74,31 +74,31 @@ return {
       
       appearance = {
         kind_icons = {
+          Text = "󰦨",
+          Method = "󰆧",
           Function = "󰊕",
           Constructor = "",
-          Text = "󰦨",
-          Method = "",
-          Field = "󰅪",
-          Variable = "󱃮",
-          Class = "",
+          Field = "󰇽",
+          Variable = "󰂡",
+          Class = "󰠱",
           Interface = "",
           Module = "",
-          Property = "",
+          Property = "󰜢",
           Unit = "",
-          Value = "󰚯",
+          Value = "󰎠",
           Enum = "",
-          Keyword = "",
+          Keyword = "󰌋",
           Snippet = "",
-          Color = "󰌁",
-          File = "",
+          Color = "󰏘",
+          File = "󰈙",
           Reference = "",
-          Folder = "",
+          Folder = "󰉋",
           EnumMember = "",
           Constant = "󰀫",
           Struct = "",
           Event = "",
           Operator = "󰘧",
-          TypeParameter = "",
+          TypeParameter = "󰅲",
         }
       },
       
@@ -226,6 +226,12 @@ return {
             min_keyword_length = 0,
             score_offset = 100,
           },
+          cmdline = {
+            name = 'cmdline',
+            enabled = true,
+            max_items = 50,
+            min_keyword_length = 1,
+          },
         },
       },
       
@@ -242,12 +248,34 @@ return {
       -- },
       
       completion = {
+        trigger = {
+          prefetch_on_insert = true,
+          show_in_snippet = true,
+          show_on_keyword = true,
+          show_on_trigger_character = true,
+          show_on_blocked_trigger_characters = { ' ', '\n', '\t' },
+          show_on_accept_on_trigger_character = true,
+          show_on_insert_on_trigger_character = true,
+          show_on_x_blocked_trigger_characters = { "'", '"', '(' }
+        },
         menu = {
+          max_height = 15,
+          auto_show = true,
           draw = {
             treesitter = { "lsp" },
+            columns = { 
+              { 'kind_icon' }, 
+              { 'label', 'label_description', gap = 1 } 
+            },
+            components = {
+              kind_icon = {
+                text = function(ctx) return ' ' .. ctx.kind_icon .. ' ' end,
+                highlight = function(ctx) 
+                  return { { group = ctx.kind_hl, priority = 20000 } } 
+                end
+              }
+            }
           },
-          auto_show = true,
-          max_height = 15,
         },
         documentation = {
           auto_show = true,
@@ -267,6 +295,16 @@ return {
       -- },
       
       cmdline = {
+        enabled = true,
+        completion = {
+          menu = {
+            auto_show = true
+          },
+          trigger = {
+            show_on_blocked_trigger_characters = {},
+            show_on_x_blocked_trigger_characters = {}
+          }
+        },
         sources = function()
           local type = vim.fn.getcmdtype()
           if type == '/' or type == '?' then
