@@ -33,11 +33,5 @@ return {
         end
       end, 100)
     end
-  },
-  {
-    "saadparwaiz1/cmp_luasnip",
-    lazy = true,
-    event = "InsertEnter",
-    dependencies = { "L3MON4D3/LuaSnip" },
   }
 }
