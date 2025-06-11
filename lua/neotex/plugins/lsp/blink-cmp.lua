@@ -121,16 +121,20 @@ return {
           path = {
             name = 'path',
             enabled = function()
-              -- Disable path source in LaTeX citation contexts only
+              -- Disable path source in LaTeX citation and reference contexts
               if vim.bo.filetype == 'tex' then
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
                 
-                -- Keep enabled for include/input contexts, disable for citations only
+                -- Keep enabled for include/input contexts, disable for citations and references
                 if before_cursor:match('\\cite[%w]*{[^}]*$') or 
                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') then
+                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
+                   before_cursor:match('\\ref{[^}]*$') or
+                   before_cursor:match('\\[Cc]ref{[^}]*$') or
+                   before_cursor:match('\\eqref{[^}]*$') or
+                   before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end
@@ -142,16 +146,20 @@ return {
           buffer = { 
             name = 'buffer',
             enabled = function()
-              -- Disable buffer source in LaTeX citation contexts only
+              -- Disable buffer source in LaTeX citation and reference contexts
               if vim.bo.filetype == 'tex' then
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
                 
-                -- Disable in citation contexts only
+                -- Disable in citation and reference contexts
                 if before_cursor:match('\\cite[%w]*{[^}]*$') or 
                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') then
+                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
+                   before_cursor:match('\\ref{[^}]*$') or
+                   before_cursor:match('\\[Cc]ref{[^}]*$') or
+                   before_cursor:match('\\eqref{[^}]*$') or
+                   before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end
@@ -164,16 +172,20 @@ return {
           snippets = { 
             name = 'snippets',
             enabled = function()
-              -- Disable snippets in LaTeX citation contexts only
+              -- Disable snippets in LaTeX citation and reference contexts
               if vim.bo.filetype == 'tex' then
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
                 
-                -- Disable in citation contexts only
+                -- Disable in citation and reference contexts
                 if before_cursor:match('\\cite[%w]*{[^}]*$') or 
                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') then
+                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
+                   before_cursor:match('\\ref{[^}]*$') or
+                   before_cursor:match('\\[Cc]ref{[^}]*$') or
+                   before_cursor:match('\\eqref{[^}]*$') or
+                   before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end

@@ -1,5 +1,0 @@
-PWD /home/benjamin/.config/nvim
-INPUT /nix/store/fmi8m9x3hlbgfc66cfcsnfx06cs7pxdp-texlive-combined-full-2023-final/share/texmf-var/web2c/texmf.cnf
-INPUT /home/benjamin/.texlive2023/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT /home/benjamin/.config/nvim/test.bib
-OUTPUT test.log
