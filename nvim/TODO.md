@@ -1,6 +1,17 @@
 # TODO
 
-- [ ] blink
+- when opening a test.tex file:
+Warning: your package.json's `tree-sitter` field has been automatically migrated to the new `tree-sitter.json` config file                             
+For more information, visit https://tree-sitter.github.io/tree-sitter/creating-parsers 
+
+## In Progress
+
+- [.] blink
+  - [x] plan
+  - [:] implement
+    - [x] first pass
+    - [x] research
+    - [x] second pass
 - [ ] latex
   - [x] highlighting
   - [x] pairs

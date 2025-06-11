@@ -9,7 +9,7 @@ return {
         -- Only enable minimal highlighting at startup
         highlight = {
           enable = true,
-          disable = { "css", "cls", "latex" },
+          disable = { "css", "cls", "latex", "tex", "plaintex", "context", "bibtex" },
           additional_vim_regex_highlighting = false, -- Disable additional regex highlighting initially
         },
         
@@ -29,7 +29,7 @@ return {
           -- Enable full syntax highlighting
           highlight = {
             enable = true,
-            disable = { "css", "cls", "latex" },
+            disable = { "css", "cls", "latex", "tex", "plaintex", "context", "bibtex" },
             additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
           },
           
