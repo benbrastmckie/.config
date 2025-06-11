@@ -1,6 +1,19 @@
 # TODO
 
 - [ ] blink
+- [ ] latex
+  - [x] highlighting
+  - [x] pairs
+  - [x] surround
+    - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
+    - [x] Fix surround keybindings conflict between mini.surround and which-key
+      - [x] Aligned key references in documentation with actual keybindings
+      - [x] Fixed mismatch between `<leader>ss` (surround) vs `<leader>sa` (add surrounding)
+      - [x] Fixed mismatch between `<leader>sc` (change) vs `<leader>sr` (replace)
+      - [x] Fixed API calls by using the correct mini.surround functions
+      - [x] Updated commands to directly use require('mini.surround').function_name()
+      - [x] Corrected visual mode mapping to use add('visual') method
+  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
@@ -21,19 +34,20 @@
     - improve ui for accept/reject
     - turn off mouse support in Avante
     - <C-j/k> sometimes stops working in Avante after it makes changes
-- [ ] latex
-  - [x] highlighting
-  - [x] pairs
+- [:] yanky
+  - [ ] replace?
+  - [x] fix error in kitty
+- [:] mini
+  - [ ] completion (works with blink?)
+  - [ ] icons
+  - [x] slplitjoin
+  - [x] align
+  - [x] a/i
+  - [x] diff
+  - [x] cursorword
+  - [x] comment
   - [x] surround
-    - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
-    - [x] Fix surround keybindings conflict between mini.surround and which-key
-      - [x] Aligned key references in documentation with actual keybindings
-      - [x] Fixed mismatch between `<leader>ss` (surround) vs `<leader>sa` (add surrounding)
-      - [x] Fixed mismatch between `<leader>sc` (change) vs `<leader>sr` (replace)
-      - [x] Fixed API calls by using the correct mini.surround functions
-      - [x] Updated commands to directly use require('mini.surround').function_name()
-      - [x] Corrected visual mode mapping to use add('visual') method
-  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
+  - [x] pairs
 - [.] email
 - [.] docs
   - [ ] api
@@ -49,20 +63,6 @@
   - [x] ai video
   - [x] website
   - wiki
-- [:] yanky
-  - [ ] replace?
-  - [x] fix error in kitty
-- [:] mini
-  - [ ] completion (works with blink?)
-  - [ ] icons
-  - [x] slplitjoin
-  - [x] align
-  - [x] a/i
-  - [x] diff
-  - [x] cursorword
-  - [x] comment
-  - [x] surround
-  - [x] pairs
 - [x] todo-comments
 - [x] snacks
   - [x] research plugins
@@ -98,6 +98,9 @@
     - [x] should I create a personal branch?
     - [x] exclude local files
     - [x] close issue
+
+## Completed
+
 - [x] mcphub
   - [x] debug mcp tools in avante
   - [x] create user guide
