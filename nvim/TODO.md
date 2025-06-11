@@ -6,19 +6,6 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
 
 ## In Progress
 
-
-
-- [.] blink
-  - [x] plan
-  - [x] implement
-    - [x] first pass
-    - [x] research
-    - [x] second pass
-  - [ ] commands
-  - [ ] paths
-- [ ] ai
-  - [ ] claude-code
-  - [ ] mcp tooling
 - [ ] latex
   - [x] highlighting
   - [x] pairs
@@ -32,6 +19,9 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
       - [x] Updated commands to directly use require('mini.surround').function_name()
       - [x] Corrected visual mode mapping to use add('visual') method
   - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
+- [ ] ai
+  - [ ] claude-code
+  - [ ] mcp tooling
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
@@ -106,6 +96,16 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
 
 ## Completed
 
+- [x] blink
+  - [x] plan
+  - [x] implement
+    - [x] first pass
+    - [x] research
+    - [x] second pass
+  - [x] commands
+  - [x] paths
+  - [x] refactor directory
+  - [x] document
 - [x] autolist
   - [x] add in-progress field
   - [x] remove box command
