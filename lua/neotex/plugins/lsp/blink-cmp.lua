@@ -3,12 +3,10 @@ return {
     "saghen/blink.compat",
     version = "2.*",
     lazy = true,
-    config = function()
-      require('blink.compat').setup({
-        debug = false,
-        impersonate_nvim_cmp = true,
-      })
-    end,
+    opts = {
+      debug = false,
+      impersonate_nvim_cmp = true,
+    },
   },
   {
     "saghen/blink.cmp",
@@ -50,167 +48,14 @@ return {
     config = function(_, opts)
       require('blink.cmp').setup(opts)
       
-      -- Custom LaTeX citation completion handler
-      local function setup_latex_completion()
-        -- Create autocmd for LaTeX files
-        vim.api.nvim_create_autocmd("FileType", {
-          pattern = "tex",
-          callback = function()
-            -- Custom function to handle citation completion
-            local function latex_complete()
-              local line = vim.api.nvim_get_current_line()
-              local col = vim.api.nvim_win_get_cursor(0)[2]
-              local before_cursor = line:sub(1, col)
-              
-              -- Check if we're in a citation context
-              if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                 before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                 before_cursor:match('\\citet?[%w]*{[^}]*$') then
-                -- Use VimTeX omnifunc for citations
-                return vim.fn['vimtex#complete#omnifunc'](vim.fn.col('.') - 1, '')
-              end
-              
-              return nil -- Let blink.cmp handle other cases
-            end
-            
-            -- Override Tab key for citation contexts in LaTeX
-            vim.keymap.set('i', '<Tab>', function()
-              local line = vim.api.nvim_get_current_line()
-              local col = vim.api.nvim_win_get_cursor(0)[2]
-              local before_cursor = line:sub(1, col)
-              
-              -- In citation context, hide blink.cmp and trigger VimTeX completion
-              if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                 before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                 before_cursor:match('\\citet?[%w]*{[^}]*$') then
-                -- Hide blink.cmp menu if visible
-                local blink = require('blink.cmp')
-                if blink.is_visible() then
-                  blink.hide()
-                end
-                return '<C-x><C-o>'
-              else
-                -- Use blink.cmp's Tab handling
-                local blink = require('blink.cmp')
-                if blink.is_visible() then
-                  return blink.accept()
-                else
-                  return '<Tab>'
-                end
-              end
-            end, { expr = true, buffer = true, desc = "Smart LaTeX completion" })
-            
-            -- Set omnifunc to VimTeX for this buffer
-            vim.bo.omnifunc = 'vimtex#complete#omnifunc'
-            
-            -- Context detection function
-            local function get_latex_context()
-              local line = vim.api.nvim_get_current_line()
-              local col = vim.api.nvim_win_get_cursor(0)[2]
-              local before_cursor = line:sub(1, col)
-              
-              -- Citation contexts
-              if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                 before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                 before_cursor:match('\\citet?[%w]*{[^}]*$') then
-                return 'citation'
-              end
-              
-              -- Reference contexts
-              if before_cursor:match('\\ref{[^}]*$') or
-                 before_cursor:match('\\[Cc]ref{[^}]*$') or
-                 before_cursor:match('\\eqref{[^}]*$') or
-                 before_cursor:match('\\autoref{[^}]*$') then
-                return 'reference'
-              end
-              
-              -- Package contexts
-              if before_cursor:match('\\usepackage{[^}]*$') or
-                 before_cursor:match('\\RequirePackage{[^}]*$') then
-                return 'package'
-              end
-              
-              -- Begin/end environment contexts
-              if before_cursor:match('\\begin{[^}]*$') or
-                 before_cursor:match('\\end{[^}]*$') then
-                return 'environment'
-              end
-              
-              return 'general'
-            end
-            
-            -- Simple setup - let the source-level filtering handle context awareness
-            vim.bo.omnifunc = 'vimtex#complete#omnifunc'
-            
-            -- Auto-trigger VimTeX completion in citation contexts
-            vim.api.nvim_create_autocmd("TextChangedI", {
-              buffer = 0,
-              callback = function()
-                local context = get_latex_context()
-                
-                if context == 'citation' then
-                  local line = vim.api.nvim_get_current_line()
-                  local col = vim.api.nvim_win_get_cursor(0)[2]
-                  local before_cursor = line:sub(1, col)
-                  
-                  -- Only trigger if we have some content to complete
-                  local content = before_cursor:match('\\cite[%w]*{([^}]*)$')
-                  if content and #content > 0 then
-                    vim.defer_fn(function()
-                      if vim.fn.mode() == 'i' and get_latex_context() == 'citation' then
-                        -- Set completion options to prevent auto-selection
-                        local old_completeopt = vim.o.completeopt
-                        vim.o.completeopt = 'menu,noselect'
-                        
-                        -- Trigger VimTeX omnifunc
-                        vim.fn.feedkeys(vim.api.nvim_replace_termcodes('<C-x><C-o>', true, false, true), 'n')
-                        
-                        -- Restore original completeopt after completion
-                        vim.defer_fn(function()
-                          vim.o.completeopt = old_completeopt
-                        end, 200)
-                      end
-                    end, 100)
-                  end
-                end
-              end,
-            })
-            
-            -- Manual completion with context awareness
-            vim.keymap.set('i', '<C-n>', function()
-              local context = get_latex_context()
-              
-              if context == 'citation' or context == 'reference' or context == 'package' or context == 'environment' then
-                return '<C-x><C-o>' -- Use VimTeX omnifunc
-              else
-                -- Use blink.cmp for general contexts
-                local blink = require('blink.cmp')
-                blink.show()
-                return ''
-              end
-            end, { expr = true, buffer = true, desc = "Context-aware LaTeX completion" })
-          end,
-        })
-      end
-      
-      -- Set up the LaTeX completion after a brief delay
-      vim.defer_fn(setup_latex_completion, 100)
-      
-      -- Set default Tab behavior for non-LaTeX files
-      vim.keymap.set('i', '<Tab>', function()
-        if vim.bo.filetype == 'tex' then
-          -- LaTeX files have their own Tab handler set up above
-          return '<Tab>'
-        else
-          -- Standard blink.cmp Tab behavior
-          local blink = require('blink.cmp')
-          if blink.is_visible() then
-            return blink.accept()
-          else
-            return '<Tab>'
-          end
-        end
-      end, { expr = true, desc = "Smart Tab completion" })
+      -- Simple LaTeX setup - let blink.cmp handle everything through VimTeX compatibility
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "tex",
+        callback = function()
+          -- Set omnifunc for VimTeX integration
+          vim.bo.omnifunc = 'vimtex#complete#omnifunc'
+        end,
+      })
     end,
     
     opts = {
@@ -220,8 +65,10 @@ return {
         ['<C-j>'] = { 'select_next', 'fallback' },
         ['<C-b>'] = { 'scroll_documentation_up', 'fallback' },
         ['<C-f>'] = { 'scroll_documentation_down', 'fallback' },
+        ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+        ['<C-e>'] = { 'hide', 'fallback' },
         ['<CR>'] = { 'accept', 'fallback' },
-        -- Tab is handled specially for LaTeX files, so we'll set it conditionally
+        ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
       
@@ -256,22 +103,31 @@ return {
       },
       
       sources = {
-        default = { 'lsp', 'path', 'snippets', 'buffer', 'vimtex' },
+        default = { 'lsp', 'path', 'snippets', 'buffer' },
         per_filetype = {
-          tex = { 'lsp', 'vimtex', 'snippets', 'buffer' }
+          tex = { 'lsp', 'omni', 'snippets', 'path', 'buffer' },  -- Use 'omni' instead of 'vimtex'
+          lua = { 'lsp', 'path', 'snippets', 'buffer' },
+          python = { 'lsp', 'path', 'snippets', 'buffer' },
         },
         providers = {
-          buffer = { 
-            max_items = 8,
-            keyword_length = 3,
-            -- Disable buffer source in citation contexts
+          lsp = {
+            name = 'lsp',
+            enabled = true,
+            max_items = 100,
+            min_keyword_length = 1,
+            score_offset = 0,
+            fallbacks = { 'buffer' },
+          },
+          path = {
+            name = 'path',
             enabled = function()
+              -- Disable path source in LaTeX citation contexts only
               if vim.bo.filetype == 'tex' then
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
                 
-                -- Disable in citation contexts
+                -- Keep enabled for include/input contexts, disable for citations only
                 if before_cursor:match('\\cite[%w]*{[^}]*$') or 
                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
                    before_cursor:match('\\citet?[%w]*{[^}]*$') then
@@ -280,16 +136,41 @@ return {
               end
               return true
             end,
+            max_items = 20,
+            min_keyword_length = 1,
+          },
+          buffer = { 
+            name = 'buffer',
+            enabled = function()
+              -- Disable buffer source in LaTeX citation contexts only
+              if vim.bo.filetype == 'tex' then
+                local line = vim.api.nvim_get_current_line()
+                local col = vim.api.nvim_win_get_cursor(0)[2]
+                local before_cursor = line:sub(1, col)
+                
+                -- Disable in citation contexts only
+                if before_cursor:match('\\cite[%w]*{[^}]*$') or 
+                   before_cursor:match('\\citep?[%w]*{[^}]*$') or
+                   before_cursor:match('\\citet?[%w]*{[^}]*$') then
+                  return false
+                end
+              end
+              return true
+            end,
+            max_items = 8,
+            min_keyword_length = 3,
+            fallbacks = {},
           },
           snippets = { 
-            min_keyword_length = 1,
-            -- Disable snippets in citation contexts
+            name = 'snippets',
             enabled = function()
+              -- Disable snippets in LaTeX citation contexts only
               if vim.bo.filetype == 'tex' then
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
                 
+                -- Disable in citation contexts only
                 if before_cursor:match('\\cite[%w]*{[^}]*$') or 
                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
                    before_cursor:match('\\citet?[%w]*{[^}]*$') then
@@ -298,20 +179,63 @@ return {
               end
               return true
             end,
+            max_items = 20,
+            min_keyword_length = 1,
+            score_offset = -3,
             opts = {
               friendly_snippets = false,
               search_paths = { vim.fn.stdpath("config") .. "/snippets" },
             }
           },
-          vimtex = {
-            name = 'vimtex',
-            module = 'blink.compat.source',
-            score_offset = 100, -- Give VimTeX higher priority
-            opts = {
-              trigger_characters = { '\\', '{', '}', ',', ' ' },
-            },
+          omni = {
+            name = 'omni',
+            enabled = function()
+              return vim.bo.filetype == 'tex' and vim.bo.omnifunc ~= ''
+            end,
+            async = true,
+            timeout_ms = 5000,
+            max_items = 50,
+            min_keyword_length = 0,
+            score_offset = 100,
           },
-        }
+        },
+      },
+      
+      trigger = {
+        completion = {
+          keyword_length = 1,
+          blocked_trigger_characters = { ' ', '\n', '\t' },
+          show_in_snippet = true,
+          debounce = 60,
+        },
+        signature_help = {
+          enabled = false,
+        },
+      },
+      
+      completion = {
+        menu = {
+          draw = {
+            treesitter = { "lsp" },
+          },
+          auto_show = true,
+          max_height = 15,
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 250,
+          treesitter_highlighting = true,
+        },
+        ghost_text = {
+          enabled = true,
+        },
+      },
+      
+      fuzzy = {
+        use_typo_resistance = true,
+        use_frecency = true,
+        use_proximity = true,
+        sorts = { 'label', 'kind', 'score' },
       },
       
       cmdline = {
@@ -324,19 +248,6 @@ return {
           end
           return {}
         end,
-      },
-      
-      trigger = {
-        completion = {
-          keyword_length = 1,
-          debounce = 500,
-        }
-      },
-      
-      performance = {
-        trigger_debounce_time = 500,
-        throttle = 550,
-        fetching_timeout = 80,
       },
     }
   }

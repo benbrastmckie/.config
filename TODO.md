@@ -12,6 +12,9 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
     - [x] first pass
     - [x] research
     - [x] second pass
+- [ ] ai
+  - [ ] claude-code
+  - [ ] mcp tooling
 - [ ] latex
   - [x] highlighting
   - [x] pairs
@@ -74,25 +77,12 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
   - [x] ai video
   - [x] website
   - wiki
-- [x] todo-comments
-- [x] snacks
-  - [x] research plugins
-  - [x] update which-key
-  - [x] remove redundant plugins
-    - [x] alpha
-    - [x] lazygit
-    - [x] indent-line
-    - [x] dressing
-  - [x] change indent line color
 - [ ] undo tree commands
 - [ ] checkhealth
   - [ ] install all missing programs in checkhealth
   - [x] error: client 2 quit with exit code 127 and signal 0
   - [x] error detected BufWritePre Autocommand for "\*"
 - [ ] update cheatsheet
-- [x] autolist
-  - [x] add in-progress field
-  - [x] remove box command
 - [ ] github issues
   - [ ] consolidate add-ons
   - [ ] forks #73
@@ -112,6 +102,19 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
 
 ## Completed
 
+- [x] autolist
+  - [x] add in-progress field
+  - [x] remove box command
+- [x] todo-comments
+- [x] snacks
+  - [x] research plugins
+  - [x] update which-key
+  - [x] remove redundant plugins
+    - [x] alpha
+    - [x] lazygit
+    - [x] indent-line
+    - [x] dressing
+  - [x] change indent line color
 - [x] mcphub
   - [x] debug mcp tools in avante
   - [x] create user guide
