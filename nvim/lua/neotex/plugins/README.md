@@ -26,12 +26,11 @@ Plugins are organized into the following categories with dedicated directories:
   - todo-comments.lua: Highlight and search TODO comments
   - yanky.lua: Enhanced yank and paste functionality
 
-- **lsp/**: Language server integration
-  - nvim-lspconfig: Base LSP configuration
-  - mason.nvim: LSP server management
-  - none-ls.lua: Additional LSP functionality
-  - nvim-cmp: Completion engine
-  - vimtex-cmp.lua: Completion for LaTeX
+- **lsp/**: Language server integration ([detailed documentation](lsp/README.md))
+  - blink-cmp.lua: Modern high-performance completion engine
+  - lspconfig.lua: Base LSP server configuration
+  - mason.lua: LSP server and tool management
+  - none-ls.lua: Additional formatters and linters
 
 - **ui/**: User interface components
   - colorscheme.lua: Theme configuration
