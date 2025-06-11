@@ -2,7 +2,6 @@ return {
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" }, -- Only load when a file is opened
   dependencies = {
-    { "hrsh7th/cmp-nvim-lsp", event = "InsertEnter" }, -- Load cmp-nvim-lsp only when entering insert mode
     { "antosha417/nvim-lsp-file-operations", event = "VeryLazy" }, -- Load file operations later
   },
   config = function()
@@ -54,9 +53,9 @@ return {
         if not server or not lspconfig[server] then return end
 
         -- Get enhanced capabilities for completion (only load when needed)
-        local ok, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+        local ok, blink = pcall(require, "blink.cmp")
         if ok then
-          capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
+          capabilities = blink.get_lsp_capabilities(capabilities)
         end
         
         -- Configure specific LSP servers
