@@ -112,7 +112,23 @@ return {
         providers = {
           lsp = {
             name = 'lsp',
-            enabled = true,
+            enabled = function()
+              -- Disable LSP source in LaTeX reference contexts to avoid duplicates with VimTeX
+              if vim.bo.filetype == 'tex' then
+                local line = vim.api.nvim_get_current_line()
+                local col = vim.api.nvim_win_get_cursor(0)[2]
+                local before_cursor = line:sub(1, col)
+                
+                -- Disable in reference contexts only (keep for citations and general editing)
+                if before_cursor:match('\\ref{[^}]*$') or
+                   before_cursor:match('\\[Cc]ref{[^}]*$') or
+                   before_cursor:match('\\eqref{[^}]*$') or
+                   before_cursor:match('\\autoref{[^}]*$') then
+                  return false
+                end
+              end
+              return true
+            end,
             max_items = 100,
             min_keyword_length = 1,
             score_offset = 0,
