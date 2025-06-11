@@ -1,9 +1,24 @@
 return {
   {
-    "nvim-treesitter/nvim-treesitter", 
+    "nvim-treesitter/nvim-treesitter",
     event = { "BufReadPost", "BufNewFile" }, -- Load when a buffer is read, not before
     build = ":TSUpdate",
-    config = function() 
+    config = function()
+      -- Remove any existing problematic parsers that cause ABI version conflicts
+      local problematic_parsers = { "latex", "tex", "bibtex", "plaintex", "context" }
+      for _, parser in ipairs(problematic_parsers) do
+        local parser_path = vim.fn.stdpath("data") .. "/lazy/nvim-treesitter/parser/" .. parser .. ".so"
+        if vim.fn.filereadable(parser_path) == 1 then
+          vim.fn.delete(parser_path)
+        end
+        
+        -- Also remove any source directories
+        local source_path = vim.fn.stdpath("data") .. "/tree-sitter-" .. parser
+        if vim.fn.isdirectory(source_path) == 1 then
+          vim.fn.delete(source_path, "rf")
+        end
+      end
+      
       -- Load only essential modules initially
       require("nvim-treesitter.configs").setup({
         -- Only enable minimal highlighting at startup
@@ -12,16 +27,16 @@ return {
           disable = { "css", "cls", "latex", "tex", "plaintex", "context", "bibtex" },
           additional_vim_regex_highlighting = false, -- Disable additional regex highlighting initially
         },
-        
+
         -- Disable more complex features at startup
         indent = { enable = false },
-        
+
         -- Don't install parsers at startup
         ensure_installed = {},
         auto_install = false,
-        ignore_install = { "latex" },
+        ignore_install = { "latex", "tex", "bibtex", "plaintex", "context" },
       })
-      
+
       -- Defer full configuration to happen after initial file is loaded
       vim.defer_fn(function()
         -- Now load the full configuration
@@ -32,10 +47,10 @@ return {
             disable = { "css", "cls", "latex", "tex", "plaintex", "context", "bibtex" },
             additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
           },
-          
+
           -- Enable indentation
           indent = { enable = true, disable = { "latex" } },
-          
+
           -- Define injection queries
           injections = {
             {
@@ -47,18 +62,18 @@ return {
               ]],
             }
           },
-          
+
           -- Install only most essential parsers immediately
           ensure_installed = {
-            "lua",           -- For Neovim configuration
-            "vim",           -- For Vim script
-            "markdown",      -- For documentation
-            "python",        -- For Python scripts
+            "lua",      -- For Neovim configuration
+            "vim",      -- For Vim script
+            "markdown", -- For documentation
+            "python",   -- For Python scripts
           },
-          
+
           auto_install = true,
-          ignore_install = { "latex" },
-          
+          ignore_install = { "latex", "tex", "bibtex", "plaintex", "context" },
+
           -- Enable more advanced features
           autopairs = { enable = true },
           incremental_selection = {
@@ -71,15 +86,16 @@ return {
             },
           },
         })
-        
+
         -- Install remaining parsers in the background without prompting
         vim.defer_fn(function()
           local additional_parsers = {
-            "vimdoc", "query", "markdown_inline", "bash", 
-            "bibtex", "nix", "json", "yaml", "toml", 
-            "gitignore", "c", "haskell", "norg"
+            "vimdoc", "query", "markdown_inline", "bash",
+            "nix", "json", "yaml", "toml",
+            "gitignore", "c", "haskell"
+            -- Removed: "bibtex", "norg" due to potential ABI version conflicts
           }
-          
+
           -- Get list of installed parsers to avoid reinstall prompts
           local installed = {}
           pcall(function()
@@ -90,29 +106,32 @@ return {
               end
             end
           end)
-          
+
           -- Only install parsers that aren't already installed
           for _, parser in ipairs(additional_parsers) do
             if not installed[parser] then
-              vim.cmd("TSInstall! " .. parser) -- Use ! to skip prompts
+              -- Use pcall to handle any ABI version errors gracefully
+              pcall(function()
+                vim.cmd("TSInstall! " .. parser) -- Use ! to skip prompts
+              end)
             end
           end
         end, 1000) -- Delay by 1 second to avoid impacting startup
-      end, 100) -- Delay the full setup by 100ms
-      
+      end, 100)    -- Delay the full setup by 100ms
+
       -- Set up filetype detection for LaTeX files to ensure proper syntax highlighting
       vim.api.nvim_create_autocmd("FileType", {
-        pattern = {"tex", "latex"},
+        pattern = { "tex", "latex" },
         callback = function()
           -- Enable Vim's built-in syntax highlighting for LaTeX
           vim.opt_local.syntax = "tex"
           -- Disable treesitter for LaTeX files
-          vim.cmd[[TSBufDisable highlight]]
+          vim.cmd [[TSBufDisable highlight]]
         end
       })
     end,
   },
-  
+
   {
     "JoosepAlviste/nvim-ts-context-commentstring",
     lazy = true,
@@ -122,7 +141,7 @@ return {
       require("ts_context_commentstring").setup({})
     end,
   },
-  
+
   {
     "windwp/nvim-ts-autotag",
     lazy = true,
