@@ -546,7 +546,7 @@ return {
         h = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", "html" },
         l = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>", "latex" },
         p = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", "pdf" },
-        v = { "<cmd>TermExec cmd='zathura %:p:r.pdf &' open=0<CR>", "view" },
+        v = { "<cmd>TermExec cmd='sioyek %:p:r.pdf &' open=0<CR>", "view" },
         -- x = { "<cmd>echo "run: unoconv -f pdf path-to.docx""  , "word to pdf"},
       },
       r = {
