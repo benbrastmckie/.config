@@ -2,7 +2,7 @@ return {
   "lervag/vimtex",
   init = function()
     -- Viewer settings
-    vim.g.vimtex_view_method = 'zathura_simple'    -- For Wayland compatibility, avoid xdotool
+    vim.g.vimtex_view_method = 'sioyek'            -- Sioyek PDF viewer for academic documents
     vim.g.vimtex_context_pdf_viewer = 'okular'     -- External PDF viewer for the Vimtex menu
 
     -- Formatting settings

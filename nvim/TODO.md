@@ -2,19 +2,6 @@
 
 ## In Progress
 
-- [:] latex
-  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
-  - [x] highlighting
-  - [x] pairs
-  - [x] surround
-    - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
-    - [x] Fix surround keybindings conflict between mini.surround and which-key
-      - [x] Aligned key references in documentation with actual keybindings
-      - [x] Fixed mismatch between `<leader>ss` (surround) vs `<leader>sa` (add surrounding)
-      - [x] Fixed mismatch between `<leader>sc` (change) vs `<leader>sr` (replace)
-      - [x] Fixed API calls by using the correct mini.surround functions
-      - [x] Updated commands to directly use require('mini.surround').function_name()
-      - [x] Corrected visual mode mapping to use add('visual') method
 - [.] ai
   - [x] claude-code
   - [ ] mcp tooling
@@ -24,8 +11,10 @@
     - [x] remove lualine from start screen
     - [x] always show active tab (sometimes they seem to get lost/hidden)
     - [x] remove light color bar at the top right
-    - [ ] `<leader>gg` sometimes opens LazyGit blank
-    - buffer tabs sometimes get lost
+    - [ ] LazyGit
+      - [ ] `<leader>gg` sometimes opens LazyGit blank
+      - [ ] hard to get dialog boxes to close
+    - buffer tabs sometimes get lost where the tab does not show for the open buffer
   - which key
     - [ ] Add icons
     - [ ] make descriptions lowercase and at most two words
@@ -92,6 +81,19 @@
 
 ## Completed
 
+- [x] latex
+  - [x] switch from zathura to sioyek: https://github.com/ahrm/sioyek
+  - [x] highlighting
+  - [x] pairs
+  - [x] surround
+    - [x] Fix LaTeX quote formatting with backtick positioning cursor between backtick and quote
+    - [x] Fix surround keybindings conflict between mini.surround and which-key
+      - [x] Aligned key references in documentation with actual keybindings
+      - [x] Fixed mismatch between `<leader>ss` (surround) vs `<leader>sa` (add surrounding)
+      - [x] Fixed mismatch between `<leader>sc` (change) vs `<leader>sr` (replace)
+      - [x] Fixed API calls by using the correct mini.surround functions
+      - [x] Updated commands to directly use require('mini.surround').function_name()
+      - [x] Corrected visual mode mapping to use add('visual') method
 - [x] blink
   - [x] plan
   - [x] implement
