@@ -1,12 +1,9 @@
 # TODO
 
-- when opening a test.tex file:
-Warning: your package.json's `tree-sitter` field has been automatically migrated to the new `tree-sitter.json` config file                             
-For more information, visit https://tree-sitter.github.io/tree-sitter/creating-parsers 
-
 ## In Progress
 
-- [ ] latex
+- [:] latex
+  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
   - [x] highlighting
   - [x] pairs
   - [x] surround
@@ -18,9 +15,8 @@ For more information, visit https://tree-sitter.github.io/tree-sitter/creating-p
       - [x] Fixed API calls by using the correct mini.surround functions
       - [x] Updated commands to directly use require('mini.surround').function_name()
       - [x] Corrected visual mode mapping to use add('visual') method
-  - [ ] switch from zathura to sioyek: https://github.com/ahrm/sioyek
-- [ ] ai
-  - [ ] claude-code
+- [.] ai
+  - [x] claude-code
   - [ ] mcp tooling
 - [ ] appearances
   - bufferline and lualine
