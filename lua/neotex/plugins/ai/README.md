@@ -5,6 +5,7 @@ This directory contains modules for integrating various AI services and tools wi
 ## Components
 
 - **Avante Integration**: Connect with the Avante plugin for AI-assisted coding and chat
+- **Claude Code Integration**: Seamless terminal integration with Claude Code CLI
 - **Lectic Integration**: Add AI-assisted writing with structured prompts
 - **MCP-Hub Integration**: Access multiple AI services through a unified hub
 - **System Prompts**: Manage and customize AI behavior with templates
@@ -16,6 +17,7 @@ lua/neotex/plugins/ai/
 ├── README.md              # This file - overview and documentation
 ├── init.lua               # AI plugins loader with event registration
 ├── avante.lua             # Avante AI assistant configuration
+├── claude-code.lua        # Claude Code terminal integration
 ├── lectic.lua             # Lectic AI writing integration
 ├── mcp-hub.lua            # MCP-Hub plugin configuration
 └── util/                  # Utility modules for AI integration
@@ -71,6 +73,68 @@ Avante provides a chat interface for AI-assisted coding and explanations.
 - `<leader>hp`: Select system prompt
 - `<leader>hs`: Edit selected text with AI
 - `<leader>ht`: Toggle Avante AI interface
+
+### Claude Code Terminal Integration
+
+Claude Code provides a seamless terminal integration for accessing the Claude Code CLI directly within NeoVim.
+
+**Key Features:**
+- Open Claude Code in a bottom horizontal split with a single keypress
+- Toggle the terminal window on/off as needed
+- Automatic file reload detection when Claude Code modifies files
+- Git project root detection for proper working directory
+- Clean bottom split interface (30% of screen height)
+- Built entirely with Claude Code (self-bootstrapped development)
+
+**Commands:**
+- `ClaudeCode`: Toggle Claude Code terminal in bottom horizontal split
+- `ClaudeCodeToggle`: Alternative command to toggle Claude Code terminal
+- `ClaudeCodeReload`: Manually reload all files modified by Claude Code
+
+**Keymaps:**
+- `<leader>ho`: Toggle Claude Code terminal in bottom split
+- `<leader>hr`: Reload files modified by Claude Code
+
+**Configuration Options:**
+The plugin uses a bottom horizontal split with optimized settings:
+
+```lua
+opts = {
+  split_ratio = 0.3,     -- Use 30% of screen height
+  position = "botright", -- Bottom horizontal split (default)
+  enter_insert = true,   -- Enter insert mode when opening
+  hide_numbers = true,   -- Hide line numbers in terminal
+  hide_signcolumn = true, -- Hide sign column in terminal
+  
+  file_refresh = {
+    enabled = true,      -- Auto-reload files modified by Claude Code
+    poll_interval = 1000, -- Check for file changes every 1000ms
+  },
+  git = {
+    enabled = true,      -- Use git root as working directory
+    fallback_to_cwd = true, -- Fallback to current directory if not in git repo
+  },
+}
+```
+
+**Bottom Split Benefits:**
+- Familiar terminal-at-bottom layout
+- Easy to toggle on/off with single command
+- Optimal height (30%) for terminal interaction
+- Full-width view for Claude Code commands
+
+**Requirements:**
+- Claude Code CLI installed and accessible in PATH
+- plenary.nvim dependency (automatically handled)
+- NeoVim 0.7.0+
+
+**Usage Workflow:**
+1. Press `<leader>ho` to toggle Claude Code terminal in bottom split
+2. Use Claude Code CLI commands as normal in the terminal
+3. Files modified by Claude Code are automatically reloaded in NeoVim
+4. Toggle the terminal off with `<leader>ho` again when done
+5. Use `<leader>hr` or `:ClaudeCodeReload` if manual file refresh is needed
+6. Your main code remains visible in the top portion
 
 ### Lectic AI-Assisted Writing
 

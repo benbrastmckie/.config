@@ -84,18 +84,19 @@ GIT (<leader>g)                                 | DESCRIPTION
 AI HELP (<leader>h)                             | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>ha - Ask                                | Ask Avante AI a question
-<leader>hb - Build dependencies                 | Build deps for Avante project
 <leader>hc - Chat                               | Start chat with Avante AI
 <leader>hd - Set model & provider               | Change AI model with defaults
 <leader>he - Edit prompts                       | Open system prompt manager
-<leader>hi - Stop generation                    | Interrupt AI generation
+<leader>hf - Refresh                            | Reload AI assistant
+<leader>hi - Interrupt                          | Stop AI generation
 <leader>hk - Clear                              | Clear Avante chat/content
 <leader>hm - Select model                       | Choose AI model for current provider
-<leader>hM - Map repo                           | Create repo map for AI context
+<leader>ho - Open Claude Code                   | Toggle Claude Code bottom split
 <leader>hp - Select prompt                      | Choose a different system prompt
+<leader>hr - Reload files                       | Reload files modified by Claude Code
 <leader>hs - Selected edit                      | Edit selected text with AI
-<leader>hr - Refresh assistant                  | Reload AI assistant
-<leader>ht - Toggle assistant                   | Show/hide Avante interface
+<leader>ht - Toggle Avante                      | Show/hide Avante interface
+<leader>hx - Open MCP Hub                       | Access MCP Hub interface
 
 ----------------------------------------------------------------------------------
 JUPYTER (<leader>j)                             | DESCRIPTION
@@ -413,22 +414,26 @@ return {
         -- Avante commands with MCPHub integration
         a = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteAsk") end, "ask" },
         c = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteChat") end, "chat" },
-        t = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle" },
-        e = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, "edit" },
+        t = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle avante" },
+        s = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, "selected edit" },
+
+        -- Claude Code integration
+        o = { "<cmd>ClaudeCode<CR>", "open claude code" },
+        r = { "<cmd>ClaudeCodeReload<CR>", "reload files" },
 
         -- Direct MCPHub command
-        x = { "<cmd>MCPHubOpen<CR>", "open MCPHub" },
+        x = { "<cmd>MCPHubOpen<CR>", "open mcp hub" },
 
         -- Standard Avante commands (don't need MCPHub)
-        b = { "<cmd>AvanteBuild<CR>", "build dependencies" },
+        -- b = { "<cmd>AvanteBuild<CR>", "build dependencies" }, -- Commented out - not used
         d = { "<cmd>AvanteProvider<CR>", "set model & provider" },
-        i = { "<cmd>AvanteStop<CR>", "interrupt avante" },
+        e = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
+        i = { "<cmd>AvanteStop<CR>", "interrupt" },
         k = { "<cmd>AvanteClear<CR>", "clear" },
         m = { "<cmd>AvanteModel<CR>", "select model" },
-        M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" },
-        p = { "<cmd>AvantePromptManager<CR>", "edit prompts" },
-        r = { "<cmd>AvanteRefresh<CR>", "refresh assistant" },
-        s = { "<cmd>AvantePrompt<CR>", "select prompt" },
+        -- M = { "<cmd>AvanteShowRepoMap<CR>", "map repo" }, -- Commented out - not used
+        p = { "<cmd>AvantePrompt<CR>", "select prompt" },
+        f = { "<cmd>AvanteRefresh<CR>", "refresh" },
       },
       --   HARPOON
       --   a = { "<cmd>lua require('harpoon.mark').add_file()<cr>", "mark" },

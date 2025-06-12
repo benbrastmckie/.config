@@ -40,7 +40,8 @@ Plugins are organized into the following categories with dedicated directories:
   - sessions.lua: Session management
 
 - **ai/**: AI tooling and integration
-  - avante.lua: AI assistants integration
+  - avante.lua: AI assistants integration  
+  - claude-code.lua: Claude Code terminal integration
   - lectic.lua: AI-assisted writing
   - mcp-hub.lua: AI tools integration
 
