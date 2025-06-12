@@ -253,46 +253,56 @@ return {
   opts = function()
     -- Default configuration
     local config = {
-      -- Gemini configuration
+      -- Provider selection and auto-suggestions
       provider = "gemini",
-      model = "gemini-2.5-pro-preview-03-25",
-      -- Claude configuration
-      -- provider = "claude",
-      -- model = "claude-3-5-sonnet-20241022",
-      -- endpoint = "https://api.anthropic.com",
-      -- Claude configuration
-      -- provider = "claude",
-      -- endpoint = "https://api.anthropic.com",
-      -- model = "claude-3-5-sonnet-20241022",
-      -- Removed force_model which isn't supported
-      temperature = 0.1, -- Slight increase for more creative responses
-      max_tokens = 4096,
-      top_p = 0.95,      -- Add top_p for better response quality
-      top_k = 40,        -- Add top_k for better response filtering
-      timeout = 60000,   -- Increase timeout for complex queries
       auto_suggestions_provider = "claude",
-      -- Explicitly set model in provider config for priority
-      claude = {
-        model = "claude-3-5-sonnet-20241022",
-        temperature = 0.1,
-        max_tokens = 4096,
-        top_p = 0.95,
-        timeout = 60000,
-      },
-      -- OpenAI configuration
-      openai = {
-        api_key = os.getenv("OPENAI_API_KEY"),
-        model = "gpt-4o",
-        temperature = 0.1,
-        max_tokens = 4096,
-        top_p = 0.95,
-        timeout = 60000,
-      },
-      -- Gemini configuration
-      gemini = {
-        model = "gemini-2.5-pro-preview-03-25",
-        temperature = 0.1,
-        max_tokens = 8192,
+      -- Updated provider configuration structure
+      providers = {
+        claude = {
+          endpoint = "https://api.anthropic.com",
+          model = "claude-3-5-sonnet-20241022",
+          timeout = 60000,
+          extra_request_body = {
+            temperature = 0.1,
+            max_tokens = 4096,
+            top_p = 0.95,
+          },
+          disable_tools = {
+            "file_creation",
+            "git_operations",
+            "system_commands",
+            "file_modifications",
+          },
+        },
+        openai = {
+          api_key = os.getenv("OPENAI_API_KEY"),
+          model = "gpt-4o",
+          timeout = 60000,
+          extra_request_body = {
+            temperature = 0.1,
+            max_tokens = 4096,
+            top_p = 0.95,
+          },
+          disable_tools = {
+            "file_creation",
+            "git_operations",
+            "system_commands",
+            "file_modifications",
+          },
+        },
+        gemini = {
+          model = "gemini-2.5-pro-preview-03-25",
+          extra_request_body = {
+            temperature = 0.1,
+            max_tokens = 8192,
+          },
+          disable_tools = {
+            "file_creation",
+            "git_operations",
+            "system_commands",
+            "file_modifications",
+          },
+        },
       },
 
       -- The system_prompt type supports both a string and a function that returns a string
@@ -306,13 +316,7 @@ return {
       -- This prevents MCPHub from being required at startup
       custom_tools = {},
 
-      -- Disable all tools that could modify the system
-      disable_tools = {
-        "file_creation",
-        "git_operations",
-        "system_commands",
-        "file_modifications",
-      },
+      -- Tools are now disabled per provider in the providers section above
 
       dual_boost = {
         enabled = false,

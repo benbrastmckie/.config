@@ -93,7 +93,10 @@ function M.setup()
   })
 
   -- Load utilities for folding and URL handling
-  local utils = require("neotex.util")
+  local ok, utils = pcall(require, "neotex.util")
+  if not ok then
+    vim.notify("Failed to load neotex.util module", vim.log.levels.WARN)
+  end
   
   -- Load the persistent folding state when entering any buffer
   vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {

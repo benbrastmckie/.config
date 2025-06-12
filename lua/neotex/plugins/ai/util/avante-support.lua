@@ -105,27 +105,29 @@ function M.load_settings()
   -- Return default settings if anything went wrong
   return {
     provider = "gemini",
-    model = "gemini-2.5-pro-preview-03-25",
-    gemini = {
-      model = "gemini-2.5-pro-preview-03-25"
+    providers = {
+      gemini = {
+        model = "gemini-2.5-pro-preview-03-25"
+      }
     }
   }
 end
 
 -- Save settings to file
 function M.save_settings(provider, model)
-  -- Create settings content
+  -- Create settings content using new provider structure
   local content = string.format([[
 -- Avante default settings
 -- Generated on: %s
 return {
   provider = "%s",
-  model = "%s",
-  ["%s"] = {
-    model = "%s"
+  providers = {
+    ["%s"] = {
+      model = "%s"
+    }
   }
 }
-]], os.date("%Y-%m-%d %H:%M:%S"), provider, model, provider, model)
+]], os.date("%Y-%m-%d %H:%M:%S"), provider, provider, model)
 
   -- Write to file
   local file = io.open(avante_settings_file, "w")

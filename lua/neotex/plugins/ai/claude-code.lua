@@ -1,40 +1,59 @@
 return {
-  "greggh/claude-code.nvim",
-  cmd = { "ClaudeCode" },
+  "coder/claudecode.nvim",
+  event = "VeryLazy",
   dependencies = {
     "nvim-lua/plenary.nvim",
   },
-  -- Keys defined in which-key.lua for consistency
   opts = {
-    -- Window configuration for horizontal bottom split (default)
-    split_ratio = 0.3,     -- Use 30% of screen height
-    position = "botright", -- Bottom horizontal split (default)
-    enter_insert = true,   -- Enter insert mode when opening
-    hide_numbers = true,   -- Hide line numbers in terminal
-    hide_signcolumn = true, -- Hide sign column in terminal
+    -- Port range for WebSocket connection
+    port_range = { min = 10000, max = 65535 },
+    auto_start = true,     -- Automatically start Claude Code
+    log_level = "info",    -- Logging level
     
-    -- File refresh options
-    file_refresh = {
-      enabled = true,      -- Auto-reload files modified by Claude Code
-      poll_interval = 1000, -- Check for file changes every 1000ms
-    },
-    
-    -- Git project detection
-    git = {
-      enabled = true,      -- Use git root as working directory when available
-      fallback_to_cwd = true, -- Fallback to current directory if not in git repo
+    -- Terminal configuration
+    terminal = {
+      split_side = "right",  -- Open terminal on right side (matches your preference)
+      provider = "native",   -- Use native terminal (or "snacks" if you have it)
+      auto_close = true,     -- Auto-close terminal when Claude Code exits
     },
   },
+  
+  -- Key mappings for Claude Code functionality
+  keys = {
+    { "<leader>cc", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude Code" },
+    { "<leader>cs", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send selection to Claude" },
+    { "<leader>ca", function()
+      local file = vim.fn.expand("%:p")
+      if file ~= "" then
+        vim.cmd("ClaudeCodeAdd " .. file)
+      else
+        vim.notify("No file to add to Claude context", vim.log.levels.WARN)
+      end
+    end, desc = "Add current file to Claude context" },
+  },
+  
   config = function(_, opts)
-    require("claude-code").setup(opts)
+    require("claudecode").setup(opts)
     
-    -- Create additional commands for convenience
+    -- Create additional commands for convenience (maintaining compatibility)
     vim.api.nvim_create_user_command("ClaudeCodeToggle", function()
       vim.cmd("ClaudeCode")
     end, { desc = "Toggle Claude Code terminal" })
     
-    vim.api.nvim_create_user_command("ClaudeCodeReload", function()
-      require("claude-code").reload_all_files()
-    end, { desc = "Reload all files modified by Claude Code" })
+    -- Command to add current buffer to Claude context
+    vim.api.nvim_create_user_command("ClaudeCodeAddBuffer", function()
+      local file = vim.fn.expand("%:p")
+      if file ~= "" then
+        vim.cmd("ClaudeCodeAdd " .. file)
+      else
+        vim.notify("No file to add to Claude context", vim.log.levels.WARN)
+      end
+    end, { desc = "Add current buffer to Claude Code context" })
+    
+    -- Command to add current directory to Claude context
+    vim.api.nvim_create_user_command("ClaudeCodeAddDir", function()
+      local cwd = vim.fn.getcwd()
+      vim.cmd("ClaudeCodeAdd " .. cwd)
+    end, { desc = "Add current directory to Claude Code context" })
   end,
 }

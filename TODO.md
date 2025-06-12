@@ -4,6 +4,8 @@
 
 - [.] ai
   - [x] claude-code
+  - [x] debug avante
+  - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] mcp tooling
 - [ ] appearances
   - bufferline and lualine

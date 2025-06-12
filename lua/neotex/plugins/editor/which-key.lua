@@ -91,9 +91,9 @@ AI HELP (<leader>h)                             | DESCRIPTION
 <leader>hi - Interrupt                          | Stop AI generation
 <leader>hk - Clear                              | Clear Avante chat/content
 <leader>hm - Select model                       | Choose AI model for current provider
-<leader>ho - Open Claude Code                   | Toggle Claude Code bottom split
-<leader>hp - Select prompt                      | Choose a different system prompt
-<leader>hr - Reload files                       | Reload files modified by Claude Code
+<leader>ho - Open Claude Code                   | Toggle Claude Code terminal
+<leader>hb - Add buffer to Claude               | Add current file to Claude context
+<leader>hr - Add directory to Claude            | Add current directory to Claude context
 <leader>hs - Selected edit                      | Edit selected text with AI
 <leader>ht - Toggle Avante                      | Show/hide Avante interface
 <leader>hx - Open MCP Hub                       | Access MCP Hub interface
@@ -417,9 +417,10 @@ return {
         t = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteToggle") end, "toggle avante" },
         s = { function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, "selected edit" },
 
-        -- Claude Code integration
+        -- Claude Code integration (claudecode.nvim)
         o = { "<cmd>ClaudeCode<CR>", "open claude code" },
-        r = { "<cmd>ClaudeCodeReload<CR>", "reload files" },
+        b = { "<cmd>ClaudeCodeAddBuffer<CR>", "add buffer to claude" },
+        r = { "<cmd>ClaudeCodeAddDir<CR>", "add directory to claude" },
 
         -- Direct MCPHub command
         x = { "<cmd>MCPHubOpen<CR>", "open mcp hub" },
