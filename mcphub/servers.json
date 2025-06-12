@@ -24,6 +24,13 @@
       "env": {
         "DEFAULT_MINIMUM_TOKENS": "10000"
       }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
     }
   }
 }

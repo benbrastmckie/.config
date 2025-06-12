@@ -76,65 +76,70 @@ Avante provides a chat interface for AI-assisted coding and explanations.
 
 ### Claude Code Terminal Integration
 
-Claude Code provides a seamless terminal integration for accessing the Claude Code CLI directly within NeoVim.
+Claude Code provides a seamless terminal integration using the official `coder/claudecode.nvim` plugin for accessing Claude Code CLI directly within NeoVim.
 
 **Key Features:**
-- Open Claude Code in a bottom horizontal split with a single keypress
-- Toggle the terminal window on/off as needed
-- Automatic file reload detection when Claude Code modifies files
-- Git project root detection for proper working directory
-- Clean bottom split interface (30% of screen height)
-- Built entirely with Claude Code (self-bootstrapped development)
+- Official Claude Code integration with WebSocket-based protocol
+- Right side terminal split with native or Snacks terminal provider
+- Context management - add files and directories to Claude Code context
+- Visual selection sending to Claude Code
+- Tree explorer integration support
+- Auto-start functionality with configurable ports
+- Pure Lua implementation for better performance
 
 **Commands:**
-- `ClaudeCode`: Toggle Claude Code terminal in bottom horizontal split
+- `ClaudeCode`: Toggle Claude Code terminal
+- `ClaudeCodeSend`: Send visual selection to Claude Code
+- `ClaudeCodeAdd <file-path>`: Add files/directories to Claude context
+- `ClaudeCodeAddBuffer`: Add current buffer to Claude context
+- `ClaudeCodeAddDir`: Add current directory to Claude context
 - `ClaudeCodeToggle`: Alternative command to toggle Claude Code terminal
-- `ClaudeCodeReload`: Manually reload all files modified by Claude Code
 
 **Keymaps:**
-- `<leader>ho`: Toggle Claude Code terminal in bottom split
-- `<leader>hr`: Reload files modified by Claude Code
+- `<leader>ho`: Toggle Claude Code terminal
+- `<leader>hb`: Add current buffer to Claude context
+- `<leader>hr`: Add current directory to Claude context
+- `<leader>cc`: Toggle Claude Code (alternative)
+- `<leader>cs`: Send visual selection to Claude Code
+- `<leader>ca`: Add current file to Claude context
 
 **Configuration Options:**
-The plugin uses a bottom horizontal split with optimized settings:
+The plugin uses a right side split with WebSocket communication:
 
 ```lua
 opts = {
-  split_ratio = 0.3,     -- Use 30% of screen height
-  position = "botright", -- Bottom horizontal split (default)
-  enter_insert = true,   -- Enter insert mode when opening
-  hide_numbers = true,   -- Hide line numbers in terminal
-  hide_signcolumn = true, -- Hide sign column in terminal
+  -- Port range for WebSocket connection
+  port_range = { min = 10000, max = 65535 },
+  auto_start = true,     -- Automatically start Claude Code
+  log_level = "info",    -- Logging level
   
-  file_refresh = {
-    enabled = true,      -- Auto-reload files modified by Claude Code
-    poll_interval = 1000, -- Check for file changes every 1000ms
-  },
-  git = {
-    enabled = true,      -- Use git root as working directory
-    fallback_to_cwd = true, -- Fallback to current directory if not in git repo
+  -- Terminal configuration
+  terminal = {
+    split_side = "right",  -- Open terminal on right side
+    provider = "native",   -- Use native terminal (or "snacks")
+    auto_close = true,     -- Auto-close terminal when Claude Code exits
   },
 }
 ```
 
-**Bottom Split Benefits:**
-- Familiar terminal-at-bottom layout
-- Easy to toggle on/off with single command
-- Optimal height (30%) for terminal interaction
-- Full-width view for Claude Code commands
+**Context Management Benefits:**
+- Easily add current file or entire directories to Claude Code context
+- Visual selection sending for focused assistance
+- Tree explorer integration for file management
+- WebSocket protocol for reliable communication
 
 **Requirements:**
 - Claude Code CLI installed and accessible in PATH
 - plenary.nvim dependency (automatically handled)
-- NeoVim 0.7.0+
+- NeoVim 0.8.0+
 
 **Usage Workflow:**
-1. Press `<leader>ho` to toggle Claude Code terminal in bottom split
-2. Use Claude Code CLI commands as normal in the terminal
-3. Files modified by Claude Code are automatically reloaded in NeoVim
-4. Toggle the terminal off with `<leader>ho` again when done
-5. Use `<leader>hr` or `:ClaudeCodeReload` if manual file refresh is needed
-6. Your main code remains visible in the top portion
+1. Press `<leader>ho` to toggle Claude Code terminal on the right
+2. Add current file to context with `<leader>hb`
+3. Add entire directory to context with `<leader>hr`
+4. Select text and use `<leader>cs` to send selection to Claude
+5. Use Claude Code CLI commands as normal in the terminal
+6. Toggle the terminal off with `<leader>ho` again when done
 
 ### Lectic AI-Assisted Writing
 
