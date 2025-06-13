@@ -10,12 +10,25 @@
   ],
   "mcpServers": {
     "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git"]
+    },
+    "brave-search": {
       "command": "npx",
-      "args": ["-y", "mcp-server-fetch@latest"],
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
       "env": {
-        "API_KEY": "",
-        "SERVER_URL": null,
-        "DEBUG": "true"
+        "BRAVE_API_KEY": ""
+      }
+    },
+    "agentql": {
+      "command": "npx",
+      "args": ["-y", "agentql-mcp"],
+      "env": {
+        "AGENTQL_API_KEY": ""
       }
     },
     "github.com/upstash/context7-mcp": {

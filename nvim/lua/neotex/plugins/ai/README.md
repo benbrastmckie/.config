@@ -216,28 +216,54 @@ The `<leader>hx` command provides direct access to the MCPHub interface.
 
 ### Available MCP Servers and Tools
 
-The integration provides access to several powerful MCP servers:
+The integration provides access to 5 powerful MCP servers with 44+ tools:
 
-#### Context7 (Library Documentation)
+#### Context7 (Library Documentation) - 2 Tools
 - **Server**: `github.com/upstash/context7-mcp`
 - **Tools**: 
-  - `resolve-library-id`: Find Context7-compatible library IDs
-  - `get-library-docs`: Retrieve library documentation
-- **Usage**: Perfect for getting up-to-date documentation for React, Vue, Express, etc.
+  - `resolve-library-id`: Find Context7-compatible library IDs for any library
+  - `get-library-docs`: Retrieve comprehensive up-to-date documentation
+- **Usage**: Perfect for getting current documentation for React, Vue, Express, TypeScript, etc.
+- **Features**: Smart library resolution, topic-focused docs, trust-scored results
 
-#### Tavily (Web Search)
+#### Tavily (Web Search & Crawling) - 4 Tools  
 - **Server**: `tavily`
 - **Tools**:
-  - `tavily-search`: Comprehensive web search with AI filtering
-  - `tavily-extract`: Extract content from specific URLs
-  - `tavily-crawl`: Crawl websites systematically
-  - `tavily-map`: Map website structure
-- **Usage**: Current news, research, real-time information
+  - `tavily-search`: AI-optimized web search with real-time results
+  - `tavily-extract`: Extract and process content from specific URLs
+  - `tavily-crawl`: Systematic website crawling with configurable depth
+  - `tavily-map`: Map and analyze website structure and navigation
+- **Usage**: Current news, research, real-time information, content analysis
+- **Features**: Country filtering, content depth control, domain inclusion/exclusion
 
-#### GitHub Integration
+#### GitHub Integration - 26 Tools
 - **Server**: `github`
-- **Tools**: Repository management, issue tracking, pull requests, file operations
-- **Usage**: Code repository operations and collaboration
+- **Tools**: Complete GitHub API integration including:
+  - Repository management (create, fork, search, file operations)
+  - Issue tracking (create, update, comment, search)
+  - Pull request operations (create, review, merge, status checks)
+  - Branch management and commit history
+  - User and code search across GitHub
+- **Usage**: Full GitHub workflow integration for repository operations
+- **Features**: Supports personal and organization repositories, comprehensive API coverage
+
+#### Git (Local Repository Management) - 11 Tools
+- **Server**: `git`
+- **Tools**:
+  - `git_status`: Working tree status and staging area
+  - `git_diff_*`: View unstaged, staged, and cross-branch changes
+  - `git_add/commit/reset`: Stage files, create commits, unstage changes
+  - `git_log/show`: View commit history and specific commit contents
+  - `git_create_branch/checkout`: Branch creation and switching
+- **Usage**: Local Git repository operations without remote dependencies
+- **Features**: Complete local Git workflow, branch management, history access
+
+#### Fetch (Web Content Extraction) - 1 Tool
+- **Server**: `fetch`
+- **Tools**:
+  - `fetch`: Retrieve web content and convert HTML to markdown
+- **Usage**: Extract content from specific web pages for analysis
+- **Features**: Configurable length limits, raw HTML option, automatic markdown conversion
 
 ### Using MCP Tools with use_mcp_tool Function
 
@@ -295,23 +321,51 @@ use_mcp_tool(
 
 ### Example Usage Patterns
 
-**Library Documentation:**
+**Library Documentation (Context7):**
 ```
 Can you show me the latest React hooks documentation?
+Get TypeScript utility types documentation  
+Show me Vue 3 Composition API docs
 ```
-→ Avante automatically uses Context7 to get current React hooks docs
+→ Avante automatically uses Context7 to get current library documentation
 
-**Current News/Research:**
+**Web Search & Research (Tavily):**
 ```
 What's new in JavaScript frameworks for 2025?
+Search for recent security vulnerabilities in Node.js
+Find current trends in web development
 ```
 → Avante automatically uses Tavily to search for current information
 
-**Combined Usage:**
+**GitHub Operations:**
 ```
-Get the Vue.js composition API documentation, then search for Vue 3 performance best practices
+Search GitHub for Neovim plugins with Git integration
+Create an issue in my repository about adding dark mode
+Show me the latest commits in the neovim/neovim repository
 ```
-→ Avante uses Context7 for docs, then Tavily for current best practices
+→ Avante uses GitHub tools for repository operations
+
+**Local Git Operations:**
+```
+Show me the git status of my current project
+What are the unstaged changes in this repository?
+Create a new branch called 'feature-auth' in my repo
+```
+→ Avante uses Git tools for local repository management
+
+**Web Content Extraction (Fetch):**
+```
+Fetch and summarize the content from https://example.com/article
+Get the main content from this documentation URL
+```
+→ Avante uses Fetch to extract and process web content
+
+**Combined Workflows:**
+```
+Get the React documentation from Context7, then search for recent React tutorials with Tavily
+Show me the git status, then search GitHub for similar repositories
+```
+→ Avante intelligently combines multiple MCP tools for comprehensive assistance
 
 ### MCP Tools Commands
 
@@ -320,6 +374,19 @@ Additional commands for MCP integration:
 - `:AvanteRestartMCP`: Restart MCP integration if tools aren't working
 - `:MCPTest`: Test MCP integration status
 - `:MCPHubOpen`: Open MCPHub interface directly
+- `:MCPHub`: Access MCPHub interface to see all server status
+- `:MCPHubStatus`: Check connection status of all MCP servers
+
+### Current MCP Server Status
+
+**✅ All 5 MCP Servers Active:**
+- **Context7**: 2 tools (library documentation)
+- **Tavily**: 4 tools (web search and crawling)  
+- **GitHub**: 26 tools (complete GitHub API)
+- **Git**: 11 tools (local repository management)
+- **Fetch**: 1 tool (web content extraction)
+
+**Total: 44+ MCP tools available in Avante**
 
 ### Troubleshooting MCP Tools
 
@@ -328,8 +395,13 @@ If MCP tools show "not fully loaded" errors:
 1. **Restart Integration**: Run `:AvanteRestartMCP`
 2. **Check Status**: Verify MCP Hub is running with `:MCPHubStatus`
 3. **Test Integration**: Run `:MCPTest` to verify tool connectivity
+4. **View Server Status**: Use `:MCPHub` to see detailed server information
 
-The integration automatically handles parameter validation and follows the correct calling patterns for each MCP server.
+**Automatic Features:**
+- Parameter validation and correct calling patterns for each server
+- Intelligent tool selection based on user requests
+- Seamless integration with Avante's natural language interface
+- Cross-platform compatibility (NixOS and standard systems)
 
 ### Integration Details
 
