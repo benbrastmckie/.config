@@ -68,7 +68,6 @@ Status: ❌ Not Available
 Summary:
 Neither Context7 nor Tavily tools are available in the current environment. The available tools are limited to file system operations (ls, grep, glob) and file editing (str_replace_editor). To test these specific MCP tools, the environment would need to be updated to include the required Context7 and Tavily functions.
 
-
 dispatch_agent Done (1 tool use · 329 tokens · 11s)
 
 ## In Progress
@@ -85,6 +84,7 @@ dispatch_agent Done (1 tool use · 329 tokens · 11s)
   - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] avante
     - [ ] don't need to cut and paste images
+    - [ ] reduce messages
   - [ ] lectic
     - [ ] mcp
     - [ ] other?
