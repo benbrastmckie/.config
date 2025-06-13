@@ -2,11 +2,21 @@
 
 ## In Progress
 
+- [ ] list of features to advertise
 - [.] ai
   - [x] claude-code
   - [x] debug avante
   - [x] switch to https://github.com/coder/claudecode.nvim
-  - [ ] mcp tooling
+  - [.] mcp tooling
+    - [x] github
+    - [ ] git
+    - [ ] brave
+    - [x] tavily
+    - [ ] agentQL
+    - [x] context7
+    - [ ] fetch
+    - [ ] examples
+    - [ ] docs
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
