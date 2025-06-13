@@ -90,3 +90,47 @@ To add a new plugin:
 ## Plugin Documentation
 
 For detailed information about specific plugins, refer to their individual files or visit their GitHub repositories.
+
+## Plugin Analysis and Maintenance
+
+Use the plugin analysis script to verify your configuration and diagnose issues:
+
+```vim
+:luafile scripts/check_plugins.lua
+```
+
+This script provides:
+- **Total plugin count**: Shows how many plugins are currently loaded
+- **Category breakdown**: Lists plugins organized by category (editor, lsp, tools, ui, ai)
+- **Plugin organization verification**: Ensures plugins are properly categorized
+- **Configuration audit**: Helps identify plugin loading issues
+
+**Example output**:
+```
+Total plugins loaded: 45
+
+Plugins by Category:
+
+EDITOR (8):
+  - conform.nvim
+  - nvim-lint
+  - telescope.nvim
+  - nvim-treesitter
+  - toggleterm.nvim
+  - which-key.nvim
+
+LSP (3):
+  - blink.cmp
+  - nvim-lspconfig
+  - mason.nvim
+
+[... other categories ...]
+```
+
+The script is particularly useful:
+- **After configuration changes**: Verify plugins load correctly
+- **During troubleshooting**: Identify missing or misconfigured plugins
+- **For documentation**: Generate current plugin lists
+- **Before updates**: Record current plugin state
+
+See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation.

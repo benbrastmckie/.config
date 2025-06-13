@@ -106,9 +106,18 @@ All LSP functionality depends on:
 - `mason.nvim`: LSP server management
 - `LuaSnip`: Snippet engine
 
-## Maintenance Notes
+## Implementation Notes
 
-- blink.cmp replaced nvim-cmp for better performance
+- Uses blink.cmp as the modern completion engine for high performance
 - VimTeX completion integrated directly into blink.cmp configuration
-- Backup files (.bak, .disabled) have been cleaned up
-- All configuration follows modern lazy loading patterns
+- Configuration follows modern lazy loading patterns for optimal startup performance
+
+## Plugin Analysis
+
+To verify LSP plugins are properly loaded and organized:
+
+```vim
+:luafile scripts/check_plugins.lua
+```
+
+This will show the LSP category with plugins like blink.cmp, nvim-lspconfig, mason.nvim, and related tools. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.

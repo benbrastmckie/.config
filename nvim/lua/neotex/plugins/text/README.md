@@ -37,4 +37,12 @@ These plugins provide enhanced editing, navigation, and visualization capabiliti
 - Custom styling
 - Export capabilities
 
-Part of Phase 2 implementation.
+## Plugin Analysis
+
+To verify text format plugins are properly loaded and organized:
+
+```vim
+:luafile scripts/check_plugins.lua
+```
+
+This will show the TEXT category with plugins like vimtex.lua, markdown-preview.lua, lean.lua, and jupyter components. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.

@@ -6,7 +6,7 @@ This directory contains utility scripts for maintaining and troubleshooting the 
 
 ### 📊 check_plugins.lua
 
-**Purpose**: Analyzes and reports on the current plugin configuration, showing plugins organized by category.
+**Purpose**: Analyzes and reports on the **entire plugin configuration**, showing all plugins organized by category across the full Neovim setup.
 
 **Usage**:
 ```bash
@@ -18,16 +18,25 @@ nvim --headless -c "luafile scripts/check_plugins.lua" -c "qa!"
 ```
 
 **What it does**:
-- Counts total loaded plugins
-- Categorizes plugins by type (coding, editor, LSP, tools, UI, extras)
+- Counts total loaded plugins across all categories
+- Categorizes **all** plugins by type:
+  - **EDITOR**: Telescope, Treesitter, formatting, linting, which-key
+  - **LSP**: Language servers, completion, Mason
+  - **TOOLS**: Git, text manipulation, utilities, browser integration  
+  - **UI**: Themes, status line, file explorer, buffers
+  - **AI**: Avante, MCP-Hub, Claude Code, Lectic
+  - **TEXT**: LaTeX, Markdown, Jupyter notebooks
 - Shows plugin loading structure and organization
-- Useful for configuration auditing and plugin management
+- Useful for comprehensive configuration auditing and plugin management
 
 **When to use**:
-- After making changes to plugin configuration
-- To verify plugin loading and organization
-- For debugging plugin-related issues
+- After making changes to **any** plugin configuration
+- To verify plugin loading and organization across all categories
+- For debugging plugin-related issues in any part of the config
 - When documenting your configuration
+- Before/after major updates to assess plugin changes
+
+**Scope**: This script analyzes the **complete plugin ecosystem**, not just AI tools. It's the primary tool for understanding your entire Neovim plugin configuration.
 
 ---
 
@@ -168,12 +177,12 @@ nvim --headless -c "luafile scripts/test_mcp_tools.lua" -c "qa!"
 ## Script Categories
 
 ### 🔍 Diagnostic Scripts
-- `check_plugins.lua` - Plugin configuration analysis
-- `test_mcp_integration.lua` - MCP integration testing
-- `test_mcp_tools.lua` - Individual tool testing
+- `check_plugins.lua` - **Complete plugin configuration analysis** (all categories)
+- `test_mcp_integration.lua` - MCP integration testing (AI-specific)
+- `test_mcp_tools.lua` - Individual tool testing (AI-specific)
 
 ### 🛠️ Maintenance Scripts  
-- `force_mcp_restart.lua` - MCP integration restart and repair
+- `force_mcp_restart.lua` - MCP integration restart and repair (AI-specific)
 
 ## Integration with Main Configuration
 

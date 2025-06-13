@@ -8,10 +8,20 @@
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
-- [ ] blink.pairs
-- [ ] scripts
-    - [ ] reduce
-    - [ ] document
+- [x] blink
+  - [ ] pairs
+    - [ ] plan
+    - [ ] implement
+  - [x] cmp
+    - [x] plan
+    - [x] implement
+      - [x] first pass
+      - [x] research
+      - [x] second pass
+    - [x] commands
+    - [x] paths
+    - [x] refactor directory
+    - [x] document
 - [.] ai
   - [:] claude-code
     - [.] mcp
@@ -75,7 +85,7 @@
 - [.] email
 - [.] docs
   - [ ] api
-  - [ ] cleanup comments throughout files
+  - [ ] READMEs
   - [ ] learning git
   - [x] cheatsheet
   - [x] readme
@@ -112,6 +122,9 @@
 
 ## Completed
 
+- [x] scripts
+    - [x] reduce
+    - [x] document
 - [x] latex
   - [x] switch from zathura to sioyek: https://github.com/ahrm/sioyek
   - [x] highlighting
@@ -125,16 +138,6 @@
       - [x] Fixed API calls by using the correct mini.surround functions
       - [x] Updated commands to directly use require('mini.surround').function_name()
       - [x] Corrected visual mode mapping to use add('visual') method
-- [x] blink
-  - [x] plan
-  - [x] implement
-    - [x] first pass
-    - [x] research
-    - [x] second pass
-  - [x] commands
-  - [x] paths
-  - [x] refactor directory
-  - [x] document
 - [x] autolist
   - [x] add in-progress field
   - [x] remove box command

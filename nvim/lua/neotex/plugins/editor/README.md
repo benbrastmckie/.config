@@ -9,17 +9,26 @@ This directory contains plugins that improve the core editing experience:
 - Text formatting and linting
 - Code formatting utilities
 
-## Note on Module Organization
+## Plugin Organization
 
-Several plugins previously in this directory have been moved:
+The editor plugins are organized by core editing functionality:
 
-- Text manipulation utilities (yanky) → tools
-- Mini ecosystem plugins (pairs, comments, etc.) → tools
-- Code manipulation tools (surround) → tools
-- Markdown list handling (autolist) → tools
-- Todo comments highlighting → tools
-- Session management → ui
+- **Navigation and Search**: telescope, treesitter
+- **Terminal Integration**: toggleterm  
+- **Code Quality**: formatting, linting
+- **User Interface**: which-key for keybinding help
 
-This organization better reflects the functional categorization of these plugins.
+Related tools are organized in other categories:
+- Text manipulation utilities → tools
+- UI components → ui  
+- Language-specific tools → text
 
-Part of Phase 2 implementation.
+## Plugin Analysis
+
+To verify editor plugins are properly loaded and organized:
+
+```vim
+:luafile scripts/check_plugins.lua
+```
+
+This will show the EDITOR category with plugins like telescope.nvim, nvim-treesitter, toggleterm.nvim, and others. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.
