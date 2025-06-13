@@ -254,7 +254,7 @@ return {
     -- Default configuration
     local config = {
       -- Provider selection and auto-suggestions
-      provider = "gemini",
+      provider = "claude",
       auto_suggestions_provider = "claude",
       -- Updated provider configuration structure
       providers = {
@@ -294,7 +294,7 @@ return {
           model = "gemini-2.5-pro-preview-03-25",
           extra_request_body = {
             temperature = 0.1,
-            max_tokens = 8192,
+            max_tokens = 4096,
           },
           disable_tools = {
             "file_creation",
