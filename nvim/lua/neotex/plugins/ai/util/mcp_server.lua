@@ -12,9 +12,19 @@ M.state = {
 }
 
 -- Configure logging levels based on debug setting
+-- Debug mode configuration
+local debug_mode = vim.g.mcphub_debug_mode or false
+
 local function log(message, level)
   level = level or vim.log.levels.INFO
   vim.notify("[MCPHub] " .. message, level)
+end
+
+-- Debug-only logging function
+local function debug_log(message)
+  if debug_mode then
+    log(message, vim.log.levels.INFO)
+  end
 end
 
 -- Check if we're on NixOS
@@ -275,8 +285,8 @@ function M.cleanup_existing_processes()
   -- Additional sleep to ensure processes are fully terminated and port is free
   vim.cmd("sleep 100m")
   
-  -- Log that cleanup was done
-  log("Cleaned up any existing MCP-Hub processes", vim.log.levels.INFO)
+  -- Log that cleanup was done (debug mode only)
+  debug_log("Cleaned up any existing MCP-Hub processes")
 end
 
 -- Start the MCPHub server with proper version handling

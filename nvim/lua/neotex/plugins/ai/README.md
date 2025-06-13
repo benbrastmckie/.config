@@ -27,7 +27,8 @@ lua/neotex/plugins/ai/
     ├── avante_mcp.lua              # Avante-MCPHub integration layer
     ├── mcp_server.lua              # MCPHub server management
     ├── system-prompts.json          # System prompt templates storage
-    └── system-prompts.lua           # System prompts manager
+    ├── system-prompts.lua           # System prompts manager
+    └── tool_registry.lua            # Hybrid tool registry for MCP scaling
 ```
 
 ### Utility Modules
@@ -36,7 +37,8 @@ The `util/` directory contains essential support modules for AI functionality:
 
 - **Core Management**: Model selection, provider switching, and settings persistence
 - **System Prompts**: Complete prompt management system with CRUD operations
-- **MCPHub Integration**: Server management and Avante-MCPHub coordination
+- **MCPHub Integration**: Server management and Avante-MCPHub coordination with hybrid tool registry
+- **Tool Registry**: Smart defaults and context-aware MCP tool selection for scalable integration
 - **Visual Enhancement**: Theme-aware highlighting and UI improvements
 
 For detailed documentation of utility modules, see [`util/README.md`](util/README.md).
@@ -196,21 +198,35 @@ The configuration automatically detects your environment and chooses the best in
 - **Clean configuration**: Minimal setup with automatic environment adaptation
 - **Cross-platform troubleshooting**: Works reliably across different systems
 
-## Using MCP Tools in Avante
+## MCP Tool Integration
 
-The MCP-Hub integration enables Avante to access and use tools provided by MCP-Hub, expanding Avante's capabilities beyond what's built-in.
+Avante includes a sophisticated MCP (Model Context Protocol) tool integration that automatically selects and uses the most relevant tools based on conversation context. The system uses a hybrid tool registry with smart defaults to provide seamless access to documentation, search, and development tools.
 
 ### Architecture
 
-The MCPHub integration uses an intelligent cross-platform approach:
+The MCP integration features an intelligent, scalable approach:
 
 1. **Environment Detection**: Automatically detects NixOS/Nix vs standard environments
 2. **Smart Installation Choice**: Uses global installation when available, bundled otherwise
-3. **Lazy Loading**: MCPHub loads via lazy.nvim when needed  
-4. **Event-Based Triggering**: Uses `User AvantePreLoad` event for Avante integration
-5. **Automatic Integration**: Just use Avante normally with `<leader>ha`, `<leader>hc`, or `<leader>ht`
-6. **Installation Feedback**: Shows which installation method is being used
-7. **Cross-Platform Reliability**: Works consistently across different systems
+3. **Hybrid Tool Registry**: Context-aware tool selection with persona-specific defaults
+4. **Dynamic Enhancement**: Tools added based on conversation keywords and context
+5. **Token Budgeting**: Prevents context bloat while ensuring relevant tools are available
+6. **Parameter Mapping**: Automatic API compatibility handling for different MCP servers
+7. **Lazy Loading**: MCPHub loads via lazy.nvim when needed
+8. **Event-Based Triggering**: Uses `User AvantePreLoad` event for Avante integration
+9. **Automatic Integration**: Works seamlessly with standard Avante commands
+10. **Cross-Platform Reliability**: Works consistently across different systems
+
+### Smart Tool Selection
+
+The hybrid tool registry automatically selects relevant MCP tools based on:
+
+- **Persona Defaults**: Each persona (researcher, coder, tutor, expert) has curated default tools
+- **Context Enhancement**: Conversation keywords trigger additional relevant tools
+- **Priority Management**: High-priority tools included first within token budget
+- **Token Budgeting**: Maximum 2000 tokens for tool descriptions, 8 tools max per conversation
+- **Automatic Library Detection**: Recognizes library/framework mentions and selects Context7
+- **Multi-Step Workflows**: Handles complex tool sequences automatically
 
 The `<leader>hx` command provides direct access to the MCPHub interface.
 
@@ -265,117 +281,95 @@ The integration provides access to 5 powerful MCP servers with 44+ tools:
 - **Usage**: Extract content from specific web pages for analysis
 - **Features**: Configurable length limits, raw HTML option, automatic markdown conversion
 
-### Using MCP Tools with use_mcp_tool Function
+### Automatic MCP Tool Usage
 
-Avante includes a built-in `use_mcp_tool` function that provides direct access to MCP server tools. Simply ask Avante to use MCP tools naturally in conversation:
+Avante automatically selects and uses MCP tools based on your questions - no explicit tool mentions required. The system intelligently routes queries to the most appropriate tools:
 
+**Library/Framework Questions → Context7:**
 ```
-Test my mcp tools: get react hooks from context7 and then search for "react 2025 news" with tavily
-```
-
-Avante will automatically:
-1. **Context7**: First call `resolve-library-id` to get the library ID, then `get-library-docs` with proper parameters
-2. **Tavily**: Search for current information with appropriate filters
-3. **Return Results**: Provide comprehensive documentation and search results
-
-### Context7 Usage Pattern (Automatic)
-
-For library documentation requests, Avante automatically follows the required two-step process:
-
-**Step 1 - Resolve Library ID:**
-```lua
-use_mcp_tool(
-  server_name: 'github.com/upstash/context7-mcp',
-  tool_name: 'resolve-library-id', 
-  tool_input: {libraryName: 'react'}
-)
+How do I implement authentication in Next.js?
+Show me React hooks for state management
+Get Vue 3 Composition API documentation
 ```
 
-**Step 2 - Get Documentation:**
-```lua
-use_mcp_tool(
-  server_name: 'github.com/upstash/context7-mcp',
-  tool_name: 'get-library-docs',
-  tool_input: {
-    context7CompatibleLibraryID: '/facebook/react',
-    topic: 'hooks'
-  }
-)
+**Current Information → Tavily:**
+```
+What are the latest JavaScript frameworks in 2024?
+Recent security vulnerabilities in Node.js
+Current web development trends
 ```
 
-### Tavily Search Usage (Automatic)
-
-For web searches and current information:
-
-```lua
-use_mcp_tool(
-  server_name: 'tavily',
-  tool_name: 'tavily-search',
-  tool_input: {
-    query: 'react 2025 news',
-    max_results: 5,
-    topic: 'news'
-  }
-)
+**Development Operations → GitHub/Git:**
+```
+Show me popular Neovim plugins
+Create a feature branch for authentication
+What are the recent commits in this repository?
 ```
 
-### Example Usage Patterns
+Avante automatically:
+1. **Detects** the type of information needed
+2. **Selects** appropriate MCP tools from the registry
+3. **Executes** multi-step workflows (e.g., resolve library → get documentation)
+4. **Returns** comprehensive, up-to-date results
 
-**Library Documentation (Context7):**
-```
-Can you show me the latest React hooks documentation?
-Get TypeScript utility types documentation  
-Show me Vue 3 Composition API docs
-```
-→ Avante automatically uses Context7 to get current library documentation
+### Behind the Scenes: Automatic Tool Workflows
 
-**Web Search & Research (Tavily):**
-```
-What's new in JavaScript frameworks for 2025?
-Search for recent security vulnerabilities in Node.js
-Find current trends in web development
-```
-→ Avante automatically uses Tavily to search for current information
+When you ask library-related questions, Avante automatically executes sophisticated workflows:
 
-**GitHub Operations:**
-```
-Search GitHub for Neovim plugins with Git integration
-Create an issue in my repository about adding dark mode
-Show me the latest commits in the neovim/neovim repository
-```
-→ Avante uses GitHub tools for repository operations
+**Context7 Documentation Workflow:**
+1. **Resolve Library ID**: Maps library names to Context7-compatible identifiers
+2. **Retrieve Documentation**: Gets specific topic documentation with proper parameters
+3. **Parameter Mapping**: Handles API compatibility automatically
 
-**Local Git Operations:**
-```
-Show me the git status of my current project
-What are the unstaged changes in this repository?
-Create a new branch called 'feature-auth' in my repo
-```
-→ Avante uses Git tools for local repository management
+**Tavily Search Workflow:**
+1. **Query Optimization**: Formats queries for AI-optimized search
+2. **Result Filtering**: Applies appropriate filters based on context
+3. **Content Extraction**: Processes results for relevant information
 
-**Web Content Extraction (Fetch):**
+**Multi-Library Support:**
 ```
-Fetch and summarize the content from https://example.com/article
-Get the main content from this documentation URL
+I need to integrate Prisma ORM with Express.js for a REST API
 ```
-→ Avante uses Fetch to extract and process web content
+→ Automatically resolves both Prisma and Express.js documentation
 
-**Combined Workflows:**
-```
-Get the React documentation from Context7, then search for recent React tutorials with Tavily
-Show me the git status, then search GitHub for similar repositories
-```
-→ Avante intelligently combines multiple MCP tools for comprehensive assistance
+### Intelligent Tool Selection Examples
+
+The system automatically chooses the right tools based on conversation context:
+
+**Documentation Queries:**
+- "How do I use React hooks?" → **Context7** (official React documentation)
+- "Vue 3 Composition API examples" → **Context7** (Vue.js documentation)
+- "Express.js middleware setup" → **Context7** (Express.js documentation)
+- "TypeScript utility types" → **Context7** (TypeScript documentation)
+
+**Current Information Queries:**
+- "Latest JavaScript trends 2024" → **Tavily** (current web search)
+- "Recent Node.js security updates" → **Tavily** (current news)
+- "Modern CSS frameworks comparison" → **Tavily** (current analysis)
+
+**Development Queries:**
+- "Popular Neovim LSP plugins" → **GitHub** (repository search)
+- "Git workflow best practices" → **Git** + **Tavily** (local Git + current practices)
+- "Create feature branch" → **Git** (local repository operations)
+
+**Multi-Tool Workflows:**
+- "Integrate Prisma with Next.js" → **Context7** (both Prisma and Next.js docs)
+- "Modern authentication with React" → **Context7** (React docs) + **Tavily** (current patterns)
+- "Deploy Express app to GitHub Pages" → **Context7** (Express docs) + **GitHub** (deployment)
 
 ### MCP Tools Commands
 
-Additional commands for MCP integration:
+Additional commands for MCP integration and tool registry management:
 
-- `:AvanteRestartMCP`: Restart MCP integration if tools aren't working
-- `:MCPTest`: Test MCP integration status
-- `:MCPHubOpen`: Open MCPHub interface directly
 - `:MCPHub`: Access MCPHub interface to see all server status
 - `:MCPHubStatus`: Check connection status of all MCP servers
+- `:MCPHubDiagnose`: Comprehensive MCP Hub connection diagnosis
+- `:MCPToolsShow [persona]`: Show selected tools for a specific persona
+- `:MCPPromptTest [persona] [context]`: Test enhanced prompt generation with context
+- `:MCPSystemPromptTest`: Check current Avante system prompt configuration
+- `:MCPAvanteConfigTest`: Verify Avante configuration and disabled tools
+- `:MCPForceReload`: Force reload Avante configuration with MCP fixes
+- `:MCPDebugToggle`: Toggle MCPHub debug mode for verbose logging
 
 ### Current MCP Server Status
 
@@ -390,18 +384,36 @@ Additional commands for MCP integration:
 
 ### Troubleshooting MCP Tools
 
-If MCP tools show "not fully loaded" errors:
+If MCP tools show connection or usage errors:
 
-1. **Restart Integration**: Run `:AvanteRestartMCP`
-2. **Check Status**: Verify MCP Hub is running with `:MCPHubStatus`
-3. **Test Integration**: Run `:MCPTest` to verify tool connectivity
-4. **View Server Status**: Use `:MCPHub` to see detailed server information
+1. **Diagnose Connection**: Run `:MCPHubDiagnose` for comprehensive status check
+2. **Check Hub Status**: Verify MCP Hub is running with `:MCPHubStatus`
+3. **View Server Status**: Use `:MCPHub` to see detailed server information
+4. **Reload Configuration**: Run `:MCPForceReload` to refresh Avante settings
+5. **Test Tool Selection**: Use `:MCPToolsShow expert` to verify tool registry
+6. **Enable Debug Mode**: Run `:MCPDebugToggle` to see detailed MCPHub startup messages
 
-**Automatic Features:**
-- Parameter validation and correct calling patterns for each server
-- Intelligent tool selection based on user requests
-- Seamless integration with Avante's natural language interface
-- Cross-platform compatibility (NixOS and standard systems)
+**Advanced Troubleshooting Scripts**: For deeper diagnosis and repair, see [`scripts/README.md`](../../../../scripts/README.md):
+
+- **Complete Integration Test**: `scripts/test_mcp_integration.lua` - Comprehensive MCP setup verification
+- **Force MCP Restart**: `scripts/force_mcp_restart.lua` - Complete MCP integration restart
+- **Individual Tool Testing**: `scripts/test_mcp_tools.lua` - Test Context7 and Tavily directly
+- **Plugin Analysis**: `scripts/check_plugins.lua` - Verify plugin loading and organization
+
+**Quick Script Usage**:
+```vim
+:luafile scripts/test_mcp_integration.lua  " Full integration test
+:luafile scripts/force_mcp_restart.lua     " Force MCP restart
+:luafile scripts/test_mcp_tools.lua        " Test individual tools
+```
+
+**Key Features:**
+- **Automatic Parameter Mapping**: Handles API compatibility across different MCP servers
+- **Intelligent Tool Selection**: Context-aware selection based on conversation content
+- **Multi-Step Workflows**: Seamlessly chains multiple tool calls for complex queries
+- **Token Budget Management**: Prevents context overflow while maintaining functionality
+- **Cross-Platform Compatibility**: Works reliably on NixOS and standard systems
+- **Zero-Configuration**: Automatic setup with smart defaults for all personas
 
 ### Integration Details
 
@@ -552,5 +564,24 @@ npm install -g mcp-hub@latest
 ```
 
 **Cross-platform compatibility verified** - the configuration automatically adapts to your environment and provides reliable MCPHub integration regardless of whether you're using NixOS, standard Linux, macOS, or Windows.
+
+### Debug Mode
+
+By default, MCPHub operates in quiet mode to keep the interface clean. You can enable debug mode for troubleshooting:
+
+**Enable Debug Mode:**
+```vim
+:MCPDebugToggle
+```
+
+**Or set globally in your configuration:**
+```lua
+vim.g.mcphub_debug_mode = true
+```
+
+**Debug mode shows:**
+- MCPHub startup messages ("MCPHub ready (bundled NixOS installation)")
+- Process cleanup notifications
+- Detailed connection information
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.

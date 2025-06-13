@@ -256,6 +256,11 @@ return {
       -- Provider selection and auto-suggestions
       provider = "claude",
       auto_suggestions_provider = "claude",
+      
+      -- Disable built-in web search to force MCP tool usage
+      web_search_engine = {
+        enabled = false,
+      },
       -- Updated provider configuration structure
       providers = {
         claude = {
@@ -269,9 +274,17 @@ return {
           },
           disable_tools = {
             "file_creation",
-            "git_operations",
+            "git_operations", 
             "system_commands",
             "file_modifications",
+            "web_search", -- Disable built-in web search to force MCP tool usage
+            "rag_search", -- Disable RAG search to avoid conflicts
+            "search_keyword", -- Disable keyword search
+            "search_files", -- Disable file search that might trigger web search
+          },
+          -- Disable web search engine to force MCP tool usage
+          web_search_engine = {
+            enabled = false,
           },
         },
         openai = {
@@ -285,9 +298,17 @@ return {
           },
           disable_tools = {
             "file_creation",
-            "git_operations",
+            "git_operations", 
             "system_commands",
             "file_modifications",
+            "web_search", -- Disable built-in web search to force MCP tool usage
+            "rag_search", -- Disable RAG search to avoid conflicts
+            "search_keyword", -- Disable keyword search
+            "search_files", -- Disable file search that might trigger web search
+          },
+          -- Disable web search engine to force MCP tool usage
+          web_search_engine = {
+            enabled = false,
           },
         },
         gemini = {
@@ -298,41 +319,50 @@ return {
           },
           disable_tools = {
             "file_creation",
-            "git_operations",
+            "git_operations", 
             "system_commands",
             "file_modifications",
+            "web_search", -- Disable built-in web search to force MCP tool usage
+            "rag_search", -- Disable RAG search to avoid conflicts
+            "search_keyword", -- Disable keyword search
+            "search_files", -- Disable file search that might trigger web search
+          },
+          -- Disable web search engine to force MCP tool usage
+          web_search_engine = {
+            enabled = false,
           },
         },
       },
 
-      -- Dynamic system prompt that includes MCP tools when available
+      -- Dynamic system prompt using hybrid tool registry
       system_prompt = function()
-        -- Default prompt
-        local base_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations."
+        -- Default persona if not specified
+        local current_persona = "expert"
         
-        -- Try to get the active system prompt from our prompt manager
+        -- Try to get current persona from system prompts manager
         local ok, prompts = pcall(require, "neotex.plugins.ai.util.system-prompts")
         if ok then
-          local default_prompt, _ = prompts.get_default()
-          if default_prompt and default_prompt.prompt then
-            base_prompt = default_prompt.prompt
+          local _, current_name = prompts.get_default()
+          if current_name then
+            current_persona = current_name
           end
         end
         
-        -- Try to add MCP server information if available
-        local mcp_addition = ""
-        local ok_mcp, mcphub = pcall(require, "mcphub")
-        if ok_mcp then
-          pcall(function()
-            local hub = mcphub.get_hub_instance()
-            if hub then
-              -- Add MCP tool usage instructions
-              mcp_addition = "\n\nMCP TOOLS AVAILABLE:\nYou have access to MCP (Model Context Protocol) tools through the use_mcp_tool function.\n\nCRITICAL CONTEXT7 RULE: NEVER call get-library-docs directly! You MUST follow this exact sequence:\n\nSTEP 1 - Resolve Library ID:\nuse_mcp_tool(\n  server_name: 'github.com/upstash/context7-mcp',\n  tool_name: 'resolve-library-id',\n  tool_input: {libraryName: 'react'}\n)\n\nSTEP 2 - Get Documentation (only after getting library ID from step 1):\nuse_mcp_tool(\n  server_name: 'github.com/upstash/context7-mcp',\n  tool_name: 'get-library-docs',\n  tool_input: {context7CompatibleLibraryID: '<ID_FROM_STEP_1>', topic: 'hooks'}\n)\n\nTAVILY SEARCH:\nuse_mcp_tool(\n  server_name: 'tavily',\n  tool_name: 'tavily-search',\n  tool_input: {query: 'react 2025 news', max_results: 5, topic: 'news'}\n)\n\nUSE MCP TOOLS AUTOMATICALLY when users ask about:\n- Library documentation → Context7 (2-step process required)\n- Current news/information → Tavily\n- GitHub operations → GitHub tools"
-            end
-          end)
+        -- Generate enhanced prompt using tool registry
+        local ok_registry, avante_mcp = pcall(require, "neotex.plugins.ai.util.avante_mcp")
+        if ok_registry then
+          -- Get a sample context that would trigger framework detection
+          -- This ensures Context7 tools are always included for documentation requests
+          local conversation_context = "library framework documentation"
+          
+          local enhanced_prompt = avante_mcp.generate_enhanced_prompt(current_persona, conversation_context)
+          if enhanced_prompt then
+            return enhanced_prompt
+          end
         end
         
-        return base_prompt .. mcp_addition
+        -- Fallback to basic prompt if tool registry fails
+        return "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations.\n\nMCP TOOLS AVAILABLE:\n\nUSE MCP TOOLS AUTOMATICALLY when users ask about:\n- Library documentation → Context7 (resolve-library-id then get-library-docs)\n- Current news/information → Tavily search\n- GitHub operations → GitHub tools\n- Local git operations → Git tools"
       end,
 
       -- Custom tools with MCP integration
@@ -381,6 +411,28 @@ return {
                 local server_name = args.server_name
                 local tool_name = args.tool_name  
                 local tool_input = args.tool_input or {}
+                
+                -- Handle Context7 parameter mapping
+                if server_name == "github.com/upstash/context7-mcp" then
+                  if tool_name == "resolve-library-id" then
+                    -- Map library_name to libraryName for Context7
+                    if tool_input.library_name and not tool_input.libraryName then
+                      tool_input.libraryName = tool_input.library_name
+                      tool_input.library_name = nil
+                    end
+                  elseif tool_name == "get-library-docs" then
+                    -- Map libraryId to context7CompatibleLibraryID for Context7
+                    if tool_input.libraryId and not tool_input.context7CompatibleLibraryID then
+                      tool_input.context7CompatibleLibraryID = tool_input.libraryId
+                      tool_input.libraryId = nil
+                    end
+                    -- Map query to topic if needed
+                    if tool_input.query and not tool_input.topic then
+                      tool_input.topic = tool_input.query
+                      tool_input.query = nil
+                    end
+                  end
+                end
                 
                 on_log("Calling MCP tool: " .. server_name .. "/" .. tool_name)
                 
