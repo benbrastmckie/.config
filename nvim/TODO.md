@@ -1,14 +1,90 @@
 # TODO
 
+> Test my mcp tools: get react hooks from context7 and then search for "react 2025 news" with tavily
+
+
+I'll help you test your MCP tools by retrieving React Hooks documentation from Context7 and searching for React 2025 news using Tavily. Let me dispatch an agent to handle this task.
+
+
+╭─  dispatch_agent  succeeded
+│   running tool
+│   prompt: Please test the MCP tools by performing these two tasks:
+│   
+│   1. Use Context7 to get documentation about React Hooks
+│   2. Use Tavily to search for "react 2025 news"
+│   
+│   For each tool:
+│   - Report whether the tool is working
+│   - Show the results received
+│   - Note any errors or issues encountered
+│   
+╰─  Please format the results clearly and separately for each tool.
+
+
+I apologize, but I notice that I don't have access to either the Context7 or Tavily tools in the provided function list. The available tools are:
+
+1. ls (list files/directories)
+2. grep (search in files)
+3. glob (file pattern matching)
+4. attempt_completion (present results)
+5. str_replace_editor (file editing)
+
+None of these tools provide the functionality to:
+- Get documentation about React Hooks via Context7
+- Search for "react 2025 news" via Tavily
+
+Therefore, I cannot perform the requested test of these MCP tools. I would need access to:
+1. Context7-related functions (like get-library-docs)
+2. Tavily search functions
+
+Would you like me to:
+1. Test different tools that are actually available in the current environment?
+2. Wait for you to provide access to the Context7 and Tavily tools?
+
+Please let me know how you'd like to proceed.
+
+
+<thinking>
+Since I've determined that the requested tools are not available and communicated this finding, I can now present this result using attempt_completion. I don't need to confirm any previous tool uses since I haven't used any tools yet.
+</thinking>
+
+
+✓  Task Completed
+
+Test Results for MCP Tools:
+
+1. Context7 (Documentation for React Hooks)
+Status: ❌ Not Available
+- Tool is not accessible in the current environment
+- Unable to retrieve React Hooks documentation
+- Error: Context7 functions are not present in the available toolset
+
+2. Tavily (Search for "react 2025 news")
+Status: ❌ Not Available
+- Tool is not accessible in the current environment
+- Unable to perform the search query
+- Error: Tavily search functions are not present in the available toolset
+
+Summary:
+Neither Context7 nor Tavily tools are available in the current environment. The available tools are limited to file system operations (ls, grep, glob) and file editing (str_replace_editor). To test these specific MCP tools, the environment would need to be updated to include the required Context7 and Tavily functions.
+
+
+dispatch_agent Done (1 tool use · 329 tokens · 11s)
+
 ## In Progress
 
 - [ ] release
   - [ ] list of features to advertise
   - [ ] list of changes
+- [ ] yank errors
+  - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
+  - Content is not an image.
 - [.] ai
   - [x] claude-code
   - [x] debug avante
   - [x] switch to https://github.com/coder/claudecode.nvim
+  - [ ] avante
+    - [ ] don't need to cut and paste images
   - [ ] lectic
     - [ ] mcp
     - [ ] other?

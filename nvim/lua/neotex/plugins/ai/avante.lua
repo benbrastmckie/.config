@@ -461,12 +461,31 @@ return {
       end
     end
 
-    -- Ensure all providers use consistent 8192 token limit to prevent API errors
-    for provider_name, provider_config in pairs(config.providers or {}) do
-      if provider_config.extra_request_body then
-        provider_config.extra_request_body.max_tokens = 8192
+    -- Critical: Force all providers to use safe token limits to prevent 20480 error
+    -- This must override all plugin defaults including inherited configurations
+    if config.providers then
+      for provider_name, provider_config in pairs(config.providers) do
+        if provider_config.extra_request_body then
+          provider_config.extra_request_body.max_tokens = 8192
+        elseif provider_config then
+          -- Ensure extra_request_body exists
+          provider_config.extra_request_body = provider_config.extra_request_body or {}
+          provider_config.extra_request_body.max_tokens = 8192
+        end
       end
     end
+    
+    -- Also add a post-initialization hook as backup
+    vim.defer_fn(function()
+      local ok, avante_config = pcall(require, "avante.config")
+      if ok and avante_config and avante_config.providers then
+        for name, provider in pairs(avante_config.providers) do
+          if provider.extra_request_body then
+            provider.extra_request_body.max_tokens = 8192
+          end
+        end
+      end
+    end, 100)
 
     return config
   end,
