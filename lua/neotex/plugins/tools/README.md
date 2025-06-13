@@ -24,4 +24,12 @@ This directory contains plugins that enhance the editing experience with additio
 
 These tools provide specialized functionality that extends the core editor capabilities with focused, purpose-built features.
 
-Part of Phase 2 implementation.
+## Plugin Analysis
+
+To verify tools plugins are properly loaded and organized:
+
+```vim
+:luafile scripts/check_plugins.lua
+```
+
+This will show the TOOLS category with plugins like gitsigns.lua, mini.lua, yanky.lua, surround.lua, and others. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.

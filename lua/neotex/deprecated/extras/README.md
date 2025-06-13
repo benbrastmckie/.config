@@ -8,4 +8,4 @@ This directory contains optional plugins that add specialized functionality:
 - conform.nvim for formatting
 - nvim-lint for linting
 
-Part of Phase 2 implementation.
+These plugins provide additional specialized functionality for enhanced workflows.
