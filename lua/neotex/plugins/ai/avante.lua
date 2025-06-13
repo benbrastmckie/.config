@@ -264,7 +264,7 @@ return {
           timeout = 60000,
           extra_request_body = {
             temperature = 0.1,
-            max_tokens = 4096,
+            max_tokens = 8192, -- API-safe token limit
             top_p = 0.95,
           },
           disable_tools = {
@@ -280,7 +280,7 @@ return {
           timeout = 60000,
           extra_request_body = {
             temperature = 0.1,
-            max_tokens = 4096,
+            max_tokens = 8192,
             top_p = 0.95,
           },
           disable_tools = {
@@ -294,7 +294,7 @@ return {
           model = "gemini-2.5-pro-preview-03-25",
           extra_request_body = {
             temperature = 0.1,
-            max_tokens = 4096,
+            max_tokens = 8192,
           },
           disable_tools = {
             "file_creation",
@@ -458,6 +458,13 @@ return {
         else
           config[k] = v
         end
+      end
+    end
+
+    -- Ensure all providers use consistent 8192 token limit to prevent API errors
+    for provider_name, provider_config in pairs(config.providers or {}) do
+      if provider_config.extra_request_body then
+        provider_config.extra_request_body.max_tokens = 8192
       end
     end
 
