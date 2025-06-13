@@ -52,7 +52,7 @@ return {
       -- Use bundled binary for NixOS or when global install is not available
       use_bundled_binary = is_nixos or not has_global_mcphub,
 
-      -- Avante integration
+      -- Avante integration with auto-approval
       extensions = {
         avante = {
           make_slash_commands = true,
@@ -61,6 +61,9 @@ return {
           show_result_in_chat = true,
         }
       },
+      
+      -- Global auto-approval for MCP tools
+      auto_approve = true,
 
       -- Clean UI
       ui = {

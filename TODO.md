@@ -85,6 +85,7 @@ dispatch_agent Done (1 tool use · 329 tokens · 11s)
   - [ ] avante
     - [ ] don't need to cut and paste images
     - [ ] reduce messages
+    - [ ] remove start_mcp_hub.sh?
   - [ ] lectic
     - [ ] mcp
     - [ ] other?
