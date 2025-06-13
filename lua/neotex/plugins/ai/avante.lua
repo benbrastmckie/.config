@@ -475,17 +475,30 @@ return {
       end
     end
     
-    -- Also add a post-initialization hook as backup
+    -- CRITICAL: Also fix the _defaults table because inheritance uses defaults, not user config
     vim.defer_fn(function()
       local ok, avante_config = pcall(require, "avante.config")
-      if ok and avante_config and avante_config.providers then
-        for name, provider in pairs(avante_config.providers) do
-          if provider.extra_request_body then
-            provider.extra_request_body.max_tokens = 8192
+      if ok and avante_config then
+        -- Fix both user config and defaults to handle inheritance
+        if avante_config._options and avante_config._options.providers then
+          for name, provider in pairs(avante_config._options.providers) do
+            if provider.extra_request_body then
+              provider.extra_request_body.max_tokens = 8192
+            end
+          end
+        end
+        
+        -- CRITICAL: Fix the defaults table too because inherited providers use this
+        if avante_config._defaults and avante_config._defaults.providers then
+          for name, provider in pairs(avante_config._defaults.providers) do
+            if provider.extra_request_body then
+              provider.extra_request_body.max_tokens = 8192
+            end
           end
         end
       end
     end, 100)
+
 
     return config
   end,
