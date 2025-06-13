@@ -214,91 +214,122 @@ The MCPHub integration uses an intelligent cross-platform approach:
 
 The `<leader>hx` command provides direct access to the MCPHub interface.
 
-### Using MCP Tools in Prompts
+### Available MCP Servers and Tools
 
-The integration with MCPHub provides two ways to access tools in Avante:
+The integration provides access to several powerful MCP servers:
 
-#### 1. JSON Tool Syntax
+#### Context7 (Library Documentation)
+- **Server**: `github.com/upstash/context7-mcp`
+- **Tools**: 
+  - `resolve-library-id`: Find Context7-compatible library IDs
+  - `get-library-docs`: Retrieve library documentation
+- **Usage**: Perfect for getting up-to-date documentation for React, Vue, Express, etc.
 
-You can use the standard JSON tool format:
+#### Tavily (Web Search)
+- **Server**: `tavily`
+- **Tools**:
+  - `tavily-search`: Comprehensive web search with AI filtering
+  - `tavily-extract`: Extract content from specific URLs
+  - `tavily-crawl`: Crawl websites systematically
+  - `tavily-map`: Map website structure
+- **Usage**: Current news, research, real-time information
+
+#### GitHub Integration
+- **Server**: `github`
+- **Tools**: Repository management, issue tracking, pull requests, file operations
+- **Usage**: Code repository operations and collaboration
+
+### Using MCP Tools with use_mcp_tool Function
+
+Avante includes a built-in `use_mcp_tool` function that provides direct access to MCP server tools. Simply ask Avante to use MCP tools naturally in conversation:
 
 ```
-I'd like you to use the MCP tool to search for information.
+Test my mcp tools: get react hooks from context7 and then search for "react 2025 news" with tavily
+```
 
-{
-  "tool": "mcp",
-  "input": {
-    "tool": "websearch",
-    "input": {
-      "query": "latest Neovim release"
-    }
+Avante will automatically:
+1. **Context7**: First call `resolve-library-id` to get the library ID, then `get-library-docs` with proper parameters
+2. **Tavily**: Search for current information with appropriate filters
+3. **Return Results**: Provide comprehensive documentation and search results
+
+### Context7 Usage Pattern (Automatic)
+
+For library documentation requests, Avante automatically follows the required two-step process:
+
+**Step 1 - Resolve Library ID:**
+```lua
+use_mcp_tool(
+  server_name: 'github.com/upstash/context7-mcp',
+  tool_name: 'resolve-library-id', 
+  tool_input: {libraryName: 'react'}
+)
+```
+
+**Step 2 - Get Documentation:**
+```lua
+use_mcp_tool(
+  server_name: 'github.com/upstash/context7-mcp',
+  tool_name: 'get-library-docs',
+  tool_input: {
+    context7CompatibleLibraryID: '/facebook/react',
+    topic: 'hooks'
   }
-}
+)
 ```
 
-#### 2. Slash Commands (Recommended)
+### Tavily Search Usage (Automatic)
 
-MCPHub automatically creates slash commands for all tools, making them easier to use:
+For web searches and current information:
 
-```
-What is the latest version of Neovim?
-
-/websearch latest Neovim release version
-```
-
-The slash command format is more concise and supports auto-completion in Avante's interface.
-
-### Supported MCP Tools
-
-MCPHub provides access to these commonly available tools:
-
-- `/websearch [query]`: Search the web for information
-- `/weather [location]`: Get current weather information
-- `/image_generate [prompt]`: Generate images from text descriptions
-- `/executor [language] [code]`: Run code in a sandbox environment
-- `/pdf [url]`: Extract and analyze content from PDF documents
-- `/variables`: List all available variables from your servers
-- `/servers`: List all connected servers and their status
-
-Additional tools may be available depending on your specific MCPHub configuration and connected servers.
-
-### Tool Parameters
-
-Most tools accept parameters that can be provided in different ways:
-
-```
-# Simple query parameter
-/websearch latest Neovim release
-
-# Multiple parameters
-/image_generate a cat sitting on a keyboard --style realistic --size 512x512
-
-# Complex parameters using JSON
-/executor {
-  "language": "python",
-  "code": "import math\nprint(math.sqrt(144))"
-}
+```lua
+use_mcp_tool(
+  server_name: 'tavily',
+  tool_name: 'tavily-search',
+  tool_input: {
+    query: 'react 2025 news',
+    max_results: 5,
+    topic: 'news'
+  }
+)
 ```
 
 ### Example Usage Patterns
 
-Here are examples of effective MCPHub tool usage in Avante:
-
-**Basic web search:**
+**Library Documentation:**
 ```
-What is the latest version of Neovim? Use MCPHub to find out.
-
-/websearch latest Neovim release version
+Can you show me the latest React hooks documentation?
 ```
+→ Avante automatically uses Context7 to get current React hooks docs
 
-**Sequential tool usage:**
+**Current News/Research:**
 ```
-Can you help me understand this weather data and how it compares to historical averages?
+What's new in JavaScript frameworks for 2025?
+```
+→ Avante automatically uses Tavily to search for current information
 
-/weather New York
-Now let's compare this with historical data:
-/websearch New York weather historical average
+**Combined Usage:**
 ```
+Get the Vue.js composition API documentation, then search for Vue 3 performance best practices
+```
+→ Avante uses Context7 for docs, then Tavily for current best practices
+
+### MCP Tools Commands
+
+Additional commands for MCP integration:
+
+- `:AvanteRestartMCP`: Restart MCP integration if tools aren't working
+- `:MCPTest`: Test MCP integration status
+- `:MCPHubOpen`: Open MCPHub interface directly
+
+### Troubleshooting MCP Tools
+
+If MCP tools show "not fully loaded" errors:
+
+1. **Restart Integration**: Run `:AvanteRestartMCP`
+2. **Check Status**: Verify MCP Hub is running with `:MCPHubStatus`
+3. **Test Integration**: Run `:MCPTest` to verify tool connectivity
+
+The integration automatically handles parameter validation and follows the correct calling patterns for each MCP server.
 
 ### Integration Details
 

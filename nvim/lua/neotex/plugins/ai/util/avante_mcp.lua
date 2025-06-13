@@ -151,6 +151,16 @@ function M.setup()
   vim.api.nvim_create_user_command("MCPHubOpen", function()
     M.open_mcphub()
   end, { desc = "Open MCPHub interface with auto-start" })
+  
+  -- Command to restart Avante with MCP integration
+  vim.api.nvim_create_user_command("AvanteRestartMCP", function()
+    dofile(vim.fn.stdpath("config") .. "/scripts/force_mcp_restart.lua")
+  end, { desc = "Restart Avante with MCP integration" })
+  
+  -- Command to test MCP integration
+  vim.api.nvim_create_user_command("MCPTest", function()
+    dofile(vim.fn.stdpath("config") .. "/scripts/test_mcp_integration.lua")
+  end, { desc = "Test MCP integration status" })
 end
 
 return M

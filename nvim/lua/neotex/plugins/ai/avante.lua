@@ -305,16 +305,117 @@ return {
         },
       },
 
-      -- The system_prompt type supports both a string and a function that returns a string
-      -- Here we use a simple string prompt first, and MCPHub integration happens later
-      -- This prevents MCPHub from loading at startup
-      system_prompt =
-      "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations. Use the memory tool to store and retrieve information as needed.",
+      -- Dynamic system prompt that includes MCP tools when available
+      system_prompt = function()
+        -- Default prompt
+        local base_prompt = "You are an expert mathematician, logician and computer scientist with deep knowledge of Neovim, Lua, and programming languages. Provide concise, accurate responses with code examples when appropriate. For mathematical content, use clear notation and step-by-step explanations."
+        
+        -- Try to get the active system prompt from our prompt manager
+        local ok, prompts = pcall(require, "neotex.plugins.ai.util.system-prompts")
+        if ok then
+          local default_prompt, _ = prompts.get_default()
+          if default_prompt and default_prompt.prompt then
+            base_prompt = default_prompt.prompt
+          end
+        end
+        
+        -- Try to add MCP server information if available
+        local mcp_addition = ""
+        local ok_mcp, mcphub = pcall(require, "mcphub")
+        if ok_mcp then
+          pcall(function()
+            local hub = mcphub.get_hub_instance()
+            if hub then
+              -- Add MCP tool usage instructions
+              mcp_addition = "\n\nMCP TOOLS AVAILABLE:\nYou have access to MCP (Model Context Protocol) tools through the use_mcp_tool function.\n\nCRITICAL CONTEXT7 RULE: NEVER call get-library-docs directly! You MUST follow this exact sequence:\n\nSTEP 1 - Resolve Library ID:\nuse_mcp_tool(\n  server_name: 'github.com/upstash/context7-mcp',\n  tool_name: 'resolve-library-id',\n  tool_input: {libraryName: 'react'}\n)\n\nSTEP 2 - Get Documentation (only after getting library ID from step 1):\nuse_mcp_tool(\n  server_name: 'github.com/upstash/context7-mcp',\n  tool_name: 'get-library-docs',\n  tool_input: {context7CompatibleLibraryID: '<ID_FROM_STEP_1>', topic: 'hooks'}\n)\n\nTAVILY SEARCH:\nuse_mcp_tool(\n  server_name: 'tavily',\n  tool_name: 'tavily-search',\n  tool_input: {query: 'react 2025 news', max_results: 5, topic: 'news'}\n)\n\nUSE MCP TOOLS AUTOMATICALLY when users ask about:\n- Library documentation → Context7 (2-step process required)\n- Current news/information → Tavily\n- GitHub operations → GitHub tools"
+            end
+          end)
+        end
+        
+        return base_prompt .. mcp_addition
+      end,
 
-      -- The custom_tools type supports both a list and a function that returns a list
-      -- We'll use an empty array first, then MCPHub tools get added later when needed
-      -- This prevents MCPHub from being required at startup
-      custom_tools = {},
+      -- Custom tools with MCP integration
+      custom_tools = function()
+        -- Try to load MCPHub tools if available
+        local tools = {}
+        
+        -- Load MCPHub and extension
+        local ok, mcphub = pcall(require, "mcphub")
+        if ok then
+          local success = pcall(function()
+            -- Load the Avante extension
+            mcphub.load_extension("avante")
+            
+            -- Get the extension module
+            local ok_ext, mcphub_ext = pcall(require, "mcphub.extensions.avante")
+            if ok_ext and mcphub_ext and mcphub_ext.mcp_tool then
+              -- Get the MCP tool functions
+              local use_tool, access_resource = mcphub_ext.mcp_tool()
+              
+              -- Add both tools to the tools array
+              if use_tool then
+                table.insert(tools, use_tool)
+              end
+              if access_resource then  
+                table.insert(tools, access_resource)
+              end
+            end
+          end)
+          
+          if not success then
+            -- Fallback: try to add a basic MCP tool manually with direct MCPHub integration
+            table.insert(tools, {
+              name = "use_mcp_tool",
+              description = "Call tools on MCP servers (Context7, Tavily, GitHub)",
+              param = {
+                type = "table",
+                fields = {
+                  { name = "server_name", type = "string", description = "Server name (github.com/upstash/context7-mcp, tavily, github)" },
+                  { name = "tool_name", type = "string", description = "Tool name (resolve-library-id, get-library-docs, tavily-search, etc.)" },
+                  { name = "tool_input", type = "object", description = "Tool input parameters" }
+                }
+              },
+              func = function(args, on_log, on_complete)
+                -- Use the proper MCP Hub internal API
+                local server_name = args.server_name
+                local tool_name = args.tool_name  
+                local tool_input = args.tool_input or {}
+                
+                on_log("Calling MCP tool: " .. server_name .. "/" .. tool_name)
+                
+                -- Try to get the MCP Hub instance
+                local ok, mcphub = pcall(require, "mcphub")
+                if not ok then
+                  return on_complete(nil, "MCPHub not available")
+                end
+                
+                local hub = mcphub.get_hub_instance()
+                if not hub then
+                  return on_complete(nil, "MCP Hub not initialized")
+                end
+                
+                -- Call the tool using the hub's internal API
+                hub:call_tool(server_name, tool_name, tool_input, {
+                  parse_response = true,
+                  caller = { type = "avante" },
+                  callback = function(result, err)
+                    if err then
+                      on_complete(nil, err)
+                    elseif result and result.error then
+                      on_complete(nil, result.error)
+                    else
+                      on_complete(result and result.text or result, nil)
+                    end
+                  end,
+                })
+              end
+            })
+          end
+        end
+        
+        return tools
+      end,
 
       -- Tools are now disabled per provider in the providers section above
 
