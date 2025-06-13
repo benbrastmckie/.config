@@ -39,11 +39,11 @@ Plugins are organized into the following categories with dedicated directories:
   - nvim-web-devicons.lua: File icons
   - sessions.lua: Session management
 
-- **ai/**: AI tooling and integration
-  - avante.lua: AI assistants integration  
+- **ai/**: AI tooling and integration ([detailed documentation](ai/README.md))
+  - avante.lua: AI assistants integration with 44+ MCP tools
   - claude-code.lua: Official Claude Code integration (coder/claudecode.nvim)
   - lectic.lua: AI-assisted writing
-  - mcp-hub.lua: AI tools integration
+  - mcp-hub.lua: Model Context Protocol hub for external AI tools
 
 ## Plugin Structure
 
