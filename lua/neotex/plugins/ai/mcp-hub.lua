@@ -78,7 +78,10 @@ return {
       on_ready = function()
         vim.g.mcphub_ready = true
         local method = (is_nixos or not has_global_mcphub) and " (bundled NixOS installation)" or ""
-        vim.notify("MCPHub ready" .. method, vim.log.levels.INFO)
+        -- Only show MCPHub ready message in debug mode
+        if vim.g.mcphub_debug_mode then
+          vim.notify("MCPHub ready" .. method, vim.log.levels.INFO)
+        end
       end,
 
       on_error = function(err)

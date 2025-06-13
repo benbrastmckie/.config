@@ -22,6 +22,16 @@ This Neovim configuration includes specialized support for:
 
 This configuration requires the `uv` package manager (a modern alternative to npm) for installing and running MCP-Hub. See [docs/UV_SETUP.md](docs/UV_SETUP.md) for installation instructions.
 
+## Maintenance and Troubleshooting
+
+The [`scripts/`](scripts/README.md) directory contains utility scripts for maintaining and troubleshooting the configuration:
+
+- **Plugin Analysis**: `scripts/check_plugins.lua` - Verify plugin loading and organization
+- **MCP Integration**: Scripts for testing and repairing AI tool integration
+- **Diagnostics**: Comprehensive tests for configuration components
+
+See [`scripts/README.md`](scripts/README.md) for detailed script documentation and usage instructions.
+
 ## Making Configuration Changes
 
 1. **Check for Conflicts**: Before adding new keybindings, check for conflicts with:

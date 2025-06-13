@@ -8,32 +8,34 @@
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
+- [ ] blink.pairs
 - [ ] scripts
     - [ ] reduce
     - [ ] document
 - [.] ai
   - [:] claude-code
-    - [ ] mcp
-  - [x] debug avante
-  - [x] switch to https://github.com/coder/claudecode.nvim
+    - [.] mcp
+    - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] avante
+    - [x] debug
     - [x] get mcp tools working
-    - [ ] don't need to cut and paste images
     - [ ] reduce messages
+    - [ ] don't need to cut and paste images
   - [ ] lectic
     - [ ] mcp
+    - [ ] documentation
+    - [ ] features
     - [ ] pull request
-    - [ ] refactor
-  - [.] mcp tooling
-    - [x] github
-    - [ ] git
-    - [ ] brave
+    - [ ] refactor config
+  - [:] mcp tooling
+    - [:] github
+    - [:] git
+    - [:] brave
     - [x] tavily
-    - [ ] agentQL
+    - [:] agentQL
     - [x] context7
-    - [ ] fetch
-    - [ ] examples
-  - [ ] documentation
+    - [:] fetch
+  - [x] documentation
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
