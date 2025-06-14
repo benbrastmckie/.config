@@ -31,13 +31,13 @@ Plugins are organized into the following categories with dedicated directories:
   - lspconfig.lua: Base LSP server configuration
   - mason.lua: LSP server and tool management
 
-- **ui/**: User interface components
-  - colorscheme.lua: Theme configuration
-  - lualine.lua: Status line
-  - bufferline.lua: Buffer line
-  - nvim-tree.lua: File explorer
-  - nvim-web-devicons.lua: File icons
-  - sessions.lua: Session management
+- **ui/**: User interface components ([detailed documentation](ui/README.md))
+  - neo-tree.lua: Modern file explorer with custom delete confirmation
+  - lualine.lua: Configurable status line with sections and themes
+  - bufferline.lua: Tab-like buffer navigation with visual indicators
+  - colorscheme.lua: Theme configuration and color scheme management
+  - nvim-web-devicons.lua: File type icons for better visual distinction
+  - sessions.lua: Session management for workspace persistence
 
 - **ai/**: AI tooling and integration ([detailed documentation](ai/README.md))
   - avante.lua: AI assistants integration with 44+ MCP tools
