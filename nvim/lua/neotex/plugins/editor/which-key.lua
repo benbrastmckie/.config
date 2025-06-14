@@ -320,7 +320,7 @@ return {
       -- Disabled by default for Telescope
       disable = {
         bt = { "help", "quickfix", "terminal", "prompt" }, -- for example
-        ft = { "NvimTree" }                                -- add your explorer's filetype here
+        ft = { "neo-tree" }                                -- add your explorer's filetype here
       }
     },
     defaults = {
@@ -334,7 +334,7 @@ return {
       c = { "<cmd>vert sb<CR>", "create split" },
       d = { "<cmd>update! | lua Snacks.bufdelete()<CR>", "delete buffer" },
       -- d = { "<cmd>update! | bdelete!<CR>", "delete buffer" },
-      e = { "<cmd>NvimTreeCustomToggle<CR>", "explorer" },
+      e = { "<cmd>Neotree toggle<CR>", "explorer" },
       -- j = { "<cmd>clo<CR>", "drop split" },
       i = { "<cmd>VimtexTocOpen<CR>", "index" },
       k = { "<cmd>on<CR>", "max split" },
@@ -362,12 +362,12 @@ return {
         p = { "<cmd>TermExec cmd='python %:p:r.py'<CR>", "python" },
         r = { "<cmd>AutolistRecalculate<CR>", "reorder list" },
         t = { "<cmd>terminal latexindent -w %:p:r.tex<CR>", "tex format" },
-        u = { "<cmd>cd %:p:h | NvimTreeRefresh | NvimTreeFindFile<CR>", "update cwd" },
+        u = { "<cmd>cd %:p:h | Neotree reveal<CR>", "update cwd" },
         v = { "<plug>(vimtex-context-menu)", "vimtex menu" },
         w = { "<cmd>VimtexCountWords!<CR>", "word count" },
         -- w = { "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>" , "word"},
         -- s = { "<cmd>lua function() require('cmp_vimtex.search').search_menu() end<CR>"           , "search citations" },
-        s = { "<cmd>NvimTreeOpen ~/.config/nvim/snippets/<CR>", "snippets edit" },
+        s = { "<cmd>Neotree ~/.config/nvim/snippets/<CR>", "snippets edit" },
         S = { "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", "ssh" },
       },
       f = {

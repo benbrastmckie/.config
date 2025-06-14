@@ -8,8 +8,9 @@
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
-- [ ] nvimtree
-  - [ ] don't resize when deleting file for open buffer
+- [:] nvimtree
+  - [:] don't resize when deleting file for open buffer
+  - [ ] replace with neo-tree
 - [x] blink
   - [ ] pairs
     - [ ] plan

@@ -5,7 +5,7 @@
 -- - colorscheme.lua: Gruvbox theme configuration
 -- - lualine.lua: Status line configuration
 -- - bufferline.lua: Buffer line configuration
--- - nvim-tree.lua: File explorer configuration
+-- - neo-tree.lua: File explorer configuration
 -- - nvim-web-devicons.lua: File icons
 -- - sessions.lua: Session management
 --
@@ -27,7 +27,7 @@ end
 local colorscheme_module = safe_require("neotex.plugins.ui.colorscheme")
 local lualine_module = safe_require("neotex.plugins.ui.lualine")
 local bufferline_module = safe_require("neotex.plugins.ui.bufferline")
-local nvim_tree_module = safe_require("neotex.plugins.ui.nvim-tree")
+local neo_tree_module = safe_require("neotex.plugins.ui.neo-tree")
 local web_devicons_module = safe_require("neotex.plugins.ui.nvim-web-devicons")
 local sessions_module = safe_require("neotex.plugins.ui.sessions")
 
@@ -36,7 +36,7 @@ return {
   colorscheme_module,
   lualine_module,
   bufferline_module,
-  nvim_tree_module,
+  neo_tree_module,
   web_devicons_module,
   sessions_module,
 }
