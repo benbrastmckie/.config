@@ -18,6 +18,52 @@ return {
     
     require("neo-tree").setup({
       close_if_last_window = true,
+      popup_border_style = "rounded",
+      
+      -- Default component overrides for modern appearance
+      default_component_configs = {
+        container = {
+          enable_character_fade = true,
+        },
+        indent = {
+          indent_size = 2,
+          padding = 1,
+          with_markers = true,
+          indent_marker = "│",
+          last_indent_marker = "└",
+          highlight = "NeoTreeIndentMarker",
+          with_expanders = nil,
+        },
+        icon = {
+          folder_closed = "",
+          folder_open = "",
+          folder_empty = "󰜌",
+          default = "*",
+          highlight = "NeoTreeFileIcon",
+        },
+        modified = {
+          symbol = "[+]",
+          highlight = "NeoTreeModified",
+        },
+        name = {
+          trailing_slash = false,
+          use_git_status_colors = true,
+          highlight = "NeoTreeFileName",
+        },
+        git_status = {
+          symbols = {
+            added     = "✚",
+            modified  = "",
+            deleted   = "✖",
+            renamed   = "󰁕",
+            untracked = "",
+            ignored   = "",
+            unstaged  = "󰄱",
+            staged    = "",
+            conflict  = "",
+          },
+        },
+      },
       
       window = {
         width = saved_width,
@@ -29,7 +75,25 @@ return {
           ["<CR>"] = "open",
           ["-"] = "navigate_up",
           ["a"] = "add",
-          ["d"] = "delete",
+          ["d"] = function(state)
+            local tree = state.tree
+            local node = tree:get_node()
+            if node.type == "file" or node.type == "directory" then
+              local filename = node.name
+              local msg = "Delete " .. filename .. "? (Enter=yes, any text=no): "
+              
+              -- Custom input that treats empty input as confirmation
+              local input = vim.fn.input(msg)
+              
+              -- Empty input (just pressed Enter) or explicit 'y' confirms deletion
+              if input == "" or input:lower() == "y" then
+                local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
+                fs_actions.delete_node(node.path, function()
+                  require("neo-tree.sources.manager").refresh("filesystem")
+                end, true) -- noconfirm = true (skip neo-tree's own confirmation)
+              end
+            end
+          end,
           ["r"] = "rename",
           ["y"] = "copy_to_clipboard",
           ["x"] = "cut_to_clipboard",
@@ -139,6 +203,13 @@ return {
       git_status = {
         window = {
           position = "float",
+          popup = {
+            size = {
+              height = "80%",
+              width = "50%",
+            },
+            position = "50%",
+          },
         },
       },
       
@@ -195,6 +266,24 @@ return {
         
         -- File icons
         vim.api.nvim_set_hl(0, "NeoTreeFileIcon", { fg = "#a89984" })
+        
+        -- Modern popup and floating window styling
+        vim.api.nvim_set_hl(0, "NeoTreeFloatBorder", { 
+          fg = "#7c6f64", 
+          bg = "NONE",
+          bold = false 
+        })
+        vim.api.nvim_set_hl(0, "NeoTreeFloatTitle", { 
+          fg = dir_color, 
+          bg = "NONE",
+          bold = true 
+        })
+        
+        -- Enhanced tree styling
+        vim.api.nvim_set_hl(0, "NeoTreeIndentMarker", { fg = "#504945" })
+        vim.api.nvim_set_hl(0, "NeoTreeExpander", { fg = "#7c6f64" })
+        vim.api.nvim_set_hl(0, "NeoTreeFileName", { fg = "#d5c4a1" })
+        vim.api.nvim_set_hl(0, "NeoTreeFileNameOpened", { fg = "#ebdbb2", bold = true })
         
         -- Header background matching bufferline
         local function get_highlight_bg(group)
