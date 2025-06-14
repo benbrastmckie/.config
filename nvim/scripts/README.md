@@ -174,12 +174,59 @@ nvim --headless -c "luafile scripts/test_mcp_tools.lua" -c "qa!"
 🎉 MCP tools test complete!
 ```
 
+---
+
+### 🔍 debug_citations.lua
+
+**Purpose**: Diagnoses citation completion issues in LaTeX files, specifically testing VimTeX and blink.cmp integration.
+
+**Usage**:
+```bash
+# From command line (while in a .tex file)
+nvim document.tex --headless -c "luafile scripts/debug_citations.lua" -c "qa!"
+
+# Or from within Neovim (best used in a .tex file)
+:luafile scripts/debug_citations.lua
+```
+
+**What it does**:
+- Checks if VimTeX plugin is properly loaded
+- Verifies cmp_vimtex source availability
+- Tests blink.compat integration
+- Validates blink.cmp configuration for VimTeX sources
+- Reports current filetype and LaTeX-specific functionality
+- Tests VimTeX omnifunc availability
+
+**When to use**:
+- When citation completion (\\cite{}) isn't working in LaTeX files
+- After updating LSP or completion configuration
+- When troubleshooting VimTeX integration issues
+- To verify blink.cmp is properly configured for LaTeX
+
+**Output example**:
+```
+=== Citation Completion Debug ===
+VimTeX loaded: 1
+cmp_vimtex available: true
+blink.compat available: true
+blink.cmp loaded successfully
+blink.cmp config available
+vimtex provider configured: true
+Current filetype: tex
+In LaTeX file - checking VimTeX functionality
+VimTeX omnifunc available
+=== End Debug ===
+```
+
+**Scope**: LaTeX/VimTeX-specific debugging (text category)
+
 ## Script Categories
 
 ### 🔍 Diagnostic Scripts
 - `check_plugins.lua` - **Complete plugin configuration analysis** (all categories)
 - `test_mcp_integration.lua` - MCP integration testing (AI-specific)
 - `test_mcp_tools.lua` - Individual tool testing (AI-specific)
+- `debug_citations.lua` - LaTeX citation completion debugging (text-specific)
 
 ### 🛠️ Maintenance Scripts  
 - `force_mcp_restart.lua` - MCP integration restart and repair (AI-specific)

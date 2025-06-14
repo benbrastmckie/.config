@@ -45,4 +45,16 @@ To verify text format plugins are properly loaded and organized:
 :luafile scripts/check_plugins.lua
 ```
 
-This will show the TEXT category with plugins like vimtex.lua, markdown-preview.lua, lean.lua, and jupyter components. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.
+This will show the TEXT category with plugins like vimtex.lua, markdown-preview.lua, lean.lua, and jupyter components. 
+
+### LaTeX-Specific Debugging
+
+For troubleshooting LaTeX citation completion issues:
+
+```vim
+:luafile scripts/debug_citations.lua
+```
+
+This script specifically diagnoses VimTeX and blink.cmp integration problems in LaTeX files.
+
+See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.
