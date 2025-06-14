@@ -160,23 +160,56 @@ return {
       desc = "Track Neo-tree width changes",
     })
     
-    -- Color integration: bufferline header + directory colors
+    -- Color scheme integration (matching original nvim-tree colors)
     vim.api.nvim_create_autocmd("ColorScheme", {
       group = vim.api.nvim_create_augroup("NeoTreeColors", { clear = true }),
       callback = function()
         -- Directory colors (soft light purple like nvim-tree)
         local dir_color = "#b294bb"
+        
+        -- Directory and folder highlights
         vim.api.nvim_set_hl(0, "NeoTreeDirectoryName", { fg = dir_color, bold = true })
         vim.api.nvim_set_hl(0, "NeoTreeDirectoryIcon", { fg = dir_color })
         vim.api.nvim_set_hl(0, "NeoTreeRootName", { fg = dir_color, bold = true, italic = true })
+        vim.api.nvim_set_hl(0, "NeoTreeFolderIcon", { fg = dir_color })
+        vim.api.nvim_set_hl(0, "NeoTreeFolderName", { fg = dir_color, bold = true })
         
-        -- Header background to match bufferline
+        -- Modified file indicator (orange like nvim-tree)
+        vim.api.nvim_set_hl(0, "NeoTreeModified", { fg = "#e78a4e", bold = true })
+        
+        -- Git colors matching GitSigns
+        local git_colors = _G.GitColors or {
+          add = "#4fa6ed",
+          change = "#e78a4e", 
+          delete = "#fb4934"
+        }
+        
+        vim.api.nvim_set_hl(0, "NeoTreeGitAdded", { fg = git_colors.add, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitModified", { fg = git_colors.change, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitDeleted", { fg = git_colors.delete, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitStaged", { fg = git_colors.add, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitUnstaged", { fg = git_colors.change, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { fg = git_colors.add, bold = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitIgnored", { fg = "#666666", italic = true })
+        vim.api.nvim_set_hl(0, "NeoTreeGitConflict", { fg = git_colors.delete, bold = true })
+        
+        -- File icons
+        vim.api.nvim_set_hl(0, "NeoTreeFileIcon", { fg = "#a89984" })
+        
+        -- Header background matching bufferline
         local function get_highlight_bg(group)
           local hl = vim.api.nvim_get_hl(0, { name = group })
           return hl and hl.bg
         end
         
-        local bg_groups = { "BufferLineFill", "TabLineFill", "StatusLine", "Normal" }
+        local bg_groups = {
+          "BufferLineFill",
+          "BufferlineBackground", 
+          "TabLineFill",
+          "StatusLine",
+          "Normal",
+        }
+        
         local bg_color
         for _, group in ipairs(bg_groups) do
           bg_color = get_highlight_bg(group)
@@ -184,8 +217,19 @@ return {
         end
         
         if bg_color then
-          local hex_bg_color = type(bg_color) == "number" and string.format("#%06x", bg_color) or bg_color
-          vim.api.nvim_set_hl(0, "NeoTreeTitleBar", { bg = hex_bg_color })
+          local hex_bg_color
+          if type(bg_color) == "number" then
+            hex_bg_color = string.format("#%06x", bg_color)
+          else
+            hex_bg_color = bg_color
+          end
+          
+          -- Set header background to match bufferline
+          vim.api.nvim_set_hl(0, "NeoTreeTitleBar", {
+            fg = dir_color,
+            bg = hex_bg_color,
+            bold = true
+          })
         end
       end,
     })
@@ -194,6 +238,10 @@ return {
     vim.schedule(function()
       vim.cmd("doautocmd ColorScheme")
     end)
+    
+    vim.defer_fn(function()
+      vim.cmd("doautocmd ColorScheme")
+    end, 100)
     
     vim.api.nvim_create_autocmd("VimEnter", {
       callback = function()
