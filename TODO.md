@@ -8,6 +8,8 @@
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
+- [ ] nvimtree
+  - [ ] don't resize when deleting file for open buffer
 - [x] blink
   - [ ] pairs
     - [ ] plan
@@ -29,7 +31,8 @@
   - [ ] avante
     - [x] debug
     - [x] get mcp tools working
-    - [ ] reduce messages
+    - [x] reduce messages
+    - [ ] model is not right in shown message
     - [ ] don't need to cut and paste images
   - [ ] lectic
     - [ ] mcp
