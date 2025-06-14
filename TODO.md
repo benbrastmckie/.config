@@ -8,9 +8,6 @@
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
-- [:] nvimtree
-  - [:] don't resize when deleting file for open buffer
-  - [ ] replace with neo-tree
 - [x] blink
   - [ ] pairs
     - [ ] plan
@@ -56,22 +53,19 @@
     - [x] remove lualine from start screen
     - [x] always show active tab (sometimes they seem to get lost/hidden)
     - [x] remove light color bar at the top right
-    - [ ] LazyGit
-      - [ ] `<leader>gg` sometimes opens LazyGit blank
-      - [ ] hard to get dialog boxes to close
     - buffer tabs sometimes get lost where the tab does not show for the open buffer
+  - [ ] LazyGit
+    - [ ] `<leader>gg` sometimes opens LazyGit blank
+    - [ ] hard to get dialog boxes to close
   - which key
     - [ ] Add icons
     - [ ] make descriptions lowercase and at most two words
     - [ ] make file-type dependent which commands appear
     - [ ] improve organization of mappings
     - [ ] make scripts
-  - [.] avante
+  - [x] avante
     - [x] search/replace
     - [x] ask seems to only use one line
-    - improve ui for accept/reject
-    - turn off mouse support in Avante
-    - <C-j/k> sometimes stops working in Avante after it makes changes
 - [:] yanky
   - [ ] replace?
   - [x] fix error in kitty
@@ -126,6 +120,9 @@
 
 ## Completed
 
+- [x] nvimtree
+  - [x] don't resize when deleting file for open buffer
+  - [x] replace with neo-tree
 - [x] scripts
     - [x] reduce
     - [x] document
