@@ -571,37 +571,55 @@ return {
       },
       t = {
         name = "TEMPLATES",
-        p = {
-          "<cmd>read ~/.config/nvim/templates/PhilPaper.tex<CR>",
-          "PhilPaper.tex",
-        },
+        -- p = {
+        --   "<cmd>read ~/.config/nvim/templates/PhilPaper.tex<CR>",
+        --   "PhilPaper.tex",
+        -- },
         l = {
           "<cmd>read ~/.config/nvim/templates/Letter.tex<CR>",
           "Letter.tex",
         },
-        g = {
-          "<cmd>read ~/.config/nvim/templates/Glossary.tex<CR>",
-          "Glossary.tex",
-        },
+        -- g = {
+        --   "<cmd>read ~/.config/nvim/templates/Glossary.tex<CR>",
+        --   "Glossary.tex",
+        -- },
         h = {
           "<cmd>read ~/.config/nvim/templates/HandOut.tex<CR>",
           "HandOut.tex",
         },
-        b = {
+        p = {
           "<cmd>read ~/.config/nvim/templates/PhilBeamer.tex<CR>",
           "PhilBeamer.tex",
         },
-        s = {
-          "<cmd>read ~/.config/nvim/templates/SubFile.tex<CR>",
-          "SubFile.tex",
-        },
-        r = {
-          "<cmd>read ~/.config/nvim/templates/Root.tex<CR>",
-          "Root.tex",
-        },
+        -- s = {
+        --   "<cmd>read ~/.config/nvim/templates/SubFile.tex<CR>",
+        --   "SubFile.tex",
+        -- },
+        -- r = {
+        --   "<cmd>read ~/.config/nvim/templates/Root.tex<CR>",
+        --   "Root.tex",
+        -- },
         m = {
           "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>",
           "MultipleAnswer.tex",
+        },
+        s = {
+          function()
+            local template_dir = vim.fn.expand("~/.config/nvim/templates/springer")
+            local current_dir = vim.fn.getcwd()
+            vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
+            vim.notify("Copied springer/ directory to " .. current_dir)
+          end,
+          "Copy Springer directory",
+        },
+        b = {
+          function()
+            local template_dir = vim.fn.expand("~/.config/nvim/templates/book")
+            local current_dir = vim.fn.getcwd()
+            vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
+            vim.notify("Copied book/ directory to " .. current_dir)
+          end,
+          "Copy book directory",
         },
       },
     },
