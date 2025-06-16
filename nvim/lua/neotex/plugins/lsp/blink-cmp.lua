@@ -59,6 +59,10 @@ return {
     end,
     
     opts = {
+      snippets = {
+        preset = 'luasnip'
+      },
+      
       keymap = {
         preset = 'default',
         ['<C-k>'] = { 'select_prev', 'fallback' },
@@ -182,38 +186,8 @@ return {
               return true
             end,
             max_items = 8,
-            min_keyword_length = 3,
+            min_keyword_length = 2,
             fallbacks = {},
-          },
-          snippets = { 
-            name = 'snippets',
-            enabled = function()
-              -- Disable snippets in LaTeX citation and reference contexts
-              if vim.bo.filetype == 'tex' then
-                local line = vim.api.nvim_get_current_line()
-                local col = vim.api.nvim_win_get_cursor(0)[2]
-                local before_cursor = line:sub(1, col)
-                
-                -- Disable in citation and reference contexts
-                if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                   before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
-                   before_cursor:match('\\ref{[^}]*$') or
-                   before_cursor:match('\\[Cc]ref{[^}]*$') or
-                   before_cursor:match('\\eqref{[^}]*$') or
-                   before_cursor:match('\\autoref{[^}]*$') then
-                  return false
-                end
-              end
-              return true
-            end,
-            max_items = 20,
-            min_keyword_length = 1,
-            score_offset = -3,
-            opts = {
-              friendly_snippets = false,
-              search_paths = { vim.fn.stdpath("config") .. "/snippets" },
-            }
           },
           omni = {
             name = 'omni',
@@ -248,6 +222,21 @@ return {
       -- },
       
       completion = {
+        accept = {
+          auto_brackets = {
+            enabled = true,
+            default_brackets = { '(', ')' },
+            kind_resolution = {
+              enabled = true,
+              blocked_filetypes = { 'tex', 'latex' }  -- Avoid conflicts with LaTeX
+            },
+            semantic_token_resolution = {
+              enabled = true,
+              blocked_filetypes = { 'tex', 'latex', 'lean' },
+              timeout_ms = 400
+            }
+          }
+        },
         trigger = {
           prefetch_on_insert = true,
           show_in_snippet = true,
