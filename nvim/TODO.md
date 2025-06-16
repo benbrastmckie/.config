@@ -10,6 +10,7 @@
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
 - [x] blink
+  - [ ] snippets
   - [ ] pairs
     - [ ] plan
     - [ ] implement
