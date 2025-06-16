@@ -33,33 +33,8 @@ return {
       },
     })
 
-    -- Configure mini.pairs - minimal setup just for brackets
-    require('mini.pairs').setup({
-      mappings = {
-        ['('] = { action = 'open', pair = '()', neigh_pattern = '[^\\].' },
-        ['['] = { action = 'open', pair = '[]', neigh_pattern = '[^\\].' },
-        ['{'] = { action = 'open', pair = '{}', neigh_pattern = '[^\\].' },
-        [')'] = { action = 'close', pair = '()', neigh_pattern = '[^\\].' },
-        [']'] = { action = 'close', pair = '[]', neigh_pattern = '[^\\].' },
-        ['}'] = { action = 'close', pair = '{}', neigh_pattern = '[^\\].' },
-      },
-    })
-
-    -- Add custom quote handling
-    for _, char in ipairs({ '"', "'", '`' }) do
-      vim.keymap.set('i', char, function()
-        local col = vim.api.nvim_win_get_cursor(0)[2]
-        local line = vim.api.nvim_get_current_line()
-
-        -- Skip existing closing quote
-        if col < #line and line:sub(col + 1, col + 1) == char then
-          return "<Right>"
-        end
-
-        -- Add quote pair
-        return char .. char .. "<Left>"
-      end, { expr = true, silent = true })
-    end
+    -- mini.pairs removed - now using nvim-autopairs for comprehensive pairing
+    -- This provides better LaTeX and Lean support with treesitter integration
 
     -- Configure mini.ai
     require('mini.ai').setup({
