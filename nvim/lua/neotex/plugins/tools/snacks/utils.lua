@@ -8,8 +8,9 @@ M.safe_lazygit = function()
   local success = false
   
   -- First try using Snacks.lazygit if available
-  if Snacks and Snacks.lazygit then
-    success = pcall(function() Snacks.lazygit() end)
+  local snacks_ok, snacks = pcall(require, 'snacks')
+  if snacks_ok and snacks.lazygit then
+    success = pcall(function() snacks.lazygit() end)
   end
   
   -- If Snacks failed or isn't available, use ToggleTerm as fallback
