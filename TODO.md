@@ -14,10 +14,13 @@
   - [.] snippets
     - [x] completion
     - [ ] strange tab behaviour
-  - [.] revert to nvim-autopairs
+  - [:] revert to nvim-autopairs
     - [x] plan
     - [x] implement
-    - [ ] debug
+    - [x] debug
+    - [:] test
+      - [ ] lean
+      - [x] latex
   - [x] cmp
     - [x] plan
     - [x] implement
@@ -67,12 +70,11 @@
     - [ ] `<leader>gg` sometimes opens LazyGit blank
     - [ ] hard to get dialog boxes to close
   - which key
-    - [ ] refactor bindings
-    - [ ] Add icons
-    - [ ] make descriptions lowercase and at most two words
+    - [x] refactor bindings
+    - [x] Add icons
+    - [x] make descriptions lowercase and at most two words
+    - [x] improve organization of mappings
     - [ ] make file-type dependent which commands appear
-    - [ ] improve organization of mappings
-    - [ ] make scripts
   - [x] avante
     - [x] search/replace
     - [x] ask seems to only use one line
@@ -82,7 +84,7 @@
 - [:] mini
   - [ ] completion (works with blink?)
   - [ ] icons
-  - [x] slplitjoin
+  - [x] split/join
   - [x] align
   - [x] a/i
   - [x] diff

@@ -1,3 +1,6 @@
+-- neotex.plugins.editor.which-key
+-- Keymapping configuration
+
 --[[ WHICH-KEY MAPPINGS - COMPLETE REFERENCE
 -----------------------------------------------------------
 
@@ -311,21 +314,43 @@ return {
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
 
-    -- LaTeX group (NEW - consolidated from top-level and actions)
+    -- FILETYPE-DEPENDENT GROUPS (hybrid approach)
+    -- Groups use modern cond for dynamic visibility, individual mappings use autocmds
+    
+    -- LaTeX group (dynamic group header)
     wk.add({
-      { "<leader>l", group = "latex", icon = "󰙩" },
-      { "<leader>la", "<cmd>lua PdfAnnots()<CR>", desc = "annotate", icon = "󰏪" },
-      { "<leader>lb", "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", desc = "bib export", icon = "󰈝" },
-      { "<leader>lc", "<cmd>VimtexCompile<CR>", desc = "compile", icon = "󰖷" },
-      { "<leader>le", "<cmd>VimtexErrors<CR>", desc = "errors", icon = "󰅚" },
-      { "<leader>lf", "<cmd>terminal latexindent -w %:p:r.tex<CR>", desc = "format", icon = "󰉣" },
-      { "<leader>lg", "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", desc = "glossary", icon = "󰈚" },
-      { "<leader>li", "<cmd>VimtexTocOpen<CR>", desc = "index", icon = "󰋽" },
-      { "<leader>lk", "<cmd>VimtexClean<CR>", desc = "kill aux", icon = "󰩺" },
-      { "<leader>lm", "<plug>(vimtex-context-menu)", desc = "menu", icon = "󰍉" },
-      { "<leader>lv", "<cmd>VimtexView<CR>", desc = "view", icon = "󰛓" },
-      { "<leader>lw", "<cmd>VimtexCountWords!<CR>", desc = "word count", icon = "󰆿" },
-      { "<leader>lx", "<cmd>:VimtexClearCache All<CR>", desc = "clear cache", icon = "󰃢" },
+      {
+        "<leader>l",
+        group = function()
+          local ft = vim.bo.filetype
+          return vim.tbl_contains({ "tex", "latex", "bib", "cls", "sty" }, ft) and "latex" or nil
+        end,
+        icon = "󰙩",
+        cond = function()
+          return vim.tbl_contains({ "tex", "latex", "bib", "cls", "sty" }, vim.bo.filetype)
+        end
+      },
+    })
+    
+    -- LaTeX individual mappings (autocmd approach)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "tex", "latex", "bib", "cls", "sty" },
+      callback = function()
+        wk.add({
+          { "<leader>la", "<cmd>lua PdfAnnots()<CR>", desc = "annotate", icon = "󰏪", buffer = 0 },
+          { "<leader>lb", "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", desc = "bib export", icon = "󰈝", buffer = 0 },
+          { "<leader>lc", "<cmd>VimtexCompile<CR>", desc = "compile", icon = "󰖷", buffer = 0 },
+          { "<leader>le", "<cmd>VimtexErrors<CR>", desc = "errors", icon = "󰅚", buffer = 0 },
+          { "<leader>lf", "<cmd>terminal latexindent -w %:p:r.tex<CR>", desc = "format", icon = "󰉣", buffer = 0 },
+          { "<leader>lg", "<cmd>e ~/.config/nvim/templates/Glossary.tex<CR>", desc = "glossary", icon = "󰈚", buffer = 0 },
+          { "<leader>li", "<cmd>VimtexTocOpen<CR>", desc = "index", icon = "󰋽", buffer = 0 },
+          { "<leader>lk", "<cmd>VimtexClean<CR>", desc = "kill aux", icon = "󰩺", buffer = 0 },
+          { "<leader>lm", "<plug>(vimtex-context-menu)", desc = "menu", icon = "󰍉", buffer = 0 },
+          { "<leader>lv", "<cmd>VimtexView<CR>", desc = "view", icon = "󰛓", buffer = 0 },
+          { "<leader>lw", "<cmd>VimtexCountWords!<CR>", desc = "word count", icon = "󰆿", buffer = 0 },
+          { "<leader>lx", "<cmd>:VimtexClearCache All<CR>", desc = "clear cache", icon = "󰃢", buffer = 0 },
+        })
+      end,
     })
 
     -- LSP & LINT group (MOVED from <leader>l to <leader>i)
@@ -359,20 +384,47 @@ return {
       { "<leader>iB", "<cmd>LintToggle buffer<CR>", desc = "toggle buffer linting", icon = "󰔡" },
     })
 
-    -- ACTIONS group (CLEANED - removed LaTeX commands)
+    -- ACTIONS group (global actions only)
     wk.add({
       { "<leader>a", group = "actions", icon = "󰌵" },
       { "<leader>af", "<cmd>lua vim.lsp.buf.format()<CR>", desc = "format", icon = "󰉣" },
       { "<leader>ah", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
-      { "<leader>al", "<cmd>LeanInfoviewToggle<CR>", desc = "lean info", icon = "󰊕" },
-      { "<leader>am", "<cmd>TermExec cmd='./Code/dev_cli.py %:p:r.py'<CR>", desc = "model checker", icon = "󰐊" },
-      { "<leader>ap", "<cmd>TermExec cmd='python %:p:r.py'<CR>", desc = "python", icon = "󰌠" },
-      { "<leader>ar", "<cmd>AutolistRecalculate<CR>", desc = "reorder list", icon = "󰔢" },
       { "<leader>au", "<cmd>cd %:p:h | Neotree reveal<CR>", desc = "update cwd", icon = "󰉖" },
       { "<leader>as", "<cmd>Neotree ~/.config/nvim/snippets/<CR>", desc = "snippets edit", icon = "󰩫" },
       { "<leader>aS", "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", desc = "ssh", icon = "󰣀" },
     })
-
+    
+    -- Filetype-specific actions (autocmd approach)
+    -- Lean actions (only for .lean files)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "lean" },
+      callback = function()
+        wk.add({
+          { "<leader>al", "<cmd>LeanInfoviewToggle<CR>", desc = "lean info", icon = "󰊕", buffer = 0 },
+        })
+      end,
+    })
+    
+    -- Python actions (only for .py files) - This fixes the model checker issue!
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "python" },
+      callback = function()
+        wk.add({
+          { "<leader>ap", "<cmd>TermExec cmd='python %:p:r.py'<CR>", desc = "python", icon = "󰌠", buffer = 0 },
+          { "<leader>am", "<cmd>TermExec cmd='./Code/dev_cli.py %:p:r.py'<CR>", desc = "model checker", icon = "󰐊", buffer = 0 },
+        })
+      end,
+    })
+    
+    -- Markdown actions (only for markdown files)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "markdown", "md" },
+      callback = function()
+        wk.add({
+          { "<leader>ar", "<cmd>AutolistRecalculate<CR>", desc = "reorder list", icon = "󰔢", buffer = 0 },
+        })
+      end,
+    })
     -- FIND group
     wk.add({
       { "<leader>f", group = "find", icon = "󰍉" },
@@ -427,41 +479,77 @@ return {
       { "<leader>hf", "<cmd>AvanteRefresh<CR>", desc = "refresh", icon = "󰜉" },
     })
 
-    -- JUPYTER group
+    -- Jupyter group (dynamic group header)
     wk.add({
-      { "<leader>j", group = "jupyter", icon = "󰌠" },
-      { "<leader>je", "<cmd>lua require('notebook-navigator').run_cell()<CR>", desc = "execute cell", icon = "󰐊" },
-      { "<leader>jj", "<cmd>lua require('notebook-navigator').move_cell('d')<CR>", desc = "next cell", icon = "󰮰" },
-      { "<leader>jk", "<cmd>lua require('notebook-navigator').move_cell('u')<CR>", desc = "previous cell", icon = "󰮲" },
-      { "<leader>jn", "<cmd>lua require('notebook-navigator').run_and_move()<CR>", desc = "execute and next", icon = "󰒭" },
-      { "<leader>jo", "<cmd>lua require('neotex.util.diagnostics').add_jupyter_cell_with_closing()<CR>", desc = "insert cell below", icon = "󰐕" },
-      { "<leader>jO", "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", desc = "insert cell above", icon = "󰐖" },
-      { "<leader>js", "<cmd>lua require('notebook-navigator').split_cell()<CR>", desc = "split cell", icon = "󰤋" },
-      { "<leader>jc", "<cmd>lua require('notebook-navigator').comment_cell()<CR>", desc = "comment cell", icon = "󰆈" },
-      { "<leader>ja", "<cmd>lua require('notebook-navigator').run_all_cells()<CR>", desc = "run all cells", icon = "󰐊" },
-      { "<leader>jb", "<cmd>lua require('notebook-navigator').run_cells_below()<CR>", desc = "run cells below", icon = "󰐊" },
-      { "<leader>ju", "<cmd>lua require('notebook-navigator').merge_cell('u')<CR>", desc = "merge with cell above", icon = "󰅂" },
-      { "<leader>jd", "<cmd>lua require('notebook-navigator').merge_cell('d')<CR>", desc = "merge with cell below", icon = "󰅀" },
-      { "<leader>ji", "<cmd>lua require('iron.core').repl_for('python')<CR>", desc = "start IPython REPL", icon = "󰌠" },
-      { "<leader>jt", "<cmd>lua require('iron.core').run_motion('send_motion')<CR>", desc = "send motion to REPL", icon = "󰊠" },
-      { "<leader>jl", "<cmd>lua require('iron.core').send_line()<CR>", desc = "send line to REPL", icon = "󰊠" },
-      { "<leader>jf", "<cmd>lua require('iron.core').send(nil, vim.fn.readfile(vim.fn.expand('%')))<CR>", desc = "send file to REPL", icon = "󰊠" },
-      { "<leader>jq", "<cmd>lua require('iron.core').close_repl()<CR>", desc = "exit REPL", icon = "󰚌" },
-      { "<leader>jr", "<cmd>lua require('iron.core').send(nil, string.char(12))<CR>", desc = "clear REPL", icon = "󰃢" },
-      { "<leader>jv", "<cmd>lua require('iron.core').visual_send()<CR>", desc = "send visual selection to REPL", icon = "󰊠" },
+      {
+        "<leader>j",
+        group = function()
+          return vim.bo.filetype == "ipynb" and "jupyter" or nil
+        end,
+        icon = "󰌠",
+        cond = function()
+          return vim.bo.filetype == "ipynb"
+        end
+      },
+    })
+    
+    -- Jupyter individual mappings (autocmd approach)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "ipynb" },
+      callback = function()
+        wk.add({
+          { "<leader>je", "<cmd>lua require('notebook-navigator').run_cell()<CR>", desc = "execute cell", icon = "󰐊", buffer = 0 },
+          { "<leader>jj", "<cmd>lua require('notebook-navigator').move_cell('d')<CR>", desc = "next cell", icon = "󰮰", buffer = 0 },
+          { "<leader>jk", "<cmd>lua require('notebook-navigator').move_cell('u')<CR>", desc = "previous cell", icon = "󰮲", buffer = 0 },
+          { "<leader>jn", "<cmd>lua require('notebook-navigator').run_and_move()<CR>", desc = "execute and next", icon = "󰒭", buffer = 0 },
+          { "<leader>jo", "<cmd>lua require('neotex.util.diagnostics').add_jupyter_cell_with_closing()<CR>", desc = "insert cell below", icon = "󰐕", buffer = 0 },
+          { "<leader>jO", "<cmd>lua require('notebook-navigator').add_cell_above()<CR>", desc = "insert cell above", icon = "󰐖", buffer = 0 },
+          { "<leader>js", "<cmd>lua require('notebook-navigator').split_cell()<CR>", desc = "split cell", icon = "󰤋", buffer = 0 },
+          { "<leader>jc", "<cmd>lua require('notebook-navigator').comment_cell()<CR>", desc = "comment cell", icon = "󰆈", buffer = 0 },
+          { "<leader>ja", "<cmd>lua require('notebook-navigator').run_all_cells()<CR>", desc = "run all cells", icon = "󰐊", buffer = 0 },
+          { "<leader>jb", "<cmd>lua require('notebook-navigator').run_cells_below()<CR>", desc = "run cells below", icon = "󰐊", buffer = 0 },
+          { "<leader>ju", "<cmd>lua require('notebook-navigator').merge_cell('u')<CR>", desc = "merge with cell above", icon = "󰅂", buffer = 0 },
+          { "<leader>jd", "<cmd>lua require('notebook-navigator').merge_cell('d')<CR>", desc = "merge with cell below", icon = "󰅀", buffer = 0 },
+          { "<leader>ji", "<cmd>lua require('iron.core').repl_for('python')<CR>", desc = "start IPython REPL", icon = "󰌠", buffer = 0 },
+          { "<leader>jt", "<cmd>lua require('iron.core').run_motion('send_motion')<CR>", desc = "send motion to REPL", icon = "󰊠", buffer = 0 },
+          { "<leader>jl", "<cmd>lua require('iron.core').send_line()<CR>", desc = "send line to REPL", icon = "󰊠", buffer = 0 },
+          { "<leader>jf", "<cmd>lua require('iron.core').send(nil, vim.fn.readfile(vim.fn.expand('%')))<CR>", desc = "send file to REPL", icon = "󰊠", buffer = 0 },
+          { "<leader>jq", "<cmd>lua require('iron.core').close_repl()<CR>", desc = "exit REPL", icon = "󰚌", buffer = 0 },
+          { "<leader>jr", "<cmd>lua require('iron.core').send(nil, string.char(12))<CR>", desc = "clear REPL", icon = "󰃢", buffer = 0 },
+          { "<leader>jv", "<cmd>lua require('iron.core').visual_send()<CR>", desc = "send visual selection to REPL", icon = "󰊠", buffer = 0 },
+        })
+      end,
     })
 
-    -- MARKDOWN group
+    -- Markdown group (dynamic group header)
     wk.add({
-      { "<leader>m", group = "markdown", icon = "" },
-      { "<leader>ml", "<cmd>Lectic<CR>", desc = "run lectic on file", icon = "󰊠" },
-      { "<leader>mn", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙" },
-      { "<leader>ms", "<cmd>LecticSubmitSelection<CR>", desc = "submit selection with message", icon = "󰚟" },
-      { "<leader>mp", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣" },
-      { "<leader>mu", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "open URL under cursor", icon = "󰖟" },
-      { "<leader>ma", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖" },
-      { "<leader>mf", "za", desc = "toggle fold under cursor", icon = "󰘖" },
-      { "<leader>mt", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖" },
+      {
+        "<leader>m",
+        group = function()
+          return vim.tbl_contains({ "markdown", "md" }, vim.bo.filetype) and "markdown" or nil
+        end,
+        icon = "",
+        cond = function()
+          return vim.tbl_contains({ "markdown", "md" }, vim.bo.filetype)
+        end
+      },
+    })
+    
+    -- Markdown individual mappings (autocmd approach)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "markdown", "md" },
+      callback = function()
+        wk.add({
+          { "<leader>ml", "<cmd>Lectic<CR>", desc = "run lectic on file", icon = "󰊠", buffer = 0 },
+          { "<leader>mn", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", buffer = 0 },
+          { "<leader>ms", "<cmd>LecticSubmitSelection<CR>", desc = "submit selection with message", icon = "󰚟", buffer = 0 },
+          { "<leader>mp", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
+          { "<leader>mu", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "open URL under cursor", icon = "󰖟", buffer = 0 },
+          { "<leader>ma", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖", buffer = 0 },
+          { "<leader>mf", "za", desc = "toggle fold under cursor", icon = "󰘖", buffer = 0 },
+          { "<leader>mt", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖", buffer = 0 },
+        })
+      end,
     })
 
     -- SESSIONS group
@@ -485,17 +573,34 @@ return {
       { "<leader>nu", "<cmd>TermExec cmd='nix flake update'<CR><C-w>j", desc = "update", icon = "󰚰" },
     })
 
-    -- PANDOC group
+    -- Pandoc group (dynamic group header)
     wk.add({
-      { "<leader>p", group = "pandoc", icon = "󰈙" },
-      { "<leader>pw", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>", desc = "word", icon = "󰈭" },
-      { "<leader>pm", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<CR>", desc = "markdown", icon = "󱀈" },
-      { "<leader>ph", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", desc = "html", icon = "󰌝" },
-      { "<leader>pl", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>", desc = "latex", icon = "󰐺" },
-      { "<leader>pp", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", desc = "pdf", icon = "󰈙" },
-      { "<leader>pv", "<cmd>TermExec cmd='sioyek %:p:r.pdf &' open=0<CR>", desc = "view", icon = "󰛓" },
+      {
+        "<leader>p",
+        group = function()
+          return vim.tbl_contains({ "markdown", "md", "tex", "latex", "org", "rst", "html", "docx" }, vim.bo.filetype) and "pandoc" or nil
+        end,
+        icon = "󰈙",
+        cond = function()
+          return vim.tbl_contains({ "markdown", "md", "tex", "latex", "org", "rst", "html", "docx" }, vim.bo.filetype)
+        end
+      },
     })
-
+    
+    -- Pandoc individual mappings (autocmd approach)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "markdown", "md", "tex", "latex", "org", "rst", "html", "docx" },
+      callback = function()
+        wk.add({
+          { "<leader>pw", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.docx'<CR>", desc = "word", icon = "󰈭", buffer = 0 },
+          { "<leader>pm", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.md'<CR>", desc = "markdown", icon = "󱀈", buffer = 0 },
+          { "<leader>ph", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", desc = "html", icon = "󰌝", buffer = 0 },
+          { "<leader>pl", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.tex'<CR>", desc = "latex", icon = "󰐺", buffer = 0 },
+          { "<leader>pp", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.pdf' open=0<CR>", desc = "pdf", icon = "󰈙", buffer = 0 },
+          { "<leader>pv", "<cmd>TermExec cmd='sioyek %:p:r.pdf &' open=0<CR>", desc = "view", icon = "󰛓", buffer = 0 },
+        })
+      end,
+    })
     -- RUN group
     wk.add({
       { "<leader>r", group = "run", icon = "󰐊" },
@@ -526,27 +631,45 @@ return {
       { "<leader>tq", "<cmd>TodoQuickFix<CR>", desc = "todo quickfix", icon = "󰁨" },
     })
 
-    -- TEMPLATES group
+    -- LaTeX Templates group (dynamic group header)
     wk.add({
-      { "<leader>T", group = "templates", icon = "󰈭" },
-      { "<leader>Ta", "<cmd>read ~/.config/nvim/templates/article.tex<CR>", desc = "article.tex", icon = "󰈙" },
-      { "<leader>Tb", "<cmd>read ~/.config/nvim/templates/beamer_slides.tex<CR>", desc = "beamer_slides.tex", icon = "󰈙" },
-      { "<leader>Tg", "<cmd>read ~/.config/nvim/templates/glossary.tex<CR>", desc = "glossary.tex", icon = "󰈙" },
-      { "<leader>Th", "<cmd>read ~/.config/nvim/templates/handout.tex<CR>", desc = "handout.tex", icon = "󰈙" },
-      { "<leader>Tl", "<cmd>read ~/.config/nvim/templates/letter.tex<CR>", desc = "letter.tex", icon = "󰈙" },
-      { "<leader>Tm", "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>", desc = "MultipleAnswer.tex", icon = "󰈙" },
-      { "<leader>Tr", function()
-        local template_dir = vim.fn.expand("~/.config/nvim/templates/report")
-        local current_dir = vim.fn.getcwd()
-        vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
-        vim.notify("Copied report/ directory to " .. current_dir)
-      end, desc = "Copy report/ directory", icon = "󰉖" },
-      { "<leader>Ts", function()
-        local template_dir = vim.fn.expand("~/.config/nvim/templates/springer")
-        local current_dir = vim.fn.getcwd()
-        vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
-        vim.notify("Copied springer/ directory to " .. current_dir)
-      end, desc = "Copy springer/ directory", icon = "󰉖" },
+      {
+        "<leader>T",
+        group = function()
+          return vim.tbl_contains({ "tex", "latex" }, vim.bo.filetype) and "templates" or nil
+        end,
+        icon = "󰈭",
+        cond = function()
+          return vim.tbl_contains({ "tex", "latex" }, vim.bo.filetype)
+        end
+      },
+    })
+    
+    -- LaTeX Templates individual mappings (autocmd approach)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "tex", "latex" },
+      callback = function()
+        wk.add({
+          { "<leader>Ta", "<cmd>read ~/.config/nvim/templates/article.tex<CR>", desc = "article.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Tb", "<cmd>read ~/.config/nvim/templates/beamer_slides.tex<CR>", desc = "beamer_slides.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Tg", "<cmd>read ~/.config/nvim/templates/glossary.tex<CR>", desc = "glossary.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Th", "<cmd>read ~/.config/nvim/templates/handout.tex<CR>", desc = "handout.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Tl", "<cmd>read ~/.config/nvim/templates/letter.tex<CR>", desc = "letter.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Tm", "<cmd>read ~/.config/nvim/templates/MultipleAnswer.tex<CR>", desc = "MultipleAnswer.tex", icon = "󰈙", buffer = 0 },
+          { "<leader>Tr", function()
+            local template_dir = vim.fn.expand("~/.config/nvim/templates/report")
+            local current_dir = vim.fn.getcwd()
+            vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
+            vim.notify("Copied report/ directory to " .. current_dir)
+          end, desc = "Copy report/ directory", icon = "󰉖", buffer = 0 },
+          { "<leader>Ts", function()
+            local template_dir = vim.fn.expand("~/.config/nvim/templates/springer")
+            local current_dir = vim.fn.getcwd()
+            vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
+            vim.notify("Copied springer/ directory to " .. current_dir)
+          end, desc = "Copy springer/ directory", icon = "󰉖", buffer = 0 },
+        })
+      end,
     })
 
     -- TEXT group

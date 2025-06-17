@@ -2,6 +2,20 @@
 
 This directory contains plugins that enhance the core editing experience in Neovim, providing navigation, formatting, terminal integration, and user interface improvements.
 
+## File Structure
+
+```
+editor/
+├── README.md           # This documentation
+├── init.lua           # Editor plugins loader
+├── formatting.lua     # Code formatting (conform.nvim)
+├── linting.lua        # Code linting (nvim-lint)
+├── telescope.lua      # Fuzzy finder and navigation
+├── toggleterm.lua     # Terminal integration
+├── treesitter.lua     # Syntax highlighting and parsing
+└── which-key.lua      # Keybinding discovery system
+```
+
 ## Module Overview
 
 ### Core Editor Plugins
@@ -103,7 +117,7 @@ Advanced syntax highlighting and code parsing using Tree-sitter.
 - Comment blocks and documentation
 
 #### Which-Key (`which-key.lua`)
-Keybinding discovery and organization system for improved workflow.
+Keybinding discovery and organization system for improved workflow, implementing a hybrid approach for filetype-dependent mappings.
 
 **Key Features:**
 - Interactive keybinding menus with descriptions
@@ -111,12 +125,55 @@ Keybinding discovery and organization system for improved workflow.
 - Visual icons for different command types
 - Modern v3 API with improved performance
 - Custom trigger configuration (leader-only mode)
+- **Hybrid filetype mapping system** (see Technical Implementation below)
 
 **Organization Structure:**
 - **Application Groups**: LaTeX, Git, LSP, Jupyter, etc.
 - **Functional Groups**: Find, Actions, Text manipulation
 - **Context Groups**: Sessions, Templates, TODO management
 - **Visual Icons**: Semantic icons for quick recognition
+
+**Filetype-Dependent Groups:**
+- **LaTeX** (`<leader>l`): Only visible in `.tex`, `.latex`, `.bib`, `.cls`, `.sty` files
+- **Jupyter** (`<leader>j`): Only visible in `.ipynb` files
+- **Markdown** (`<leader>m`): Only visible in `.md`, `.markdown` files
+- **Pandoc** (`<leader>p`): Visible in convertible formats (markdown, tex, org, rst, html, docx)
+- **Templates** (`<leader>T`): Only visible in LaTeX files
+- **Actions** (`<leader>a*`): Python, Lean, and Markdown-specific actions appear contextually
+
+**Technical Implementation:**
+Due to a limitation in which-key.nvim v3 where `cond` parameters are only evaluated once at startup, this configuration uses a **hybrid approach**:
+
+1. **Dynamic Group Headers**: Use modern `cond` functions for group visibility
+   ```lua
+   {
+     "<leader>l",
+     group = function()
+       return vim.tbl_contains({ "tex", "latex" }, vim.bo.filetype) and "latex" or nil
+     end,
+     cond = function()
+       return vim.tbl_contains({ "tex", "latex" }, vim.bo.filetype)
+     end
+   }
+   ```
+
+2. **Individual Mappings**: Use FileType autocmds for proper runtime registration
+   ```lua
+   vim.api.nvim_create_autocmd("FileType", {
+     pattern = { "python" },
+     callback = function()
+       wk.add({
+         { "<leader>ap", "<cmd>TermExec cmd='python %:p'<CR>", desc = "python", buffer = 0 },
+         { "<leader>am", "<cmd>TermExec cmd='./Code/dev_cli.py %:p'<CR>", desc = "model checker", buffer = 0 },
+       })
+     end,
+   })
+   ```
+
+This approach ensures:
+- Groups appear/disappear dynamically based on filetype
+- Individual mappings are properly registered when entering relevant filetypes
+- Optimal user experience with working conditional mappings
 
 **UI Enhancements:**
 - Clean minimal interface (no status bar)

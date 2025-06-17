@@ -2,6 +2,31 @@
 
 This directory contains plugins that enhance the editing experience with specialized tools and functionality. These plugins provide focused, purpose-built features that extend the core editor capabilities.
 
+## File Structure
+
+```
+tools/
+├── README.md           # This documentation
+├── init.lua           # Tools plugins loader
+├── autopairs.lua      # Intelligent auto-pairing
+├── gitsigns.lua       # Git integration
+├── firenvim.lua       # Browser integration
+├── mini.lua           # Mini plugin collection
+├── surround.lua       # Text surrounding
+├── yanky.lua          # Enhanced yank/paste
+├── todo-comments.lua  # TODO comment management
+├── luasnip.lua        # Snippet engine
+├── autolist/          # Smart list handling
+│   ├── README.md      # Autolist documentation
+│   ├── init.lua       # Main autolist plugin
+│   └── util/          # Autolist utilities
+└── snacks/            # UI enhancements
+    ├── README.md      # Snacks documentation
+    ├── init.lua       # Main snacks configuration
+    ├── dashboard.lua  # Dashboard setup
+    └── utils.lua      # Snacks utilities
+```
+
 ## Overview
 
 The tools module is organized into individual plugin configurations and specialized subdirectories:

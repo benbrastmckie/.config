@@ -2,6 +2,16 @@
 
 This directory contains the configuration for snacks.nvim, a collection of polished utilities and UI enhancements for Neovim that improve the overall editing experience.
 
+## File Structure
+
+```
+snacks/
+├── README.md           # This documentation
+├── init.lua           # Main snacks configuration
+├── dashboard.lua      # Dashboard setup and customization
+└── utils.lua          # Snacks utility functions
+```
+
 ## Overview
 
 Snacks.nvim provides a suite of small, focused utilities that enhance various aspects of Neovim. The configuration is modular and carefully tuned to integrate seamlessly with the existing setup while providing essential quality-of-life improvements.

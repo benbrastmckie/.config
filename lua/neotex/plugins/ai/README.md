@@ -2,6 +2,27 @@
 
 This directory contains modules for integrating various AI services and tools with NeoVim, enhancing your coding and writing experience with advanced AI capabilities.
 
+## File Structure
+
+```
+ai/
+├── README.md           # This documentation
+├── init.lua           # AI plugins loader
+├── avante.lua         # Avante AI assistant
+├── claude-code.lua    # Claude Code integration
+├── lectic.lua         # AI-assisted writing
+├── mcp-hub.lua        # Model Context Protocol hub
+└── util/              # AI utility modules
+    ├── README.md      # AI utilities documentation
+    ├── avante-highlights.lua # Theme-aware highlighting
+    ├── avante-support.lua    # Avante management
+    ├── avante_mcp.lua        # Avante/MCP integration
+    ├── mcp_server.lua        # MCP server management
+    ├── system-prompts.lua    # Prompt management
+    ├── system-prompts.json   # Prompt storage
+    └── tool_registry.lua     # AI tool registry
+```
+
 ## Components
 
 - **Avante Integration**: Connect with the Avante plugin for AI-assisted coding and chat

@@ -1,8 +1,35 @@
 # NeoVim Configuration and CheatSheet
 
-A feature-rich Neovim configuration optimized for LaTeX, Markdown, AI integration, and NixOS.
+A feature-rich Neovim configuration with AI integration optimized for LaTeX, Markdown, Jupyter Notebooks, and managing NixOS.
+
 This setup provides a streamlined environment for academic writing, code development, and system management.
-The AI integration makes it easy to learn and configure for your specific needs.
+The AI integration makes it easy to learn and configure this setup for your specific needs.
+Every subdirectory includes a `README.md` file which documents the modules contained in that directory.
+
+## File Structure
+
+```
+nvim/
+├── init.lua              # Main configuration entry point
+├── lazy-lock.json        # Plugin version lockfile
+├── CLAUDE.md             # Project guidelines and policies
+├── after/                # Post-load configurations
+│   ├── ftdetect/         # File type detection rules
+│   └── ftplugin/         # File type specific settings
+├── lua/neotex/           # Main configuration modules
+│   ├── bootstrap.lua     # Plugin system initialization
+│   ├── config/           # Core Neovim settings
+│   ├── plugins/          # Plugin configurations
+│   └── util/             # Utility functions
+├── templates/            # Document templates
+│   ├── *.tex             # LaTeX templates
+│   ├── report/           # Multi-chapter documents
+│   └── springer/         # Publisher templates
+├── snippets/             # Code snippet collections
+├── scripts/              # Maintenance utilities
+├── sessions/             # Saved editor sessions
+└── spell/                # Custom spell check dictionaries
+```
 
 ## Features Overview
 
@@ -18,63 +45,7 @@ This Neovim configuration includes specialized support for:
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 
-## Prerequisites
-
-This configuration requires the `uv` package manager (a modern alternative to npm) for installing and running MCP-Hub. See [docs/UV_SETUP.md](docs/UV_SETUP.md) for installation instructions.
-
-## Maintenance and Troubleshooting
-
-The [`scripts/`](scripts/README.md) directory contains utility scripts for maintaining and troubleshooting the configuration:
-
-- **Plugin Analysis**: `scripts/check_plugins.lua` - Verify plugin loading and organization
-- **MCP Integration**: Scripts for testing and repairing AI tool integration
-- **Diagnostics**: Comprehensive tests for configuration components
-
-See [`scripts/README.md`](scripts/README.md) for detailed script documentation and usage instructions.
-
-## Making Configuration Changes
-
-1. **Check for Conflicts**: Before adding new keybindings, check for conflicts with:
-   ```
-   :verbose map <key-combo>
-   ```
-   This shows if the key is already mapped and in which file.
-
-2. **Test Changes Incrementally**: Make small changes and test them before proceeding to more complex modifications.
-
-3. **Update Documentation**: Always update docstrings in the corresponding files when making changes:
-   - For keymappings: Update comments in `keymaps.lua`
-   - For which-key entries: Update the reference at the top of `which-key.lua`
-   - For new features: Add documentation to this README.md
-
-4. **Organize Related Functions**: Keep related functionality together in appropriate files:
-   - Core settings: `lua/neotex/core/`
-   - Plugin configurations: `lua/neotex/plugins/`
-   - Filetype-specific settings: `after/ftplugin/`
-
-## Using Avante AI
-
-The Avante AI integration provides intelligent assistance directly within Neovim.
-It supports multiple AI providers including Claude (Anthropic), GPT (OpenAI), and Gemini (Google).
-
-### Basic Usage
-
-> [Info] The `leader` key is set to `space`.
-
-- **Access the AI**: Press `<leader>ha` to ask a question or `<leader>ht` to toggle the AI interface
-- **Chat Mode**: Use `<leader>hc` to start a chat session with the AI
-- **Quick Access**: In terminal mode, use `<C-a>` to ask a question
-
-### Managing AI Settings
-
-- **Switch Models**: Press `<leader>hm` to select a model for the current provider
-- **Change Provider**: Use `<leader>hd` to set a different AI provider (Claude, OpenAI, Gemini)
-- **System Prompts**: Manage system prompts with `<leader>hp` (select) or `<leader>he` (edit)
-- **Stop Generation**: If the AI is taking too long, press `<leader>hi` to interrupt the generation
-
-More details are provided in [Making Configuration Changes](#making-configuration-changes) below.
-
-## Feature Overview
+### Dashboard Overview
 
 NeoVim will open with the dashboard which includes the following options:
 
@@ -100,6 +71,107 @@ The dashboard provides quick access to common actions and makes it easy to start
 - Manage your Neovim setup
 
 Press the corresponding key to activate any option, or use your mouse to click on the desired action.
+
+### Prerequisites
+
+This configuration requires the `uv` package manager (a modern alternative to npm) for installing and running MCP-Hub. See [docs/UV_SETUP.md](docs/UV_SETUP.md) for installation instructions.
+
+## Documentation Structure
+
+This configuration features comprehensive documentation throughout the directory structure. Each subdirectory contains a README.md file with detailed information about its purpose, components, and usage.
+
+### Core Documentation Areas
+
+- **[Configuration Core](lua/neotex/config/README.md)** - Essential Neovim settings (options, keymaps, autocommands)
+- **[Plugin System](lua/neotex/plugins/README.md)** - Plugin organization and management
+  - [Editor Enhancements](lua/neotex/plugins/editor/README.md) - Navigation, formatting, and terminal integration
+  - [LSP Configuration](lua/neotex/plugins/lsp/README.md) - Language server setup and completion
+  - [Text Processing](lua/neotex/plugins/text/README.md) - LaTeX, Markdown, Jupyter, and Lean support
+  - [Development Tools](lua/neotex/plugins/tools/README.md) - Git, snippets, and productivity enhancements
+  - [UI Components](lua/neotex/plugins/ui/README.md) - File explorer, status line, and visual elements
+  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
+- **[Utility Functions](lua/neotex/util/README.md)** - Helper functions and performance optimization tools
+- **[File Type Support](after/README.md)** - Language-specific configurations and detection
+- **[Templates](templates/README.md)** - Document templates for LaTeX, presentations, and academic writing
+- **[Code Snippets](snippets/README.md)** - Custom snippet collections for rapid development
+- **[Scripts](scripts/README.md)** - Maintenance and diagnostic utilities
+
+### Navigation
+
+Each README file includes:
+- Detailed module documentation
+- Usage examples and configuration options
+- Integration points with other system components
+- Navigation links to related documentation
+- Parent/child directory relationships
+
+This documentation structure ensures that information about any component is easily accessible and maintains consistency across the entire configuration.
+
+## Maintenance and Troubleshooting
+
+The [`scripts/`](scripts/README.md) directory contains utility scripts for maintaining and troubleshooting the configuration:
+
+- **Plugin Analysis**: `scripts/check_plugins.lua` - Verify plugin loading and organization
+- **MCP Integration**: Scripts for testing and repairing AI tool integration
+- **Diagnostics**: Comprehensive tests for configuration components
+
+See [`scripts/README.md`](scripts/README.md) for detailed script documentation and usage instructions.
+
+### Making Configuration Changes
+
+1. **Check for Conflicts**: Before adding new keybindings, check for conflicts with:
+   ```
+   :verbose map <key-combo>
+   ```
+   This shows if the key is already mapped and in which file.
+
+2. **Test Changes Incrementally**: Make small changes and test them before proceeding to more complex modifications.
+
+3. **Update Documentation**: Always update docstrings in the corresponding files when making changes:
+   - For keymappings: Update comments in `keymaps.lua`
+   - For which-key entries: Update the reference at the top of `which-key.lua`
+   - For new features: Add documentation to this README.md
+
+4. **Organize Related Functions**: Keep related functionality together in appropriate files:
+   - Core settings: `lua/neotex/core/`
+   - Plugin configurations: `lua/neotex/plugins/`
+   - Filetype-specific settings: `after/ftplugin/`
+
+## Using Avante AI
+
+Avante provides AI-powered code assistance directly within Neovim, offering intelligent code completion, explanations, refactoring suggestions, and conversational help. It supports multiple AI providers including Claude (Anthropic), GPT (OpenAI), and Gemini (Google).
+
+### Basic Usage
+
+> [Info] The `leader` key is set to `space`.
+
+- **Access the AI**: Press `<leader>ha` to ask a question or `<leader>ht` to toggle the AI interface
+- **Chat Mode**: Use `<leader>hc` to start a chat session with the AI
+- **Quick Access**: In terminal mode, use `<C-a>` to ask a question
+
+### Managing AI Settings
+
+- **Switch Models**: Press `<leader>hm` to select a model for the current provider
+- **Change Provider**: Use `<leader>hd` to set a different AI provider (Claude, OpenAI, Gemini)
+- **System Prompts**: Manage system prompts with `<leader>hp` (select) or `<leader>he` (edit)
+- **Stop Generation**: If the AI is taking too long, press `<leader>hi` to interrupt the generation
+
+More details are provided in [Making Configuration Changes](#making-configuration-changes) below.
+
+### Using Avante to Work with this Configuration
+
+Avante is particularly useful for understanding and modifying this Neovim configuration:
+
+1. **Explore Features**: Ask Avante about specific features, e.g., "How do I use VimTeX in this configuration?"
+2. **Get Help with Keymappings**: Ask "What are the keybindings for this [feature]?"
+3. **Customize Settings**: Ask "How can I change [setting]?" or "Help me add a new keybinding for [action]"
+4. **Troubleshoot Issues**: Describe any problems you encounter for guided troubleshooting
+5. **Add New Features**: Get assistance with integrating new plugins or features and understanding documentation
+
+Example prompts:
+- "I want to add a new LaTeX template. How should I do that?"
+- "Help me understand the Markdown list handling in this setup"
+- "Show me how to create a custom system prompt for Avante"
 
 ### Special Keybindings in Avante Buffers
 
@@ -131,372 +203,11 @@ When in an Avante buffer (AI interface):
 | `<Tab>`   | Switch windows in sidebar         |
 | `<S-Tab>` | Reverse switch windows in sidebar |
 
-### Using Avante to Work with this Configuration
-
-Avante is particularly useful for understanding and modifying this Neovim configuration:
-
-1. **Explore Features**: Ask Avante about specific features, e.g., "How do I use VimTeX in this configuration?"
-2. **Get Help with Keymappings**: Ask "What are the keybindings for this [feature]?"
-3. **Customize Settings**: Ask "How can I change [setting]?" or "Help me add a new keybinding for [action]"
-4. **Troubleshoot Issues**: Describe any problems you encounter for guided troubleshooting
-5. **Add New Features**: Get assistance with integrating new plugins or features and understanding documentation
-
-Example prompts:
-- "I want to add a new LaTeX template. How should I do that?"
-- "Help me understand the Markdown list handling in this setup"
-- "Show me how to create a custom system prompt for Avante"
-
-## Keybinding Reference
-
-Here is an exhaustive list of the keybindings which this configuration adds to vanilla NeoVim.
-It is easy to change these keybindings one at a time, but harder to come up with a coherent set of conventions as a whole.
-Details will be included below for how to go about adapting this configuration for your specific needs.
-
-### General Key Mappings
-
-| Key             | Action                            |
-|-----------------|-----------------------------------|
-| `<Space>`       | Leader key for command sequences  |
-| `<C-t>`         | Toggle terminal window            |
-| `<C-s>`         | Show spelling suggestions         |
-| `<CR>` (Enter)  | Clear search highlighting         |
-| `<C-p>`         | Find files with Telescope         |
-| `<C-;>`         | Toggle comments for line/selection|
-| `<S-m>`         | Show help for word under cursor   |
-| `<C-m>`         | Search man pages with Telescope   |
-| `gx`            | Open URL under cursor             |
-| `<C-LeftMouse>` | Open URL at mouse click position  |
-
-### Navigation Keys
-
-| Key                                  | Action                              |
-|--------------------------------------|-------------------------------------|
-| `Y`                                  | Yank to end of line                 |
-| `E`                                  | Go to end of previous word          |
-| `m`                                  | Center cursor at top of screen      |
-| `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>`   | Navigate between windows            |
-| `<A-h>`, `<A-l>`                     | Resize window horizontally          |
-| `<Tab>`                              | Go to next buffer (by modified time)|
-| `<S-Tab>`                            | Go to prev buffer (by modified time)|
-| `<C-u>`, `<C-d>`                     | Scroll half-page with centering     |
-| `<S-h>`, `<S-l>`                     | Go to start/end of display line     |
-| `J`, `K`                             | Navigate display lines (with wrap)  |
-
-### Folding Keys
-
-| Key           | Action                                     |
-|---------------|--------------------------------------------|
-| `<leader>mt`  | Toggle folding method (manual/smart)       |
-| `<leader>mf`  | Toggle fold under cursor                   |
-| `<leader>ma`  | Toggle all folds open/closed               |
-
-### Lectic Keys (AI-assisted markdown)
-
-| Key           | Action                             |
-|---------------|------------------------------------|
-| `<leader>mn`  | Create new Lectic file             |
-| `<leader>ml`  | Run Lectic on entire file          |
-| `<leader>ms`  | Submit selection with user message |
-
-### Text Manipulation Keys
-
-| Key             | Action                            |
-|-----------------|-----------------------------------|
-| `<A-j>`, `<A-k>`| Move line or selection up/down    |
-| `<`, `>`        | Decrease/increase indentation     |
-
-### Terminal Mode Keys
-
-| Key                                 | Action                         |
-|-------------------------------------|--------------------------------|
-| `<Esc>`                             | Exit terminal mode             |
-| `<C-t>`                             | Toggle terminal window         |
-| `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>`  | Navigate between windows       |
-| `<C-a>`                             | Ask Avante AI (non-lazygit)    |
-| `<M-h>`, `<M-l>`, etc.              | Resize terminal window         |
-
-### Markdown-Specific Keys
-
-| Key                  | Action                               |
-|----------------------|--------------------------------------|
-| `<CR>` (Enter)       | Create new bullet point              |
-| `o`                  | Create new bullet point below        |
-| `O`                  | Create new bullet point above        |
-| `<Tab>`              | Indent bullet and recalculate        |
-| `<S-Tab>`            | Unindent bullet and recalculate      |
-| `dd`                 | Delete line and recalculate          |
-| `d` (visual mode)    | Delete selection and recalculate     |
-| `<C-n>`              | Toggle checkbox status ([ ] -> [x])  |
-| `<C-c>`              | Recalculate list numbering           |
-
-### Leader Key Mappings
-
-These mappings are provided by the `which-key` plugin with a pop up menu to make them easy to remember and learn.
-
-#### Top-Level Leader Mappings (`<leader>`)
-
-| Key           | Action                         |
-|---------------|--------------------------------|
-| `<leader>b`   | Compile LaTeX document         |
-| `<leader>c`   | Create vertical split          |
-| `<leader>d`   | Save and delete buffer         |
-| `<leader>e`   | Toggle NvimTree explorer       |
-| `<leader>j`   | Jupyter notebook functions     |
-| `<leader>i`   | Open VimtexToc                 |
-| `<leader>k`   | Maximize split                 |
-| `<leader>q`   | Save all and quit              |
-| `<leader>u`   | Open Telescope undo            |
-| `<leader>v`   | View compiled LaTeX document   |
-| `<leader>w`   | Write all files                |
-| `<leader>x`   | Text operations menu           |
-
-#### Actions (`<leader>a`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>aa`     | Work with PDF annotations     |
-| `<leader>ab`     | Export BibTeX to separate file|
-| `<leader>ac`     | Clear LaTeX compilation cache |
-| `<leader>ae`     | Display LaTeX error messages  |
-| `<leader>af`     | Format current buffer via LSP |
-| `<leader>ag`     | Open LaTeX glossary template  |
-| `<leader>ah`     | Highlight word occurrences    |
-| `<leader>ak`     | Remove LaTeX auxiliary files  |
-| `<leader>al`     | Show/hide Lean information    |
-| `<leader>am`     | Execute model checker         |
-| `<leader>ap`     | Execute current Python file   |
-| `<leader>ar`     | Fix numbering in lists        |
-| `<leader>at`     | Format LaTeX using latexindent|
-| `<leader>au`     | Change to file's directory    |
-| `<leader>av`     | Show VimTeX context actions   |
-| `<leader>aw`     | Count words in document       |
-| `<leader>as`     | Open snippets directory       |
-| `<leader>aS`     | Connect to MIT server via SSH |
-
-#### Find (`<leader>f`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>fa`     | Search all files (inc. hidden)|
-| `<leader>fb`     | Switch between open buffers   |
-| `<leader>fc`     | Search BibTeX citations       |
-| `<leader>ff`     | Search text in project files  |
-| `<leader>fl`     | Continue previous search      |
-| `<leader>fq`     | Search within quickfix list   |
-| `<leader>fg`     | Browse git commit history     |
-| `<leader>fh`     | Search Neovim help docs       |
-| `<leader>fk`     | Show all keybindings          |
-| `<leader>fr`     | Show clipboard registers      |
-| `<leader>ft`     | Find TODOs in project         |
-| `<leader>fs`     | Search for string in project  |
-| `<leader>fw`     | Find current word in project  |
-| `<leader>fy`     | Browse clipboard history      |
-
-#### Git (`<leader>g`)
-
-| Key              | Action                         |
-|------------------|--------------------------------|
-| `<leader>gb`     | Switch to another git branch   |
-| `<leader>gc`     | Show commit history            |
-| `<leader>gd`     | Show changes against HEAD      |
-| `<leader>gg`     | Launch terminal git interface  |
-| `<leader>gk`     | Jump to previous change        |
-| `<leader>gj`     | Jump to next change            |
-| `<leader>gl`     | Show git blame for current line|
-| `<leader>gp`     | Preview current change         |
-| `<leader>gs`     | Show files with changes        |
-| `<leader>gt`     | Toggle line blame display      |
-
-#### Jupyter (`<leader>j`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>je`     | Execute cell                  |
-| `<leader>jj`     | Next cell                     |
-| `<leader>jk`     | Previous cell                 |
-| `<leader>jn`     | Execute and next              |
-| `<leader>jo`     | Insert cell below             |
-| `<leader>jO`     | Insert cell above             |
-| `<leader>js`     | Split cell at cursor          |
-| `<leader>jc`     | Comment current cell          |
-| `<leader>ja`     | Run all cells                 |
-| `<leader>jb`     | Run cells below               |
-| `<leader>ju`     | Merge with cell above         |
-| `<leader>jd`     | Merge with cell below         |
-| `<leader>ji`     | Start IPython REPL            |
-| `<leader>jt`     | Send motion to REPL           |
-| `<leader>jl`     | Send line to REPL             |
-| `<leader>jf`     | Send file to REPL             |
-| `<leader>jq`     | Exit REPL                     |
-| `<leader>jr`     | Clear REPL                    |
-| `<leader>jv`     | Send visual selection to REPL |
-
-#### AI Help (`<leader>h`)
-
-| Key              | Action                          |
-|------------------|---------------------------------|
-| `<leader>ha`     | Ask Avante AI a question        |
-| `<leader>hb`     | Build deps for Avante project   |
-| `<leader>hc`     | Start chat with Avante AI       |
-| `<leader>hk`     | Clear Avante chat/content       |
-| `<leader>hd`     | Change AI model with defaults   |
-| `<leader>he`     | Open system prompt manager      |
-| `<leader>hm`     | Choose AI model for provider    |
-| `<leader>hM`     | Create repo map for AI context  |
-| `<leader>hp`     | Choose a different system prompt|
-| `<leader>hs`     | Edit selected text with AI      |
-| `<leader>hr`     | Reload AI assistant             |
-| `<leader>hi`     | Interrupt AI generation         |
-| `<leader>ht`     | Show/hide Avante interface      |
-| `<leader>hx`     | Open MCPHub interface           |
-
-#### List (`<leader>L`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>Lc`     | Check/uncheck a checkbox      |
-| `<leader>Ln`     | Move to next item in list     |
-| `<leader>Lp`     | Move to previous item in list |
-| `<leader>Lr`     | Fix list numbering            |
-
-#### LSP & Linting (`<leader>l`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>lb`     | Show errors in current file   |
-| `<leader>lc`     | Show available code actions   |
-| `<leader>ld`     | Jump to symbol definition     |
-| `<leader>lD`     | Jump to symbol declaration    |
-| `<leader>lh`     | Show documentation under cursor|
-| `<leader>li`     | Find implementations of symbol|
-| `<leader>lk`     | Stop language server          |
-| `<leader>ll`     | Show errors for current line  |
-| `<leader>ln`     | Go to next error/warning      |
-| `<leader>lp`     | Go to previous error/warning  |
-| `<leader>lr`     | Find all references to symbol |
-| `<leader>ls`     | Restart language server       |
-| `<leader>lt`     | Start language server         |
-| `<leader>ly`     | Copy diagnostics to clipboard |
-| `<leader>lR`     | Rename symbol under cursor    |
-| `<leader>lL`     | Run linters on current file   |
-| `<leader>lg`     | Toggle linting globally       |
-| `<leader>lB`     | Toggle linting for buffer     |
-
-#### Markdown (`<leader>m`)
-
-| Key              | Action                              |
-|------------------|-------------------------------------|
-| `<leader>ml`     | Run Lectic on current file          |
-| `<leader>mn`     | Create new Lectic file with template|
-| `<leader>ms`     | Submit selection with user message  |
-| `<leader>mp`     | Format buffer with conform.nvim     |
-| `<leader>mu`     | Open URL under cursor               |
-| `<leader>mf`     | Toggle fold under cursor            |
-| `<leader>ma`     | Toggle all folds open/closed        |
-| `<leader>mt`     | Toggle folding method               |
-
-#### Sessions (`<leader>S`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>Ss`     | Save current session          |
-| `<leader>Sd`     | Delete a saved session        |
-| `<leader>Sl`     | Load a saved session          |
-
-#### NixOS (`<leader>n`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>nd`     | Enter nix development shell   |
-| `<leader>ng`     | Clean up old nix packages     |
-| `<leader>np`     | Open nixOS packages website   |
-| `<leader>nm`     | Open MyNixOS website          |
-| `<leader>nr`     | Rebuild system from flake     |
-| `<leader>nh`     | Apply home-manager changes    |
-| `<leader>nu`     | Update flake dependencies     |
-
-#### Pandoc (`<leader>p`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>pw`     | Convert to .docx format       |
-| `<leader>pm`     | Convert to .md format         |
-| `<leader>ph`     | Convert to .html format       |
-| `<leader>pl`     | Convert to .tex format        |
-| `<leader>pp`     | Convert to .pdf format        |
-| `<leader>pv`     | Open PDF in document viewer   |
-
-#### Run (`<leader>r`)
-
-| Key              | Action                         |
-|------------------|------------------------------- |
-| `<leader>rc`     | Clear Neovim plugin cache      |
-| `<leader>re`     | Show errors in location list   |
-| `<leader>rk`     | Remove all plugin files        |
-| `<leader>rn`     | Go to next diagnostic/error    |
-| `<leader>rp`     | Go to previous diagnostic/error|
-| `<leader>rr`     | Reload Neovim configuration    |
-| `<leader>rm`     | Display notification history   |
-
-#### Surround (`<leader>s`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>ss`     | Surround with characters      |
-| `<leader>sd`     | Remove surrounding characters |
-| `<leader>sc`     | Change surrounding characters |
-
-#### Yank (`<leader>y`)
-
-| Key              | Action                        |
-|------------------|-------------------------------|
-| `<leader>yh`     | Browse yank/clipboard history |
-| `<leader>yc`     | Clear yank history            |
-| `<C-n>`          | Cycle forward through yanks   |
-| `<C-p>`          | Cycle backward through yanks  |
-
-#### Templates (`<leader>t`)
-
-| Key              | Action                         |
-|------------------|--------------------------------|
-| `<leader>tp`     | Insert paper template          |
-| `<leader>tl`     | Insert letter template         |
-| `<leader>tg`     | Insert glossary template       |
-| `<leader>th`     | Insert handout template        |
-| `<leader>tb`     | Insert beamer presentation     |
-| `<leader>ts`     | Insert subfile template        |
-| `<leader>tr`     | Insert root document template  |
-| `<leader>tm`     | Insert multiple answer template|
-
-#### Text Operations (`<leader>x`)
-
-| Key              | Action                              |
-|------------------|-------------------------------------|
-| `<leader>xa`     | Start text alignment                |
-| `<leader>xA`     | Start alignment with preview        |
-| `<leader>xs`     | Toggle between single/multi-line    |
-| `<leader>xd`     | Show diff overlay with clipboard    |
-| `<leader>xw`     | Toggle word-level diff display      |
-
-#### TODO Navigation (`<leader>t`)
-
-| Key              | Action                              |
-|------------------|-------------------------------------|
-| `<leader>tt`     | Find all TODOs with Telescope       |
-| `<leader>tn`     | Jump to next TODO comment           |
-| `<leader>tp`     | Jump to previous TODO comment       |
-| `<leader>tl`     | Show TODOs in location list         |
-| `<leader>tq`     | Show TODOs in quickfix list         |
-| `[t`             | Go to previous TODO comment         |
-| `]t`             | Go to next TODO comment             |
-
-## Features and Workflows
-
-When modifying this Neovim configuration, follow these guidelines to ensure consistency and prevent conflicts.
 
 ### Using Avante for Configuration Help
 
-Avante AI can be an invaluable tool when modifying this configuration:
+Avante AI can be an invaluable tool when modifying this configuration.
+When modifying this Neovim configuration, follow these guidelines to ensure consistency and prevent conflicts.
 
 1. **Ask for Documentation**: Use Avante to generate detailed docstrings by asking:
    ```
@@ -522,6 +233,58 @@ Avante AI can be an invaluable tool when modifying this configuration:
    ```
    I'm having an issue with [feature]. Here's the relevant configuration and error...
    ```
+
+## Keybinding Reference
+
+This configuration provides extensive keybinding customizations to enhance productivity and provide a cohesive editing experience. The keybindings are organized through two main systems:
+
+### Keybinding Documentation
+
+For complete keybinding reference, see:
+- **[Complete Mappings Documentation](docs/MAPPINGS.md)** - Comprehensive reference of all keybindings organized by context and functionality
+- **[Which-Key Configuration](lua/neotex/plugins/editor/README.md#which-key-whichkeylua)** - Interactive keybinding discovery system with contextual menus
+- **[Core Keymaps Configuration](lua/neotex/config/README.md#keymaps-keymapslua)** - Base keybinding definitions and customizations
+
+### Key Configuration Files
+
+#### Core Keybindings (`lua/neotex/config/keymaps.lua`)
+Defines the fundamental key mappings including:
+- **Navigation**: Window movement, buffer switching, and cursor positioning
+- **Editing**: Text manipulation, folding, and basic operations
+- **Terminal**: Terminal mode bindings and window management
+- **File operations**: Basic file handling and URL opening
+
+#### Interactive Keybinding Discovery (`lua/neotex/plugins/editor/which-key.lua`)
+Provides the which-key system for:
+- **Leader-based mappings**: Organized hierarchical command structure under `<space>`
+- **Contextual help**: On-screen menus showing available key combinations
+- **Filetype-specific bindings**: Dynamic keybindings that appear based on current file type
+- **Plugin integration**: Unified access to plugin functionality
+
+### Quick Access
+
+- **Leader key**: `<space>` - Access to all major functionality through organized menus
+- **Help system**: Press `<leader>` and wait to see available commands
+- **Complete reference**: See [docs/MAPPINGS.md](docs/MAPPINGS.md) for full details
+- **Avante AI integration**: Ask Avante about specific keybindings with `<leader>ha`
+
+## Further Features
+
+### Lectic Integration
+
+Lectic provides AI-assisted writing for markdown files with these features:
+
+1. **Quick File Creation**: `<leader>mn` creates a new Lectic file with a template
+2. **Full-File Processing**: `<leader>ml` runs Lectic on the entire file
+3. **Visual Selection Processing**: 
+   - Select text in visual mode (`v`, `V`, or `<C-v>`)
+   - Press `<Esc>` to exit visual mode
+   - Press `<leader>ms` to process the previously selected text
+   - You'll be prompted to add a message/question about the selection in a multi-line input box
+   - Both the selected text and your message will be added to the end of the file with appropriate formatting
+   - Lectic will then process the entire file
+
+Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
 
 ### Folding System
 
@@ -557,22 +320,6 @@ This configuration includes a comprehensive URL handling system for all file typ
    - `Ctrl+Click` to open URL at mouse position
    - `<leader>mu` to open URL under cursor via keybinding
 4. **Cross-Platform**: Works on Linux, macOS, and Windows
-
-### Lectic Integration
-
-Lectic provides AI-assisted writing for markdown files with these features:
-
-1. **Quick File Creation**: `<leader>mn` creates a new Lectic file with a template
-2. **Full-File Processing**: `<leader>ml` runs Lectic on the entire file
-3. **Visual Selection Processing**: 
-   - Select text in visual mode (`v`, `V`, or `<C-v>`)
-   - Press `<Esc>` to exit visual mode
-   - Press `<leader>ms` to process the previously selected text
-   - You'll be prompted to add a message/question about the selection in a multi-line input box
-   - Both the selected text and your message will be added to the end of the file with appropriate formatting
-   - Lectic will then process the entire file
-
-Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
 
 ### Jupyter Notebook Integration
 
@@ -631,6 +378,37 @@ The system recognizes cells based on these markers:
 5. Use additional features like `<leader>js` (split cell), `<leader>jc` (comment cell), or `<leader>ja` (run all cells)
 
 This integration provides a seamless experience for data analysis, scientific computing, and literate programming without leaving Neovim.
+
+### NixOS Management
+
+This configuration includes convenient keybindings for managing NixOS systems directly from Neovim, streamlining system administration tasks:
+
+#### System Management (`<leader>n`)
+
+| Key              | Action                        |
+|------------------|-------------------------------|
+| `<leader>nr`     | Rebuild system from flake     |
+| `<leader>nh`     | Apply home-manager changes    |
+| `<leader>nu`     | Update flake dependencies     |
+| `<leader>ng`     | Clean up old nix packages     |
+| `<leader>nd`     | Enter nix development shell   |
+
+#### Quick Access Resources
+
+| Key              | Action                        |
+|------------------|-------------------------------|
+| `<leader>np`     | Open NixOS packages website   |
+| `<leader>nm`     | Open MyNixOS website          |
+
+#### Key Features
+
+1. **System Rebuilding**: Quickly rebuild your NixOS configuration from flakes
+2. **Home Manager**: Apply user-specific configuration changes
+3. **Package Management**: Update dependencies and clean up old generations
+4. **Development Environment**: Enter development shells for project-specific dependencies
+5. **Resource Access**: Quick links to NixOS package search and configuration tools
+
+These commands integrate NixOS system management into your development workflow, allowing you to manage system configuration, packages, and environments without leaving your editor.
 
 ### Performance Optimization Tools
 

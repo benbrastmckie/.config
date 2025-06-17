@@ -1,10 +1,11 @@
 -- neotex.config.keymaps
 -- Keymapping configuration
 
---[[ KEYBINDINGS REFERENCE
+--[[ KEYBINDINGS - COMPLETE REFERENCE
+-----------------------------------------------------------
 
-NOTE: These mappings are also documented in ~/.config/nvim/docs/MAPPINGS.md
-Please maintain consistency between both documents when making changes.
+📖 COMPLETE DOCUMENTATION: See docs/MAPPINGS.md for comprehensive keybinding reference
+Please maintain consistency between this file and docs/MAPPINGS.md when making changes.
 
 This file defines global keybindings, with special handling for terminal, markdown,
 and Avante AI buffers. The file organizes keymaps by functionality and uses helper
