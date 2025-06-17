@@ -6,6 +6,10 @@ This setup provides a streamlined environment for academic writing, code develop
 The AI integration makes it easy to learn and configure this setup for your specific needs.
 Every subdirectory includes a `README.md` file which documents the modules contained in that directory.
 
+## Installation
+
+**New to this configuration?** See the [Installation Guide](docs/INSTALLATION.md) for step-by-step setup instructions, including how to fork the repository, install dependencies, and run health checks.
+
 ## File Structure
 
 ```
@@ -74,7 +78,9 @@ Press the corresponding key to activate any option, or use your mouse to click o
 
 ### Prerequisites
 
-This configuration requires the `uv` package manager (a modern alternative to npm) for installing and running MCP-Hub. See [docs/UV_SETUP.md](docs/UV_SETUP.md) for installation instructions.
+This configuration requires several dependencies including Neovim (≥ 0.9.0), Git, Node.js, Python 3, and the `uv` package manager for MCP-Hub AI integration. 
+
+**For complete installation requirements and step-by-step setup instructions, see the [Installation Guide](docs/INSTALLATION.md).**
 
 ## Documentation Structure
 
