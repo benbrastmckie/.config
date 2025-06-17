@@ -14,13 +14,10 @@
   - [.] snippets
     - [x] completion
     - [ ] strange tab behaviour
-  - [:] revert to nvim-autopairs
+  - [x] revert to nvim-autopairs
     - [x] plan
     - [x] implement
     - [x] debug
-    - [:] test
-      - [ ] lean
-      - [x] latex
   - [x] cmp
     - [x] plan
     - [x] implement
@@ -74,7 +71,9 @@
     - [x] Add icons
     - [x] make descriptions lowercase and at most two words
     - [x] improve organization of mappings
-    - [ ] make file-type dependent which commands appear
+    - [:] make file-type dependent which commands appear
+      - [.] check that all commands are still present
+        - [ ] visual select mode for `<leader>hs`
   - [x] avante
     - [x] search/replace
     - [x] ask seems to only use one line
