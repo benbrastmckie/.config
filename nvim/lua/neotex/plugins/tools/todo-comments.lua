@@ -116,23 +116,16 @@ return {
       telescope.load_extension("todo-comments")
     end
 
-    -- Add which-key mappings
+    -- Add which-key mappings using modern API
     local has_which_key, which_key = pcall(require, "which-key")
     if has_which_key then
-      which_key.register({
-        ["<leader>ft"] = { "<cmd>TodoTelescope<CR>", "todos" },
+      which_key.add({
+        -- Add to FIND group (ft = find todos)
+        { "<leader>ft", "<cmd>TodoTelescope<CR>", desc = "todos", icon = "󰄬" },
+        
+        -- NOTE: TODO group is now under <leader>t (was <leader>T) to avoid conflict with TEMPLATES
+        -- The actual TODO mappings are defined in which-key.lua
       })
-
-      which_key.register({
-        t = {
-          name = "TODO",
-          t = { "<cmd>TodoTelescope<CR>", "todos" },
-          n = { function() require("todo-comments").jump_next() end, "next todo" },
-          p = { function() require("todo-comments").jump_prev() end, "previous todo" },
-          l = { "<cmd>TodoLocList<CR>", "todo location list" },
-          q = { "<cmd>TodoQuickFix<CR>", "todo quickfix" },
-        },
-      }, { prefix = "<leader>" })
     end
   end,
 }

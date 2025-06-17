@@ -3,7 +3,7 @@
 
 --[[ KEYBINDINGS REFERENCE
 
-NOTE: These mappings are also documented in ~/.config/nvim/README.md
+NOTE: These mappings are also documented in ~/.config/nvim/docs/MAPPINGS.md
 Please maintain consistency between both documents when making changes.
 
 This file defines global keybindings, with special handling for terminal, markdown,

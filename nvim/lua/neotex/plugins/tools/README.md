@@ -31,7 +31,6 @@ The tools module is organized into individual plugin configurations and speciali
   - LaTeX dollar sign pairs (`$...$`) with proper spacing
   - Lean unicode mathematical symbols (`⟨⟩`, `«»`, `⟪⟫`, `⦃⦄`)
   - Treesitter integration for context-aware pairing
-  - blink.cmp integration via community workaround
 
 - **mini**: Essential editing enhancements
   - `mini.comment`: Smart commenting for all filetypes
@@ -150,6 +149,37 @@ def func : «input» → «output» := sorry
    - Nested item  -- Smart cycling
    - Another item
 3. Continue...    -- Smart continuation
+```
+
+## Completion Integration
+
+### Autopairs and Completion System
+
+Text pairing functionality is provided by two complementary systems:
+
+- **nvim-autopairs**: Handles language-specific custom rules for LaTeX and Lean
+- **blink.cmp auto-brackets**: Provides bracket completion for function calls and completions
+
+#### Configuration
+```lua
+-- autopairs.lua: Custom language rules
+autopairs.add_rules({
+  Rule("$", "$", "tex"),                    -- LaTeX math mode
+  Rule("⟨", "⟩", "lean"),                  -- Lean angle brackets
+  Rule("«", "»", "lean"),                   -- Lean guillemets
+  Rule("⟪", "⟫", "lean"),                  -- Lean double angle brackets
+  Rule("⦃", "⦄", "lean"),                  -- Lean white curly brackets
+})
+
+-- blink-cmp.lua: Auto-brackets for completions
+completion = {
+  accept = {
+    auto_brackets = {
+      enabled = true,
+      blocked_filetypes = { 'tex', 'latex', 'lean' }
+    }
+  }
+}
 ```
 
 ## Plugin Verification

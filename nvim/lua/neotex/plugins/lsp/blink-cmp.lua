@@ -272,7 +272,7 @@ return {
           treesitter_highlighting = true,
         },
         ghost_text = {
-          enabled = true,
+          enabled = false,
         },
       },
       
