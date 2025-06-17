@@ -2,6 +2,17 @@
 
 This directory contains the core configuration modules for NeoVim.
 
+## File Structure
+
+```
+config/
+├── README.md           # This documentation
+├── init.lua           # Main loader and initialization
+├── options.lua        # Core Vim/NeoVim options
+├── keymaps.lua        # Key mappings for different modes
+└── autocmds.lua       # Autocommands for different events
+```
+
 ## Module Structure
 
 - **init.lua**: Main loader that initializes all configuration modules

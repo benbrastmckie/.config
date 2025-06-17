@@ -2,6 +2,16 @@
 
 This directory contains all Language Server Protocol related plugins and configurations for NeoVim.
 
+## File Structure
+
+```
+lsp/
+├── README.md           # This documentation
+├── blink-cmp.lua      # Modern completion engine
+├── lspconfig.lua      # Base LSP server configuration
+└── mason.lua          # LSP server management
+```
+
 ## Overview
 
 The LSP configuration provides intelligent code editing features including:

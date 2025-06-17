@@ -2,6 +2,21 @@
 
 This document provides a comprehensive overview of all keybindings configured in this Neovim setup, organized by context and functionality.
 
+## ðŸŽ¯ Filetype-Dependent Mappings
+
+**Important Note**: Many of the leader-based mappings listed below are **filetype-dependent** and only appear when working with relevant file types. This configuration uses a hybrid approach in which-key.nvim to provide context-aware keybindings:
+
+- **LaTeX** (`<leader>l*`): Only available in `.tex`, `.latex`, `.bib`, `.cls`, `.sty` files
+- **Jupyter** (`<leader>j*`): Only available in `.ipynb` files  
+- **Markdown** (`<leader>m*`): Only available in `.md`, `.markdown` files
+- **Pandoc** (`<leader>p*`): Available in convertible formats (markdown, tex, org, rst, html, docx)
+- **Templates** (`<leader>T*`): Only available in LaTeX files
+- **Python Actions** (`<leader>ap`, `<leader>am`): Only available in `.py` files
+- **Lean Actions** (`<leader>al`): Only available in `.lean` files
+- **Markdown Actions** (`<leader>ar`): Only available in markdown files
+
+This means you'll only see relevant mappings for your current file type, providing a cleaner and more focused interface.
+
 ## Table of Contents
 
 1. [Global Keybindings](#global-keybindings)
@@ -88,17 +103,19 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 ### ACTIONS (`<leader>a`)
 
-| Key | Action | Description |
-|-----|--------|-------------|
-| `<leader>af` | Format buffer | Format current buffer via LSP |
-| `<leader>ah` | Toggle local highlight | Highlight current word occurrences |
-| `<leader>al` | Toggle Lean info view | Show/hide Lean information panel |
-| `<leader>am` | Run model checker | Execute model checker on file |
-| `<leader>ap` | Run Python file | Execute current Python file |
-| `<leader>ar` | Recalculate autolist | Fix numbering in lists |
-| `<leader>au` | Update CWD | Change to file's directory |
-| `<leader>as` | Edit snippets | Open snippets directory |
-| `<leader>aS` | SSH connect | Connect to MIT server via SSH |
+**Note**: Some actions are filetype-specific and only appear for relevant files.
+
+| Key | Action | Description | Availability |
+|-----|--------|-------------|--------------|
+| `<leader>af` | Format buffer | Format current buffer via LSP | All files |
+| `<leader>ah` | Toggle local highlight | Highlight current word occurrences | All files |
+| `<leader>al` | Toggle Lean info view | Show/hide Lean information panel | `.lean` files only |
+| `<leader>am` | Run model checker | Execute model checker on file | `.py` files only |
+| `<leader>ap` | Run Python file | Execute current Python file | `.py` files only |
+| `<leader>ar` | Recalculate autolist | Fix numbering in lists | `.md` files only |
+| `<leader>au` | Update CWD | Change to file's directory | All files |
+| `<leader>as` | Edit snippets | Open snippets directory | All files |
+| `<leader>aS` | SSH connect | Connect to MIT server via SSH | All files |
 
 ### FIND (`<leader>f`)
 
@@ -179,6 +196,8 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 ### JUPYTER (`<leader>j`)
 
+**Availability**: Only available in `.ipynb` files.
+
 | Key | Action | Description |
 |-----|--------|-------------|
 | `<leader>je` | Execute cell | Run current notebook cell |
@@ -203,6 +222,8 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 ### LATEX (`<leader>l`)
 
+**Availability**: Only available in `.tex`, `.latex`, `.bib`, `.cls`, `.sty` files.
+
 | Key | Action | Description |
 |-----|--------|-------------|
 | `<leader>la` | PDF annotations | Work with PDF annotations |
@@ -219,6 +240,8 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>lx` | Clear VimTeX cache | Clear LaTeX compilation cache |
 
 ### MARKDOWN (`<leader>m`)
+
+**Availability**: Only available in `.md`, `.markdown` files.
 
 | Key | Action | Description |
 |-----|--------|-------------|
@@ -245,6 +268,8 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>nu` | Update flake | Update flake dependencies |
 
 ### PANDOC (`<leader>p`)
+
+**Availability**: Available in convertible formats (`.md`, `.markdown`, `.tex`, `.latex`, `.org`, `.rst`, `.html`, `.docx`).
 
 | Key | Action | Description |
 |-----|--------|-------------|
@@ -294,6 +319,8 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>tq` | Todo quickfix | Show TODOs in quickfix list |
 
 ### TEMPLATES (`<leader>T`)
+
+**Availability**: Only available in `.tex`, `.latex` files.
 
 | Key | Action | Description |
 |-----|--------|-------------|
@@ -360,7 +387,7 @@ Active in markdown files (`.md`, `.markdown` extensions).
 | `<S-Tab>` | i | Smart unindent | Unindent bullet and recalculate numbers |
 | `dd` | n | Delete and recalculate | Delete line and fix list numbering |
 | `d` | v | Delete and recalculate | Delete selection and fix numbering |
-| `<C-n>` | n | Toggle checkbox | Cycle checkbox status ([ ] ” [x]) |
+| `<C-n>` | n | Toggle checkbox | Cycle checkbox status ([ ] ï¿½ [x]) |
 | `<C-c>` | n | Recalculate list | Fix all list numbering |
 | `>`, `<` | n | Indent/unindent | Adjust bullet indentation with recalculation |
 

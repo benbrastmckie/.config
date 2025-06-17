@@ -1,6 +1,20 @@
 # UI Enhancement Plugins
 
-This directory contains plugins that improve the user interface and visual experience:
+This directory contains plugins that improve the user interface and visual experience.
+
+## File Structure
+
+```
+ui/
+├── README.md           # This documentation
+├── init.lua           # UI plugins loader
+├── neo-tree.lua       # Modern file explorer
+├── lualine.lua        # Configurable status line
+├── bufferline.lua     # Tab-like buffer navigation
+├── colorscheme.lua    # Theme configuration
+├── nvim-web-devicons.lua # File type icons
+└── sessions.lua       # Session management
+```
 
 ## Current Plugins
 

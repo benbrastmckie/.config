@@ -2,6 +2,39 @@
 
 This directory contains plugin specifications and configurations managed by lazy.nvim.
 
+## File Structure
+
+```
+plugins/
+├── README.md           # This documentation
+├── init.lua           # Plugin system entry point
+├── editor/            # Core editor capabilities
+│   ├── formatting.lua # Code formatting
+│   ├── linting.lua    # Code linting
+│   ├── telescope.lua  # Fuzzy finder
+│   └── ...           # Other editor plugins
+├── lsp/              # Language server integration
+│   ├── blink-cmp.lua # Completion engine
+│   ├── lspconfig.lua # LSP configuration
+│   └── mason.lua     # LSP server management
+├── text/             # Text processing plugins
+│   ├── vimtex.lua    # LaTeX support
+│   ├── lean.lua      # Lean theorem prover
+│   └── jupyter/      # Jupyter integration
+├── tools/            # Development tools
+│   ├── gitsigns.lua  # Git integration
+│   ├── autolist/     # List management
+│   └── snacks/       # UI enhancements
+├── ui/               # User interface components
+│   ├── neo-tree.lua  # File explorer
+│   ├── lualine.lua   # Status line
+│   └── ...           # Other UI plugins
+└── ai/               # AI integration
+    ├── avante.lua    # AI assistant
+    ├── claude-code.lua # Claude Code integration
+    └── util/         # AI utilities
+```
+
 ## Organization Structure
 
 Plugins are organized into the following categories with dedicated directories:

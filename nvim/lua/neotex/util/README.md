@@ -2,6 +2,22 @@
 
 This directory contains utility functions that provide common functionality throughout the NeoVim configuration.
 
+## File Structure
+
+```
+util/
+├── README.md           # This documentation
+├── init.lua           # Main loader and utilities
+├── buffer.lua         # Buffer management utilities
+├── fold.lua           # Code folding utilities
+├── url.lua            # URL detection and handling
+├── diagnostics.lua    # LSP diagnostic utilities
+├── misc.lua           # Miscellaneous helper functions
+├── optimize.lua       # Performance optimization utilities
+├── lectic_extras.lua  # Lectic AI integration helpers
+└── neotree-width.lua  # Neo-tree width management
+```
+
 ## Module Structure
 
 - **init.lua**: Main loader that initializes all utility modules
