@@ -18,19 +18,9 @@ return {
     },
   },
   
-  -- Key mappings for Claude Code functionality
-  keys = {
-    { "<leader>cc", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude Code" },
-    { "<leader>cs", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send selection to Claude" },
-    { "<leader>ca", function()
-      local file = vim.fn.expand("%:p")
-      if file ~= "" then
-        vim.cmd("ClaudeCodeAdd " .. file)
-      else
-        vim.notify("No file to add to Claude context", vim.log.levels.WARN)
-      end
-    end, desc = "Add current file to Claude context" },
-  },
+  -- NOTE: Key mappings are now defined in which-key.lua under the AI HELP group
+  -- to avoid conflicts with other leader mappings
+  keys = {},
   
   config = function(_, opts)
     require("claudecode").setup(opts)

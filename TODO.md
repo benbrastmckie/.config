@@ -10,10 +10,14 @@
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
 - [x] blink
-  - [ ] snippets
-  - [ ] pairs
-    - [ ] plan
-    - [ ] implement
+  - [x] no ghost text insertions
+  - [.] snippets
+    - [x] completion
+    - [ ] strange tab behaviour
+  - [.] revert to nvim-autopairs
+    - [x] plan
+    - [x] implement
+    - [ ] debug
   - [x] cmp
     - [x] plan
     - [x] implement
@@ -49,6 +53,9 @@
     - [x] context7
     - [:] fetch
   - [x] documentation
+- [ ] lean
+  - [ ] test autopairs
+  - [ ] documentation
 - [ ] appearances
   - bufferline and lualine
     - [x] remove light bar at the top when opening neovim
@@ -60,6 +67,7 @@
     - [ ] `<leader>gg` sometimes opens LazyGit blank
     - [ ] hard to get dialog boxes to close
   - which key
+    - [ ] refactor bindings
     - [ ] Add icons
     - [ ] make descriptions lowercase and at most two words
     - [ ] make file-type dependent which commands appear

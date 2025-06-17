@@ -87,16 +87,22 @@ return {
 
     -- Custom blink.cmp integration using community workaround
     local function setup_blink_integration()
-      local ok, _ = pcall(require, 'blink.cmp')
+      local ok, blink = pcall(require, 'blink.cmp')
       if not ok then return end
+
+      -- Check if blink.cmp has the visibility check method
+      if not blink.is_visible then
+        -- If blink.cmp doesn't support autopairs integration yet, skip setup
+        vim.notify("blink.cmp autopairs integration not available", vim.log.levels.WARN)
+        return
+      end
 
       -- Use community-proposed solution from GitHub issue #477
       local cmp_autopairs = require("nvim-autopairs.completion.cmp")
       
       -- Override CR keymap to include autopairs callback
       vim.keymap.set('i', '<CR>', function()
-        local blink = require('blink.cmp')
-        if blink.visible() then
+        if blink.is_visible() then
           return blink.accept({ 
             callback = cmp_autopairs.on_confirm_done({
               filetypes = {

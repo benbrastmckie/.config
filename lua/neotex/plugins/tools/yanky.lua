@@ -161,29 +161,8 @@ return {
       }):find()
     end
     
-    -- Override the keymaps in the which-key setup to use our custom function
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "VeryLazy",
-      callback = function()
-        -- Update the keymaps when plugins are fully loaded
-        pcall(function()
-          local wk = require("which-key")
-          
-          -- Update both keymaps that use yank history
-          wk.register({
-            f = { 
-              y = { function() _G.YankyTelescopeHistory() end, "yanks" },
-            }
-          }, { prefix = "<leader>" })
-          
-          wk.register({
-            y = { 
-              h = { function() _G.YankyTelescopeHistory() end, "history" },
-            }
-          }, { prefix = "<leader>" })
-        end)
-      end
-    })
+    -- NOTE: Keymaps for <leader>fy and <leader>yh are defined in which-key.lua
+    -- They will automatically use the _G.YankyTelescopeHistory() function defined above
     
     -- Still try to load the extension as a fallback
     pcall(function()
