@@ -303,6 +303,13 @@ return {
           end
           return {}
         end,
+        keymap = {
+          preset = 'default',
+          ['<C-k>'] = { 'select_prev', 'fallback' },
+          ['<C-j>'] = { 'select_next', 'fallback' },
+          ['<CR>'] = { 'accept', 'fallback' },
+          ['<C-e>'] = { 'hide', 'fallback' },
+        },
       },
     }
   }
