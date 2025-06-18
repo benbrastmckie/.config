@@ -163,4 +163,10 @@ return {
         },
     },
   },
+  config = function(_, opts)
+    local snacks = require("snacks")
+    snacks.setup(opts)
+    -- Set vim.ui.input to use Snacks.input
+    vim.ui.input = snacks.input
+  end,
 }

@@ -1,10 +1,14 @@
 # TODO
 
+
+
 ## In Progress
 
 - [ ] release
   - [ ] list of features to advertise
   - [ ] list of changes
+  - [x] gitexclude
+  - [x] checkhealth
 - [ ] delete neotex directory
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
@@ -19,6 +23,7 @@
     - [x] implement
     - [x] debug
   - [x] cmp
+    - [x] improve super-tab
     - [x] plan
     - [x] implement
       - [x] first pass
@@ -29,14 +34,14 @@
     - [x] refactor directory
     - [x] document
 - [.] ai
-  - [:] claude-code
+  - [:] claude-codehttps://link-springer-com.libproxy.mit.edu/article/10.1007/s10992-025-09793-8
     - [.] mcp
     - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] avante
     - [x] debug
     - [x] get mcp tools working
     - [x] reduce messages
-    - [ ] model is not right in shown message
+    - [x] model is not right in shown message
     - [ ] don't need to cut and paste images
   - [ ] lectic
     - [ ] mcp

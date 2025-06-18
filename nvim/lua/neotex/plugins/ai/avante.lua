@@ -251,11 +251,19 @@ return {
     })
   end,
   opts = function()
+    -- Load saved settings first to determine defaults
+    local avante_support = require("neotex.plugins.ai.util.avante-support")
+    local saved_settings = avante_support.load_settings()
+    
+    -- Use saved settings for defaults
+    local default_provider = saved_settings.provider or "claude"
+    local default_model = saved_settings.model or "claude-4-sonnet-20250514"
+    
     -- Default configuration
     local config = {
-      -- Provider selection and auto-suggestions
-      provider = "claude",
-      auto_suggestions_provider = "claude",
+      -- Provider selection and auto-suggestions (use saved preferences)
+      provider = default_provider,
+      auto_suggestions_provider = default_provider,
       
       -- Disable built-in web search to force MCP tool usage
       web_search_engine = {
@@ -265,7 +273,7 @@ return {
       providers = {
         claude = {
           endpoint = "https://api.anthropic.com",
-          model = "claude-3-5-sonnet-20241022",
+          model = saved_settings.providers and saved_settings.providers.claude and saved_settings.providers.claude.model or default_model,
           timeout = 60000,
           extra_request_body = {
             temperature = 0.1,
@@ -481,7 +489,7 @@ return {
       },
       fallback = {
         enabled = false,                      -- Enable fallback model if primary fails
-        model = "claude-3-5-sonnet-20241022", -- More stable fallback model
+        model = default_model, -- Use the same default model as fallback
         auto_retry = false,
       },
       behaviour = {

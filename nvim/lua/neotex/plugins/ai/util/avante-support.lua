@@ -68,8 +68,8 @@ end
 -- Initialize global state if not already defined
 if not _G.avante_cycle_state then
   _G.avante_cycle_state = {
-    provider = "gemini",
-    model_index = 1
+    provider = "claude",
+    model_index = 3  -- Claude 4.0 is at index 3 in the provider_models.claude array
   }
 end
 
@@ -86,12 +86,14 @@ end
 function M.load_settings()
   -- Check if file exists
   if vim.fn.filereadable(avante_settings_file) ~= 1 then
-    -- Return default settings
+    -- Return default settings based on the actual defaults
     return {
-      provider = "gemini",
-      model = "gemini-2.5-pro-preview-03-25",
-      gemini = {
-        model = "gemini-2.5-pro-preview-03-25"
+      provider = "claude",
+      model = "claude-4-sonnet-20250514",
+      providers = {
+        claude = {
+          model = "claude-4-sonnet-20250514"
+        }
       }
     }
   end
@@ -104,10 +106,11 @@ function M.load_settings()
 
   -- Return default settings if anything went wrong
   return {
-    provider = "gemini",
+    provider = "claude",
+    model = "claude-4-sonnet-20250514",
     providers = {
-      gemini = {
-        model = "gemini-2.5-pro-preview-03-25"
+      claude = {
+        model = "claude-4-sonnet-20250514"
       }
     }
   }
@@ -217,7 +220,13 @@ function M.init()
   local model = settings.model
   local model_index = 1
 
-  if M.provider_models[provider] then
+  -- If model is not specified in settings, try to get it from providers
+  if not model and settings.providers and settings.providers[provider] then
+    model = settings.providers[provider].model
+  end
+
+  -- Find the model index in our provider models list
+  if M.provider_models[provider] and model then
     for i, m in ipairs(M.provider_models[provider]) do
       if m == model then
         model_index = i

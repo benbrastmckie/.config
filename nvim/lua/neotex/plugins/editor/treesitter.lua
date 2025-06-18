@@ -113,8 +113,10 @@ return {
           local additional_parsers = {
             "vimdoc", "query", "markdown_inline", "bash",
             "nix", "json", "yaml", "toml",
-            "gitignore", "c", "haskell"
-            -- Removed: "bibtex", "norg" due to potential ABI version conflicts
+            "gitignore", "c", "haskell",
+            "css", "html", "javascript", "scss", "regex"
+            -- Removed: "bibtex", "norg", "latex" due to potential ABI version conflicts
+            -- Removed: "tsx", "svelte", "vue", "typst" - less commonly used
           }
 
           -- Get list of installed parsers to avoid reinstall prompts
