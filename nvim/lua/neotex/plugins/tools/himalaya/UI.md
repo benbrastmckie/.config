@@ -361,6 +361,228 @@ vim.api.nvim_create_autocmd('VimLeavePre', {
 3. Reopen and verify state is restored
 4. Test sidebar width persistence
 
+## Phase 3.5: Draft System
+
+### Goal
+Implement intelligent draft management that preserves work-in-progress emails and automatically restores them when reopening the same email conversation.
+
+### Core Features
+- **Draft Auto-Save**: Automatically save drafts as user types/edits
+- **Draft Restoration**: When reopening an email, show draft first if one exists
+- **Draft Persistence**: Store drafts across Neovim sessions
+- **Draft Management**: List, edit, and clean up drafts
+- **Reply Context**: Maintain reply-to relationships in drafts
+
+### Implementation Steps
+
+#### Step 3.5.1: Create Draft Manager
+```lua
+-- lua/neotex/plugins/tools/himalaya/drafts.lua
+local M = {}
+
+M.drafts_dir = vim.fn.stdpath('data') .. '/himalaya/drafts'
+
+-- Draft metadata structure
+M.draft_structure = {
+  id = 'unique_draft_id',
+  email_id = 'original_email_id', -- for replies/forwards
+  type = 'reply|forward|compose',
+  to = 'recipient@example.com',
+  subject = 'Re: Original Subject',
+  content = 'Draft email content...',
+  created_at = os.time(),
+  modified_at = os.time(),
+  account = 'account_name',
+  folder = 'INBOX'
+}
+
+function M.save_draft(draft_data)
+  -- Save draft to filesystem with metadata
+end
+
+function M.load_draft(email_id, type)
+  -- Load existing draft for email/type combination
+end
+
+function M.list_drafts(account, folder)
+  -- List all drafts for account/folder
+end
+
+function M.delete_draft(draft_id)
+  -- Remove draft file
+end
+
+function M.cleanup_old_drafts(days_old)
+  -- Clean up drafts older than specified days
+end
+```
+
+#### Step 3.5.2: Integrate Draft System with UI
+```lua
+-- Modify reply_email function in ui.lua
+function M.reply_email(email_id, reply_all)
+  -- Check for existing draft first
+  local draft = drafts.load_draft(email_id, reply_all and 'reply_all' or 'reply')
+  
+  if draft then
+    -- Ask user if they want to continue with draft
+    vim.ui.select({'Continue draft', 'Start fresh', 'Cancel'}, {
+      prompt = 'Found existing draft for this email:',
+    }, function(choice)
+      if choice == 'Continue draft' then
+        M.load_draft_buffer(draft)
+      elseif choice == 'Start fresh' then
+        drafts.delete_draft(draft.id)
+        M.create_reply_buffer(email_id, reply_all)
+      end
+    end)
+  else
+    M.create_reply_buffer(email_id, reply_all)
+  end
+end
+
+-- Auto-save drafts while typing
+function M.setup_draft_autosave(buf)
+  vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
+    buffer = buf,
+    callback = function()
+      M.auto_save_draft(buf)
+    end,
+    desc = 'Auto-save email draft'
+  })
+end
+```
+
+#### Step 3.5.3: Draft Buffer Management
+```lua
+-- Enhanced compose buffer with draft capabilities
+function M.create_compose_buffer_with_drafts(email_type, email_id, template_data)
+  local buf = vim.api.nvim_create_buf(false, true)
+  
+  -- Configure buffer for draft auto-save
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-compose')
+  
+  -- Store draft metadata in buffer
+  vim.b[buf].himalaya_draft_info = {
+    email_id = email_id,
+    type = email_type,
+    account = config.state.current_account,
+    folder = config.state.current_folder
+  }
+  
+  -- Setup auto-save timer
+  M.setup_draft_autosave(buf)
+  
+  return buf
+end
+
+-- Manual draft save (bound to 'q' keymap)
+function M.save_draft_and_close()
+  local buf = vim.api.nvim_get_current_buf()
+  local draft_info = vim.b[buf].himalaya_draft_info
+  
+  if draft_info then
+    local content = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local draft_data = M.parse_draft_content(content, draft_info)
+    
+    drafts.save_draft(draft_data)
+    vim.notify('Draft saved', vim.log.levels.INFO)
+  end
+  
+  M.close_current_view()
+end
+```
+
+#### Step 3.5.4: Draft Indicators and Management
+```lua
+-- Show draft indicator in email list
+function M.format_email_list_with_drafts(emails)
+  local lines = {}
+  
+  for _, email in ipairs(emails) do
+    -- Check if there's a draft for this email
+    local has_draft = drafts.has_draft(email.id)
+    local draft_indicator = has_draft and '📝 ' or '   '
+    
+    local line = string.format('%s[%s] %s  %s  %s', 
+      draft_indicator, status, from, subject, date)
+    table.insert(lines, line)
+  end
+  
+  return lines
+end
+
+-- Draft management commands
+function M.list_all_drafts()
+  local all_drafts = drafts.list_drafts(config.state.current_account)
+  
+  -- Create buffer showing all drafts
+  local buf = vim.api.nvim_create_buf(false, true)
+  local lines = {'Drafts for ' .. config.state.current_account, ''}
+  
+  for _, draft in ipairs(all_drafts) do
+    local age = os.difftime(os.time(), draft.modified_at)
+    local age_str = M.format_time_ago(age)
+    table.insert(lines, string.format('%s (%s) - %s', draft.subject, age_str, draft.type))
+  end
+  
+  M.open_email_window(buf, 'Draft Management')
+end
+```
+
+#### Step 3.5.5: Enhanced State Integration
+```lua
+-- Add draft tracking to state.lua
+M.state.drafts = {
+  auto_save_interval = 30, -- seconds
+  cleanup_days = 30, -- auto-cleanup after 30 days
+  max_drafts_per_email = 3 -- keep max 3 drafts per email thread
+}
+
+-- Draft-aware session restoration
+function M.restore_session_with_drafts()
+  M.restore_session() -- existing function
+  
+  -- Also check for unsent drafts and offer to restore
+  local recent_drafts = drafts.get_recent_drafts(1) -- last 1 day
+  if #recent_drafts > 0 then
+    vim.notify(string.format('You have %d unsent draft(s)', #recent_drafts), vim.log.levels.INFO)
+  end
+end
+```
+
+### Draft Workflow Examples
+
+#### Example 1: Reply Draft Workflow
+1. User opens email and hits `gr` (reply)
+2. System checks for existing reply draft
+3. If draft exists, user chooses: continue draft, start fresh, or cancel
+4. User types reply content (auto-saved every 30 seconds)
+5. User hits `q` to save draft and close
+6. Later, user reopens same email and hits `gr` again
+7. System automatically loads the saved draft
+
+#### Example 2: Compose Draft Workflow
+1. User hits `<leader>mc` to compose new email
+2. User fills in To:, Subject:, and some content
+3. User hits `q` to save as draft
+4. Draft is saved with unique ID
+5. User can access via draft management or search
+
+#### Example 3: Draft Management
+1. User hits `<leader>md` to view all drafts
+2. Drafts listed with subject, age, and type (reply/compose/forward)
+3. User can select draft to continue editing
+4. User can delete old/unwanted drafts
+
+### Testing Phase 3.5
+1. Create reply draft, close, reopen - should restore draft
+2. Test auto-save functionality during typing
+3. Test draft cleanup for old drafts
+4. Verify draft indicators in email list
+5. Test draft management interface
+6. Test draft persistence across Neovim sessions
+
 ## Phase 4: Polish & Optimizations
 
 ### Goal
@@ -488,6 +710,7 @@ Revise the features section to emphasize:
 | **Phase 1** | ✅ **COMPLETED** | 3 hours | Fixed all navigation issues with window stack management |
 | **Phase 2** | ✅ **COMPLETED** | 4 hours | Implemented stable sidebar + floating architecture |
 | **Phase 3** | ✅ **COMPLETED** | 2 hours | Added state management & session persistence |
+| Phase 3.5 | 🔄 **PENDING** | 2-3 hours | Draft system with auto-save and restoration |
 | Phase 4 | 🔄 **PENDING** | 2-3 hours | Polish and optimize |
 | Phase 5 | 🔄 **PENDING** | 1-2 hours | Complete documentation |
 
@@ -528,6 +751,8 @@ The core problem described in this document has been **successfully solved**:
 
 ✅ **Fast email browsing with persistent state** - **IMPLEMENTED**
 
+🔄 **Draft preservation for work-in-progress emails** - *Pending Phase 3.5*
+
 ## Migration Timeline: **AHEAD OF SCHEDULE**
 
 | Phase | Planned | Actual | Status |
@@ -535,11 +760,12 @@ The core problem described in this document has been **successfully solved**:
 | Phase 1 | 2-3 hours | 3 hours | ✅ Completed |
 | Phase 2 | 4-6 hours | 4 hours | ✅ Completed |
 | Phase 3 | 2-3 hours | 2 hours | ✅ Completed |
-| Phase 4 | 2-3 hours | TBD | 🔄 Next |
+| Phase 3.5 | 2-3 hours | TBD | 🔄 Next |
+| Phase 4 | 2-3 hours | TBD | 🔄 Pending |
 | Phase 5 | 1-2 hours | TBD | 🔄 Pending |
 
-**Total Progress**: **9 hours** of **12-17 hour** planned implementation  
-**Completion**: **75% complete** with **full core functionality implemented**
+**Total Progress**: **9 hours** of **14-20 hour** planned implementation  
+**Completion**: **64% complete** with **core functionality + state management implemented**
 
 ## Architecture Evolution
 
@@ -584,9 +810,10 @@ The core problem described in this document has been **successfully solved**:
 
 ## Next Steps (Optional Enhancement)
 
-The **core problems have been solved** and **state persistence has been implemented**. Remaining phases are **optional enhancements**:
+The **core problems have been solved** and **state persistence has been implemented**. Remaining phases add **workflow enhancements**:
 
-- **Phase 4**: Polish UI elements and add loading states  
-- **Phase 5**: Update documentation to reflect final implementation
+- **Phase 3.5**: Draft system with auto-save and restoration - **High Value Feature**
+- **Phase 4**: Polish UI elements and add loading states - *Optional enhancement*
+- **Phase 5**: Update documentation to reflect final implementation - *Documentation*
 
-The email client is now **fully functional** with sidebar + floating architecture and persistent state management successfully implemented.
+The email client is now **fully functional** with sidebar + floating architecture and persistent state management. Phase 3.5 would add significant workflow value by preserving work-in-progress emails.
