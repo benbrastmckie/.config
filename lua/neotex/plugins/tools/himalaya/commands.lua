@@ -87,6 +87,37 @@ function M.setup()
     desc = 'Create a new email folder',
   })
   
+  -- Configuration validation command
+  vim.api.nvim_create_user_command('HimalayaConfigValidate', function(opts)
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local valid, message, issues = utils.validate_mbsync_config()
+    if valid then
+      vim.notify('✓ ' .. message, vim.log.levels.INFO)
+    else
+      if issues then
+        utils.handle_mbsync_config_issues(issues)
+      else
+        vim.notify('✗ ' .. message, vim.log.levels.ERROR)
+      end
+    end
+  end, {
+    desc = 'Validate mbsync configuration',
+  })
+
+  -- Alternative sync command
+  vim.api.nvim_create_user_command('HimalayaAlternativeSync', function(opts)
+    require('neotex.plugins.tools.himalaya.utils').alternative_sync()
+  end, {
+    desc = 'Try alternative sync method when mbsync fails',
+  })
+
+  -- Configuration help command
+  vim.api.nvim_create_user_command('HimalayaConfigHelp', function(opts)
+    require('neotex.plugins.tools.himalaya.utils').show_config_help()
+  end, {
+    desc = 'Show configuration help and troubleshooting guide',
+  })
+
   -- Session restoration command
   vim.api.nvim_create_user_command('HimalayaRestore', function(opts)
     if opts.bang then
