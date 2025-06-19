@@ -61,6 +61,20 @@ function M.setup()
     desc = 'Manually sync emails (use ! to force)',
   })
   
+  -- Session restoration command
+  vim.api.nvim_create_user_command('HimalayaRestore', function(opts)
+    if opts.bang then
+      -- Force restore without prompt
+      require('neotex.plugins.tools.himalaya.ui').restore_session()
+    else
+      -- Show prompt for restore
+      require('neotex.plugins.tools.himalaya.ui').prompt_session_restore()
+    end
+  end, {
+    bang = true,
+    desc = 'Restore previous email session (use ! to restore without prompt)',
+  })
+
   -- Read specific email command
   vim.api.nvim_create_user_command('HimalayaRead', function(opts)
     if not opts.args or opts.args == '' then

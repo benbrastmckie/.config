@@ -24,13 +24,11 @@ function M.init()
   -- Initialize sidebar with state
   sidebar.init()
   
-  -- Sync state with sidebar configuration
+  -- Sync state with sidebar configuration (non-intrusive)
   state.sync_with_sidebar()
   
-  -- Restore session if state is fresh
-  if state.is_state_fresh() then
-    M.restore_session()
-  end
+  -- Note: Session restoration is now manual only
+  -- Call M.restore_session() explicitly if needed
 end
 
 -- Show email list in sidebar
@@ -932,34 +930,97 @@ function M.open_url(url)
   })
 end
 
--- Restore session from state
+-- Check if session restoration is available
+function M.can_restore_session()
+  if not state.is_state_fresh() then
+    return false, "No recent session found (older than 24 hours)"
+  end
+  
+  local current_account = state.get_current_account()
+  local current_folder = state.get_current_folder()
+  
+  if not current_account or not current_folder then
+    return false, "No previous email session found"
+  end
+  
+  return true, string.format("Session available: %s/%s", current_account, current_folder)
+end
+
+-- Restore session from state (manual only)
 function M.restore_session()
+  local can_restore, message = M.can_restore_session()
+  
+  if not can_restore then
+    vim.notify('Cannot restore session: ' .. message, vim.log.levels.WARN)
+    return false
+  end
+  
   local current_account = state.get_current_account()
   local current_folder = state.get_current_folder()
   local selected_email = state.get_selected_email()
   
-  -- Only restore if we have account and folder info
-  if current_account and current_folder then
-    vim.defer_fn(function()
-      -- Show the email list for the saved folder/account
-      M.show_email_list({current_folder, '--account=' .. current_account})
-      
-      -- If there was a selected email, try to restore it
-      if selected_email then
-        vim.defer_fn(function()
-          M.read_email(selected_email)
-        end, 500)
+  vim.defer_fn(function()
+    -- Show the email list for the saved folder/account
+    M.show_email_list({current_folder, '--account=' .. current_account})
+    
+    -- Check if we're in headless mode
+    local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+    
+    -- Ask user if they want to restore the selected email (skip in headless)
+    if selected_email and not is_headless then
+      vim.ui.select({'Open previous email', 'Just show email list'}, {
+        prompt = 'Restore previous email session:',
+      }, function(choice)
+        if choice == 'Open previous email' then
+          vim.defer_fn(function()
+            M.read_email(selected_email)
+          end, 200)
+        end
+      end)
+    elseif selected_email and is_headless then
+      -- In headless mode, just restore the email directly
+      vim.defer_fn(function()
+        M.read_email(selected_email)
+      end, 200)
+    end
+    
+    -- Restore search results if available
+    local last_query = state.get_last_query()
+    local search_results = state.get_search_results()
+    if last_query and search_results then
+      vim.notify('Previous search: "' .. last_query .. '" available', vim.log.levels.INFO)
+    end
+    
+    vim.notify('Email session restored', vim.log.levels.INFO)
+  end, 100)
+  
+  return true
+end
+
+-- Show session restoration prompt (called manually)
+function M.prompt_session_restore()
+  local can_restore, message = M.can_restore_session()
+  
+  if not can_restore then
+    vim.notify(message, vim.log.levels.INFO)
+    return
+  end
+  
+  -- Check if we're in headless mode
+  local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+  
+  if is_headless then
+    -- In headless mode, just restore directly
+    vim.notify('Headless mode: ' .. message, vim.log.levels.INFO)
+    M.restore_session()
+  else
+    vim.ui.select({'Restore previous session', 'Start fresh'}, {
+      prompt = message .. ' - Restore?',
+    }, function(choice)
+      if choice == 'Restore previous session' then
+        M.restore_session()
       end
-      
-      -- Restore search results if available
-      local last_query = state.get_last_query()
-      local search_results = state.get_search_results()
-      if last_query and search_results then
-        vim.notify('Previous search: "' .. last_query .. '" (results available)', vim.log.levels.INFO)
-      end
-      
-      vim.notify('Session restored', vim.log.levels.INFO)
-    end, 100)
+    end)
   end
 end
 
