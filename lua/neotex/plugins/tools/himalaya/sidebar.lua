@@ -55,37 +55,32 @@ function M.open()
   
   local buf = M.create_buffer()
   
-  -- Calculate window dimensions
-  local width = M.config.width
-  local height = vim.o.lines - 2  -- Leave space for statusline
+  -- Store original window to restore focus if needed
+  local original_win = vim.api.nvim_get_current_win()
   
-  -- Determine position
-  local col = M.config.position == 'left' and 0 or (vim.o.columns - width)
-  local anchor = M.config.position == 'left' and 'NW' or 'NE'
+  -- Use neo-tree style window splitting instead of floating
+  -- This creates a real sidebar that shifts content instead of overlapping
+  if M.config.position == 'left' then
+    vim.cmd('topleft ' .. M.config.width .. 'vsplit')
+  else
+    vim.cmd('botright ' .. M.config.width .. 'vsplit')
+  end
   
-  -- Create sidebar window
-  M.state.win = vim.api.nvim_open_win(buf, true, {
-    relative = 'editor',
-    anchor = anchor,
-    width = width,
-    height = height,
-    row = 0,
-    col = col,
-    style = 'minimal',
-    border = M.config.border,
-    title = ' Email Client ',
-    title_pos = 'center'
-  })
+  M.state.win = vim.api.nvim_get_current_win()
+  
+  -- Set the buffer in the new window
+  vim.api.nvim_win_set_buf(M.state.win, buf)
   
   M.state.is_open = true
   
-  -- Window configuration
+  -- Window configuration for sidebar appearance
   vim.api.nvim_win_set_option(M.state.win, 'wrap', false)
   vim.api.nvim_win_set_option(M.state.win, 'cursorline', true)
   vim.api.nvim_win_set_option(M.state.win, 'number', false)
   vim.api.nvim_win_set_option(M.state.win, 'relativenumber', false)
   vim.api.nvim_win_set_option(M.state.win, 'signcolumn', 'no')
   vim.api.nvim_win_set_option(M.state.win, 'foldcolumn', '0')
+  vim.api.nvim_win_set_option(M.state.win, 'winfixwidth', true)  -- Fixed width like neo-tree
   vim.api.nvim_win_set_option(M.state.win, 'winhl', 'Normal:NeoTreeNormal,FloatBorder:NeoTreeFloatBorder')
   
   return M.state.win
@@ -117,6 +112,11 @@ end
 -- Get sidebar window ID (if open)
 function M.get_win()
   return M.is_open() and M.state.win or nil
+end
+
+-- Get sidebar window ID even if closed (for window stack tracking)
+function M.get_win_id()
+  return M.state.win
 end
 
 -- Get sidebar buffer ID
@@ -171,10 +171,23 @@ function M.set_position(position)
   -- If sidebar is open, we need to recreate it
   if M.is_open() then
     local was_focused = vim.api.nvim_get_current_win() == M.state.win
+    local content = nil
+    
+    -- Preserve content before closing
+    if vim.api.nvim_buf_is_valid(M.state.buf) then
+      content = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+    end
+    
     M.close()
     M.open()
+    
+    -- Restore content if we had any
+    if content then
+      M.update_content(content)
+    end
+    
     if not was_focused then
-      -- Return focus to original window
+      -- Return focus to a main window (not sidebar)
       local wins = vim.api.nvim_list_wins()
       for _, win in ipairs(wins) do
         if win ~= M.state.win then
