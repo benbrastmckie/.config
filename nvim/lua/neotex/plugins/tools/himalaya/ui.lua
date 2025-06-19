@@ -7,6 +7,7 @@ local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
+local state = require('neotex.plugins.tools.himalaya.state')
 
 -- Buffer tracking
 M.buffers = {
@@ -17,7 +18,19 @@ M.buffers = {
 
 -- Initialize UI components
 function M.init()
+  -- Initialize state management first
+  state.init()
+  
+  -- Initialize sidebar with state
   sidebar.init()
+  
+  -- Sync state with sidebar configuration
+  state.sync_with_sidebar()
+  
+  -- Restore session if state is fresh
+  if state.is_state_fresh() then
+    M.restore_session()
+  end
 end
 
 -- Show email list in sidebar
@@ -44,6 +57,10 @@ function M.show_email_list(args)
     config.switch_folder(folder)
   end
   
+  -- Update state
+  state.set_current_account(config.state.current_account)
+  state.set_current_folder(folder)
+  
   -- Get email list
   local emails = utils.get_email_list(config.state.current_account, folder)
   if not emails then
@@ -66,6 +83,9 @@ function M.show_email_list(args)
   vim.api.nvim_buf_set_var(buf, 'himalaya_emails', emails)
   vim.api.nvim_buf_set_var(buf, 'himalaya_account', config.state.current_account)
   vim.api.nvim_buf_set_var(buf, 'himalaya_folder', folder)
+  
+  -- Save current view to state
+  state.save()
   
   -- Focus the sidebar
   sidebar.focus()
@@ -158,6 +178,9 @@ function M.read_email(email_id)
   vim.b[buf].himalaya_email_id = email_id
   vim.b[buf].himalaya_email = email_content
   vim.b[buf].himalaya_urls = urls
+  
+  -- Update selected email in state
+  state.set_selected_email(email_id)
   
   -- Open in window
   M.open_email_window(buf, 'Email - ' .. (email_content.subject or 'No Subject'))
@@ -644,6 +667,9 @@ end
 
 -- Close Himalaya entirely (all buffers and sidebar)
 function M.close_himalaya()
+  -- Save state before closing
+  state.save()
+  
   -- Close sidebar
   sidebar.close()
   
@@ -682,8 +708,13 @@ end
 
 -- Search emails
 function M.search_emails(query)
+  -- Update search state
+  state.set_last_query(query)
+  
   local results = utils.search_emails(config.state.current_account, query)
   if results then
+    -- Save search results to state
+    state.set_search_results(results)
     -- Display search results in email list format
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-list')
@@ -897,6 +928,58 @@ function M.open_url(url)
       end
     end
   })
+end
+
+-- Restore session from state
+function M.restore_session()
+  local current_account = state.get_current_account()
+  local current_folder = state.get_current_folder()
+  local selected_email = state.get_selected_email()
+  
+  -- Only restore if we have account and folder info
+  if current_account and current_folder then
+    vim.defer_fn(function()
+      -- Show the email list for the saved folder/account
+      M.show_email_list({current_folder, '--account=' .. current_account})
+      
+      -- If there was a selected email, try to restore it
+      if selected_email then
+        vim.defer_fn(function()
+          M.read_email(selected_email)
+        end, 500)
+      end
+      
+      -- Restore search results if available
+      local last_query = state.get_last_query()
+      local search_results = state.get_search_results()
+      if last_query and search_results then
+        vim.notify('Previous search: "' .. last_query .. '" (results available)', vim.log.levels.INFO)
+      end
+      
+      vim.notify('Session restored', vim.log.levels.INFO)
+    end, 100)
+  end
+end
+
+-- Update sidebar configuration from state
+function M.sync_sidebar_config()
+  local sidebar_width = state.get_sidebar_width()
+  local sidebar_position = state.get_sidebar_position()
+  
+  if sidebar_width and sidebar_width ~= sidebar.get_width() then
+    sidebar.set_width(sidebar_width)
+  end
+  
+  if sidebar_position and sidebar_position ~= sidebar.config.position then
+    sidebar.set_position(sidebar_position)
+  end
+end
+
+-- Save current sidebar configuration to state
+function M.save_sidebar_config()
+  state.set_sidebar_width(sidebar.get_width())
+  state.set_sidebar_position(sidebar.config.position)
+  state.save()
 end
 
 return M
