@@ -542,7 +542,7 @@ return {
       { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", icon = "󰒊" },
       { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", icon = "󰚌" },
       { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", icon = "󰁦" },
-      { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" },
+      -- { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" }, -- Disabled due to mbsync config conflict
       { "<leader>mS", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉖" },
       { "<leader>mc", "<cmd>HimalayaCompose<CR>", desc = "compose (draft)", icon = "󰏫" },
