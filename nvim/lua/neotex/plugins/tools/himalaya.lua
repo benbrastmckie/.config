@@ -23,11 +23,15 @@ return {
     config = function()
       local config = require('neotex.plugins.tools.himalaya.config')
       local utils = require('neotex.plugins.tools.himalaya.utils')
+      local ui = require('neotex.plugins.tools.himalaya.ui')
       
       -- Initialize utilities first
       if not utils.init() then
         return
       end
+      
+      -- Initialize UI components
+      ui.init()
       
       -- Setup configuration
       config.setup({

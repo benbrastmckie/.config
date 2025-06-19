@@ -6,6 +6,7 @@ local M = {}
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
+local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
 
 -- Buffer tracking
 M.buffers = {
@@ -14,7 +15,12 @@ M.buffers = {
   email_compose = nil,
 }
 
--- Show email list
+-- Initialize UI components
+function M.init()
+  sidebar.init()
+end
+
+-- Show email list in sidebar
 function M.show_email_list(args)
   args = args or {}
   
@@ -45,31 +51,27 @@ function M.show_email_list(args)
     return
   end
   
-  -- Create or reuse buffer
-  local buf = M.buffers.email_list
-  if not buf or not vim.api.nvim_buf_is_valid(buf) then
-    buf = vim.api.nvim_create_buf(false, true)
-    M.buffers.email_list = buf
-  end
+  -- Open sidebar (this creates the buffer if needed)
+  local win = sidebar.open()
+  local buf = sidebar.get_buf()
   
-  -- Configure buffer
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-list')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  -- Update buffer tracking
+  M.buffers.email_list = buf
   
   -- Format email list content
   local lines = M.format_email_list(emails)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  sidebar.update_content(lines)
   
-  -- Store email data for reference
-  vim.b[buf].himalaya_emails = emails
-  vim.b[buf].himalaya_account = config.state.current_account
-  vim.b[buf].himalaya_folder = folder
+  -- Store email data for reference in sidebar buffer
+  vim.api.nvim_buf_set_var(buf, 'himalaya_emails', emails)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_account', config.state.current_account)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_folder', folder)
   
-  -- Open in window
-  M.open_email_window(buf, 'Email List - ' .. config.get_current_account().name .. ' - ' .. folder)
+  -- Focus the sidebar
+  sidebar.focus()
+  
+  vim.notify('Email list loaded in sidebar', vim.log.levels.INFO)
+  return win
 end
 
 -- Format email list for display
@@ -551,11 +553,22 @@ end
 function M.open_email_window(buf, title)
   local ui_config = config.config.ui.email_list
   
-  -- Calculate window size
-  local width = math.floor(vim.o.columns * ui_config.width)
+  -- Calculate window size accounting for sidebar
+  local sidebar_width = sidebar.is_open() and sidebar.get_width() + 2 or 0  -- +2 for borders
+  local available_width = vim.o.columns - sidebar_width
+  local width = math.min(math.floor(available_width * 0.9), math.floor(vim.o.columns * ui_config.width))
   local height = math.floor(vim.o.lines * ui_config.height)
+  
+  -- Position next to sidebar if open
   local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
+  local col
+  if sidebar.is_open() then
+    -- Position to the right of sidebar with some padding
+    col = sidebar_width + 5
+  else
+    -- Center if no sidebar
+    col = math.floor((vim.o.columns - width) / 2)
+  end
   
   -- Get current window as parent
   local parent_win = vim.api.nvim_get_current_win()
@@ -629,8 +642,11 @@ function M.close_and_save_draft()
   end
 end
 
--- Close Himalaya entirely (all buffers)
+-- Close Himalaya entirely (all buffers and sidebar)
 function M.close_himalaya()
+  -- Close sidebar
+  sidebar.close()
+  
   -- Close all Himalaya buffers
   for _, buf in pairs(M.buffers) do
     if buf and vim.api.nvim_buf_is_valid(buf) then
