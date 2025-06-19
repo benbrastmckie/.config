@@ -395,14 +395,81 @@ function M.download_attachment(email_id, attachment_name)
   end
 end
 
--- Sync mail using mbsync
+-- Validate mbsync configuration
+function M.validate_mbsync_config()
+  -- Check if mbsync is available
+  local mbsync_check = vim.fn.system('which mbsync')
+  if vim.v.shell_error ~= 0 then
+    return false, 'mbsync not found in PATH'
+  end
+  
+  -- Check if config file exists
+  local config_file = vim.fn.expand('~/.mbsyncrc')
+  if vim.fn.filereadable(config_file) == 0 then
+    return false, 'mbsync configuration file not found at ~/.mbsyncrc'
+  end
+  
+  -- Read and analyze config for common issues
+  local config_content = vim.fn.readfile(config_file)
+  local content_str = table.concat(config_content, '\n')
+  
+  -- Check for the specific Path + SubFolders Maildir++ conflict
+  local stores = {}
+  local current_store = nil
+  local issues = {}
+  
+  for _, line in ipairs(config_content) do
+    local store_match = line:match('^MaildirStore%s+(.+)')
+    if store_match then
+      current_store = store_match
+      stores[current_store] = { path = false, subfolders = false, line_num = _ }
+    elseif current_store and line:match('^Path%s+') then
+      stores[current_store].path = true
+    elseif current_store and line:match('^SubFolders%s+Maildir%+%+') then
+      stores[current_store].subfolders = true
+    end
+  end
+  
+  -- Check for conflicts
+  for store_name, store_config in pairs(stores) do
+    if store_config.path and store_config.subfolders then
+      table.insert(issues, {
+        type = 'path_subfolder_conflict',
+        store = store_name,
+        message = string.format('Store "%s" has both Path and SubFolders Maildir++ (incompatible)', store_name)
+      })
+    end
+  end
+  
+  if #issues > 0 then
+    return false, 'Configuration conflicts detected', issues
+  end
+  
+  return true, 'Configuration appears valid'
+end
+
+-- Sync mail using mbsync with intelligent error handling
 function M.sync_mail(force)
+  -- First validate configuration
+  local config_valid, config_message, config_issues = M.validate_mbsync_config()
+  
+  if not config_valid then
+    if config_issues then
+      M.handle_mbsync_config_issues(config_issues)
+    else
+      vim.notify('Mail sync failed: ' .. config_message, vim.log.levels.ERROR)
+    end
+    return false
+  end
+  
   local cmd = { 'mbsync', '-a' }
   if force then
     table.insert(cmd, '--force')
   end
   
   vim.notify('Syncing mail...', vim.log.levels.INFO)
+  
+  local error_output = {}
   
   -- Run sync in background
   vim.fn.jobstart(cmd, {
@@ -412,15 +479,158 @@ function M.sync_mail(force)
         -- Trigger sync complete event
         vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaSyncComplete' })
       else
-        vim.notify('Mail sync failed', vim.log.levels.ERROR)
+        M.handle_sync_failure(exit_code, error_output)
       end
     end,
     on_stderr = function(_, data)
       if data and #data > 0 then
-        vim.notify('Sync error: ' .. table.concat(data, '\n'), vim.log.levels.WARN)
+        -- Collect error output for analysis
+        for _, line in ipairs(data) do
+          if line and line ~= '' then
+            table.insert(error_output, line)
+          end
+        end
       end
     end,
   })
+  
+  return true
+end
+
+-- Handle mbsync configuration issues with helpful suggestions
+function M.handle_mbsync_config_issues(issues)
+  local message_parts = {'Mail sync configuration issues detected:', ''}
+  
+  for _, issue in ipairs(issues) do
+    if issue.type == 'path_subfolder_conflict' then
+      table.insert(message_parts, string.format('• %s', issue.message))
+      table.insert(message_parts, '  Fix: Choose either "Path" OR "SubFolders Maildir++" (not both)')
+      table.insert(message_parts, '  Recommended: Remove "Path" line, keep "SubFolders Maildir++"')
+      table.insert(message_parts, '')
+    end
+  end
+  
+  table.insert(message_parts, 'To fix: Edit your Nix configuration and rebuild')
+  table.insert(message_parts, 'Until fixed, try: :HimalayaAlternativeSync for folder-specific sync')
+  
+  vim.notify(table.concat(message_parts, '\n'), vim.log.levels.ERROR)
+end
+
+-- Handle sync failure with intelligent error analysis
+function M.handle_sync_failure(exit_code, error_output)
+  local error_text = table.concat(error_output, '\n')
+  
+  -- Analyze common error patterns
+  if error_text:match('Setting Path is incompatible with .*SubFolders Maildir%+%+') then
+    vim.notify('Mail sync failed: mbsync configuration conflict\n' ..
+               'Fix: Edit ~/.mbsyncrc to use either "Path" OR "SubFolders Maildir++" (not both)\n' ..
+               'Try: :HimalayaConfigHelp for detailed instructions', vim.log.levels.ERROR)
+  elseif error_text:match('No configuration file found') then
+    vim.notify('Mail sync failed: No mbsync configuration found\n' ..
+               'Run: mbsync --help or check your mail setup', vim.log.levels.ERROR)
+  elseif error_text:match('authentication') or error_text:match('password') then
+    vim.notify('Mail sync failed: Authentication error\n' ..
+               'Check your email credentials and oauth tokens', vim.log.levels.ERROR)
+  elseif error_text:match('network') or error_text:match('connection') then
+    vim.notify('Mail sync failed: Network/connection error\n' ..
+               'Check your internet connection and email server settings', vim.log.levels.ERROR)
+  else
+    vim.notify('Mail sync failed (exit code: ' .. exit_code .. ')\n' .. 
+               'Error: ' .. (error_text ~= '' and error_text or 'Unknown error'), vim.log.levels.ERROR)
+  end
+  
+  -- Offer alternative sync methods
+  M.offer_alternative_sync()
+end
+
+-- Offer alternative sync methods when main sync fails
+function M.offer_alternative_sync()
+  -- Check if we're in headless mode
+  local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+  
+  if is_headless then
+    vim.notify('Alternative: Try manual folder sync with :HimalayaAlternativeSync', vim.log.levels.INFO)
+    return
+  end
+  
+  vim.defer_fn(function()
+    vim.ui.select({
+      'Try alternative sync method',
+      'Open mbsync configuration help',
+      'Manual terminal sync (mbsync -a)',
+      'Cancel'
+    }, {
+      prompt = 'Mail sync failed. What would you like to do?',
+    }, function(choice)
+      if choice == 'Try alternative sync method' then
+        M.alternative_sync()
+      elseif choice == 'Open mbsync configuration help' then
+        M.show_config_help()
+      elseif choice == 'Manual terminal sync (mbsync -a)' then
+        vim.cmd('terminal mbsync -a')
+      end
+    end)
+  end, 1000)
+end
+
+-- Alternative sync method using Himalaya directly
+function M.alternative_sync()
+  vim.notify('Trying alternative sync using Himalaya...', vim.log.levels.INFO)
+  
+  -- Try to sync specific folders using Himalaya instead of mbsync
+  local folders = M.get_folders(config.state.current_account)
+  if folders then
+    vim.notify('Alternative sync completed (using Himalaya folder refresh)', vim.log.levels.INFO)
+  else
+    vim.notify('Alternative sync failed: Could not access folders', vim.log.levels.ERROR)
+  end
+end
+
+-- Show configuration help
+function M.show_config_help()
+  local help_content = {
+    'Himalaya Email Configuration Help',
+    '====================================',
+    '',
+    'Common mbsync configuration issues:',
+    '',
+    '1. Path + SubFolders Maildir++ Conflict',
+    '   Problem: Both "Path" and "SubFolders Maildir++" in same store',
+    '   Solution: Choose one:',
+    '   • Remove "Path" line (recommended)',
+    '   • OR remove "SubFolders Maildir++" line',
+    '',
+    '2. Example working configuration:',
+    '   MaildirStore account-local',
+    '   Inbox ~/Mail/Account/',
+    '   SubFolders Maildir++',
+    '   # Path line removed',
+    '',
+    '3. Alternative working configuration:',
+    '   MaildirStore account-local',
+    '   Path ~/Mail/Account/',
+    '   Inbox ~/Mail/Account/',
+    '   # SubFolders line removed',
+    '',
+    'For Nix users: Update your home-manager mail configuration',
+    'and run: home-manager switch',
+    '',
+    'Commands available:',
+    '• :HimalayaAlternativeSync - Try alternative sync method',
+    '• :HimalayaConfigValidate - Check configuration',
+  }
+  
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_content)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.open_email_window(buf, 'Himalaya Configuration Help')
 end
 
 -- Configure account

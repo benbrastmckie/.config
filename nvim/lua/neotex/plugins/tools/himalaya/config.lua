@@ -52,7 +52,7 @@ M.config = {
   html_viewer = 'w3m',
   editor = vim.env.EDITOR or 'nvim',
   -- Sync settings
-  auto_sync = false, -- Disabled due to mbsync configuration conflict
+  auto_sync = true,
   sync_interval = 300, -- 5 minutes in seconds
 }
 

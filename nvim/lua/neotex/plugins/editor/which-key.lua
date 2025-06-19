@@ -542,7 +542,7 @@ return {
       { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", icon = "󰒊" },
       { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", icon = "󰚌" },
       { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", icon = "󰁦" },
-      -- { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" }, -- Disabled due to mbsync config conflict
+      { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" },
       { "<leader>mS", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉖" },
       { "<leader>mc", "<cmd>HimalayaCompose<CR>", desc = "compose (draft)", icon = "󰏫" },
@@ -550,6 +550,9 @@ return {
       { "<leader>mm", "<cmd>HimalayaMove<CR>", desc = "move email", icon = "󰪹" },
       { "<leader>mt", "<cmd>HimalayaTags<CR>", desc = "manage tags", icon = "󰓹" },
       { "<leader>mi", "<cmd>HimalayaInfo<CR>", desc = "email info", icon = "󰋽" },
+      { "<leader>mv", "<cmd>HimalayaConfigValidate<CR>", desc = "validate config", icon = "󰚩" },
+      { "<leader>mh", "<cmd>HimalayaConfigHelp<CR>", desc = "config help", icon = "󰘥" },
+      { "<leader>mA", "<cmd>HimalayaAlternativeSync<CR>", desc = "alternative sync", icon = "󰑓" },
     })
     
     -- Markdown-specific format mapping
