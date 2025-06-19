@@ -95,6 +95,18 @@ function M.close()
   M.state.win = nil
 end
 
+-- Close sidebar and clean up buffer completely
+function M.close_and_cleanup()
+  -- Close the window first
+  M.close()
+  
+  -- Delete the buffer to prevent it from lingering
+  if M.state.buf and vim.api.nvim_buf_is_valid(M.state.buf) then
+    vim.api.nvim_buf_delete(M.state.buf, { force = true })
+  end
+  M.state.buf = nil
+end
+
 -- Toggle sidebar visibility
 function M.toggle()
   if M.state.is_open then

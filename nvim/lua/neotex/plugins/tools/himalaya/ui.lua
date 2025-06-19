@@ -670,13 +670,27 @@ function M.close_himalaya()
   -- Save state before closing
   state.save()
   
-  -- Close sidebar
-  sidebar.close()
+  -- Close and cleanup sidebar (including buffer)
+  sidebar.close_and_cleanup()
   
-  -- Close all Himalaya buffers
-  for _, buf in pairs(M.buffers) do
+  -- Close all tracked Himalaya buffers
+  local closed_buffers = 0
+  for name, buf in pairs(M.buffers) do
     if buf and vim.api.nvim_buf_is_valid(buf) then
       vim.api.nvim_buf_delete(buf, { force = true })
+      closed_buffers = closed_buffers + 1
+    end
+  end
+  
+  -- Find and close any remaining Himalaya buffers by filetype
+  local all_buffers = vim.api.nvim_list_bufs()
+  for _, buf in ipairs(all_buffers) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      local ok, filetype = pcall(vim.api.nvim_buf_get_option, buf, 'filetype')
+      if ok and filetype and filetype:match('^himalaya%-') then
+        vim.api.nvim_buf_delete(buf, { force = true })
+        closed_buffers = closed_buffers + 1
+      end
     end
   end
   
@@ -690,7 +704,29 @@ function M.close_himalaya()
     email_compose = nil,
   }
   
-  vim.notify('Himalaya closed', vim.log.levels.INFO)
+  vim.notify(string.format('Himalaya closed (%d buffers cleaned up)', closed_buffers), vim.log.levels.INFO)
+end
+
+-- Debug function to list Himalaya buffers
+function M.debug_buffers()
+  print("Himalaya Buffers Debug:")
+  print("Tracked buffers:")
+  for name, buf in pairs(M.buffers) do
+    local status = buf and vim.api.nvim_buf_is_valid(buf) and "valid" or "invalid/nil"
+    print(string.format("  %s: %s (%s)", name, buf or "nil", status))
+  end
+  
+  print("All Himalaya buffers by filetype:")
+  local all_buffers = vim.api.nvim_list_bufs()
+  for _, buf in ipairs(all_buffers) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      local ok, filetype = pcall(vim.api.nvim_buf_get_option, buf, 'filetype')
+      if ok and filetype and filetype:match('^himalaya%-') then
+        local name = vim.api.nvim_buf_get_name(buf)
+        print(string.format("  Buffer %d: %s (name: %s)", buf, filetype, name))
+      end
+    end
+  end
 end
 
 -- Check if email buffer is open
