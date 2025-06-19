@@ -5,6 +5,7 @@ local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
+local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
 
 -- Buffer tracking
 M.buffers = {
@@ -556,6 +557,9 @@ function M.open_email_window(buf, title)
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
   
+  -- Get current window as parent
+  local parent_win = vim.api.nvim_get_current_win()
+  
   -- Open floating window
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
@@ -573,6 +577,12 @@ function M.open_email_window(buf, title)
   vim.api.nvim_win_set_option(win, 'wrap', true)
   vim.api.nvim_win_set_option(win, 'cursorline', true)
   
+  -- Add to window stack
+  window_stack.push(win, parent_win)
+  
+  -- Store window ID in buffer for reference
+  vim.api.nvim_buf_set_var(buf, 'himalaya_window_id', win)
+  
   return win
 end
 
@@ -588,9 +598,15 @@ function M.refresh_email_list()
   end
 end
 
--- Close current view
+-- Close current view using window stack
 function M.close_current_view()
-  vim.cmd('close')
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Try to close using window stack first
+  if not window_stack.close_current() then
+    -- If not in stack, close normally
+    vim.cmd('close')
+  end
 end
 
 -- Close without saving (discard)
@@ -621,6 +637,9 @@ function M.close_himalaya()
       vim.api.nvim_buf_delete(buf, { force = true })
     end
   end
+  
+  -- Clear window stack
+  window_stack.clear()
   
   -- Reset buffer tracking
   M.buffers = {
