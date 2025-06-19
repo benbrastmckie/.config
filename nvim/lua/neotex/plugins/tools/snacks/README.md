@@ -304,3 +304,7 @@ vii  -- Select inner scope
 - **Visual feedback**: Clear indicators for git changes and structure
 - **Developer workflow**: Integrated git tools and file operations
 - **User experience**: Polished notifications and input dialogs
+
+## Navigation
+
+- [← Tools Plugins](../README.md)

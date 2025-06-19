@@ -78,3 +78,5 @@ Signal
 **/.claude/
 **/specs/
 nvim/test.tex
+himalaya/config.toml
+himalaya/config.toml.bak

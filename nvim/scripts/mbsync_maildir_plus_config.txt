@@ -1,0 +1,30 @@
+# Updated mbsync configuration for Maildir++ format
+# Replace your current .mbsyncrc with this content
+
+# Gmail IMAP account
+IMAPAccount gmail
+Host imap.gmail.com
+Port 993
+User benbrastmckie@gmail.com
+AuthMechs XOAUTH2
+PassCmd "secret-tool lookup keyring gmail-smtp-oauth2-access-token"
+TLSType IMAPS
+
+# Gmail remote store
+IMAPStore gmail-remote
+Account gmail
+
+# Gmail local store (Maildir++ format)
+MaildirStore gmail-local
+Path ~/Mail/Gmail/
+Inbox ~/Mail/Gmail/
+SubFolders Maildir++
+
+# Gmail sync channel
+Channel gmail
+Far :gmail-remote:
+Near :gmail-local:
+Patterns *
+Create Both
+SyncState *
+Expunge Both

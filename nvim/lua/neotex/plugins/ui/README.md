@@ -86,3 +86,12 @@ All UI plugins follow the project's coding standards:
 - Error handling with pcall
 - Integration with existing color schemes
 - Consistent keymapping patterns
+
+## Navigation
+
+- [Tools Plugins →](../tools/README.md)
+- [Editor Plugins →](../editor/README.md)
+- [LSP Configuration →](../lsp/README.md)
+- [AI Plugins →](../ai/README.md)
+- [Text Plugins →](../text/README.md)
+- [← Plugins Overview](../README.md)

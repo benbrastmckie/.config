@@ -12,6 +12,7 @@
 -- - surround.lua: Text surrounding functionality
 -- - todo-comments.lua: Highlight and search TODO comments
 -- - yanky.lua: Enhanced yank and paste functionality
+-- - himalaya/: Email client integration with local storage
 --
 -- Note: The following remain in other modules:
 -- - toggleterm.lua: Terminal integration (editor module)
@@ -64,6 +65,7 @@ local mini_module = safe_require("neotex.plugins.tools.mini")
 local surround_module = safe_require("neotex.plugins.tools.surround")
 local todo_comments_module = safe_require("neotex.plugins.tools.todo-comments")
 local yanky_module = safe_require("neotex.plugins.tools.yanky")
+local himalaya_module = safe_require("neotex.plugins.tools.himalaya")
 
 -- Create array of valid plugin specs
 local plugins = {}
@@ -84,6 +86,16 @@ add_if_valid(mini_module)
 add_if_valid(surround_module)
 add_if_valid(todo_comments_module)
 add_if_valid(yanky_module)
+
+-- Himalaya returns multiple specs, handle them separately
+if type(himalaya_module) == "table" and not himalaya_module[1] and not himalaya_module.import then
+  -- It's an array of plugin specs
+  for _, spec in ipairs(himalaya_module) do
+    add_if_valid(spec)
+  end
+else
+  add_if_valid(himalaya_module)
+end
 
 -- Return only valid plugin specs
 return plugins

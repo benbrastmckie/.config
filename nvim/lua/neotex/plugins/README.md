@@ -167,3 +167,14 @@ The script is particularly useful:
 - **Before updates**: Record current plugin state
 
 See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation.
+
+## Navigation
+
+- [Tools Plugins →](tools/README.md)
+- [Editor Plugins →](editor/README.md)
+- [LSP Configuration →](lsp/README.md)
+- [UI Plugins →](ui/README.md)
+- [AI Plugins →](ai/README.md)
+- [Text Plugins →](text/README.md)
+- [Config Documentation →](../config/README.md)
+- [← Main Configuration](../../README.md)

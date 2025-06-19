@@ -249,3 +249,8 @@ highlights.apply_theme_aware_highlights()
 - **UI**: Uses `vim.ui.select` and `vim.ui.input` for consistent interface
 
 This utility system provides a robust foundation for AI integration while maintaining modularity and cross-platform compatibility.
+
+## Navigation
+
+- [← AI Plugins](../README.md)
+- [← Plugins Overview](../../README.md)

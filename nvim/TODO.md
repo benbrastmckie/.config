@@ -1,7 +1,5 @@
 # TODO
 
-
-
 ## In Progress
 
 - [ ] release
@@ -34,7 +32,7 @@
     - [x] refactor directory
     - [x] document
 - [.] ai
-  - [:] claude-codehttps://link-springer-com.libproxy.mit.edu/article/10.1007/s10992-025-09793-8
+  - [:] claude-code
     - [.] mcp
     - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] avante
@@ -96,7 +94,14 @@
   - [x] comment
   - [x] surround
   - [x] pairs
-- [.] email
+- [:] email
+  - [x] install himalaya
+  - [x] get mbsync to work
+  - [.] build himalaya-nvim plugin
+    - [ ] test
+    - [x] make all keymaps run through which-key
+    - [x] preview html in browser
+    - [x] document
 - [.] docs
   - [ ] api
   - [ ] READMEs

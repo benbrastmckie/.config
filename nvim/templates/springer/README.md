@@ -91,4 +91,5 @@ Multiple citation styles available:
 - [which-key.lua](../../lua/neotex/plugins/editor/which-key.lua) - Template keybindings
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [← Templates](../README.md)

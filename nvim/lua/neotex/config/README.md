@@ -61,3 +61,11 @@ require("neotex.config").setup()
 -- Or reload a specific module
 require("neotex.config.options").setup()
 ```
+
+## Navigation
+
+- [Plugins Overview →](../plugins/README.md)
+- [Tools Plugins →](../plugins/tools/README.md)
+- [Editor Plugins →](../plugins/editor/README.md)
+- [LSP Configuration →](../plugins/lsp/README.md)
+- [← Main Configuration](../README.md)

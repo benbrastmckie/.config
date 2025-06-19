@@ -67,4 +67,7 @@ Snippets integrate with:
 - [templates/](../templates/README.md) - Document templates
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [Templates →](../templates/README.md)
+- [LSP Configuration →](../lua/neotex/plugins/lsp/README.md)
+- [← Main Configuration](../README.md)

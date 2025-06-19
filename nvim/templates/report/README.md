@@ -117,4 +117,6 @@ Root.tex (master document)
 - [sessions.lua](../../lua/neotex/plugins/ui/sessions.lua) - Project session management
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [Chapter Templates →](chapters/README.md)
+- [← Templates](../README.md)

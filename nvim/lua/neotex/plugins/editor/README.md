@@ -242,3 +242,12 @@ This shows the EDITOR category with all editor enhancement plugins. See [`script
 - **LSP Configuration**: Language servers → [lsp/](../lsp/)
 
 This organization ensures editor enhancements are separated from language-specific tools while maintaining clear integration points for a cohesive editing experience.
+
+## Navigation
+
+- [Tools Plugins →](../tools/README.md)
+- [LSP Configuration →](../lsp/README.md)
+- [UI Plugins →](../ui/README.md)
+- [AI Plugins →](../ai/README.md)
+- [Text Plugins →](../text/README.md)
+- [← Plugins Overview](../README.md)

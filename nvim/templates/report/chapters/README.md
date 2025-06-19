@@ -125,4 +125,6 @@ chapters/
 - [vimtex.lua](../../../lua/neotex/plugins/text/vimtex.lua) - LaTeX compilation setup
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [← Report Templates](../README.md)
+- [← Templates](../../README.md)

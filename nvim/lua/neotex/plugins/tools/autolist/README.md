@@ -265,3 +265,8 @@ vim.api.nvim_create_autocmd("FileType", {
 - **Neorg** (`.norg`)
 
 The module is specifically optimized for note-taking and documentation workflows in these formats.
+
+## Navigation
+
+- [Autolist Utilities →](util/README.md)
+- [← Tools Plugins](../README.md)

@@ -104,4 +104,11 @@ See [`scripts/README.md`](../../../scripts/README.md) for complete script docume
 - **Snippets**: Code snippets → [../../../snippets/](../../../snippets/)
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [Jupyter Integration →](jupyter/README.md)
+- [Tools Plugins →](../tools/README.md)
+- [Editor Plugins →](../editor/README.md)
+- [LSP Configuration →](../lsp/README.md)
+- [UI Plugins →](../ui/README.md)
+- [AI Plugins →](../ai/README.md)
+- [← Plugins Overview](../README.md)
