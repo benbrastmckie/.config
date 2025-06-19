@@ -141,6 +141,12 @@ function M.set_width(new_width)
   if M.is_open() then
     vim.api.nvim_win_set_width(M.state.win, new_width)
   end
+  
+  -- Update state if available
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.state')
+  if ok then
+    state.set_sidebar_width(new_width)
+  end
 end
 
 -- Get current width
@@ -155,6 +161,12 @@ function M.set_position(position)
   end
   
   M.config.position = position
+  
+  -- Update state if available
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.state')
+  if ok then
+    state.set_sidebar_position(position)
+  end
   
   -- If sidebar is open, we need to recreate it
   if M.is_open() then
