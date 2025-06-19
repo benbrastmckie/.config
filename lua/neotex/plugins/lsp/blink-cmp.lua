@@ -10,7 +10,7 @@ return {
   },
   {
     "saghen/blink.cmp",
-    version = "1.*", 
+    version = "1.*",
     event = { "InsertEnter", "CmdlineEnter" },
     dependencies = {
       "saghen/blink.compat",
@@ -47,7 +47,7 @@ return {
     },
     config = function(_, opts)
       require('blink.cmp').setup(opts)
-      
+
       -- Simple LaTeX setup - let blink.cmp handle everything through VimTeX compatibility
       vim.api.nvim_create_autocmd("FileType", {
         pattern = "tex",
@@ -57,12 +57,12 @@ return {
         end,
       })
     end,
-    
+
     opts = {
       snippets = {
         preset = 'luasnip'
       },
-      
+
       keymap = {
         preset = 'default',
         ['<C-k>'] = { 'select_prev', 'fallback' },
@@ -75,7 +75,7 @@ return {
         ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
-      
+
       appearance = {
         kind_icons = {
           Text = "󰦨",
@@ -105,11 +105,11 @@ return {
           TypeParameter = "󰅲",
         }
       },
-      
+
       sources = {
         default = { 'lsp', 'path', 'snippets', 'buffer' },
         per_filetype = {
-          tex = { 'lsp', 'omni', 'snippets', 'path', 'buffer' },  -- Use 'omni' instead of 'vimtex'
+          tex = { 'lsp', 'omni', 'snippets', 'path', 'buffer' }, -- Use 'omni' instead of 'vimtex'
           lua = { 'lsp', 'path', 'snippets', 'buffer' },
           python = { 'lsp', 'path', 'snippets', 'buffer' },
         },
@@ -122,12 +122,12 @@ return {
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
-                
+
                 -- Disable in reference contexts only (keep for citations and general editing)
                 if before_cursor:match('\\ref{[^}]*$') or
-                   before_cursor:match('\\[Cc]ref{[^}]*$') or
-                   before_cursor:match('\\eqref{[^}]*$') or
-                   before_cursor:match('\\autoref{[^}]*$') then
+                    before_cursor:match('\\[Cc]ref{[^}]*$') or
+                    before_cursor:match('\\eqref{[^}]*$') or
+                    before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end
@@ -146,15 +146,15 @@ return {
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
-                
+
                 -- Keep enabled for include/input contexts, disable for citations and references
-                if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                   before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
-                   before_cursor:match('\\ref{[^}]*$') or
-                   before_cursor:match('\\[Cc]ref{[^}]*$') or
-                   before_cursor:match('\\eqref{[^}]*$') or
-                   before_cursor:match('\\autoref{[^}]*$') then
+                if before_cursor:match('\\cite[%w]*{[^}]*$') or
+                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
+                    before_cursor:match('\\citet?[%w]*{[^}]*$') or
+                    before_cursor:match('\\ref{[^}]*$') or
+                    before_cursor:match('\\[Cc]ref{[^}]*$') or
+                    before_cursor:match('\\eqref{[^}]*$') or
+                    before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end
@@ -163,7 +163,7 @@ return {
             max_items = 20,
             min_keyword_length = 1,
           },
-          buffer = { 
+          buffer = {
             name = 'buffer',
             enabled = function()
               -- Disable buffer source in LaTeX citation and reference contexts
@@ -171,15 +171,15 @@ return {
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local before_cursor = line:sub(1, col)
-                
+
                 -- Disable in citation and reference contexts
-                if before_cursor:match('\\cite[%w]*{[^}]*$') or 
-                   before_cursor:match('\\citep?[%w]*{[^}]*$') or
-                   before_cursor:match('\\citet?[%w]*{[^}]*$') or
-                   before_cursor:match('\\ref{[^}]*$') or
-                   before_cursor:match('\\[Cc]ref{[^}]*$') or
-                   before_cursor:match('\\eqref{[^}]*$') or
-                   before_cursor:match('\\autoref{[^}]*$') then
+                if before_cursor:match('\\cite[%w]*{[^}]*$') or
+                    before_cursor:match('\\citep?[%w]*{[^}]*$') or
+                    before_cursor:match('\\citet?[%w]*{[^}]*$') or
+                    before_cursor:match('\\ref{[^}]*$') or
+                    before_cursor:match('\\[Cc]ref{[^}]*$') or
+                    before_cursor:match('\\eqref{[^}]*$') or
+                    before_cursor:match('\\autoref{[^}]*$') then
                   return false
                 end
               end
@@ -208,7 +208,7 @@ return {
           },
         },
       },
-      
+
       -- trigger = {
       --   completion = {
       --     keyword_length = 1,
@@ -220,7 +220,7 @@ return {
       --     enabled = false,
       --   },
       -- },
-      
+
       completion = {
         accept = {
           auto_brackets = {
@@ -228,7 +228,7 @@ return {
             default_brackets = { '(', ')' },
             kind_resolution = {
               enabled = true,
-              blocked_filetypes = { 'tex', 'latex' }  -- Avoid conflicts with LaTeX
+              blocked_filetypes = { 'tex', 'latex' } -- Avoid conflicts with LaTeX
             },
             semantic_token_resolution = {
               enabled = true,
@@ -252,15 +252,15 @@ return {
           auto_show = true,
           draw = {
             treesitter = { "lsp" },
-            columns = { 
-              { 'kind_icon' }, 
-              { 'label', 'label_description', gap = 1 } 
+            columns = {
+              { 'kind_icon' },
+              { 'label',    'label_description', gap = 1 }
             },
             components = {
               kind_icon = {
                 text = function(ctx) return ' ' .. ctx.kind_icon .. ' ' end,
-                highlight = function(ctx) 
-                  return { { group = ctx.kind_hl, priority = 20000 } } 
+                highlight = function(ctx)
+                  return { { group = ctx.kind_hl, priority = 20000 } }
                 end
               }
             }
@@ -275,14 +275,14 @@ return {
           enabled = false,
         },
       },
-      
+
       -- fuzzy = {
       --   use_typo_resistance = true,
       --   use_frecency = true,
       --   use_proximity = true,
       --   sorts = { 'label', 'kind', 'score' },
       -- },
-      
+
       cmdline = {
         enabled = true,
         completion = {
@@ -314,3 +314,4 @@ return {
     }
   }
 }
+

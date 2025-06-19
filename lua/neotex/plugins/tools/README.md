@@ -20,11 +20,20 @@ tools/
 │   ├── README.md      # Autolist documentation
 │   ├── init.lua       # Main autolist plugin
 │   └── util/          # Autolist utilities
-└── snacks/            # UI enhancements
-    ├── README.md      # Snacks documentation
-    ├── init.lua       # Main snacks configuration
-    ├── dashboard.lua  # Dashboard setup
-    └── utils.lua      # Snacks utilities
+├── snacks/            # UI enhancements
+│   ├── README.md      # Snacks documentation
+│   ├── init.lua       # Main snacks configuration
+│   ├── dashboard.lua  # Dashboard setup
+│   └── utils.lua      # Snacks utilities
+└── himalaya/          # Email client integration
+    ├── README.md      # Himalaya documentation
+    ├── INSTALLATION.md # Complete setup guide
+    ├── init.lua       # Main plugin interface
+    ├── config.lua     # Configuration management
+    ├── commands.lua   # Command definitions
+    ├── ui.lua         # Email interface
+    ├── picker.lua     # Telescope integration
+    └── utils.lua      # CLI utilities
 ```
 
 ## Overview
@@ -48,6 +57,7 @@ The tools module is organized into individual plugin configurations and speciali
 
 - **[`autolist/`](autolist/README.md)** - Smart list handling for markdown and note-taking
 - **[`snacks/`](snacks/README.md)** - Collection of UI enhancements and utilities
+- **[`himalaya/`](himalaya/README.md)** - Complete email client integration with local storage
 
 ## Plugin Categories
 
@@ -95,6 +105,15 @@ The tools module is organized into individual plugin configurations and speciali
   - Seamless Neovim integration in web browsers
   - Automatic filetype detection
 
+### Communication & Email
+- **himalaya**: Complete email client integration
+  - Multi-account email management (personal, work)
+  - Local Maildir storage with automatic IMAP sync
+  - Rich email interface with floating windows
+  - Telescope integration for folders and accounts
+  - Offline email access and composition
+  - OAuth2 authentication with secure keyring storage
+
 ### Code Completion & Snippets
 - **luasnip**: Advanced snippet engine
   - Custom snippet definitions
@@ -124,6 +143,7 @@ return {
   yanky_module,
   autopairs_module,
   luasnip_module,
+  himalaya_module,
 }
 ```
 
@@ -143,6 +163,7 @@ return {
 - **Browser Integration**: Edit web forms in Neovim
 - **Clipboard Enhancement**: Persistent yank history and smart pasting
 - **Visual Feedback**: Clear indicators for git changes and highlights
+- **Email Management**: Complete email workflow without leaving the editor
 
 ## Usage Examples
 
@@ -174,6 +195,21 @@ def func : «input» → «output» := sorry
    - Nested item  -- Smart cycling
    - Another item
 3. Continue...    -- Smart continuation
+```
+
+### Email Management
+```lua
+-- Keymap examples for email workflow
+<leader>me  -- Open email list
+<leader>mw  -- Compose new email
+<leader>mf  -- Browse folders
+<leader>ma  -- Switch accounts
+
+-- Within email list
+<CR>        -- Read email
+gr          -- Reply
+gf          -- Forward
+gD          -- Delete
 ```
 
 ## Completion Integration
@@ -223,6 +259,9 @@ This shows the TOOLS category with all configured plugins. See [`scripts/README.
 - **Git**: Required for gitsigns functionality
 - **Node.js**: Required for firenvim browser integration
 - **Telescope**: Required for yanky history and todo-comments search
+- **Himalaya CLI**: Required for email client functionality
+- **mbsync**: Required for email synchronization
+- **GNOME Keyring**: Required for secure email credential storage
 
 ### Internal Dependencies
 - **Treesitter**: Enhances autopairs and mini.ai functionality
@@ -231,11 +270,19 @@ This shows the TOOLS category with all configured plugins. See [`scripts/README.
 
 ## Related Documentation
 
-- [Main Plugins README](../README.md) - Plugin system overview
-- [Editor Plugins](../editor/README.md) - Core editing functionality
-- [LSP Configuration](../lsp/README.md) - Language server setup
-- [UI Plugins](../ui/README.md) - Interface enhancements
-
 For detailed configuration of specialized components, see the subdirectory documentation:
 - [Autolist Documentation](autolist/README.md)
 - [Snacks Documentation](snacks/README.md)
+- [Himalaya Email Documentation](himalaya/README.md)
+
+## Navigation
+
+- [Autolist Plugin →](autolist/README.md)
+- [Snacks Plugin →](snacks/README.md)
+- [Himalaya Email →](himalaya/README.md)
+- [Editor Plugins →](../editor/README.md)
+- [LSP Configuration →](../lsp/README.md)
+- [UI Plugins →](../ui/README.md)
+- [AI Plugins →](../ai/README.md)
+- [Text Plugins →](../text/README.md)
+- [← Plugins Overview](../README.md)

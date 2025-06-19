@@ -131,3 +131,12 @@ To verify LSP plugins are properly loaded and organized:
 ```
 
 This will show the LSP category with plugins like blink.cmp, nvim-lspconfig, mason.nvim, and related tools. See [`scripts/README.md`](../../../scripts/README.md) for complete script documentation and the main [plugins README](../README.md#plugin-analysis-and-maintenance) for more details.
+
+## Navigation
+
+- [Tools Plugins →](../tools/README.md)
+- [Editor Plugins →](../editor/README.md)
+- [UI Plugins →](../ui/README.md)
+- [AI Plugins →](../ai/README.md)
+- [Text Plugins →](../text/README.md)
+- [← Plugins Overview](../README.md)

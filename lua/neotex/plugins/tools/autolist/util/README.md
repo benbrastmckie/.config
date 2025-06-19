@@ -105,4 +105,6 @@ The utilities extend the base autolist functionality:
 - [editor/treesitter.lua](../../editor/treesitter.lua) - Syntax support
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [← Autolist Plugin](../README.md)
+- [← Tools Plugins](../../README.md)

@@ -85,4 +85,6 @@ conda install jupyter
 - [editor/telescope.lua](../../editor/telescope.lua) - Jupyter file search integration
 
 ## Navigation
-- [← Parent Directory](../README.md)
+
+- [← Text Plugins](../README.md)
+- [← Plugins Overview](../../README.md)

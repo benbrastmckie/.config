@@ -448,4 +448,9 @@ Active in Avante AI interface buffers.
    - Leader mappings: `lua/neotex/plugins/editor/which-key.lua`
    - Plugin-specific mappings: Individual plugin configuration files
 
+## Navigation
+
+- [Main Configuration ←](../README.md)
+- [Installation Guide ←](INSTALLATION.md)
+
 For more information about the overall configuration structure, see the main [README](../README.md).

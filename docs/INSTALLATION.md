@@ -287,4 +287,9 @@ After successful installation:
 3. **Explore Features**: Try the dashboard options and various workflows
 4. **Customize**: Adapt the configuration to your specific needs
 
-Welcome to your new Neovim configuration! <�
+## Navigation
+
+- [Main Configuration ←](../README.md)
+- [Keybinding Reference →](MAPPINGS.md)
+
+Welcome to your new Neovim configuration! <�

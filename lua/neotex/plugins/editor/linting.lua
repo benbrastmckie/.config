@@ -98,7 +98,9 @@ return {
     if is_executable("pylint") then
       lint.linters.pylint = lint.linters.pylint or {}
       lint.linters.pylint.args = {
-        "--disable=C0111",
+        "--disable=C0111,C0103,R0903",
+        "--output-format=parseable",
+        "--reports=no",
       }
       
       -- Only add pylintrc if it exists
@@ -106,6 +108,9 @@ return {
       if vim.fn.filereadable(pylintrc_path) == 1 then
         table.insert(lint.linters.pylint.args, "--rcfile=" .. pylintrc_path)
       end
+      
+      -- Add condition to handle parsing errors
+      lint.linters.pylint.ignore_exitcode = true
     end
     
     if is_executable("luacheck") then

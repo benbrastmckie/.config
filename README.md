@@ -440,6 +440,23 @@ After making changes:
 Remember that a well-documented configuration is easier to maintain and extend.
 Take the time to add clear comments and keep this README updated as the configuration evolves.
 
+## Navigation
+
+### Core Configuration Areas
+- [Configuration →](lua/neotex/config/README.md) - Options, keymaps, and autocommands
+- [Plugins →](lua/neotex/plugins/README.md) - Plugin system and organization
+- [Utilities →](lua/neotex/util/README.md) - Helper functions and optimization tools
+
+### Specialized Documentation
+- [Templates →](templates/README.md) - LaTeX document templates
+- [Snippets →](snippets/README.md) - Code snippet collections
+- [Scripts →](scripts/README.md) - Maintenance and diagnostic utilities
+- [File Types →](after/README.md) - Language-specific configurations
+
+### Additional Resources
+- [Installation Guide →](docs/INSTALLATION.md) - Setup instructions
+- [Keybinding Reference →](docs/MAPPINGS.md) - Complete keymap documentation
+
 ### Troubleshooting and Debugging
 
 #### Viewing Debug Messages

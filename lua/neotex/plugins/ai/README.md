@@ -606,3 +606,13 @@ vim.g.mcphub_debug_mode = true
 - Detailed connection information
 
 For more detailed information, refer to the individual module documentation or the help pages with `:h avante` or `:h lectic`.
+
+## Navigation
+
+- [AI Utilities →](util/README.md)
+- [Tools Plugins →](../tools/README.md)
+- [Editor Plugins →](../editor/README.md)
+- [LSP Configuration →](../lsp/README.md)
+- [UI Plugins →](../ui/README.md)
+- [Text Plugins →](../text/README.md)
+- [← Plugins Overview](../README.md)

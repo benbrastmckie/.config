@@ -35,6 +35,10 @@ ACTIONS (<leader>a)                             | DESCRIPTION
 <leader>au - Update CWD                         | Change to file's directory
 <leader>as - Edit snippets                      | Open snippets directory
 <leader>aS - SSH connect                        | Connect to MIT server via SSH
+<leader>aU - Open URL                           | Open URL under cursor
+<leader>aF - Toggle all folds                   | Toggle all folds open/closed
+<leader>ao - Toggle fold                        | Toggle fold under cursor
+<leader>aT - Toggle folding method              | Switch between manual/smart folding
 
 ----------------------------------------------------------------------------------
 FIND (<leader>f)                                | DESCRIPTION
@@ -392,6 +396,10 @@ return {
       { "<leader>au", "<cmd>cd %:p:h | Neotree reveal<CR>", desc = "update cwd", icon = "󰉖" },
       { "<leader>as", "<cmd>Neotree ~/.config/nvim/snippets/<CR>", desc = "snippets edit", icon = "󰩫" },
       { "<leader>aS", "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", desc = "ssh", icon = "󰣀" },
+      { "<leader>aU", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "open URL under cursor", icon = "󰖟" },
+      { "<leader>aF", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖" },
+      { "<leader>ao", "za", desc = "toggle fold under cursor", icon = "󰘖" },
+      { "<leader>aT", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖" },
     })
     
     -- Filetype-specific actions (autocmd approach)
@@ -477,6 +485,9 @@ return {
       { "<leader>hm", "<cmd>AvanteModel<CR>", desc = "select model", icon = "󰒕" },
       { "<leader>hp", "<cmd>AvantePrompt<CR>", desc = "select prompt", icon = "󰞋" },
       { "<leader>hf", "<cmd>AvanteRefresh<CR>", desc = "refresh", icon = "󰜉" },
+      { "<leader>hl", "<cmd>Lectic<CR>", desc = "run lectic on file", icon = "󰊠" },
+      { "<leader>hn", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙" },
+      { "<leader>hL", "<cmd>LecticSubmitSelection<CR>", desc = "submit selection with message", icon = "󰚟" },
     })
 
     -- Jupyter group (dynamic group header)
@@ -521,33 +532,32 @@ return {
       end,
     })
 
-    -- Markdown group (dynamic group header)
+    -- MAIL group (global - himalaya email client)
     wk.add({
-      {
-        "<leader>m",
-        group = function()
-          return vim.tbl_contains({ "markdown", "md" }, vim.bo.filetype) and "markdown" or nil
-        end,
-        icon = "",
-        cond = function()
-          return vim.tbl_contains({ "markdown", "md" }, vim.bo.filetype)
-        end
-      },
+      { "<leader>m", group = "mail", icon = "󰇮" },
+      { "<leader>ml", "<cmd>HimalayaList<CR>", desc = "list emails", icon = "󰇮" },
+      { "<leader>mr", "<cmd>HimalayaRead<CR>", desc = "read email", icon = "󰍎" },
+      { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰏫" },
+      { "<leader>mR", "<cmd>HimalayaReply<CR>", desc = "reply", icon = "󰑣" },
+      { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", icon = "󰒊" },
+      { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", icon = "󰚌" },
+      { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", icon = "󰁦" },
+      { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" },
+      { "<leader>mS", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
+      { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉖" },
+      { "<leader>mc", "<cmd>HimalayaCompose<CR>", desc = "compose (draft)", icon = "󰏫" },
+      { "<leader>mx", "<cmd>HimalayaExpunge<CR>", desc = "expunge deleted", icon = "󰩺" },
+      { "<leader>mm", "<cmd>HimalayaMove<CR>", desc = "move email", icon = "󰪹" },
+      { "<leader>mt", "<cmd>HimalayaTags<CR>", desc = "manage tags", icon = "󰓹" },
+      { "<leader>mi", "<cmd>HimalayaInfo<CR>", desc = "email info", icon = "󰋽" },
     })
     
-    -- Markdown individual mappings (autocmd approach)
+    -- Markdown-specific format mapping
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "markdown", "md" },
       callback = function()
         wk.add({
-          { "<leader>ml", "<cmd>Lectic<CR>", desc = "run lectic on file", icon = "󰊠", buffer = 0 },
-          { "<leader>mn", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", buffer = 0 },
-          { "<leader>ms", "<cmd>LecticSubmitSelection<CR>", desc = "submit selection with message", icon = "󰚟", buffer = 0 },
-          { "<leader>mp", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
-          { "<leader>mu", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "open URL under cursor", icon = "󰖟", buffer = 0 },
-          { "<leader>ma", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖", buffer = 0 },
-          { "<leader>mf", "za", desc = "toggle fold under cursor", icon = "󰘖", buffer = 0 },
-          { "<leader>mt", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖", buffer = 0 },
+          { "<leader>ap", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
         })
       end,
     })
