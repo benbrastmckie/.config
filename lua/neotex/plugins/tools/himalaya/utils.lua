@@ -103,6 +103,21 @@ function M.get_folders(account)
   return nil
 end
 
+-- Create a new folder
+function M.create_folder(folder_name, account)
+  account = account or config.state.current_account
+  local args = { 'folder', 'create', folder_name }
+  local result = M.execute_himalaya(args, { account = account })
+  
+  if result then
+    vim.notify(string.format('Folder "%s" created', folder_name), vim.log.levels.INFO)
+    return true
+  else
+    vim.notify(string.format('Failed to create folder "%s"', folder_name), vim.log.levels.ERROR)
+    return false
+  end
+end
+
 -- Get unread email count for folder
 function M.get_unread_count(account, folder)
   folder = folder or 'INBOX'
@@ -240,11 +255,69 @@ function M.parse_email_content(lines)
   return email_data
 end
 
--- Delete email
-function M.delete_email(account, email_id)
+-- Delete email with improved error handling
+function M.delete_email(account, email_id, permanent)
+  if permanent then
+    -- Permanently delete (flag as deleted + expunge)
+    local args = { 'flag', 'add', tostring(email_id), 'Deleted' }
+    local result = M.execute_himalaya(args, { account = account })
+    if result then
+      -- Expunge to permanently remove
+      return M.expunge_deleted()
+    end
+    return false
+  else
+    -- Try to move to trash first
+    local args = { 'message', 'delete', tostring(email_id) }
+    local result = M.execute_himalaya(args, { account = account })
+    return result ~= nil
+  end
+end
+
+-- Enhanced delete with folder checking
+function M.smart_delete_email(account, email_id)
+  -- First try normal delete (move to trash)
   local args = { 'message', 'delete', tostring(email_id) }
-  local result = M.execute_himalaya(args, { account = account })
-  return result ~= nil
+  local cmd = { config.config.executable }
+  vim.list_extend(cmd, args)
+  
+  if account then
+    table.insert(cmd, '-a')
+    table.insert(cmd, account)
+  end
+  
+  table.insert(cmd, '-o')
+  table.insert(cmd, 'json')
+  
+  local result = vim.fn.system(cmd)
+  local exit_code = vim.v.shell_error
+  
+  if exit_code == 0 then
+    return true, 'Email moved to trash'
+  end
+  
+  -- If normal delete failed, check if it's a missing trash folder issue
+  if result:match('cannot find maildir matching name Trash') then
+    -- Get available folders to suggest alternatives
+    local folders = M.get_folders(account)
+    local suggestions = {}
+    
+    if folders then
+      -- Look for common trash folder names
+      local trash_patterns = { 'Trash', 'TRASH', 'Deleted', 'DELETED', 'Junk', 'JUNK' }
+      for _, folder in ipairs(folders) do
+        for _, pattern in ipairs(trash_patterns) do
+          if folder:lower():match(pattern:lower()) then
+            table.insert(suggestions, folder)
+          end
+        end
+      end
+    end
+    
+    return false, 'missing_trash', suggestions
+  else
+    return false, 'delete_failed', result
+  end
 end
 
 -- Move email to folder
@@ -461,7 +534,8 @@ end
 -- Expunge deleted emails
 function M.expunge_deleted()
   local config = require('neotex.plugins.tools.himalaya.config')
-  local args = { 'folder', 'expunge' }
+  local current_folder = config.state.current_folder or 'INBOX'
+  local args = { 'folder', 'expunge', current_folder }
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
