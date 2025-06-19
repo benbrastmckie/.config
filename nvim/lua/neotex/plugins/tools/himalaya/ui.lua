@@ -576,25 +576,27 @@ end
 function M.open_email_window(buf, title)
   local ui_config = config.config.ui.email_list
   
-  -- Calculate window size accounting for sidebar
-  local sidebar_width = sidebar.is_open() and sidebar.get_width() + 2 or 0  -- +2 for borders
+  -- Calculate window size accounting for sidebar that now shifts content
+  local sidebar_width = sidebar.is_open() and sidebar.get_width() or 0
+  -- Since sidebar now shifts content, we use the remaining available space
   local available_width = vim.o.columns - sidebar_width
-  local width = math.min(math.floor(available_width * 0.9), math.floor(vim.o.columns * ui_config.width))
+  local width = math.min(math.floor(available_width * 0.8), math.floor(vim.o.columns * ui_config.width))
   local height = math.floor(vim.o.lines * ui_config.height)
   
-  -- Position next to sidebar if open
+  -- Position in the main content area (shifted by sidebar)
   local row = math.floor((vim.o.lines - height) / 2)
   local col
   if sidebar.is_open() then
-    -- Position to the right of sidebar with some padding
-    col = sidebar_width + 5
+    -- Position in the main content area (after sidebar shift)
+    -- Center within the available space after sidebar
+    col = sidebar_width + math.floor((available_width - width) / 2)
   else
     -- Center if no sidebar
     col = math.floor((vim.o.columns - width) / 2)
   end
   
-  -- Get current window as parent
-  local parent_win = vim.api.nvim_get_current_win()
+  -- Get sidebar window as parent if it's open, otherwise current window
+  local parent_win = sidebar.is_open() and sidebar.get_win() or vim.api.nvim_get_current_win()
   
   -- Open floating window
   local win = vim.api.nvim_open_win(buf, true, {
@@ -613,7 +615,7 @@ function M.open_email_window(buf, title)
   vim.api.nvim_win_set_option(win, 'wrap', true)
   vim.api.nvim_win_set_option(win, 'cursorline', true)
   
-  -- Add to window stack
+  -- Add to window stack with sidebar as parent
   window_stack.push(win, parent_win)
   
   -- Store window ID in buffer for reference
