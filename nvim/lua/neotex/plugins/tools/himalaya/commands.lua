@@ -74,6 +74,18 @@ function M.setup()
   end, {
     desc = 'Debug Himalaya buffer state',
   })
+
+  -- Create folder command
+  vim.api.nvim_create_user_command('HimalayaCreateFolder', function(opts)
+    if not opts.args or opts.args == '' then
+      vim.notify('Folder name required', vim.log.levels.ERROR)
+      return
+    end
+    require('neotex.plugins.tools.himalaya.utils').create_folder(opts.args)
+  end, {
+    nargs = 1,
+    desc = 'Create a new email folder',
+  })
   
   -- Session restoration command
   vim.api.nvim_create_user_command('HimalayaRestore', function(opts)

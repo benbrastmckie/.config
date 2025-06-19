@@ -551,23 +551,114 @@ function M.send_current_email()
   end
 end
 
--- Delete email
+-- Delete email with smart error handling
 function M.delete_current_email()
   local buf = vim.api.nvim_get_current_buf()
   local email_id = vim.b[buf].himalaya_email_id
   
-  if email_id then
-    local success = utils.delete_email(config.state.current_account, email_id)
-    if success then
-      vim.notify('Email deleted', vim.log.levels.INFO)
-      M.close_current_view()
-      M.refresh_email_list()
-    else
-      vim.notify('Failed to delete email', vim.log.levels.ERROR)
-    end
-  else
+  if not email_id then
     vim.notify('No email to delete', vim.log.levels.WARN)
+    return
   end
+  
+  local success, error_type, extra = utils.smart_delete_email(config.state.current_account, email_id)
+  
+  if success then
+    vim.notify('Email deleted', vim.log.levels.INFO)
+    M.close_current_view()
+    M.refresh_email_list()
+  elseif error_type == 'missing_trash' then
+    -- Trash folder doesn't exist, offer alternatives
+    M.handle_missing_trash_folder(email_id, extra)
+  else
+    vim.notify('Failed to delete email: ' .. (extra or 'Unknown error'), vim.log.levels.ERROR)
+  end
+end
+
+-- Handle missing trash folder scenario
+function M.handle_missing_trash_folder(email_id, suggested_folders)
+  -- Check if we're in headless mode
+  local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+  
+  if is_headless then
+    -- In headless mode, just permanently delete
+    vim.notify('Headless mode: Permanently deleting email (trash folder not found)', vim.log.levels.INFO)
+    M.permanent_delete_email(email_id)
+    return
+  end
+  
+  local options = {'Permanently delete (cannot be undone)'}
+  
+  -- Add suggested trash folders
+  if suggested_folders and #suggested_folders > 0 then
+    for _, folder in ipairs(suggested_folders) do
+      table.insert(options, 'Move to ' .. folder)
+    end
+  end
+  
+  -- Add option to move to a custom folder
+  table.insert(options, 'Move to custom folder...')
+  table.insert(options, 'Cancel')
+  
+  vim.ui.select(options, {
+    prompt = 'Trash folder not found. How would you like to delete this email?',
+  }, function(choice)
+    if not choice or choice == 'Cancel' then
+      return
+    end
+    
+    if choice == 'Permanently delete (cannot be undone)' then
+      M.permanent_delete_email(email_id)
+    elseif choice:match('^Move to ') then
+      local folder = choice:gsub('^Move to ', '')
+      M.move_email_to_folder(email_id, folder)
+    elseif choice == 'Move to custom folder...' then
+      M.prompt_custom_folder_move(email_id)
+    end
+  end)
+end
+
+-- Permanently delete email (flag + expunge)
+function M.permanent_delete_email(email_id)
+  local success = utils.delete_email(config.state.current_account, email_id, true)
+  if success then
+    vim.notify('Email permanently deleted', vim.log.levels.INFO)
+    M.close_current_view()
+    M.refresh_email_list()
+  else
+    vim.notify('Failed to permanently delete email', vim.log.levels.ERROR)
+  end
+end
+
+-- Move email to specific folder
+function M.move_email_to_folder(email_id, folder)
+  local success = utils.move_email(email_id, folder)
+  if success then
+    M.close_current_view()
+    M.refresh_email_list()
+  end
+end
+
+-- Prompt for custom folder name
+function M.prompt_custom_folder_move(email_id)
+  -- Check if we're in headless mode
+  local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+  
+  if is_headless then
+    -- In headless mode, use a default folder
+    vim.notify('Headless mode: Moving email to Archive folder', vim.log.levels.INFO)
+    M.move_email_to_folder(email_id, 'Archive')
+    return
+  end
+  
+  vim.ui.input({
+    prompt = 'Enter folder name: ',
+    completion = 'custom,folder',
+  }, function(folder)
+    if folder and folder ~= '' then
+      M.move_email_to_folder(email_id, folder)
+    end
+  end)
 end
 
 -- Open email window
