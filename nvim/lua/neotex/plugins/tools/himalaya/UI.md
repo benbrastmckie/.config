@@ -817,3 +817,260 @@ The **core problems have been solved** and **state persistence has been implemen
 - **Phase 5**: Update documentation to reflect final implementation - *Documentation*
 
 The email client is now **fully functional** with sidebar + floating architecture and persistent state management. Phase 3.5 would add significant workflow value by preserving work-in-progress emails.
+
+## Future Additions
+
+### Removed Elements Available for Re-implementation
+
+The following features were simplified out of the current Himalaya configuration but could be added back as optional enhancements:
+
+#### Multiple Account Support
+**Removed**: `work` account configuration
+**Implementation**: 
+```lua
+-- In config.lua
+accounts = {
+  gmail = { name = 'Benjamin Brast-McKie', email = 'benbrastmckie@gmail.com' },
+  work = { name = 'Work Account', email = 'work@company.com' },
+  university = { name = 'University', email = 'user@university.edu' }
+}
+```
+**Features**: Account switching via `ga` command, per-account state tracking, different sync settings per account
+
+#### Enhanced UI Configuration
+**Removed**: Compose window sizing, folder picker dimensions, preview settings
+**Implementation**:
+```lua
+-- In config.lua  
+ui = {
+  email_list = {
+    width = 0.8,
+    height = 0.8,
+    preview = true,  -- Show email preview in sidebar
+  },
+  compose = {
+    width = 0.9,
+    height = 0.9,
+  },
+  folder_picker = {
+    width = 0.6,
+    height = 0.4,
+  },
+}
+```
+**Features**: Configurable window sizes, email preview pane, folder picker customization
+
+#### Advanced Email Operations
+**Removed**: Copy, move, attachments, flag management, search keymaps
+**Implementation**:
+```lua
+-- In config.lua keymaps
+keymaps = {
+  -- Current keymaps +
+  copy = 'gC',           -- Copy email to folder
+  move = 'gM',           -- Move email to folder  
+  attachments = 'gA',    -- View/download attachments
+  flag = 'gF',           -- Add/remove flags (starred, important, etc.)
+  search = '/',          -- Search emails
+}
+```
+**Features**: Advanced email organization, attachment management, email flagging system, full-text search
+
+#### Content Display Options  
+**Removed**: HTML viewer, external editor settings
+**Implementation**:
+```lua
+-- In config.lua
+html_viewer = 'w3m',              -- HTML email rendering
+editor = vim.env.EDITOR or 'nvim', -- External editor for compose
+folder_picker = 'telescope',       -- 'telescope', 'fzf', 'native'
+```
+**Features**: Better HTML email support, external editor integration, folder picker choice
+
+#### Pagination Controls
+**Removed**: Page size adjustment (`gl`/`gL` load more/fewer functionality)
+**Implementation**:
+```lua
+-- Add back to g-command handler in config.lua
+elseif key == 'l' then
+  require('neotex.plugins.tools.himalaya.ui').load_more_emails()
+elseif key == 'L' then  
+  require('neotex.plugins.tools.himalaya.ui').load_fewer_emails()
+
+-- Re-add functions to ui.lua
+function M.load_more_emails()
+  config.state.page_size = config.state.page_size + 15
+  M.update_email_display()
+end
+
+function M.load_fewer_emails()
+  if config.state.page_size > 15 then
+    config.state.page_size = config.state.page_size - 15
+    M.update_email_display()
+  end
+end
+```
+**Features**: Dynamic email loading, adjustable page sizes, memory-efficient browsing
+
+#### Enhanced State Tracking
+**Removed**: Total email count, folder list caching, email list caching  
+**Implementation**:
+```lua
+-- In config.lua state
+M.state = {
+  current_account = nil,
+  current_folder = 'INBOX', 
+  current_page = 1,
+  page_size = 30,
+  total_emails = 0,    -- Track total for better pagination
+  email_list = {},     -- Cache current email list
+  folders = {},        -- Cache folder list per account
+}
+```
+**Features**: Better pagination navigation, folder caching, improved performance
+
+#### Advanced Email Client Features
+**Potential Additions**:
+
+1. **Email Threading**: Group related emails into conversation threads
+2. **Unified Inbox**: View emails from all accounts in single view  
+3. **Email Filters**: Auto-organize emails based on rules
+4. **Contact Management**: Address book integration and auto-completion
+5. **Calendar Integration**: Meeting invite handling and calendar sync
+6. **Email Templates**: Pre-defined email templates for common responses
+7. **Offline Support**: Queue emails when offline, sync when reconnected
+8. **Email Encryption**: PGP/GPG support for secure email
+9. **Rich Text Editing**: Markdown/HTML composition support
+10. **Email Scheduling**: Send emails at specified times
+
+#### Implementation Priority (if desired):
+1. **High Priority**: Multiple accounts, enhanced UI config, advanced operations
+2. **Medium Priority**: Content display options, pagination controls, state tracking  
+3. **Low Priority**: Advanced features like threading, unified inbox, encryption
+
+All removed elements maintain the same API design and can be re-integrated without breaking existing functionality.
+
+## Debug Features
+
+### Common Issues and Solutions
+
+#### Issue: "No email to delete" / "Failed to move email"
+**Symptoms**: 
+- Error message: `No email to delete`
+- Error message: `Failed to move email`
+- Error message: `Himalaya command failed: Error: cannot find maildir matching name Archive`
+
+**Root Causes**:
+
+1. **Missing Archive/Spam Folders**: Gmail accounts often don't have standard "Archive" or "Spam" folders
+   - Gmail uses `[Gmail]/All Mail` instead of `Archive`
+   - Gmail uses `[Gmail]/Spam` instead of `Spam`
+   - Some accounts use `All Mail`, `Junk`, or other variations
+
+2. **Email ID Extraction Issues**: Problems with calculating the correct email index
+   - Header line calculation was off (fixed: now correctly accounts for 4 header lines)
+   - Email data structure differences between Himalaya versions
+
+3. **Command Syntax Issues**: Himalaya CLI argument order
+   - **Fixed**: Commands now use correct syntax `himalaya message move <TARGET> <ID>`
+   - Previously used incorrect syntax `himalaya message move <ID> <TARGET>`
+
+**Solutions Implemented**:
+
+1. **Smart Folder Detection**: Archive and spam functions now:
+   - Check for multiple possible folder names (`Archive`, `All Mail`, `[Gmail]/All Mail`, etc.)
+   - Fall back to user selection if no standard folders found
+   - Offer custom folder input as last resort
+
+2. **Robust Email ID Extraction**: 
+   - Correctly calculate email index by subtracting 4 header lines
+   - Validate email exists before accessing ID field
+   - Handle different email data structures gracefully
+
+3. **Proper Command Construction**:
+   - Use correct Himalaya CLI syntax for move/copy operations
+   - Proper argument ordering for all email operations
+
+#### Issue: "Himalaya closed (0 buffers cleaned up)"
+**Symptoms**: Message appears when trying to use email operations
+
+**Root Cause**: Email operations called when Himalaya sidebar is not open or buffers not properly initialized
+
+**Solution**: Ensure Himalaya is opened with `<leader>ml` before using email operations
+
+#### Debugging Email Operations
+
+To debug email operation issues:
+
+1. **Check Available Folders**:
+   ```vim
+   :HimalayaFolders
+   ```
+   This shows all available folders in your account
+
+2. **Verify Account Configuration**:
+   ```vim
+   :HimalayaConfigValidate
+   ```
+   Checks mbsync and Himalaya configuration
+
+3. **Test Basic Operations**:
+   ```vim
+   :Himalaya INBOX
+   ```
+   Load email list to verify basic functionality
+
+4. **Check Folder Structure**: Common Gmail folder names:
+   - `INBOX` - Main inbox
+   - `[Gmail]/Sent Mail` - Sent emails
+   - `[Gmail]/All Mail` - Archive equivalent  
+   - `[Gmail]/Spam` - Spam folder
+   - `[Gmail]/Trash` - Deleted emails
+   - `[Gmail]/Drafts` - Draft emails
+
+#### Email Operation Keybindings
+
+**In Email List (Sidebar)**:
+- `gD` - Delete email (moves to trash or permanently deletes)
+- `gA` - Archive email (smart folder detection)
+- `gS` - Mark as spam (smart folder detection)
+- `gn` - Next page of emails
+- `gp` - Previous page of emails
+- `r` - Refresh email list
+
+**Troubleshooting Steps**:
+
+1. **Verify Folder Names**: Use `:HimalayaFolders` to see exact folder names in your account
+2. **Test with Manual Commands**: Try `HimalayaMove <email_id> <folder_name>` to test specific operations
+3. **Check Sync Status**: Run `HimalayaSync` to ensure emails are up to date
+4. **Validate Configuration**: Run `HimalayaConfigValidate` to check for configuration issues
+
+#### Technical Implementation Notes
+
+**Email ID Extraction Logic**:
+```lua
+-- Email list header structure (4 lines):
+-- Line 1: "Himalaya - account - folder"  
+-- Line 2: "Page X | Y emails (page size: Z)"
+-- Line 3: "────────────────────────────"
+-- Line 4: "" (empty line)
+-- Line 5+: Email entries start here
+
+local email_index = line_num - 4  -- Subtract header lines
+```
+
+**Command Syntax Reference**:
+```bash
+# Correct syntax (implemented)
+himalaya message move <TARGET_FOLDER> <EMAIL_ID>
+himalaya message copy <TARGET_FOLDER> <EMAIL_ID>
+himalaya message delete <EMAIL_ID>
+
+# Incorrect syntax (old implementation)  
+himalaya message move <EMAIL_ID> <TARGET_FOLDER>  # Wrong order
+```
+
+**Smart Folder Detection Logic**:
+- Archive: `Archive`, `All Mail`, `[Gmail]/All Mail`, `ARCHIVE`, `Archived`
+- Spam: `Spam`, `Junk`, `[Gmail]/Spam`, `SPAM`, `JUNK`
+- Case-insensitive matching with fallback to user selection

@@ -1,6 +1,6 @@
 # Himalaya Email Plugin for NeoVim
 
-A comprehensive email management system that integrates the Himalaya CLI email client directly into NeoVim, providing a complete email workflow with local storage, automatic synchronization, and rich UI features.
+A streamlined email management system that integrates the Himalaya CLI email client directly into NeoVim, providing a complete email workflow with local storage, automatic synchronization, and a sidebar + floating window UI architecture.
 
 ## Quick Start
 
@@ -9,42 +9,66 @@ See [INSTALLATION.md](INSTALLATION.md) for complete setup instructions.
 ## Features
 
 ### 📧 **Email Management**
-- **Multi-account support** - Manage personal and work emails seamlessly
-- **Offline access** - Read and compose emails without internet connection
-- **Real-time sync** - Automatic background synchronization every 5 minutes
-- **Rich UI** - Floating windows with email list, reading, and composition views
+- **Single account support** - Currently configured for Gmail account
+- **Offline access** - Read and compose emails without internet connection  
+- **Manual sync** - On-demand email synchronization via `:HimalayaSync`
+- **Sidebar + Floating UI** - Persistent email list sidebar with floating email reading and composition windows
 
-### 🔍 **Navigation & Search**
-- **Telescope integration** - Fuzzy search for folders, accounts, and emails
-- **Quick folder switching** - Browse all email folders with unread counts
-- **Account switching** - Switch between accounts with status indicators
-- **Email search** - Full-text search across all emails
+### 🔍 **Navigation & Organization**
+- **Sidebar email list** - Persistent email list with pagination (30 emails per page)
+- **Folder browsing** - Switch between email folders (INBOX, Sent, Drafts, etc.)
+- **Email pagination** - Navigate through email pages with `gn`/`gp`
+- **Session persistence** - Remembers current folder, account, and selected email across restarts
 
 ### ✉️ **Email Operations**
-- **Compose emails** - Rich composition interface with signatures
-- **Reply/Forward** - Reply, reply-all, and forward with quoted content
-- **Email management** - Delete, move, copy, and flag emails
-- **Attachment handling** - View and download email attachments
+- **Compose emails** - Rich composition interface with templates
+- **Reply/Forward** - Reply, reply-all, and forward with properly quoted content
+- **Email management** - Delete, archive, and mark emails as spam
+- **Smart folder detection** - Automatically finds correct folders (e.g., `[Gmail].All Mail` for archiving)
 
-### ⚡ **Performance**
-- **Local storage** - Instant email access from Maildir format
-- **Background sync** - Non-blocking IMAP synchronization
-- **Efficient UI** - Fast buffer switching and window management
+### ⚡ **Performance & Reliability** 
+- **Local Maildir storage** - Instant email access from local file system
+- **Stable navigation** - Window stack management prevents "stuck in background buffer" issues
+- **Auto-refresh** - Email list refreshes after operations (delete, move, send, etc.)
+- **Smart caching** - Email list caching with 30-second timeout for better performance
 
 ## Architecture
+
+### Sidebar + Floating Window Design
+
+```
+┌─────────────────┬────────────────────────────────────┐
+│   Email List   │           Main Editing Area        │
+│   (Sidebar)    │                                    │
+│                │  ┌─────────────────────────────┐   │
+│ ● INBOX (12)   │  │      Email Reading          │   │
+│   Sent         │  │      (Floating Window)      │   │
+│   Drafts       │  │                             │   │
+│   All Mail     │  │  ┌─────────────────────┐   │   │
+│                │  │  │    Compose Email    │   │   │
+│                │  │  │  (Modal Floating)   │   │   │
+│                │  │  │                     │   │   │
+│                │  │  └─────────────────────┘   │   │
+│                │  └─────────────────────────────┘   │
+└─────────────────┴────────────────────────────────────┘
+```
+
+### Data Flow
 
 ```
 IMAP Server <--[mbsync]--> Local Maildir <--> Himalaya CLI <--> NeoVim Interface
      |                          |                                    |
-  Gmail/Work              ~/Mail/Gmail                          User Actions
-                          ~/Mail/Work
+   Gmail                 ~/Mail/Gmail                    Sidebar + Floating Windows
 ```
 
-The plugin uses a hybrid approach combining:
-- **Himalaya CLI** for email operations and OAuth2 authentication
-- **mbsync** for automatic IMAP synchronization
-- **Local Maildir** storage for offline access and performance
-- **NeoVim Lua** for rich UI and seamless integration
+### Component Architecture
+
+- **Himalaya CLI** - Email operations and OAuth2 authentication
+- **mbsync** - Manual IMAP synchronization (triggered via `:HimalayaSync`)
+- **Local Maildir** - Offline storage in `~/Mail/Gmail/` directory
+- **Sidebar UI** - Persistent email list using neo-tree-style patterns
+- **Window Stack** - Proper focus management for floating windows
+- **State Management** - Session persistence and configuration storage
 
 ## Usage
 
@@ -52,28 +76,30 @@ The plugin uses a hybrid approach combining:
 
 | Keymap | Command | Description |
 |--------|---------|-------------|
-| `<leader>me` | `:Himalaya` | Open email list |
+| `<leader>ml` | `:Himalaya` | Open email list in sidebar |
 | `<leader>mw` | `:HimalayaWrite` | Compose new email |
 | `<leader>mf` | `:HimalayaFolders` | Browse folders |
-| `<leader>ma` | `:HimalayaAccounts` | Switch accounts |
 | `<leader>ms` | `:HimalayaSync` | Manual sync |
 
-### Email List Navigation
+### Email List Navigation (Sidebar)
 
 | Keymap | Action | Description |
 |--------|--------|-------------|
-| `<CR>` | Read | Open selected email |
+| `<CR>` | Read | Open selected email in floating window |
 | `gw` | Write | Compose new email |
-| `gr` | Reply | Reply to email |
+| `gr` | Reply | Reply to selected email |
 | `gR` | Reply All | Reply to all recipients |
-| `gf` | Forward | Forward email |
-| `gD` | Delete | Delete email |
+| `gf` | Forward | Forward selected email |
+| `gD` | Delete | Delete email (moves to trash or prompts) |
+| `gA` | Archive | Archive email (smart folder detection) |
+| `gS` | Spam | Mark email as spam (smart folder detection) |
 | `gm` | Folder | Change folder |
-| `ga` | Account | Switch account |
-| `gC` | Copy | Copy email to folder |
-| `gM` | Move | Move email to folder |
+| `gn` | Next Page | Navigate to next page of emails |
+| `gp` | Previous Page | Navigate to previous page of emails |
+| `r` | Refresh | Refresh email list |
+| `q` | Close | Close Himalaya entirely |
 
-### Email Reading
+### Email Reading (Floating Window)
 
 | Keymap | Action | Description |
 |--------|--------|-------------|
@@ -81,25 +107,26 @@ The plugin uses a hybrid approach combining:
 | `gR` | Reply All | Reply to all recipients |
 | `gf` | Forward | Forward current email |
 | `gD` | Delete | Delete current email |
-| `q` | Close | Close email view |
+| `gl` | Links | Go to link under cursor |
+| `q` | Close | Close email and return to sidebar |
 
-### Email Composition
+### Email Composition (Floating Window)
 
-| Command | Description |
-|---------|-------------|
-| `:w` | Save draft |
-| `:HimalaySend` | Send email |
-| `:q` | Cancel composition |
+| Keymap | Action | Description |
+|--------|--------|-------------|
+| `ZZ` | Send | Send email |
+| `q` | Save Draft | Save as draft and close |
+| `Q` | Discard | Discard without saving |
 
 ## Commands
 
 ### Core Commands
 
-- **`:Himalaya [folder]`** - Open email list (optionally specify folder)
+- **`:Himalaya [folder]`** - Open email list in sidebar (optionally specify folder)
 - **`:HimalayaWrite [email]`** - Compose new email (optionally specify recipient)
-- **`:HimalayaFolders`** - Open folder picker
-- **`:HimalayaAccounts`** - Open account picker
-- **`:HimalayaSync[!]`** - Manual sync (use `!` to force)
+- **`:HimalayaFolders`** - Open folder picker (via vim.ui.select)
+- **`:HimalayaSync[!]`** - Manual email sync (use `!` to force)
+- **`:HimalayaClose`** - Close Himalaya and cleanup all buffers
 
 ### Email Operations
 
@@ -110,13 +137,16 @@ The plugin uses a hybrid approach combining:
 - **`:HimalayaMove <id> <folder>`** - Move email to folder
 - **`:HimalayaCopy <id> <folder>`** - Copy email to folder
 
-### Advanced Operations
+### Session Management
 
-- **`:HimalayaSearch <query>`** - Search emails
-- **`:HimalayaFlag[!] <id> <flag>`** - Add flag (use `!` to remove)
-- **`:HimalayaAttachments <id>`** - List email attachments
-- **`:HimalayaDownload <id> <attachment>`** - Download attachment
-- **`:HimalayaConfigure [account]`** - Configure account
+- **`:HimalayaRestore[!]`** - Restore previous session (use `!` to skip prompt)
+
+### Debug & Maintenance
+
+- **`:HimalayaDebug`** - Debug buffer state
+- **`:HimalayaConfigValidate`** - Validate mbsync configuration
+- **`:HimalayaConfigHelp`** - Show configuration help
+- **`:HimalayaAlternativeSync`** - Try alternative sync method
 
 ## Configuration
 
@@ -127,55 +157,50 @@ require('neotex.plugins.tools.himalaya').setup({
   -- Himalaya executable path
   executable = 'himalaya',
   
-  -- Default account
-  default_account = 'personal',
+  -- Default account (currently single account)
+  default_account = 'gmail',
   
   -- Account configuration
   accounts = {
-    personal = { 
-      name = 'Your Name', 
-      email = 'your-email@gmail.com' 
-    },
-    work = { 
-      name = 'Work Name', 
-      email = 'work@company.com' 
+    gmail = { 
+      name = 'Benjamin Brast-McKie', 
+      email = 'benbrastmckie@gmail.com' 
     },
   },
   
-  -- UI configuration
+  -- UI configuration for floating windows
   ui = {
     email_list = {
       width = 0.8,
       height = 0.8,
-      preview = true,
-    },
-    compose = {
-      width = 0.9,
-      height = 0.9,
     },
   },
   
-  -- Picker preference
-  folder_picker = 'telescope', -- 'telescope', 'fzf', 'native'
-  
-  -- Sync settings
+  -- Sync settings (manual sync only)
   auto_sync = true,
-  sync_interval = 300, -- 5 minutes
-  
-  -- Email settings
-  html_viewer = 'w3m',
-  editor = vim.env.EDITOR or 'nvim',
+  sync_interval = 300, -- 5 minutes (currently unused - manual sync only)
 })
 ```
 
-### Customizing Keymaps
+### Default Configuration (Currently Active)
 
-To customize keymaps, modify the `keymaps` section in the configuration:
+The plugin is currently configured with minimal options for Gmail:
 
 ```lua
-require('neotex.plugins.tools.himalaya').setup({
+M.config = {
+  executable = 'himalaya',
+  default_account = 'gmail',
+  accounts = {
+    gmail = { name = 'Benjamin Brast-McKie', email = 'benbrastmckie@gmail.com' },
+  },
+  ui = {
+    email_list = {
+      width = 0.8,
+      height = 0.8,
+    },
+  },
+  -- Basic keymaps
   keymaps = {
-    -- Email list navigation
     read_email = '<CR>',
     write_email = 'gw',
     reply = 'gr',
@@ -183,91 +208,168 @@ require('neotex.plugins.tools.himalaya').setup({
     forward = 'gf',
     delete = 'gD',
     change_folder = 'gm',
-    change_account = 'ga',
-    -- Add your custom keymaps here
+    refresh = 'r',
   },
-})
+  -- Sync settings
+  auto_sync = true,
+  sync_interval = 300,
+}
 ```
+
+### State Management
+
+The plugin automatically saves and restores session state including:
+
+- **Current account** and **folder** 
+- **Selected email** and **sidebar position**
+- **Search queries** and **pagination state**
+- **Sidebar width** and **configuration preferences**
+
+State is saved to `~/.local/share/nvim/himalaya/state.json` and automatically restored when reopening Neovim.
+
+### Smart Email Operations
+
+#### Archive Function (`gA`)
+Automatically detects the correct archive folder:
+- **Gmail**: Uses `[Gmail].All Mail` 
+- **Other providers**: Looks for `Archive`, `All Mail`, `ARCHIVE`, etc.
+- **Fallback**: Prompts user to select folder if none found
+
+#### Spam Function (`gS`) 
+Automatically detects spam/junk folders:
+- **Gmail**: Uses `[Gmail].Spam` (if available)
+- **Other providers**: Looks for `Spam`, `Junk`, `SPAM`, etc.
+- **Fallback**: Prompts user for folder selection
+
+#### Delete Function (`gD`)
+Intelligent delete handling:
+- **First attempt**: Move to trash folder
+- **Missing trash**: Prompts for permanent delete or custom folder
+- **Headless mode**: Automatically handles without prompts
 
 ## File Structure
 
 ```
 lua/neotex/plugins/tools/himalaya/
 ├── README.md              # This documentation
-├── INSTALLATION.md        # Complete installation guide
+├── UI.md                  # Implementation details and debug features
 ├── init.lua              # Main plugin interface
-├── config.lua            # Configuration management
-├── commands.lua          # Command definitions
-├── ui.lua                # Buffer and window management
-├── picker.lua            # Telescope/fzf integration
-└── utils.lua             # Utility functions and CLI integration
+├── config.lua            # Configuration management and keymaps
+├── commands.lua          # Command definitions and tab completion
+├── ui.lua                # Sidebar + floating window management
+├── sidebar.lua           # Persistent email list sidebar
+├── window_stack.lua      # Window hierarchy and focus management  
+├── state.lua             # Session persistence and state management
+├── picker.lua            # Folder/account selection interfaces
+└── utils.lua             # Himalaya CLI integration and email operations
 ```
 
 ### Module Overview
 
-- **`init.lua`** - Plugin entry point, lazy.nvim integration, and setup function
-- **`config.lua`** - Configuration management, keymaps, and plugin state
+- **`init.lua`** - Plugin entry point and setup function
+- **`config.lua`** - Configuration management, keymaps, and g-command handlers
 - **`commands.lua`** - All user commands with tab completion and validation
-- **`ui.lua`** - Email interface, floating windows, and buffer management
-- **`picker.lua`** - Telescope/fzf integration for folder/account selection
-- **`utils.lua`** - Himalaya CLI integration, email operations, and sync functionality
+- **`ui.lua`** - Email interface, email operations, and display formatting
+- **`sidebar.lua`** - Persistent sidebar implementation with neo-tree patterns
+- **`window_stack.lua`** - Window hierarchy tracking for proper focus management
+- **`state.lua`** - Session persistence, state management, and auto-save
+- **`picker.lua`** - vim.ui.select integration for folder/account selection  
+- **`utils.lua`** - Himalaya CLI integration, sync functionality, and email operations
+
+### Key Features Implemented
+
+- ✅ **Sidebar + Floating Architecture** - Stable navigation with persistent email list
+- ✅ **Window Stack Management** - Proper focus restoration prevents "stuck in background"
+- ✅ **Session Persistence** - Automatic state save/restore across Neovim sessions
+- ✅ **Smart Email Operations** - Auto-detect folders for archive/spam/delete operations
+- ✅ **Pagination System** - Navigate through emails with 30 per page default
+- ✅ **Auto-refresh** - Email list updates after operations and sync completion
 
 ## Integration
 
-### Telescope
+### Neovim Integration
 
-The plugin integrates seamlessly with Telescope for:
-- Folder browsing with unread counts
-- Account switching with status indicators
-- Email search with fuzzy matching
+The plugin integrates with standard Neovim features:
+- **vim.ui.select** - Folder and account selection (no telescope dependency)
+- **vim.keymap.set** - Standard keymap configuration
+- **vim.notify** - Status messages and error reporting
+- **autocommands** - Auto-refresh triggers for email operations
 
-### Auto-sync
+### Auto-refresh System
 
-Automatic email synchronization runs in the background:
-- Syncs every 5 minutes by default
-- Non-blocking operation
-- Triggers UI refresh after sync completion
-- Manual sync available via `:HimalayaSync`
+Email list automatically refreshes after:
+- Email operations (delete, move, send, archive, spam)
+- Manual sync completion (`:HimalayaSync`)
+- Folder changes and account switches
+- Email sending and draft operations
 
-### Multi-account Support
+### Session Management
 
-Switch between accounts effortlessly:
-- Independent folder structures
-- Separate sync status
-- Account-specific signatures
-- Context-aware composition
+Persistent state management includes:
+- **Window restoration** - Remembers sidebar position and email selection
+- **Folder persistence** - Restores last viewed folder on startup  
+- **Account state** - Maintains current account across sessions
+- **Search history** - Preserves search queries and results
+
+### Manual Sync Only
+
+Current sync configuration:
+- **Manual sync** via `:HimalayaSync` command
+- **Background sync** disabled (auto_sync setting unused)
+- **On-demand operation** prevents blocking UI operations
+- **Error handling** with intelligent sync failure analysis
 
 ## Dependencies
 
 ### Required
-- **Himalaya CLI** - Email client backend
-- **mbsync (isync)** - IMAP synchronization
-- **GNOME Keyring** - Secure credential storage
+- **Himalaya CLI** - Email client backend and OAuth2 authentication
+- **mbsync (isync)** - IMAP synchronization (manual via `:HimalayaSync`)
+- **Credential storage** - GNOME Keyring, pass, or similar for OAuth tokens
 
-### Optional
-- **Telescope.nvim** - Enhanced folder/account picking
-- **fzf-lua** - Alternative picker interface
-- **w3m** - HTML email viewing
+### Built-in (No External Dependencies)
+- **vim.ui.select** - Folder and account selection (replaces Telescope dependency)
+- **Standard Neovim APIs** - Buffer management, keymaps, autocommands
+- **Lua file I/O** - State persistence and configuration storage
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Himalaya CLI not found"**
-   - Ensure Himalaya is installed and in PATH
-   - Check configuration with `himalaya --version`
+1. **"No email to delete" / "Failed to move email"**
+   - **Cause**: Missing archive/spam folders or email ID extraction issues
+   - **Solution**: See [UI.md Debug Features](UI.md#debug-features) for detailed troubleshooting
 
-2. **"SASL mechanism XOAUTH2 not available"**
-   - Install `cyrus-sasl-xoauth2` package
-   - Set `SASL_PATH` environment variable
+2. **"cannot find maildir matching name Archive"**
+   - **Cause**: Standard folder names don't exist (Gmail uses `[Gmail].All Mail`)
+   - **Solution**: Archive function now auto-detects correct folders
 
-3. **"cannot list maildir entries"**
-   - Run initial sync: `mbsync -a`
-   - Check mail directory exists: `ls ~/Mail/`
+3. **"Himalaya command failed: invalid value 'Archive' for '<ID>'"**
+   - **Cause**: Command syntax issues (fixed: now uses correct `<TARGET> <ID>` order)
+   - **Solution**: Automatically resolved with updated command construction
 
-4. **OAuth2 authentication fails**
-   - Reconfigure account: `himalaya account configure`
-   - Check Google Cloud Console settings
+4. **Email operations don't work in sidebar**
+   - **Cause**: Email ID extraction from wrong line numbers
+   - **Solution**: Fixed header line calculation (4 header lines before emails)
+
+5. **"Himalaya closed (0 buffers cleaned up)"**
+   - **Cause**: Trying to use operations when sidebar not open
+   - **Solution**: Open Himalaya with `<leader>ml` first
+
+### Quick Debug Steps
+
+1. **Check available folders**: `:HimalayaFolders`
+2. **Validate configuration**: `:HimalayaConfigValidate`  
+3. **Test basic functionality**: `:Himalaya INBOX`
+4. **Debug buffer state**: `:HimalayaDebug`
+5. **Check folder structure**: `:HimalayaConfigHelp`
+
+### Gmail-Specific Folder Names
+
+Your Gmail account uses these folder names:
+- **Archive**: `[Gmail].All Mail` (auto-detected by `gA`)
+- **Sent**: `[Gmail].Sent Mail`
+- **Drafts**: `[Gmail].Drafts`
+- **Custom folders**: `EuroTrip`, `CrazyTown`, `Letters`
 
 ### Debug Commands
 
@@ -275,17 +377,40 @@ Switch between accounts effortlessly:
 # Check Himalaya status
 himalaya account list
 
-# Test CLI integration
-himalaya envelope list --output json
+# Test folder access
+himalaya folder list -a gmail
 
-# Check sync status
-systemctl --user status mbsync.timer
+# Test email list
+himalaya envelope list --folder INBOX -a gmail
 
-# Monitor sync logs
-journalctl --user -u mbsync.service -f
+# Check configuration
+himalaya --version
 ```
+
+## Summary
+
+The Himalaya email plugin provides a complete email management solution within Neovim using a **sidebar + floating window architecture**. Key achievements:
+
+### ✅ **Fully Functional Email Operations**
+- **Archive** (`gA`) - Auto-detects `[Gmail].All Mail` for Gmail accounts
+- **Delete** (`gD`) - Intelligent trash handling with fallbacks
+- **Spam** (`gS`) - Smart spam folder detection
+- **Reply/Forward** (`gr`/`gf`) - Proper email composition with quoted content
+- **Pagination** (`gn`/`gp`) - Navigate through email pages efficiently
+
+### ✅ **Stable UI Architecture**  
+- **Persistent Sidebar** - Email list remains visible during operations
+- **Window Stack Management** - Prevents "stuck in background buffer" issues
+- **Session Persistence** - Remembers state across Neovim restarts
+- **Auto-refresh** - Email list updates after operations
+
+### ✅ **Robust Configuration**
+- **Single Gmail Account** - Fully configured and working
+- **Smart Folder Detection** - Handles Gmail's `[Gmail].` folder naming
+- **Manual Sync** - Reliable on-demand email synchronization
+- **Error Handling** - Comprehensive error recovery and user guidance
 
 ## Navigation
 
 - [← Tools Directory](../README.md)
-- [Installation Guide →](INSTALLATION.md)
+- [Debug Features →](UI.md#debug-features)

@@ -48,22 +48,30 @@ function M.show_email_list(args)
   if account and not config.switch_account(account) then
     vim.notify('Unknown account: ' .. account, vim.log.levels.ERROR)
     return
+  elseif account and account ~= config.state.current_account then
+    M.reset_pagination()  -- Reset pagination when changing accounts
   end
   
-  -- Switch folder if different
+  -- Switch folder if different (only reset pagination if actually changing folders)
   if folder ~= config.state.current_folder then
-    config.switch_folder(folder)
+    config.state.current_folder = folder  -- Set folder directly without resetting page
+    M.reset_pagination()  -- Reset pagination when changing folders
   end
   
   -- Update state
   state.set_current_account(config.state.current_account)
   state.set_current_folder(folder)
   
-  -- Get email list
-  local emails = utils.get_email_list(config.state.current_account, folder)
+  -- Get email list with pagination
+  local emails = utils.get_email_list(config.state.current_account, folder, config.state.current_page, config.state.page_size)
   if not emails then
     vim.notify('Failed to get email list', vim.log.levels.ERROR)
     return
+  end
+  
+  -- Store total count if available
+  if emails and #emails > 0 then
+    config.state.total_emails = #emails
   end
   
   -- Open sidebar (this creates the buffer if needed)
@@ -96,11 +104,15 @@ end
 function M.format_email_list(emails)
   local lines = {}
   
-  -- Header
+  -- Header with pagination info
   local account = config.get_current_account()
   local header = string.format('Himalaya - %s - %s', account.email, config.state.current_folder)
+  local pagination_info = string.format('Page %d | %d emails (page size: %d)', 
+    config.state.current_page, #emails, config.state.page_size)
+  
   table.insert(lines, header)
-  table.insert(lines, string.rep('─', #header))
+  table.insert(lines, pagination_info)
+  table.insert(lines, string.rep('─', math.max(#header, #pagination_info)))
   table.insert(lines, '')
   
   -- Email entries
@@ -141,7 +153,9 @@ function M.format_email_list(emails)
   -- Footer with keymaps
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'gm:folder ga:account gw:write gr:reply gf:forward gD:delete')
+  table.insert(lines, 'r:refresh gn:next-page gp:prev-page')
+  table.insert(lines, 'gm:folder ga:account gw:write gr:reply gf:forward')
+  table.insert(lines, 'gD:delete gA:archive gS:spam')
   
   return lines
 end
@@ -185,28 +199,6 @@ function M.read_email(email_id)
 end
 
 -- Read current email from list
-function M.read_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  local emails = vim.b[buf].himalaya_emails
-  if not emails then
-    vim.notify('No emails available', vim.log.levels.WARN)
-    return
-  end
-  
-  local line_num = vim.api.nvim_win_get_cursor(0)[1]
-  
-  -- Find email index (accounting for header lines)
-  local email_index = line_num - 3 -- Skip header lines
-  if email_index <= 0 or email_index > #emails then
-    vim.notify('No email selected', vim.log.levels.WARN)
-    return
-  end
-  
-  local email = emails[email_index]
-  if email and email.id then
-    M.read_email(email.id)
-  end
-end
 
 -- Format email content for display
 function M.format_email_content(email_content)
@@ -368,6 +360,48 @@ function M.compose_email(to_address)
   vim.cmd('startinsert!')
 end
 
+-- Parse email content for reply operations
+function M.parse_email_for_reply(email_content)
+  local parsed = {}
+  
+  if type(email_content) == 'string' then
+    -- Parse raw email string
+    local email_lines = vim.split(email_content, '\n')
+    local in_headers = true
+    local body_lines = {}
+    
+    for _, line in ipairs(email_lines) do
+      if in_headers then
+        if line == '' or line:match('^──+$') then
+          in_headers = false
+        elseif line:match('^From:%s*(.+)') then
+          parsed.from = line:match('^From:%s*(.+)')
+        elseif line:match('^To:%s*(.+)') then
+          parsed.to = line:match('^To:%s*(.+)')
+        elseif line:match('^CC:%s*(.+)') then
+          parsed.cc = line:match('^CC:%s*(.+)')
+        elseif line:match('^Subject:%s*(.+)') then
+          parsed.subject = line:match('^Subject:%s*(.+)')
+        elseif line:match('^Date:%s*(.+)') then
+          parsed.date = line:match('^Date:%s*(.+)')
+        end
+      else
+        -- Skip separator lines
+        if not line:match('^──+$') then
+          table.insert(body_lines, line)
+        end
+      end
+    end
+    
+    parsed.body = table.concat(body_lines, '\n')
+  else
+    -- Already structured data
+    parsed = email_content
+  end
+  
+  return parsed
+end
+
 -- Reply to email
 function M.reply_email(email_id, reply_all)
   local email_content = utils.get_email_content(config.state.current_account, email_id)
@@ -375,6 +409,9 @@ function M.reply_email(email_id, reply_all)
     vim.notify('Failed to get email for reply', vim.log.levels.ERROR)
     return
   end
+  
+  -- Parse email content if it's raw text
+  local parsed_email = M.parse_email_for_reply(email_content)
   
   -- Create compose buffer
   local buf = vim.api.nvim_create_buf(false, true)
@@ -386,13 +423,21 @@ function M.reply_email(email_id, reply_all)
   
   -- Reply template
   local account = config.get_current_account()
-  local to_field = email_content.from or ''
-  if reply_all and email_content.cc then
-    to_field = to_field .. ', ' .. email_content.cc
+  local to_field = parsed_email.from or ''
+  if reply_all then
+    local cc_field = parsed_email.cc or ''
+    if cc_field ~= '' then
+      to_field = to_field .. ', ' .. cc_field
+    end
+    -- Also include other recipients from To field if reply_all
+    local original_to = parsed_email.to or ''
+    if original_to ~= '' and original_to ~= account.email then
+      to_field = to_field .. ', ' .. original_to
+    end
   end
   
-  local subject = email_content.subject or ''
-  if not subject:match('^Re:') then
+  local subject = parsed_email.subject or ''
+  if not subject:match('^Re:%s') then
     subject = 'Re: ' .. subject
   end
   
@@ -402,12 +447,12 @@ function M.reply_email(email_id, reply_all)
     'Subject: ' .. subject,
     '',
     '',
-    '> ' .. (email_content.from or 'Unknown') .. ' wrote:',
+    '> ' .. (parsed_email.from or 'Unknown') .. ' wrote:',
   }
   
   -- Add quoted original content
-  if email_content.body then
-    local original_lines = vim.split(email_content.body, '\n')
+  if parsed_email.body then
+    local original_lines = vim.split(parsed_email.body, '\n')
     for _, line in ipairs(original_lines) do
       table.insert(lines, '> ' .. line)
     end
@@ -465,6 +510,9 @@ function M.forward_email(email_id)
     return
   end
   
+  -- Parse email content
+  local parsed_email = M.parse_email_for_reply(email_content)
+  
   -- Create compose buffer similar to reply but with forward template
   local buf = vim.api.nvim_create_buf(false, true)
   
@@ -473,8 +521,8 @@ function M.forward_email(email_id)
   vim.api.nvim_buf_set_option(buf, 'swapfile', false)
   
   local account = config.get_current_account()
-  local subject = email_content.subject or ''
-  if not subject:match('^Fwd:') then
+  local subject = parsed_email.subject or ''
+  if not subject:match('^Fwd:%s') then
     subject = 'Fwd: ' .. subject
   end
   
@@ -484,22 +532,31 @@ function M.forward_email(email_id)
     'Subject: ' .. subject,
     '',
     '---------- Forwarded message ---------',
-    'From: ' .. (email_content.from or 'Unknown'),
-    'Date: ' .. (email_content.date or 'Unknown'),
-    'Subject: ' .. (email_content.subject or '(No subject)'),
-    'To: ' .. (email_content.to or 'Unknown'),
+    'From: ' .. (parsed_email.from or 'Unknown'),
+    'Date: ' .. (parsed_email.date or 'Unknown'),
+    'Subject: ' .. (parsed_email.subject or '(No subject)'),
+    'To: ' .. (parsed_email.to or 'Unknown'),
     '',
   }
   
+  -- Add CC if present
+  if parsed_email.cc then
+    table.insert(lines, 10, 'CC: ' .. parsed_email.cc)
+    table.insert(lines, 11, '')
+  end
+  
   -- Add original content
-  if email_content.body then
-    local original_lines = vim.split(email_content.body, '\n')
+  if parsed_email.body then
+    local original_lines = vim.split(parsed_email.body, '\n')
     vim.list_extend(lines, original_lines)
   end
   
   table.insert(lines, '')
   table.insert(lines, '--')
   table.insert(lines, account.name or account.email)
+  table.insert(lines, '')
+  table.insert(lines, string.rep('─', 70))
+  table.insert(lines, 'ZZ:send q:save-draft Q:discard')
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -546,6 +603,8 @@ function M.send_current_email()
   if success then
     vim.notify('Email sent successfully', vim.log.levels.INFO)
     vim.api.nvim_buf_delete(buf, { force = true })
+    -- Refresh email list after sending
+    M.refresh_email_list()
   else
     vim.notify('Failed to send email', vim.log.levels.ERROR)
   end
@@ -624,7 +683,10 @@ function M.permanent_delete_email(email_id)
   if success then
     vim.notify('Email permanently deleted', vim.log.levels.INFO)
     M.close_current_view()
-    M.refresh_email_list()
+    -- Trigger manual refresh for permanent deletion
+    vim.defer_fn(function()
+      M.refresh_email_list()
+    end, 100)
   else
     vim.notify('Failed to permanently delete email', vim.log.levels.ERROR)
   end
@@ -635,7 +697,7 @@ function M.move_email_to_folder(email_id, folder)
   local success = utils.move_email(email_id, folder)
   if success then
     M.close_current_view()
-    M.refresh_email_list()
+    -- Refresh is handled by the autocmd from utils.move_email
   end
 end
 
@@ -720,6 +782,8 @@ function M.refresh_email_list()
     local account = vim.b[buf].himalaya_account
     local folder = vim.b[buf].himalaya_folder
     if account and folder then
+      -- Clear cache to force refresh
+      utils.clear_email_cache(account, folder)
       M.show_email_list({folder, '--account=' .. account})
     end
   end
@@ -728,11 +792,22 @@ end
 -- Close current view using window stack
 function M.close_current_view()
   local current_win = vim.api.nvim_get_current_win()
+  local current_buf = vim.api.nvim_get_current_buf()
+  
+  -- Check if we're closing an email reading buffer
+  local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
   
   -- Try to close using window stack first
   if not window_stack.close_current() then
     -- If not in stack, close normally
     vim.cmd('close')
+  end
+  
+  -- Refresh email list after closing email reading view
+  if is_email_buffer then
+    vim.defer_fn(function()
+      M.refresh_email_list()
+    end, 100)
   end
 end
 
@@ -973,11 +1048,11 @@ function M.get_current_email_id()
     return nil
   end
   
-  local line = vim.api.nvim_get_current_line()
-  local email_index = vim.fn.line('.') - 3 -- Account for header lines
+  local line_num = vim.fn.line('.')
+  local email_index = line_num - 4 -- Account for header lines (header + pagination + separator + empty = 4 lines)
   local emails = vim.b.himalaya_emails
   
-  if emails and emails[email_index] then
+  if emails and email_index > 0 and emails[email_index] then
     return emails[email_index].id
   end
   
@@ -1170,6 +1245,182 @@ function M.save_sidebar_config()
   state.set_sidebar_width(sidebar.get_width())
   state.set_sidebar_position(sidebar.config.position)
   state.save()
+end
+
+-- Update email list display without resetting pagination
+function M.update_email_display()
+  -- Get email list with current pagination settings
+  local emails = utils.get_email_list(config.state.current_account, config.state.current_folder, config.state.current_page, config.state.page_size)
+  if not emails then
+    vim.notify('Failed to get email list', vim.log.levels.ERROR)
+    return
+  end
+  
+  -- Get existing sidebar buffer or create new one
+  local win = sidebar.open()
+  local buf = sidebar.get_buf()
+  
+  -- Update buffer tracking
+  M.buffers.email_list = buf
+  
+  -- Format email list content
+  local lines = M.format_email_list(emails)
+  sidebar.update_content(lines)
+  
+  -- Store email data for reference in sidebar buffer
+  vim.api.nvim_buf_set_var(buf, 'himalaya_emails', emails)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_account', config.state.current_account)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_folder', config.state.current_folder)
+  
+  -- Save current view to state
+  state.save()
+  
+  -- Focus the sidebar
+  sidebar.focus()
+end
+
+-- Next page of emails
+function M.next_page()
+  config.state.current_page = config.state.current_page + 1
+  
+  -- Check if there are emails for this page
+  local emails = utils.get_email_list(config.state.current_account, config.state.current_folder, config.state.current_page, config.state.page_size)
+  if not emails or #emails == 0 then
+    -- No more emails, go back to previous page
+    config.state.current_page = config.state.current_page - 1
+    vim.notify('No more emails on next page', vim.log.levels.INFO)
+    return
+  end
+  
+  -- Update the display without going through show_email_list
+  M.update_email_display()
+end
+
+-- Previous page of emails
+function M.prev_page()
+  if config.state.current_page > 1 then
+    config.state.current_page = config.state.current_page - 1
+    M.update_email_display()
+  else
+    vim.notify('Already on first page', vim.log.levels.INFO)
+  end
+end
+
+
+-- Archive current email (from email list)
+function M.archive_current_email()
+  local email_id = M.get_current_email_id()
+  if email_id then
+    -- Try different archive folder names that might exist
+    local archive_folders = {'Archive', 'All Mail', '[Gmail]/All Mail', '[Gmail].All Mail', 'ARCHIVE', 'Archived'}
+    local folders = utils.get_folders(config.state.current_account)
+    local archive_folder = nil
+    
+    if folders then
+      -- Find the first existing archive folder
+      for _, folder in ipairs(folders) do
+        for _, archive_name in ipairs(archive_folders) do
+          if folder:lower():match(archive_name:lower()) or folder == archive_name then
+            archive_folder = folder
+            break
+          end
+        end
+        if archive_folder then break end
+      end
+    end
+    
+    if archive_folder then
+      local success = utils.move_email(email_id, archive_folder)
+      if success then
+        vim.notify('Email archived to ' .. archive_folder, vim.log.levels.INFO)
+        -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
+      end
+    else
+      -- If no archive folder found, offer alternatives
+      vim.ui.select({
+        'Move to All Mail',
+        'Move to [Gmail].All Mail', 
+        'Move to custom folder...',
+        'Cancel'
+      }, {
+        prompt = 'No archive folder found. How would you like to archive this email?',
+      }, function(choice)
+        if choice == 'Move to All Mail' then
+          utils.move_email(email_id, 'All Mail')
+        elseif choice == 'Move to [Gmail].All Mail' then
+          utils.move_email(email_id, '[Gmail].All Mail')
+        elseif choice == 'Move to custom folder...' then
+          vim.ui.input({
+            prompt = 'Enter folder name: ',
+          }, function(folder)
+            if folder and folder ~= '' then
+              utils.move_email(email_id, folder)
+            end
+          end)
+        end
+      end)
+    end
+  else
+    vim.notify('No email selected', vim.log.levels.WARN)
+  end
+end
+
+-- Mark current email as spam and move to spam folder
+function M.spam_current_email()
+  local email_id = M.get_current_email_id()
+  if email_id then
+    -- Try different spam folder names that might exist
+    local spam_folders = {'Spam', 'Junk', '[Gmail].Spam', '[Gmail]/Spam', 'SPAM', 'JUNK'}
+    local folders = utils.get_folders(config.state.current_account)
+    local spam_folder = nil
+    
+    if folders then
+      -- Find the first existing spam folder
+      for _, folder in ipairs(folders) do
+        for _, spam_name in ipairs(spam_folders) do
+          if folder:lower():match(spam_name:lower()) then
+            spam_folder = folder
+            break
+          end
+        end
+        if spam_folder then break end
+      end
+    end
+    
+    if spam_folder then
+      local success = utils.move_email(email_id, spam_folder)
+      if success then
+        vim.notify('Email marked as spam and moved to ' .. spam_folder, vim.log.levels.INFO)
+        -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
+      end
+    else
+      -- If no spam folder found, ask user what to do
+      vim.ui.select({
+        'Move to Junk folder',
+        'Move to Spam folder', 
+        'Delete permanently',
+        'Cancel'
+      }, {
+        prompt = 'No spam folder found. How would you like to handle this email?',
+      }, function(choice)
+        if choice == 'Move to Junk folder' then
+          utils.move_email(email_id, 'Junk')
+        elseif choice == 'Move to Spam folder' then
+          utils.move_email(email_id, 'Spam')
+        elseif choice == 'Delete permanently' then
+          M.delete_current_email()
+        end
+      end)
+    end
+  else
+    vim.notify('No email selected', vim.log.levels.WARN)
+  end
+end
+
+-- Reset pagination when switching folders/accounts
+function M.reset_pagination()
+  config.state.current_page = 1
+  config.state.page_size = 30  -- Reset to default
 end
 
 return M
