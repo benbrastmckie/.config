@@ -8,27 +8,16 @@ M.config = {
   executable = 'himalaya',
   default_account = 'gmail',
   accounts = {
-    gmail = { name = 'Gmail', email = 'benbrastmckie@gmail.com' },
-    work = { name = 'Work', email = 'work@company.com' },
+    gmail = { name = 'Benjamin Brast-McKie', email = 'benbrastmckie@gmail.com' },
   },
-  folder_picker = 'telescope', -- 'telescope', 'fzf', 'native'
   ui = {
     email_list = {
       width = 0.8,
       height = 0.8,
-      preview = true,
-    },
-    compose = {
-      width = 0.9,
-      height = 0.9,
-    },
-    folder_picker = {
-      width = 0.6,
-      height = 0.4,
     },
   },
+  -- Basic keymaps (used for buffer-specific keybindings)
   keymaps = {
-    -- Email list navigation
     read_email = '<CR>',
     write_email = 'gw',
     reply = 'gr',
@@ -36,21 +25,9 @@ M.config = {
     forward = 'gf',
     delete = 'gD',
     change_folder = 'gm',
-    next_page = 'gn',
-    prev_page = 'gp',
-    -- Folder/account management
     change_account = 'ga',
-    refresh = 'gr',
-    -- Email operations
-    copy = 'gC',
-    move = 'gM',
-    attachments = 'gA',
-    flag = 'gF',
-    search = '/',
+    refresh = 'gR',
   },
-  -- Email content settings
-  html_viewer = 'w3m',
-  editor = vim.env.EDITOR or 'nvim',
   -- Sync settings
   auto_sync = true,
   sync_interval = 300, -- 5 minutes in seconds
@@ -61,8 +38,7 @@ M.state = {
   current_account = nil,
   current_folder = 'INBOX',
   current_page = 1,
-  email_list = {},
-  folders = {},
+  page_size = 30,
 }
 
 -- Setup function
@@ -82,12 +58,9 @@ function M.setup(opts)
   M.setup_autocmds()
 end
 
--- Set up global keymaps
+-- Set up global keymaps (currently unused)
 function M.setup_keymaps()
-  local keymap = vim.keymap.set
-  
-  -- Note: These keymaps are not used directly since we're using which-key
-  -- They're kept here for reference and backup
+  -- Reserved for future global keymaps if needed
 end
 
 -- Set up autocommands
@@ -106,6 +79,31 @@ function M.setup_autocmds()
       end
     end,
   })
+  
+  -- Auto-refresh email list after email operations
+  local refresh_events = {
+    'HimalayaEmailMoved',
+    'HimalayaEmailCopied', 
+    'HimalayaEmailSent',
+    'HimalayaEmailDeleted',
+    'HimalayaFlagChanged',
+    'HimalayaTagChanged',
+    'HimalayaExpunged',
+    'HimalayaFolderCreated'
+  }
+  
+  for _, event in ipairs(refresh_events) do
+    vim.api.nvim_create_autocmd('User', {
+      pattern = event,
+      group = augroup,
+      callback = function()
+        local ui = require('neotex.plugins.tools.himalaya.ui')
+        if ui.is_email_buffer_open() then
+          ui.refresh_email_list()
+        end
+      end,
+    })
+  end
   
   -- Set up email-specific keymaps for email buffers
   vim.api.nvim_create_autocmd('FileType', {
@@ -160,6 +158,44 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui').refresh_email_list()
     end, vim.tbl_extend('force', opts, { desc = 'Refresh' }))
     
+    -- Add single 'r' for refresh as well
+    keymap('n', 'r', function()
+      require('neotex.plugins.tools.himalaya.ui').refresh_email_list()
+    end, vim.tbl_extend('force', opts, { desc = 'Refresh email list' }))
+    
+    -- Override 'g' to handle our custom g-commands immediately
+    keymap('n', 'g', function()
+      local char = vim.fn.getchar()
+      local key = vim.fn.nr2char(char)
+      
+      if key == 'n' then
+        require('neotex.plugins.tools.himalaya.ui').next_page()
+      elseif key == 'p' then
+        require('neotex.plugins.tools.himalaya.ui').prev_page()
+      elseif key == 'm' then
+        require('neotex.plugins.tools.himalaya.picker').show_folders()
+      elseif key == 'a' then
+        require('neotex.plugins.tools.himalaya.picker').show_accounts()
+      elseif key == 'w' then
+        require('neotex.plugins.tools.himalaya.ui').compose_email()
+      elseif key == 'r' then
+        require('neotex.plugins.tools.himalaya.ui').reply_current_email()
+      elseif key == 'R' then
+        require('neotex.plugins.tools.himalaya.ui').reply_all_current_email()
+      elseif key == 'f' then
+        require('neotex.plugins.tools.himalaya.ui').forward_current_email()
+      elseif key == 'D' then
+        require('neotex.plugins.tools.himalaya.ui').delete_current_email()
+      elseif key == 'A' then
+        require('neotex.plugins.tools.himalaya.ui').archive_current_email()
+      elseif key == 'S' then
+        require('neotex.plugins.tools.himalaya.ui').spam_current_email()
+      else
+        -- Pass through to built-in g commands
+        vim.api.nvim_feedkeys('g' .. key, 'n', false)
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Himalaya g-commands' }))
+    
     -- Add q to close Himalaya entirely from email list
     keymap('n', 'q', function()
       require('neotex.plugins.tools.himalaya.ui').close_himalaya()
@@ -211,6 +247,7 @@ function M.setup_buffer_keymaps(bufnr)
     keymap('n', 'ZZ', function()
       require('neotex.plugins.tools.himalaya.ui').send_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
+    
   end
 end
 

@@ -48,19 +48,89 @@ function M.execute_himalaya(args, opts)
   return data
 end
 
+-- Cache for all emails to support pagination without repeatedly fetching
+local email_cache = {}
+local cache_timestamp = 0
+local cache_timeout = 30000 -- 30 seconds
+
 -- Get email list for account and folder
-function M.get_email_list(account, folder, page)
+function M.get_email_list(account, folder, page, page_size)
   folder = folder or 'INBOX'
   page = page or 1
+  page_size = page_size or 30  -- Default to 30 emails per page
   
-  local args = { 'envelope', 'list' }
-  if page > 1 then
-    table.insert(args, '--page')
-    table.insert(args, tostring(page))
+  local cache_key = account .. '|' .. folder
+  local current_time = vim.loop.now()
+  
+  -- Check if we need to refresh the cache
+  local need_refresh = not email_cache[cache_key] or 
+                      (current_time - cache_timestamp) > cache_timeout
+  
+  if need_refresh then
+    vim.notify(string.format('Fetching emails from Himalaya (cache refresh)'), vim.log.levels.DEBUG)
+    
+    local args = { 'envelope', 'list' }
+    
+    -- Try to fetch a large number of emails to support pagination
+    -- If Himalaya doesn't support --page-size, this will just return all available
+    table.insert(args, '--page-size')
+    table.insert(args, '200')  -- Fetch up to 200 emails
+    
+    local result = M.execute_himalaya(args, { account = account, folder = folder })
+    
+    if result then
+      email_cache[cache_key] = result
+      cache_timestamp = current_time
+      vim.notify(string.format('Cached %d emails for %s/%s', #result, account, folder), vim.log.levels.DEBUG)
+    else
+      -- If cache exists, use it; otherwise return nil
+      if email_cache[cache_key] then
+        vim.notify('Using cached emails (fetch failed)', vim.log.levels.DEBUG)
+      else
+        return nil
+      end
+    end
   end
   
-  local result = M.execute_himalaya(args, { account = account, folder = folder })
+  local all_emails = email_cache[cache_key] or {}
   
+  if #all_emails > 0 then
+    -- Calculate the start and end indices for the requested page
+    local start_idx = (page - 1) * page_size + 1
+    local end_idx = math.min(start_idx + page_size - 1, #all_emails)
+    
+    -- Return only the emails for this page
+    if start_idx <= #all_emails then
+      local page_emails = {}
+      for i = start_idx, end_idx do
+        table.insert(page_emails, all_emails[i])
+      end
+      vim.notify(string.format('Page %d: showing emails %d-%d of %d total', page, start_idx, end_idx, #all_emails), vim.log.levels.INFO)
+      return page_emails
+    else
+      -- No emails for this page
+      vim.notify(string.format('No emails for page %d (only %d total emails)', page, #all_emails), vim.log.levels.INFO)
+      return {}
+    end
+  end
+  
+  return all_emails
+end
+
+-- Clear email cache (call when emails are modified)
+function M.clear_email_cache(account, folder)
+  if account and folder then
+    local cache_key = account .. '|' .. folder
+    email_cache[cache_key] = nil
+  else
+    -- Clear entire cache
+    email_cache = {}
+  end
+  cache_timestamp = 0
+end
+
+-- Legacy error handling (keeping for compatibility)
+local function handle_email_list_error(result)
   -- If we get an error, try to provide helpful information
   if not result then
     -- Try to diagnose the issue
@@ -111,6 +181,10 @@ function M.create_folder(folder_name, account)
   
   if result then
     vim.notify(string.format('Folder "%s" created', folder_name), vim.log.levels.INFO)
+    -- Trigger refresh after folder creation
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaFolderCreated' })
+    end, 100)
     return true
   else
     vim.notify(string.format('Failed to create folder "%s"', folder_name), vim.log.levels.ERROR)
@@ -183,6 +257,11 @@ function M.send_email(account, email_data)
     vim.notify('Failed to send email: ' .. result, vim.log.levels.ERROR)
     return false
   end
+  
+  -- Trigger refresh after successful send
+  vim.defer_fn(function()
+    vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailSent' })
+  end, 100)
   
   return true
 end
@@ -263,13 +342,26 @@ function M.delete_email(account, email_id, permanent)
     local result = M.execute_himalaya(args, { account = account })
     if result then
       -- Expunge to permanently remove
-      return M.expunge_deleted()
+      local expunge_success = M.expunge_deleted()
+      if expunge_success then
+        -- Trigger refresh after permanent deletion
+        vim.defer_fn(function()
+          vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
+        end, 100)
+      end
+      return expunge_success
     end
     return false
   else
     -- Try to move to trash first
     local args = { 'message', 'delete', tostring(email_id) }
     local result = M.execute_himalaya(args, { account = account })
+    if result then
+      -- Trigger refresh after deletion
+      vim.defer_fn(function()
+        vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
+      end, 100)
+    end
     return result ~= nil
   end
 end
@@ -322,11 +414,15 @@ end
 
 -- Move email to folder
 function M.move_email(email_id, target_folder)
-  local args = { 'message', 'move', tostring(email_id), target_folder }
+  local args = { 'message', 'move', target_folder, tostring(email_id) }
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
     vim.notify(string.format('Email moved to %s', target_folder), vim.log.levels.INFO)
+    -- Trigger refresh after successful move
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailMoved' })
+    end, 100)
     return true
   else
     vim.notify('Failed to move email', vim.log.levels.ERROR)
@@ -336,11 +432,15 @@ end
 
 -- Copy email to folder
 function M.copy_email(email_id, target_folder)
-  local args = { 'message', 'copy', tostring(email_id), target_folder }
+  local args = { 'message', 'copy', target_folder, tostring(email_id) }
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
     vim.notify(string.format('Email copied to %s', target_folder), vim.log.levels.INFO)
+    -- Trigger refresh after successful copy
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailCopied' })
+    end, 100)
     return true
   else
     vim.notify('Failed to copy email', vim.log.levels.ERROR)
@@ -363,6 +463,10 @@ function M.manage_flag(email_id, flag, action)
   
   if result then
     vim.notify(string.format('Flag %s %s', flag, action == 'add' and 'added' or 'removed'), vim.log.levels.INFO)
+    -- Trigger refresh after flag change
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaFlagChanged' })
+    end, 100)
     return true
   else
     vim.notify('Failed to manage flag', vim.log.levels.ERROR)
@@ -753,6 +857,10 @@ function M.expunge_deleted()
   
   if result then
     vim.notify('Expunged deleted emails', vim.log.levels.INFO)
+    -- Trigger refresh after expunge
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaExpunged' })
+    end, 100)
     return true
   else
     vim.notify('Failed to expunge emails', vim.log.levels.ERROR)
@@ -769,6 +877,10 @@ function M.manage_tag(email_id, tag, action)
   
   if result then
     vim.notify(string.format('%s tag: %s', action == 'add' and 'Added' or 'Removed', tag), vim.log.levels.INFO)
+    -- Trigger refresh after tag change
+    vim.defer_fn(function()
+      vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaTagChanged' })
+    end, 100)
     return true
   else
     vim.notify('Failed to manage tag', vim.log.levels.ERROR)
