@@ -60,6 +60,20 @@ function M.setup()
     bang = true,
     desc = 'Manually sync emails (use ! to force)',
   })
+
+  -- Close Himalaya and cleanup buffers
+  vim.api.nvim_create_user_command('HimalayaClose', function(opts)
+    require('neotex.plugins.tools.himalaya.ui').close_himalaya()
+  end, {
+    desc = 'Close Himalaya and cleanup all related buffers',
+  })
+
+  -- Debug Himalaya buffers
+  vim.api.nvim_create_user_command('HimalayaDebug', function(opts)
+    require('neotex.plugins.tools.himalaya.ui').debug_buffers()
+  end, {
+    desc = 'Debug Himalaya buffer state',
+  })
   
   -- Session restoration command
   vim.api.nvim_create_user_command('HimalayaRestore', function(opts)
