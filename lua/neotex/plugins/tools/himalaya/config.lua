@@ -31,6 +31,18 @@ M.config = {
   -- Sync settings
   auto_sync = true,
   sync_interval = 300, -- 5 minutes in seconds
+  
+  -- Local trash configuration
+  trash = {
+    enabled = true,
+    directory = "~/Mail/Gmail/.trash",
+    retention_days = 30,
+    max_size_mb = 1000,
+    organization = "daily", -- "daily", "monthly", "flat"
+    metadata_storage = "json", -- "sqlite", "json"
+    auto_cleanup = true,
+    cleanup_interval_hours = 24
+  }
 }
 
 -- Current state

@@ -74,40 +74,254 @@ Your mbsync config uses `Patterns *` which should sync all Gmail folders, but Gm
 - [x] Root cause identified
 - [x] Comprehensive diagnostic suite created
 - [x] Moved tools to util/ directory with documentation
-- [ ] Gmail settings verified (user action required)
-- [ ] Configuration fixes applied (depends on Gmail settings)
-- [ ] Testing completed
-- [x] Alternative solutions ready (Gmail fix already applied)
+- [x] Local trash implementation plan created
+- [x] Phase 6.1: Core trash infrastructure (completed)
+- [x] Phase 6.2: Trash operations implementation (completed)
+- [x] Phase 6.3: Trash browser UI (completed)
+- [ ] Phase 6.4: Management & cleanup features (partial - basic cleanup implemented)
+- [x] Basic testing completed
 
 ## Expected Outcomes
-1. **Primary Goal**: Restore `[Gmail]/Trash` folder visibility in Himalaya
-2. **Secondary Goal**: Proper delete operations that move emails to trash instead of errors
-3. **Fallback Goal**: Working alternative deletion strategy using All Mail or custom folders
+1. **Primary Goal**: ~~Restore `[Gmail]/Trash` folder visibility in Himalaya~~ → **NEW: Implement local trash directory**
+2. **Secondary Goal**: Proper delete operations that move emails to local trash with recovery options
+3. **Tertiary Goal**: Full trash management system with UI browser and cleanup automation
 
-## Next Action Required
+## Phase 6: Local Trash Directory Implementation
 
-### 🚨 IMMEDIATE STEP: Check Gmail Web Interface
+### 🗂️ USER DECISION: Local Trash Instead of Gmail IMAP Trash
 
-**You need to verify Gmail's IMAP settings immediately:**
+**User preference**: Create local trash directory instead of enabling Gmail IMAP trash folder.
 
-1. **Go to Gmail → Settings (gear icon) → "See all settings"**
-2. **Click "Labels" tab**
-3. **Find "System labels" section**
-4. **Check "Trash" row - verify "Show in IMAP" is CHECKED**
+### Benefits of Local Trash Approach
+1. **Independent of Gmail settings** - No need to modify Gmail IMAP configuration
+2. **Full control** - Complete ownership of deleted emails
+3. **Faster operations** - No network dependency for delete operations
+4. **Email recovery** - Easy access to deleted emails for salvage
+5. **Consistent behavior** - Same trash behavior regardless of email provider
 
-If "Show in IMAP" for Trash is unchecked, that's your problem!
+### Implementation Plan
 
-### Alternative Solutions Available
+#### Phase 6.1: Local Trash Directory Structure
+- [ ] Create local trash directory: `~/Mail/Gmail/trash/` (or user-configurable)
+- [ ] Design folder structure for organized trash storage
+- [ ] Implement date-based organization (e.g., `YYYY/MM/DD/` subdirectories)
+- [ ] Add metadata tracking (original folder, deletion date, email ID)
 
-If Gmail settings are correct but Trash still missing:
-1. **Use our Gmail fix** (already applied) - offers All Mail archiving
-2. **Force-create Trash folder** via IMAP commands
-3. **Use custom folder** as trash replacement
+#### Phase 6.2: Enhanced Delete Operation
+- [ ] Modify delete operation to move emails to local trash instead of IMAP trash
+- [ ] Preserve original email structure and headers
+- [ ] Store deletion metadata (JSON sidecar files or database)
+- [ ] Implement atomic move operations to prevent data loss
+- [ ] Add progress indicators for large email moves
 
-## Commands Now Available
+#### Phase 6.3: Trash Management System
+- [ ] Create trash viewing interface (`:HimalayaTrash`)
+- [ ] Implement trash browsing with date/folder organization
+- [ ] Add email restoration functionality (move back to original folder)
+- [ ] Implement permanent deletion (remove from local trash)
+- [ ] Add trash cleanup (auto-delete old emails after X days)
+
+#### Phase 6.4: Configuration Options
+- [ ] Add trash directory configuration option
+- [ ] Configure retention policy (default: 30 days)
+- [ ] Add trash size limits and cleanup policies
+- [ ] Option to disable/enable local trash vs IMAP trash
+- [ ] Backup/export options for trash contents
+
+#### Phase 6.5: UI Integration
+- [ ] Add trash folder to folder list (special handling)
+- [ ] Implement trash-specific operations (restore, permanent delete)
+- [ ] Add trash status indicators (item count, disk usage)
+- [ ] Create trash management commands and keymaps
+- [ ] Integrate with existing sidebar and navigation
+
+### Technical Implementation Details
+
+#### Directory Structure
+```
+~/Mail/Gmail/
+├── INBOX/           # Regular maildir folders
+├── sent/
+├── drafts/
+└── .trash/          # Local trash directory
+    ├── metadata.db  # SQLite database for tracking
+    ├── 2024/
+    │   ├── 01/
+    │   │   ├── 15/  # Daily subdirectories
+    │   │   └── 16/
+    │   └── 02/
+    └── restore_info/ # Backup metadata for restoration
+```
+
+#### Metadata Storage Options
+**Option A: JSON Sidecar Files**
+```json
+{
+  "email_id": "12345",
+  "original_folder": "INBOX", 
+  "deleted_date": "2024-01-15T10:30:00Z",
+  "deleted_by": "user",
+  "restore_path": "INBOX",
+  "size_bytes": 5432
+}
+```
+
+**Option B: SQLite Database**
+```sql
+CREATE TABLE trash_items (
+  id INTEGER PRIMARY KEY,
+  email_id TEXT UNIQUE,
+  original_folder TEXT,
+  deleted_date DATETIME,
+  file_path TEXT,
+  size_bytes INTEGER,
+  restore_info JSON
+);
+```
+
+#### New Commands to Implement
+- `:HimalayaTrash` - Open trash browser
+- `:HimalayaTrashRestore <id>` - Restore email to original folder
+- `:HimalayaTrashPurge [days]` - Permanently delete old trash items
+- `:HimalayaTrashClean` - Clean up orphaned files and metadata
+- `:HimalayaTrashStats` - Show trash statistics and disk usage
+
+### Implementation Phases
+
+#### Phase 6.1: Core Infrastructure (Priority: High)
+**Tasks:**
+- [ ] Create trash directory structure
+- [ ] Implement basic file move operations
+- [ ] Add metadata storage system
+- [ ] Create trash configuration options
+
+**Files to Create/Modify:**
+- `trash_manager.lua` - Core trash management
+- `config.lua` - Add trash configuration options
+- `utils.lua` - Modify delete operations
+
+#### Phase 6.2: Trash Operations (Priority: High)  
+**Tasks:**
+- [ ] Implement safe email moving to trash
+- [ ] Add restoration functionality
+- [ ] Create permanent deletion
+- [ ] Add error handling and rollback
+
+**Files to Create/Modify:**
+- `trash_operations.lua` - Trash-specific operations
+- `ui.lua` - Integrate trash operations with UI
+
+#### Phase 6.3: Trash Browser UI (Priority: Medium)
+**Tasks:**
+- [ ] Create trash folder browser
+- [ ] Add date-based navigation
+- [ ] Implement trash-specific keymaps
+- [ ] Add restoration interface
+
+**Files to Create/Modify:**
+- `trash_ui.lua` - Trash browser interface
+- `sidebar.lua` - Add trash folder to sidebar
+- `keymaps.lua` - Add trash-specific keymaps
+
+#### Phase 6.4: Management & Cleanup (Priority: Low)
+**Tasks:**
+- [ ] Implement retention policies
+- [ ] Add automatic cleanup
+- [ ] Create trash statistics
+- [ ] Add backup/export functionality
+
+**Files to Create/Modify:**
+- `trash_cleanup.lua` - Automated cleanup system
+- `trash_stats.lua` - Statistics and reporting
+
+### Configuration Schema
+
+```lua
+trash = {
+  enabled = true,
+  directory = "~/Mail/Gmail/.trash",
+  retention_days = 30,
+  max_size_mb = 1000,
+  organization = "daily", -- "daily", "monthly", "flat"
+  metadata_storage = "sqlite", -- "sqlite", "json"
+  auto_cleanup = true,
+  cleanup_interval_hours = 24
+}
+```
+
+### User Experience Flow
+
+#### Delete Operation
+1. User presses `gD` on an email
+2. Email moved to local trash with metadata
+3. UI updates immediately (email removed from list)
+4. Confirmation: "Email moved to trash (restore available)"
+
+#### Restoration Flow  
+1. User opens trash: `:HimalayaTrash`
+2. Browse by date or search
+3. Select email and press `gR` (restore)
+4. Email moved back to original folder
+5. Confirmation: "Email restored to INBOX"
+
+#### Cleanup Flow
+1. Automatic: Old emails auto-deleted after retention period
+2. Manual: `:HimalayaTrashPurge 7` deletes items older than 7 days
+3. Confirmation and safety prompts for permanent deletion
+
+## Local Trash System Implementation Summary
+
+### ✅ **Completed Features**
+
+#### Core Infrastructure (Phase 6.1)
+- ✅ Local trash directory: `~/Mail/Gmail/.trash/`
+- ✅ Date-based organization: `YYYY/MM/DD/` subdirectories
+- ✅ JSON metadata tracking with email details
+- ✅ Configuration system in `config.lua`
+- ✅ Directory structure auto-creation
+
+#### Trash Operations (Phase 6.2)
+- ✅ `gD` delete operation now uses local trash
+- ✅ Email content preservation in trash files
+- ✅ Metadata tracking (ID, folder, date, size)
+- ✅ Atomic operations with rollback on failure
+- ✅ Integration with existing delete workflow
+
+#### Trash Browser UI (Phase 6.3)
+- ✅ `:HimalayaTrash` - Full-featured trash browser
+- ✅ Floating window interface with keymaps
+- ✅ Email details view (`<CR>`)
+- ✅ Restore functionality (`gR`)
+- ✅ Permanent delete (`gD`)
+- ✅ Real-time refresh (`r`)
+
+#### Management & Cleanup (Phase 6.4 - Partial)
+- ✅ Basic cleanup with retention policy
+- ✅ Trash statistics and validation
+- ✅ File size tracking and reporting
+
+### 📋 **New Commands Available**
+
+#### Diagnostic Commands (Previous)
 - ✅ `HimalayaCheckGmailSettings` - Guide through Gmail web interface verification
 - ✅ `HimalayaAnalyzeMbsync` - Check `.mbsyncrc` configuration  
 - ✅ `HimalayaTestFolderAccess` - Test raw folder detection
 - ✅ `HimalayaSuggestFixes` - Show configuration recommendations
 - ✅ `HimalayaTestDelete` - Verify delete operations work correctly
 - ✅ `HimalayaFullDiagnostics` - Complete analysis suite
+
+#### New Trash Commands
+- ✅ `HimalayaTrash` - Open trash browser interface
+- ✅ `HimalayaTrashStats` - Show trash statistics
+- ✅ `HimalayaTrashList` - List trash contents in terminal
+- ✅ `HimalayaTrashRestore <id>` - Restore specific email
+- ✅ `HimalayaTrashPurge <id>` - Permanently delete email
+- ✅ `HimalayaTrashCleanup` - Clean old items per retention policy
+- ✅ `HimalayaTrashValidate` - Validate trash configuration
+- ✅ `HimalayaTrashInit` - Manually initialize trash system
+
+### 🎯 **Current Behavior**
+1. **Delete Operation (`gD`)**: Emails moved to local trash with full metadata
+2. **Trash Browser (`:HimalayaTrash`)**: Visual interface for trash management  
+3. **Email Recovery**: Full restoration capability with original folder tracking
+4. **Independent Operation**: No dependency on Gmail IMAP settings
