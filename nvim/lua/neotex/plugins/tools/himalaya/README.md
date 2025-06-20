@@ -23,7 +23,8 @@ See [INSTALLATION.md](INSTALLATION.md) for complete setup instructions.
 ### ✉️ **Email Operations**
 - **Compose emails** - Rich composition interface with templates
 - **Reply/Forward** - Reply, reply-all, and forward with properly quoted content
-- **Email management** - Delete, archive, and mark emails as spam
+- **Local trash system** - Delete emails to local trash with full recovery capability
+- **Email management** - Archive and mark emails as spam with smart folder detection
 - **Smart folder detection** - Automatically finds correct folders (e.g., `[Gmail].All Mail` for archiving)
 
 ### ⚡ **Performance & Reliability** 
@@ -90,7 +91,7 @@ IMAP Server <--[mbsync]--> Local Maildir <--> Himalaya CLI <--> NeoVim Interface
 | `gr` | Reply | Reply to selected email |
 | `gR` | Reply All | Reply to all recipients |
 | `gf` | Forward | Forward selected email |
-| `gD` | Delete | Delete email (moves to trash or prompts) |
+| `gD` | Delete | Delete email (moves to local trash with recovery) |
 | `gA` | Archive | Archive email (smart folder detection) |
 | `gS` | Spam | Mark email as spam (smart folder detection) |
 | `gm` | Folder | Change folder |
@@ -106,7 +107,7 @@ IMAP Server <--[mbsync]--> Local Maildir <--> Himalaya CLI <--> NeoVim Interface
 | `gr` | Reply | Reply to current email |
 | `gR` | Reply All | Reply to all recipients |
 | `gf` | Forward | Forward current email |
-| `gD` | Delete | Delete current email |
+| `gD` | Delete | Delete current email (moves to local trash with recovery) |
 | `gl` | Links | Go to link under cursor |
 | `q` | Close | Close email and return to sidebar |
 
@@ -140,6 +141,23 @@ IMAP Server <--[mbsync]--> Local Maildir <--> Himalaya CLI <--> NeoVim Interface
 ### Session Management
 
 - **`:HimalayaRestore[!]`** - Restore previous session (use `!` to skip prompt)
+
+### Local Trash Management
+
+- **`:HimalayaTrash`** - Open trash browser interface with visual management
+- **`:HimalayaTrashStats`** - Show trash statistics and disk usage
+- **`:HimalayaTrashList`** - List trash contents in terminal
+- **`:HimalayaTrashRestore <id>`** - Restore specific email to original folder
+- **`:HimalayaTrashPurge <id>`** - Permanently delete email from trash
+- **`:HimalayaTrashCleanup`** - Clean old items based on retention policy
+
+### Diagnostics & Troubleshooting
+
+- **`:HimalayaQuickHealthCheck`** - Fast overview of system health
+- **`:HimalayaFullDiagnostics`** - Complete diagnostic suite and troubleshooting
+- **`:HimalayaCheckGmailSettings`** - Guide through Gmail IMAP settings verification
+- **`:HimalayaAnalyzeMbsync`** - Analyze mbsync configuration for issues
+- **`:HimalayaTestDelete`** - Test delete operation functionality
 
 ### Debug & Maintenance
 
@@ -179,6 +197,18 @@ require('neotex.plugins.tools.himalaya').setup({
   -- Sync settings (manual sync only)
   auto_sync = true,
   sync_interval = 300, -- 5 minutes (currently unused - manual sync only)
+  
+  -- Local trash configuration
+  trash = {
+    enabled = true,                    -- Enable local trash system
+    directory = "~/Mail/Gmail/.trash", -- Trash directory location
+    retention_days = 30,               -- Auto-delete after 30 days
+    max_size_mb = 1000,                -- Maximum trash size in MB
+    organization = "daily",            -- "daily", "monthly", "flat"
+    metadata_storage = "json",         -- "json" (SQLite planned)
+    auto_cleanup = true,               -- Enable automatic cleanup
+    cleanup_interval_hours = 24        -- Cleanup check interval
+  }
 })
 ```
 
@@ -227,6 +257,35 @@ The plugin automatically saves and restores session state including:
 
 State is saved to `~/.local/share/nvim/himalaya/state.json` and automatically restored when reopening Neovim.
 
+### Local Trash System
+
+#### Delete Function (`gD`) - **New Local Trash Implementation**
+**Complete email recovery system with local storage:**
+- **Local trash directory**: `~/Mail/Gmail/.trash/` with date-based organization
+- **Full email preservation**: Complete email content and metadata saved locally
+- **Metadata tracking**: Original folder, deletion date, file size, and restore information
+- **Independent operation**: No dependency on Gmail IMAP trash settings
+- **Instant deletion**: No network delays for delete operations
+
+#### Trash Management Interface
+**Visual trash browser with comprehensive management:**
+- **`:HimalayaTrash`**: Full-featured trash browser with floating window interface
+- **Email restoration**: `gR` to restore emails to original folders
+- **Permanent deletion**: `gD` for final removal with confirmation
+- **Automatic cleanup**: Configurable retention policy (default: 30 days)
+- **Statistics tracking**: Monitor trash size and usage patterns
+
+#### Configuration Options
+```lua
+trash = {
+  enabled = true,                    -- Enable/disable local trash
+  directory = "~/Mail/Gmail/.trash", -- Trash location
+  retention_days = 30,               -- Auto-cleanup after X days
+  organization = "daily",            -- Date-based folder structure
+  auto_cleanup = true                -- Automatic old email removal
+}
+```
+
 ### Smart Email Operations
 
 #### Archive Function (`gA`)
@@ -240,12 +299,6 @@ Automatically detects spam/junk folders:
 - **Gmail**: Uses `[Gmail].Spam` (if available)
 - **Other providers**: Looks for `Spam`, `Junk`, `SPAM`, etc.
 - **Fallback**: Prompts user for folder selection
-
-#### Delete Function (`gD`)
-Intelligent delete handling:
-- **First attempt**: Move to trash folder
-- **Missing trash**: Prompts for permanent delete or custom folder
-- **Headless mode**: Automatically handles without prompts
 
 ## File Structure
 
@@ -263,6 +316,9 @@ lua/neotex/plugins/tools/himalaya/
 ├── state.lua             # Session persistence and state management
 ├── picker.lua            # Folder/account selection interfaces
 ├── utils.lua             # Himalaya CLI integration and email operations
+├── trash_manager.lua     # Local trash system core infrastructure
+├── trash_operations.lua  # Email trash operations (move, restore, delete)
+├── trash_ui.lua          # Trash browser interface and management
 └── util/                  # Diagnostic and troubleshooting tools
     ├── README.md          # Diagnostic tools documentation
     ├── init.lua          # Main utilities interface
@@ -284,6 +340,9 @@ lua/neotex/plugins/tools/himalaya/
 - **`state.lua`** - Session persistence, state management, and auto-save
 - **`picker.lua`** - vim.ui.select integration for folder/account selection  
 - **`utils.lua`** - Himalaya CLI integration, sync functionality, and email operations
+- **`trash_manager.lua`** - **Local trash system core** - Directory management, metadata tracking, configuration
+- **`trash_operations.lua`** - **Trash email operations** - Move to trash, restore, permanent delete
+- **`trash_ui.lua`** - **Trash browser interface** - Visual trash management with floating window
 - **`util/`** - **Diagnostic and troubleshooting suite** - [See util/README.md](util/README.md) for comprehensive troubleshooting tools
 
 ### Key Features Implemented
@@ -291,9 +350,11 @@ lua/neotex/plugins/tools/himalaya/
 - ✅ **Sidebar + Floating Architecture** - Stable navigation with persistent email list
 - ✅ **Window Stack Management** - Proper focus restoration prevents "stuck in background"
 - ✅ **Session Persistence** - Automatic state save/restore across Neovim sessions
-- ✅ **Smart Email Operations** - Auto-detect folders for archive/spam/delete operations
+- ✅ **Local Trash System** - Complete email recovery with local storage and visual management
+- ✅ **Smart Email Operations** - Auto-detect folders for archive/spam operations
 - ✅ **Pagination System** - Navigate through emails with 30 per page default
 - ✅ **Auto-refresh** - Email list updates after operations and sync completion
+- ✅ **Comprehensive Diagnostics** - Full troubleshooting suite with health monitoring
 
 ## Integration
 
@@ -405,11 +466,17 @@ himalaya --version
 The Himalaya email plugin provides a complete email management solution within Neovim using a **sidebar + floating window architecture**. Key achievements:
 
 ### ✅ **Fully Functional Email Operations**
+- **Local Trash System** (`gD`) - Complete email recovery with local storage independent of Gmail settings
 - **Archive** (`gA`) - Auto-detects `[Gmail].All Mail` for Gmail accounts
-- **Delete** (`gD`) - Intelligent trash handling with fallbacks
 - **Spam** (`gS`) - Smart spam folder detection
 - **Reply/Forward** (`gr`/`gf`) - Proper email composition with quoted content
 - **Pagination** (`gn`/`gp`) - Navigate through email pages efficiently
+
+### ✅ **Advanced Trash Management**
+- **Visual Trash Browser** (`:HimalayaTrash`) - Full-featured interface for trash management
+- **Email Recovery** - Restore deleted emails to original folders with complete metadata
+- **Automatic Cleanup** - Configurable retention policies with 30-day default
+- **Independent Operation** - No dependency on Gmail IMAP trash configuration
 
 ### ✅ **Stable UI Architecture**  
 - **Persistent Sidebar** - Email list remains visible during operations
@@ -417,9 +484,15 @@ The Himalaya email plugin provides a complete email management solution within N
 - **Session Persistence** - Remembers state across Neovim restarts
 - **Auto-refresh** - Email list updates after operations
 
+### ✅ **Comprehensive Diagnostics**
+- **Health Monitoring** (`:HimalayaQuickHealthCheck`) - System status overview
+- **Full Diagnostics** (`:HimalayaFullDiagnostics`) - Complete troubleshooting suite
+- **Configuration Analysis** - mbsync and Gmail settings verification
+- **Operation Testing** - Verify email operations and folder access
+
 ### ✅ **Robust Configuration**
 - **Single Gmail Account** - Fully configured and working
-- **Smart Folder Detection** - Handles Gmail's `[Gmail].` folder naming
+- **Smart Folder Detection** - Handles Gmail's `[Gmail].` folder naming  
 - **Manual Sync** - Reliable on-demand email synchronization
 - **Error Handling** - Comprehensive error recovery and user guidance
 

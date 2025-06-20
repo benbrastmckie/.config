@@ -72,6 +72,14 @@ function M.apply_gmail_delete_fix()
   local original_smart_delete = utils.smart_delete_email
   
   utils.smart_delete_email = function(account, email_id)
+    -- First check if local trash is enabled - if so, let it handle deletion
+    local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+    if trash_manager.is_enabled() then
+      -- Call the original function which now includes local trash support
+      return original_smart_delete(account, email_id)
+    end
+    
+    -- Local trash not enabled, use Gmail-specific logic
     -- First check if we have a trash folder
     local trash_folder = M.ensure_trash_folder()
     

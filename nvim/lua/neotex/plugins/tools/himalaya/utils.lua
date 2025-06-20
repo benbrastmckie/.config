@@ -366,9 +366,29 @@ function M.delete_email(account, email_id, permanent)
   end
 end
 
--- Enhanced delete with folder checking
+-- Enhanced delete with local trash support
 function M.smart_delete_email(account, email_id)
-  -- First try normal delete (move to trash)
+  -- Check if local trash is enabled
+  local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+  local trash_operations = require('neotex.plugins.tools.himalaya.trash_operations')
+  
+  if trash_manager.is_enabled() then
+    -- Use local trash system
+    local current_folder = config.state.current_folder or 'INBOX'
+    local success = trash_operations.move_to_trash(email_id, current_folder)
+    
+    if success then
+      -- Trigger refresh after successful local trash
+      vim.defer_fn(function()
+        vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
+      end, 100)
+      return true, 'moved_to_local_trash', 'Email moved to local trash'
+    else
+      return false, 'local_trash_failed', 'Failed to move email to local trash'
+    end
+  end
+  
+  -- Fallback to IMAP trash (original behavior)
   local args = { 'message', 'delete', tostring(email_id) }
   local cmd = { config.config.executable }
   vim.list_extend(cmd, args)
@@ -385,7 +405,7 @@ function M.smart_delete_email(account, email_id)
   local exit_code = vim.v.shell_error
   
   if exit_code == 0 then
-    return true, 'Email moved to trash'
+    return true, 'moved_to_imap_trash', 'Email moved to IMAP trash'
   end
   
   -- If normal delete failed, check if it's a missing trash folder issue

@@ -59,6 +59,9 @@ return {
       local folder_check = require('neotex.plugins.tools.himalaya.folder_check')
       local gmail_fix = require('neotex.plugins.tools.himalaya.gmail_fix')
       local util = require('neotex.plugins.tools.himalaya.util')
+      local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+      local trash_operations = require('neotex.plugins.tools.himalaya.trash_operations')
+      local trash_ui = require('neotex.plugins.tools.himalaya.trash_ui')
       
       debug_tools.setup_commands()
       fixes.setup_commands()
@@ -68,6 +71,9 @@ return {
       folder_check.setup_commands()
       gmail_fix.setup_commands()
       util.setup_commands()
+      trash_manager.setup_commands()
+      trash_operations.setup_commands()
+      trash_ui.setup_commands()
       
       -- Auto-apply fixes and optimizations
       fixes.apply_fixes()
@@ -76,6 +82,9 @@ return {
       delete_fix.apply_fixes()
       folder_check.fix_delete_for_gmail()
       gmail_fix.apply_gmail_delete_fix()
+      
+      -- Initialize local trash system
+      trash_manager.init()
       
       -- Setup cleanup on exit
       vim.api.nvim_create_autocmd('VimLeavePre', {
