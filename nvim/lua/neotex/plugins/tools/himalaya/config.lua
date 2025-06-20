@@ -42,6 +42,14 @@ M.config = {
     metadata_storage = "json", -- "sqlite", "json"
     auto_cleanup = true,
     cleanup_interval_hours = 24
+  },
+  
+  -- Debug and notification settings
+  debug_mode = false, -- Show all notifications when true, only important ones when false
+  notification_levels = {
+    -- Define which notification types are considered "important"
+    important = { "error", "warn", "email_sent", "email_deleted" },
+    debug_only = { "cache", "fetch", "init", "cleanup", "page_load" }
   }
 }
 

@@ -24,6 +24,7 @@ return {
       local config = require('neotex.plugins.tools.himalaya.config')
       local utils = require('neotex.plugins.tools.himalaya.utils')
       local ui = require('neotex.plugins.tools.himalaya.ui')
+      local notifications = require('neotex.plugins.tools.himalaya.notifications')
       
       -- Initialize utilities first
       if not utils.init() then
@@ -44,6 +45,9 @@ return {
           },
         },
       })
+      
+      -- Setup notification filtering based on debug mode
+      notifications.setup_notification_override()
       
       -- Start auto-sync if enabled
       if config.config.auto_sync then

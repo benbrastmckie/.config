@@ -8,6 +8,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
 local state = require('neotex.plugins.tools.himalaya.state')
+local notifications = require('neotex.plugins.tools.himalaya.notifications')
 
 -- Buffer tracking
 M.buffers = {
@@ -96,7 +97,7 @@ function M.show_email_list(args)
   -- Focus the sidebar
   sidebar.focus()
   
-  vim.notify('Email list loaded in sidebar', vim.log.levels.INFO)
+  notifications.notify('Email list loaded in sidebar', vim.log.levels.INFO)
   return win
 end
 
@@ -688,17 +689,18 @@ function M.delete_current_email()
   
   if success then
     vim.notify('Email deleted successfully', vim.log.levels.INFO)
-    M.close_current_view()
     
-    -- Remove email from sidebar immediately and then refresh
-    local performance = require('neotex.plugins.tools.himalaya.performance')
-    local removed_locally = performance.remove_email_locally(email_id)
+    -- Only close view if we're in an email reading buffer, not the sidebar
+    local current_buf = vim.api.nvim_get_current_buf()
+    local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
+    local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
     
-    if removed_locally then
-      -- Email removed from sidebar, no need for full refresh
-      vim.notify('Email deleted and removed from list', vim.log.levels.INFO)
-    else
-      -- Fallback to full refresh if local removal failed
+    if is_email_buffer and not is_sidebar then
+      M.close_current_view()
+    end
+    
+    -- Always refresh the list to show the deletion
+    vim.defer_fn(function()
       if M.refresh_email_list_original then
         -- Use original refresh function if available (bypasses debouncing)
         M.refresh_email_list_original()
@@ -706,7 +708,7 @@ function M.delete_current_email()
         -- Fallback to current refresh
         M.refresh_email_list()
       end
-    end
+    end, 100)
   elseif error_type == 'missing_trash' then
     -- Trash folder doesn't exist, offer alternatives
     M.handle_missing_trash_folder(email_id, extra)

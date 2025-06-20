@@ -176,13 +176,13 @@ function M.apply_fixes()
     -- Local trash is enabled, only override spam function
     local ui = require('neotex.plugins.tools.himalaya.ui')
     ui.spam_current_email = M.spam_current_email_fixed
-    vim.notify('Himalaya fixes applied (local trash active)', vim.log.levels.INFO)
+    -- Fixes applied silently
   else
     -- Local trash not enabled, apply all fixes
     local ui = require('neotex.plugins.tools.himalaya.ui')
     ui.delete_current_email = M.delete_current_email_fixed
     ui.spam_current_email = M.spam_current_email_fixed
-    vim.notify('Himalaya fixes applied', vim.log.levels.INFO)
+    -- Fixes applied silently
   end
 end
 
