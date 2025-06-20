@@ -138,6 +138,13 @@ end
 
 -- Override the problematic delete function
 function M.fix_delete_for_gmail()
+  -- Check if local trash is enabled - if so, don't apply this fix
+  local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+  if trash_manager.is_enabled() then
+    -- Local trash is enabled, no need for folder-specific fix
+    return
+  end
+  
   local original_smart_delete = utils.smart_delete_email
   
   utils.smart_delete_email = function(account, email_id)

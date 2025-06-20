@@ -62,6 +62,7 @@ return {
       local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
       local trash_operations = require('neotex.plugins.tools.himalaya.trash_operations')
       local trash_ui = require('neotex.plugins.tools.himalaya.trash_ui')
+      local delete_diagnostics = require('neotex.plugins.tools.himalaya.delete_diagnostics')
       
       debug_tools.setup_commands()
       fixes.setup_commands()
@@ -74,6 +75,7 @@ return {
       trash_manager.setup_commands()
       trash_operations.setup_commands()
       trash_ui.setup_commands()
+      delete_diagnostics.setup_commands()
       
       -- Auto-apply fixes and optimizations
       fixes.apply_fixes()

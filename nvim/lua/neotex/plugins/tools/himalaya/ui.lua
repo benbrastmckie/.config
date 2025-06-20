@@ -194,6 +194,9 @@ function M.read_email(email_id)
   -- Update selected email in state
   state.set_selected_email(email_id)
   
+  -- Explicitly ensure keymaps are set up for this buffer
+  config.setup_buffer_keymaps(buf)
+  
   -- Open in window
   M.open_email_window(buf, 'Email - ' .. (email_content.subject or 'No Subject'))
 end
@@ -337,7 +340,7 @@ function M.compose_email(to_address)
     account.name or account.email,
     '',
     string.rep('─', 70),
-    'ZZ:send q:save-draft Q:discard',
+    'gs:send q:save-draft Q:discard',
   }
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -345,6 +348,37 @@ function M.compose_email(to_address)
   -- Store compose data
   vim.b[buf].himalaya_compose = true
   vim.b[buf].himalaya_account = config.state.current_account
+  
+  -- Set up buffer keymaps
+  config.setup_buffer_keymaps(buf)
+  
+  -- Explicitly set up gs keybinding for sending
+  vim.keymap.set('n', 'gs', function()
+    vim.notify('gs keymap triggered!', vim.log.levels.INFO)
+    M.send_current_email()
+  end, { buffer = buf, desc = 'Send email' })
+  
+  -- Also set up <F5> as an alternative test
+  vim.keymap.set('n', '<F5>', function()
+    vim.notify('F5 triggered - sending email!', vim.log.levels.INFO)
+    M.send_current_email()
+  end, { buffer = buf, desc = 'Send email (F5 test)' })
+  
+  -- Test if 's' alone works
+  vim.keymap.set('n', 's', function()
+    vim.notify('s key triggered - sending email!', vim.log.levels.INFO)
+    M.send_current_email()
+  end, { buffer = buf, desc = 'Send email (s test)' })
+  
+  -- Debug: Check what keymaps are set
+  vim.defer_fn(function()
+    local keymaps = vim.api.nvim_buf_get_keymap(buf, 'n')
+    for _, keymap in ipairs(keymaps) do
+      if keymap.lhs == 'gs' then
+        vim.notify('Found gs keymap in compose buffer', vim.log.levels.INFO)
+      end
+    end
+  end, 100)
   
   -- Open in window
   M.open_email_window(buf, 'Compose Email')
@@ -463,7 +497,7 @@ function M.reply_email(email_id, reply_all)
   table.insert(lines, account.name or account.email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'ZZ:send q:save-draft Q:discard')
+  table.insert(lines, 'gs:send q:save-draft Q:discard')
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -471,6 +505,14 @@ function M.reply_email(email_id, reply_all)
   vim.b[buf].himalaya_compose = true
   vim.b[buf].himalaya_account = config.state.current_account
   vim.b[buf].himalaya_reply_to = email_id
+  
+  -- Set up buffer keymaps
+  config.setup_buffer_keymaps(buf)
+  
+  -- Explicitly set up gs keybinding for sending
+  vim.keymap.set('n', 'gs', function()
+    M.send_current_email()
+  end, { buffer = buf, desc = 'Send email' })
   
   -- Open in window
   M.open_email_window(buf, 'Reply - ' .. subject)
@@ -556,13 +598,21 @@ function M.forward_email(email_id)
   table.insert(lines, account.name or account.email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'ZZ:send q:save-draft Q:discard')
+  table.insert(lines, 'gs:send q:save-draft Q:discard')
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
   vim.b[buf].himalaya_compose = true
   vim.b[buf].himalaya_account = config.state.current_account
   vim.b[buf].himalaya_forward = email_id
+  
+  -- Set up buffer keymaps
+  config.setup_buffer_keymaps(buf)
+  
+  -- Explicitly set up gs keybinding for sending
+  vim.keymap.set('n', 'gs', function()
+    M.send_current_email()
+  end, { buffer = buf, desc = 'Send email' })
   
   M.open_email_window(buf, 'Forward - ' .. subject)
   
@@ -585,21 +635,30 @@ end
 -- Send current email
 function M.send_current_email()
   local buf = vim.api.nvim_get_current_buf()
+  vim.notify('DEBUG: send_current_email called', vim.log.levels.INFO)
+  
   if not vim.b[buf].himalaya_compose then
     vim.notify('Not in compose buffer', vim.log.levels.ERROR)
     return
   end
+  vim.notify('DEBUG: In compose buffer', vim.log.levels.INFO)
   
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  vim.notify('DEBUG: Buffer lines (first 5): ' .. vim.inspect({lines[1], lines[2], lines[3], lines[4], lines[5]}), vim.log.levels.INFO)
   local email_data = utils.parse_email_content(lines)
+  vim.notify('DEBUG: Email data parsed: ' .. vim.inspect(email_data), vim.log.levels.INFO)
   
   if not email_data.to or email_data.to == '' then
     vim.notify('To field is required', vim.log.levels.ERROR)
     return
   end
+  vim.notify('DEBUG: To field check passed', vim.log.levels.INFO)
   
   -- Send email
+  vim.notify('DEBUG: Attempting to send email...', vim.log.levels.INFO)
   local success = utils.send_email(config.state.current_account, email_data)
+  vim.notify('DEBUG: Send result: ' .. tostring(success), vim.log.levels.INFO)
+  
   if success then
     vim.notify('Email sent successfully', vim.log.levels.INFO)
     vim.api.nvim_buf_delete(buf, { force = true })
@@ -615,6 +674,11 @@ function M.delete_current_email()
   local buf = vim.api.nvim_get_current_buf()
   local email_id = vim.b[buf].himalaya_email_id
   
+  -- If no email_id in buffer variable, try to get it from cursor position (sidebar)
+  if not email_id then
+    email_id = M.get_current_email_id()
+  end
+  
   if not email_id then
     vim.notify('No email to delete', vim.log.levels.WARN)
     return
@@ -623,9 +687,26 @@ function M.delete_current_email()
   local success, error_type, extra = utils.smart_delete_email(config.state.current_account, email_id)
   
   if success then
-    vim.notify('Email deleted', vim.log.levels.INFO)
+    vim.notify('Email deleted successfully', vim.log.levels.INFO)
     M.close_current_view()
-    M.refresh_email_list()
+    
+    -- Remove email from sidebar immediately and then refresh
+    local performance = require('neotex.plugins.tools.himalaya.performance')
+    local removed_locally = performance.remove_email_locally(email_id)
+    
+    if removed_locally then
+      -- Email removed from sidebar, no need for full refresh
+      vim.notify('Email deleted and removed from list', vim.log.levels.INFO)
+    else
+      -- Fallback to full refresh if local removal failed
+      if M.refresh_email_list_original then
+        -- Use original refresh function if available (bypasses debouncing)
+        M.refresh_email_list_original()
+      else
+        -- Fallback to current refresh
+        M.refresh_email_list()
+      end
+    end
   elseif error_type == 'missing_trash' then
     -- Trash folder doesn't exist, offer alternatives
     M.handle_missing_trash_folder(email_id, extra)

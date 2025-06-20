@@ -236,19 +236,53 @@ function M.send_email(account, email_data)
   file:close()
   
   -- Send email using himalaya
-  local args = { 'message', 'send', '--stdin' }
-  local cmd = { config.config.executable }
-  
-  vim.list_extend(cmd, args)
+  local cmd = { config.config.executable, 'message', 'send' }
   
   if account then
     table.insert(cmd, '-a')
     table.insert(cmd, account)
   end
   
-  -- Execute with file input
-  local result = vim.fn.system(table.concat(cmd, ' ') .. ' < ' .. temp_file)
-  local exit_code = vim.v.shell_error
+  -- Execute with stdin
+  local full_cmd = table.concat(cmd, ' ')
+  vim.notify('DEBUG: Executing command: ' .. full_cmd .. ' < temp_file', vim.log.levels.INFO)
+  vim.notify('DEBUG: Email content preview: ' .. vim.fn.system('head -5 ' .. temp_file), vim.log.levels.INFO)
+  
+  -- Use jobstart for better stdin handling
+  local result_lines = {}
+  local job_id = vim.fn.jobstart(cmd, {
+    stdin = 'pipe',
+    stdout_buffered = true,
+    stderr_buffered = true,
+    on_stdout = function(_, data)
+      vim.list_extend(result_lines, data)
+    end,
+    on_stderr = function(_, data)
+      vim.list_extend(result_lines, data)
+    end,
+  })
+  
+  if job_id <= 0 then
+    vim.notify('Failed to start send job', vim.log.levels.ERROR)
+    os.remove(temp_file)
+    return false
+  end
+  
+  -- Send the email content
+  local file = io.open(temp_file, 'r')
+  local content = file:read('*all')
+  file:close()
+  
+  vim.fn.chansend(job_id, content)
+  vim.fn.chanclose(job_id, 'stdin')
+  
+  -- Wait for completion
+  local exit_code = vim.fn.jobwait({job_id}, 5000)[1]
+  
+  local result = table.concat(result_lines, '\n')
+  
+  vim.notify('DEBUG: Command result: ' .. tostring(result), vim.log.levels.INFO)
+  vim.notify('DEBUG: Exit code: ' .. tostring(exit_code), vim.log.levels.INFO)
   
   -- Clean up temporary file
   os.remove(temp_file)
@@ -271,6 +305,9 @@ function M.format_email_for_sending(email_data)
   local lines = {}
   
   -- Headers
+  if email_data.from then
+    table.insert(lines, 'From: ' .. email_data.from)
+  end
   if email_data.to then
     table.insert(lines, 'To: ' .. email_data.to)
   end
@@ -310,7 +347,9 @@ function M.parse_email_content(lines)
     local header, value = line:match('^([^:]+):%s*(.*)$')
     if header then
       header = header:lower()
-      if header == 'to' then
+      if header == 'from' then
+        email_data.from = value
+      elseif header == 'to' then
         email_data.to = value
       elseif header == 'cc' then
         email_data.cc = value

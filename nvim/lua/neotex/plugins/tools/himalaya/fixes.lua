@@ -170,13 +170,20 @@ end
 
 -- Apply all fixes by overriding the original functions
 function M.apply_fixes()
-  local ui = require('neotex.plugins.tools.himalaya.ui')
-  
-  -- Override the problematic functions
-  ui.delete_current_email = M.delete_current_email_fixed
-  ui.spam_current_email = M.spam_current_email_fixed
-  
-  vim.notify('Himalaya fixes applied', vim.log.levels.INFO)
+  -- Check if local trash is enabled - if so, don't override delete function
+  local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+  if trash_manager.is_enabled() then
+    -- Local trash is enabled, only override spam function
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    ui.spam_current_email = M.spam_current_email_fixed
+    vim.notify('Himalaya fixes applied (local trash active)', vim.log.levels.INFO)
+  else
+    -- Local trash not enabled, apply all fixes
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    ui.delete_current_email = M.delete_current_email_fixed
+    ui.spam_current_email = M.spam_current_email_fixed
+    vim.notify('Himalaya fixes applied', vim.log.levels.INFO)
+  end
 end
 
 -- Create command to apply fixes
