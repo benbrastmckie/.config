@@ -1819,10 +1819,712 @@ end
    - Test command execution error handling
    - Test cache corruption recovery
 
-## Phase 5: Documentation Update
+## Phase 5: Undo System Implementation
 
 ### Goal
-Update the existing Himalaya README.md to accurately reflect the completed email client integration after implementing the sidebar + floating window architecture.
+Implement a comprehensive undo system for email operations that allows users to revert recent actions (delete, move, archive, spam, etc.) with a simple keymap, extensible for future operations.
+
+### Research Summary
+
+#### Email Client Undo Patterns Analysis
+**Gmail**: 5-second "Undo" toast notification after move/delete operations
+**Outlook**: "Undo" button in status bar for 10 seconds after operations  
+**Apple Mail**: Cmd+Z for immediate undo of last operation
+**Thunderbird**: Edit menu undo for folder operations
+
+#### Key Design Principles
+1. **Time-Limited**: Undo should expire after reasonable time (Gmail: 5s, Outlook: 10s)
+2. **Single Operation**: Undo last operation only (not full history stack)
+3. **Visible Feedback**: Clear indication that undo is available
+4. **Safe Operations**: Only undo reversible operations (not permanent deletes)
+5. **Graceful Degradation**: Handle cases where undo isn't possible
+
+### Phase 5A: Undo System Architecture
+
+#### Core Components Design
+
+##### **5A.1: Undo Operation Data Structure**
+```lua
+-- lua/neotex/plugins/tools/himalaya/undo.lua
+local M = {}
+
+-- Undo operation structure
+M.undo_operation = {
+  type = 'move|delete|archive|spam|flag|copy',
+  email_id = 'unique_email_identifier',
+  email_data = {}, -- Cached email for restoration if needed
+  source_folder = 'INBOX',
+  target_folder = 'Archive', -- For move operations
+  timestamp = 1234567890,
+  account = 'gmail',
+  
+  -- Operation-specific data
+  metadata = {
+    original_flags = {}, -- For flag operations
+    original_position = 5, -- For UI restoration
+    batch_size = 1, -- For future batch operations
+  },
+  
+  -- Undo function
+  undo_function = function() end,
+  
+  -- Human-readable description
+  description = 'Moved email "Subject" to Archive'
+}
+```
+
+##### **5A.2: Undo Manager**
+```lua
+-- Undo state management
+M.undo_state = {
+  current_operation = nil, -- Most recent undoable operation
+  undo_timer = nil, -- Timer for expiration
+  undo_timeout = 8000, -- 8 seconds (between Gmail's 5s and Outlook's 10s)
+  notification_id = nil, -- For updating/dismissing notifications
+}
+
+-- Core undo functions
+function M.register_operation(operation)
+  -- Cancel any existing undo timer
+  -- Store new operation as current
+  -- Start expiration timer
+  -- Show undo notification
+end
+
+function M.execute_undo()
+  -- Validate operation is still valid
+  -- Execute undo function
+  -- Clear current operation
+  -- Show success notification
+end
+
+function M.expire_undo()
+  -- Clear current operation
+  -- Dismiss undo notification
+end
+
+function M.can_undo()
+  -- Check if undo is available and not expired
+end
+```
+
+##### **5A.3: Operation Registration System**
+```lua
+-- Integration with existing operations
+function M.wrap_operation(original_function, undo_creator)
+  return function(...)
+    local args = {...}
+    local result = original_function(...)
+    
+    if result.success then
+      local undo_op = undo_creator(args, result)
+      M.register_operation(undo_op)
+    end
+    
+    return result
+  end
+end
+
+-- Example: Wrapping delete operation
+local original_delete = ui.delete_current_email
+ui.delete_current_email = M.wrap_operation(original_delete, function(args, result)
+  return {
+    type = 'delete',
+    email_id = result.email_id,
+    source_folder = result.original_folder,
+    target_folder = result.trash_folder,
+    undo_function = function()
+      return utils.move_email(result.email_id, result.original_folder)
+    end,
+    description = 'Deleted email "' .. (result.subject or 'Unknown') .. '"'
+  }
+end)
+```
+
+### Phase 5B: Undo Operation Implementations
+
+#### **5B.1: Move/Archive/Spam Undo**
+```lua
+-- Undo move operations (archive, spam, folder moves)
+function M.create_move_undo(email_id, source_folder, target_folder, email_data)
+  return {
+    type = 'move',
+    email_id = email_id,
+    source_folder = source_folder,
+    target_folder = target_folder,
+    email_data = email_data,
+    undo_function = function()
+      -- Move email back to source folder
+      local success = utils.move_email(email_id, source_folder)
+      if success then
+        -- Update local UI if sidebar is open
+        local performance = require('neotex.plugins.tools.himalaya.performance')
+        if source_folder == config.state.current_folder then
+          -- Add email back to current view
+          performance.add_email_locally(email_data)
+        end
+        return {
+          success = true,
+          message = 'Email restored to ' .. source_folder
+        }
+      else
+        return {
+          success = false,
+          message = 'Failed to restore email'
+        }
+      end
+    end,
+    description = string.format('Moved "%s" from %s to %s', 
+                                email_data.subject or 'email', 
+                                source_folder, 
+                                target_folder)
+  }
+end
+```
+
+#### **5B.2: Delete Undo**
+```lua
+-- Undo delete operations (move from trash back to inbox)
+function M.create_delete_undo(email_id, original_folder, trash_folder, email_data)
+  return {
+    type = 'delete',
+    email_id = email_id,
+    source_folder = original_folder,
+    target_folder = trash_folder,
+    email_data = email_data,
+    undo_function = function()
+      -- Move from trash back to original folder
+      local success = utils.move_email(email_id, original_folder)
+      if success then
+        -- Update UI to show restored email
+        local performance = require('neotex.plugins.tools.himalaya.performance')
+        if original_folder == config.state.current_folder then
+          performance.add_email_locally(email_data)
+        end
+        return {
+          success = true,
+          message = 'Email restored to ' .. original_folder
+        }
+      else
+        return {
+          success = false,
+          message = 'Failed to restore deleted email'
+        }
+      end
+    end,
+    description = 'Deleted "' .. (email_data.subject or 'email') .. '"',
+    warning = 'Note: Email moved to trash folder'
+  }
+end
+```
+
+#### **5B.3: Flag Operation Undo**
+```lua
+-- Undo flag changes (read/unread, starred, etc.)
+function M.create_flag_undo(email_id, flag_type, old_value, new_value)
+  return {
+    type = 'flag',
+    email_id = email_id,
+    flag_type = flag_type,
+    old_value = old_value,
+    new_value = new_value,
+    undo_function = function()
+      local action = old_value and 'add' or 'remove'
+      local success = utils.flag_email(email_id, flag_type, action)
+      if success then
+        return {
+          success = true,
+          message = 'Flag change reverted'
+        }
+      else
+        return {
+          success = false,
+          message = 'Failed to revert flag change'
+        }
+      end
+    end,
+    description = string.format('%s flag %s', 
+                                new_value and 'Added' or 'Removed', 
+                                flag_type)
+  }
+end
+```
+
+### Phase 5C: User Interface Integration
+
+#### **5C.1: Undo Notification System**
+```lua
+-- Enhanced notification with undo option
+function M.show_undo_notification(operation)
+  local message = operation.description .. ' - Press u to undo'
+  
+  -- Show notification with custom handler
+  local notification_id = vim.notify(message, vim.log.levels.INFO, {
+    title = 'Himalaya Operation',
+    timeout = M.undo_state.undo_timeout,
+    on_open = function()
+      -- Set up temporary keymap for undo
+      M.setup_temporary_undo_keymap()
+    end,
+    on_close = function()
+      -- Clean up temporary keymap
+      M.cleanup_temporary_undo_keymap()
+    end
+  })
+  
+  M.undo_state.notification_id = notification_id
+end
+
+-- Temporary undo keymap (active only during undo window)
+function M.setup_temporary_undo_keymap()
+  vim.keymap.set('n', 'u', function()
+    M.execute_undo()
+  end, { 
+    desc = 'Undo last email operation',
+    buffer = false, -- Global keymap
+    silent = true
+  })
+end
+```
+
+#### **5C.2: Visual Undo Feedback**
+```lua
+-- Status line integration
+function M.get_undo_status()
+  if M.can_undo() then
+    local op = M.undo_state.current_operation
+    local time_left = math.ceil((op.timestamp + M.undo_state.undo_timeout - vim.loop.now()) / 1000)
+    return string.format('⟲ Undo: %s (%ds)', op.type, time_left)
+  end
+  return ''
+end
+
+-- Sidebar indication
+function M.show_undo_indicator_in_sidebar()
+  if M.can_undo() then
+    local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
+    local lines = sidebar.get_content()
+    
+    -- Add undo indicator to header
+    local undo_line = '  ⟲ Press u to undo last operation'
+    table.insert(lines, 2, undo_line) -- Insert after title
+    
+    sidebar.update_content(lines)
+  end
+end
+```
+
+### Phase 5D: Operation Integration
+
+#### **5D.1: Wrapper System for Existing Operations**
+```lua
+-- Automatic integration with existing operations
+function M.integrate_with_operations()
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  local performance = require('neotex.plugins.tools.himalaya.performance')
+  
+  -- Wrap delete operation
+  local original_delete = performance.delete_email_optimized
+  performance.delete_email_optimized = function(email_id)
+    -- Get email data before deletion for undo
+    local email_data = M.get_email_data(email_id)
+    local original_folder = config.state.current_folder
+    
+    -- Execute original delete
+    local result = original_delete(email_id)
+    
+    -- Register undo if successful
+    if result and result.success then
+      local undo_op = M.create_delete_undo(
+        email_id, 
+        original_folder, 
+        result.trash_folder, 
+        email_data
+      )
+      M.register_operation(undo_op)
+    end
+    
+    return result
+  end
+  
+  -- Wrap archive operation  
+  local original_archive = ui.archive_current_email
+  ui.archive_current_email = function()
+    local email_id = ui.get_current_email_id()
+    local email_data = M.get_email_data(email_id)
+    local original_folder = config.state.current_folder
+    
+    -- Execute original archive
+    local result = original_archive()
+    
+    -- Register undo if successful
+    if result and result.success then
+      local undo_op = M.create_move_undo(
+        email_id, 
+        original_folder, 
+        result.archive_folder, 
+        email_data
+      )
+      M.register_operation(undo_op)
+    end
+    
+    return result
+  end
+  
+  -- Similar wrappers for spam, move, flag operations...
+end
+```
+
+#### **5D.2: Enhanced Email Data Capture**
+```lua
+-- Capture email data for undo operations
+function M.get_email_data(email_id)
+  local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
+  local buf = sidebar.get_buf()
+  
+  if buf and vim.api.nvim_buf_is_valid(buf) then
+    local emails = vim.b[buf].himalaya_emails
+    if emails then
+      for _, email in ipairs(emails) do
+        if email.id == email_id then
+          return {
+            id = email.id,
+            subject = email.subject,
+            from = email.from,
+            date = email.date,
+            status = email.status,
+            position = M.find_email_position(email_id) -- For UI restoration
+          }
+        end
+      end
+    end
+  end
+  
+  return { id = email_id, subject = 'Unknown' }
+end
+
+-- Find email position in current list for restoration
+function M.find_email_position(email_id)
+  local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
+  local buf = sidebar.get_buf()
+  
+  if buf and vim.api.nvim_buf_is_valid(buf) then
+    local emails = vim.b[buf].himalaya_emails
+    if emails then
+      for i, email in ipairs(emails) do
+        if email.id == email_id then
+          return i
+        end
+      end
+    end
+  end
+  
+  return nil
+end
+```
+
+### Phase 5E: Advanced Features
+
+#### **5E.1: Batch Undo Support**
+```lua
+-- Support for undoing batch operations (future enhancement)
+function M.register_batch_operation(operations)
+  local batch_undo = {
+    type = 'batch',
+    operations = operations,
+    timestamp = vim.loop.now(),
+    undo_function = function()
+      local results = {}
+      local success_count = 0
+      
+      -- Undo operations in reverse order
+      for i = #operations, 1, -1 do
+        local op = operations[i]
+        local result = op.undo_function()
+        table.insert(results, result)
+        if result.success then
+          success_count = success_count + 1
+        end
+      end
+      
+      return {
+        success = success_count == #operations,
+        message = string.format('Restored %d/%d operations', success_count, #operations),
+        details = results
+      }
+    end,
+    description = string.format('Batch operation: %d emails', #operations)
+  }
+  
+  M.register_operation(batch_undo)
+end
+```
+
+#### **5E.2: Undo History (Optional Enhancement)**
+```lua
+-- Extended undo history (disabled by default for simplicity)
+M.undo_history = {
+  operations = {}, -- Stack of recent operations
+  max_history = 5, -- Keep last 5 operations
+  enabled = false -- Disabled by default, enable via config
+}
+
+function M.enable_undo_history()
+  M.undo_history.enabled = true
+end
+
+function M.show_undo_history()
+  if not M.undo_history.enabled then
+    vim.notify('Undo history not enabled', vim.log.levels.INFO)
+    return
+  end
+  
+  local operations = M.undo_history.operations
+  if #operations == 0 then
+    vim.notify('No undo history', vim.log.levels.INFO)
+    return
+  end
+  
+  local choices = {}
+  for i, op in ipairs(operations) do
+    table.insert(choices, string.format('%d. %s', i, op.description))
+  end
+  
+  vim.ui.select(choices, {
+    prompt = 'Select operation to undo:',
+  }, function(choice, idx)
+    if idx then
+      M.execute_specific_undo(operations[idx])
+    end
+  end)
+end
+```
+
+### Phase 5F: Error Handling and Edge Cases
+
+#### **5F.1: Undo Validation**
+```lua
+-- Validate undo operation before execution
+function M.validate_undo_operation(operation)
+  local validations = {
+    -- Check if email still exists
+    email_exists = function()
+      local folders = utils.get_folders(operation.account)
+      -- Search for email in target folder
+      return M.email_exists_in_folder(operation.email_id, operation.target_folder)
+    end,
+    
+    -- Check if source folder still exists
+    folder_exists = function()
+      local folders = utils.get_folders(operation.account)
+      return vim.tbl_contains(folders, operation.source_folder)
+    end,
+    
+    -- Check if operation hasn't expired
+    not_expired = function()
+      local now = vim.loop.now()
+      return (now - operation.timestamp) < M.undo_state.undo_timeout
+    end,
+    
+    -- Check if account is still active
+    account_valid = function()
+      return operation.account == config.state.current_account
+    end
+  }
+  
+  local errors = {}
+  for validation_name, validation_func in pairs(validations) do
+    if not validation_func() then
+      table.insert(errors, validation_name)
+    end
+  end
+  
+  return #errors == 0, errors
+end
+```
+
+#### **5F.2: Graceful Error Recovery**
+```lua
+-- Handle undo failures gracefully
+function M.handle_undo_failure(operation, errors)
+  local error_messages = {
+    email_exists = 'Email no longer exists in target folder',
+    folder_exists = 'Source folder no longer exists',
+    not_expired = 'Undo operation has expired',
+    account_valid = 'Account has changed'
+  }
+  
+  local user_message = 'Cannot undo operation: '
+  local detailed_errors = {}
+  
+  for _, error in ipairs(errors) do
+    table.insert(detailed_errors, error_messages[error] or error)
+  end
+  
+  user_message = user_message .. table.concat(detailed_errors, ', ')
+  
+  vim.notify(user_message, vim.log.levels.WARN)
+  
+  -- Clear the failed undo operation
+  M.clear_current_undo()
+end
+```
+
+### Phase 5G: Configuration and Customization
+
+#### **5G.1: User Configuration**
+```lua
+-- Undo system configuration
+M.config = {
+  enabled = true,
+  timeout = 8000, -- 8 seconds
+  show_notifications = true,
+  show_sidebar_indicator = true,
+  enable_history = false,
+  max_history = 5,
+  keymap = 'u', -- Undo keymap
+  
+  -- Operations that support undo
+  supported_operations = {
+    'delete', 'move', 'archive', 'spam', 'flag'
+  },
+  
+  -- Operations that should NOT be undoable
+  excluded_operations = {
+    'permanent_delete', 'send_email'
+  }
+}
+
+function M.setup(user_config)
+  M.config = vim.tbl_deep_extend('force', M.config, user_config or {})
+  
+  if M.config.enabled then
+    M.integrate_with_operations()
+    M.setup_keymaps()
+  end
+end
+```
+
+#### **5G.2: Keymap Integration**
+```lua
+-- Add undo keymap to email list buffer
+function M.setup_keymaps()
+  -- Global undo keymap (only active when undo available)
+  vim.keymap.set('n', M.config.keymap, function()
+    if M.can_undo() then
+      M.execute_undo()
+    else
+      vim.notify('No operation to undo', vim.log.levels.INFO)
+    end
+  end, { desc = 'Undo last email operation' })
+  
+  -- Add to g-command handler in config.lua
+  -- elseif key == 'u' then
+  --   require('neotex.plugins.tools.himalaya.undo').execute_undo()
+end
+```
+
+### Phase 5H: Testing Strategy
+
+#### **5H.1: Unit Tests**
+```lua
+-- Test undo operation creation
+function test_create_move_undo()
+  local email_data = { id = '123', subject = 'Test Email' }
+  local undo_op = M.create_move_undo('123', 'INBOX', 'Archive', email_data)
+  
+  assert(undo_op.type == 'move')
+  assert(undo_op.email_id == '123')
+  assert(undo_op.source_folder == 'INBOX')
+  assert(undo_op.target_folder == 'Archive')
+  assert(type(undo_op.undo_function) == 'function')
+end
+
+-- Test undo expiration
+function test_undo_expiration()
+  local operation = M.create_test_operation()
+  M.register_operation(operation)
+  
+  assert(M.can_undo() == true)
+  
+  -- Fast-forward time past expiration
+  operation.timestamp = vim.loop.now() - (M.undo_state.undo_timeout + 1000)
+  
+  assert(M.can_undo() == false)
+end
+```
+
+#### **5H.2: Integration Tests**
+```lua
+-- Test complete undo workflow
+function test_delete_and_undo_workflow()
+  -- Setup: Have email in INBOX
+  -- Action: Delete email (should move to trash)
+  -- Verify: Email removed from INBOX view
+  -- Action: Press 'u' to undo
+  -- Verify: Email restored to INBOX
+  -- Verify: Email removed from trash
+end
+
+-- Test undo with folder changes
+function test_undo_with_folder_change()
+  -- Setup: Delete email from INBOX
+  -- Action: Switch to different folder
+  -- Action: Try to undo
+  -- Verify: Undo still works, email restored to INBOX
+end
+```
+
+### Implementation Priority
+
+#### **Phase 5 Priority Levels**
+1. **High Priority (Core Functionality)**:
+   - 5A: Basic undo architecture and data structures
+   - 5B.1: Move/archive/spam undo (most common operations)
+   - 5B.2: Delete undo
+   - 5C.1: Basic notification system
+   - 5D.1: Integration with existing operations
+
+2. **Medium Priority (Enhanced UX)**:
+   - 5C.2: Visual feedback and status indicators
+   - 5F.1: Undo validation
+   - 5G.1: Configuration system
+   - 5G.2: Keymap integration
+
+3. **Low Priority (Advanced Features)**:
+   - 5B.3: Flag operation undo
+   - 5E.1: Batch undo support
+   - 5E.2: Undo history
+   - 5F.2: Advanced error handling
+
+#### **Estimated Implementation Time**
+- **High Priority**: 6-8 hours
+- **Medium Priority**: 3-4 hours  
+- **Low Priority**: 4-6 hours
+- **Total**: 13-18 hours
+
+### Integration with Existing System
+
+The undo system integrates with:
+- **Performance Module**: Uses local UI updates for instant visual feedback
+- **Notification System**: Leverages existing notification debouncing
+- **State Management**: Stores undo operations in session state
+- **Sidebar Enhancements**: Shows undo indicators and status
+- **Existing Operations**: Wraps current delete/move/archive functions
+
+### Future Extensibility
+
+The system is designed to easily support:
+- **New Operations**: Copy, batch operations, folder management
+- **Enhanced UI**: Undo buttons, progress indicators, history panels
+- **Cross-Session Persistence**: Save undo operations across Neovim restarts
+- **Server-Side Undo**: Integration with email server undo capabilities
+- **Conflict Resolution**: Handle cases where multiple clients modify emails
+
+## Phase 6: Documentation Update
+
+### Goal
+Update the existing Himalaya README.md to accurately reflect the completed email client integration after implementing the sidebar + floating window architecture and undo system.
 
 ### Implementation Steps
 
@@ -2078,125 +2780,124 @@ All removed elements maintain the same API design and can be re-integrated witho
 
 ## Debug Features
 
-### Common Issues and Solutions
+### ✅ **RESOLVED ISSUES**
 
-#### Issue: "No email to delete" / "Failed to move email"
-**Symptoms**: 
-- Error message: `No email to delete`
-- Error message: `Failed to move email`
-- Error message: `Himalaya command failed: Error: cannot find maildir matching name Archive`
+The following issues have been **FIXED** and **OPTIMIZED** as of the latest implementation:
 
-**Root Causes**:
+#### ✅ Issue: Email Operations Not Working from Sidebar - **RESOLVED**
+**Previous Symptoms**: 
+- `gD` (delete) only worked in email view, not from sidebar cursor position
+- `gS` (spam) showed folder picker but selections failed
+- Email ID extraction failed when operating from sidebar
 
-1. **Missing Archive/Spam Folders**: Gmail accounts often don't have standard "Archive" or "Spam" folders
-   - Gmail uses `[Gmail]/All Mail` instead of `Archive`
-   - Gmail uses `[Gmail]/Spam` instead of `Spam`
-   - Some accounts use `All Mail`, `Junk`, or other variations
-
-2. **Email ID Extraction Issues**: Problems with calculating the correct email index
-   - Header line calculation was off (fixed: now correctly accounts for 4 header lines)
-   - Email data structure differences between Himalaya versions
-
-3. **Command Syntax Issues**: Himalaya CLI argument order
-   - **Fixed**: Commands now use correct syntax `himalaya message move <TARGET> <ID>`
-   - Previously used incorrect syntax `himalaya message move <ID> <TARGET>`
+**Root Causes Identified**:
+1. **Email ID Extraction**: `delete_current_email()` used `vim.b[buf].himalaya_email_id` instead of cursor-based extraction
+2. **Folder Detection**: Flawed pattern matching for Gmail folders like `[Gmail]/Spam`
+3. **Command Execution**: Incorrect folder names passed to move operations
 
 **Solutions Implemented**:
+1. **Dual ID Extraction**: Functions now try buffer variable first, fall back to cursor position
+2. **Improved Folder Detection**: Exact matching for Gmail folders with smart fallbacks  
+3. **Better Error Handling**: Clear error messages and recovery options
+4. **Smart Folder Picker**: Shows all available folders when standard ones aren't found
 
-1. **Smart Folder Detection**: Archive and spam functions now:
-   - Check for multiple possible folder names (`Archive`, `All Mail`, `[Gmail]/All Mail`, etc.)
-   - Fall back to user selection if no standard folders found
-   - Offer custom folder input as last resort
+#### ✅ Issue: Slow, Clunky Email Operations - **OPTIMIZED**
+**Previous Symptoms**:
+- Email deletion caused sidebar to close and reopen
+- Full email list refresh after every operation
+- Operations felt slow and unresponsive
+- UI blocked during email operations
 
-2. **Robust Email ID Extraction**: 
-   - Correctly calculate email index by subtracting 4 header lines
-   - Validate email exists before accessing ID field
-   - Handle different email data structures gracefully
+**Performance Improvements Implemented**:
+1. **Local UI Updates**: Emails removed instantly from display before server operation
+2. **Background Operations**: Server operations happen asynchronously 
+3. **Debounced Refreshes**: Multiple operations batched together
+4. **Smart Caching**: Avoid unnecessary rebuilds of email list
+5. **Visual Feedback**: Immediate feedback with background sync
 
-3. **Proper Command Construction**:
-   - Use correct Himalaya CLI syntax for move/copy operations
-   - Proper argument ordering for all email operations
+#### ✅ Issue: Archive Operation (`gA`) - **CONFIRMED WORKING** 
+**Status**: This operation was already working correctly and has been removed from debug issues.
 
-#### Issue: "Himalaya closed (0 buffers cleaned up)"
-**Symptoms**: Message appears when trying to use email operations
+### **PERFORMANCE ENHANCEMENTS**
 
-**Root Cause**: Email operations called when Himalaya sidebar is not open or buffers not properly initialized
+The following optimizations are now active:
 
-**Solution**: Ensure Himalaya is opened with `<leader>ml` before using email operations
+#### **Instant Local Updates** ⚡
+- **Email Deletion**: Emails disappear immediately from sidebar
+- **Move Operations**: UI updates instantly, server sync in background  
+- **Visual Feedback**: Temporary status indicators during operations
+- **Cursor Management**: Smart cursor positioning after removals
 
-#### Debugging Email Operations
+#### **Optimized Refresh Patterns** 🔄
+- **Debounced Refreshes**: 500ms delay to batch multiple operations
+- **Background Sync**: Server refresh happens 3 seconds after operations
+- **Cache-Aware Updates**: Only refresh when content actually changes
+- **Smart Rebuilds**: Preserve cursor position during updates
 
-To debug email operation issues:
+#### **Enhanced Navigation** 🚀
+- **Quick Scroll**: `J`/`K` for 5-email jumps
+- **Smart Boundaries**: `gg` goes to first email, `G` to last
+- **Status Integration**: Current email position display
+- **Visual Enhancements**: Better highlighting and status indicators
 
-1. **Check Available Folders**:
-   ```vim
-   :HimalayaFolders
-   ```
-   This shows all available folders in your account
+### **ACTIVE OPTIMIZATIONS**
 
-2. **Verify Account Configuration**:
-   ```vim
-   :HimalayaConfigValidate
-   ```
-   Checks mbsync and Himalaya configuration
+The following systems are automatically optimizing your experience:
 
-3. **Test Basic Operations**:
-   ```vim
-   :Himalaya INBOX
-   ```
-   Load email list to verify basic functionality
+1. **Performance Module**: Handles local updates and background operations
+2. **Sidebar Enhancements**: Smart content updates and navigation
+3. **Debug Tools**: Available for troubleshooting if needed
+4. **Intelligent Caching**: Reduces unnecessary server calls
 
-4. **Check Folder Structure**: Common Gmail folder names:
-   - `INBOX` - Main inbox
-   - `[Gmail]/Sent Mail` - Sent emails
-   - `[Gmail]/All Mail` - Archive equivalent  
-   - `[Gmail]/Spam` - Spam folder
-   - `[Gmail]/Trash` - Deleted emails
-   - `[Gmail]/Drafts` - Draft emails
+### **AVAILABLE DEBUG COMMANDS**
 
-#### Email Operation Keybindings
+If you encounter any issues, these diagnostic commands are available:
 
-**In Email List (Sidebar)**:
-- `gD` - Delete email (moves to trash or permanently deletes)
-- `gA` - Archive email (smart folder detection)
-- `gS` - Mark as spam (smart folder detection)
-- `gn` - Next page of emails
-- `gp` - Previous page of emails
-- `r` - Refresh email list
+#### **Primary Debug Commands**
+- **`:HimalayaDebugAll`** - Run comprehensive diagnostic tests
+- **`:HimalayaDebugEmailID`** - Test email ID extraction from cursor position  
+- **`:HimalayaDebugSpamFolders`** - Test spam folder detection logic
+- **`:HimalayaDebugMove <folder>`** - Test move operations to specific folder
 
-**Troubleshooting Steps**:
+#### **Performance Commands**
+- **`:HimalayaOptimize`** - Apply performance optimizations (auto-applied)
+- **`:HimalayaRevert`** - Revert optimizations if needed
+- **`:HimalayaForceRefresh`** - Force immediate refresh bypassing debouncing
 
-1. **Verify Folder Names**: Use `:HimalayaFolders` to see exact folder names in your account
-2. **Test with Manual Commands**: Try `HimalayaMove <email_id> <folder_name>` to test specific operations
-3. **Check Sync Status**: Run `HimalayaSync` to ensure emails are up to date
-4. **Validate Configuration**: Run `HimalayaConfigValidate` to check for configuration issues
+#### **Test Commands** 
+- **`:HimalayaTestDelete`** - Test improved delete function
+- **`:HimalayaTestSpam`** - Test improved spam function
+- **`:HimalayaApplyFixes`** - Manually apply bug fixes (auto-applied)
 
-#### Technical Implementation Notes
+#### **Current Email Operations** ✅
 
-**Email ID Extraction Logic**:
-```lua
--- Email list header structure (4 lines):
--- Line 1: "Himalaya - account - folder"  
--- Line 2: "Page X | Y emails (page size: Z)"
--- Line 3: "────────────────────────────"
--- Line 4: "" (empty line)
--- Line 5+: Email entries start here
+**In Email List (Sidebar)** - All Working:
+- **`gD`** - Delete email (instant UI update, background server sync)
+- **`gA`** - Archive email (smart folder detection)  
+- **`gS`** - Mark as spam (improved folder detection)
+- **`gn`** - Next page of emails
+- **`gp`** - Previous page of emails  
+- **`r`** - Refresh email list
+- **`J`/`K`** - Quick navigation (5 emails at a time)
+- **`gg`/`G`** - Jump to first/last email
 
-local email_index = line_num - 4  -- Subtract header lines
-```
+#### **Performance Status** 🚀
 
-**Command Syntax Reference**:
-```bash
-# Correct syntax (implemented)
-himalaya message move <TARGET_FOLDER> <EMAIL_ID>
-himalaya message copy <TARGET_FOLDER> <EMAIL_ID>
-himalaya message delete <EMAIL_ID>
+Current optimizations automatically active:
+- ⚡ **Instant local updates** - Emails disappear immediately 
+- 🔄 **Background sync** - Server operations don't block UI
+- 📦 **Smart caching** - Reduced unnecessary refreshes
+- 🎯 **Debounced operations** - Batch multiple actions
+- 👁️ **Visual feedback** - Clear status during operations
 
-# Incorrect syntax (old implementation)  
-himalaya message move <EMAIL_ID> <TARGET_FOLDER>  # Wrong order
-```
+#### **Gmail Folder Support** 📧
 
-**Smart Folder Detection Logic**:
-- Archive: `Archive`, `All Mail`, `[Gmail]/All Mail`, `ARCHIVE`, `Archived`
-- Spam: `Spam`, `Junk`, `[Gmail]/Spam`, `SPAM`, `JUNK`
-- Case-insensitive matching with fallback to user selection
+Automatically detected Gmail folders:
+- `INBOX` - Main inbox
+- `[Gmail]/Sent Mail` - Sent emails  
+- `[Gmail]/All Mail` - Archive operations (`gA`)
+- `[Gmail]/Spam` - Spam operations (`gS`)
+- `[Gmail]/Trash` - Delete operations (`gD`)
+- `[Gmail]/Drafts` - Draft emails
+
+**Note**: All folder detection includes smart fallbacks and user selection when standard folders aren't found.

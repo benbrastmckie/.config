@@ -253,6 +253,7 @@ Intelligent delete handling:
 lua/neotex/plugins/tools/himalaya/
 ├── README.md              # This documentation
 ├── UI.md                  # Implementation details and debug features
+├── SYNC.md                # Gmail sync diagnostics and fixes
 ├── init.lua              # Main plugin interface
 ├── config.lua            # Configuration management and keymaps
 ├── commands.lua          # Command definitions and tab completion
@@ -261,7 +262,15 @@ lua/neotex/plugins/tools/himalaya/
 ├── window_stack.lua      # Window hierarchy and focus management  
 ├── state.lua             # Session persistence and state management
 ├── picker.lua            # Folder/account selection interfaces
-└── utils.lua             # Himalaya CLI integration and email operations
+├── utils.lua             # Himalaya CLI integration and email operations
+└── util/                  # Diagnostic and troubleshooting tools
+    ├── README.md          # Diagnostic tools documentation
+    ├── init.lua          # Main utilities interface
+    ├── diagnostics.lua   # Complete diagnostic suite
+    ├── gmail_settings.lua # Gmail IMAP settings verification
+    ├── mbsync_analyzer.lua # mbsync configuration analysis
+    ├── folder_diagnostics.lua # Folder access testing
+    └── operation_tester.lua # Email operation testing
 ```
 
 ### Module Overview
@@ -275,6 +284,7 @@ lua/neotex/plugins/tools/himalaya/
 - **`state.lua`** - Session persistence, state management, and auto-save
 - **`picker.lua`** - vim.ui.select integration for folder/account selection  
 - **`utils.lua`** - Himalaya CLI integration, sync functionality, and email operations
+- **`util/`** - **Diagnostic and troubleshooting suite** - [See util/README.md](util/README.md) for comprehensive troubleshooting tools
 
 ### Key Features Implemented
 
@@ -357,11 +367,14 @@ Current sync configuration:
 
 ### Quick Debug Steps
 
-1. **Check available folders**: `:HimalayaFolders`
-2. **Validate configuration**: `:HimalayaConfigValidate`  
-3. **Test basic functionality**: `:Himalaya INBOX`
-4. **Debug buffer state**: `:HimalayaDebug`
-5. **Check folder structure**: `:HimalayaConfigHelp`
+1. **Quick health check**: `:HimalayaQuickHealthCheck` - Fast overview of system status
+2. **Complete diagnostics**: `:HimalayaFullDiagnostics` - Comprehensive analysis and troubleshooting
+3. **Test delete operation**: `:HimalayaTestDelete` - Test the most common failing operation
+4. **Check Gmail settings**: `:HimalayaCheckGmailSettings` - Verify Gmail IMAP settings
+5. **Analyze configuration**: `:HimalayaAnalyzeMbsync` - Check mbsync configuration
+6. **Test folder access**: `:HimalayaTestFolderAccess` - Verify folder detection
+
+See [util/README.md](util/README.md) for complete diagnostic command reference.
 
 ### Gmail-Specific Folder Names
 
