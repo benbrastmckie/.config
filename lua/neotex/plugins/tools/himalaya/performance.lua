@@ -396,16 +396,20 @@ function M.apply_optimizations()
   ui.refresh_email_list = M.get_optimized_refresh()
   
   -- Override delete function with optimized version - prevent double execution
-  ui.delete_current_email_original = ui.delete_current_email
-  ui.delete_current_email = function()
-    local email_id = ui.get_current_email_id()
-    if not email_id then
-      notifications.notify('No email to delete', vim.log.levels.WARN)
-      return
+  -- Check if local trash is enabled - if so, don't override delete function
+  local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+  if not trash_manager.is_enabled() then
+    ui.delete_current_email_original = ui.delete_current_email
+    ui.delete_current_email = function()
+      local email_id = ui.get_current_email_id()
+      if not email_id then
+        notifications.notify('No email to delete', vim.log.levels.WARN)
+        return
+      end
+      
+      -- Call our optimized version ONLY
+      M.delete_email_optimized(email_id)
     end
-    
-    -- Call our optimized version ONLY
-    M.delete_email_optimized(email_id)
   end
   
   -- Override spam function with optimized version

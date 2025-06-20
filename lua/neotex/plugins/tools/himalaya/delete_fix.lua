@@ -153,20 +153,30 @@ end
 
 -- Apply the fixes
 function M.apply_fixes()
-  local ui = require('neotex.plugins.tools.himalaya.ui')
-  local performance = require('neotex.plugins.tools.himalaya.performance')
-  
-  -- Replace the optimized delete with our fixed version
-  ui.delete_current_email = function()
-    local email_id = ui.get_current_email_id()
-    if email_id then
-      M.delete_email_fixed(email_id)
-    else
-      notifications.notify('No email to delete', vim.log.levels.WARN)
+  -- Check if local trash is enabled - if so, don't override delete function
+  local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
+  if trash_manager.is_enabled() then
+    -- Local trash is enabled, don't override delete function
+    notifications.notify_force('Delete operation fixes skipped (local trash active)', vim.log.levels.INFO)
+  else
+    -- Local trash not enabled, apply delete fixes
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    local performance = require('neotex.plugins.tools.himalaya.performance')
+    
+    -- Replace the optimized delete with our fixed version
+    ui.delete_current_email = function()
+      local email_id = ui.get_current_email_id()
+      if email_id then
+        M.delete_email_fixed(email_id)
+      else
+        notifications.notify('No email to delete', vim.log.levels.WARN)
+      end
     end
+    
+    notifications.notify_force('Delete operation fixes applied', vim.log.levels.INFO)
   end
   
-  -- Fix the 'r' refresh to bypass debouncing
+  -- Fix the 'r' refresh to bypass debouncing (always apply this)
   local config = require('neotex.plugins.tools.himalaya.config')
   local original_setup = config.setup_buffer_keymaps
   
@@ -185,8 +195,6 @@ function M.apply_fixes()
       })
     end
   end
-  
-  notifications.notify_force('Delete operation fixes applied', vim.log.levels.INFO)
 end
 
 -- Create commands

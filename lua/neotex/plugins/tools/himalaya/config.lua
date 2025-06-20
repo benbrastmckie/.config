@@ -256,9 +256,25 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui').close_and_save_draft()
     end, vim.tbl_extend('force', opts, { desc = 'Close and save as draft' }))
     
-    keymap('n', 'ZZ', function()
+    -- Add direct 's' key for send (override vim's substitute)
+    keymap('n', 's', function()
+      vim.notify('Send key pressed!', vim.log.levels.INFO)
       require('neotex.plugins.tools.himalaya.ui').send_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
+    
+    -- Override 'g' to handle g-commands for compose buffers
+    keymap('n', 'g', function()
+      local char = vim.fn.getchar()
+      local key = vim.fn.nr2char(char)
+      
+      if key == 's' then
+        vim.notify('gs pressed!', vim.log.levels.INFO)
+        require('neotex.plugins.tools.himalaya.ui').send_current_email()
+      else
+        -- Pass through to built-in g commands
+        vim.api.nvim_feedkeys('g' .. key, 'n', false)
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Compose g-commands' }))
     
   end
 end

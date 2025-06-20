@@ -32,8 +32,10 @@ function M.move_to_trash(email_id, original_folder)
   -- Get the email content
   local email_content = utils.get_email_content(account, email_id)
   if not email_content then
-    vim.notify('Failed to retrieve email content for ID: ' .. email_id, vim.log.levels.ERROR)
-    return false
+    -- If we can't get content, still proceed with deletion but with a placeholder
+    vim.notify('Warning: Could not retrieve email content for ID: ' .. email_id .. ', deleting without backup', vim.log.levels.WARN)
+    email_content = string.format("Email ID: %s\nOriginal Folder: %s\nContent could not be retrieved during deletion.\nDeleted on: %s\n", 
+      email_id, original_folder, os.date())
   end
   
   -- Prepare trash storage
