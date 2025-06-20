@@ -209,7 +209,7 @@ function M.apply_enhancements()
   M.setup_enhanced_navigation()
   M.setup_visual_enhancements()
   
-  vim.notify('Sidebar enhancements applied', vim.log.levels.INFO)
+  -- Enhancements applied silently
 end
 
 -- Create commands

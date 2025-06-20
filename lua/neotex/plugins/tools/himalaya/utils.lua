@@ -4,6 +4,7 @@
 local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.config')
+local notifications = require('neotex.plugins.tools.himalaya.notifications')
 
 -- Execute himalaya command and return output
 function M.execute_himalaya(args, opts)
@@ -67,7 +68,7 @@ function M.get_email_list(account, folder, page, page_size)
                       (current_time - cache_timestamp) > cache_timeout
   
   if need_refresh then
-    vim.notify(string.format('Fetching emails from Himalaya (cache refresh)'), vim.log.levels.DEBUG)
+    notifications.notify(string.format('Fetching emails from Himalaya (cache refresh)'), vim.log.levels.DEBUG)
     
     local args = { 'envelope', 'list' }
     
@@ -81,7 +82,7 @@ function M.get_email_list(account, folder, page, page_size)
     if result then
       email_cache[cache_key] = result
       cache_timestamp = current_time
-      vim.notify(string.format('Cached %d emails for %s/%s', #result, account, folder), vim.log.levels.DEBUG)
+      notifications.notify(string.format('Cached %d emails for %s/%s', #result, account, folder), vim.log.levels.DEBUG)
     else
       -- If cache exists, use it; otherwise return nil
       if email_cache[cache_key] then
@@ -105,7 +106,7 @@ function M.get_email_list(account, folder, page, page_size)
       for i = start_idx, end_idx do
         table.insert(page_emails, all_emails[i])
       end
-      vim.notify(string.format('Page %d: showing emails %d-%d of %d total', page, start_idx, end_idx, #all_emails), vim.log.levels.INFO)
+      notifications.notify(string.format('Page %d: showing emails %d-%d of %d total', page, start_idx, end_idx, #all_emails), vim.log.levels.INFO)
       return page_emails
     else
       -- No emails for this page
@@ -915,7 +916,7 @@ function M.expunge_deleted()
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify('Expunged deleted emails', vim.log.levels.INFO)
+    notifications.notify('Expunged deleted emails', vim.log.levels.INFO)
     -- Trigger refresh after expunge
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaExpunged' })

@@ -369,6 +369,19 @@ function M.setup()
   end, {
     desc = 'Show email info',
   })
+  
+  -- Debug mode toggle command
+  vim.api.nvim_create_user_command('HimalayaDebug', function()
+    local config = require('neotex.plugins.tools.himalaya.config')
+    local notifications = require('neotex.plugins.tools.himalaya.notifications')
+    
+    config.config.debug_mode = not config.config.debug_mode
+    
+    local status = config.config.debug_mode and 'enabled' or 'disabled'
+    notifications.notify_force('Himalaya debug mode ' .. status, vim.log.levels.INFO)
+  end, {
+    desc = 'Toggle Himalaya debug mode',
+  })
 end
 
 return M

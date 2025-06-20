@@ -68,7 +68,10 @@ function M.remove_email_locally(email_id)
   if current_line >= email_start_line + removed_index then
     -- Move cursor up if we're below the deleted email
     local new_line = math.max(email_start_line, current_line - 1)
-    vim.api.nvim_win_set_cursor(sidebar.get_win(), {new_line, 0})
+    local win = sidebar.get_win()
+    if win and vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_set_cursor(win, {new_line, 0})
+    end
   end
   
   return true
@@ -202,7 +205,7 @@ function M.delete_email_optimized(email_id)
   if is_in_sidebar then
     local_success = M.remove_email_locally(email_id)
     if local_success then
-      notifications.notify_status('Email deleted', vim.log.levels.INFO)
+      notifications.notify_status('Email deleted successfully', vim.log.levels.INFO)
     end
   end
   
@@ -437,7 +440,7 @@ function M.apply_optimizations()
     end
   end
   
-  vim.notify('Performance optimizations applied', vim.log.levels.INFO)
+  -- Optimizations applied silently
 end
 
 -- Revert optimizations if needed
