@@ -10,7 +10,17 @@ M.state = {
   sync_running = false,
   last_oauth_refresh = 0,
   sync_pid = nil,
-  last_sync_time = 0
+  last_sync_time = 0,
+  cancel_requested = false,
+  -- Cache sync status briefly to avoid repeated system calls
+  last_sync_check = 0,
+  last_sync_status = false,
+  sync_progress = {
+    current_folder = nil,
+    messages_total = 0,
+    messages_synced = 0,
+    current_operation = nil
+  }
 }
 
 local LOCK_FILE = '/tmp/himalaya-sync.lock'
@@ -52,7 +62,9 @@ function M.release_lock()
 end
 
 -- Clean up corrupted sync state
-function M.clean_sync_state()
+function M.clean_sync_state(silent)
+  silent = silent or false
+  
   local cleanup_commands = {
     -- Remove corrupted journal files (all sizes)
     'find ~/Mail/Gmail -name ".mbsyncstate.journal" -delete 2>/dev/null',
@@ -66,7 +78,9 @@ function M.clean_sync_state()
     os.execute(cmd)
   end
   
-  notify.himalaya('Sync state cleaned', notify.categories.STATUS)
+  if not silent then
+    notify.himalaya('Sync state cleaned', notify.categories.STATUS)
+  end
 end
 
 -- Kill any existing mbsync processes
@@ -124,17 +138,81 @@ function M.ensure_oauth_fresh()
   end
 end
 
--- Streamlined sync function
-function M.sync_mail(force_full)
-  -- Prevent multiple syncs
+-- Check if sync is running globally (across all nvim instances)
+function M.is_sync_running_globally()
+  local now = os.time()
+  
+  -- Use cached result if checked within last 2 seconds (for responsiveness)
+  if (now - M.state.last_sync_check) < 2 then
+    return M.state.last_sync_status
+  end
+  
+  local is_running = false
+  
+  -- Check for lock file first
+  if vim.fn.filereadable(LOCK_FILE) == 1 then
+    local handle = io.open(LOCK_FILE, 'r')
+    if handle then
+      local pid = handle:read('*a'):match('%d+')
+      handle:close()
+      
+      if pid then
+        -- Check if process still exists
+        local check_result = os.execute('kill -0 ' .. pid .. ' 2>/dev/null')
+        if check_result == 0 then
+          is_running = true
+        else
+          -- Stale lock file, remove it
+          os.remove(LOCK_FILE)
+        end
+      end
+    end
+  end
+  
+  -- Also check for any mbsync processes (only if lock file check didn't find anything)
+  if not is_running then
+    local handle = io.popen('pgrep mbsync 2>/dev/null')
+    if handle then
+      local output = handle:read('*a')
+      handle:close()
+      if output and output:match('%d+') then
+        is_running = true
+      end
+    end
+  end
+  
+  -- Cache the result
+  M.state.last_sync_check = now
+  M.state.last_sync_status = is_running
+  
+  return is_running
+end
+
+-- Streamlined sync function with user action awareness
+function M.sync_mail(force_full, is_user_action)
+  is_user_action = is_user_action or false
+  
+  -- Check if sync is already running globally
+  if M.is_sync_running_globally() then
+    if is_user_action then
+      notify.himalaya('Sync is already in progress', notify.categories.USER_ACTION)
+    end
+    return false
+  end
+  
+  -- Prevent multiple syncs from this instance
   if M.state.sync_running then
-    notify.himalaya('Sync already in progress', notify.categories.WARNING)
+    if is_user_action then
+      notify.himalaya('Sync already in progress in this instance', notify.categories.WARNING)
+    end
     return false
   end
   
   -- Acquire lock
   if not M.acquire_lock() then
-    notify.himalaya('Another sync process is running', notify.categories.WARNING)
+    if is_user_action then
+      notify.himalaya('Another sync process is running', notify.categories.USER_ACTION)
+    end
     return false
   end
   
@@ -145,13 +223,13 @@ function M.sync_mail(force_full)
   
   -- Small delay to ensure processes are gone
   vim.defer_fn(function()
-    M._perform_sync(force_full)
+    M._perform_sync(force_full, is_user_action)
   end, 1000)
   
   return true
 end
 
-function M._perform_sync(force_full)
+function M._perform_sync(force_full, is_user_action)
   -- Ensure OAuth is fresh
   if not M.ensure_oauth_fresh() then
     M._sync_complete(false, 'OAuth refresh failed')
@@ -164,14 +242,21 @@ function M._perform_sync(force_full)
   -- Build mbsync command - use specific channel for inbox, avoid full sync
   local cmd
   if force_full then
-    -- For full sync, use shorter timeout and specific channels to avoid Gmail throttling
-    cmd = { 'timeout', tostring(SYNC_TIMEOUT), 'mbsync', '-V', 'gmail-inbox', 'gmail-sent', 'gmail-drafts' }
+    -- For full sync, sync all configured channels
+    cmd = { 'timeout', tostring(SYNC_TIMEOUT), 'mbsync', '-V', '-a' } -- -a syncs all channels
   else
     -- Quick inbox-only sync
     cmd = { 'timeout', tostring(SYNC_TIMEOUT / 2), 'mbsync', '-V', 'gmail-inbox' }
   end
   
-  notify.himalaya('Starting mail sync...', notify.categories.STATUS)
+  if is_user_action then
+    notify.himalaya('Sync has been started', notify.categories.USER_ACTION)
+  end
+  -- No notification for auto-sync on startup
+  
+  -- Start sidebar sync status updates
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.start_sync_status_updates()
   
   -- Use vim.fn.jobstart for better control
   local output = {}
@@ -180,9 +265,17 @@ function M._perform_sync(force_full)
       for _, line in ipairs(data) do
         if line and line ~= "" then
           table.insert(output, line)
-          -- Show important progress lines
+          
+          -- Parse sync progress
+          M._parse_sync_progress(line)
+          
+          -- Show important progress lines with enhanced info
           if line:match('messages') or line:match('recent') or line:match('Connecting') then
-            notify.himalaya(line, notify.categories.STATUS)
+            local progress_info = ""
+            if M.state.sync_progress.messages_total > 0 then
+              progress_info = string.format(" (%d/%d)", M.state.sync_progress.messages_synced, M.state.sync_progress.messages_total)
+            end
+            notify.himalaya(line .. progress_info, notify.categories.STATUS)
           end
         end
       end
@@ -198,7 +291,21 @@ function M._perform_sync(force_full)
       if exit_code == 0 then
         M._sync_complete(true, 'Sync completed successfully')
       else
-        -- Handle common exit codes
+        -- Check if cancellation was requested - don't show error for intentional cancellation
+        if M.state.cancel_requested and exit_code == 143 then
+          -- Intentional cancellation, don't show error message
+          M.state.sync_running = false
+          M.state.sync_pid = nil
+          M.state.cancel_requested = false
+          M.release_lock()
+          
+          -- Stop sidebar updates
+          local ui = require('neotex.plugins.tools.himalaya.ui')
+          ui.stop_sync_status_updates()
+          return
+        end
+        
+        -- Handle other exit codes
         local error_msg = 'Sync failed'
         if exit_code == 124 then
           error_msg = 'Sync timed out - Gmail may be slow'
@@ -232,11 +339,14 @@ function M._sync_complete(success, message)
   M.state.last_sync_time = os.time()
   M.release_lock()
   
+  -- Stop sidebar sync status updates
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.stop_sync_status_updates()
+  
   if success then
     notify.himalaya(message, notify.categories.USER_ACTION)
     -- Refresh UI after successful sync
     vim.defer_fn(function()
-      local ui = require('neotex.plugins.tools.himalaya.ui')
       if ui and ui.refresh_email_list then
         ui.refresh_email_list()
       end
@@ -247,34 +357,137 @@ function M._sync_complete(success, message)
 end
 
 -- Quick inbox-only sync
-function M.sync_inbox()
-  return M.sync_mail(false)
+function M.sync_inbox(is_user_action)
+  -- Provide immediate feedback for user actions
+  if is_user_action then
+    notify.himalaya('Checking sync status...', notify.categories.STATUS)
+  end
+  return M.sync_mail(false, is_user_action)
 end
 
 -- Full account sync
-function M.sync_full()
-  return M.sync_mail(true)
+function M.sync_full(is_user_action)
+  -- Provide immediate feedback for user actions
+  if is_user_action then
+    notify.himalaya('Checking sync status...', notify.categories.STATUS)
+  end
+  return M.sync_mail(true, is_user_action)
+end
+
+-- Auto-sync on startup (only if not already running)
+function M.auto_sync_on_startup()
+  if not M.is_sync_running_globally() then
+    M.sync_inbox(false) -- Not a user action, so no notifications about already running
+  end
 end
 
 -- Cancel current sync
 function M.cancel_sync()
+  local was_running = M.state.sync_running or M.is_sync_running_globally()
+  
+  -- Set cancellation flag to prevent "Sync was terminated" message
+  M.state.cancel_requested = true
+  
+  -- Stop the job if we have a PID
+  if M.state.sync_pid then
+    vim.fn.jobstop(M.state.sync_pid)
+    M.state.sync_pid = nil
+  end
+  
+  -- Kill any mbsync processes
+  M.kill_existing_processes()
+  
+  -- Reset state
+  M.state.sync_running = false
+  M.release_lock()
+  
+  -- Reset cancel flag after a short delay to allow on_exit callback to see it
+  vim.defer_fn(function()
+    M.state.cancel_requested = false
+  end, 100)
+  
+  -- Stop sidebar updates
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.stop_sync_status_updates()
+  
+  -- Only notify if there was actually a sync to cancel
+  if was_running then
+    notify.himalaya('Sync cancelled', notify.categories.USER_ACTION)
+  end
+end
+
+-- Cleanup on vim exit (lighter version for exit)
+function M.cleanup()
   if M.state.sync_pid then
     vim.fn.jobstop(M.state.sync_pid)
     M.state.sync_pid = nil
   end
   M.state.sync_running = false
   M.release_lock()
-  notify.himalaya('Sync cancelled', notify.categories.USER_ACTION)
 end
 
--- Emergency cleanup
+-- Emergency cleanup (silent version for startup)
 function M.emergency_cleanup()
-  M.cancel_sync()
-  M.kill_existing_processes()
-  M.clean_sync_state()
-  M.release_lock()
+  -- Only clean up this instance's state, don't interfere with other instances
+  if M.state.sync_pid then
+    vim.fn.jobstop(M.state.sync_pid)
+    M.state.sync_pid = nil
+  end
+  
+  -- Reset local state only
   M.state.sync_running = false
-  notify.himalaya('Emergency cleanup completed', notify.categories.USER_ACTION)
+  M.state.cancel_requested = false
+  
+  -- Only clean lock file if it's stale (process doesn't exist)
+  if vim.fn.filereadable(LOCK_FILE) == 1 then
+    local handle = io.open(LOCK_FILE, 'r')
+    if handle then
+      local pid = handle:read('*a'):match('%d+')
+      handle:close()
+      
+      if pid then
+        -- Check if process still exists
+        local check_result = os.execute('kill -0 ' .. pid .. ' 2>/dev/null')
+        if check_result ~= 0 then
+          -- Stale lock file, safe to remove
+          M.release_lock()
+        end
+        -- If process exists, leave it alone - another instance is using it
+      else
+        -- Invalid lock file, safe to remove
+        M.release_lock()
+      end
+    end
+  end
+  
+  -- Clean sync state (silently during startup) - this only removes corrupted files
+  M.clean_sync_state(true)
+end
+
+-- Parse sync progress from mbsync output
+function M._parse_sync_progress(line)
+  -- Parse lines like "C: 1/1  N: 1/1  E: 0/0  F: +0/1/0  T: +1/2/0"
+  local new_count = line:match('N: (%d+)/')
+  local total_new = line:match('N: %d+/(%d+)')
+  
+  if new_count and total_new then
+    M.state.sync_progress.messages_synced = tonumber(new_count) or 0
+    M.state.sync_progress.messages_total = tonumber(total_new) or 0
+  end
+  
+  -- Parse folder being synced
+  local folder = line:match('Channel (%S+)')
+  if folder then
+    M.state.sync_progress.current_folder = folder
+    M.state.sync_progress.current_operation = "Syncing " .. folder
+  end
+  
+  -- Parse connection status
+  if line:match('Connecting') then
+    M.state.sync_progress.current_operation = "Connecting to server"
+  elseif line:match('Selecting') then
+    M.state.sync_progress.current_operation = "Selecting mailbox"
+  end
 end
 
 -- Status check
@@ -282,17 +495,22 @@ function M.get_status()
   return {
     sync_running = M.state.sync_running,
     last_sync = M.state.last_sync_time,
-    oauth_fresh = os.time() - M.state.last_oauth_refresh < OAUTH_REFRESH_INTERVAL
+    oauth_fresh = os.time() - M.state.last_oauth_refresh < OAUTH_REFRESH_INTERVAL,
+    progress = M.state.sync_progress
   }
 end
 
 -- Setup commands
 function M.setup_commands()
-  vim.api.nvim_create_user_command('HimalayaSyncInbox', M.sync_inbox, {
+  vim.api.nvim_create_user_command('HimalayaSyncInbox', function()
+    M.sync_inbox(true) -- User action
+  end, {
     desc = 'Sync inbox only (quick)'
   })
   
-  vim.api.nvim_create_user_command('HimalayaSyncFull', M.sync_full, {
+  vim.api.nvim_create_user_command('HimalayaSyncFull', function()
+    M.sync_full(true) -- User action
+  end, {
     desc = 'Full account sync'
   })
   
@@ -306,12 +524,49 @@ function M.setup_commands()
   
   vim.api.nvim_create_user_command('HimalayaSyncStatus', function()
     local status = M.get_status()
-    print('Sync Status:')
-    print('  Running: ' .. (status.sync_running and 'Yes' or 'No'))
-    print('  Last sync: ' .. (status.last_sync > 0 and os.date('%H:%M:%S', status.last_sync) or 'Never'))
-    print('  OAuth fresh: ' .. (status.oauth_fresh and 'Yes' or 'No'))
+    local is_global = M.is_sync_running_globally()
+    
+    notify.himalaya('===== Sync Status =====', notify.categories.USER_ACTION)
+    notify.himalaya('Local running: ' .. (status.sync_running and 'Yes' or 'No'), notify.categories.USER_ACTION)
+    notify.himalaya('Global running: ' .. (is_global and 'Yes' or 'No'), notify.categories.USER_ACTION)
+    notify.himalaya('Last sync: ' .. (status.last_sync > 0 and os.date('%H:%M:%S', status.last_sync) or 'Never'), notify.categories.USER_ACTION)
+    notify.himalaya('OAuth fresh: ' .. (status.oauth_fresh and 'Yes' or 'No'), notify.categories.USER_ACTION)
+    
+    -- Check for processes
+    local handle = io.popen('pgrep mbsync 2>/dev/null')
+    if handle then
+      local output = handle:read('*a')
+      handle:close()
+      if output and output:match('%d+') then
+        notify.himalaya('mbsync processes: ' .. output:gsub('\n', ', '), notify.categories.USER_ACTION)
+      else
+        notify.himalaya('mbsync processes: None', notify.categories.USER_ACTION)
+      end
+    end
+    
+    -- Check for lock file
+    if vim.fn.filereadable(LOCK_FILE) == 1 then
+      local handle = io.open(LOCK_FILE, 'r')
+      if handle then
+        local pid = handle:read('*a'):match('%d+')
+        handle:close()
+        notify.himalaya('Lock file PID: ' .. (pid or 'invalid'), notify.categories.USER_ACTION)
+      end
+    else
+      notify.himalaya('Lock file: None', notify.categories.USER_ACTION)
+    end
+    
+    if status.sync_running and status.progress then
+      notify.himalaya('Current operation: ' .. (status.progress.current_operation or 'Unknown'), notify.categories.USER_ACTION)
+      if status.progress.current_folder then
+        notify.himalaya('Current folder: ' .. status.progress.current_folder, notify.categories.USER_ACTION)
+      end
+      if status.progress.messages_total > 0 then
+        notify.himalaya('Progress: ' .. status.progress.messages_synced .. '/' .. status.progress.messages_total .. ' messages', notify.categories.USER_ACTION)
+      end
+    end
   end, {
-    desc = 'Show sync status'
+    desc = 'Show detailed sync status'
   })
 end
 

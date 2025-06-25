@@ -539,9 +539,9 @@ return {
     -- MAIL group (only global commands)
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
-      { "<leader>mo", "<cmd>Himalaya<CR>", desc = "open mail", icon = "󰊫" },
+      { "<leader>mo", function() require('neotex.plugins.tools.himalaya.ui').toggle_email_sidebar() end, desc = "toggle mail", icon = "󰊫" },
       { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
-      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all folders", icon = "󰜉" },
+      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all mail", icon = "󰜉" },
       { "<leader>mk", "<cmd>HimalayaCancelSync<CR>", desc = "cancel sync", icon = "󰚌" },
       { "<leader>mA", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mv", "<cmd>HimalayaConfigValidate<CR>", desc = "validate config", icon = "󰚩" },

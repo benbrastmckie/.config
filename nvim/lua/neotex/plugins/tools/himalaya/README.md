@@ -246,20 +246,20 @@ Integrates with the unified notification system:
 
 ```
 lua/neotex/plugins/tools/himalaya/
-├── README.md                 # This documentation
-├── himalaya.lua             # Main plugin definition
+├── README.md                 # This documentation  
+├── UI.md                     # UI documentation
 ├── config.lua               # Configuration management
 ├── commands.lua             # User commands
-├── ui.lua                   # Email interface
-├── utils.lua                # Core email operations
-├── streamlined_sync.lua     # Clean sync system with atomic locking
-├── fresh_sync.lua          # Quick testing and fresh maildir creation
+├── picker.lua               # Telescope integration
+├── sidebar.lua              # Email sidebar
+├── state.lua                # State management
+├── streamlined_sync.lua     # Maildir++ sync system with atomic locking
 ├── trash_manager.lua        # Local trash system
 ├── trash_operations.lua     # Trash operations (move, restore, delete)
-└── util/                    # Diagnostic tools
-    ├── diagnostics.lua      # Health checks
-    ├── gmail_settings.lua   # Gmail configuration
-    └── oauth_manager.lua    # OAuth utilities
+├── trash_ui.lua             # Trash user interface
+├── ui.lua                   # Main email interface
+├── utils.lua                # Core Himalaya CLI operations
+└── window_stack.lua         # Window management
 ```
 
 ## Troubleshooting

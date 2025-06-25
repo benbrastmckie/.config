@@ -35,7 +35,7 @@ function M.execute_himalaya(args, opts)
   local exit_code = vim.v.shell_error
   
   if exit_code ~= 0 then
-    notify.himalaya('Himalaya command failed', notify.categories.ERROR, { result = result })
+    notify.himalaya('Himalaya command failed: ' .. (result or 'unknown error'), notify.categories.ERROR)
     return nil
   end
   

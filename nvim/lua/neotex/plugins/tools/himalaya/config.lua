@@ -149,17 +149,9 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui').compose_email()
     end, vim.tbl_extend('force', opts, { desc = 'Write email' }))
     
-    keymap('n', M.config.keymaps.reply, function()
-      require('neotex.plugins.tools.himalaya.ui').reply_current_email()
-    end, vim.tbl_extend('force', opts, { desc = 'Reply' }))
-    
     keymap('n', M.config.keymaps.reply_all, function()
       require('neotex.plugins.tools.himalaya.ui').reply_all_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
-    
-    keymap('n', M.config.keymaps.forward, function()
-      require('neotex.plugins.tools.himalaya.ui').forward_current_email()
-    end, vim.tbl_extend('force', opts, { desc = 'Forward' }))
     
     keymap('n', M.config.keymaps.delete, function()
       require('neotex.plugins.tools.himalaya.ui').delete_current_email()
@@ -197,12 +189,8 @@ function M.setup_buffer_keymaps(bufnr)
         require('neotex.plugins.tools.himalaya.picker').show_accounts()
       elseif key == 'w' then
         require('neotex.plugins.tools.himalaya.ui').compose_email()
-      elseif key == 'r' then
-        require('neotex.plugins.tools.himalaya.ui').reply_current_email()
       elseif key == 'R' then
         require('neotex.plugins.tools.himalaya.ui').reply_all_current_email()
-      elseif key == 'f' then
-        require('neotex.plugins.tools.himalaya.ui').forward_current_email()
       elseif key == 'D' then
         require('neotex.plugins.tools.himalaya.ui').delete_current_email()
       elseif key == 'A' then
@@ -265,7 +253,6 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Add direct 's' key for send (override vim's substitute)
     keymap('n', 's', function()
-      vim.notify('Send key pressed!', vim.log.levels.INFO)
       require('neotex.plugins.tools.himalaya.ui').send_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
     
@@ -275,7 +262,6 @@ function M.setup_buffer_keymaps(bufnr)
       local key = vim.fn.nr2char(char)
       
       if key == 's' then
-        vim.notify('gs pressed!', vim.log.levels.INFO)
         require('neotex.plugins.tools.himalaya.ui').send_current_email()
       else
         -- Pass through to built-in g commands

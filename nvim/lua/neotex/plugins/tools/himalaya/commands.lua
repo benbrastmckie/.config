@@ -106,14 +106,14 @@ function M.setup()
 
   -- Alternative sync command
   vim.api.nvim_create_user_command('HimalayaAlternativeSync', function(opts)
-    require('neotex.plugins.tools.himalaya.utils').alternative_sync()
+    require('neotex.plugins.tools.himalaya.streamlined_sync').sync_inbox()
   end, {
     desc = 'Try alternative sync method when mbsync fails',
   })
   
   -- Enhanced sync using mbsync for true bidirectional sync
   vim.api.nvim_create_user_command('HimalayaEnhancedSync', function(opts)
-    require('neotex.plugins.tools.himalaya.native_sync').enhanced_sync(opts.bang)
+    require('neotex.plugins.tools.himalaya.streamlined_sync').sync_inbox()
   end, {
     bang = true,
     desc = 'Enhanced mail sync with mbsync (use ! to force)',
@@ -121,7 +121,7 @@ function M.setup()
   
   -- Quick sync for current folder
   vim.api.nvim_create_user_command('HimalayaQuickSync', function(opts)
-    require('neotex.plugins.tools.himalaya.native_sync').quick_sync(opts.args)
+    require('neotex.plugins.tools.himalaya.streamlined_sync').sync_inbox()
   end, {
     nargs = '?',
     desc = 'Quick sync for specific folder',
@@ -129,14 +129,14 @@ function M.setup()
   
   -- Force sync with --force flag
   vim.api.nvim_create_user_command('HimalayaForceSync', function(opts)
-    require('neotex.plugins.tools.himalaya.native_sync').enhanced_sync(true)
+    require('neotex.plugins.tools.himalaya.streamlined_sync').sync_full()
   end, {
     desc = 'Force sync with mbsync --force flag',
   })
   
   -- Cancel ongoing sync
   vim.api.nvim_create_user_command('HimalayaCancelSync', function(opts)
-    require('neotex.plugins.tools.himalaya.native_sync').cancel_sync()
+    require('neotex.plugins.tools.himalaya.streamlined_sync').cancel_sync()
   end, {
     desc = 'Cancel ongoing sync operation',
   })
