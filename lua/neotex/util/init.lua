@@ -68,7 +68,8 @@ function M._load_submodules()
     "diagnostics",
     "misc",
     "optimize",
-    "lectic_extras"
+    "lectic_extras",
+    "migrate_notifications"
   }
   
   local loaded = {}

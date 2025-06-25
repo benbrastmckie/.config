@@ -15,6 +15,8 @@
 -- - Local file paths (/path/to/file.txt)
 -----------------------------------------------------------
 
+local notify = require('neotex.util.notifications')
+
 local M = {}
 
 -- Function to extract URLs from a line of text (supports more URL patterns)
@@ -124,7 +126,7 @@ end
 function M.open_url_at_position(line_num, col)
   -- Validate parameters
   if not line_num or line_num < 1 then
-    vim.notify("Invalid line number", vim.log.levels.ERROR)
+    notify.editor("Invalid line number", notify.categories.ERROR)
     return false
   end
 
@@ -133,7 +135,7 @@ function M.open_url_at_position(line_num, col)
 
   -- Handle errors or empty result
   if not ok or not line or #line == 0 then
-    vim.notify("Could not read line " .. line_num, vim.log.levels.ERROR)
+    notify.editor("Could not read line " .. line_num, notify.categories.ERROR)
     return false
   end
 
@@ -203,7 +205,7 @@ function M.open_url_at_position(line_num, col)
     elseif vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
       cmd = string.format("silent !start \"\" \"%s\"", selected_url:gsub('"', '\\"'))
     else
-      vim.notify("Platform not supported for opening URLs", vim.log.levels.ERROR)
+      notify.editor("Platform not supported for opening URLs", notify.categories.ERROR)
       return false
     end
 
@@ -213,10 +215,10 @@ function M.open_url_at_position(line_num, col)
     end)
 
     if ok then
-      vim.notify("Opening URL: " .. selected_url, vim.log.levels.INFO)
+      notify.editor("Opening URL: " .. selected_url, notify.categories.USER_ACTION)
       return true
     else
-      vim.notify("Error opening URL: " .. err, vim.log.levels.ERROR)
+      notify.editor("Error opening URL: " .. err, notify.categories.ERROR)
       return false
     end
   end
@@ -228,7 +230,7 @@ end
 function M.open_url_at_mouse()
   local mouse_pos = vim.fn.getmousepos()
   if not mouse_pos or not mouse_pos.line or not mouse_pos.column then
-    vim.notify("Invalid mouse position", vim.log.levels.WARN)
+    notify.editor("Invalid mouse position", notify.categories.WARNING)
     return false
   end
 
@@ -238,7 +240,7 @@ function M.open_url_at_mouse()
   if M.open_url_at_position(line_num, col) then
     return true
   else
-    vim.notify("No URL found at mouse position", vim.log.levels.WARN)
+    notify.editor("No URL found at mouse position", notify.categories.STATUS)
     return false
   end
 end
@@ -252,7 +254,7 @@ function M.open_url_under_cursor()
   if M.open_url_at_position(line_num, col) then
     return true
   else
-    vim.notify("No URL found under cursor", vim.log.levels.WARN)
+    notify.editor("No URL found under cursor", notify.categories.STATUS)
     return false
   end
 end
@@ -278,7 +280,7 @@ function M.setup_url_mappings()
     vim.schedule(function()
       local ok, err = pcall(M.open_url_at_mouse)
       if not ok then
-        vim.notify("Error handling mouse click: " .. err, vim.log.levels.ERROR)
+        notify.editor("Error handling mouse click: " .. err, notify.categories.ERROR)
       end
     end)
   end, vim.tbl_extend("force", opts, { desc = "Open URL with Ctrl+Click" }))

@@ -6,8 +6,9 @@ local M = {}
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 local performance = require('neotex.plugins.tools.himalaya.performance')
+local native_sync = require('neotex.plugins.tools.himalaya.native_sync')
 
 -- Store email data before removal for restoration
 M.pending_delete = nil
@@ -15,7 +16,7 @@ M.pending_delete = nil
 -- Fixed delete operation that only removes locally after confirming operation
 function M.delete_email_fixed(email_id)
   if not email_id then
-    notifications.notify('No email to delete', vim.log.levels.WARN)
+    notify.himalaya('No email to delete', notify.categories.WARNING)
     return
   end
   
@@ -36,14 +37,17 @@ function M.delete_email_fixed(email_id)
     -- Server delete succeeded, now remove locally
     if is_in_sidebar then
       performance.remove_email_locally(email_id)
-      notifications.notify_status('Email deleted', vim.log.levels.INFO)
+      notify.himalaya('Email deleted', notify.categories.USER_ACTION)
     else
       -- Close email view if not in sidebar
       local ui = require('neotex.plugins.tools.himalaya.ui')
       ui.close_current_view()
     end
     
-    -- Schedule background refresh for sync
+    -- Sync deletion to Gmail immediately
+    native_sync.sync_after_delete()
+    
+    -- Schedule refresh
     performance.schedule_refresh(2000)
   else
     -- Handle different failure types
@@ -53,7 +57,7 @@ function M.delete_email_fixed(email_id)
     elseif error_type == 'delete_failed' then
       -- Regular delete failure
       local error_msg = type(extra) == 'string' and extra or 'Delete command failed'
-      notifications.notify('Failed to delete email: ' .. error_msg, vim.log.levels.ERROR)
+      notify.himalaya('Failed to delete email: ' .. error_msg, notify.categories.ERROR)
     end
   end
 end
@@ -63,7 +67,7 @@ function M.handle_missing_trash_with_restore(email_id, email_data, is_in_sidebar
   local folders = utils.get_folders(config.state.current_account)
   
   if not folders or #folders == 0 then
-    notifications.notify('No folders available', vim.log.levels.ERROR)
+    notify.himalaya('No folders available', notify.categories.ERROR)
     return
   end
   
@@ -83,7 +87,7 @@ function M.handle_missing_trash_with_restore(email_id, email_data, is_in_sidebar
       local move_success = utils.move_email(email_id, choice)
       
       if move_success then
-        notifications.notify('Email moved to ' .. choice, vim.log.levels.INFO)
+        notify.himalaya('Email moved to ' .. choice, notify.categories.USER_ACTION)
         
         -- Now remove locally since move succeeded
         if is_in_sidebar and not M.pending_delete.was_removed then
@@ -91,13 +95,16 @@ function M.handle_missing_trash_with_restore(email_id, email_data, is_in_sidebar
           M.pending_delete.was_removed = true
         end
         
+        -- Sync the move operation to Gmail
+        native_sync.sync_after_delete()
+        
         performance.schedule_refresh(1000)
       else
-        notifications.notify('Failed to move email to ' .. choice, vim.log.levels.ERROR)
+        notify.himalaya('Failed to move email to ' .. choice, notify.categories.ERROR)
       end
     else
       -- User cancelled - no need to do anything since we didn't remove locally yet
-      notifications.notify('Delete operation cancelled', vim.log.levels.INFO)
+      notify.himalaya('Delete operation cancelled', notify.categories.USER_ACTION)
     end
     
     -- Clear pending delete
@@ -157,7 +164,7 @@ function M.apply_fixes()
   local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
   if trash_manager.is_enabled() then
     -- Local trash is enabled, don't override delete function
-    notifications.notify_force('Delete operation fixes skipped (local trash active)', vim.log.levels.INFO)
+    notify.himalaya('Delete operation fixes skipped (local trash active)', notify.categories.BACKGROUND)
   else
     -- Local trash not enabled, apply delete fixes
     local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -169,11 +176,11 @@ function M.apply_fixes()
       if email_id then
         M.delete_email_fixed(email_id)
       else
-        notifications.notify('No email to delete', vim.log.levels.WARN)
+        notify.himalaya('No email to delete', notify.categories.WARNING)
       end
     end
     
-    notifications.notify_force('Delete operation fixes applied', vim.log.levels.INFO)
+    notify.himalaya('Delete operation fixes applied', notify.categories.BACKGROUND)
   end
   
   -- Fix the 'r' refresh to bypass debouncing (always apply this)

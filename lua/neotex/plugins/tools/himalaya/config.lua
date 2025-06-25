@@ -29,7 +29,7 @@ M.config = {
     refresh = 'gR',
   },
   -- Sync settings
-  auto_sync = true,
+  auto_sync = false, -- Disabled - using startup sync only to prevent conflicts
   sync_interval = 300, -- 5 minutes in seconds
   
   -- Local trash configuration
@@ -44,8 +44,7 @@ M.config = {
     cleanup_interval_hours = 24
   },
   
-  -- Debug and notification settings
-  debug_mode = false, -- Show all notifications when true, only important ones when false
+  -- Debug and notification settings (using unified notification system)
   notification_levels = {
     -- Define which notification types are considered "important"
     important = { "error", "warn", "email_sent", "email_deleted" },

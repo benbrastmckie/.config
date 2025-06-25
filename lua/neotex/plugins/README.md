@@ -78,6 +78,38 @@ Plugins are organized into the following categories with dedicated directories:
   - lectic.lua: AI-assisted writing
   - mcp-hub.lua: Model Context Protocol hub for external AI tools
 
+## Unified Notification System
+
+All plugins integrate with the unified notification system located in `/lua/neotex/util/notifications.lua`. This provides consistent user feedback across all modules while preventing notification spam.
+
+### Key Features
+- **Category-based filtering**: ERROR, WARNING, USER_ACTION, STATUS, BACKGROUND
+- **Module-specific control**: Configure notifications per plugin category
+- **Debug mode**: Toggle detailed notifications for troubleshooting
+- **Smart batching**: Prevents notification spam during bulk operations
+
+### Usage in Plugins
+```lua
+local notify = require('neotex.util.notifications')
+
+-- User action feedback (always shown)
+notify.editor('File formatted', notify.categories.USER_ACTION)
+
+-- Background operation (debug mode only)
+notify.lsp('Language server connected', notify.categories.BACKGROUND)
+```
+
+### Configuration
+Control notification behavior per module:
+```lua
+-- In plugin configurations
+local config = require('neotex.config.notifications')
+config.modules.lsp.server_status = false  -- Hide LSP connection messages
+config.modules.ai.processing = false      -- Hide AI background operations
+```
+
+See [complete notification documentation](../docs/NOTIFICATIONS.md) for detailed configuration and usage examples.
+
 ## Plugin Structure
 
 Each plugin has its own configuration file in the appropriate category directory. A typical plugin specification follows this pattern:

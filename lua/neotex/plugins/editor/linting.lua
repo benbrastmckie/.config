@@ -182,10 +182,7 @@ return {
           is_enabled = false
         end
         
-        vim.notify(
-          string.format("Auto-linting %s for this buffer", is_enabled and "enabled" or "disabled"),
-          vim.log.levels.INFO
-        )
+        require('neotex.util.notifications').lsp('Auto-linting ' .. (is_enabled and 'enabled' or 'disabled') .. ' for this buffer', require('neotex.util.notifications').categories.USER_ACTION)
       else
         -- Toggle globally
         if vim.g.disable_autolint == true then
@@ -196,10 +193,7 @@ return {
           is_enabled = false
         end
         
-        vim.notify(
-          string.format("Auto-linting %s globally", is_enabled and "enabled" or "disabled"),
-          vim.log.levels.INFO
-        )
+        require('neotex.util.notifications').lsp('Auto-linting ' .. (is_enabled and 'enabled' or 'disabled') .. ' globally', require('neotex.util.notifications').categories.USER_ACTION)
       end
     end, {
       nargs = "?",

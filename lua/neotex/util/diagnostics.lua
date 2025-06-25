@@ -11,13 +11,14 @@
 -----------------------------------------------------------
 
 local M = {}
+local notify = require('neotex.util.notifications')
 
 -- Function to show all linter errors in a floating window
 function M.show_all_errors()
   local diagnostics = vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR })
 
   if #diagnostics == 0 then
-    vim.notify("No linter errors found", vim.log.levels.INFO)
+    notify.editor('No linter errors found', notify.categories.STATUS)
     return
   end
 
@@ -93,7 +94,7 @@ end
 function M.add_jupyter_cell_with_closing()
   local ok, nn = pcall(require, "notebook-navigator")
   if not ok then
-    vim.notify("NotebookNavigator plugin not found", vim.log.levels.ERROR)
+    notify.editor('NotebookNavigator plugin not found', notify.categories.ERROR)
     return
   end
   
@@ -123,7 +124,7 @@ end
 function M.copy_diagnostics_to_clipboard()
   local diagnostics = vim.diagnostic.get(0)  -- Get diagnostics for current buffer
   if #diagnostics == 0 then
-    vim.notify("No diagnostics found", vim.log.levels.INFO)
+    notify.editor('No diagnostics found', notify.categories.STATUS)
     return
   end
   
@@ -143,7 +144,7 @@ function M.copy_diagnostics_to_clipboard()
   
   local formatted = table.concat(lines, "\n")
   vim.fn.setreg('+', formatted)
-  vim.notify("Copied " .. #diagnostics .. " diagnostics to clipboard", vim.log.levels.INFO)
+  notify.editor('Diagnostics copied to clipboard', notify.categories.USER_ACTION, { count = #diagnostics })
 end
 
 -- Setup function for diagnostic utilities

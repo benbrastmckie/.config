@@ -24,8 +24,6 @@ return {
       local config = require('neotex.plugins.tools.himalaya.config')
       local utils = require('neotex.plugins.tools.himalaya.utils')
       local ui = require('neotex.plugins.tools.himalaya.ui')
-      local notifications = require('neotex.plugins.tools.himalaya.notifications')
-      
       -- Initialize utilities first
       if not utils.init() then
         return
@@ -46,13 +44,17 @@ return {
         },
       })
       
-      -- Setup notification filtering based on debug mode
-      notifications.setup_notification_override()
+      -- Initialize streamlined sync system
+      local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
+      local fresh_sync = require('neotex.plugins.tools.himalaya.fresh_sync')
+      streamlined_sync.setup_commands()
+      fresh_sync.setup_commands()
       
-      -- Start auto-sync if enabled
-      if config.config.auto_sync then
-        utils.start_auto_sync()
-      end
+      -- Emergency cleanup on startup to prevent stuck processes
+      streamlined_sync.emergency_cleanup()
+      
+      -- Wait longer for cleanup and let manual sync take precedence
+      -- No automatic sync on startup - let user control when to sync
       
       -- Setup debug tools and fixes
       local debug_tools = require('neotex.plugins.tools.himalaya.debug_tools')
@@ -67,6 +69,9 @@ return {
       local trash_operations = require('neotex.plugins.tools.himalaya.trash_operations')
       local trash_ui = require('neotex.plugins.tools.himalaya.trash_ui')
       local delete_diagnostics = require('neotex.plugins.tools.himalaya.delete_diagnostics')
+      local native_sync = require('neotex.plugins.tools.himalaya.native_sync')
+      local auto_updates = require('neotex.plugins.tools.himalaya.auto_updates')
+      local fix_mbsync = require('neotex.plugins.tools.himalaya.fix_mbsync')
       
       debug_tools.setup_commands()
       fixes.setup_commands()
@@ -92,10 +97,15 @@ return {
       -- Initialize local trash system
       trash_manager.init()
       
+      -- Initialize automatic updates system
+      -- TEMPORARILY DISABLED: auto_updates.setup() to test manual sync
+      -- auto_updates.setup()
+      
       -- Setup cleanup on exit
       vim.api.nvim_create_autocmd('VimLeavePre', {
         callback = function()
           utils.cleanup()
+          native_sync.cleanup()
         end,
       })
     end,

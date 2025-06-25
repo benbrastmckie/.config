@@ -23,7 +23,7 @@ return {
   -- Explicitly checking for Neovim 0.10.1+ compatibility
   cond = function()
     if vim.fn.has("nvim-0.10.1") == 0 then
-      vim.notify("Avante requires Neovim 0.10.1 or later", vim.log.levels.WARN)
+      require('neotex.util.notifications').ai('Avante requires Neovim 0.10.1 or later', require('neotex.util.notifications').categories.WARNING)
       return false
     end
     return true

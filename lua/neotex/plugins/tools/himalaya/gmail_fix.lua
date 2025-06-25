@@ -4,7 +4,7 @@ local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Check if Gmail trash folder exists and create if needed
 function M.ensure_trash_folder()
@@ -126,20 +126,20 @@ function M.apply_gmail_delete_fix()
             -- Archive to All Mail
             local success = utils.move_email(email_id, all_mail)
             if success then
-              notifications.notify('Email archived to ' .. all_mail, vim.log.levels.INFO)
+              notify.himalaya('Email archived to ' .. all_mail, notify.categories.USER_ACTION)
               -- Update UI
               local performance = require('neotex.plugins.tools.himalaya.performance')
               performance.remove_email_locally(email_id)
               performance.schedule_refresh(1000)
             else
-              notifications.notify('Failed to archive email', vim.log.levels.ERROR)
+              notify.himalaya('Failed to archive email', notify.categories.ERROR)
             end
           elseif choice == choices[2] then
             -- Return to show folder picker
             return false, 'missing_trash', folders
           else
             -- Cancelled
-            notifications.notify('Delete operation cancelled', vim.log.levels.INFO)
+            notify.himalaya('Delete operation cancelled', notify.categories.USER_ACTION)
           end
         end)
         
@@ -152,7 +152,7 @@ function M.apply_gmail_delete_fix()
     end
   end
   
-  notifications.notify_force('Gmail delete fix applied', vim.log.levels.INFO)
+  notify.himalaya('Gmail delete fix applied', notify.categories.BACKGROUND)
 end
 
 -- Check Gmail folder structure and suggest fixes

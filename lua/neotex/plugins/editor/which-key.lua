@@ -26,6 +26,7 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 ----------------------------------------------------------------------------------
 ACTIONS (<leader>a)                             | DESCRIPTION
 ----------------------------------------------------------------------------------
+<leader>ad - Toggle debug mode                  | Enable/disable debug mode
 <leader>af - Format buffer                      | Format current buffer via LSP
 <leader>ah - Toggle local highlight             | Highlight current word occurrences
 <leader>al - Toggle Lean info view              | Show/hide Lean information panel
@@ -157,7 +158,6 @@ MARKDOWN (<leader>m)                            | DESCRIPTION
 <leader>ml - Run Lectic                         | Run Lectic on current file
 <leader>mn - New Lectic file                    | Create new Lectic file with template
 <leader>ms - Submit selection                   | Submit visual selection with user message
-<leader>mp - Format buffer                      | Format code with conform.nvim
 <leader>mu - Open URL                           | Open URL under cursor
 <leader>ma - Toggle all folds                   | Toggle all folds open/closed
 <leader>mf - Toggle fold                        | Toggle fold under cursor
@@ -375,10 +375,10 @@ return {
         local clients = vim.lsp.get_clients({ bufnr = 0 })
         if #clients > 0 then
           vim.cmd('LspStop')
-          vim.notify('LSP stopped', vim.log.levels.INFO)
+          require('neotex.util.notifications').lsp('LSP stopped', require('neotex.util.notifications').categories.USER_ACTION)
         else
           vim.cmd('LspStart')
-          vim.notify('LSP started', vim.log.levels.INFO)
+          require('neotex.util.notifications').lsp('LSP started', require('neotex.util.notifications').categories.USER_ACTION)
         end
       end, desc = "toggle lsp", icon = "󰔡" },
       { "<leader>iy", "<cmd>lua CopyDiagnosticsToClipboard()<CR>", desc = "copy diagnostics", icon = "󰆏" },
@@ -391,12 +391,16 @@ return {
     -- ACTIONS group (global actions only)
     wk.add({
       { "<leader>a", group = "actions", icon = "󰌵" },
-      { "<leader>af", "<cmd>lua vim.lsp.buf.format()<CR>", desc = "format", icon = "󰉣" },
+      { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format", icon = "󰉣" },
       { "<leader>ah", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
       { "<leader>au", "<cmd>cd %:p:h | Neotree reveal<CR>", desc = "update cwd", icon = "󰉖" },
       { "<leader>as", "<cmd>Neotree ~/.config/nvim/snippets/<CR>", desc = "snippets edit", icon = "󰩫" },
       { "<leader>aS", "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", desc = "ssh", icon = "󰣀" },
       { "<leader>aU", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "open URL under cursor", icon = "󰖟" },
+      { "<leader>ad", function()
+          local notify = require('neotex.util.notifications')
+          notify.toggle_debug_mode()
+        end, desc = "toggle debug mode", icon = "󰃤" },
       { "<leader>aF", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖" },
       { "<leader>ao", "za", desc = "toggle fold under cursor", icon = "󰘖" },
       { "<leader>aT", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖" },
@@ -532,27 +536,108 @@ return {
       end,
     })
 
-    -- MAIL group (global - himalaya email client)
+    -- MAIL group (only global commands)
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
-      { "<leader>ml", "<cmd>HimalayaList<CR>", desc = "list emails", icon = "󰇮" },
-      { "<leader>mr", "<cmd>HimalayaRead<CR>", desc = "read email", icon = "󰍎" },
-      { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰏫" },
-      { "<leader>mR", "<cmd>HimalayaReply<CR>", desc = "reply", icon = "󰑣" },
-      { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", icon = "󰒊" },
-      { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", icon = "󰚌" },
-      { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", icon = "󰁦" },
-      { "<leader>ms", "<cmd>HimalayaSync<CR>", desc = "sync mail", icon = "󰜉" },
-      { "<leader>mS", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
-      { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉖" },
-      { "<leader>mc", "<cmd>HimalayaCompose<CR>", desc = "compose (draft)", icon = "󰏫" },
-      { "<leader>mx", "<cmd>HimalayaExpunge<CR>", desc = "expunge deleted", icon = "󰩺" },
-      { "<leader>mm", "<cmd>HimalayaMove<CR>", desc = "move email", icon = "󰪹" },
-      { "<leader>mt", "<cmd>HimalayaTags<CR>", desc = "manage tags", icon = "󰓹" },
-      { "<leader>mi", "<cmd>HimalayaInfo<CR>", desc = "email info", icon = "󰋽" },
+      { "<leader>mo", "<cmd>Himalaya<CR>", desc = "open mail", icon = "󰊫" },
+      { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
+      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all folders", icon = "󰜉" },
+      { "<leader>mk", "<cmd>HimalayaCancelSync<CR>", desc = "cancel sync", icon = "󰚌" },
+      { "<leader>mA", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mv", "<cmd>HimalayaConfigValidate<CR>", desc = "validate config", icon = "󰚩" },
       { "<leader>mh", "<cmd>HimalayaConfigHelp<CR>", desc = "config help", icon = "󰘥" },
-      { "<leader>mA", "<cmd>HimalayaAlternativeSync<CR>", desc = "alternative sync", icon = "󰑓" },
+    })
+
+    -- MAIL LIST BUFFER specific keymaps (himalaya-list filetype)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "himalaya-list",
+      callback = function()
+        wk.add({
+          -- Navigation
+          { "<CR>", function() require('neotex.plugins.tools.himalaya.ui').read_email() end, desc = "read email", buffer = 0 },
+          { "j", "j", desc = "next email", buffer = 0 },
+          { "k", "k", desc = "previous email", buffer = 0 },
+          { "q", function() require('neotex.plugins.tools.himalaya.ui').close_himalaya() end, desc = "close mail", buffer = 0 },
+          
+          -- Actions
+          { "r", function() require('neotex.plugins.tools.himalaya.ui').refresh_email_list() end, desc = "refresh", buffer = 0 },
+          { "w", "<cmd>HimalayaWrite<CR>", desc = "write email", buffer = 0 },
+          { "d", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
+          { "a", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+          
+          -- Go commands
+          { "g", group = "go", buffer = 0 },
+          { "gn", function() require('neotex.plugins.tools.himalaya.ui').next_page() end, desc = "next page", buffer = 0 },
+          { "gp", function() require('neotex.plugins.tools.himalaya.ui').prev_page() end, desc = "prev page", buffer = 0 },
+          { "gm", "<cmd>HimalayaFolder<CR>", desc = "folder", buffer = 0 },
+          { "ga", "<cmd>HimalayaSwitch<CR>", desc = "account", buffer = 0 },
+          { "gr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
+          { "gR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
+          { "gf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
+          { "gD", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
+          { "gA", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+          { "gS", "<cmd>HimalayaSpam<CR>", desc = "spam", buffer = 0 },
+          
+          -- Leader mail commands (context-specific)
+          { "<leader>m", group = "mail", buffer = 0 },
+          { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", buffer = 0 },
+          { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
+          { "<leader>mr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
+          { "<leader>mR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
+          { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
+          { "<leader>ma", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+          { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", buffer = 0 },
+        }, { buffer = 0 })
+      end,
+    })
+
+    -- EMAIL READING BUFFER specific keymaps (himalaya-email filetype)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "himalaya-email",
+      callback = function()
+        wk.add({
+          { "q", function() require('neotex.plugins.tools.himalaya.ui').close_current_buffer() end, desc = "back to list", buffer = 0 },
+          { "L", function() require('neotex.plugins.tools.himalaya.utils').go_to_link() end, desc = "open link", buffer = 0 },
+          
+          -- Go commands
+          { "g", group = "go", buffer = 0 },
+          { "gr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
+          { "gR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
+          { "gf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
+          { "gd", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
+          { "gl", function() require('neotex.plugins.tools.himalaya.utils').go_to_link() end, desc = "link", buffer = 0 },
+          { "ga", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+          
+          -- Leader mail commands (context-specific)
+          { "<leader>m", group = "mail", buffer = 0 },
+          { "<leader>mr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
+          { "<leader>mR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
+          { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
+          { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
+          { "<leader>ma", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+        }, { buffer = 0 })
+      end,
+    })
+
+    -- EMAIL COMPOSE BUFFER specific keymaps (himalaya-compose filetype)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "himalaya-compose",
+      callback = function()
+        wk.add({
+          { "q", function() require('neotex.plugins.tools.himalaya.utils').save_draft() end, desc = "save draft & close", buffer = 0 },
+          { "Q", function() require('neotex.plugins.tools.himalaya.utils').discard_draft() end, desc = "discard & close", buffer = 0 },
+          { "<C-s>", "<cmd>HimalayaSend<CR>", desc = "send email", buffer = 0 },
+          
+          -- Go commands
+          { "g", group = "go", buffer = 0 },
+          { "gs", "<cmd>HimalayaSend<CR>", desc = "send", buffer = 0 },
+          
+          -- Leader mail commands (context-specific)
+          { "<leader>m", group = "mail", buffer = 0 },
+          { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", buffer = 0 },
+          { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", buffer = 0 },
+        }, { buffer = 0 })
+      end,
     })
     
     -- Markdown-specific format mapping
@@ -560,7 +645,7 @@ return {
       pattern = { "markdown", "md" },
       callback = function()
         wk.add({
-          { "<leader>ap", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
+          { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
         })
       end,
     })
@@ -673,13 +758,13 @@ return {
             local template_dir = vim.fn.expand("~/.config/nvim/templates/report")
             local current_dir = vim.fn.getcwd()
             vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
-            vim.notify("Copied report/ directory to " .. current_dir)
+            require('neotex.util.notifications').editor('Template copied', require('neotex.util.notifications').categories.USER_ACTION, { template = 'report', directory = current_dir })
           end, desc = "Copy report/ directory", icon = "󰉖", buffer = 0 },
           { "<leader>Ts", function()
             local template_dir = vim.fn.expand("~/.config/nvim/templates/springer")
             local current_dir = vim.fn.getcwd()
             vim.fn.system("cp -r " .. vim.fn.shellescape(template_dir) .. " " .. vim.fn.shellescape(current_dir))
-            vim.notify("Copied springer/ directory to " .. current_dir)
+            require('neotex.util.notifications').editor('Template copied', require('neotex.util.notifications').categories.USER_ACTION, { template = 'springer', directory = current_dir })
           end, desc = "Copy springer/ directory", icon = "󰉖", buffer = 0 },
         })
       end,

@@ -17,7 +17,7 @@ local debug_mode = vim.g.mcphub_debug_mode or false
 
 local function log(message, level)
   level = level or vim.log.levels.INFO
-  vim.notify("[MCPHub] " .. message, level)
+  require('neotex.util.notifications').ai(message, require('neotex.util.notifications').categories.STATUS)
 end
 
 -- Debug-only logging function

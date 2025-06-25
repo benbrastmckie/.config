@@ -6,7 +6,7 @@ local M = {}
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Debounce refresh operations
 M.refresh_timer = nil
@@ -192,7 +192,7 @@ end
 -- Optimized delete operation
 function M.delete_email_optimized(email_id)
   if not email_id then
-    vim.notify('No email to delete', vim.log.levels.WARN)
+    vim.notify('No email to delete', notify.categories.WARNING)
     return
   end
   
@@ -205,7 +205,7 @@ function M.delete_email_optimized(email_id)
   if is_in_sidebar then
     local_success = M.remove_email_locally(email_id)
     if local_success then
-      notifications.notify_status('Email deleted successfully', vim.log.levels.INFO)
+      notify.himalaya('Email deleted successfully', notify.categories.USER_ACTION)
     end
   end
   
@@ -235,7 +235,7 @@ function M.delete_email_optimized(email_id)
               if choice then
                 local move_success = utils.move_email(email_id, choice)
                 if move_success then
-                  vim.notify('Email moved to ' .. choice, vim.log.levels.INFO)
+                  vim.notify('Email moved to ' .. choice, notify.categories.USER_ACTION)
                   if is_in_sidebar then
                     M.remove_email_locally(email_id)
                   end
@@ -244,7 +244,7 @@ function M.delete_email_optimized(email_id)
                   vim.notify('Failed to move email to ' .. choice, vim.log.levels.ERROR)
                 end
               else
-                vim.notify('Delete operation cancelled', vim.log.levels.INFO)
+                vim.notify('Delete operation cancelled', notify.categories.USER_ACTION)
               end
             end)
           else
@@ -280,14 +280,14 @@ end
 -- Optimized spam operation
 function M.spam_email_optimized(email_id, target_folder)
   if not email_id then
-    vim.notify('No email selected', vim.log.levels.WARN)
+    vim.notify('No email selected', notify.categories.WARNING)
     return
   end
   
   -- Immediately update UI locally
   local local_success = M.remove_email_locally(email_id)
   if local_success then
-    vim.notify('Email moved to ' .. target_folder, vim.log.levels.INFO)
+    vim.notify('Email moved to ' .. target_folder, notify.categories.USER_ACTION)
   end
   
   -- Perform actual move in background
@@ -334,7 +334,7 @@ function M.move_email_optimized(email_id, target_folder)
   -- Update locally first
   local local_success = M.remove_email_locally(email_id)
   if local_success then
-    vim.notify('Email moved to ' .. target_folder, vim.log.levels.INFO)
+    vim.notify('Email moved to ' .. target_folder, notify.categories.USER_ACTION)
   end
   
   -- Perform move in background
@@ -388,8 +388,7 @@ function M.apply_optimizations()
   local ui = require('neotex.plugins.tools.himalaya.ui')
   local fixes = require('neotex.plugins.tools.himalaya.fixes')
   
-  -- Setup notification management
-  notifications.setup_notification_override()
+  -- Setup notification management is now handled by unified system
   
   -- Disable auto-refresh autocmds to prevent spam
   M.disable_auto_refresh_events()
@@ -406,7 +405,7 @@ function M.apply_optimizations()
     ui.delete_current_email = function()
       local email_id = ui.get_current_email_id()
       if not email_id then
-        notifications.notify('No email to delete', vim.log.levels.WARN)
+        notify.himalaya('No email to delete', notify.categories.WARNING)
         return
       end
       
@@ -420,7 +419,7 @@ function M.apply_optimizations()
   ui.spam_current_email = function()
     local email_id = ui.get_current_email_id()
     if not email_id then
-      vim.notify('No email selected', vim.log.levels.WARN)
+      vim.notify('No email selected', notify.categories.WARNING)
       return
     end
     
@@ -466,13 +465,12 @@ function M.revert_optimizations()
     M.refresh_timer = nil
   end
   
-  -- Restore original notifications
-  notifications.restore_notification_override()
+  -- Restore original notifications (handled by unified system)
   
   -- Re-enable auto-refresh events
   M.enable_auto_refresh_events()
   
-  notifications.notify_force('Performance optimizations reverted', vim.log.levels.INFO)
+  notify.himalaya('Performance optimizations reverted', notify.categories.USER_ACTION)
 end
 
 -- Create commands

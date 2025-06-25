@@ -10,6 +10,8 @@
 -- The utilities are exposed both as module functions and vim commands.
 -----------------------------------------------------------
 
+local notify = require('neotex.util.notifications')
+
 local M = {}
 
 -- Go to next/previous most recent buffer, excluding buffers where winfixbuf = true
@@ -110,7 +112,7 @@ function M.reload_config()
   end
 
   dofile(vim.env.MYVIMRC)
-  vim.notify('Nvim configuration reloaded!', vim.log.levels.INFO)
+  notify.editor('Nvim configuration reloaded!', notify.categories.USER_ACTION)
 end
 
 -- Close all buffers except current one
@@ -121,7 +123,7 @@ function M.close_other_buffers()
       vim.cmd(string.format('silent! bdelete %d', bufnr))
     end
   end
-  vim.notify("Closed all other buffers", vim.log.levels.INFO)
+  notify.editor("Closed all other buffers", notify.categories.USER_ACTION)
 end
 
 -- Close buffers that haven't been used for specified time
@@ -142,13 +144,13 @@ function M.close_unused_buffers(minutes)
     end
   end
   
-  vim.notify(string.format("Closed %d unused buffers (inactive for >%d minutes)", closed_count, minutes), vim.log.levels.INFO)
+  notify.editor(string.format("Closed %d unused buffers (inactive for >%d minutes)", closed_count, minutes), notify.categories.USER_ACTION)
 end
 
 -- Save all modified buffers
 function M.save_all_buffers()
   vim.cmd('wall')
-  vim.notify("Saved all modified buffers", vim.log.levels.INFO)
+  notify.editor("Saved all modified buffers", notify.categories.USER_ACTION)
 end
 
 -- Jump to alternate buffer with optional fallback to most recent

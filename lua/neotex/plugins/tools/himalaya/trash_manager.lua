@@ -4,7 +4,7 @@
 local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.config')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Default trash configuration
 M.default_config = {
@@ -38,7 +38,7 @@ function M.init()
     vim.notify('Failed to initialize trash metadata storage', vim.log.levels.WARN)
   end
   
-  notifications.notify('Local trash system initialized at: ' .. trash_dir, vim.log.levels.DEBUG)
+  notify.himalaya('Local trash system initialized', notify.categories.BACKGROUND, { directory = trash_dir })
   return true
 end
 
