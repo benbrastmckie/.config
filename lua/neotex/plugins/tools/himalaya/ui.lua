@@ -33,6 +33,16 @@ function M.init()
 end
 
 -- Show email list in sidebar
+-- Toggle email sidebar
+function M.toggle_email_sidebar()
+  if sidebar.is_open() then
+    sidebar.close()
+    notify.himalaya('Himalaya closed', notify.categories.STATUS)
+  else
+    M.show_email_list({})
+  end
+end
+
 function M.show_email_list(args)
   args = args or {}
   
@@ -63,41 +73,71 @@ function M.show_email_list(args)
   state.set_current_account(config.state.current_account)
   state.set_current_folder(folder)
   
-  -- Get email list with pagination
-  local emails = utils.get_email_list(config.state.current_account, folder, config.state.current_page, config.state.page_size)
-  if not emails then
-    notify.himalaya('Failed to get email list', notify.categories.ERROR)
-    return
-  end
-  
-  -- Store total count if available
-  if emails and #emails > 0 then
-    config.state.total_emails = #emails
-  end
-  
-  -- Open sidebar (this creates the buffer if needed)
+  -- Open sidebar immediately with loading message
   local win = sidebar.open()
   local buf = sidebar.get_buf()
-  
-  -- Update buffer tracking
   M.buffers.email_list = buf
   
-  -- Format email list content
-  local lines = M.format_email_list(emails)
-  sidebar.update_content(lines)
+  -- Show loading content immediately for responsiveness
+  local loading_lines = {
+    string.format('󰊫 %s (%s)', config.state.current_account, folder),
+    '',
+    '󰔟 Loading emails...',
+    '',
+    'Please wait while emails are being fetched from Himalaya.'
+  }
+  sidebar.update_content(loading_lines)
   
-  -- Store email data for reference in sidebar buffer
-  vim.api.nvim_buf_set_var(buf, 'himalaya_emails', emails)
-  vim.api.nvim_buf_set_var(buf, 'himalaya_account', config.state.current_account)
-  vim.api.nvim_buf_set_var(buf, 'himalaya_folder', folder)
+  -- Load emails asynchronously to avoid blocking UI
+  vim.defer_fn(function()
+    local emails = utils.get_email_list(config.state.current_account, folder, config.state.current_page, config.state.page_size)
+    if not emails then
+      local error_lines = {
+        string.format('󰊫 %s (%s)', config.state.current_account, folder),
+        '',
+        '󰅙 Failed to get email list',
+        '',
+        'Check your Himalaya configuration and try again.'
+      }
+      sidebar.update_content(error_lines)
+      notify.himalaya('Failed to get email list', notify.categories.ERROR)
+      return
+    end
+    
+    -- Store total count if available
+    if emails and #emails > 0 then
+      config.state.total_emails = #emails
+    end
+    
+    -- Format and display email list
+    local lines = M.format_email_list(emails)
+    sidebar.update_content(lines)
+    
+    -- Store email data for reference in sidebar buffer
+    vim.b[buf].himalaya_emails = emails
+    vim.b[buf].himalaya_account = config.state.current_account
+    vim.b[buf].himalaya_folder = folder
+    
+    -- Set up buffer keymaps for the sidebar
+    config.setup_buffer_keymaps(buf)
+    
+    -- Only start sync status updates if sync is actually running
+    local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
+    if streamlined_sync.is_sync_running_globally() then
+      M.start_sync_status_updates()
+    end
+    
+    -- Save current view to state
+    state.save()
+    
+    notify.himalaya('Email list loaded in sidebar', notify.categories.STATUS)
+  end, 10) -- Very short delay to ensure sidebar opens immediately
   
-  -- Save current view to state
-  state.save()
+  -- Set up buffer keymaps immediately (before emails load)
+  config.setup_buffer_keymaps(buf)
   
-  -- Focus the sidebar
+  -- Focus the sidebar immediately
   sidebar.focus()
-  
-  notify.himalaya('Email list loaded in sidebar', notify.categories.STATUS)
   return win
 end
 
@@ -111,9 +151,15 @@ function M.format_email_list(emails)
   local pagination_info = string.format('Page %d | %d emails (page size: %d)', 
     config.state.current_page, #emails, config.state.page_size)
   
+  -- Add sync status if running
+  local sync_status_line = M.get_sync_status_line()
+  
   table.insert(lines, header)
   table.insert(lines, pagination_info)
-  table.insert(lines, string.rep('─', math.max(#header, #pagination_info)))
+  if sync_status_line then
+    table.insert(lines, sync_status_line)
+  end
+  table.insert(lines, string.rep('─', math.max(#header, #pagination_info, sync_status_line and #sync_status_line or 0)))
   table.insert(lines, '')
   
   -- Email entries
@@ -155,10 +201,102 @@ function M.format_email_list(emails)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
   table.insert(lines, 'r:refresh gn:next-page gp:prev-page')
-  table.insert(lines, 'gm:folder ga:account gw:write gr:reply gf:forward')
+  table.insert(lines, 'gm:folder ga:account gw:write')
   table.insert(lines, 'gD:delete gA:archive gS:spam')
   
   return lines
+end
+
+-- Get sync status line for header
+function M.get_sync_status_line()
+  local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
+  local status = streamlined_sync.get_status()
+  
+  if not status.sync_running then
+    return nil
+  end
+  
+  local status_text = "🔄 Syncing"
+  
+  if status.progress then
+    if status.progress.current_operation then
+      status_text = status_text .. ": " .. status.progress.current_operation
+    end
+    
+    if status.progress.messages_total > 0 then
+      status_text = status_text .. string.format(" (%d/%d)", 
+        status.progress.messages_synced, 
+        status.progress.messages_total)
+    end
+  end
+  
+  return status_text
+end
+
+-- Timer for sync status updates
+local sync_status_timer = nil
+
+-- Start sync status updates
+function M.start_sync_status_updates()
+  -- Stop existing timer
+  M.stop_sync_status_updates()
+  
+  -- Start new timer to update every minute (60000ms)
+  sync_status_timer = vim.fn.timer_start(60000, function()
+    M.update_sidebar_sync_status()
+  end, { ['repeat'] = -1 })
+end
+
+-- Stop sync status updates
+function M.stop_sync_status_updates()
+  if sync_status_timer then
+    vim.fn.timer_stop(sync_status_timer)
+    sync_status_timer = nil
+  end
+end
+
+-- Update sidebar with current sync status
+function M.update_sidebar_sync_status()
+  local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
+  local status = streamlined_sync.get_status()
+  
+  -- Stop timer if sync is no longer running
+  if not status.sync_running then
+    M.stop_sync_status_updates()
+    -- Refresh sidebar one final time to remove sync status
+    M.refresh_sidebar_header()
+    return
+  end
+  
+  -- Update sidebar header with current sync status
+  M.refresh_sidebar_header()
+end
+
+-- Refresh just the sidebar header (without refetching emails)
+function M.refresh_sidebar_header()
+  local buf = sidebar.get_buf()
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  local emails = vim.b[buf].himalaya_emails
+  if not emails then
+    return
+  end
+  
+  -- Get current cursor position
+  local cursor_pos = vim.api.nvim_win_get_cursor(sidebar.get_win())
+  
+  -- Regenerate content with updated sync status
+  local lines = M.format_email_list(emails)
+  
+  -- Update buffer content
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Restore cursor position
+  pcall(vim.api.nvim_win_set_cursor, sidebar.get_win(), cursor_pos)
 end
 
 -- Read specific email

@@ -11,20 +11,20 @@ local notify = require('neotex.util.notifications')
 -- Move email to local trash
 function M.move_to_trash(email_id, original_folder)
   if not trash_manager.is_enabled() then
-    vim.notify('Local trash is disabled', vim.log.levels.WARN)
+    notify.himalaya('Local trash is disabled', notify.categories.WARNING)
     return false
   end
   
   -- Validate inputs
   if not email_id or not original_folder then
-    vim.notify('Missing email ID or folder information', vim.log.levels.ERROR)
+    notify.himalaya('Missing email ID or folder information', notify.categories.ERROR)
     return false
   end
   
   -- Get email content first
   local account = config.state.current_account
   if not account then
-    vim.notify('No current account set', vim.log.levels.ERROR)
+    notify.himalaya('No current account set', notify.categories.ERROR)
     return false
   end
   
@@ -34,7 +34,7 @@ function M.move_to_trash(email_id, original_folder)
   local email_content = utils.get_email_content(account, email_id)
   if not email_content then
     -- If we can't get content, still proceed with deletion but with a placeholder
-    vim.notify('Warning: Could not retrieve email content for ID: ' .. email_id .. ', deleting without backup', vim.log.levels.WARN)
+    notify.himalaya('Warning: Could not retrieve email content for ID: ' .. email_id .. ', deleting without backup', notify.categories.WARNING)
     email_content = string.format("Email ID: %s\nOriginal Folder: %s\nContent could not be retrieved during deletion.\nDeleted on: %s\n", 
       email_id, original_folder, os.date())
   end
@@ -43,7 +43,7 @@ function M.move_to_trash(email_id, original_folder)
   local date = os.date("*t")
   local trash_date_dir = trash_manager.ensure_date_directory(date)
   if not trash_date_dir then
-    vim.notify('Failed to create trash date directory', vim.log.levels.ERROR)
+    notify.himalaya('Failed to create trash date directory', notify.categories.ERROR)
     return false
   end
   
@@ -54,7 +54,7 @@ function M.move_to_trash(email_id, original_folder)
   -- Write email content to trash file
   local success = M.write_email_to_file(email_content, trash_file_path)
   if not success then
-    vim.notify('Failed to write email to trash file', vim.log.levels.ERROR)
+    notify.himalaya('Failed to write email to trash file', notify.categories.ERROR)
     return false
   end
   
@@ -70,7 +70,7 @@ function M.move_to_trash(email_id, original_folder)
   )
   
   if not metadata_success then
-    vim.notify('Failed to add trash metadata (email saved but not tracked)', vim.log.levels.WARN)
+    notify.himalaya('Failed to add trash metadata (email saved but not tracked)', notify.categories.WARNING)
   end
   
   -- Now delete from original location using Himalaya
@@ -79,17 +79,17 @@ function M.move_to_trash(email_id, original_folder)
     -- If deletion fails, clean up trash file
     vim.fn.delete(trash_file_path)
     trash_manager.remove_trash_metadata(email_id)
-    vim.notify('Failed to delete email from original location', vim.log.levels.ERROR)
+    notify.himalaya('Failed to delete email from original location', notify.categories.ERROR)
     return false
   end
   
   -- Sync deletion to Gmail
-  local native_sync = require('neotex.plugins.tools.himalaya.native_sync')
+  local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
   vim.defer_fn(function()
-    native_sync.sync_after_delete()
+    streamlined_sync.sync_inbox()
   end, 1000) -- Brief delay to ensure local deletion is complete
   
-  notify.himalaya(string.format('Email moved to local trash (%s)', trash_filename), vim.log.levels.INFO)
+  notify.himalaya(string.format('Email moved to local trash (%s)', trash_filename), notify.categories.USER_ACTION)
   return true
 end
 
@@ -124,7 +124,7 @@ function M.write_email_to_file(email_content, file_path)
   local write_result = vim.fn.writefile(lines, file_path)
   
   if write_result ~= 0 then
-    vim.notify('Failed to write file: ' .. file_path, vim.log.levels.ERROR)
+    notify.himalaya('Failed to write file: ' .. file_path, notify.categories.ERROR)
     return false
   end
   
@@ -151,7 +151,7 @@ function M.restore_from_trash(email_id, target_folder)
   -- Get trash metadata
   local metadata = trash_manager.get_trash_metadata(email_id)
   if not metadata then
-    vim.notify('Email not found in trash: ' .. email_id, vim.log.levels.ERROR)
+    notify.himalaya('Email not found in trash: ' .. email_id, notify.categories.ERROR)
     return false
   end
   
@@ -163,7 +163,7 @@ function M.restore_from_trash(email_id, target_folder)
   -- Read email content from trash file
   local email_content = M.read_email_from_file(metadata.file_path)
   if not email_content then
-    vim.notify('Failed to read email from trash file', vim.log.levels.ERROR)
+    notify.himalaya('Failed to read email from trash file', notify.categories.ERROR)
     return false
   end
   
@@ -175,7 +175,7 @@ function M.restore_from_trash(email_id, target_folder)
     -- Remove from trash
     vim.fn.delete(metadata.file_path)
     trash_manager.remove_trash_metadata(email_id)
-    vim.notify('Email restored to ' .. target_folder, vim.log.levels.INFO)
+    notify.himalaya('Email restored to ' .. target_folder, notify.categories.USER_ACTION)
     return true
   end
   
@@ -205,8 +205,8 @@ function M.restore_as_draft(email_content, target_folder)
     return false
   end
   
-  vim.notify('Email content saved to: ' .. temp_file, vim.log.levels.INFO)
-  vim.notify('Manual action required: Import this file to restore the email', vim.log.levels.WARN)
+  notify.himalaya('Email content saved to: ' .. temp_file, notify.categories.STATUS)
+  notify.himalaya('Manual action required: Import this file to restore the email', notify.categories.WARNING)
   
   return true
 end
@@ -215,7 +215,7 @@ end
 function M.permanent_delete(email_id)
   local metadata = trash_manager.get_trash_metadata(email_id)
   if not metadata then
-    vim.notify('Email not found in trash: ' .. email_id, vim.log.levels.ERROR)
+    notify.himalaya('Email not found in trash: ' .. email_id, notify.categories.ERROR)
     return false
   end
   
@@ -227,7 +227,7 @@ function M.permanent_delete(email_id)
   )
   
   if confirm ~= 1 then
-    vim.notify('Permanent deletion cancelled', vim.log.levels.INFO)
+    notify.himalaya('Permanent deletion cancelled', notify.categories.STATUS)
     return false
   end
   
@@ -238,10 +238,10 @@ function M.permanent_delete(email_id)
   local metadata_removed = trash_manager.remove_trash_metadata(email_id)
   
   if file_deleted and metadata_removed then
-    vim.notify('Email permanently deleted', vim.log.levels.INFO)
+    notify.himalaya('Email permanently deleted', notify.categories.USER_ACTION)
     return true
   else
-    vim.notify('Failed to completely remove email from trash', vim.log.levels.ERROR)
+    notify.himalaya('Failed to completely remove email from trash', notify.categories.ERROR)
     return false
   end
 end
@@ -294,7 +294,7 @@ function M.cleanup_old_items()
   end
   
   if cleaned_count > 0 then
-    vim.notify(string.format('Cleaned up %d old trash items', cleaned_count), vim.log.levels.INFO)
+    notify.himalaya(string.format('Cleaned up %d old trash items', cleaned_count), notify.categories.STATUS)
   end
   
   return cleaned_count
@@ -353,7 +353,7 @@ function M.setup_commands()
   vim.api.nvim_create_user_command('HimalayaTrashRestore', function(opts)
     local email_id = opts.args
     if email_id == '' then
-      vim.notify('Usage: :HimalayaTrashRestore <email_id>', vim.log.levels.ERROR)
+      notify.himalaya('Usage: :HimalayaTrashRestore <email_id>', notify.categories.ERROR)
       return
     end
     
@@ -366,7 +366,7 @@ function M.setup_commands()
   vim.api.nvim_create_user_command('HimalayaTrashPurge', function(opts)
     local email_id = opts.args
     if email_id == '' then
-      vim.notify('Usage: :HimalayaTrashPurge <email_id>', vim.log.levels.ERROR)
+      notify.himalaya('Usage: :HimalayaTrashPurge <email_id>', notify.categories.ERROR)
       return
     end
     
