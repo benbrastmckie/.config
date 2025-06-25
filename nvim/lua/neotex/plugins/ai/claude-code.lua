@@ -36,7 +36,7 @@ return {
       if file ~= "" then
         vim.cmd("ClaudeCodeAdd " .. file)
       else
-        vim.notify("No file to add to Claude context", vim.log.levels.WARN)
+        require('neotex.util.notifications').ai('No file to add to Claude context', require('neotex.util.notifications').categories.WARNING)
       end
     end, { desc = "Add current buffer to Claude Code context" })
     

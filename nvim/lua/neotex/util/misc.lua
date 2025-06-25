@@ -14,6 +14,7 @@
 -----------------------------------------------------------
 
 local M = {}
+local notify = require('neotex.util.notifications')
 
 -- Get OS information
 function M.get_os()
@@ -39,7 +40,7 @@ function M.safe_execute(func, ...)
   end)
   
   if not ok then
-    vim.notify("Error executing function: " .. tostring(result), vim.log.levels.ERROR)
+    notify.editor('Error executing function', notify.categories.ERROR, { error = tostring(result) })
     return nil
   end
   
@@ -51,7 +52,7 @@ function M.defer(func, delay)
   vim.defer_fn(function()
     local ok, err = pcall(func)
     if not ok then
-      vim.notify("Error in deferred function: " .. tostring(err), vim.log.levels.ERROR)
+      notify.editor('Error in deferred function', notify.categories.ERROR, { error = tostring(err) })
     end
   end, delay or 100)
 end
@@ -63,7 +64,7 @@ function M.log(msg, level)
     msg = vim.inspect(msg)
   end
   
-  vim.notify(msg, level)
+  notify.editor(msg, notify.categories.STATUS)
 end
 
 -- Toggle between relative and absolute line numbers
@@ -75,9 +76,9 @@ function M.toggle_line_numbers()
   vim.wo.number = true
   
   if vim.wo.relativenumber then
-    vim.notify("Using relative line numbers", vim.log.levels.INFO)
+    notify.editor('Using relative line numbers', notify.categories.USER_ACTION)
   else
-    vim.notify("Using absolute line numbers", vim.log.levels.INFO)
+    notify.editor('Using absolute line numbers', notify.categories.USER_ACTION)
   end
 end
 
@@ -86,7 +87,7 @@ function M.trim_whitespace()
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   vim.cmd([[keeppatterns %s/\s\+$//e]])
   vim.api.nvim_win_set_cursor(0, cursor_pos)
-  vim.notify("Trailing whitespace removed", vim.log.levels.INFO)
+  notify.editor('Trailing whitespace removed', notify.categories.USER_ACTION)
 end
 
 -- Generate a random string of specified length
@@ -168,21 +169,21 @@ function M.show_selection_info()
     "Selection: %d lines, %d columns, %d characters",
     info.lines, info.columns, info.characters
   )
-  vim.notify(msg, vim.log.levels.INFO)
+  notify.editor(msg, notify.categories.STATUS)
 end
 
 -- Copy current buffer path to clipboard and notify
 function M.copy_buffer_path()
   local path = vim.fn.expand('%:p')
   vim.fn.setreg('+', path)
-  vim.notify('Copied to clipboard: ' .. path, vim.log.levels.INFO)
+  notify.editor('Path copied to clipboard', notify.categories.USER_ACTION, { path = path })
 end
 
 -- Copy error message to clipboard and notify
 function M.copy_error_to_clipboard(error_msg)
   if not error_msg or error_msg == "" then return end
   vim.fn.setreg('+', error_msg)
-  vim.notify('Error copied to clipboard', vim.log.levels.INFO)
+  notify.editor('Error copied to clipboard', notify.categories.USER_ACTION)
 end
 
 -- Set up misc utilities

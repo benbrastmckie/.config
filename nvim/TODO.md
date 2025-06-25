@@ -3,15 +3,19 @@
 ## In Progress
 
 - [ ] release
+  - [ ] update notification system
   - [ ] list of features to advertise
   - [ ] list of changes
   - [x] gitexclude
   - [x] checkhealth
 - [ ] delete neotex directory
+- [ ] neo-tree
+  - [ ] make esc cancel delete
 - [ ] yank errors
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
   - Content is not an image.
 - [x] blink
+  - [ ] tab in command mode
   - [x] no ghost text insertions
   - [.] snippets
     - [x] completion
@@ -70,6 +74,9 @@
     - [ ] `<leader>gg` sometimes opens LazyGit blank
     - [ ] hard to get dialog boxes to close
   - which key
+    - [ ] conflict message on <leader>w: 
+      - There were issues reported with your **which-key** mappings.
+      - Use `:checkhealth which-key` to find out more.
     - [x] refactor bindings
     - [x] Add icons
     - [x] make descriptions lowercase and at most two words
@@ -95,6 +102,9 @@
   - [x] surround
   - [x] pairs
 - [:] email
+  - [ ] fix download redundancy problem
+  - [ ] works with non-nix just as well?
+  - [ ] remove GMAIL_CLIENT_ID from private.fish?
   - [x] install himalaya
   - [x] get mbsync to work
   - [.] build himalaya-nvim plugin

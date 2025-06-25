@@ -15,16 +15,6 @@ return {
   "stevearc/conform.nvim",
   event = { "BufWritePre", "BufNewFile" },
   cmd = { "ConformInfo" },
-  keys = {
-    {
-      "<leader>mp", 
-      function()
-        require("conform").format({ async = true, lsp_fallback = true })
-      end,
-      mode = { "n", "v" },
-      desc = "Format buffer or selection"
-    },
-  },
   config = function()
     require("conform").setup({
       -- Define formatters for different file types
@@ -143,10 +133,7 @@ return {
           is_enabled = false
         end
         
-        vim.notify(
-          string.format("Format on save %s for this buffer", is_enabled and "enabled" or "disabled"),
-          vim.log.levels.INFO
-        )
+        require('neotex.util.notifications').lsp('Format on save ' .. (is_enabled and 'enabled' or 'disabled') .. ' for this buffer', require('neotex.util.notifications').categories.USER_ACTION)
       else
         -- Toggle globally
         if vim.g.disable_autoformat == true then
@@ -157,10 +144,7 @@ return {
           is_enabled = false
         end
         
-        vim.notify(
-          string.format("Format on save %s globally", is_enabled and "enabled" or "disabled"),
-          vim.log.levels.INFO
-        )
+        require('neotex.util.notifications').lsp('Format on save ' .. (is_enabled and 'enabled' or 'disabled') .. ' globally', require('neotex.util.notifications').categories.USER_ACTION)
       end
     end, {
       nargs = "?",

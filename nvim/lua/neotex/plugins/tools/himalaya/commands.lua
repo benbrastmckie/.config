@@ -110,6 +110,68 @@ function M.setup()
   end, {
     desc = 'Try alternative sync method when mbsync fails',
   })
+  
+  -- Enhanced sync using mbsync for true bidirectional sync
+  vim.api.nvim_create_user_command('HimalayaEnhancedSync', function(opts)
+    require('neotex.plugins.tools.himalaya.native_sync').enhanced_sync(opts.bang)
+  end, {
+    bang = true,
+    desc = 'Enhanced mail sync with mbsync (use ! to force)',
+  })
+  
+  -- Quick sync for current folder
+  vim.api.nvim_create_user_command('HimalayaQuickSync', function(opts)
+    require('neotex.plugins.tools.himalaya.native_sync').quick_sync(opts.args)
+  end, {
+    nargs = '?',
+    desc = 'Quick sync for specific folder',
+  })
+  
+  -- Force sync with --force flag
+  vim.api.nvim_create_user_command('HimalayaForceSync', function(opts)
+    require('neotex.plugins.tools.himalaya.native_sync').enhanced_sync(true)
+  end, {
+    desc = 'Force sync with mbsync --force flag',
+  })
+  
+  -- Cancel ongoing sync
+  vim.api.nvim_create_user_command('HimalayaCancelSync', function(opts)
+    require('neotex.plugins.tools.himalaya.native_sync').cancel_sync()
+  end, {
+    desc = 'Cancel ongoing sync operation',
+  })
+  
+  -- Fix mbsync configuration and corrupted maildir
+  vim.api.nvim_create_user_command('HimalayaFixMbsync', function(opts)
+    require('neotex.plugins.tools.himalaya.fix_mbsync').fix_all()
+  end, {
+    desc = 'Fix corrupted mbsync configuration and maildir',
+  })
+  
+  -- Show manual fix steps
+  vim.api.nvim_create_user_command('HimalayaMbsyncHelp', function(opts)
+    require('neotex.plugins.tools.himalaya.fix_mbsync').show_manual_steps()
+  end, {
+    desc = 'Show manual steps to fix mbsync issues',
+  })
+  
+  -- Auto-refresh management
+  vim.api.nvim_create_user_command('HimalayaAutoRefresh', function(opts)
+    local auto_updates = require('neotex.plugins.tools.himalaya.auto_updates')
+    if opts.args == 'toggle' or opts.args == '' then
+      auto_updates.toggle()
+    elseif opts.args == 'start' then
+      auto_updates.start_auto_refresh()
+    elseif opts.args == 'stop' then
+      auto_updates.stop_auto_refresh()
+    elseif tonumber(opts.args) then
+      auto_updates.set_interval(tonumber(opts.args))
+    end
+  end, {
+    nargs = '?',
+    complete = function() return {'toggle', 'start', 'stop', '30', '60', '120', '300'} end,
+    desc = 'Manage automatic refresh: toggle/start/stop or set interval (seconds)',
+  })
 
   -- Configuration help command
   vim.api.nvim_create_user_command('HimalayaConfigHelp', function(opts)
@@ -370,18 +432,238 @@ function M.setup()
     desc = 'Show email info',
   })
   
-  -- Debug mode toggle command
+  -- Debug mode toggle command (uses unified notification system)
   vim.api.nvim_create_user_command('HimalayaDebug', function()
-    local config = require('neotex.plugins.tools.himalaya.config')
-    local notifications = require('neotex.plugins.tools.himalaya.notifications')
-    
-    config.config.debug_mode = not config.config.debug_mode
-    
-    local status = config.config.debug_mode and 'enabled' or 'disabled'
-    notifications.notify_force('Himalaya debug mode ' .. status, vim.log.levels.INFO)
+    local notify = require('neotex.util.notifications')
+    notify.toggle_debug_mode()
   end, {
-    desc = 'Toggle Himalaya debug mode',
+    desc = 'Toggle debug mode (unified)',
   })
+  
+  -- OAuth token refresh command
+  vim.api.nvim_create_user_command('HimalayaRefreshOAuth', function()
+    local notify = require('neotex.util.notifications')
+    
+    -- Check if the refresh script exists
+    local refresh_script = '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2'
+    if vim.fn.filereadable(refresh_script) == 0 then
+      notify.himalaya('OAuth refresh script not found', notify.categories.ERROR)
+      notify.himalaya('Please ensure gmail OAuth is configured in your Nix setup', notify.categories.STATUS)
+      return
+    end
+    
+    notify.himalaya('Refreshing OAuth token...', notify.categories.STATUS)
+    
+    -- Run the refresh script
+    vim.fn.jobstart({refresh_script}, {
+      on_exit = function(_, exit_code)
+        if exit_code == 0 then
+          notify.himalaya('OAuth token refreshed successfully', notify.categories.USER_ACTION)
+          notify.himalaya('Try syncing again with :HimalayaSync', notify.categories.STATUS)
+        else
+          notify.himalaya('OAuth token refresh failed', notify.categories.ERROR)
+          notify.himalaya('You may need to reconfigure: himalaya account configure gmail', notify.categories.STATUS)
+        end
+      end,
+      on_stderr = function(_, data)
+        if data and #data > 0 then
+          for _, line in ipairs(data) do
+            if line and line ~= '' then
+              notify.himalaya('OAuth refresh error: ' .. line, notify.categories.ERROR)
+            end
+          end
+        end
+      end,
+    })
+  end, {
+    desc = 'Refresh Gmail OAuth2 token',
+  })
+  
+  -- OAuth status check command
+  vim.api.nvim_create_user_command('HimalayaOAuthStatus', function()
+    local notify = require('neotex.util.notifications')
+    
+    -- Check systemd timer status
+    local timer_status = vim.fn.system('systemctl --user is-active gmail-oauth2-refresh.timer')
+    local service_status = vim.fn.system('systemctl --user status gmail-oauth2-refresh.service --no-pager -n 5')
+    
+    notify.himalaya('OAuth Timer Status: ' .. timer_status:gsub('%s+$', ''), notify.categories.STATUS)
+    
+    -- Check for stored credentials
+    local has_refresh_token = vim.fn.system('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token 2>/dev/null')
+    if has_refresh_token and has_refresh_token ~= '' then
+      notify.himalaya('OAuth refresh token found in keyring', notify.categories.STATUS)
+    else
+      notify.himalaya('No OAuth refresh token found', notify.categories.ERROR)
+      notify.himalaya('Run: himalaya account configure gmail', notify.categories.STATUS)
+    end
+    
+    -- Show recent service logs
+    notify.himalaya('Recent OAuth refresh attempts:', notify.categories.STATUS)
+    local logs = vim.fn.system('journalctl --user -u gmail-oauth2-refresh.service -n 5 --no-pager --output=cat')
+    for line in logs:gmatch('[^\n]+') do
+      if line:match('error') or line:match('failed') then
+        notify.himalaya(line, notify.categories.ERROR)
+      else
+        notify.himalaya(line, notify.categories.STATUS)
+      end
+    end
+  end, {
+    desc = 'Check Gmail OAuth2 status',
+  })
+  
+  -- Reconfigure account command (wrapper for himalaya account configure)
+  vim.api.nvim_create_user_command('HimalayaReconfigureGmail', function()
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Opening terminal for Gmail reconfiguration...', notify.categories.STATUS)
+    notify.himalaya('Follow the OAuth flow to get new tokens', notify.categories.STATUS)
+    
+    -- Open in a new terminal split
+    vim.cmd('split | terminal himalaya account configure gmail')
+    vim.cmd('startinsert')
+  end, {
+    desc = 'Reconfigure Gmail account with OAuth',
+  })
+  
+  -- OAuth troubleshooting command
+  vim.api.nvim_create_user_command('HimalayaOAuthTroubleshoot', function()
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local notify = require('neotex.util.notifications')
+    
+    notify.himalaya('Diagnosing OAuth authentication issues...', notify.categories.STATUS)
+    
+    local issues, suggestions = utils.diagnose_oauth_auth()
+    
+    -- Display issues
+    notify.himalaya('=== OAuth Diagnostic Results ===', notify.categories.STATUS)
+    for _, issue in ipairs(issues) do
+      local level = issue:match('✓') and notify.categories.STATUS or notify.categories.WARNING
+      notify.himalaya(issue, level)
+    end
+    
+    -- Display suggestions if any
+    if #suggestions > 0 then
+      notify.himalaya('', notify.categories.STATUS)
+      notify.himalaya('=== Suggested Actions ===', notify.categories.STATUS)
+      for i, suggestion in ipairs(suggestions) do
+        notify.himalaya(i .. '. ' .. suggestion, notify.categories.STATUS)
+      end
+    end
+    
+    -- Quick actions menu
+    if #suggestions > 0 then
+      vim.defer_fn(function()
+        vim.ui.select({
+          'Try manual OAuth refresh',
+          'Reconfigure Gmail account', 
+          'Check mbsync configuration',
+          'Open OAuth setup documentation',
+          'Cancel'
+        }, {
+          prompt = 'OAuth Action:',
+        }, function(choice)
+          if choice == 'Try manual OAuth refresh' then
+            vim.cmd('HimalayaRefreshOAuth')
+          elseif choice == 'Reconfigure Gmail account' then
+            vim.cmd('HimalayaReconfigureGmail')
+          elseif choice == 'Check mbsync configuration' then
+            vim.cmd('HimalayaAnalyzeMbsync')
+          elseif choice == 'Open OAuth setup documentation' then
+            M.show_oauth_help()
+          end
+        end)
+      end, 100)
+    end
+  end, {
+    desc = 'Troubleshoot Gmail OAuth authentication issues',
+  })
+  
+  -- Cancel sync command
+  vim.api.nvim_create_user_command('HimalayaCancelSync', function()
+    require('neotex.plugins.tools.himalaya.native_sync').cancel_sync()
+  end, {
+    desc = 'Cancel ongoing mail sync',
+  })
+  
+  -- Force sync command (with mbsync --force flag)
+  vim.api.nvim_create_user_command('HimalayaForceSync', function()
+    require('neotex.plugins.tools.himalaya.native_sync').enhanced_sync(true)
+  end, {
+    desc = 'Force mail sync with mbsync --force',
+  })
+end
+
+-- Show OAuth setup help
+function M.show_oauth_help()
+  local help_content = {
+    '# Gmail OAuth2 Setup Guide',
+    '',
+    '## Common Issues and Solutions',
+    '',
+    '### 1. AUTHENTICATIONFAILED Error',
+    'This usually means your OAuth token has expired or is invalid.',
+    '',
+    '**Quick Fix:**',
+    '- Run `:HimalayaRefreshOAuth` to refresh the token',
+    '- If that fails, run `:HimalayaReconfigureGmail`',
+    '',
+    '### 2. "invalid_client" Error',
+    'Your OAuth client ID is not recognized by Google.',
+    '',
+    '**Solutions:**',
+    '- Check GMAIL_CLIENT_ID environment variable is set correctly',
+    '- Verify the OAuth app in Google Cloud Console is active',
+    '- Ensure the client ID matches your OAuth app',
+    '',
+    '### 3. Missing Refresh Token',
+    'The OAuth refresh token is not stored in the keyring.',
+    '',
+    '**Solution:**',
+    '- Run: `himalaya account configure gmail`',
+    '- Complete the OAuth flow in your browser',
+    '',
+    '## Manual Token Refresh',
+    '',
+    'If automatic refresh fails, you can:',
+    '1. Run the refresh script manually:',
+    '   `/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2`',
+    '',
+    '2. Check the systemd timer:',
+    '   `systemctl --user status gmail-oauth2-refresh.timer`',
+    '',
+    '3. View recent logs:',
+    '   `journalctl --user -u gmail-oauth2-refresh.service -f`',
+    '',
+    '## OAuth Configuration in mbsync',
+    '',
+    'Ensure your ~/.mbsyncrc has:',
+    '```',
+    'IMAPAccount gmail',
+    'Host imap.gmail.com',
+    'User your-email@gmail.com',
+    'AuthMechs XOAUTH2',
+    'PassCmd "secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token"',
+    '```',
+    '',
+    '## Available Commands',
+    '',
+    '- `:HimalayaOAuthStatus` - Check OAuth status',
+    '- `:HimalayaRefreshOAuth` - Manually refresh token',
+    '- `:HimalayaReconfigureGmail` - Reconfigure Gmail account',
+    '- `:HimalayaOAuthTroubleshoot` - Run full diagnostics',
+  }
+  
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_content)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.open_email_window(buf, 'Gmail OAuth2 Help')
 end
 
 return M

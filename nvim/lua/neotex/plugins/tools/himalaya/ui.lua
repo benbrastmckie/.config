@@ -8,7 +8,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
 local state = require('neotex.plugins.tools.himalaya.state')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Buffer tracking
 M.buffers = {
@@ -47,7 +47,7 @@ function M.show_email_list(args)
   
   -- Switch account if specified
   if account and not config.switch_account(account) then
-    vim.notify('Unknown account: ' .. account, vim.log.levels.ERROR)
+    notify.himalaya('Unknown account: ' .. account, notify.categories.ERROR)
     return
   elseif account and account ~= config.state.current_account then
     M.reset_pagination()  -- Reset pagination when changing accounts
@@ -66,7 +66,7 @@ function M.show_email_list(args)
   -- Get email list with pagination
   local emails = utils.get_email_list(config.state.current_account, folder, config.state.current_page, config.state.page_size)
   if not emails then
-    vim.notify('Failed to get email list', vim.log.levels.ERROR)
+    notify.himalaya('Failed to get email list', notify.categories.ERROR)
     return
   end
   
@@ -97,7 +97,7 @@ function M.show_email_list(args)
   -- Focus the sidebar
   sidebar.focus()
   
-  notifications.notify('Email list loaded in sidebar', vim.log.levels.INFO)
+  notify.himalaya('Email list loaded in sidebar', notify.categories.STATUS)
   return win
 end
 
@@ -165,7 +165,7 @@ end
 function M.read_email(email_id)
   local email_content = utils.get_email_content(config.state.current_account, email_id)
   if not email_content then
-    vim.notify('Failed to read email', vim.log.levels.ERROR)
+    notify.himalaya('Failed to read email', notify.categories.ERROR)
     return
   end
   
@@ -355,19 +355,19 @@ function M.compose_email(to_address)
   
   -- Explicitly set up gs keybinding for sending
   vim.keymap.set('n', 'gs', function()
-    vim.notify('gs keymap triggered!', vim.log.levels.INFO)
+    notify.himalaya('Compose keymap triggered', notify.categories.BACKGROUND)
     M.send_current_email()
   end, { buffer = buf, desc = 'Send email' })
   
   -- Also set up <F5> as an alternative test
   vim.keymap.set('n', '<F5>', function()
-    vim.notify('F5 triggered - sending email!', vim.log.levels.INFO)
+    notify.himalaya('Send email keymap triggered', notify.categories.BACKGROUND)
     M.send_current_email()
   end, { buffer = buf, desc = 'Send email (F5 test)' })
   
   -- Test if 's' alone works
   vim.keymap.set('n', 's', function()
-    vim.notify('s key triggered - sending email!', vim.log.levels.INFO)
+    notify.himalaya('Send email keymap triggered', notify.categories.BACKGROUND)
     M.send_current_email()
   end, { buffer = buf, desc = 'Send email (s test)' })
   
@@ -376,7 +376,7 @@ function M.compose_email(to_address)
     local keymaps = vim.api.nvim_buf_get_keymap(buf, 'n')
     for _, keymap in ipairs(keymaps) do
       if keymap.lhs == 'gs' then
-        vim.notify('Found gs keymap in compose buffer', vim.log.levels.INFO)
+        notify.himalaya('Compose keymap detected', notify.categories.BACKGROUND)
       end
     end
   end, 100)
@@ -441,7 +441,7 @@ end
 function M.reply_email(email_id, reply_all)
   local email_content = utils.get_email_content(config.state.current_account, email_id)
   if not email_content then
-    vim.notify('Failed to get email for reply', vim.log.levels.ERROR)
+    notify.himalaya('Failed to get email for reply', notify.categories.ERROR)
     return
   end
   
@@ -530,7 +530,7 @@ function M.reply_current_email()
   if email_id then
     M.reply_email(email_id, false)
   else
-    vim.notify('No email to reply to', vim.log.levels.WARN)
+    notify.himalaya('No email to reply to', notify.categories.WARNING)
   end
 end
 
@@ -541,7 +541,7 @@ function M.reply_all_current_email()
   if email_id then
     M.reply_email(email_id, true)
   else
-    vim.notify('No email to reply to', vim.log.levels.WARN)
+    notify.himalaya('No email to reply to', notify.categories.WARNING)
   end
 end
 
@@ -549,7 +549,7 @@ end
 function M.forward_email(email_id)
   local email_content = utils.get_email_content(config.state.current_account, email_id)
   if not email_content then
-    vim.notify('Failed to get email for forwarding', vim.log.levels.ERROR)
+    notify.himalaya('Failed to get email for forwarding', notify.categories.ERROR)
     return
   end
   
@@ -629,44 +629,44 @@ function M.forward_current_email()
   if email_id then
     M.forward_email(email_id)
   else
-    vim.notify('No email to forward', vim.log.levels.WARN)
+    notify.himalaya('No email to forward', notify.categories.WARNING)
   end
 end
 
 -- Send current email
 function M.send_current_email()
   local buf = vim.api.nvim_get_current_buf()
-  vim.notify('DEBUG: send_current_email called', vim.log.levels.INFO)
+  notify.himalaya('Send email function called', notify.categories.BACKGROUND)
   
   if not vim.b[buf].himalaya_compose then
-    vim.notify('Not in compose buffer', vim.log.levels.ERROR)
+    notify.himalaya('Not in compose buffer', notify.categories.ERROR)
     return
   end
-  vim.notify('DEBUG: In compose buffer', vim.log.levels.INFO)
+  notify.himalaya('In compose buffer', notify.categories.BACKGROUND)
   
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  vim.notify('DEBUG: Buffer lines (first 5): ' .. vim.inspect({lines[1], lines[2], lines[3], lines[4], lines[5]}), vim.log.levels.INFO)
+  notify.himalaya('Buffer content parsed', notify.categories.BACKGROUND)
   local email_data = utils.parse_email_content(lines)
-  vim.notify('DEBUG: Email data parsed: ' .. vim.inspect(email_data), vim.log.levels.INFO)
+  notify.himalaya('Email data parsed', notify.categories.BACKGROUND, { to = email_data.to, subject = email_data.subject })
   
   if not email_data.to or email_data.to == '' then
-    vim.notify('To field is required', vim.log.levels.ERROR)
+    notify.himalaya('To field is required', notify.categories.ERROR)
     return
   end
-  vim.notify('DEBUG: To field check passed', vim.log.levels.INFO)
+  notify.himalaya('Email validation passed', notify.categories.BACKGROUND)
   
   -- Send email
-  vim.notify('DEBUG: Attempting to send email...', vim.log.levels.INFO)
+  notify.himalaya('Attempting to send email', notify.categories.BACKGROUND)
   local success = utils.send_email(config.state.current_account, email_data)
-  vim.notify('DEBUG: Send result: ' .. tostring(success), vim.log.levels.INFO)
+  notify.himalaya('Send operation completed', notify.categories.BACKGROUND, { success = success })
   
   if success then
-    vim.notify('Email sent successfully', vim.log.levels.INFO)
+    notify.himalaya('Email sent successfully', notify.categories.USER_ACTION, { recipient = email_data.to })
     vim.api.nvim_buf_delete(buf, { force = true })
     -- Refresh email list after sending
     M.refresh_email_list()
   else
-    vim.notify('Failed to send email', vim.log.levels.ERROR)
+    notify.himalaya('Failed to send email', notify.categories.ERROR)
   end
 end
 
@@ -681,14 +681,14 @@ function M.delete_current_email()
   end
   
   if not email_id then
-    vim.notify('No email to delete', vim.log.levels.WARN)
+    notify.himalaya('No email to delete', notify.categories.WARNING)
     return
   end
   
   local success, error_type, extra = utils.smart_delete_email(config.state.current_account, email_id)
   
   if success then
-    vim.notify('Email deleted successfully', vim.log.levels.INFO)
+    notify.himalaya('Email deleted successfully', notify.categories.USER_ACTION)
     
     -- Only close view if we're in an email reading buffer, not the sidebar
     local current_buf = vim.api.nvim_get_current_buf()
@@ -713,7 +713,7 @@ function M.delete_current_email()
     -- Trash folder doesn't exist, offer alternatives
     M.handle_missing_trash_folder(email_id, extra)
   else
-    vim.notify('Failed to delete email: ' .. (extra or 'Unknown error'), vim.log.levels.ERROR)
+    notify.himalaya('Failed to delete email', notify.categories.ERROR, { error = extra or 'Unknown error' })
   end
 end
 
@@ -724,7 +724,7 @@ function M.handle_missing_trash_folder(email_id, suggested_folders)
   
   if is_headless then
     -- In headless mode, just permanently delete
-    vim.notify('Headless mode: Permanently deleting email (trash folder not found)', vim.log.levels.INFO)
+    notify.himalaya('Permanently deleting email (trash folder not found)', notify.categories.STATUS)
     M.permanent_delete_email(email_id)
     return
   end
@@ -764,14 +764,14 @@ end
 function M.permanent_delete_email(email_id)
   local success = utils.delete_email(config.state.current_account, email_id, true)
   if success then
-    vim.notify('Email permanently deleted', vim.log.levels.INFO)
+    notify.himalaya('Email permanently deleted', notify.categories.USER_ACTION)
     M.close_current_view()
     -- Trigger manual refresh for permanent deletion
     vim.defer_fn(function()
       M.refresh_email_list()
     end, 100)
   else
-    vim.notify('Failed to permanently delete email', vim.log.levels.ERROR)
+    notify.himalaya('Failed to permanently delete email', notify.categories.ERROR)
   end
 end
 
@@ -791,7 +791,7 @@ function M.prompt_custom_folder_move(email_id)
   
   if is_headless then
     -- In headless mode, use a default folder
-    vim.notify('Headless mode: Moving email to Archive folder', vim.log.levels.INFO)
+    notify.himalaya('Moving email to Archive folder', notify.categories.STATUS)
     M.move_email_to_folder(email_id, 'Archive')
     return
   end
@@ -898,7 +898,7 @@ end
 function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_delete(buf, { force = true })
-  vim.notify('Draft discarded', vim.log.levels.INFO)
+  notify.himalaya('Draft discarded', notify.categories.USER_ACTION)
 end
 
 -- Close and save as draft
@@ -907,7 +907,7 @@ function M.close_and_save_draft()
   if vim.b[buf].himalaya_compose then
     -- TODO: Implement draft saving with Himalaya CLI
     -- For now, just close and notify
-    vim.notify('Draft saved (not yet implemented)', vim.log.levels.WARN)
+    notify.himalaya('Draft saved (not yet implemented)', notify.categories.WARNING)
     vim.cmd('close')
   else
     vim.cmd('close')
@@ -953,7 +953,7 @@ function M.close_himalaya()
     email_compose = nil,
   }
   
-  vim.notify(string.format('Himalaya closed (%d buffers cleaned up)', closed_buffers), vim.log.levels.INFO)
+  notify.himalaya('Himalaya closed', notify.categories.BACKGROUND, { buffers_cleaned = closed_buffers })
 end
 
 -- Debug function to list Himalaya buffers
@@ -1017,7 +1017,7 @@ function M.search_emails(query)
     
     M.open_email_window(buf, 'Search Results: ' .. query)
   else
-    vim.notify('Search failed', vim.log.levels.ERROR)
+    notify.himalaya('Search failed', notify.categories.ERROR)
   end
 end
 
@@ -1025,7 +1025,7 @@ end
 function M.show_attachments(email_id)
   local attachments = utils.get_email_attachments(config.state.current_account, email_id)
   if not attachments or #attachments == 0 then
-    vim.notify('No attachments found', vim.log.levels.INFO)
+    notify.himalaya('No attachments found', notify.categories.STATUS)
     return
   end
   
@@ -1059,14 +1059,14 @@ function M.read_current_email()
   if email_id then
     M.read_email(email_id)
   else
-    vim.notify('No email selected', vim.log.levels.WARN)
+    notify.himalaya('No email selected', notify.categories.WARNING)
   end
 end
 
 -- Attach file to current composition
 function M.attach_file()
   if vim.bo.filetype ~= 'himalaya-compose' then
-    vim.notify('Can only attach files in composition mode', vim.log.levels.ERROR)
+    notify.himalaya('Can only attach files in composition mode', notify.categories.ERROR)
     return
   end
   
@@ -1076,7 +1076,7 @@ function M.attach_file()
     local attachments = vim.b.himalaya_attachments or {}
     table.insert(attachments, file)
     vim.b.himalaya_attachments = attachments
-    vim.notify('Attached: ' .. file, vim.log.levels.INFO)
+    notify.himalaya('File attached', notify.categories.USER_ACTION, { file = file })
   end
 end
 
@@ -1089,7 +1089,7 @@ end
 function M.manage_tags()
   local email_id = M.get_current_email_id()
   if not email_id then
-    vim.notify('No email selected', vim.log.levels.WARN)
+    notify.himalaya('No email selected', notify.categories.WARNING)
     return
   end
   
@@ -1106,7 +1106,7 @@ end
 function M.show_email_info()
   local email_id = M.get_current_email_id()
   if not email_id then
-    vim.notify('No email selected', vim.log.levels.WARN)
+    notify.himalaya('No email selected', notify.categories.WARNING)
     return
   end
   
@@ -1148,7 +1148,7 @@ function M.open_link_under_cursor()
   local urls = vim.b[buf].himalaya_urls
   
   if not urls or #urls == 0 then
-    vim.notify('No links found in this email', vim.log.levels.INFO)
+    notify.himalaya('No links found in this email', notify.categories.STATUS)
     return
   end
   
@@ -1200,16 +1200,16 @@ function M.open_url(url)
   elseif vim.fn.has('win32') == 1 then
     cmd = { 'cmd', '/c', 'start', url }
   else
-    vim.notify('Unsupported platform for opening URLs', vim.log.levels.ERROR)
+    notify.himalaya('Unsupported platform for opening URLs', notify.categories.ERROR)
     return
   end
   
   vim.fn.jobstart(cmd, {
     on_exit = function(_, exit_code)
       if exit_code == 0 then
-        vim.notify('Opened: ' .. url, vim.log.levels.INFO)
+        notify.himalaya('URL opened', notify.categories.USER_ACTION, { url = url })
       else
-        vim.notify('Failed to open URL', vim.log.levels.ERROR)
+        notify.himalaya('Failed to open URL', notify.categories.ERROR)
       end
     end
   })
@@ -1236,7 +1236,7 @@ function M.restore_session()
   local can_restore, message = M.can_restore_session()
   
   if not can_restore then
-    vim.notify('Cannot restore session: ' .. message, vim.log.levels.WARN)
+    notify.himalaya('Cannot restore session', notify.categories.WARNING, { error = message })
     return false
   end
   
@@ -1273,10 +1273,10 @@ function M.restore_session()
     local last_query = state.get_last_query()
     local search_results = state.get_search_results()
     if last_query and search_results then
-      vim.notify('Previous search: "' .. last_query .. '" available', vim.log.levels.INFO)
+      notify.himalaya('Previous search available', notify.categories.STATUS, { query = last_query })
     end
     
-    vim.notify('Email session restored', vim.log.levels.INFO)
+    notify.himalaya('Email session restored', notify.categories.USER_ACTION)
   end, 100)
   
   return true
@@ -1287,7 +1287,7 @@ function M.prompt_session_restore()
   local can_restore, message = M.can_restore_session()
   
   if not can_restore then
-    vim.notify(message, vim.log.levels.INFO)
+    notify.himalaya(message, notify.categories.STATUS)
     return
   end
   
@@ -1296,7 +1296,7 @@ function M.prompt_session_restore()
   
   if is_headless then
     -- In headless mode, just restore directly
-    vim.notify('Headless mode: ' .. message, vim.log.levels.INFO)
+    notify.himalaya(message, notify.categories.STATUS)
     M.restore_session()
   else
     vim.ui.select({'Restore previous session', 'Start fresh'}, {
@@ -1335,7 +1335,7 @@ function M.update_email_display()
   -- Get email list with current pagination settings
   local emails = utils.get_email_list(config.state.current_account, config.state.current_folder, config.state.current_page, config.state.page_size)
   if not emails then
-    vim.notify('Failed to get email list', vim.log.levels.ERROR)
+    notify.himalaya('Failed to get email list', notify.categories.ERROR)
     return
   end
   
@@ -1371,7 +1371,7 @@ function M.next_page()
   if not emails or #emails == 0 then
     -- No more emails, go back to previous page
     config.state.current_page = config.state.current_page - 1
-    vim.notify('No more emails on next page', vim.log.levels.INFO)
+    notify.himalaya('No more emails on next page', notify.categories.STATUS)
     return
   end
   
@@ -1385,7 +1385,7 @@ function M.prev_page()
     config.state.current_page = config.state.current_page - 1
     M.update_email_display()
   else
-    vim.notify('Already on first page', vim.log.levels.INFO)
+    notify.himalaya('Already on first page', notify.categories.STATUS)
   end
 end
 
@@ -1415,7 +1415,7 @@ function M.archive_current_email()
     if archive_folder then
       local success = utils.move_email(email_id, archive_folder)
       if success then
-        vim.notify('Email archived to ' .. archive_folder, vim.log.levels.INFO)
+        notify.himalaya('Email archived', notify.categories.USER_ACTION, { folder = archive_folder })
         -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
       end
     else
@@ -1444,7 +1444,7 @@ function M.archive_current_email()
       end)
     end
   else
-    vim.notify('No email selected', vim.log.levels.WARN)
+    notify.himalaya('No email selected', notify.categories.WARNING)
   end
 end
 
@@ -1473,7 +1473,7 @@ function M.spam_current_email()
     if spam_folder then
       local success = utils.move_email(email_id, spam_folder)
       if success then
-        vim.notify('Email marked as spam and moved to ' .. spam_folder, vim.log.levels.INFO)
+        notify.himalaya('Email marked as spam', notify.categories.USER_ACTION, { folder = spam_folder })
         -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
       end
     else
@@ -1496,7 +1496,7 @@ function M.spam_current_email()
       end)
     end
   else
-    vim.notify('No email selected', vim.log.levels.WARN)
+    notify.himalaya('No email selected', notify.categories.WARNING)
   end
 end
 

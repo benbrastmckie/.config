@@ -11,6 +11,8 @@
 -- file-specific folding methods.
 -----------------------------------------------------------
 
+local notify = require('neotex.util.notifications')
+
 local M = {}
 
 -- Function to toggle between fully open and fully closed folds
@@ -30,11 +32,11 @@ function M.toggle_all_folds()
   if all_open then
     -- All folds are open, so close them all
     vim.cmd('normal! zM')
-    vim.notify("All folds closed", vim.log.levels.INFO)
+    notify.editor("All folds closed", notify.categories.USER_ACTION)
   else
     -- Some folds are closed, so open them all
     vim.cmd('normal! zR')
-    vim.notify("All folds opened", vim.log.levels.INFO)
+    notify.editor("All folds opened", notify.categories.USER_ACTION)
   end
 end
 
@@ -69,9 +71,9 @@ function M.toggle_fold_enable()
 
   -- Show notification about the new state
   if vim.wo.foldenable then
-    vim.notify("Folding enabled", vim.log.levels.INFO)
+    notify.editor("Folding enabled", notify.categories.USER_ACTION)
   else
-    vim.notify("Folding disabled", vim.log.levels.INFO)
+    notify.editor("Folding disabled", notify.categories.USER_ACTION)
   end
 end
 
@@ -95,12 +97,12 @@ function M.toggle_folding_method()
       new_method = "expr"
       vim.wo.foldmethod = "expr"
       vim.wo.foldexpr = "v:lua.MarkdownFoldLevel()"
-      vim.notify("Folding enabled (expr with markdown support)", vim.log.levels.INFO)
+      notify.editor("Folding enabled (expr with markdown support)", notify.categories.USER_ACTION)
     else
       -- For other filetypes, use indent folding which is generally useful
       new_method = "indent"
       vim.wo.foldmethod = "indent"
-      vim.notify("Folding enabled (indent)", vim.log.levels.INFO)
+      notify.editor("Folding enabled (indent)", notify.categories.USER_ACTION)
     end
 
     -- Save the state to file with error handling
@@ -114,12 +116,12 @@ function M.toggle_folding_method()
     end)
 
     if not ok then
-      vim.notify("Error saving fold state: " .. err, vim.log.levels.WARN)
+      notify.editor("Error saving fold state: " .. err, notify.categories.WARNING)
     end
   else
     new_method = "manual"
     vim.wo.foldmethod = "manual"
-    vim.notify("Folding set to manual", vim.log.levels.INFO)
+    notify.editor("Folding set to manual", notify.categories.USER_ACTION)
 
     -- Save the state to file with error handling
     local ok, err = pcall(function()
@@ -132,7 +134,7 @@ function M.toggle_folding_method()
     end)
 
     if not ok then
-      vim.notify("Error saving fold state: " .. err, vim.log.levels.WARN)
+      notify.editor("Error saving fold state: " .. err, notify.categories.WARNING)
     end
   end
 
@@ -171,7 +173,7 @@ function M.load_folding_state()
         vim.wo.foldmethod = "manual"
       end
     else
-      vim.notify("Error loading fold state: " .. result, vim.log.levels.WARN)
+      notify.editor("Error loading fold state: " .. result, notify.categories.WARNING)
       -- Fall back to manual folding
       vim.wo.foldmethod = "manual"
     end

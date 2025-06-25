@@ -1,13 +1,12 @@
 -- Test file for notification filtering
 -- Run with :luafile %
 
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
-local config = require('neotex.plugins.tools.himalaya.config')
+local notify = require('neotex.util.notifications')
 
 -- Test function
 local function test_notifications()
-  print("Testing Himalaya notification filtering...")
-  print("Current debug mode:", config.config.debug_mode)
+  print("Testing unified notification system...")
+  print("Current debug mode:", notify.config.debug_mode)
   
   -- Test various notification types
   local test_messages = {
@@ -27,12 +26,12 @@ local function test_notifications()
   
   for _, test in ipairs(test_messages) do
     print(string.format("Testing: %s", test.desc))
-    notifications.notify(test.msg, vim.log.levels.INFO)
+    notify.himalaya(test.msg, notify.categories.USER_ACTION)
     vim.wait(100) -- Small delay to see notifications
   end
   
   print("\nTest complete! Check which notifications appeared.")
-  print("Use :HimalayaDebug to toggle debug mode and run again.")
+  print("Use <leader>ad to toggle debug mode and run again.")
 end
 
 -- Run the test

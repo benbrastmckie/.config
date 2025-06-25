@@ -39,6 +39,7 @@ function M.setup()
   -- Each returns true/false based on successful loading
   local modules = {
     "neotex.config.options",
+    "neotex.config.notifications",  -- Load notification system early
     "neotex.config.keymaps",
     "neotex.config.autocmds",
   }

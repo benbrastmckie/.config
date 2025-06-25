@@ -80,7 +80,7 @@ return {
         local method = (is_nixos or not has_global_mcphub) and " (bundled NixOS installation)" or ""
         -- Only show MCPHub ready message in debug mode
         if vim.g.mcphub_debug_mode then
-          vim.notify("MCPHub ready" .. method, vim.log.levels.INFO)
+          require('neotex.util.notifications').ai('MCPHub ready', require('neotex.util.notifications').categories.STATUS, { method = method })
         end
       end,
 
@@ -93,7 +93,7 @@ return {
         end
 
         vim.g.mcphub_ready = false
-        vim.notify("MCPHub error: " .. err, vim.log.levels.ERROR)
+        require('neotex.util.notifications').ai('MCPHub error', require('neotex.util.notifications').categories.ERROR, { error = err })
       end,
 
       -- Minimal logging

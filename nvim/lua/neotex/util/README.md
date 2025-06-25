@@ -8,6 +8,7 @@ This directory contains utility functions that provide common functionality thro
 util/
 ├── README.md           # This documentation
 ├── init.lua           # Main loader and utilities
+├── notifications.lua  # Unified notification system
 ├── buffer.lua         # Buffer management utilities
 ├── fold.lua           # Code folding utilities
 ├── url.lua            # URL detection and handling
@@ -21,6 +22,7 @@ util/
 ## Module Structure
 
 - **init.lua**: Main loader that initializes all utility modules
+- **notifications.lua**: Unified notification system for entire configuration
 - **buffer.lua**: Buffer management utilities
 - **fold.lua**: Code folding utilities
 - **url.lua**: URL detection and handling
@@ -42,7 +44,51 @@ utils.toggle_line_numbers()
 -- Or load a specific module
 local buffer = require("neotex.util.buffer")
 buffer.reload_config()
+
+-- Use the notification system
+local notify = require("neotex.util.notifications")
+notify.editor('File saved', notify.categories.USER_ACTION)
 ```
+
+## Notification System
+
+The unified notification system provides consistent notification management across all modules. It features intelligent filtering, category-based organization, and module-specific controls.
+
+### Key Features
+
+- **Smart Filtering**: Shows only relevant notifications based on context and user preferences
+- **Category-based**: Five notification categories (ERROR, WARNING, USER_ACTION, STATUS, BACKGROUND)
+- **Module Control**: Per-module configuration for Himalaya, AI, LSP, editor, and startup
+- **Debug Mode**: Toggle detailed notifications for troubleshooting
+- **Batching**: Prevents notification spam during bulk operations
+
+### Quick Usage
+
+```lua
+local notify = require('neotex.util.notifications')
+
+-- User actions (always shown)
+notify.editor('File saved', notify.categories.USER_ACTION)
+
+-- Background operations (debug mode only)
+notify.editor('Cache updated', notify.categories.BACKGROUND)
+
+-- Module-specific notifications
+notify.himalaya('Email sent', notify.categories.USER_ACTION)
+notify.ai('Model switched', notify.categories.USER_ACTION)
+notify.lsp('Formatting complete', notify.categories.USER_ACTION)
+```
+
+### Notification Commands
+
+| Command | Description |
+|---------|-------------|
+| `:Notifications` | Show notification management menu |
+| `:Notifications history` | Display recent notification history |
+| `:Notifications config` | Show current configuration |
+| `:NotifyDebug [module]` | Toggle debug mode for module or globally |
+
+See the [full notification documentation](../../docs/NOTIFICATIONS.md) for complete usage examples and configuration options.
 
 ## Available Commands
 

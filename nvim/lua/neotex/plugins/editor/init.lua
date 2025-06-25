@@ -27,7 +27,7 @@
 local function safe_require(module)
   local ok, result = pcall(require, module)
   if not ok then
-    vim.notify("Failed to load plugin module: " .. module, vim.log.levels.WARN)
+    require('neotex.util.notifications').editor('Failed to load plugin module', require('neotex.util.notifications').categories.WARNING, { module = module })
     return {}
   end
   return result

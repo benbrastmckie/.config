@@ -25,6 +25,7 @@
 -- All configurations persist between Neovim sessions
 
 local M = {}
+local notify = require('neotex.util.notifications')
 
 -- Define AI provider models
 -- Centralized definition that can be accessed by other modules
@@ -135,7 +136,7 @@ return {
   -- Write to file
   local file = io.open(avante_settings_file, "w")
   if not file then
-    vim.notify("Could not save Avante settings", vim.log.levels.ERROR)
+    notify.ai('Could not save Avante settings', notify.categories.ERROR)
     return false
   end
 
@@ -202,7 +203,7 @@ function M.apply_settings(provider, model, model_index, notify)
 
   -- 5. Show notification if requested
   if notify then
-    vim.notify("Switched to " .. provider .. "/" .. model, vim.log.levels.INFO)
+    notify.ai('Model switched', notify.categories.USER_ACTION, { provider = provider, model = model })
   end
 
   return success
@@ -250,7 +251,7 @@ function M.model_select()
   -- Check if avante is loaded
   local ok, avante = pcall(require, "avante")
   if not ok then
-    vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+    notify.ai('Avante plugin is not loaded yet', notify.categories.ERROR)
     return
   end
 
@@ -260,7 +261,7 @@ function M.model_select()
   -- Get models for current provider
   local models = M.provider_models[current_provider] or {}
   if #models == 0 then
-    vim.notify("No models available for provider: " .. current_provider, vim.log.levels.WARN)
+    notify.ai('No models available for provider', notify.categories.WARNING, { provider = current_provider })
     return
   end
 
@@ -292,7 +293,7 @@ function M.provider_select()
   -- Check if avante is loaded
   local ok, avante = pcall(require, "avante")
   if not ok then
-    vim.notify("Avante plugin is not loaded yet", vim.log.levels.ERROR)
+    notify.ai('Avante plugin is not loaded yet', notify.categories.ERROR)
     return
   end
 

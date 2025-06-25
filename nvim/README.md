@@ -10,6 +10,8 @@ Every subdirectory includes a `README.md` file which documents the modules conta
 
 **New to this configuration?** See the [Installation Guide](docs/INSTALLATION.md) for step-by-step setup instructions, including how to fork the repository, install dependencies, and run health checks.
 
+**Want to customize notifications?** See the [Notification System Documentation](docs/NOTIFICATIONS.md) for configuring notification behavior across all modules and plugins.
+
 ## File Structure
 
 ```
@@ -48,6 +50,7 @@ This Neovim configuration includes specialized support for:
 - **Session Management**: Save and restore editing sessions with persistent workspaces
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
+- **Unified Notifications**: Intelligent notification system with category-based filtering and module-specific controls
 
 ### Dashboard Overview
 

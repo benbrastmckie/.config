@@ -6,7 +6,7 @@ local M = {}
 local config = require('neotex.plugins.tools.himalaya.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local trash_manager = require('neotex.plugins.tools.himalaya.trash_manager')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Move email to local trash
 function M.move_to_trash(email_id, original_folder)
@@ -83,7 +83,13 @@ function M.move_to_trash(email_id, original_folder)
     return false
   end
   
-  notifications.notify(string.format('Email moved to local trash (%s)', trash_filename), vim.log.levels.INFO)
+  -- Sync deletion to Gmail
+  local native_sync = require('neotex.plugins.tools.himalaya.native_sync')
+  vim.defer_fn(function()
+    native_sync.sync_after_delete()
+  end, 1000) -- Brief delay to ensure local deletion is complete
+  
+  notify.himalaya(string.format('Email moved to local trash (%s)', trash_filename), vim.log.levels.INFO)
   return true
 end
 

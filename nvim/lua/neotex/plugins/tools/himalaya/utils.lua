@@ -4,7 +4,7 @@
 local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.config')
-local notifications = require('neotex.plugins.tools.himalaya.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Execute himalaya command and return output
 function M.execute_himalaya(args, opts)
@@ -35,14 +35,14 @@ function M.execute_himalaya(args, opts)
   local exit_code = vim.v.shell_error
   
   if exit_code ~= 0 then
-    vim.notify('Himalaya command failed: ' .. result, vim.log.levels.ERROR)
+    notify.himalaya('Himalaya command failed', notify.categories.ERROR, { result = result })
     return nil
   end
   
   -- Parse JSON output
   local success, data = pcall(vim.json.decode, result)
   if not success then
-    vim.notify('Failed to parse Himalaya output', vim.log.levels.ERROR)
+    notify.himalaya('Failed to parse Himalaya output', notify.categories.ERROR)
     return nil
   end
   
@@ -68,7 +68,7 @@ function M.get_email_list(account, folder, page, page_size)
                       (current_time - cache_timestamp) > cache_timeout
   
   if need_refresh then
-    notifications.notify(string.format('Fetching emails from Himalaya (cache refresh)'), vim.log.levels.DEBUG)
+    notify.himalaya('Fetching emails from Himalaya', notify.categories.BACKGROUND, { cache_refresh = true })
     
     local args = { 'envelope', 'list' }
     
@@ -82,11 +82,11 @@ function M.get_email_list(account, folder, page, page_size)
     if result then
       email_cache[cache_key] = result
       cache_timestamp = current_time
-      notifications.notify(string.format('Cached %d emails for %s/%s', #result, account, folder), vim.log.levels.DEBUG)
+      notify.himalaya('Cached emails', notify.categories.BACKGROUND, { count = #result, account = account, folder = folder })
     else
       -- If cache exists, use it; otherwise return nil
       if email_cache[cache_key] then
-        vim.notify('Using cached emails (fetch failed)', vim.log.levels.DEBUG)
+        notify.himalaya('Using cached emails (fetch failed)', notify.categories.BACKGROUND)
       else
         return nil
       end
@@ -106,11 +106,11 @@ function M.get_email_list(account, folder, page, page_size)
       for i = start_idx, end_idx do
         table.insert(page_emails, all_emails[i])
       end
-      notifications.notify(string.format('Page %d: showing emails %d-%d of %d total', page, start_idx, end_idx, #all_emails), vim.log.levels.INFO)
+      notify.himalaya('Email list pagination', notify.categories.STATUS, { page = page, start_idx = start_idx, end_idx = end_idx, total = #all_emails })
       return page_emails
     else
       -- No emails for this page
-      vim.notify(string.format('No emails for page %d (only %d total emails)', page, #all_emails), vim.log.levels.INFO)
+      notify.himalaya('No emails for page', notify.categories.STATUS, { page = page, total = #all_emails })
       return {}
     end
   end
@@ -137,10 +137,10 @@ local function handle_email_list_error(result)
     -- Try to diagnose the issue
     local account_test = M.execute_himalaya({ 'account', 'list' })
     if not account_test then
-      vim.notify('Himalaya: Account configuration issue. Try running: himalaya account configure', vim.log.levels.ERROR)
+      notify.himalaya('Account configuration issue', notify.categories.ERROR, { suggestion = 'Try running: himalaya account configure' })
     else
-      vim.notify('Himalaya: Cannot access maildir. Check your mail sync status.', vim.log.levels.ERROR)
-      vim.notify('Try running: mbsync -a', vim.log.levels.INFO)
+      notify.himalaya('Cannot access maildir', notify.categories.ERROR, { suggestion = 'Check your mail sync status' })
+      notify.himalaya('Sync suggestion', notify.categories.STATUS, { command = 'mbsync -a' })
     end
   end
   
@@ -181,14 +181,14 @@ function M.create_folder(folder_name, account)
   local result = M.execute_himalaya(args, { account = account })
   
   if result then
-    vim.notify(string.format('Folder "%s" created', folder_name), vim.log.levels.INFO)
+    notify.himalaya('Folder created', notify.categories.USER_ACTION, { folder = folder_name })
     -- Trigger refresh after folder creation
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaFolderCreated' })
     end, 100)
     return true
   else
-    vim.notify(string.format('Failed to create folder "%s"', folder_name), vim.log.levels.ERROR)
+    notify.himalaya('Failed to create folder', notify.categories.ERROR, { folder = folder_name })
     return false
   end
 end
@@ -229,7 +229,7 @@ function M.send_email(account, email_data)
   
   local file = io.open(temp_file, 'w')
   if not file then
-    vim.notify('Failed to create temporary file', vim.log.levels.ERROR)
+    notify.himalaya('Failed to create temporary file', notify.categories.ERROR)
     return false
   end
   
@@ -246,8 +246,8 @@ function M.send_email(account, email_data)
   
   -- Execute with stdin
   local full_cmd = table.concat(cmd, ' ')
-  vim.notify('DEBUG: Executing command: ' .. full_cmd .. ' < temp_file', vim.log.levels.INFO)
-  vim.notify('DEBUG: Email content preview: ' .. vim.fn.system('head -5 ' .. temp_file), vim.log.levels.INFO)
+  notify.himalaya('Executing send command', notify.categories.BACKGROUND, { command = full_cmd })
+  notify.himalaya('Email content prepared', notify.categories.BACKGROUND)
   
   -- Use jobstart for better stdin handling
   local result_lines = {}
@@ -264,7 +264,7 @@ function M.send_email(account, email_data)
   })
   
   if job_id <= 0 then
-    vim.notify('Failed to start send job', vim.log.levels.ERROR)
+    notify.himalaya('Failed to start send job', notify.categories.ERROR)
     os.remove(temp_file)
     return false
   end
@@ -282,14 +282,14 @@ function M.send_email(account, email_data)
   
   local result = table.concat(result_lines, '\n')
   
-  vim.notify('DEBUG: Command result: ' .. tostring(result), vim.log.levels.INFO)
-  vim.notify('DEBUG: Exit code: ' .. tostring(exit_code), vim.log.levels.INFO)
+  notify.himalaya('Send command result', notify.categories.BACKGROUND, { result = tostring(result) })
+  notify.himalaya('Send command exit code', notify.categories.BACKGROUND, { exit_code = exit_code })
   
   -- Clean up temporary file
   os.remove(temp_file)
   
   if exit_code ~= 0 then
-    vim.notify('Failed to send email: ' .. result, vim.log.levels.ERROR)
+    notify.himalaya('Failed to send email', notify.categories.ERROR, { result = result })
     return false
   end
   
@@ -478,14 +478,14 @@ function M.move_email(email_id, target_folder)
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify(string.format('Email moved to %s', target_folder), vim.log.levels.INFO)
+    notify.himalaya('Email moved', notify.categories.USER_ACTION, { folder = target_folder })
     -- Trigger refresh after successful move
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailMoved' })
     end, 100)
     return true
   else
-    vim.notify('Failed to move email', vim.log.levels.ERROR)
+    notify.himalaya('Failed to move email', notify.categories.ERROR)
     return false
   end
 end
@@ -496,14 +496,14 @@ function M.copy_email(email_id, target_folder)
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify(string.format('Email copied to %s', target_folder), vim.log.levels.INFO)
+    notify.himalaya('Email copied', notify.categories.USER_ACTION, { folder = target_folder })
     -- Trigger refresh after successful copy
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailCopied' })
     end, 100)
     return true
   else
-    vim.notify('Failed to copy email', vim.log.levels.ERROR)
+    notify.himalaya('Failed to copy email', notify.categories.ERROR)
     return false
   end
 end
@@ -522,14 +522,14 @@ function M.manage_flag(email_id, flag, action)
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify(string.format('Flag %s %s', flag, action == 'add' and 'added' or 'removed'), vim.log.levels.INFO)
+    notify.himalaya('Flag updated', notify.categories.USER_ACTION, { flag = flag, action = action })
     -- Trigger refresh after flag change
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaFlagChanged' })
     end, 100)
     return true
   else
-    vim.notify('Failed to manage flag', vim.log.levels.ERROR)
+    notify.himalaya('Failed to manage flag', notify.categories.ERROR)
     return false
   end
 end
@@ -551,10 +551,10 @@ function M.download_attachment(email_id, attachment_name)
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify(string.format('Attachment downloaded to %s', download_dir), vim.log.levels.INFO)
+    notify.himalaya('Attachment downloaded', notify.categories.USER_ACTION, { directory = download_dir })
     return true
   else
-    vim.notify('Failed to download attachment', vim.log.levels.ERROR)
+    notify.himalaya('Failed to download attachment', notify.categories.ERROR)
     return false
   end
 end
@@ -612,53 +612,14 @@ function M.validate_mbsync_config()
   return true, 'Configuration appears valid'
 end
 
--- Sync mail using mbsync with intelligent error handling
+-- Sync mail using streamlined sync system
 function M.sync_mail(force)
-  -- First validate configuration
-  local config_valid, config_message, config_issues = M.validate_mbsync_config()
-  
-  if not config_valid then
-    if config_issues then
-      M.handle_mbsync_config_issues(config_issues)
-    else
-      vim.notify('Mail sync failed: ' .. config_message, vim.log.levels.ERROR)
-    end
-    return false
-  end
-  
-  local cmd = { 'mbsync', '-a' }
+  local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
   if force then
-    table.insert(cmd, '--force')
+    return streamlined_sync.sync_full()
+  else
+    return streamlined_sync.sync_inbox()
   end
-  
-  vim.notify('Syncing mail...', vim.log.levels.INFO)
-  
-  local error_output = {}
-  
-  -- Run sync in background
-  vim.fn.jobstart(cmd, {
-    on_exit = function(_, exit_code)
-      if exit_code == 0 then
-        vim.notify('Mail sync completed', vim.log.levels.INFO)
-        -- Trigger sync complete event
-        vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaSyncComplete' })
-      else
-        M.handle_sync_failure(exit_code, error_output)
-      end
-    end,
-    on_stderr = function(_, data)
-      if data and #data > 0 then
-        -- Collect error output for analysis
-        for _, line in ipairs(data) do
-          if line and line ~= '' then
-            table.insert(error_output, line)
-          end
-        end
-      end
-    end,
-  })
-  
-  return true
 end
 
 -- Handle mbsync configuration issues with helpful suggestions
@@ -677,7 +638,7 @@ function M.handle_mbsync_config_issues(issues)
   table.insert(message_parts, 'To fix: Edit your Nix configuration and rebuild')
   table.insert(message_parts, 'Until fixed, try: :HimalayaAlternativeSync for folder-specific sync')
   
-  vim.notify(table.concat(message_parts, '\n'), vim.log.levels.ERROR)
+  notify.himalaya('Mail sync error', notify.categories.ERROR, { details = table.concat(message_parts, '\n') })
 end
 
 -- Handle sync failure with intelligent error analysis
@@ -686,21 +647,26 @@ function M.handle_sync_failure(exit_code, error_output)
   
   -- Analyze common error patterns
   if error_text:match('Setting Path is incompatible with .*SubFolders Maildir%+%+') then
-    vim.notify('Mail sync failed: mbsync configuration conflict\n' ..
-               'Fix: Edit ~/.mbsyncrc to use either "Path" OR "SubFolders Maildir++" (not both)\n' ..
-               'Try: :HimalayaConfigHelp for detailed instructions', vim.log.levels.ERROR)
+    notify.himalaya('Mail sync failed: configuration conflict', notify.categories.ERROR, {
+      suggestion = 'Edit ~/.mbsyncrc - use either Path OR SubFolders Maildir++ (not both)'
+    })
   elseif error_text:match('No configuration file found') then
-    vim.notify('Mail sync failed: No mbsync configuration found\n' ..
-               'Run: mbsync --help or check your mail setup', vim.log.levels.ERROR)
+    notify.himalaya('Mail sync failed: no configuration found', notify.categories.ERROR, {
+      suggestion = 'Run: mbsync --help or check your mail setup'
+    })
   elseif error_text:match('authentication') or error_text:match('password') then
-    vim.notify('Mail sync failed: Authentication error\n' ..
-               'Check your email credentials and oauth tokens', vim.log.levels.ERROR)
+    notify.himalaya('Mail sync failed: authentication error', notify.categories.ERROR, {
+      suggestion = 'Check your email credentials and oauth tokens'
+    })
   elseif error_text:match('network') or error_text:match('connection') then
-    vim.notify('Mail sync failed: Network/connection error\n' ..
-               'Check your internet connection and email server settings', vim.log.levels.ERROR)
+    notify.himalaya('Mail sync failed: network error', notify.categories.ERROR, {
+      suggestion = 'Check your internet connection and email server settings'
+    })
   else
-    vim.notify('Mail sync failed (exit code: ' .. exit_code .. ')\n' .. 
-               'Error: ' .. (error_text ~= '' and error_text or 'Unknown error'), vim.log.levels.ERROR)
+    notify.himalaya('Mail sync failed', notify.categories.ERROR, {
+      exit_code = exit_code,
+      error = error_text ~= '' and error_text or 'Unknown error'
+    })
   end
   
   -- Offer alternative sync methods
@@ -713,7 +679,7 @@ function M.offer_alternative_sync()
   local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
   
   if is_headless then
-    vim.notify('Alternative: Try manual folder sync with :HimalayaAlternativeSync', vim.log.levels.INFO)
+    notify.himalaya('Alternative sync available', notify.categories.STATUS, { command = ':HimalayaAlternativeSync' })
     return
   end
   
@@ -739,15 +705,74 @@ end
 
 -- Alternative sync method using Himalaya directly
 function M.alternative_sync()
-  vim.notify('Trying alternative sync using Himalaya...', vim.log.levels.INFO)
+  notify.himalaya('Trying alternative sync using Himalaya', notify.categories.STATUS)
   
   -- Try to sync specific folders using Himalaya instead of mbsync
   local folders = M.get_folders(config.state.current_account)
   if folders then
-    vim.notify('Alternative sync completed (using Himalaya folder refresh)', vim.log.levels.INFO)
+    notify.himalaya('Alternative sync completed (using Himalaya folder refresh)', notify.categories.USER_ACTION)
+    
+    -- Refresh current view if we're in Himalaya
+    local current_buf = vim.api.nvim_get_current_buf()
+    if vim.bo[current_buf].filetype == 'himalaya-list' then
+      vim.defer_fn(function()
+        vim.cmd('HimalayaRefresh')
+      end, 1000)
+    end
   else
-    vim.notify('Alternative sync failed: Could not access folders', vim.log.levels.ERROR)
+    notify.himalaya('Alternative sync failed: Could not access folders', notify.categories.ERROR)
   end
+end
+
+-- Enhanced sync with automatic OAuth refresh
+function M.smart_sync(force)
+  notify.himalaya('Starting smart sync with auto OAuth refresh', notify.categories.STATUS)
+  
+  -- First try to refresh OAuth tokens using the existing command
+  local oauth_cmd = '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2'
+  
+  -- Check if refresh script exists
+  if vim.fn.executable(oauth_cmd) == 0 then
+    notify.himalaya('OAuth refresh script not found, using alternative sync', notify.categories.WARNING)
+    M.alternative_sync()
+    return
+  end
+  
+  -- Run OAuth refresh in background
+  notify.himalaya('Refreshing OAuth tokens...', notify.categories.STATUS)
+  
+  vim.fn.jobstart(oauth_cmd, {
+    on_exit = function(_, exit_code)
+      vim.schedule(function()
+        if exit_code == 0 then
+          notify.himalaya('OAuth refresh successful, syncing mail...', notify.categories.STATUS)
+          
+          -- Wait a moment for OAuth refresh to take effect
+          vim.defer_fn(function()
+            -- Try mbsync first
+            local sync_ok = M.sync_mail(force)
+            if not sync_ok then
+              notify.himalaya('mbsync failed, using alternative method', notify.categories.STATUS)
+              M.alternative_sync()
+            end
+          end, 1500)
+        else
+          notify.himalaya('OAuth refresh failed, using alternative sync', notify.categories.WARNING)
+          M.alternative_sync()
+        end
+      end)
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        local error_msg = table.concat(data, '\n'):gsub('^%s*(.-)%s*$', '%1')
+        if error_msg ~= '' then
+          vim.schedule(function()
+            notify.himalaya('OAuth refresh error: ' .. error_msg, notify.categories.WARNING)
+          end)
+        end
+      end
+    end
+  })
 end
 
 -- Show configuration help
@@ -860,14 +885,14 @@ end
 function M.init()
   -- Check if himalaya is available
   if not M.check_himalaya_available() then
-    vim.notify('Himalaya CLI not found. Please install it first.', vim.log.levels.ERROR)
+    notify.himalaya('Himalaya CLI not found. Please install it first.', notify.categories.ERROR)
     return false
   end
   
   -- Check if mbsync is available
   local mbsync_result = vim.fn.system('mbsync --version')
   if vim.v.shell_error ~= 0 then
-    vim.notify('mbsync not found. Email sync will not work.', vim.log.levels.WARN)
+    notify.himalaya('mbsync not found. Email sync will not work.', notify.categories.WARNING)
   end
   
   return true
@@ -916,14 +941,14 @@ function M.expunge_deleted()
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    notifications.notify('Expunged deleted emails', vim.log.levels.INFO)
+    notify.himalaya('Expunged deleted emails', notify.categories.USER_ACTION)
     -- Trigger refresh after expunge
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaExpunged' })
     end, 100)
     return true
   else
-    vim.notify('Failed to expunge emails', vim.log.levels.ERROR)
+    notify.himalaya('Failed to expunge emails', notify.categories.ERROR)
     return false
   end
 end
@@ -936,14 +961,14 @@ function M.manage_tag(email_id, tag, action)
   local result = M.execute_himalaya(args, { account = config.state.current_account })
   
   if result then
-    vim.notify(string.format('%s tag: %s', action == 'add' and 'Added' or 'Removed', tag), vim.log.levels.INFO)
+    notify.himalaya('Tag updated', notify.categories.USER_ACTION, { action = action, tag = tag })
     -- Trigger refresh after tag change
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaTagChanged' })
     end, 100)
     return true
   else
-    vim.notify('Failed to manage tag', vim.log.levels.ERROR)
+    notify.himalaya('Failed to manage tag', notify.categories.ERROR)
     return false
   end
 end
@@ -960,6 +985,94 @@ function M.get_email_info(email_id)
   end
   
   return result
+end
+
+-- Diagnose OAuth authentication issues
+function M.diagnose_oauth_auth()
+  local issues = {}
+  local suggestions = {}
+  
+  -- Check if refresh script exists
+  local refresh_script = '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2'
+  if vim.fn.filereadable(refresh_script) == 0 then
+    table.insert(issues, 'OAuth refresh script not found at: ' .. refresh_script)
+    table.insert(suggestions, 'Ensure gmail OAuth is configured in your Nix/home-manager setup')
+  else
+    table.insert(issues, 'OAuth refresh script found ✓')
+  end
+  
+  -- Check systemd timer
+  local timer_active = vim.fn.system('systemctl --user is-active gmail-oauth2-refresh.timer'):gsub('%s+$', '')
+  if timer_active == 'active' then
+    table.insert(issues, 'OAuth refresh timer is active ✓')
+  else
+    table.insert(issues, 'OAuth refresh timer is not active: ' .. timer_active)
+    table.insert(suggestions, 'Run: systemctl --user start gmail-oauth2-refresh.timer')
+  end
+  
+  -- Check for stored tokens
+  local has_refresh_token = vim.fn.system('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token 2>/dev/null')
+  if has_refresh_token and has_refresh_token ~= '' then
+    table.insert(issues, 'OAuth refresh token found in keyring ✓')
+  else
+    table.insert(issues, 'No OAuth refresh token found in keyring')
+    table.insert(suggestions, 'Run: himalaya account configure gmail')
+  end
+  
+  -- Check recent refresh attempts
+  local recent_logs = vim.fn.system('journalctl --user -u gmail-oauth2-refresh.service -n 3 --no-pager --output=cat 2>/dev/null')
+  if recent_logs:match('invalid_client') then
+    table.insert(issues, 'OAuth client ID appears to be invalid')
+    table.insert(suggestions, 'Check your GMAIL_CLIENT_ID environment variable')
+    table.insert(suggestions, 'You may need to create a new OAuth app in Google Cloud Console')
+  elseif recent_logs:match('Failed to refresh') then
+    table.insert(issues, 'Recent OAuth refresh attempts have failed')
+    table.insert(suggestions, 'Try manual refresh: :HimalayaRefreshOAuth')
+  end
+  
+  -- Check mbsync config for OAuth
+  local mbsync_config = vim.fn.readfile(vim.fn.expand('~/.mbsyncrc'))
+  local has_oauth = false
+  for _, line in ipairs(mbsync_config) do
+    if line:match('AuthMechs%s+XOAUTH2') then
+      has_oauth = true
+      break
+    end
+  end
+  
+  if has_oauth then
+    table.insert(issues, 'mbsync configured for OAuth2 ✓')
+  else
+    table.insert(issues, 'mbsync not configured for OAuth2')
+    table.insert(suggestions, 'Check AuthMechs setting in ~/.mbsyncrc')
+  end
+  
+  return issues, suggestions
+end
+
+-- Manual OAuth token refresh
+function M.manual_oauth_refresh()
+  local refresh_script = '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2'
+  
+  if vim.fn.filereadable(refresh_script) == 0 then
+    return false, 'OAuth refresh script not found'
+  end
+  
+  local result = vim.fn.system(refresh_script)
+  local exit_code = vim.v.shell_error
+  
+  if exit_code == 0 then
+    return true, 'OAuth token refreshed successfully'
+  else
+    -- Parse error from output
+    if result:match('invalid_client') then
+      return false, 'Invalid OAuth client ID - check GMAIL_CLIENT_ID environment variable'
+    elseif result:match('Missing OAuth2 credentials') then
+      return false, 'Missing OAuth credentials - run: himalaya account configure gmail'
+    else
+      return false, 'OAuth refresh failed: ' .. (result or 'unknown error')
+    end
+  end
 end
 
 return M
