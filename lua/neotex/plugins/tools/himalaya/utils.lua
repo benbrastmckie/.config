@@ -130,6 +130,19 @@ function M.clear_email_cache(account, folder)
   cache_timestamp = 0
 end
 
+-- Force clear all caches
+function M.force_clear_all_caches()
+  email_cache = {}
+  cache_timestamp = 0
+  -- Also clear any buffer-local caches
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.b[buf].himalaya_emails = nil
+      vim.b[buf].himalaya_cache_time = nil
+    end
+  end
+end
+
 -- Legacy error handling (keeping for compatibility)
 local function handle_email_list_error(result)
   -- If we get an error, try to provide helpful information

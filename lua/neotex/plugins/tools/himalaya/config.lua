@@ -49,6 +49,29 @@ M.config = {
     -- Define which notification types are considered "important"
     important = { "error", "warn", "email_sent", "email_deleted" },
     debug_only = { "cache", "fetch", "init", "cleanup", "page_load" }
+  },
+  
+  -- Sync handoff configuration
+  sync_handoff = {
+    enabled = true,
+    
+    -- Automatically take over external syncs
+    auto_takeover = false,
+    
+    -- Take over if sync running longer than X seconds
+    auto_takeover_timeout = 300, -- 5 minutes
+    
+    -- Show external sync progress from progress files
+    show_external_progress = true,
+    
+    -- Write progress files for sharing
+    share_progress = true,
+    
+    -- How often to write progress (in progress updates)
+    progress_write_interval = 5,
+    
+    -- Enable graceful handoff protocol (Phase 3)
+    graceful_handoff = false
   }
 }
 
@@ -57,7 +80,7 @@ M.state = {
   current_account = nil,
   current_folder = 'INBOX',
   current_page = 1,
-  page_size = 30,
+  page_size = 25,
 }
 
 -- Setup function
@@ -277,6 +300,11 @@ function M.get_current_account()
   return M.config.accounts[M.state.current_account]
 end
 
+-- Get current account name
+function M.get_current_account_name()
+  return M.state.current_account
+end
+
 -- Switch to different account
 function M.switch_account(account_name)
   if M.config.accounts[account_name] then
@@ -292,6 +320,24 @@ end
 function M.switch_folder(folder_name)
   M.state.current_folder = folder_name
   M.state.current_page = 1
+end
+
+-- Get sync handoff configuration
+function M.get_sync_handoff_config()
+  return M.config.sync_handoff or {}
+end
+
+-- Get specific sync handoff option
+function M.get_sync_handoff_option(option)
+  return M.config.sync_handoff and M.config.sync_handoff[option]
+end
+
+-- Set specific sync handoff option
+function M.set_sync_handoff_option(option, value)
+  if not M.config.sync_handoff then
+    M.config.sync_handoff = {}
+  end
+  M.config.sync_handoff[option] = value
 end
 
 return M

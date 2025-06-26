@@ -78,6 +78,13 @@ function M.show_email_list(args)
   local buf = sidebar.get_buf()
   M.buffers.email_list = buf
   
+  -- Note: Removed auto-sync trigger to prevent race conditions
+  -- Users must manually trigger sync with <leader>ms
+  
+  -- Check for external sync
+  local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
+  local handled = external_sync.check_and_handle_external_sync()
+  
   -- Show loading content immediately for responsiveness
   local loading_lines = {
     string.format('󰊫 %s (%s)', config.state.current_account, folder),
@@ -121,10 +128,16 @@ function M.show_email_list(args)
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
     
-    -- Only start sync status updates if sync is actually running
+    -- Check for running sync and start status updates
     local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
-    if streamlined_sync.is_sync_running_globally() then
+    local status = streamlined_sync.get_status()
+    local is_global = streamlined_sync.is_sync_running_globally()
+    
+    -- Start sync status updates if sync is running (either locally or globally)
+    if status.sync_running or is_global then
       M.start_sync_status_updates()
+      -- Force refresh header immediately to show current status
+      M.refresh_sidebar_header()
     end
     
     -- Save current view to state
@@ -148,8 +161,8 @@ function M.format_email_list(emails)
   -- Header with pagination info
   local account = config.get_current_account()
   local header = string.format('Himalaya - %s - %s', account.email, config.state.current_folder)
-  local pagination_info = string.format('Page %d | %d emails (page size: %d)', 
-    config.state.current_page, #emails, config.state.page_size)
+  local pagination_info = string.format('Page %d | %d emails', 
+    config.state.current_page, #emails)
   
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
@@ -207,26 +220,172 @@ function M.format_email_list(emails)
   return lines
 end
 
--- Get sync status line for header
+-- Get sync status line for header with enhanced progress information
 function M.get_sync_status_line()
   local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
   local status = streamlined_sync.get_status()
   
+  -- If no local sync, check for external sync
   if not status.sync_running then
+    -- Check if sync is running globally (external process)
+    if streamlined_sync.is_sync_running_globally() then
+      local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
+      local external_progress = external_sync.read_external_progress()
+      
+      if external_progress and external_progress.progress then
+        -- Show external progress
+        local p = external_progress.progress
+        local status_text = "🔄 Syncing (external)"
+        
+        if p.current_message and p.total_messages then
+          status_text = status_text .. string.format(": %d/%d emails", 
+            p.current_message, p.total_messages)
+        elseif p.current_operation then
+          status_text = status_text .. ": " .. p.current_operation
+        end
+        
+        return status_text
+      else
+        -- External sync but no progress file
+        return "🔄 Syncing (1 process)"
+      end
+    end
+    
     return nil
   end
   
   local status_text = "🔄 Syncing"
+  local progress_info = {}
   
   if status.progress then
-    if status.progress.current_operation then
+    -- Priority 1: Show message ratio if available (15/98 emails)
+    if status.progress.current_message and status.progress.total_messages and 
+       status.progress.total_messages > 0 then
+      status_text = status_text .. string.format(": %d/%d emails", 
+        status.progress.current_message, status.progress.total_messages)
+    
+    -- Priority 2: Show detailed progress from mbsync counters
+    elseif (status.progress.messages_added_total and status.progress.messages_added_total > 0) or
+           (status.progress.messages_updated_total and status.progress.messages_updated_total > 0) then
+      local progress_parts = {}
+      
+      if status.progress.messages_added_total and status.progress.messages_added_total > 0 then
+        table.insert(progress_parts, string.format("%d/%d new", 
+          status.progress.messages_added or 0, status.progress.messages_added_total))
+      end
+      
+      if status.progress.messages_updated_total and status.progress.messages_updated_total > 0 then
+        table.insert(progress_parts, string.format("%d/%d updated", 
+          status.progress.messages_updated or 0, status.progress.messages_updated_total))
+      end
+      
+      if #progress_parts > 0 then
+        status_text = status_text .. ": " .. table.concat(progress_parts, ", ")
+      elseif status.progress.current_operation then
+        status_text = status_text .. ": " .. status.progress.current_operation
+      end
+    
+    -- Priority 3: Show calculated difference if we have far/near totals
+    elseif status.progress.far_total and status.progress.near_total then
+      local new_msgs = math.max(0, status.progress.far_total - status.progress.near_total)
+      local to_upload = math.max(0, status.progress.near_total - status.progress.far_total)
+      local recent = status.progress.far_recent or 0
+      
+      -- Show what's happening based on the difference
+      if new_msgs > 0 then
+        status_text = status_text .. string.format(": %d new to download", new_msgs)
+      elseif to_upload > 0 then
+        status_text = status_text .. string.format(": %d to upload", to_upload)
+      elseif recent > 0 then
+        status_text = status_text .. string.format(": %d recent to check", recent)
+      else
+        -- Show the totals for reference
+        status_text = status_text .. string.format(": %d/%d synced", 
+          status.progress.near_total, status.progress.far_total)
+      end
+      
+      -- Add operation if different from default
+      if status.progress.current_operation and 
+         status.progress.current_operation ~= "Synchronizing emails" then
+        status_text = status_text .. " - " .. status.progress.current_operation
+      end
+    
+    -- Priority 4: Show operation status
+    elseif status.progress.current_operation then
       status_text = status_text .. ": " .. status.progress.current_operation
     end
     
-    if status.progress.messages_total > 0 then
-      status_text = status_text .. string.format(" (%d/%d)", 
-        status.progress.messages_synced, 
-        status.progress.messages_total)
+    -- Add mailbox progress if available (nil-safe)
+    if status.progress.mailboxes_total and status.progress.mailboxes_total > 0 then
+      table.insert(progress_info, string.format("%d/%d mailboxes", 
+        status.progress.mailboxes_done or 0, status.progress.mailboxes_total))
+    end
+    
+    -- Add message processing info if available (nil-safe)
+    if status.progress.messages_processed and status.progress.messages_processed > 0 then
+      local msg_details = {}
+      if status.progress.messages_added and status.progress.messages_added > 0 then
+        table.insert(msg_details, status.progress.messages_added .. " added")
+      end
+      if status.progress.messages_updated and status.progress.messages_updated > 0 then
+        table.insert(msg_details, status.progress.messages_updated .. " updated")
+      end
+      
+      if #msg_details > 0 then
+        table.insert(progress_info, table.concat(msg_details, ", "))
+      else
+        table.insert(progress_info, status.progress.messages_processed .. " msgs")
+      end
+    end
+    
+    -- Add elapsed time
+    if status.progress.start_time then
+      local elapsed = os.time() - status.progress.start_time
+      local elapsed_str
+      if elapsed >= 60 then
+        local minutes = math.floor(elapsed / 60)
+        local seconds = elapsed % 60
+        elapsed_str = string.format("%dm %ds", minutes, seconds)
+      else
+        elapsed_str = string.format("%ds", elapsed)
+      end
+      table.insert(progress_info, elapsed_str)
+    end
+    
+    -- Combine progress info with separator
+    if #progress_info > 0 then
+      status_text = status_text .. " | " .. table.concat(progress_info, " | ")
+    end
+  end
+  
+  -- Fallback to process count if no detailed progress
+  if #progress_info == 0 then
+    -- Try to get mbsync command line to show what's syncing
+    local handle = io.popen('pgrep -a mbsync 2>/dev/null | head -1')
+    if handle then
+      local mbsync_info = handle:read('*a')
+      handle:close()
+      
+      if mbsync_info and mbsync_info ~= "" then
+        -- Extract account or channel from command line
+        local account = mbsync_info:match('mbsync%s+(%S+)')
+        if account and account ~= '-V' and account ~= '-a' then
+          status_text = status_text .. ": " .. account
+        else
+          -- Count processes as fallback
+          local count_handle = io.popen('pgrep mbsync 2>/dev/null | wc -l')
+          if count_handle then
+            local process_count = tonumber(count_handle:read('*a')) or 0
+            count_handle:close()
+            if process_count > 0 then
+              status_text = status_text .. string.format(" (%d process%s)", 
+                process_count, process_count == 1 and "" or "es")
+            end
+          end
+        end
+      else
+        status_text = status_text .. "..."
+      end
     end
   end
   
@@ -241,8 +400,8 @@ function M.start_sync_status_updates()
   -- Stop existing timer
   M.stop_sync_status_updates()
   
-  -- Start new timer to update every minute (60000ms)
-  sync_status_timer = vim.fn.timer_start(60000, function()
+  -- Start new timer to update every 5 seconds for real-time progress (5000ms)
+  sync_status_timer = vim.fn.timer_start(5000, function()
     M.update_sidebar_sync_status()
   end, { ['repeat'] = -1 })
 end
@@ -259,6 +418,11 @@ end
 function M.update_sidebar_sync_status()
   local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
   local status = streamlined_sync.get_status()
+  
+  -- Only update if sidebar is actually open
+  if not sidebar.is_open() then
+    return
+  end
   
   -- Stop timer if sync is no longer running
   if not status.sync_running then
@@ -1006,6 +1170,12 @@ function M.refresh_email_list()
       -- Clear cache to force refresh
       utils.clear_email_cache(account, folder)
       M.show_email_list({folder, '--account=' .. account})
+      
+      -- Start sync status updates if sync is running (for manual refresh)
+      local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
+      if streamlined_sync.is_sync_running_globally() then
+        M.start_sync_status_updates()
+      end
     end
   end
 end
