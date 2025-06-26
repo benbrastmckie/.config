@@ -102,6 +102,9 @@
   - [x] surround
   - [x] pairs
 - [:] email
+  - [ ] Instead of auto-sync when nvim starts, can you make it auto-sync when I open himalaya?
+  - [ ] only show loading screen on first open
+    - [ ] make reload only redraw after finished
   - [ ] fix download redundancy problem
   - [ ] works with non-nix just as well?
   - [ ] remove GMAIL_CLIENT_ID from private.fish?
