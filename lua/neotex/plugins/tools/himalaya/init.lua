@@ -46,6 +46,9 @@ return {
       local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
       external_sync.setup()
       
+      -- Load debug module
+      require('neotex.plugins.tools.himalaya.debug_sync')
+      
       -- Setup configuration
       config.setup({
         -- Override default configuration here if needed

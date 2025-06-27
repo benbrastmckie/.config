@@ -81,9 +81,11 @@ function M.show_email_list(args)
   -- Note: Removed auto-sync trigger to prevent race conditions
   -- Users must manually trigger sync with <leader>ms
   
-  -- Check for external sync
-  local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
-  local handled = external_sync.check_and_handle_external_sync()
+  -- Check for external sync when opening sidebar
+  vim.defer_fn(function()
+    local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
+    local handled = external_sync.check_and_handle_external_sync()
+  end, 100) -- Small delay to ensure sidebar is fully opened
   
   -- Show loading content immediately for responsiveness
   local loading_lines = {
@@ -131,10 +133,9 @@ function M.show_email_list(args)
     -- Check for running sync and start status updates
     local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
     local status = streamlined_sync.get_status()
-    local is_global = streamlined_sync.is_sync_running_globally()
     
-    -- Start sync status updates if sync is running (either locally or globally)
-    if status.sync_running or is_global then
+    -- Start sync status updates if sync is running (either locally or externally)
+    if status.sync_running or status.external_sync_running then
       M.start_sync_status_updates()
       -- Force refresh header immediately to show current status
       M.refresh_sidebar_header()
@@ -225,32 +226,33 @@ function M.get_sync_status_line()
   local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
   local status = streamlined_sync.get_status()
   
-  -- If no local sync, check for external sync
-  if not status.sync_running then
-    -- Check if sync is running globally (external process)
-    if streamlined_sync.is_sync_running_globally() then
-      local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
-      local external_progress = external_sync.read_external_progress()
-      
-      if external_progress and external_progress.progress then
-        -- Show external progress
-        local p = external_progress.progress
-        local status_text = "🔄 Syncing (external)"
-        
-        if p.current_message and p.total_messages then
-          status_text = status_text .. string.format(": %d/%d emails", 
-            p.current_message, p.total_messages)
-        elseif p.current_operation then
-          status_text = status_text .. ": " .. p.current_operation
-        end
-        
-        return status_text
-      else
-        -- External sync but no progress file
-        return "🔄 Syncing (1 process)"
-      end
-    end
+  -- Check for external sync first (higher priority in display)
+  if status.external_sync_running then
+    -- External sync is running
+    local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
+    local external_progress = external_sync.read_external_progress()
     
+    if external_progress and external_progress.progress then
+      -- Show external progress
+      local p = external_progress.progress
+      local status_text = "🔄 Syncing (external)"
+      
+      if p.current_message and p.total_messages then
+        status_text = status_text .. string.format(": %d/%d emails", 
+          p.current_message, p.total_messages)
+      elseif p.current_operation then
+        status_text = status_text .. ": " .. p.current_operation
+      end
+      
+      return status_text
+    else
+      -- External sync but no progress file
+      return "🔄 Syncing (1 process)"
+    end
+  end
+  
+  -- Check for local sync
+  if not status.sync_running then
     return nil
   end
   
@@ -424,8 +426,8 @@ function M.update_sidebar_sync_status()
     return
   end
   
-  -- Stop timer if sync is no longer running
-  if not status.sync_running then
+  -- Stop timer if sync is no longer running (neither local nor external)
+  if not status.sync_running and not status.external_sync_running then
     M.stop_sync_status_updates()
     -- Refresh sidebar one final time to remove sync status
     M.refresh_sidebar_header()
@@ -1173,7 +1175,8 @@ function M.refresh_email_list()
       
       -- Start sync status updates if sync is running (for manual refresh)
       local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync')
-      if streamlined_sync.is_sync_running_globally() then
+      local status = streamlined_sync.get_status()
+      if status.sync_running or status.external_sync_running then
         M.start_sync_status_updates()
       end
     end
