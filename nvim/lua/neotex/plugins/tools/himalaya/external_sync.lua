@@ -23,15 +23,27 @@ function M.analyze_external_sync()
   local handle = io.popen('ps aux | grep mbsync | grep -v grep | head -1')
   if not handle then return nil end
   
-  local ps_output = handle:read('*a')
+  local ps_output = handle:read('*a'):gsub('\n$', '') -- Remove trailing newline
   handle:close()
   
   if ps_output == '' then return nil end
   
-  -- Extract command, PID, and runtime
-  local pid = ps_output:match('^%S+%s+(%d+)')
-  local cpu, mem, vsz, rss, tty, stat, start, runtime = ps_output:match('^%S+%s+%d+%s+([%d%.]+)%s+([%d%.]+)%s+(%d+)%s+(%d+)%s+%S+%s+%S+%s+(%S+)%s+([%d:]+)')
-  local command = ps_output:match('mbsync%s+(.+)$') or ps_output:match('mbsync$') and ''
+  -- Parse ps output more carefully
+  -- Format: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
+  local parts = {}
+  for part in ps_output:gmatch('%S+') do
+    table.insert(parts, part)
+  end
+  
+  if #parts < 11 then return nil end
+  
+  local pid = parts[2]
+  local start_time = parts[9]
+  local runtime = parts[10]
+  
+  -- Extract command (everything after mbsync)
+  local command = ps_output:match('mbsync%s+(.+)$') or ''
+  command = command:gsub('\n', '') -- Remove any newlines
   
   -- Check if sync is likely stuck (> 5 minutes)
   local stuck = false
@@ -42,10 +54,10 @@ function M.analyze_external_sync()
   
   return {
     pid = pid,
-    runtime = runtime or 'unknown',
-    command = command or 'mbsync',
+    runtime = runtime,
+    command = command,
     likely_stuck = stuck,
-    ps_output = ps_output
+    start_time = start_time
   }
 end
 
@@ -79,12 +91,17 @@ end
 function M.show_takeover_prompt(sync_info)
   if not sync_info then return end
   
+  -- Sanitize fields to remove newlines
+  local pid = (sync_info.pid or 'unknown'):gsub('\n', '')
+  local runtime = (sync_info.runtime or 'unknown'):gsub('\n', '')
+  local command = (sync_info.command or ''):gsub('\n', '')
+  
   local lines = {
     'External sync process detected:',
     '',
-    '  Process ID: ' .. (sync_info.pid or 'unknown'),
-    '  Runtime: ' .. (sync_info.runtime or 'unknown'),
-    '  Command: mbsync ' .. (sync_info.command or ''),
+    '  Process ID: ' .. pid,
+    '  Runtime: ' .. runtime,
+    '  Command: mbsync ' .. command,
     '',
   }
   
