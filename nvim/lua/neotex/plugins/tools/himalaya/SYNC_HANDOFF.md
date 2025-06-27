@@ -4,12 +4,24 @@
 This document outlines the implementation of a cross-instance sync management system for the Himalaya email plugin. The goal is to provide detailed sync progress information even when switching between Neovim instances.
 
 ## Current Status
-Phase 1 is now complete and working! When opening the sidebar in a new instance while sync is running externally:
+Phase 1 & 2 are now complete and working! 
+
+### Phase 1: External Sync Detection ✅
+When opening the sidebar in a new instance while sync is running externally:
 - ✅ Takeover prompt appears with sync details
-- ✅ Shows PID, runtime, command, and stuck warning
+- ✅ Shows PID, runtime, command, and stuck warning (>5 min)
 - ✅ User can choose to take control or keep external sync
-- ✅ External sync progress displayed in sidebar status
-- ✅ Progress files written and read across instances
+- ✅ Configuration for auto-takeover behavior
+- ✅ Commands for manual control
+
+### Phase 2: Progress File Sharing ✅
+Progress is now shared between instances via `/tmp/himalaya-sync-{account}.progress`:
+- ✅ Progress written every 5 updates during sync
+- ✅ External instances read and display detailed progress
+- ✅ Shows "🔄 Syncing (external): 45/120 emails" or operation status
+- ✅ Validates progress data structure and freshness
+- ✅ Auto-cleanup of stale progress files (>5 min old)
+- ✅ Test suite to verify accuracy
 
 ## Problem Statement
 - When opening the sidebar in a new Neovim instance while sync is running from another instance
@@ -368,14 +380,16 @@ M.config = {
 - [x] Fix newline sanitization bug
 - [x] Fix incorrect local sync claiming
 
-### Week 3: Phase 2 Progress Sharing 🚧 IN PROGRESS
+### Week 3: Phase 2 Progress Sharing ✅ COMPLETE
 - [x] Design progress file format
 - [x] Implement progress writer (writes every 5 updates)
 - [x] Add progress reader
 - [x] Update status display (shows external progress)
-- [ ] Test progress accuracy across instances
-- [ ] Add progress file validation
-- [ ] Implement stale progress detection
+- [x] Test progress accuracy across instances
+- [x] Add progress file validation
+- [x] Implement stale progress detection (>60s)
+- [x] Auto-cleanup stale files on startup
+- [x] Add test suite for verification
 
 ### Week 4: Testing & Refinement
 - [ ] Test edge cases

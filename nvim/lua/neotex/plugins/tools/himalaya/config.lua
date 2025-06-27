@@ -51,27 +51,9 @@ M.config = {
     debug_only = { "cache", "fetch", "init", "cleanup", "page_load" }
   },
   
-  -- Sync handoff configuration
-  sync_handoff = {
-    enabled = true,
-    
-    -- Automatically take over external syncs
-    auto_takeover = false,
-    
-    -- Take over if sync running longer than X seconds
-    auto_takeover_timeout = 300, -- 5 minutes
-    
-    -- Show external sync progress from progress files
-    show_external_progress = true,
-    
-    -- Write progress files for sharing
-    share_progress = true,
-    
-    -- How often to write progress (in progress updates)
-    progress_write_interval = 5,
-    
-    -- Enable graceful handoff protocol (Phase 3)
-    graceful_handoff = false
+  -- External sync detection (simplified - no takeover)
+  external_sync = {
+    enabled = true
   }
 }
 
@@ -322,22 +304,9 @@ function M.switch_folder(folder_name)
   M.state.current_page = 1
 end
 
--- Get sync handoff configuration
-function M.get_sync_handoff_config()
-  return M.config.sync_handoff or {}
-end
-
--- Get specific sync handoff option
-function M.get_sync_handoff_option(option)
-  return M.config.sync_handoff and M.config.sync_handoff[option]
-end
-
--- Set specific sync handoff option
-function M.set_sync_handoff_option(option, value)
-  if not M.config.sync_handoff then
-    M.config.sync_handoff = {}
-  end
-  M.config.sync_handoff[option] = value
+-- Check if external sync detection is enabled
+function M.is_external_sync_enabled()
+  return M.config.external_sync and M.config.external_sync.enabled
 end
 
 return M
