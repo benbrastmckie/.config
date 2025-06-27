@@ -1396,12 +1396,6 @@ function M._sync_complete(success, message)
   
   M.release_lock()
   
-  -- Clean up progress file
-  local config = require('neotex.plugins.tools.himalaya.config')
-  local account = config.get_current_account_name() or 'gmail'
-  local progress_file = string.format('/tmp/himalaya-sync-%s.progress', account)
-  os.remove(progress_file)
-  
   -- Clean up any remaining mbsync processes on failure
   if not success then
     M.kill_existing_processes()
@@ -1611,36 +1605,7 @@ function M.emergency_cleanup()
   M.clean_sync_state(true)
 end
 
--- Progress update counter for periodic writes
-M.state.progress_update_count = 0
-
--- Write progress to file for sharing with other instances
-local function write_progress_file()
-  local config = require('neotex.plugins.tools.himalaya.config')
-  local handoff_config = config.get_sync_handoff_config()
-  
-  -- Only write if sharing is enabled
-  if not handoff_config.share_progress then
-    return
-  end
-  
-  local account = config.get_current_account_name() or 'gmail'
-  local progress_file = string.format('/tmp/himalaya-sync-%s.progress', account)
-  
-  local progress_data = vim.json.encode({
-    pid = M.state.sync_pid,
-    start_time = M.state.sync_progress.start_time,
-    command = M.state.current_sync_command,
-    progress = M.state.sync_progress,
-    last_update = os.time()
-  })
-  
-  local file = io.open(progress_file, 'w')
-  if file then
-    file:write(progress_data)
-    file:close()
-  end
-end
+-- Progress file writing removed - no longer needed for simplified external sync detection
 
 -- Parse sync progress from mbsync output
 function M._parse_sync_progress(line)
@@ -1818,14 +1783,7 @@ function M._parse_sync_progress(line)
     M.state.sync_progress.current_operation = "Opening connection"
   end
   
-  -- Update progress counter and write to file periodically
-  M.state.progress_update_count = (M.state.progress_update_count or 0) + 1
-  local config = require('neotex.plugins.tools.himalaya.config')
-  local handoff_config = config.get_sync_handoff_config()
-  
-  if M.state.progress_update_count % (handoff_config.progress_write_interval or 5) == 0 then
-    write_progress_file()
-  end
+  -- No longer writing progress files
 end
 
 -- Status check

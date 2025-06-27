@@ -27,6 +27,7 @@ A streamlined email management system that integrates the Himalaya CLI email cli
 - **Background sync** - Silent email fetching without user notifications
 - **Smart caching** - Efficient email list management
 - **OAuth automation** - Automatic token refresh via systemd timer
+- **External sync detection** - Shows when sync is running in another Neovim instance
 
 ## Usage
 
@@ -76,6 +77,11 @@ A streamlined email management system that integrates the Himalaya CLI email cli
 - **`:HimalayaCancelSync`** - Cancel current sync operation
 - **`:HimalayaCleanup`** - Emergency cleanup - kill processes and reset state
 - **`:HimalayaSyncStatus`** - Show current sync status
+
+When a sync is already running in another Neovim instance, the sidebar will display:
+- **`🔄 Syncing: External (1 process)`** - Indicates external sync is active
+- New syncs are prevented until the external sync completes
+- This prevents email duplication and sync conflicts
 
 ### Core Email Operations
 
@@ -160,6 +166,9 @@ Gmail IMAP <--[mbsync/Maildir++]<--[OAuth2]--> Local Maildir++ <--[Himalaya CLI]
     directory = "~/Mail/Gmail/.trash",
     retention_days = 30,
     auto_cleanup = true
+  },
+  external_sync = {
+    enabled = true  -- Detect syncs from other Neovim instances
   }
 }
 ```
@@ -250,6 +259,7 @@ lua/neotex/plugins/tools/himalaya/
 ├── UI.md                     # UI documentation
 ├── config.lua               # Configuration management
 ├── commands.lua             # User commands
+├── external_sync_simple.lua # External sync detection (simplified)
 ├── picker.lua               # Telescope integration
 ├── sidebar.lua              # Email sidebar
 ├── state.lua                # State management
@@ -309,6 +319,15 @@ ls -la ~/.mbsyncrc
 cat ~/.mbsyncrc | grep "SubFolders Maildir++"
 ```
 
+### External Sync Detection
+
+**"🔄 Syncing: External (1 process)" in sidebar**
+- **Cause**: An mbsync process is running from another Neovim instance
+- **Behavior**: New syncs are prevented until external sync completes
+- **Solution**: Wait for external sync to finish, or use `killall mbsync` if stuck
+
+This simplified external sync detection prevents conflicts without complex takeover logic.
+
 ## Summary
 
 A complete, streamlined email solution featuring:
@@ -320,5 +339,6 @@ A complete, streamlined email solution featuring:
 ✅ **Himalaya CLI Integration** - Native maildir operations with folder support  
 ✅ **Clean Architecture** - No backwards compatibility or legacy code  
 ✅ **Robust Error Handling** - Emergency cleanup and sync status monitoring
+✅ **External Sync Detection** - Prevents conflicts across multiple Neovim instances
 
 The system provides reliable Gmail ↔ Local synchronization using mbsync with Maildir++ format, ensuring compatibility between mbsync and Himalaya CLI while maintaining a clean, maintainable configuration through NixOS home-manager.

@@ -42,18 +42,12 @@ return {
       -- Initialize UI components
       ui.init()
       
-      -- Initialize external sync detection
-      local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
+      -- Initialize simplified external sync detection
+      local external_sync = require('neotex.plugins.tools.himalaya.external_sync_simple')
       external_sync.setup()
       
-      -- Load debug module
-      require('neotex.plugins.tools.himalaya.debug_sync')
-      
-      -- Load progress validator
-      require('neotex.plugins.tools.himalaya.progress_validator')
-      
-      -- Load test module
-      require('neotex.plugins.tools.himalaya.test_progress')
+      -- Load debug module (optional)
+      -- require('neotex.plugins.tools.himalaya.debug_sync')
       
       -- Setup configuration
       config.setup({
