@@ -210,6 +210,13 @@ function M.setup()
   end, {
     desc = 'Refresh Gmail OAuth2 token',
   })
+  
+  -- OAuth diagnostics command
+  vim.api.nvim_create_user_command('HimalayaOAuthDiagnostics', function()
+    require('neotex.plugins.tools.himalaya.oauth_diagnostics').run_diagnostics()
+  end, {
+    desc = 'Diagnose OAuth2 authentication issues',
+  })
 end
 
 return M

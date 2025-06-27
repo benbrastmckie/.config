@@ -178,6 +178,43 @@ This is useful for:
 - Cleaning up after testing
 - Recovering from corrupted state
 
+## Environment Requirements
+
+### Required Environment Variables for OAuth2
+
+For mbsync and OAuth2 authentication to work properly, two environment variables must be set:
+
+1. **SASL_PATH** - Path to SASL plugins (including XOAUTH2)
+2. **GMAIL_CLIENT_ID** - OAuth2 client ID for Gmail API access
+
+**Important**: Neovim must be started from an environment where both variables are already set.
+
+#### For NixOS Users
+If you're using home-manager with `sessionVariables`, ensure you start Neovim from:
+- A terminal that has loaded the session variables
+- Not from a desktop launcher that bypasses shell initialization
+
+#### For Non-NixOS Users
+Set both variables in your shell configuration (`~/.bashrc`, `~/.zshrc`, etc.):
+```bash
+export SASL_PATH="/usr/lib/sasl2:/usr/lib64/sasl2:/usr/local/lib/sasl2"
+export GMAIL_CLIENT_ID="your-client-id-here"
+```
+
+#### Verify Environment Variables
+Before starting Neovim, verify both environment variables are set:
+```bash
+echo $SASL_PATH
+# Should output your SASL plugin paths
+
+echo $GMAIL_CLIENT_ID
+# Should output your OAuth2 client ID
+```
+
+If these variables are not set when Neovim starts:
+- **Missing SASL_PATH**: mbsync authentication will hang at "Authenticating with SASL mechanism XOAUTH2..."
+- **Missing GMAIL_CLIENT_ID**: OAuth token refresh will fail with "Missing OAuth2 credentials"
+
 ## Configuration
 
 ### Current Setup (Gmail)

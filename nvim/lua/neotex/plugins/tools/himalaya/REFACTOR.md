@@ -291,7 +291,57 @@ Yet UI shows: "🔄 Syncing: External (1 process)"
 - Protected maildir setup from interfering with active syncs
 - Preserved sync state during backup operations
 
-### Phase 11: Progress Display Fix 🚧 MEDIUM - IN PROGRESS
+### Phase 11: OAuth2 Authentication & Maildir Structure Issues 🚧 HIGH - IN PROGRESS
+**Priority**: High - mbsync cannot authenticate and sync emails
+**Evidence**:
+```
+Authenticating with SASL mechanism XOAUTH2...
+[hangs indefinitely]
+```
+And:
+```
+Maildir error: cannot read UIDVALIDITY in /home/benjamin/Mail/Gmail/.
+Error: channel gmail-inbox: near side box INBOX cannot be opened.
+```
+
+**Root Cause Analysis**:
+1. **OAuth token may be expired** - himalaya OAuth refresh script reports "Missing OAuth2 credentials"
+2. **SASL_PATH environment issue** - Even with SASL_PATH set, authentication hangs
+3. **Maildir structure mismatch** - Fixed folder naming but UIDVALIDITY errors persist
+4. **Missing mbsync state files** - Created .mbsyncstate but authentication still fails
+
+**Investigation Findings**:
+- OAuth token exists in keyring (starts with ya29.a0AS3H6N...)
+- XOAUTH2 SASL plugin exists at correct path
+- Maildir structure now matches mbsyncrc (`.Sent` instead of `.[Gmail].Sent Mail`)
+- Authentication hangs suggesting token validation failure
+
+**Refactor Plan**:
+1. **Fix OAuth2 token refresh** ⏳
+   - Investigate why refresh-gmail-oauth2 reports missing credentials
+   - Ensure himalaya OAuth config matches mbsync requirements
+   - Consider alternative token refresh methods
+2. **Debug SASL authentication** ⏳
+   - Add verbose logging to mbsync commands
+   - Test with manual mbsync outside of Neovim
+   - Verify SASL mechanisms are properly loaded
+3. **Validate maildir structure** ⏳
+   - Ensure UIDVALIDITY format matches mbsync expectations
+   - Check for any missing state files or permissions issues
+   - Compare with working backup structure
+
+**Current Status**:
+- Environment variables now load from systemd ✅
+- OAuth access token exists but is likely expired (socket timeout after XOAUTH2)
+- Missing refresh token and client secret in keyring prevents automatic refresh
+- User needs to run `himalaya account configure gmail` in terminal to complete OAuth setup
+
+**Next Steps**:
+1. Implement automatic OAuth token refresh detection and retry
+2. Add OAuth diagnostics command (`:HimalayaOAuthDiagnostics`) ✅
+3. Guide user to reconfigure OAuth when tokens are incomplete
+
+### Phase 12: Progress Display Fix 🚧 MEDIUM - IN PROGRESS
 **Priority**: Medium - Progress indicator not incrementing correctly
 **Evidence**: "🔄 Syncing: 0/1894 new" - 0 never increments
 **Root Cause**: Current regex patterns don't match actual mbsync output
@@ -305,7 +355,7 @@ Yet UI shows: "🔄 Syncing: External (1 process)"
 2. **Multi-Channel Progress Aggregation** - Handle multiple channels correctly ⏳
 3. **Real-time Progress Updates** - Show incremental progress as it happens ⏳
 
-### Phase 12: Smart Auto-sync on Startup ⏳ PLANNED
+### Phase 13: Smart Auto-sync on Startup ⏳ PLANNED
 1. **Implement startup auto-sync** - Auto-start sync after nvim launch ⏳
 2. **Multi-instance detection** - Only auto-sync if no other nvim instances syncing ⏳  
 3. **Configurable delay** - Allow user to set startup sync delay (default 3-5 seconds) ⏳
