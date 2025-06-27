@@ -979,6 +979,73 @@ function M.refresh_oauth()
   notify.himalaya('Then follow the OAuth flow to get a fresh token', notify.categories.STATUS)
 end
 
+-- Attempt OAuth refresh and retry sync
+function M.attempt_oauth_refresh_and_retry(force_full, is_user_action)
+  -- Check if we have all required OAuth credentials
+  local has_refresh_token = os.execute('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token >/dev/null 2>&1') == 0
+  local has_client_secret = os.execute('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-client-secret >/dev/null 2>&1') == 0
+  
+  if not has_refresh_token or not has_client_secret then
+    notify.himalaya('❌ Missing OAuth credentials for automatic refresh', notify.categories.ERROR)
+    notify.himalaya('Please run in terminal: himalaya account configure gmail', notify.categories.USER_ACTION)
+    notify.himalaya('This will set up complete OAuth2 authentication', notify.categories.STATUS)
+    
+    -- Run OAuth diagnostics to show what's missing
+    vim.defer_fn(function()
+      local diagnostics = require('neotex.plugins.tools.himalaya.oauth_diagnostics')
+      if diagnostics then
+        diagnostics.run_diagnostics()
+      end
+    end, 500)
+    return
+  end
+  
+  -- Try to refresh the token
+  local env = get_required_environment()
+  
+  if not env.GMAIL_CLIENT_ID or env.GMAIL_CLIENT_ID == "" then
+    notify.himalaya('❌ GMAIL_CLIENT_ID not set - cannot refresh token', notify.categories.ERROR)
+    return
+  end
+  
+  local refresh_job = vim.fn.jobstart({'refresh-gmail-oauth2'}, {
+    env = env,
+    detach = false,
+    on_exit = function(_, exit_code)
+      if exit_code == 0 then
+        notify.himalaya('✅ OAuth token refreshed successfully', notify.categories.SUCCESS)
+        M.state.last_oauth_refresh = os.time()
+        
+        -- Wait a moment then retry the sync
+        vim.defer_fn(function()
+          notify.himalaya('🔄 Retrying sync with fresh token...', notify.categories.USER_ACTION)
+          if force_full then
+            M.sync_full(is_user_action)
+          else
+            M.sync_inbox(is_user_action)
+          end
+        end, 1000)
+      else
+        notify.himalaya('❌ OAuth token refresh failed', notify.categories.ERROR)
+        notify.himalaya('Please run in terminal: himalaya account configure gmail', notify.categories.USER_ACTION)
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        for _, line in ipairs(data) do
+          if line and line ~= '' and not line:match('^%s*$') then
+            notify.himalaya('OAuth refresh: ' .. line, notify.categories.ERROR)
+          end
+        end
+      end
+    end,
+  })
+  
+  if refresh_job <= 0 then
+    notify.himalaya('Failed to start OAuth refresh process', notify.categories.ERROR)
+  end
+end
+
 -- Kill any existing mbsync processes
 function M.kill_existing_processes()
   local all_processes = {}
@@ -1063,7 +1130,19 @@ function M.ensure_oauth_fresh()
     
     -- Try to refresh the token using jobstart for better control
     local refresh_success = false
+    
+    -- Get environment with systemd fallback
+    local env = get_required_environment()
+    
+    -- The CLIENT_ID should be in the environment, but if not, we can't refresh
+    if not env.GMAIL_CLIENT_ID or env.GMAIL_CLIENT_ID == "" then
+      notify.himalaya('GMAIL_CLIENT_ID not set - cannot refresh OAuth token', notify.categories.ERROR)
+      notify.himalaya('Set GMAIL_CLIENT_ID in your environment', notify.categories.WARNING)
+      return false
+    end
+    
     local job_id = vim.fn.jobstart({'refresh-gmail-oauth2'}, {
+      env = env,  -- Pass environment including GMAIL_CLIENT_ID
       on_exit = function(_, exit_code)
         if exit_code == 0 then
           M.state.last_oauth_refresh = now
@@ -1220,7 +1299,9 @@ function M.sync_mail(force_full, is_user_action)
   end
   
   M.state.sync_running = true
+  M.state.sync_started_by_us = true  -- Mark ownership immediately
   notify.himalaya('DEBUG: Set sync_running = true for local sync', notify.categories.DEBUG)
+  notify.himalaya('DEBUG: Set sync_started_by_us = true (early)', notify.categories.DEBUG)
   
   -- Reset sync progress data with new structure
   M.state.sync_progress = {
@@ -1266,8 +1347,85 @@ function M.sync_mail(force_full, is_user_action)
   return true
 end
 
+-- Helper function to get environment from systemd if not in current environment
+local function get_required_environment()
+  local env = vim.fn.environ()
+  
+  -- If variables are already set, use them
+  if env.SASL_PATH and env.SASL_PATH ~= "" and env.GMAIL_CLIENT_ID and env.GMAIL_CLIENT_ID ~= "" then
+    return env
+  end
+  
+  -- Try to get from systemd user environment
+  notify.himalaya('Loading environment from systemd...', notify.categories.DEBUG)
+  local systemd_env_output = vim.fn.system('systemctl --user show-environment')
+  
+  if vim.v.shell_error == 0 and systemd_env_output then
+    -- Parse systemd environment
+    for line in systemd_env_output:gmatch("[^\r\n]+") do
+      local key, value = line:match("^([^=]+)=(.+)$")
+      if key and value then
+        if key == "SASL_PATH" or key == "GMAIL_CLIENT_ID" then
+          env[key] = value
+          notify.himalaya(string.format('Loaded %s from systemd', key), notify.categories.DEBUG)
+        end
+      end
+    end
+  end
+  
+  return env
+end
+
 function M._perform_sync(force_full, is_user_action)
+  -- Get environment variables from systemd if needed
+  local env = get_required_environment()
+  
+  if not env.SASL_PATH or env.SASL_PATH == "" then
+    notify.himalaya('❌ SASL_PATH not set - mbsync cannot authenticate', notify.categories.ERROR)
+    notify.himalaya('Set SASL_PATH to your SASL plugin directories', notify.categories.WARNING)
+    notify.himalaya('See :help himalaya-environment for details', notify.categories.STATUS)
+    M._sync_complete(false, 'Missing SASL_PATH environment variable')
+    return
+  end
+  
+  if not env.GMAIL_CLIENT_ID or env.GMAIL_CLIENT_ID == "" then
+    notify.himalaya('❌ GMAIL_CLIENT_ID not set - OAuth refresh will fail', notify.categories.ERROR)
+    notify.himalaya('Set GMAIL_CLIENT_ID to your OAuth2 client ID', notify.categories.WARNING)
+    notify.himalaya('See :help himalaya-environment for details', notify.categories.STATUS)
+    M._sync_complete(false, 'Missing GMAIL_CLIENT_ID environment variable')
+    return
+  end
+  
   -- Note: OAuth refresh not needed for mbsync - it handles its own authentication
+  
+  -- Ensure maildir structure exists before sync
+  local maildir_setup = require('neotex.plugins.tools.himalaya.maildir_setup')
+  local config = require('neotex.plugins.tools.himalaya.config')
+  local account = config.get_current_account_name() or 'gmail'
+  local mail_dir = vim.fn.expand('~/Mail/' .. account:gsub("^%l", string.upper))
+  
+  -- Check if we need to create basic structure for inbox sync
+  if not force_full then
+    -- For inbox-only sync, ensure at least the root maildir exists with UIDVALIDITY
+    if vim.fn.isdirectory(mail_dir) == 0 then
+      vim.fn.mkdir(mail_dir, 'p')
+    end
+    
+    -- Ensure basic maildir++ structure for INBOX (cur, new, tmp)
+    local inbox_dirs = { mail_dir .. '/cur', mail_dir .. '/new', mail_dir .. '/tmp' }
+    for _, dir in ipairs(inbox_dirs) do
+      if vim.fn.isdirectory(dir) == 0 then
+        vim.fn.mkdir(dir, 'p')
+      end
+    end
+    
+    -- Create UIDVALIDITY file if missing
+    local uidvalidity_file = mail_dir .. '/.uidvalidity'
+    if vim.fn.filereadable(uidvalidity_file) == 0 then
+      vim.fn.writefile({ tostring(os.time()) }, uidvalidity_file)
+      notify.himalaya('📁 Created INBOX maildir structure with UIDVALIDITY', notify.categories.STATUS)
+    end
+  end
   
   -- Only clean sync state if we detect actual corruption
   M.clean_sync_state(true) -- Silent cleanup of only corrupted files
@@ -1295,6 +1453,10 @@ function M._perform_sync(force_full, is_user_action)
     mbsync_args = 'mbsync -V ' .. account .. '-inbox'  -- Sync just inbox
     notify.himalaya('📧 STARTING INBOX SYNC (flock + mbsync ' .. account .. '-inbox)', notify.categories.USER_ACTION)
   end
+  
+  -- Make env and is_user_action available for the job later
+  local sync_env = env
+  local sync_is_user_action = is_user_action
   
   -- Double-check flock availability right before starting
   local pre_check = os.execute('flock -n ' .. flock_lock_file .. ' -c "exit 0" 2>/dev/null')
@@ -1356,8 +1518,11 @@ function M._perform_sync(force_full, is_user_action)
   
   -- Use vim.fn.jobstart for better control (ensure proper parent-child relationship)
   local output = {}
+  
+  -- Pass the environment we loaded (which includes systemd vars if needed)
   local job_id = vim.fn.jobstart(cmd, {
     detach = false,  -- Ensure proper parent-child relationship to avoid zombies
+    env = sync_env,  -- Pass environment with SASL_PATH and GMAIL_CLIENT_ID
     on_stdout = function(_, data)
       for _, line in ipairs(data) do
         if line and line ~= "" then
@@ -1391,6 +1556,8 @@ function M._perform_sync(force_full, is_user_action)
       -- Stop the progress timer
       vim.fn.timer_stop(progress_timer)
       
+      notify.himalaya('DEBUG: mbsync exited with code: ' .. exit_code, notify.categories.DEBUG)
+      
       if exit_code == 0 then
         M._sync_complete(true, 'Sync completed successfully')
       else
@@ -1419,12 +1586,32 @@ function M._perform_sync(force_full, is_user_action)
             error_msg = 'Connection lost - Gmail may be throttling'
           elseif last_line:match('Authentication failed') or all_output:match('AUTHENTICATIONFAILED') then
             error_msg = 'OAuth token expired - reconfigure account'
+          elseif all_output:match('Socket error.*timeout') and all_output:match('XOAUTH2') then
+            -- Socket timeout after XOAUTH2 indicates expired token
+            error_msg = 'OAuth token expired - attempting refresh'
+            -- Try to refresh OAuth token automatically
+            vim.defer_fn(function()
+              notify.himalaya('🔑 Attempting automatic OAuth token refresh...', notify.categories.USER_ACTION)
+              M.attempt_oauth_refresh_and_retry(force_full, sync_is_user_action)
+            end, 100)
+            M._sync_complete(false, error_msg)
+            return
           elseif all_output:match('is locked') then
             error_msg = 'Sync locked - cleaning up stale locks'
             -- Clean up locks immediately when we detect this error
             M.clean_sync_state(true)
           elseif last_line:match('Channels:.*Far:.*Near:') then
-            error_msg = 'Sync interrupted during message transfer'
+            -- Check if this is actually a successful sync with no messages
+            local far_new = last_line:match('Far: %+(%d+)')
+            local near_new = last_line:match('Near: %+(%d+)')
+            if far_new == "0" and near_new == "0" then
+              -- This is a successful sync with no new messages
+              M._sync_complete(true, 'Sync completed successfully (no new messages)')
+              return
+            else
+              -- This might be an interrupted sync
+              error_msg = 'Sync interrupted during message transfer'
+            end
           else
             error_msg = error_msg .. ': ' .. last_line
           end
@@ -1937,13 +2124,8 @@ function M.get_status()
     notify.himalaya(string.format('DEBUG: is_global=true, sync_running=%s, sync_started_by_us=%s', 
       tostring(M.state.sync_running), tostring(M.state.sync_started_by_us)), notify.categories.DEBUG)
     
-    if M.state.sync_running and M.state.sync_started_by_us then
-      -- We started this sync, it's not external
-      external_sync = false
-    elseif not M.state.sync_running then
-      -- There's a sync running but we didn't start it
-      external_sync = true
-    end
+    -- Simple logic: if there's a global sync and we didn't start it, it's external
+    external_sync = not M.state.sync_started_by_us
   end
   
   return {

@@ -24,6 +24,12 @@ Before installing this configuration, ensure you have the following:
 - **Lean 4** - For theorem proving support
 - **Jupyter** - For notebook integration
 
+### Email Integration Dependencies (Optional)
+For Himalaya email integration with OAuth2 authentication:
+- **mbsync** (isync) - For IMAP synchronization
+- **cyrus-sasl-xoauth2** - For OAuth2 authentication
+- **SASL_PATH environment variable** - Must be set before starting Neovim
+
 ## Installation Steps
 
 ### Step 1: Fork the Repository
@@ -172,16 +178,59 @@ Most LSP servers will be automatically installed by Mason when you first open re
 
 This opens the Mason interface where you can install language servers, formatters, and linters.
 
+### Step 9: Email Integration Setup (Optional)
+
+If you want to use the Himalaya email integration with OAuth2:
+
+#### Environment Variable Setup
+
+**Critical**: The `SASL_PATH` environment variable must be set before starting Neovim for OAuth2 authentication to work.
+
+##### For NixOS Users
+If using home-manager with `sessionVariables`:
+```nix
+home.sessionVariables = {
+  SASL_PATH = "/path/to/cyrus-sasl-xoauth2/lib/sasl2:/path/to/cyrus-sasl/lib/sasl2";
+  GMAIL_CLIENT_ID = "your-oauth2-client-id";
+};
+```
+
+**Important**: Start Neovim from a terminal that has loaded these session variables, not from a desktop launcher.
+
+##### For Non-NixOS Users
+Add to your shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.):
+```bash
+export SASL_PATH="/usr/lib/sasl2:/usr/lib64/sasl2:/usr/local/lib/sasl2"
+export GMAIL_CLIENT_ID="your-oauth2-client-id"
+```
+
+#### Verify Setup
+Before using email features, verify the environment:
+```bash
+# Check SASL_PATH is set
+echo $SASL_PATH
+
+# Check GMAIL_CLIENT_ID is set
+echo $GMAIL_CLIENT_ID
+
+# Test mbsync can find XOAUTH2
+mbsync --help | grep SASL
+```
+
+If these variables are not set when Neovim starts:
+- Email sync will fail with authentication errors
+- OAuth token refresh will report "Missing OAuth2 credentials"
+
 ## Post-Installation Configuration
 
-### Step 9: Customize Settings
+### Step 10: Customize Settings
 
 1. **Personal Information**: Update templates and git integration with your information
 2. **AI Configuration**: Set up AI providers (Claude, OpenAI, etc.) if desired
 3. **Keybindings**: Customize keybindings in `lua/neotex/config/keymaps.lua`
 4. **Theme**: Adjust colorscheme in `lua/neotex/plugins/ui/colorscheme.lua`
 
-### Step 10: Test Core Features
+### Step 11: Test Core Features
 
 Test essential functionality:
 

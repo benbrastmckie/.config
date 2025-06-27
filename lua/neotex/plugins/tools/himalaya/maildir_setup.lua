@@ -79,16 +79,26 @@ function M.imap_to_maildir_name(folder_name)
     return ''
   end
   
-  -- Replace hierarchy delimiter with dots and prefix with dot
-  -- [Gmail]/Sent Mail -> .Gmail.Sent Mail
-  local maildir_name = folder_name:gsub('/', '.')
+  -- Handle Gmail special folders according to mbsync configuration
+  -- Map [Gmail]/Folder to simple .Folder names as configured in mbsyncrc
+  local gmail_mappings = {
+    ['[Gmail]/Sent Mail'] = '.Sent',
+    ['[Gmail]/Drafts'] = '.Drafts',
+    ['[Gmail]/Trash'] = '.Trash',
+    ['[Gmail]/All Mail'] = '.All_Mail',
+    ['[Gmail]/Spam'] = '.Spam',
+    ['[Gmail]/Starred'] = '.Starred',
+    ['[Gmail]/Important'] = '.Important',
+  }
   
-  -- Ensure it starts with a dot (unless it's INBOX which returns empty)
-  if maildir_name ~= '' and not maildir_name:match('^%.') then
-    maildir_name = '.' .. maildir_name
+  -- Check if this is a mapped Gmail folder
+  if gmail_mappings[folder_name] then
+    return gmail_mappings[folder_name]
   end
   
-  return maildir_name
+  -- For other folders, just add a dot prefix
+  -- EuroTrip -> .EuroTrip
+  return '.' .. folder_name
 end
 
 -- Create maildir++ structure for a single folder
@@ -107,6 +117,13 @@ function M.create_maildir_folder(base_dir, folder_name)
     if vim.fn.isdirectory(dir) == 0 then
       vim.fn.mkdir(dir, 'p')
     end
+  end
+  
+  -- Create UIDVALIDITY file for this folder
+  -- This is required by IMAP/Maildir++ specification for proper synchronization
+  local uidvalidity_file = folder_path .. '/.uidvalidity'
+  if vim.fn.filereadable(uidvalidity_file) == 0 then
+    vim.fn.writefile({ tostring(os.time()) }, uidvalidity_file)
   end
   
   return true
@@ -130,12 +147,6 @@ function M.setup_maildir_structure(mail_dir, folders)
   end
   
   notify.himalaya(string.format('✅ Created %d folders in maildir++ format', created_count), notify.categories.USER_ACTION)
-  
-  -- Create .uidvalidity file for INBOX
-  local uidvalidity_file = mail_dir .. '/.uidvalidity'
-  if vim.fn.filereadable(uidvalidity_file) == 0 then
-    vim.fn.writefile({ tostring(os.time()) }, uidvalidity_file)
-  end
   
   return true
 end

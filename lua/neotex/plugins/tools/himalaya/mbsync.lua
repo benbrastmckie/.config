@@ -38,6 +38,24 @@ function M.sync(force_full, callback)
     notify.categories.USER_ACTION
   )
   
+  -- Set up environment for XOAUTH2
+  -- Note: In a proper setup, SASL_PATH should be set in your shell environment
+  -- This is a fallback to help mbsync find the XOAUTH2 plugin
+  local env = vim.fn.environ()
+  if not env.SASL_PATH or env.SASL_PATH == "" then
+    -- Try to find SASL plugins in common locations
+    local possible_paths = {
+      "/usr/lib/sasl2",
+      "/usr/lib64/sasl2",
+      "/nix/store/*/lib/sasl2",
+      vim.fn.expand("~/.nix-profile/lib/sasl2")
+    }
+    
+    -- Note: This is a workaround. Properly set SASL_PATH in your shell config
+    notify.himalaya('⚠️  SASL_PATH not set - XOAUTH2 auth may fail', notify.categories.WARNING)
+    notify.himalaya('Set SASL_PATH in your shell config as documented', notify.categories.WARNING)
+  end
+  
   vim.fn.jobstart(cmd, {
     detach = false,  -- Ensure proper parent-child relationship to avoid zombies
     stdout_buffered = true,
