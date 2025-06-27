@@ -10,8 +10,8 @@ local streamlined_sync = require('neotex.plugins.tools.himalaya.streamlined_sync
 function M.detect_external_sync()
   local status = streamlined_sync.get_status()
   
-  -- Check if sync is running globally but not in our instance
-  if streamlined_sync.is_sync_running_globally() and not status.sync_running then
+  -- Check if external sync is running (using the new field)
+  if status.external_sync_running then
     local sync_info = M.analyze_external_sync()
     return true, sync_info
   end

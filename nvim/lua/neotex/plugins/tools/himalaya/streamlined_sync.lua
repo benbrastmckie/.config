@@ -1145,15 +1145,8 @@ function M.sync_mail(force_full, is_user_action)
   
   -- Robust process deduplication check
   if M.has_active_mbsync_processes() then
-    -- Synchronize local state with global state
-    if not M.state.sync_running then
-      M.state.sync_running = true
-      local ui = require('neotex.plugins.tools.himalaya.ui')
-      local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
-      if sidebar.is_open() then
-        ui.start_sync_status_updates()
-      end
-    end
+    -- DO NOT claim external syncs as our own!
+    -- Only set sync_running = true when WE start the process
     
     if is_user_action then
       notify.himalaya('Sync is already running (mbsync processes detected)', notify.categories.USER_ACTION)
@@ -1859,12 +1852,17 @@ function M.get_status()
   
   local progress = M.state.sync_progress
   
-  -- Sync local state with global state if they're out of sync
+  -- Check if sync is running globally
   local is_global = M.is_sync_running_globally()
-  if is_global and not M.state.sync_running then
-    M.state.sync_running = true
-  elseif not is_global and M.state.sync_running then
+  
+  -- IMPORTANT: Don't set sync_running to true just because mbsync is running!
+  -- Only our own vim job should set this flag
+  
+  -- If we think we're running but no global sync exists, clear our state
+  if M.state.sync_running and not is_global then
+    -- Our sync must have finished or crashed
     M.state.sync_running = false
+    M.state.sync_pid = nil
   end
   
   -- Progress data is already parsed and stored in M.state.sync_progress
@@ -1874,7 +1872,9 @@ function M.get_status()
     sync_running = M.state.sync_running,
     last_sync = M.state.last_sync_time,
     oauth_fresh = os.time() - M.state.last_oauth_refresh < OAUTH_REFRESH_INTERVAL,
-    progress = progress
+    progress = progress,
+    -- Add explicit external sync indicator
+    external_sync_running = is_global and not M.state.sync_running
   }
 end
 
