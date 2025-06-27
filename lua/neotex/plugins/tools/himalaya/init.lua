@@ -49,6 +49,12 @@ return {
       -- Load debug module
       require('neotex.plugins.tools.himalaya.debug_sync')
       
+      -- Load progress validator
+      require('neotex.plugins.tools.himalaya.progress_validator')
+      
+      -- Load test module
+      require('neotex.plugins.tools.himalaya.test_progress')
+      
       -- Setup configuration
       config.setup({
         -- Override default configuration here if needed

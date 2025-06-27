@@ -3,6 +3,14 @@
 ## Overview
 This document outlines the implementation of a cross-instance sync management system for the Himalaya email plugin. The goal is to provide detailed sync progress information even when switching between Neovim instances.
 
+## Current Status
+Phase 1 is now complete and working! When opening the sidebar in a new instance while sync is running externally:
+- ✅ Takeover prompt appears with sync details
+- ✅ Shows PID, runtime, command, and stuck warning
+- ✅ User can choose to take control or keep external sync
+- ✅ External sync progress displayed in sidebar status
+- ✅ Progress files written and read across instances
+
 ## Problem Statement
 - When opening the sidebar in a new Neovim instance while sync is running from another instance
 - Only generic status shown: "= Syncing (1 process)"
@@ -68,7 +76,7 @@ function M.show_takeover_prompt(sync_info)
   }
   
   if sync_info.likely_stuck then
-    table.insert(lines, '�  This sync appears stuck (> 5 minutes)')
+    table.insert(lines, '�  This sync appears stuck (> 5 minutes)')
     table.insert(lines, '')
   end
   
@@ -347,23 +355,27 @@ M.config = {
 
 ## Implementation Timeline
 
-### Week 1: Phase 1 Basic Implementation
-- [ ] Implement external sync detection
-- [ ] Create takeover prompt UI
-- [ ] Add kill & restart logic
-- [ ] Test with multiple instances
+### Week 1: Phase 1 Basic Implementation ✅ COMPLETE
+- [x] Implement external sync detection
+- [x] Create takeover prompt UI
+- [x] Add kill & restart logic
+- [x] Test with multiple instances
 
-### Week 2: Phase 1 Polish
-- [ ] Add configuration options
-- [ ] Implement auto-takeover logic
-- [ ] Add user commands
-- [ ] Update documentation
+### Week 2: Phase 1 Polish ✅ COMPLETE
+- [x] Add configuration options
+- [x] Implement auto-takeover logic
+- [x] Add user commands
+- [x] Fix newline sanitization bug
+- [x] Fix incorrect local sync claiming
 
-### Week 3: Phase 2 Progress Sharing
-- [ ] Design progress file format
-- [ ] Implement progress writer
-- [ ] Add progress reader
-- [ ] Update status display
+### Week 3: Phase 2 Progress Sharing 🚧 IN PROGRESS
+- [x] Design progress file format
+- [x] Implement progress writer (writes every 5 updates)
+- [x] Add progress reader
+- [x] Update status display (shows external progress)
+- [ ] Test progress accuracy across instances
+- [ ] Add progress file validation
+- [ ] Implement stale progress detection
 
 ### Week 4: Testing & Refinement
 - [ ] Test edge cases
