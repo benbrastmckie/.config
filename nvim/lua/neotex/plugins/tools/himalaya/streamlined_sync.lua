@@ -10,6 +10,8 @@ M.state = {
   sync_running = false,
   last_oauth_refresh = 0,
   sync_pid = nil,
+  sync_mbsync_pid = nil,  -- Track actual mbsync process PID
+  sync_started_by_us = false,  -- Track if we started the current sync
   last_sync_time = 0,
   cancel_requested = false,
   -- Cache sync status briefly to avoid repeated system calls
@@ -105,14 +107,27 @@ function M.release_lock()
   os.remove(LOCK_FILE)
 end
 
--- Check if any mbsync processes are currently running
+-- Check if any mbsync processes are currently running (including flock-wrapped)
 function M.has_active_mbsync_processes()
-  local handle = io.popen('pgrep mbsync 2>/dev/null')
-  if handle then
-    local output = handle:read('*a')
-    handle:close()
-    return output and output:match('%d+')
+  -- First check if flock is holding the mbsync lock
+  local flock_check = os.execute('flock -n /tmp/mbsync-global.lock -c "exit 0" 2>/dev/null')
+  if flock_check ~= 0 then
+    -- Lock is held by another process
+    return true
   end
+  
+  -- Also check for any mbsync processes directly (in case they're not using flock)
+  local ps_handle = io.popen('ps -eo pid,stat,cmd 2>/dev/null | grep "mbsync" | grep -v " Z " | grep -v grep')
+  if ps_handle then
+    local output = ps_handle:read('*a')
+    ps_handle:close()
+    
+    -- If we found any non-zombie mbsync processes, return true
+    if output and output:match('%d+') then
+      return true
+    end
+  end
+  
   return false
 end
 
@@ -943,13 +958,16 @@ function M.force_unlock()
   M.state.current_sync_type = nil
   M.state.original_force_full = nil  -- Clear previous sync type
   
-  -- Clear sync status cache
+  -- Clear sync status cache and force fresh check
   M.state.last_sync_check = 0
   M.state.last_sync_status = false
   
-  -- Stop any running sync status updates
+  -- Stop any running sync status updates immediately
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.stop_sync_status_updates()
+  
+  -- Force immediate recheck to clear any phantom detections (after stopping timers)
+  M.is_sync_running_globally()
   
   notify.himalaya('All sync processes killed and locks cleared', notify.categories.USER_ACTION)
 end
@@ -963,32 +981,62 @@ end
 
 -- Kill any existing mbsync processes
 function M.kill_existing_processes()
-  local handle = io.popen('pgrep mbsync 2>/dev/null')
-  local processes = {}
+  local all_processes = {}
   
-  if handle then
-    for line in handle:lines() do
+  -- Use ps to find live (non-zombie) sync processes
+  local ps_handle = io.popen('ps -eo pid,stat,cmd 2>/dev/null | grep -E "(mbsync|flock.*mbsync)" | grep -v " Z " | grep -v grep')
+  if ps_handle then
+    for line in ps_handle:lines() do
       if line and line ~= "" then
-        table.insert(processes, line)
+        -- Extract PID and process type from ps output
+        local pid, stat, cmd = line:match('^%s*(%d+)%s+(%S+)%s+(.+)')
+        if pid and cmd then
+          local process_type = "mbsync"
+          if cmd:match("flock") then
+            process_type = "flock"
+          end
+          table.insert(all_processes, {pid = pid, name = process_type, cmd = cmd})
+        end
       end
     end
-    handle:close()
+    ps_handle:close()
   end
   
-  if #processes > 0 then
-    for _, pid in ipairs(processes) do
-      os.execute('kill -TERM ' .. pid .. ' 2>/dev/null')
+  if #all_processes > 0 then
+    -- First try graceful termination
+    for _, proc in ipairs(all_processes) do
+      os.execute('kill -TERM ' .. proc.pid .. ' 2>/dev/null')
     end
     
     -- Wait a moment, then force kill if needed
     vim.defer_fn(function()
-      for _, pid in ipairs(processes) do
-        os.execute('kill -KILL ' .. pid .. ' 2>/dev/null')
+      for _, proc in ipairs(all_processes) do
+        os.execute('kill -KILL ' .. proc.pid .. ' 2>/dev/null')
       end
     end, 2000)
     
-    notify.himalaya(string.format('Killed %d mbsync processes', #processes), notify.categories.STATUS)
+    -- Provide more detail about what was killed
+    local flock_count = 0
+    local mbsync_count = 0
+    for _, proc in ipairs(all_processes) do
+      if proc.name == "flock" then
+        flock_count = flock_count + 1
+      else
+        mbsync_count = mbsync_count + 1
+      end
+    end
+    
+    if flock_count > 0 and mbsync_count > 0 then
+      notify.himalaya(string.format('Killed %d sync processes (%d flock + %d mbsync)', #all_processes, flock_count, mbsync_count), notify.categories.STATUS)
+    else
+      notify.himalaya(string.format('Killed %d sync processes', #all_processes), notify.categories.STATUS)
+    end
+  else
+    notify.himalaya('No live sync processes found to kill', notify.categories.STATUS)
   end
+  
+  -- Always clean up lock files even if no processes were killed
+  os.remove('/tmp/mbsync-global.lock')
 end
 
 -- Check OAuth token validity and refresh if needed
@@ -1065,8 +1113,8 @@ end
 function M.is_sync_running_globally()
   local now = os.time()
   
-  -- Use cached result if checked within last 2 seconds (for responsiveness)
-  if (now - M.state.last_sync_check) < 2 then
+  -- Use cached result if checked within last 10 seconds (reduce detection frequency)
+  if (now - M.state.last_sync_check) < 10 then
     return M.state.last_sync_status
   end
   
@@ -1151,6 +1199,7 @@ function M.sync_mail(force_full, is_user_action)
     if is_user_action then
       notify.himalaya('Sync is already running (mbsync processes detected)', notify.categories.USER_ACTION)
     end
+    sync_starting = false  -- Reset flag
     return false
   end
   
@@ -1171,6 +1220,7 @@ function M.sync_mail(force_full, is_user_action)
   end
   
   M.state.sync_running = true
+  notify.himalaya('DEBUG: Set sync_running = true for local sync', notify.categories.DEBUG)
   
   -- Reset sync progress data with new structure
   M.state.sync_progress = {
@@ -1232,16 +1282,36 @@ function M._perform_sync(force_full, is_user_action)
     return
   end
   
-  local cmd
+  -- Build flock-wrapped mbsync command to prevent race conditions
+  local flock_lock_file = '/tmp/mbsync-global.lock'
+  local mbsync_args
   if force_full then
     -- Use the gmail group instead of -a to avoid duplicates
-    cmd = { 'mbsync', '-V', 'gmail' }  -- Sync gmail group only
-    notify.himalaya('🔄 STARTING FULL SYNC (mbsync gmail)', notify.categories.USER_ACTION)
+    mbsync_args = 'mbsync -V gmail'  -- Sync gmail group only
+    notify.himalaya('🔄 STARTING FULL SYNC (flock + mbsync gmail)', notify.categories.USER_ACTION)
   else
     local config = require('neotex.plugins.tools.himalaya.config')
     local account = config.get_current_account_name() or 'gmail'
-    cmd = { 'mbsync', '-V', account .. '-inbox' }  -- Sync just inbox
-    notify.himalaya('📧 STARTING INBOX SYNC (mbsync ' .. account .. '-inbox)', notify.categories.USER_ACTION)
+    mbsync_args = 'mbsync -V ' .. account .. '-inbox'  -- Sync just inbox
+    notify.himalaya('📧 STARTING INBOX SYNC (flock + mbsync ' .. account .. '-inbox)', notify.categories.USER_ACTION)
+  end
+  
+  -- Double-check flock availability right before starting
+  local pre_check = os.execute('flock -n ' .. flock_lock_file .. ' -c "exit 0" 2>/dev/null')
+  if pre_check ~= 0 then
+    notify.himalaya('Sync blocked - another sync acquired the lock first', notify.categories.WARNING)
+    M._sync_complete(false, 'Another sync is already running (flock pre-check failed)')
+    ui.stop_sync_status_updates()
+    return
+  end
+  
+  -- Use flock to ensure atomic mbsync execution (community standard)
+  -- Note: flock will exit with code 1 if it can't acquire the lock
+  local cmd = { 'flock', '-n', flock_lock_file }
+  
+  -- Split mbsync_args into separate arguments for jobstart
+  for word in mbsync_args:gmatch("%S+") do
+    table.insert(cmd, word)
   end
   
   if is_user_action then
@@ -1279,13 +1349,15 @@ function M._perform_sync(force_full, is_user_action)
     return
   end
   
+  
   -- Log the exact command being run
   notify.himalaya('DEBUG: Starting job with command: ' .. table.concat(cmd, ' '), notify.categories.DEBUG)
   notify.himalaya('DEBUG: sync_running=' .. tostring(M.state.sync_running), notify.categories.DEBUG)
   
-  -- Use vim.fn.jobstart for better control
+  -- Use vim.fn.jobstart for better control (ensure proper parent-child relationship)
   local output = {}
   local job_id = vim.fn.jobstart(cmd, {
+    detach = false,  -- Ensure proper parent-child relationship to avoid zombies
     on_stdout = function(_, data)
       for _, line in ipairs(data) do
         if line and line ~= "" then
@@ -1331,7 +1403,12 @@ function M._perform_sync(force_full, is_user_action)
         
         -- Handle other exit codes
         local error_msg = 'Sync failed'
-        if exit_code == 143 then
+        if exit_code == 1 and #output == 0 then
+          -- flock couldn't acquire lock
+          error_msg = 'Another sync is already running (flock denied)'
+          M._sync_complete(false, error_msg)
+          return
+        elseif exit_code == 143 then
           error_msg = 'Sync was terminated'
         elseif #output > 0 then
           local last_line = output[#output] or ''
@@ -1364,12 +1441,40 @@ function M._perform_sync(force_full, is_user_action)
     M._sync_complete(false, 'Failed to start sync process')
   else
     M.state.sync_pid = job_id
+    M.state.sync_started_by_us = true  -- Mark that we started this sync
+    notify.himalaya('DEBUG: Job started with ID: ' .. job_id, notify.categories.DEBUG)
+    notify.himalaya('DEBUG: Set sync_started_by_us = true', notify.categories.DEBUG)
+    
+    -- Try to get the actual mbsync PID after a short delay
+    vim.defer_fn(function()
+      -- Get account name here since it's not in scope
+      local config = require('neotex.plugins.tools.himalaya.config')
+      local current_account = config.get_current_account_name() or 'gmail'
+      local pattern = force_full and current_account or (current_account .. '-inbox')
+      
+      local ps_handle = io.popen('pgrep -f "mbsync.*' .. pattern .. '"')
+      if ps_handle then
+        local pids = ps_handle:read('*a')
+        ps_handle:close()
+        if pids and pids:match('%d+') then
+          -- Get the first PID (there should only be one)
+          local mbsync_pid = pids:match('%d+')
+          if mbsync_pid then
+            M.state.sync_mbsync_pid = tonumber(mbsync_pid)
+            notify.himalaya('DEBUG: Found mbsync PID: ' .. mbsync_pid, notify.categories.DEBUG)
+          end
+        end
+      end
+    end, 500)
   end
 end
 
 function M._sync_complete(success, message)
   M.state.sync_running = false
+  notify.himalaya('DEBUG: Set sync_running = false in _sync_complete: ' .. message, notify.categories.DEBUG)
   M.state.sync_pid = nil
+  M.state.sync_mbsync_pid = nil  -- Clear mbsync PID
+  M.state.sync_started_by_us = false  -- Clear ownership flag
   M.state.last_sync_time = os.time()
   M.state.current_sync_type = nil
   M.state.original_force_full = nil  -- Clear sync type state
@@ -1826,17 +1931,80 @@ function M.get_status()
   -- Progress data is already parsed and stored in M.state.sync_progress
   -- No need for additional calculations here
   
+  -- Determine if the global sync is external (not started by us)
+  local external_sync = false
+  if is_global then
+    notify.himalaya(string.format('DEBUG: is_global=true, sync_running=%s, sync_started_by_us=%s', 
+      tostring(M.state.sync_running), tostring(M.state.sync_started_by_us)), notify.categories.DEBUG)
+    
+    if M.state.sync_running and M.state.sync_started_by_us then
+      -- We started this sync, it's not external
+      external_sync = false
+    elseif not M.state.sync_running then
+      -- There's a sync running but we didn't start it
+      external_sync = true
+    end
+  end
+  
   return {
     sync_running = M.state.sync_running,
     last_sync = M.state.last_sync_time,
     oauth_fresh = os.time() - M.state.last_oauth_refresh < OAUTH_REFRESH_INTERVAL,
     progress = progress,
     -- Add explicit external sync indicator
-    external_sync_running = is_global and not M.state.sync_running
+    external_sync_running = external_sync
   }
 end
 
--- Setup commands
+-- Show sync status (moved from commands)
+function M.show_sync_status()
+  local status = M.get_status()
+  local is_global = M.is_sync_running_globally()
+  
+  notify.himalaya('===== Sync Status =====', notify.categories.USER_ACTION)
+  notify.himalaya('Local running: ' .. (status.sync_running and 'Yes' or 'No'), notify.categories.USER_ACTION)
+  notify.himalaya('Global running: ' .. (is_global and 'Yes' or 'No'), notify.categories.USER_ACTION)
+  notify.himalaya('Last sync: ' .. (status.last_sync > 0 and os.date('%H:%M:%S', status.last_sync) or 'Never'), notify.categories.USER_ACTION)
+  
+  -- Check for processes
+  local handle = io.popen('pgrep mbsync 2>/dev/null')
+  if handle then
+    local output = handle:read('*a')
+    handle:close()
+    if output and output:match('%d+') then
+      notify.himalaya('mbsync processes: ' .. output:gsub('\n', ', '), notify.categories.USER_ACTION)
+    else
+      notify.himalaya('mbsync processes: None', notify.categories.USER_ACTION)
+    end
+  end
+  
+  -- Check for lock file
+  if vim.fn.filereadable(LOCK_FILE) == 1 then
+    local handle = io.open(LOCK_FILE, 'r')
+    if handle then
+      local pid = handle:read('*a'):match('%d+')
+      handle:close()
+      notify.himalaya('Lock file PID: ' .. (pid or 'invalid'), notify.categories.USER_ACTION)
+    end
+  else
+    notify.himalaya('Lock file: None', notify.categories.USER_ACTION)
+  end
+  
+  -- Check flock status
+  local flock_check = os.execute('flock -n /tmp/mbsync-global.lock -c "exit 0" 2>/dev/null')
+  if flock_check ~= 0 then
+    notify.himalaya('flock status: LOCKED (sync active)', notify.categories.USER_ACTION)
+  else
+    notify.himalaya('flock status: Available', notify.categories.USER_ACTION)
+  end
+  
+  if status.sync_running and status.progress then
+    notify.himalaya('Current operation: ' .. (status.progress.current_operation or 'Unknown'), notify.categories.USER_ACTION)
+  end
+end
+
+-- Setup commands (DEPRECATED - commands now in commands_simplified.lua)
+--[[
 function M.setup_commands()
   vim.api.nvim_create_user_command('HimalayaToggleSidebar', function()
     require('neotex.plugins.tools.himalaya.ui').toggle_email_sidebar()
@@ -1951,5 +2119,6 @@ function M.setup_commands()
     desc = 'Show detailed sync status'
   })
 end
+--]]
 
 return M

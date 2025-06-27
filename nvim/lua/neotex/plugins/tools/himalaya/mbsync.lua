@@ -4,13 +4,23 @@ local notify = require('neotex.util.notifications')
 local config = require('neotex.plugins.tools.himalaya.config')
 
 local function get_mbsync_command(force_full)
-  local account = config.get_current_account_name()
+  local account = config.get_current_account_name() or 'gmail'
+  local flock_lock_file = '/tmp/mbsync-global.lock'
+  
+  -- Build flock-wrapped mbsync command to prevent race conditions
+  local cmd = { 'flock', '-n', flock_lock_file }
+  
+  -- Add mbsync and its arguments as separate array elements
+  table.insert(cmd, 'mbsync')
+  table.insert(cmd, '-V')
   
   if force_full then
-    return account and {'mbsync', '-V', account} or {'mbsync', '-V', '-a'}
+    table.insert(cmd, account)
   else
-    return account and {'mbsync', '-V', account .. '-inbox'} or {'mbsync', '-V', 'gmail-inbox'}
+    table.insert(cmd, account .. '-inbox')
   end
+  
+  return cmd
 end
 
 local function clear_himalaya_cache()
@@ -29,6 +39,7 @@ function M.sync(force_full, callback)
   )
   
   vim.fn.jobstart(cmd, {
+    detach = false,  -- Ensure proper parent-child relationship to avoid zombies
     stdout_buffered = true,
     stderr_buffered = true,
     on_stdout = function(_, data)
@@ -62,9 +73,17 @@ function M.sync(force_full, callback)
             callback(true)
           end
         else
-          notify.himalaya('❌ SYNC FAILED (exit code: ' .. exit_code .. ')', notify.categories.ERROR)
-          if callback then
-            callback(false, 'mbsync failed with exit code: ' .. exit_code)
+          -- Handle flock exit codes
+          if exit_code == 1 then
+            notify.himalaya('⚠️ Another sync is already running (flock denied)', notify.categories.WARNING)
+            if callback then
+              callback(false, 'Another sync is already running')
+            end
+          else
+            notify.himalaya('❌ SYNC FAILED (exit code: ' .. exit_code .. ')', notify.categories.ERROR)
+            if callback then
+              callback(false, 'mbsync failed with exit code: ' .. exit_code)
+            end
           end
         end
       end)

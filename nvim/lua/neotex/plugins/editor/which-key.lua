@@ -536,26 +536,23 @@ return {
       end,
     })
 
-    -- MAIL group (only global commands)
+    -- MAIL group (simplified commands)
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
-      { "<leader>mo", "<cmd>HimalayaToggleSidebar<CR>", desc = "toggle mail", icon = "󰊫" },
+      { "<leader>mo", "<cmd>Himalaya<CR>", desc = "open mail", icon = "󰊫" },
       { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
-      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all mail", icon = "󰜉" },
+      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all", icon = "󰜉" },
       { "<leader>mk", "<cmd>HimalayaCancelSync<CR>", desc = "cancel sync", icon = "󰚌" },
-      { "<leader>mf", "<cmd>HimalayaFixDuplicates<CR>", desc = "fix duplicates", icon = "󰆓" },
-      { "<leader>md", "<cmd>HimalayaDebugDuplicates<CR>", desc = "debug duplicates", icon = "󰓧" },
-      { "<leader>mr", "<cmd>HimalayaRebuildIndex<CR>", desc = "rebuild index", icon = "󰑓" },
-      { "<leader>mR", "<cmd>HimalayaRebuildMbsync<CR>", desc = "rebuild mbsync", icon = "󰜉" },
-      { "<leader>mF", "<cmd>HimalayaFreshStart<CR>", desc = "fresh start", icon = "󰑓" },
-      { "<leader>mD", "<cmd>HimalayaDiagnoseMail<CR>", desc = "diagnose mail", icon = "󰓧" },
-      { "<leader>mU", "<cmd>HimalayaForceUnlock<CR>", desc = "kill all syncs", icon = "󰌾" },
-      { "<leader>mi", "<cmd>HimalayaSyncStatus<CR>", desc = "sync info", icon = "󰋼" },
-      { "<leader>mp", "<cmd>HimalayaDiagnoseProcesses<CR>", desc = "diagnose processes", icon = "󰔴" },
-      { "<leader>mO", "<cmd>HimalayaRefreshOAuth<CR>", desc = "refresh oauth", icon = "󰌆" },
-      { "<leader>mA", "<cmd>HimalayaSwitch<CR>", desc = "switch account", icon = "󰌏" },
-      { "<leader>mv", "<cmd>HimalayaConfigValidate<CR>", desc = "validate config", icon = "󰚩" },
-      { "<leader>mh", "<cmd>HimalayaConfigHelp<CR>", desc = "config help", icon = "󰘥" },
+      { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰝒" },
+      { "<leader>mr", "<cmd>HimalayaRestore<CR>", desc = "restore session", icon = "󰑓" },
+      { "<leader>mU", "<cmd>HimalayaCleanup<CR>", desc = "cleanup", icon = "󰌾" },
+      { "<leader>mi", "<cmd>HimalayaSyncStatus<CR>", desc = "sync status", icon = "󰋼" },
+      { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
+      { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
+      { "<leader>mR", "<cmd>HimalayaRefreshOAuth<CR>", desc = "refresh OAuth", icon = "󰌆" },
+      { "<leader>mt", "<cmd>HimalayaTrash<CR>", desc = "view trash", icon = "󰩺" },
+      { "<leader>mT", "<cmd>HimalayaTrashStats<CR>", desc = "trash stats", icon = "󰊢" },
+      { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
     })
 
     -- MAIL LIST BUFFER specific keymaps (himalaya-list filetype)
@@ -563,40 +560,8 @@ return {
       pattern = "himalaya-list",
       callback = function()
         wk.add({
-          -- Navigation
-          { "<CR>", function() require('neotex.plugins.tools.himalaya.ui').read_email() end, desc = "read email", buffer = 0 },
-          { "j", "j", desc = "next email", buffer = 0 },
-          { "k", "k", desc = "previous email", buffer = 0 },
-          { "q", function() require('neotex.plugins.tools.himalaya.ui').close_himalaya() end, desc = "close mail", buffer = 0 },
-          
-          -- Actions
-          { "r", function() require('neotex.plugins.tools.himalaya.ui').refresh_email_list() end, desc = "refresh", buffer = 0 },
-          { "w", "<cmd>HimalayaWrite<CR>", desc = "write email", buffer = 0 },
-          { "d", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
-          { "a", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
-          
-          -- Go commands
-          { "g", group = "go", buffer = 0 },
-          { "gn", function() require('neotex.plugins.tools.himalaya.ui').next_page() end, desc = "next page", buffer = 0 },
-          { "gp", function() require('neotex.plugins.tools.himalaya.ui').prev_page() end, desc = "prev page", buffer = 0 },
-          { "gm", "<cmd>HimalayaFolder<CR>", desc = "folder", buffer = 0 },
-          { "ga", "<cmd>HimalayaSwitch<CR>", desc = "account", buffer = 0 },
-          { "gr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
-          { "gR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
-          { "gf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
-          { "gD", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
-          { "gA", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
-          { "gS", "<cmd>HimalayaSpam<CR>", desc = "spam", buffer = 0 },
-          
-          -- Leader mail commands (context-specific)
-          { "<leader>m", group = "mail", buffer = 0 },
-          { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", buffer = 0 },
-          { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
-          { "<leader>mr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
-          { "<leader>mR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
-          { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
-          { "<leader>ma", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
-          { "<leader>mF", "<cmd>HimalayaFolder<CR>", desc = "change folder", buffer = 0 },
+          -- These keymaps are defined in config.lua setup_buffer_keymaps
+          -- which-key will automatically detect them from the buffer
         }, { buffer = 0 })
       end,
     })
@@ -606,25 +571,8 @@ return {
       pattern = "himalaya-email",
       callback = function()
         wk.add({
-          { "q", function() require('neotex.plugins.tools.himalaya.ui').close_current_buffer() end, desc = "back to list", buffer = 0 },
-          { "L", function() require('neotex.plugins.tools.himalaya.utils').go_to_link() end, desc = "open link", buffer = 0 },
-          
-          -- Go commands
-          { "g", group = "go", buffer = 0 },
-          { "gr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
-          { "gR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
-          { "gf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
-          { "gd", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
-          { "gl", function() require('neotex.plugins.tools.himalaya.utils').go_to_link() end, desc = "link", buffer = 0 },
-          { "ga", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
-          
-          -- Leader mail commands (context-specific)
-          { "<leader>m", group = "mail", buffer = 0 },
-          { "<leader>mr", "<cmd>HimalayaReply<CR>", desc = "reply", buffer = 0 },
-          { "<leader>mR", "<cmd>HimalayaReplyAll<CR>", desc = "reply all", buffer = 0 },
-          { "<leader>mf", "<cmd>HimalayaForward<CR>", desc = "forward", buffer = 0 },
-          { "<leader>md", "<cmd>HimalayaDelete<CR>", desc = "delete", buffer = 0 },
-          { "<leader>ma", "<cmd>HimalayaArchive<CR>", desc = "archive", buffer = 0 },
+          -- These keymaps are defined in config.lua setup_buffer_keymaps
+          -- which-key will automatically detect them from the buffer
         }, { buffer = 0 })
       end,
     })
@@ -634,18 +582,8 @@ return {
       pattern = "himalaya-compose",
       callback = function()
         wk.add({
-          { "q", function() require('neotex.plugins.tools.himalaya.utils').save_draft() end, desc = "save draft & close", buffer = 0 },
-          { "Q", function() require('neotex.plugins.tools.himalaya.utils').discard_draft() end, desc = "discard & close", buffer = 0 },
-          { "<C-s>", "<cmd>HimalayaSend<CR>", desc = "send email", buffer = 0 },
-          
-          -- Go commands
-          { "g", group = "go", buffer = 0 },
-          { "gs", "<cmd>HimalayaSend<CR>", desc = "send", buffer = 0 },
-          
-          -- Leader mail commands (context-specific)
-          { "<leader>m", group = "mail", buffer = 0 },
-          { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", buffer = 0 },
-          { "<leader>ma", "<cmd>HimalayaAttach<CR>", desc = "attach file", buffer = 0 },
+          -- These keymaps are defined in config.lua setup_buffer_keymaps
+          -- which-key will automatically detect them from the buffer
         }, { buffer = 0 })
       end,
     })

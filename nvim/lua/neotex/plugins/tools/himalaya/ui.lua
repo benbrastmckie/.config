@@ -46,6 +46,13 @@ end
 function M.show_email_list(args)
   args = args or {}
   
+  -- Check if maildir exists and set up if needed
+  local maildir_setup = require('neotex.plugins.tools.himalaya.maildir_setup')
+  if not maildir_setup.ensure_maildir_exists() then
+    -- Setup is being handled asynchronously, return for now
+    return
+  end
+  
   -- Parse arguments
   local folder = args[1] or config.state.current_folder
   local account = nil
