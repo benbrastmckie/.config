@@ -229,24 +229,27 @@ function M.get_sync_status_line()
   -- Check for external sync first (higher priority in display)
   if status.external_sync_running then
     -- External sync is running
-    local external_sync = require('neotex.plugins.tools.himalaya.external_sync')
-    local external_progress = external_sync.read_external_progress()
+    local validator = require('neotex.plugins.tools.himalaya.progress_validator')
+    local external_progress, err = validator.read_validated_progress()
     
     if external_progress and external_progress.progress then
       -- Show external progress
       local p = external_progress.progress
       local status_text = "🔄 Syncing (external)"
       
-      if p.current_message and p.total_messages then
+      if p.current_message and p.total_messages and p.total_messages > 0 then
         status_text = status_text .. string.format(": %d/%d emails", 
           p.current_message, p.total_messages)
+      elseif p.messages_added_total and p.messages_added_total > 0 then
+        status_text = status_text .. string.format(": %d/%d new", 
+          p.messages_added or 0, p.messages_added_total)
       elseif p.current_operation then
         status_text = status_text .. ": " .. p.current_operation
       end
       
       return status_text
     else
-      -- External sync but no progress file
+      -- External sync but no valid progress file
       return "🔄 Syncing (1 process)"
     end
   end

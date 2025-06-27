@@ -69,18 +69,15 @@ function M.get_progress_file()
 end
 
 function M.read_external_progress()
-  local progress_file = M.get_progress_file()
-  local file = io.open(progress_file, 'r')
-  if not file then return nil end
+  local config = require('neotex.plugins.tools.himalaya.config')
+  local account = config.get_current_account_name() or 'gmail'
   
-  local content = file:read('*a')
-  file:close()
+  -- Use validated progress reader
+  local validator = require('neotex.plugins.tools.himalaya.progress_validator')
+  local data, err = validator.read_validated_progress(account)
   
-  local ok, data = pcall(vim.json.decode, content)
-  if not ok then return nil end
-  
-  -- Check if progress is stale (> 30 seconds)
-  if data.last_update and os.time() - data.last_update > 30 then
+  if not data then
+    -- Silently fail for normal cases like no file or stale data
     return nil
   end
   
@@ -285,6 +282,12 @@ end
 -- Setup
 function M.setup()
   M.setup_commands()
+  
+  -- Clean up stale progress files on startup
+  local validator = require('neotex.plugins.tools.himalaya.progress_validator')
+  vim.defer_fn(function()
+    validator.cleanup_stale_progress_files()
+  end, 1000)
 end
 
 return M
