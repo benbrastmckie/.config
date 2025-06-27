@@ -21,12 +21,6 @@ return {
     dir = vim.fn.stdpath('config') .. '/lua/neotex/plugins/tools/himalaya',
     name = 'himalaya-email',
     event = { 'VeryLazy' }, -- Load after startup is complete
-    keys = {
-      { '<leader>mo', desc = 'Toggle Himalaya sidebar' },
-      { '<leader>ms', desc = 'Sync inbox' },
-      { '<leader>mS', desc = 'Sync all mail' },
-      { '<leader>mk', desc = 'Cancel sync' },
-    },
     config = function()
       -- Load modules only when needed (lazy loading for startup performance)
       local config = require('neotex.plugins.tools.himalaya.config')
@@ -46,13 +40,9 @@ return {
       local external_sync = require('neotex.plugins.tools.himalaya.external_sync_simple')
       external_sync.setup()
       
-      -- Load test module for verification
-      require('neotex.plugins.tools.himalaya.test_simplified')
+      -- External sync detection is now simplified and automatic
       
-      -- Load cache clearing utility
-      require('neotex.plugins.tools.himalaya.clear_cache')
-      
-      -- Setup configuration
+      -- Setup configuration (this also sets up commands)
       config.setup({
         -- Override default configuration here if needed
         default_account = 'gmail',
@@ -63,9 +53,6 @@ return {
           },
         },
       })
-      
-      -- Initialize streamlined sync system
-      streamlined_sync.setup_commands()
       
       -- Emergency cleanup on startup to prevent stuck processes (defer to not block startup)
       vim.defer_fn(function()
@@ -84,21 +71,7 @@ return {
         trash_ui.setup_commands()
         trash_manager.init()
         
-        -- Initialize duplicate investigation commands
-        local duplicate_investigation = require('neotex.plugins.tools.himalaya.duplicate_investigation')
-        duplicate_investigation.setup_commands()
-        
-        -- Initialize full cleanup commands
-        local full_cleanup = require('neotex.plugins.tools.himalaya.full_cleanup')
-        full_cleanup.setup_commands()
-        
-        -- Initialize force refresh commands
-        local force_refresh = require('neotex.plugins.tools.himalaya.force_refresh')
-        force_refresh.setup_commands()
-        
-        -- Initialize diagnostic commands
-        local diagnose = require('neotex.plugins.tools.himalaya.diagnose_display')
-        diagnose.setup_commands()
+        -- Trash system initialization complete
       end, 50)
       
       -- Setup cleanup on exit

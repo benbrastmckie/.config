@@ -75,17 +75,10 @@ function M.setup(opts)
   -- Initialize commands
   require('neotex.plugins.tools.himalaya.commands').setup()
   
-  -- Set up keymaps
-  M.setup_keymaps()
-  
   -- Set up autocmds
   M.setup_autocmds()
 end
 
--- Set up global keymaps (currently unused)
-function M.setup_keymaps()
-  -- Reserved for future global keymaps if needed
-end
 
 -- Set up autocommands
 function M.setup_autocmds()

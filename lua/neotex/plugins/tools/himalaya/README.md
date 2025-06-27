@@ -40,6 +40,7 @@ A streamlined email management system that integrates the Himalaya CLI email cli
 | `<leader>mS` | `:HimalayaSyncFull` | Full account sync |
 | `<leader>mk` | `:HimalayaCancelSync` | Cancel current sync |
 | `<leader>mw` | `:HimalayaWrite` | Compose new email |
+| `<leader>mX` | `:HimalayaBackupAndFresh` | Backup mail & start fresh |
 
 ### Email List Navigation (Sidebar)
 
@@ -89,7 +90,14 @@ When a sync is already running in another Neovim instance, the sidebar will disp
 - **`:HimalayaWrite [email]`** - Compose new email
 - **`:HimalayaReply[!] <id>`** - Reply (use `!` for reply-all)
 - **`:HimalayaForward <id>`** - Forward email
+- **`:HimalayaDelete <id>`** - Delete email (to trash)
+- **`:HimalayaSearch <query>`** - Search emails
 - **`:HimalayaFolder`** - Browse folders
+- **`:HimalayaAccounts`** - Switch accounts
+
+### Session Management
+
+- **`:HimalayaRestore[!]`** - Restore previous session (use `!` to skip prompt)
 
 ### Trash Management
 
@@ -98,17 +106,11 @@ When a sync is already running in another Neovim instance, the sidebar will disp
 - **`:HimalayaTrashRestore <id>`** - Restore deleted email
 - **`:HimalayaTrashPurge <id>`** - Permanently delete
 
-### OAuth & Authentication
+### Setup & Authentication
 
+- **`:HimalayaSetupMaildir`** - Set up maildir++ structure for new accounts
+- **`:HimalayaBackupAndFresh`** - Backup existing mail directory and start fresh
 - **`:HimalayaRefreshOAuth`** - Manual OAuth token refresh
-- **`:HimalayaOAuthStatus`** - Check OAuth status
-- **`:HimalayaOAuthTroubleshoot`** - OAuth diagnostics
-
-### Diagnostics
-
-- **`:HimalayaQuickHealthCheck`** - System health overview
-- **`:HimalayaFullDiagnostics`** - Comprehensive diagnostics
-- **`:HimalayaTestDelete`** - Test delete operations
 
 ## Architecture
 
@@ -142,6 +144,39 @@ Gmail IMAP <--[mbsync/Maildir++]<--[OAuth2]--> Local Maildir++ <--[Himalaya CLI]
 2. **OAuth2 Tokens** - Stored securely via secret-tool keyring
 3. **Automatic Refresh** - mbsync handles OAuth token refresh automatically
 4. **Seamless Operation** - No manual token management required
+
+## First-Time Setup
+
+When you first open Himalaya (`<leader>mo`), if no mail directory exists, you'll be prompted to:
+
+1. **Automatic Maildir Creation** - The system will:
+   - Connect to your IMAP server to discover all folders
+   - Create a proper maildir++ directory structure
+   - Set up folders matching your email labels/folders
+   - Configure the directory for use with mbsync and Himalaya
+
+2. **Manual Setup** - If you prefer, you can run `:HimalayaSetupMaildir` at any time
+
+The setup process:
+- Detects your IMAP folder structure (works with Gmail, Outlook, etc.)
+- Creates proper maildir++ format (INBOX in root, other folders with dot prefix)
+- Handles special folders like `[Gmail]/Sent Mail` → `.Gmail.Sent Mail`
+- Creates required `cur/`, `new/`, and `tmp/` subdirectories
+
+### Backup and Fresh Start
+
+If you need to start fresh with your email setup, use `<leader>mX` or `:HimalayaBackupAndFresh`:
+
+1. **Shows Current Status** - Displays directory size and email count
+2. **Creates Timestamped Backup** - Moves existing mail to `~/Mail/Gmail.backup-YYYYMMDD-HHMMSS`
+3. **Cleans All State** - Removes sync state, cache, and lock files
+4. **Sets Up Fresh** - Creates new maildir++ structure from scratch
+
+This is useful for:
+- Resolving persistent sync issues
+- Starting fresh after configuration changes
+- Cleaning up after testing
+- Recovering from corrupted state
 
 ## Configuration
 

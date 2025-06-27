@@ -110,11 +110,13 @@
   - [ ] remove GMAIL_CLIENT_ID from private.fish?
   - [x] install himalaya
   - [x] get mbsync to work
-  - [.] build himalaya-nvim plugin
-    - [ ] test
+  - [x] build himalaya-nvim plugin
+    - [x] test
     - [x] make all keymaps run through which-key
     - [x] preview html in browser
     - [x] document
+    - [x] simplify by removing development/testing elements
+    - [x] centralize all <leader> mappings in which-key.lua
 - [.] docs
   - [ ] api
   - [ ] READMEs
