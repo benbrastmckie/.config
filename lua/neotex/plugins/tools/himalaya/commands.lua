@@ -217,6 +217,39 @@ function M.setup()
   end, {
     desc = 'Diagnose OAuth2 authentication issues',
   })
+  
+  -- OAuth test commands
+  vim.api.nvim_create_user_command('HimalayaTestOAuth', function(opts)
+    local test = require('neotex.plugins.tools.himalaya.test_oauth_refresh')
+    if opts.args == 'expired' then
+      test.test_expired_token()
+    elseif opts.args == 'service' then
+      test.test_refresh_service()
+    elseif opts.args == 'timeout' then
+      test.test_timeout_detection()
+    elseif opts.args == 'status' then
+      test.check_token_status()
+    else
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Usage: :HimalayaTestOAuth [expired|service|timeout|status]', notify.categories.INFO)
+      notify.himalaya('  expired - Simulate expired token to test auto-refresh', notify.categories.STATUS)
+      notify.himalaya('  service - Test refresh service directly', notify.categories.STATUS)
+      notify.himalaya('  timeout - Show what happens on timeout', notify.categories.STATUS)
+      notify.himalaya('  status  - Check current token status', notify.categories.STATUS)
+    end
+  end, {
+    nargs = '?',
+    complete = function()
+      return {'expired', 'service', 'timeout', 'status'}
+    end,
+    desc = 'Test OAuth refresh mechanisms',
+  })
+  
+  vim.api.nvim_create_user_command('HimalayaTestRestore', function()
+    require('neotex.plugins.tools.himalaya.test_oauth_refresh').restore_token()
+  end, {
+    desc = 'Restore backed up OAuth token after testing',
+  })
 end
 
 return M
