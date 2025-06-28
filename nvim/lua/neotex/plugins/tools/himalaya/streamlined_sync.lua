@@ -981,22 +981,52 @@ end
 
 -- Attempt OAuth refresh and retry sync
 function M.attempt_oauth_refresh_and_retry(force_full, is_user_action)
+  -- For NixOS setup, we can use systemctl to trigger the refresh service
+  notify.himalaya('🔑 Triggering OAuth token refresh...', notify.categories.USER_ACTION)
+  
+  -- Use systemctl to trigger the OAuth refresh service
+  local refresh_cmd = 'systemctl --user start gmail-oauth2-refresh.service'
+  local result = os.execute(refresh_cmd .. ' 2>&1')
+  
+  if result == 0 then
+    -- Wait a moment for the service to complete
+    vim.defer_fn(function()
+      -- Check if the service succeeded
+      local status_cmd = 'systemctl --user is-failed gmail-oauth2-refresh.service 2>/dev/null'
+      local failed = os.execute(status_cmd) == 0
+      
+      if not failed then
+        notify.himalaya('✅ OAuth token refreshed successfully', notify.categories.SUCCESS)
+        M.state.last_oauth_refresh = os.time()
+        
+        -- Wait a moment then retry the sync
+        vim.defer_fn(function()
+          notify.himalaya('🔄 Retrying sync with fresh token...', notify.categories.USER_ACTION)
+          if force_full then
+            M.sync_full(is_user_action)
+          else
+            M.sync_inbox(is_user_action)
+          end
+        end, 1000)
+      else
+        -- Service failed, try the direct refresh approach
+        M.attempt_direct_oauth_refresh(force_full, is_user_action)
+      end
+    end, 2000)  -- Wait 2 seconds for service to complete
+  else
+    -- Systemctl failed, try direct refresh
+    M.attempt_direct_oauth_refresh(force_full, is_user_action)
+  end
+end
+
+-- Direct OAuth refresh fallback
+function M.attempt_direct_oauth_refresh(force_full, is_user_action)
   -- Check if we have all required OAuth credentials
   local has_refresh_token = os.execute('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token >/dev/null 2>&1') == 0
-  local has_client_secret = os.execute('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-client-secret >/dev/null 2>&1') == 0
   
-  if not has_refresh_token or not has_client_secret then
-    notify.himalaya('❌ Missing OAuth credentials for automatic refresh', notify.categories.ERROR)
+  if not has_refresh_token then
+    notify.himalaya('❌ Missing refresh token for automatic refresh', notify.categories.ERROR)
     notify.himalaya('Please run in terminal: himalaya account configure gmail', notify.categories.USER_ACTION)
-    notify.himalaya('This will set up complete OAuth2 authentication', notify.categories.STATUS)
-    
-    -- Run OAuth diagnostics to show what's missing
-    vim.defer_fn(function()
-      local diagnostics = require('neotex.plugins.tools.himalaya.oauth_diagnostics')
-      if diagnostics then
-        diagnostics.run_diagnostics()
-      end
-    end, 500)
     return
   end
   
