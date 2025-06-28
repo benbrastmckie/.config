@@ -1691,7 +1691,8 @@ function M.archive_current_email()
   local email_id = M.get_current_email_id()
   if email_id then
     -- Try different archive folder names that might exist
-    local archive_folders = {'Archive', 'All Mail', '[Gmail]/All Mail', '[Gmail].All Mail', 'ARCHIVE', 'Archived'}
+    -- When using maildir backend, himalaya returns local folder names like "All_Mail" not "[Gmail]/All Mail"
+    local archive_folders = {'All_Mail', 'Archive', 'All Mail', 'ARCHIVE', 'Archived'}
     local folders = utils.get_folders(config.state.current_account)
     local archive_folder = nil
     
@@ -1699,7 +1700,8 @@ function M.archive_current_email()
       -- Find the first existing archive folder
       for _, folder in ipairs(folders) do
         for _, archive_name in ipairs(archive_folders) do
-          if folder:lower():match(archive_name:lower()) or folder == archive_name then
+          -- Check exact match first, then case-insensitive match
+          if folder == archive_name or folder:lower() == archive_name:lower() then
             archive_folder = folder
             break
           end
@@ -1717,16 +1719,16 @@ function M.archive_current_email()
     else
       -- If no archive folder found, offer alternatives
       vim.ui.select({
-        'Move to All Mail',
-        'Move to [Gmail].All Mail', 
+        'Move to All_Mail',
+        'Create Archive folder',
         'Move to custom folder...',
         'Cancel'
       }, {
         prompt = 'No archive folder found. How would you like to archive this email?',
       }, function(choice)
-        if choice == 'Move to All Mail' then
-          utils.move_email(email_id, 'All Mail')
-        elseif choice == 'Move to [Gmail].All Mail' then
+        if choice == 'Move to All_Mail' then
+          utils.move_email(email_id, 'All_Mail')
+        elseif choice == 'Create Archive folder' then
           utils.move_email(email_id, '[Gmail].All Mail')
         elseif choice == 'Move to custom folder...' then
           vim.ui.input({
@@ -1749,7 +1751,8 @@ function M.spam_current_email()
   local email_id = M.get_current_email_id()
   if email_id then
     -- Try different spam folder names that might exist
-    local spam_folders = {'Spam', 'Junk', '[Gmail].Spam', '[Gmail]/Spam', 'SPAM', 'JUNK'}
+    -- When using maildir backend, himalaya returns local folder names
+    local spam_folders = {'Spam', 'Junk', 'SPAM', 'JUNK'}
     local folders = utils.get_folders(config.state.current_account)
     local spam_folder = nil
     
@@ -1757,7 +1760,8 @@ function M.spam_current_email()
       -- Find the first existing spam folder
       for _, folder in ipairs(folders) do
         for _, spam_name in ipairs(spam_folders) do
-          if folder:lower():match(spam_name:lower()) then
+          -- Check exact match first, then case-insensitive match
+          if folder == spam_name or folder:lower() == spam_name:lower() then
             spam_folder = folder
             break
           end
