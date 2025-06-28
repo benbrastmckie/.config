@@ -171,6 +171,13 @@ function M.setup()
     desc = 'Backup existing mail and start fresh',
   })
   
+  -- Diagnose maildir structure
+  vim.api.nvim_create_user_command('HimalayaDiagnose', function()
+    require('neotex.plugins.tools.himalaya.maildir_setup').diagnose_maildir()
+  end, {
+    desc = 'Diagnose maildir structure issues',
+  })
+  
   -- OAuth refresh command
   vim.api.nvim_create_user_command('HimalayaRefreshOAuth', function()
     local notify = require('neotex.util.notifications')

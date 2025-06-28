@@ -26,8 +26,9 @@ A streamlined email management system that integrates the Himalaya CLI email cli
 - **Auto-refresh** - Sidebar updates automatically every 60 seconds
 - **Background sync** - Silent email fetching without user notifications
 - **Smart caching** - Efficient email list management
-- **OAuth automation** - Automatic token refresh via systemd timer
+- **OAuth automation** - Automatic token refresh on sync failure and via systemd timer
 - **External sync detection** - Shows when sync is running in another Neovim instance
+- **Automatic retry** - Retries sync after OAuth token refresh
 
 ## Usage
 
@@ -111,6 +112,13 @@ When a sync is already running in another Neovim instance, the sidebar will disp
 - **`:HimalayaSetupMaildir`** - Set up maildir++ structure for new accounts
 - **`:HimalayaBackupAndFresh`** - Backup existing mail directory and start fresh
 - **`:HimalayaRefreshOAuth`** - Manual OAuth token refresh
+- **`:HimalayaOAuthDiagnostics`** - Diagnose OAuth authentication issues
+- **`:HimalayaTestOAuth [type]`** - Test OAuth refresh mechanisms:
+  - `status` - Check current token status and refresh schedule
+  - `service` - Test systemd refresh service
+  - `expired` - Simulate expired token to test auto-refresh
+  - `timeout` - Show timeout detection logic
+- **`:HimalayaTestRestore`** - Restore token after testing
 
 ## Architecture
 
@@ -140,9 +148,11 @@ Gmail IMAP <--[mbsync/Maildir++]<--[OAuth2]--> Local Maildir++ <--[Himalaya CLI]
 - **OAuth Integration** - Automatic token management via NixOS
 
 ### Authentication Flow
-1. **NixOS home-manager** - Configures mbsync with Maildir++ format
+1. **NixOS home-manager** - Configures mbsync with Maildir++ format and systemd timer
 2. **OAuth2 Tokens** - Stored securely via secret-tool keyring
-3. **Automatic Refresh** - mbsync handles OAuth token refresh automatically
+3. **Automatic Refresh** - Two-tier approach:
+   - **Proactive**: Systemd timer refreshes token every 45 minutes
+   - **Reactive**: Sync automatically refreshes expired tokens and retries
 4. **Seamless Operation** - No manual token management required
 
 ## First-Time Setup
@@ -177,6 +187,21 @@ This is useful for:
 - Starting fresh after configuration changes
 - Cleaning up after testing
 - Recovering from corrupted state
+
+## OAuth2 Token Management
+
+### Automatic Token Refresh
+
+The system handles OAuth token expiration automatically with a two-tier approach:
+
+1. **Proactive Refresh** - A systemd timer refreshes tokens every 45 minutes (before the 1-hour expiration)
+2. **Reactive Refresh** - If a sync fails due to expired token:
+   - Automatically detects authentication failure or socket timeout
+   - Triggers systemd OAuth refresh service
+   - Waits for refresh completion
+   - Automatically retries the sync with fresh token
+
+No manual intervention is required - expired tokens are handled seamlessly during sync operations.
 
 ## Environment Requirements
 
@@ -356,7 +381,10 @@ lua/neotex/plugins/tools/himalaya/
 
 **"Mail sync failed"**
 - **Cause**: OAuth token expired, network issues, or Gmail server load
-- **Solution**: `:HimalayaCancelSync` then `:HimalayaSyncInbox` to retry, or check network connection
+- **Solution**: 
+  - If OAuth expired: System will auto-refresh and retry (watch for "🔑 Triggering OAuth token refresh...")
+  - For other issues: `:HimalayaCancelSync` then `:HimalayaSyncInbox` to retry
+  - Check network connection if persistent
 
 **"No such file or directory" error**
 - **Cause**: Maildir++ structure not properly initialized  
@@ -374,14 +402,28 @@ lua/neotex/plugins/tools/himalaya/
 
 Check OAuth token status:
 ```bash
+# Run OAuth diagnostics in Neovim
+:HimalayaOAuthDiagnostics
+
+# Test OAuth refresh mechanisms
+:HimalayaTestOAuth status    # Check current token status
+:HimalayaTestOAuth service   # Test refresh service
+:HimalayaTestOAuth expired   # Simulate expired token
+
+# Manually trigger OAuth refresh
+:HimalayaRefreshOAuth
+```
+
+Check system configuration:
+```bash
 # Verify tokens are stored in keyring
 secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token
 
-# Test direct mbsync authentication  
-mbsync gmail-inbox
+# Check systemd timer status
+systemctl --user status gmail-oauth2-refresh.timer
 
-# Check mbsync configuration
-cat ~/.mbsyncrc | grep -A5 -B5 "XOAUTH2"
+# View recent refresh logs
+journalctl --user -u gmail-oauth2-refresh.service -n 20
 ```
 
 Verify NixOS configuration:
@@ -408,9 +450,10 @@ A complete, streamlined email solution featuring:
 ✅ **Streamlined Sync System** - Atomic process management with intelligent timeouts  
 ✅ **NixOS Integration** - Permanent configuration via home-manager with no cruft  
 ✅ **OAuth2 Authentication** - Secure token management via system keyring  
+✅ **Automatic Token Refresh** - Proactive timer + reactive sync-failure detection  
 ✅ **Himalaya CLI Integration** - Native maildir operations with folder support  
 ✅ **Clean Architecture** - No backwards compatibility or legacy code  
 ✅ **Robust Error Handling** - Emergency cleanup and sync status monitoring
 ✅ **External Sync Detection** - Prevents conflicts across multiple Neovim instances
 
-The system provides reliable Gmail ↔ Local synchronization using mbsync with Maildir++ format, ensuring compatibility between mbsync and Himalaya CLI while maintaining a clean, maintainable configuration through NixOS home-manager.
+The system provides reliable Gmail ↔ Local synchronization using mbsync with Maildir++ format, ensuring compatibility between mbsync and Himalaya CLI while maintaining a clean, maintainable configuration through NixOS home-manager. OAuth token expiration is handled automatically with no manual intervention required.

@@ -41,6 +41,8 @@ M.state = {
   retry_count = 0
 }
 
+-- Remove queue system - just track current sync
+
 local LOCK_FILE = '/tmp/himalaya-sync.lock'
 local OAUTH_MARKER = '/tmp/himalaya-oauth-fresh'
 local SYNC_TIMEOUT = 0 -- No timeout - let sync run as long as needed
@@ -1614,8 +1616,24 @@ function M._perform_sync(force_full, is_user_action)
           
           if last_line:match('Connection timed out') or last_line:match('Connection reset') then
             error_msg = 'Connection lost - Gmail may be throttling'
+          elseif last_line:match('Socket error.*timeout') then
+            -- Plain socket timeout - likely expired OAuth token
+            error_msg = 'Socket timeout - attempting OAuth refresh'
+            vim.defer_fn(function()
+              notify.himalaya('🔑 Socket timeout detected - refreshing OAuth token...', notify.categories.USER_ACTION)
+              M.attempt_oauth_refresh_and_retry(force_full, sync_is_user_action)
+            end, 100)
+            M._sync_complete(false, error_msg)
+            return
           elseif last_line:match('Authentication failed') or all_output:match('AUTHENTICATIONFAILED') then
-            error_msg = 'OAuth token expired - reconfigure account'
+            error_msg = 'OAuth token expired - attempting refresh'
+            -- Try to refresh OAuth token automatically
+            vim.defer_fn(function()
+              notify.himalaya('🔑 Attempting automatic OAuth token refresh...', notify.categories.USER_ACTION)
+              M.attempt_oauth_refresh_and_retry(force_full, sync_is_user_action)
+            end, 100)
+            M._sync_complete(false, error_msg)
+            return
           elseif all_output:match('Socket error.*timeout') and all_output:match('XOAUTH2') then
             -- Socket timeout after XOAUTH2 indicates expired token
             error_msg = 'OAuth token expired - attempting refresh'
@@ -1645,6 +1663,16 @@ function M._perform_sync(force_full, is_user_action)
           else
             error_msg = error_msg .. ': ' .. last_line
           end
+        else
+          -- No output - likely hung during authentication
+          error_msg = 'Sync failed with no output - likely authentication issue'
+          -- Try OAuth refresh for any unexplained failure
+          vim.defer_fn(function()
+            notify.himalaya('🔑 Sync failed - attempting OAuth token refresh...', notify.categories.USER_ACTION)
+            M.attempt_oauth_refresh_and_retry(force_full, sync_is_user_action)
+          end, 100)
+          M._sync_complete(false, error_msg)
+          return
         end
         
         -- No automatic retry to prevent process multiplication
@@ -1749,53 +1777,51 @@ end
 
 -- Quick inbox-only sync
 function M.sync_inbox(is_user_action)
-  notify.himalaya('DEBUG: sync_inbox called with is_user_action=' .. tostring(is_user_action), notify.categories.STATUS)
-  if not is_user_action then
-    -- Auto-sync - just try to start if nothing running
-    notify.himalaya('DEBUG: Calling sync_mail(false, false) for inbox sync', notify.categories.STATUS)
-    return M.sync_mail(false, is_user_action)
-  end
-  
-  -- User action - check what's currently running
+  -- Check if sync is already running
   if M.is_sync_running_globally() then
-    local running_type = M.get_running_sync_type()
-    if running_type == "inbox" then
-      notify.himalaya('Inbox sync is already running', notify.categories.USER_ACTION)
-    elseif running_type == "full" then
-      notify.himalaya('Full sync is currently running', notify.categories.USER_ACTION)
-    else
-      notify.himalaya('Unknown sync type is running', notify.categories.WARNING)
+    if is_user_action then
+      local running_type = M.get_running_sync_type()
+      if running_type == "full" then
+        notify.himalaya('Full sync already running (includes inbox)', notify.categories.USER_ACTION)
+      elseif running_type == "inbox" then
+        notify.himalaya('Inbox sync already running', notify.categories.USER_ACTION)
+      else
+        notify.himalaya('Sync already running', notify.categories.USER_ACTION)
+      end
+      notify.himalaya('Wait for completion or use :HimalayaCancelSync', notify.categories.STATUS)
     end
     return false
   end
   
-  -- Nothing running, start inbox sync
-  notify.himalaya('Starting inbox sync...', notify.categories.STATUS)
+  -- Nothing running, start immediately
+  if is_user_action then
+    notify.himalaya('Starting inbox sync...', notify.categories.STATUS)
+  end
   return M.sync_mail(false, is_user_action)
 end
 
 -- Full account sync
 function M.sync_full(is_user_action)
-  if not is_user_action then
-    -- Auto-sync - just try to start if nothing running
-    return M.sync_mail(true, is_user_action)
-  end
-  
-  -- User action - check what's currently running
+  -- Check if sync is already running
   if M.is_sync_running_globally() then
-    local running_type = M.get_running_sync_type()
-    if running_type == "full" then
-      notify.himalaya('Full sync is already running', notify.categories.USER_ACTION)
-    elseif running_type == "inbox" then
-      notify.himalaya('Inbox sync is currently running', notify.categories.USER_ACTION)
-    else
-      notify.himalaya('Unknown sync type is running', notify.categories.WARNING)
+    if is_user_action then
+      local running_type = M.get_running_sync_type()
+      if running_type == "full" then
+        notify.himalaya('Full sync already running', notify.categories.USER_ACTION)
+      elseif running_type == "inbox" then
+        notify.himalaya('Inbox sync running - cannot start full sync', notify.categories.USER_ACTION)
+      else
+        notify.himalaya('Sync already running', notify.categories.USER_ACTION)
+      end
+      notify.himalaya('Wait for completion or use :HimalayaCancelSync', notify.categories.STATUS)
     end
     return false
   end
   
-  -- Nothing running, start full sync
-  notify.himalaya('Starting full sync...', notify.categories.STATUS)
+  -- Nothing running, start immediately
+  if is_user_action then
+    notify.himalaya('Starting full sync...', notify.categories.STATUS)
+  end
   return M.sync_mail(true, is_user_action)
 end
 
