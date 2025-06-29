@@ -31,9 +31,36 @@ M.prev_page = main.prev_page
 M.refresh_email_list = main.refresh_email_list
 M.send_current_email = main.send_current_email
 M.is_email_buffer_open = main.is_email_buffer_open
+M.read_current_email = main.read_current_email
+M.get_current_email_id = main.get_current_email_id
+M.close_current_view = main.close_current_view
+M.close_himalaya = main.close_himalaya
+M.update_email_display = main.update_email_display
+M.refresh_current_view = main.refresh_current_view
+M.reply_current_email = main.reply_current_email
+M.reply_all_current_email = main.reply_all_current_email
+M.reply_email = main.reply_email
+M.parse_email_for_reply = main.parse_email_for_reply
+M.forward_current_email = main.forward_current_email
+M.forward_email = main.forward_email
+M.delete_current_email = main.delete_current_email
+M.handle_missing_trash_folder = main.handle_missing_trash_folder
+M.permanent_delete_email = main.permanent_delete_email
+M.move_email_to_folder = main.move_email_to_folder
+M.prompt_custom_folder_move = main.prompt_custom_folder_move
+M.archive_current_email = main.archive_current_email
+M.spam_current_email = main.spam_current_email
+M.search_emails = main.search_emails
+M.show_attachments = main.show_attachments
+M.open_link_under_cursor = main.open_link_under_cursor
+M.open_url = main.open_url
+M.can_restore_session = main.can_restore_session
+M.restore_session = main.restore_session
+M.prompt_session_restore = main.prompt_session_restore
 
--- Also expose main module for direct access
+-- Also expose main module and buffers for direct access
 M.main = main
+M.buffers = main.buffers
 
 -- Initialize UI components
 function M.setup()
