@@ -43,12 +43,13 @@ environment.systemPackages = with pkgs; [
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 ```lua
 {
-  'neotex/himalaya.nvim',
+  dir = vim.fn.expand("~/.config/nvim/lua/neotex/plugins/tools/himalaya"),
+  name = 'himalaya.nvim',
   dependencies = {
     'nvim-lua/plenary.nvim',
   },
   config = function()
-    require('himalaya').setup({
+    require('neotex.plugins.tools.himalaya').setup({
       -- Optional: override defaults
       accounts = {
         gmail = {

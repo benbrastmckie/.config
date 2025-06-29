@@ -4,7 +4,9 @@
 local M = {}
 
 -- Dependencies
-local base_notify = require('neotex.util.notifications')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Error patterns and handlers
 M.error_map = {
@@ -131,10 +133,13 @@ function M.handle_sync_error(error_text)
         msg = msg .. '. ' .. handler.action
       end
       
-      base_notify.himalaya(msg, 
-        handler.level == vim.log.levels.ERROR and base_notify.categories.ERROR or
-        handler.level == vim.log.levels.WARN and base_notify.categories.WARNING or
-        base_notify.categories.STATUS)
+      if handler.level == vim.log.levels.ERROR then
+        logger.error(msg)
+      elseif handler.level == vim.log.levels.WARN then
+        logger.warn(msg)
+      else
+        logger.info(msg)
+      end
       
       -- Run automatic action if available
       if handler.auto_action then
@@ -146,7 +151,7 @@ function M.handle_sync_error(error_text)
   end
   
   -- Generic error
-  base_notify.himalaya('Sync error: ' .. error_text, base_notify.categories.ERROR)
+  logger.error('Sync error: ' .. error_text)
   return false
 end
 
@@ -165,7 +170,7 @@ function M.handle_success(text)
         msg = handler.message
       end
       
-      base_notify.himalaya(msg, base_notify.categories.STATUS)
+      logger.info(msg)
       return true
     end
   end
@@ -174,23 +179,23 @@ function M.handle_success(text)
 end
 
 -- Wrap notifications with smart handling
-function M.notify(text, category)
+function M.notify(text, level)
   -- Try to handle as error
-  if category == base_notify.categories.ERROR then
+  if level == 'error' then
     if M.handle_sync_error(text) then
       return
     end
   end
   
   -- Try to handle as success
-  if category == base_notify.categories.STATUS or category == base_notify.categories.USER_ACTION then
+  if level == 'info' then
     if M.handle_success(text) then
       return
     end
   end
   
-  -- Fall back to standard notification
-  base_notify.himalaya(text, category)
+  -- Fall back to standard logger
+  logger[level](text)
 end
 
 -- Show sync progress in a simple way
@@ -241,10 +246,7 @@ function M.show_setup_hints()
   for _, check_name in ipairs(priority_order) do
     for _, check in ipairs(result.report) do
       if check.name == check_name and not check.ok then
-        base_notify.himalaya(
-          string.format('⚠️  %s issue detected. %s', check.name, check.fix or 'Run :HimalayaHealth'),
-          base_notify.categories.WARNING
-        )
+        logger.warn(string.format('⚠️  %s issue detected. %s', check.name, check.fix or 'Run :HimalayaHealth'))
         return -- Show only the most important issue
       end
     end
@@ -253,15 +255,7 @@ end
 
 -- Initialize notification system
 function M.setup()
-  -- Override default himalaya notifications if configured
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.config.ui.smart_notifications then
-    -- Monkey patch the base notify
-    local original_notify = base_notify.himalaya
-    base_notify.himalaya = function(text, category)
-      M.notify(text, category)
-    end
-  end
+  -- Nothing needed for now, using logger directly
 end
 
 return M

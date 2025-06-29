@@ -4,7 +4,9 @@
 local M = {}
 
 -- Dependencies  
-local notify = require('neotex.util.notifications')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Files to remove from old version
 M.deprecated_files = {
@@ -31,8 +33,7 @@ M.config_migrations = {
 
 -- Fix UIDVALIDITY files
 function M.fix_uidvalidity_files()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
   local fixed = 0
@@ -94,9 +95,9 @@ function M.migrate_config()
   end
   
   if #vim.tbl_keys(changes) > 0 then
-    notify.himalaya('Configuration changes detected. Please update your config:', notify.categories.WARNING)
+    logger.warn('Configuration changes detected. Please update your config:')
     if changes.folder_map then
-      notify.himalaya('  - Rename folder_aliases to folder_map', notify.categories.STATUS)
+      logger.info('  - Rename folder_aliases to folder_map')
     end
     return true
   end
@@ -148,7 +149,7 @@ function M.backup_old_files()
   end
   
   if #backed_up > 0 then
-    notify.himalaya('Backed up ' .. #backed_up .. ' files to: ' .. backup_dir, notify.categories.STATUS)
+    logger.info('Backed up ' .. #backed_up .. ' files to: ' .. backup_dir)
   end
   
   return backup_dir, backed_up
@@ -156,42 +157,42 @@ end
 
 -- Main migration function
 function M.migrate_from_old()
-  notify.himalaya('🔄 Starting migration from old Himalaya plugin...', notify.categories.USER_ACTION)
+  logger.info('🔄 Starting migration from old Himalaya plugin...')
   
   local changes = {}
   
   -- Step 1: Backup old files
-  notify.himalaya('📦 Backing up old files...', notify.categories.STATUS)
+  logger.info('📦 Backing up old files...')
   local backup_dir, backed_up = M.backup_old_files()
   if #backed_up > 0 then
     table.insert(changes, string.format('Backed up %d files to %s', #backed_up, backup_dir))
   end
   
   -- Step 2: Fix UIDVALIDITY files
-  notify.himalaya('🔧 Fixing UIDVALIDITY files...', notify.categories.STATUS)
+  logger.info('🔧 Fixing UIDVALIDITY files...')
   local fixed = M.fix_uidvalidity_files()
   if fixed > 0 then
     table.insert(changes, string.format('Fixed %d UIDVALIDITY files', fixed))
   end
   
   -- Step 3: Migrate configuration
-  notify.himalaya('⚙️  Checking configuration...', notify.categories.STATUS)
+  logger.info('⚙️  Checking configuration...')
   if M.migrate_config() then
     table.insert(changes, 'Configuration updates needed (see above)')
   end
   
   -- Step 4: Clear old state
-  notify.himalaya('🧹 Clearing old state files...', notify.categories.STATUS)
+  logger.info('🧹 Clearing old state files...')
   if M.clear_old_state() then
     table.insert(changes, 'Cleared obsolete state files')
   end
   
   -- Step 5: Stop any running syncs
-  notify.himalaya('🛑 Stopping old sync processes...', notify.categories.STATUS)
+  logger.info('🛑 Stopping old sync processes...')
   os.execute('pkill -f "mbsync" 2>/dev/null')
   
   -- Step 6: Run health check
-  notify.himalaya('🏥 Running health check...', notify.categories.STATUS)
+  logger.info('🏥 Running health check...')
   vim.defer_fn(function()
     local health = require('neotex.plugins.tools.himalaya.setup.health')
     health.show_report()
@@ -199,28 +200,25 @@ function M.migrate_from_old()
   
   -- Report results
   if #changes > 0 then
-    notify.himalaya('\n✅ Migration complete:', notify.categories.USER_ACTION)
+    logger.info('\n✅ Migration complete:')
     for _, change in ipairs(changes) do
-      notify.himalaya('  - ' .. change, notify.categories.STATUS)
+      logger.info('  - ' .. change)
     end
     
-    notify.himalaya('\n📝 Next steps:', notify.categories.USER_ACTION)
-    notify.himalaya('1. Review the health check results above', notify.categories.STATUS)
-    notify.himalaya('2. Update your configuration if needed', notify.categories.STATUS)
-    notify.himalaya('3. Run :HimalayaSetup if any issues', notify.categories.STATUS)
-    notify.himalaya('4. Delete backup directory when satisfied: ' .. backup_dir, notify.categories.STATUS)
+    logger.info('\n📝 Next steps:')
+    logger.info('1. Review the health check results above')
+    logger.info('2. Update your configuration if needed')
+    logger.info('3. Run :HimalayaSetup if any issues')
+    logger.info('4. Delete backup directory when satisfied: ' .. backup_dir)
   else
-    notify.himalaya('✅ No migration needed - already up to date!', notify.categories.USER_ACTION)
+    logger.info('✅ No migration needed - already up to date!')
   end
   
   -- Save migration completion
-  local state = require('neotex.plugins.tools.himalaya.state')
-  state.set('migration_completed', {
-    version = '2.0',
-    date = os.date('%Y-%m-%d %H:%M:%S'),
-    changes = changes
-  })
-  state.save()
+  state.set('migration.completed', true)
+  state.set('migration.version', '2.0')
+  state.set('migration.date', os.date('%Y-%m-%d %H:%M:%S'))
+  state.set('migration.changes', changes)
 end
 
 -- Check if migration is needed
@@ -235,16 +233,15 @@ function M.needs_migration()
   end
   
   -- Check state
-  local state = require('neotex.plugins.tools.himalaya.state')
-  local migration = state.get('migration_completed')
+  local version = state.get('migration.version')
   
-  return not migration or migration.version ~= '2.0'
+  return not version or version ~= '2.0'
 end
 
 -- Clean up after successful migration
 function M.cleanup_backup(backup_dir)
   if not backup_dir or vim.fn.isdirectory(backup_dir) == 0 then
-    notify.himalaya('No backup directory to clean up', notify.categories.STATUS)
+    logger.info('No backup directory to clean up')
     return
   end
   
@@ -253,7 +250,7 @@ function M.cleanup_backup(backup_dir)
   }, function(input)
     if input and input:lower() == 'y' then
       vim.fn.system({'rm', '-rf', backup_dir})
-      notify.himalaya('Backup directory deleted', notify.categories.USER_ACTION)
+      logger.info('Backup directory deleted')
     end
   end)
 end
