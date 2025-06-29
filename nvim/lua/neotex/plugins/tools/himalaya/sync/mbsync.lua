@@ -63,13 +63,24 @@ function M.sync(channel, opts)
     return false, "mbsync not found"
   end
   
-  -- Check OAuth first
+  -- Ensure OAuth token exists and is valid
   if not oauth.is_valid() then
-    if opts.auto_refresh then
-      logger.info("OAuth token invalid, attempting refresh")
-      return oauth.refresh_and_retry(function()
-        return M.sync(channel, opts)
+    if opts.auto_refresh ~= false then  -- Default to true
+      logger.info("OAuth token may be invalid, ensuring token...")
+      oauth.ensure_token(nil, function(success)
+        if success then
+          -- Retry sync after token is ready
+          vim.defer_fn(function()
+            M.sync(channel, opts)
+          end, 500)
+        else
+          logger.error("Could not obtain valid OAuth token")
+          if opts.callback then
+            opts.callback(false, "OAuth token invalid")
+          end
+        end
       end)
+      return false, "refreshing OAuth"
     else
       logger.error("OAuth token invalid")
       return false, "OAuth token invalid"
@@ -96,12 +107,42 @@ function M.sync(channel, opts)
       end
     end,
     on_stderr = function(_, data)
-      -- Log errors but don't interrupt
+      -- Log errors and check for auth failures
       if data and #data > 0 then
+        local auth_error = false
         for _, line in ipairs(data) do
           if line ~= '' then
             logger.debug('mbsync: ' .. line)
+            -- Check for authentication errors
+            if line:match('AUTHENTICATE') or line:match('LOGIN') or 
+               line:match('AUTH') or line:match('XOAUTH2') then
+              auth_error = true
+            end
           end
+        end
+        
+        -- If auth error and auto_refresh enabled, try to refresh token
+        if auth_error and opts.auto_refresh ~= false and not state.get("sync.auth_retry") then
+          state.set("sync.auth_retry", true)
+          logger.info("Authentication error detected, attempting OAuth refresh...")
+          vim.fn.jobstop(M.current_job)
+          M.current_job = nil
+          
+          oauth.ensure_token(nil, function(success)
+            state.set("sync.auth_retry", false)
+            if success then
+              logger.info("OAuth refreshed, retrying sync...")
+              vim.defer_fn(function()
+                M.sync(channel, opts)
+              end, 1000)
+            else
+              logger.error("Failed to refresh OAuth token")
+              state.set("sync.last_error", "Authentication failed - OAuth refresh failed")
+              if opts.callback then
+                opts.callback(false, "Authentication failed - OAuth refresh failed")
+              end
+            end
+          end)
         end
       end
     end,
@@ -109,6 +150,7 @@ function M.sync(channel, opts)
       M.current_job = nil
       state.set("sync.status", "idle")
       state.set("sync.last_sync", os.time())
+      state.set("sync.auth_retry", false)
       
       if code == 0 then
         logger.info("Sync completed successfully")
@@ -119,7 +161,16 @@ function M.sync(channel, opts)
       end
       
       if opts.callback then
-        opts.callback(code == 0, code)
+        -- Pass error message string for consistency
+        local error_msg = nil
+        if code ~= 0 then
+          if code == 143 then
+            error_msg = "Sync cancelled"
+          else
+            error_msg = state.get("sync.last_error", "Sync failed with code: " .. code)
+          end
+        end
+        opts.callback(code == 0, error_msg)
       end
     end
   })

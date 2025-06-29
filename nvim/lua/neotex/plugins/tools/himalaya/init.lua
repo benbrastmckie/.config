@@ -1,228 +1,272 @@
--- Himalaya Email Plugin for Neovim - Version 2.0
+-- Himalaya Email Plugin - Simplified and Robust
 -- Main entry point for the refactored plugin
 
 local M = {}
 
--- Plugin version
-M.version = "2.0.0"
-
--- The plugin configuration for lazy.nvim
-M.plugin_spec = {
-  {
-    'nvim-telescope/telescope.nvim',
-    optional = true,
-    opts = function()
-      require('neotex.plugins.tools.himalaya.picker').setup_telescope()
-    end,
-  },
-  {
-    'williamboman/mason.nvim',
-    optional = true,
-    opts = {
-      ensure_installed = { 'vale' }, -- Email linting
-    },
-  },
-  {
-    -- Virtual plugin for Himalaya setup
-    dir = vim.fn.stdpath('config') .. '/lua/neotex/plugins/tools/himalaya',
-    name = 'himalaya-email',
-    event = { 'VeryLazy' }, -- Load after startup is complete
-    config = function(opts)
-      M.setup(opts)
-    end,
-  },
-}
+-- Plugin state
+M.loaded = false
 
 -- Setup function
 function M.setup(opts)
-  opts = opts or {}
+  if M.loaded then
+    return
+  end
   
-  -- Initialize core modules
-  local config = require("neotex.plugins.tools.himalaya.core.config")
-  local logger = require("neotex.plugins.tools.himalaya.core.logger")
-  local state = require("neotex.plugins.tools.himalaya.core.state")
-  
-  -- Setup configuration
+  -- Initialize core configuration
+  local config = require('neotex.plugins.tools.himalaya.core.config')
   config.setup(opts)
   
-  -- Setup logger
-  logger.setup({
-    level = opts.log_level or "info",
-    prefix = "[Himalaya]"
-  })
-  
-  -- Initialize OAuth environment
-  local oauth = require("neotex.plugins.tools.himalaya.sync.oauth")
+  -- Initialize OAuth module
+  local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   oauth.setup()
   
-  -- Check if setup is needed
-  local wizard = require("neotex.plugins.tools.himalaya.setup.wizard")
-  if config.get("setup.auto_run", true) and not wizard.is_setup_complete() then
+  -- Initialize UI system
+  local ui = require('neotex.plugins.tools.himalaya.ui')
+  ui.setup()
+  
+  -- Set up commands
+  M.setup_commands()
+  
+  -- Run health check on startup if configured
+  if config.config.setup.check_health_on_startup then
     vim.defer_fn(function()
-      logger.info("First-time setup needed. Run :HimalayaSetup to configure.")
+      local health = require('neotex.plugins.tools.himalaya.setup.health')
+      local result = health.check()
+      if not result.ok then
+        ui.notifications.show_setup_hints()
+      end
     end, 1000)
   end
   
-  -- Check if migration is needed
-  local migration = require("neotex.plugins.tools.himalaya.setup.migration")
-  if migration.needs_migration() then
-    vim.defer_fn(function()
-      logger.info("Migration available from old version. Run :HimalayaMigrate to update.")
-    end, 2000)
+  -- Check if setup wizard should run
+  if config.config.setup.auto_run then
+    local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+    if not wizard.is_setup_complete() then
+      vim.defer_fn(function()
+        local notify = require('neotex.util.notifications')
+        notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.USER_ACTION)
+      end, 2000)
+    end
   end
   
-  -- Run health check if configured
-  if config.get("setup.check_health_on_startup", true) then
-    vim.defer_fn(function()
-      local health = require("neotex.plugins.tools.himalaya.setup.health")
-      local result = health.check()
-      if not result.ok then
-        logger.warn("Health check found issues. Run :HimalayaHealth for details.")
-      end
-    end, 3000)
-  end
-  
-  -- Setup commands
-  M.setup_commands()
-  
-  -- Setup autocommands
-  M.setup_autocommands()
-  
-  logger.info("Himalaya email plugin loaded (v" .. M.version .. ")")
+  M.loaded = true
 end
 
--- Setup commands
+-- Setup user commands
 function M.setup_commands()
   local cmd = vim.api.nvim_create_user_command
   
   -- Main commands
-  cmd("Himalaya", function(opts)
-    require("neotex.plugins.tools.himalaya.ui").show_email_list(opts.fargs)
+  cmd('Himalaya', function(opts)
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    ui.show_email_list(vim.split(opts.args or '', ' '))
   end, {
-    nargs = "*",
-    desc = "Open email list",
+    nargs = '*',
+    desc = 'Open Himalaya email list',
     complete = function()
-      return {"INBOX", "Sent", "Drafts", "Trash", "All_Mail"}
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      return utils.get_folders() or {}
     end
   })
   
-  cmd("HimalayaWrite", function(opts)
-    require("neotex.plugins.tools.himalaya.ui").compose_email(opts.args)
+  cmd('HimalayaToggle', function()
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    ui.toggle_email_sidebar()
   end, {
-    nargs = "?",
-    desc = "Compose new email"
+    desc = 'Toggle Himalaya sidebar'
+  })
+  
+  cmd('HimalayaWrite', function(opts)
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    ui.compose_email(opts.args)
+  end, {
+    nargs = '?',
+    desc = 'Compose new email'
   })
   
   -- Sync commands
-  cmd("HimalayaSyncInbox", function()
-    local mbsync = require("neotex.plugins.tools.himalaya.sync.mbsync")
-    local config = require("neotex.plugins.tools.himalaya.core.config")
-    local account = config.get_current_account()
+  cmd('HimalayaSyncInbox', function()
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    local ui = require('neotex.plugins.tools.himalaya.ui')
     
-    mbsync.sync(account.mbsync.inbox_channel, {
-      auto_refresh = true,
-      callback = function(success)
-        if success then
-          vim.cmd("doautocmd User HimalayaSyncComplete")
+    mbsync.sync_inbox({
+      on_progress = ui.notifications.show_sync_progress,
+      callback = function(success, error)
+        if not success then
+          ui.notifications.handle_sync_error(error)
+        else
+          -- Clear cache and refresh UI
+          local utils = require('neotex.plugins.tools.himalaya.utils')
+          utils.clear_email_cache()
+          
+          if ui.is_email_buffer_open() then
+            ui.refresh_email_list()
+          end
         end
       end
     })
-  end, { desc = "Sync inbox only" })
+  end, {
+    desc = 'Sync inbox only'
+  })
   
-  cmd("HimalayaSyncAll", function()
-    local mbsync = require("neotex.plugins.tools.himalaya.sync.mbsync")
-    local config = require("neotex.plugins.tools.himalaya.core.config")
-    local account = config.get_current_account()
+  cmd('HimalayaSyncAll', function()
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    local ui = require('neotex.plugins.tools.himalaya.ui')
     
-    mbsync.sync(account.mbsync.all_channel or config.get_current_account_name(), {
-      auto_refresh = true,
-      callback = function(success)
-        if success then
-          vim.cmd("doautocmd User HimalayaSyncComplete")
+    mbsync.sync_all({
+      on_progress = ui.notifications.show_sync_progress,
+      callback = function(success, error)
+        if not success then
+          ui.notifications.handle_sync_error(error)
+        else
+          local utils = require('neotex.plugins.tools.himalaya.utils')
+          utils.clear_email_cache()
+          
+          if ui.is_email_buffer_open() then
+            ui.refresh_email_list()
+          end
         end
       end
     })
-  end, { desc = "Sync all folders" })
+  end, {
+    desc = 'Sync all folders'
+  })
   
-  cmd("HimalayaCancelSync", function()
-    local mbsync = require("neotex.plugins.tools.himalaya.sync.mbsync")
-    if mbsync.stop() then
-      require("neotex.plugins.tools.himalaya.core.logger").info("Sync cancelled")
-    end
-  end, { desc = "Cancel ongoing sync" })
+  cmd('HimalayaCancelSync', function()
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    mbsync.stop_sync()
+    
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Sync cancelled', notify.categories.USER_ACTION)
+  end, {
+    desc = 'Cancel ongoing sync'
+  })
   
-  -- Setup & maintenance
-  cmd("HimalayaSetup", function()
-    require("neotex.plugins.tools.himalaya.setup.wizard").run()
-  end, { desc = "Run setup wizard" })
+  -- Setup commands
+  cmd('HimalayaSetup', function()
+    local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+    wizard.run()
+  end, {
+    desc = 'Run setup wizard'
+  })
   
-  cmd("HimalayaHealth", function()
-    require("neotex.plugins.tools.himalaya.setup.health").show_report()
-  end, { desc = "Show health check" })
+  cmd('HimalayaHealth', function()
+    local health = require('neotex.plugins.tools.himalaya.setup.health')
+    health.show_report()
+  end, {
+    desc = 'Show health check report'
+  })
   
-  cmd("HimalayaFixCommon", function()
-    require("neotex.plugins.tools.himalaya.setup.health").fix_common_issues()
-  end, { desc = "Fix common issues automatically" })
-  
-  cmd("HimalayaCleanup", function()
-    local lock = require("neotex.plugins.tools.himalaya.sync.lock")
-    local cleaned = lock.cleanup_locks()
-    require("neotex.plugins.tools.himalaya.core.logger").info(
-      string.format("Cleaned %d stale locks", cleaned)
-    )
-  end, { desc = "Clean up stale locks" })
-  
-  cmd("HimalayaMigrate", function()
-    require("neotex.plugins.tools.himalaya.setup.migration").migrate_from_old()
-  end, { desc = "Migrate from old version" })
+  cmd('HimalayaFixCommon', function()
+    local health = require('neotex.plugins.tools.himalaya.setup.health')
+    health.fix_common_issues()
+  end, {
+    desc = 'Fix common issues automatically'
+  })
   
   -- OAuth commands
-  cmd("HimalayaOAuthRefresh", function()
-    local oauth = require("neotex.plugins.tools.himalaya.sync.oauth")
+  cmd('HimalayaOAuthRefresh', function()
+    local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
     oauth.refresh()
-  end, { desc = "Refresh OAuth token" })
+  end, {
+    desc = 'Refresh OAuth token'
+  })
   
-  cmd("HimalayaOAuthStatus", function()
-    local oauth = require("neotex.plugins.tools.himalaya.sync.oauth")
-    local logger = require("neotex.plugins.tools.himalaya.core.logger")
+  cmd('HimalayaOAuthStatus', function()
+    local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
     local status = oauth.get_status()
     
-    logger.info("OAuth Status:")
-    logger.info("  Has token: " .. tostring(status.has_token))
-    logger.info("  Last refresh: " .. (status.last_refresh > 0 and os.date("%Y-%m-%d %H:%M:%S", status.last_refresh) or "never"))
-    logger.info("  Environment loaded: " .. tostring(status.environment_loaded))
-  end, { desc = "Show OAuth status" })
-end
-
--- Setup autocommands
-function M.setup_autocommands()
-  local group = vim.api.nvim_create_augroup("HimalayaEmail", { clear = true })
-  
-  -- Auto-refresh email list after sync
-  vim.api.nvim_create_autocmd("User", {
-    pattern = "HimalayaSyncComplete",
-    group = group,
-    callback = function()
-      -- Refresh email list if it's open
-      local ui = require("neotex.plugins.tools.himalaya.ui")
-      if ui.is_sidebar_open and ui.is_sidebar_open() then
-        ui.refresh_email_list()
-      end
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('OAuth Status:', notify.categories.STATUS)
+    notify.himalaya('  Token exists: ' .. tostring(status.has_token), notify.categories.STATUS)
+    notify.himalaya('  Environment loaded: ' .. tostring(status.environment_loaded), notify.categories.STATUS)
+    if status.last_refresh > 0 then
+      local ago = os.time() - status.last_refresh
+      notify.himalaya('  Last refresh: ' .. ago .. ' seconds ago', notify.categories.STATUS)
     end
+  end, {
+    desc = 'Show OAuth status'
   })
   
-  -- Update sidebar status
-  vim.api.nvim_create_autocmd("User", {
-    pattern = "HimalayaStatusUpdate",
-    group = group,
-    callback = function()
-      -- Update sidebar header if it's open
-      local sidebar = require("neotex.plugins.tools.himalaya.ui.sidebar")
-      if sidebar.is_open and sidebar.is_open() then
-        sidebar.refresh_header()
-      end
-    end
+  -- Maintenance commands
+  cmd('HimalayaCleanup', function()
+    local notify = require('neotex.util.notifications')
+    
+    -- Stop all syncs
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    mbsync.stop_sync()
+    
+    -- Clean up locks
+    local lock = require('neotex.plugins.tools.himalaya.sync.lock')
+    local cleaned = lock.cleanup_locks()
+    
+    notify.himalaya('Cleanup complete:', notify.categories.USER_ACTION)
+    notify.himalaya('  Stopped all syncs', notify.categories.STATUS)
+    notify.himalaya('  Cleaned ' .. cleaned .. ' lock files', notify.categories.STATUS)
+  end, {
+    desc = 'Clean up processes and locks'
+  })
+  
+  -- Maildir commands
+  cmd('HimalayaFixMaildir', function()
+    local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local account = config.get_account()
+    
+    wizard.fix_uidvalidity_files(vim.fn.expand(account.maildir_path))
+    
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Maildir structure fixed', notify.categories.USER_ACTION)
+  end, {
+    desc = 'Fix UIDVALIDITY files in maildir'
+  })
+  
+  -- Migration command (for existing users)
+  cmd('HimalayaMigrate', function()
+    local migration = require('neotex.plugins.tools.himalaya.setup.migration')
+    migration.migrate_from_old()
+  end, {
+    desc = 'Migrate from old plugin version'
   })
 end
 
-return M.plugin_spec
+-- Keymaps helper for which-key
+function M.get_keymaps()
+  return {
+    ['<leader>m'] = {
+      name = '+mail',
+      o = { ':HimalayaToggle<CR>', 'Toggle sidebar' },
+      l = { ':Himalaya<CR>', 'Email list' },
+      s = { ':HimalayaSyncInbox<CR>', 'Sync inbox' },
+      S = { ':HimalayaSyncAll<CR>', 'Sync all' },
+      c = { ':HimalayaWrite<CR>', 'Compose' },
+      h = { ':HimalayaHealth<CR>', 'Health check' },
+      x = { ':HimalayaCancelSync<CR>', 'Cancel sync' },
+    }
+  }
+end
+
+-- Return plugin specification for lazy.nvim
+return {
+  {
+    -- Virtual plugin for Himalaya setup
+    dir = vim.fn.stdpath('config') .. '/lua/neotex/plugins/tools/himalaya',
+    name = 'himalaya-email',
+    event = { 'VeryLazy' }, -- Load after startup
+    config = function(_, opts)
+      M.setup(opts)
+    end,
+    keys = {
+      { '<leader>mo', ':HimalayaToggle<CR>', desc = 'Toggle email sidebar' },
+      { '<leader>ml', ':Himalaya<CR>', desc = 'Open email list' },
+      { '<leader>ms', ':HimalayaSyncInbox<CR>', desc = 'Sync inbox' },
+      { '<leader>mS', ':HimalayaSyncAll<CR>', desc = 'Sync all folders' },
+      { '<leader>mc', ':HimalayaWrite<CR>', desc = 'Compose email' },
+    },
+  },
+  -- Dependencies
+  {
+    'nvim-telescope/telescope.nvim',
+    optional = true,
+  },
+}

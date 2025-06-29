@@ -3,7 +3,8 @@
 
 local M = {}
 
-local config = require('neotex.plugins.tools.himalaya.config')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local old_config = require('neotex.plugins.tools.himalaya.config')  -- For compatibility
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.window_stack')
 local sidebar = require('neotex.plugins.tools.himalaya.sidebar')
@@ -19,6 +20,17 @@ M.buffers = {
 
 -- Initialize UI components
 function M.init()
+  -- Ensure old_config state is initialized
+  if not old_config.state then
+    old_config.state = {
+      current_account = config.get_current_account_name() or 'gmail',
+      current_folder = 'INBOX',
+      current_page = 1,
+      page_size = 25,
+      total_emails = 0
+    }
+  end
+  
   -- Initialize state management first
   state.init()
   
@@ -46,6 +58,11 @@ end
 function M.show_email_list(args)
   args = args or {}
   
+  -- Ensure UI is initialized
+  if not old_config.state then
+    M.init()
+  end
+  
   -- Check if maildir exists and set up if needed
   local maildir_setup = require('neotex.plugins.tools.himalaya.maildir_setup')
   if not maildir_setup.ensure_maildir_exists() then
@@ -54,7 +71,7 @@ function M.show_email_list(args)
   end
   
   -- Parse arguments
-  local folder = args[1] or config.state.current_folder
+  local folder = args[1] or old_config.state.current_folder or 'INBOX'
   local account = nil
   for i, arg in ipairs(args) do
     if arg:match('^--account=') then
@@ -63,21 +80,24 @@ function M.show_email_list(args)
   end
   
   -- Switch account if specified
-  if account and not config.switch_account(account) then
-    notify.himalaya('Unknown account: ' .. account, notify.categories.ERROR)
-    return
-  elseif account and account ~= config.state.current_account then
+  if account then
+    local switch_fn = config.switch_account or old_config.switch_account
+    if not switch_fn(account) then
+      notify.himalaya('Unknown account: ' .. account, notify.categories.ERROR)
+      return
+    end
+  elseif account and account ~= (old_config.state.current_account or config.get_current_account_name()) then
     M.reset_pagination()  -- Reset pagination when changing accounts
   end
   
   -- Switch folder if different (only reset pagination if actually changing folders)
-  if folder ~= config.state.current_folder then
-    config.state.current_folder = folder  -- Set folder directly without resetting page
+  if folder ~= old_config.state.current_folder then
+    old_config.state.current_folder = folder  -- Set folder directly without resetting page
     M.reset_pagination()  -- Reset pagination when changing folders
   end
   
   -- Update state
-  state.set_current_account(config.state.current_account)
+  state.set_current_account(old_config.state.current_account or config.get_current_account_name())
   state.set_current_folder(folder)
   
   -- Open sidebar immediately with loading message
@@ -92,8 +112,9 @@ function M.show_email_list(args)
   -- External sync status will be shown in the header
   
   -- Show loading content immediately for responsiveness
+  local account_name = old_config.state.current_account or config.get_current_account_name()
   local loading_lines = {
-    string.format('󰊫 %s (%s)', config.state.current_account, folder),
+    string.format('󰊫 %s (%s)', account_name, folder),
     '',
     '󰔟 Loading emails...',
     '',
@@ -103,10 +124,12 @@ function M.show_email_list(args)
   
   -- Load emails asynchronously to avoid blocking UI
   vim.defer_fn(function()
-    local emails = utils.get_email_list(config.state.current_account, folder, config.state.current_page, config.state.page_size)
+    -- Use old_config for now until we complete the migration
+    local account_name = old_config.state.current_account or config.get_current_account_name()
+    local emails = utils.get_email_list(account_name, folder, old_config.state.current_page, old_config.state.page_size)
     if not emails then
       local error_lines = {
-        string.format('󰊫 %s (%s)', config.state.current_account, folder),
+        string.format('󰊫 %s (%s)', account_name, folder),
         '',
         '󰅙 Failed to get email list',
         '',
@@ -152,7 +175,7 @@ function M.show_email_list(args)
   end, 10) -- Very short delay to ensure sidebar opens immediately
   
   -- Set up buffer keymaps immediately (before emails load)
-  config.setup_buffer_keymaps(buf)
+  old_config.setup_buffer_keymaps(buf)
   
   -- Focus the sidebar immediately
   sidebar.focus()

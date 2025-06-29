@@ -1,5 +1,7 @@
 # TODO
 
+Right now the wizard works and shows all the output in the command line in nvim. Can you check what happens if the wizard fails at any step? I want it to report what failed and what to do (briefly) and nothing more to keep things simple. 
+
 ## In Progress
 
 - [ ] release
