@@ -285,12 +285,25 @@ The plugin follows a modular architecture:
 
 ```
 himalaya/
-|-- core/           # Core functionality
-|-- sync/           # Sync management
-|-- email/          # Email operations
-|-- ui/             # User interface
-|-- setup/          # Setup and diagnostics
-`-- docs/           # Documentation
+├── core/           # Core functionality
+│   ├── config.lua    # Configuration management
+│   ├── logger.lua    # Logging system
+│   └── state.lua     # State management
+├── sync/           # Sync management
+│   ├── mbsync.lua    # mbsync integration
+│   ├── oauth.lua     # OAuth token management
+│   └── lock.lua      # Process locking
+├── ui/             # User interface components
+│   ├── init.lua      # Main UI module
+│   ├── email_list.lua # Email list display
+│   ├── compose.lua    # Email composition
+│   ├── sidebar.lua    # Sidebar functionality
+│   └── notifications.lua # Smart notifications
+├── setup/          # Setup and diagnostics
+│   ├── wizard.lua    # Setup wizard
+│   ├── health.lua    # Health checks
+│   └── migration.lua # Version migration
+└── docs/           # Documentation
 ```
 
 Key improvements in v2:

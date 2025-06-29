@@ -1,171 +1,275 @@
--- Simplified sidebar display module
--- Provides clean, simple progress display
+-- Himalaya Sidebar Module
+-- Neo-tree style persistent sidebar for email list navigation
 
 local M = {}
 
--- Dependencies
-local config = require("neotex.plugins.tools.himalaya.core.config")
-local state = require("neotex.plugins.tools.himalaya.core.state")
-local logger = require("neotex.plugins.tools.himalaya.core.logger")
+-- Configuration
+M.config = {
+  width = 50,
+  position = 'left',
+  border = 'rounded'
+}
 
--- Format time ago
-local function format_time_ago(timestamp)
-  if not timestamp then return "never" end
+-- State tracking
+M.state = {
+  buf = nil,
+  win = nil,
+  is_open = false
+}
+
+-- Create or get existing buffer for sidebar
+function M.create_buffer()
+  if M.state.buf and vim.api.nvim_buf_is_valid(M.state.buf) then
+    return M.state.buf
+  end
   
-  local now = os.time()
-  local diff = now - timestamp
+  M.state.buf = vim.api.nvim_create_buf(false, true)
   
-  if diff < 60 then
-    return "just now"
-  elseif diff < 3600 then
-    local mins = math.floor(diff / 60)
-    return mins .. "m ago"
-  elseif diff < 86400 then
-    local hours = math.floor(diff / 3600)
-    return hours .. "h ago"
+  -- Buffer configuration
+  vim.api.nvim_buf_set_option(M.state.buf, 'filetype', 'himalaya-list')
+  vim.api.nvim_buf_set_option(M.state.buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(M.state.buf, 'swapfile', false)
+  vim.api.nvim_buf_set_option(M.state.buf, 'bufhidden', 'hide')
+  vim.api.nvim_buf_set_option(M.state.buf, 'buflisted', false)
+  
+  -- Buffer-local settings
+  vim.api.nvim_buf_call(M.state.buf, function()
+    vim.opt_local.wrap = false
+    vim.opt_local.cursorline = true
+    vim.opt_local.number = false
+    vim.opt_local.relativenumber = false
+    vim.opt_local.signcolumn = 'no'
+    vim.opt_local.foldcolumn = '0'
+  end)
+  
+  return M.state.buf
+end
+
+-- Open sidebar window
+function M.open()
+  if M.state.is_open and M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    -- Already open, just focus it
+    vim.api.nvim_set_current_win(M.state.win)
+    return M.state.win
+  end
+  
+  local buf = M.create_buffer()
+  
+  -- Store original window to restore focus if needed
+  local original_win = vim.api.nvim_get_current_win()
+  
+  -- Use neo-tree style window splitting instead of floating
+  -- This creates a real sidebar that shifts content instead of overlapping
+  if M.config.position == 'left' then
+    vim.cmd('topleft ' .. M.config.width .. 'vsplit')
   else
-    local days = math.floor(diff / 86400)
-    return days .. "d ago"
+    vim.cmd('botright ' .. M.config.width .. 'vsplit')
+  end
+  
+  M.state.win = vim.api.nvim_get_current_win()
+  
+  -- Set the buffer in the new window
+  vim.api.nvim_win_set_buf(M.state.win, buf)
+  
+  M.state.is_open = true
+  
+  -- Window configuration for sidebar appearance
+  vim.api.nvim_win_set_option(M.state.win, 'wrap', false)
+  vim.api.nvim_win_set_option(M.state.win, 'cursorline', true)
+  vim.api.nvim_win_set_option(M.state.win, 'number', false)
+  vim.api.nvim_win_set_option(M.state.win, 'relativenumber', false)
+  vim.api.nvim_win_set_option(M.state.win, 'signcolumn', 'no')
+  vim.api.nvim_win_set_option(M.state.win, 'foldcolumn', '0')
+  vim.api.nvim_win_set_option(M.state.win, 'winfixwidth', true)  -- Fixed width like neo-tree
+  vim.api.nvim_win_set_option(M.state.win, 'winhl', 'Normal:NeoTreeNormal,FloatBorder:NeoTreeFloatBorder')
+  
+  return M.state.win
+end
+
+-- Close sidebar window
+function M.close()
+  if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    vim.api.nvim_win_close(M.state.win, true)
+  end
+  M.state.is_open = false
+  M.state.win = nil
+end
+
+-- Close sidebar and clean up buffer completely
+function M.close_and_cleanup()
+  -- Close the window first
+  M.close()
+  
+  -- Delete the buffer to prevent it from lingering
+  if M.state.buf and vim.api.nvim_buf_is_valid(M.state.buf) then
+    vim.api.nvim_buf_delete(M.state.buf, { force = true })
+  end
+  M.state.buf = nil
+end
+
+-- Toggle sidebar visibility
+function M.toggle()
+  if M.state.is_open then
+    M.close()
+  else
+    M.open()
   end
 end
 
--- Get simple sync status
-function M.get_sync_status()
-  local mbsync = require("neotex.plugins.tools.himalaya.sync.mbsync")
-  local status = mbsync.get_status()
+-- Check if sidebar is currently open
+function M.is_open()
+  return M.state.is_open and M.state.win and vim.api.nvim_win_is_valid(M.state.win)
+end
+
+-- Get sidebar window ID (if open)
+function M.get_win()
+  return M.is_open() and M.state.win or nil
+end
+
+-- Get sidebar window ID even if closed (for window stack tracking)
+function M.get_win_id()
+  return M.state.win
+end
+
+-- Get sidebar buffer ID
+function M.get_buf()
+  return M.state.buf
+end
+
+-- Focus the sidebar
+function M.focus()
+  if M.is_open() then
+    vim.api.nvim_set_current_win(M.state.win)
+    return true
+  end
+  return false
+end
+
+-- Update sidebar width
+function M.set_width(new_width)
+  M.config.width = new_width
   
-  if status.running then
-    -- Simple, honest progress
-    return "🔄 Syncing email..."
-  elseif status.last_error then
-    return "⚠️  Sync failed (see :messages)"
-  elseif status.last_sync then
-    return "✓ Synced " .. format_time_ago(status.last_sync)
-  else
-    return "○ Not synced yet"
+  -- If sidebar is open, resize it
+  if M.is_open() then
+    vim.api.nvim_win_set_width(M.state.win, new_width)
+  end
+  
+  -- Update state if available
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.ui.state')
+  if ok then
+    state.set_sidebar_width(new_width)
   end
 end
 
--- Format email list header with simple sync status
-function M.format_header(folder, email_count)
-  local lines = {}
-  local account = config.get_current_account_name()
-  
-  -- Account and folder
-  table.insert(lines, string.format("📧 %s / %s", account, folder))
-  
-  -- Email count
-  table.insert(lines, string.format("   %d emails", email_count or 0))
-  
-  -- Sync status
-  local sync_status = M.get_sync_status()
-  table.insert(lines, "   " .. sync_status)
-  
-  -- Separator
-  table.insert(lines, string.rep("─", 50))
-  table.insert(lines, "")
-  
-  return lines
+-- Get current width
+function M.get_width()
+  return M.config.width
 end
 
--- Format email list entry
-function M.format_email_entry(email)
-  -- Parse flags
-  local seen = false
-  if email.flags and type(email.flags) == "table" then
-    for _, flag in ipairs(email.flags) do
-      if flag == "Seen" then
-        seen = true
-        break
+-- Set sidebar position (left/right)
+function M.set_position(position)
+  if position ~= 'left' and position ~= 'right' then
+    error("Position must be 'left' or 'right'")
+  end
+  
+  M.config.position = position
+  
+  -- Update state if available
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.ui.state')
+  if ok then
+    state.set_sidebar_position(position)
+  end
+  
+  -- If sidebar is open, we need to recreate it
+  if M.is_open() then
+    local was_focused = vim.api.nvim_get_current_win() == M.state.win
+    local content = nil
+    
+    -- Preserve content before closing
+    if vim.api.nvim_buf_is_valid(M.state.buf) then
+      content = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+    end
+    
+    M.close()
+    M.open()
+    
+    -- Restore content if we had any
+    if content then
+      M.update_content(content)
+    end
+    
+    if not was_focused then
+      -- Return focus to a main window (not sidebar)
+      local wins = vim.api.nvim_list_wins()
+      for _, win in ipairs(wins) do
+        if win ~= M.state.win then
+          vim.api.nvim_set_current_win(win)
+          break
+        end
       end
     end
   end
-  
-  local status = seen and " " or "●"
-  
-  -- Parse from field
-  local from = "Unknown"
-  if email.from then
-    if type(email.from) == "table" then
-      from = email.from.name or email.from.addr or "Unknown"
-    else
-      from = tostring(email.from)
-    end
-  end
-  
-  -- Truncate fields
-  from = from:sub(1, 20)
-  local subject = (email.subject or "(No subject)"):sub(1, 40)
-  local date = email.date or ""
-  
-  -- Simple format
-  return string.format("[%s] %-20s  %-40s  %s", status, from, subject, date)
 end
 
--- Format footer with keybindings
-function M.format_footer()
-  return {
-    "",
-    string.rep("─", 50),
-    "r:refresh  n/p:page  <CR>:read  d:delete",
-    "c:compose  s:sync  q:quit",
-  }
+-- Check if current window is the sidebar
+function M.is_current_window()
+  return M.is_open() and vim.api.nvim_get_current_win() == M.state.win
+end
+
+-- Auto-resize handler for VimResized event
+function M.handle_resize()
+  if M.is_open() then
+    local height = vim.o.lines - 2
+    vim.api.nvim_win_set_height(M.state.win, height)
+  end
 end
 
 -- Update sidebar content
-function M.update_content(buf, emails, folder)
-  if not buf or not vim.api.nvim_buf_is_valid(buf) then
-    return
+function M.update_content(lines)
+  if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
+    return false
   end
   
-  local lines = {}
+  -- Make buffer modifiable
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
   
-  -- Header
-  vim.list_extend(lines, M.format_header(folder, #emails))
+  -- Set content
+  vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
   
-  -- Email list
-  if #emails == 0 then
-    table.insert(lines, "  No emails in this folder")
-  else
-    for _, email in ipairs(emails) do
-      table.insert(lines, M.format_email_entry(email))
-    end
-  end
+  -- Make buffer read-only again
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', false)
   
-  -- Footer
-  vim.list_extend(lines, M.format_footer())
-  
-  -- Update buffer
-  vim.api.nvim_buf_set_option(buf, "modifiable", true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+  return true
 end
 
--- Timer for status updates
-local status_timer = nil
-
--- Start periodic sync status updates
-function M.start_status_updates()
-  M.stop_status_updates()
+-- Setup autocommands for sidebar management
+function M.setup_autocmds()
+  local group = vim.api.nvim_create_augroup('HimalayaSidebar', { clear = true })
   
-  -- Update every 2 seconds when syncing
-  status_timer = vim.fn.timer_start(2000, function()
-    local mbsync = require("neotex.plugins.tools.himalaya.sync.mbsync")
-    if not mbsync.is_running() then
-      M.stop_status_updates()
-    end
-    
-    -- Trigger header refresh
-    vim.cmd("doautocmd User HimalayaStatusUpdate")
-  end, { ["repeat"] = -1 })
+  -- Handle window resize
+  vim.api.nvim_create_autocmd('VimResized', {
+    group = group,
+    callback = M.handle_resize,
+    desc = 'Resize Himalaya sidebar on Vim resize'
+  })
+  
+  -- Handle sidebar buffer events
+  vim.api.nvim_create_autocmd({'BufWinEnter', 'WinEnter'}, {
+    group = group,
+    callback = function(args)
+      if args.buf == M.state.buf then
+        -- Ensure correct window options when entering sidebar
+        vim.opt_local.wrap = false
+        vim.opt_local.cursorline = true
+      end
+    end,
+    desc = 'Configure Himalaya sidebar window options'
+  })
 end
 
--- Stop status updates
-function M.stop_status_updates()
-  if status_timer then
-    vim.fn.timer_stop(status_timer)
-    status_timer = nil
-  end
+-- Initialize sidebar (call once)
+function M.init()
+  M.setup_autocmds()
 end
 
 return M

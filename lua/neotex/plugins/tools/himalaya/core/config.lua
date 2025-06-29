@@ -28,6 +28,7 @@ M.defaults = {
       
       -- Reverse mapping for operations (Local -> IMAP)
       local_to_imap = {
+        ["INBOX"] = "INBOX",
         ["All_Mail"] = "[Gmail]/All Mail",
         ["Sent"] = "[Gmail]/Sent Mail",
         ["Drafts"] = "[Gmail]/Drafts",

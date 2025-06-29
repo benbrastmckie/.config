@@ -51,13 +51,11 @@ end
 function M.has_token(account)
   account = account or 'gmail'
   
-  -- Check using secret-tool (GNOME keyring)
-  local cmd = string.format(
-    'secret-tool lookup account %s 2>/dev/null | grep -q "access-token"',
-    vim.fn.shellescape(account)
-  )
+  -- Check using secret-tool (GNOME keyring) with himalaya's specific format
+  local cmd = 'secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token 2>/dev/null | grep -q .'
   
-  return os.execute(cmd) == 0
+  local result = os.execute(cmd)
+  return result == 0
 end
 
 -- Check if OAuth token is valid (not expired)
@@ -93,9 +91,10 @@ function M.refresh(account, callback)
     return
   end
   
-  -- Check cooldown
+  -- Check cooldown only if we've tried recently and failed
   local last_refresh = state.get("oauth.last_refresh", 0)
-  if os.time() - last_refresh < REFRESH_RETRY_COOLDOWN then
+  local last_refresh_failed = state.get("oauth.last_refresh_failed", false)
+  if last_refresh_failed and os.time() - last_refresh < REFRESH_RETRY_COOLDOWN then
     logger.info('OAuth refresh on cooldown')
     if callback then
       callback(false, "cooldown")
@@ -142,11 +141,14 @@ function M.refresh(account, callback)
       
       if code == 0 then
         state.set("oauth.last_refresh", os.time())
+        state.set("oauth.last_refresh_failed", false)
         logger.info('OAuth token refreshed successfully')
         if callback then
           callback(true)
         end
       else
+        state.set("oauth.last_refresh", os.time())
+        state.set("oauth.last_refresh_failed", true)
         logger.error('OAuth refresh failed (exit code: ' .. code .. ')')
         logger.info('You may need to reconfigure: himalaya account configure ' .. account)
         if callback then
@@ -180,6 +182,38 @@ function M.refresh_and_retry(fn, account)
   end)
 end
 
+-- Get detailed token information
+function M.get_token_info()
+  local info = {}
+  
+  -- Check access token
+  local handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token 2>/dev/null')
+  if handle then
+    local token = handle:read('*a')
+    handle:close()
+    info.has_access_token = token and token ~= ''
+    info.access_token_preview = token and token:sub(1, 10) .. '...' or nil
+  end
+  
+  -- Check refresh token
+  handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token 2>/dev/null')
+  if handle then
+    local token = handle:read('*a')
+    handle:close()
+    info.has_refresh_token = token and token ~= ''
+  end
+  
+  -- Check client secret
+  handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-client-secret 2>/dev/null')
+  if handle then
+    local token = handle:read('*a')
+    handle:close()
+    info.has_client_secret = token and token ~= ''
+  end
+  
+  return info
+end
+
 -- Get OAuth status information
 function M.get_status(account)
   account = account or 'gmail'
@@ -188,7 +222,8 @@ function M.get_status(account)
     has_token = M.has_token(account),
     last_refresh = state.get("oauth.last_refresh", 0),
     refresh_in_progress = state.get("oauth.refresh_in_progress", false),
-    environment_loaded = false
+    environment_loaded = false,
+    token_info = M.get_token_info()
   }
   
   -- Check environment
@@ -196,6 +231,55 @@ function M.get_status(account)
   status.environment_loaded = env.GMAIL_CLIENT_ID ~= nil
   
   return status
+end
+
+-- Ensure OAuth token exists, refreshing if necessary
+function M.ensure_token(account, callback)
+  account = account or 'gmail'
+  
+  -- First check if token exists
+  if M.has_token(account) then
+    logger.debug('OAuth token found')
+    if callback then
+      callback(true)
+    end
+    return
+  end
+  
+  -- No token found, try to refresh
+  logger.info('No OAuth token found, attempting automatic refresh...')
+  M.refresh(account, function(success, error)
+    if success then
+      -- Double check that token now exists
+      if M.has_token(account) then
+        logger.info('OAuth token successfully obtained')
+        if callback then
+          callback(true)
+        end
+      else
+        logger.error('OAuth refresh succeeded but token still not found')
+        if callback then
+          callback(false, "token not found after refresh")
+        end
+      end
+    else
+      -- Refresh failed, but let's check one more time in case
+      -- the token was created by another process
+      vim.defer_fn(function()
+        if M.has_token(account) then
+          logger.info('OAuth token found after retry')
+          if callback then
+            callback(true)
+          end
+        else
+          logger.debug('OAuth token still not found after refresh attempt')
+          if callback then
+            callback(false, error or "no token")
+          end
+        end
+      end, 1000)
+    end
+  end)
 end
 
 -- Initialize OAuth module

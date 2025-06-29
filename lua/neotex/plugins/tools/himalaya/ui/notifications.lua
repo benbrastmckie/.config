@@ -7,6 +7,7 @@ local M = {}
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local state = require('neotex.plugins.tools.himalaya.core.state')
+local notify = require('neotex.util.notifications')
 
 -- Error patterns and handlers
 M.error_map = {
@@ -178,7 +179,7 @@ function M.handle_success(text)
   return false
 end
 
--- Wrap notifications with smart handling
+-- Wrap notifications with smart handling and unified system integration
 function M.notify(text, level)
   -- Try to handle as error
   if level == 'error' then
@@ -194,8 +195,40 @@ function M.notify(text, level)
     end
   end
   
-  -- Fall back to standard logger
-  logger[level](text)
+  -- Use unified notification system
+  if level == 'error' then
+    notify.himalaya(text, notify.categories.ERROR)
+  elseif level == 'warn' then
+    notify.himalaya(text, notify.categories.WARNING)
+  else
+    notify.himalaya(text, notify.categories.STATUS)
+  end
+end
+
+-- Show notification with proper categorization
+function M.show(message, level, context)
+  context = context or {}
+  
+  -- Map string levels to categories
+  local category = notify.categories.STATUS
+  
+  if level == 'error' then
+    category = notify.categories.ERROR
+  elseif level == 'warn' then
+    category = notify.categories.WARNING
+  elseif level == 'info' then
+    -- Check if it's a user action
+    if context.user_action or message:match('sent') or message:match('deleted') or message:match('moved') then
+      category = notify.categories.USER_ACTION
+    else
+      category = notify.categories.STATUS
+    end
+  elseif level == 'debug' then
+    category = notify.categories.BACKGROUND
+  end
+  
+  -- Use the himalaya-specific notification function
+  notify.himalaya(message, category, context)
 end
 
 -- Show sync progress in a simple way
@@ -216,11 +249,10 @@ function M.show_sync_progress(progress)
     return -- No useful progress to show
   end
   
-  -- Use a consistent notification ID for progress to avoid spam
-  vim.notify(msg, vim.log.levels.INFO, {
-    title = 'Himalaya Sync',
-    replace = 'himalaya_sync_progress',
-    timeout = 1000
+  -- Use unified notification system for progress
+  notify.himalaya(msg, notify.categories.STATUS, {
+    progress = true,
+    replace = 'himalaya_sync_progress'
   })
 end
 
@@ -256,6 +288,12 @@ end
 -- Initialize notification system
 function M.setup()
   -- Nothing needed for now, using logger directly
+end
+
+-- Simple notification show function
+function M.show(text, level)
+  level = level or 'info'
+  M.notify(text, level)
 end
 
 return M
