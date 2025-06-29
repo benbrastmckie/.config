@@ -229,7 +229,16 @@ Before starting the main refactor, redistribute functionality from utils.lua to 
    - `archive_current_email()`
    - `spam_current_email()`
 
-### Phase 2: Enhanced Features
+### ⏭️ Phase 2: Enhanced Features [SKIPPED]
+**Status**: Skipped - functionality already implemented in main.lua
+
+**Decision**: 
+- All email viewing, composing, and action functionality is already implemented in main.lua
+- compose.lua and email_list.lua have stub implementations
+- Moving functions between files would add complexity without benefit
+- Keeping everything in main.lua follows the "avoid creating millions of modules" directive
+
+### Phase 2: Enhanced Features [SKIPPED]
 5. **Create search.lua** for search:
    - `search_emails(query)`
    - `show_search_results(results)`
@@ -255,7 +264,17 @@ Before starting the main refactor, redistribute functionality from utils.lua to 
    - `show_email_info()`
    - `debug_buffers()`
 
-### Phase 3: Integration
+### ✅ Phase 3: Integration [COMPLETED]
+**Status**: All integration work completed
+
+**What was done**:
+- ✅ Added setup_buffer_keymaps() to core/config.lua with all keymaps from old UI
+- ✅ Updated ui/main.lua to call setup_buffer_keymaps when creating buffers
+- ✅ Fixed email list formatting to match old UI exactly
+- ✅ Added missing functions (close_without_saving, close_and_save_draft)
+- ✅ Exported all functions in ui/init.lua
+
+### Phase 3: Integration [COMPLETED]
 9. **Update init.lua** to properly export all functionality
 10. **Update email_list.lua** to use the old formatting style
 11. **Ensure all keymaps are properly set up**

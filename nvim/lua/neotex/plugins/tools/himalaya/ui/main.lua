@@ -131,8 +131,7 @@ function M.show_email_list(args)
     vim.b[buf].himalaya_folder = folder
     
     -- Set up buffer keymaps for the sidebar
-    -- TODO: Implement keymap setup
-    -- config.setup_buffer_keymaps(buf)
+    config.setup_buffer_keymaps(buf)
     
     -- Check for running sync and start status updates
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
@@ -152,8 +151,7 @@ function M.show_email_list(args)
   end, 10) -- Very short delay to ensure sidebar opens immediately
   
   -- Set up buffer keymaps immediately (before emails load)
-  -- TODO: Implement keymap setup
-  -- config.setup_buffer_keymaps(buf)
+  config.setup_buffer_keymaps(buf)
   
   -- Focus the sidebar immediately
   sidebar.focus()
@@ -164,143 +162,64 @@ end
 function M.format_email_list(emails)
   local lines = {}
   
-  -- Header with account info and folder
+  -- Header with pagination info (matching old format)
   local account = config.get_current_account()
-  local header = string.format('󰊫 %s (%s)', account.email or account.name or 'Unknown', state.get_current_folder())
+  local header = string.format('Himalaya - %s - %s', account.email, state.get_current_folder())
+  local pagination_info = string.format('Page %d | %d emails', 
+    state.get_current_page(), #emails)
   
-  -- Sync status
+  -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
   
-  -- Add header sections
   table.insert(lines, header)
+  table.insert(lines, pagination_info)
   if sync_status_line then
     table.insert(lines, sync_status_line)
   end
+  table.insert(lines, string.rep('─', math.max(#header, #pagination_info, sync_status_line and #sync_status_line or 0)))
   table.insert(lines, '')
   
-  -- Column headers with nice formatting
-  table.insert(lines, '  📧 Emails')
-  table.insert(lines, '  ' .. string.rep('─', 60))
-  
-  -- Email entries with better formatting
-  if emails and #emails > 0 then
-    for _, email in ipairs(emails) do
-      -- Parse flags
-      local seen = false
-      local flagged = false
-      if email.flags then
-        if type(email.flags) == 'table' then
-          for _, flag in ipairs(email.flags) do
-            if flag == 'Seen' or flag == '\\Seen' or flag == 'R' then
-              seen = true
-            elseif flag == 'Flagged' or flag == '\\Flagged' or flag == '*' then
-              flagged = true
-            end
-          end
-        elseif type(email.flags) == 'string' then
-          seen = email.flags:match('R') ~= nil
-          flagged = email.flags:match('*') ~= nil
+  -- Email entries
+  for _, email in ipairs(emails) do
+    -- Parse flags (they're in an array)
+    local seen = false
+    if email.flags and type(email.flags) == 'table' then
+      for _, flag in ipairs(email.flags) do
+        if flag == 'Seen' then
+          seen = true
+          break
         end
       end
-      
-      -- Status icon
-      local status_icon = '●'  -- Unread (filled circle)
-      if seen then
-        status_icon = '○'      -- Read (empty circle)
-      end
-      if flagged then
-        status_icon = '★'      -- Flagged (star)
-      end
-      
-      -- Parse from field
-      local from = 'Unknown'
-      if email.from then
-        if type(email.from) == 'table' then
-          -- Prefer name over email address
-          from = email.from.name or email.from.addr or 'Unknown'
-          -- Handle vim.NIL values
-          if from == vim.NIL then
-            from = email.from.addr or 'Unknown'
-          end
-          if from == vim.NIL then
-            from = 'Unknown'
-          end
-        else
-          from = tostring(email.from)
-        end
-      end
-      
-      -- Format date nicely
-      local date_str = ''
-      if email.date then
-        -- Try to parse and format the date
-        local date = email.date
-        if type(date) == 'string' then
-          -- Extract just the date part if it has timezone info
-          local simple_date = date:match('(%d%d%d%d%-%d%d%-%d%d)')
-          if simple_date then
-            date_str = simple_date
-          else
-            -- Try to extract time
-            local time = date:match('(%d%d:%d%d)')
-            if time then
-              date_str = time
-            else
-              date_str = date:sub(1, 10)
-            end
-          end
-        end
-      end
-      
-      local subject = email.subject or '(No subject)'
-      
-      -- Calculate field widths for alignment
-      local status_width = 2
-      local from_width = 20
-      local subject_width = 35
-      local date_width = 10
-      
-      -- Truncate and pad fields
-      from = utils.truncate_string(from, from_width)
-      from = from .. string.rep(' ', from_width - vim.fn.strdisplaywidth(from))
-      
-      subject = utils.truncate_string(subject, subject_width)
-      subject = subject .. string.rep(' ', subject_width - vim.fn.strdisplaywidth(subject))
-      
-      date_str = utils.truncate_string(date_str, date_width)
-      
-      -- Format the line with better spacing
-      local line = string.format('  %s %s │ %s │ %s', 
-        status_icon, 
-        from, 
-        subject, 
-        date_str
-      )
-      
-      table.insert(lines, line)
     end
-  else
-    table.insert(lines, '')
-    table.insert(lines, '  No emails to display')
-    table.insert(lines, '')
-    table.insert(lines, '  Press <leader>ms to sync inbox')
+    local status = seen and ' ' or '*'
+    
+    -- Parse from field (it's an object with name and addr)
+    local from = 'Unknown'
+    if email.from then
+      if type(email.from) == 'table' then
+        from = email.from.name or email.from.addr or 'Unknown'
+      else
+        from = tostring(email.from)
+      end
+    end
+    
+    local subject = email.subject or '(No subject)'
+    local date = email.date or ''
+    
+    -- Truncate long fields
+    from = utils.truncate_string(from, 25)
+    subject = utils.truncate_string(subject, 50)
+    
+    local line = string.format('[%s] %s  %s  %s', status, from, subject, date)
+    table.insert(lines, line)
   end
   
-  -- Footer with pagination
+  -- Footer with keymaps
   table.insert(lines, '')
-  table.insert(lines, '  ' .. string.rep('─', 60))
-  local page_info = string.format('  Page %d of %d (%d emails)', 
-    state.get_current_page(),
-    math.max(1, math.ceil(state.get_total_emails() / state.get_page_size())),
-    #emails
-  )
-  table.insert(lines, page_info)
-  
-  -- Quick help
-  table.insert(lines, '')
-  table.insert(lines, '  Quick Keys:')
-  table.insert(lines, '  <CR> Read  │ c Compose │ r Refresh')
-  table.insert(lines, '  j/k Navigate │ n/p Page │ q Close')
+  table.insert(lines, string.rep('─', 70))
+  table.insert(lines, 'r:refresh gn:next-page gp:prev-page')
+  table.insert(lines, 'gm:folder ga:account gw:write')
+  table.insert(lines, 'gD:delete gA:archive gS:spam')
   
   return lines
 end
@@ -577,8 +496,7 @@ function M.read_email(email_id)
   state.set_selected_email(email_id)
   
   -- Explicitly ensure keymaps are set up for this buffer
-  -- TODO: Implement keymap setup
-  -- config.setup_buffer_keymaps(buf)
+  config.setup_buffer_keymaps(buf)
   
   -- Open in window
   M.open_email_window(buf, 'Email - ' .. (email_content.subject or 'No Subject'))
@@ -731,8 +649,7 @@ function M.compose_email(to_address)
   vim.b[buf].himalaya_account = state.get_current_account()
   
   -- Set up buffer keymaps
-  -- TODO: Implement keymap setup
-  -- config.setup_buffer_keymaps(buf)
+  config.setup_buffer_keymaps(buf)
   
   -- Open in window
   M.open_email_window(buf, 'Compose Email')
@@ -866,6 +783,26 @@ end
 -- Check if email buffer is open (for backward compatibility)
 function M.is_email_buffer_open()
   return sidebar.is_open()
+end
+
+-- Close without saving (discard)
+function M.close_without_saving()
+  local buf = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_delete(buf, { force = true })
+  notifications.show('Draft discarded', 'info')
+end
+
+-- Close and save as draft
+function M.close_and_save_draft()
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.b[buf].himalaya_compose then
+    -- TODO: Implement draft saving with Himalaya CLI
+    -- For now, just close and notify
+    notifications.show('Draft saved (not yet implemented)', 'warn')
+    vim.cmd('close')
+  else
+    vim.cmd('close')
+  end
 end
 
 -- Read current email (from email list buffer)

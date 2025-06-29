@@ -57,6 +57,8 @@ M.open_url = main.open_url
 M.can_restore_session = main.can_restore_session
 M.restore_session = main.restore_session
 M.prompt_session_restore = main.prompt_session_restore
+M.close_without_saving = main.close_without_saving
+M.close_and_save_draft = main.close_and_save_draft
 
 -- Also expose main module and buffers for direct access
 M.main = main
