@@ -4,18 +4,18 @@
 local M = {}
 
 -- Dependencies
-local notify = require('neotex.util.notifications')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 
--- Wizard state
-M.state = {
-  current_step = 0,
-  total_steps = 5,
-  results = {},
-}
+-- Wizard progress tracking
+M.current_step = 0
+M.total_steps = 5
+M.results = {}
 
 -- Step 1: Check dependencies
 function M.check_dependencies()
-  notify.himalaya('🔍 Checking dependencies...', notify.categories.STATUS)
+  logger.info('🔍 Checking dependencies...')
   
   local deps = {
     {name = 'mbsync', cmd = 'mbsync --version', required = true},
@@ -40,7 +40,7 @@ function M.check_dependencies()
           table.insert(optional_missing, dep.name)
         end
       else
-        notify.himalaya('✅ ' .. dep.name .. ' found', notify.categories.STATUS)
+        logger.info('✅ ' .. dep.name .. ' found')
       end
     else
       if dep.required then
@@ -52,24 +52,24 @@ function M.check_dependencies()
   end
   
   if #missing > 0 then
-    notify.himalaya('❌ Missing required dependencies: ' .. table.concat(missing, ', '), notify.categories.ERROR)
-    notify.himalaya('Install with: brew install isync himalaya', notify.categories.STATUS)
+    logger.error('❌ Missing required dependencies: ' .. table.concat(missing, ', '))
+    logger.info('Install with: brew install isync himalaya')
     return false, 'missing dependencies'
   end
   
   if #optional_missing > 0 then
-    notify.himalaya('⚠️  Optional dependencies missing: ' .. table.concat(optional_missing, ', '), notify.categories.WARNING)
+    logger.warn('⚠️  Optional dependencies missing: ' .. table.concat(optional_missing, ', ')')
   end
   
   -- Check NixOS-specific setup
   local is_nixos = vim.fn.filereadable('/etc/NIXOS') == 1
   if is_nixos then
-    notify.himalaya('📦 NixOS detected - checking systemd environment', notify.categories.STATUS)
+    logger.info('📦 NixOS detected - checking systemd environment')
     local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
     local env = oauth.load_environment()
     if not env.GMAIL_CLIENT_ID then
-      notify.himalaya('⚠️  GMAIL_CLIENT_ID not found in systemd environment', notify.categories.WARNING)
-      notify.himalaya('Add to home-manager: systemd.user.sessionVariables.GMAIL_CLIENT_ID', notify.categories.STATUS)
+      logger.warn('⚠️  GMAIL_CLIENT_ID not found in systemd environment')
+      logger.info('Add to home-manager: systemd.user.sessionVariables.GMAIL_CLIENT_ID')
     end
   end
   
@@ -78,22 +78,22 @@ end
 
 -- Step 2: Setup OAuth
 function M.setup_oauth()
-  notify.himalaya('🔐 Checking OAuth setup...', notify.categories.STATUS)
+  logger.info('🔐 Checking OAuth setup...')
   
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   
   -- Check if token exists
   if oauth.has_token(account.name or 'gmail') then
-    notify.himalaya('✅ OAuth token found', notify.categories.STATUS)
+    logger.info('✅ OAuth token found')
     
     -- Try to validate it
     if oauth.is_valid(account.name or 'gmail') then
-      notify.himalaya('✅ OAuth token appears valid', notify.categories.STATUS)
+      logger.info('✅ OAuth token appears valid')
       return true
     else
-      notify.himalaya('⚠️  OAuth token may be expired', notify.categories.WARNING)
+      logger.warn('⚠️  OAuth token may be expired')
       
       -- Offer to refresh
       vim.ui.input({
@@ -102,9 +102,9 @@ function M.setup_oauth()
         if input and input:lower() == 'y' then
           oauth.refresh(account.name or 'gmail', function(success)
             if success then
-              notify.himalaya('✅ OAuth token refreshed', notify.categories.USER_ACTION)
+              logger.info('✅ OAuth token refreshed')
             else
-              notify.himalaya('❌ Failed to refresh token', notify.categories.ERROR)
+              logger.error('❌ Failed to refresh token')
               M.guide_oauth_setup()
             end
           end)
@@ -116,7 +116,7 @@ function M.setup_oauth()
       return false, 'oauth needs refresh'
     end
   else
-    notify.himalaya('❌ No OAuth token found', notify.categories.WARNING)
+    logger.warn('❌ No OAuth token found')
     M.guide_oauth_setup()
     return false, 'no oauth token'
   end
@@ -124,11 +124,11 @@ end
 
 -- Guide through OAuth setup
 function M.guide_oauth_setup()
-  notify.himalaya('📋 OAuth Setup Instructions:', notify.categories.USER_ACTION)
-  notify.himalaya('1. Exit Neovim', notify.categories.STATUS)
-  notify.himalaya('2. Run in terminal: himalaya account configure gmail', notify.categories.STATUS)
-  notify.himalaya('3. Follow the browser authentication flow', notify.categories.STATUS)
-  notify.himalaya('4. Return to Neovim and run :HimalayaSetup again', notify.categories.STATUS)
+  logger.info('📋 OAuth Setup Instructions:')
+  logger.info('1. Exit Neovim')
+  logger.info('2. Run in terminal: himalaya account configure gmail')
+  logger.info('3. Follow the browser authentication flow')
+  logger.info('4. Return to Neovim and run :HimalayaSetup again')
   
   vim.ui.input({
     prompt = 'Open terminal to configure OAuth? (y/n): '
@@ -136,17 +136,17 @@ function M.guide_oauth_setup()
     if input and input:lower() == 'y' then
       -- Open a terminal with the command
       vim.cmd('split | terminal himalaya account configure gmail')
-      notify.himalaya('Complete OAuth setup in the terminal below', notify.categories.STATUS)
+      logger.info('Complete OAuth setup in the terminal below')
     end
   end)
 end
 
 -- Step 3: Create maildir structure
 function M.create_maildir()
-  notify.himalaya('📁 Setting up maildir structure...', notify.categories.STATUS)
+  logger.info('📁 Setting up maildir structure...')
   
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
   -- Check if maildir exists
@@ -157,7 +157,7 @@ function M.create_maildir()
     local has_tmp = vim.fn.isdirectory(maildir .. 'tmp') == 1
     
     if has_cur and has_new and has_tmp then
-      notify.himalaya('✅ Maildir structure exists', notify.categories.STATUS)
+      logger.info('✅ Maildir structure exists')
       
       -- Fix UIDVALIDITY files
       M.fix_uidvalidity_files(maildir)
@@ -166,7 +166,7 @@ function M.create_maildir()
   end
   
   -- Create structure
-  notify.himalaya('Creating maildir structure at: ' .. maildir, notify.categories.STATUS)
+  logger.info('Creating maildir structure at: ' .. maildir)
   
   -- Create directories
   local dirs = {
@@ -193,13 +193,13 @@ function M.create_maildir()
   -- Create empty UIDVALIDITY files (critical for mbsync)
   M.fix_uidvalidity_files(maildir)
   
-  notify.himalaya('✅ Maildir structure created', notify.categories.USER_ACTION)
+  logger.info('✅ Maildir structure created')
   return true
 end
 
 -- Fix UIDVALIDITY files
 function M.fix_uidvalidity_files(maildir)
-  notify.himalaya('🔧 Creating UIDVALIDITY files...', notify.categories.STATUS)
+  logger.info('🔧 Creating UIDVALIDITY files...')
   
   -- Create empty UIDVALIDITY files - mbsync will populate them
   local cmd = string.format('find %s -type d -name "cur" -exec sh -c \'touch "$(dirname "{}")"/.uidvalidity\' \\; 2>/dev/null', vim.fn.shellescape(maildir))
@@ -209,36 +209,37 @@ function M.fix_uidvalidity_files(maildir)
   cmd = string.format('find %s -name ".uidvalidity" -exec sh -c \'echo -n > "{}"\' \\; 2>/dev/null', vim.fn.shellescape(maildir))
   os.execute(cmd)
   
-  notify.himalaya('✅ UIDVALIDITY files prepared', notify.categories.STATUS)
+  logger.info('✅ UIDVALIDITY files prepared')
 end
 
 -- Step 4: Verify sync
 function M.verify_sync()
-  notify.himalaya('🔄 Testing email sync...', notify.categories.STATUS)
+  logger.info('🔄 Testing email sync...')
   
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   
   -- Try to sync inbox
   local sync_worked = false
-  mbsync.sync_inbox({
+  local inbox_channel = account.mbsync and account.mbsync.inbox_channel or 'gmail-inbox'
+  mbsync.sync(inbox_channel, {
     on_progress = function(progress)
       if progress.total then
-        notify.himalaya(string.format('Found %d messages', progress.total), notify.categories.STATUS)
+        logger.info(string.format('Found %d messages', progress.total))
       end
     end,
     callback = function(success, error)
       if success then
-        notify.himalaya('✅ Sync test successful!', notify.categories.USER_ACTION)
+        logger.info('✅ Sync test successful!')
         sync_worked = true
       else
-        notify.himalaya('❌ Sync failed: ' .. (error or 'unknown error'), notify.categories.ERROR)
+        logger.error('❌ Sync failed: ' .. (error or 'unknown error'))
         
         if error:match('Authentication') or error:match('XOAUTH2') then
-          notify.himalaya('OAuth token may be invalid. Re-run OAuth setup.', notify.categories.STATUS)
+          logger.info('OAuth token may be invalid. Re-run OAuth setup.')
         elseif error:match('UIDVALIDITY') then
-          notify.himalaya('Maildir structure issue. Re-run setup.', notify.categories.STATUS)
+          logger.info('Maildir structure issue. Re-run setup.')
         end
       end
     end
@@ -252,24 +253,24 @@ end
 
 -- Step 5: Configure keymaps
 function M.configure_keymaps()
-  notify.himalaya('⌨️  Setting up keymaps...', notify.categories.STATUS)
+  logger.info('⌨️  Setting up keymaps...')
   
   -- Check if which-key is available
   local has_which_key = pcall(require, 'which-key')
   
   if has_which_key then
-    notify.himalaya('✅ Keymaps configured in which-key', notify.categories.STATUS)
-    notify.himalaya('Press <leader>m to see email commands', notify.categories.USER_ACTION)
+    logger.info('✅ Keymaps configured in which-key')
+    logger.info('Press <leader>m to see email commands')
   else
     -- Set up basic keymaps
     vim.keymap.set('n', '<leader>ml', ':Himalaya<CR>', {desc = 'Open email list'})
     vim.keymap.set('n', '<leader>ms', ':HimalayaSyncInbox<CR>', {desc = 'Sync inbox'})
     vim.keymap.set('n', '<leader>mc', ':HimalayaWrite<CR>', {desc = 'Compose email'})
     
-    notify.himalaya('✅ Basic keymaps configured', notify.categories.STATUS)
-    notify.himalaya('<leader>ml - Open email', notify.categories.STATUS)
-    notify.himalaya('<leader>ms - Sync inbox', notify.categories.STATUS)
-    notify.himalaya('<leader>mc - Compose email', notify.categories.STATUS)
+    logger.info('✅ Basic keymaps configured')
+    logger.info('<leader>ml - Open email')
+    logger.info('<leader>ms - Sync inbox')
+    logger.info('<leader>mc - Compose email')
   end
   
   return true
@@ -277,7 +278,7 @@ end
 
 -- Main wizard runner
 function M.run()
-  notify.himalaya('🧙 Starting Himalaya Setup Wizard', notify.categories.USER_ACTION)
+  logger.info('🧙 Starting Himalaya Setup Wizard')
   
   local steps = {
     {name = 'Check Dependencies', fn = M.check_dependencies},
@@ -287,29 +288,28 @@ function M.run()
     {name = 'Configure Keymaps', fn = M.configure_keymaps},
   }
   
-  M.state.total_steps = #steps
+  M.total_steps = #steps
   
   for i, step in ipairs(steps) do
-    M.state.current_step = i
-    notify.himalaya(string.format('\n📍 Step %d/%d: %s', i, #steps, step.name), notify.categories.USER_ACTION)
+    M.current_step = i
+    logger.info(string.format('\n📍 Step %d/%d: %s', i, #steps, step.name))
     
     local ok, err = step.fn()
-    M.state.results[step.name] = {ok = ok, error = err}
+    M.results[step.name] = {ok = ok, error = err}
     
     if not ok then
-      notify.himalaya(string.format('❌ Setup failed at step %d: %s', i, err or 'unknown error'), notify.categories.ERROR)
+      logger.error(string.format('❌ Setup failed at step %d: %s', i, err or 'unknown error'))
       M.offer_fixes(step.name, err)
       return false
     end
   end
   
-  notify.himalaya('\n🎉 Himalaya setup complete!', notify.categories.USER_ACTION)
-  notify.himalaya('Press <leader>ml to open your email', notify.categories.USER_ACTION)
+  logger.info('\n🎉 Himalaya setup complete!')
+  logger.info('Press <leader>ml to open your email')
   
   -- Save setup completion
-  local state = require('neotex.plugins.tools.himalaya.state')
-  state.set('setup_completed', true)
-  state.save()
+  state.set('setup.completed', true)
+  state.set('setup.completed_at', os.time())
   
   return true
 end
@@ -334,7 +334,7 @@ function M.offer_fixes(step_name, error)
   }
   
   if fixes[step_name] and fixes[step_name][error] then
-    notify.himalaya('💡 Suggested fix: ' .. fixes[step_name][error], notify.categories.STATUS)
+    logger.info('💡 Suggested fix: ' .. fixes[step_name][error])
   end
   
   vim.ui.input({
@@ -350,8 +350,7 @@ end
 
 -- Check if setup has been completed
 function M.is_setup_complete()
-  local state = require('neotex.plugins.tools.himalaya.state')
-  return state.get('setup_completed') == true
+  return state.get('setup.completed', false)
 end
 
 return M

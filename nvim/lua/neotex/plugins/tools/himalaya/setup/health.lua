@@ -4,15 +4,16 @@
 local M = {}
 
 -- Dependencies
-local notify = require('neotex.util.notifications')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Health check functions
 M.checks = {}
 
 -- Check UIDVALIDITY files
 function M.checks.uidvalidity()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
   local issues = {}
@@ -64,8 +65,7 @@ end
 -- Check OAuth tokens
 function M.checks.oauth()
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   
   local status = oauth.get_status(account.name or 'gmail')
   
@@ -89,8 +89,7 @@ end
 
 -- Check maildir structure
 function M.checks.maildir()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
   local issues = {}
@@ -173,7 +172,6 @@ end
 
 -- Check binaries
 function M.checks.binaries()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
   local issues = {}
   
   for name, path in pairs(config.config.binaries) do
@@ -191,8 +189,7 @@ end
 
 -- Check folder mappings
 function M.checks.folder_mappings()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local account = config.get_account()
+  local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
   local issues = {}
@@ -260,8 +257,8 @@ function M.show_report(silent)
   local result = M.check()
   
   if not silent then
-    notify.himalaya('🏥 Himalaya Health Check', notify.categories.USER_ACTION)
-    notify.himalaya(string.rep('─', 40), notify.categories.STATUS)
+    logger.info('🏥 Himalaya Health Check')
+    logger.info(string.rep('─', 40))
   end
   
   for _, check in ipairs(result.report) do
@@ -269,32 +266,35 @@ function M.show_report(silent)
     local status = check.ok and 'OK' or 'ISSUES'
     
     if not silent then
-      notify.himalaya(string.format('%s %s: %s', icon, check.name, status), 
-        check.ok and notify.categories.STATUS or notify.categories.WARNING)
+      if check.ok then
+        logger.info(string.format('%s %s: %s', icon, check.name, status))
+      else
+        logger.warn(string.format('%s %s: %s', icon, check.name, status))
+      end
     end
     
     if not check.ok and check.issues and not silent then
       for _, issue in ipairs(check.issues) do
         if type(issue) == 'table' then
-          notify.himalaya('  - ' .. issue.issue .. ' (' .. issue.file .. ')', notify.categories.WARNING)
+          logger.warn('  - ' .. issue.issue .. ' (' .. issue.file .. ')')
         else
-          notify.himalaya('  - ' .. issue, notify.categories.WARNING)
+          logger.warn('  - ' .. issue)
         end
       end
       
       if check.fix then
-        notify.himalaya('  💡 Fix: ' .. check.fix, notify.categories.STATUS)
+        logger.info('  💡 Fix: ' .. check.fix)
       end
     end
   end
   
   if not silent then
-    notify.himalaya(string.rep('─', 40), notify.categories.STATUS)
+    logger.info(string.rep('─', 40))
     
     if result.ok then
-      notify.himalaya('🎉 All checks passed!', notify.categories.USER_ACTION)
+      logger.info('🎉 All checks passed!')
     else
-      notify.himalaya('⚠️  Some issues detected. Run suggested fixes.', notify.categories.WARNING)
+      logger.warn('⚠️  Some issues detected. Run suggested fixes.')
     end
   end
   
@@ -303,7 +303,7 @@ end
 
 -- Fix common issues automatically
 function M.fix_common_issues()
-  notify.himalaya('🔧 Attempting to fix common issues...', notify.categories.STATUS)
+  logger.info('🔧 Attempting to fix common issues...')
   
   local fixes_applied = {}
   
@@ -311,8 +311,7 @@ function M.fix_common_issues()
   local uidvalidity_check = M.checks.uidvalidity()
   if not uidvalidity_check.ok then
     local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
-    local config = require('neotex.plugins.tools.himalaya.core.config')
-    local account = config.get_account()
+    local account = config.get_current_account()
     wizard.fix_uidvalidity_files(vim.fn.expand(account.maildir_path))
     table.insert(fixes_applied, 'Fixed UIDVALIDITY files')
   end
@@ -328,12 +327,12 @@ function M.fix_common_issues()
   end
   
   if #fixes_applied > 0 then
-    notify.himalaya('✅ Applied fixes:', notify.categories.USER_ACTION)
+    logger.info('✅ Applied fixes:')
     for _, fix in ipairs(fixes_applied) do
-      notify.himalaya('  - ' .. fix, notify.categories.STATUS)
+      logger.info('  - ' .. fix)
     end
   else
-    notify.himalaya('No automatic fixes available', notify.categories.STATUS)
+    logger.info('No automatic fixes available')
   end
   
   -- Show report again
