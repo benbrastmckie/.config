@@ -4,6 +4,12 @@
 
 This document specifies the implementation of a smart sync feature for the Himalaya email plugin that provides fast, responsive syncing while keeping local emails up to date. The feature will intelligently check for new emails and only sync what's necessary, avoiding slow full syncs when not needed.
 
+## Design Principles
+
+1. **Minimal New Modules**: Work within existing infrastructure, only adding new functions to existing modules
+2. **Keymap Management**: All keymaps defined in which-key.lua, preserving existing functionality
+3. **Incremental Migration**: Add new keymaps alongside existing ones, migrate once proven stable
+
 ## Research Summary
 
 ### Key Findings
@@ -34,7 +40,11 @@ This document specifies the implementation of a smart sync feature for the Himal
 
 #### Phase 1: Smart Check Function
 
-Add a new function to check for new emails without syncing:
+**What it does**: Adds a new function to the existing `sync/mbsync.lua` module that checks if new emails exist on the server without downloading them.
+
+**Why it's useful**: Currently, checking for new emails requires a full sync which can take 30+ seconds. This function uses Himalaya's `--disable-cache` flag to query the IMAP server directly, returning results in under 2 seconds.
+
+Add this function to the existing mbsync module:
 
 ```lua
 -- In sync/mbsync.lua
@@ -78,7 +88,17 @@ end
 
 #### Phase 2: Smart Sync Command
 
-Modify the existing sync infrastructure to support smart sync:
+**What it does**: Adds a new command to `init.lua` that combines the check function with existing sync functionality.
+
+**Why it's useful**: Users can quickly check if they have new mail without waiting for a full sync. If no new emails exist, they get instant feedback. If new emails are found, only then does a sync occur.
+
+**Module Reuse**: This command reuses all existing infrastructure:
+- Uses existing `mbsync.sync()` function for actual syncing
+- Uses existing OAuth refresh mechanisms
+- Uses existing progress tracking and notifications
+- Uses existing UI refresh functions
+
+Add to the existing commands section in init.lua:
 
 ```lua
 -- Add to init.lua commands section
@@ -148,7 +168,20 @@ end, {
 
 #### Phase 3: Async Implementation
 
-Make the check asynchronous to avoid blocking:
+**What it does**: Enhances the check_new_emails function to support both synchronous and asynchronous operation using Neovim's jobstart API.
+
+**Why it's useful**: 
+- **Non-blocking UI**: The check happens in the background, so Neovim remains responsive while checking the server
+- **Better User Experience**: Users can continue editing while the check runs
+- **Network Resilience**: Network delays don't freeze the editor
+- **Progress Indication**: Can show "Checking..." status without blocking
+
+**Technical Benefits**:
+- Prevents UI freezing during network operations
+- Allows cancellation of long-running checks
+- Enables parallel operations (e.g., checking multiple folders simultaneously in future)
+
+Enhance the existing function with async support:
 
 ```lua
 -- Enhanced check_new_emails with async support
@@ -211,14 +244,40 @@ end
 
 #### Phase 4: Integration with Keymaps
 
-Update the keymap to use smart sync:
+**What it does**: Adds new keymaps in which-key.lua alongside existing ones, allowing gradual migration.
+
+**Why it's useful**: 
+- Preserves existing workflow while testing new functionality
+- Allows A/B comparison of sync methods
+- Easy rollback if issues arise
+- Clear migration path once proven stable
+
+**Implementation in which-key.lua**:
 
 ```lua
--- In init.lua, update the keymap
-{ '<leader>ms', ':HimalayaSmartSync<CR>', desc = 'Smart sync inbox' },
-{ '<leader>mS', ':HimalayaSyncInbox<CR>', desc = 'Force sync inbox' },
-{ '<leader>mF', ':HimalayaSyncFull<CR>', desc = 'Full sync all folders' },
+-- In which-key.lua, within the existing himalaya section
+{
+  ["<leader>m"] = {
+    name = "+mail",
+    -- Existing keymaps remain unchanged
+    s = { ":HimalayaSyncInbox<CR>", "Sync inbox" },
+    S = { ":HimalayaSyncFull<CR>", "Sync all" },
+    
+    -- New smart sync keymaps added alongside
+    i = { ":HimalayaSmartSync<CR>", "Smart sync (check first)" },
+    I = { ":HimalayaSyncInbox<CR>", "Force inbox sync" },
+    F = { ":HimalayaSyncFull<CR>", "Force full sync" },
+  }
+}
 ```
+
+**Migration Strategy**:
+1. Keep existing `<leader>ms` and `<leader>mS` unchanged initially
+2. Add new keymaps `<leader>mi` (smart), `<leader>mI` (force inbox), `<leader>mF` (force full)
+3. After testing period, swap keymaps:
+   - `<leader>ms` → Smart sync (most common use)
+   - `<leader>mS` → Force sync inbox
+   - `<leader>mF` → Force full sync
 
 ### Configuration Options
 
@@ -256,12 +315,30 @@ sync = {
 
 ### Implementation Plan
 
-1. **Create check_new_emails function** in `sync/mbsync.lua`
-2. **Add HimalayaSmartSync command** in `init.lua`
-3. **Update keymaps** to use smart sync as default
-4. **Add configuration options** in `core/config.lua`
+1. **Add check_new_emails function** to existing `sync/mbsync.lua` module
+   - No new files needed
+   - Reuses existing config and utils modules
+   
+2. **Add HimalayaSmartSync command** to existing commands in `init.lua`
+   - Placed alongside existing sync commands
+   - Reuses all existing sync infrastructure
+   
+3. **Add new keymaps** in `which-key.lua`
+   - Preserve existing keymaps
+   - Add new ones for testing
+   - Document migration plan
+   
+4. **Add configuration options** to existing config structure in `core/config.lua`
+   - Extend existing sync configuration
+   - No new config modules
+   
 5. **Test with various email scenarios**
-6. **Update documentation** and help text
+   - Test alongside existing sync methods
+   - Compare performance and reliability
+   
+6. **Update help text** in existing help system
+   - Add new keymaps to help display
+   - Update command descriptions
 
 ### Technical Considerations
 
@@ -312,6 +389,22 @@ sync = {
    - Accuracy of new email detection
    - User experience flow
 
+## Module Reuse Summary
+
+**No new modules are created**. The implementation only adds:
+- One new function (`check_new_emails`) to existing `sync/mbsync.lua`
+- One new command (`HimalayaSmartSync`) to existing command list in `init.lua`
+- New keymaps in `which-key.lua` alongside existing ones
+- Configuration options to existing config structure
+
+**All functionality reuses**:
+- Existing OAuth refresh mechanisms
+- Existing progress tracking system
+- Existing notification system
+- Existing UI refresh functions
+- Existing lock management
+- Existing error handling
+
 ## Conclusion
 
 This smart sync feature will significantly improve the user experience by:
@@ -320,4 +413,4 @@ This smart sync feature will significantly improve the user experience by:
 - Maintaining the robustness of the existing sync system
 - Integrating seamlessly with current workflows
 
-The implementation leverages Himalaya's stateless nature and mbsync's capabilities to create an efficient, user-friendly email sync experience.
+The implementation leverages Himalaya's stateless nature and mbsync's capabilities to create an efficient, user-friendly email sync experience, while respecting the existing codebase structure and avoiding unnecessary module proliferation.

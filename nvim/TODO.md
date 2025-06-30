@@ -105,13 +105,13 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] pairs
 - [:] email
   - [ ] features
-    - [ ] sync
-      - [ ] smart_sync using himalaya
-      - [ ] auto_sync when nvim opens
     - [ ] save-drafts
       - [ ] q:save-draft
     - [ ] trash
-    - [ ] extra
+    - [ ] sync
+      - [ ] smart_sync using himalaya
+      - [ ] auto_sync when nvim opens
+    - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
       - [ ] attachments
       - [ ] images
