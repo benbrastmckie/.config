@@ -105,18 +105,24 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] pairs
 - [:] email
   - [ ] features
-    - [ ] autosync when nvim opens
+    - [ ] sync
+      - [ ] smart_sync using himalaya
+      - [ ] auto_sync when nvim opens
     - [ ] save-drafts
       - [ ] q:save-draft
     - [ ] trash
+    - [ ] extra
+      - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
+      - [ ] attachments
+      - [ ] images
+      - [ ] add header field to email
+    - [ ] autocomplete
+      - [ ] addresses in the form: Name <user@domain>
     - [x] email
       - [x] gs:send
       - [x] start cursor in email field
       - [x] tab fields
-    - [ ] remove/fix mappings
-      - [ ] `<leader>ma`
-      - [ ] `<leader>mf`
-      - [ ] `<leader>mp`
+    - [x] remove/fix mappings
   - [:] sidebar
     - [x] batch operation
       - [x] spec
