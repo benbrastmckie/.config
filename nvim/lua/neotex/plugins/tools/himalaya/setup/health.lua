@@ -70,20 +70,42 @@ function M.checks.oauth()
   local status = oauth.get_status(account.name or 'gmail')
   
   local issues = {}
+  local details = {}
   
   if not status.has_token then
     table.insert(issues, 'No OAuth token found')
+  else
+    table.insert(details, 'Token exists: Yes')
   end
   
   if not status.environment_loaded then
     table.insert(issues, 'OAuth environment variables not loaded')
+  else
+    table.insert(details, 'Environment loaded: Yes')
+  end
+  
+  if status.last_refresh > 0 then
+    local ago = os.time() - status.last_refresh
+    local minutes = math.floor(ago / 60)
+    table.insert(details, 'Last refresh: ' .. minutes .. ' minutes ago')
+  end
+  
+  -- Add token info if available
+  if status.token_info then
+    if status.token_info.has_access_token then
+      table.insert(details, 'Access token: Present')
+    end
+    if status.token_info.has_refresh_token then
+      table.insert(details, 'Refresh token: Present')
+    end
   end
   
   return {
     ok = #issues == 0,
     status = status,
     issues = issues,
-    fix = #issues > 0 and ':HimalayaSetupOAuth or run "himalaya account configure" in terminal' or nil
+    details = details,
+    fix = #issues > 0 and ':HimalayaOAuthRefresh or run "himalaya account configure" in terminal' or nil
   }
 end
 
@@ -130,10 +152,11 @@ function M.checks.maildir()
   }
 end
 
--- Check for stuck sync processes
-function M.checks.sync_processes()
+-- Check for stuck sync processes and recent errors
+function M.checks.sync_status()
   local issues = {}
   local processes = {}
+  local details = {}
   
   -- Check for mbsync processes
   local handle = io.popen('ps aux | grep "[m]bsync" 2>/dev/null')
@@ -163,11 +186,31 @@ function M.checks.sync_processes()
     table.insert(issues, 'Stale lock files detected')
   end
   
+  -- Check last sync error
+  local last_error = state.get("sync.last_error")
+  if last_error then
+    table.insert(details, 'Last sync error: ' .. last_error)
+  end
+  
+  -- Check last sync time
+  local last_sync = state.get("sync.last_sync")
+  if last_sync then
+    local ago = os.time() - last_sync
+    local minutes = math.floor(ago / 60)
+    table.insert(details, 'Last sync: ' .. minutes .. ' minutes ago')
+  end
+  
+  -- Add process count
+  if #processes > 0 then
+    table.insert(details, 'Active mbsync processes: ' .. #processes)
+  end
+  
   return {
     ok = #issues == 0,
     processes = processes,
     locks = active_locks,
     issues = issues,
+    details = details,
     fix = #issues > 0 and ':HimalayaCleanup' or nil
   }
 end
@@ -230,9 +273,9 @@ function M.check()
     {name = 'Binaries', test = M.checks.binaries},
     {name = 'Maildir Structure', test = M.checks.maildir},
     {name = 'UIDVALIDITY Files', test = M.checks.uidvalidity},
-    {name = 'OAuth Tokens', test = M.checks.oauth},
+    {name = 'OAuth Status', test = M.checks.oauth},
     {name = 'Folder Mappings', test = M.checks.folder_mappings},
-    {name = 'Sync Processes', test = M.checks.sync_processes},
+    {name = 'Sync Status', test = M.checks.sync_status},
   }
   
   local report = {}
@@ -257,47 +300,63 @@ end
 -- Display health check results
 function M.show_report(silent)
   local result = M.check()
+  local float = require('neotex.plugins.tools.himalaya.ui.float')
+  
+  -- Build output lines
+  local lines = {}
   
   if not silent then
-    logger.info(' Himalaya Health Check')
-    logger.info(string.rep('─', 40))
+    table.insert(lines, 'Himalaya Health Check')
+    table.insert(lines, string.rep('=', 40))
+    table.insert(lines, '')
   end
   
   for _, check in ipairs(result.report) do
-    local icon = check.ok and '' or ''
+    local icon = check.ok and '✓' or '✗'
     local status = check.ok and 'OK' or 'ISSUES'
     
     if not silent then
-      if check.ok then
-        logger.info(string.format('%s %s: %s', icon, check.name, status))
-      else
-        logger.warn(string.format('%s %s: %s', icon, check.name, status))
+      local line = string.format('%s %s: %s', icon, check.name, status)
+      table.insert(lines, line)
+    end
+    
+    -- Show details if available (when debug mode is on or if there are issues)
+    local notify = require('neotex.util.notifications')
+    local show_details = notify.config.modules.himalaya.debug_mode or not check.ok
+    
+    if show_details and check.details and #check.details > 0 and not silent then
+      for _, detail in ipairs(check.details) do
+        table.insert(lines, '   ' .. detail)
       end
     end
     
     if not check.ok and check.issues and not silent then
       for _, issue in ipairs(check.issues) do
         if type(issue) == 'table' then
-          logger.warn('   ' .. issue.issue .. ' (' .. issue.file .. ')')
+          table.insert(lines, '   ' .. issue.issue .. ' (' .. issue.file .. ')')
         else
-          logger.warn('   ' .. issue)
+          table.insert(lines, '   ' .. issue)
         end
       end
       
       if check.fix then
-        logger.info('   Fix: ' .. check.fix)
+        table.insert(lines, '   Fix: ' .. check.fix)
       end
     end
   end
   
   if not silent then
-    logger.info(string.rep('─', 40))
+    table.insert(lines, '')
+    table.insert(lines, string.rep('-', 40))
     
     if result.ok then
-      logger.info(' All checks passed!')
+      table.insert(lines, 'All checks passed!')
     else
-      logger.warn('  Some issues detected. Run suggested fixes.')
+      table.insert(lines, 'Some issues detected. Run suggested fixes.')
     end
+    
+    -- Show in floating window
+    float.show('Himalaya Health Check', lines)
   end
   
   return result
@@ -305,7 +364,7 @@ end
 
 -- Fix common issues automatically
 function M.fix_common_issues()
-  logger.info(' Attempting to fix common issues...')
+  print(' Attempting to fix common issues...')
   
   local fixes_applied = {}
   
@@ -319,7 +378,7 @@ function M.fix_common_issues()
   end
   
   -- Clean up stale locks
-  local sync_check = M.checks.sync_processes()
+  local sync_check = M.checks.sync_status()
   if not sync_check.ok and #sync_check.locks > 0 and #sync_check.processes == 0 then
     local lock = require('neotex.plugins.tools.himalaya.sync.lock')
     local cleaned = lock.cleanup_locks()
@@ -329,12 +388,12 @@ function M.fix_common_issues()
   end
   
   if #fixes_applied > 0 then
-    logger.info(' Applied fixes:')
+    print(' Applied fixes:')
     for _, fix in ipairs(fixes_applied) do
-      logger.info('  - ' .. fix)
+      print('  - ' .. fix)
     end
   else
-    logger.info('No automatic fixes available')
+    print('No automatic fixes available')
   end
   
   -- Show report again

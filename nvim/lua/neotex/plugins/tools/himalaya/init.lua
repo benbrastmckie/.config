@@ -124,6 +124,19 @@ function M.setup_commands()
     local channel = account.mbsync and account.mbsync.inbox_channel or 'gmail-inbox'
     notify.himalaya('Starting inbox sync...', notify.categories.STATUS)
     
+    -- Set sync status immediately
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set('sync.status', '⟳ Syncing...')
+    state.set('sync.start_time', os.time())
+    state.set('sync.running', true)
+    
+    -- Immediately show sync status in sidebar
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    if ui.is_email_buffer_open() then
+      -- Force immediate refresh to show "Syncing..." status
+      main.refresh_sidebar_header()
+    end
+    
     -- Start sidebar refresh timer
     local refresh_timer = nil
     if ui.is_email_buffer_open() then
@@ -150,6 +163,11 @@ function M.setup_commands()
         
         if not success then
           ui.notifications.handle_sync_error(error)
+          -- Log error details in debug mode
+          local notify = require('neotex.util.notifications')
+          if notify.config.modules.himalaya.debug_mode and error then
+            notify.himalaya('Sync error details: ' .. error, notify.categories.DEBUG)
+          end
         else
           -- Clear cache and refresh UI
           local utils = require('neotex.plugins.tools.himalaya.utils')
@@ -194,6 +212,19 @@ function M.setup_commands()
     local channel = account.mbsync and account.mbsync.all_channel or 'gmail'
     notify.himalaya('Starting full sync...', notify.categories.STATUS)
     
+    -- Set sync status immediately
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set('sync.status', '⟳ Syncing...')
+    state.set('sync.start_time', os.time())
+    state.set('sync.running', true)
+    
+    -- Immediately show sync status in sidebar
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    if ui.is_email_buffer_open() then
+      -- Force immediate refresh to show "Syncing..." status
+      main.refresh_sidebar_header()
+    end
+    
     -- Start sidebar refresh timer
     local refresh_timer = nil
     if ui.is_email_buffer_open() then
@@ -220,6 +251,11 @@ function M.setup_commands()
         
         if not success then
           ui.notifications.handle_sync_error(error)
+          -- Log error details in debug mode
+          local notify = require('neotex.util.notifications')
+          if notify.config.modules.himalaya.debug_mode and error then
+            notify.himalaya('Sync error details: ' .. error, notify.categories.DEBUG)
+          end
         else
           local utils = require('neotex.plugins.tools.himalaya.utils')
           utils.clear_email_cache()
@@ -344,21 +380,25 @@ function M.setup_commands()
     desc = 'Refresh OAuth token'
   })
   
-  cmd('HimalayaOAuthStatus', function()
+  
+  cmd('HimalayaOAuthRefresh', function()
     local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
-    local status = oauth.get_status()
-    
     local notify = require('neotex.util.notifications')
-    notify.himalaya('OAuth Status:', notify.categories.STATUS)
-    notify.himalaya('  Token exists: ' .. tostring(status.has_token), notify.categories.STATUS)
-    notify.himalaya('  Environment loaded: ' .. tostring(status.environment_loaded), notify.categories.STATUS)
-    if status.last_refresh > 0 then
-      local ago = os.time() - status.last_refresh
-      notify.himalaya('  Last refresh: ' .. ago .. ' seconds ago', notify.categories.STATUS)
-    end
+    
+    notify.himalaya('Refreshing OAuth token...', notify.categories.INFO)
+    
+    oauth.refresh(nil, function(success, error_msg)
+      if success then
+        notify.himalaya('OAuth token refreshed successfully!', notify.categories.SUCCESS)
+      else
+        notify.himalaya('Failed to refresh OAuth token: ' .. (error_msg or 'unknown error'), notify.categories.ERROR)
+        notify.himalaya('You may need to run: himalaya account configure gmail', notify.categories.INFO)
+      end
+    end)
   end, {
-    desc = 'Show OAuth status'
+    desc = 'Manually refresh OAuth token'
   })
+  
   
   -- Maintenance commands
   cmd('HimalayaCleanup', function()
@@ -709,7 +749,7 @@ function M.setup_commands()
               local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
               wizard.run()
             else
-              notify.himalaya('✅ Fresh maildir ready. Run :HimalayaSetup when ready to configure.', notify.categories.USER_ACTION)
+              notify.himalaya('[OK] Fresh maildir ready. Run :HimalayaSetup when ready to configure.', notify.categories.USER_ACTION)
             end
           end)
         end
@@ -729,7 +769,7 @@ function M.setup_commands()
     local backup_prompt = string.format('Backup %s emails (%s)? (y/n): ', email_count, dir_size)
     vim.ui.input({ prompt = backup_prompt }, function(backup_input)
       if not backup_input then
-        notify.himalaya('❌ Cancelled - no changes made', notify.categories.USER_ACTION)
+        notify.himalaya('[CANCELLED] Cancelled - no changes made', notify.categories.USER_ACTION)
         return
       end
       
@@ -753,10 +793,10 @@ function M.setup_commands()
         local result = os.execute(cp_cmd)
         
         if result == 0 then
-          notify.himalaya('✅ Backup created: ' .. backup_dir, notify.categories.SUCCESS)
+          notify.himalaya('[OK] Backup created: ' .. backup_dir, notify.categories.SUCCESS)
           backup_made = true
         else
-          notify.himalaya('❌ Backup failed!', notify.categories.ERROR)
+          notify.himalaya('[CANCELLED] Backup failed!', notify.categories.ERROR)
           return
         end
       end
@@ -764,7 +804,7 @@ function M.setup_commands()
       -- Question 2: Delete current mail?
       vim.ui.input({ prompt = 'Delete current mail directory? (y/n): ' }, function(delete_input)
         if not delete_input or delete_input:lower() ~= 'y' then
-          notify.himalaya('❌ Cancelled - no changes made', notify.categories.USER_ACTION)
+          notify.himalaya('[CANCELLED] Cancelled - no changes made', notify.categories.USER_ACTION)
           return
         end
         
@@ -779,11 +819,11 @@ function M.setup_commands()
         local result = os.execute(rm_cmd)
         
         if result ~= 0 then
-          notify.himalaya('❌ Failed to delete mail directory', notify.categories.ERROR)
+          notify.himalaya('[CANCELLED] Failed to delete mail directory', notify.categories.ERROR)
           return
         end
         
-        notify.himalaya('✅ Mail directory deleted', notify.categories.SUCCESS)
+        notify.himalaya('[OK] Mail directory deleted', notify.categories.SUCCESS)
         
         -- Clear all state
         state.reset()
@@ -835,7 +875,7 @@ function M.setup_commands()
         local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
         wizard.fix_uidvalidity_files(mail_dir)
         
-        notify.himalaya('✅ Fresh maildir structure created', notify.categories.SUCCESS)
+        notify.himalaya('[OK] Fresh maildir structure created', notify.categories.SUCCESS)
         
         -- Question 3: Run setup wizard?
         vim.schedule(function()
@@ -844,7 +884,7 @@ function M.setup_commands()
               local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
               wizard.run()
             else
-              notify.himalaya('✅ Fresh maildir ready. Run :HimalayaSetup when ready to configure.', notify.categories.USER_ACTION)
+              notify.himalaya('[OK] Fresh maildir ready. Run :HimalayaSetup when ready to configure.', notify.categories.USER_ACTION)
             end
           end)
         end)
@@ -867,7 +907,6 @@ function M.get_keymaps()
       c = { ':HimalayaWrite<CR>', 'Compose' },
       h = { ':HimalayaHealth<CR>', 'Health check' },
       x = { ':HimalayaCancelSync<CR>', 'Cancel sync' },
-      U = { ':HimalayaCancelSync<CR>', 'Cancel all syncs' },
     }
   }
 end
@@ -888,7 +927,8 @@ return {
       { '<leader>mS', ':HimalayaSyncFull<CR>', desc = 'Sync all folders' },
       { '<leader>mc', ':HimalayaWrite<CR>', desc = 'Compose email' },
       { '<leader>mW', ':HimalayaSetup<CR>', desc = 'Setup wizard' },
-      { '<leader>mU', ':HimalayaCancelSync<CR>', desc = 'Cancel all syncs' },
+      { '<leader>mx', ':HimalayaCancelSync<CR>', desc = 'Cancel all syncs' },
+      { '<leader>mh', ':HimalayaHealth<CR>', desc = 'Health check' },
     },
   },
   -- Dependencies
