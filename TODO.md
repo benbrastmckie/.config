@@ -105,11 +105,18 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] pairs
 - [:] email
   - [ ] Instead of auto-sync when nvim starts, can you make it auto-sync when I open himalaya?
-  - [ ] only show loading screen on first open
-    - [ ] make reload only redraw after finished
-  - [ ] fix download redundancy problem
-  - [ ] works with non-nix just as well?
-  - [ ] remove GMAIL_CLIENT_ID from private.fish?
+  - [ ] UI
+    - [ ] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
+    - [ ] multi select emails
+    - [ ] colors for stared and unread
+    - [ ] subject in bold
+    - [ ] hover emails
+    - [ ] reply/forward/compose in buffers
+  - [ ] documentation
+    - [ ] refactor
+    - [ ] works with non-nix just as well?
+  - [ ] publish plugin
+  - [x] remove GMAIL_CLIENT_ID from private.fish?
   - [x] install himalaya
   - [x] get mbsync to work
   - [x] build himalaya-nvim plugin
@@ -119,7 +126,7 @@ Right now the wizard works and shows all the output in the command line in nvim.
     - [x] document
     - [x] simplify by removing development/testing elements
     - [x] centralize all <leader> mappings in which-key.lua
-- [.] docs
+ [.] docs
   - [ ] api
   - [ ] READMEs
   - [ ] learning git
@@ -133,13 +140,13 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] ai video
   - [x] website
   - wiki
-- [ ] undo tree commands
-- [ ] checkhealth
+ [ ] undo tree commands
+ [ ] checkhealth
   - [ ] install all missing programs in checkhealth
   - [x] error: client 2 quit with exit code 127 and signal 0
   - [x] error detected BufWritePre Autocommand for "\*"
-- [ ] update cheatsheet
-- [ ] github issues
+ [ ] update cheatsheet
+ [ ] github issues
   - [ ] consolidate add-ons
   - [ ] forks #73
   - [ ] thesaurus #69

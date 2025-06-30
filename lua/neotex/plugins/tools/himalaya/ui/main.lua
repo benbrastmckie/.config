@@ -283,14 +283,16 @@ function M.format_email_list(emails)
   table.insert(lines, '')
   
   -- Email entries
-  for _, email in ipairs(emails) do
+  for i, email in ipairs(emails) do
     -- Parse flags (they're in an array)
     local seen = false
+    local starred = false
     if email.flags and type(email.flags) == 'table' then
       for _, flag in ipairs(email.flags) do
         if flag == 'Seen' then
           seen = true
-          break
+        elseif flag == 'Flagged' or flag == 'Starred' then
+          starred = true
         end
       end
     end
@@ -315,6 +317,14 @@ function M.format_email_list(emails)
     
     local line = string.format('[%s] %s  %s  %s', status, from, subject, date)
     table.insert(lines, line)
+    
+    -- Store email metadata for highlighting
+    if not lines.metadata then lines.metadata = {} end
+    lines.metadata[#lines] = {
+      seen = seen,
+      starred = starred,
+      email_index = i
+    }
   end
   
   -- Footer with keymaps
