@@ -190,6 +190,49 @@ function M.get_current_account()
   return M.config.accounts[M.current_account]
 end
 
+-- Auto-detect email address from himalaya config
+function M.get_account_email(account_name)
+  account_name = account_name or M.current_account
+  local account = M.config.accounts[account_name]
+  
+  -- If email is already configured, return it
+  if account and account.email then
+    return account.email
+  end
+  
+  -- Try to read email from himalaya config file
+  local config_file = vim.fn.expand('~/.config/himalaya/config.toml')
+  if vim.fn.filereadable(config_file) == 1 then
+    local handle = io.open(config_file, 'r')
+    if handle then
+      local content = handle:read('*a')
+      handle:close()
+      
+      -- Look for the account section and email field
+      local pattern = '%[accounts%.' .. account_name .. '%].-email%s*=%s*["\']([^"\']+)["\']'
+      local email = content:match(pattern)
+      
+      if email then
+        -- Cache the email in the config
+        if account then
+          account.email = email
+        end
+        return email
+      end
+    end
+  end
+  
+  -- Fallback: if account name looks like an email, use it
+  if account_name and account_name:match('@') then
+    if account then
+      account.email = account_name
+    end
+    return account_name
+  end
+  
+  return nil
+end
+
 -- Get current account name
 function M.get_current_account_name()
   return M.current_account
@@ -257,6 +300,12 @@ end
 function M.setup_buffer_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
+  
+  -- Disable tab cycling in all Himalaya buffers
+  keymap('n', '<Tab>', '<Nop>', opts)
+  keymap('n', '<S-Tab>', '<Nop>', opts)
+  keymap('i', '<Tab>', '<Tab>', opts)  -- Keep normal tab in insert mode
+  keymap('i', '<S-Tab>', '<S-Tab>', opts)  -- Keep shift-tab in insert mode
   
   -- Email list keymaps
   if vim.bo[bufnr].filetype == 'himalaya-list' then
