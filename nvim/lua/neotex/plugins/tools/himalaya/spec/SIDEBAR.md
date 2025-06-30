@@ -520,10 +520,23 @@ end
 - Header shows selection count when in selection mode
 - Keymap 'v' successfully toggles selection mode
 
-### Phase 3: Selection Interaction
-1. Implement space-bar selection toggle
-2. Add visual feedback for selection mode
-3. Update sidebar header with selection count
+### Phase 3: Selection Interaction ✅ COMPLETED
+1. ✅ Implement space-bar selection toggle
+2. ✅ Add visual feedback for selection mode
+3. ✅ Update sidebar header with selection count
+
+**Changes made:**
+- Added Space keymap in `core/config.lua` to toggle email selection in selection mode
+- Enhanced `apply_email_highlighting()` to highlight checkboxes and selected lines
+- Space bar correctly toggles selection with proper notifications
+- Cursor position maintained after refresh
+- Visual feedback includes green checkboxes for selected items and highlighted lines
+
+**Test results:**
+- Space bar selection toggle working correctly
+- Selection count updates properly in notifications
+- Visual highlighting applied to selected emails and checkboxes
+- Header shows current selection count
 
 ### Phase 4: Batch Operations
 1. Implement batch delete, archive, and spam functions
