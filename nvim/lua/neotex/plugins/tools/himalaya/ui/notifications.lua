@@ -233,27 +233,9 @@ end
 
 -- Show sync progress in a simple way
 function M.show_sync_progress(progress)
-  if not progress then return end
-  
-  local msg
-  
-  if progress.status == 'syncing' then
-    msg = '🔄 Syncing email...'
-  elseif progress.status == 'counting' and progress.total then
-    msg = string.format('📊 Found %d emails', progress.total)
-  elseif progress.status == 'expunging' then
-    msg = '🧹 Cleaning up deleted messages...'
-  elseif progress.message then
-    msg = progress.message
-  else
-    return -- No useful progress to show
-  end
-  
-  -- Use unified notification system for progress
-  notify.himalaya(msg, notify.categories.STATUS, {
-    progress = true,
-    replace = 'himalaya_sync_progress'
-  })
+  -- Disable sync progress messages - they're too repetitive
+  -- Progress is shown in the sidebar header instead
+  return
 end
 
 -- Show setup hints based on current issues

@@ -43,7 +43,14 @@ end
 -- Execute himalaya command and return output
 function M.execute_himalaya(args, opts)
   opts = opts or {}
-  local cmd = { config.config.executable }
+  
+  -- Get the executable path
+  local executable = 'himalaya'
+  if config and config.config and config.config.binaries and config.config.binaries.himalaya then
+    executable = config.config.binaries.himalaya
+  end
+  
+  local cmd = { executable }
   
   -- Add the main arguments first (command and subcommand)
   vim.list_extend(cmd, args)
@@ -68,12 +75,30 @@ function M.execute_himalaya(args, opts)
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error
   
+  -- Debug logging for move commands
+  if args[1] == 'message' and args[2] == 'move' then
+    logger.debug('Move command: ' .. table.concat(cmd, ' '))
+    logger.debug('Move result: ' .. (result or 'nil'))
+    logger.debug('Move exit code: ' .. exit_code)
+  end
+  
   if exit_code ~= 0 then
+    -- Check if this is the "cannot list maildir entries" error for empty maildir
+    if result and result:match('cannot list maildir entries') then
+      -- This is expected for empty maildirs, return empty list
+      return {}, 0
+    end
     notify.himalaya('Himalaya command failed: ' .. (result or 'unknown error'), notify.categories.ERROR)
     return nil
   end
   
-  -- Parse JSON output
+  -- For some commands (like move), success is indicated by exit code 0 even without JSON output
+  if args[1] == 'message' and (args[2] == 'move' or args[2] == 'delete') then
+    -- These commands may not return JSON, just check exit code
+    return exit_code == 0
+  end
+  
+  -- Parse JSON output for other commands
   local success, data = pcall(vim.json.decode, result)
   if not success then
     notify.himalaya('Failed to parse Himalaya output', notify.categories.ERROR)
@@ -118,7 +143,7 @@ function M.get_email_list(account, folder, page, page_size)
                       (current_time - cache_timestamp) > cache_timeout
   
   if need_refresh then
-    notify.himalaya('Fetching emails from Himalaya', notify.categories.BACKGROUND, { cache_refresh = true })
+    -- Remove fetching message - too noisy
     
     local args = { 'envelope', 'list' }
     
@@ -132,11 +157,11 @@ function M.get_email_list(account, folder, page, page_size)
     if result then
       email_cache[cache_key] = result
       cache_timestamp = current_time
-      notify.himalaya('Cached emails', notify.categories.BACKGROUND, { count = #result, account = account, folder = folder })
+      -- Remove cached message - too noisy
     else
       -- If cache exists, use it; otherwise return nil
       if email_cache[cache_key] then
-        notify.himalaya('Using cached emails (fetch failed)', notify.categories.BACKGROUND)
+        -- Remove message - too noisy
       else
         return nil
       end
@@ -156,22 +181,28 @@ function M.get_email_list(account, folder, page, page_size)
       for i = start_idx, end_idx do
         table.insert(page_emails, all_emails[i])
       end
-      notify.himalaya('Email list pagination', notify.categories.STATUS, { page = page, start_idx = start_idx, end_idx = end_idx, total = #all_emails })
-      return page_emails
+      -- Remove pagination message - too noisy
+      -- Return page emails and total count
+      return page_emails, #all_emails
     else
       -- No emails for this page
       notify.himalaya('No emails for page', notify.categories.STATUS, { page = page, total = #all_emails })
-      return {}
+      return {}, #all_emails
     end
   end
   
-  return all_emails
+  -- When no pagination is requested, return all emails and count
+  return all_emails, #all_emails
 end
 
 -- Get email content by ID
-function M.get_email_content(account, email_id)
+function M.get_email_content(account, email_id, folder)
   local args = { 'message', 'read', tostring(email_id) }
-  return M.execute_himalaya(args, { account = account })
+  local opts = { account = account }
+  if folder then
+    opts.folder = folder
+  end
+  return M.execute_himalaya(args, opts)
 end
 
 -- Send email
@@ -190,7 +221,7 @@ function M.send_email(account, email_data)
   file:close()
   
   -- Send email using himalaya
-  local cmd = { config.config.executable, 'message', 'send' }
+  local cmd = { config.config.binaries.himalaya or 'himalaya', 'message', 'send' }
   
   if account then
     table.insert(cmd, '-a')
@@ -319,10 +350,17 @@ function M.parse_email_content(lines)
 end
 
 -- Delete email
-function M.delete_email(account, email_id)
+function M.delete_email(account, email_id, folder)
   local args = { 'message', 'delete', tostring(email_id) }
-  local result = M.execute_himalaya(args, { account = account })
+  local opts = { account = account }
+  if folder then
+    opts.folder = folder
+  end
+  local result = M.execute_himalaya(args, opts)
   if result then
+    -- Clear entire cache after successful deletion (we don't know which folder)
+    M.clear_email_cache()
+    
     -- Trigger refresh after deletion
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
@@ -334,7 +372,7 @@ end
 -- Smart delete email with trash folder detection
 function M.smart_delete_email(account, email_id)
   local args = { 'message', 'delete', tostring(email_id) }
-  local cmd = { config.config.executable }
+  local cmd = { config.config.binaries.himalaya or 'himalaya' }
   vim.list_extend(cmd, args)
   
   if account then
@@ -342,13 +380,34 @@ function M.smart_delete_email(account, email_id)
     table.insert(cmd, account)
   end
   
+  -- Add current folder
+  local state = require('neotex.plugins.tools.himalaya.ui.state')
+  local folder = state.get_current_folder()
+  if folder then
+    table.insert(cmd, '-f')
+    table.insert(cmd, folder)
+  end
+  
   table.insert(cmd, '-o')
   table.insert(cmd, 'json')
+  
+  -- Debug: show the exact command
+  notify.himalaya('Delete command: ' .. table.concat(cmd, ' '), notify.categories.DEBUG)
   
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error
   
+  -- Debug: log the deletion attempt
+  if exit_code ~= 0 then
+    notify.himalaya('Delete failed: ' .. (result or 'no error message'), notify.categories.ERROR)
+  else
+    notify.himalaya('Delete result: ' .. (result or 'success'), notify.categories.DEBUG)
+  end
+  
   if exit_code == 0 then
+    -- Clear entire cache after successful deletion
+    M.clear_email_cache()
+    
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
     end, 100)
@@ -382,10 +441,21 @@ end
 -- Move email to folder
 function M.move_email(email_id, target_folder)
   local args = { 'message', 'move', target_folder, tostring(email_id) }
-  local result = M.execute_himalaya(args, { account = config.state.current_account })
+  -- Get current folder from UI state
+  local state = require('neotex.plugins.tools.himalaya.ui.state')
+  local current_folder = state.get_current_folder() or 'INBOX'
+  
+  local result = M.execute_himalaya(args, { 
+    account = config.get_current_account_name(),
+    folder = current_folder  -- Add source folder
+  })
   
   if result then
     notify.himalaya('Email moved', notify.categories.USER_ACTION, { folder = target_folder })
+    -- Clear cache after move
+    M.clear_email_cache(config.get_current_account_name(), current_folder)
+    M.clear_email_cache(config.get_current_account_name(), target_folder)
+    
     -- Trigger refresh after successful move
     vim.defer_fn(function()
       vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailMoved' })
@@ -413,7 +483,7 @@ end
 function M.manage_tag(email_id, tag, action)
   local flag_action = action == 'add' and 'add' or 'remove'
   local args = { 'flag', flag_action, email_id, tag }
-  local result = M.execute_himalaya(args, { account = config.state.current_account })
+  local result = M.execute_himalaya(args, { account = config.get_current_account_name() })
   
   if result then
     notify.himalaya('Tag updated', notify.categories.USER_ACTION, { action = action, tag = tag })
@@ -430,7 +500,7 @@ end
 -- Get email info
 function M.get_email_info(email_id)
   local args = { 'message', 'read', email_id }
-  local result = M.execute_himalaya(args, { account = config.state.current_account })
+  local result = M.execute_himalaya(args, { account = config.get_current_account_name() })
   
   -- Convert result to string if it's a table
   if type(result) == 'table' then

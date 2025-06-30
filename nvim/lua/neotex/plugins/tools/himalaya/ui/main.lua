@@ -34,12 +34,33 @@ end
 
 -- Toggle email sidebar
 function M.toggle_email_sidebar()
-  if sidebar.is_open() then
-    sidebar.close()
-    notifications.show('Himalaya closed', 'info')
-  else
-    M.show_email_list({})
+  -- Check if we have an email list buffer open
+  local email_list_buf = M.buffers.email_list
+  if email_list_buf and vim.api.nvim_buf_is_valid(email_list_buf) then
+    -- Find the window showing this buffer
+    local win_found = false
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_get_buf(win) == email_list_buf then
+        -- Close this window
+        vim.api.nvim_win_close(win, true)
+        win_found = true
+        break
+      end
+    end
+    
+    if win_found then
+      -- Clean up
+      M.buffers.email_list = nil
+      sidebar.state.is_open = false
+      sidebar.state.win = nil
+      sidebar.state.buf = nil
+      notifications.show('Himalaya closed', 'info')
+      return
+    end
   end
+  
+  -- If we get here, sidebar is not open, so open it
+  M.show_email_list({})
 end
 
 function M.show_email_list(args)
@@ -48,6 +69,12 @@ function M.show_email_list(args)
   -- Ensure UI is initialized
   if not state.is_initialized() then
     M.init()
+  end
+  
+  -- Check if config is properly initialized
+  if not config.is_initialized() then
+    notifications.show('Himalaya not configured. Run :HimalayaSetup to begin.', 'error')
+    return
   end
   
   -- Check if maildir exists and set up if needed
@@ -102,23 +129,82 @@ function M.show_email_list(args)
   -- Load emails asynchronously to avoid blocking UI
   vim.defer_fn(function()
     local account_name = config.get_current_account_name()
-    local emails = utils.get_email_list(account_name, folder, state.get_current_page(), state.get_page_size())
+    local emails, total_count = utils.get_email_list(account_name, folder, state.get_current_page(), state.get_page_size())
     if not emails then
-      local error_lines = {
-        string.format('󰊫 %s (%s)', account_name, folder),
-        '',
-        '󰅙 Failed to get email list',
-        '',
-        'Check your Himalaya configuration and try again.'
-      }
-      sidebar.update_content(error_lines)
-      notifications.show('Failed to get email list', 'error')
-      return
+      -- Check if this is a fresh/empty maildir
+      local account = config.get_current_account()
+      if account then
+        local maildir = vim.fn.expand(account.maildir_path)
+        if vim.fn.isdirectory(maildir) == 1 then
+          -- Check if INBOX has any emails
+          local inbox_cur = maildir .. '/INBOX/cur'
+          local inbox_new = maildir .. '/INBOX/new'
+          local has_emails = false
+          
+          if vim.fn.isdirectory(inbox_cur) == 1 then
+            local cur_files = vim.fn.readdir(inbox_cur)
+            if #cur_files > 0 then has_emails = true end
+          end
+          
+          if not has_emails and vim.fn.isdirectory(inbox_new) == 1 then
+            local new_files = vim.fn.readdir(inbox_new)
+            if #new_files > 0 then has_emails = true end
+          end
+          
+          if not has_emails then
+            -- Fresh maildir with no emails
+            local empty_lines = {
+              string.format('󰊫 %s (%s)', account_name, folder),
+              '',
+              '󰇯 Maildir is empty',
+              '',
+              'Run :HimalayaSyncInbox to sync emails',
+              'or :HimalayaSyncFull for all folders'
+            }
+            sidebar.update_content(empty_lines)
+            notifications.show('Maildir is empty. Run :HimalayaSyncInbox to sync emails.', 'info')
+            -- Continue with empty list
+            emails = {}
+            total_count = 0
+          else
+            local error_lines = {
+              string.format('󰊫 %s (%s)', account_name, folder),
+              '',
+              '󰅙 Failed to get email list',
+              '',
+              'Check your Himalaya configuration and try again.'
+            }
+            sidebar.update_content(error_lines)
+            notifications.show('Failed to get email list', 'error')
+            return
+          end
+        else
+          local error_lines = {
+            string.format('󰊫 %s (%s)', account_name, folder),
+            '',
+            '󰅙 Mail directory not found',
+            '',
+            'Run :HimalayaSetup to configure'
+          }
+          sidebar.update_content(error_lines)
+          notifications.show('Mail directory not found. Run :HimalayaSetup', 'error')
+          return
+        end
+      else
+        local error_lines = {
+          '󰊫 No account configured',
+          '',
+          'Run :HimalayaSetup to configure'
+        }
+        sidebar.update_content(error_lines)
+        notifications.show('No account configured', 'error')
+        return
+      end
     end
     
-    -- Store total count if available
-    if emails and #emails > 0 then
-      state.set_total_emails(#emails)
+    -- Store total count
+    if total_count then
+      state.set_total_emails(total_count)
     end
     
     -- Format and display email list
@@ -137,8 +223,8 @@ function M.show_email_list(args)
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local status = mbsync.get_status()
     
-    -- Start sync status updates if sync is running (either locally or externally)
-    if status.sync_running or status.external_sync_running then
+    -- Start sync status updates if sync is running
+    if status.sync_running then
       M.start_sync_status_updates()
       -- Force refresh header immediately to show current status
       M.refresh_sidebar_header()
@@ -147,7 +233,7 @@ function M.show_email_list(args)
     -- Save current view to state
     state.save()
     
-    notifications.show('Email list loaded in sidebar', 'info')
+    -- Remove repetitive message - too noisy
   end, 10) -- Very short delay to ensure sidebar opens immediately
   
   -- Set up buffer keymaps immediately (before emails load)
@@ -164,9 +250,26 @@ function M.format_email_list(emails)
   
   -- Header with pagination info (matching old format)
   local account = config.get_current_account()
-  local header = string.format('Himalaya - %s - %s', account.email, state.get_current_folder())
+  local email_display = 'Empty'
+  
+  -- Try to get email from account config
+  if account and account.email then
+    email_display = account.email
+  elseif account and account.name then
+    email_display = account.name
+  else
+    -- Try to get from account name (often is the email for gmail)
+    local account_name = config.get_current_account_name()
+    if account_name and account_name ~= 'gmail' then
+      email_display = account_name
+    elseif emails and #emails > 0 then
+      -- If we have emails, we have a working config, so show account name
+      email_display = account_name or 'gmail'
+    end
+  end
+  local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
   local pagination_info = string.format('Page %d | %d emails', 
-    state.get_current_page(), #emails)
+    state.get_current_page(), state.get_total_emails())
   
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
@@ -226,14 +329,13 @@ end
 
 -- Get sync status line for header
 function M.get_sync_status_line()
-  local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
-  local status = mbsync.get_status()
-  
-  if not status.running then
-    return nil
+  -- Use the detailed version that shows progress ratios
+  local status = M.get_sync_status_line_detailed()
+  if status then
+    -- Ensure we're not getting any extra text appended
+    return status
   end
-  
-  return "  🔄 Syncing..."
+  return nil
 end
 
 -- Get sync status line for header with enhanced progress information (from old UI)
@@ -241,151 +343,104 @@ function M.get_sync_status_line_detailed()
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
   local status = mbsync.get_status()
   
-  -- Check for external sync first (higher priority in display)
-  if status.external_sync_running then
-    -- External sync is running - show simple status
-    return "🔄 Syncing: External (1 process)"
-  end
-  
-  -- Check for local sync
-  if not status.sync_running then
+  -- Check if any sync is running (local or external)
+  if not status.sync_running and not status.external_sync_running then
     return nil
   end
   
-  local status_text = "🔄 Syncing"
-  local progress_info = {}
-  
-  if status.progress then
-    -- Priority 1: Show message ratio if available (15/98 emails)
-    if status.progress.current_message and status.progress.total_messages and 
-       status.progress.total_messages > 0 then
-      status_text = status_text .. string.format(": %d/%d emails", 
-        status.progress.current_message, status.progress.total_messages)
-    
-    -- Priority 2: Show detailed progress from mbsync counters
-    elseif (status.progress.messages_added_total and status.progress.messages_added_total > 0) or
-           (status.progress.messages_updated_total and status.progress.messages_updated_total > 0) then
-      local progress_parts = {}
-      
-      if status.progress.messages_added_total and status.progress.messages_added_total > 0 then
-        table.insert(progress_parts, string.format("%d/%d new", 
-          status.progress.messages_added or 0, status.progress.messages_added_total))
-      end
-      
-      if status.progress.messages_updated_total and status.progress.messages_updated_total > 0 then
-        table.insert(progress_parts, string.format("%d/%d updated", 
-          status.progress.messages_updated or 0, status.progress.messages_updated_total))
-      end
-      
-      if #progress_parts > 0 then
-        status_text = status_text .. ": " .. table.concat(progress_parts, ", ")
-      elseif status.progress.current_operation then
-        status_text = status_text .. ": " .. status.progress.current_operation
-      end
-    
-    -- Priority 3: Show calculated difference if we have far/near totals
-    elseif status.progress.far_total and status.progress.near_total then
-      local new_msgs = math.max(0, status.progress.far_total - status.progress.near_total)
-      local to_upload = math.max(0, status.progress.near_total - status.progress.far_total)
-      local recent = status.progress.far_recent or 0
-      
-      -- Show what's happening based on the difference
-      if new_msgs > 0 then
-        status_text = status_text .. string.format(": %d new to download", new_msgs)
-      elseif to_upload > 0 then
-        status_text = status_text .. string.format(": %d to upload", to_upload)
-      elseif recent > 0 then
-        status_text = status_text .. string.format(": %d recent to check", recent)
-      else
-        -- Show the totals for reference
-        status_text = status_text .. string.format(": %d/%d synced", 
-          status.progress.near_total, status.progress.far_total)
-      end
-      
-      -- Add operation if different from default
-      if status.progress.current_operation and 
-         status.progress.current_operation ~= "Synchronizing emails" then
-        status_text = status_text .. " - " .. status.progress.current_operation
-      end
-    
-    -- Priority 4: Show operation status
-    elseif status.progress.current_operation then
-      status_text = status_text .. ": " .. status.progress.current_operation
-    end
-    
-    -- Add mailbox progress if available (nil-safe)
-    if status.progress.mailboxes_total and status.progress.mailboxes_total > 0 then
-      table.insert(progress_info, string.format("%d/%d mailboxes", 
-        status.progress.mailboxes_done or 0, status.progress.mailboxes_total))
-    end
-    
-    -- Add message processing info if available (nil-safe)
-    if status.progress.messages_processed and status.progress.messages_processed > 0 then
-      local msg_details = {}
-      if status.progress.messages_added and status.progress.messages_added > 0 then
-        table.insert(msg_details, status.progress.messages_added .. " added")
-      end
-      if status.progress.messages_updated and status.progress.messages_updated > 0 then
-        table.insert(msg_details, status.progress.messages_updated .. " updated")
-      end
-      
-      if #msg_details > 0 then
-        table.insert(progress_info, table.concat(msg_details, ", "))
-      else
-        table.insert(progress_info, status.progress.messages_processed .. " msgs")
-      end
-    end
-    
-    -- Add elapsed time
-    if status.progress.start_time then
-      local elapsed = os.time() - status.progress.start_time
-      local elapsed_str
+  -- Check for external sync first (higher priority in display)
+  if status.external_sync_running and not status.running then
+    -- External sync is running - show simple status with elapsed time
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local start_time = state.get('sync.start_time')
+    local elapsed_str = ""
+    if start_time then
+      local elapsed = os.time() - start_time
       if elapsed >= 60 then
         local minutes = math.floor(elapsed / 60)
         local seconds = elapsed % 60
-        elapsed_str = string.format("%dm %ds", minutes, seconds)
+        elapsed_str = string.format(" (%dm %ds)", minutes, seconds)
       else
-        elapsed_str = string.format("%ds", elapsed)
+        elapsed_str = string.format(" (%ds)", elapsed)
       end
-      table.insert(progress_info, elapsed_str)
     end
-    
-    -- Combine progress info with separator
-    if #progress_info > 0 then
-      status_text = status_text .. " | " .. table.concat(progress_info, " | ")
-    end
+    return "   Syncing (external)" .. elapsed_str
   end
   
-  -- Fallback to process count if no detailed progress
-  if #progress_info == 0 then
-    -- Try to get mbsync command line to show what's syncing
-    local handle = io.popen('pgrep -a mbsync 2>/dev/null | head -1')
-    if handle then
-      local mbsync_info = handle:read('*a')
-      handle:close()
-      
-      if mbsync_info and mbsync_info ~= "" then
-        -- Extract account or channel from command line
-        local account = mbsync_info:match('mbsync%s+(%S+)')
-        if account and account ~= '-V' and account ~= '-a' then
-          status_text = status_text .. ": " .. account
-        else
-          -- Count processes as fallback
-          local count_handle = io.popen('pgrep mbsync 2>/dev/null | wc -l')
-          if count_handle then
-            local process_count = tonumber(count_handle:read('*a')) or 0
-            count_handle:close()
-            if process_count > 0 then
-              status_text = status_text .. string.format(" (%d process%s)", 
-                process_count, process_count == 1 and "" or "es")
-            end
-          end
-        end
-      else
-        status_text = status_text .. "..."
-      end
+  local status_text = " Syncing"
+  local progress_info = {}
+  
+  -- Add elapsed time first
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  local start_time = status.progress and status.progress.start_time or state.get('sync.start_time')
+  if start_time then
+    local elapsed = os.time() - start_time
+    local elapsed_str
+    if elapsed >= 60 then
+      local minutes = math.floor(elapsed / 60)
+      local seconds = elapsed % 60
+      elapsed_str = string.format(" (%dm %ds)", minutes, seconds)
+    else
+      elapsed_str = string.format(" (%ds)", elapsed)
     end
+    status_text = status_text .. elapsed_str
   end
+  
+  if status.progress then
+    -- Build status in the format: "Folder X/Y - Operation X/Y"
+    local folder_part = nil
+    local operation_part = nil
+    
+    -- First part: Current folder with folder progress
+    if status.progress.current_folder then
+      folder_part = status.progress.current_folder
+      
+      -- Add folder progress if available
+      if status.progress.folders_total and status.progress.folders_total > 0 then
+        folder_part = folder_part .. string.format(" %d/%d", 
+          status.progress.folders_done or 0, status.progress.folders_total)
+      end
+    elseif status.progress.folders_total and status.progress.folders_total > 0 then
+      -- No current folder, just show folder progress
+      folder_part = string.format("%d/%d folders", 
+        status.progress.folders_done or 0, status.progress.folders_total)
+    end
+    
+    -- Second part: Operation with message progress
+    if status.progress.messages_total and status.progress.messages_total > 0 then
+      local op_name = status.progress.current_operation or "Processing"
+      -- Capitalize common operations for consistency
+      if op_name == "Downloading" then
+        op_name = "Downloaded"
+      elseif op_name == "Uploading" then
+        op_name = "Uploaded"
+      elseif op_name == "Synchronizing" then
+        op_name = "Synced"
+      end
+      operation_part = string.format("%s %d/%d", op_name,
+        status.progress.messages_processed or 0, status.progress.messages_total)
+    elseif status.progress.current_operation then
+      operation_part = status.progress.current_operation
+    end
+    
+    -- Combine parts
+    if folder_part then
+      status_text = status_text .. ": " .. folder_part
+      if operation_part then
+        status_text = status_text .. " - " .. operation_part
+      end
+    elseif operation_part then
+      status_text = status_text .. ": " .. operation_part
+    end
+    
+    -- Removed overall statistics display as requested
+    -- The folder/message progress is sufficient
+  end
+  
+  -- Removed fallback to process count - not needed
+  
+  -- Strip any existing process count that might have been added
+  status_text = status_text:gsub(' %((%d+) process[es]*%)', '')
   
   return status_text
 end
@@ -412,6 +467,9 @@ function M.stop_sync_status_updates()
   end
 end
 
+-- Track last known sync progress to avoid unnecessary updates
+local last_sync_progress = nil
+
 -- Update sidebar with current sync status
 function M.update_sidebar_sync_status()
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
@@ -422,16 +480,35 @@ function M.update_sidebar_sync_status()
     return
   end
   
-  -- Stop timer if sync is no longer running (neither local nor external)
-  if not status.sync_running and not status.external_sync_running then
+  -- Stop timer if sync is no longer running
+  if not status.sync_running then
     M.stop_sync_status_updates()
-    -- Refresh sidebar one final time to remove sync status
-    M.refresh_sidebar_header()
+    -- Clear last progress
+    last_sync_progress = nil
+    -- Refresh entire sidebar one final time to remove sync status
+    M.refresh_email_list()
     return
   end
   
-  -- Update sidebar header with current sync status
-  M.refresh_sidebar_header()
+  -- Check if progress has actually changed
+  local progress_changed = false
+  if status.progress then
+    local current_progress = vim.inspect(status.progress)
+    if current_progress ~= last_sync_progress then
+      progress_changed = true
+      last_sync_progress = current_progress
+    end
+  end
+  
+  -- Only update if something meaningful changed
+  if progress_changed then
+    -- Just update the header for smoother experience
+    M.refresh_sidebar_header()
+  else
+    -- Only update header if we need to refresh elapsed time
+    -- This happens less frequently
+    M.refresh_sidebar_header()
+  end
 end
 
 -- Refresh just the sidebar header (without refetching emails)
@@ -446,24 +523,46 @@ function M.refresh_sidebar_header()
     return
   end
   
-  -- Get current cursor position
-  local cursor_pos = vim.api.nvim_win_get_cursor(sidebar.get_win())
+  -- Build just the header lines
+  local account = config.get_current_account()
+  local email_display = 'Empty'
   
-  -- Regenerate content with updated sync status
-  local lines = M.format_email_list(emails)
+  -- Try to get email from account config
+  if account and account.email then
+    email_display = account.email
+  elseif account and account.name then
+    email_display = account.name
+  else
+    -- Try to get from account name (often is the email for gmail)
+    local account_name = config.get_current_account_name()
+    if account_name and account_name ~= 'gmail' then
+      email_display = account_name
+    elseif emails and #emails > 0 then
+      -- If we have emails, we have a working config, so show account name
+      email_display = account_name or 'gmail'
+    end
+  end
   
-  -- Update buffer content
-  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
+  local pagination_info = string.format('Page %d | %d emails', 
+    state.get_current_page(), state.get_total_emails())
   
-  -- Restore cursor position
-  pcall(vim.api.nvim_win_set_cursor, sidebar.get_win(), cursor_pos)
+  -- Add sync status if running
+  local sync_status_line = M.get_sync_status_line()
+  
+  local header_lines = {header, pagination_info}
+  if sync_status_line then
+    table.insert(header_lines, sync_status_line)
+  end
+  table.insert(header_lines, string.rep('─', math.max(#header, #pagination_info, sync_status_line and #sync_status_line or 0)))
+  
+  -- Use optimized header update
+  sidebar.update_header_lines(header_lines)
 end
 
 -- Read specific email
 function M.read_email(email_id)
-  local email_content = utils.get_email_content(state.get_current_account(), email_id)
+  local email_content = utils.get_email_content(state.get_current_account(), email_id, state.get_current_folder())
   if not email_content then
     notifications.show('Failed to read email', 'error')
     return
@@ -628,15 +727,39 @@ function M.compose_email(to_address)
   
   -- Email template
   local account = config.get_current_account()
+  
+  -- Get email address - try multiple sources
+  local from_email = nil
+  if account then
+    if account.email then
+      from_email = account.email
+    elseif account.name and account.name:match('@') then
+      -- Account name might be the email
+      from_email = account.name
+    else
+      -- Try to get from account name (often is the email for gmail)
+      local account_name = config.get_current_account_name()
+      if account_name and account_name:match('@') then
+        from_email = account_name
+      end
+    end
+  end
+  
+  -- Error if no email address found
+  if not from_email then
+    notifications.show('Cannot compose email: No email address configured for account', 'error')
+    return
+  end
+  
   local lines = {
-    'From: ' .. account.email,
+    'From: ' .. from_email,
     'To: ' .. (to_address or ''),
     'Subject: ',
     '',
     '',
     '',
     '--',
-    account.name or account.email,
+    account.name or from_email,
     '',
     string.rep('─', 70),
     'gs:send q:save-draft Q:discard',
@@ -716,7 +839,50 @@ end
 
 -- Refresh current email list
 function M.refresh_email_list()
-  M.show_email_list({state.get_current_folder()})
+  -- Save current window to restore focus
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Get current sidebar buffer
+  local buf = sidebar.get_buf()
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    -- No sidebar open, do full show
+    M.show_email_list({state.get_current_folder()})
+  else
+    -- Sidebar is open, do optimized refresh
+    local account_name = config.get_current_account_name()
+    if not account_name then
+      return
+    end
+    
+    local folder = state.get_current_folder()
+    
+    -- Get updated email list
+    local emails, total_count = utils.get_email_list(
+      account_name,
+      folder,
+      state.get_current_page(),
+      state.get_page_size()
+    )
+    
+    if emails then
+      -- Store total count
+      if total_count then
+        state.set_total_emails(total_count)
+      end
+      
+      -- Update stored email data
+      vim.b[buf].himalaya_emails = emails
+      
+      -- Format and update display with optimized rendering
+      local lines = M.format_email_list(emails)
+      sidebar.update_content(lines)
+    end
+  end
+  
+  -- Restore focus to original window if it's still valid
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_set_current_win(current_win)
+  end
 end
 
 -- Send current email (from compose buffer)
@@ -822,10 +988,41 @@ function M.get_current_email_id()
   end
   
   local line_num = vim.fn.line('.')
-  local email_index = line_num - 4 -- Account for header lines
   local emails = vim.b.himalaya_emails
   
-  if emails and email_index > 0 and emails[email_index] then
+  if not emails or #emails == 0 then
+    return nil
+  end
+  
+  -- Find where emails actually start by looking for the pattern of the first email
+  local email_start_line = 0
+  for i = 1, 15 do  -- Check first 15 lines
+    local line = vim.fn.getline(i)
+    if line and line:match('^%[.-%]') then  -- Found first email line (starts with [status])
+      email_start_line = i
+      break
+    end
+  end
+  
+  -- Fallback: count header lines by finding the separator line
+  if email_start_line == 0 then
+    for i = 1, 10 do  -- Check first 10 lines
+      local line = vim.fn.getline(i)
+      if line and line:match('^[─]+$') then  -- Found separator line
+        email_start_line = i + 2  -- Emails start after separator + empty line
+        break
+      end
+    end
+  end
+  
+  -- Final fallback if nothing found
+  if email_start_line == 0 then
+    email_start_line = 6 -- Default
+  end
+  
+  local email_index = line_num - email_start_line + 1
+  
+  if email_index > 0 and email_index <= #emails and emails[email_index] then
     return emails[email_index].id
   end
   
@@ -984,6 +1181,30 @@ function M.reply_email(email_id, reply_all)
   
   -- Reply template
   local account = config.get_current_account()
+  
+  -- Get email address - try multiple sources
+  local from_email = nil
+  if account then
+    if account.email then
+      from_email = account.email
+    elseif account.name and account.name:match('@') then
+      -- Account name might be the email
+      from_email = account.name
+    else
+      -- Try to get from account name (often is the email for gmail)
+      local account_name = config.get_current_account_name()
+      if account_name and account_name:match('@') then
+        from_email = account_name
+      end
+    end
+  end
+  
+  -- Error if no email address found
+  if not from_email then
+    notifications.show('Cannot reply: No email address configured for account', 'error')
+    return
+  end
+  
   local to_field = parsed_email.from or ''
   if reply_all then
     local cc_field = parsed_email.cc or ''
@@ -992,7 +1213,7 @@ function M.reply_email(email_id, reply_all)
     end
     -- Also include other recipients from To field if reply_all
     local original_to = parsed_email.to or ''
-    if original_to ~= '' and original_to ~= account.email then
+    if original_to ~= '' and original_to ~= from_email then
       to_field = to_field .. ', ' .. original_to
     end
   end
@@ -1003,7 +1224,7 @@ function M.reply_email(email_id, reply_all)
   end
   
   local lines = {
-    'From: ' .. account.email,
+    'From: ' .. from_email,
     'To: ' .. to_field,
     'Subject: ' .. subject,
     '',
@@ -1021,7 +1242,7 @@ function M.reply_email(email_id, reply_all)
   
   table.insert(lines, '')
   table.insert(lines, '--')
-  table.insert(lines, account.name or account.email)
+  table.insert(lines, account.name or from_email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
   table.insert(lines, 'gs:send q:save-draft Q:discard')
@@ -1118,8 +1339,31 @@ function M.forward_email(email_id)
     subject = 'Fwd: ' .. subject
   end
   
+  -- Get email address - try multiple sources
+  local from_email = nil
+  if account then
+    if account.email then
+      from_email = account.email
+    elseif account.name and account.name:match('@') then
+      -- Account name might be the email
+      from_email = account.name
+    else
+      -- Try to get from account name (often is the email for gmail)
+      local account_name = config.get_current_account_name()
+      if account_name and account_name:match('@') then
+        from_email = account_name
+      end
+    end
+  end
+  
+  -- Error if no email address found
+  if not from_email then
+    notifications.show('Cannot forward: No email address configured for account', 'error')
+    return
+  end
+  
   local lines = {
-    'From: ' .. account.email,
+    'From: ' .. from_email,
     'To: ',
     'Subject: ' .. subject,
     '',
@@ -1145,7 +1389,7 @@ function M.forward_email(email_id)
   
   table.insert(lines, '')
   table.insert(lines, '--')
-  table.insert(lines, account.name or account.email)
+  table.insert(lines, account.name or from_email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
   table.insert(lines, 'gs:send q:save-draft Q:discard')
@@ -1249,7 +1493,7 @@ end
 
 -- Permanently delete email
 function M.permanent_delete_email(email_id)
-  local success = utils.delete_email(state.get_current_account(), email_id)
+  local success = utils.delete_email(state.get_current_account(), email_id, state.get_current_folder())
   if success then
     notifications.show('Email permanently deleted', 'info')
     M.close_current_view()
@@ -1294,7 +1538,17 @@ end
 
 -- Archive current email (from email list)
 function M.archive_current_email()
-  local email_id = M.get_current_email_id()
+  local email_id = nil
+  local current_buf = vim.api.nvim_get_current_buf()
+  
+  -- Try to get email ID based on current buffer type
+  if vim.bo[current_buf].filetype == 'himalaya-list' then
+    email_id = M.get_current_email_id()
+  elseif vim.b[current_buf].himalaya_email_id then
+    -- We're in email reading buffer
+    email_id = vim.b[current_buf].himalaya_email_id
+  end
+  
   if email_id then
     -- Try different archive folder names that might exist
     local archive_folders = {'All_Mail', 'Archive', 'All Mail', 'ARCHIVE', 'Archived'}
@@ -1319,7 +1573,20 @@ function M.archive_current_email()
       local success = utils.move_email(email_id, archive_folder)
       if success then
         notifications.show('Email archived', 'info', { folder = archive_folder })
-        -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
+        
+        -- Close email view if we're reading the email
+        local current_buf = vim.api.nvim_get_current_buf()
+        local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
+        local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
+        
+        if is_email_buffer and not is_sidebar then
+          M.close_current_view()
+        end
+        
+        -- Always refresh the sidebar to show the change
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
       end
     else
       -- If no archive folder found, offer alternatives
@@ -1378,7 +1645,20 @@ function M.spam_current_email()
       local success = utils.move_email(email_id, spam_folder)
       if success then
         notifications.show('Email marked as spam', 'info', { folder = spam_folder })
-        -- Refresh is handled by auto-refresh system via HimalayaEmailMoved event
+        
+        -- Close email view if we're reading the email
+        local current_buf = vim.api.nvim_get_current_buf()
+        local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
+        local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
+        
+        if is_email_buffer and not is_sidebar then
+          M.close_current_view()
+        end
+        
+        -- Always refresh the sidebar to show the change
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
       end
     else
       -- If no spam folder found, ask user what to do
@@ -1631,6 +1911,91 @@ function M.prompt_session_restore()
       end
     end)
   end
+end
+
+-- Show folder picker
+function M.pick_folder()
+  local account_name = config.get_current_account_name()
+  if not account_name then
+    notifications.show('No account selected', 'error')
+    return
+  end
+  
+  local folders = utils.get_folders(account_name)
+  if not folders or #folders == 0 then
+    notifications.show('No folders found', 'error')
+    return
+  end
+  
+  -- Add current folder indicator
+  local current_folder = state.get_current_folder()
+  local options = {}
+  for _, folder in ipairs(folders) do
+    if folder == current_folder then
+      table.insert(options, folder .. ' (current)')
+    else
+      table.insert(options, folder)
+    end
+  end
+  
+  vim.ui.select(options, {
+    prompt = 'Select folder:',
+  }, function(choice)
+    if not choice then
+      return
+    end
+    
+    -- Remove the " (current)" suffix if present
+    local folder = choice:gsub(' %(current%)$', '')
+    
+    if folder ~= current_folder then
+      state.set_current_folder(folder)
+      state.set_current_page(1)  -- Reset to first page
+      M.show_email_list({ folder })
+    end
+  end)
+end
+
+-- Show account picker
+function M.pick_account()
+  -- Get available accounts from config
+  local accounts = {}
+  local current_account = config.get_current_account_name()
+  
+  for name, _ in pairs(config.config.accounts) do
+    if name == current_account then
+      table.insert(accounts, name .. ' (current)')
+    else
+      table.insert(accounts, name)
+    end
+  end
+  
+  if #accounts == 0 then
+    notifications.show('No accounts configured', 'error')
+    return
+  end
+  
+  vim.ui.select(accounts, {
+    prompt = 'Select account:',
+  }, function(choice)
+    if not choice then
+      return
+    end
+    
+    -- Remove the " (current)" suffix if present
+    local account = choice:gsub(' %(current%)$', '')
+    
+    if account ~= current_account then
+      if config.switch_account(account) then
+        state.set_current_account(account)
+        state.set_current_folder('INBOX')  -- Reset to INBOX
+        state.set_current_page(1)  -- Reset to first page
+        M.show_email_list({ 'INBOX' })
+      else
+        notifications.show('Failed to switch account', 'error')
+      end
+    end
+  end)
 end
 
 return M

@@ -539,14 +539,14 @@ return {
     -- MAIL group (simplified commands)
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
-      { "<leader>mo", "<cmd>Himalaya<CR>", desc = "open mail", icon = "󰊫" },
+      { "<leader>mo", "<cmd>HimalayaToggle<CR>", desc = "toggle mail", icon = "󰊫" },
       { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
       { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "sync all", icon = "󰜉" },
-      { "<leader>mk", "<cmd>HimalayaCancelSync<CR>", desc = "cancel sync", icon = "󰚌" },
       { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰝒" },
+      { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mr", "<cmd>HimalayaRestore<CR>", desc = "restore session", icon = "󰑓" },
       { "<leader>mU", "<cmd>HimalayaCleanup<CR>", desc = "cleanup", icon = "󰌾" },
-      { "<leader>mi", "<cmd>HimalayaSyncStatus<CR>", desc = "sync status", icon = "󰋼" },
+      { "<leader>mi", "<cmd>HimalayaSyncInfo<CR>", desc = "sync status", icon = "󰋼" },
       { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
       { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mR", "<cmd>HimalayaRefreshOAuth<CR>", desc = "refresh OAuth", icon = "󰌆" },

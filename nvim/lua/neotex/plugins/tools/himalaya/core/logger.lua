@@ -61,10 +61,10 @@ function M.log(level, msg, context)
   local formatted = format_message(msg, context)
   local vim_level = to_vim_level(level)
   
-  -- Check if notifications are enabled
+  -- Check if notifications are enabled (but never notify debug messages)
   local notify_config = get_notify_config()
-  if notify_config.enabled then
-    -- Only show notifications for configured level and above
+  if notify_config.enabled and level > M.levels.DEBUG then
+    -- Only show notifications for configured level and above (excluding debug)
     local config_level = M.levels[notify_config.level:upper()] or M.levels.INFO
     if level >= config_level then
       vim.notify(formatted, vim_level)
@@ -76,6 +76,9 @@ function M.log(level, msg, context)
     vim.api.nvim_err_writeln(formatted)
   elseif level == M.levels.WARN then
     vim.api.nvim_echo({{formatted, "WarningMsg"}}, true, {})
+  elseif level == M.levels.DEBUG then
+    -- Debug messages go only to :messages, not as notifications
+    vim.api.nvim_echo({{formatted, "Comment"}}, true, {})
   else
     vim.api.nvim_echo({{formatted, "Normal"}}, true, {})
   end
@@ -141,6 +144,20 @@ function M.setup(opts)
   if opts.prefix then
     M.prefix = opts.prefix
   end
+end
+
+-- Enable debug logging
+function M.set_debug(enabled)
+  if enabled then
+    M.current_level = M.levels.DEBUG
+  else
+    M.current_level = M.levels.INFO
+  end
+end
+
+-- Check if debug logging is enabled
+function M.is_debug()
+  return M.current_level == M.levels.DEBUG
 end
 
 return M
