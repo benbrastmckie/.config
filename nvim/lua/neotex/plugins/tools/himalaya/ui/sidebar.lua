@@ -242,6 +242,20 @@ function M.update_content(lines)
     return false
   end
   
+  -- Extract metadata if present
+  local metadata = nil
+  local line_data = lines
+  if type(lines) == 'table' and lines.metadata then
+    metadata = lines.metadata
+    -- Extract just the line strings
+    line_data = {}
+    for i, line in ipairs(lines) do
+      if type(line) == 'string' then
+        table.insert(line_data, line)
+      end
+    end
+  end
+  
   -- Save cursor position
   local cursor_pos = nil
   if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
@@ -260,11 +274,11 @@ function M.update_content(lines)
   
   -- Only update if content has actually changed
   local content_changed = false
-  if #current_lines ~= #lines then
+  if #current_lines ~= #line_data then
     content_changed = true
   else
-    for i = 1, #lines do
-      if current_lines[i] ~= lines[i] then
+    for i = 1, #line_data do
+      if current_lines[i] ~= line_data[i] then
         content_changed = true
         break
       end
@@ -273,12 +287,12 @@ function M.update_content(lines)
   
   if content_changed then
     -- Use nvim_buf_set_text for smoother updates when possible
-    if #current_lines > 0 and #lines > 0 then
+    if #current_lines > 0 and #line_data > 0 then
       -- Clear and set in one operation
-      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
+      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, line_data)
     else
       -- Full replace for empty buffers
-      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
+      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, line_data)
     end
   end
   
@@ -287,6 +301,11 @@ function M.update_content(lines)
   
   -- Restore eventignore
   vim.o.eventignore = eventignore
+  
+  -- Apply highlighting if metadata is provided
+  if metadata then
+    M.apply_email_highlighting(metadata)
+  end
   
   -- Restore cursor position if it was saved and is still valid
   if cursor_pos and M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
@@ -335,6 +354,33 @@ function M.update_header_lines(header_lines)
   return true
 end
 
+-- Apply email highlighting based on status
+function M.apply_email_highlighting(metadata)
+  if not M.state.win or not vim.api.nvim_win_is_valid(M.state.win) then
+    return
+  end
+  
+  -- Clear existing matches for this window
+  vim.api.nvim_win_call(M.state.win, function()
+    vim.fn.clearmatches()
+  end)
+  
+  if not metadata then return end
+  
+  -- Apply highlighting based on email metadata
+  vim.api.nvim_win_call(M.state.win, function()
+    for line_num, data in pairs(metadata) do
+      if data.starred then
+        -- Starred emails get orange highlighting
+        vim.fn.matchaddpos('HimalayaStarred', {{line_num}})
+      elseif not data.seen then
+        -- Unread emails get blue highlighting
+        vim.fn.matchaddpos('HimalayaUnread', {{line_num}})
+      end
+    end
+  end)
+end
+
 -- Setup autocommands for sidebar management
 function M.setup_autocmds()
   local group = vim.api.nvim_create_augroup('HimalayaSidebar', { clear = true })
@@ -360,9 +406,26 @@ function M.setup_autocmds()
   })
 end
 
+-- Setup highlight groups for email status
+function M.setup_highlights()
+  -- Unread emails (light blue)
+  vim.api.nvim_set_hl(0, 'HimalayaUnread', { fg = '#87CEEB', bold = true })
+  
+  -- Starred emails (light orange) 
+  vim.api.nvim_set_hl(0, 'HimalayaStarred', { fg = '#FFA07A', bold = true })
+  
+  -- Selected emails (for multi-select)
+  vim.api.nvim_set_hl(0, 'HimalayaSelected', { bg = '#444444', fg = '#FFFFFF' })
+  
+  -- Checkbox indicators
+  vim.api.nvim_set_hl(0, 'HimalayaCheckbox', { fg = '#888888' })
+  vim.api.nvim_set_hl(0, 'HimalayaCheckboxSelected', { fg = '#00FF00', bold = true })
+end
+
 -- Initialize sidebar (call once)
 function M.init()
   M.setup_autocmds()
+  M.setup_highlights()
 end
 
 -- Export state for debugging
