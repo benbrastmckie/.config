@@ -1987,4 +1987,163 @@ function M.pick_account()
   end)
 end
 
+-- Batch Operations
+
+-- Batch delete operation
+function M.delete_selected_emails()
+  local selected = state.get_selected_emails()
+  
+  if #selected == 0 then
+    notifications.show('No emails selected', 'warn')
+    return
+  end
+  
+  -- Confirm batch operation
+  vim.ui.input({
+    prompt = string.format('Delete %d selected emails? (y/n): ', #selected)
+  }, function(input)
+    if input and input:lower() == 'y' then
+      local success_count = 0
+      local error_count = 0
+      
+      for _, email in ipairs(selected) do
+        local success, error_type = utils.smart_delete_email(state.get_current_account(), email.id)
+        if success then
+          success_count = success_count + 1
+        else
+          error_count = error_count + 1
+        end
+      end
+      
+      state.clear_selection()
+      state.toggle_selection_mode() -- Exit selection mode
+      
+      notifications.show(
+        string.format('Deleted %d emails (%d errors)', success_count, error_count),
+        error_count > 0 and 'warn' or 'success'
+      )
+      
+      M.refresh_email_list()
+    end
+  end)
+end
+
+-- Batch archive operation
+function M.archive_selected_emails()
+  local selected = state.get_selected_emails()
+  
+  if #selected == 0 then
+    notifications.show('No emails selected', 'warn')
+    return
+  end
+  
+  vim.ui.input({
+    prompt = string.format('Archive %d selected emails? (y/n): ', #selected)
+  }, function(input)
+    if input and input:lower() == 'y' then
+      local success_count = 0
+      local error_count = 0
+      
+      -- Find archive folder
+      local archive_folders = {'Archive', 'All Mail', 'All_Mail', '[Gmail]/All Mail'}
+      local folders = utils.get_folders(state.get_current_account())
+      local archive_folder = nil
+      
+      if folders then
+        for _, folder in ipairs(folders) do
+          for _, archive_name in ipairs(archive_folders) do
+            if folder == archive_name or folder:match(archive_name) then
+              archive_folder = folder
+              break
+            end
+          end
+          if archive_folder then break end
+        end
+      end
+      
+      if not archive_folder then
+        archive_folder = 'All_Mail' -- Default fallback
+      end
+      
+      for _, email in ipairs(selected) do
+        local success = utils.move_email(email.id, archive_folder)
+        if success then
+          success_count = success_count + 1
+        else
+          error_count = error_count + 1
+        end
+      end
+      
+      state.clear_selection()
+      state.toggle_selection_mode()
+      
+      notifications.show(
+        string.format('Archived %d emails (%d errors)', success_count, error_count),
+        error_count > 0 and 'warn' or 'success'
+      )
+      
+      M.refresh_email_list()
+    end
+  end)
+end
+
+-- Batch spam operation
+function M.spam_selected_emails()
+  local selected = state.get_selected_emails()
+  
+  if #selected == 0 then
+    notifications.show('No emails selected', 'warn')
+    return
+  end
+  
+  vim.ui.input({
+    prompt = string.format('Mark %d selected emails as spam? (y/n): ', #selected)
+  }, function(input)
+    if input and input:lower() == 'y' then
+      local success_count = 0
+      local error_count = 0
+      
+      -- Find spam folder
+      local spam_folders = {'Spam', 'Junk', 'SPAM', 'JUNK', '[Gmail]/Spam'}
+      local folders = utils.get_folders(state.get_current_account())
+      local spam_folder = nil
+      
+      if folders then
+        for _, folder in ipairs(folders) do
+          for _, spam_name in ipairs(spam_folders) do
+            if folder == spam_name or folder:lower() == spam_name:lower() then
+              spam_folder = folder
+              break
+            end
+          end
+          if spam_folder then break end
+        end
+      end
+      
+      if not spam_folder then
+        spam_folder = 'Spam' -- Default fallback
+      end
+      
+      for _, email in ipairs(selected) do
+        local success = utils.move_email(email.id, spam_folder)
+        if success then
+          success_count = success_count + 1
+        else
+          error_count = error_count + 1
+        end
+      end
+      
+      state.clear_selection()
+      state.toggle_selection_mode()
+      
+      notifications.show(
+        string.format('Marked %d emails as spam (%d errors)', success_count, error_count),
+        error_count > 0 and 'warn' or 'success'
+      )
+      
+      M.refresh_email_list()
+    end
+  end)
+end
+
 return M

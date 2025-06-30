@@ -323,8 +323,13 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Override 'g' to handle our custom g-commands immediately
     keymap('n', 'g', function()
+      local state = require('neotex.plugins.tools.himalaya.ui.state')
       local char = vim.fn.getchar()
       local key = vim.fn.nr2char(char)
+      
+      -- Check if we have selections for batch operations
+      local selected_count = state.get_selection_count()
+      local has_selection = selected_count > 0
       
       if key == 'n' then
         require('neotex.plugins.tools.himalaya.ui.main').next_page()
@@ -339,11 +344,23 @@ function M.setup_buffer_keymaps(bufnr)
       elseif key == 'R' then
         require('neotex.plugins.tools.himalaya.ui.main').reply_all_current_email()
       elseif key == 'D' then
-        require('neotex.plugins.tools.himalaya.ui.main').delete_current_email()
+        if has_selection then
+          require('neotex.plugins.tools.himalaya.ui.main').delete_selected_emails()
+        else
+          require('neotex.plugins.tools.himalaya.ui.main').delete_current_email()
+        end
       elseif key == 'A' then
-        require('neotex.plugins.tools.himalaya.ui.main').archive_current_email()
+        if has_selection then
+          require('neotex.plugins.tools.himalaya.ui.main').archive_selected_emails()
+        else
+          require('neotex.plugins.tools.himalaya.ui.main').archive_current_email()
+        end
       elseif key == 'S' then
-        require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
+        if has_selection then
+          require('neotex.plugins.tools.himalaya.ui.main').spam_selected_emails()
+        else
+          require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
+        end
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
