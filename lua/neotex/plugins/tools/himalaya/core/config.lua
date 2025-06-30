@@ -261,15 +261,15 @@ function M.setup_buffer_keymaps(bufnr)
   -- Email list keymaps
   if vim.bo[bufnr].filetype == 'himalaya-list' then
     keymap('n', '<CR>', function()
-      require('neotex.plugins.tools.himalaya.ui').read_current_email()
+      require('neotex.plugins.tools.himalaya.ui.main').read_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Read email' }))
     
     keymap('n', 'c', function()
-      require('neotex.plugins.tools.himalaya.ui').compose_email()
+      require('neotex.plugins.tools.himalaya.ui.main').compose_email()
     end, vim.tbl_extend('force', opts, { desc = 'Compose email' }))
     
     keymap('n', 'r', function()
-      require('neotex.plugins.tools.himalaya.ui').refresh_email_list()
+      require('neotex.plugins.tools.himalaya.ui.main').refresh_email_list()
     end, vim.tbl_extend('force', opts, { desc = 'Refresh email list' }))
     
     -- Override 'g' to handle our custom g-commands immediately
@@ -278,25 +278,23 @@ function M.setup_buffer_keymaps(bufnr)
       local key = vim.fn.nr2char(char)
       
       if key == 'n' then
-        require('neotex.plugins.tools.himalaya.ui').next_page()
+        require('neotex.plugins.tools.himalaya.ui.main').next_page()
       elseif key == 'p' then
-        require('neotex.plugins.tools.himalaya.ui').prev_page()
+        require('neotex.plugins.tools.himalaya.ui.main').prev_page()
       elseif key == 'm' then
-        -- TODO: implement folder picker
-        require('neotex.util.notifications').himalaya('Folder picker not implemented yet', 'warn')
+        require('neotex.plugins.tools.himalaya.ui.main').pick_folder()
       elseif key == 'a' then
-        -- TODO: implement account picker
-        require('neotex.util.notifications').himalaya('Account picker not implemented yet', 'warn')
+        require('neotex.plugins.tools.himalaya.ui.main').pick_account()
       elseif key == 'w' then
-        require('neotex.plugins.tools.himalaya.ui').compose_email()
+        require('neotex.plugins.tools.himalaya.ui.main').compose_email()
       elseif key == 'R' then
-        require('neotex.plugins.tools.himalaya.ui').reply_all_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').reply_all_current_email()
       elseif key == 'D' then
-        require('neotex.plugins.tools.himalaya.ui').delete_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').delete_current_email()
       elseif key == 'A' then
-        require('neotex.plugins.tools.himalaya.ui').archive_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').archive_current_email()
       elseif key == 'S' then
-        require('neotex.plugins.tools.himalaya.ui').spam_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
@@ -305,8 +303,9 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Add q to close Himalaya entirely from email list
     keymap('n', 'q', function()
-      require('neotex.plugins.tools.himalaya.ui').close_himalaya()
+      require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
+    
   end
   
   -- Email reading keymaps
@@ -317,15 +316,15 @@ function M.setup_buffer_keymaps(bufnr)
       local key = vim.fn.nr2char(char)
       
       if key == 'r' then
-        require('neotex.plugins.tools.himalaya.ui').reply_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').reply_current_email()
       elseif key == 'R' then
-        require('neotex.plugins.tools.himalaya.ui').reply_all_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').reply_all_current_email()
       elseif key == 'f' then
-        require('neotex.plugins.tools.himalaya.ui').forward_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').forward_current_email()
       elseif key == 'D' then
-        require('neotex.plugins.tools.himalaya.ui').delete_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').delete_current_email()
       elseif key == 'l' then
-        require('neotex.plugins.tools.himalaya.ui').open_link_under_cursor()
+        require('neotex.plugins.tools.himalaya.ui.main').open_link_under_cursor()
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
@@ -333,27 +332,28 @@ function M.setup_buffer_keymaps(bufnr)
     end, vim.tbl_extend('force', opts, { desc = 'Himalaya g-commands' }))
     
     keymap('n', 'q', function()
-      require('neotex.plugins.tools.himalaya.ui').close_current_view()
+      require('neotex.plugins.tools.himalaya.ui.main').close_current_view()
     end, vim.tbl_extend('force', opts, { desc = 'Close' }))
     
     keymap('n', 'L', function()
-      require('neotex.plugins.tools.himalaya.ui').open_link_under_cursor()
+      require('neotex.plugins.tools.himalaya.ui.main').open_link_under_cursor()
     end, vim.tbl_extend('force', opts, { desc = 'Go to link under cursor' }))
+    
   end
   
   -- Email compose keymaps
   if vim.bo[bufnr].filetype == 'himalaya-compose' then
     keymap('n', 'Q', function()
-      require('neotex.plugins.tools.himalaya.ui').close_without_saving()
+      require('neotex.plugins.tools.himalaya.ui.main').close_without_saving()
     end, vim.tbl_extend('force', opts, { desc = 'Close without saving' }))
     
     keymap('n', 'q', function()
-      require('neotex.plugins.tools.himalaya.ui').close_and_save_draft()
+      require('neotex.plugins.tools.himalaya.ui.main').close_and_save_draft()
     end, vim.tbl_extend('force', opts, { desc = 'Close and save as draft' }))
     
     -- Add direct 's' key for send (override vim's substitute)
     keymap('n', 's', function()
-      require('neotex.plugins.tools.himalaya.ui').send_current_email()
+      require('neotex.plugins.tools.himalaya.ui.main').send_current_email()
     end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
     
     -- Override 'g' to handle g-commands for compose buffers
@@ -362,7 +362,7 @@ function M.setup_buffer_keymaps(bufnr)
       local key = vim.fn.nr2char(char)
       
       if key == 's' then
-        require('neotex.plugins.tools.himalaya.ui').send_current_email()
+        require('neotex.plugins.tools.himalaya.ui.main').send_current_email()
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)

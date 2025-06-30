@@ -275,7 +275,7 @@ function M.setup()
         print("Length: " .. string.len(system_prompt) .. " characters")
         print("Contains MANDATORY:", string.find(system_prompt, "MANDATORY") ~= nil)
         print("Contains Context7:", string.find(system_prompt, "Context7") ~= nil)
-        print("Contains emoji rules:", string.find(system_prompt, "🔴") ~= nil)
+        print("Contains warning rules:", string.find(system_prompt, "") ~= nil)
         print("")
         print("First 800 characters:")
         print(system_prompt:sub(1, 800))
@@ -354,11 +354,11 @@ function M.setup()
         if avante_config.opts then
           local new_config = type(avante_config.opts) == "function" and avante_config.opts() or avante_config.opts
           avante.config.override(new_config)
-          vim.notify("✅ Avante configuration reloaded", vim.log.levels.INFO)
+          vim.notify(" Avante configuration reloaded", vim.log.levels.INFO)
         end
       end
     else
-      vim.notify("❌ Failed to reload Avante", vim.log.levels.ERROR)
+      vim.notify(" Failed to reload Avante", vim.log.levels.ERROR)
     end
   end, { desc = "Force reload Avante configuration with MCP fixes" })
   

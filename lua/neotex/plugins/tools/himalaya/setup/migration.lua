@@ -157,42 +157,42 @@ end
 
 -- Main migration function
 function M.migrate_from_old()
-  logger.info('🔄 Starting migration from old Himalaya plugin...')
+  logger.info(' Starting migration from old Himalaya plugin...')
   
   local changes = {}
   
   -- Step 1: Backup old files
-  logger.info('📦 Backing up old files...')
+  logger.info(' Backing up old files...')
   local backup_dir, backed_up = M.backup_old_files()
   if #backed_up > 0 then
     table.insert(changes, string.format('Backed up %d files to %s', #backed_up, backup_dir))
   end
   
   -- Step 2: Fix UIDVALIDITY files
-  logger.info('🔧 Fixing UIDVALIDITY files...')
+  logger.info(' Fixing UIDVALIDITY files...')
   local fixed = M.fix_uidvalidity_files()
   if fixed > 0 then
     table.insert(changes, string.format('Fixed %d UIDVALIDITY files', fixed))
   end
   
   -- Step 3: Migrate configuration
-  logger.info('⚙️  Checking configuration...')
+  logger.info('  Checking configuration...')
   if M.migrate_config() then
     table.insert(changes, 'Configuration updates needed (see above)')
   end
   
   -- Step 4: Clear old state
-  logger.info('🧹 Clearing old state files...')
+  logger.info(' Clearing old state files...')
   if M.clear_old_state() then
     table.insert(changes, 'Cleared obsolete state files')
   end
   
   -- Step 5: Stop any running syncs
-  logger.info('🛑 Stopping old sync processes...')
+  logger.info(' Stopping old sync processes...')
   os.execute('pkill -f "mbsync" 2>/dev/null')
   
   -- Step 6: Run health check
-  logger.info('🏥 Running health check...')
+  logger.info(' Running health check...')
   vim.defer_fn(function()
     local health = require('neotex.plugins.tools.himalaya.setup.health')
     health.show_report()
@@ -200,18 +200,18 @@ function M.migrate_from_old()
   
   -- Report results
   if #changes > 0 then
-    logger.info('\n✅ Migration complete:')
+    logger.info('\n Migration complete:')
     for _, change in ipairs(changes) do
       logger.info('  - ' .. change)
     end
     
-    logger.info('\n📝 Next steps:')
+    logger.info('\n Next steps:')
     logger.info('1. Review the health check results above')
     logger.info('2. Update your configuration if needed')
     logger.info('3. Run :HimalayaSetup if any issues')
     logger.info('4. Delete backup directory when satisfied: ' .. backup_dir)
   else
-    logger.info('✅ No migration needed - already up to date!')
+    logger.info(' No migration needed - already up to date!')
   end
   
   -- Save migration completion

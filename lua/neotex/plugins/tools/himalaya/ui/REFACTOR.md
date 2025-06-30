@@ -3,6 +3,24 @@
 ## Overview
 This document outlines the systematic refactor of the Himalaya UI to reproduce the exact functionality from the old ui.lua while maintaining a clean, modular directory structure.
 
+## Refactor Status Summary
+**PHASES COMPLETED**: 0, 1, 3, 4 (Phase 2 skipped as unnecessary)
+**CURRENT PHASE**: 5 - Systematic Testing
+
+### What Has Been Done:
+1. **Utils Module**: Replaced all stub functions with real himalaya CLI integration
+2. **UI Functions**: Added all missing functions to ui/main.lua from old UI
+3. **Keymaps**: Configured all keymaps in core/config.lua
+4. **Email Formatting**: Fixed to match old UI display exactly
+5. **Module Cleanup**: Removed unused stub modules, kept focused architecture
+
+### Architecture Achieved:
+- `utils.lua`: All email operations and himalaya CLI integration
+- `ui/main.lua`: All UI functionality (display, compose, actions)
+- `core/config.lua`: Configuration and keymaps
+- `ui/state.lua`: Persistent UI state (session restoration)
+- `core/state.lua`: Runtime state (sync status, cache)
+
 ## Current Issues
 The UI was broken during refactoring, missing critical functionality from the original `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/old_backup/ui.lua`.
 
@@ -280,7 +298,24 @@ Before starting the main refactor, redistribute functionality from utils.lua to 
 11. **Ensure all keymaps are properly set up**
 12. **Test all functionality matches the old UI**
 
-### Phase 4: Cleanup and Optimization
+### ✅ Phase 4: Cleanup and Optimization [COMPLETED]
+**Status**: Cleanup completed, codebase optimized
+
+**What was done**:
+- ✅ Removed unused stub modules (compose.lua, email_list.lua)
+- ✅ Verified no circular dependencies exist
+- ✅ Kept both state modules as they serve different purposes:
+  - core/state.lua: Runtime state (sync status, cache)
+  - ui/state.lua: Persistent UI state (session restoration)
+- ✅ No redundant code found - all functions have unique purposes
+- ✅ Module exports are already optimized in ui/init.lua
+
+**Clean architecture achieved**:
+- utils.lua: All email operations and CLI integration
+- ui/main.lua: All UI functionality
+- Other modules: Specific focused functionality
+
+### Phase 4: Cleanup and Optimization [COMPLETED]
 13. **Remove redundant code**:
     - Identify duplicate functions across modules
     - Remove unused helper functions
@@ -305,7 +340,37 @@ Before starting the main refactor, redistribute functionality from utils.lua to 
     - Remove unnecessary module table entries
     - Clean up init.lua to only export what's needed
 
-### Phase 5: Systematic Testing
+### Phase 5: Systematic Testing [IN PROGRESS]
+**Status**: Basic functionality confirmed working!
+
+**Progress**:
+- ✅ Sidebar opens successfully with <leader>mo
+- ✅ Sidebar now toggles properly with <leader>mo (fixed is_open state tracking)
+- ✅ Email list loads and displays (200 emails cached)
+- ✅ Pagination info shows correctly with total email count
+- ✅ Fixed config access pattern (was incorrectly accessing config.binaries instead of config.config.binaries)
+- ✅ Pagination with gn/gp works (fixed missing state fields)
+- ✅ Email opening with <CR> works (added folder parameter to read command)
+- ✅ Closing with q works
+
+**Fixed Issues**:
+1. Added missing state fields (current_page, page_size, total_emails)
+2. Fixed sidebar.is_open state tracking
+3. Updated get_email_list to return total count for proper pagination display
+4. Added folder parameter to email reading command
+
+**Additional fixes**:
+5. Fixed all command mappings (sync_inbox → sync, stop_sync → stop, etc.)
+6. Added proper error handling for sync commands
+7. Fixed account configuration checks
+8. Added all missing commands (with TODO placeholders for unimplemented features)
+
+**Command Status**:
+- ✅ Working: Toggle, Open, Sync (inbox/full), Cancel sync, Write, Cleanup, OAuth refresh, Restore session
+- 🚧 TODO: Folder picker, Account switcher, Trash viewer, Trash stats, Backup & fresh
+
+**Ready to continue testing**:
+
 17. **Basic Functionality Testing** (with user):
     ```
     □ Start Neovim fresh

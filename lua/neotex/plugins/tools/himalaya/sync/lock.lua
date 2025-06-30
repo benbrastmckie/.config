@@ -54,20 +54,31 @@ end
 function M.cleanup_locks()
   local cleaned = 0
   
-  -- Find all lock files
+  -- Find all himalaya lock files
   local handle = io.popen('ls ' .. M.LOCK_DIR .. '/' .. M.LOCK_PREFIX .. '*.lock 2>/dev/null')
   if handle then
     local files = handle:read('*a')
     handle:close()
     
     for file in files:gmatch('[^\n]+') do
-      -- Check if lock is stale by trying to acquire it
-      local cmd = string.format('flock -n %s -c "echo cleaned" 2>/dev/null', vim.fn.shellescape(file))
-      if os.execute(cmd) == 0 then
-        -- Lock was acquired, so it was stale
+      -- Try to acquire the lock to check if it's stale
+      local test_cmd = string.format('flock -n -x %s -c "exit 0" 2>/dev/null', vim.fn.shellescape(file))
+      if os.execute(test_cmd) == 0 then
+        -- Lock was successfully acquired, so it's not held by any process
+        -- This means it's a stale lock file that can be removed
         os.remove(file)
         cleaned = cleaned + 1
       end
+    end
+  end
+  
+  -- Also check the global mbsync lock
+  local global_lock = M.LOCK_DIR .. '/mbsync-global.lock'
+  if vim.fn.filereadable(global_lock) == 1 then
+    local test_cmd = string.format('flock -n -x %s -c "exit 0" 2>/dev/null', vim.fn.shellescape(global_lock))
+    if os.execute(test_cmd) == 0 then
+      os.remove(global_lock)
+      cleaned = cleaned + 1
     end
   end
   
@@ -78,24 +89,32 @@ end
 function M.get_active_locks()
   local locks = {}
   
-  -- Check global lock
-  if M.is_locked() then
-    table.insert(locks, 'global')
-  end
-  
-  -- Find channel-specific locks
+  -- Find all lock files
   local handle = io.popen('ls ' .. M.LOCK_DIR .. '/' .. M.LOCK_PREFIX .. '*.lock 2>/dev/null')
   if handle then
     local files = handle:read('*a')
     handle:close()
     
     for file in files:gmatch('[^\n]+') do
-      if M.is_locked(file:match(M.LOCK_PREFIX .. '(.+)%.lock$')) then
-        local channel = file:match(M.LOCK_PREFIX .. '(.+)%.lock$')
-        if channel then
+      -- Extract channel name from filename
+      local channel = file:match(M.LOCK_PREFIX .. '(.+)%.lock$')
+      if channel then
+        -- Check if this specific lock is actually held by a process
+        if M.is_locked(channel) then
           table.insert(locks, channel)
         end
       end
+    end
+  end
+  
+  -- Also check the global lock
+  local global_lock = M.LOCK_DIR .. '/mbsync-global.lock'
+  if vim.fn.filereadable(global_lock) == 1 then
+    -- Try to acquire it to see if it's stale
+    local cmd = string.format('flock -n %s -c "echo unlocked" 2>/dev/null', vim.fn.shellescape(global_lock))
+    if os.execute(cmd) ~= 0 then
+      -- Lock is held
+      table.insert(locks, 'global')
     end
   end
   

@@ -89,10 +89,22 @@ end
 -- Close sidebar window
 function M.close()
   if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    -- Get the window's buffer before closing
+    local buf = vim.api.nvim_win_get_buf(M.state.win)
+    
+    -- Close the window
     vim.api.nvim_win_close(M.state.win, true)
+    
+    -- Also delete the buffer to ensure clean state
+    if buf and vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
   end
+  
+  -- Reset state
   M.state.is_open = false
   M.state.win = nil
+  M.state.buf = nil
 end
 
 -- Close sidebar and clean up buffer completely
@@ -224,19 +236,100 @@ function M.handle_resize()
   end
 end
 
--- Update sidebar content
+-- Update sidebar content with optimized rendering to prevent flicker
 function M.update_content(lines)
   if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
     return false
   end
   
+  -- Save cursor position
+  local cursor_pos = nil
+  if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    cursor_pos = vim.api.nvim_win_get_cursor(M.state.win)
+  end
+  
+  -- Disable syntax and other expensive features during update
+  local eventignore = vim.o.eventignore
+  vim.o.eventignore = 'all'
+  
   -- Make buffer modifiable
   vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
   
-  -- Set content
-  vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
+  -- Get current lines for comparison
+  local current_lines = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+  
+  -- Only update if content has actually changed
+  local content_changed = false
+  if #current_lines ~= #lines then
+    content_changed = true
+  else
+    for i = 1, #lines do
+      if current_lines[i] ~= lines[i] then
+        content_changed = true
+        break
+      end
+    end
+  end
+  
+  if content_changed then
+    -- Use nvim_buf_set_text for smoother updates when possible
+    if #current_lines > 0 and #lines > 0 then
+      -- Clear and set in one operation
+      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
+    else
+      -- Full replace for empty buffers
+      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
+    end
+  end
   
   -- Make buffer read-only again
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', false)
+  
+  -- Restore eventignore
+  vim.o.eventignore = eventignore
+  
+  -- Restore cursor position if it was saved and is still valid
+  if cursor_pos and M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    local line_count = vim.api.nvim_buf_line_count(M.state.buf)
+    if cursor_pos[1] <= line_count then
+      vim.api.nvim_win_set_cursor(M.state.win, cursor_pos)
+    end
+  end
+  
+  return true
+end
+
+-- Update only specific lines (for header updates)
+function M.update_header_lines(header_lines)
+  if not M.state.buf or not vim.api.nvim_buf_is_valid(M.state.buf) then
+    return false
+  end
+  
+  local current_lines = vim.api.nvim_buf_get_lines(M.state.buf, 0, -1, false)
+  if #current_lines < #header_lines then
+    return false -- Not enough lines, do full update instead
+  end
+  
+  -- Check if header actually changed
+  local header_changed = false
+  for i = 1, #header_lines do
+    if current_lines[i] ~= header_lines[i] then
+      header_changed = true
+      break
+    end
+  end
+  
+  if not header_changed then
+    return true -- No update needed
+  end
+  
+  -- Update only the header lines
+  vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
+  
+  for i = 1, #header_lines do
+    vim.api.nvim_buf_set_lines(M.state.buf, i-1, i, false, {header_lines[i]})
+  end
+  
   vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', false)
   
   return true
@@ -270,6 +363,11 @@ end
 -- Initialize sidebar (call once)
 function M.init()
   M.setup_autocmds()
+end
+
+-- Export state for debugging
+M.get_state = function()
+  return M.state
 end
 
 return M

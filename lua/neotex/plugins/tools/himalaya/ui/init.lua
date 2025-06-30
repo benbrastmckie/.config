@@ -59,6 +59,7 @@ M.restore_session = main.restore_session
 M.prompt_session_restore = main.prompt_session_restore
 M.close_without_saving = main.close_without_saving
 M.close_and_save_draft = main.close_and_save_draft
+M.stop_sync_status_updates = main.stop_sync_status_updates
 
 -- Also expose main module and buffers for direct access
 M.main = main
@@ -72,7 +73,38 @@ function M.setup()
   -- Setup notifications
   M.notifications.setup()
   
-  -- Any other UI-wide initialization
+  -- Setup autocmds for email actions
+  local group = vim.api.nvim_create_augroup('HimalayaEmailActions', { clear = true })
+  
+  -- Refresh sidebar when emails are moved, deleted, or sent
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = { 'HimalayaEmailMoved', 'HimalayaEmailDeleted', 'HimalayaEmailSent' },
+    callback = function()
+      -- Refresh sidebar if it's open
+      if M.sidebar.is_open() then
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
+      end
+    end,
+    desc = 'Refresh Himalaya sidebar after email actions'
+  })
+  
+  -- Refresh sidebar when tags are changed
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = 'HimalayaTagChanged',
+    callback = function()
+      -- Refresh sidebar if it's open
+      if M.sidebar.is_open() then
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
+      end
+    end,
+    desc = 'Refresh Himalaya sidebar after tag changes'
+  })
 end
 
 return M

@@ -153,8 +153,10 @@ function M.checks.sync_processes()
   local lock = require('neotex.plugins.tools.himalaya.sync.lock')
   local active_locks = lock.get_active_locks()
   
-  if #processes > 1 then
-    table.insert(issues, 'Multiple mbsync processes detected')
+  -- Only consider it problematic if there are truly excessive processes (3+)
+  -- Single external sync from another nvim instance is normal
+  if #processes > 2 then
+    table.insert(issues, 'Too many mbsync processes detected (' .. #processes .. ')')
   end
   
   if #active_locks > 0 and #processes == 0 then
@@ -257,12 +259,12 @@ function M.show_report(silent)
   local result = M.check()
   
   if not silent then
-    logger.info('🏥 Himalaya Health Check')
+    logger.info(' Himalaya Health Check')
     logger.info(string.rep('─', 40))
   end
   
   for _, check in ipairs(result.report) do
-    local icon = check.ok and '✅' or '❌'
+    local icon = check.ok and '' or ''
     local status = check.ok and 'OK' or 'ISSUES'
     
     if not silent then
@@ -276,14 +278,14 @@ function M.show_report(silent)
     if not check.ok and check.issues and not silent then
       for _, issue in ipairs(check.issues) do
         if type(issue) == 'table' then
-          logger.warn('  - ' .. issue.issue .. ' (' .. issue.file .. ')')
+          logger.warn('   ' .. issue.issue .. ' (' .. issue.file .. ')')
         else
-          logger.warn('  - ' .. issue)
+          logger.warn('   ' .. issue)
         end
       end
       
       if check.fix then
-        logger.info('  💡 Fix: ' .. check.fix)
+        logger.info('   Fix: ' .. check.fix)
       end
     end
   end
@@ -292,9 +294,9 @@ function M.show_report(silent)
     logger.info(string.rep('─', 40))
     
     if result.ok then
-      logger.info('🎉 All checks passed!')
+      logger.info(' All checks passed!')
     else
-      logger.warn('⚠️  Some issues detected. Run suggested fixes.')
+      logger.warn('  Some issues detected. Run suggested fixes.')
     end
   end
   
@@ -303,7 +305,7 @@ end
 
 -- Fix common issues automatically
 function M.fix_common_issues()
-  logger.info('🔧 Attempting to fix common issues...')
+  logger.info(' Attempting to fix common issues...')
   
   local fixes_applied = {}
   
@@ -327,7 +329,7 @@ function M.fix_common_issues()
   end
   
   if #fixes_applied > 0 then
-    logger.info('✅ Applied fixes:')
+    logger.info(' Applied fixes:')
     for _, fix in ipairs(fixes_applied) do
       logger.info('  - ' .. fix)
     end
