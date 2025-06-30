@@ -728,22 +728,8 @@ function M.compose_email(to_address)
   -- Email template
   local account = config.get_current_account()
   
-  -- Get email address - try multiple sources
-  local from_email = nil
-  if account then
-    if account.email then
-      from_email = account.email
-    elseif account.name and account.name:match('@') then
-      -- Account name might be the email
-      from_email = account.name
-    else
-      -- Try to get from account name (often is the email for gmail)
-      local account_name = config.get_current_account_name()
-      if account_name and account_name:match('@') then
-        from_email = account_name
-      end
-    end
-  end
+  -- Get email address using auto-detection
+  local from_email = config.get_account_email()
   
   -- Error if no email address found
   if not from_email then
@@ -1182,22 +1168,8 @@ function M.reply_email(email_id, reply_all)
   -- Reply template
   local account = config.get_current_account()
   
-  -- Get email address - try multiple sources
-  local from_email = nil
-  if account then
-    if account.email then
-      from_email = account.email
-    elseif account.name and account.name:match('@') then
-      -- Account name might be the email
-      from_email = account.name
-    else
-      -- Try to get from account name (often is the email for gmail)
-      local account_name = config.get_current_account_name()
-      if account_name and account_name:match('@') then
-        from_email = account_name
-      end
-    end
-  end
+  -- Get email address using auto-detection
+  local from_email = config.get_account_email()
   
   -- Error if no email address found
   if not from_email then
@@ -1339,22 +1311,8 @@ function M.forward_email(email_id)
     subject = 'Fwd: ' .. subject
   end
   
-  -- Get email address - try multiple sources
-  local from_email = nil
-  if account then
-    if account.email then
-      from_email = account.email
-    elseif account.name and account.name:match('@') then
-      -- Account name might be the email
-      from_email = account.name
-    else
-      -- Try to get from account name (often is the email for gmail)
-      local account_name = config.get_current_account_name()
-      if account_name and account_name:match('@') then
-        from_email = account_name
-      end
-    end
-  end
+  -- Get email address using auto-detection
+  local from_email = config.get_account_email()
   
   -- Error if no email address found
   if not from_email then

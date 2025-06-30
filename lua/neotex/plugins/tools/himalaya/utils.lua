@@ -113,20 +113,29 @@ function M.get_folders(account)
   local args = { 'folder', 'list' }
   local result = M.execute_himalaya(args, { account = account })
   
+  local folders = {}
+  
+  -- Always include INBOX as first folder (it's the special default folder)
+  table.insert(folders, 'INBOX')
+  
   if result and type(result) == 'table' then
     -- Extract folder names from result
-    local folders = {}
     for _, folder_data in ipairs(result) do
+      local folder_name = nil
       if type(folder_data) == 'string' then
-        table.insert(folders, folder_data)
+        folder_name = folder_data
       elseif type(folder_data) == 'table' and folder_data.name then
-        table.insert(folders, folder_data.name)
+        folder_name = folder_data.name
+      end
+      
+      -- Add folder if it's not INBOX (to avoid duplicates)
+      if folder_name and folder_name ~= 'INBOX' then
+        table.insert(folders, folder_name)
       end
     end
-    return folders
   end
   
-  return nil
+  return #folders > 0 and folders or nil
 end
 
 -- Get email list for account and folder
