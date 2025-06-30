@@ -355,6 +355,20 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
     
+    -- Toggle selection mode
+    keymap('n', 'v', function()
+      local state = require('neotex.plugins.tools.himalaya.ui.state')
+      local main = require('neotex.plugins.tools.himalaya.ui.main')
+      local mode = state.toggle_selection_mode()
+      if mode then
+        vim.notify('Selection mode: ON (Space to select, v to exit)')
+      else
+        state.clear_selection()
+        vim.notify('Selection mode: OFF')
+      end
+      main.refresh_email_list()
+    end, vim.tbl_extend('force', opts, { desc = 'Toggle selection mode' }))
+    
   end
   
   -- Email reading keymaps

@@ -502,10 +502,23 @@ end
 - Email metadata correctly identifies unread, read, and starred emails
 - Visual highlighting ready for testing with real email data
 
-### Phase 2: Selection State Management
-1. Extend `ui/state.lua` with selection functionality
-2. Implement selection mode toggle (keymap `v`)
-3. Add basic checkbox rendering to email list format
+### Phase 2: Selection State Management ✅ COMPLETED
+1. ✅ Extend `ui/state.lua` with selection functionality
+2. ✅ Implement selection mode toggle (keymap `v`)
+3. ✅ Add basic checkbox rendering to email list format
+
+**Changes made:**
+- Added selection state and functions to `ui/state.lua` (toggle mode, select/deselect, get count, etc.)
+- Added 'v' keymap in `core/config.lua` to toggle selection mode with notifications
+- Modified `format_email_list()` to render checkboxes `[ ]` / `[x]` when in selection mode
+- Added selection count to sidebar header when in selection mode
+- Updated reset function to clear selection state
+
+**Test results:**
+- All selection state functions working correctly
+- Checkboxes render properly with correct selection state
+- Header shows selection count when in selection mode
+- Keymap 'v' successfully toggles selection mode
 
 ### Phase 3: Selection Interaction
 1. Implement space-bar selection toggle
