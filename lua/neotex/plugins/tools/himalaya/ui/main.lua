@@ -271,15 +271,26 @@ function M.format_email_list(emails)
   local pagination_info = string.format('Page %d | %d emails', 
     state.get_current_page(), state.get_total_emails())
   
+  -- Add selection status if in selection mode
+  local selection_info = nil
+  if state.is_selection_mode() then
+    local count = state.get_selection_count()
+    selection_info = string.format('Selection: %d selected (v to exit)', count)
+  end
+  
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
   
   table.insert(lines, header)
   table.insert(lines, pagination_info)
+  if selection_info then
+    table.insert(lines, selection_info)
+  end
   if sync_status_line then
     table.insert(lines, sync_status_line)
   end
-  table.insert(lines, string.rep('─', math.max(#header, #pagination_info, sync_status_line and #sync_status_line or 0)))
+  table.insert(lines, string.rep('─', math.max(#header, #pagination_info, 
+    selection_info and #selection_info or 0, sync_status_line and #sync_status_line or 0)))
   table.insert(lines, '')
   
   -- Email entries
@@ -298,6 +309,14 @@ function M.format_email_list(emails)
     end
     local status = seen and ' ' or '*'
     
+    -- Selection checkbox
+    local email_id = email.id or tostring(i)
+    local is_selected = state.is_email_selected(email_id)
+    local checkbox = ''
+    if state.is_selection_mode() then
+      checkbox = is_selected and '[x] ' or '[ ] '
+    end
+    
     -- Parse from field (it's an object with name and addr)
     local from = 'Unknown'
     if email.from then
@@ -315,7 +334,7 @@ function M.format_email_list(emails)
     from = utils.truncate_string(from, 25)
     subject = utils.truncate_string(subject, 50)
     
-    local line = string.format('[%s] %s  %s  %s', status, from, subject, date)
+    local line = string.format('%s[%s] %s  %s  %s', checkbox, status, from, subject, date)
     table.insert(lines, line)
     
     -- Store email metadata for highlighting
@@ -323,7 +342,9 @@ function M.format_email_list(emails)
     lines.metadata[#lines] = {
       seen = seen,
       starred = starred,
-      email_index = i
+      email_index = i,
+      email_id = email_id,
+      selected = is_selected
     }
   end
   

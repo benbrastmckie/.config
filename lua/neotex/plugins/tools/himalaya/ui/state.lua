@@ -19,6 +19,12 @@ M.state = {
   session_timestamp = nil,
 }
 
+-- Selection state (separate from persisted state)
+M.selection = {
+  selected_emails = {}, -- Set of email IDs
+  selection_mode = false, -- Toggle for selection mode
+}
+
 -- State file path
 local function get_state_file()
   local data_dir = vim.fn.stdpath('data') .. '/himalaya'
@@ -224,6 +230,12 @@ function M.reset()
     window_positions = {},
     session_timestamp = nil,
   }
+  
+  -- Also reset selection state
+  M.selection = {
+    selected_emails = {},
+    selection_mode = false,
+  }
 end
 
 -- Get session age in minutes
@@ -314,6 +326,56 @@ function M.import_state(new_state)
     return true
   end
   return false
+end
+
+-- Selection state management functions
+
+-- Toggle selection mode
+function M.toggle_selection_mode()
+  M.selection.selection_mode = not M.selection.selection_mode
+  return M.selection.selection_mode
+end
+
+-- Check if email is selected
+function M.is_email_selected(email_id)
+  return M.selection.selected_emails[email_id] ~= nil
+end
+
+-- Toggle email selection
+function M.toggle_email_selection(email_id, email_data)
+  if M.selection.selected_emails[email_id] then
+    M.selection.selected_emails[email_id] = nil
+  else
+    M.selection.selected_emails[email_id] = email_data
+  end
+end
+
+-- Clear all selections
+function M.clear_selection()
+  M.selection.selected_emails = {}
+end
+
+-- Get all selected emails
+function M.get_selected_emails()
+  local selected = {}
+  for id, email in pairs(M.selection.selected_emails) do
+    table.insert(selected, email)
+  end
+  return selected
+end
+
+-- Get selection count
+function M.get_selection_count()
+  local count = 0
+  for _ in pairs(M.selection.selected_emails) do
+    count = count + 1
+  end
+  return count
+end
+
+-- Check if in selection mode
+function M.is_selection_mode()
+  return M.selection.selection_mode
 end
 
 return M

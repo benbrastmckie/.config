@@ -104,15 +104,22 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] surround
   - [x] pairs
 - [:] email
-  - [ ] Instead of auto-sync when nvim starts, can you make it auto-sync when I open himalaya?
-  - [ ] UI
-    - [ ] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
-    - [ ] multi select emails
-    - [ ] colors for stared and unread
-    - [ ] subject in bold
-    - [ ] hover emails
-    - [ ] reply/forward/compose in buffers
+  - [ ] instead of auto-sync when nvim starts, can you make it auto-sync when I open himalaya?
+  - [ ] sidebar
+    - [ ] batch operation
+      - [x] spec
+      - [ ] multi select emails
+      - [ ] colors for stared and unread
+    - [ ] appearances
+      - [ ] spec
+      - [ ] subject in bold
+      - [ ] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
+    - [ ] hover and buffers
+      - [ ] spec
+      - [ ] hover emails
+      - [ ] reply/forward/compose in buffers
   - [ ] documentation
+    - [ ] spec
     - [ ] refactor
     - [ ] works with non-nix just as well?
   - [ ] publish plugin
