@@ -351,9 +351,15 @@ function M.format_email_list(emails)
   -- Footer with keymaps
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'r:refresh gn:next-page gp:prev-page')
-  table.insert(lines, 'gm:folder ga:account gw:write')
-  table.insert(lines, 'gD:delete gA:archive gS:spam')
+  
+  if state.is_selection_mode() then
+    table.insert(lines, 'SELECTION MODE: Space:toggle v:exit')
+    table.insert(lines, 'gD:delete-selected gA:archive-selected gS:spam-selected')
+  else
+    table.insert(lines, 'r:refresh gn:next-page gp:prev-page v:select-mode')
+    table.insert(lines, 'gm:folder ga:account gw:write')
+    table.insert(lines, 'gD:delete gA:archive gS:spam')
+  end
   
   return lines
 end
@@ -2006,12 +2012,25 @@ function M.delete_selected_emails()
       local success_count = 0
       local error_count = 0
       
-      for _, email in ipairs(selected) do
+      -- Show progress notification for large batches
+      if #selected > 5 then
+        notifications.show(string.format('Deleting %d emails...', #selected), 'info')
+      end
+      
+      for i, email in ipairs(selected) do
         local success, error_type = utils.smart_delete_email(state.get_current_account(), email.id)
         if success then
           success_count = success_count + 1
         else
           error_count = error_count + 1
+          -- Log specific error for debugging
+          vim.notify(string.format('Failed to delete email %s: %s', 
+            email.subject or email.id, error_type or 'unknown error'), vim.log.levels.DEBUG)
+        end
+        
+        -- Update progress for large batches
+        if #selected > 10 and i % 10 == 0 then
+          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
         end
       end
       
@@ -2065,12 +2084,24 @@ function M.archive_selected_emails()
         archive_folder = 'All_Mail' -- Default fallback
       end
       
-      for _, email in ipairs(selected) do
+      -- Show progress notification for large batches
+      if #selected > 5 then
+        notifications.show(string.format('Archiving %d emails to %s...', #selected, archive_folder), 'info')
+      end
+      
+      for i, email in ipairs(selected) do
         local success = utils.move_email(email.id, archive_folder)
         if success then
           success_count = success_count + 1
         else
           error_count = error_count + 1
+          vim.notify(string.format('Failed to archive email %s', 
+            email.subject or email.id), vim.log.levels.DEBUG)
+        end
+        
+        -- Update progress for large batches
+        if #selected > 10 and i % 10 == 0 then
+          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
         end
       end
       
@@ -2124,12 +2155,24 @@ function M.spam_selected_emails()
         spam_folder = 'Spam' -- Default fallback
       end
       
-      for _, email in ipairs(selected) do
+      -- Show progress notification for large batches
+      if #selected > 5 then
+        notifications.show(string.format('Moving %d emails to spam...', #selected), 'info')
+      end
+      
+      for i, email in ipairs(selected) do
         local success = utils.move_email(email.id, spam_folder)
         if success then
           success_count = success_count + 1
         else
           error_count = error_count + 1
+          vim.notify(string.format('Failed to mark email as spam: %s', 
+            email.subject or email.id), vim.log.levels.DEBUG)
+        end
+        
+        -- Update progress for large batches
+        if #selected > 10 and i % 10 == 0 then
+          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
         end
       end
       

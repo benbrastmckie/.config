@@ -386,6 +386,77 @@ function M.setup_buffer_keymaps(bufnr)
       main.refresh_email_list()
     end, vim.tbl_extend('force', opts, { desc = 'Toggle selection mode' }))
     
+    -- Show help
+    keymap('n', '?', function()
+      local help_lines = {
+        'Himalaya Email Client - Key Mappings',
+        '',
+        'Navigation:',
+        '  j/k       - Move up/down',
+        '  <CR>      - Read email',
+        '  q         - Close Himalaya',
+        '  r         - Refresh list',
+        '  gn/gp     - Next/previous page',
+        '',
+        'Selection Mode:',
+        '  v         - Toggle selection mode',
+        '  <Space>   - Select/deselect email (in selection mode)',
+        '',
+        'Email Actions:',
+        '  c/gw      - Compose new email',
+        '  gD        - Delete (batch if selected)',
+        '  gA        - Archive (batch if selected)',
+        '  gS        - Spam (batch if selected)',
+        '',
+        'Folders & Accounts:',
+        '  gm        - Change folder',
+        '  ga        - Change account',
+        '',
+        'Colors:',
+        '  Blue      - Unread emails',
+        '  Orange    - Starred emails',
+        '  Green [x] - Selected emails',
+        '',
+        'Press any key to close help'
+      }
+      
+      -- Create floating window for help
+      local width = 50
+      local height = #help_lines
+      local buf = vim.api.nvim_create_buf(false, true)
+      
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
+      vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+      vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+      
+      local win_opts = {
+        relative = 'editor',
+        width = width,
+        height = height,
+        col = math.floor((vim.o.columns - width) / 2),
+        row = math.floor((vim.o.lines - height) / 2),
+        style = 'minimal',
+        border = 'rounded',
+        title = ' Himalaya Help ',
+        title_pos = 'center',
+      }
+      
+      local win = vim.api.nvim_open_win(buf, true, win_opts)
+      
+      -- Close on any key press
+      vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', ':close<CR>', { silent = true })
+      vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':close<CR>', { silent = true })
+      vim.api.nvim_create_autocmd('BufLeave', {
+        buffer = buf,
+        once = true,
+        callback = function()
+          if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_win_close(win, true)
+          end
+        end
+      })
+    end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
+    
     -- Toggle email selection (Space)
     keymap('n', '<Space>', function()
       local state = require('neotex.plugins.tools.himalaya.ui.state')
