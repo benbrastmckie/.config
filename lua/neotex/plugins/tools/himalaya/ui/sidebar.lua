@@ -244,16 +244,43 @@ function M.update_content(lines)
   
   -- Extract metadata if present
   local metadata = nil
-  local line_data = lines
-  if type(lines) == 'table' and lines.metadata then
-    metadata = lines.metadata
-    -- Extract just the line strings
-    line_data = {}
-    for i, line in ipairs(lines) do
-      if type(line) == 'string' then
-        table.insert(line_data, line)
+  local line_data = {}
+  
+  if type(lines) == 'table' then
+    if lines.metadata then
+      metadata = lines.metadata
+      -- Extract array elements when metadata exists
+      local i = 1
+      while lines[i] ~= nil do
+        local line = lines[i]
+        -- Ensure each element is a string
+        if type(line) == 'string' then
+          table.insert(line_data, line)
+        elseif type(line) == 'number' then
+          table.insert(line_data, tostring(line))
+        else
+          -- Convert any other type to string
+          table.insert(line_data, tostring(line or ''))
+        end
+        i = i + 1
+      end
+    else
+      -- Simple array without metadata
+      for i, line in ipairs(lines) do
+        if type(line) == 'string' then
+          table.insert(line_data, line)
+        elseif type(line) == 'number' then
+          table.insert(line_data, tostring(line))
+        else
+          table.insert(line_data, tostring(line or ''))
+        end
       end
     end
+  end
+  
+  -- Ensure we have at least an empty array
+  if #line_data == 0 then
+    line_data = {''}  -- nvim_buf_set_lines needs at least one element
   end
   
   -- Save cursor position
@@ -286,13 +313,16 @@ function M.update_content(lines)
   end
   
   if content_changed then
-    -- Use nvim_buf_set_text for smoother updates when possible
-    if #current_lines > 0 and #line_data > 0 then
-      -- Clear and set in one operation
-      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, line_data)
-    else
-      -- Full replace for empty buffers
-      vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, line_data)
+    -- Ensure line_data is a valid array
+    if type(line_data) ~= 'table' then
+      line_data = {}
+    end
+    
+    -- Set buffer lines
+    local ok, err = pcall(vim.api.nvim_buf_set_lines, M.state.buf, 0, -1, false, line_data)
+    if not ok then
+      -- Silently fail - don't notify user about internal errors
+      return false
     end
   end
   
@@ -370,29 +400,40 @@ function M.apply_email_highlighting(metadata)
   -- Apply highlighting based on email metadata
   vim.api.nvim_win_call(M.state.win, function()
     local state = require('neotex.plugins.tools.himalaya.ui.state')
-    local in_selection_mode = state.is_selection_mode()
     
     for line_num, data in pairs(metadata) do
-      -- Apply checkbox highlighting if in selection mode
-      if in_selection_mode then
-        if data.selected then
-          -- Highlight selected checkbox
-          vim.fn.matchaddpos('HimalayaCheckboxSelected', {{line_num, 1, 3}})
-          -- Also highlight the whole line for selected emails
-          vim.fn.matchaddpos('HimalayaSelected', {{line_num}})
-        else
-          -- Highlight unselected checkbox
-          vim.fn.matchaddpos('HimalayaCheckbox', {{line_num, 1, 3}})
-        end
+      -- Apply checkbox highlighting for selected emails
+      if data.selected then
+        -- Highlight selected checkbox
+        vim.fn.matchaddpos('HimalayaCheckboxSelected', {{line_num, 1, 3}})
+        -- Also highlight the whole line for selected emails
+        vim.fn.matchaddpos('HimalayaSelected', {{line_num}})
+      else
+        -- Highlight unselected checkbox
+        vim.fn.matchaddpos('HimalayaCheckbox', {{line_num, 1, 3}})
       end
       
-      -- Apply status highlighting (starred/unread)
+      -- Apply status highlighting (starred/unread) first with lower priority
       if data.starred then
         -- Starred emails get orange highlighting
-        vim.fn.matchaddpos('HimalayaStarred', {{line_num}})
+        vim.fn.matchaddpos('HimalayaStarred', {{line_num}}, 10)
       elseif not data.seen then
         -- Unread emails get blue highlighting
-        vim.fn.matchaddpos('HimalayaUnread', {{line_num}})
+        vim.fn.matchaddpos('HimalayaUnread', {{line_num}}, 10)
+      end
+      
+      -- Apply author highlighting (bold) with higher priority so it overrides line highlights
+      if data.from_start and data.from_end then
+        if data.starred then
+          -- Starred emails get bold orange author
+          vim.fn.matchaddpos('HimalayaAuthorStarred', {{line_num, data.from_start, data.from_end - data.from_start + 1}}, 20)
+        elseif not data.seen then
+          -- Unread emails get bold blue author
+          vim.fn.matchaddpos('HimalayaAuthorUnread', {{line_num, data.from_start, data.from_end - data.from_start + 1}}, 20)
+        else
+          -- Read emails get just bold author
+          vim.fn.matchaddpos('HimalayaAuthor', {{line_num, data.from_start, data.from_end - data.from_start + 1}}, 20)
+        end
       end
     end
   end)
@@ -425,11 +466,11 @@ end
 
 -- Setup highlight groups for email status
 function M.setup_highlights()
-  -- Unread emails (light blue)
-  vim.api.nvim_set_hl(0, 'HimalayaUnread', { fg = '#87CEEB', bold = true })
+  -- Unread emails (light blue, not bold)
+  vim.api.nvim_set_hl(0, 'HimalayaUnread', { fg = '#87CEEB' })
   
-  -- Starred emails (light orange) 
-  vim.api.nvim_set_hl(0, 'HimalayaStarred', { fg = '#FFA07A', bold = true })
+  -- Starred emails (light orange, not bold) 
+  vim.api.nvim_set_hl(0, 'HimalayaStarred', { fg = '#FFA07A' })
   
   -- Selected emails (for multi-select)
   vim.api.nvim_set_hl(0, 'HimalayaSelected', { bg = '#444444', fg = '#FFFFFF' })
@@ -437,6 +478,15 @@ function M.setup_highlights()
   -- Checkbox indicators
   vim.api.nvim_set_hl(0, 'HimalayaCheckbox', { fg = '#888888' })
   vim.api.nvim_set_hl(0, 'HimalayaCheckboxSelected', { fg = '#00FF00', bold = true })
+  
+  -- Author field (bold only)
+  vim.api.nvim_set_hl(0, 'HimalayaAuthor', { bold = true })
+  
+  -- Author field for unread emails (bold and blue)
+  vim.api.nvim_set_hl(0, 'HimalayaAuthorUnread', { fg = '#87CEEB', bold = true })
+  
+  -- Author field for starred emails (bold and orange)
+  vim.api.nvim_set_hl(0, 'HimalayaAuthorStarred', { fg = '#FFA07A', bold = true })
 end
 
 -- Initialize sidebar (call once)

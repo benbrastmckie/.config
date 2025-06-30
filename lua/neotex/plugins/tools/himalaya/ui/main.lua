@@ -117,8 +117,13 @@ function M.show_email_list(args)
   
   -- Show loading content immediately for responsiveness
   local account_name = config.get_current_account_name()
+  -- Capitalize common account names for display
+  local display_name = account_name
+  if display_name == 'gmail' then
+    display_name = 'Gmail'
+  end
   local loading_lines = {
-    string.format('󰊫 %s (%s)', account_name, folder),
+    string.format('󰊫 %s (%s)', display_name, folder),
     '',
     '󰔟 Loading emails...',
     '',
@@ -154,7 +159,7 @@ function M.show_email_list(args)
           if not has_emails then
             -- Fresh maildir with no emails
             local empty_lines = {
-              string.format('󰊫 %s (%s)', account_name, folder),
+              string.format('󰊫 %s (%s)', display_name, folder),
               '',
               '󰇯 Maildir is empty',
               '',
@@ -168,7 +173,7 @@ function M.show_email_list(args)
             total_count = 0
           else
             local error_lines = {
-              string.format('󰊫 %s (%s)', account_name, folder),
+              string.format('󰊫 %s (%s)', display_name, folder),
               '',
               '󰅙 Failed to get email list',
               '',
@@ -180,7 +185,7 @@ function M.show_email_list(args)
           end
         else
           local error_lines = {
-            string.format('󰊫 %s (%s)', account_name, folder),
+            string.format('󰊫 %s (%s)', display_name, folder),
             '',
             '󰅙 Mail directory not found',
             '',
@@ -215,6 +220,8 @@ function M.show_email_list(args)
     vim.b[buf].himalaya_emails = emails
     vim.b[buf].himalaya_account = state.get_current_account()
     vim.b[buf].himalaya_folder = folder
+    vim.b[buf].himalaya_line_map = lines.metadata -- Store line-to-email mapping
+    vim.b[buf].himalaya_email_start_line = lines.email_start_line -- Store where emails start
     
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
@@ -267,31 +274,36 @@ function M.format_email_list(emails)
       email_display = account_name or 'gmail'
     end
   end
+  
+  -- Capitalize common account names for display
+  if email_display == 'gmail' then
+    email_display = 'Gmail'
+  end
+  
   local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
   local pagination_info = string.format('Page %d | %d emails', 
     state.get_current_page(), state.get_total_emails())
   
-  -- Add selection status if in selection mode
-  local selection_info = nil
-  if state.is_selection_mode() then
-    local count = state.get_selection_count()
-    selection_info = string.format('Selection: %d selected (v to exit)', count)
-  end
+  -- Remove selection info display
   
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
   
   table.insert(lines, header)
   table.insert(lines, pagination_info)
-  if selection_info then
-    table.insert(lines, selection_info)
-  end
   if sync_status_line then
     table.insert(lines, sync_status_line)
   end
   table.insert(lines, string.rep('─', math.max(#header, #pagination_info, 
-    selection_info and #selection_info or 0, sync_status_line and #sync_status_line or 0)))
-  table.insert(lines, '')
+    sync_status_line and #sync_status_line or 0)))
+  
+  -- Only add blank line when NOT syncing
+  if not sync_status_line then
+    table.insert(lines, '')
+  end
+  
+  -- Store where emails start (before adding email lines)
+  local email_start_line = #lines + 1
   
   -- Email entries
   for i, email in ipairs(emails) do
@@ -309,13 +321,10 @@ function M.format_email_list(emails)
     end
     local status = seen and ' ' or '*'
     
-    -- Selection checkbox
+    -- Selection checkbox (always shown)
     local email_id = email.id or tostring(i)
     local is_selected = state.is_email_selected(email_id)
-    local checkbox = ''
-    if state.is_selection_mode() then
-      checkbox = is_selected and '[x] ' or '[ ] '
-    end
+    local checkbox = is_selected and '[x] ' or '[ ] '
     
     -- Parse from field (it's an object with name and addr)
     local from = 'Unknown'
@@ -334,7 +343,7 @@ function M.format_email_list(emails)
     from = utils.truncate_string(from, 25)
     subject = utils.truncate_string(subject, 50)
     
-    local line = string.format('%s[%s] %s  %s  %s', checkbox, status, from, subject, date)
+    local line = string.format('%s%s | %s  %s', checkbox, from, subject, date)
     table.insert(lines, line)
     
     -- Store email metadata for highlighting
@@ -344,22 +353,27 @@ function M.format_email_list(emails)
       starred = starred,
       email_index = i,
       email_id = email_id,
-      selected = is_selected
+      selected = is_selected,
+      from_start = #checkbox + 1,  -- Start position of author field
+      from_end = #checkbox + #from  -- End position of author field
     }
   end
+  
+  -- Store the email start line for easier access
+  lines.email_start_line = email_start_line
   
   -- Footer with keymaps
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
   
-  if state.is_selection_mode() then
-    table.insert(lines, 'SELECTION MODE: n:select-and-move v:exit')
-    table.insert(lines, 'gD:delete-selected gA:archive-selected gS:spam-selected')
+  -- Show different footer based on whether emails are selected
+  local selected_count = state.get_selection_count()
+  if selected_count > 0 then
+    table.insert(lines, string.format('%d selected: gD:delete gA:archive gS:spam n/N:select', selected_count))
   else
-    table.insert(lines, 'r:refresh gn:next-page gp:prev-page v:select-mode')
-    table.insert(lines, 'gm:folder ga:account gw:write')
-    table.insert(lines, 'gD:delete gA:archive gS:spam')
+    table.insert(lines, 'r:refresh gn:next-page gp:prev-page n/N:select')
   end
+  table.insert(lines, 'gm:folder ga:account gw:write c:compose')
   
   return lines
 end
@@ -379,10 +393,21 @@ end
 function M.get_sync_status_line_detailed()
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
   local status = mbsync.get_status()
+  local state = require('neotex.plugins.tools.himalaya.core.state')
   
-  -- Check if any sync is running (local or external)
-  if not status.sync_running and not status.external_sync_running then
+  -- Check state for immediate sync status
+  local sync_running = state.get('sync.running', false)
+  local sync_status = state.get('sync.status')
+  
+  -- Check if any sync is running (local or external or just starting)
+  if not status.sync_running and not status.external_sync_running and not sync_running then
     return nil
+  end
+  
+  -- If we have an immediate status message, show it
+  if sync_running and sync_status and not status.sync_running then
+    -- Sync is starting but mbsync hasn't reported progress yet
+    return sync_status
   end
   
   -- Check for external sync first (higher priority in display)
@@ -401,10 +426,10 @@ function M.get_sync_status_line_detailed()
         elapsed_str = string.format(" (%ds)", elapsed)
       end
     end
-    return "   Syncing (external)" .. elapsed_str
+    return "⟳ Syncing (external)" .. elapsed_str
   end
   
-  local status_text = " Syncing"
+  local status_text = "⟳ Syncing"
   local progress_info = {}
   
   -- Add elapsed time first
@@ -800,8 +825,10 @@ function M.compose_email(to_address)
   -- Open in window
   M.open_email_window(buf, 'Compose Email')
   
-  -- Position cursor on To: line if empty, otherwise Subject line
-  vim.api.nvim_win_set_cursor(0, to_address and {3, 9} or {2, 4})
+  -- Position cursor on To: line after "To: "
+  vim.api.nvim_win_set_cursor(0, {2, 4})
+  -- Start in insert mode
+  vim.cmd('startinsert!')
 end
 
 -- Open email window (floating)
@@ -899,6 +926,10 @@ function M.refresh_email_list()
       -- Format and update display with optimized rendering
       local lines = M.format_email_list(emails)
       sidebar.update_content(lines)
+      
+      -- Update line mapping data
+      vim.b[buf].himalaya_line_map = lines.metadata
+      vim.b[buf].himalaya_email_start_line = lines.email_start_line
     end
   end
   
@@ -958,12 +989,21 @@ function M.send_current_email()
   local body = table.concat(body_lines, '\n')
   
   -- Send email
-  local result = utils.send_email(state.get_current_account(), headers.to, headers.subject, body)
+  local email_data = {
+    from = headers.from,
+    to = headers.to,
+    subject = headers.subject,
+    body = body
+  }
+  local result = utils.send_email(state.get_current_account(), email_data)
   
   if result then
-    notifications.show('Email sent successfully', 'info')
+    notifications.show('Email sent successfully', 'info', { user_action = true })
     -- Close compose window
-    window_stack.close_current()
+    local current_win = vim.api.nvim_get_current_win()
+    if vim.api.nvim_win_is_valid(current_win) then
+      vim.api.nvim_win_close(current_win, true)
+    end
   else
     notifications.show('Failed to send email', 'error')
   end
@@ -979,6 +1019,56 @@ function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_delete(buf, { force = true })
   notifications.show('Draft discarded', 'info')
+end
+
+-- Navigate to next field in compose buffer
+function M.compose_next_field()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1]
+  local col = cursor[2]
+  
+  -- Field positions:
+  -- Line 2: To:
+  -- Line 3: Subject:
+  -- Line 5+: Body (first empty line after headers)
+  
+  if row < 2 then
+    -- Move to To: field
+    vim.api.nvim_win_set_cursor(0, {2, 4})
+    vim.cmd('startinsert!')
+  elseif row == 2 then
+    -- Move to Subject: field
+    vim.api.nvim_win_set_cursor(0, {3, 9})
+    vim.cmd('startinsert!')
+  elseif row == 3 then
+    -- Move to body (first empty line after subject)
+    vim.api.nvim_win_set_cursor(0, {5, 0})
+    vim.cmd('startinsert')
+  else
+    -- In body, go back to To:
+    vim.api.nvim_win_set_cursor(0, {2, 4})
+    vim.cmd('startinsert!')
+  end
+end
+
+-- Navigate to previous field in compose buffer
+function M.compose_prev_field()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1]
+  
+  if row <= 2 then
+    -- At To: or above, go to body
+    vim.api.nvim_win_set_cursor(0, {5, 0})
+    vim.cmd('startinsert')
+  elseif row == 3 then
+    -- At Subject:, go to To:
+    vim.api.nvim_win_set_cursor(0, {2, 4})
+    vim.cmd('startinsert!')
+  else
+    -- In body, go to Subject:
+    vim.api.nvim_win_set_cursor(0, {3, 9})
+    vim.cmd('startinsert!')
+  end
 end
 
 -- Close and save as draft
@@ -1012,35 +1102,42 @@ function M.get_current_email_id()
   
   local line_num = vim.fn.line('.')
   local emails = vim.b.himalaya_emails
+  local email_start_line = vim.b.himalaya_email_start_line
   
   if not emails or #emails == 0 then
     return nil
   end
   
-  -- Find where emails actually start by looking for the pattern of the first email
-  local email_start_line = 0
-  for i = 1, 15 do  -- Check first 15 lines
-    local line = vim.fn.getline(i)
-    if line and line:match('^%[.-%]') then  -- Found first email line (starts with [status])
-      email_start_line = i
-      break
-    end
-  end
-  
-  -- Fallback: count header lines by finding the separator line
-  if email_start_line == 0 then
-    for i = 1, 10 do  -- Check first 10 lines
+  -- Use stored email start line if available
+  if not email_start_line then
+    -- Fallback: Find where emails actually start by looking for the pattern of the first email
+    email_start_line = 0
+    for i = 1, 15 do  -- Check first 15 lines
       local line = vim.fn.getline(i)
-      if line and line:match('^[─]+$') then  -- Found separator line
-        email_start_line = i + 2  -- Emails start after separator + empty line
+      -- Look for email lines which have the status indicator pattern [*] or [ ]
+      -- In selection mode, lines start with checkbox [ ] or [x] followed by status [*] or [ ]
+      -- Without selection mode, lines start directly with status [*] or [ ]
+      if line and (line:match('^%[[ *]%] [^ ]') or line:match('^%[[ x]%] %[[ *]%]')) then
+        email_start_line = i
         break
       end
     end
-  end
-  
-  -- Final fallback if nothing found
-  if email_start_line == 0 then
-    email_start_line = 6 -- Default
+    
+    -- Fallback: count header lines by finding the separator line
+    if email_start_line == 0 then
+      for i = 1, 10 do  -- Check first 10 lines
+        local line = vim.fn.getline(i)
+        if line and line:match('^[─]+$') then  -- Found separator line
+          email_start_line = i + 2  -- Emails start after separator + empty line
+          break
+        end
+      end
+    end
+    
+    -- Final fallback if nothing found
+    if email_start_line == 0 then
+      email_start_line = 6 -- Default
+    end
   end
   
   local email_index = line_num - email_start_line + 1

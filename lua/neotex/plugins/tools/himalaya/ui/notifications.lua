@@ -272,10 +272,6 @@ function M.setup()
   -- Nothing needed for now, using logger directly
 end
 
--- Simple notification show function
-function M.show(text, level)
-  level = level or 'info'
-  M.notify(text, level)
-end
+-- Remove duplicate show function - using the more sophisticated one above
 
 return M

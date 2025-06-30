@@ -103,7 +103,7 @@ function M.refresh(account, callback)
   end
   
   state.set("oauth.refresh_in_progress", true)
-  logger.info('Refreshing OAuth token...')
+  logger.debug('Refreshing OAuth token...')
   
   -- Load environment
   M.load_environment()
@@ -111,15 +111,27 @@ function M.refresh(account, callback)
   -- Try to find refresh script
   local refresh_script = nil
   local possible_paths = {
+    'refresh-gmail-oauth2',  -- Try PATH first
     '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2',
+    vim.fn.expand('~/.local/bin/refresh-gmail-oauth2'),
     vim.fn.expand('~/.local/bin/refresh-oauth'),
-    '/usr/local/bin/oauth2-refresh'
+    '/usr/local/bin/oauth2-refresh',
+    '/usr/local/bin/refresh-gmail-oauth2'
   }
   
   for _, path in ipairs(possible_paths) do
-    if vim.fn.filereadable(path) == 1 then
-      refresh_script = path
-      break
+    -- Check if it's a command in PATH (no slashes)
+    if not path:match('/') then
+      if vim.fn.executable(path) == 1 then
+        refresh_script = path
+        break
+      end
+    else
+      -- It's a full path, check if file exists
+      if vim.fn.filereadable(path) == 1 then
+        refresh_script = path
+        break
+      end
     end
   end
   
@@ -143,6 +155,13 @@ function M.refresh(account, callback)
         state.set("oauth.last_refresh", os.time())
         state.set("oauth.last_refresh_failed", false)
         logger.info('OAuth token refreshed successfully')
+        
+        -- Debug notification
+        local notify = require('neotex.util.notifications')
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('OAuth token refreshed successfully', notify.categories.DEBUG)
+        end
+        
         if callback then
           callback(true)
         end

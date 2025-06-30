@@ -111,11 +111,8 @@ M.defaults = {
     check_health_on_startup = true,
   },
   
-  -- Debug settings
-  debug = {
-    verbose_sync = false,
-    log_oauth = false,
-  }
+  -- Debug mode is now controlled by the notification system
+  -- Use <leader>ad to toggle debug mode
 }
 
 -- Current configuration (merged with defaults)
@@ -372,19 +369,79 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
     
-    -- Toggle selection mode
-    keymap('n', 'v', function()
+    -- Select email and move down
+    keymap('n', 'n', function()
       local state = require('neotex.plugins.tools.himalaya.ui.state')
       local main = require('neotex.plugins.tools.himalaya.ui.main')
-      local mode = state.toggle_selection_mode()
-      if mode then
-        vim.notify('Selection mode: ON (n to select, v to exit)')
+      
+      local current_pos = vim.api.nvim_win_get_cursor(0)
+      local current_line = current_pos[1]
+      
+      -- Use the line map for accurate email selection
+      local line_map = vim.b.himalaya_line_map
+      local email_data = vim.b.himalaya_emails
+      
+      if line_map and line_map[current_line] then
+        local line_info = line_map[current_line]
+        local email_idx = line_info.email_index
+        local email = email_data[email_idx]
+        
+        if email then
+          local email_id = email.id or tostring(email_idx)
+          
+          -- Toggle selection on current line
+          state.toggle_email_selection(email_id, email)
+          
+          -- Refresh to show the selection change
+          main.refresh_email_list()
+          
+          -- Move cursor down after selection
+          vim.schedule(function()
+            vim.cmd('normal! j')
+          end)
+        end
       else
-        state.clear_selection()
-        vim.notify('Selection mode: OFF')
+        -- If not on an email line, just move down
+        vim.cmd('normal! j')
       end
-      main.refresh_email_list()
-    end, vim.tbl_extend('force', opts, { desc = 'Toggle selection mode' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Select/deselect email and move down' }))
+    
+    -- Select email and move up
+    keymap('n', 'N', function()
+      local state = require('neotex.plugins.tools.himalaya.ui.state')
+      local main = require('neotex.plugins.tools.himalaya.ui.main')
+      
+      local current_pos = vim.api.nvim_win_get_cursor(0)
+      local current_line = current_pos[1]
+      
+      -- Use the line map for accurate email selection
+      local line_map = vim.b.himalaya_line_map
+      local email_data = vim.b.himalaya_emails
+      
+      if line_map and line_map[current_line] then
+        local line_info = line_map[current_line]
+        local email_idx = line_info.email_index
+        local email = email_data[email_idx]
+        
+        if email then
+          local email_id = email.id or tostring(email_idx)
+          
+          -- Toggle selection on current line
+          state.toggle_email_selection(email_id, email)
+          
+          -- Refresh to show the selection change
+          main.refresh_email_list()
+          
+          -- Move cursor up after selection
+          vim.schedule(function()
+            vim.cmd('normal! k')
+          end)
+        end
+      else
+        -- If not on an email line, just move up
+        vim.cmd('normal! k')
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Select/deselect email and move up' }))
     
     -- Show help
     keymap('n', '?', function()
@@ -398,9 +455,9 @@ function M.setup_buffer_keymaps(bufnr)
         '  r         - Refresh list',
         '  gn/gp     - Next/previous page',
         '',
-        'Selection Mode:',
-        '  v         - Toggle selection mode',
-        '  n         - Select/deselect email and move down (in selection mode)',
+        'Selection:',
+        '  n         - Select/deselect email and move down',
+        '  N         - Select/deselect email and move up',
         '',
         'Email Actions:',
         '  c/gw      - Compose new email',
@@ -415,7 +472,10 @@ function M.setup_buffer_keymaps(bufnr)
         'Colors:',
         '  Blue      - Unread emails',
         '  Orange    - Starred emails',
-        '  Green [x] - Selected emails',
+        '',
+        'Checkboxes:',
+        '  [ ]       - Not selected',
+        '  [x]       - Selected for batch operations',
         '',
         'Press any key to close help'
       }
@@ -457,52 +517,6 @@ function M.setup_buffer_keymaps(bufnr)
       })
     end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
     
-    -- Select current email and move down (only in selection mode)
-    keymap('n', 'n', function()
-      local state = require('neotex.plugins.tools.himalaya.ui.state')
-      local main = require('neotex.plugins.tools.himalaya.ui.main')
-      
-      if not state.is_selection_mode() then
-        -- Pass through to normal 'n' behavior when not in selection mode
-        vim.api.nvim_feedkeys('n', 'n', false)
-        return
-      end
-      
-      local line_num = vim.api.nvim_win_get_cursor(0)[1]
-      
-      -- Parse email ID from line (requires stored metadata)
-      local email_data = vim.b.himalaya_emails
-      if email_data and line_num > 5 then -- Skip header lines
-        -- Account for variable header size
-        local header_size = 5 -- Base header size
-        if state.is_selection_mode() then
-          header_size = header_size + 1 -- Selection info line
-        end
-        
-        local email_idx = line_num - header_size
-        local email = email_data[email_idx]
-        if email then
-          local email_id = email.id or tostring(email_idx)
-          state.toggle_email_selection(email_id, email)
-          
-          local count = state.get_selection_count()
-          vim.notify(string.format('Selected: %d email%s', count, count == 1 and '' or 's'))
-          
-          -- Refresh to update checkboxes
-          main.refresh_email_list()
-          
-          -- Move cursor down after refresh
-          vim.defer_fn(function()
-            local win = vim.api.nvim_get_current_win()
-            local buf_line_count = vim.api.nvim_buf_line_count(0)
-            local next_line = line_num + 1
-            if next_line <= buf_line_count then
-              vim.api.nvim_win_set_cursor(win, {next_line, 0})
-            end
-          end, 10)
-        end
-      end
-    end, vim.tbl_extend('force', opts, { desc = 'Select email and move down' }))
     
   end
   
@@ -566,6 +580,23 @@ function M.setup_buffer_keymaps(bufnr)
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
       end
     end, vim.tbl_extend('force', opts, { desc = 'Compose g-commands' }))
+    
+    -- Tab navigation for compose fields
+    keymap('n', '<Tab>', function()
+      require('neotex.plugins.tools.himalaya.ui.main').compose_next_field()
+    end, vim.tbl_extend('force', opts, { desc = 'Next compose field' }))
+    
+    keymap('n', '<S-Tab>', function()
+      require('neotex.plugins.tools.himalaya.ui.main').compose_prev_field()
+    end, vim.tbl_extend('force', opts, { desc = 'Previous compose field' }))
+    
+    keymap('i', '<Tab>', function()
+      require('neotex.plugins.tools.himalaya.ui.main').compose_next_field()
+    end, vim.tbl_extend('force', opts, { desc = 'Next compose field' }))
+    
+    keymap('i', '<S-Tab>', function()
+      require('neotex.plugins.tools.himalaya.ui.main').compose_prev_field()
+    end, vim.tbl_extend('force', opts, { desc = 'Previous compose field' }))
   end
 end
 

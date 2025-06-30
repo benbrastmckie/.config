@@ -106,22 +106,35 @@ Right now the wizard works and shows all the output in the command line in nvim.
 - [:] email
   - [ ] features
     - [ ] autosync when nvim opens
-    - [ ] gs:send q:save-draft Q:discard
+    - [ ] save-drafts
+      - [ ] q:save-draft
+    - [ ] trash
+    - [x] email
+      - [x] gs:send
+      - [x] start cursor in email field
+      - [x] tab fields
     - [ ] remove/fix mappings
       - [ ] `<leader>ma`
       - [ ] `<leader>mf`
       - [ ] `<leader>mp`
-  - [ ] sidebar
-    - [.] batch operation
+  - [:] sidebar
+    - [x] batch operation
       - [x] spec
       - [x] colors for stared and unread
-      - [ ] make `<space>` work
-      - [ ] fix visual select
-    - [ ] appearances
-      - [ ] spec
-      - [ ] subject in bold
-      - [ ] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
-      - [ ] read email updates slowly
+      - [x] make `<space>` work
+      - [x] fix visual select
+      - [x] remove boxes
+    - [x] appearances
+      - [x] remove 'unlocked' that shows on start
+      - [x] subject in bold
+      - [x] unicode icons instead of emojis
+        - [x]  Syncing (3s): 0/1 folders - Authenticating
+      - [x] make sync more responsive
+        - [x] avoid bumping email list
+      - [x] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
+      - [x] wizard output
+      - [x] health output
+      - [x] read email color updates slowly
     - [ ] hover and buffers
       - [ ] spec
       - [ ] hover emails

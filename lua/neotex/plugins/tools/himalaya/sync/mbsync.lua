@@ -324,6 +324,7 @@ function M.sync(channel, opts)
   -- Update state
   state.set("sync.status", "running")
   state.set("sync.start_time", os.time())
+  state.set("sync.error_lines", nil)  -- Clear any previous error lines
   
   -- Start job with pty to get progress output
   M.current_job = vim.fn.jobstart(cmd, {
@@ -331,6 +332,69 @@ function M.sync(channel, opts)
     stdout_buffered = false,
     pty = true,  -- Use pseudo-terminal to get progress counters
     on_stdout = function(_, data)
+      -- Also check stdout for authentication errors
+      if data and #data > 0 then
+        for _, line in ipairs(data) do
+          if line ~= '' then
+            -- Check for authentication errors in stdout too
+            if line:match('AUTHENTICATIONFAILED') or 
+               line:match('Invalid credentials') or
+               line:match('Authentication failed') or
+               line:match('AUTHENTICATE.*error') then
+              logger.info("Auth error detected in stdout: " .. line)
+              -- Trigger the same auth error handling as stderr
+              local auth_error = true
+              if auth_error and opts.auto_refresh ~= false and not state.get("sync.auth_retry") then
+                state.set("sync.auth_retry", true)
+                logger.info("Authentication error detected, attempting automatic OAuth refresh...")
+                
+                -- Stop the current job
+                if M.current_job then
+                  vim.fn.jobstop(M.current_job)
+                  M.current_job = nil
+                end
+                
+                -- Show notification only in debug mode
+                local notify = require('neotex.util.notifications')
+                if notify.config.modules.himalaya.debug_mode then
+                  notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+                end
+                
+                -- Attempt OAuth refresh
+                oauth.refresh(nil, function(success, error_msg)
+                  state.set("sync.auth_retry", false)
+                  if success then
+                    logger.info("OAuth token refreshed successfully, retrying sync...")
+                    if notify.config.modules.himalaya.debug_mode then
+                      if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
+              end
+                    end
+                    vim.defer_fn(function()
+                      M.sync(channel, opts)
+                    end, 2000)
+                  else
+                    logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
+                    -- Always show errors, but less intrusive
+                    logger.error("OAuth refresh failed - sync will fail")
+                    if notify.config.modules.himalaya.debug_mode then
+                      if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
+              end
+                    end
+                    state.set("sync.last_error", "Authentication failed - OAuth refresh failed")
+                    if opts.callback then
+                      opts.callback(false, "Authentication failed - OAuth refresh failed")
+                    end
+                  end
+                end)
+                return -- Don't process more lines
+              end
+            end
+          end
+        end
+      end
+      -- Original stdout handling
       -- Log raw output for debugging
       if data and #data > 0 then
         for _, line in ipairs(data) do
@@ -355,34 +419,81 @@ function M.sync(channel, opts)
       -- Log errors and check for auth failures
       if data and #data > 0 then
         local auth_error = false
+        local error_lines = {}
         for _, line in ipairs(data) do
           if line ~= '' then
-            logger.debug('mbsync: ' .. line)
+            logger.debug('mbsync stderr: ' .. line)  -- Back to debug
+            -- Collect error lines for later display
+            table.insert(error_lines, line)
             -- Check for authentication errors
-            if line:match('AUTHENTICATE') or line:match('LOGIN') or 
-               line:match('AUTH') or line:match('XOAUTH2') then
+            if line:match('AUTHENTICATIONFAILED') or 
+               line:match('Invalid credentials') or
+               line:match('Authentication failed') or
+               line:match('AUTHENTICATE.*error') or
+               line:match('LOGIN.*failed') or
+               line:match('AUTH.*denied') or
+               line:match('XOAUTH2.*error') then
               auth_error = true
+              logger.info("Detected authentication failure: " .. line)
             end
+          end
+        end
+        -- Store error lines in state for later use
+        if #error_lines > 0 then
+          local existing_errors = state.get("sync.error_lines") or {}
+          for _, line in ipairs(error_lines) do
+            table.insert(existing_errors, line)
+          end
+          state.set("sync.error_lines", existing_errors)
+          -- Also store the auth error flag
+          if auth_error then
+            state.set("sync.auth_error_detected", true)
           end
         end
         
         -- If auth error and auto_refresh enabled, try to refresh token
+        logger.debug("Auth error check: " .. tostring(auth_error) .. ", auto_refresh: " .. tostring(opts.auto_refresh ~= false) .. ", auth_retry: " .. tostring(state.get("sync.auth_retry")))
         if auth_error and opts.auto_refresh ~= false and not state.get("sync.auth_retry") then
           state.set("sync.auth_retry", true)
-          logger.info("Authentication error detected, attempting OAuth refresh...")
-          vim.fn.jobstop(M.current_job)
-          M.current_job = nil
+          logger.info("Authentication error detected, attempting automatic OAuth refresh...")
           
-          oauth.ensure_token(nil, function(success)
+          -- Stop the current job to prevent further errors
+          if M.current_job then
+            vim.fn.jobstop(M.current_job)
+            M.current_job = nil
+          end
+          
+          -- Clear the error lines since we're handling it
+          state.set("sync.error_lines", {})
+          
+          -- Show notification only in debug mode
+          local notify = require('neotex.util.notifications')
+          local config = require('neotex.plugins.tools.himalaya.core.config')
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+          end
+          
+          -- Attempt OAuth refresh
+          oauth.refresh(nil, function(success, error_msg)
             state.set("sync.auth_retry", false)
             if success then
-              logger.info("OAuth refreshed, retrying sync...")
+              logger.info("OAuth token refreshed successfully, retrying sync...")
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
+              end
+              
+              -- Wait a moment for token to propagate
               vim.defer_fn(function()
+                -- Retry the sync with the same options
                 M.sync(channel, opts)
-              end, 1000)
+              end, 2000)
             else
-              logger.error("Failed to refresh OAuth token")
-              state.set("sync.last_error", "Authentication failed - OAuth refresh failed")
+              logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
+              end
+              
+              state.set("sync.last_error", "Authentication failed - OAuth refresh failed: " .. (error_msg or "unknown error"))
               if opts.callback then
                 opts.callback(false, "Authentication failed - OAuth refresh failed")
               end
@@ -396,17 +507,85 @@ function M.sync(channel, opts)
       state.set("sync.status", "idle")
       state.set("sync.last_sync", os.time())
       state.set("sync.auth_retry", false)
+      state.set("sync.running", false)  -- Clear immediate sync status
+      
+      -- Get captured error lines
+      local error_lines = state.get("sync.error_lines")
       
       if code == 0 then
         logger.info("Sync completed successfully")
         state.set("sync.last_error", nil)
+        state.set("sync.error_lines", nil)  -- Clear error lines on success
       elseif code == 143 or code == 129 or code == 130 then
         -- 143 = SIGTERM, 129 = SIGHUP, 130 = SIGINT - all mean sync was cancelled
         logger.info("Sync cancelled by user")
         state.set("sync.last_error", nil)
+        state.set("sync.error_lines", nil)
       else
         logger.error("Sync failed with code: " .. code)
-        state.set("sync.last_error", "Sync failed with code: " .. code)
+        
+        -- Check if we detected an auth error but didn't handle it yet
+        if state.get("sync.auth_error_detected") and opts.auto_refresh ~= false and not state.get("sync.auth_retry") then
+          state.set("sync.auth_error_detected", false)
+          state.set("sync.auth_retry", true)
+          logger.info("Authentication error detected in exit handler, attempting OAuth refresh...")
+          
+          local notify = require('neotex.util.notifications')
+          local config = require('neotex.plugins.tools.himalaya.core.config')
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+          end
+          
+          oauth.refresh(nil, function(success, error_msg)
+            state.set("sync.auth_retry", false)
+            if success then
+              logger.info("OAuth token refreshed successfully, retrying sync...")
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
+              end
+              vim.defer_fn(function()
+                M.sync(channel, opts)
+              end, 2000)
+            else
+              logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
+              end
+              if opts.callback then
+                opts.callback(false, "Authentication failed - OAuth refresh failed")
+              end
+            end
+          end)
+          return -- Don't call the normal callback
+        end
+        
+        -- Build a more informative error message
+        local error_msg = "Sync failed with code: " .. code
+        if error_lines and #error_lines > 0 then
+          -- Find the most relevant error line
+          local relevant_error = nil
+          for _, line in ipairs(error_lines) do
+            -- Look for specific error patterns
+            if line:match('Error:') or line:match('ERROR:') or 
+               line:match('failed') or line:match('Failed') or
+               line:match('Cannot') or line:match('cannot') or
+               line:match('Unable') or line:match('unable') or
+               line:match('Connection') or line:match('Authentication') or
+               line:match('IMAP') or line:match('SSL') then
+              relevant_error = line
+              break
+            end
+          end
+          -- If no specific pattern found, use the last error line
+          if not relevant_error and #error_lines > 0 then
+            relevant_error = error_lines[#error_lines]
+          end
+          if relevant_error then
+            error_msg = error_msg .. ": " .. relevant_error
+          end
+        end
+        state.set("sync.last_error", error_msg)
+        state.set("sync.error_lines", nil)  -- Clear after using
       end
       
       if opts.callback then

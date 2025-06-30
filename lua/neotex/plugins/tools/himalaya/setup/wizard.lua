@@ -42,7 +42,7 @@ function M.check_dependencies()
   
   -- Report found dependencies
   if #found > 0 then
-    notify.himalaya(' Found: ' .. table.concat(found, ', '), notify.categories.DEBUG)
+    print('  Found: ' .. table.concat(found, ', '))
   end
   
   if #missing > 0 then
@@ -50,7 +50,7 @@ function M.check_dependencies()
   end
   
   if #optional_missing > 0 then
-    notify.himalaya('  Optional missing: ' .. table.concat(optional_missing, ', '), notify.categories.DEBUG)
+    print('  Optional missing: ' .. table.concat(optional_missing, ', '))
   end
   
   -- Check NixOS-specific setup
@@ -59,7 +59,9 @@ function M.check_dependencies()
     local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
     local env = oauth.load_environment()
     if not env.GMAIL_CLIENT_ID then
-      notify.himalaya('  NixOS: GMAIL_CLIENT_ID not in systemd environment', notify.categories.DEBUG)
+      print('  NixOS: GMAIL_CLIENT_ID not in systemd environment')
+    else
+      print('  NixOS: OAuth environment configured')
     end
   end
   
@@ -72,6 +74,8 @@ function M.setup_oauth()
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local account = config.get_current_account()
   local account_name = account.name or 'gmail'
+  
+  print('  Checking OAuth for account: ' .. account_name)
   
   -- Use the new ensure_token function that automatically handles refresh
   local token_ready = false
@@ -88,6 +92,7 @@ function M.setup_oauth()
   end, 100)
   
   if token_ready then
+    print('  OAuth token verified')
     return true
   else
     -- Guide user through manual setup (non-blocking)
@@ -116,6 +121,8 @@ function M.create_maildir()
   local account = config.get_current_account()
   local maildir = vim.fn.expand(account.maildir_path)
   
+  print('  Maildir path: ' .. maildir)
+  
   -- Check if maildir exists with proper structure
   if vim.fn.isdirectory(maildir) == 1 then
     local has_cur = vim.fn.isdirectory(maildir .. 'cur') == 1
@@ -123,10 +130,16 @@ function M.create_maildir()
     local has_tmp = vim.fn.isdirectory(maildir .. 'tmp') == 1
     
     if has_cur and has_new and has_tmp then
+      print('  Maildir structure exists')
       -- Fix UIDVALIDITY files silently
       M.fix_uidvalidity_files(maildir)
+      print('  UIDVALIDITY files verified')
       return true
+    else
+      print('  Incomplete maildir structure, recreating...')
     end
+  else
+    print('  Creating new maildir structure...')
   end
   
   -- Create structure
@@ -138,13 +151,19 @@ function M.create_maildir()
   }
   
   -- Add folder directories
+  local folder_count = 0
   for imap_name, local_name in pairs(account.folder_map or {}) do
     if local_name ~= 'INBOX' then
       table.insert(dirs, maildir .. '.' .. local_name)
       table.insert(dirs, maildir .. '.' .. local_name .. '/cur')
       table.insert(dirs, maildir .. '.' .. local_name .. '/new')
       table.insert(dirs, maildir .. '.' .. local_name .. '/tmp')
+      folder_count = folder_count + 1
     end
+  end
+  
+  if folder_count > 0 then
+    print('  Creating ' .. folder_count .. ' mail folders')
   end
   
   for _, dir in ipairs(dirs) do
@@ -153,6 +172,7 @@ function M.create_maildir()
   
   -- Create empty UIDVALIDITY files (critical for mbsync)
   M.fix_uidvalidity_files(maildir)
+  print('  UIDVALIDITY files created')
   
   return true
 end
@@ -266,7 +286,25 @@ end
 -- Main wizard runner (streamlined version)
 function M.run()
   local notify = require('neotex.util.notifications')
-  notify.himalaya(' Starting Himalaya Setup Wizard', notify.categories.STATUS)
+  local float = require('neotex.plugins.tools.himalaya.ui.float')
+  
+  -- Store all output lines
+  local output_lines = {}
+  
+  -- Helper to add output line
+  local function add_line(line)
+    table.insert(output_lines, line or '')
+  end
+  
+  -- Show banner
+  add_line('Himalaya Setup Wizard')
+  add_line(string.rep('=', 40))
+  add_line('')
+  add_line('This wizard will:')
+  add_line('  1. Check required dependencies')
+  add_line('  2. Verify OAuth authentication')
+  add_line('  3. Set up maildir structure')
+  add_line('')
   
   local steps = {
     {name = 'Check Dependencies', fn = M.check_dependencies},
@@ -276,50 +314,70 @@ function M.run()
   
   M.total_steps = #steps
   
+  -- Capture print output
+  local original_print = print
+  print = function(...)
+    local args = {...}
+    local line = table.concat(vim.tbl_map(tostring, args), '\t')
+    add_line(line)
+  end
+  
   -- Run all steps automatically
   for i, step in ipairs(steps) do
     M.current_step = i
-    notify.himalaya(string.format(' Step %d/%d: %s...', i, #steps, step.name), notify.categories.STATUS)
+    add_line(string.format('Step %d/%d: %s...', i, #steps, step.name))
+    add_line('')
     
     local ok, err = step.fn()
     M.results[step.name] = {ok = ok, error = err}
     
     if not ok then
       -- Only stop on error
-      notify.himalaya(string.format(' Setup failed: %s', err or 'unknown error'), notify.categories.ERROR)
+      add_line(string.format('[ERROR] Setup failed: %s', err or 'unknown error'))
       
       -- Show troubleshooting for specific errors
       if err == 'missing dependencies' then
-        notify.himalaya(' Fix: Install with: brew install isync himalaya', notify.categories.USER_ACTION)
+        add_line('[FIX] Install with: brew install isync himalaya')
       elseif err == 'oauth setup required' then
-        notify.himalaya(' Fix: Run in terminal: himalaya account configure gmail', notify.categories.USER_ACTION)
-        notify.himalaya('    Then run :HimalayaSetup again', notify.categories.USER_ACTION)
+        add_line('[FIX] Run in terminal: himalaya account configure gmail')
+        add_line('      Then run :HimalayaSetup again')
       elseif err:match('permission denied') then
-        notify.himalaya(' Fix: Check directory permissions or choose different location', notify.categories.USER_ACTION)
+        add_line('[FIX] Check directory permissions or choose different location')
       end
       
+      -- Restore print
+      print = original_print
+      
+      -- Show output in floating window
+      float.show('Himalaya Setup Wizard', output_lines)
       return false
     else
-      notify.himalaya(string.format(' %s complete', step.name), notify.categories.SUCCESS)
+      add_line(string.format('[OK] %s complete', step.name))
+      add_line('')
     end
   end
   
   -- All steps completed
-  notify.himalaya(' Himalaya setup complete!', notify.categories.SUCCESS)
-  notify.himalaya(' Sync your emails when ready', notify.categories.STATUS)
+  add_line('')
+  add_line(string.rep('-', 40))
+  add_line(' Himalaya setup complete!')
+  add_line(string.rep('-', 40))
+  add_line('')
+  add_line('Summary:')
+  add_line('  [OK] Dependencies checked')
+  add_line('  [OK] OAuth verified') 
+  add_line('  [OK] Maildir configured')
+  add_line('')
+  
+  -- Restore original print function
+  print = original_print
   
   -- Save setup completion
   state.set('setup.completed', true)
   state.set('setup.completed_at', os.time())
   
-  -- Ask if user wants to run health check
-  vim.defer_fn(function()
-    vim.ui.input({ prompt = 'Run health check? (y/n): ' }, function(input)
-      if input and input:lower() == 'y' then
-        vim.cmd('HimalayaHealth')
-      end
-    end)
-  end, 500)
+  -- Show output in floating window
+  float.show('Himalaya Setup Wizard', output_lines)
   
   return true
 end
