@@ -104,7 +104,9 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [x] surround
   - [x] pairs
 - [:] email
-  - [ ] instead of auto-sync when nvim starts, can you make it auto-sync when I open himalaya?
+  - [ ] features
+    - [ ] autosync when nvim opens
+    - [ ] gs:send q:save-draft Q:discard
   - [ ] sidebar
     - [ ] batch operation
       - [x] spec

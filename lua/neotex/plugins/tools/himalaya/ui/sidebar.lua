@@ -369,7 +369,24 @@ function M.apply_email_highlighting(metadata)
   
   -- Apply highlighting based on email metadata
   vim.api.nvim_win_call(M.state.win, function()
+    local state = require('neotex.plugins.tools.himalaya.ui.state')
+    local in_selection_mode = state.is_selection_mode()
+    
     for line_num, data in pairs(metadata) do
+      -- Apply checkbox highlighting if in selection mode
+      if in_selection_mode then
+        if data.selected then
+          -- Highlight selected checkbox
+          vim.fn.matchaddpos('HimalayaCheckboxSelected', {{line_num, 1, 3}})
+          -- Also highlight the whole line for selected emails
+          vim.fn.matchaddpos('HimalayaSelected', {{line_num}})
+        else
+          -- Highlight unselected checkbox
+          vim.fn.matchaddpos('HimalayaCheckbox', {{line_num, 1, 3}})
+        end
+      end
+      
+      -- Apply status highlighting (starred/unread)
       if data.starred then
         -- Starred emails get orange highlighting
         vim.fn.matchaddpos('HimalayaStarred', {{line_num}})
