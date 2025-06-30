@@ -538,10 +538,23 @@ end
 - Visual highlighting applied to selected emails and checkboxes
 - Header shows current selection count
 
-### Phase 4: Batch Operations
-1. Implement batch delete, archive, and spam functions
-2. Enhance g-command handler for batch vs. single operations
-3. Add confirmation dialogs for batch operations
+### Phase 4: Batch Operations ✅ COMPLETED
+1. ✅ Implement batch delete, archive, and spam functions
+2. ✅ Enhance g-command handler for batch vs. single operations
+3. ✅ Add confirmation dialogs for batch operations
+
+**Changes made:**
+- Added `delete_selected_emails()`, `archive_selected_emails()`, and `spam_selected_emails()` to `ui/main.lua`
+- Enhanced g-command handler in `core/config.lua` to check for selections and route to batch operations
+- All batch operations include confirmation prompts with email count
+- Automatic exit from selection mode after batch operation
+- Progress reporting shows success/error counts
+
+**Test results:**
+- All batch operation functions created successfully
+- g-commands correctly route based on selection state
+- Empty selection handled gracefully
+- Confirmation dialogs working as expected
 
 ### Phase 5: Polish and Error Handling
 1. Add error handling for failed batch operations
