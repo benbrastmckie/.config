@@ -378,7 +378,7 @@ function M.setup_buffer_keymaps(bufnr)
       local main = require('neotex.plugins.tools.himalaya.ui.main')
       local mode = state.toggle_selection_mode()
       if mode then
-        vim.notify('Selection mode: ON (Space to select, v to exit)')
+        vim.notify('Selection mode: ON (n to select, v to exit)')
       else
         state.clear_selection()
         vim.notify('Selection mode: OFF')
@@ -400,7 +400,7 @@ function M.setup_buffer_keymaps(bufnr)
         '',
         'Selection Mode:',
         '  v         - Toggle selection mode',
-        '  <Space>   - Select/deselect email (in selection mode)',
+        '  n         - Select/deselect email and move down (in selection mode)',
         '',
         'Email Actions:',
         '  c/gw      - Compose new email',
@@ -457,20 +457,22 @@ function M.setup_buffer_keymaps(bufnr)
       })
     end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
     
-    -- Toggle email selection (Space)
-    keymap('n', '<Space>', function()
+    -- Select current email and move down (only in selection mode)
+    keymap('n', 'n', function()
       local state = require('neotex.plugins.tools.himalaya.ui.state')
       local main = require('neotex.plugins.tools.himalaya.ui.main')
       
       if not state.is_selection_mode() then
-        return -- Only work in selection mode
+        -- Pass through to normal 'n' behavior when not in selection mode
+        vim.api.nvim_feedkeys('n', 'n', false)
+        return
       end
       
       local line_num = vim.api.nvim_win_get_cursor(0)[1]
       
       -- Parse email ID from line (requires stored metadata)
       local email_data = vim.b.himalaya_emails
-      if email_data and line_num > 5 then -- Skip header lines (adjust based on actual header size)
+      if email_data and line_num > 5 then -- Skip header lines
         -- Account for variable header size
         local header_size = 5 -- Base header size
         if state.is_selection_mode() then
@@ -489,17 +491,18 @@ function M.setup_buffer_keymaps(bufnr)
           -- Refresh to update checkboxes
           main.refresh_email_list()
           
-          -- Try to maintain cursor position
+          -- Move cursor down after refresh
           vim.defer_fn(function()
             local win = vim.api.nvim_get_current_win()
             local buf_line_count = vim.api.nvim_buf_line_count(0)
-            if line_num <= buf_line_count then
-              vim.api.nvim_win_set_cursor(win, {line_num, 0})
+            local next_line = line_num + 1
+            if next_line <= buf_line_count then
+              vim.api.nvim_win_set_cursor(win, {next_line, 0})
             end
           end, 10)
         end
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Toggle email selection' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Select email and move down' }))
     
   end
   

@@ -353,7 +353,7 @@ function M.format_email_list(emails)
   table.insert(lines, string.rep('─', 70))
   
   if state.is_selection_mode() then
-    table.insert(lines, 'SELECTION MODE: Space:toggle v:exit')
+    table.insert(lines, 'SELECTION MODE: n:select-and-move v:exit')
     table.insert(lines, 'gD:delete-selected gA:archive-selected gS:spam-selected')
   else
     table.insert(lines, 'r:refresh gn:next-page gp:prev-page v:select-mode')
