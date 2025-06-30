@@ -107,15 +107,21 @@ Right now the wizard works and shows all the output in the command line in nvim.
   - [ ] features
     - [ ] autosync when nvim opens
     - [ ] gs:send q:save-draft Q:discard
+    - [ ] remove/fix mappings
+      - [ ] `<leader>ma`
+      - [ ] `<leader>mf`
+      - [ ] `<leader>mp`
   - [ ] sidebar
-    - [ ] batch operation
+    - [.] batch operation
       - [x] spec
-      - [ ] multi select emails
-      - [ ] colors for stared and unread
+      - [x] colors for stared and unread
+      - [ ] make `<space>` work
+      - [ ] fix visual select
     - [ ] appearances
       - [ ] spec
       - [ ] subject in bold
       - [ ] change 'Himalaya - gmail - INBOX' to 'Himalaya - Gmail - INBOX'
+      - [ ] read email updates slowly
     - [ ] hover and buffers
       - [ ] spec
       - [ ] hover emails
