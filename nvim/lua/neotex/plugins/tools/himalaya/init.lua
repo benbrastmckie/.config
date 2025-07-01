@@ -145,15 +145,8 @@ function M.setup_commands()
     -- Only show notifications in debug mode
     if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
       notify.himalaya('Checking Gmail for new emails...', notify.categories.STATUS)
-      notify.himalaya('Set sync.running = ' .. tostring(state.get('sync.running')), notify.categories.BACKGROUND)
-      notify.himalaya('Set sync.checking = ' .. tostring(state.get('sync.checking')), notify.categories.BACKGROUND)
-      notify.himalaya('Set sync.status = ' .. tostring(state.get('sync.status')), notify.categories.BACKGROUND)
     end
     
-    -- Debug notification
-    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-      notify.himalaya('Starting himalaya_fast_check', notify.categories.BACKGROUND)
-    end
     
     -- Add timestamp to debug timing issues
     local check_start_timestamp = vim.fn.reltime()
@@ -164,8 +157,9 @@ function M.setup_commands()
       callback = function(status, error)
         if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
           local elapsed = vim.fn.reltimefloat(vim.fn.reltime(check_start_timestamp))
-          notify.himalaya(string.format('Fast check callback called after %.2fs with error: %s', elapsed, tostring(error)), notify.categories.BACKGROUND)
-          notify.himalaya('Fast check status: ' .. vim.inspect(status), notify.categories.BACKGROUND)
+          if error then
+            notify.himalaya(string.format('Fast check failed after %.2fs: %s', elapsed, tostring(error)), notify.categories.ERROR)
+          end
         end
         
         -- Complete check through manager
@@ -200,10 +194,6 @@ function M.setup_commands()
           return
         end
         
-        -- Debug notification for status
-        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-          notify.himalaya('Himalaya check status: ' .. vim.inspect(status), notify.categories.BACKGROUND)
-        end
         
         if status.has_new then
           -- Only notify in debug mode
@@ -1303,15 +1293,6 @@ return {
     config = function(_, opts)
       M.setup(opts)
     end,
-    keys = {
-      { '<leader>mo', ':HimalayaToggle<CR>', desc = 'Toggle email sidebar' },
-      { '<leader>ms', ':HimalayaSyncInbox<CR>', desc = 'Sync inbox' },
-      { '<leader>mS', ':HimalayaSyncFull<CR>', desc = 'Sync all folders' },
-      { '<leader>mc', ':HimalayaWrite<CR>', desc = 'Compose email' },
-      { '<leader>mW', ':HimalayaSetup<CR>', desc = 'Setup wizard' },
-      { '<leader>mx', ':HimalayaCancelSync<CR>', desc = 'Cancel all syncs' },
-      { '<leader>mh', ':HimalayaHealth<CR>', desc = 'Health check' },
-    },
   },
   -- Dependencies
   {

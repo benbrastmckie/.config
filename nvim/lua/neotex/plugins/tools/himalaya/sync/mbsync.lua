@@ -848,9 +848,6 @@ function M.himalaya_fast_check(opts)
   
   -- Import notify early for debug output
   local notify = require('neotex.util.notifications')
-  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-    notify.himalaya('himalaya_fast_check: Function called', notify.categories.STATUS)
-  end
   
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local utils = require('neotex.plugins.tools.himalaya.utils')
@@ -866,9 +863,8 @@ function M.himalaya_fast_check(opts)
   -- Import notify for debug messages
   local notify = require('neotex.util.notifications')
   
-  -- Use IMAP account variant for direct server access
-  local imap_account = account_name .. '-imap'
-  local check_account = imap_account
+  -- Use fastcheck account variant for direct server access
+  local check_account = account_name .. '-fastcheck'
   
   -- Check if we can refresh OAuth for Himalaya IMAP
   -- Note: Himalaya uses different OAuth storage than mbsync
@@ -896,10 +892,6 @@ function M.himalaya_fast_check(opts)
   local output = {}
   local stderr_output = {}
   
-  -- Test if jobstart works at all
-  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-    notify.himalaya('About to start jobstart with cmd: ' .. vim.inspect(cmd), notify.categories.BACKGROUND)
-  end
   
   if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
     notify.himalaya('Starting himalaya envelope list command...', notify.categories.STATUS)
@@ -909,24 +901,15 @@ function M.himalaya_fast_check(opts)
     stdout_buffered = true,
     stderr_buffered = true,
     on_stdout = function(_, data)
-      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-        notify.himalaya('on_stdout called with data: ' .. vim.inspect(data), notify.categories.BACKGROUND)
-      end
       if data then
         for _, line in ipairs(data) do
           if line ~= "" then
             table.insert(output, line)
           end
         end
-        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-          notify.himalaya('Himalaya stdout lines received: ' .. #output, notify.categories.BACKGROUND)
-        end
       end
     end,
     on_stderr = function(_, data)
-      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-        notify.himalaya('on_stderr called with data: ' .. vim.inspect(data), notify.categories.BACKGROUND)
-      end
       if data then
         for _, line in ipairs(data) do
           if line ~= "" then
@@ -953,11 +936,6 @@ function M.himalaya_fast_check(opts)
       end
     end,
     on_exit = function(_, code)
-      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-        notify.himalaya('on_exit called with code: ' .. tostring(code), notify.categories.BACKGROUND)
-        notify.himalaya('Total output lines: ' .. #output, notify.categories.BACKGROUND)
-        notify.himalaya('Total stderr lines: ' .. #stderr_output, notify.categories.BACKGROUND)
-      end
       
       -- Check if we had an authentication error
       if code ~= 0 and stderr_output.has_auth_error and opts.auto_refresh ~= false then
@@ -1016,14 +994,6 @@ function M.himalaya_fast_check(opts)
         if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
           notify.himalaya('Himalaya output length: ' .. #result_str .. ' bytes', notify.categories.BACKGROUND)
           
-          -- Show first 500 chars of output for debugging
-          if #result_str > 0 then
-            local preview = result_str:sub(1, 500)
-            if #result_str > 500 then
-              preview = preview .. '... (truncated)'
-            end
-            notify.himalaya('Himalaya output preview: ' .. preview, notify.categories.BACKGROUND)
-          end
         end
         
         local success, emails = pcall(vim.json.decode, result_str)
