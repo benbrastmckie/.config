@@ -6,7 +6,7 @@ local M = {}
 -- Dependencies
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
-local state = require('neotex.plugins.tools.himalaya.ui.state')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
@@ -402,16 +402,9 @@ end
 
 -- Get sync status line for header
 function M.get_sync_status_line()
-  -- Debug logging
-  local state = require('neotex.plugins.tools.himalaya.core.state')
-  local sync_checking = state.get('sync.checking', false)
-  local notify = require('neotex.util.notifications')
-  if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('get_sync_status_line called, sync.checking = ' .. tostring(sync_checking), notify.categories.BACKGROUND)
-  end
-  
   -- Use the detailed version that shows progress ratios
   local status = M.get_sync_status_line_detailed()
+  local notify = require('neotex.util.notifications')
   if status and notify.config.modules.himalaya.debug_mode then
     notify.himalaya('get_sync_status_line returning: ' .. status, notify.categories.BACKGROUND)
   end

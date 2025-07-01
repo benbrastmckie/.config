@@ -320,7 +320,7 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Override 'g' to handle our custom g-commands immediately
     keymap('n', 'g', function()
-      local state = require('neotex.plugins.tools.himalaya.ui.state')
+      local state = require('neotex.plugins.tools.himalaya.core.state')
       local char = vim.fn.getchar()
       local key = vim.fn.nr2char(char)
       
@@ -371,7 +371,7 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Select email and move down
     keymap('n', 'n', function()
-      local state = require('neotex.plugins.tools.himalaya.ui.state')
+      local state = require('neotex.plugins.tools.himalaya.core.state')
       local main = require('neotex.plugins.tools.himalaya.ui.main')
       
       local current_pos = vim.api.nvim_win_get_cursor(0)
@@ -408,7 +408,7 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- Select email and move up
     keymap('n', 'N', function()
-      local state = require('neotex.plugins.tools.himalaya.ui.state')
+      local state = require('neotex.plugins.tools.himalaya.core.state')
       local main = require('neotex.plugins.tools.himalaya.ui.main')
       
       local current_pos = vim.api.nvim_win_get_cursor(0)

@@ -7,7 +7,7 @@ local M = {}
 local main = require('neotex.plugins.tools.himalaya.ui.main')
 M.window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 M.sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-M.state = require('neotex.plugins.tools.himalaya.ui.state')
+M.state = require('neotex.plugins.tools.himalaya.core.state')
 M.notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 
 -- Re-export main UI functions for backward compatibility

@@ -1323,7 +1323,7 @@ function M.setup_commands()
           email_compose = nil,
         }
         
-        local ui_state = require('neotex.plugins.tools.himalaya.ui.state')
+        local ui_state = require('neotex.plugins.tools.himalaya.core.state')
         ui_state.reset()
         
         local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')

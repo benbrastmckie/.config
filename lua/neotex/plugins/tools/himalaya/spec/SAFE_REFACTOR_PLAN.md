@@ -19,7 +19,7 @@ This plan revises the original REFACTOR_SPEC.md to ensure functionality is prese
 - Process management (sync cancellation)
 - Health checks and setup wizard
 
-## Phase 1: Safe Preparation (Day 1)
+## Phase 1: Safe Preparation (Day 1) ✅ COMPLETE
 
 ### 1.1 Create Testing Infrastructure ✅ COMPLETE
 ```bash
@@ -70,7 +70,7 @@ end)
 -- Continue for all commands...
 ```
 
-## Phase 2: Incremental init.lua Refactoring
+## Phase 2: Incremental init.lua Refactoring ✅ COMPLETE
 
 ### 2.1 Extract Command Definitions (Safest Approach) ✅ COMPLETE
 
@@ -133,7 +133,7 @@ return M
 - [x] Init.lua reduced from 1504 to 92 lines
 - [x] All commands successfully moved to core/commands.lua
 
-## Phase 3: UI Module Extraction
+## Phase 3: UI Module Extraction ✅ COMPLETE
 
 ### 3.1 Analyze ui/main.lua Structure
 
@@ -330,61 +330,223 @@ return M
 - [x] ui/main.lua successfully reduced from 2548 to 1025 lines (60% reduction)
 - [x] Created 3 focused modules: email_list.lua, email_viewer.lua, email_composer.lua
 
-## Phase 4: State Management Consolidation
+## Phase 4: State Management Consolidation - Complete Unification ✅ COMPLETE
 
-### 4.1 Analyze State Usage First
+### IMPORTANT CONTEXT:
+- HimalayaFastCheck will be removed as part of this phase
+- Unifying state into core/state.lua for single source of truth
+- All state access will go through one module for consistency
 
-**Step 1: Document all state access points**
+### 4.1 Pre-Implementation Analysis
+
+**Current state distribution:**
+1. **core/state.lua** - Persistent state, sync operations
+   - Files using it: sync/manager.lua, sync/mbsync.lua, sync/oauth.lua, setup/wizard.lua
+   
+2. **ui/state.lua** - UI state, selections, current folder
+   - Files using it: ui/main.lua, ui/sidebar.lua, ui/email_list.lua, ui/email_viewer.lua, ui/email_composer.lua, utils.lua
+
+**Migration scope:**
+- ~15 files need import updates
+- Merge ui/state.lua functionality into core/state.lua
+- Remove ui/state.lua completely
+
+### 4.2 Implementation Plan
+
+#### Step 1: Remove HimalayaFastCheck ✅ COMPLETE
+
+**Files to modify:**
+- `core/commands.lua` - Remove HimalayaFastCheck command
+- `init.lua` - Remove keymap for `<leader>mz`
+- `sync/mbsync.lua` - Remove himalaya_fast_check function
+- Any state references to `sync.checking` or `sync.check_start_time`
+
+**Actions:**
 ```bash
-# Find all state references
-grep -n "state\." *.lua ui/*.lua core/*.lua sync/*.lua
+# Find all fast check references
+grep -n "HimalayaFastCheck\|fast_check\|himalaya_fast_check" **/*.lua
+grep -n "sync.checking\|check_start_time" **/*.lua
 ```
 
-**Current state usage pattern:**
-- Sync modules → core.state
-- UI modules → ui.state (except sync status functions which use core.state)
-- Utils → ui.state
+#### Step 2: Merge UI state into core/state.lua ✅ COMPLETE
 
-### 4.2 Create Migration Path
-
-**Option 1: Merge into single state module**
-- Combine both state structures into one module
-- Update all references to use the unified state
-- Pros: Simple, consistent
-- Cons: Large change, risk of breaking functionality
-
-**Option 2: Create state bridge/proxy**
+**Add to core/state.lua:**
 ```lua
--- In ui/state.lua
-local core_state = require("neotex.plugins.tools.himalaya.core.state")
+-- At the top with other default state
+M.default_state = {
+  -- Existing core state
+  sync = {
+    status = 'idle',
+    running = false,
+    -- Remove: checking = false,
+    -- Remove: check_start_time = nil,
+  },
+  oauth = { ... },
+  setup = { ... },
+  
+  -- UI state being merged
+  ui = {
+    current_folder = 'INBOX',
+    current_account = 'gmail',
+    selections = {},
+    -- Email selection state
+    selected_emails = {},
+    selection_mode = false,
+  },
+  
+  -- Session state
+  session = {
+    last_folder = 'INBOX',
+    last_account = 'gmail',
+    window_layout = {},
+  }
+}
 
--- Proxy sync-related calls to core.state
-function M.get(path, default)
-  if path:match("^sync%.") then
-    return core_state.get(path, default)
+-- Add UI-specific helper functions
+function M.get_current_folder()
+  return M.get('ui.current_folder', 'INBOX')
+end
+
+function M.set_current_folder(folder)
+  M.set('ui.current_folder', folder or 'INBOX')
+end
+
+function M.get_current_account()
+  return M.get('ui.current_account', 'gmail')
+end
+
+function M.set_current_account(account)
+  M.set('ui.current_account', account)
+end
+
+-- Selection management
+function M.toggle_email_selection(email_id, email_data)
+  local selections = M.get('ui.selections', {})
+  if selections[email_id] then
+    selections[email_id] = nil
+  else
+    selections[email_id] = email_data
   end
-  -- Handle UI state normally
-  return M.state[path] or default
+  M.set('ui.selections', selections)
+end
+
+function M.clear_selections()
+  M.set('ui.selections', {})
+end
+
+function M.get_selections()
+  return M.get('ui.selections', {})
+end
+
+function M.get_selection_count()
+  local selections = M.get('ui.selections', {})
+  local count = 0
+  for _ in pairs(selections) do
+    count = count + 1
+  end
+  return count
 end
 ```
 
-**Option 3: Keep separation but improve communication**
-- Keep core.state for sync operations
-- Keep ui.state for UI operations
-- Add explicit sync points where they need to communicate
-- Use events/callbacks to notify UI of sync state changes
+#### Step 3: Update all imports ✅ COMPLETE
 
-**Testing with any approach:**
-- [ ] All state-dependent features work
-- [ ] UI state persists across sessions
-- [ ] Sync state updates are visible in UI
-- [ ] Delete operations use correct folder state
-- [ ] Multi-account state management works
+**Files to update (in order):**
+1. `utils.lua`
+   ```lua
+   -- Change: local state = require('neotex.plugins.tools.himalaya.ui.state')
+   -- To: local state = require('neotex.plugins.tools.himalaya.core.state')
+   ```
 
-**Step 2: Gradually update references**
-- Update one module at a time
-- Test after each module update
-- Pay special attention to mixed-state modules like ui/email_list.lua
+2. `ui/main.lua`
+   ```lua
+   -- Remove: local ui_state = require('neotex.plugins.tools.himalaya.ui.state')
+   -- Add/Update: local state = require('neotex.plugins.tools.himalaya.core.state')
+   -- Update all ui_state references to state
+   ```
+
+3. `ui/sidebar.lua`
+   ```lua
+   -- Same pattern as above
+   ```
+
+4. `ui/email_list.lua`
+   ```lua
+   -- Remove both state imports
+   -- Keep only: local state = require('neotex.plugins.tools.himalaya.core.state')
+   -- Update path prefixes: current_folder → ui.current_folder
+   ```
+
+5. `ui/email_viewer.lua`, `ui/email_composer.lua`
+   ```lua
+   -- Update imports and state paths
+   ```
+
+**State path updates needed:**
+- `current_folder` → `ui.current_folder`
+- `current_account` → `ui.current_account`
+- `selections` → `ui.selections`
+- `selected_emails` → `ui.selected_emails`
+
+#### Step 4: Delete ui/state.lua ✅ COMPLETE
+
+**Final cleanup:**
+```bash
+# After all imports are updated and tested
+rm lua/neotex/plugins/tools/himalaya/ui/state.lua
+```
+
+### 4.3 Testing Plan
+
+#### After Step 1 (Remove HimalayaFastCheck): ✅ COMPLETE
+- [x] Verify `<leader>mz` keymap is removed
+- [x] No errors when loading plugin
+- [x] HimalayaSyncInbox still works
+- [x] No "checking" state references remain
+
+#### After Step 2 (Merge state modules): ✅ COMPLETE
+- [x] core/state.lua loads without errors
+- [x] Helper functions work correctly
+- [x] State persistence still works
+
+#### After Step 3 (Update imports): ✅ COMPLETE
+- [x] Test file by file:
+  - [x] utils.lua - Delete operations work
+  - [x] ui/main.lua - UI opens correctly
+  - [x] ui/sidebar.lua - Sidebar displays
+  - [x] ui/email_list.lua - List shows emails, sync status visible
+  - [x] ui/email_viewer.lua - Can view emails
+  - [x] ui/email_composer.lua - Can compose emails
+- [x] Current folder persists
+- [x] Selections work
+- [x] Sync status appears in UI
+
+#### After Step 4 (Delete ui/state.lua): ✅ COMPLETE
+- [x] Plugin loads without errors
+- [x] All state operations work
+- [x] Run full command test suite
+
+### 4.4 Rollback Strategy
+
+**Create restore points:**
+```bash
+# Before starting
+git add -A && git commit -m "Before Phase 4: State unification"
+
+# After each major step
+git add -A && git commit -m "Phase 4.1: Remove HimalayaFastCheck"
+git add -A && git commit -m "Phase 4.2: Merge state into core/state.lua"
+git add -A && git commit -m "Phase 4.3: Update all state imports"
+git add -A && git commit -m "Phase 4.4: Remove ui/state.lua"
+```
+
+**If rollback needed:**
+```bash
+# To rollback one step
+git reset --hard HEAD~1
+
+# Complete rollback to before Phase 4
+git reset --hard [commit-hash-before-phase-4]
+```
 
 ## Phase 5: Architecture Improvements
 
