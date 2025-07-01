@@ -20,6 +20,7 @@
   - it is OK to create new modules and commands if there is good reason
 - integrate with existing neovim configuration
   - use the notification system described in `nvim/docs/NOTIFICATIONS.md`
+  - preserve all existing functionality
 - track progress
   - work in phases
   - test changes once complete by running commands and then asking me to test the feature
