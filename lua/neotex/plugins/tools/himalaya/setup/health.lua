@@ -67,45 +67,88 @@ function M.checks.oauth()
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   local account = config.get_current_account()
   
-  local status = oauth.get_status(account.name or 'gmail')
-  
   local issues = {}
   local details = {}
   
-  if not status.has_token then
-    table.insert(issues, 'No OAuth token found')
+  -- Check main account OAuth (for mbsync)
+  local main_account = account.name or 'gmail'
+  local main_status = oauth.get_status(main_account)
+  
+  table.insert(details, '━━ Main account (' .. main_account .. ') ━━')
+  
+  if not main_status.has_token then
+    table.insert(issues, 'No OAuth token found for ' .. main_account)
   else
-    table.insert(details, 'Token exists: Yes')
+    table.insert(details, '  Token exists: Yes')
   end
   
-  if not status.environment_loaded then
+  if main_status.token_info then
+    if main_status.token_info.has_access_token then
+      table.insert(details, '  Access token: Present')
+    end
+    if main_status.token_info.has_refresh_token then
+      table.insert(details, '  Refresh token: Present')
+    end
+  end
+  
+  if main_status.last_refresh > 0 then
+    local ago = os.time() - main_status.last_refresh
+    local minutes = math.floor(ago / 60)
+    table.insert(details, '  Last refresh: ' .. minutes .. ' minutes ago')
+  end
+  
+  -- Check IMAP account OAuth (for fast check)
+  local imap_account = main_account .. '-imap'
+  local imap_status = oauth.get_status(imap_account)
+  
+  table.insert(details, '')
+  table.insert(details, '━━ IMAP account (' .. imap_account .. ') ━━')
+  
+  if not imap_status.has_token then
+    table.insert(issues, 'No OAuth token found for ' .. imap_account .. ' (needed for fast check)')
+    table.insert(details, '  Token exists: No [!]')
+  else
+    table.insert(details, '  Token exists: Yes')
+  end
+  
+  if imap_status.token_info then
+    if imap_status.token_info.has_access_token then
+      table.insert(details, '  Access token: Present')
+    else
+      table.insert(details, '  Access token: Missing [!]')
+    end
+    if imap_status.token_info.has_refresh_token then
+      table.insert(details, '  Refresh token: Present')
+    else
+      table.insert(details, '  Refresh token: Missing [!]')
+    end
+  end
+  
+  -- Environment check (common for both)
+  if not main_status.environment_loaded then
     table.insert(issues, 'OAuth environment variables not loaded')
   else
+    table.insert(details, '')
     table.insert(details, 'Environment loaded: Yes')
   end
   
-  if status.last_refresh > 0 then
-    local ago = os.time() - status.last_refresh
-    local minutes = math.floor(ago / 60)
-    table.insert(details, 'Last refresh: ' .. minutes .. ' minutes ago')
-  end
-  
-  -- Add token info if available
-  if status.token_info then
-    if status.token_info.has_access_token then
-      table.insert(details, 'Access token: Present')
-    end
-    if status.token_info.has_refresh_token then
-      table.insert(details, 'Refresh token: Present')
+  -- Add fix suggestions
+  local fix = nil
+  if #issues > 0 then
+    if not imap_status.has_token then
+      fix = 'Run: himalaya account configure ' .. imap_account
+    else
+      fix = ':HimalayaOAuthRefresh or run "himalaya account configure" in terminal'
     end
   end
   
   return {
     ok = #issues == 0,
-    status = status,
+    main_status = main_status,
+    imap_status = imap_status,
     issues = issues,
     details = details,
-    fix = #issues > 0 and ':HimalayaOAuthRefresh or run "himalaya account configure" in terminal' or nil
+    fix = fix
   }
 end
 

@@ -1,6 +1,5 @@
 # TODO
 
-Right now the wizard works and shows all the output in the command line in nvim. Can you check what happens if the wizard fails at any step? I want it to report what failed and what to do (briefly) and nothing more to keep things simple. 
 
 ## In Progress
 
@@ -108,8 +107,8 @@ Right now the wizard works and shows all the output in the command line in nvim.
     - [ ] save-drafts
       - [ ] q:save-draft
     - [ ] trash
-    - [ ] sync
-      - [ ] smart_sync using himalaya
+    - [.] sync
+      - [.] smart_sync using himalaya
       - [ ] auto_sync when nvim opens
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
@@ -131,6 +130,9 @@ Right now the wizard works and shows all the output in the command line in nvim.
       - [x] fix visual select
       - [x] remove boxes
     - [x] appearances
+      - [x] header
+        - [ ] Himalaya - Gmail - 
+        - [ ] Page 1 | 200 emails
       - [x] remove 'unlocked' that shows on start
       - [x] subject in bold
       - [x] unicode icons instead of emojis
