@@ -58,20 +58,27 @@ function M.log(level, msg, context)
     return
   end
   
-  local formatted = format_message(msg, context)
-  local vim_level = to_vim_level(level)
+  -- Use the notification system instead of vim.notify to avoid duplicates
+  local notify = require('neotex.util.notifications')
   
-  -- Check if notifications are enabled (but never notify debug messages)
-  local notify_config = get_notify_config()
-  if notify_config.enabled and level > M.levels.DEBUG then
-    -- Only show notifications for configured level and above (excluding debug)
-    local config_level = M.levels[notify_config.level:upper()] or M.levels.INFO
-    if level >= config_level then
-      vim.notify(formatted, vim_level)
-    end
+  -- Map logger levels to notification categories
+  local category
+  if level == M.levels.ERROR then
+    category = notify.categories.ERROR
+  elseif level == M.levels.WARN then
+    category = notify.categories.WARNING
+  elseif level == M.levels.DEBUG then
+    category = notify.categories.BACKGROUND
+  else -- INFO
+    -- Most logger.info calls are status updates, not user actions
+    category = notify.categories.STATUS
   end
   
-  -- Always log to messages
+  -- Send through notification system (without prefix - notify system adds it)
+  notify.himalaya(msg, category, context)
+  
+  -- Also log to messages for debugging
+  local formatted = format_message(msg, context)
   if level == M.levels.ERROR then
     vim.api.nvim_err_writeln(formatted)
   elseif level == M.levels.WARN then

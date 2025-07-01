@@ -120,15 +120,21 @@ function M.refresh(account, callback)
   local refresh_script = nil
   local possible_paths = {}
   
-  -- For IMAP accounts, prefer our wrapper script
+  -- For IMAP accounts, prefer our direct himalaya refresh script
   if account and account:match('-imap$') then
     -- Get the himalaya plugin directory path
     local current_file = debug.getinfo(1).source:sub(2)  -- Remove the @ prefix
     local sync_dir = vim.fn.fnamemodify(current_file, ':h')  -- sync directory
     local himalaya_dir = vim.fn.fnamemodify(sync_dir, ':h')  -- himalaya directory
-    local script_path = himalaya_dir .. '/scripts/refresh-himalaya-oauth2'
     
-    logger.debug('Looking for refresh script at: ' .. script_path)
+    -- Try direct himalaya refresh first
+    local direct_script_path = himalaya_dir .. '/scripts/refresh-himalaya-oauth2-direct'
+    logger.debug('Looking for direct himalaya refresh script at: ' .. direct_script_path)
+    table.insert(possible_paths, direct_script_path)
+    
+    -- Then fallback to wrapper script
+    local script_path = himalaya_dir .. '/scripts/refresh-himalaya-oauth2'
+    logger.debug('Looking for wrapper refresh script at: ' .. script_path)
     table.insert(possible_paths, script_path)
   end
   
@@ -192,8 +198,6 @@ function M.refresh(account, callback)
   if refresh_script:match('refresh-himalaya-oauth2') and account then
     table.insert(cmd, account)
     logger.debug('Using wrapper script with account: ' .. account)
-  elseif account and account:match('-imap$') then
-    logger.info('Warning: Standard refresh script may not work for IMAP account: ' .. account)
   end
   
   logger.debug('Running OAuth refresh command: ' .. table.concat(cmd, ' '))
@@ -207,19 +211,19 @@ function M.refresh(account, callback)
       if code == 0 then
         state.set("oauth.last_refresh", os.time())
         state.set("oauth.last_refresh_failed", false)
-        logger.info('OAuth token refreshed successfully for ' .. account)
+        logger.debug('OAuth token refreshed successfully for ' .. account)
         
         -- Debug notification
         local notify = require('neotex.util.notifications')
-        if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('OAuth token refreshed successfully for ' .. account, notify.categories.DEBUG)
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+          notify.himalaya('OAuth token refreshed successfully for ' .. account, notify.categories.BACKGROUND)
           
           -- Verify token exists after refresh
           vim.defer_fn(function()
             if M.has_token(account) then
-              notify.himalaya('Token verified after refresh for ' .. account, notify.categories.DEBUG)
+              notify.himalaya('Token verified after refresh for ' .. account, notify.categories.BACKGROUND)
             else
-              notify.himalaya('WARNING: Token still missing after refresh for ' .. account, notify.categories.DEBUG)
+              notify.himalaya('WARNING: Token still missing after refresh for ' .. account, notify.categories.BACKGROUND)
             end
           end, 500)
         end

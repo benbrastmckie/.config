@@ -96,6 +96,9 @@ function M.setup(user_config)
     M.config = vim.tbl_deep_extend('force', M.config, user_config)
   end
   
+  -- Load debug state from persistence
+  M.config.debug_mode = load_debug_state()
+  
   -- Initialize statistics
   for module_name, _ in pairs(M.config.modules) do
     M.stats.by_module[module_name] = {

@@ -84,7 +84,7 @@ function M.setup_commands()
       -- Close the window
       vim.api.nvim_win_close(himalaya_win, true)
       local notify = require('neotex.util.notifications')
-      notify.himalaya('Himalaya closed', notify.categories.INFO)
+      notify.himalaya('Himalaya closed', notify.categories.USER_ACTION)
     else
       -- Open the sidebar
       local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -106,6 +106,17 @@ function M.setup_commands()
   -- Fast check using Himalaya's IMAP mode
   cmd('HimalayaFastCheck', function()
     local notify = require('neotex.util.notifications')
+    
+    -- Always show this to confirm command is triggered
+    notify.himalaya('Fast check started', notify.categories.USER_ACTION)
+    
+    -- Additional debug feedback
+    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+      notify.himalaya('Debug mode is ON - you should see detailed notifications', notify.categories.STATUS)
+    else
+      notify.himalaya('Debug mode is OFF - run :HimalayaDebug on for details', notify.categories.USER_ACTION)
+    end
+    
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local config = require('neotex.plugins.tools.himalaya.core.config')
     local state = require('neotex.plugins.tools.himalaya.ui.state')
@@ -123,41 +134,25 @@ function M.setup_commands()
       return
     end
     
-    -- Set sync status immediately (same as <leader>ms)
-    state.set('sync.status', '󰍉 Checking for new mail...')
-    state.set('sync.start_time', os.time())
-    state.set('sync.check_start_time', os.time())  -- For fast check elapsed time
-    state.set('sync.running', true)
-    state.set('sync.checking', true)  -- This is what get_sync_status_line_detailed checks for!
+    -- Use sync manager for consistent state management
+    local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
     
-    -- Immediately show sync status in sidebar
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-    
-    -- Check if sidebar is actually open
-    if sidebar.is_open() then
-      -- Force immediate refresh to show "Checking..." status
-      main.refresh_sidebar_header()
-      
-      -- Also try a deferred refresh like <leader>ms does with its timer
-      vim.defer_fn(function()
-        if sidebar.is_open() then
-          main.refresh_sidebar_header()
-        end
-      end, 100)
-    end
+    -- Start fast check through manager
+    sync_manager.start_sync('fast_check', {
+      account = account.name or 'gmail'
+    })
     
     -- Only show notifications in debug mode
-    if notify.config.modules.himalaya.debug_mode then
+    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
       notify.himalaya('Checking Gmail for new emails...', notify.categories.STATUS)
-      notify.himalaya('Set sync.running = ' .. tostring(state.get('sync.running')), notify.categories.DEBUG)
-      notify.himalaya('Set sync.checking = ' .. tostring(state.get('sync.checking')), notify.categories.DEBUG)
-      notify.himalaya('Set sync.status = ' .. tostring(state.get('sync.status')), notify.categories.DEBUG)
+      notify.himalaya('Set sync.running = ' .. tostring(state.get('sync.running')), notify.categories.BACKGROUND)
+      notify.himalaya('Set sync.checking = ' .. tostring(state.get('sync.checking')), notify.categories.BACKGROUND)
+      notify.himalaya('Set sync.status = ' .. tostring(state.get('sync.status')), notify.categories.BACKGROUND)
     end
     
     -- Debug notification
-    if notify.config.modules.himalaya.debug_mode then
-      notify.himalaya('Starting himalaya_fast_check', notify.categories.DEBUG)
+    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+      notify.himalaya('Starting himalaya_fast_check', notify.categories.BACKGROUND)
     end
     
     -- Add timestamp to debug timing issues
@@ -167,32 +162,28 @@ function M.setup_commands()
     local job_id = mbsync.himalaya_fast_check({
       auto_refresh = true,  -- Enable OAuth auto-refresh
       callback = function(status, error)
-        if notify.config.modules.himalaya.debug_mode then
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
           local elapsed = vim.fn.reltimefloat(vim.fn.reltime(check_start_timestamp))
-          notify.himalaya(string.format('Fast check callback called after %.2fs with error: %s', elapsed, tostring(error)), notify.categories.DEBUG)
+          notify.himalaya(string.format('Fast check callback called after %.2fs with error: %s', elapsed, tostring(error)), notify.categories.BACKGROUND)
+          notify.himalaya('Fast check status: ' .. vim.inspect(status), notify.categories.BACKGROUND)
         end
         
-        -- Clear sync status (same as mbsync callback)
-        state.set('sync.status', 'idle')
-        state.set('sync.running', false)
-        state.set('sync.checking', false)  -- Clear the checking state
-        state.set('sync.last_sync', os.time())
-        
-        -- Refresh the sidebar to remove sync status
-        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-        if sidebar.is_open() then
-          local main = require('neotex.plugins.tools.himalaya.ui.main')
-          main.refresh_sidebar_header()
-        end
+        -- Complete check through manager
+        sync_manager.complete_sync('fast_check', {
+          success = status ~= nil,
+          error = error,
+          has_new = status and status.has_new,
+          new_count = status and status.new_count
+        })
         
         if error then
           -- Show the actual error 
-          if notify.config.modules.himalaya.debug_mode then
-            notify.himalaya('Himalaya fast check error: ' .. tostring(error), notify.categories.DEBUG)
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+            notify.himalaya('Himalaya fast check error: ' .. tostring(error), notify.categories.BACKGROUND)
           end
           
           -- Only show error notifications in debug mode
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             local error_str = tostring(error)
             if error_str:match('OAuth authentication failed') or error_str:match('not authenticated') then
               -- OAuth error - show the full error message which includes instructions
@@ -210,13 +201,13 @@ function M.setup_commands()
         end
         
         -- Debug notification for status
-        if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('Himalaya check status: ' .. vim.inspect(status), notify.categories.DEBUG)
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+          notify.himalaya('Himalaya check status: ' .. vim.inspect(status), notify.categories.BACKGROUND)
         end
         
         if status.has_new then
           -- Only notify in debug mode
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             notify.himalaya(string.format('Found %d new emails on Gmail server!', status.new_count), 
                           notify.categories.USER_ACTION)
           end
@@ -231,15 +222,18 @@ function M.setup_commands()
             end
           end)
         else
-          notify.himalaya('Local maildir is up to date with Gmail', notify.categories.SUCCESS)
+          -- Only show in debug mode as requested
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+            notify.himalaya('Local maildir is up to date with Gmail', notify.categories.STATUS)
+          end
         end
       end
     })
     
     -- Notify that we started the job
     if job_id then
-      if notify.config.modules.himalaya.debug_mode then
-        notify.himalaya('Himalaya fast check job started with ID: ' .. tostring(job_id), notify.categories.DEBUG)
+      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+        notify.himalaya('Himalaya fast check job started with ID: ' .. tostring(job_id), notify.categories.BACKGROUND)
       end
     else
       notify.himalaya('Failed to start Himalaya check', notify.categories.ERROR)
@@ -269,18 +263,15 @@ function M.setup_commands()
     local channel = account.mbsync and account.mbsync.inbox_channel or 'gmail-inbox'
     notify.himalaya('Starting inbox sync...', notify.categories.STATUS)
     
-    -- Set sync status immediately
-    local state = require('neotex.plugins.tools.himalaya.core.state')
-    state.set('sync.status', '⟳ Syncing...')
-    state.set('sync.start_time', os.time())
-    state.set('sync.running', true)
+    -- Use sync manager for consistent state management
+    local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
+    local account_name = config.get_current_account_name()
     
-    -- Immediately show sync status in sidebar
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    if ui.is_email_buffer_open() then
-      -- Force immediate refresh to show "Syncing..." status
-      main.refresh_sidebar_header()
-    end
+    -- Start sync through manager
+    sync_manager.start_sync('full', {
+      channel = channel,
+      account = account_name
+    })
     
     -- Start sidebar refresh timer
     local refresh_timer = nil
@@ -296,6 +287,9 @@ function M.setup_commands()
     
     mbsync.sync(channel, {
       on_progress = function(progress)
+        -- Update progress through manager
+        sync_manager.update_progress(progress)
+        
         if ui.notifications and ui.notifications.show_sync_progress then
           ui.notifications.show_sync_progress(progress)
         end
@@ -306,12 +300,18 @@ function M.setup_commands()
           vim.fn.timer_stop(refresh_timer)
         end
         
+        -- Complete sync through manager
+        sync_manager.complete_sync('full', {
+          success = success,
+          error = error
+        })
+        
         if not success then
           ui.notifications.handle_sync_error(error)
           -- Log error details in debug mode
           local notify = require('neotex.util.notifications')
-          if notify.config.modules.himalaya.debug_mode and error then
-            notify.himalaya('Sync error details: ' .. error, notify.categories.DEBUG)
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) and error then
+            notify.himalaya('Sync error details: ' .. error, notify.categories.BACKGROUND)
           end
         else
           -- Clear cache and refresh UI
@@ -319,7 +319,7 @@ function M.setup_commands()
           utils.clear_email_cache()
           
           local notify = require('neotex.util.notifications')
-          notify.himalaya('Sync completed successfully!', notify.categories.SUCCESS)
+          notify.himalaya('Sync completed successfully!', notify.categories.USER_ACTION)
           
           if ui.is_email_buffer_open() then
             ui.refresh_email_list()
@@ -357,18 +357,15 @@ function M.setup_commands()
     local channel = account.mbsync and account.mbsync.all_channel or 'gmail'
     notify.himalaya('Starting full sync...', notify.categories.STATUS)
     
-    -- Set sync status immediately
-    local state = require('neotex.plugins.tools.himalaya.core.state')
-    state.set('sync.status', '⟳ Syncing...')
-    state.set('sync.start_time', os.time())
-    state.set('sync.running', true)
+    -- Use sync manager for consistent state management
+    local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
+    local account_name = config.get_current_account_name()
     
-    -- Immediately show sync status in sidebar
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    if ui.is_email_buffer_open() then
-      -- Force immediate refresh to show "Syncing..." status
-      main.refresh_sidebar_header()
-    end
+    -- Start sync through manager
+    sync_manager.start_sync('full', {
+      channel = channel,
+      account = account_name
+    })
     
     -- Start sidebar refresh timer
     local refresh_timer = nil
@@ -384,6 +381,9 @@ function M.setup_commands()
     
     mbsync.sync(channel, {
       on_progress = function(progress)
+        -- Update progress through manager
+        sync_manager.update_progress(progress)
+        
         if ui.notifications and ui.notifications.show_sync_progress then
           ui.notifications.show_sync_progress(progress)
         end
@@ -394,18 +394,24 @@ function M.setup_commands()
           vim.fn.timer_stop(refresh_timer)
         end
         
+        -- Complete sync through manager
+        sync_manager.complete_sync('full', {
+          success = success,
+          error = error
+        })
+        
         if not success then
           ui.notifications.handle_sync_error(error)
           -- Log error details in debug mode
           local notify = require('neotex.util.notifications')
-          if notify.config.modules.himalaya.debug_mode and error then
-            notify.himalaya('Sync error details: ' .. error, notify.categories.DEBUG)
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) and error then
+            notify.himalaya('Sync error details: ' .. error, notify.categories.BACKGROUND)
           end
         else
           local utils = require('neotex.plugins.tools.himalaya.utils')
           utils.clear_email_cache()
           
-          notify.himalaya('Sync completed successfully!', notify.categories.SUCCESS)
+          notify.himalaya('Sync completed successfully!', notify.categories.USER_ACTION)
           
           if ui.is_email_buffer_open() then
             ui.refresh_email_list()
@@ -448,14 +454,14 @@ function M.setup_commands()
     vim.defer_fn(function()
       local cleaned_locks = lock.cleanup_locks()
       if cleaned_locks > 0 then
-        notify.himalaya('Cleaned ' .. cleaned_locks .. ' stale lock(s)', notify.categories.DEBUG)
+        notify.himalaya('Cleaned ' .. cleaned_locks .. ' stale lock(s)', notify.categories.BACKGROUND)
       end
     end, 500)  -- Wait a bit for processes to fully terminate
     
     if killed_count > 0 then
       notify.himalaya('Cancelled ' .. killed_count .. ' sync process(es)', notify.categories.USER_ACTION)
     else
-      notify.himalaya('No sync processes to cancel', notify.categories.INFO)
+      notify.himalaya('No sync processes to cancel', notify.categories.STATUS)
     end
     
     -- Stop sync status timer and refresh UI to clear sync status
@@ -469,30 +475,6 @@ function M.setup_commands()
     end
   end, {
     desc = 'Cancel all sync processes'
-  })
-  
-  -- Debug command to enable/disable debug logging
-  cmd('HimalayaDebug', function(opts)
-    local logger = require('neotex.plugins.tools.himalaya.core.logger')
-    local notify = require('neotex.util.notifications')
-    
-    if opts.args == 'on' or opts.args == '1' or opts.args == 'true' then
-      logger.set_level('DEBUG')
-      notify.himalaya('Debug logging enabled', notify.categories.SUCCESS)
-    elseif opts.args == 'off' or opts.args == '0' or opts.args == 'false' then
-      logger.set_level('INFO')
-      notify.himalaya('Debug logging disabled', notify.categories.SUCCESS)
-    else
-      local current = logger.get_level_name()
-      notify.himalaya('Debug logging is currently: ' .. (current == 'DEBUG' and 'ON' or 'OFF'), notify.categories.INFO)
-      notify.himalaya('Use :HimalayaDebug on/off to change', notify.categories.INFO)
-    end
-  end, {
-    nargs = '?',
-    desc = 'Toggle debug logging (on/off)',
-    complete = function()
-      return {'on', 'off'}
-    end
   })
   
   -- Setup commands
@@ -530,14 +512,14 @@ function M.setup_commands()
     local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
     local notify = require('neotex.util.notifications')
     
-    notify.himalaya('Refreshing OAuth token...', notify.categories.INFO)
+    notify.himalaya('Refreshing OAuth token...', notify.categories.STATUS)
     
     oauth.refresh(nil, function(success, error_msg)
       if success then
-        notify.himalaya('OAuth token refreshed successfully!', notify.categories.SUCCESS)
+        notify.himalaya('OAuth token refreshed successfully!', notify.categories.USER_ACTION)
       else
         notify.himalaya('Failed to refresh OAuth token: ' .. (error_msg or 'unknown error'), notify.categories.ERROR)
-        notify.himalaya('You may need to run: himalaya account configure gmail', notify.categories.INFO)
+        notify.himalaya('You may need to run: himalaya account configure gmail', notify.categories.USER_ACTION)
       end
     end)
   end, {
@@ -592,27 +574,96 @@ function M.setup_commands()
     desc = 'Migrate from old plugin version'
   })
   
-  -- Debug command
-  cmd('HimalayaDebug', function(opts)
-    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  -- Debug command - show debug information in floating window
+  cmd('HimalayaDebug', function()
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local notify = require('neotex.util.notifications')
     
-    if opts.args == 'on' then
-      logger.set_debug(true)
-      notify.himalaya('Debug logging enabled', notify.categories.STATUS)
-    elseif opts.args == 'off' then
-      logger.set_debug(false)
-      notify.himalaya('Debug logging disabled', notify.categories.STATUS)
-    else
-      local status = logger.is_debug() and 'on' or 'off'
-      notify.himalaya('Debug logging is ' .. status, notify.categories.STATUS)
-    end
+    -- Collect debug information
+    local lines = {
+      '=== Himalaya Debug Information ===',
+      '',
+      'System Info:',
+      '  • Platform: ' .. vim.loop.os_uname().sysname,
+      '  • Neovim version: ' .. vim.version().major .. '.' .. vim.version().minor .. '.' .. vim.version().patch,
+      '  • Debug mode: ' .. (notify.config.debug_mode and 'ON' or 'OFF'),
+      '',
+      'Configuration:',
+      '  • Current account: ' .. (config.get_current_account_name() or 'none'),
+      '  • Config initialized: ' .. tostring(config.is_initialized()),
+      '',
+      'Sync State:',
+      '  • Type: ' .. tostring(state.get('sync.type')),
+      '  • Status: ' .. tostring(state.get('sync.status')),
+      '  • Running: ' .. tostring(state.get('sync.running')),
+      '  • Last sync: ' .. (state.get('sync.last_sync') and os.date('%Y-%m-%d %H:%M:%S', state.get('sync.last_sync')) or 'never'),
+      '',
+      'Mbsync Status:',
+    }
+    
+    -- Get mbsync status
+    local status = mbsync.get_status()
+    table.insert(lines, '  • Running: ' .. tostring(status.running))
+    table.insert(lines, '  • External sync: ' .. tostring(status.external_sync_running))
+    table.insert(lines, '  • Last error: ' .. (status.last_error or 'none'))
+    
+    -- Check for mbsync binary
+    table.insert(lines, '')
+    table.insert(lines, 'Binaries:')
+    local mbsync_path = vim.fn.system('which mbsync 2>/dev/null'):gsub('\n', '')
+    table.insert(lines, '  • mbsync: ' .. (mbsync_path ~= '' and mbsync_path or 'NOT FOUND'))
+    local himalaya_path = vim.fn.system('which himalaya 2>/dev/null'):gsub('\n', '')
+    table.insert(lines, '  • himalaya: ' .. (himalaya_path ~= '' and himalaya_path or 'NOT FOUND'))
+    
+    -- OAuth status
+    table.insert(lines, '')
+    table.insert(lines, 'OAuth Status:')
+    local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
+    local oauth_status = oauth.get_status()
+    table.insert(lines, '  • Has token: ' .. tostring(oauth_status.has_token))
+    table.insert(lines, '  • Token valid: ' .. tostring(oauth_status.is_valid))
+    table.insert(lines, '  • Last refresh: ' .. (oauth_status.last_refresh and os.date('%Y-%m-%d %H:%M:%S', oauth_status.last_refresh) or 'never'))
+    
+    -- Create floating window
+    local width = math.floor(vim.o.columns * 0.6)
+    local height = math.min(#lines + 4, math.floor(vim.o.lines * 0.8))
+    local buf = vim.api.nvim_create_buf(false, true)
+    
+    vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+    vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+    vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    
+    -- Calculate position
+    local row = math.floor((vim.o.lines - height) / 2)
+    local col = math.floor((vim.o.columns - width) / 2)
+    
+    -- Create window
+    local win = vim.api.nvim_open_win(buf, true, {
+      relative = 'editor',
+      row = row,
+      col = col,
+      width = width,
+      height = height,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' Himalaya Debug ',
+      title_pos = 'center'
+    })
+    
+    -- Set keymaps
+    vim.keymap.set('n', 'q', function()
+      vim.api.nvim_win_close(win, true)
+    end, { buffer = buf, silent = true })
+    
+    vim.keymap.set('n', '<Esc>', function()
+      vim.api.nvim_win_close(win, true)
+    end, { buffer = buf, silent = true })
   end, {
-    nargs = '?',
-    complete = function()
-      return {'on', 'off'}
-    end,
-    desc = 'Toggle debug logging'
+    desc = 'Show debug information'
   })
   
   -- Debug command to check sync state
@@ -700,11 +751,33 @@ function M.setup_commands()
   })
   
   cmd('HimalayaSyncInfo', function()
+    local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local lock = require('neotex.plugins.tools.himalaya.sync.lock')
     local state = require('neotex.plugins.tools.himalaya.core.state')
     
-    -- Get sync status
+    -- Helper function to format time ago
+    local function format_time_ago(timestamp)
+      if not timestamp then return 'Never' end
+      local now = os.time()
+      local diff = now - timestamp
+      
+      if diff < 60 then
+        return diff .. 's ago'
+      elseif diff < 3600 then
+        return math.floor(diff / 60) .. 'm ago'
+      elseif diff < 86400 then
+        return math.floor(diff / 3600) .. 'h ago'
+      else
+        return os.date('%Y-%m-%d %H:%M', timestamp)
+      end
+    end
+    
+    -- Get current sync info from unified manager
+    local sync_info = sync_manager.get_sync_info()
+    local history = sync_manager.get_history()
+    
+    -- Get old status for process detection
     local status = mbsync.get_status()
     local active_locks = lock.get_active_locks()
     
@@ -736,27 +809,47 @@ function M.setup_commands()
     local lines = {
       '=== Himalaya Sync Status ===',
       '',
-      ' Sync Status:',
     }
     
-    -- Local sync status
-    if status.running then
-      table.insert(lines, '  • Local sync: RUNNING')
-      local start_time = state.get('sync.start_time')
-      if start_time then
-        local elapsed = os.time() - start_time
-        table.insert(lines, '    Elapsed: ' .. elapsed .. 's')
+    -- Current sync status
+    if sync_info.type then
+      table.insert(lines, ' Current Sync:')
+      table.insert(lines, '  • Type: ' .. sync_info.type)
+      table.insert(lines, '  • Status: ' .. sync_info.status)
+      table.insert(lines, '  • Message: ' .. (sync_info.message or 'N/A'))
+      
+      if sync_info.start_time then
+        local elapsed = os.time() - sync_info.start_time
+        table.insert(lines, '  • Elapsed: ' .. elapsed .. 's')
       end
-    else
-      table.insert(lines, '  • Local sync: IDLE')
+      
+      -- Type-specific info
+      if sync_info.type == 'full' and sync_info.channel then
+        table.insert(lines, '  • Channel: ' .. sync_info.channel)
+      elseif sync_info.type == 'fast_check' and sync_info.account then
+        table.insert(lines, '  • Account: ' .. sync_info.account)
+      end
+      
+      table.insert(lines, '')
     end
     
-    -- External sync detection
-    local external_sync = #mbsync_processes > (status.running and 1 or 0)
-    if external_sync then
-      table.insert(lines, '  • External sync: DETECTED')
-    else
-      table.insert(lines, '  • External sync: None')
+    -- Sync history
+    table.insert(lines, ' Sync History:')
+    table.insert(lines, '  • Last full sync: ' .. format_time_ago(history.last_full_sync))
+    table.insert(lines, '  • Last fast check: ' .. format_time_ago(history.last_fast_check))
+    table.insert(lines, '  • Full syncs today: ' .. (history.total_syncs_today or 0))
+    table.insert(lines, '  • Fast checks today: ' .. (history.total_checks_today or 0))
+    
+    if history.last_error then
+      table.insert(lines, '')
+      table.insert(lines, ' Last Error:')
+      table.insert(lines, '  • Type: ' .. (history.last_error_type or 'unknown'))
+      table.insert(lines, '  • Time: ' .. format_time_ago(history.last_error_time))
+      local error_msg = history.last_error
+      if #error_msg > 50 then
+        error_msg = error_msg:sub(1, 50) .. '...'
+      end
+      table.insert(lines, '  • Message: ' .. error_msg)
     end
     
     table.insert(lines, '')
@@ -778,6 +871,14 @@ function M.setup_commands()
       table.insert(lines, '  • mbsync processes: 0')
     end
     
+    -- External sync detection
+    local external_sync = #mbsync_processes > (status.running and 1 or 0)
+    if external_sync then
+      table.insert(lines, '  • External sync: DETECTED')
+    else
+      table.insert(lines, '  • External sync: None')
+    end
+    
     table.insert(lines, '')
     table.insert(lines, ' Lock Status:')
     
@@ -795,27 +896,6 @@ function M.setup_commands()
         table.insert(lines, '    - ' .. lock_name)
       end
     end
-    
-    -- State information
-    table.insert(lines, '')
-    table.insert(lines, ' State Information:')
-    if status.last_sync then
-      table.insert(lines, '  • Last sync: ' .. os.date('%H:%M:%S', status.last_sync))
-    else
-      table.insert(lines, '  • Last sync: Never')
-    end
-    
-    if status.last_error then
-      local error_msg = status.last_error
-      if #error_msg > 50 then
-        error_msg = error_msg:sub(1, 50) .. '...'
-      end
-      table.insert(lines, '  • Last error: ' .. error_msg)
-    else
-      table.insert(lines, '  • Last error: None')
-    end
-    
-    table.insert(lines, '  • Status: ' .. (status.status or 'unknown'))
     
     -- Create floating window
     local width = math.floor(vim.o.columns * 0.6)
@@ -865,10 +945,10 @@ function M.setup_commands()
     if ui.is_email_buffer_open() then
       ui.refresh_email_list()
       local notify = require('neotex.util.notifications')
-      notify.himalaya('Email list refreshed', notify.categories.INFO)
+      notify.himalaya('Email list refreshed', notify.categories.USER_ACTION)
     else
       local notify = require('neotex.util.notifications')
-      notify.himalaya('No email sidebar open to refresh', notify.categories.INFO)
+      notify.himalaya('No email sidebar open to refresh', notify.categories.STATUS)
     end
   end, {
     desc = 'Refresh email sidebar'
@@ -878,10 +958,10 @@ function M.setup_commands()
   cmd('HimalayaTestNotify', function()
     local notify = require('neotex.util.notifications')
     notify.himalaya('Test STATUS notification', notify.categories.STATUS)
-    notify.himalaya('Test INFO notification', notify.categories.INFO)
-    notify.himalaya('Test SUCCESS notification', notify.categories.SUCCESS)
+    notify.himalaya('Test INFO notification', notify.categories.STATUS)
+    notify.himalaya('Test SUCCESS notification', notify.categories.USER_ACTION)
     notify.himalaya('Test ERROR notification', notify.categories.ERROR)
-    notify.himalaya('Test DEBUG notification', notify.categories.DEBUG)
+    notify.himalaya('Test DEBUG notification', notify.categories.BACKGROUND)
   end, {
     desc = 'Test notifications'
   })
@@ -897,7 +977,7 @@ function M.setup_commands()
     local old_level = logger.current_level
     logger.set_debug(true)
     
-    notify.himalaya('Testing Himalaya JSON output...', notify.categories.INFO)
+    notify.himalaya('Testing Himalaya JSON output...', notify.categories.STATUS)
     
     -- Test basic command
     local account = config.get_current_account_name()
@@ -907,26 +987,26 @@ function M.setup_commands()
     end
     
     -- Test folder list (simple command)
-    notify.himalaya('Testing folder list...', notify.categories.INFO)
+    notify.himalaya('Testing folder list...', notify.categories.STATUS)
     local folders = utils.get_folders(account)
     if folders then
-      notify.himalaya('Folder list successful: ' .. #folders .. ' folders', notify.categories.SUCCESS)
+      notify.himalaya('Folder list successful: ' .. #folders .. ' folders', notify.categories.STATUS)
     else
       notify.himalaya('Folder list failed - check :messages', notify.categories.ERROR)
     end
     
     -- Test email list (more complex)
-    notify.himalaya('Testing email list...', notify.categories.INFO)
+    notify.himalaya('Testing email list...', notify.categories.STATUS)
     local emails, count = utils.get_email_list(account, 'INBOX', 1, 5)
     if emails then
-      notify.himalaya('Email list successful: ' .. (count or #emails) .. ' total emails', notify.categories.SUCCESS)
+      notify.himalaya('Email list successful: ' .. (count or #emails) .. ' total emails', notify.categories.STATUS)
     else
       notify.himalaya('Email list failed - check :messages', notify.categories.ERROR)
     end
     
     -- Restore log level
     logger.current_level = old_level
-    notify.himalaya('Debug test complete - check :messages for details', notify.categories.INFO)
+    notify.himalaya('Debug test complete - check :messages for details', notify.categories.STATUS)
   end, {
     desc = 'Debug Himalaya JSON parsing'
   })
@@ -951,7 +1031,7 @@ function M.setup_commands()
     table.insert(cmd, '-o')
     table.insert(cmd, 'json')
     
-    notify.himalaya('Running: ' .. table.concat(cmd, ' '), notify.categories.INFO)
+    notify.himalaya('Running: ' .. table.concat(cmd, ' '), notify.categories.STATUS)
     
     -- Execute command
     local result = vim.fn.system(cmd)
@@ -1095,7 +1175,7 @@ function M.setup_commands()
         local result = os.execute(cp_cmd)
         
         if result == 0 then
-          notify.himalaya('[OK] Backup created: ' .. backup_dir, notify.categories.SUCCESS)
+          notify.himalaya('[OK] Backup created: ' .. backup_dir, notify.categories.USER_ACTION)
           backup_made = true
         else
           notify.himalaya('[CANCELLED] Backup failed!', notify.categories.ERROR)
@@ -1125,7 +1205,7 @@ function M.setup_commands()
           return
         end
         
-        notify.himalaya('[OK] Mail directory deleted', notify.categories.SUCCESS)
+        notify.himalaya('[OK] Mail directory deleted', notify.categories.USER_ACTION)
         
         -- Clear all state
         state.reset()
@@ -1177,7 +1257,7 @@ function M.setup_commands()
         local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
         wizard.fix_uidvalidity_files(mail_dir)
         
-        notify.himalaya('[OK] Fresh maildir structure created', notify.categories.SUCCESS)
+        notify.himalaya('[OK] Fresh maildir structure created', notify.categories.USER_ACTION)
         
         -- Question 3: Run setup wizard?
         vim.schedule(function()

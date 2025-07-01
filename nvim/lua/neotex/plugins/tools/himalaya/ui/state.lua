@@ -47,7 +47,8 @@ function M.save()
     file:close()
     return true
   else
-    vim.notify('Failed to save Himalaya state', vim.log.levels.WARN)
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Failed to save Himalaya state', notify.categories.WARNING)
     return false
   end
 end
@@ -65,7 +66,8 @@ function M.load()
         M.state = vim.tbl_extend('force', M.state, decoded)
         return true
       else
-        vim.notify('Failed to parse Himalaya state file', vim.log.levels.WARN)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya('Failed to parse Himalaya state file', notify.categories.WARNING)
       end
     end
   end

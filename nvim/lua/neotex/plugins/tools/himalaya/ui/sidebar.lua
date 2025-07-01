@@ -352,9 +352,9 @@ end
 function M.update_header_lines(header_lines)
   local notify = require('neotex.util.notifications')
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('sidebar.update_header_lines called with ' .. #header_lines .. ' lines', notify.categories.DEBUG)
+    notify.himalaya('sidebar.update_header_lines called with ' .. #header_lines .. ' lines', notify.categories.BACKGROUND)
     for i, line in ipairs(header_lines) do
-      notify.himalaya('  Line ' .. i .. ': ' .. line, notify.categories.DEBUG)
+      notify.himalaya('  Line ' .. i .. ': ' .. line, notify.categories.BACKGROUND)
     end
   end
   

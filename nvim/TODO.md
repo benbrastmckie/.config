@@ -108,7 +108,8 @@
       - [ ] q:save-draft
     - [ ] trash
     - [.] sync
-      - [.] smart_sync using himalaya
+      - [x] smart_sync using himalaya
+      - [ ] sidebar status for smart_sync
       - [ ] auto_sync when nvim opens
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
