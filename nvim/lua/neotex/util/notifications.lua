@@ -90,6 +90,9 @@ M.notification_cooldown = {}
 M.batch_queue = {}
 M.batch_timer = nil
 
+-- Forward declare load_debug_state function
+local load_debug_state
+
 -- Setup function
 function M.setup(user_config)
   if user_config then
@@ -449,7 +452,7 @@ function M.notify_force(message, level, context)
 end
 
 -- State persistence functions
-local function load_debug_state()
+load_debug_state = function()
   local ok, result = pcall(function()
     if vim.fn.filereadable(state_file) == 1 then
       local content = vim.fn.readfile(state_file)

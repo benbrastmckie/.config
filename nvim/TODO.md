@@ -131,8 +131,8 @@
       - [x] fix visual select
       - [x] remove boxes
     - [x] appearances
+      - [ ] "Himalaya closed" can be removed
       - [x] header
-        - [ ] Himalaya - Gmail - 
         - [ ] Page 1 | 200 emails
       - [x] remove 'unlocked' that shows on start
       - [x] subject in bold
