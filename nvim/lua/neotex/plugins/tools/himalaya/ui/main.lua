@@ -135,7 +135,7 @@ function M.show_email_list(args)
   vim.defer_fn(function()
     local account_name = config.get_current_account_name()
     local emails, total_count = utils.get_email_list(account_name, folder, state.get_current_page(), state.get_page_size())
-    if not emails then
+    if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
       -- Check if this is a fresh/empty maildir
       local account = config.get_current_account()
       if account then
@@ -177,10 +177,18 @@ function M.show_email_list(args)
               '',
               '󰅙 Failed to get email list',
               '',
-              'Check your Himalaya configuration and try again.'
+              'This could be due to:',
+              '• Invalid Himalaya configuration',
+              '• JSON parsing error',
+              '• Network connectivity issues',
+              '',
+              'Try:',
+              '• :HimalayaDebugJson - Test JSON parsing',
+              '• :HimalayaRawTest - Test raw output',
+              '• :messages - Check error details'
             }
             sidebar.update_content(error_lines)
-            notifications.show('Failed to get email list', 'error')
+            notifications.show('Failed to get email list - run :HimalayaDebugJson for details', 'error')
             return
           end
         else
@@ -289,6 +297,12 @@ function M.format_email_list(emails)
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
   
+  -- Debug the sync status
+  local notify = require('neotex.util.notifications')
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('format_email_list: sync_status_line = ' .. tostring(sync_status_line), notify.categories.DEBUG)
+  end
+  
   table.insert(lines, header)
   table.insert(lines, pagination_info)
   if sync_status_line then
@@ -307,56 +321,65 @@ function M.format_email_list(emails)
   
   -- Email entries
   for i, email in ipairs(emails) do
-    -- Parse flags (they're in an array)
-    local seen = false
-    local starred = false
-    if email.flags and type(email.flags) == 'table' then
-      for _, flag in ipairs(email.flags) do
-        if flag == 'Seen' then
-          seen = true
-        elseif flag == 'Flagged' or flag == 'Starred' then
-          starred = true
+    -- Validate email structure
+    if email and type(email) == 'table' then
+      -- Parse flags (they're in an array)
+      local seen = false
+      local starred = false
+      if email.flags and type(email.flags) == 'table' then
+        for _, flag in ipairs(email.flags) do
+          if flag == 'Seen' then
+            seen = true
+          elseif flag == 'Flagged' or flag == 'Starred' then
+            starred = true
+          end
         end
       end
-    end
-    local status = seen and ' ' or '*'
-    
-    -- Selection checkbox (always shown)
-    local email_id = email.id or tostring(i)
-    local is_selected = state.is_email_selected(email_id)
-    local checkbox = is_selected and '[x] ' or '[ ] '
-    
-    -- Parse from field (it's an object with name and addr)
-    local from = 'Unknown'
-    if email.from then
-      if type(email.from) == 'table' then
-        from = email.from.name or email.from.addr or 'Unknown'
-      else
-        from = tostring(email.from)
+      local status = seen and ' ' or '*'
+      
+      -- Selection checkbox (always shown)
+      local email_id = email.id or tostring(i)
+      local is_selected = state.is_email_selected(email_id)
+      local checkbox = is_selected and '[x] ' or '[ ] '
+      
+      -- Parse from field (it's an object with name and addr)
+      local from = 'Unknown'
+      if email.from then
+        if type(email.from) == 'table' then
+          from = email.from.name or email.from.addr or 'Unknown'
+        elseif type(email.from) == 'string' then
+          from = email.from
+        else
+          from = tostring(email.from)
+        end
       end
+      
+      local subject = email.subject or '(No subject)'
+      local date = email.date or ''
+      
+      -- Truncate long fields
+      from = utils.truncate_string(from, 25)
+      subject = utils.truncate_string(subject, 50)
+      
+      local line = string.format('%s%s | %s  %s', checkbox, from, subject, date)
+      table.insert(lines, line)
+      
+      -- Store email metadata for highlighting
+      if not lines.metadata then lines.metadata = {} end
+      lines.metadata[#lines] = {
+        seen = seen,
+        starred = starred,
+        email_index = i,
+        email_id = email_id,
+        selected = is_selected,
+        from_start = #checkbox + 1,  -- Start position of author field
+        from_end = #checkbox + #from  -- End position of author field
+      }
+    else
+      -- Log invalid email but continue
+      local logger = require('neotex.plugins.tools.himalaya.core.logger')
+      logger.warn('Invalid email structure at index ' .. i, { email = email })
     end
-    
-    local subject = email.subject or '(No subject)'
-    local date = email.date or ''
-    
-    -- Truncate long fields
-    from = utils.truncate_string(from, 25)
-    subject = utils.truncate_string(subject, 50)
-    
-    local line = string.format('%s%s | %s  %s', checkbox, from, subject, date)
-    table.insert(lines, line)
-    
-    -- Store email metadata for highlighting
-    if not lines.metadata then lines.metadata = {} end
-    lines.metadata[#lines] = {
-      seen = seen,
-      starred = starred,
-      email_index = i,
-      email_id = email_id,
-      selected = is_selected,
-      from_start = #checkbox + 1,  -- Start position of author field
-      from_end = #checkbox + #from  -- End position of author field
-    }
   end
   
   -- Store the email start line for easier access
@@ -380,13 +403,21 @@ end
 
 -- Get sync status line for header
 function M.get_sync_status_line()
+  -- Debug logging
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  local sync_checking = state.get('sync.checking', false)
+  local notify = require('neotex.util.notifications')
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('get_sync_status_line called, sync.checking = ' .. tostring(sync_checking), notify.categories.DEBUG)
+  end
+  
   -- Use the detailed version that shows progress ratios
   local status = M.get_sync_status_line_detailed()
-  if status then
-    -- Ensure we're not getting any extra text appended
-    return status
+  if status and notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('get_sync_status_line returning: ' .. status, notify.categories.DEBUG)
   end
-  return nil
+  
+  return status
 end
 
 -- Get sync status line for header with enhanced progress information (from old UI)
@@ -398,6 +429,25 @@ function M.get_sync_status_line_detailed()
   -- Check state for immediate sync status
   local sync_running = state.get('sync.running', false)
   local sync_status = state.get('sync.status')
+  local sync_checking = state.get('sync.checking', false)
+  
+  local notify = require('neotex.util.notifications')
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('get_sync_status_line_detailed: sync_checking = ' .. tostring(sync_checking), notify.categories.DEBUG)
+  end
+  
+  -- Check if we're checking for new emails
+  if sync_checking then
+    local start_time = state.get('sync.check_start_time')
+    local elapsed_str = ""
+    if start_time then
+      local elapsed = os.time() - start_time
+      -- Round to nearest 5 seconds
+      elapsed = math.floor(elapsed / 5) * 5
+      elapsed_str = string.format(" (%ds)", elapsed)
+    end
+    return " Checking for new mail" .. elapsed_str
+  end
   
   -- Check if any sync is running (local or external or just starting)
   if not status.sync_running and not status.external_sync_running and not sync_running then
@@ -575,42 +625,50 @@ end
 
 -- Refresh just the sidebar header (without refetching emails)
 function M.refresh_sidebar_header()
+  local notify = require('neotex.util.notifications')
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('refresh_sidebar_header called', notify.categories.DEBUG)
+  end
+  
   local buf = sidebar.get_buf()
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('refresh_sidebar_header: no valid buffer', notify.categories.DEBUG)
+    end
     return
   end
   
-  local emails = vim.b[buf].himalaya_emails
-  if not emails then
-    return
+  -- Debug buffer info
+  if notify.config.modules.himalaya.debug_mode then
+    local filetype = vim.bo[buf].filetype
+    notify.himalaya('refresh_sidebar_header: buffer filetype = ' .. tostring(filetype), notify.categories.DEBUG)
   end
+  
+  -- Don't require emails to be loaded - we can still update the header
+  local emails = vim.b[buf].himalaya_emails
   
   -- Build just the header lines
-  local account = config.get_current_account()
-  local email_display = 'Empty'
+  local account_name = config.get_current_account_name() or 'gmail'
+  local folder_name = state.get_current_folder() or 'INBOX'
   
-  -- Try to get email from account config
-  if account and account.email then
-    email_display = account.email
-  elseif account and account.name then
-    email_display = account.name
-  else
-    -- Try to get from account name (often is the email for gmail)
-    local account_name = config.get_current_account_name()
-    if account_name and account_name ~= 'gmail' then
-      email_display = account_name
-    elseif emails and #emails > 0 then
-      -- If we have emails, we have a working config, so show account name
-      email_display = account_name or 'gmail'
-    end
-  end
+  -- Capitalize account name for display
+  local account_display = account_name:sub(1,1):upper() .. account_name:sub(2):lower()
   
-  local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
+  local header = string.format('Himalaya - %s - %s', account_display, folder_name)
   local pagination_info = string.format('Page %d | %d emails', 
     state.get_current_page(), state.get_total_emails())
   
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
+  
+  -- Debug: log if we have a sync status
+  if notify.config.modules.himalaya.debug_mode then
+    if sync_status_line then
+      notify.himalaya('refresh_sidebar_header: sync_status_line = ' .. sync_status_line, notify.categories.DEBUG)
+    else
+      notify.himalaya('refresh_sidebar_header: no sync status line', notify.categories.DEBUG)
+    end
+  end
   
   local header_lines = {header, pagination_info}
   if sync_status_line then

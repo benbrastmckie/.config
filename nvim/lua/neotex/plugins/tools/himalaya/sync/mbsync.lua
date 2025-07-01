@@ -357,7 +357,7 @@ function M.sync(channel, opts)
                 -- Show notification only in debug mode
                 local notify = require('neotex.util.notifications')
                 if notify.config.modules.himalaya.debug_mode then
-                  notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+                  notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
                 end
                 
                 -- Attempt OAuth refresh
@@ -470,7 +470,7 @@ function M.sync(channel, opts)
           local notify = require('neotex.util.notifications')
           local config = require('neotex.plugins.tools.himalaya.core.config')
           if notify.config.modules.himalaya.debug_mode then
-            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
           end
           
           -- Attempt OAuth refresh
@@ -533,7 +533,7 @@ function M.sync(channel, opts)
           local notify = require('neotex.util.notifications')
           local config = require('neotex.plugins.tools.himalaya.core.config')
           if notify.config.modules.himalaya.debug_mode then
-            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.INFO)
+            notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
           end
           
           oauth.refresh(nil, function(success, error_msg)
@@ -629,6 +629,176 @@ function M.is_running()
   return M.current_job ~= nil
 end
 
+-- Check for new emails without syncing
+function M.check_new_emails(opts)
+  opts = opts or {}
+  local config = require("neotex.plugins.tools.himalaya.core.config")
+  local utils = require("neotex.plugins.tools.himalaya.utils")
+  local account = opts.account or config.get_current_account_name()
+  local folder = opts.folder or 'INBOX'
+  
+  -- Since Himalaya reads from local Maildir when it exists, we need a different approach
+  -- We'll use mbsync in dry-run mode to check if there are new messages
+  
+  -- Get current local count first
+  local local_emails, total_count = utils.get_email_list(account, folder, 1, 200)
+  local local_count = total_count or (local_emails and #local_emails) or 0
+  
+  -- If no callback provided, run synchronously
+  if not opts.callback then
+    -- Use mbsync in dry-run mode to check for new messages
+    local account_config = config.get_current_account()
+    local channel = account_config.mbsync and account_config.mbsync.inbox_channel or 'gmail-inbox'
+    
+    -- Run mbsync in dry-run mode
+    local cmd = {'mbsync', '--dry-run', '--verbose', channel}
+    local result = vim.fn.system(cmd)
+    local exit_code = vim.v.shell_error
+    
+    if exit_code ~= 0 then
+      logger.error("Failed to check remote emails: exit code " .. exit_code)
+      return nil, "Failed to check remote emails"
+    end
+    
+    -- Parse mbsync dry-run output to check for new messages
+    local new_messages = 0
+    local near_count = 0
+    local far_count = 0
+    
+    for line in result:gmatch("[^\r\n]+") do
+      -- Check message counts first
+      local near_msgs = line:match("near side:%s*(%d+)%s*messages")
+      local far_msgs = line:match("far side:%s*(%d+)%s*messages")
+      
+      if near_msgs then
+        near_count = tonumber(near_msgs) or 0
+      end
+      if far_msgs then
+        far_count = tonumber(far_msgs) or 0
+      end
+      
+      -- Also check the summary line for new messages
+      local far_new = line:match("Far:%s+%+(%d+)")
+      if far_new then
+        new_messages = tonumber(far_new) or 0
+      end
+    end
+    
+    -- If message counts differ, we have new/deleted messages
+    if far_count > near_count then
+      new_messages = far_count - near_count
+    end
+    
+    return {
+      has_new = new_messages > 0,
+      local_count = local_count,
+      remote_count = local_count + new_messages,
+      new_count = new_messages
+    }
+  end
+  
+  -- Asynchronous version
+  local account_config = config.get_current_account()
+  local channel = account_config.mbsync and account_config.mbsync.inbox_channel or 'gmail-inbox'
+  
+  local new_messages = 0
+  local near_count = 0
+  local far_count = 0
+  local job_id = vim.fn.jobstart({
+    'mbsync', '--dry-run', '--verbose', channel
+  }, {
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      if data and #data > 0 then
+        -- Parse mbsync dry-run output to check for new messages
+        for _, line in ipairs(data) do
+          if line and line ~= '' then
+            -- Check message counts
+            local near_msgs = line:match("near side:%s*(%d+)%s*messages")
+            local far_msgs = line:match("far side:%s*(%d+)%s*messages")
+            
+            if near_msgs then
+              near_count = tonumber(near_msgs) or 0
+            end
+            if far_msgs then
+              far_count = tonumber(far_msgs) or 0
+            end
+            
+            -- Also check the summary line
+            local far_new = line:match("Far:%s+%+(%d+)")
+            if far_new then
+              new_messages = tonumber(far_new) or 0
+            end
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        local error_msg = table.concat(data, '\n')
+        if error_msg and error_msg ~= '' then
+          logger.error("mbsync dry-run stderr: " .. error_msg)
+          
+          -- Check for auth errors
+          if error_msg:match('AUTHENTICATIONFAILED') or 
+             error_msg:match('Invalid credentials') or
+             error_msg:match('Authentication failed') then
+            -- Try to refresh OAuth if configured
+            if opts.auto_refresh ~= false then
+              logger.info("Authentication error during check, attempting OAuth refresh...")
+              oauth.ensure_token(nil, function(success)
+                if success then
+                  -- Retry the check
+                  vim.defer_fn(function()
+                    M.check_new_emails(opts)
+                  end, 1000)
+                else
+                  opts.callback(nil, "Authentication failed - OAuth refresh failed")
+                end
+              end)
+              return
+            end
+          end
+          
+          -- Don't treat stderr as fatal for dry-run, mbsync often outputs info there
+        end
+      end
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        logger.error("mbsync dry-run failed with exit code: " .. code)
+        opts.callback(nil, "Failed to check remote emails")
+      else
+        -- Success - return the results
+        local local_emails, total_count = utils.get_email_list(account, folder, 1, 200)
+        local local_count = total_count or (local_emails and #local_emails) or 0
+        
+        -- If message counts differ, we have new/deleted messages
+        if far_count > near_count then
+          new_messages = far_count - near_count
+        end
+        
+        logger.debug(string.format("Check complete - near: %d, far: %d, new: %d", 
+                                  near_count, far_count, new_messages))
+        
+        opts.callback({
+          has_new = new_messages > 0,
+          local_count = local_count,
+          remote_count = local_count + new_messages,
+          new_count = new_messages
+        })
+      end
+    end
+  })
+  
+  if job_id <= 0 then
+    logger.error("Failed to start mbsync dry-run job")
+    opts.callback(nil, "Failed to start check job")
+  else
+    logger.debug("Started email check job: " .. job_id)
+  end
+end
+
 -- Get sync status
 function M.get_status()
   local progress_data = state.get("sync.progress")
@@ -670,6 +840,337 @@ function M.get_status()
     status = status_val,
     progress = progress_data,
   }
+end
+
+-- Fast check using Himalaya's direct IMAP access
+function M.himalaya_fast_check(opts)
+  opts = opts or {}
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local utils = require('neotex.plugins.tools.himalaya.utils')
+  
+  local account_name = opts.account or config.get_current_account_name()
+  local folder = opts.folder or 'INBOX'
+  local callback = opts.callback
+  
+  if not callback then
+    return nil, "Callback required for async operation"
+  end
+  
+  -- Import notify for debug messages
+  local notify = require('neotex.util.notifications')
+  
+  -- Use IMAP account variant for direct server access
+  local imap_account = account_name .. '-imap'
+  local check_account = imap_account
+  
+  -- Check if we can refresh OAuth for Himalaya IMAP
+  -- Note: Himalaya uses different OAuth storage than mbsync
+  -- If the account hasn't been authenticated, we need to inform the user
+  
+  -- Skip the pre-flight check - it's causing the hang
+  -- Let the actual envelope list command fail if there's an auth issue
+  -- This way we can show the checking status immediately
+  
+  -- Build Himalaya command
+  local cmd = {
+    config.config.binaries.himalaya or 'himalaya',
+    'envelope', 'list',
+    '-a', check_account,
+    '-f', folder,
+    '-s', '50',  -- Get first 50 emails to compare
+    '-o', 'json'
+  }
+  
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('Himalaya fast check - Using account: ' .. check_account .. ', Folder: ' .. folder, notify.categories.DEBUG)
+    notify.himalaya('Himalaya fast check command: ' .. table.concat(cmd, ' '), notify.categories.DEBUG)
+  end
+  
+  local output = {}
+  local stderr_output = {}
+  
+  -- Test if jobstart works at all
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('About to start jobstart with cmd: ' .. vim.inspect(cmd), notify.categories.DEBUG)
+  end
+  
+  local job_id = vim.fn.jobstart(cmd, {
+    stdout_buffered = true,
+    stderr_buffered = true,
+    on_stdout = function(_, data)
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('on_stdout called with data: ' .. vim.inspect(data), notify.categories.DEBUG)
+      end
+      if data then
+        for _, line in ipairs(data) do
+          if line ~= "" then
+            table.insert(output, line)
+          end
+        end
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('Himalaya stdout lines received: ' .. #output, notify.categories.DEBUG)
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('on_stderr called with data: ' .. vim.inspect(data), notify.categories.DEBUG)
+      end
+      if data then
+        for _, line in ipairs(data) do
+          if line ~= "" then
+            table.insert(stderr_output, line)
+          end
+        end
+        if #stderr_output > 0 then
+          local error_str = table.concat(stderr_output, '\n')
+          -- Always show stderr in debug mode
+          if notify.config.modules.himalaya.debug_mode then
+            -- Clean up ANSI escape codes for readability
+            local clean_str = error_str:gsub('\27%[[0-9;]*m', '')
+            notify.himalaya('Himalaya stderr: ' .. clean_str:sub(1, 500), notify.categories.DEBUG)
+          end
+          
+          -- Check if the error is about missing account or auth issues
+          if error_str:match('account.*not found') and error_str:match('gmail%-imap') then
+            notify.himalaya('IMAP account not configured. Add gmail-imap account to Himalaya config for fast checks.', notify.categories.WARNING)
+          elseif error_str:match('AUTHENTICATIONFAILED') or error_str:match('auth') or error_str:match('OAuth.*failed') then
+            -- Store the auth error for handling in on_exit
+            stderr_output.has_auth_error = true
+          end
+        end
+      end
+    end,
+    on_exit = function(_, code)
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('on_exit called with code: ' .. tostring(code), notify.categories.DEBUG)
+        notify.himalaya('Total output lines: ' .. #output, notify.categories.DEBUG)
+        notify.himalaya('Total stderr lines: ' .. #stderr_output, notify.categories.DEBUG)
+      end
+      
+      -- Check if we had an authentication error
+      if code ~= 0 and stderr_output.has_auth_error and opts.auto_refresh ~= false then
+        -- Don't retry infinitely
+        opts.retry_count = (opts.retry_count or 0) + 1
+        if opts.retry_count > 2 then
+          callback(nil, "OAuth authentication failed after retries")
+          return
+        end
+        
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('OAuth authentication failed, attempting refresh...', notify.categories.STATUS)
+        end
+        
+        -- Debug: log which account we're refreshing
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('Refreshing OAuth for account: ' .. check_account, notify.categories.DEBUG)
+          
+          -- Check current token status before refresh
+          local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
+          local status = oauth.get_status(check_account)
+          notify.himalaya('Token exists before refresh: ' .. tostring(status.has_token), notify.categories.DEBUG)
+        end
+        
+        -- Try to refresh OAuth token for the IMAP account
+        local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
+        oauth.refresh(check_account, function(success)
+          if success then
+            if notify.config.modules.himalaya.debug_mode then
+              notify.himalaya('OAuth token refreshed, retrying check...', notify.categories.STATUS)
+            end
+            -- Retry the fast check after a short delay
+            vim.defer_fn(function()
+              opts.retry_count = opts.retry_count or 0
+              M.himalaya_fast_check(opts)
+            end, 2000)
+          else
+            -- Special handling for gmail-imap configuration issue
+            if check_account == 'gmail-imap' then
+              callback(nil, "Gmail IMAP requires manual OAuth setup due to token naming issue")
+            else
+              callback(nil, "OAuth authentication failed - refresh failed")
+            end
+          end
+        end)
+        return
+      end
+      
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('Himalaya fast check exited with code: ' .. code, notify.categories.DEBUG)
+      end
+      if code == 0 then
+        -- Parse the output
+        local result_str = table.concat(output, '\n')
+        
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('Himalaya output length: ' .. #result_str .. ' bytes', notify.categories.DEBUG)
+          
+          -- Show first 500 chars of output for debugging
+          if #result_str > 0 then
+            local preview = result_str:sub(1, 500)
+            if #result_str > 500 then
+              preview = preview .. '... (truncated)'
+            end
+            notify.himalaya('Himalaya output preview: ' .. preview, notify.categories.DEBUG)
+          end
+        end
+        
+        local success, emails = pcall(vim.json.decode, result_str)
+        
+        if success and type(emails) == 'table' then
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('Successfully parsed JSON, email count from IMAP: ' .. #emails, notify.categories.DEBUG)
+          end
+          
+          -- Handle empty mailbox case
+          if #emails == 0 then
+            if notify.config.modules.himalaya.debug_mode then
+              notify.himalaya('Remote mailbox is empty', notify.categories.DEBUG)
+            end
+            callback({
+              has_new = false,
+              local_count = 0,
+              remote_count = 0,
+              new_count = 0
+            })
+            return
+          end
+          
+          -- Get local emails to compare (always use the maildir account, not IMAP)
+          local maildir_account = account_name:gsub('%-imap$', '')  -- Remove -imap suffix if present
+          local local_emails = utils.get_email_list(maildir_account, folder, 1, 50)
+          local local_count = local_emails and #local_emails or 0
+          
+          -- Since maildir and IMAP use completely different ID systems, we cannot compare IDs
+          -- Instead, we'll use a simpler approach based on counts and subjects
+          local has_new = false
+          local new_count = 0
+          
+          -- Get total count from maildir (not just first 50)
+          local all_local_emails, total_local_count = utils.get_email_list(maildir_account, folder, 1, 1000)
+          local actual_local_count = total_local_count or (all_local_emails and #all_local_emails) or 0
+          
+          -- For IMAP, we need to get the total count, not just what we fetched
+          -- Since we only fetched 50, we'll need to make another request or estimate
+          -- For now, assume if we got 50 emails, there might be more
+          local remote_count_estimate = #emails
+          if #emails == 50 and notify.config.modules.himalaya.debug_mode then
+            -- We hit the limit, so there are likely more emails on the server
+            notify.himalaya('Remote mailbox has 50+ emails (exact count unknown)', notify.categories.DEBUG)
+          end
+          
+          -- Simple heuristic: if local count is significantly different from remote sample, we're out of sync
+          -- This isn't perfect but avoids the ID comparison problem
+          if actual_local_count == 0 and #emails > 0 then
+            -- Empty local, emails on remote
+            has_new = true
+            new_count = #emails
+            if notify.config.modules.himalaya.debug_mode then
+              notify.himalaya(string.format('Local maildir empty, remote has %d+ emails', #emails), notify.categories.DEBUG)
+            end
+          elseif #emails == 0 and actual_local_count > 0 then
+            -- Remote empty (or inaccessible), local has emails
+            has_new = false
+            new_count = 0
+            if notify.config.modules.himalaya.debug_mode then
+              notify.himalaya(string.format('Remote appears empty, local has %d emails', actual_local_count), notify.categories.DEBUG)
+            end
+          else
+            -- Both have emails - check if the most recent subjects match
+            -- This is a heuristic that works well in practice
+            local local_latest_subject = local_emails and local_emails[1] and local_emails[1].subject
+            local remote_latest_subject = emails[1] and emails[1].subject
+            
+            if local_latest_subject ~= remote_latest_subject then
+              -- Different latest emails suggests new mail
+              has_new = true
+              -- We can't know exact count without comparing all emails
+              new_count = 1 -- Conservative estimate
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('Latest email subjects differ - new mail likely', notify.categories.DEBUG)
+                notify.himalaya('Local latest: ' .. (local_latest_subject or 'none'), notify.categories.DEBUG)
+                notify.himalaya('Remote latest: ' .. (remote_latest_subject or 'none'), notify.categories.DEBUG)
+              end
+            else
+              -- Same latest email, probably in sync
+              has_new = false
+              new_count = 0
+              if notify.config.modules.himalaya.debug_mode then
+                notify.himalaya('Latest emails match - maildir appears in sync', notify.categories.DEBUG)
+              end
+            end
+          end
+          
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya(string.format('Local count: %d, Remote sample: %d, Has new: %s', 
+                          actual_local_count, #emails, tostring(has_new)), notify.categories.DEBUG)
+          end
+          
+          callback({
+            has_new = has_new,
+            local_count = local_count,
+            remote_count = #emails,  -- This is actually just the first page
+            new_count = new_count
+          })
+        else
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('Failed to parse JSON: ' .. tostring(emails), notify.categories.DEBUG)
+          end
+          callback(nil, "Failed to parse Himalaya output")
+        end
+      else
+        -- Return error with stderr output
+        local error_msg = table.concat(stderr_output, '\n')
+        if error_msg == "" then
+          error_msg = "Himalaya check failed with exit code: " .. code
+        end
+        
+        -- Check for specific error types
+        if error_msg:match('account.*not found') and error_msg:match(check_account) then
+          -- Missing account
+          callback(nil, "IMAP account '" .. check_account .. "' not found in Himalaya config")
+        elseif error_msg:match('AUTHENTICATIONFAILED') or error_msg:match('Invalid credentials') or 
+               error_msg:match('authentication') or error_msg:match('AUTH') then
+          -- Authentication failure
+          local auth_error = 'OAuth authentication failed for ' .. check_account .. '\n' ..
+                            'Himalaya uses separate OAuth tokens from mbsync.\n' ..
+                            'To authenticate, run: himalaya account configure ' .. check_account
+          callback(nil, auth_error)
+        elseif error_msg == "" and code ~= 0 then
+          -- Generic failure with no stderr - likely hanging on auth
+          callback(nil, 'Himalaya command failed. If it hung, the ' .. check_account .. 
+                       ' account may need authentication.\nRun: himalaya account configure ' .. check_account)
+        else
+          callback(nil, error_msg)
+        end
+      end
+    end
+  })
+  
+  if job_id <= 0 then
+    notify.himalaya('Failed to start himalaya job, job_id: ' .. tostring(job_id), notify.categories.ERROR)
+  elseif notify.config.modules.himalaya.debug_mode then
+    notify.himalaya('Started himalaya job with ID: ' .. tostring(job_id), notify.categories.DEBUG)
+  end
+  
+  return job_id
+end
+
+-- Helper function to get highest email ID from a list
+function M.get_highest_email_id(emails)
+  if not emails or #emails == 0 then
+    return 0
+  end
+  
+  local highest_id = 0
+  for _, email in ipairs(emails) do
+    local id_num = tonumber(email.id) or 0
+    if id_num > highest_id then
+      highest_id = id_num
+    end
+  end
+  
+  return highest_id
 end
 
 return M

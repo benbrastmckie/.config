@@ -103,6 +103,151 @@ function M.setup_commands()
   })
   
   -- Sync commands
+  -- Fast check using Himalaya's IMAP mode
+  cmd('HimalayaFastCheck', function()
+    local notify = require('neotex.util.notifications')
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local state = require('neotex.plugins.tools.himalaya.ui.state')
+    local ui = require('neotex.plugins.tools.himalaya.ui')
+    
+    -- Check if config is initialized
+    if not config.is_initialized() then
+      notify.himalaya('Himalaya not configured. Run :HimalayaSetup', notify.categories.ERROR)
+      return
+    end
+    
+    local account = config.get_current_account()
+    if not account then
+      notify.himalaya('No email account configured', notify.categories.ERROR)
+      return
+    end
+    
+    -- Set sync status immediately (same as <leader>ms)
+    state.set('sync.status', '󰍉 Checking for new mail...')
+    state.set('sync.start_time', os.time())
+    state.set('sync.check_start_time', os.time())  -- For fast check elapsed time
+    state.set('sync.running', true)
+    state.set('sync.checking', true)  -- This is what get_sync_status_line_detailed checks for!
+    
+    -- Immediately show sync status in sidebar
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    
+    -- Check if sidebar is actually open
+    if sidebar.is_open() then
+      -- Force immediate refresh to show "Checking..." status
+      main.refresh_sidebar_header()
+      
+      -- Also try a deferred refresh like <leader>ms does with its timer
+      vim.defer_fn(function()
+        if sidebar.is_open() then
+          main.refresh_sidebar_header()
+        end
+      end, 100)
+    end
+    
+    -- Only show notifications in debug mode
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('Checking Gmail for new emails...', notify.categories.STATUS)
+      notify.himalaya('Set sync.running = ' .. tostring(state.get('sync.running')), notify.categories.DEBUG)
+      notify.himalaya('Set sync.checking = ' .. tostring(state.get('sync.checking')), notify.categories.DEBUG)
+      notify.himalaya('Set sync.status = ' .. tostring(state.get('sync.status')), notify.categories.DEBUG)
+    end
+    
+    -- Debug notification
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('Starting himalaya_fast_check', notify.categories.DEBUG)
+    end
+    
+    -- Add timestamp to debug timing issues
+    local check_start_timestamp = vim.fn.reltime()
+    
+    -- Use the himalaya_fast_check function from mbsync module
+    local job_id = mbsync.himalaya_fast_check({
+      auto_refresh = true,  -- Enable OAuth auto-refresh
+      callback = function(status, error)
+        if notify.config.modules.himalaya.debug_mode then
+          local elapsed = vim.fn.reltimefloat(vim.fn.reltime(check_start_timestamp))
+          notify.himalaya(string.format('Fast check callback called after %.2fs with error: %s', elapsed, tostring(error)), notify.categories.DEBUG)
+        end
+        
+        -- Clear sync status (same as mbsync callback)
+        state.set('sync.status', 'idle')
+        state.set('sync.running', false)
+        state.set('sync.checking', false)  -- Clear the checking state
+        state.set('sync.last_sync', os.time())
+        
+        -- Refresh the sidebar to remove sync status
+        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+        if sidebar.is_open() then
+          local main = require('neotex.plugins.tools.himalaya.ui.main')
+          main.refresh_sidebar_header()
+        end
+        
+        if error then
+          -- Show the actual error 
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('Himalaya fast check error: ' .. tostring(error), notify.categories.DEBUG)
+          end
+          
+          -- Only show error notifications in debug mode
+          if notify.config.modules.himalaya.debug_mode then
+            local error_str = tostring(error)
+            if error_str:match('OAuth authentication failed') or error_str:match('not authenticated') then
+              -- OAuth error - show the full error message which includes instructions
+              notify.himalaya(error_str, notify.categories.ERROR)
+            elseif error_str:match('not found in Himalaya config') then
+              -- Missing account config
+              notify.himalaya(error_str, notify.categories.ERROR)
+              notify.himalaya('Add gmail-imap account to himalaya config via home.nix', notify.categories.USER_ACTION)
+            else
+              -- Other errors
+              notify.himalaya('Himalaya IMAP check failed: ' .. error_str, notify.categories.ERROR)
+            end
+          end
+          return
+        end
+        
+        -- Debug notification for status
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('Himalaya check status: ' .. vim.inspect(status), notify.categories.DEBUG)
+        end
+        
+        if status.has_new then
+          -- Only notify in debug mode
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya(string.format('Found %d new emails on Gmail server!', status.new_count), 
+                          notify.categories.USER_ACTION)
+          end
+          
+          -- Ask if user wants to sync
+          vim.ui.input({
+            prompt = string.format('Download %d new emails from Gmail? (y/n): ', status.new_count)
+          }, function(input)
+            if input and input:lower() == 'y' then
+              notify.himalaya('Starting mbsync to download emails...', notify.categories.STATUS)
+              vim.cmd('HimalayaSyncInbox')
+            end
+          end)
+        else
+          notify.himalaya('Local maildir is up to date with Gmail', notify.categories.SUCCESS)
+        end
+      end
+    })
+    
+    -- Notify that we started the job
+    if job_id then
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('Himalaya fast check job started with ID: ' .. tostring(job_id), notify.categories.DEBUG)
+      end
+    else
+      notify.himalaya('Failed to start Himalaya check', notify.categories.ERROR)
+    end
+  end, {
+    desc = 'Fast check using Himalaya IMAP'
+  })
+  
   cmd('HimalayaSyncInbox', function()
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -470,6 +615,36 @@ function M.setup_commands()
     desc = 'Toggle debug logging'
   })
   
+  -- Debug command to check sync state
+  cmd('HimalayaDebugSyncState', function()
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local notify = require('neotex.util.notifications')
+    
+    notify.himalaya('=== Sync State Debug ===', notify.categories.STATUS)
+    notify.himalaya('sync.running: ' .. tostring(state.get('sync.running')), notify.categories.STATUS)
+    notify.himalaya('sync.checking: ' .. tostring(state.get('sync.checking')), notify.categories.STATUS)
+    notify.himalaya('sync.status: ' .. tostring(state.get('sync.status')), notify.categories.STATUS)
+    notify.himalaya('sync.start_time: ' .. tostring(state.get('sync.start_time')), notify.categories.STATUS)
+    notify.himalaya('sync.check_start_time: ' .. tostring(state.get('sync.check_start_time')), notify.categories.STATUS)
+    
+    -- Also check mbsync status
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    local mbsync_status = mbsync.get_status()
+    notify.himalaya('mbsync.running: ' .. tostring(mbsync_status.running), notify.categories.STATUS)
+    notify.himalaya('mbsync.sync_running: ' .. tostring(mbsync_status.sync_running), notify.categories.STATUS)
+    
+    -- Check sidebar status
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    notify.himalaya('sidebar.is_open(): ' .. tostring(sidebar.is_open()), notify.categories.STATUS)
+    
+    -- Try to get sync status line
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    local sync_line = main.get_sync_status_line()
+    notify.himalaya('get_sync_status_line(): ' .. tostring(sync_line), notify.categories.STATUS)
+  end, {
+    desc = 'Debug sync state values'
+  })
+  
   -- Additional commands for which-key mappings
   cmd('HimalayaRestore', function()
     local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -697,6 +872,133 @@ function M.setup_commands()
     end
   end, {
     desc = 'Refresh email sidebar'
+  })
+  
+  -- Test notification command
+  cmd('HimalayaTestNotify', function()
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Test STATUS notification', notify.categories.STATUS)
+    notify.himalaya('Test INFO notification', notify.categories.INFO)
+    notify.himalaya('Test SUCCESS notification', notify.categories.SUCCESS)
+    notify.himalaya('Test ERROR notification', notify.categories.ERROR)
+    notify.himalaya('Test DEBUG notification', notify.categories.DEBUG)
+  end, {
+    desc = 'Test notifications'
+  })
+  
+  -- Debug command to test himalaya JSON output
+  cmd('HimalayaDebugJson', function()
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+    local notify = require('neotex.util.notifications')
+    
+    -- Enable debug logging temporarily
+    local old_level = logger.current_level
+    logger.set_debug(true)
+    
+    notify.himalaya('Testing Himalaya JSON output...', notify.categories.INFO)
+    
+    -- Test basic command
+    local account = config.get_current_account_name()
+    if not account then
+      notify.himalaya('No account configured', notify.categories.ERROR)
+      return
+    end
+    
+    -- Test folder list (simple command)
+    notify.himalaya('Testing folder list...', notify.categories.INFO)
+    local folders = utils.get_folders(account)
+    if folders then
+      notify.himalaya('Folder list successful: ' .. #folders .. ' folders', notify.categories.SUCCESS)
+    else
+      notify.himalaya('Folder list failed - check :messages', notify.categories.ERROR)
+    end
+    
+    -- Test email list (more complex)
+    notify.himalaya('Testing email list...', notify.categories.INFO)
+    local emails, count = utils.get_email_list(account, 'INBOX', 1, 5)
+    if emails then
+      notify.himalaya('Email list successful: ' .. (count or #emails) .. ' total emails', notify.categories.SUCCESS)
+    else
+      notify.himalaya('Email list failed - check :messages', notify.categories.ERROR)
+    end
+    
+    -- Restore log level
+    logger.current_level = old_level
+    notify.himalaya('Debug test complete - check :messages for details', notify.categories.INFO)
+  end, {
+    desc = 'Debug Himalaya JSON parsing'
+  })
+  
+  -- Raw command test for debugging
+  cmd('HimalayaRawTest', function(opts)
+    local args = vim.split(opts.args or 'envelope list', ' ')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local notify = require('neotex.util.notifications')
+    
+    local account = config.get_current_account_name()
+    if not account then
+      notify.himalaya('No account configured', notify.categories.ERROR)
+      return
+    end
+    
+    -- Build command
+    local cmd = { config.config.binaries.himalaya or 'himalaya' }
+    vim.list_extend(cmd, args)
+    table.insert(cmd, '-a')
+    table.insert(cmd, account)
+    table.insert(cmd, '-o')
+    table.insert(cmd, 'json')
+    
+    notify.himalaya('Running: ' .. table.concat(cmd, ' '), notify.categories.INFO)
+    
+    -- Execute command
+    local result = vim.fn.system(cmd)
+    local exit_code = vim.v.shell_error
+    
+    -- Create output buffer
+    local buf = vim.api.nvim_create_buf(false, true)
+    local lines = {
+      'Command: ' .. table.concat(cmd, ' '),
+      'Exit code: ' .. exit_code,
+      '',
+      '--- Raw Output ---',
+    }
+    
+    -- Add raw output
+    local output_lines = vim.split(result or '', '\n')
+    vim.list_extend(lines, output_lines)
+    
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = '--- JSON Parse Test ---'
+    
+    -- Try to parse JSON
+    local success, data = pcall(vim.json.decode, result)
+    if success then
+      lines[#lines + 1] = 'JSON parsing: SUCCESS'
+      lines[#lines + 1] = 'Data type: ' .. type(data)
+      if type(data) == 'table' then
+        lines[#lines + 1] = 'Number of items: ' .. #data
+        lines[#lines + 1] = ''
+        lines[#lines + 1] = '--- Parsed Data (pretty) ---'
+        lines[#lines + 1] = vim.inspect(data)
+      end
+    else
+      lines[#lines + 1] = 'JSON parsing: FAILED'
+      lines[#lines + 1] = 'Error: ' .. tostring(data)
+    end
+    
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    vim.api.nvim_buf_set_option(buf, 'filetype', 'json')
+    
+    -- Open in split
+    vim.cmd('split')
+    vim.api.nvim_win_set_buf(0, buf)
+  end, {
+    nargs = '*',
+    desc = 'Test raw Himalaya command output'
   })
   
   cmd('HimalayaBackupAndFresh', function()

@@ -52,8 +52,20 @@ function M.execute_himalaya(args, opts)
   
   local cmd = { executable }
   
+  -- Separate query from other args
+  local query = nil
+  local clean_args = {}
+  
+  for i, arg in ipairs(args) do
+    if arg:match('^order by') then
+      query = arg
+    else
+      table.insert(clean_args, arg)
+    end
+  end
+  
   -- Add the main arguments first (command and subcommand)
-  vim.list_extend(cmd, args)
+  vim.list_extend(cmd, clean_args)
   
   -- Add account specification if provided
   if opts.account then
@@ -62,7 +74,7 @@ function M.execute_himalaya(args, opts)
   end
   
   -- Add folder specification if provided
-  if opts.folder then
+  if opts.folder and opts.folder ~= '' then
     table.insert(cmd, '-f')
     table.insert(cmd, opts.folder)
   end
@@ -70,6 +82,11 @@ function M.execute_himalaya(args, opts)
   -- Add output format
   table.insert(cmd, '-o')
   table.insert(cmd, 'json')
+  
+  -- Add query last if present
+  if query then
+    table.insert(cmd, query)
+  end
   
   -- Execute command
   local result = vim.fn.system(cmd)
@@ -101,7 +118,13 @@ function M.execute_himalaya(args, opts)
   -- Parse JSON output for other commands
   local success, data = pcall(vim.json.decode, result)
   if not success then
-    notify.himalaya('Failed to parse Himalaya output', notify.categories.ERROR)
+    -- Log the raw output for debugging
+    logger.error('Failed to parse Himalaya JSON output', {
+      command = table.concat(cmd, ' '),
+      raw_output = result and result:sub(1, 500) or 'nil', -- First 500 chars for debugging
+      error = data
+    })
+    notify.himalaya('Failed to parse Himalaya output - check :messages for details', notify.categories.ERROR)
     return nil
   end
   
@@ -156,10 +179,12 @@ function M.get_email_list(account, folder, page, page_size)
     
     local args = { 'envelope', 'list' }
     
-    -- Try to fetch a large number of emails to support pagination
-    -- If Himalaya doesn't support --page-size, this will just return all available
+    -- Add page size flag first
     table.insert(args, '--page-size')
     table.insert(args, '200')  -- Fetch up to 200 emails
+    
+    -- Add sorting query as a single argument
+    table.insert(args, 'order by date desc')
     
     local result = M.execute_himalaya(args, { account = account, folder = folder })
     
@@ -168,11 +193,12 @@ function M.get_email_list(account, folder, page, page_size)
       cache_timestamp = current_time
       -- Remove cached message - too noisy
     else
-      -- If cache exists, use it; otherwise return nil
+      -- If cache exists, use it; otherwise return empty list
       if email_cache[cache_key] then
         -- Remove message - too noisy
       else
-        return nil
+        -- Return empty list with count 0 instead of nil
+        return {}, 0
       end
     end
   end

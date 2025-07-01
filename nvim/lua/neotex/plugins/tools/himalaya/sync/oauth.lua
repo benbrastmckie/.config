@@ -51,8 +51,16 @@ end
 function M.has_token(account)
   account = account or 'gmail'
   
+  -- Build the correct token name based on account
+  local token_name = account .. '-smtp-oauth2-access-token'
+  if account:match('-imap$') then
+    -- For IMAP accounts, the pattern is account-imap-oauth2
+    -- e.g., gmail-imap becomes gmail-imap-imap-oauth2-access-token
+    token_name = account .. '-imap-oauth2-access-token'
+  end
+  
   -- Check using secret-tool (GNOME keyring) with himalaya's specific format
-  local cmd = 'secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token 2>/dev/null | grep -q .'
+  local cmd = string.format('secret-tool lookup service himalaya-cli username %s 2>/dev/null | grep -q .', token_name)
   
   local result = os.execute(cmd)
   return result == 0
@@ -110,14 +118,40 @@ function M.refresh(account, callback)
   
   -- Try to find refresh script
   local refresh_script = nil
-  local possible_paths = {
-    'refresh-gmail-oauth2',  -- Try PATH first
+  local possible_paths = {}
+  
+  -- For IMAP accounts, prefer our wrapper script
+  if account and account:match('-imap$') then
+    -- Get the himalaya plugin directory path
+    local current_file = debug.getinfo(1).source:sub(2)  -- Remove the @ prefix
+    local sync_dir = vim.fn.fnamemodify(current_file, ':h')  -- sync directory
+    local himalaya_dir = vim.fn.fnamemodify(sync_dir, ':h')  -- himalaya directory
+    local script_path = himalaya_dir .. '/scripts/refresh-himalaya-oauth2'
+    
+    logger.debug('Looking for refresh script at: ' .. script_path)
+    table.insert(possible_paths, script_path)
+  end
+  
+  -- Get the himalaya scripts directory
+  local current_file = debug.getinfo(1).source:sub(2)
+  local sync_dir = vim.fn.fnamemodify(current_file, ':h')
+  local himalaya_dir = vim.fn.fnamemodify(sync_dir, ':h')
+  local scripts_dir = himalaya_dir .. '/scripts'
+  
+  -- Add standard paths
+  local standard_paths = {
+    scripts_dir .. '/refresh-gmail-oauth2',  -- Check himalaya scripts first
+    'refresh-gmail-oauth2',  -- Try PATH
     '/home/benjamin/.nix-profile/bin/refresh-gmail-oauth2',
     vim.fn.expand('~/.local/bin/refresh-gmail-oauth2'),
     vim.fn.expand('~/.local/bin/refresh-oauth'),
     '/usr/local/bin/oauth2-refresh',
     '/usr/local/bin/refresh-gmail-oauth2'
   }
+  
+  for _, path in ipairs(standard_paths) do
+    table.insert(possible_paths, path)
+  end
   
   for _, path in ipairs(possible_paths) do
     -- Check if it's a command in PATH (no slashes)
@@ -130,6 +164,12 @@ function M.refresh(account, callback)
       -- It's a full path, check if file exists
       if vim.fn.filereadable(path) == 1 then
         refresh_script = path
+        logger.debug('Found refresh script at: ' .. path)
+        break
+      elseif vim.fn.executable(path) == 1 then
+        -- Sometimes filereadable fails but executable works
+        refresh_script = path
+        logger.debug('Found executable refresh script at: ' .. path)
         break
       end
     end
@@ -145,8 +185,21 @@ function M.refresh(account, callback)
     return
   end
   
+  -- Build refresh command
+  local cmd = {refresh_script}
+  
+  -- If using our wrapper script, pass the account name
+  if refresh_script:match('refresh-himalaya-oauth2') and account then
+    table.insert(cmd, account)
+    logger.debug('Using wrapper script with account: ' .. account)
+  elseif account and account:match('-imap$') then
+    logger.info('Warning: Standard refresh script may not work for IMAP account: ' .. account)
+  end
+  
+  logger.debug('Running OAuth refresh command: ' .. table.concat(cmd, ' '))
+  
   -- Run refresh script
-  vim.fn.jobstart({refresh_script}, {
+  vim.fn.jobstart(cmd, {
     detach = false,
     on_exit = function(_, code)
       state.set("oauth.refresh_in_progress", false)
@@ -154,12 +207,21 @@ function M.refresh(account, callback)
       if code == 0 then
         state.set("oauth.last_refresh", os.time())
         state.set("oauth.last_refresh_failed", false)
-        logger.info('OAuth token refreshed successfully')
+        logger.info('OAuth token refreshed successfully for ' .. account)
         
         -- Debug notification
         local notify = require('neotex.util.notifications')
         if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('OAuth token refreshed successfully', notify.categories.DEBUG)
+          notify.himalaya('OAuth token refreshed successfully for ' .. account, notify.categories.DEBUG)
+          
+          -- Verify token exists after refresh
+          vim.defer_fn(function()
+            if M.has_token(account) then
+              notify.himalaya('Token verified after refresh for ' .. account, notify.categories.DEBUG)
+            else
+              notify.himalaya('WARNING: Token still missing after refresh for ' .. account, notify.categories.DEBUG)
+            end
+          end, 500)
         end
         
         if callback then
@@ -202,11 +264,15 @@ function M.refresh_and_retry(fn, account)
 end
 
 -- Get detailed token information
-function M.get_token_info()
+function M.get_token_info(account)
+  account = account or 'gmail'
   local info = {}
   
+  -- Determine token suffix based on account type
+  local token_suffix = account:match('-imap$') and '-imap-oauth2' or '-smtp-oauth2'
+  
   -- Check access token
-  local handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-access-token 2>/dev/null')
+  local handle = io.popen(string.format('secret-tool lookup service himalaya-cli username %s%s-access-token 2>/dev/null', account, token_suffix))
   if handle then
     local token = handle:read('*a')
     handle:close()
@@ -215,7 +281,7 @@ function M.get_token_info()
   end
   
   -- Check refresh token
-  handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-refresh-token 2>/dev/null')
+  handle = io.popen(string.format('secret-tool lookup service himalaya-cli username %s%s-refresh-token 2>/dev/null', account, token_suffix))
   if handle then
     local token = handle:read('*a')
     handle:close()
@@ -223,7 +289,7 @@ function M.get_token_info()
   end
   
   -- Check client secret
-  handle = io.popen('secret-tool lookup service himalaya-cli username gmail-smtp-oauth2-client-secret 2>/dev/null')
+  handle = io.popen(string.format('secret-tool lookup service himalaya-cli username %s%s-client-secret 2>/dev/null', account, token_suffix))
   if handle then
     local token = handle:read('*a')
     handle:close()
@@ -242,7 +308,7 @@ function M.get_status(account)
     last_refresh = state.get("oauth.last_refresh", 0),
     refresh_in_progress = state.get("oauth.refresh_in_progress", false),
     environment_loaded = false,
-    token_info = M.get_token_info()
+    token_info = M.get_token_info(account)
   }
   
   -- Check environment
