@@ -131,6 +131,8 @@
       - [x] fix visual select
       - [x] remove boxes
     - [x] appearances
+      - [ ] `<leader>mz` leaves an extra line when already up to date
+      - [ ] confirm messages use return/escape
       - [ ] "Himalaya closed" can be removed
       - [x] header
         - [ ] Page 1 | 200 emails

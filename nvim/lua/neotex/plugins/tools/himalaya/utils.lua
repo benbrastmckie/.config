@@ -311,6 +311,77 @@ function M.send_email(account, email_data)
   return true
 end
 
+-- Save email as draft
+function M.save_draft(account, email_data, folder)
+  -- Create temporary file with email content
+  local temp_file = vim.fn.tempname()
+  local content = M.format_email_for_sending(email_data)
+  
+  local file = io.open(temp_file, 'w')
+  if not file then
+    notify.himalaya('Failed to create temporary file', notify.categories.ERROR)
+    return false
+  end
+  
+  file:write(content)
+  file:close()
+  
+  -- Save draft using himalaya
+  local cmd = { config.config.binaries.himalaya or 'himalaya', 'message', 'save' }
+  
+  if account then
+    table.insert(cmd, '-a')
+    table.insert(cmd, account)
+  end
+  
+  if folder then
+    table.insert(cmd, '-f')
+    table.insert(cmd, folder)
+  end
+  
+  -- Use jobstart for better stdin handling
+  local result_lines = {}
+  local job_id = vim.fn.jobstart(cmd, {
+    stdin = 'pipe',
+    stdout_buffered = true,
+    stderr_buffered = true,
+    on_stdout = function(_, data)
+      vim.list_extend(result_lines, data)
+    end,
+    on_stderr = function(_, data)
+      vim.list_extend(result_lines, data)
+    end,
+  })
+  
+  if job_id <= 0 then
+    notify.himalaya('Failed to start save job', notify.categories.ERROR)
+    os.remove(temp_file)
+    return false
+  end
+  
+  -- Send the email content
+  local file = io.open(temp_file, 'r')
+  local content = file:read('*all')
+  file:close()
+  
+  vim.fn.chansend(job_id, content)
+  vim.fn.chanclose(job_id, 'stdin')
+  
+  -- Wait for completion
+  local exit_code = vim.fn.jobwait({job_id}, 5000)[1]
+  
+  -- Clean up temporary file
+  os.remove(temp_file)
+  
+  if exit_code ~= 0 then
+    local result = table.concat(result_lines, '\n')
+    notify.himalaya('Failed to save draft', notify.categories.ERROR, { result = result })
+    return false
+  end
+  
+  return true
+end
+
 -- Format email data for sending
 function M.format_email_for_sending(email_data)
   local lines = {}
