@@ -776,6 +776,10 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
+  -- Capture parent window before creating compose buffer
+  local parent_win = vim.api.nvim_get_current_win()
+  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
+  
   -- Create compose buffer
   local buf = vim.api.nvim_create_buf(false, true)
   
@@ -815,11 +819,37 @@ function M.compose_email(to_address)
   vim.b[buf].himalaya_compose = true
   vim.b[buf].himalaya_account = state.get_current_account()
   
+  -- Store parent window info for restoration
+  vim.b[buf].himalaya_parent_win = parent_win
+  vim.b[buf].himalaya_parent_buf = parent_buf
+  
+  -- Set up autocommand to handle window close and focus restoration
+  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
+    buffer = buf,
+    once = true,
+    callback = function()
+      -- Restore focus to parent window if it's still valid
+      vim.defer_fn(function()
+        if vim.api.nvim_win_is_valid(parent_win) then
+          vim.api.nvim_set_current_win(parent_win)
+        elseif vim.api.nvim_buf_is_valid(parent_buf) then
+          -- Parent window was closed, try to find a window showing the parent buffer
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            if vim.api.nvim_win_get_buf(win) == parent_buf then
+              vim.api.nvim_set_current_win(win)
+              break
+            end
+          end
+        end
+      end, 50)
+    end
+  })
+  
   -- Set up buffer keymaps
   config.setup_buffer_keymaps(buf)
   
   -- Open in window
-  M.open_email_window(buf, 'Compose Email')
+  M.open_email_window(buf, 'Compose Email', parent_win)
   
   -- Position cursor on To: line after "To: "
   vim.api.nvim_win_set_cursor(0, {2, 4})
@@ -828,7 +858,7 @@ function M.compose_email(to_address)
 end
 
 -- Open email window (floating)
-function M.open_email_window(buf, title)
+function M.open_email_window(buf, title, parent_win)
   -- Calculate window size
   local ui = vim.api.nvim_list_uis()[1]
   local width = math.floor(ui.width * 0.8)
@@ -855,7 +885,8 @@ function M.open_email_window(buf, title)
   vim.api.nvim_win_set_option(win, 'cursorline', true)
   
   -- Track window in stack for proper focus restoration
-  window_stack.push(win, sidebar.get_win())
+  -- Use provided parent window or current window as fallback
+  window_stack.push(win, parent_win or vim.api.nvim_get_current_win())
   
   return win
 end
@@ -995,11 +1026,37 @@ function M.send_current_email()
   
   if result then
     notifications.show('Email sent successfully', 'info', { user_action = true })
-    -- Close compose window
+    
+    -- Get parent window info from buffer variables
+    local parent_win = vim.b[buf].himalaya_parent_win
+    local parent_buf = vim.b[buf].himalaya_parent_buf
+    
+    -- Close compose window and restore focus to parent
     local current_win = vim.api.nvim_get_current_win()
+    
+    -- Close the compose window
     if vim.api.nvim_win_is_valid(current_win) then
       vim.api.nvim_win_close(current_win, true)
     end
+    
+    -- Explicitly restore focus to email reading window
+    vim.defer_fn(function()
+      -- First try the stored email reading window (most reliable for replies)
+      if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
+        vim.api.nvim_set_current_win(M._email_reading_win)
+        M._email_reading_win = nil  -- Clear it after use
+      elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
+        vim.api.nvim_set_current_win(parent_win)
+      elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
+        -- Parent window was closed, try to find a window showing the parent buffer
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          if vim.api.nvim_win_get_buf(win) == parent_buf then
+            vim.api.nvim_set_current_win(win)
+            break
+          end
+        end
+      end
+    end, 50)
   else
     notifications.show('Failed to send email', 'error')
   end
@@ -1013,7 +1070,41 @@ end
 -- Close without saving (discard)
 function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_delete(buf, { force = true })
+  
+  -- Get parent window info from buffer variables
+  local parent_win = vim.b[buf].himalaya_parent_win
+  local parent_buf = vim.b[buf].himalaya_parent_buf
+  
+  -- Close the current window
+  local current_win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_win_close(current_win, true)
+  end
+  
+  -- Delete the buffer
+  if vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+  
+  -- Explicitly restore focus to email reading window
+  vim.defer_fn(function()
+    -- First try the stored email reading window (most reliable for replies)
+    if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
+      vim.api.nvim_set_current_win(M._email_reading_win)
+      M._email_reading_win = nil  -- Clear it after use
+    elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
+      vim.api.nvim_set_current_win(parent_win)
+    elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
+      -- Parent window was closed, try to find a window showing the parent buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == parent_buf then
+          vim.api.nvim_set_current_win(win)
+          break
+        end
+      end
+    end
+  end, 50)
+  
   notifications.show('Draft discarded', 'info')
 end
 
@@ -1070,14 +1161,41 @@ end
 -- Close and save as draft
 function M.close_and_save_draft()
   local buf = vim.api.nvim_get_current_buf()
+  
+  -- Get parent window info from buffer variables
+  local parent_win = vim.b[buf].himalaya_parent_win
+  local parent_buf = vim.b[buf].himalaya_parent_buf
+  
   if vim.b[buf].himalaya_compose then
     -- TODO: Implement draft saving with Himalaya CLI
     -- For now, just close and notify
     notifications.show('Draft saved (not yet implemented)', 'warn')
-    vim.cmd('close')
-  else
-    vim.cmd('close')
   end
+  
+  -- Close the current window
+  local current_win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_win_close(current_win, true)
+  end
+  
+  -- Explicitly restore focus to email reading window
+  vim.defer_fn(function()
+    -- First try the stored email reading window (most reliable for replies)
+    if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
+      vim.api.nvim_set_current_win(M._email_reading_win)
+      M._email_reading_win = nil  -- Clear it after use
+    elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
+      vim.api.nvim_set_current_win(parent_win)
+    elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
+      -- Parent window was closed, try to find a window showing the parent buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == parent_buf then
+          vim.api.nvim_set_current_win(win)
+          break
+        end
+      end
+    end
+  end, 50)
 end
 
 -- Read current email (from email list buffer)
@@ -1259,6 +1377,8 @@ function M.reply_current_email()
   local buf = vim.api.nvim_get_current_buf()
   local email_id = vim.b[buf].himalaya_email_id
   if email_id then
+    -- Store the current window (email reading window) globally for restoration
+    M._email_reading_win = vim.api.nvim_get_current_win()
     M.reply_email(email_id, false)
   else
     notifications.show('No email to reply to', 'warn')
@@ -1270,6 +1390,8 @@ function M.reply_all_current_email()
   local buf = vim.api.nvim_get_current_buf()
   local email_id = vim.b[buf].himalaya_email_id
   if email_id then
+    -- Store the current window (email reading window) globally for restoration
+    M._email_reading_win = vim.api.nvim_get_current_win()
     M.reply_email(email_id, true)
   else
     notifications.show('No email to reply to', 'warn')
@@ -1278,6 +1400,13 @@ end
 
 -- Reply to email
 function M.reply_email(email_id, reply_all)
+  -- Capture parent window before creating new window
+  local parent_win = vim.api.nvim_get_current_win()
+  
+  -- Store the parent window in a more reliable way
+  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
+  local is_email_reading_buffer = vim.b[parent_buf].himalaya_email_id ~= nil
+  
   local email_content = utils.get_email_content(state.get_current_account(), email_id)
   if not email_content then
     notifications.show('Failed to get email for reply', 'error')
@@ -1355,8 +1484,35 @@ function M.reply_email(email_id, reply_all)
   vim.b[buf].himalaya_account = state.get_current_account()
   vim.b[buf].himalaya_reply_to = email_id
   
-  -- Open in window
-  M.open_email_window(buf, 'Reply - ' .. subject)
+  -- Store parent window info in compose buffer for reliable restoration
+  vim.b[buf].himalaya_parent_win = parent_win
+  vim.b[buf].himalaya_parent_buf = parent_buf
+  vim.b[buf].himalaya_parent_is_email = is_email_reading_buffer
+  
+  -- Set up autocommand to handle window close and focus restoration
+  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
+    buffer = buf,
+    once = true,
+    callback = function()
+      -- Restore focus to parent window if it's still valid
+      vim.defer_fn(function()
+        if vim.api.nvim_win_is_valid(parent_win) then
+          vim.api.nvim_set_current_win(parent_win)
+        elseif vim.api.nvim_buf_is_valid(parent_buf) then
+          -- Parent window was closed, try to find a window showing the parent buffer
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            if vim.api.nvim_win_get_buf(win) == parent_buf then
+              vim.api.nvim_set_current_win(win)
+              break
+            end
+          end
+        end
+      end, 50)
+    end
+  })
+  
+  -- Open in window with proper parent tracking
+  M.open_email_window(buf, 'Reply - ' .. subject, parent_win)
   
   -- Position cursor before quoted content
   vim.api.nvim_win_set_cursor(0, {5, 0})
@@ -1410,6 +1566,8 @@ function M.forward_current_email()
   local buf = vim.api.nvim_get_current_buf()
   local email_id = vim.b[buf].himalaya_email_id
   if email_id then
+    -- Store the current window (email reading window) globally for restoration
+    M._email_reading_win = vim.api.nvim_get_current_win()
     M.forward_email(email_id)
   else
     notifications.show('No email to forward', 'warn')
@@ -1418,6 +1576,13 @@ end
 
 -- Forward email
 function M.forward_email(email_id)
+  -- Capture parent window before creating new window
+  local parent_win = vim.api.nvim_get_current_win()
+  
+  -- Store the parent window in a more reliable way
+  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
+  local is_email_reading_buffer = vim.b[parent_buf].himalaya_email_id ~= nil
+  
   local email_content = utils.get_email_content(state.get_current_account(), email_id)
   if not email_content then
     notifications.show('Failed to get email for forwarding', 'error')
@@ -1486,7 +1651,34 @@ function M.forward_email(email_id)
   vim.b[buf].himalaya_account = state.get_current_account()
   vim.b[buf].himalaya_forward = email_id
   
-  M.open_email_window(buf, 'Forward - ' .. subject)
+  -- Store parent window info in compose buffer for reliable restoration
+  vim.b[buf].himalaya_parent_win = parent_win
+  vim.b[buf].himalaya_parent_buf = parent_buf
+  vim.b[buf].himalaya_parent_is_email = is_email_reading_buffer
+  
+  -- Set up autocommand to handle window close and focus restoration
+  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
+    buffer = buf,
+    once = true,
+    callback = function()
+      -- Restore focus to parent window if it's still valid
+      vim.defer_fn(function()
+        if vim.api.nvim_win_is_valid(parent_win) then
+          vim.api.nvim_set_current_win(parent_win)
+        elseif vim.api.nvim_buf_is_valid(parent_buf) then
+          -- Parent window was closed, try to find a window showing the parent buffer
+          for _, win in ipairs(vim.api.nvim_list_wins()) do
+            if vim.api.nvim_win_get_buf(win) == parent_buf then
+              vim.api.nvim_set_current_win(win)
+              break
+            end
+          end
+        end
+      end, 50)
+    end
+  })
+  
+  M.open_email_window(buf, 'Forward - ' .. subject, parent_win)
   
   -- Position cursor on To: line
   vim.api.nvim_win_set_cursor(0, {2, #lines[2]})
@@ -2278,6 +2470,80 @@ function M.spam_selected_emails()
       M.refresh_email_list()
     end
   end)
+end
+
+-- Close compose buffer and save as draft
+function M.close_and_save_draft()
+  local buf = vim.api.nvim_get_current_buf()
+  if not vim.b[buf].himalaya_compose then
+    notifications.show('Not in compose buffer', 'warn')
+    return
+  end
+  
+  -- Get buffer content
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  
+  -- Parse email content
+  local email_data = utils.parse_email_content(lines)
+  
+  -- Save to drafts folder
+  local account = state.get_current_account()
+  local drafts_folders = {'Drafts', 'DRAFTS', '[Gmail]/Drafts', 'Draft'}
+  local folders = utils.get_folders(account)
+  local drafts_folder = nil
+  
+  if folders then
+    for _, folder in ipairs(folders) do
+      for _, draft_name in ipairs(drafts_folders) do
+        if folder == draft_name or folder:lower() == draft_name:lower() then
+          drafts_folder = folder
+          break
+        end
+      end
+      if drafts_folder then break end
+    end
+  end
+  
+  if not drafts_folder then
+    drafts_folder = 'Drafts' -- Default fallback
+  end
+  
+  -- Save draft using utility function
+  local success = utils.save_draft(account, email_data, drafts_folder)
+  
+  if success then
+    notifications.show('Draft saved to ' .. drafts_folder, 'info')
+    M.close_current_view()
+  else
+    notifications.show('Failed to save draft', 'error')
+  end
+end
+
+-- Close compose buffer without saving
+function M.close_without_saving()
+  local buf = vim.api.nvim_get_current_buf()
+  if not vim.b[buf].himalaya_compose then
+    notifications.show('Not in compose buffer', 'warn')
+    return
+  end
+  
+  -- Check if buffer has been modified
+  if vim.bo[buf].modified then
+    vim.ui.input({
+      prompt = 'Discard unsaved changes? (y/n): '
+    }, function(input)
+      if input and input:lower() == 'y' then
+        -- Force close without saving
+        vim.bo[buf].modified = false
+        M.close_current_view()
+        notifications.show('Email discarded', 'info')
+      end
+    end)
+  else
+    -- Buffer not modified, just close
+    M.close_current_view()
+    notifications.show('Email discarded', 'info')
+  end
 end
 
 return M

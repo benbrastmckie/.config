@@ -153,15 +153,21 @@ LATEX (<leader>l)                               | DESCRIPTION
 <leader>lx - Clear VimTeX cache                 | Clear LaTeX compilation cache
 
 ----------------------------------------------------------------------------------
-MARKDOWN (<leader>m)                            | DESCRIPTION
+MAIL (<leader>m)                                | DESCRIPTION
 ----------------------------------------------------------------------------------
-<leader>ml - Run Lectic                         | Run Lectic on current file
-<leader>mn - New Lectic file                    | Create new Lectic file with template
-<leader>ms - Submit selection                   | Submit visual selection with user message
-<leader>mu - Open URL                           | Open URL under cursor
-<leader>ma - Toggle all folds                   | Toggle all folds open/closed
-<leader>mf - Toggle fold                        | Toggle fold under cursor
-<leader>mt - Toggle folding method              | Switch between manual/smart folding
+<leader>mo - Toggle sidebar                     | Open/close Himalaya email sidebar
+<leader>mu - Update inbox                       | Sync inbox with server
+<leader>mU - Update all folders                 | Sync all email folders
+<leader>mc - Compose email                      | Write a new email
+<leader>ms - Send email                         | Send current compose buffer
+<leader>md - Save draft                         | Save email as draft and close
+<leader>mD - Discard email                      | Discard compose buffer without saving
+<leader>mW - Setup wizard                       | Run Himalaya setup wizard
+<leader>mx - Cancel all syncs                   | Stop all running sync processes
+<leader>mh - Health check                       | Show Himalaya health status
+<leader>mi - Sync status                        | Show detailed sync information
+<leader>mf - Change folder                      | Switch to different email folder
+<leader>ma - Switch account                     | Change email account
 
 ----------------------------------------------------------------------------------
 NIXOS (<leader>n)                               | DESCRIPTION
@@ -540,9 +546,12 @@ return {
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
       { "<leader>mo", "<cmd>HimalayaToggle<CR>", desc = "toggle sidebar", icon = "󰊫" },
-      { "<leader>mu", "<cmd>HimalayaSyncInbox<CR>", desc = "update inbox", icon = "󰜉" },
-      { "<leader>mU", "<cmd>HimalayaSyncFull<CR>", desc = "update all folders", icon = "󰜉" },
-      { "<leader>mc", "<cmd>HimalayaWrite<CR>", desc = "compose email", icon = "󰝒" },
+      { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
+      { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "full sync", icon = "󰜉" },
+      { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰝒" },
+      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠" },
+      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊" },
+      { "<leader>mD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺" },
       { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mx", "<cmd>HimalayaCancelSync<CR>", desc = "cancel all syncs", icon = "󰚌" },
       { "<leader>mh", "<cmd>HimalayaHealth<CR>", desc = "health check", icon = "󰸉" },
@@ -584,9 +593,9 @@ return {
       pattern = "himalaya-compose",
       callback = function()
         wk.add({
-          { "<leader>me", function() require('neotex.plugins.tools.himalaya.ui.main').send_current_email() end, desc = "send email", icon = "󰊠", buffer = 0 },
-          { "<leader>md", function() require('neotex.plugins.tools.himalaya.ui.main').close_and_save_draft() end, desc = "save draft", icon = "󰆓", buffer = 0 },
-          { "<leader>mq", function() require('neotex.plugins.tools.himalaya.ui.main').close_without_saving() end, desc = "discard email", icon = "󰩺", buffer = 0 },
+          { "<leader>mS", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", buffer = 0 },
+          { "<leader>mq", "<cmd>HimalayaSaveDraft<CR>", desc = "quit and save draft", icon = "󰆓", buffer = 0 },
+          { "<leader>mQ", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", buffer = 0 },
         }, { buffer = 0 })
       end,
     })
