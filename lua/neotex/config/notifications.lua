@@ -122,7 +122,7 @@ function M.apply()
   local converted_config = M._convert_preferences_to_config()
   
   notifications.setup(converted_config)
-  notifications.init()
+  -- Note: notifications module doesn't have an init() function
 end
 
 -- Profile presets for common use cases
@@ -175,7 +175,8 @@ function M.set_profile(profile_name)
 end
 
 -- User configuration function
-function M.setup(user_config)
+-- Setup function for user configuration
+function M.configure(user_config)
   if user_config then
     M.config = vim.tbl_deep_extend('force', M.config, user_config)
   end
@@ -317,15 +318,27 @@ end
 
 -- Initialize the configuration system
 function M.init()
-  M._setup_commands()
+  -- Setup commands with error handling
+  local ok, err = pcall(M._setup_commands)
+  if not ok then
+    vim.notify('Failed to setup notification commands: ' .. tostring(err), vim.log.levels.WARN)
+  end
   
-  -- Apply default configuration
-  M.apply()
+  -- Apply default configuration with error handling
+  ok, err = pcall(M.apply)
+  if not ok then
+    vim.notify('Failed to apply notification config: ' .. tostring(err), vim.log.levels.WARN)
+  end
 end
 
 -- Setup function for integration with config system
 function M.setup()
-  M.init()
+  -- Wrap in pcall to catch any errors
+  local ok, err = pcall(M.init)
+  if not ok then
+    vim.notify('Notification setup error: ' .. tostring(err), vim.log.levels.ERROR)
+    return false
+  end
   return true
 end
 

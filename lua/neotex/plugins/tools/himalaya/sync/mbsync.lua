@@ -356,7 +356,7 @@ function M.sync(channel, opts)
                 
                 -- Show notification only in debug mode
                 local notify = require('neotex.util.notifications')
-                if notify.config.modules.himalaya.debug_mode then
+                if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                   notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
                 end
                 
@@ -365,8 +365,8 @@ function M.sync(channel, opts)
                   state.set("sync.auth_retry", false)
                   if success then
                     logger.info("OAuth token refreshed successfully, retrying sync...")
-                    if notify.config.modules.himalaya.debug_mode then
-                      if notify.config.modules.himalaya.debug_mode then
+                    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+                      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
               end
                     end
@@ -377,8 +377,8 @@ function M.sync(channel, opts)
                     logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
                     -- Always show errors, but less intrusive
                     logger.error("OAuth refresh failed - sync will fail")
-                    if notify.config.modules.himalaya.debug_mode then
-                      if notify.config.modules.himalaya.debug_mode then
+                    if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+                      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
               end
                     end
@@ -469,7 +469,7 @@ function M.sync(channel, opts)
           -- Show notification only in debug mode
           local notify = require('neotex.util.notifications')
           local config = require('neotex.plugins.tools.himalaya.core.config')
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
           end
           
@@ -478,7 +478,7 @@ function M.sync(channel, opts)
             state.set("sync.auth_retry", false)
             if success then
               logger.info("OAuth token refreshed successfully, retrying sync...")
-              if notify.config.modules.himalaya.debug_mode then
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
               end
               
@@ -489,7 +489,7 @@ function M.sync(channel, opts)
               end, 2000)
             else
               logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
-              if notify.config.modules.himalaya.debug_mode then
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
               end
               
@@ -532,7 +532,7 @@ function M.sync(channel, opts)
           
           local notify = require('neotex.util.notifications')
           local config = require('neotex.plugins.tools.himalaya.core.config')
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             notify.himalaya('OAuth token expired, refreshing automatically...', notify.categories.STATUS)
           end
           
@@ -540,7 +540,7 @@ function M.sync(channel, opts)
             state.set("sync.auth_retry", false)
             if success then
               logger.info("OAuth token refreshed successfully, retrying sync...")
-              if notify.config.modules.himalaya.debug_mode then
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
               end
               vim.defer_fn(function()
@@ -548,7 +548,7 @@ function M.sync(channel, opts)
               end, 2000)
             else
               logger.error("Failed to refresh OAuth token: " .. (error_msg or "unknown error"))
-              if notify.config.modules.himalaya.debug_mode then
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
                 notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
               end
               if opts.callback then
@@ -845,6 +845,13 @@ end
 -- Fast check using Himalaya's direct IMAP access
 function M.himalaya_fast_check(opts)
   opts = opts or {}
+  
+  -- Import notify early for debug output
+  local notify = require('neotex.util.notifications')
+  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+    notify.himalaya('himalaya_fast_check: Function called', notify.categories.STATUS)
+  end
+  
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local utils = require('neotex.plugins.tools.himalaya.utils')
   
@@ -881,25 +888,29 @@ function M.himalaya_fast_check(opts)
     '-o', 'json'
   }
   
-  if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('Himalaya fast check - Using account: ' .. check_account .. ', Folder: ' .. folder, notify.categories.DEBUG)
-    notify.himalaya('Himalaya fast check command: ' .. table.concat(cmd, ' '), notify.categories.DEBUG)
+  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+    notify.himalaya('Himalaya fast check - Using account: ' .. check_account .. ', Folder: ' .. folder, notify.categories.BACKGROUND)
+    notify.himalaya('Himalaya fast check command: ' .. table.concat(cmd, ' '), notify.categories.BACKGROUND)
   end
   
   local output = {}
   local stderr_output = {}
   
   -- Test if jobstart works at all
-  if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('About to start jobstart with cmd: ' .. vim.inspect(cmd), notify.categories.DEBUG)
+  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+    notify.himalaya('About to start jobstart with cmd: ' .. vim.inspect(cmd), notify.categories.BACKGROUND)
+  end
+  
+  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+    notify.himalaya('Starting himalaya envelope list command...', notify.categories.STATUS)
   end
   
   local job_id = vim.fn.jobstart(cmd, {
     stdout_buffered = true,
     stderr_buffered = true,
     on_stdout = function(_, data)
-      if notify.config.modules.himalaya.debug_mode then
-        notify.himalaya('on_stdout called with data: ' .. vim.inspect(data), notify.categories.DEBUG)
+      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+        notify.himalaya('on_stdout called with data: ' .. vim.inspect(data), notify.categories.BACKGROUND)
       end
       if data then
         for _, line in ipairs(data) do
@@ -907,14 +918,14 @@ function M.himalaya_fast_check(opts)
             table.insert(output, line)
           end
         end
-        if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('Himalaya stdout lines received: ' .. #output, notify.categories.DEBUG)
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+          notify.himalaya('Himalaya stdout lines received: ' .. #output, notify.categories.BACKGROUND)
         end
       end
     end,
     on_stderr = function(_, data)
-      if notify.config.modules.himalaya.debug_mode then
-        notify.himalaya('on_stderr called with data: ' .. vim.inspect(data), notify.categories.DEBUG)
+      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+        notify.himalaya('on_stderr called with data: ' .. vim.inspect(data), notify.categories.BACKGROUND)
       end
       if data then
         for _, line in ipairs(data) do
@@ -925,10 +936,10 @@ function M.himalaya_fast_check(opts)
         if #stderr_output > 0 then
           local error_str = table.concat(stderr_output, '\n')
           -- Always show stderr in debug mode
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             -- Clean up ANSI escape codes for readability
             local clean_str = error_str:gsub('\27%[[0-9;]*m', '')
-            notify.himalaya('Himalaya stderr: ' .. clean_str:sub(1, 500), notify.categories.DEBUG)
+            notify.himalaya('Himalaya stderr: ' .. clean_str:sub(1, 500), notify.categories.BACKGROUND)
           end
           
           -- Check if the error is about missing account or auth issues
@@ -942,10 +953,10 @@ function M.himalaya_fast_check(opts)
       end
     end,
     on_exit = function(_, code)
-      if notify.config.modules.himalaya.debug_mode then
-        notify.himalaya('on_exit called with code: ' .. tostring(code), notify.categories.DEBUG)
-        notify.himalaya('Total output lines: ' .. #output, notify.categories.DEBUG)
-        notify.himalaya('Total stderr lines: ' .. #stderr_output, notify.categories.DEBUG)
+      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+        notify.himalaya('on_exit called with code: ' .. tostring(code), notify.categories.BACKGROUND)
+        notify.himalaya('Total output lines: ' .. #output, notify.categories.BACKGROUND)
+        notify.himalaya('Total stderr lines: ' .. #stderr_output, notify.categories.BACKGROUND)
       end
       
       -- Check if we had an authentication error
@@ -957,25 +968,25 @@ function M.himalaya_fast_check(opts)
           return
         end
         
-        if notify.config.modules.himalaya.debug_mode then
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
           notify.himalaya('OAuth authentication failed, attempting refresh...', notify.categories.STATUS)
         end
         
         -- Debug: log which account we're refreshing
-        if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('Refreshing OAuth for account: ' .. check_account, notify.categories.DEBUG)
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+          notify.himalaya('Refreshing OAuth for account: ' .. check_account, notify.categories.BACKGROUND)
           
           -- Check current token status before refresh
           local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
           local status = oauth.get_status(check_account)
-          notify.himalaya('Token exists before refresh: ' .. tostring(status.has_token), notify.categories.DEBUG)
+          notify.himalaya('Token exists before refresh: ' .. tostring(status.has_token), notify.categories.BACKGROUND)
         end
         
         -- Try to refresh OAuth token for the IMAP account
         local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
         oauth.refresh(check_account, function(success)
           if success then
-            if notify.config.modules.himalaya.debug_mode then
+            if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
               notify.himalaya('OAuth token refreshed, retrying check...', notify.categories.STATUS)
             end
             -- Retry the fast check after a short delay
@@ -995,15 +1006,15 @@ function M.himalaya_fast_check(opts)
         return
       end
       
-      if notify.config.modules.himalaya.debug_mode then
-        notify.himalaya('Himalaya fast check exited with code: ' .. code, notify.categories.DEBUG)
+      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+        notify.himalaya('Himalaya fast check exited with code: ' .. code, notify.categories.BACKGROUND)
       end
       if code == 0 then
         -- Parse the output
         local result_str = table.concat(output, '\n')
         
-        if notify.config.modules.himalaya.debug_mode then
-          notify.himalaya('Himalaya output length: ' .. #result_str .. ' bytes', notify.categories.DEBUG)
+        if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+          notify.himalaya('Himalaya output length: ' .. #result_str .. ' bytes', notify.categories.BACKGROUND)
           
           -- Show first 500 chars of output for debugging
           if #result_str > 0 then
@@ -1011,21 +1022,21 @@ function M.himalaya_fast_check(opts)
             if #result_str > 500 then
               preview = preview .. '... (truncated)'
             end
-            notify.himalaya('Himalaya output preview: ' .. preview, notify.categories.DEBUG)
+            notify.himalaya('Himalaya output preview: ' .. preview, notify.categories.BACKGROUND)
           end
         end
         
         local success, emails = pcall(vim.json.decode, result_str)
         
         if success and type(emails) == 'table' then
-          if notify.config.modules.himalaya.debug_mode then
-            notify.himalaya('Successfully parsed JSON, email count from IMAP: ' .. #emails, notify.categories.DEBUG)
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+            notify.himalaya('Successfully parsed JSON, email count from IMAP: ' .. #emails, notify.categories.BACKGROUND)
           end
           
           -- Handle empty mailbox case
           if #emails == 0 then
-            if notify.config.modules.himalaya.debug_mode then
-              notify.himalaya('Remote mailbox is empty', notify.categories.DEBUG)
+            if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+              notify.himalaya('Remote mailbox is empty', notify.categories.BACKGROUND)
             end
             callback({
               has_new = false,
@@ -1054,9 +1065,9 @@ function M.himalaya_fast_check(opts)
           -- Since we only fetched 50, we'll need to make another request or estimate
           -- For now, assume if we got 50 emails, there might be more
           local remote_count_estimate = #emails
-          if #emails == 50 and notify.config.modules.himalaya.debug_mode then
+          if #emails == 50 and (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             -- We hit the limit, so there are likely more emails on the server
-            notify.himalaya('Remote mailbox has 50+ emails (exact count unknown)', notify.categories.DEBUG)
+            notify.himalaya('Remote mailbox has 50+ emails (exact count unknown)', notify.categories.BACKGROUND)
           end
           
           -- Simple heuristic: if local count is significantly different from remote sample, we're out of sync
@@ -1065,15 +1076,15 @@ function M.himalaya_fast_check(opts)
             -- Empty local, emails on remote
             has_new = true
             new_count = #emails
-            if notify.config.modules.himalaya.debug_mode then
-              notify.himalaya(string.format('Local maildir empty, remote has %d+ emails', #emails), notify.categories.DEBUG)
+            if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+              notify.himalaya(string.format('Local maildir empty, remote has %d+ emails', #emails), notify.categories.BACKGROUND)
             end
           elseif #emails == 0 and actual_local_count > 0 then
             -- Remote empty (or inaccessible), local has emails
             has_new = false
             new_count = 0
-            if notify.config.modules.himalaya.debug_mode then
-              notify.himalaya(string.format('Remote appears empty, local has %d emails', actual_local_count), notify.categories.DEBUG)
+            if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+              notify.himalaya(string.format('Remote appears empty, local has %d emails', actual_local_count), notify.categories.BACKGROUND)
             end
           else
             -- Both have emails - check if the most recent subjects match
@@ -1086,24 +1097,24 @@ function M.himalaya_fast_check(opts)
               has_new = true
               -- We can't know exact count without comparing all emails
               new_count = 1 -- Conservative estimate
-              if notify.config.modules.himalaya.debug_mode then
-                notify.himalaya('Latest email subjects differ - new mail likely', notify.categories.DEBUG)
-                notify.himalaya('Local latest: ' .. (local_latest_subject or 'none'), notify.categories.DEBUG)
-                notify.himalaya('Remote latest: ' .. (remote_latest_subject or 'none'), notify.categories.DEBUG)
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+                notify.himalaya('Latest email subjects differ - new mail likely', notify.categories.BACKGROUND)
+                notify.himalaya('Local latest: ' .. (local_latest_subject or 'none'), notify.categories.BACKGROUND)
+                notify.himalaya('Remote latest: ' .. (remote_latest_subject or 'none'), notify.categories.BACKGROUND)
               end
             else
               -- Same latest email, probably in sync
               has_new = false
               new_count = 0
-              if notify.config.modules.himalaya.debug_mode then
-                notify.himalaya('Latest emails match - maildir appears in sync', notify.categories.DEBUG)
+              if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+                notify.himalaya('Latest emails match - maildir appears in sync', notify.categories.BACKGROUND)
               end
             end
           end
           
-          if notify.config.modules.himalaya.debug_mode then
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
             notify.himalaya(string.format('Local count: %d, Remote sample: %d, Has new: %s', 
-                          actual_local_count, #emails, tostring(has_new)), notify.categories.DEBUG)
+                          actual_local_count, #emails, tostring(has_new)), notify.categories.BACKGROUND)
           end
           
           callback({
@@ -1113,8 +1124,8 @@ function M.himalaya_fast_check(opts)
             new_count = new_count
           })
         else
-          if notify.config.modules.himalaya.debug_mode then
-            notify.himalaya('Failed to parse JSON: ' .. tostring(emails), notify.categories.DEBUG)
+          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+            notify.himalaya('Failed to parse JSON: ' .. tostring(emails), notify.categories.BACKGROUND)
           end
           callback(nil, "Failed to parse Himalaya output")
         end
@@ -1149,8 +1160,8 @@ function M.himalaya_fast_check(opts)
   
   if job_id <= 0 then
     notify.himalaya('Failed to start himalaya job, job_id: ' .. tostring(job_id), notify.categories.ERROR)
-  elseif notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('Started himalaya job with ID: ' .. tostring(job_id), notify.categories.DEBUG)
+  elseif (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
+    notify.himalaya('Started himalaya job with ID: ' .. tostring(job_id), notify.categories.BACKGROUND)
   end
   
   return job_id

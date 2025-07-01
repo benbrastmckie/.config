@@ -427,7 +427,7 @@ function M.smart_delete_email(account, email_id)
   table.insert(cmd, 'json')
   
   -- Debug: show the exact command
-  notify.himalaya('Delete command: ' .. table.concat(cmd, ' '), notify.categories.DEBUG)
+  notify.himalaya('Delete command: ' .. table.concat(cmd, ' '), notify.categories.BACKGROUND)
   
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error
@@ -436,7 +436,7 @@ function M.smart_delete_email(account, email_id)
   if exit_code ~= 0 then
     notify.himalaya('Delete failed: ' .. (result or 'no error message'), notify.categories.ERROR)
   else
-    notify.himalaya('Delete result: ' .. (result or 'success'), notify.categories.DEBUG)
+    notify.himalaya('Delete result: ' .. (result or 'success'), notify.categories.BACKGROUND)
   end
   
   if exit_code == 0 then

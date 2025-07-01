@@ -300,7 +300,7 @@ function M.format_email_list(emails)
   -- Debug the sync status
   local notify = require('neotex.util.notifications')
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('format_email_list: sync_status_line = ' .. tostring(sync_status_line), notify.categories.DEBUG)
+    notify.himalaya('format_email_list: sync_status_line = ' .. tostring(sync_status_line), notify.categories.BACKGROUND)
   end
   
   table.insert(lines, header)
@@ -408,13 +408,13 @@ function M.get_sync_status_line()
   local sync_checking = state.get('sync.checking', false)
   local notify = require('neotex.util.notifications')
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('get_sync_status_line called, sync.checking = ' .. tostring(sync_checking), notify.categories.DEBUG)
+    notify.himalaya('get_sync_status_line called, sync.checking = ' .. tostring(sync_checking), notify.categories.BACKGROUND)
   end
   
   -- Use the detailed version that shows progress ratios
   local status = M.get_sync_status_line_detailed()
   if status and notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('get_sync_status_line returning: ' .. status, notify.categories.DEBUG)
+    notify.himalaya('get_sync_status_line returning: ' .. status, notify.categories.BACKGROUND)
   end
   
   return status
@@ -422,71 +422,33 @@ end
 
 -- Get sync status line for header with enhanced progress information (from old UI)
 function M.get_sync_status_line_detailed()
-  local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
-  local status = mbsync.get_status()
-  local state = require('neotex.plugins.tools.himalaya.core.state')
-  
-  -- Check state for immediate sync status
-  local sync_running = state.get('sync.running', false)
-  local sync_status = state.get('sync.status')
-  local sync_checking = state.get('sync.checking', false)
-  
+  local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
   local notify = require('neotex.util.notifications')
+  
+  -- Get current sync info from unified manager
+  local sync_info = sync_manager.get_sync_info()
+  
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('get_sync_status_line_detailed: sync_checking = ' .. tostring(sync_checking), notify.categories.DEBUG)
+    notify.himalaya('get_sync_status_line_detailed called', notify.categories.BACKGROUND)
+    notify.himalaya('  sync type = ' .. tostring(sync_info.type), notify.categories.BACKGROUND)
+    notify.himalaya('  sync status = ' .. tostring(sync_info.status), notify.categories.BACKGROUND)
+    notify.himalaya('  sync message = ' .. tostring(sync_info.message), notify.categories.BACKGROUND)
   end
   
-  -- Check if we're checking for new emails
-  if sync_checking then
-    local start_time = state.get('sync.check_start_time')
-    local elapsed_str = ""
-    if start_time then
-      local elapsed = os.time() - start_time
-      -- Round to nearest 5 seconds
-      elapsed = math.floor(elapsed / 5) * 5
-      elapsed_str = string.format(" (%ds)", elapsed)
-    end
-    return " Checking for new mail" .. elapsed_str
-  end
-  
-  -- Check if any sync is running (local or external or just starting)
-  if not status.sync_running and not status.external_sync_running and not sync_running then
+  -- Not syncing
+  if not sync_info.type or sync_info.status ~= 'running' then
     return nil
   end
   
-  -- If we have an immediate status message, show it
-  if sync_running and sync_status and not status.sync_running then
-    -- Sync is starting but mbsync hasn't reported progress yet
-    return sync_status
+  -- Get base message
+  local message = sync_info.message
+  if not message then
+    return nil
   end
   
-  -- Check for external sync first (higher priority in display)
-  if status.external_sync_running and not status.running then
-    -- External sync is running - show simple status with elapsed time
-    local state = require('neotex.plugins.tools.himalaya.core.state')
-    local start_time = state.get('sync.start_time')
-    local elapsed_str = ""
-    if start_time then
-      local elapsed = os.time() - start_time
-      if elapsed >= 60 then
-        local minutes = math.floor(elapsed / 60)
-        local seconds = elapsed % 60
-        elapsed_str = string.format(" (%dm %ds)", minutes, seconds)
-      else
-        elapsed_str = string.format(" (%ds)", elapsed)
-      end
-    end
-    return "⟳ Syncing (external)" .. elapsed_str
-  end
-  
-  local status_text = "⟳ Syncing"
-  local progress_info = {}
-  
-  -- Add elapsed time first
-  local state = require('neotex.plugins.tools.himalaya.core.state')
-  local start_time = status.progress and status.progress.start_time or state.get('sync.start_time')
-  if start_time then
-    local elapsed = os.time() - start_time
+  -- Add elapsed time
+  if sync_info.start_time then
+    local elapsed = os.time() - sync_info.start_time
     local elapsed_str
     if elapsed >= 60 then
       local minutes = math.floor(elapsed / 60)
@@ -495,32 +457,28 @@ function M.get_sync_status_line_detailed()
     else
       elapsed_str = string.format(" (%ds)", elapsed)
     end
-    status_text = status_text .. elapsed_str
+    message = message .. elapsed_str
   end
   
-  if status.progress then
-    -- Build status in the format: "Folder X/Y - Operation X/Y"
-    local folder_part = nil
-    local operation_part = nil
+  -- Add type-specific details
+  if sync_info.type == 'full' and sync_info.progress then
+    local progress = sync_info.progress
     
-    -- First part: Current folder with folder progress
-    if status.progress.current_folder then
-      folder_part = status.progress.current_folder
-      
-      -- Add folder progress if available
-      if status.progress.folders_total and status.progress.folders_total > 0 then
-        folder_part = folder_part .. string.format(" %d/%d", 
-          status.progress.folders_done or 0, status.progress.folders_total)
+    -- Add folder progress
+    if progress.current_folder then
+      message = message .. ": " .. progress.current_folder
+      if progress.folders_total and progress.folders_total > 0 then
+        message = message .. string.format(" %d/%d", 
+          progress.folders_done or 0, progress.folders_total)
       end
-    elseif status.progress.folders_total and status.progress.folders_total > 0 then
-      -- No current folder, just show folder progress
-      folder_part = string.format("%d/%d folders", 
-        status.progress.folders_done or 0, status.progress.folders_total)
+    elseif progress.folders_total and progress.folders_total > 0 then
+      message = message .. string.format(": %d/%d folders", 
+        progress.folders_done or 0, progress.folders_total)
     end
     
-    -- Second part: Operation with message progress
-    if status.progress.messages_total and status.progress.messages_total > 0 then
-      local op_name = status.progress.current_operation or "Processing"
+    -- Add operation details
+    if progress.messages_total and progress.messages_total > 0 then
+      local op_name = progress.current_operation or "Processing"
       -- Capitalize common operations for consistency
       if op_name == "Downloading" then
         op_name = "Downloaded"
@@ -529,34 +487,15 @@ function M.get_sync_status_line_detailed()
       elseif op_name == "Synchronizing" then
         op_name = "Synced"
       end
-      operation_part = string.format("%s %d/%d", op_name,
-        status.progress.messages_processed or 0, status.progress.messages_total)
-    elseif status.progress.current_operation then
-      operation_part = status.progress.current_operation
+      message = message .. string.format(" - %s %d/%d", op_name,
+        progress.messages_processed or 0, progress.messages_total)
+    elseif progress.current_operation then
+      message = message .. " - " .. progress.current_operation
     end
-    
-    -- Combine parts
-    if folder_part then
-      status_text = status_text .. ": " .. folder_part
-      if operation_part then
-        status_text = status_text .. " - " .. operation_part
-      end
-    elseif operation_part then
-      status_text = status_text .. ": " .. operation_part
-    end
-    
-    -- Removed overall statistics display as requested
-    -- The folder/message progress is sufficient
   end
   
-  -- Removed fallback to process count - not needed
-  
-  -- Strip any existing process count that might have been added
-  status_text = status_text:gsub(' %((%d+) process[es]*%)', '')
-  
-  return status_text
+  return message
 end
-
 -- Timer for sync status updates
 local sync_status_timer = nil
 
@@ -627,13 +566,13 @@ end
 function M.refresh_sidebar_header()
   local notify = require('neotex.util.notifications')
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('refresh_sidebar_header called', notify.categories.DEBUG)
+    notify.himalaya('refresh_sidebar_header called', notify.categories.BACKGROUND)
   end
   
   local buf = sidebar.get_buf()
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
     if notify.config.modules.himalaya.debug_mode then
-      notify.himalaya('refresh_sidebar_header: no valid buffer', notify.categories.DEBUG)
+      notify.himalaya('refresh_sidebar_header: no valid buffer', notify.categories.BACKGROUND)
     end
     return
   end
@@ -641,7 +580,7 @@ function M.refresh_sidebar_header()
   -- Debug buffer info
   if notify.config.modules.himalaya.debug_mode then
     local filetype = vim.bo[buf].filetype
-    notify.himalaya('refresh_sidebar_header: buffer filetype = ' .. tostring(filetype), notify.categories.DEBUG)
+    notify.himalaya('refresh_sidebar_header: buffer filetype = ' .. tostring(filetype), notify.categories.BACKGROUND)
   end
   
   -- Don't require emails to be loaded - we can still update the header
@@ -664,9 +603,9 @@ function M.refresh_sidebar_header()
   -- Debug: log if we have a sync status
   if notify.config.modules.himalaya.debug_mode then
     if sync_status_line then
-      notify.himalaya('refresh_sidebar_header: sync_status_line = ' .. sync_status_line, notify.categories.DEBUG)
+      notify.himalaya('refresh_sidebar_header: sync_status_line = ' .. sync_status_line, notify.categories.BACKGROUND)
     else
-      notify.himalaya('refresh_sidebar_header: no sync status line', notify.categories.DEBUG)
+      notify.himalaya('refresh_sidebar_header: no sync status line', notify.categories.BACKGROUND)
     end
   end
   
@@ -2179,13 +2118,13 @@ function M.delete_selected_emails()
         else
           error_count = error_count + 1
           -- Log specific error for debugging
-          vim.notify(string.format('Failed to delete email %s: %s', 
-            email.subject or email.id, error_type or 'unknown error'), vim.log.levels.DEBUG)
+          notify.himalaya(string.format('Failed to delete email %s: %s', 
+            email.subject or email.id, error_type or 'unknown error'), notify.categories.BACKGROUND)
         end
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
@@ -2250,13 +2189,13 @@ function M.archive_selected_emails()
           success_count = success_count + 1
         else
           error_count = error_count + 1
-          vim.notify(string.format('Failed to archive email %s', 
-            email.subject or email.id), vim.log.levels.DEBUG)
+          notify.himalaya(string.format('Failed to archive email %s', 
+            email.subject or email.id), notify.categories.BACKGROUND)
         end
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
@@ -2321,13 +2260,13 @@ function M.spam_selected_emails()
           success_count = success_count + 1
         else
           error_count = error_count + 1
-          vim.notify(string.format('Failed to mark email as spam: %s', 
-            email.subject or email.id), vim.log.levels.DEBUG)
+          notify.himalaya(string.format('Failed to mark email as spam: %s', 
+            email.subject or email.id), notify.categories.BACKGROUND)
         end
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          vim.notify(string.format('Progress: %d/%d', i, #selected), vim.log.levels.INFO)
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
