@@ -167,7 +167,7 @@ function M.set_width(new_width)
   end
   
   -- Update state if available
-  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.ui.state')
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.core.state')
   if ok then
     state.set_sidebar_width(new_width)
   end
@@ -187,7 +187,7 @@ function M.set_position(position)
   M.config.position = position
   
   -- Update state if available
-  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.ui.state')
+  local ok, state = pcall(require, 'neotex.plugins.tools.himalaya.core.state')
   if ok then
     state.set_sidebar_position(position)
   end
@@ -407,7 +407,7 @@ function M.apply_email_highlighting(metadata)
   
   -- Apply highlighting based on email metadata
   vim.api.nvim_win_call(M.state.win, function()
-    local state = require('neotex.plugins.tools.himalaya.ui.state')
+    local state = require('neotex.plugins.tools.himalaya.core.state')
     
     for line_num, data in pairs(metadata) do
       -- Apply checkbox highlighting for selected emails

@@ -6,7 +6,7 @@ local M = {}
 -- Dependencies
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
-local state = require('neotex.plugins.tools.himalaya.ui.state')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 
 -- Module state

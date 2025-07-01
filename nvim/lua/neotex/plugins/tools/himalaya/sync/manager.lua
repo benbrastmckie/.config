@@ -23,8 +23,6 @@ function M.start_sync(sync_type, options)
   -- Set type-specific state
   if sync_type == 'full' then
     state.set('sync.full.channel', options.channel)
-  elseif sync_type == 'fast_check' then
-    state.set('sync.fast_check.account', options.account)
   end
   
   -- Notify UI to update
@@ -58,11 +56,6 @@ function M.complete_sync(sync_type, result)
   state.set('sync.end_time', os.time())
   
   -- Store type-specific results
-  if sync_type == 'fast_check' and result.success then
-    state.set('sync.fast_check.has_new', result.has_new or false)
-    state.set('sync.fast_check.new_count', result.new_count or 0)
-    state.set('sync.fast_check.checked_at', os.time())
-  end
   
   -- Update history
   M.update_history(sync_type, result)
@@ -85,8 +78,6 @@ end
 function M.get_status_message(sync_type)
   if sync_type == 'full' then
     return '⟳ Syncing emails...'
-  elseif sync_type == 'fast_check' then
-    return '󰍉 Checking for new mail...'
   end
   return nil
 end
@@ -99,9 +90,6 @@ function M.update_history(sync_type, result)
   if sync_type == 'full' then
     history.last_full_sync = os.time()
     history.total_syncs_today = (history.total_syncs_today or 0) + 1
-  elseif sync_type == 'fast_check' then
-    history.last_fast_check = os.time()
-    history.total_checks_today = (history.total_checks_today or 0) + 1
   end
   
   -- Store last error
@@ -115,7 +103,7 @@ function M.update_history(sync_type, result)
   local today = os.date('%Y-%m-%d')
   if history.last_count_date ~= today then
     history.total_syncs_today = (sync_type == 'full') and 1 or 0
-    history.total_checks_today = (sync_type == 'fast_check') and 1 or 0
+    history.total_checks_today = 0
     history.last_count_date = today
   end
   
@@ -150,10 +138,6 @@ function M.get_sync_info()
   if info.type == 'full' then
     info.channel = state.get('sync.full.channel')
     info.progress = state.get('sync.full.progress')
-  elseif info.type == 'fast_check' then
-    info.account = state.get('sync.fast_check.account')
-    info.has_new = state.get('sync.fast_check.has_new')
-    info.new_count = state.get('sync.fast_check.new_count')
   end
   
   return info
@@ -172,7 +156,6 @@ function M.clear_sync_state()
   state.set('sync.start_time', nil)
   state.set('sync.end_time', nil)
   state.set('sync.full', {})
-  state.set('sync.fast_check', {})
   M.notify_ui_update()
 end
 

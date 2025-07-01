@@ -478,7 +478,7 @@ end
 -- Smart delete email with trash folder detection
 function M.smart_delete_email(account, email_id)
   -- Get current folder BEFORE building the command
-  local state = require('neotex.plugins.tools.himalaya.ui.state')
+  local state = require('neotex.plugins.tools.himalaya.core.state')
   local folder = state.get_current_folder()
   
   -- If no folder, default to INBOX
@@ -557,7 +557,7 @@ end
 function M.move_email(email_id, target_folder)
   local args = { 'message', 'move', target_folder, tostring(email_id) }
   -- Get current folder from UI state
-  local state = require('neotex.plugins.tools.himalaya.ui.state')
+  local state = require('neotex.plugins.tools.himalaya.core.state')
   local current_folder = state.get_current_folder() or 'INBOX'
   
   local result = M.execute_himalaya(args, { 
