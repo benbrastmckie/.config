@@ -583,8 +583,9 @@ return {
       pattern = "himalaya-compose",
       callback = function()
         wk.add({
-          -- These keymaps are defined in config.lua setup_buffer_keymaps
-          -- which-key will automatically detect them from the buffer
+          { "<leader>me", function() require('neotex.plugins.tools.himalaya.ui.main').send_current_email() end, desc = "send email", icon = "󰊠", buffer = 0 },
+          { "<leader>md", function() require('neotex.plugins.tools.himalaya.ui.main').close_and_save_draft() end, desc = "save draft", icon = "󰆓", buffer = 0 },
+          { "<leader>mq", function() require('neotex.plugins.tools.himalaya.ui.main').close_without_saving() end, desc = "discard email", icon = "󰩺", buffer = 0 },
         }, { buffer = 0 })
       end,
     })
