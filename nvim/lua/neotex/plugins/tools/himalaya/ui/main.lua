@@ -807,7 +807,6 @@ function M.compose_email(to_address)
     account.name or from_email,
     '',
     string.rep('─', 70),
-    'gs:send q:save-draft Q:discard',
   }
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -1348,7 +1347,6 @@ function M.reply_email(email_id, reply_all)
   table.insert(lines, account.name or from_email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'gs:send q:save-draft Q:discard')
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -1481,7 +1479,6 @@ function M.forward_email(email_id)
   table.insert(lines, account.name or from_email)
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
-  table.insert(lines, 'gs:send q:save-draft Q:discard')
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
