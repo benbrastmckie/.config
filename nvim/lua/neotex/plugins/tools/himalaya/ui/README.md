@@ -1,54 +1,78 @@
-# Himalaya UI Components
+# User Interface Components
 
-This directory contains all UI-related modules for the Himalaya email plugin.
+UI modules for the Himalaya email plugin.
 
 ## Modules
 
-### init.lua
-Main UI module that serves as the central hub for all UI components. It loads and re-exports functions from submodules for a clean API.
+### main.lua (2548 lines)
+Core UI functionality containing all email interface operations:
+- Email list display and navigation
+- Email reading and viewing
+- Compose, reply, and forward functionality
+- Email actions (delete, archive, move)
+- Keybinding management
+- Buffer and window management
 
-### email_list.lua
-Handles the display and interaction with email lists:
-- Shows emails from selected folders
-- Provides keybindings for email navigation
-- Manages email list buffer and window
-- Supports refresh functionality
-
-### compose.lua
-Email composition functionality:
-- Creates composition windows
-- Handles email templates
-- Manages send/cancel/draft operations
-- Supports reply and forward (placeholder)
+This is currently a monolithic module that will be reorganized in the refactor.
 
 ### sidebar.lua
-Provides sidebar display functionality:
-- Shows sync status
-- Formats email entries
-- Displays folder information
-- Manages periodic status updates
+Neo-tree style sidebar for email display:
+- Email list rendering
+- Folder navigation
+- Sync status display
+- Account switching
+- Periodic updates
+
+Key functions:
+- `show()` - Display the sidebar
+- `update()` - Refresh sidebar content
+- `set_status(status)` - Update sync status
 
 ### notifications.lua
-Smart notification system with context-aware error handling:
-- Pattern-based error detection
-- Automatic error recovery actions
-- OAuth token refresh on authentication failures
-- User-friendly error messages
+Smart notification system with pattern-based error handling:
+- Context-aware error messages
+- Automatic recovery suggestions
+- OAuth refresh triggers
+- User-friendly translations of technical errors
 
-## Usage
+Key functions:
+- `handle_error(error, context)` - Process and display errors
+- `suggest_recovery(error_type)` - Provide recovery actions
 
-The UI system is initialized in the main plugin setup:
+### state.lua
+Persistent UI state management:
+- Last selected folder per account
+- Sidebar width preferences
+- View mode settings
+- Session restoration
+
+### window_stack.lua
+Window focus and navigation management:
+- Tracks window hierarchy
+- Restores focus after operations
+- Manages floating windows
+
+### float.lua (unused)
+Floating window utilities - currently not in use.
+
+### init.lua
+Simple re-export module that exposes functions from main.lua.
+
+## Usage Examples
 
 ```lua
-local ui = require('neotex.plugins.tools.himalaya.ui')
-ui.setup()
+-- Open email interface
+local ui = require("neotex.plugins.tools.himalaya.ui")
+ui.open()
 
--- Show email list
-ui.show_email_list()
+-- Update sidebar status
+local sidebar = require("neotex.plugins.tools.himalaya.ui.sidebar")
+sidebar.set_status("Syncing...")
 
--- Compose new email
-ui.compose_email()
+-- Handle an error
+local notifications = require("neotex.plugins.tools.himalaya.ui.notifications")
+notifications.handle_error("OAuth token expired", "sync")
 ```
 
 ## Navigation
-- [← Parent Directory](../README.md)
+- [← Himalaya Plugin](../README.md)

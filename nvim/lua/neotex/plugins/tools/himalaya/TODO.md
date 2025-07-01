@@ -29,12 +29,13 @@
 
 ## DETAILS
 
-- [ ] document existing himalaya implementation
-  - [ ] create a README.md in each directory that:
-    - [ ] fully describes the modules in that directory
-    - [ ] briefly describes subdirectories with links to the README.md they each contain
-    - [ ] includes backlinks to README.md files in the parent directory
-  - [ ] indicate differences between nixos users and non-nix users where relevant
+- [x] document existing himalaya implementation ✅ PHASE 1 COMPLETE
+  - [x] create a README.md in each directory that:
+    - [x] fully describes the modules in that directory
+    - [x] briefly describes subdirectories with links to the README.md they each contain
+    - [x] includes backlinks to README.md files in the parent directory
+  - [x] indicate differences between nixos users and non-nix users where relevant
+  - [x] create dependency graph in docs/DEPENDENCIES.md
 - refactor existing implementation
   - remove cruft
   - reorganize existing
