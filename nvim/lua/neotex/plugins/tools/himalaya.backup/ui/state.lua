@@ -106,20 +106,11 @@ end
 
 -- Get current folder
 function M.get_current_folder()
-  local folder = M.state.current_folder
-  -- Ensure we never return nil or empty string
-  if not folder or folder == '' then
-    folder = 'INBOX'
-  end
-  return folder
+  return M.state.current_folder
 end
 
 -- Set current folder
 function M.set_current_folder(folder)
-  -- Don't allow nil or empty folder
-  if not folder or folder == '' then
-    folder = 'INBOX'
-  end
   M.state.current_folder = folder
   M.save()
 end

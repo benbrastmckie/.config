@@ -183,24 +183,9 @@ function M.fix_uidvalidity_files(maildir)
   local cmd = string.format('find %s -type d -name "cur" -exec sh -c \'touch "$(dirname "{}")"/.uidvalidity\' \\; 2>/dev/null', vim.fn.shellescape(maildir))
   os.execute(cmd)
   
-  -- Empty any existing ones - mbsync needs to regenerate them
-  cmd = string.format('find %s -name ".uidvalidity" -exec sh -c \'> "{}"\' \\; 2>/dev/null', vim.fn.shellescape(maildir))
+  -- Empty any existing ones with wrong format
+  cmd = string.format('find %s -name ".uidvalidity" -exec sh -c \'echo -n > "{}"\' \\; 2>/dev/null', vim.fn.shellescape(maildir))
   os.execute(cmd)
-  
-  -- Also backup and remove .mbsyncstate files which can become corrupted
-  local mbsyncstate = maildir .. '.mbsyncstate'
-  if vim.fn.filereadable(mbsyncstate) == 1 then
-    os.execute(string.format('mv %s %s.backup.%s 2>/dev/null', 
-      vim.fn.shellescape(mbsyncstate), 
-      vim.fn.shellescape(mbsyncstate),
-      os.date('%Y%m%d_%H%M%S')))
-  end
-  
-  -- Clean up any lock or journal files
-  os.execute(string.format('rm -f %s.lock %s.new %s.journal 2>/dev/null',
-    vim.fn.shellescape(mbsyncstate),
-    vim.fn.shellescape(mbsyncstate),
-    vim.fn.shellescape(mbsyncstate)))
 end
 
 -- Step 4: Verify sync

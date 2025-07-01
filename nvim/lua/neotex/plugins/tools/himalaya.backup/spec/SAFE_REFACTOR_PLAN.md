@@ -21,7 +21,7 @@ This plan revises the original REFACTOR_SPEC.md to ensure functionality is prese
 
 ## Phase 1: Safe Preparation (Day 1)
 
-### 1.1 Create Testing Infrastructure ✅ COMPLETE
+### 1.1 Create Testing Infrastructure
 ```bash
 # Create backup
 cp -r ~/.config/nvim/lua/neotex/plugins/tools/himalaya ~/.config/nvim/lua/neotex/plugins/tools/himalaya.backup
@@ -29,7 +29,6 @@ cp -r ~/.config/nvim/lua/neotex/plugins/tools/himalaya ~/.config/nvim/lua/neotex
 # Create test checklist file
 touch ~/.config/nvim/lua/neotex/plugins/tools/himalaya/TEST_CHECKLIST.md
 ```
-**Status**: Backup created and TEST_CHECKLIST.md file created with all 28 commands documented.
 
 ### 1.2 Document Current Behavior
 Test and document output for each command:
@@ -72,7 +71,7 @@ end)
 
 ## Phase 2: Incremental init.lua Refactoring
 
-### 2.1 Extract Command Definitions (Safest Approach) ✅ COMPLETE
+### 2.1 Extract Command Definitions (Safest Approach)
 
 **Step 1: Create command registry without moving code**
 ```lua
@@ -86,11 +85,11 @@ command_registry.Himalaya = {
 }
 ```
 
-**Testing after Step 1:** ✅
-- [x] All commands still work exactly as before
-- [x] No functionality changed
+**Testing after Step 1:**
+- [ ] All commands still work exactly as before
+- [ ] No functionality changed
 
-**Step 2: Refactor command creation loop** ✅ COMPLETE
+**Step 2: Refactor command creation loop**
 ```lua
 -- Replace individual nvim_create_user_command calls with:
 for name, def in pairs(command_registry) do
@@ -98,17 +97,16 @@ for name, def in pairs(command_registry) do
 end
 ```
 
-**Testing after Step 2:** ✅
-- [x] Run full command test suite
-- [x] Verify all 28 commands still function
-- [x] All commands successfully migrated to registry format
+**Testing after Step 2:**
+- [ ] Run full command test suite
+- [ ] Verify all 28 commands still function
 
 **Rollback if needed:**
 ```bash
 cp ~/.config/nvim/lua/neotex/plugins/tools/himalaya.backup/init.lua ~/.config/nvim/lua/neotex/plugins/tools/himalaya/init.lua
 ```
 
-### 2.2 Gradual Command Extraction ✅ COMPLETE
+### 2.2 Gradual Command Extraction
 
 **Step 1: Create commands module with minimal changes**
 ```lua
@@ -127,11 +125,9 @@ end
 return M
 ```
 
-**Testing after extraction:** ✅
-- [x] Source init.lua and verify all commands work
-- [x] Test each command category systematically
-- [x] Init.lua reduced from 1504 to 92 lines
-- [x] All commands successfully moved to core/commands.lua
+**Testing after extraction:**
+- [ ] Source init.lua and verify all commands work
+- [ ] Test each command category systematically
 
 ## Phase 3: UI Module Extraction
 
@@ -159,7 +155,7 @@ grep -n "^local function\|^function M\." ui/main.lua > ui_functions.txt
 - [ ] Reply/Forward work correctly
 - [ ] Attachments display properly
 
-### 3.2 Extract Email List Module ✅ COMPLETE
+### 3.2 Extract Email List Module
 
 **Step 1: Create ui/email_list.lua**
 ```lua
@@ -189,17 +185,15 @@ local email_list = require("neotex.plugins.tools.himalaya.ui.email_list")
 -- email_list.open() instead of open_email_list()
 ```
 
-**Testing after email_list extraction:** ✅
-- [x] `:Himalaya` opens list
-- [x] All list navigation works (j/k/g/G)
-- [x] Folder switching works
-- [x] Email marking/deleting works
-- [x] Search functionality works
-- [x] Refresh with 'r' works
-- [x] ui/main.lua reduced from 2548 to 1816 lines
-- [x] All 17 email list functions successfully extracted
+**Testing after email_list extraction:**
+- [ ] `:Himalaya` opens list
+- [ ] All list navigation works (j/k/g/G)
+- [ ] Folder switching works
+- [ ] Email marking/deleting works
+- [ ] Search functionality works
+- [ ] Refresh with 'r' works
 
-### 3.3 Extract Email Viewer Module ✅ COMPLETE
+### 3.3 Extract Email Viewer Module
 
 **Step 1: Create ui/email_viewer.lua**
 ```lua
@@ -228,18 +222,16 @@ local email_viewer = require("neotex.plugins.tools.himalaya.ui.email_viewer")
 -- email_viewer.open() instead of open_email()
 ```
 
-**Testing after email_viewer extraction:** ✅
-- [x] Opening emails from list works
-- [x] Email content displays correctly
-- [x] Headers toggle with 'h'
-- [x] Reply with 'r' opens composer
-- [x] Forward with 'f' opens composer
-- [x] Attachments show and can be opened
-- [x] Navigation within email works
-- [x] ui/main.lua reduced from 1816 to 1585 lines
-- [x] All 7 email viewer functions successfully extracted
+**Testing after email_viewer extraction:**
+- [ ] Opening emails from list works
+- [ ] Email content displays correctly
+- [ ] Headers toggle with 'h'
+- [ ] Reply with 'r' opens composer
+- [ ] Forward with 'f' opens composer
+- [ ] Attachments show and can be opened
+- [ ] Navigation within email works
 
-### 3.4 Extract Email Composer Module ✅ COMPLETE
+### 3.4 Extract Email Composer Module
 
 **Step 1: Create ui/email_composer.lua**
 ```lua
@@ -270,16 +262,14 @@ local email_composer = require("neotex.plugins.tools.himalaya.ui.email_composer"
 -- `:HimalayaSend` uses email_composer.send()
 ```
 
-**Testing after email_composer extraction:** ✅
-- [x] `:HimalayaWrite` opens composer
-- [x] Tab completion for addresses works
-- [x] `:HimalayaSend` sends with confirmation
-- [x] `:HimalayaSaveDraft` saves to drafts
-- [x] `:HimalayaDiscard` discards with confirmation
-- [x] Reply/Forward pre-fill correctly
-- [x] Attachments can be added
-- [x] ui/main.lua reduced from 1585 to 1025 lines
-- [x] All 12 email composer functions successfully extracted
+**Testing after email_composer extraction:**
+- [ ] `:HimalayaWrite` opens composer
+- [ ] Tab completion for addresses works
+- [ ] `:HimalayaSend` sends with confirmation
+- [ ] `:HimalayaSaveDraft` saves to drafts
+- [ ] `:HimalayaDiscard` discards with confirmation
+- [ ] Reply/Forward pre-fill correctly
+- [ ] Attachments can be added
 
 ### 3.5 Clean up ui/main.lua
 
@@ -321,74 +311,16 @@ M.email_composer = email_composer
 return M
 ```
 
-**Final testing after all extractions:** ✅
-- [x] Run all 28 commands
-- [x] Test complete email workflow (list → view → reply → send)
-- [x] Test state persistence (close/reopen Neovim)
-- [x] Test multi-account switching
-- [x] Verify no performance degradation
-- [x] ui/main.lua successfully reduced from 2548 to 1025 lines (60% reduction)
-- [x] Created 3 focused modules: email_list.lua, email_viewer.lua, email_composer.lua
+**Final testing after all extractions:**
+- [ ] Run all 28 commands
+- [ ] Test complete email workflow (list → view → reply → send)
+- [ ] Test state persistence (close/reopen Neovim)
+- [ ] Test multi-account switching
+- [ ] Verify no performance degradation
 
-## Phase 4: State Management Consolidation
+## Phase 4: Architecture Improvements
 
-### 4.1 Analyze State Usage First
-
-**Step 1: Document all state access points**
-```bash
-# Find all state references
-grep -n "state\." *.lua ui/*.lua core/*.lua sync/*.lua
-```
-
-**Current state usage pattern:**
-- Sync modules → core.state
-- UI modules → ui.state (except sync status functions which use core.state)
-- Utils → ui.state
-
-### 4.2 Create Migration Path
-
-**Option 1: Merge into single state module**
-- Combine both state structures into one module
-- Update all references to use the unified state
-- Pros: Simple, consistent
-- Cons: Large change, risk of breaking functionality
-
-**Option 2: Create state bridge/proxy**
-```lua
--- In ui/state.lua
-local core_state = require("neotex.plugins.tools.himalaya.core.state")
-
--- Proxy sync-related calls to core.state
-function M.get(path, default)
-  if path:match("^sync%.") then
-    return core_state.get(path, default)
-  end
-  -- Handle UI state normally
-  return M.state[path] or default
-end
-```
-
-**Option 3: Keep separation but improve communication**
-- Keep core.state for sync operations
-- Keep ui.state for UI operations
-- Add explicit sync points where they need to communicate
-- Use events/callbacks to notify UI of sync state changes
-
-**Testing with any approach:**
-- [ ] All state-dependent features work
-- [ ] UI state persists across sessions
-- [ ] Sync state updates are visible in UI
-- [ ] Delete operations use correct folder state
-- [ ] Multi-account state management works
-
-**Step 2: Gradually update references**
-- Update one module at a time
-- Test after each module update
-- Pay special attention to mixed-state modules like ui/email_list.lua
-
-## Phase 5: Architecture Improvements
-
-### 5.1 Establish Clear Module Hierarchy
+### 4.1 Establish Clear Module Hierarchy
 
 After completing the extractions, enforce a clear dependency hierarchy:
 
@@ -431,7 +363,7 @@ After completing the extractions, enforce a clear dependency hierarchy:
 - [ ] All commands still function correctly
 - [ ] State flows properly between layers
 
-### 5.2 Standardize Error Handling
+### 4.2 Standardize Error Handling
 
 **Step 1: Create consistent error handling pattern**
 
@@ -456,7 +388,7 @@ end
 - [ ] No duplicate error messages
 - [ ] Commands handle errors gracefully
 
-### 5.3 Clean Up Obsolete Code
+### 4.3 Clean Up Obsolete Code
 
 **Step 1: Remove unused files**
 - [ ] Delete `ui/float.lua` (unused)
@@ -472,6 +404,39 @@ end
 - [ ] All commands still work
 - [ ] No broken requires
 - [ ] Module imports still resolve
+
+## Phase 5: State Management Consolidation
+
+### 5.1 Analyze State Usage First
+
+**Step 1: Document all state access points**
+```bash
+# Find all state references
+grep -n "state\." *.lua ui/*.lua core/*.lua sync/*.lua
+```
+
+### 5.2 Create Migration Path
+
+**Step 1: Add compatibility layer**
+```lua
+-- In ui/state.lua
+local core_state = require("neotex.plugins.tools.himalaya.core.state")
+
+-- Proxy all calls to core.state
+return setmetatable({}, {
+  __index = function(_, key) return core_state[key] end,
+  __newindex = function(_, key, value) core_state[key] = value end
+})
+```
+
+**Testing with compatibility layer:**
+- [ ] All state-dependent features work
+- [ ] UI state persists
+- [ ] Runtime state updates correctly
+
+**Step 2: Gradually update references**
+- Update one module at a time
+- Test after each module update
 
 ## Phase 6: Critical Functionality Testing
 

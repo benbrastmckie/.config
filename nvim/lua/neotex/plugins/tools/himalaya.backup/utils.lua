@@ -477,34 +477,23 @@ end
 
 -- Smart delete email with trash folder detection
 function M.smart_delete_email(account, email_id)
-  -- Get current folder BEFORE building the command
-  local state = require('neotex.plugins.tools.himalaya.ui.state')
-  local folder = state.get_current_folder()
-  
-  -- If no folder, default to INBOX
-  if not folder or folder == '' then
-    folder = 'INBOX'
-  end
-  
-  -- Build command with proper order: himalaya message delete <ID> [OPTIONS]
+  local args = { 'message', 'delete', tostring(email_id) }
   local cmd = { config.config.binaries.himalaya or 'himalaya' }
+  vim.list_extend(cmd, args)
   
-  -- Add the subcommand first
-  table.insert(cmd, 'message')
-  table.insert(cmd, 'delete')
-  table.insert(cmd, tostring(email_id))
-  
-  -- Add options after the command
   if account then
     table.insert(cmd, '-a')
     table.insert(cmd, account)
   end
   
-  -- Add folder
-  table.insert(cmd, '-f')
-  table.insert(cmd, folder)
+  -- Add current folder
+  local state = require('neotex.plugins.tools.himalaya.ui.state')
+  local folder = state.get_current_folder()
+  if folder then
+    table.insert(cmd, '-f')
+    table.insert(cmd, folder)
+  end
   
-  -- Add output format
   table.insert(cmd, '-o')
   table.insert(cmd, 'json')
   
@@ -514,9 +503,11 @@ function M.smart_delete_email(account, email_id)
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error
   
-  -- Debug: log the deletion attempt if it fails
+  -- Debug: log the deletion attempt
   if exit_code ~= 0 then
     notify.himalaya('Delete failed: ' .. (result or 'no error message'), notify.categories.ERROR)
+  else
+    notify.himalaya('Delete result: ' .. (result or 'success'), notify.categories.BACKGROUND)
   end
   
   if exit_code == 0 then
