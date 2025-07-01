@@ -13,11 +13,6 @@ function M.start_sync(sync_type, options)
   
   logger.debug('Starting sync: ' .. sync_type)
   
-  -- Also use notification system for immediate visibility
-  local notify = require('neotex.util.notifications')
-  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-    notify.himalaya('Sync manager: Starting ' .. sync_type .. ' sync', notify.categories.STATUS)
-  end
   
   -- Set common state
   state.set('sync.type', sync_type)
@@ -35,10 +30,6 @@ function M.start_sync(sync_type, options)
   -- Notify UI to update
   M.notify_ui_update()
   
-  -- Show sync status in sidebar if open
-  if sync_type == 'fast_check' and (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-    notify.himalaya('Fast check status should now be visible in sidebar', notify.categories.STATUS)
-  end
 end
 
 -- Update sync progress (for full sync)
@@ -55,11 +46,6 @@ function M.complete_sync(sync_type, result)
   
   logger.debug('Completing sync: ' .. sync_type .. ', success: ' .. tostring(result.success))
   
-  -- Also use notification system for immediate visibility
-  local notify = require('neotex.util.notifications')
-  if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-    notify.himalaya('Sync manager: Completing ' .. sync_type .. ' sync, success: ' .. tostring(result.success), notify.categories.STATUS)
-  end
   
   -- Only update if this is the current sync
   if state.get('sync.type') ~= sync_type then
