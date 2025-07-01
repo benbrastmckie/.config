@@ -6,8 +6,8 @@ This document provides a comprehensive plan for refactoring the Himalaya email p
 
 **Key Principles (from TODO.md GUIDELINES):**
 - No need for backwards compatibility or comments about past implementations
-- Keep the number of modules and commands minimal - prefer modifying existing modules
 - Integrate with existing neovim configuration and notification system
+- Be careful to preserve all existing functionality
 - Work in phases with testing after each phase
 
 ## Current State Analysis
@@ -117,6 +117,7 @@ Simplify the monolithic init.lua file:
 - [ ] Consider whether commands should remain in init.lua or be moved
   - Only create `core/commands.lua` if there's a compelling reason
   - Otherwise, reorganize commands within init.lua for better clarity
+  - Be careful to preserve all existing functionality
 
 - [ ] Simplify `init.lua` structure:
   - Load configuration
