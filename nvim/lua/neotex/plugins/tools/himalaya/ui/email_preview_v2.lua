@@ -350,11 +350,12 @@ function M.show_preview(email_id, parent_win)
     -- Build himalaya command
     local cmd = {
       'himalaya',
+      'message', 'read',
       '-a', account,
-      'message', 'read', tostring(email_id),
       '-f', folder,
-      '--output', 'json',
-      '--preview'  -- Don't mark as read when previewing
+      '-o', 'json',
+      '--preview',  -- Don't mark as read when previewing
+      tostring(email_id)
     }
     
     vim.fn.jobstart(cmd, {
