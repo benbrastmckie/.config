@@ -12,6 +12,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 
 -- Module state
 local sync_status_timer = nil
@@ -216,6 +217,11 @@ function M.show_email_list(args)
       end
     end
     
+    -- Store emails in cache
+    if emails and #emails > 0 then
+      email_cache.store_emails(account_name, folder, emails)
+    end
+    
     -- Store total count
     if total_count then
       state.set_total_emails(total_count)
@@ -229,14 +235,18 @@ function M.show_email_list(args)
     local lines = M.format_email_list(emails)
     sidebar.update_content(lines)
     
-    -- Store email data for reference in sidebar buffer
-    vim.b[buf].himalaya_emails = emails
-    vim.b[buf].himalaya_account = state.get_current_account()
-    vim.b[buf].himalaya_folder = folder
+    -- Store email data in state instead of buffer variables to avoid userdata issues
+    state.set('email_list.emails', emails)
+    state.set('email_list.account', state.get_current_account())
+    state.set('email_list.folder', folder)
     
-    -- Store metadata in state instead of buffer variables to avoid userdata issues
+    -- Store metadata in state
     state.set('email_list.line_map', lines.metadata or {})
     state.set('email_list.email_start_line', lines.email_start_line or 1)
+    
+    -- Keep buffer references for backwards compatibility but only with simple data
+    vim.b[buf].himalaya_account = state.get_current_account()
+    vim.b[buf].himalaya_folder = folder
     
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
@@ -601,7 +611,6 @@ function M.refresh_sidebar_header()
   end
   
   -- Don't require emails to be loaded - we can still update the header
-  local emails = vim.b[buf].himalaya_emails
   
   -- Build just the header lines
   local account_name = config.get_current_account_name() or 'gmail'
@@ -688,19 +697,22 @@ function M.refresh_email_list()
     )
     
     if emails then
+      -- Store emails in cache
+      email_cache.store_emails(account_name, folder, emails)
+      
       -- Store total count
       if total_count then
         state.set_total_emails(total_count)
       end
       
-      -- Update stored email data
-      vim.b[buf].himalaya_emails = emails
+      -- Update stored email data in state instead of buffer variables
+      state.set('email_list.emails', emails)
       
       -- Format and update display with optimized rendering
       local lines = M.format_email_list(emails)
       sidebar.update_content(lines)
       
-      -- Update line mapping data in state to avoid userdata issues
+      -- Update line mapping data in state
       state.set('email_list.line_map', lines.metadata or {})
       state.set('email_list.email_start_line', lines.email_start_line or 1)
     end
@@ -737,8 +749,12 @@ function M.update_email_display()
   local lines = M.format_email_list(emails)
   sidebar.update_content(lines)
   
-  -- Store email data for reference in sidebar buffer
-  vim.api.nvim_buf_set_var(buf, 'himalaya_emails', emails)
+  -- Store email data in state instead of buffer variables
+  state.set('email_list.emails', emails)
+  state.set('email_list.account', state.get_current_account())
+  state.set('email_list.folder', state.get_current_folder())
+  
+  -- Keep simple buffer variables for identification
   vim.api.nvim_buf_set_var(buf, 'himalaya_account', state.get_current_account())
   vim.api.nvim_buf_set_var(buf, 'himalaya_folder', state.get_current_folder())
   
@@ -752,7 +768,7 @@ end
 -- Refresh current view
 function M.refresh_current_view()
   local buf = vim.api.nvim_get_current_buf()
-  if vim.b[buf].himalaya_emails then
+  if vim.bo[buf].filetype == 'himalaya-list' then
     M.refresh_email_list()
   end
 end
@@ -777,7 +793,12 @@ function M.search_emails(query)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
     
-    vim.b[buf].himalaya_emails = results
+    -- Store search results in state
+    state.set('search.results', results)
+    state.set('search.account', state.get_current_account())
+    state.set('search.query', query)
+    
+    -- Keep simple buffer variables for identification
     vim.b[buf].himalaya_account = state.get_current_account()
     vim.b[buf].himalaya_search = query
     

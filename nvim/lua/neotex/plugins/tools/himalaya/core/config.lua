@@ -410,12 +410,12 @@ function M.setup_buffer_keymaps(bufnr)
       
       -- Use the line map for accurate email selection
       local line_map = state.get('email_list.line_map')
-      local email_data = vim.b.himalaya_emails
+      local email_data = state.get('email_list.emails')
       
       if line_map and line_map[current_line] then
         local line_info = line_map[current_line]
         local email_idx = line_info.email_index
-        local email = email_data[email_idx]
+        local email = email_data and email_data[email_idx]
         
         if email then
           local email_id = email.id or tostring(email_idx)
@@ -447,12 +447,12 @@ function M.setup_buffer_keymaps(bufnr)
       
       -- Use the line map for accurate email selection
       local line_map = state.get('email_list.line_map')
-      local email_data = vim.b.himalaya_emails
+      local email_data = state.get('email_list.emails')
       
       if line_map and line_map[current_line] then
         local line_info = line_map[current_line]
         local email_idx = line_info.email_index
-        local email = email_data[email_idx]
+        local email = email_data and email_data[email_idx]
         
         if email then
           local email_id = email.id or tostring(email_idx)

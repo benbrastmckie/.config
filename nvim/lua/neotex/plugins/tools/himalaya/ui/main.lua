@@ -38,6 +38,13 @@ function M.init()
   -- Initialize email composer module with buffer reference, main module, and window stack
   email_composer.init(M.buffers, M, window_stack)
   
+  -- Initialize v2 modules
+  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+  local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  email_viewer_v2.setup(config.config)
+  email_composer_v2.setup(config.config)
+  
   -- Sync state with sidebar configuration (non-intrusive)
   state.sync_with_sidebar()
   
@@ -90,7 +97,9 @@ end
 
 -- Read specific email
 function M.read_email(email_id)
-  return email_viewer.read_email(email_id)
+  -- Use v2 viewer for buffer-based viewing
+  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+  return email_viewer_v2.view_email(email_id)
 end
 
 -- Format email content for display
@@ -105,14 +114,9 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
-  -- Check if we should use the new buffer-based composer
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    return email_composer_v2.compose_email({ to = to_address })
-  else
-    return email_composer.compose_email(to_address)
-  end
+  -- Always use v2 buffer-based composer
+  local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+  return email_composer_v2.compose_email({ to = to_address })
 end
 
 -- Open email window (floating)
@@ -300,7 +304,18 @@ end
 
 -- Read current email (from email list buffer)
 function M.read_current_email()
-  return email_viewer.read_current_email()
+  -- Use v2 viewer for buffer-based viewing
+  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+  
+  -- Get current email ID
+  local email_id = M.get_current_email_id()
+  if not email_id then
+    notify.himalaya('No email selected', notify.categories.ERROR)
+    return
+  end
+  
+  -- View email in buffer
+  email_viewer_v2.view_email(email_id)
 end
 
 -- Helper function to get current email ID
@@ -310,8 +325,16 @@ function M.get_current_email_id()
   end
   
   local line_num = vim.fn.line('.')
-  local emails = vim.b.himalaya_emails
-  local email_start_line = vim.b.himalaya_email_start_line
+  
+  -- Use the line map from state
+  local line_map = state.get('email_list.line_map')
+  if line_map and line_map[line_num] then
+    return line_map[line_num].email_id
+  end
+  
+  -- Fallback to old method if line map not available
+  local emails = state.get('email_list.emails')
+  local email_start_line = state.get('email_list.email_start_line')
   
   if not emails or #emails == 0 then
     return nil
