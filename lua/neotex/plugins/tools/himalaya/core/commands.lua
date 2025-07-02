@@ -136,50 +136,20 @@ M.command_registry.HimalayaSend = {
   fn = function()
     local notify = require('neotex.util.notifications')
     local main = require('neotex.plugins.tools.himalaya.ui.main')
+    local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
     
-    -- Create confirmation buffer
-    local confirm_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(confirm_buf, 0, -1, false, {
-      '',
-      '  Send this email?',
-      '',
-      '  Press Enter to send, Esc to cancel',
-      ''
+    local choice = confirm.show({
+      title = 'Send Email',
+      message = 'Send this email?',
+      options = { 'Send', 'Cancel' },
+      default = 1,
     })
     
-    local width = 40
-    local height = 5
-    local win = vim.api.nvim_open_win(confirm_buf, true, {
-      relative = 'editor',
-      width = width,
-      height = height,
-      col = (vim.o.columns - width) / 2,
-      row = (vim.o.lines - height) / 2,
-      style = 'minimal',
-      border = 'rounded',
-      title = ' Confirm Send ',
-      title_pos = 'center',
-    })
-    
-    -- Set buffer options
-    vim.api.nvim_buf_set_option(confirm_buf, 'modifiable', false)
-    vim.api.nvim_buf_set_option(confirm_buf, 'buftype', 'nofile')
-    
-    -- Set keymaps for confirmation
-    vim.keymap.set('n', '<CR>', function()
-      vim.api.nvim_win_close(win, true)
+    if choice == 1 then
       main.send_current_email()
-    end, { buffer = confirm_buf, silent = true })
-    
-    vim.keymap.set('n', '<Esc>', function()
-      vim.api.nvim_win_close(win, true)
+    else
       notify.himalaya('Send cancelled', notify.categories.STATUS)
-    end, { buffer = confirm_buf, silent = true })
-    
-    vim.keymap.set('n', 'q', function()
-      vim.api.nvim_win_close(win, true)
-      notify.himalaya('Send cancelled', notify.categories.STATUS)
-    end, { buffer = confirm_buf, silent = true })
+    end
   end,
   opts = {
     desc = 'Send current email from compose buffer'
@@ -200,50 +170,20 @@ M.command_registry.HimalayaDiscard = {
   fn = function()
     local notify = require('neotex.util.notifications')
     local main = require('neotex.plugins.tools.himalaya.ui.main')
+    local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
     
-    -- Create confirmation buffer
-    local confirm_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(confirm_buf, 0, -1, false, {
-      '',
-      '  Discard this email?',
-      '',
-      '  Press Enter to discard, Esc to cancel',
-      ''
+    local choice = confirm.show({
+      title = 'Discard Email',
+      message = 'Discard this email?',
+      options = { 'Discard', 'Cancel' },
+      default = 2,
     })
     
-    local width = 40
-    local height = 5
-    local win = vim.api.nvim_open_win(confirm_buf, true, {
-      relative = 'editor',
-      width = width,
-      height = height,
-      col = (vim.o.columns - width) / 2,
-      row = (vim.o.lines - height) / 2,
-      style = 'minimal',
-      border = 'rounded',
-      title = ' Confirm Discard ',
-      title_pos = 'center',
-    })
-    
-    -- Set buffer options
-    vim.api.nvim_buf_set_option(confirm_buf, 'modifiable', false)
-    vim.api.nvim_buf_set_option(confirm_buf, 'buftype', 'nofile')
-    
-    -- Set keymaps for confirmation
-    vim.keymap.set('n', '<CR>', function()
-      vim.api.nvim_win_close(win, true)
+    if choice == 1 then
       main.close_without_saving()
-    end, { buffer = confirm_buf, silent = true })
-    
-    vim.keymap.set('n', '<Esc>', function()
-      vim.api.nvim_win_close(win, true)
+    else
       notify.himalaya('Discard cancelled', notify.categories.STATUS)
-    end, { buffer = confirm_buf, silent = true })
-    
-    vim.keymap.set('n', 'q', function()
-      vim.api.nvim_win_close(win, true)
-      notify.himalaya('Discard cancelled', notify.categories.STATUS)
-    end, { buffer = confirm_buf, silent = true })
+    end
   end,
   opts = {
     desc = 'Discard current email without saving'
