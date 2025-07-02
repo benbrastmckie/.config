@@ -105,7 +105,14 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
-  return email_composer.compose_email(to_address)
+  -- Check if we should use the new buffer-based composer
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    return email_composer_v2.compose_email({ to = to_address })
+  else
+    return email_composer.compose_email(to_address)
+  end
 end
 
 -- Open email window (floating)
@@ -162,7 +169,18 @@ end
 
 -- Send current email (from compose buffer)
 function M.send_current_email()
-  return email_composer.send_current_email()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local buf = vim.api.nvim_get_current_buf()
+    if email_composer_v2.is_compose_buffer(buf) then
+      return email_composer_v2.send_email(buf)
+    end
+    notify.himalaya('Not in a compose buffer', notify.categories.ERROR)
+    return
+  else
+    return email_composer.send_current_email()
+  end
 end
 
 -- Check if email buffer is open (for backward compatibility)
@@ -174,6 +192,15 @@ end
 -- Close compose buffer without saving (delegation to appropriate module)
 function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
+  
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    if email_composer_v2.is_compose_buffer(buf) then
+      return email_composer_v2.discard_email(buf)
+    end
+  end
+  
   if vim.b[buf].himalaya_compose then
     return email_composer.close_without_saving()
   else
@@ -228,6 +255,15 @@ end
 -- Close and save as draft (delegation to appropriate module)
 function M.close_and_save_draft()
   local buf = vim.api.nvim_get_current_buf()
+  
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    if email_composer_v2.is_compose_buffer(buf) then
+      return email_composer_v2.save_draft(buf)
+    end
+  end
+  
   if vim.b[buf].himalaya_compose then
     return email_composer.close_and_save_draft()
   else
@@ -383,7 +419,7 @@ function M.close_himalaya()
     email_compose = nil,
   }
   
-  notify.himalaya('Himalaya closed', notify.categories.STATUS)
+  -- Remove noisy notification - user initiated the close action
 end
 
 -- Update email display without resetting pagination
@@ -398,17 +434,66 @@ end
 
 -- Reply to current email
 function M.reply_current_email()
-  return email_composer.reply_current_email()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    -- Get current email
+    local buf = vim.api.nvim_get_current_buf()
+    local email_id = vim.b[buf].himalaya_email_id
+    if email_id then
+      local account = state.get_current_account()
+      local folder = state.get_current_folder()
+      local email = utils.get_email_by_id(account, folder, email_id)
+      if email then
+        return email_composer_v2.reply_email(email, false)
+      end
+    end
+    notify.himalaya('No email to reply to', notify.categories.ERROR)
+    return
+  else
+    return email_composer.reply_current_email()
+  end
 end
 
 -- Reply all to current email
 function M.reply_all_current_email()
-  return email_composer.reply_all_current_email()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    -- Get current email
+    local buf = vim.api.nvim_get_current_buf()
+    local email_id = vim.b[buf].himalaya_email_id
+    if email_id then
+      local account = state.get_current_account()
+      local folder = state.get_current_folder()
+      local email = utils.get_email_by_id(account, folder, email_id)
+      if email then
+        return email_composer_v2.reply_email(email, true)
+      end
+    end
+    notify.himalaya('No email to reply to', notify.categories.ERROR)
+    return
+  else
+    return email_composer.reply_all_current_email()
+  end
 end
 
 -- Reply to email
 function M.reply_email(email_id, reply_all)
-  return email_composer.reply_email(email_id, reply_all)
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local account = state.get_current_account()
+    local folder = state.get_current_folder()
+    local email = utils.get_email_by_id(account, folder, email_id)
+    if email then
+      return email_composer_v2.reply_email(email, reply_all)
+    end
+    notify.himalaya('Email not found', notify.categories.ERROR)
+    return
+  else
+    return email_composer.reply_email(email_id, reply_all)
+  end
 end
 
 -- Parse email content for reply operations
@@ -418,12 +503,43 @@ end
 
 -- Forward current email
 function M.forward_current_email()
-  return email_composer.forward_current_email()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    -- Get current email
+    local buf = vim.api.nvim_get_current_buf()
+    local email_id = vim.b[buf].himalaya_email_id
+    if email_id then
+      local account = state.get_current_account()
+      local folder = state.get_current_folder()
+      local email = utils.get_email_by_id(account, folder, email_id)
+      if email then
+        return email_composer_v2.forward_email(email)
+      end
+    end
+    notify.himalaya('No email to forward', notify.categories.ERROR)
+    return
+  else
+    return email_composer.forward_current_email()
+  end
 end
 
 -- Forward email
 function M.forward_email(email_id)
-  return email_composer.forward_email(email_id)
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.get('compose.use_v2', false) then
+    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local account = state.get_current_account()
+    local folder = state.get_current_folder()
+    local email = utils.get_email_by_id(account, folder, email_id)
+    if email then
+      return email_composer_v2.forward_email(email)
+    end
+    notify.himalaya('Email not found', notify.categories.ERROR)
+    return
+  else
+    return email_composer.forward_email(email_id)
+  end
 end
 
 -- Delete current email
@@ -492,22 +608,27 @@ function M.handle_missing_trash_folder(email_id, suggested_folders)
   table.insert(options, 'Move to custom folder...')
   table.insert(options, 'Cancel')
   
-  vim.ui.select(options, {
-    prompt = 'Trash folder not found. How would you like to delete this email?',
-  }, function(choice)
-    if not choice or choice == 'Cancel' then
-      return
-    end
-    
-    if choice == 'Permanently delete (cannot be undone)' then
-      M.permanent_delete_email(email_id)
-    elseif choice:match('^Move to ') then
-      local folder = choice:gsub('^Move to ', '')
-      M.move_email_to_folder(email_id, folder)
-    elseif choice == 'Move to custom folder...' then
-      M.prompt_custom_folder_move(email_id)
-    end
-  end)
+  local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
+  local choice = confirm.show({
+    title = 'Trash Folder Not Found',
+    message = 'How would you like to delete this email?',
+    options = options,
+    default = #options,  -- Default to Cancel
+  })
+  
+  if not choice then
+    return
+  end
+  
+  local selected_option = options[choice]
+  if selected_option == 'Permanently delete (cannot be undone)' then
+    M.permanent_delete_email(email_id)
+  elseif selected_option:match('^Move to ') then
+    local folder = selected_option:gsub('^Move to ', '')
+    M.move_email_to_folder(email_id, folder)
+  elseif selected_option == 'Move to custom folder...' then
+    M.prompt_custom_folder_move(email_id)
+  end
 end
 
 -- Permanently delete email

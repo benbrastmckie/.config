@@ -267,6 +267,13 @@ function M.show_setup_hints()
   end
 end
 
+-- Debug notification helper - only shows in debug mode
+function M.debug(message, category)
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya(message, category or notify.categories.BACKGROUND)
+  end
+end
+
 -- Initialize notification system
 function M.setup()
   -- Nothing needed for now, using logger directly

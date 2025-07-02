@@ -113,6 +113,37 @@ M.defaults = {
   
   -- Debug mode is now controlled by the notification system
   -- Use <leader>ad to toggle debug mode
+  
+  -- Email preview settings
+  preview = {
+    enabled = true,
+    delay_ms = 500,
+    width = 40,
+    position = 'right', -- 'right' or 'bottom'
+    show_headers = true,
+    max_lines = 50,
+  },
+  
+  -- Email composition settings
+  compose = {
+    use_v2 = true,  -- Use new buffer-based composer
+    use_tab = false,
+    auto_save_interval = 30,
+    delete_draft_on_send = true,
+    syntax_highlighting = true,
+    draft_dir = vim.fn.expand('~/.local/share/himalaya/drafts/'),
+  },
+  
+  -- Confirmation dialog settings
+  confirmations = {
+    style = 'modern', -- 'modern' or 'classic'
+    default_to_cancel = true,
+  },
+  
+  -- Notification settings
+  notifications = {
+    show_routine_operations = false,
+  },
 }
 
 -- Current configuration (merged with defaults)

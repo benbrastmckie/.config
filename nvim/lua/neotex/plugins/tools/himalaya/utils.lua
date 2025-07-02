@@ -382,6 +382,153 @@ function M.save_draft(account, email_data, folder)
   return true
 end
 
+-- Get email by ID
+function M.get_email_by_id(account, folder, email_id)
+  local cmd = string.format(
+    '%s -a %s message read -f %s %s',
+    config.config.binaries.himalaya or 'himalaya',
+    vim.fn.shellescape(account),
+    vim.fn.shellescape(folder),
+    vim.fn.shellescape(email_id)
+  )
+  
+  local output = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    return nil, 'Failed to read email: ' .. output
+  end
+  
+  -- Parse the email content
+  local email = {
+    id = email_id,
+    body = output,
+  }
+  
+  -- Extract headers from the output
+  local in_headers = true
+  local body_lines = {}
+  
+  for line in output:gmatch("[^\r\n]+") do
+    if in_headers and line == "" then
+      in_headers = false
+    elseif in_headers then
+      local header, value = line:match("^([^:]+):%s*(.*)$")
+      if header then
+        email[header:lower():gsub("-", "_")] = value
+      end
+    else
+      table.insert(body_lines, line)
+    end
+  end
+  
+  email.body = table.concat(body_lines, "\n")
+  
+  return email
+end
+
+-- Find draft folder for account
+function M.find_draft_folder(account)
+  local account_config = config.get_account(account)
+  if not account_config then
+    return nil
+  end
+  
+  -- Check common draft folder names
+  local draft_folders = { 'Drafts', 'DRAFTS', '[Gmail]/Drafts', 'Draft' }
+  
+  -- Check folder map for draft folder
+  if account_config.folder_map then
+    for imap, local_folder in pairs(account_config.folder_map) do
+      if imap:lower():match('draft') then
+        return local_folder
+      end
+    end
+  end
+  
+  -- Default to 'Drafts'
+  return 'Drafts'
+end
+
+-- Save draft to maildir
+function M.save_draft(account, folder, email_data)
+  local cmd_parts = {
+    config.config.binaries.himalaya or 'himalaya',
+    '-a', account,
+    'message', 'save',
+    '-f', folder,
+  }
+  
+  -- Create email content
+  local content = M.format_email_for_sending(email_data)
+  
+  -- Use echo to pipe content
+  local full_cmd = string.format(
+    'echo %s | %s',
+    vim.fn.shellescape(content),
+    table.concat(cmd_parts, ' ')
+  )
+  
+  local output = vim.fn.system(full_cmd)
+  if vim.v.shell_error ~= 0 then
+    return nil, 'Failed to save draft: ' .. output
+  end
+  
+  -- Extract draft ID from output if possible
+  local draft_id = output:match('Message saved with ID: (%S+)') or 
+                   output:match('id: (%S+)') or
+                   'draft_' .. os.time()
+  
+  return { id = draft_id }
+end
+
+-- Delete email (for draft cleanup)
+function M.delete_email(account, folder, email_id)
+  local cmd = string.format(
+    '%s -a %s message delete -f %s %s',
+    config.config.binaries.himalaya or 'himalaya',
+    vim.fn.shellescape(account),
+    vim.fn.shellescape(folder),
+    vim.fn.shellescape(email_id)
+  )
+  
+  local output = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    error('Failed to delete email: ' .. output)
+  end
+  
+  return true
+end
+
+-- Get folder email count
+function M.get_folder_email_count(account, folder)
+  -- Try to get count from himalaya list output
+  local cmd = string.format(
+    '%s -a %s list -f %s --page-size 1 2>/dev/null | head -1',
+    config.config.binaries.himalaya or 'himalaya',
+    vim.fn.shellescape(account),
+    vim.fn.shellescape(folder)
+  )
+  
+  local output = vim.fn.system(cmd)
+  
+  -- Parse output to extract total count
+  -- Expected format: "Page 1 / 10 | 243 emails"
+  local count = output:match('| (%d+) emails?')
+  
+  if count then
+    return tonumber(count)
+  end
+  
+  -- Fallback: count files in maildir
+  local maildir = config.get_current_account().maildir_path .. folder .. '/cur/'
+  local files = vim.fn.globpath(maildir, '*', 0, 1)
+  return #files
+end
+
+-- Send email with account context
+function M.send_email(account, email_data)
+  return M.send_email_raw(email_data, account)
+end
+
 -- Format email data for sending
 function M.format_email_for_sending(email_data)
   local lines = {}

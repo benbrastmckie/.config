@@ -4,16 +4,16 @@ This document outlines planned features and enhancements for the Himalaya email 
 
 ## High Priority Features
 
-**Current Task:** Implementation spec created for Enhanced UI/UX Features (see ENHANCED_UI_UX_SPEC.md)
+**Current Task:** Enhanced UI/UX Features IMPLEMENTED ✅
 
-### 1. Enhanced UI/UX Features
-- **Hover Preview**: Preview emails in a second sidebar when hovering
-- **Buffer-based Composition**: Compose/reply/forward emails in regular buffers
-  - Auto-save to drafts folder
-  - Delete drafts when discarding
-- **Improved Confirmations**: Use return/escape for confirmation dialogs
-- **Accurate Email Count**: Fix "Page 1 | 200 emails" to reflect actual count
-- **Remove Noisy Messages**: Remove "Himalaya closed" notification
+### 1. Enhanced UI/UX Features ✅ IMPLEMENTED
+- **Hover Preview**: Preview emails in a second sidebar when hovering ✅
+- **Buffer-based Composition**: Compose/reply/forward emails in regular buffers ✅
+  - Auto-save to drafts folder ✅
+  - Delete drafts when discarding ✅
+- **Improved Confirmations**: Use return/escape for confirmation dialogs ✅
+- **Accurate Email Count**: Fix "Page 1 | 200 emails" to reflect actual count ✅
+- **Remove Noisy Messages**: Remove "Himalaya closed" notification ✅
 
 ### 2. Email Management Features
 - **Attachment Support**: View and manage email attachments

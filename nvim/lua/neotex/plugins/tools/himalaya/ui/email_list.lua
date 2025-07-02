@@ -11,6 +11,7 @@ local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
+local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 
 -- Module state
 local sync_status_timer = nil
@@ -218,6 +219,10 @@ function M.show_email_list(args)
     -- Store total count
     if total_count then
       state.set_total_emails(total_count)
+      -- Update cached count
+      local account = state.get_current_account()
+      local folder = state.get_current_folder()
+      state.set('email_counts.' .. account .. '.' .. folder, total_count)
     end
     
     -- Format and display email list
@@ -233,6 +238,9 @@ function M.show_email_list(args)
     
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
+    
+    -- Set up hover preview
+    M.setup_hover_preview(buf)
     
     -- Check for running sync and start status updates
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
@@ -289,8 +297,24 @@ function M.format_email_list(emails)
   end
   
   local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
-  local pagination_info = string.format('Page %d | %d emails', 
-    state.get_current_page(), state.get_total_emails())
+  
+  -- Get accurate email count
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local total_emails = state.get('email_counts.' .. account .. '.' .. folder)
+  
+  -- If no cached count, get it
+  if not total_emails then
+    total_emails = utils.get_folder_email_count(account, folder)
+    state.set('email_counts.' .. account .. '.' .. folder, total_emails)
+  end
+  
+  local page_size = state.get_page_size()
+  local current_page = state.get_current_page()
+  local total_pages = math.max(1, math.ceil(total_emails / page_size))
+  
+  local pagination_info = string.format('Page %d / %d | %d emails', 
+    current_page, total_pages, total_emails)
   
   -- Remove selection info display
   
@@ -298,10 +322,7 @@ function M.format_email_list(emails)
   local sync_status_line = M.get_sync_status_line()
   
   -- Debug the sync status
-  local notify = require('neotex.util.notifications')
-  if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya('format_email_list: sync_status_line = ' .. tostring(sync_status_line), notify.categories.BACKGROUND)
-  end
+  notifications.debug('format_email_list: sync_status_line = ' .. tostring(sync_status_line))
   
   table.insert(lines, header)
   table.insert(lines, pagination_info)
@@ -842,6 +863,66 @@ function M.pick_account()
       end
     end
   end)
+end
+
+-- Get email ID from current line
+function M.get_email_id_from_line(line_num)
+  local buf = vim.api.nvim_get_current_buf()
+  local line_map = vim.b[buf].himalaya_line_map
+  local email_start_line = vim.b[buf].himalaya_email_start_line
+  
+  if not line_map or not email_start_line then
+    return nil
+  end
+  
+  -- Get metadata for this line
+  local metadata = line_map[line_num]
+  if metadata and metadata.email_id then
+    return metadata.email_id
+  end
+  
+  return nil
+end
+
+-- Setup hover preview for email list
+function M.setup_hover_preview(buf)
+  if not config.get('preview.enabled', true) then
+    return
+  end
+  
+  -- Store sidebar window for preview positioning
+  local sidebar_win = sidebar.get_win()
+  
+  -- CursorHold - show preview after delay
+  vim.api.nvim_create_autocmd('CursorHold', {
+    buffer = buf,
+    callback = function()
+      if not email_preview.config.enabled then return end
+      
+      local line = vim.api.nvim_win_get_cursor(0)[1]
+      local email_id = M.get_email_id_from_line(line)
+      
+      if email_id then
+        email_preview.show_preview(email_id, sidebar_win)
+      end
+    end
+  })
+  
+  -- CursorMoved - hide preview when cursor moves
+  vim.api.nvim_create_autocmd('CursorMoved', {
+    buffer = buf,
+    callback = function()
+      email_preview.hide_preview()
+    end
+  })
+  
+  -- BufLeave - hide preview when leaving buffer
+  vim.api.nvim_create_autocmd('BufLeave', {
+    buffer = buf,
+    callback = function()
+      email_preview.hide_preview()
+    end
+  })
 end
 
 return M
