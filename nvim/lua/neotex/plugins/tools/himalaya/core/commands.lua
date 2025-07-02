@@ -1229,6 +1229,10 @@ function M.register_all()
   for name, def in pairs(M.command_registry) do
     cmd(name, def.fn, def.opts)
   end
+  
+  -- Register preview commands
+  local preview_commands = require('neotex.plugins.tools.himalaya.core.commands_preview')
+  preview_commands.register()
 end
 
 return M

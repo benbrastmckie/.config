@@ -11,7 +11,7 @@ local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
-local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 
 -- Module state
@@ -931,7 +931,7 @@ function M.setup_hover_preview(buf)
       local email_id = M.get_email_id_from_line(line)
       
       if email_id then
-        email_preview.show_preview(email_id, sidebar_win)
+        email_preview.queue_preview(email_id, sidebar_win, 'keyboard')
       end
     end
   })

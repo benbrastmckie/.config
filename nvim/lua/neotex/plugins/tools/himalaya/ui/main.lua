@@ -41,9 +41,11 @@ function M.init()
   -- Initialize v2 modules
   local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
   local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+  local email_preview_v2 = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
   local config = require('neotex.plugins.tools.himalaya.core.config')
   email_viewer_v2.setup(config.config)
   email_composer_v2.setup(config.config)
+  email_preview_v2.setup(config.config)
   
   -- Sync state with sidebar configuration (non-intrusive)
   state.sync_with_sidebar()
