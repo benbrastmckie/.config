@@ -62,9 +62,9 @@ The plugin follows a clean layered architecture:
 ## Recent Major Refactoring (Phases 1-5 Complete)
 
 The plugin recently underwent comprehensive refactoring:
-- ✅ **Phase 1-3**: Modularized UI components (1000+ lines → focused modules)
-- ✅ **Phase 4**: Unified state management (removed dual state systems)
-- ✅ **Phase 5**: Architecture improvements and notification standardization
+- [x] **Phase 1-3**: Modularized UI components (1000+ lines -> focused modules)
+- [x] **Phase 4**: Unified state management (removed dual state systems)
+- [x] **Phase 5**: Architecture improvements and notification standardization
 
 **Status**: Core refactoring complete, testing phases pending
 
@@ -170,6 +170,6 @@ See [spec/FEATURES_SPEC.md](spec/FEATURES_SPEC.md) for planned enhancements:
 - Performance optimizations and code quality improvements
 
 ## Navigation
-- [← Neovim Tools](../README.md)
+- [< Neovim Tools](../README.md)
 - [Architecture Documentation](docs/ARCHITECTURE.md)
 - [Development Specifications](spec/README.md)

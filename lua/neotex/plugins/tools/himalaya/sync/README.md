@@ -127,4 +127,4 @@ end, 30) -- 30 second timeout
 ```
 
 ## Navigation
-- [← Himalaya Plugin](../README.md)
+- [< Himalaya Plugin](../README.md)

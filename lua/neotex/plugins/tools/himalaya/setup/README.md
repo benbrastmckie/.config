@@ -154,4 +154,4 @@ health.check_accounts({
 ```
 
 ## Navigation
-- [← Himalaya Plugin](../README.md)
+- [< Himalaya Plugin](../README.md)

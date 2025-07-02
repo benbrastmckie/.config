@@ -4,9 +4,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 
 ## High Priority Features
 
-**Current Task:** Enhanced UI/UX Features IMPLEMENTED ✅
-
-### 1. Enhanced UI/UX Features ✅ IMPLEMENTED
+### 1. Enhanced UI/UX Features ✅ COMPLETE
 - **Hover Preview**: Preview emails in a second sidebar when hovering ✅
 - **Buffer-based Composition**: Compose/reply/forward emails in regular buffers ✅
   - Auto-save to drafts folder ✅
@@ -14,6 +12,8 @@ This document outlines planned features and enhancements for the Himalaya email 
 - **Improved Confirmations**: Use return/escape for confirmation dialogs ✅
 - **Accurate Email Count**: Fix "Page 1 | 200 emails" to reflect actual count ✅
 - **Remove Noisy Messages**: Remove "Himalaya closed" notification ✅
+
+**Implementation Details**: See [ENHANCED_UI_UX_SPEC.md](ENHANCED_UI_UX_SPEC.md) for full implementation documentation.
 
 ### 2. Email Management Features
 - **Attachment Support**: View and manage email attachments
@@ -27,7 +27,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 - **Himalaya FAQ Features**: Implement remaining features from [Himalaya FAQ](https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq)
 
 ### 3. Sync Improvements
-- **Remove Fast Sync**: Simplify to single sync mechanism ✅ COMPLETE
+- **Remove Fast Sync**: Simplify to single sync mechanism [x] COMPLETE
 - **Smart Sync Status**: Enhanced sidebar status for sync operations
 - **Auto-sync on Start**: Automatic sync when nvim opens
 - **Sync Error Recovery**: Automatic recovery from UIDVALIDITY issues

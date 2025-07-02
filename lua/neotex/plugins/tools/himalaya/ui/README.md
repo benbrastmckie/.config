@@ -206,4 +206,4 @@ notifications.show("Email sent successfully", "success", "compose")
 ```
 
 ## Navigation
-- [← Himalaya Plugin](../README.md)
+- [< Himalaya Plugin](../README.md)

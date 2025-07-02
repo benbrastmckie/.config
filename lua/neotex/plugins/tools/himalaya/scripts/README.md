@@ -172,4 +172,4 @@ Scripts return these exit codes:
 - `5`: Network connectivity issue
 
 ## Navigation
-- [← Himalaya Plugin](../README.md)
+- [< Himalaya Plugin](../README.md)
