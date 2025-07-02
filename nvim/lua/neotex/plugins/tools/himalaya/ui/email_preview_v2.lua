@@ -61,6 +61,7 @@ function M.get_or_create_preview_buffer()
   vim.api.nvim_buf_set_option(buf, 'swapfile', false)
   vim.api.nvim_buf_set_option(buf, 'undolevels', -1)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   
   preview_buffers[buf] = true
   return buf
@@ -82,44 +83,25 @@ end
 
 -- Calculate smart preview position
 function M.calculate_preview_position(parent_win)
-  local win_width = vim.api.nvim_win_get_width(parent_win)
+  local sidebar_width = vim.api.nvim_win_get_width(parent_win)
   local win_height = vim.api.nvim_win_get_height(parent_win)
-  local cursor_pos = vim.api.nvim_win_get_cursor(parent_win)
+  local win_pos = vim.api.nvim_win_get_position(parent_win)
   
-  -- Smart positioning based on available space
-  if win_width > 160 then
-    -- Wide screen: show on right
-    return {
-      relative = 'win',
-      win = parent_win,
-      width = M.config.width,
-      height = win_height - 2,
-      row = 0,
-      col = win_width + 1,
-      style = 'minimal',
-      border = M.config.border,
-      title = ' Email Preview ',
-      title_pos = 'center',
-      focusable = M.config.focusable,
-      zindex = 50,
-    }
-  else
-    -- Narrow screen: show below cursor
-    return {
-      relative = 'win',
-      win = parent_win,
-      width = win_width - 4,
-      height = math.min(20, win_height - cursor_pos[1] - 2),
-      row = cursor_pos[1] + 1,
-      col = 0,
-      style = 'minimal',
-      border = M.config.border,
-      title = ' Email Preview ',
-      title_pos = 'center',
-      focusable = M.config.focusable,
-      zindex = 50,
-    }
-  end
+  -- Always position to the right of sidebar
+  -- Use editor positioning to place it beside the sidebar
+  return {
+    relative = 'editor',
+    width = 80,  -- Fixed 80 character width as requested
+    height = win_height,
+    row = win_pos[1],
+    col = win_pos[2] + sidebar_width + 1,  -- Position after sidebar + 1 for border
+    style = 'minimal',
+    border = M.config.border,
+    title = ' Email Preview ',
+    title_pos = 'center',
+    focusable = true,  -- Make it focusable so we can enter it
+    zindex = 50,
+  }
 end
 
 -- Safe preview wrapper with error handling
@@ -454,6 +436,42 @@ end
 -- Get current preview email ID
 function M.get_current_preview_id()
   return current_preview_id
+end
+
+-- Focus the preview window
+function M.focus_preview()
+  if preview_win and vim.api.nvim_win_is_valid(preview_win) then
+    vim.api.nvim_set_current_win(preview_win)
+    
+    -- Set up keymaps for preview window
+    local buf = vim.api.nvim_win_get_buf(preview_win)
+    local opts = { buffer = buf, silent = true }
+    
+    -- q to return to sidebar
+    vim.keymap.set('n', 'q', function()
+      -- Find the sidebar window
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      local sidebar_win = sidebar.get_win()
+      if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+        vim.api.nvim_set_current_win(sidebar_win)
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Return to sidebar' }))
+    
+    -- Enter to open in buffer
+    vim.keymap.set('n', '<CR>', function()
+      if current_preview_id then
+        -- Close preview
+        M.hide_preview()
+        -- Open email in buffer
+        local viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+        viewer.view_email(current_preview_id)
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Open email in buffer' }))
+    
+    -- Standard vim navigation should work for scrolling
+    return true
+  end
+  return false
 end
 
 -- Update config
