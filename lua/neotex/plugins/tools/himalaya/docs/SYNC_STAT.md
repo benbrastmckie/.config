@@ -1,169 +1,206 @@
-# Sync Status Display Specification
+# Sync Status Display Implementation
 
-## Problem Statement
+Current implementation of sync status parsing and display for the Himalaya email plugin.
 
-The current sync status display shows confusing and inconsistent numbers that jump around wildly during email synchronization, making it impossible for users to understand the actual progress of their sync operation.
+## Current Implementation Status
 
-### Current Behavior
+✅ **RESOLVED** - The sync status display issues have been addressed through comprehensive refactoring in sync/mbsync.lua and the unified sync manager.
 
-During a sync operation, the status displays show values like:
-- `= Syncing (1m 5s): 1 new to download`
-- `= Syncing (1m 25s): 24500 to upload` 
-- `= Syncing (1m 50s): 26590/26590 synced`
-- `= Syncing (1m 55s): 26323 new to download`
-- `= Syncing (2m 10s): 267/267 synced`
-- `= Syncing (4m 45s): 8 new to download`
-- `= Syncing (5m 15s): 797 new to download`
+## Implementation Overview
 
-These numbers:
-1. Jump from small to large values unpredictably (1 � 24500 � 26590 � 26323 � 267 � 8 � 797)
-2. Switch between different types of operations (download/upload/synced) without clear context
-3. Don't provide a clear sense of overall progress or completion percentage
-4. Eventually result in sync failure with error code 1
+The sync system now provides clear, consistent progress information through:
 
-### Desired Behavior
+### 1. Unified Sync Manager (`sync/manager.lua`)
+- **Coordinates all sync operations** with consistent state management
+- **Tracks sync lifecycle** from start to completion with timing
+- **Provides unified status** across different sync types (inbox, full)
+- **Updates UI in real-time** through state notifications
 
-Users want to see clear incremental progress like:
-- `= Syncing (2m 15s): 45/120 emails`
-- A consistent count that shows how many emails have been processed and how many remain
-- Clear indication of what operation is being performed (downloading, uploading, etc.)
+### 2. Enhanced Progress Parsing (`sync/mbsync.lua`)
+- **Folder-focused progress** as primary indicator
+- **Real-time message counts** for current folder being synced
+- **Clean folder name detection** with common folder mapping
+- **Operation type detection** (downloading, uploading, updating flags)
 
-## Technical Analysis
+### 3. Improved Display Logic (`ui/email_list.lua`)
+- **Progressive disclosure** showing relevant information based on sync stage
+- **Consistent format** with folder progress and elapsed time
+- **Clear operation context** showing what's currently happening
 
-### mbsync Output Format
+## Current Display Examples
 
-mbsync provides progress information in the following format:
+The new implementation provides these user-friendly displays:
+
 ```
-C: 1/2 B: 3/4 F: +13/13 *23/42 #0/0 -0/0 N: +0/7 *0/0 #0/0
-```
+# Initial sync start
+󰜉 Syncing (0s): Initializing...
 
-Where:
-- `C: X/Y` - Channels processed (X) of total (Y)
-- `B: X/Y` - Mailboxes (folders) processed (X) of total (Y)
-- `F:` - Far side (server) operations:
-  - `+X/Y` - Messages added (X) of total to add (Y)
-  - `*X/Y` - Messages updated (X) of total to update (Y)
-  - `#X/Y` - Messages flagged (X) of total to flag (Y)
-  - `-X/Y` - Messages deleted (X) of total to delete (Y)
-- `N:` - Near side (local) operations with same format as F:
+# Folder-level progress
+󰜉 Syncing (1m 5s): 2/5 folders - INBOX
 
-### Current Implementation Issues
+# Message-level progress within folder
+󰜉 Syncing (1m 15s): 2/5 folders - INBOX (45/120) - Downloading
 
-1. **Mixed Operation Types**: The parser is capturing different types of operations (adds, updates, flags, deletes) but displaying them inconsistently
-2. **Cumulative vs Current**: mbsync reports cumulative totals, not current progress for a single operation
-3. **Multiple Passes**: mbsync may make multiple passes over folders, causing numbers to reset or jump
-4. **Context Loss**: Without knowing which folder/channel is being processed, numbers lack context
+# Operation without specific counts
+󰜉 Syncing (2m 10s): 3/5 folders - Sent - Updating flags
 
-### Root Causes
-
-1. **Parser Complexity**: The current parser tries to extract too many different metrics without understanding the context
-2. **Display Logic**: The display logic doesn't differentiate between operation types or provide context
-3. **State Management**: Progress state isn't properly tracked across different sync phases
-
-## Proposed Solution
-
-### 1. Simplify Progress Tracking
-
-Focus on the most meaningful metrics:
-- Current folder being synced
-- Overall channel progress (X/Y channels)
-- Current operation type (downloading, uploading, etc.)
-- Estimated time remaining (if possible)
-
-### 2. Context-Aware Display
-
-Show progress with clear context:
-```
-= Syncing INBOX (1/5 folders): Downloading messages...
-= Syncing Sent (2/5 folders): Uploading 45 messages...
-= Syncing All_Mail (3/5 folders): Updating flags...
+# Final summary with statistics
+󰜉 Syncing (3m 15s): 5/5 folders | +234 ↻45 -2 emails
 ```
 
-### 3. Operation Grouping
+## Technical Implementation Details
 
-Group similar operations and show aggregate progress:
-- Instead of showing individual add/update/flag operations
-- Show total messages being processed for current folder
-- Use folder-level progress as primary indicator
+### Progress Data Structure
+```lua
+progress = {
+  status = 'syncing',
+  current_folder = 'INBOX',
+  folders_done = 2,
+  folders_total = 5,
+  current_operation = 'Downloading',
+  messages_processed = 45,
+  messages_total = 120,
+  total_new = 234,
+  total_updated = 45, 
+  total_deleted = 2,
+  start_time = os.time()
+}
+```
 
-### 4. Progressive Disclosure
+### Key Parsing Improvements
 
-Provide different levels of detail:
-- Simple mode: `= Syncing (2m 15s): 3/5 folders`
-- Detailed mode: `= Syncing All_Mail (3/5): 1,234/5,678 messages`
-- Debug mode: Full mbsync counter display
-
-## Implementation Plan
-
-### Phase 1: Research
-- Study mbsync verbose output patterns in detail
-- Test with different mailbox sizes and sync scenarios
-- Understand the relationship between counters and actual progress
-
-### Phase 2: Parser Refactor
-- Simplify parse_progress() to focus on key metrics
-- Add context tracking (current folder, operation type)
-- Implement proper state management for multi-phase syncs
-
-### Phase 3: Display Enhancement
-- Create clear, consistent progress messages
-- Add folder-level progress tracking
-- Implement progressive disclosure options
-
-### Phase 4: Testing
-- Test with various email accounts and folder structures
-- Verify progress accuracy and consistency
-- Ensure no performance regression
-
-## Alternative Approaches
-
-### Option 1: Time-Based Progress
-Show elapsed time and current operation without counts:
-- `= Syncing (2m 15s): Processing INBOX...`
-- `= Syncing (3m 45s): Processing All_Mail...`
-
-### Option 2: Folder-Only Progress
-Focus solely on folder completion:
-- `= Syncing:  INBOX  Sent � All_Mail � Drafts � Trash`
-
-### Option 3: Percentage-Based
-Calculate approximate percentage based on folders and operations:
-- `= Syncing: 60% complete (3/5 folders)`
-
-## Success Criteria
-
-1. Progress display shows consistent, understandable numbers
-2. Users can gauge how much work remains
-3. No confusing number jumps or resets
-4. Clear indication of current operation
-5. Works reliably across different email providers and folder structures
-
-## Implementation Completed
-
-### Changes Made
-
-1. **Simplified Progress Tracking** in `sync/mbsync.lua`:
-   - Focus on folder-level progress as primary indicator
-   - Track current folder and message counts per folder
-   - Accumulate overall statistics (+new, ↻updated, -deleted)
-   - Remove confusing cumulative counters
-
-2. **Clearer Display Logic** in `ui/main.lua`:
-   - Primary display: "X/Y folders" with current folder name
-   - Secondary display: Message progress for current folder
-   - Compact statistics using icons (+, ↻, -)
-   - Progressive disclosure based on available data
-
-3. **Expected Display Examples**:
-   ```
-   🔄 Syncing (1m 5s): 2/5 folders - INBOX (45/120)
-   🔄 Syncing (2m 10s): 3/5 folders - Sent - Uploading
-   🔄 Syncing (3m 15s): 5/5 folders | +234 ↻45 -2
+1. **Folder Detection** - Robust pattern matching for various mbsync output formats:
+   ```lua
+   local opening_box = line:match('Opening master box (.+)') or
+                       line:match('Opening slave box (.+)') or
+                       line:match('Mailbox (.+)') or
+                       line:match('Processing mailbox (.+)')
    ```
 
-### Benefits
+2. **Progress Parsing** - Focus on meaningful metrics:
+   ```lua
+   -- Folder progress (primary indicator)
+   local mailboxes_done, mailboxes_total = line:match('B:%s*(%d+)/(%d+)')
+   
+   -- Message progress for current folder  
+   local n_added_current, n_added_total = line:match('N:%s*%+(%d+)/(%d+)')
+   ```
 
-- Clear folder-based progress gives users context
-- Per-folder message counts show granular progress
-- Overall statistics provide summary without confusion
-- No more jumping numbers or misleading totals
+3. **Clean Folder Names** - Map technical names to user-friendly labels:
+   ```lua
+   if folder_name:match('All_Mail') or folder_name:match('All Mail') then
+     folder_name = 'All Mail'
+   elseif folder_name:match('Spam') or folder_name:match('Junk') then
+     folder_name = 'Spam'
+   end
+   ```
+
+### Display Logic Improvements
+
+The `ui/email_list.lua` module now implements progressive disclosure:
+
+```lua
+function M.get_sync_status_line_detailed()
+  local sync_info = sync_manager.get_sync_info()
+  
+  -- Base message with elapsed time
+  local message = sync_info.message
+  if sync_info.start_time then
+    local elapsed = os.time() - sync_info.start_time
+    message = message .. string.format(" (%ds)", elapsed)
+  end
+  
+  -- Add folder progress
+  if progress.folders_total > 0 then
+    message = message .. string.format(": %d/%d folders", 
+      progress.folders_done, progress.folders_total)
+  end
+  
+  -- Add current folder and operation
+  if progress.current_folder then
+    message = message .. " - " .. progress.current_folder
+    
+    -- Add message progress if available
+    if progress.messages_total > 0 then
+      message = message .. string.format(" (%d/%d)", 
+        progress.messages_processed, progress.messages_total)
+    end
+    
+    -- Add operation type
+    if progress.current_operation then
+      message = message .. " - " .. progress.current_operation
+    end
+  end
+  
+  return message
+end
+```
+
+## Benefits of Current Implementation
+
+1. **Clear Context** - Users always know which folder is being processed
+2. **Predictable Progress** - Folder-based progress provides consistent advancement
+3. **Granular Detail** - Message counts show progress within each folder
+4. **No Confusing Jumps** - Progress only increases, never resets unexpectedly
+5. **Meaningful Operations** - Clear indication of what mbsync is doing
+
+## State Management Integration
+
+The sync status integrates with the unified state system:
+
+```lua
+-- Sync manager updates state
+state.set('sync.status', 'running')
+state.set('sync.progress', progress)
+state.set('sync.start_time', os.time())
+
+-- UI components read state
+local sync_info = sync_manager.get_sync_info()
+local status_line = email_list.get_sync_status_line()
+```
+
+## Error Handling
+
+The system gracefully handles various error conditions:
+
+1. **Parse Failures** - Continues with existing progress data
+2. **Malformed Output** - Filters and cleans mbsync output
+3. **Process Termination** - Properly cleans up state
+4. **Network Issues** - Maintains last known progress
+
+## Debugging Support
+
+Debug information is available when debug mode is enabled:
+
+```lua
+if notify.config.modules.himalaya.debug_mode then
+  notify.himalaya('Progress line: ' .. line, notify.categories.BACKGROUND)
+  notify.himalaya('Parsed folder progress: ' .. folders_done .. '/' .. folders_total, 
+    notify.categories.BACKGROUND)
+end
+```
+
+## Future Enhancements
+
+Potential improvements identified for future implementation:
+
+1. **Bandwidth Monitoring** - Track sync speed and data transfer
+2. **Time Estimation** - Predict remaining sync time based on history
+3. **Selective Sync** - Allow syncing specific folders only
+4. **Conflict Resolution** - Better handling of sync conflicts
+5. **Background Sync** - Optional automatic periodic syncing
+
+## Historical Context
+
+This implementation resolves the original issues documented in this file:
+- ❌ ~~Confusing number jumps~~ → ✅ Consistent folder-based progress
+- ❌ ~~Mixed operation types~~ → ✅ Clear operation context
+- ❌ ~~No completion sense~~ → ✅ Folder progress shows advancement
+- ❌ ~~Unpredictable resets~~ → ✅ Progress only increases within folders
+
+The current implementation provides the "clear incremental progress" that users requested, with consistent counts and clear operation context.
+
+## Navigation
+- [← Himalaya Plugin](../README.md)
+- [Architecture Documentation](ARCHITECTURE.md)
+- [Test Documentation](TEST_CHECKLIST.md)
