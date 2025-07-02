@@ -71,7 +71,12 @@ function M.release_preview_buffer(buf)
   if preview_buffers[buf] then
     preview_buffers[buf] = false
     -- Clear content but keep buffer for reuse
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    if vim.api.nvim_buf_is_valid(buf) then
+      local modifiable = vim.api.nvim_buf_get_option(buf, 'modifiable')
+      vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+      vim.api.nvim_buf_set_option(buf, 'modifiable', modifiable)
+    end
   end
 end
 
@@ -189,13 +194,20 @@ function M.render_preview(email, buf)
   -- Protected render function
   local function do_render()
     if M.config.show_headers then
-      table.insert(lines, "From: " .. (email.from or "Unknown"))
-      table.insert(lines, "To: " .. (email.to or "Unknown"))
+      -- Safe string conversion for all fields
+      local from = tostring(email.from or "Unknown")
+      local to = tostring(email.to or "Unknown")
+      local subject = tostring(email.subject or "No Subject")
+      local date = tostring(email.date or "Unknown")
+      
+      table.insert(lines, "From: " .. from)
+      table.insert(lines, "To: " .. to)
       if email.cc then
-        table.insert(lines, "Cc: " .. email.cc)
+        local cc = tostring(email.cc)
+        table.insert(lines, "Cc: " .. cc)
       end
-      table.insert(lines, "Subject: " .. (email.subject or "No Subject"))
-      table.insert(lines, "Date: " .. (email.date or "Unknown"))
+      table.insert(lines, "Subject: " .. subject)
+      table.insert(lines, "Date: " .. date)
       table.insert(lines, string.rep("-", M.config.width - 2))
       table.insert(lines, "")
     end
@@ -341,14 +353,9 @@ function M.show_preview(email_id, parent_win)
       '-a', account,
       'message', 'read', tostring(email_id),
       '-f', folder,
-      '--output', 'json'
+      '--output', 'json',
+      '--preview'  -- Don't mark as read when previewing
     }
-    
-    -- Add maildir path if available
-    if account_cfg.maildir_path then
-      table.insert(cmd, 2, '--maildir-path')
-      table.insert(cmd, 3, vim.fn.expand(account_cfg.maildir_path))
-    end
     
     vim.fn.jobstart(cmd, {
       on_stdout = function(_, data, _)
