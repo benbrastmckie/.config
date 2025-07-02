@@ -338,22 +338,26 @@ function M.setup_buffer_keymaps(bufnr)
   -- Email list keymaps
   if vim.bo[bufnr].filetype == 'himalaya-list' then
     keymap('n', '<CR>', function()
-      -- If preview is shown, focus it; otherwise show preview
       local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
-      if preview.is_preview_shown() then
+      local line = vim.api.nvim_win_get_cursor(0)[1]
+      local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+      local email_id = email_list.get_email_id_from_line(line)
+      
+      if not email_id then
+        return
+      end
+      
+      -- Check if preview is shown for current email
+      if preview.is_preview_shown() and preview.get_current_preview_id() == email_id then
+        -- Preview is already showing for this email, just focus it
         preview.focus_preview()
       else
-        -- Get current email ID and show preview
-        local line = vim.api.nvim_win_get_cursor(0)[1]
-        local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
-        local email_id = email_list.get_email_id_from_line(line)
-        if email_id then
-          preview.show_preview(email_id, vim.api.nvim_get_current_win())
-          -- After showing, focus it
-          vim.defer_fn(function()
-            preview.focus_preview()
-          end, 100)
-        end
+        -- Show preview for this email
+        preview.show_preview(email_id, vim.api.nvim_get_current_win())
+        -- After showing, focus it
+        vim.defer_fn(function()
+          preview.focus_preview()
+        end, 150)
       end
     end, vim.tbl_extend('force', opts, { desc = 'Focus/show email preview' }))
     
