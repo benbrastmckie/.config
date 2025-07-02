@@ -32,6 +32,44 @@ function M.init(config)
   logger.debug('Email cache initialized', { config = M.config })
 end
 
+-- Safe string conversion that handles userdata
+local function safe_tostring(value, default)
+  default = default or 'Unknown'
+  if not value then
+    return default
+  end
+  
+  local t = type(value)
+  if t == 'string' then
+    return value
+  elseif t == 'number' or t == 'boolean' then
+    return tostring(value)
+  elseif t == 'table' then
+    -- Try common email field patterns
+    if value.name then
+      return safe_tostring(value.name, default)
+    elseif value.addr then
+      return safe_tostring(value.addr, default)
+    elseif value[1] then
+      return safe_tostring(value[1], default)
+    else
+      -- Try tostring metamethod
+      local ok, str = pcall(tostring, value)
+      if ok and str and str ~= 'table' then
+        return str
+      end
+    end
+  else
+    -- Handle userdata and other types
+    local ok, str = pcall(tostring, value)
+    if ok and str and not str:match('^userdata') and not str:match('^table:') then
+      return str
+    end
+  end
+  
+  return default
+end
+
 -- Normalize complex fields to simple strings
 function M.normalize_email(email)
   if not email then
@@ -39,9 +77,9 @@ function M.normalize_email(email)
   end
   
   local normalized = {
-    id = tostring(email.id or ''),
-    subject = email.subject or 'No Subject',
-    date = email.date or 'Unknown',
+    id = safe_tostring(email.id, ''),
+    subject = safe_tostring(email.subject, 'No Subject'),
+    date = safe_tostring(email.date, 'Unknown'),
     flags = {},
     -- Store timestamp for TTL
     cached_at = os.time(),
@@ -55,62 +93,38 @@ function M.normalize_email(email)
   end
   
   -- Handle from field
-  if email.from then
-    if type(email.from) == 'table' then
-      normalized.from = email.from.name or email.from.addr or 'Unknown'
-      normalized.from_addr = email.from.addr
-      normalized.from_name = email.from.name
-    else
-      normalized.from = tostring(email.from)
-    end
-  else
-    normalized.from = 'Unknown'
+  normalized.from = safe_tostring(email.from, 'Unknown')
+  if type(email.from) == 'table' then
+    normalized.from_addr = safe_tostring(email.from.addr)
+    normalized.from_name = safe_tostring(email.from.name)
   end
   
   -- Handle to field
-  if email.to then
-    if type(email.to) == 'table' then
-      if vim.islist and vim.islist(email.to) or (email.to[1] ~= nil) then
-        -- Handle multiple recipients
-        local recipients = {}
-        for _, recipient in ipairs(email.to) do
-          if type(recipient) == 'table' then
-            table.insert(recipients, recipient.name or recipient.addr or 'Unknown')
-          else
-            table.insert(recipients, tostring(recipient))
-          end
-        end
-        normalized.to = table.concat(recipients, ', ')
-      else
-        normalized.to = email.to.name or email.to.addr or 'Unknown'
-        normalized.to_addr = email.to.addr
-        normalized.to_name = email.to.name
-      end
-    else
-      normalized.to = tostring(email.to or 'Unknown')
+  if type(email.to) == 'table' and (vim.islist and vim.islist(email.to) or (email.to[1] ~= nil)) then
+    -- Handle multiple recipients
+    local recipients = {}
+    for _, recipient in ipairs(email.to) do
+      table.insert(recipients, safe_tostring(recipient, 'Unknown'))
     end
+    normalized.to = table.concat(recipients, ', ')
   else
-    normalized.to = 'Unknown'
+    normalized.to = safe_tostring(email.to, 'Unknown')
+    if type(email.to) == 'table' then
+      normalized.to_addr = safe_tostring(email.to.addr)
+      normalized.to_name = safe_tostring(email.to.name)
+    end
   end
   
   -- Handle cc field
   if email.cc then
-    if type(email.cc) == 'table' then
-      if vim.islist and vim.islist(email.cc) or (email.cc[1] ~= nil) then
-        local cc_list = {}
-        for _, cc in ipairs(email.cc) do
-          if type(cc) == 'table' then
-            table.insert(cc_list, cc.name or cc.addr or '')
-          else
-            table.insert(cc_list, tostring(cc))
-          end
-        end
-        normalized.cc = table.concat(cc_list, ', ')
-      else
-        normalized.cc = email.cc.name or email.cc.addr
+    if type(email.cc) == 'table' and (vim.islist and vim.islist(email.cc) or (email.cc[1] ~= nil)) then
+      local cc_list = {}
+      for _, cc in ipairs(email.cc) do
+        table.insert(cc_list, safe_tostring(cc, ''))
       end
+      normalized.cc = table.concat(cc_list, ', ')
     else
-      normalized.cc = tostring(email.cc)
+      normalized.cc = safe_tostring(email.cc)
     end
   end
   

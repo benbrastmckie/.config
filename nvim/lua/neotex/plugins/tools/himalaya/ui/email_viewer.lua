@@ -192,8 +192,8 @@ function M.get_current_email_id()
   end
   
   local line_num = vim.fn.line('.')
-  local emails = vim.b.himalaya_emails
-  local email_start_line = vim.b.himalaya_email_start_line
+  local emails = state.get('email_list.emails')
+  local email_start_line = state.get('email_list.email_start_line')
   
   if not emails or #emails == 0 then
     return nil
