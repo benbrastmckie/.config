@@ -12,6 +12,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
 local email_viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer')
 local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+local notify = require('neotex.util.notifications')
 
 -- Buffer tracking
 M.buffers = {
@@ -210,7 +211,7 @@ function M.close_without_saving()
       end
     end, 50)
     
-    notifications.show('Draft discarded', 'info')
+    notify.himalaya('Draft discarded', notify.categories.STATUS)
   end
 end
 
@@ -382,7 +383,7 @@ function M.close_himalaya()
     email_compose = nil,
   }
   
-  notifications.show('Himalaya closed', 'info', { buffers_cleaned = closed_buffers })
+  notify.himalaya('Himalaya closed', notify.categories.STATUS)
 end
 
 -- Update email display without resetting pagination
@@ -436,14 +437,14 @@ function M.delete_current_email()
   end
   
   if not email_id then
-    notifications.show('No email to delete', 'warn')
+    notify.himalaya('No email to delete', notify.categories.STATUS)
     return
   end
   
   local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
   
   if success then
-    notifications.show('Email deleted successfully', 'info')
+    notify.himalaya('Email deleted successfully', notify.categories.STATUS)
     
     -- Only close view if we're in an email reading buffer, not the sidebar
     local current_buf = vim.api.nvim_get_current_buf()
@@ -462,7 +463,7 @@ function M.delete_current_email()
     -- Trash folder doesn't exist, offer alternatives
     M.handle_missing_trash_folder(email_id, extra)
   else
-    notifications.show('Failed to delete email', 'error', { error = extra or 'Unknown error' })
+    notify.himalaya('Failed to delete email', notify.categories.STATUS)
   end
 end
 
@@ -473,7 +474,7 @@ function M.handle_missing_trash_folder(email_id, suggested_folders)
   
   if is_headless then
     -- In headless mode, just permanently delete
-    notifications.show('Permanently deleting email (trash folder not found)', 'info')
+    notify.himalaya('Permanently deleting email (trash folder not found)', notify.categories.STATUS)
     M.permanent_delete_email(email_id)
     return
   end
@@ -513,13 +514,13 @@ end
 function M.permanent_delete_email(email_id)
   local success = utils.delete_email(state.get_current_account(), email_id, state.get_current_folder())
   if success then
-    notifications.show('Email permanently deleted', 'info')
+    notify.himalaya('Email permanently deleted', notify.categories.STATUS)
     M.close_current_view()
     vim.defer_fn(function()
       M.refresh_email_list()
     end, 100)
   else
-    notifications.show('Failed to permanently delete email', 'error')
+    notify.himalaya('Failed to permanently delete email', notify.categories.ERROR)
   end
 end
 
@@ -539,7 +540,7 @@ function M.prompt_custom_folder_move(email_id)
   
   if is_headless then
     -- In headless mode, use a default folder
-    notifications.show('Moving email to Archive folder', 'info')
+    notify.himalaya('Moving email to Archive folder', notify.categories.STATUS)
     M.move_email_to_folder(email_id, 'Archive')
     return
   end
@@ -590,7 +591,7 @@ function M.archive_current_email()
     if archive_folder then
       local success = utils.move_email(email_id, archive_folder)
       if success then
-        notifications.show('Email archived', 'info', { folder = archive_folder })
+        notify.himalaya('Email archived', notify.categories.STATUS)
         
         -- Close email view if we're reading the email
         local current_buf = vim.api.nvim_get_current_buf()
@@ -632,7 +633,7 @@ function M.archive_current_email()
       end)
     end
   else
-    notifications.show('No email selected', 'warn')
+    notify.himalaya('No email selected', notify.categories.STATUS)
   end
 end
 
@@ -662,7 +663,7 @@ function M.spam_current_email()
     if spam_folder then
       local success = utils.move_email(email_id, spam_folder)
       if success then
-        notifications.show('Email marked as spam', 'info', { folder = spam_folder })
+        notify.himalaya('Email marked as spam', notify.categories.STATUS)
         
         -- Close email view if we're reading the email
         local current_buf = vim.api.nvim_get_current_buf()
@@ -698,7 +699,7 @@ function M.spam_current_email()
       end)
     end
   else
-    notifications.show('No email selected', 'warn')
+    notify.himalaya('No email selected', notify.categories.STATUS)
   end
 end
 
@@ -743,7 +744,7 @@ function M.restore_session()
   local can_restore, message = M.can_restore_session()
   
   if not can_restore then
-    notifications.show('Cannot restore session', 'warn', { error = message })
+    notify.himalaya('Cannot restore session', notify.categories.STATUS)
     return false
   end
   
@@ -780,10 +781,10 @@ function M.restore_session()
     local last_query = state.get_last_query()
     local search_results = state.get_search_results()
     if last_query and search_results then
-      notifications.show('Previous search available', 'info', { query = last_query })
+      notify.himalaya('Previous search available', notify.categories.STATUS)
     end
     
-    notifications.show('Email session restored', 'info')
+    notify.himalaya('Email session restored', notify.categories.STATUS)
   end, 100)
   
   return true
@@ -794,7 +795,7 @@ function M.prompt_session_restore()
   local can_restore, message = M.can_restore_session()
   
   if not can_restore then
-    notifications.show(message, 'info')
+    notify.himalaya(message, notify.categories.STATUS)
     return
   end
   
@@ -803,7 +804,7 @@ function M.prompt_session_restore()
   
   if is_headless then
     -- In headless mode, just restore directly
-    notifications.show(message, 'info')
+    notify.himalaya(message, notify.categories.STATUS)
     M.restore_session()
   else
     vim.ui.select({'Restore previous session', 'Start fresh'}, {
@@ -833,7 +834,7 @@ function M.delete_selected_emails()
   local selected = state.get_selected_emails()
   
   if #selected == 0 then
-    notifications.show('No emails selected', 'warn')
+    notify.himalaya('No emails selected', notify.categories.STATUS)
     return
   end
   
@@ -847,7 +848,7 @@ function M.delete_selected_emails()
       
       -- Show progress notification for large batches
       if #selected > 5 then
-        notifications.show(string.format('Deleting %d emails...', #selected), 'info')
+        notify.himalaya(string.format('Deleting %d emails...', #selected), notify.categories.STATUS)
       end
       
       for i, email in ipairs(selected) do
@@ -857,22 +858,20 @@ function M.delete_selected_emails()
         else
           error_count = error_count + 1
           -- Log specific error for debugging
-          notifications.show(string.format('Failed to delete email %s: %s', 
-            email.subject or email.id, error_type or 'unknown error'), 'error')
+          notify.himalaya(string.format('Failed to delete email %s: %s', email.subject or email.id, error_type or 'unknown error'), notify.categories.BACKGROUND)
         end
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          notifications.show(string.format('Progress: %d/%d', i, #selected), 'info')
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
       state.clear_selection()
       state.toggle_selection_mode() -- Exit selection mode
       
-      notifications.show(
-        string.format('Deleted %d emails (%d errors)', success_count, error_count),
-        error_count > 0 and 'warn' or 'success'
+      notify.himalaya(string.format('Deleted %d emails (%d errors)', success_count, error_count),
+        error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
       
       M.refresh_email_list()
@@ -885,7 +884,7 @@ function M.archive_selected_emails()
   local selected = state.get_selected_emails()
   
   if #selected == 0 then
-    notifications.show('No emails selected', 'warn')
+    notify.himalaya('No emails selected', notify.categories.STATUS)
     return
   end
   
@@ -919,7 +918,7 @@ function M.archive_selected_emails()
       
       -- Show progress notification for large batches
       if #selected > 5 then
-        notifications.show(string.format('Archiving %d emails to %s...', #selected, archive_folder), 'info')
+        notify.himalaya(string.format('Archiving %d emails to %s...', #selected, archive_folder), notify.categories.STATUS)
       end
       
       for i, email in ipairs(selected) do
@@ -934,16 +933,15 @@ function M.archive_selected_emails()
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          notifications.show(string.format('Progress: %d/%d', i, #selected), 'info')
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
       state.clear_selection()
       state.toggle_selection_mode()
       
-      notifications.show(
-        string.format('Archived %d emails (%d errors)', success_count, error_count),
-        error_count > 0 and 'warn' or 'success'
+      notify.himalaya(string.format('Archived %d emails (%d errors)', success_count, error_count),
+        error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
       
       M.refresh_email_list()
@@ -956,7 +954,7 @@ function M.spam_selected_emails()
   local selected = state.get_selected_emails()
   
   if #selected == 0 then
-    notifications.show('No emails selected', 'warn')
+    notify.himalaya('No emails selected', notify.categories.STATUS)
     return
   end
   
@@ -990,7 +988,7 @@ function M.spam_selected_emails()
       
       -- Show progress notification for large batches
       if #selected > 5 then
-        notifications.show(string.format('Moving %d emails to spam...', #selected), 'info')
+        notify.himalaya(string.format('Moving %d emails to spam...', #selected), notify.categories.STATUS)
       end
       
       for i, email in ipairs(selected) do
@@ -1005,16 +1003,15 @@ function M.spam_selected_emails()
         
         -- Update progress for large batches
         if #selected > 10 and i % 10 == 0 then
-          notifications.show(string.format('Progress: %d/%d', i, #selected), 'info')
+          notify.himalaya(string.format('Progress: %d/%d', i, #selected), notify.categories.STATUS)
         end
       end
       
       state.clear_selection()
       state.toggle_selection_mode()
       
-      notifications.show(
-        string.format('Marked %d emails as spam (%d errors)', success_count, error_count),
-        error_count > 0 and 'warn' or 'success'
+      notify.himalaya(string.format('Marked %d emails as spam (%d errors)', success_count, error_count),
+        error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
       
       M.refresh_email_list()

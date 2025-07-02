@@ -4,12 +4,15 @@
 
 ## PLAN
 
-- [ ] document existing implementation
-  - [ ] create refactor spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/REFACTOR_SPEC.md
-  - [ ] implement refactor
+- [x] document existing implementation ✅ PHASE 1 COMPLETE
+  - [x] create refactor spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/SAFE_REFACTOR_PLAN.md ✅ COMPLETE
+  - [x] implement refactor ✅ PHASES 2-5 COMPLETE
 - [ ] add new features to himalaya
-  - [ ] create new features spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md
-  - [ ] implement new features
+  - [x] create new features spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md ✅ COMPLETE
+  - [ ] implement new features (see FEATURES_SPEC.md for planned features)
+- [ ] complete remaining testing phases
+  - [ ] Phase 6: Critical Functionality Testing
+  - [ ] Phase 7: Performance Validation
 - [ ] update documentation
 
 ## GUIDELINES
@@ -37,31 +40,37 @@
     - [x] includes backlinks to README.md files in the parent directory
   - [x] indicate differences between nixos users and non-nix users where relevant
   - [x] create dependency graph in docs/DEPENDENCIES.md
-- refactor existing implementation
-  - remove cruft
-  - reorganize existing
-  - test to confirm all features have been preserved
-- add new features
-  - UI
-    - [ ] hover and buffers
-      - [ ] hover emails in second sidebar
-      - [ ] reply/forward/compose emails in buffers saved in drafts folder
-      - delete drafts from drafts folder when discarding
-    - [ ] appearances
-      - [ ] confirm messages use return/escape
-      - [ ] "Himalaya closed" can be removed
-      - [ ] "Page 1 | 200 emails" does not reflect the 179 emails in my inbox
-  - [ ] EMAIL
-    - [ ] sync
-      - [ ] remove fast sync
-      - [ ] sidebar status for smart_sync
-      - [ ] auto_sync when nvim opens
-    - [ ] extras
-      - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
-      - [ ] attachments
-      - [ ] images
-      - [ ] add header field to email
-    - [ ] local trash system
-      - [ ] mappings for viewing and recovering trash
-    - [ ] autocomplete
-      - [ ] addresses in the form: Name <user@domain>
+- [x] refactor existing implementation ✅ PHASES 2-5 COMPLETE
+  - [x] remove cruft (HimalayaFastCheck removed)
+  - [x] reorganize existing (modularized UI, unified state)
+  - [x] establish clean architecture and notification standardization
+  - [x] test to confirm all features have been preserved
+## REMAINING PHASES
+
+### Phase 6: Critical Functionality Testing
+- [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
+- [ ] State Persistence Testing
+- [ ] Multi-Account Testing
+
+### Phase 7: Performance Validation
+- [ ] Baseline metrics measurement
+- [ ] Post-refactor performance comparison
+
+## FUTURE FEATURES
+
+All planned new features are documented in `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md` including:
+
+### High Priority Features
+- Enhanced UI/UX (hover preview, buffer composition, improved confirmations)
+- Email Management (attachments, images, custom headers, local trash)
+- Sync Improvements (smart status, auto-sync, error recovery)
+
+### Medium Priority Features
+- Code Quality Improvements (error handling, API consistency, performance)
+- Developer Experience (testing, observability, modularization)
+
+### Low Priority Features  
+- Advanced Features (multiple accounts, advanced search, templates, encryption)
+- Integration Features (calendar, contacts, tasks, notes)
+
+Refer to FEATURES_SPEC.md for complete details on each planned feature.

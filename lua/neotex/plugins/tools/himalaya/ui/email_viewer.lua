@@ -8,6 +8,7 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Module state
 local buffers = nil  -- Reference to main module's buffers
@@ -23,7 +24,7 @@ end
 function M.read_email(email_id)
   local email_content = utils.get_email_content(state.get_current_account(), email_id, state.get_current_folder())
   if not email_content then
-    notifications.show('Failed to read email', 'error')
+    notify.himalaya('Failed to read email', notify.categories.ERROR)
     return
   end
   
@@ -180,7 +181,7 @@ function M.read_current_email()
   if email_id then
     M.read_email(email_id)
   else
-    notifications.show('No email selected', 'warn')
+    notify.himalaya('No email selected', notify.categories.STATUS)
   end
 end
 
@@ -243,7 +244,7 @@ end
 function M.show_attachments(email_id)
   local attachments = utils.get_email_attachments(state.get_current_account(), email_id)
   if not attachments or #attachments == 0 then
-    notifications.show('No attachments found', 'info')
+    notify.himalaya('No attachments found', notify.categories.STATUS)
     return
   end
   
@@ -277,7 +278,7 @@ function M.open_link_under_cursor()
   local urls = vim.b[buf].himalaya_urls
   
   if not urls or #urls == 0 then
-    notifications.show('No links found in this email', 'info')
+    notify.himalaya('No links found in this email', notify.categories.STATUS)
     return
   end
   
@@ -329,16 +330,16 @@ function M.open_url(url)
   elseif vim.fn.has('win32') == 1 then
     cmd = { 'cmd', '/c', 'start', url }
   else
-    notifications.show('Unsupported platform for opening URLs', 'error')
+    notify.himalaya('Unsupported platform for opening URLs', notify.categories.ERROR)
     return
   end
   
   vim.fn.jobstart(cmd, {
     on_exit = function(_, exit_code)
       if exit_code == 0 then
-        notifications.show('URL opened', 'info', { url = url })
+        notify.himalaya('URL opened', notify.categories.STATUS)
       else
-        notifications.show('Failed to open URL', 'error')
+        notify.himalaya('Failed to open URL', notify.categories.ERROR)
       end
     end
   })

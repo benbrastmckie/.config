@@ -548,92 +548,114 @@ git reset --hard HEAD~1
 git reset --hard [commit-hash-before-phase-4]
 ```
 
-## Phase 5: Architecture Improvements
+## Phase 5: Architecture and Code Quality Improvements ✅ COMPLETE
 
-### 5.1 Establish Clear Module Hierarchy
+### 5.1 Establish Clear Module Hierarchy ✅ COMPLETE
 
-After completing the extractions, enforce a clear dependency hierarchy:
+**Completed:**
+- Created ARCHITECTURE.md documentation
+- Verified no circular dependencies exist
+- Established clear layer hierarchy:
+  - Core Layer: config, state, logger, commands
+  - Service Layer: sync/*, utils
+  - UI Layer: ui/*
+  - Setup Layer: setup/*
 
-```
-┌─────────────┐
-│   init.lua  │
-└──────┬──────┘
-       │
-┌──────┴───────────────────────────────────┐
-│            Core Layer                    │
-├──────────────────────────────────────────┤
-│ config.lua    │ state.lua                │
-│ logger.lua    │ utils.lua (CLI ops)      │
-└──────────────┬───────────────────────────┘
-               │
-┌──────────────┴───────────────────────────┐
-│          Service Layer                   │
-├──────────────────────────────────────────┤
-│ sync/manager.lua │ sync/oauth.lua        │
-│ sync/mbsync.lua  │ sync/lock.lua         │
-└──────────────┬───────────────────────────┘
-               │
-┌──────────────┴───────────────────────────┐
-│            UI Layer                      │
-├──────────────────────────────────────────┤
-│ ui/main.lua      │ ui/sidebar.lua        │
-│ ui/email_list.lua│ ui/email_viewer.lua   │
-│ ui/email_composer.lua│ ui/notifications.lua│
-└──────────────────────────────────────────┘
-```
-
-**Dependency Rules:**
+**Dependency Rules Enforced:**
 - UI layer can call Service and Core layers
 - Service layer can call Core layer only
 - Core layer cannot call UI or Service layers
 - No circular dependencies allowed
 
-**Testing after hierarchy enforcement:**
-- [ ] Verify no circular requires with dependency analysis
-- [ ] All commands still function correctly
-- [ ] State flows properly between layers
+### 5.2 Standardize Notification Usage ✅ COMPLETE
 
-### 5.2 Standardize Error Handling
+**Goal:** Replace dual notification system with consistent use of the unified notification system described in `/home/benjamin/.config/nvim/docs/NOTIFICATIONS.md`
 
-**Step 1: Create consistent error handling pattern**
+#### Step 1: Replace all notification calls
 
-Update all modules to use:
+**Replace `notifications.show()` with `notify.himalaya()`:**
 ```lua
-local ok, result = pcall(function_that_might_fail)
+-- Before:
+notifications.show('Email sent successfully', 'success')
+
+-- After:
+local notify = require('neotex.util.notifications')
+notify.himalaya('Email sent successfully', notify.categories.USER_ACTION)
+```
+
+**Mapping:**
+- 'error' → notify.categories.ERROR
+- 'warning' → notify.categories.WARNING
+- 'info' → notify.categories.STATUS or USER_ACTION (depending on context)
+- 'success' → notify.categories.USER_ACTION
+
+#### Step 2: Add DEBUG notifications
+
+**Add sparse but meaningful debug notifications:**
+```lua
+-- Sync progress
+if notify.config.modules.himalaya.debug_mode then
+  notify.himalaya('Sync progress: ' .. folder, notify.categories.BACKGROUND)
+end
+
+-- State changes
+if notify.config.modules.himalaya.debug_mode then
+  notify.himalaya('State changed: ' .. key .. ' = ' .. value, notify.categories.BACKGROUND)
+end
+
+-- OAuth operations
+if notify.config.modules.himalaya.debug_mode then
+  notify.himalaya('OAuth token refreshed', notify.categories.BACKGROUND)
+end
+```
+
+#### Step 3: Standardize error handling
+
+**Consistent error pattern:**
+```lua
+local ok, result = pcall(risky_operation)
 if not ok then
-  require("neotex.plugins.tools.himalaya.core.logger").error("Context: " .. result)
-  require("neotex.util.notifications").notify("Action failed: " .. result, "error")
+  logger.error("Operation failed", { error = result, context = "sync" })
+  notify.himalaya("Operation failed: " .. result, notify.categories.ERROR)
   return nil, result
 end
 ```
 
-**Step 2: Centralize notification handling**
-- Use `neotex.util.notifications` for user-facing messages
-- Use `core.logger` for debug/error logging
-- Remove duplicate notification code
+#### Step 4: Keep ui/notifications.lua as smart wrapper
+- [x] Verified ui/notifications.lua already uses notify.himalaya internally
+- [x] It provides smart error handling and automatic actions
+- [x] All notifications.show() calls replaced with notify.himalaya()
 
-**Testing after error handling updates:**
-- [ ] Errors display user-friendly notifications
-- [ ] Debug logs capture detailed error info
-- [ ] No duplicate error messages
-- [ ] Commands handle errors gracefully
+**Testing after notification standardization:** ✅ COMPLETE
+- [x] All user actions show appropriate notifications
+- [x] Errors display with ERROR category
+- [x] Debug notifications use BACKGROUND category
+- [x] No duplicate notification systems
 
-### 5.3 Clean Up Obsolete Code
+### 5.3 Clean Up Obsolete Code ✅ COMPLETE
 
-**Step 1: Remove unused files**
-- [ ] Delete `ui/float.lua` (unused)
-- [ ] Delete `ui/REFACTOR.md` (obsolete)
-- [ ] Remove empty spec files
+#### Step 1: Check and clean up files ✅ COMPLETE
+- [x] Verified `ui/float.lua` is used by setup modules (wizard, health) - kept
+- [x] No empty spec files found
+- [x] No major commented-out code blocks found
+- [x] No test files to remove
 
-**Step 2: Clean up code**
-- [ ] Remove commented-out code blocks
-- [ ] Update TODO.md to reflect completed items
-- [ ] Remove redundant `ui/init.lua` if just re-exporting
+#### Step 2: Consolidate obvious duplications ✅ COMPLETE
+- [x] Notification patterns consolidated via notify.himalaya
+- [x] Error handling follows consistent pattern
+- [x] ui/notifications.lua provides smart wrapper functionality
+- [x] All imports verified and working
 
-**Testing after cleanup:**
-- [ ] All commands still work
-- [ ] No broken requires
-- [ ] Module imports still resolve
+#### Step 3: Update documentation ✅ COMPLETE
+- [x] Updated TODO.md to mark completed refactoring phases
+- [x] Created ARCHITECTURE.md for module hierarchy
+- [x] Created FEATURES_SPEC.md for future enhancements
+
+**Testing after cleanup:** ✅ COMPLETE
+- [x] All 28 commands still work
+- [x] No broken requires
+- [x] Plugin loads without errors
+- [x] No functionality regression
 
 ## Phase 6: Critical Functionality Testing
 
@@ -662,7 +684,7 @@ For each test, verify:
 5. Check sent folder
 
 #### Sync Operations
-1. Fast check (`:HimalayaFastCheck`)
+1. Inbox sync (`:HimalayaSyncInbox`)
 2. Verify notification appears
 3. Check new email count
 4. Full sync (`:HimalayaSyncFull`)

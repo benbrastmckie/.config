@@ -10,6 +10,7 @@ local state = require('neotex.plugins.tools.himalaya.core.state')
 local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
+local notify = require('neotex.util.notifications')
 
 -- Module state
 local sync_status_timer = nil
@@ -46,7 +47,7 @@ function M.toggle_email_sidebar()
       sidebar.state.is_open = false
       sidebar.state.win = nil
       sidebar.state.buf = nil
-      notifications.show('Himalaya closed', 'info')
+      notify.himalaya('Himalaya closed', notify.categories.STATUS)
       return
     end
   end
@@ -72,13 +73,13 @@ function M.show_email_list(args)
   
   -- Check if config is properly initialized
   if not config.is_initialized() then
-    notifications.show('Himalaya not configured. Run :HimalayaSetup to begin.', 'error')
+    notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.ERROR)
     return
   end
   
   -- Check if maildir exists and set up if needed
   -- For now, we'll skip this check since the wizard module doesn't have ensure_maildir_exists
-  -- TODO: Implement maildir check in wizard module or create a separate maildir module
+  -- TODO: Implement maildir check in wizard module
   
   -- Parse arguments
   local folder = args[1] or state.get_current_folder() or 'INBOX'
@@ -92,7 +93,7 @@ function M.show_email_list(args)
   -- Switch account if specified
   if account then
     if not config.switch_account(account) then
-      notifications.show('Unknown account: ' .. account, 'error')
+      notify.himalaya('Unknown account: ' .. account, notify.categories.ERROR)
       return
     end
   elseif account and account ~= config.get_current_account_name() then
@@ -166,7 +167,7 @@ function M.show_email_list(args)
               'or :HimalayaSyncFull for all folders'
             }
             sidebar.update_content(empty_lines)
-            notifications.show('Maildir is empty. Run :HimalayaSyncInbox to sync emails.', 'info')
+            notify.himalaya('Maildir is empty. Run :HimalayaSyncInbox to sync emails.', notify.categories.STATUS)
             -- Continue with empty list
             emails = {}
             total_count = 0
@@ -187,7 +188,7 @@ function M.show_email_list(args)
               '• :messages - Check error details'
             }
             sidebar.update_content(error_lines)
-            notifications.show('Failed to get email list - run :HimalayaDebugJson for details', 'error')
+            notify.himalaya('Failed to get email list - run :HimalayaDebugJson for details', notify.categories.ERROR)
             return
           end
         else
@@ -199,7 +200,7 @@ function M.show_email_list(args)
             'Run :HimalayaSetup to configure'
           }
           sidebar.update_content(error_lines)
-          notifications.show('Mail directory not found. Run :HimalayaSetup', 'error')
+          notify.himalaya('Mail directory not found. Run :HimalayaSetup', notify.categories.ERROR)
           return
         end
       else
@@ -209,7 +210,7 @@ function M.show_email_list(args)
           'Run :HimalayaSetup to configure'
         }
         sidebar.update_content(error_lines)
-        notifications.show('No account configured', 'error')
+        notify.himalaya('No account configured', notify.categories.ERROR)
         return
       end
     end
@@ -617,7 +618,7 @@ function M.next_page()
     state.set_current_page(state.get_current_page() + 1)
     M.refresh_email_list()
   else
-    notifications.show('Already on last page', 'info')
+    notify.himalaya('Already on last page', notify.categories.STATUS)
   end
 end
 
@@ -626,7 +627,7 @@ function M.prev_page()
     state.set_current_page(state.get_current_page() - 1)
     M.refresh_email_list()
   else
-    notifications.show('Already on first page', 'info')
+    notify.himalaya('Already on first page', notify.categories.STATUS)
   end
 end
 
@@ -692,7 +693,7 @@ function M.update_email_display()
     state.get_page_size()
   )
   if not emails then
-    notifications.show('Failed to get email list', 'error')
+    notify.himalaya('Failed to get email list', notify.categories.ERROR)
     return
   end
   
@@ -754,7 +755,7 @@ function M.search_emails(query)
     -- Note: M.open_email_window needs to be provided by main module
     require('neotex.plugins.tools.himalaya.ui.main').open_email_window(buf, 'Search Results: ' .. query)
   else
-    notifications.show('Search failed', 'error')
+    notify.himalaya('Search failed', notify.categories.ERROR)
   end
 end
 
@@ -762,13 +763,13 @@ end
 function M.pick_folder()
   local account_name = config.get_current_account_name()
   if not account_name then
-    notifications.show('No account selected', 'error')
+    notify.himalaya('No account selected', notify.categories.ERROR)
     return
   end
   
   local folders = utils.get_folders(account_name)
   if not folders or #folders == 0 then
-    notifications.show('No folders found', 'error')
+    notify.himalaya('No folders found', notify.categories.ERROR)
     return
   end
   
@@ -816,7 +817,7 @@ function M.pick_account()
   end
   
   if #accounts == 0 then
-    notifications.show('No accounts configured', 'error')
+    notify.himalaya('No accounts configured', notify.categories.ERROR)
     return
   end
   
@@ -837,7 +838,7 @@ function M.pick_account()
         state.set_current_page(1)  -- Reset to first page
         M.show_email_list({ 'INBOX' })
       else
-        notifications.show('Failed to switch account', 'error')
+        notify.himalaya('Failed to switch account', notify.categories.ERROR)
       end
     end
   end)

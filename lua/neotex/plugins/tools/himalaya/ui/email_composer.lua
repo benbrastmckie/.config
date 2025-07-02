@@ -8,6 +8,7 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
+local notify = require('neotex.util.notifications')
 
 -- Module state
 local buffers = nil  -- Reference to main module's buffers
@@ -43,7 +44,7 @@ function M.compose_email(to_address)
   
   -- Error if no email address found
   if not from_email then
-    notifications.show('Cannot compose email: No email address configured for account', 'error')
+    notify.himalaya('Cannot compose email: No email address configured for account', notify.categories.ERROR)
     return
   end
   
@@ -108,7 +109,7 @@ end
 function M.send_current_email()
   local buf = vim.api.nvim_get_current_buf()
   if not vim.b[buf].himalaya_compose then
-    notifications.show('Not in compose buffer', 'warn')
+    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
     return
   end
   
@@ -133,12 +134,12 @@ function M.send_current_email()
   
   -- Validate required fields
   if not headers.to or headers.to == '' then
-    notifications.show('To: field is required', 'error')
+    notify.himalaya('To: field is required', notify.categories.ERROR)
     return
   end
   
   if not headers.subject or headers.subject == '' then
-    notifications.show('Subject: field is required', 'error')
+    notify.himalaya('Subject: field is required', notify.categories.ERROR)
     return
   end
   
@@ -163,7 +164,7 @@ function M.send_current_email()
   local result = utils.send_email(state.get_current_account(), email_data)
   
   if result then
-    notifications.show('Email sent successfully', 'info', { user_action = true })
+    notify.himalaya('Email sent successfully', notify.categories.STATUS)
     
     -- Get parent window info from buffer variables
     local parent_win = vim.b[buf].himalaya_parent_win
@@ -199,7 +200,7 @@ function M.send_current_email()
       end
     end, 50)
   else
-    notifications.show('Failed to send email', 'error', { user_action = true })
+    notify.himalaya('Failed to send email', notify.categories.STATUS)
   end
 end
 
@@ -257,7 +258,7 @@ end
 function M.close_and_save_draft()
   local buf = vim.api.nvim_get_current_buf()
   if not vim.b[buf].himalaya_compose then
-    notifications.show('Not in compose buffer', 'warn')
+    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
     return
   end
   
@@ -293,10 +294,10 @@ function M.close_and_save_draft()
   local success = utils.save_draft(account, email_data, drafts_folder)
   
   if success then
-    notifications.show('Draft saved to ' .. drafts_folder, 'info')
+    notify.himalaya('Draft saved to ' .. drafts_folder, notify.categories.STATUS)
     main.close_current_view()
   else
-    notifications.show('Failed to save draft', 'error')
+    notify.himalaya('Failed to save draft', notify.categories.ERROR)
   end
 end
 
@@ -309,7 +310,7 @@ function M.reply_current_email()
     main._email_reading_win = vim.api.nvim_get_current_win()
     M.reply_email(email_id, false)
   else
-    notifications.show('No email to reply to', 'warn')
+    notify.himalaya('No email to reply to', notify.categories.STATUS)
   end
 end
 
@@ -322,7 +323,7 @@ function M.reply_all_current_email()
     main._email_reading_win = vim.api.nvim_get_current_win()
     M.reply_email(email_id, true)
   else
-    notifications.show('No email to reply to', 'warn')
+    notify.himalaya('No email to reply to', notify.categories.STATUS)
   end
 end
 
@@ -337,7 +338,7 @@ function M.reply_email(email_id, reply_all)
   
   local email_content = utils.get_email_content(state.get_current_account(), email_id)
   if not email_content then
-    notifications.show('Failed to get email for reply', 'error')
+    notify.himalaya('Failed to get email for reply', notify.categories.ERROR)
     return
   end
   
@@ -360,7 +361,7 @@ function M.reply_email(email_id, reply_all)
   
   -- Error if no email address found
   if not from_email then
-    notifications.show('Cannot reply: No email address configured for account', 'error')
+    notify.himalaya('Cannot reply: No email address configured for account', notify.categories.ERROR)
     return
   end
   
@@ -498,7 +499,7 @@ function M.forward_current_email()
     main._email_reading_win = vim.api.nvim_get_current_win()
     M.forward_email(email_id)
   else
-    notifications.show('No email to forward', 'warn')
+    notify.himalaya('No email to forward', notify.categories.STATUS)
   end
 end
 
@@ -513,7 +514,7 @@ function M.forward_email(email_id)
   
   local email_content = utils.get_email_content(state.get_current_account(), email_id)
   if not email_content then
-    notifications.show('Failed to get email for forwarding', 'error')
+    notify.himalaya('Failed to get email for forwarding', notify.categories.ERROR)
     return
   end
   
@@ -538,7 +539,7 @@ function M.forward_email(email_id)
   
   -- Error if no email address found
   if not from_email then
-    notifications.show('Cannot forward: No email address configured for account', 'error')
+    notify.himalaya('Cannot forward: No email address configured for account', notify.categories.ERROR)
     return
   end
   
@@ -617,7 +618,7 @@ end
 function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
   if not vim.b[buf].himalaya_compose then
-    notifications.show('Not in compose buffer', 'warn')
+    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
     return
   end
   
@@ -630,12 +631,12 @@ function M.close_without_saving()
         -- Force close without saving
         vim.bo[buf].modified = false
         main.close_current_view()
-        notifications.show('Email discarded', 'info')
+        notify.himalaya('Email discarded', notify.categories.STATUS)
       end
     end)
   else
     main.close_current_view()
-    notifications.show('Email discarded', 'info')
+    notify.himalaya('Email discarded', notify.categories.STATUS)
   end
 end
 
