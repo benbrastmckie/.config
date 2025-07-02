@@ -312,6 +312,12 @@ function M.show_preview(email_id, parent_win)
     
     preview_win = vim.api.nvim_open_win(preview_buf, false, win_config)
     
+    -- Validate window was created
+    if not preview_win or type(preview_win) ~= "number" then
+      logger.error("Failed to create preview window", { win = preview_win })
+      return
+    end
+    
     -- Set window options
     vim.api.nvim_win_set_option(preview_win, 'wrap', true)
     vim.api.nvim_win_set_option(preview_win, 'linebreak', true)
@@ -440,12 +446,25 @@ end
 
 -- Focus the preview window
 function M.focus_preview()
-  if preview_win and vim.api.nvim_win_is_valid(preview_win) then
-    vim.api.nvim_set_current_win(preview_win)
-    
-    -- Set up keymaps for preview window
-    local buf = vim.api.nvim_win_get_buf(preview_win)
-    local opts = { buffer = buf, silent = true }
+  if not preview_win or not vim.api.nvim_win_is_valid(preview_win) then
+    return false
+  end
+  
+  -- Ensure preview_win is a valid number
+  if type(preview_win) ~= "number" then
+    logger.error("Invalid preview window handle", { type = type(preview_win), value = preview_win })
+    return false
+  end
+  
+  vim.api.nvim_set_current_win(preview_win)
+  
+  -- Set up keymaps for preview window
+  local buf = vim.api.nvim_win_get_buf(preview_win)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+  
+  local opts = { buffer = buf, silent = true }
     
     -- q to return to sidebar
     vim.keymap.set('n', 'q', function()
