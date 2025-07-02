@@ -16,6 +16,10 @@ function M.setup(opts)
   local config = require('neotex.plugins.tools.himalaya.core.config')
   config.setup(opts)
 
+  -- Initialize email cache
+  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+  email_cache.init(config.config.cache)
+
   -- Initialize OAuth module
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   oauth.setup()
