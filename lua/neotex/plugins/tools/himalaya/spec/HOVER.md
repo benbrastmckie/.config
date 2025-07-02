@@ -432,15 +432,15 @@ end
 - [x] Test data serialization fixes ✓
 
 ### Week 2: Async Loading
-- [ ] Implement async preview loading with jobstart
-- [ ] Add two-stage preview rendering
-- [ ] Create preview content caching
+- [x] Implement async preview loading with jobstart ✓
+- [x] Add two-stage preview rendering ✓
+- [x] Create preview content caching ✓
 - [ ] Test performance improvements
 
 ### Week 3: Polish
-- [ ] Add smart positioning logic
+- [x] Add smart positioning logic ✓
 - [ ] Implement progressive content loading
-- [ ] Add error recovery and fallbacks
+- [x] Add error recovery and fallbacks ✓
 - [ ] Comprehensive testing
 
 ## Testing Strategy
