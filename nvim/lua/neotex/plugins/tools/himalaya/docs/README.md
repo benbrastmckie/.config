@@ -60,7 +60,7 @@ This documentation serves multiple audiences:
 - **User Guide**: See main [../README.md](../README.md) for usage information
 
 ## Navigation
-- [← Himalaya Plugin](../README.md)
+- [< Himalaya Plugin](../README.md)
 - [Architecture Guide](ARCHITECTURE.md)
 - [Testing Checklist](TEST_CHECKLIST.md)
 - [Sync Implementation](SYNC_STAT.md)

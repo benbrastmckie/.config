@@ -9,7 +9,8 @@
   - [x] implement refactor ✅ PHASES 2-5 COMPLETE
 - [ ] add new features to himalaya
   - [x] create new features spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md ✅ COMPLETE
-  - [ ] implement new features (see FEATURES_SPEC.md for planned features)
+  - [x] implement Enhanced UI/UX Features ✅ COMPLETE (see ENHANCED_UI_UX_SPEC.md)
+  - [ ] implement remaining features (see FEATURES_SPEC.md for planned features)
 - [ ] complete remaining testing phases
   - [ ] Phase 6: Critical Functionality Testing
   - [ ] Phase 7: Performance Validation
@@ -61,7 +62,7 @@
 All planned new features are documented in `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md` including:
 
 ### High Priority Features
-- Enhanced UI/UX (hover preview, buffer composition, improved confirmations)
+- ✅ Enhanced UI/UX (hover preview, buffer composition, improved confirmations) - COMPLETE
 - Email Management (attachments, images, custom headers, local trash)
 - Sync Improvements (smart status, auto-sync, error recovery)
 
