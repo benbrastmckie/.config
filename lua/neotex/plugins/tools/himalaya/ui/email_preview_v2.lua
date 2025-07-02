@@ -347,53 +347,26 @@ function M.show_preview(email_id, parent_win)
       return
     end
     
-    -- Build himalaya command
+    -- Build himalaya command (message read returns plain text, not JSON)
     local cmd = {
       'himalaya',
       'message', 'read',
       '-a', account,
       '-f', folder,
-      '-o', 'json',
       '--preview',  -- Don't mark as read when previewing
       tostring(email_id)
     }
     
+    local stdout_buffer = {}
+    
     vim.fn.jobstart(cmd, {
       on_stdout = function(_, data, _)
-        if not data or #data == 0 then
-          return
-        end
-        
-        -- Filter out empty strings
-        local filtered_data = {}
-        for _, line in ipairs(data) do
-          if line ~= "" then
-            table.insert(filtered_data, line)
-          end
-        end
-        
-        if #filtered_data == 0 then
-          return
-        end
-        
-        local json_str = table.concat(filtered_data, '\n')
-        local ok, email = pcall(vim.json.decode, json_str)
-        
-        if ok and email then
-          -- Update preview with full content if still showing
-          if current_preview_id == email_id and preview_win and vim.api.nvim_win_is_valid(preview_win) then
-            -- Normalize the email
-            local normalized = email_cache.normalize_email(email)
-            if normalized and email.body then
-              -- Cache the body
-              email_cache.store_email_body(account, folder, email_id, email.body)
-              -- Update the preview
-              normalized.body = email.body
-              M.render_preview(normalized, preview_buf)
+        if data then
+          for _, line in ipairs(data) do
+            if line ~= "" then
+              table.insert(stdout_buffer, line)
             end
           end
-        else
-          logger.error('Failed to parse email JSON', { error = email, id = email_id })
         end
       end,
       on_stderr = function(_, data, _)
@@ -405,7 +378,63 @@ function M.show_preview(email_id, parent_win)
         end
       end,
       on_exit = function(_, exit_code, _)
-        if exit_code ~= 0 then
+        if exit_code == 0 and #stdout_buffer > 0 then
+          local output = table.concat(stdout_buffer, '\n')
+          
+          -- Parse plain text output
+          local body = output
+          
+          -- Try to extract body after headers
+          local header_end = output:find("\n\n")
+          if header_end then
+            body = output:sub(header_end + 2)
+          end
+          
+          -- Remove HTML wrapper if present
+          body = body:gsub("<#part type=text/html>", "")
+          body = body:gsub("<#/part>", "")
+          body = body:gsub("\r\n", "\n")
+          
+          -- Update preview with full content if still showing
+          if current_preview_id == email_id and preview_win and vim.api.nvim_win_is_valid(preview_win) then
+            local cached = email_cache.get_email(account, folder, email_id)
+            if cached then
+              -- Cache the body
+              email_cache.store_email_body(account, folder, email_id, body)
+              -- Update the preview
+              cached.body = body
+              M.render_preview(cached, preview_buf)
+            else
+              -- Create minimal email object from output
+              local email = {
+                id = email_id,
+                subject = "Unknown",
+                from = "Unknown",
+                to = "Unknown",
+                date = "Unknown",
+                body = body
+              }
+              
+              -- Try to parse headers from output
+              local headers_text = header_end and output:sub(1, header_end) or ""
+              for line in headers_text:gmatch("[^\n]+") do
+                local header, value = line:match("^([^:]+):%s*(.*)$")
+                if header and value then
+                  local lower_header = header:lower()
+                  if lower_header == "from" then
+                    email.from = value
+                  elseif lower_header == "to" then
+                    email.to = value
+                  elseif lower_header == "subject" then
+                    email.subject = value
+                  end
+                end
+              end
+              
+              M.render_preview(email, preview_buf)
+            end
+          end
+        elseif exit_code ~= 0 then
           logger.error('Failed to load email for preview', { id = email_id, exit_code = exit_code })
         end
       end
