@@ -11,33 +11,34 @@ function M.setup(opts)
   if M.loaded then
     return
   end
-  
+
   -- Initialize core configuration
   local config = require('neotex.plugins.tools.himalaya.core.config')
   config.setup(opts)
-  
+
   -- Initialize OAuth module
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   oauth.setup()
-  
+
   -- Initialize UI system
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.setup()
-  
+
   -- Set up commands
   M.setup_commands()
-  
+
   -- Run health check on startup if configured
   if config.config.setup.check_health_on_startup then
     vim.defer_fn(function()
       local health = require('neotex.plugins.tools.himalaya.setup.health')
       local result = health.check()
       if not result.ok then
-        ui.notifications.show_setup_hints()
+        local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
+        notifications.show_setup_hints()
       end
     end, 1000)
   end
-  
+
   -- Check if setup wizard should run
   if config.config.setup.auto_run then
     local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
@@ -48,7 +49,7 @@ function M.setup(opts)
       end, 2000)
     end
   end
-  
+
   M.loaded = true
 end
 
