@@ -15,7 +15,7 @@ local autosave_timers = {}
 
 -- Configuration
 M.config = {
-  use_tab = false,
+  use_tab = true,  -- Changed to use tabs by default
   auto_save_interval = 30,
   delete_draft_on_send = true,
   syntax_highlighting = true,

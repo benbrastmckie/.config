@@ -409,7 +409,7 @@ function M.setup_buffer_keymaps(bufnr)
       local current_line = current_pos[1]
       
       -- Use the line map for accurate email selection
-      local line_map = vim.b.himalaya_line_map
+      local line_map = state.get('email_list.line_map')
       local email_data = vim.b.himalaya_emails
       
       if line_map and line_map[current_line] then
@@ -446,7 +446,7 @@ function M.setup_buffer_keymaps(bufnr)
       local current_line = current_pos[1]
       
       -- Use the line map for accurate email selection
-      local line_map = vim.b.himalaya_line_map
+      local line_map = state.get('email_list.line_map')
       local email_data = vim.b.himalaya_emails
       
       if line_map and line_map[current_line] then

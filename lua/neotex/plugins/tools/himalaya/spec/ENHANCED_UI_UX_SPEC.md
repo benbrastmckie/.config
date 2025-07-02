@@ -1,27 +1,29 @@
 # Enhanced UI/UX Features Implementation Specification
 
-## Status: COMPLETE ✅
+## Status: IN PROGRESS 🚧
 
-All features specified in this document have been successfully implemented and tested.
+Most features have been implemented, but several issues need resolution.
 
 ## Overview
 
 This specification details the implementation plan for enhanced UI/UX features in the Himalaya email plugin. These features focus on improving user interaction, providing better visual feedback, and modernizing the email composition experience.
 
 **Implementation Status**: 
-- ✅ Phase 1: Foundation - Complete
-- ✅ Phase 2: Hover Preview - Complete  
-- ✅ Phase 3: Buffer-based Composition - Complete
-- ✅ Phase 4: Improved Confirmations - Complete
-- ✅ Phase 5: Accurate Email Count & Cleanup - Complete
+- ✅ Phase 1: Foundation - Complete (modules created)
+- ⚠️ Phase 2: Hover Preview - Partially working (performance issues, missing imports)
+- ✅ Phase 3: Buffer-based Composition - Complete (needs tab default adjustment)
+- ✅ Phase 4: Improved Confirmations - Complete and integrated
+- ⚠️ Phase 5: Accurate Email Count & Cleanup - Partially working (still shows 200)
+- 🔲 Phase 6: Buffer-based Email Viewing - To be implemented
 
 ## Feature Set
 
 1. **Hover Preview** - Preview emails in a second sidebar
 2. **Buffer-based Composition** - Compose emails in regular buffers with auto-save
-3. **Improved Confirmations** - Modern confirmation dialogs with return/escape
-4. **Accurate Email Count** - Fix pagination display to show actual counts
-5. **Remove Noisy Messages** - Eliminate unnecessary notifications
+3. **Buffer-based Email Viewing** - View emails in regular buffers (NEW)
+4. **Improved Confirmations** - Modern confirmation dialogs with return/escape
+5. **Accurate Email Count** - Fix pagination display to show actual counts
+6. **Remove Noisy Messages** - Eliminate unnecessary notifications
 
 ## Detailed Implementation Plans
 
@@ -323,7 +325,209 @@ function M.discard_email(buf)
 end
 ```
 
-### 3. Improved Confirmations
+### 3. Buffer-based Email Viewing (NEW - To Be Implemented)
+
+#### Current State
+- Emails open in floating windows
+- Inconsistent with buffer-based composition
+- Limited navigation options
+
+#### Design Goals
+- Use regular buffers for viewing emails (matching composition)
+- Open in new tabs by default
+- Support split/tab configuration
+- Consistent keybindings with composition
+- Better integration with Neovim workflows
+
+#### Implementation Details
+
+##### 3.1 Email Viewer v2
+```lua
+-- ui/email_viewer_v2.lua (new module based on email_viewer.lua)
+local M = {}
+
+M.config = {
+  use_tab = true,  -- Match composer default
+  syntax_highlighting = true,
+  show_headers = true,
+  wrap_text = true,
+}
+
+function M.view_email(email_id)
+  -- Get email content
+  local account = state.get_current_account()
+  local folder = state.get_current_folder() 
+  local email = utils.get_email_by_id(account, folder, email_id)
+  
+  if not email then
+    notify.himalaya('Failed to load email', notify.categories.ERROR)
+    return
+  end
+  
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(true, false)
+  
+  -- Set buffer options
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'buftype', 'nowrite')
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Name the buffer
+  local buf_name = string.format('[Email] %s', email.subject or 'No Subject')
+  vim.api.nvim_buf_set_name(buf, buf_name)
+  
+  -- Open in tab or split
+  if M.config.use_tab then
+    vim.cmd('tabnew')
+  else
+    vim.cmd('vsplit')
+  end
+  
+  vim.api.nvim_win_set_buf(0, buf)
+  
+  -- Render email content
+  M.render_email(buf, email)
+  
+  -- Setup buffer-local keymaps
+  M.setup_email_keymaps(buf, email)
+  
+  -- Track in state for navigation
+  state.set('viewing_email', {
+    id = email_id,
+    buf = buf,
+    account = account,
+    folder = folder
+  })
+end
+```
+
+##### 3.2 Email Rendering
+```lua
+function M.render_email(buf, email)
+  local lines = {}
+  
+  -- Headers section
+  if M.config.show_headers then
+    local from = format_address(email.from)
+    local to = format_address(email.to)
+    
+    table.insert(lines, 'From: ' .. from)
+    table.insert(lines, 'To: ' .. to)
+    if email.cc then
+      table.insert(lines, 'Cc: ' .. format_address(email.cc))
+    end
+    table.insert(lines, 'Subject: ' .. (email.subject or 'No Subject'))
+    table.insert(lines, 'Date: ' .. (email.date or 'Unknown'))
+    table.insert(lines, string.rep('─', 80))
+    table.insert(lines, '')
+  end
+  
+  -- Email body
+  if email.body then
+    -- Process email body (handle plain text and HTML)
+    local body_lines = process_email_body(email.body)
+    vim.list_extend(lines, body_lines)
+  end
+  
+  -- Attachments section
+  if email.attachments and #email.attachments > 0 then
+    table.insert(lines, '')
+    table.insert(lines, string.rep('─', 80))
+    table.insert(lines, 'Attachments:')
+    for i, attachment in ipairs(email.attachments) do
+      table.insert(lines, string.format('  [%d] %s (%s)', 
+        i, attachment.name, format_size(attachment.size)))
+    end
+  end
+  
+  -- Set buffer content
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+end
+```
+
+##### 3.3 Email-specific Keymaps
+```lua
+function M.setup_email_keymaps(buf, email)
+  local opts = { buffer = buf, silent = true }
+  
+  -- Navigation
+  vim.keymap.set('n', 'q', function()
+    vim.cmd('tabclose')
+  end, vim.tbl_extend('force', opts, { desc = 'Close email' }))
+  
+  -- Actions
+  vim.keymap.set('n', 'r', function()
+    -- Close current tab first
+    vim.cmd('tabclose')
+    -- Reply to email
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    composer.reply_email(email, false)
+  end, vim.tbl_extend('force', opts, { desc = 'Reply to email' }))
+  
+  vim.keymap.set('n', 'R', function()
+    vim.cmd('tabclose')
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    composer.reply_email(email, true)
+  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
+  
+  vim.keymap.set('n', 'f', function()
+    vim.cmd('tabclose')
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    composer.forward_email(email)
+  end, vim.tbl_extend('force', opts, { desc = 'Forward email' }))
+  
+  vim.keymap.set('n', 'd', function()
+    local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
+    local choice = confirm.show({
+      title = 'Delete Email',
+      message = 'Move this email to trash?',
+      options = { 'Delete', 'Cancel' },
+      default = 2,
+    })
+    
+    if choice == 1 then
+      vim.cmd('tabclose')
+      local main = require('neotex.plugins.tools.himalaya.ui.main')
+      main.delete_email(email.id)
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Delete email' }))
+  
+  -- Navigation between emails
+  vim.keymap.set('n', ']e', function()
+    M.view_next_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Next email' }))
+  
+  vim.keymap.set('n', '[e', function()
+    M.view_previous_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Previous email' }))
+end
+```
+
+##### 3.4 Integration with existing code
+```lua
+-- In ui/main.lua, update read_current_email:
+function M.read_current_email()
+  local email_id = get_current_email_id()
+  if email_id then
+    -- Use v2 viewer if available
+    local viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+    viewer.view_email(email_id)
+  end
+end
+
+-- In ui/email_list.lua keymap setup:
+vim.keymap.set('n', '<CR>', function()
+  local email_id = M.get_email_id_from_line(line)
+  if email_id then
+    local viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
+    viewer.view_email(email_id)
+  end
+end, { buffer = buf, desc = 'Open email' })
+```
+
+### 4. Improved Confirmations (Already Implemented)
 
 #### Current State
 - Uses basic vim.ui.input with y/n prompts
