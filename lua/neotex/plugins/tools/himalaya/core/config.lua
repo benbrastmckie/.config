@@ -338,8 +338,24 @@ function M.setup_buffer_keymaps(bufnr)
   -- Email list keymaps
   if vim.bo[bufnr].filetype == 'himalaya-list' then
     keymap('n', '<CR>', function()
-      require('neotex.plugins.tools.himalaya.ui.main').read_current_email()
-    end, vim.tbl_extend('force', opts, { desc = 'Read email' }))
+      -- If preview is shown, focus it; otherwise show preview
+      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+      if preview.is_preview_shown() then
+        preview.focus_preview()
+      else
+        -- Get current email ID and show preview
+        local line = vim.api.nvim_win_get_cursor(0)[1]
+        local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+        local email_id = email_list.get_email_id_from_line(line)
+        if email_id then
+          preview.show_preview(email_id, vim.api.nvim_get_current_win())
+          -- After showing, focus it
+          vim.defer_fn(function()
+            preview.focus_preview()
+          end, 100)
+        end
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Focus/show email preview' }))
     
     keymap('n', 'c', function()
       require('neotex.plugins.tools.himalaya.ui.main').compose_email()
