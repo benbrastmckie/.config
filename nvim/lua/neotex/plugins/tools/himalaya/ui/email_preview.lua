@@ -6,18 +6,20 @@ local state = require('neotex.plugins.tools.himalaya.core.state')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
+local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 
 -- Module state
 local preview_win = nil
 local preview_buf = nil
 local hover_timer = nil
 local current_preview_id = nil
+local email_body_cache = {} -- Cache email bodies to avoid repeated fetches
 
 -- Configuration
 M.config = {
   enabled = true,
   delay_ms = 500,
-  width = 40,
+  width = 80,
   position = 'right', -- 'right' or 'bottom'
   show_headers = true,
   max_lines = 50,
@@ -64,8 +66,28 @@ local function render_preview(email)
   
   -- Add headers if enabled
   if M.config.show_headers then
-    table.insert(lines, "From: " .. (email.from or "Unknown"))
-    table.insert(lines, "To: " .. (email.to or "Unknown"))
+    -- Handle from field (can be string or table)
+    local from = "Unknown"
+    if email.from then
+      if type(email.from) == "table" then
+        from = email.from.name or email.from.addr or "Unknown"
+      else
+        from = tostring(email.from)
+      end
+    end
+    
+    -- Handle to field (can be string or table)
+    local to = "Unknown"
+    if email.to then
+      if type(email.to) == "table" then
+        to = email.to.name or email.to.addr or "Unknown"
+      else
+        to = tostring(email.to)
+      end
+    end
+    
+    table.insert(lines, "From: " .. from)
+    table.insert(lines, "To: " .. to)
     table.insert(lines, "Subject: " .. (email.subject or "No Subject"))
     table.insert(lines, "Date: " .. (email.date or "Unknown"))
     table.insert(lines, string.rep("─", M.config.width - 2))
@@ -145,33 +167,33 @@ function M.show_preview(email_id, parent_win)
     local account = state.get_current_account()
     local folder = state.get_current_folder()
     
-    -- Get email metadata from state
-    local emails = state.get('emails')
+    -- First, try to get email from the sidebar buffer (fast)
     local email = nil
-    
-    if emails and emails[folder] then
-      for _, e in ipairs(emails[folder]) do
-        if e.id == email_id then
-          email = e
-          break
+    local sidebar_buf = sidebar.get_buf()
+    if sidebar_buf and vim.api.nvim_buf_is_valid(sidebar_buf) then
+      local emails = vim.b[sidebar_buf].himalaya_emails
+      if emails then
+        for _, e in ipairs(emails) do
+          if tostring(e.id) == tostring(email_id) then
+            email = vim.tbl_deep_extend("force", {}, e) -- Copy the email
+            break
+          end
         end
       end
     end
     
     if not email then
-      logger.warn('Email not found for preview', { id = email_id })
+      logger.warn('Email not found in list', { id = email_id })
       return
     end
     
-    -- Get full email content if not already loaded
-    if not email.body then
-      local ok, result = pcall(utils.get_email_by_id, account, folder, email_id)
-      if ok and result then
-        email = result
-      else
-        logger.error('Failed to load email for preview', { id = email_id, error = result })
-        return
-      end
+    -- Check if we have cached body
+    local cache_key = account .. ":" .. folder .. ":" .. email_id
+    if email_body_cache[cache_key] then
+      email.body = email_body_cache[cache_key]
+    else
+      -- Show preview with loading message first
+      email.body = "Loading email content..."
     end
     
     -- Create or reuse preview window
@@ -216,6 +238,26 @@ function M.show_preview(email_id, parent_win)
     -- Render email content
     render_preview(email)
     current_preview_id = email_id
+    
+    -- Async load full email body if not cached
+    if not email_body_cache[cache_key] then
+      vim.defer_fn(function()
+        -- Only load if preview is still showing same email
+        if current_preview_id == email_id then
+          local full_email = utils.get_email_by_id(account, folder, email_id)
+          if full_email and full_email.body then
+            -- Cache the body
+            email_body_cache[cache_key] = full_email.body
+            
+            -- Update the preview if still showing
+            if current_preview_id == email_id and preview_win and vim.api.nvim_win_is_valid(preview_win) then
+              email.body = full_email.body
+              render_preview(email)
+            end
+          end
+        end
+      end, 100) -- Small delay to let preview show first
+    end
     
     if notify.config.modules.himalaya.debug_mode then
       notify.himalaya('Showing preview for email: ' .. (email.subject or 'No Subject'), notify.categories.BACKGROUND)

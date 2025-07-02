@@ -384,20 +384,21 @@ end
 
 -- Get email by ID
 function M.get_email_by_id(account, folder, email_id)
-  local cmd = string.format(
-    '%s -a %s message read -f %s %s',
-    config.config.binaries.himalaya or 'himalaya',
-    vim.fn.shellescape(account),
-    vim.fn.shellescape(folder),
-    vim.fn.shellescape(email_id)
-  )
+  -- Use execute_himalaya for consistent command construction
+  local args = { 'message', 'read', tostring(email_id) }
+  local opts = { account = account, folder = folder }
   
-  local output = vim.fn.system(cmd)
-  if vim.v.shell_error ~= 0 then
-    return nil, 'Failed to read email: ' .. output
+  local output = M.execute_himalaya(args, opts)
+  if not output then
+    return nil, 'Failed to read email'
   end
   
-  -- Parse the email content
+  -- If output is a table (JSON), it's already parsed
+  if type(output) == 'table' then
+    return output
+  end
+  
+  -- Otherwise parse the text output
   local email = {
     id = email_id,
     body = output,
@@ -500,28 +501,43 @@ end
 
 -- Get folder email count
 function M.get_folder_email_count(account, folder)
-  -- Try to get count from himalaya list output
-  local cmd = string.format(
-    '%s -a %s list -f %s --page-size 1 2>/dev/null | head -1',
-    config.config.binaries.himalaya or 'himalaya',
-    vim.fn.shellescape(account),
-    vim.fn.shellescape(folder)
-  )
-  
-  local output = vim.fn.system(cmd)
-  
-  -- Parse output to extract total count
-  -- Expected format: "Page 1 / 10 | 243 emails"
-  local count = output:match('| (%d+) emails?')
-  
-  if count then
-    return tonumber(count)
+  -- Try to get total count from the cached email list
+  local cache_key = account .. '|' .. folder
+  if email_cache[cache_key] and #email_cache[cache_key] > 0 then
+    -- If we have a full cache (200 emails), we might have more
+    if #email_cache[cache_key] == 200 then
+      -- Try to count files in maildir for accurate count
+      local account_config = config.get_account(account)
+      if account_config and account_config.maildir_path then
+        local maildir = account_config.maildir_path .. '/' .. folder .. '/cur/'
+        if vim.fn.isdirectory(maildir) == 1 then
+          local files = vim.fn.globpath(maildir, '*', 0, 1)
+          return #files
+        end
+      end
+      -- Return 200+ to indicate there might be more
+      return 200
+    else
+      -- Cache has less than 200, so that's the total
+      return #email_cache[cache_key]
+    end
   end
   
-  -- Fallback: count files in maildir
-  local maildir = config.get_current_account().maildir_path .. folder .. '/cur/'
-  local files = vim.fn.globpath(maildir, '*', 0, 1)
-  return #files
+  -- No cache, try maildir count first
+  local account_config = config.get_account(account)
+  if account_config and account_config.maildir_path then
+    local maildir = account_config.maildir_path .. '/' .. folder .. '/cur/'
+    if vim.fn.isdirectory(maildir) == 1 then
+      local files = vim.fn.globpath(maildir, '*', 0, 1)
+      if #files > 0 then
+        return #files
+      end
+    end
+  end
+  
+  -- Last resort: fetch one page to get some idea
+  local emails, count = M.get_email_list(account, folder, 1, 30)
+  return count or 0
 end
 
 -- Send email with account context

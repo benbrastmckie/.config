@@ -233,8 +233,10 @@ function M.show_email_list(args)
     vim.b[buf].himalaya_emails = emails
     vim.b[buf].himalaya_account = state.get_current_account()
     vim.b[buf].himalaya_folder = folder
-    vim.b[buf].himalaya_line_map = lines.metadata -- Store line-to-email mapping
-    vim.b[buf].himalaya_email_start_line = lines.email_start_line -- Store where emails start
+    
+    -- Store metadata in state instead of buffer variables to avoid userdata issues
+    state.set('email_list.line_map', lines.metadata or {})
+    state.set('email_list.email_start_line', lines.email_start_line or 1)
     
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
@@ -306,7 +308,13 @@ function M.format_email_list(emails)
   -- If no cached count, get it
   if not total_emails then
     total_emails = utils.get_folder_email_count(account, folder)
-    state.set('email_counts.' .. account .. '.' .. folder, total_emails)
+    -- Only cache if we got a valid count
+    if total_emails and total_emails > 0 then
+      state.set('email_counts.' .. account .. '.' .. folder, total_emails)
+    else
+      -- If we couldn't get the count, use the number of emails we have
+      total_emails = #emails
+    end
   end
   
   local page_size = state.get_page_size()
@@ -692,9 +700,9 @@ function M.refresh_email_list()
       local lines = M.format_email_list(emails)
       sidebar.update_content(lines)
       
-      -- Update line mapping data
-      vim.b[buf].himalaya_line_map = lines.metadata
-      vim.b[buf].himalaya_email_start_line = lines.email_start_line
+      -- Update line mapping data in state to avoid userdata issues
+      state.set('email_list.line_map', lines.metadata or {})
+      state.set('email_list.email_start_line', lines.email_start_line or 1)
     end
   end
   
@@ -867,9 +875,8 @@ end
 
 -- Get email ID from current line
 function M.get_email_id_from_line(line_num)
-  local buf = vim.api.nvim_get_current_buf()
-  local line_map = vim.b[buf].himalaya_line_map
-  local email_start_line = vim.b[buf].himalaya_email_start_line
+  local line_map = state.get('email_list.line_map')
+  local email_start_line = state.get('email_list.email_start_line')
   
   if not line_map or not email_start_line then
     return nil
