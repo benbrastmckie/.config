@@ -48,9 +48,10 @@
   - [x] test to confirm all features have been preserved
 - [ ] features refactor
   - [ ] 'unlocked' shown in red a few seconds after nvim startup
+  - [ ] is /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/ui/confirm.lua used at all?
   - [ ] 'Page 2 / 8 | 200 emails' has 200 hard coded
   - [ ] simplify '⟳ Syncing emails... (4s): 0/1 folders - Connecting' to '⟳ Sync (4s): 0/1 Folders - Connecting'
-  - [ ] make preview end below the buffer line and above the status line
+  - [x] make preview end below the buffer line and above the status line
   - [x] make click between sidebar, preview, and buffers work
   - [x] remove flicker between email previews
   - [x] add footer to email preview

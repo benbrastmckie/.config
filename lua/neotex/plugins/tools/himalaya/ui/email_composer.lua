@@ -1,643 +1,570 @@
--- Himalaya Email Composer UI Module
--- Handles composing, sending, and saving draft emails
-
+-- Buffer-based email composition with auto-save
 local M = {}
 
 -- Dependencies
-local config = require('neotex.plugins.tools.himalaya.core.config')
-local utils = require('neotex.plugins.tools.himalaya.utils')
 local state = require('neotex.plugins.tools.himalaya.core.state')
-local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
+local config = require('neotex.plugins.tools.himalaya.core.config')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
 
 -- Module state
-local buffers = nil  -- Reference to main module's buffers
-local main = nil     -- Reference to main module for window functions
-local window_stack = nil  -- Reference to window stack from main module
+local composer_buffers = {}
+local autosave_timers = {}
+
+-- Configuration
+M.config = {
+  use_tab = true,  -- Open in current window (false = vsplit)
+  auto_save_interval = 30,
+  delete_draft_on_send = true,
+  syntax_highlighting = true,
+  draft_dir = vim.fn.expand('~/.local/share/himalaya/drafts/'),
+}
 
 -- Initialize module
-function M.init(main_buffers, main_module, main_window_stack)
-  buffers = main_buffers
-  main = main_module
-  window_stack = main_window_stack
+function M.setup(cfg)
+  if cfg and cfg.compose then
+    M.config = vim.tbl_extend('force', M.config, cfg.compose)
+  end
+  
+  -- Ensure draft directory exists
+  vim.fn.mkdir(M.config.draft_dir, 'p')
+  
+  logger.debug('Email composer v2 initialized', { config = M.config })
 end
 
--- Compose new email
-function M.compose_email(to_address)
-  -- Capture parent window before creating compose buffer
-  local parent_win = vim.api.nvim_get_current_win()
-  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
+-- Parse email buffer content
+local function parse_email_buffer(lines)
+  local email = {
+    headers = {},
+    body = '',
+  }
   
-  -- Create compose buffer
-  local buf = vim.api.nvim_create_buf(false, true)
+  local in_body = false
+  local body_lines = {}
   
-  -- Configure buffer
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-compose')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'acwrite')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  
-  -- Email template
-  local account = config.get_current_account()
-  
-  -- Get email address using auto-detection
-  local from_email = config.get_account_email()
-  
-  -- Error if no email address found
-  if not from_email then
-    notify.himalaya('Cannot compose email: No email address configured for account', notify.categories.ERROR)
-    return
+  for _, line in ipairs(lines) do
+    if in_body then
+      table.insert(body_lines, line)
+    elseif line == '' then
+      -- Empty line marks end of headers
+      in_body = true
+    else
+      -- Parse header
+      local header, value = line:match('^([^:]+):%s*(.*)$')
+      if header and value then
+        email.headers[header:lower()] = value
+      end
+    end
   end
+  
+  email.body = table.concat(body_lines, '\n')
+  
+  -- Map common headers (handle vim.NIL)
+  local function safe_value(val)
+    if val == vim.NIL or val == 'vim.NIL' then
+      return nil
+    end
+    return val
+  end
+  
+  email.from = safe_value(email.headers.from)
+  email.to = safe_value(email.headers.to)
+  email.cc = safe_value(email.headers.cc)
+  email.bcc = safe_value(email.headers.bcc)
+  email.subject = safe_value(email.headers.subject)
+  
+  return email
+end
+
+-- Format email for display in buffer
+local function format_email_template(opts)
+  opts = opts or {}
+  
+  local account_name = state.get_current_account()
+  local from = opts.from or config.get_account_email(account_name) or ''
   
   local lines = {
-    'From: ' .. from_email,
-    'To: ' .. (to_address or ''),
-    'Subject: ',
-    '',
-    '',
-    '',
-    '--',
-    account.name or from_email,
-    '',
-    string.rep('─', 70),
+    'From: ' .. from,
+    'To: ' .. (opts.to or ''),
+    'Cc: ' .. (opts.cc or ''),
+    'Bcc: ' .. (opts.bcc or ''),
+    'Subject: ' .. (opts.subject or ''),
+    'Date: ' .. os.date('%a, %d %b %Y %H:%M:%S %z'),
+    '',  -- Empty line to separate headers from body
   }
   
+  -- Add body content
+  if opts.body then
+    for line in opts.body:gmatch('[^\r\n]+') do
+      table.insert(lines, line)
+    end
+  else
+    -- Add signature if configured
+    local signature = config.get('compose.signature')
+    if signature then
+      table.insert(lines, '')
+      table.insert(lines, '--')
+      for line in signature:gmatch('[^\r\n]+') do
+        table.insert(lines, line)
+      end
+    end
+  end
+  
+  return lines
+end
+
+-- Sync draft to maildir
+local function sync_draft_to_maildir(draft_file)
+  local account = state.get_current_account()
+  local draft_folder = utils.find_draft_folder(account)
+  
+  if not draft_folder then
+    logger.warn('No draft folder found for account', { account = account })
+    return nil
+  end
+  
+  -- Read draft content
+  local content = vim.fn.readfile(draft_file)
+  local email = parse_email_buffer(content)
+  
+  -- Save to maildir using himalaya
+  local ok, result = pcall(utils.save_draft, account, draft_folder, email)
+  if ok and result then
+    logger.debug('Draft synced to maildir', { 
+      file = draft_file,
+      draft_id = result.id 
+    })
+    -- Show success notification in debug mode
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('Draft synced to ' .. draft_folder, notify.categories.BACKGROUND)
+    end
+    return result.id
+  else
+    logger.error('Failed to sync draft', { 
+      file = draft_file,
+      error = result 
+    })
+    -- Show user-friendly notification about draft sync failure
+    if not email.from or email.from == '' then
+      notify.himalaya('Draft saved locally but not synced: Missing From address', notify.categories.WARNING)
+    else
+      notify.himalaya('Draft saved locally but sync failed: ' .. tostring(result), notify.categories.WARNING)
+    end
+    return nil
+  end
+end
+
+-- Delete draft from maildir
+local function delete_draft_from_maildir(account, draft_id)
+  if not draft_id then return end
+  
+  local draft_folder = utils.find_draft_folder(account)
+  if not draft_folder then return end
+  
+  local ok, err = pcall(utils.delete_email, account, draft_folder, draft_id)
+  if not ok then
+    logger.error('Failed to delete draft from maildir', {
+      draft_id = draft_id,
+      error = err
+    })
+  end
+end
+
+-- Setup auto-save for a buffer
+local function setup_autosave(buf, draft_file)
+  -- Clear any existing timer
+  if autosave_timers[buf] then
+    vim.loop.timer_stop(autosave_timers[buf])
+    autosave_timers[buf] = nil
+  end
+  
+  local timer = vim.loop.new_timer()
+  autosave_timers[buf] = timer
+  
+  -- Auto-save every N seconds
+  timer:start(M.config.auto_save_interval * 1000, M.config.auto_save_interval * 1000, 
+    vim.schedule_wrap(function()
+      if not vim.api.nvim_buf_is_valid(buf) then
+        timer:stop()
+        autosave_timers[buf] = nil
+        return
+      end
+      
+      if vim.api.nvim_buf_get_option(buf, 'modified') then
+        -- Save to file
+        vim.api.nvim_buf_call(buf, function()
+          vim.cmd('silent write!')
+        end)
+        
+        -- Sync to maildir
+        local draft_info = composer_buffers[buf]
+        if draft_info then
+          draft_info.draft_id = sync_draft_to_maildir(draft_file)
+          
+          -- Update state
+          state.set('compose.drafts.' .. buf, draft_info)
+        end
+        
+        -- Notify in debug mode
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('Draft auto-saved', notify.categories.BACKGROUND)
+        end
+      end
+    end)
+  )
+end
+
+-- Setup buffer keymaps and autocmds
+local function setup_buffer_mappings(buf)
+  local opts = { buffer = buf, noremap = true, silent = true }
+  
+  -- Only set up Tab navigation helper, other keymaps are in which-key
+  vim.keymap.set('n', '<Tab>', function()
+    -- Jump to next header field or body
+    local line = vim.api.nvim_win_get_cursor(0)[1]
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    
+    -- Find next field
+    for i = line + 1, #lines do
+      if lines[i] == '' then
+        -- Jump to body
+        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        return
+      elseif lines[i]:match('^[^:]+:%s*$') or lines[i]:match('^[^:]+:%s*$') then
+        -- Jump to end of header line
+        vim.api.nvim_win_set_cursor(0, { i, #lines[i] })
+        return
+      end
+    end
+  end, opts)
+  
+  -- Cleanup on buffer unload
+  vim.api.nvim_create_autocmd('BufUnload', {
+    buffer = buf,
+    callback = function()
+      -- Stop autosave timer
+      if autosave_timers[buf] then
+        vim.loop.timer_stop(autosave_timers[buf])
+        autosave_timers[buf] = nil
+      end
+      
+      -- Cleanup state
+      composer_buffers[buf] = nil
+      state.set('compose.drafts.' .. buf, nil)
+    end,
+  })
+end
+
+-- Create email composition buffer
+function M.compose_email(opts)
+  opts = opts or {}
+  
+  -- Generate draft filename
+  local timestamp = os.date('%Y%m%d_%H%M%S')
+  local draft_file = M.config.draft_dir .. 'draft_' .. timestamp .. '.eml'
+  
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_buf_set_name(buf, draft_file)
+  
+  -- Set buffer options
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'buftype', '')
+  
+  -- Open buffer in appropriate window
+  if M.config.use_tab then
+    -- Check if we're in the sidebar
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    local current_win = vim.api.nvim_get_current_win()
+    
+    -- If in sidebar, move to next window (neo-tree style)
+    if sidebar_win and current_win == sidebar_win then
+      vim.cmd('wincmd w')
+    end
+    
+    -- Now edit the buffer in the current window
+    vim.cmd('buffer ' .. buf)
+  else
+    -- Use vertical split for wider editing area
+    vim.cmd('vsplit')
+    vim.api.nvim_win_set_buf(0, buf)
+  end
+  
+  -- Initialize content
+  local lines = format_email_template(opts)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
-  -- Store compose data
-  vim.b[buf].himalaya_compose = true
-  vim.b[buf].himalaya_account = state.get_current_account()
-  
-  -- Store parent window info for restoration
-  vim.b[buf].himalaya_parent_win = parent_win
-  vim.b[buf].himalaya_parent_buf = parent_buf
-  
-  -- Set up autocommand to handle window close and focus restoration
-  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
-    buffer = buf,
-    once = true,
-    callback = function()
-      -- Restore focus to parent window if it's still valid
-      vim.defer_fn(function()
-        if vim.api.nvim_win_is_valid(parent_win) then
-          vim.api.nvim_set_current_win(parent_win)
-        elseif vim.api.nvim_buf_is_valid(parent_buf) then
-          -- Parent window was closed, try to find a window showing the parent buffer
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            if vim.api.nvim_win_get_buf(win) == parent_buf then
-              vim.api.nvim_set_current_win(win)
-              break
-            end
-          end
-        end
-      end, 50)
-    end
-  })
-  
-  -- Set up buffer keymaps
-  config.setup_buffer_keymaps(buf)
-  
-  -- Open in window
-  main.open_email_window(buf, 'Compose Email', parent_win)
-  
-  -- Position cursor on To: line after "To: "
-  vim.api.nvim_win_set_cursor(0, {2, 4})
-  -- Start in insert mode
-  vim.cmd('startinsert!')
-end
-
--- Send current email (from compose buffer)
-function M.send_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  if not vim.b[buf].himalaya_compose then
-    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
-    return
+  -- Position cursor in To: field if empty
+  if not opts.to then
+    vim.api.nvim_win_set_cursor(0, { 2, 4 })  -- After "To: "
+  elseif not opts.subject then
+    vim.api.nvim_win_set_cursor(0, { 5, 9 })  -- After "Subject: "
+  else
+    -- Position in body
+    vim.api.nvim_win_set_cursor(0, { 8, 0 })
   end
   
-  -- Get buffer content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  
-  -- Parse email headers and body
-  local headers = {}
-  local body_start = nil
-  
-  for i, line in ipairs(lines) do
-    if line == '' and not body_start then
-      body_start = i + 1
-      break
-    elseif line:match('^[%w-]+:') then
-      local header, value = line:match('^([%w-]+):%s*(.*)$')
-      if header then
-        headers[header:lower()] = value
-      end
-    end
+  -- Setup syntax highlighting
+  if M.config.syntax_highlighting then
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd('syntax match mailHeader "^\\(From\\|To\\|Cc\\|Bcc\\|Subject\\|Date\\|Reply-To\\):"')
+      vim.cmd('syntax match mailEmail "<[^>]\\+@[^>]\\+>"')
+      vim.cmd('syntax match mailEmail "[a-zA-Z0-9._%+-]\\+@[a-zA-Z0-9.-]\\+\\.[a-zA-Z]\\{2,}"')
+      vim.cmd('syntax region mailQuoted start="^>" end="$" contains=mailQuoted')
+      vim.cmd('hi link mailHeader Keyword')
+      vim.cmd('hi link mailEmail Underlined')
+      vim.cmd('hi link mailQuoted Comment')
+    end)
   end
   
-  -- Validate required fields
-  if not headers.to or headers.to == '' then
-    notify.himalaya('To: field is required', notify.categories.ERROR)
-    return
-  end
-  
-  if not headers.subject or headers.subject == '' then
-    notify.himalaya('Subject: field is required', notify.categories.ERROR)
-    return
-  end
-  
-  -- Get body content (skip footer)
-  local body_lines = {}
-  for i = body_start or 1, #lines do
-    if lines[i]:match('^─+$') then
-      break
-    end
-    table.insert(body_lines, lines[i])
-  end
-  
-  local body = table.concat(body_lines, '\n')
-  
-  -- Send email
-  local email_data = {
-    from = headers.from,
-    to = headers.to,
-    subject = headers.subject,
-    body = body
+  -- Store buffer info
+  local draft_info = {
+    file = draft_file,
+    created = os.time(),
+    account = state.get_current_account(),
+    reply_to = opts.reply_to,
+    forward_from = opts.forward_from,
   }
-  local result = utils.send_email(state.get_current_account(), email_data)
   
-  if result then
-    notify.himalaya('Email sent successfully', notify.categories.STATUS)
-    
-    -- Get parent window info from buffer variables
-    local parent_win = vim.b[buf].himalaya_parent_win
-    local parent_buf = vim.b[buf].himalaya_parent_buf
-    
-    -- Close the compose window first
-    local current_win = vim.api.nvim_get_current_win()
-    if vim.api.nvim_win_is_valid(current_win) then
-      vim.api.nvim_win_close(current_win, true)
-    end
-    
-    -- Then delete the buffer
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
-    
-    -- Explicitly restore focus to email reading window
-    vim.defer_fn(function()
-      -- First try the stored email reading window (most reliable for replies)
-      if main._email_reading_win and vim.api.nvim_win_is_valid(main._email_reading_win) then
-        vim.api.nvim_set_current_win(main._email_reading_win)
-        main._email_reading_win = nil  -- Clear it after use
-      elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
-        vim.api.nvim_set_current_win(parent_win)
-      elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
-        -- Parent window was closed, try to find a window showing the parent buffer
-        for _, win in ipairs(vim.api.nvim_list_wins()) do
-          if vim.api.nvim_win_get_buf(win) == parent_buf then
-            vim.api.nvim_set_current_win(win)
-            break
-          end
-        end
-      end
-    end, 50)
-  else
-    notify.himalaya('Failed to send email', notify.categories.STATUS)
-  end
-end
-
--- Navigate to next field in compose buffer
-function M.compose_next_field()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row = cursor[1]
-  local col = cursor[2]
+  composer_buffers[buf] = draft_info
+  state.set('compose.drafts.' .. buf, draft_info)
   
-  -- Field positions:
-  -- Line 2: To:
-  -- Line 3: Subject:
-  -- Line 5+: Body (first empty line after headers)
+  -- Setup mappings and auto-save
+  setup_buffer_mappings(buf)
+  setup_autosave(buf, draft_file)
   
-  if row < 2 then
-    -- Move to To: field
-    vim.api.nvim_win_set_cursor(0, {2, 4})
-    vim.cmd('startinsert!')
-  elseif row == 2 then
-    -- Move to Subject: field
-    vim.api.nvim_win_set_cursor(0, {3, 9})
-    vim.cmd('startinsert!')
-  elseif row == 3 then
-    -- Move to body (first empty line after subject)
-    vim.api.nvim_win_set_cursor(0, {5, 0})
-    vim.cmd('startinsert')
-  else
-    -- In body, go back to To:
-    vim.api.nvim_win_set_cursor(0, {2, 4})
-    vim.cmd('startinsert!')
-  end
-end
-
--- Navigate to previous field in compose buffer
-function M.compose_prev_field()
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row = cursor[1]
+  -- Initial save
+  vim.cmd('silent write!')
   
-  if row <= 2 then
-    -- At To: or above, go to body
-    vim.api.nvim_win_set_cursor(0, {5, 0})
-    vim.cmd('startinsert')
-  elseif row == 3 then
-    -- At Subject:, go to To:
-    vim.api.nvim_win_set_cursor(0, {2, 4})
-    vim.cmd('startinsert!')
-  else
-    -- In body, go to Subject:
-    vim.api.nvim_win_set_cursor(0, {3, 9})
-    vim.cmd('startinsert!')
-  end
-end
-
--- Close compose buffer and save as draft
-function M.close_and_save_draft()
-  local buf = vim.api.nvim_get_current_buf()
-  if not vim.b[buf].himalaya_compose then
-    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
-    return
-  end
+  notify.himalaya('Composing email (auto-save enabled)', notify.categories.STATUS)
   
-  -- Get buffer content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  
-  -- Parse email content
-  local email_data = utils.parse_email_content(lines)
-  
-  -- Save to drafts folder
-  local account = state.get_current_account()
-  local drafts_folders = {'Drafts', 'DRAFTS', '[Gmail]/Drafts', 'Draft'}
-  local folders = utils.get_folders(account)
-  local drafts_folder = nil
-  
-  if folders then
-    for _, folder in ipairs(folders) do
-      for _, draft_name in ipairs(drafts_folders) do
-        if folder == draft_name or folder:lower() == draft_name:lower() then
-          drafts_folder = folder
-          break
-        end
-      end
-      if drafts_folder then break end
-    end
-  end
-  
-  if not drafts_folder then
-    drafts_folder = 'Drafts' -- Default fallback
-  end
-  
-  -- Save draft using utility function
-  local success = utils.save_draft(account, email_data, drafts_folder)
-  
-  if success then
-    notify.himalaya('Draft saved to ' .. drafts_folder, notify.categories.STATUS)
-    main.close_current_view()
-  else
-    notify.himalaya('Failed to save draft', notify.categories.ERROR)
-  end
-end
-
--- Reply to current email
-function M.reply_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  local email_id = vim.b[buf].himalaya_email_id
-  if email_id then
-    -- Store the current window (email reading window) globally for restoration
-    main._email_reading_win = vim.api.nvim_get_current_win()
-    M.reply_email(email_id, false)
-  else
-    notify.himalaya('No email to reply to', notify.categories.STATUS)
-  end
-end
-
--- Reply all to current email
-function M.reply_all_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  local email_id = vim.b[buf].himalaya_email_id
-  if email_id then
-    -- Store the current window (email reading window) globally for restoration
-    main._email_reading_win = vim.api.nvim_get_current_win()
-    M.reply_email(email_id, true)
-  else
-    notify.himalaya('No email to reply to', notify.categories.STATUS)
-  end
+  return buf
 end
 
 -- Reply to email
-function M.reply_email(email_id, reply_all)
-  -- Capture parent window before creating new window
-  local parent_win = vim.api.nvim_get_current_win()
-  
-  -- Store the parent window in a more reliable way
-  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
-  local is_email_reading_buffer = vim.b[parent_buf].himalaya_email_id ~= nil
-  
-  local email_content = utils.get_email_content(state.get_current_account(), email_id)
-  if not email_content then
-    notify.himalaya('Failed to get email for reply', notify.categories.ERROR)
-    return
-  end
-  
-  -- Parse email content if it's raw text
-  local parsed_email = M.parse_email_for_reply(email_content)
-  
-  -- Create compose buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  
-  -- Configure buffer
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-compose')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'acwrite')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  
-  -- Reply template
-  local account = config.get_current_account()
-  
-  -- Get email address using auto-detection
-  local from_email = config.get_account_email()
-  
-  -- Error if no email address found
-  if not from_email then
-    notify.himalaya('Cannot reply: No email address configured for account', notify.categories.ERROR)
-    return
-  end
-  
-  local to_field = parsed_email.from or ''
-  if reply_all then
-    local cc_field = parsed_email.cc or ''
-    if cc_field ~= '' then
-      to_field = to_field .. ', ' .. cc_field
+function M.reply_email(email, reply_all)
+  -- Format the quoted body
+  local quoted_body = ''
+  if email.body then
+    -- Split body into lines and prefix each with "> "
+    for line in email.body:gmatch("[^\r\n]*") do
+      quoted_body = quoted_body .. '> ' .. line .. '\n'
     end
-    -- Also include other recipients from To field if reply_all
-    local original_to = parsed_email.to or ''
-    if original_to ~= '' and original_to ~= from_email then
-      to_field = to_field .. ', ' .. original_to
-    end
+  else
+    quoted_body = '> [No content]\n'
   end
   
-  local subject = parsed_email.subject or ''
-  if not subject:match('^Re:%s') then
-    subject = 'Re: ' .. subject
-  end
-  
-  local lines = {
-    'From: ' .. from_email,
-    'To: ' .. to_field,
-    'Subject: ' .. subject,
-    '',
-    '',
-    '> ' .. (parsed_email.from or 'Unknown') .. ' wrote:',
+  local opts = {
+    to = email.from,
+    subject = 'Re: ' .. (email.subject or ''),
+    body = '\n\n' .. string.rep('-', 40) .. '\n' ..
+           'On ' .. (email.date or 'Unknown date') .. ', ' .. 
+           (email.from or 'Unknown') .. ' wrote:\n\n' ..
+           quoted_body,
+    reply_to = email.id,
   }
   
-  -- Add quoted original content
-  if parsed_email.body then
-    local original_lines = vim.split(parsed_email.body, '\n')
-    for _, line in ipairs(original_lines) do
-      table.insert(lines, '> ' .. line)
-    end
+  if reply_all and email.cc then
+    opts.cc = email.cc
   end
   
-  table.insert(lines, '')
-  table.insert(lines, '--')
-  table.insert(lines, account.name or from_email)
-  table.insert(lines, '')
-  table.insert(lines, string.rep('─', 70))
-  
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  
-  -- Store compose data
-  vim.b[buf].himalaya_compose = true
-  vim.b[buf].himalaya_account = state.get_current_account()
-  vim.b[buf].himalaya_reply_to = email_id
-  
-  -- Store parent window info in compose buffer for reliable restoration
-  vim.b[buf].himalaya_parent_win = parent_win
-  vim.b[buf].himalaya_parent_buf = parent_buf
-  vim.b[buf].himalaya_parent_is_email = is_email_reading_buffer
-  
-  -- Set up autocommand to handle window close and focus restoration
-  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
-    buffer = buf,
-    once = true,
-    callback = function()
-      -- Restore focus to parent window if it's still valid
-      vim.defer_fn(function()
-        if vim.api.nvim_win_is_valid(parent_win) then
-          vim.api.nvim_set_current_win(parent_win)
-        elseif vim.api.nvim_buf_is_valid(parent_buf) then
-          -- Parent window was closed, try to find a window showing the parent buffer
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            if vim.api.nvim_win_get_buf(win) == parent_buf then
-              vim.api.nvim_set_current_win(win)
-              break
-            end
-          end
-        end
-      end, 50)
-    end
-  })
-  
-  -- Open in window with proper parent tracking
-  main.open_email_window(buf, 'Reply - ' .. subject, parent_win)
-  
-  -- Position cursor before quoted content
-  vim.api.nvim_win_set_cursor(0, {5, 0})
-  vim.cmd('startinsert!')
-end
-
--- Parse email content for reply operations
-function M.parse_email_for_reply(email_content)
-  local parsed = {}
-  
-  if type(email_content) == 'string' then
-    -- Parse raw email string
-    local email_lines = vim.split(email_content, '\n')
-    local in_headers = true
-    local body_lines = {}
-    
-    for _, line in ipairs(email_lines) do
-      if in_headers then
-        if line == '' or line:match('^──+$') then
-          in_headers = false
-        elseif line:match('^From:%s*(.+)') then
-          parsed.from = line:match('^From:%s*(.+)')
-        elseif line:match('^To:%s*(.+)') then
-          parsed.to = line:match('^To:%s*(.+)')
-        elseif line:match('^CC:%s*(.+)') then
-          parsed.cc = line:match('^CC:%s*(.+)')
-        elseif line:match('^Subject:%s*(.+)') then
-          parsed.subject = line:match('^Subject:%s*(.+)')
-        elseif line:match('^Date:%s*(.+)') then
-          parsed.date = line:match('^Date:%s*(.+)')
-        end
-      else
-        -- Skip separator lines
-        if not line:match('^──+$') then
-          table.insert(body_lines, line)
-        end
-      end
-    end
-    
-    parsed.body = table.concat(body_lines, '\n')
-  else
-    -- Already structured data
-    parsed = email_content
-  end
-  
-  return parsed
-end
-
--- Forward current email
-function M.forward_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  local email_id = vim.b[buf].himalaya_email_id
-  if email_id then
-    -- Store the current window (email reading window) globally for restoration
-    main._email_reading_win = vim.api.nvim_get_current_win()
-    M.forward_email(email_id)
-  else
-    notify.himalaya('No email to forward', notify.categories.STATUS)
-  end
+  return M.compose_email(opts)
 end
 
 -- Forward email
-function M.forward_email(email_id)
-  -- Capture parent window before creating new window
-  local parent_win = vim.api.nvim_get_current_win()
-  
-  -- Store the parent window in a more reliable way
-  local parent_buf = vim.api.nvim_win_get_buf(parent_win)
-  local is_email_reading_buffer = vim.b[parent_buf].himalaya_email_id ~= nil
-  
-  local email_content = utils.get_email_content(state.get_current_account(), email_id)
-  if not email_content then
-    notify.himalaya('Failed to get email for forwarding', notify.categories.ERROR)
-    return
-  end
-  
-  -- Parse email content
-  local parsed_email = M.parse_email_for_reply(email_content)
-  
-  -- Create compose buffer similar to reply but with forward template
-  local buf = vim.api.nvim_create_buf(false, true)
-  
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-compose')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'acwrite')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  
-  local account = config.get_current_account()
-  local subject = parsed_email.subject or ''
-  if not subject:match('^Fwd:%s') then
-    subject = 'Fwd: ' .. subject
-  end
-  
-  -- Get email address using auto-detection
-  local from_email = config.get_account_email()
-  
-  -- Error if no email address found
-  if not from_email then
-    notify.himalaya('Cannot forward: No email address configured for account', notify.categories.ERROR)
-    return
-  end
-  
-  local lines = {
-    'From: ' .. from_email,
-    'To: ',
-    'Subject: ' .. subject,
-    '',
-    '---------- Forwarded message ---------',
-    'From: ' .. (parsed_email.from or 'Unknown'),
-    'Date: ' .. (parsed_email.date or 'Unknown'),
-    'Subject: ' .. (parsed_email.subject or '(No subject)'),
-    'To: ' .. (parsed_email.to or 'Unknown'),
-    '',
+function M.forward_email(email)
+  local opts = {
+    subject = 'Fwd: ' .. (email.subject or ''),
+    body = '\n\n' .. string.rep('-', 40) .. '\n' ..
+           '---------- Forwarded message ----------\n' ..
+           'From: ' .. (email.from or 'Unknown') .. '\n' ..
+           'Date: ' .. (email.date or 'Unknown date') .. '\n' ..
+           'Subject: ' .. (email.subject or '') .. '\n' ..
+           'To: ' .. (email.to or '') .. '\n\n' ..
+           (email.body or ''),
+    forward_from = email.id,
   }
   
-  -- Add CC if present
-  if parsed_email.cc then
-    table.insert(lines, 10, 'CC: ' .. parsed_email.cc)
-    table.insert(lines, 11, '')
-  end
-  
-  -- Add original content
-  if parsed_email.body then
-    local original_lines = vim.split(parsed_email.body, '\n')
-    vim.list_extend(lines, original_lines)
-  end
-  
-  table.insert(lines, '')
-  table.insert(lines, '--')
-  table.insert(lines, account.name or from_email)
-  table.insert(lines, '')
-  table.insert(lines, string.rep('─', 70))
-  
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  
-  vim.b[buf].himalaya_compose = true
-  vim.b[buf].himalaya_account = state.get_current_account()
-  vim.b[buf].himalaya_forward = email_id
-  
-  -- Store parent window info in compose buffer for reliable restoration
-  vim.b[buf].himalaya_parent_win = parent_win
-  vim.b[buf].himalaya_parent_buf = parent_buf
-  vim.b[buf].himalaya_parent_is_email = is_email_reading_buffer
-  
-  -- Set up autocommand to handle window close and focus restoration
-  vim.api.nvim_create_autocmd({'BufWipeout', 'BufDelete'}, {
-    buffer = buf,
-    once = true,
-    callback = function()
-      -- Restore focus to parent window if it's still valid
-      vim.defer_fn(function()
-        if vim.api.nvim_win_is_valid(parent_win) then
-          vim.api.nvim_set_current_win(parent_win)
-        elseif vim.api.nvim_buf_is_valid(parent_buf) then
-          -- Parent window was closed, try to find a window showing the parent buffer
-          for _, win in ipairs(vim.api.nvim_list_wins()) do
-            if vim.api.nvim_win_get_buf(win) == parent_buf then
-              vim.api.nvim_set_current_win(win)
-              break
-            end
-          end
-        end
-      end, 50)
-    end
-  })
-  
-  main.open_email_window(buf, 'Forward - ' .. subject, parent_win)
-  
-  -- Position cursor on To: line
-  vim.api.nvim_win_set_cursor(0, {2, #lines[2]})
-  vim.cmd('startinsert!')
+  return M.compose_email(opts)
 end
 
--- Close compose buffer without saving
-function M.close_without_saving()
-  local buf = vim.api.nvim_get_current_buf()
-  if not vim.b[buf].himalaya_compose then
-    notify.himalaya('Not in compose buffer', notify.categories.STATUS)
+-- Save draft manually
+function M.save_draft(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
   
-  -- Check if buffer has been modified
-  if vim.bo[buf].modified then
-    vim.ui.input({
-      prompt = 'Discard unsaved changes? (y/n): '
-    }, function(input)
-      if input and input:lower() == 'y' then
-        -- Force close without saving
-        vim.bo[buf].modified = false
-        main.close_current_view()
-        notify.himalaya('Email discarded', notify.categories.STATUS)
-      end
-    end)
-  else
-    main.close_current_view()
-    notify.himalaya('Email discarded', notify.categories.STATUS)
+  local draft_info = composer_buffers[buf]
+  if not draft_info then
+    notify.himalaya('Not a compose buffer', notify.categories.ERROR)
+    return
   end
+  
+  -- Save to file
+  vim.api.nvim_buf_call(buf, function()
+    vim.cmd('write!')
+  end)
+  
+  -- Sync to maildir
+  draft_info.draft_id = sync_draft_to_maildir(draft_info.file)
+  
+  notify.himalaya('Draft saved', notify.categories.USER_ACTION)
+end
+
+-- Send email
+function M.send_email(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  local draft_info = composer_buffers[buf]
+  if not draft_info then
+    notify.himalaya('Not a compose buffer', notify.categories.ERROR)
+    return
+  end
+  
+  -- Save current content
+  vim.api.nvim_buf_call(buf, function()
+    vim.cmd('write!')
+  end)
+  
+  -- Parse email
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local email = parse_email_buffer(lines)
+  
+  -- Validate required fields
+  if not email.to or email.to == '' then
+    notify.himalaya('Please specify a recipient', notify.categories.ERROR)
+    return
+  end
+  
+  -- Show confirmation
+  local misc = require('neotex.util.misc')
+  if not misc.confirm('Send email to ' .. email.to .. '?', false) then
+    return
+  end
+  
+  -- Send email
+  notify.himalaya('Sending email...', notify.categories.STATUS)
+  
+  local ok, result = pcall(utils.send_email, draft_info.account, email)
+  
+  if ok and result then
+    notify.himalaya('Email sent successfully', notify.categories.USER_ACTION)
+    
+    -- Delete draft if configured
+    if M.config.delete_draft_on_send then
+      -- Delete file
+      vim.fn.delete(draft_info.file)
+      
+      -- Delete from maildir
+      if draft_info.draft_id then
+        delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+      end
+    end
+    
+    -- Close buffer
+    vim.api.nvim_buf_delete(buf, { force = true })
+  else
+    notify.himalaya('Failed to send email: ' .. tostring(result), notify.categories.ERROR)
+  end
+end
+
+-- Discard email with modern confirmation dialog
+function M.discard_email(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  local draft_info = composer_buffers[buf]
+  if not draft_info then
+    notify.himalaya('Not a compose buffer', notify.categories.ERROR)
+    return
+  end
+  
+  -- Use simple confirmation prompt
+  local misc = require('neotex.util.misc')
+  local modified = vim.api.nvim_buf_get_option(buf, 'modified')
+  local message = modified and 'Discard unsaved email draft?' or 'Discard email draft?'
+  
+  if not misc.confirm(message, true) then
+    -- User cancelled or pressed Escape
+    return
+  end
+  
+  -- User pressed 'y', proceed with discard
+  -- Stop autosave
+  if autosave_timers[buf] then
+    vim.loop.timer_stop(autosave_timers[buf])
+    autosave_timers[buf] = nil
+  end
+  
+  -- Delete draft file
+  vim.fn.delete(draft_info.file)
+  
+  -- Delete from maildir
+  if draft_info.draft_id then
+    delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+  end
+  
+  -- Switch to alternate buffer before deleting (like :bd behavior)
+  -- This prevents the sidebar from going full screen
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Get list of all buffers
+  local buffers = vim.api.nvim_list_bufs()
+  local alternate_buf = nil
+  
+  -- Find a suitable buffer to switch to
+  for _, b in ipairs(buffers) do
+    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+      -- Skip special buffers like the sidebar
+      if buftype == '' and not filetype:match('^himalaya%-') then
+        alternate_buf = b
+        break
+      end
+    end
+  end
+  
+  -- If no alternate buffer found, create a new empty one
+  if not alternate_buf then
+    alternate_buf = vim.api.nvim_create_buf(true, false)
+  end
+  
+  -- Switch to the alternate buffer first
+  vim.api.nvim_win_set_buf(current_win, alternate_buf)
+  
+  -- Now delete the draft buffer
+  vim.api.nvim_buf_delete(buf, { force = true })
+  
+  notify.himalaya('Email discarded', notify.categories.STATUS)
+end
+
+-- Check if buffer is a compose buffer
+function M.is_compose_buffer(buf)
+  return composer_buffers[buf] ~= nil
+end
+
+-- Get all active compose buffers
+function M.get_compose_buffers()
+  local buffers = {}
+  for buf, info in pairs(composer_buffers) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      table.insert(buffers, { buffer = buf, info = info })
+    else
+      -- Cleanup invalid buffer
+      composer_buffers[buf] = nil
+      if autosave_timers[buf] then
+        vim.loop.timer_stop(autosave_timers[buf])
+        autosave_timers[buf] = nil
+      end
+    end
+  end
+  return buffers
 end
 
 return M

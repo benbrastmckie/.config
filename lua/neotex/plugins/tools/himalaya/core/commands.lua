@@ -135,12 +135,12 @@ M.command_registry.HimalayaTrashStats = {
 M.command_registry.HimalayaSend = {
   fn = function()
     local buf = vim.api.nvim_get_current_buf()
-    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
     
     -- Check if this is a compose buffer
-    if composer_v2.is_compose_buffer(buf) then
+    if composer.is_compose_buffer(buf) then
       -- send_email already has its own confirmation dialog
-      composer_v2.send_email(buf)
+      composer.send_email(buf)
     else
       -- Not a compose buffer
       local notify = require('neotex.util.notifications')
@@ -155,11 +155,11 @@ M.command_registry.HimalayaSend = {
 M.command_registry.HimalayaSaveDraft = {
   fn = function()
     local buf = vim.api.nvim_get_current_buf()
-    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
     
     -- Check if this is a compose buffer
-    if composer_v2.is_compose_buffer(buf) then
-      composer_v2.save_draft(buf)
+    if composer.is_compose_buffer(buf) then
+      composer.save_draft(buf)
       -- Don't close the buffer - let user continue editing
       local notify = require('neotex.util.notifications')
       notify.himalaya('Draft saved', notify.categories.USER_ACTION)
@@ -177,12 +177,12 @@ M.command_registry.HimalayaSaveDraft = {
 M.command_registry.HimalayaDiscard = {
   fn = function()
     local buf = vim.api.nvim_get_current_buf()
-    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
     
     -- Check if this is a compose buffer
-    if composer_v2.is_compose_buffer(buf) then
+    if composer.is_compose_buffer(buf) then
       -- Call discard_email directly which will show the modern confirmation prompt
-      composer_v2.discard_email(buf)
+      composer.discard_email(buf)
     else
       -- Not a compose buffer
       local notify = require('neotex.util.notifications')

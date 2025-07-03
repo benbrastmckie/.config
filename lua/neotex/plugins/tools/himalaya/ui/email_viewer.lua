@@ -1,348 +1,430 @@
--- Himalaya Email Viewer UI Module
--- Handles reading, displaying, and formatting individual emails
-
+-- Buffer-based email viewer for Himalaya
 local M = {}
 
 -- Dependencies
-local config = require('neotex.plugins.tools.himalaya.core.config')
-local utils = require('neotex.plugins.tools.himalaya.utils')
 local state = require('neotex.plugins.tools.himalaya.core.state')
-local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
+local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
+local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
 
--- Module state
-local buffers = nil  -- Reference to main module's buffers
-local main = nil     -- Reference to main module for window functions
+-- Configuration
+M.config = {
+  use_tab = true,  -- Match composer default
+  syntax_highlighting = true,
+  show_headers = true,
+  wrap_text = true,
+}
 
 -- Initialize module
-function M.init(main_buffers, main_module)
-  buffers = main_buffers
-  main = main_module
+function M.setup(cfg)
+  if cfg and cfg.view then
+    M.config = vim.tbl_extend('force', M.config, cfg.view)
+  end
 end
 
--- Read and display email content
-function M.read_email(email_id)
-  local email_content = utils.get_email_content(state.get_current_account(), email_id, state.get_current_folder())
-  if not email_content then
-    notify.himalaya('Failed to read email', notify.categories.ERROR)
-    return
+-- Format email address (handle string or table)
+local function format_address(addr)
+  if not addr then
+    return "Unknown"
   end
   
-  -- Create or reuse buffer
-  local buf = buffers.email_read
-  if not buf or not vim.api.nvim_buf_is_valid(buf) then
-    buf = vim.api.nvim_create_buf(false, true)
-    buffers.email_read = buf
+  if type(addr) == "table" then
+    if addr.name and addr.addr then
+      return string.format("%s <%s>", addr.name, addr.addr)
+    elseif addr.addr then
+      return addr.addr
+    elseif addr.name then
+      return addr.name
+    end
   end
   
-  -- Configure buffer
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-email')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
+  return tostring(addr)
+end
+
+-- Format file size
+local function format_size(size)
+  if not size then return "unknown size" end
+  
+  if size < 1024 then
+    return string.format("%d B", size)
+  elseif size < 1024 * 1024 then
+    return string.format("%.1f KB", size / 1024)
+  else
+    return string.format("%.1f MB", size / (1024 * 1024))
+  end
+end
+
+-- Process email body (handle plain text and HTML)
+local function process_email_body(body)
+  if not body then
+    return { "No content available" }
+  end
+  
+  local lines = {}
+  
+  -- Simple line splitting for now
+  -- TODO: Add HTML to text conversion
+  for line in body:gmatch("[^\r\n]+") do
+    table.insert(lines, line)
+  end
+  
+  if #lines == 0 then
+    table.insert(lines, body)
+  end
+  
+  return lines
+end
+
+-- Render email content to buffer
+function M.render_email(buf, email)
+  local lines = {}
+  
+  -- Headers section
+  if M.config.show_headers then
+    local from = format_address(email.from)
+    local to = format_address(email.to)
+    
+    table.insert(lines, 'From: ' .. from)
+    table.insert(lines, 'To: ' .. to)
+    
+    if email.cc then
+      table.insert(lines, 'Cc: ' .. format_address(email.cc))
+    end
+    
+    table.insert(lines, 'Subject: ' .. (email.subject or 'No Subject'))
+    table.insert(lines, 'Date: ' .. (email.date or 'Unknown'))
+    table.insert(lines, string.rep('─', 80))
+    table.insert(lines, '')
+  end
+  
+  -- Email body
+  if email.body then
+    -- Process email body (handle plain text and HTML)
+    local body_lines = process_email_body(email.body)
+    vim.list_extend(lines, body_lines)
+  else
+    table.insert(lines, "Loading email content...")
+  end
+  
+  -- Attachments section
+  if email.attachments and #email.attachments > 0 then
+    table.insert(lines, '')
+    table.insert(lines, string.rep('─', 80))
+    table.insert(lines, 'Attachments:')
+    for i, attachment in ipairs(email.attachments) do
+      table.insert(lines, string.format('  [%d] %s (%s)', 
+        i, attachment.name, format_size(attachment.size)))
+    end
+  end
+  
+  -- Set buffer content
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-  
-  -- Format email content
-  local lines, urls = M.format_email_content(email_content)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-  
-  -- Store email data
-  vim.b[buf].himalaya_email_id = email_id
-  vim.b[buf].himalaya_email = email_content
-  vim.b[buf].himalaya_urls = urls
-  
-  -- Update selected email in state
-  state.set_selected_email(email_id)
-  
-  -- Explicitly ensure keymaps are set up for this buffer
-  config.setup_buffer_keymaps(buf)
-  
-  -- Open in window
-  main.open_email_window(buf, 'Email - ' .. (email_content.subject or 'No Subject'))
 end
 
--- Format email content for display
-function M.format_email_content(email_content)
-  local lines = {}
-  local urls = {}  -- Track URLs for easy access
+-- Setup email-specific keymaps
+function M.setup_email_keymaps(buf, email)
+  local opts = { buffer = buf, silent = true }
   
-  -- Parse the raw email content if it's a string
-  if type(email_content) == 'string' then
-    local email_lines = vim.split(email_content, '\n')
-    local in_headers = true
-    local headers = {}
-    local body_lines = {}
+  -- Navigation
+  vim.keymap.set('n', 'q', function()
+    -- Close tab or buffer
+    if vim.fn.tabpagenr('$') > 1 then
+      vim.cmd('tabclose')
+    else
+      vim.cmd('bdelete')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Close email' }))
+  
+  -- Actions
+  vim.keymap.set('n', 'r', function()
+    -- Close current view first
+    if vim.fn.tabpagenr('$') > 1 then
+      vim.cmd('tabclose')
+    else
+      vim.cmd('bdelete')
+    end
+    -- Reply to email
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+    composer.reply_email(email, false)
+  end, vim.tbl_extend('force', opts, { desc = 'Reply to email' }))
+  
+  vim.keymap.set('n', 'R', function()
+    if vim.fn.tabpagenr('$') > 1 then
+      vim.cmd('tabclose')
+    else
+      vim.cmd('bdelete')
+    end
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+    composer.reply_email(email, true)
+  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
+  
+  vim.keymap.set('n', 'f', function()
+    if vim.fn.tabpagenr('$') > 1 then
+      vim.cmd('tabclose')
+    else
+      vim.cmd('bdelete')
+    end
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+    composer.forward_email(email)
+  end, vim.tbl_extend('force', opts, { desc = 'Forward email' }))
+  
+  vim.keymap.set('n', 'd', function()
+    local choice = confirm.show({
+      title = 'Delete Email',
+      message = 'Move this email to trash?',
+      options = { 'Delete', 'Cancel' },
+      default = 2,
+    })
     
-    for _, line in ipairs(email_lines) do
-      if in_headers then
-        if line == '' then
-          in_headers = false
-        elseif line:match('^[%w-]+:') then
-          local header, value = line:match('^([%w-]+):%s*(.*)$')
-          if header then
-            headers[header:lower()] = value
-          end
-        end
+    if choice == 1 then
+      if vim.fn.tabpagenr('$') > 1 then
+        vim.cmd('tabclose')
       else
-        table.insert(body_lines, line)
+        vim.cmd('bdelete')
       end
+      -- Delete email and refresh list
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      local account = state.get_current_account()
+      local folder = state.get_current_folder()
+      utils.delete_email(account, folder, email.id)
+      
+      -- Refresh email list
+      local main = require('neotex.plugins.tools.himalaya.ui.main')
+      main.refresh_email_list()
     end
-    
-    -- Format headers
-    table.insert(lines, 'From: ' .. (headers.from or 'Unknown'))
-    table.insert(lines, 'To: ' .. (headers.to or 'Unknown'))
-    if headers.cc then
-      table.insert(lines, 'CC: ' .. headers.cc)
-    end
-    table.insert(lines, 'Subject: ' .. (headers.subject or '(No subject)'))
-    table.insert(lines, 'Date: ' .. (headers.date or 'Unknown'))
-    
-    table.insert(lines, string.rep('─', 70))
-    table.insert(lines, '')
-    
-    -- Process body and extract URLs
-    local processed_body = M.process_email_body(body_lines, urls)
-    vim.list_extend(lines, processed_body)
-  else
-    -- Fallback for structured data (shouldn't happen with current Himalaya)
-    table.insert(lines, 'From: ' .. (email_content.from or 'Unknown'))
-    table.insert(lines, 'To: ' .. (email_content.to or 'Unknown'))
-    if email_content.cc then
-      table.insert(lines, 'CC: ' .. email_content.cc)
-    end
-    table.insert(lines, 'Subject: ' .. (email_content.subject or '(No subject)'))
-    table.insert(lines, 'Date: ' .. (email_content.date or 'Unknown'))
-    
-    table.insert(lines, string.rep('─', 70))
-    table.insert(lines, '')
-    
-    -- Body
-    if email_content.body then
-      local body_lines = vim.split(email_content.body, '\n')
-      local processed_body = M.process_email_body(body_lines, urls)
-      vim.list_extend(lines, processed_body)
-    end
-  end
+  end, vim.tbl_extend('force', opts, { desc = 'Delete email' }))
   
-  -- Add URLs section if any were found
-  if #urls > 0 then
-    table.insert(lines, '')
-    table.insert(lines, string.rep('─', 70))
-    table.insert(lines, 'LINKS:')
-    for i, url in ipairs(urls) do
-      -- Truncate long URLs for display but keep them ctrl+clickable
-      local display_url = utils.truncate_string(url, 60)
-      table.insert(lines, string.format('[%d] %s', i, display_url))
-    end
-  end
+  -- Navigation between emails
+  vim.keymap.set('n', ']e', function()
+    M.view_next_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Next email' }))
   
-  -- Footer
-  table.insert(lines, '')
-  table.insert(lines, string.rep('─', 70))
-  if #urls > 0 then
-    table.insert(lines, 'gl:go-to-link gr:reply gR:reply-all gf:forward gD:delete q:back')
-  else
-    table.insert(lines, 'gr:reply gR:reply-all gf:forward gD:delete q:back')
-  end
+  vim.keymap.set('n', '[e', function()
+    M.view_previous_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Previous email' }))
   
-  return lines, urls
-end
-
--- Process email body to extract and replace URLs
-function M.process_email_body(body_lines, urls)
-  local processed_lines = {}
-  
-  for _, line in ipairs(body_lines) do
-    -- Extract URLs from angle brackets and replace with numbered references
-    local processed_line = line:gsub('<(https?://[^>]+)>', function(url)
-      table.insert(urls, url)
-      return string.format('[%d]', #urls)
-    end)
+  -- Mark as read/unread
+  vim.keymap.set('n', 'u', function()
+    -- Toggle seen flag
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local account = state.get_current_account()
+    local folder = state.get_current_folder()
     
-    -- Also extract bare URLs (not in angle brackets)
-    processed_line = processed_line:gsub('(https?://[%S]+)', function(url)
-      -- Don't double-process URLs that were already in angle brackets
-      if not line:match('<' .. url:gsub('[%(%)%.%+%-%*%?%[%]%^%$%%]', '%%%1') .. '>') then
-        table.insert(urls, url)
-        return string.format('[%d]', #urls)
-      end
-      return url
-    end)
-    
-    table.insert(processed_lines, processed_line)
-  end
-  
-  return processed_lines
-end
-
--- Read current email (from list view)
-function M.read_current_email()
-  local email_id = M.get_current_email_id()
-  if email_id then
-    M.read_email(email_id)
-  else
-    notify.himalaya('No email selected', notify.categories.STATUS)
-  end
-end
-
--- Helper function to get current email ID
-function M.get_current_email_id()
-  if vim.bo.filetype ~= 'himalaya-list' then
-    return nil
-  end
-  
-  local line_num = vim.fn.line('.')
-  local emails = state.get('email_list.emails')
-  local email_start_line = state.get('email_list.email_start_line')
-  
-  if not emails or #emails == 0 then
-    return nil
-  end
-  
-  -- Use stored email start line if available
-  if not email_start_line then
-    -- Fallback: Find where emails actually start by looking for the pattern of the first email
-    email_start_line = 0
-    for i = 1, 15 do  -- Check first 15 lines
-      local line = vim.fn.getline(i)
-      -- Look for email lines which have the status indicator pattern [*] or [ ]
-      -- In selection mode, lines start with checkbox [ ] or [x] followed by status [*] or [ ]
-      -- Without selection mode, lines start directly with status [*] or [ ]
-      if line and (line:match('^%[[ *]%] [^ ]') or line:match('^%[[ x]%] %[[ *]%]')) then
-        email_start_line = i
-        break
-      end
-    end
-    
-    -- Fallback: count header lines by finding the separator line
-    if email_start_line == 0 then
-      for i = 1, 10 do  -- Check first 10 lines
-        local line = vim.fn.getline(i)
-        if line and line:match('^[─]+$') then  -- Found separator line
-          email_start_line = i + 2  -- Emails start after separator + empty line
+    -- Check current state
+    local is_seen = false
+    if email.flags then
+      for _, flag in ipairs(email.flags) do
+        if flag == 'Seen' then
+          is_seen = true
           break
         end
       end
     end
     
-    -- Final fallback if nothing found
-    if email_start_line == 0 then
-      email_start_line = 6 -- Default
-    end
-  end
-  
-  local email_index = line_num - email_start_line + 1
-  
-  if email_index > 0 and email_index <= #emails and emails[email_index] then
-    return emails[email_index].id
-  end
-  
-  return nil
-end
-
--- Show email attachments
-function M.show_attachments(email_id)
-  local attachments = utils.get_email_attachments(state.get_current_account(), email_id)
-  if not attachments or #attachments == 0 then
-    notify.himalaya('No attachments found', notify.categories.STATUS)
-    return
-  end
-  
-  -- Create attachment list buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-attachments')
-  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-  
-  local lines = {'Email Attachments', string.rep('─', 50), ''}
-  for i, attachment in ipairs(attachments) do
-    table.insert(lines, string.format('%d. %s (%s)', i, attachment.name, attachment.size or 'unknown size'))
-  end
-  table.insert(lines, '')
-  table.insert(lines, string.rep('─', 50))
-  table.insert(lines, '<CR>:download  q:close')
-  
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-  
-  vim.b[buf].himalaya_attachments = attachments
-  vim.b[buf].himalaya_email_id = email_id
-  
-  main.open_email_window(buf, 'Attachments')
-end
-
--- Open link under cursor
-function M.open_link_under_cursor()
-  local buf = vim.api.nvim_get_current_buf()
-  local urls = vim.b[buf].himalaya_urls
-  
-  if not urls or #urls == 0 then
-    notify.himalaya('No links found in this email', notify.categories.STATUS)
-    return
-  end
-  
-  -- Get current line
-  local line = vim.api.nvim_get_current_line()
-  
-  -- Check if cursor is on a link line
-  local link_number = line:match('^%[(%d+)%]')
-  if link_number then
-    local index = tonumber(link_number)
-    if index and urls[index] then
-      M.open_url(urls[index])
-      return
-    end
-  end
-  
-  -- If not on a link line, show picker
-  if #urls == 1 then
-    M.open_url(urls[1])
-  else
-    local choices = {}
-    for i, url in ipairs(urls) do
-      table.insert(choices, string.format('%d. %s', i, url))
+    -- Toggle the flag using himalaya commands
+    local args
+    if is_seen then
+      args = { 'flag', 'remove', tostring(email.id), 'Seen' }
+    else
+      args = { 'flag', 'add', tostring(email.id), 'Seen' }
     end
     
-    vim.ui.select(choices, {
-      prompt = 'Select link to open:',
-      format_item = function(item)
-        return item
-      end,
-    }, function(choice)
-      if choice then
-        local index = tonumber(choice:match('^(%d+)%.'))
-        if index and urls[index] then
-          M.open_url(urls[index])
-        end
-      end
-    end)
-  end
+    utils.execute_himalaya(args, { account = account, folder = folder })
+    
+    -- Refresh display
+    M.refresh_current_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Toggle read/unread' }))
+  
+  -- Refresh
+  vim.keymap.set('n', 'gr', function()
+    M.refresh_current_email()
+  end, vim.tbl_extend('force', opts, { desc = 'Refresh email' }))
 end
 
--- Open URL using system default browser
-function M.open_url(url)
-  local cmd
-  if vim.fn.has('mac') == 1 then
-    cmd = { 'open', url }
-  elseif vim.fn.has('unix') == 1 then
-    cmd = { 'xdg-open', url }
-  elseif vim.fn.has('win32') == 1 then
-    cmd = { 'cmd', '/c', 'start', url }
-  else
-    notify.himalaya('Unsupported platform for opening URLs', notify.categories.ERROR)
+-- View email in buffer
+function M.view_email(email_id)
+  -- Get email content
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  
+  -- Show loading message
+  notify.himalaya('Loading email...', notify.categories.STATUS)
+  
+  local email = utils.get_email_by_id(account, folder, email_id)
+  
+  if not email then
+    notify.himalaya('Failed to load email', notify.categories.ERROR)
     return
   end
   
-  vim.fn.jobstart(cmd, {
-    on_exit = function(_, exit_code)
-      if exit_code == 0 then
-        notify.himalaya('URL opened', notify.categories.STATUS)
-      else
-        notify.himalaya('Failed to open URL', notify.categories.ERROR)
-      end
-    end
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(true, false)
+  
+  -- Set buffer options
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'buftype', 'nowrite')
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
+  
+  -- Name the buffer
+  local buf_name = string.format('[Email] %s', email.subject or 'No Subject')
+  vim.api.nvim_buf_set_name(buf, buf_name)
+  
+  -- Open buffer in tab or split
+  if M.config.use_tab then
+    -- Use tab sb to open buffer in new tab without creating empty buffer
+    vim.cmd('tab sb ' .. buf)
+  else
+    vim.cmd('vsplit')
+    vim.api.nvim_win_set_buf(0, buf)
+  end
+  
+  -- Window options
+  vim.wo.wrap = M.config.wrap_text
+  vim.wo.linebreak = true
+  vim.wo.breakindent = true
+  vim.wo.number = false
+  vim.wo.relativenumber = false
+  vim.wo.signcolumn = 'no'
+  
+  -- Render email content
+  M.render_email(buf, email)
+  
+  -- Setup buffer-local keymaps
+  M.setup_email_keymaps(buf, email)
+  
+  -- Track in state for navigation
+  state.set('viewing_email', {
+    id = email_id,
+    buf = buf,
+    account = account,
+    folder = folder
   })
+  
+  -- Apply syntax highlighting if enabled
+  if M.config.syntax_highlighting then
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd('syntax match mailHeader "^\\(From\\|To\\|Cc\\|Subject\\|Date\\):"')
+      vim.cmd('syntax match mailEmail "<[^>]\\+@[^>]\\+>"')
+      vim.cmd('syntax match mailEmail "[a-zA-Z0-9._%+-]\\+@[a-zA-Z0-9.-]\\+\\.[a-zA-Z]\\{2,}"')
+      vim.cmd('syntax match mailQuoted "^>.*$"')
+      vim.cmd('hi link mailHeader Keyword')
+      vim.cmd('hi link mailEmail Underlined') 
+      vim.cmd('hi link mailQuoted Comment')
+    end)
+  end
+  
+  -- Position cursor at top
+  vim.api.nvim_win_set_cursor(0, {1, 0})
+  
+  return buf
+end
+
+-- View next email in list
+function M.view_next_email()
+  local current = state.get('viewing_email')
+  if not current then return end
+  
+  -- Get email list from sidebar
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_buf = sidebar.get_buf()
+  if not sidebar_buf or not vim.api.nvim_buf_is_valid(sidebar_buf) then
+    notify.himalaya('Email list not available', notify.categories.ERROR)
+    return
+  end
+  
+  local emails = state.get('email_list.emails')
+  if not emails or #emails == 0 then return end
+  
+  -- Find current email index
+  local current_idx = nil
+  for i, email in ipairs(emails) do
+    if tostring(email.id) == tostring(current.id) then
+      current_idx = i
+      break
+    end
+  end
+  
+  if current_idx and current_idx < #emails then
+    -- View next email
+    local next_email = emails[current_idx + 1]
+    if next_email and next_email.id then
+      -- Close current
+      if vim.api.nvim_buf_is_valid(current.buf) then
+        vim.api.nvim_buf_delete(current.buf, { force = true })
+      end
+      -- Open next
+      M.view_email(next_email.id)
+    end
+  else
+    notify.himalaya('No more emails', notify.categories.INFO)
+  end
+end
+
+-- View previous email in list
+function M.view_previous_email()
+  local current = state.get('viewing_email')
+  if not current then return end
+  
+  -- Get email list from sidebar
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_buf = sidebar.get_buf()
+  if not sidebar_buf or not vim.api.nvim_buf_is_valid(sidebar_buf) then
+    notify.himalaya('Email list not available', notify.categories.ERROR)
+    return
+  end
+  
+  local emails = state.get('email_list.emails')
+  if not emails or #emails == 0 then return end
+  
+  -- Find current email index
+  local current_idx = nil
+  for i, email in ipairs(emails) do
+    if tostring(email.id) == tostring(current.id) then
+      current_idx = i
+      break
+    end
+  end
+  
+  if current_idx and current_idx > 1 then
+    -- View previous email
+    local prev_email = emails[current_idx - 1]
+    if prev_email and prev_email.id then
+      -- Close current
+      if vim.api.nvim_buf_is_valid(current.buf) then
+        vim.api.nvim_buf_delete(current.buf, { force = true })
+      end
+      -- Open previous
+      M.view_email(prev_email.id)
+    end
+  else
+    notify.himalaya('No previous emails', notify.categories.INFO)
+  end
+end
+
+-- Refresh current email
+function M.refresh_current_email()
+  local current = state.get('viewing_email')
+  if not current then return end
+  
+  -- Reload email
+  local email = utils.get_email_by_id(current.account, current.folder, current.id)
+  if email and vim.api.nvim_buf_is_valid(current.buf) then
+    M.render_email(current.buf, email)
+    notify.himalaya('Email refreshed', notify.categories.INFO)
+  end
+end
+
+-- Check if buffer is an email viewer buffer
+function M.is_email_buffer(buf)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+  
+  local name = vim.api.nvim_buf_get_name(buf)
+  return name:match("^%[Email%]")
 end
 
 return M

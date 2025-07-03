@@ -37,6 +37,7 @@ Email list display and management in sidebar format:
 - Folder switching and account switching
 - Sync progress display with elapsed time tracking
 - Email metadata formatting and display
+- Mouse click support for email selection
 
 Key functions:
 - `show_email_list(args)` - Display email list for folder/account
@@ -45,8 +46,26 @@ Key functions:
 - `refresh_email_list()` - Refresh current view
 - Navigation: `next_page()`, `prev_page()`, `pick_folder()`
 
-<!-- TODO: Add keyboard navigation within email list -->
-<!-- TODO: Implement email preview on hover -->
+### email_preview.lua
+Real-time email preview system with mouse interaction:
+- Floating preview window positioned next to sidebar
+- Two-stage loading: cached content immediately, full content async
+- Mouse click support for window focus switching
+- Preview mode: automatic preview updates on email selection
+- Global email actions (reply, forward, delete, archive, spam) from preview
+- Buffer pooling for performance
+
+Key functions:
+- `enable_preview_mode()` / `disable_preview_mode()` - Toggle preview mode
+- `show_preview(email_id, parent_win)` - Display email preview
+- `focus_preview()` / `return_to_sidebar()` - Window focus management
+- `is_preview_shown()` / `is_preview_mode()` - State queries
+
+Mouse interactions:
+- Click sidebar → preview: Update preview content
+- Click preview → sidebar: Switch focus to sidebar  
+- Click preview → normal buffer: Close preview and exit preview mode
+- Click within preview: Move cursor for navigation
 
 ### email_viewer.lua
 Email reading and display functionality:
@@ -166,9 +185,10 @@ The UI layer follows these design principles:
 
 ```
 main.lua (coordinator)
-├── email_list.lua (depends on: sidebar, state, notifications)
-├── email_viewer.lua (depends on: window_stack, notifications)
+├── email_list.lua (depends on: sidebar, state, notifications, email_preview)
+├── email_viewer.lua (depends on: window_stack, notifications, email_composer)
 ├── email_composer.lua (depends on: window_stack, notifications)
+├── email_preview.lua (depends on: state, email_cache, sidebar)
 ├── sidebar.lua (standalone)
 ├── notifications.lua (depends on: core/logger)
 ├── window_stack.lua (standalone)
@@ -186,23 +206,27 @@ ui.init()
 ui.toggle_email_sidebar()  -- Open/close email interface
 ui.show_email_list({'INBOX'})  -- Show specific folder
 
+-- Preview system
+local preview = require("neotex.plugins.tools.himalaya.ui.email_preview")
+preview.enable_preview_mode()  -- Enable automatic previews
+preview.show_preview("email-123", sidebar_win)  -- Manual preview
+preview.focus_preview()  -- Switch focus to preview window
+
 -- Direct module usage
 local email_list = require("neotex.plugins.tools.himalaya.ui.email_list")
 email_list.refresh_email_list()
 
 local email_viewer = require("neotex.plugins.tools.himalaya.ui.email_viewer")
-email_viewer.read_email("email-123")
+email_viewer.view_email("email-123")
 
 local email_composer = require("neotex.plugins.tools.himalaya.ui.email_composer")
-email_composer.compose_email("user@example.com")
+email_composer.compose_email({ to = "user@example.com" })
 
--- Window management
-local window_stack = require("neotex.plugins.tools.himalaya.ui.window_stack")
-window_stack.push(new_window, parent_window)
-
--- Smart notifications
-local notifications = require("neotex.plugins.tools.himalaya.ui.notifications")
-notifications.show("Email sent successfully", "success", "compose")
+-- Mouse interactions (automatic)
+-- Click emails in sidebar → selects email, updates preview
+-- Click preview window → switches focus from sidebar to preview
+-- Click normal buffer → closes preview and exits preview mode
+-- Click within preview → moves cursor for navigation
 ```
 
 ## Navigation
