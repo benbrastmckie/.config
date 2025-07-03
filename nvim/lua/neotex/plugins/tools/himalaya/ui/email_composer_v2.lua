@@ -7,7 +7,6 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
-local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
 
 -- Module state
 local composer_buffers = {}
@@ -15,7 +14,7 @@ local autosave_timers = {}
 
 -- Configuration
 M.config = {
-  use_tab = true,  -- Changed to use tabs by default
+  use_tab = true,  -- Open in current window (false = vsplit)
   auto_save_interval = 30,
   delete_draft_on_send = true,
   syntax_highlighting = true,
@@ -61,12 +60,19 @@ local function parse_email_buffer(lines)
   
   email.body = table.concat(body_lines, '\n')
   
-  -- Map common headers
-  email.from = email.headers.from
-  email.to = email.headers.to
-  email.cc = email.headers.cc
-  email.bcc = email.headers.bcc
-  email.subject = email.headers.subject
+  -- Map common headers (handle vim.NIL)
+  local function safe_value(val)
+    if val == vim.NIL or val == 'vim.NIL' then
+      return nil
+    end
+    return val
+  end
+  
+  email.from = safe_value(email.headers.from)
+  email.to = safe_value(email.headers.to)
+  email.cc = safe_value(email.headers.cc)
+  email.bcc = safe_value(email.headers.bcc)
+  email.subject = safe_value(email.headers.subject)
   
   return email
 end
@@ -75,8 +81,8 @@ end
 local function format_email_template(opts)
   opts = opts or {}
   
-  local account_config = config.get_account(state.get_current_account())
-  local from = opts.from or (account_config and account_config.email) or ''
+  local account_name = state.get_current_account()
+  local from = opts.from or config.get_account_email(account_name) or ''
   
   local lines = {
     'From: ' .. from,
@@ -129,12 +135,22 @@ local function sync_draft_to_maildir(draft_file)
       file = draft_file,
       draft_id = result.id 
     })
+    -- Show success notification in debug mode
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('Draft synced to ' .. draft_folder, notify.categories.BACKGROUND)
+    end
     return result.id
   else
     logger.error('Failed to sync draft', { 
       file = draft_file,
       error = result 
     })
+    -- Show user-friendly notification about draft sync failure
+    if not email.from or email.from == '' then
+      notify.himalaya('Draft saved locally but not synced: Missing From address', notify.categories.WARNING)
+    else
+      notify.himalaya('Draft saved locally but sync failed: ' .. tostring(result), notify.categories.WARNING)
+    end
     return nil
   end
 end
@@ -203,22 +219,7 @@ end
 local function setup_buffer_mappings(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
   
-  -- Send email
-  vim.keymap.set('n', '<leader>ms', function()
-    M.send_email(buf)
-  end, opts)
-  
-  -- Save draft manually
-  vim.keymap.set('n', '<leader>md', function()
-    M.save_draft(buf)
-  end, opts)
-  
-  -- Discard email
-  vim.keymap.set('n', '<leader>mq', function()
-    M.discard_email(buf)
-  end, opts)
-  
-  -- Navigation helpers
+  -- Only set up Tab navigation helper, other keymaps are in which-key
   vim.keymap.set('n', '<Tab>', function()
     -- Jump to next header field or body
     local line = vim.api.nvim_win_get_cursor(0)[1]
@@ -271,15 +272,25 @@ function M.compose_email(opts)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   
-  -- Open buffer in window
+  -- Open buffer in appropriate window
   if M.config.use_tab then
-    vim.cmd('tabnew')
+    -- Check if we're in the sidebar
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    local current_win = vim.api.nvim_get_current_win()
+    
+    -- If in sidebar, move to next window (neo-tree style)
+    if sidebar_win and current_win == sidebar_win then
+      vim.cmd('wincmd w')
+    end
+    
+    -- Now edit the buffer in the current window
+    vim.cmd('buffer ' .. buf)
   else
     -- Use vertical split for wider editing area
     vim.cmd('vsplit')
+    vim.api.nvim_win_set_buf(0, buf)
   end
-  
-  vim.api.nvim_win_set_buf(0, buf)
   
   -- Initialize content
   local lines = format_email_template(opts)
@@ -334,13 +345,24 @@ end
 
 -- Reply to email
 function M.reply_email(email, reply_all)
+  -- Format the quoted body
+  local quoted_body = ''
+  if email.body then
+    -- Split body into lines and prefix each with "> "
+    for line in email.body:gmatch("[^\r\n]*") do
+      quoted_body = quoted_body .. '> ' .. line .. '\n'
+    end
+  else
+    quoted_body = '> [No content]\n'
+  end
+  
   local opts = {
     to = email.from,
     subject = 'Re: ' .. (email.subject or ''),
     body = '\n\n' .. string.rep('-', 40) .. '\n' ..
            'On ' .. (email.date or 'Unknown date') .. ', ' .. 
            (email.from or 'Unknown') .. ' wrote:\n\n' ..
-           (email.body or ''):gsub('(.-)\n', '> %1\n'),
+           quoted_body,
     reply_to = email.id,
   }
   
@@ -419,14 +441,8 @@ function M.send_email(buf)
   end
   
   -- Show confirmation
-  local confirmed = confirm.show({
-    title = 'Send Email',
-    message = 'Send email to ' .. email.to .. '?',
-    options = { 'Send', 'Cancel' },
-    default = 1,
-  })
-  
-  if confirmed ~= 1 then
+  local misc = require('neotex.util.misc')
+  if not misc.confirm('Send email to ' .. email.to .. '?', false) then
     return
   end
   
@@ -456,7 +472,7 @@ function M.send_email(buf)
   end
 end
 
--- Discard email
+-- Discard email with modern confirmation dialog
 function M.discard_email(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -468,22 +484,17 @@ function M.discard_email(buf)
     return
   end
   
-  -- Check if buffer has unsaved changes
+  -- Use simple confirmation prompt
+  local misc = require('neotex.util.misc')
   local modified = vim.api.nvim_buf_get_option(buf, 'modified')
+  local message = modified and 'Discard unsaved email draft?' or 'Discard email draft?'
   
-  -- Show confirmation
-  local message = modified and 'Discard unsaved email?' or 'Discard email draft?'
-  local confirmed = confirm.show({
-    title = 'Discard Email',
-    message = message,
-    options = { 'Discard', 'Cancel' },
-    default = 2,
-  })
-  
-  if confirmed ~= 1 then
+  if not misc.confirm(message, true) then
+    -- User cancelled or pressed Escape
     return
   end
   
+  -- User pressed 'y', proceed with discard
   -- Stop autosave
   if autosave_timers[buf] then
     vim.loop.timer_stop(autosave_timers[buf])
@@ -498,7 +509,36 @@ function M.discard_email(buf)
     delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
   end
   
-  -- Close buffer without saving
+  -- Switch to alternate buffer before deleting (like :bd behavior)
+  -- This prevents the sidebar from going full screen
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Get list of all buffers
+  local buffers = vim.api.nvim_list_bufs()
+  local alternate_buf = nil
+  
+  -- Find a suitable buffer to switch to
+  for _, b in ipairs(buffers) do
+    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+      -- Skip special buffers like the sidebar
+      if buftype == '' and not filetype:match('^himalaya%-') then
+        alternate_buf = b
+        break
+      end
+    end
+  end
+  
+  -- If no alternate buffer found, create a new empty one
+  if not alternate_buf then
+    alternate_buf = vim.api.nvim_create_buf(true, false)
+  end
+  
+  -- Switch to the alternate buffer first
+  vim.api.nvim_win_set_buf(current_win, alternate_buf)
+  
+  -- Now delete the draft buffer
   vim.api.nvim_buf_delete(buf, { force = true })
   
   notify.himalaya('Email discarded', notify.categories.STATUS)

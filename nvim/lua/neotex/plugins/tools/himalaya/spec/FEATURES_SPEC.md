@@ -5,6 +5,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 ## High Priority Features
 
 ### 1. Enhanced UI/UX Features ✅ COMPLETE
+
 - **Hover Preview**: Preview emails in a second sidebar when hovering ✅
 - **Buffer-based Composition**: Compose/reply/forward emails in regular buffers ✅
   - Auto-save to drafts folder ✅
@@ -16,32 +17,35 @@ This document outlines planned features and enhancements for the Himalaya email 
 **Implementation Details**: See [ENHANCED_UI_UX_SPEC.md](ENHANCED_UI_UX_SPEC.md) for full implementation documentation.
 
 ### 2. Email Management Features
+
 - **Attachment Support**: View and manage email attachments
 - **Image Display**: Inline image viewing in emails
 - **Custom Headers**: Add custom header fields to emails
 - **Address Autocomplete**: Complete addresses in format "Name <user@domain>"
-- **Local Trash System**: 
+- **Local Trash System**:
   - Move deleted emails to local trash
   - Mappings for viewing and recovering trash
   - Automatic trash cleanup
 - **Himalaya FAQ Features**: Implement remaining features from [Himalaya FAQ](https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq)
 
 ### 3. Sync Improvements
-- **Remove Fast Sync**: Simplify to single sync mechanism [x] COMPLETE
-- **Smart Sync Status**: Enhanced sidebar status for sync operations
+
+- **Smart Sync Status**: Refactor sidebar status for sync operations
 - **Auto-sync on Start**: Automatic sync when nvim opens
-- **Sync Error Recovery**: Automatic recovery from UIDVALIDITY issues
 
 ## Medium Priority Features
 
 ### 4. Code Quality Improvements
+
 - **Enhanced Error Handling Module** (`core/errors.lua`):
+
   - Centralized error types and codes
   - Consistent error wrapping with context
   - Error recovery strategies
   - Integration with logging and notifications
 
 - **API Consistency Layer**:
+
   - Standardize function return values (success, result, error)
   - Implement consistent parameter validation
   - Add type annotations for better IDE support
@@ -54,13 +58,16 @@ This document outlines planned features and enhancements for the Himalaya email 
   - Profile and optimize slow operations
 
 ### 5. Developer Experience
+
 - **Testing Infrastructure**:
+
   - Create `test/` directory with unit tests
   - Add integration test suite for critical paths
   - Implement mock modules for external dependencies
   - Add performance benchmarks
 
 - **Observability**:
+
   - Enhanced logging with configurable log levels
   - Add performance timing for slow operations
   - Create debug mode with detailed operation traces
@@ -74,6 +81,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 ## Low Priority Features
 
 ### 6. Advanced Features
+
 - **Multiple Account Views**: View emails from multiple accounts simultaneously
 - **Advanced Search**: Full-text search with filters and operators
 - **Email Templates**: Save and use email templates
@@ -82,6 +90,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 - **Rules and Filters**: Client-side email filtering rules
 
 ### 7. Integration Features
+
 - **Calendar Integration**: View and respond to calendar invites
 - **Contact Management**: Integrated address book
 - **Task Integration**: Convert emails to tasks
@@ -91,7 +100,9 @@ This document outlines planned features and enhancements for the Himalaya email 
 ## Implementation Notes
 
 ### From TODO.md
+
 The following features were originally planned and should be considered:
+
 - Improved confirmations using return/escape keys
 - Remove unnecessary notifications (e.g., "Himalaya closed")
 - Fix email count display accuracy
@@ -101,6 +112,7 @@ The following features were originally planned and should be considered:
 - Address autocomplete in "Name <email>" format
 
 ### Technical Debt
+
 - Fix TODO in `ui/email_list.lua` line 81 (maildir check implementation)
 - Resolve backup directory execution issue (found during refactoring)
 - Standardize all error handling patterns
@@ -109,6 +121,7 @@ The following features were originally planned and should be considered:
 ## Priority Guidelines
 
 When implementing these features:
+
 1. Maintain compatibility with existing functionality
 2. Follow established architectural patterns
 3. Use the unified notification system consistently
@@ -120,9 +133,11 @@ When implementing these features:
 ## Architecture Refactoring (Phase 8)
 
 ### Overview
+
 Implement the ideal architecture with strict unidirectional dependencies, eliminating the current pragmatic compromises documented in ARCHITECTURE.md. This refactoring will establish a clean, maintainable architecture that follows SOLID principles. **This is a breaking change that intentionally removes all backward compatibility to achieve a tight, maintainable codebase.**
 
 ### Goals
+
 1. **Eliminate cross-layer dependencies** - Remove UI dependencies from core layer
 2. **Implement event-driven architecture** - Decouple layers through events
 3. **Establish proper abstractions** - Use interfaces and dependency injection
@@ -177,6 +192,7 @@ Implement the ideal architecture with strict unidirectional dependencies, elimin
 ### Implementation Plan
 
 #### Step 1: Create Event System
+
 ```lua
 -- orchestration/events.lua
 local M = {}
@@ -202,13 +218,13 @@ return {
   SYNC_PROGRESS = "sync:progress",
   SYNC_COMPLETED = "sync:completed",
   SYNC_FAILED = "sync:failed",
-  
+
   -- Email events
   EMAIL_SELECTED = "email:selected",
   EMAIL_OPENED = "email:opened",
   EMAIL_SENT = "email:sent",
   EMAIL_DELETED = "email:deleted",
-  
+
   -- UI events
   UI_REFRESH_REQUESTED = "ui:refresh_requested",
   UI_FOLDER_CHANGED = "ui:folder_changed",
@@ -217,6 +233,7 @@ return {
 ```
 
 #### Step 2: Extract Pure Configuration
+
 ```lua
 -- core/config.lua (pure data only)
 local M = {}
@@ -245,6 +262,7 @@ end
 ```
 
 #### Step 3: Move Keybindings to Orchestration
+
 ```lua
 -- orchestration/keybindings.lua
 local events = require('orchestration.events')
@@ -255,12 +273,12 @@ local M = {}
 function M.setup()
   local config = require('core.config')
   local keymaps = config.get('keymaps')
-  
+
   -- Map keys to events instead of direct functions
   vim.keymap.set('n', keymaps.open or '<leader>mo', function()
     events.emit(core_events.UI_OPEN_REQUESTED)
   end)
-  
+
   vim.keymap.set('n', keymaps.compose or '<leader>mc', function()
     events.emit(core_events.UI_COMPOSE_REQUESTED)
   end)
@@ -268,22 +286,23 @@ end
 ```
 
 #### Step 4: Refactor Commands with Dependency Injection
+
 ```lua
 -- orchestration/commands.lua
 local M = {}
 
 function M.setup(deps)
   local commands = {}
-  
+
   -- Email commands
   commands.Himalaya = function(args)
     deps.events.emit('ui:open_requested', { folder = args[1] })
   end
-  
+
   commands.HimalayaSyncFull = function()
     deps.events.emit('sync:full_requested')
   end
-  
+
   -- Register all commands
   for name, handler in pairs(commands) do
     vim.api.nvim_create_user_command(name, handler, {})
@@ -292,6 +311,7 @@ end
 ```
 
 #### Step 5: Create Service Layer Abstractions
+
 ```lua
 -- service/email.lua
 local M = {}
@@ -322,6 +342,7 @@ end
 ```
 
 #### Step 6: Refactor UI Layer with Controllers
+
 ```lua
 -- ui/controllers/email_list.lua
 local M = {}
@@ -330,7 +351,7 @@ function M.init(deps)
   M.view = deps.view
   M.email_service = deps.email_service
   M.events = deps.events
-  
+
   -- Subscribe to events
   M.events.on('email:list_requested', function(data)
     M.show_list(data.folder, data.page)
@@ -344,6 +365,7 @@ end
 ```
 
 #### Step 7: Bootstrap Everything
+
 ```lua
 -- orchestration/bootstrap.lua
 local M = {}
@@ -351,12 +373,12 @@ local M = {}
 function M.init()
   -- Initialize event system
   local events = require('orchestration.events')
-  
+
   -- Initialize core layer
   local config = require('core.config')
   local state = require('core.state')
   local logger = require('core.logger')
-  
+
   -- Initialize service layer with dependencies
   local email_service = require('service.email')
   email_service.init({
@@ -364,21 +386,21 @@ function M.init()
     state = state,
     logger = logger,
   })
-  
+
   local sync_service = require('service.sync')
   sync_service.init({
     state = state,
     logger = logger,
     events = events,
   })
-  
+
   -- Initialize UI layer
   local ui_controllers = {
     email_list = require('ui.controllers.email_list'),
     email_viewer = require('ui.controllers.email_viewer'),
     email_composer = require('ui.controllers.email_composer'),
   }
-  
+
   for _, controller in pairs(ui_controllers) do
     controller.init({
       email_service = email_service,
@@ -387,11 +409,11 @@ function M.init()
       state = state,
     })
   end
-  
+
   -- Setup commands and keybindings
   require('orchestration.commands').setup({ events = events })
   require('orchestration.keybindings').setup({ events = events })
-  
+
   -- Wire up cross-layer event handlers
   M.setup_event_routing(events)
 end
@@ -401,7 +423,7 @@ function M.setup_event_routing(events)
   events.on('sync:progress', function(data)
     events.emit('ui:update_sync_status', data)
   end)
-  
+
   -- UI events trigger services
   events.on('ui:sync_requested', function(data)
     events.emit('sync:start_requested', data)
@@ -412,6 +434,7 @@ end
 ### Migration Strategy - Clean Break Approach
 
 #### Phase 8.1: Create New Architecture (Greenfield)
+
 1. Create entirely new directory structure (himalaya-v2/)
 2. Implement clean event system from scratch
 3. Build orchestration layer without legacy constraints
@@ -419,6 +442,7 @@ end
 5. Write comprehensive test suite for new architecture
 
 #### Phase 8.2: Feature Parity Implementation
+
 1. Reimplement all 31 commands in new architecture
 2. No compatibility layers or adapters
 3. No migration of old code - rewrite for clarity
@@ -426,6 +450,7 @@ end
 5. Document all breaking changes
 
 #### Phase 8.3: Hard Cutover
+
 1. Archive old implementation to himalaya-legacy/
 2. Move new implementation to main himalaya/
 3. Update init.lua to use new bootstrap only
@@ -433,6 +458,7 @@ end
 5. Update all documentation from scratch
 
 #### Phase 8.4: Cleanup and Optimization
+
 1. Delete himalaya-legacy/ after verification period
 2. Remove any remaining compatibility code
 3. Optimize without legacy constraints
@@ -441,16 +467,19 @@ end
 ### Breaking Changes (Intentional)
 
 1. **Configuration Format**
+
    - New YAML/TOML based config (no Lua tables)
    - No migration tool - users must reconfigure
    - Cleaner, validated schema
 
 2. **API Changes**
+
    - All module paths change
    - No compatibility aliases
    - Function signatures optimized for new architecture
 
 3. **State Format**
+
    - New state serialization format
    - No migration of old state
    - Users start fresh
@@ -497,10 +526,12 @@ events.emit('sync:progress', data)
 ### Risks and Mitigation
 
 1. **Risk**: User disruption from breaking changes
+
    - **Mitigation**: Clear migration guide, but NO compatibility code
    - **Philosophy**: Short-term pain for long-term maintainability
 
 2. **Risk**: Loss of user customizations
+
    - **Mitigation**: Document new extension points clearly
    - **Philosophy**: Better to break than to accumulate technical debt
 
@@ -526,7 +557,7 @@ events.emit('sync:progress', data)
 - Phase 8.4: 2-3 days (optimization and cleanup)
 
 **Total: 13-18 days of focused development**
-*(Longer than compatibility approach but results in cleaner codebase)*
+_(Longer than compatibility approach but results in cleaner codebase)_
 
 ### Implementation Philosophy
 

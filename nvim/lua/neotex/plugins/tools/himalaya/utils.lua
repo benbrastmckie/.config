@@ -407,8 +407,9 @@ function M.get_email_by_id(account, folder, email_id)
   -- Extract headers from the output
   local in_headers = true
   local body_lines = {}
+  local lines = vim.split(output, '\n', { plain = true })
   
-  for line in output:gmatch("[^\r\n]+") do
+  for _, line in ipairs(lines) do
     if in_headers and line == "" then
       in_headers = false
     elseif in_headers then
@@ -433,16 +434,22 @@ function M.find_draft_folder(account)
     return nil
   end
   
-  -- Check common draft folder names
-  local draft_folders = { 'Drafts', 'DRAFTS', '[Gmail]/Drafts', 'Draft' }
-  
   -- Check folder map for draft folder
   if account_config.folder_map then
     for imap, local_folder in pairs(account_config.folder_map) do
       if imap:lower():match('draft') then
-        return local_folder
+        -- For maildir, we need the IMAP name, not the local folder name
+        return imap
       end
     end
+  end
+  
+  -- Check common draft folder names
+  local draft_folders = { '[Gmail]/Drafts', 'Drafts', 'DRAFTS', 'Draft', '.Drafts' }
+  
+  -- For Gmail specifically, use [Gmail]/Drafts
+  if account:lower() == 'gmail' then
+    return '[Gmail]/Drafts'
   end
   
   -- Default to 'Drafts'
@@ -451,27 +458,63 @@ end
 
 -- Save draft to maildir
 function M.save_draft(account, folder, email_data)
+  -- Build himalaya command with correct v1.1.0 syntax
   local cmd_parts = {
     config.config.binaries.himalaya or 'himalaya',
-    '-a', account,
     'message', 'save',
+    '-a', account,
     '-f', folder,
   }
   
   -- Create email content
   local content = M.format_email_for_sending(email_data)
   
-  -- Use echo to pipe content
+  -- Log the command and content for debugging
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug('Saving draft', {
+    account = account,
+    folder = folder,
+    cmd = table.concat(cmd_parts, ' '),
+    has_content = content ~= nil,
+    content_length = content and #content or 0,
+    from = email_data.from,
+    to = email_data.to,
+    subject = email_data.subject
+  })
+  
+  -- Write content to temporary file instead of using echo
+  local temp_file = vim.fn.tempname()
+  local file = io.open(temp_file, 'w')
+  if not file then
+    logger.error('Failed to create temp file for draft')
+    return nil, 'Failed to create temporary file'
+  end
+  file:write(content)
+  file:close()
+  
+  -- Use cat to pipe content (more reliable than echo)
   local full_cmd = string.format(
-    'echo %s | %s',
-    vim.fn.shellescape(content),
+    'cat %s | %s',
+    vim.fn.shellescape(temp_file),
     table.concat(cmd_parts, ' ')
   )
   
   local output = vim.fn.system(full_cmd)
-  if vim.v.shell_error ~= 0 then
+  local exit_code = vim.v.shell_error
+  
+  -- Clean up temp file
+  os.remove(temp_file)
+  
+  if exit_code ~= 0 then
+    logger.error('Draft save failed', {
+      exit_code = exit_code,
+      output = output,
+      cmd = full_cmd
+    })
     return nil, 'Failed to save draft: ' .. output
   end
+  
+  logger.debug('Draft save output', { output = output })
   
   -- Extract draft ID from output if possible
   local draft_id = output:match('Message saved with ID: (%S+)') or 

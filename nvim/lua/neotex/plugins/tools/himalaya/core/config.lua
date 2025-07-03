@@ -127,7 +127,7 @@ M.defaults = {
   -- Email composition settings
   compose = {
     use_v2 = true,  -- Use new buffer-based composer
-    use_tab = false,
+    use_tab = true,  -- Open in current window (false = vsplit)
     auto_save_interval = 30,
     delete_draft_on_send = true,
     syntax_highlighting = true,
@@ -347,27 +347,34 @@ function M.setup_buffer_keymaps(bufnr)
         return
       end
       
-      -- Check if preview is shown for current email
-      if preview.is_preview_shown() and preview.get_current_preview_id() == email_id then
-        -- Preview is already showing for this email, just focus it
-        preview.focus_preview()
-      else
-        -- Show preview for this email
+      -- First CR: Enable preview mode and show preview for current email
+      if not preview.is_preview_mode() then
+        preview.enable_preview_mode()
+        -- Show preview for current email immediately
         preview.show_preview(email_id, vim.api.nvim_get_current_win())
-        -- After showing, focus it
-        vim.defer_fn(function()
-          preview.focus_preview()
-        end, 150)
+      -- Second CR: Focus the preview if it's showing
+      elseif preview.is_preview_shown() then
+        local focused = preview.focus_preview()
+        if not focused then
+          -- If focus failed, try showing the preview again
+          preview.show_preview(email_id, vim.api.nvim_get_current_win())
+        end
+      else
+        -- Preview mode is on but no preview shown, show it
+        preview.show_preview(email_id, vim.api.nvim_get_current_win())
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Focus/show email preview' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Toggle preview mode / Focus preview' }))
     
-    keymap('n', 'c', function()
-      require('neotex.plugins.tools.himalaya.ui.main').compose_email()
-    end, vim.tbl_extend('force', opts, { desc = 'Compose email' }))
+    -- ESC to exit preview mode
+    keymap('n', '<Esc>', function()
+      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+      if preview.is_preview_mode() then
+        preview.disable_preview_mode()
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Exit preview mode' }))
     
-    keymap('n', 'r', function()
-      require('neotex.plugins.tools.himalaya.ui.main').refresh_email_list()
-    end, vim.tbl_extend('force', opts, { desc = 'Refresh email list' }))
+    -- Removed 'c' mapping - use 'gw' to compose/write email
+    -- Removed 'r' mapping - use 'gs' for sync which includes refresh
     
     -- Override 'g' to handle our custom g-commands immediately
     keymap('n', 'g', function()
@@ -389,8 +396,14 @@ function M.setup_buffer_keymaps(bufnr)
         require('neotex.plugins.tools.himalaya.ui.main').pick_account()
       elseif key == 'w' then
         require('neotex.plugins.tools.himalaya.ui.main').compose_email()
+      elseif key == 'r' then
+        require('neotex.plugins.tools.himalaya.ui.main').reply_current_email()
       elseif key == 'R' then
         require('neotex.plugins.tools.himalaya.ui.main').reply_all_current_email()
+      elseif key == 'f' then
+        require('neotex.plugins.tools.himalaya.ui.main').forward_current_email()
+      elseif key == 's' then
+        require('neotex.plugins.tools.himalaya.ui.main').sync_current_folder()
       elseif key == 'D' then
         if has_selection then
           require('neotex.plugins.tools.himalaya.ui.main').delete_selected_emails()
@@ -419,6 +432,60 @@ function M.setup_buffer_keymaps(bufnr)
     keymap('n', 'q', function()
       require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
+    
+    -- Mouse click handler for sidebar
+    keymap('n', '<LeftMouse>', function()
+      -- Get mouse position
+      local mouse_pos = vim.fn.getmousepos()
+      
+      -- Move cursor to clicked position
+      if mouse_pos.line > 0 then
+        vim.api.nvim_win_set_cursor(0, {mouse_pos.line, mouse_pos.column - 1})
+      end
+      
+      -- Update preview immediately for mouse clicks
+      vim.schedule(function()
+        local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+        if preview.is_preview_mode() then
+          local main = require('neotex.plugins.tools.himalaya.ui.main')
+          local email_id = main.get_current_email_id()
+          local current_preview_id = preview.get_current_preview_id()
+          
+          if email_id and email_id ~= current_preview_id then
+            preview.show_preview(email_id, vim.api.nvim_get_current_win())
+          end
+        end
+      end)
+    end, vim.tbl_extend('force', opts, { desc = 'Click to select email' }))
+    
+    -- Debounced cursor movement handler for smooth j/k navigation
+    local preview_timer = nil
+    vim.api.nvim_create_autocmd('CursorMoved', {
+      buffer = buf,
+      callback = function()
+        local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+        if not preview.is_preview_mode() then
+          return
+        end
+        
+        -- Cancel previous timer
+        if preview_timer then
+          vim.fn.timer_stop(preview_timer)
+        end
+        
+        -- Set new timer with minimal debounce for snappy response
+        preview_timer = vim.fn.timer_start(50, function()
+          local main = require('neotex.plugins.tools.himalaya.ui.main')
+          local email_id = main.get_current_email_id()
+          local current_preview_id = preview.get_current_preview_id()
+          
+          if email_id and email_id ~= current_preview_id then
+            preview.show_preview(email_id, vim.api.nvim_get_current_win())
+          end
+          preview_timer = nil
+        end)
+      end
+    })
     
     -- Select email and move down
     keymap('n', 'n', function()
@@ -501,9 +568,10 @@ function M.setup_buffer_keymaps(bufnr)
         '',
         'Navigation:',
         '  j/k       - Move up/down',
-        '  <CR>      - Read email',
+        '  <CR>      - Enable preview mode / Focus preview',
+        '  <Esc>     - Exit preview mode',
         '  q         - Close Himalaya',
-        '  r         - Refresh list',
+        '  gs        - Sync current folder',
         '  gn/gp     - Next/previous page',
         '',
         'Selection:',
@@ -511,7 +579,10 @@ function M.setup_buffer_keymaps(bufnr)
         '  N         - Select/deselect email and move up',
         '',
         'Email Actions:',
-        '  c/gw      - Compose new email',
+        '  gw        - Write new email',
+        '  gr        - Reply to current email',
+        '  gR        - Reply all to current email',
+        '  gf        - Forward current email',
         '  gD        - Delete (batch if selected)',
         '  gA        - Archive (batch if selected)',
         '  gS        - Spam (batch if selected)',
@@ -527,6 +598,12 @@ function M.setup_buffer_keymaps(bufnr)
         'Checkboxes:',
         '  [ ]       - Not selected',
         '  [x]       - Selected for batch operations',
+        '',
+        'Preview Mode:',
+        '  First <CR>  - Enable preview mode (hover shows previews)',
+        '  Second <CR> - Focus the preview window',
+        '  <Esc>       - Return to sidebar (keep preview mode)',
+        '  q           - Close preview and exit preview mode',
         '',
         'Press any key to close help'
       }

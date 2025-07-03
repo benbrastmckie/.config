@@ -13,6 +13,7 @@ local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
 local email_viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer')
 local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
 local notify = require('neotex.util.notifications')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
 -- Buffer tracking
 M.buffers = {
@@ -322,6 +323,14 @@ end
 
 -- Helper function to get current email ID
 function M.get_current_email_id()
+  -- Check if we have a preview_email_id set (from preview window actions)
+  local preview_email_id = state.get('preview_email_id')
+  if preview_email_id then
+    -- Clear it after use
+    state.set('preview_email_id', nil)
+    return preview_email_id
+  end
+  
   if vim.bo.filetype ~= 'himalaya-list' then
     return nil
   end
@@ -462,14 +471,28 @@ function M.reply_current_email()
   local config = require('neotex.plugins.tools.himalaya.core.config')
   if config.get('compose.use_v2', false) then
     local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email
-    local buf = vim.api.nvim_get_current_buf()
-    local email_id = vim.b[buf].himalaya_email_id
+    -- Get current email (check preview first, then buffer)
+    local email_id = state.get('preview_email_id')
+    if email_id then
+      -- Clear the preview email ID after use
+      state.set('preview_email_id', nil)
+    else
+      -- Get from current buffer
+      local buf = vim.api.nvim_get_current_buf()
+      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    end
+    
     if email_id then
       local account = state.get_current_account()
       local folder = state.get_current_folder()
       local email = utils.get_email_by_id(account, folder, email_id)
       if email then
+        -- Debug: log what we got
+        logger.debug('Reply email data', { 
+          id = email.id, 
+          has_body = email.body ~= nil,
+          body_length = email.body and #email.body or 0
+        })
         return email_composer_v2.reply_email(email, false)
       end
     end
@@ -485,14 +508,28 @@ function M.reply_all_current_email()
   local config = require('neotex.plugins.tools.himalaya.core.config')
   if config.get('compose.use_v2', false) then
     local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email
-    local buf = vim.api.nvim_get_current_buf()
-    local email_id = vim.b[buf].himalaya_email_id
+    -- Get current email (check preview first, then buffer)
+    local email_id = state.get('preview_email_id')
+    if email_id then
+      -- Clear the preview email ID after use
+      state.set('preview_email_id', nil)
+    else
+      -- Get from current buffer
+      local buf = vim.api.nvim_get_current_buf()
+      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    end
+    
     if email_id then
       local account = state.get_current_account()
       local folder = state.get_current_folder()
       local email = utils.get_email_by_id(account, folder, email_id)
       if email then
+        -- Debug: log what we got
+        logger.debug('Reply all email data', { 
+          id = email.id, 
+          has_body = email.body ~= nil,
+          body_length = email.body and #email.body or 0
+        })
         return email_composer_v2.reply_email(email, true)
       end
     end
@@ -531,9 +568,17 @@ function M.forward_current_email()
   local config = require('neotex.plugins.tools.himalaya.core.config')
   if config.get('compose.use_v2', false) then
     local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email
-    local buf = vim.api.nvim_get_current_buf()
-    local email_id = vim.b[buf].himalaya_email_id
+    -- Get current email (check preview first, then buffer)
+    local email_id = state.get('preview_email_id')
+    if email_id then
+      -- Clear the preview email ID after use
+      state.set('preview_email_id', nil)
+    else
+      -- Get from current buffer
+      local buf = vim.api.nvim_get_current_buf()
+      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    end
+    
     if email_id then
       local account = state.get_current_account()
       local folder = state.get_current_folder()
@@ -547,6 +592,151 @@ function M.forward_current_email()
   else
     return email_composer.forward_current_email()
   end
+end
+
+-- Shared sync implementation that handles OAuth refresh
+function M._perform_sync(mbsync_target, display_name)
+  -- Use sync manager for consistent state management
+  local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
+  local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+  
+  notify.himalaya('Starting sync for ' .. display_name .. '...', notify.categories.STATUS)
+  
+  -- Start sync through manager
+  sync_manager.start_sync('full', {
+    channel = mbsync_target,
+    account = state.get_current_account()
+  })
+  
+  -- Start sidebar refresh timer
+  local refresh_timer = nil
+  if M.is_email_buffer_open() then
+    refresh_timer = vim.fn.timer_start(5000, function()
+      -- Refresh the entire sidebar to show updated sync progress
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      if sidebar.is_open() then
+        M.refresh_email_list()
+      end
+    end, { ['repeat'] = -1 })
+  end
+  
+  -- Run mbsync with OAuth auto-refresh enabled
+  mbsync.sync(mbsync_target, {
+    auto_refresh = true,  -- Enable OAuth auto-refresh
+    on_progress = function(progress)
+      -- Update progress through manager
+      sync_manager.update_progress(progress)
+      
+      if notifications and notifications.show_sync_progress then
+        notifications.show_sync_progress(progress)
+      end
+    end,
+    callback = function(success, error)
+      -- Stop the refresh timer
+      if refresh_timer then
+        vim.fn.timer_stop(refresh_timer)
+      end
+      
+      -- Complete sync through manager
+      sync_manager.complete_sync('full', {
+        success = success,
+        error = error
+      })
+      
+      if not success then
+        notifications.handle_sync_error(error)
+        -- Log error details in debug mode
+        if notify.config.modules.himalaya.debug_mode and error then
+          notify.himalaya('Sync error details: ' .. error, notify.categories.BACKGROUND)
+        end
+      else
+        -- Clear cache
+        utils.clear_email_cache()
+        
+        notify.himalaya('Sync completed for ' .. display_name, notify.categories.USER_ACTION)
+        
+        if M.is_email_buffer_open() then
+          M.refresh_email_list()
+        end
+      end
+      
+      -- Final sidebar refresh
+      if M.is_email_buffer_open() then
+        M.refresh_email_list()
+      end
+    end
+  })
+end
+
+-- Sync current folder (for 'gs' keybinding)
+function M.sync_current_folder()
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  
+  if not account or not folder then
+    notify.himalaya('No folder selected', notify.categories.ERROR)
+    return
+  end
+  
+  -- Get account configuration
+  local account_config = config.get_account(account)
+  if not account_config then
+    notify.himalaya('Account configuration not found', notify.categories.ERROR)
+    return
+  end
+  
+  -- Determine the mbsync channel/target
+  local mbsync_target
+  local display_name = folder
+  if account:lower() == 'gmail' then
+    -- Map folder to specific mbsync channels
+    local folder_channels = {
+      ['INBOX'] = 'gmail-inbox',
+      ['Drafts'] = 'gmail-drafts',
+      ['Sent'] = 'gmail-sent',
+      ['Trash'] = 'gmail-trash',
+      ['Spam'] = 'gmail-spam',
+      ['All_Mail'] = 'gmail-all',
+      ['Starred'] = 'gmail-starred',
+      ['Important'] = 'gmail-important'
+    }
+    
+    mbsync_target = folder_channels[folder]
+    
+    if not mbsync_target then
+      -- Fallback to general sync if no specific channel
+      mbsync_target = 'gmail'
+      display_name = 'all folders'
+      notify.himalaya('Note: No specific channel for ' .. folder .. ', syncing all folders', notify.categories.INFO)
+    end
+  else
+    -- For non-Gmail accounts, use account:folder format
+    mbsync_target = string.format('%s:%s', account, folder)
+  end
+  
+  -- Use shared sync implementation
+  M._perform_sync(mbsync_target, display_name)
+end
+
+-- Sync inbox only (for <leader>ms keybinding)
+function M.sync_inbox()
+  local account = state.get_current_account()
+  if not account then
+    notify.himalaya('No email account configured', notify.categories.ERROR)
+    return
+  end
+  
+  local account_config = config.get_account(account)
+  if not account_config then
+    notify.himalaya('Account configuration not found', notify.categories.ERROR)
+    return
+  end
+  
+  -- Always use inbox channel
+  local channel = account_config.mbsync and account_config.mbsync.inbox_channel or 'gmail-inbox'
+  
+  -- Use shared sync implementation
+  M._perform_sync(channel, 'inbox')
 end
 
 -- Forward email
@@ -706,12 +896,15 @@ function M.archive_current_email()
   local email_id = nil
   local current_buf = vim.api.nvim_get_current_buf()
   
-  -- Try to get email ID based on current buffer type
-  if vim.bo[current_buf].filetype == 'himalaya-list' then
-    email_id = M.get_current_email_id()
-  elseif vim.b[current_buf].himalaya_email_id then
-    -- We're in email reading buffer
-    email_id = vim.b[current_buf].himalaya_email_id
+  -- First try get_current_email_id which handles preview_email_id
+  email_id = M.get_current_email_id()
+  
+  -- If that didn't work, try to get email ID based on current buffer type
+  if not email_id then
+    if vim.b[current_buf].himalaya_email_id then
+      -- We're in email reading buffer
+      email_id = vim.b[current_buf].himalaya_email_id
+    end
   end
   
   if email_id then
@@ -786,6 +979,15 @@ end
 -- Mark current email as spam and move to spam folder
 function M.spam_current_email()
   local email_id = M.get_current_email_id()
+  
+  -- If that didn't work, try to get from buffer variable
+  if not email_id then
+    local current_buf = vim.api.nvim_get_current_buf()
+    if vim.b[current_buf].himalaya_email_id then
+      email_id = vim.b[current_buf].himalaya_email_id
+    end
+  end
+  
   if email_id then
     -- Try different spam folder names that might exist
     local spam_folders = {'Spam', 'Junk', 'SPAM', 'JUNK'}

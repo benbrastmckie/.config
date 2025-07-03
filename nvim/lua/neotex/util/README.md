@@ -90,6 +90,36 @@ notify.lsp('Formatting complete', notify.categories.USER_ACTION)
 
 See the [full notification documentation](../../docs/NOTIFICATIONS.md) for complete usage examples and configuration options.
 
+## Simple Confirmation Prompts
+
+The `misc.lua` module includes a simple confirmation prompt function.
+
+### Features
+
+- **Native Dialog**: Uses Neovim's built-in confirmation dialog
+- **Smart Defaults**: Safe actions default to confirm, destructive actions default to cancel
+- **Keyboard Friendly**: Navigate with arrow keys or use shortcut keys
+
+### Usage
+
+```lua
+local misc = require('neotex.util.misc')
+
+-- Safe action (defaults to Yes)
+if misc.confirm('Save changes?', false) then
+  -- User confirmed
+end
+
+-- Destructive action (defaults to No)
+if misc.confirm('Delete this file?', true) then
+  -- User confirmed
+end
+```
+
+The second parameter controls the default:
+- `false` = defaults to Yes (for safe actions)
+- `true` = defaults to No (for destructive actions)
+
 ## Available Commands
 
 Many of the utility functions are exposed as commands:
@@ -100,6 +130,7 @@ Many of the utility functions are exposed as commands:
 | `:BufCloseOthers` | Close all buffers except current one |
 | `:BufCloseUnused [minutes]` | Close buffers inactive for specified time |
 | `:BufSaveAll` | Save all modified buffers |
+| `:BufDeleteFile` | Delete current file and close buffer |
 | `:ToggleLineNumbers` | Toggle between relative and absolute line numbers |
 | `:TrimWhitespace` | Remove trailing whitespace in current buffer |
 | `:SelectionInfo` | Display information about visual selection |

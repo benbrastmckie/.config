@@ -46,31 +46,59 @@
   - [x] reorganize existing (modularized UI, unified state)
   - [x] establish clean architecture and notification standardization
   - [x] test to confirm all features have been preserved
-## REMAINING PHASES
+- [ ] features refactor
+  - [ ] 'unlocked' shown in red a few seconds after nvim startup
+  - [ ] 'Page 2 / 8 | 200 emails' has 200 hard coded
+  - [ ] simplify '⟳ Syncing emails... (4s): 0/1 folders - Connecting' to '⟳ Sync (4s): 0/1 Folders - Connecting'
+  - [ ] make preview end below the buffer line and above the status line
+  - [ ] remove delay between email previews
+  - [ ] make click between sidebar, preview, and buffers work
+  - [x] add footer to email preview
+  - [x] make 'gD', 'gA', 'gS' work in email preview
+  - [x] make 'q' in the preview to close the preview and exit preview mode
+  - [x] make CR in the sidebar start preview mode, and make ESC exit preview mode
+  - [x] make CR in the sidebar move the cursor into the preview if preview mode is already started
+  - [x] remove extra line after 'gs' sync
+  - [x] error on 'gs' sync: [Himalaya] Auth error detected in stdout
+  - [x] centralized confirmation prompt
+  - [x] `<leader>ak` deletes file and buffer
+  - [x] in drafts, 'gs' gives: ⟳ Syncing emails... (21s): Sent 1/6 - Downloaded 178/26621
+- [ ] refine refactor
+  - [ ] finish /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/ENHANCED_UI_UX_SPEC.md
+  - [ ] remove? /home/benjamin/.config/nvim/lua/neotex/util/migrate_notifications.lua
+  - [ ] pasting text gives: Content is not an image.
+  - [ ] update documentation
+  - [ ] gather TODOs
+  - [ ] Phase 6: Critical Functionality Testing
+    - [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
+    - [ ] State Persistence Testing
+    - [ ] Multi-Account Testing
+  - [ ] Phase 7: Performance Validation
+    - [ ] Baseline metrics measurement
+    - [ ] Post-refactor performance comparison
 
-### Phase 6: Critical Functionality Testing
-- [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
-- [ ] State Persistence Testing
-- [ ] Multi-Account Testing
 
-### Phase 7: Performance Validation
-- [ ] Baseline metrics measurement
-- [ ] Post-refactor performance comparison
+
+
+## REFINE REFACTOR
 
 ## FUTURE FEATURES
 
 All planned new features are documented in `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md` including:
 
 ### High Priority Features
+
 - ✅ Enhanced UI/UX (hover preview, buffer composition, improved confirmations) - COMPLETE
 - Email Management (attachments, images, custom headers, local trash)
 - Sync Improvements (smart status, auto-sync, error recovery)
 
 ### Medium Priority Features
+
 - Code Quality Improvements (error handling, API consistency, performance)
 - Developer Experience (testing, observability, modularization)
 
-### Low Priority Features  
+### Low Priority Features
+
 - Advanced Features (multiple accounts, advanced search, templates, encryption)
 - Integration Features (calendar, contacts, tasks, notes)
 
