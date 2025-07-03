@@ -12,6 +12,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
 local email_viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer')
 local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 local notify = require('neotex.util.notifications')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
@@ -33,20 +34,11 @@ function M.init()
   -- Initialize email list module with buffer reference
   email_list.init(M.buffers)
   
-  -- Initialize email viewer module with buffer reference and main module
-  email_viewer.init(M.buffers, M)
-  
-  -- Initialize email composer module with buffer reference, main module, and window stack
-  email_composer.init(M.buffers, M, window_stack)
-  
-  -- Initialize v2 modules
-  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
-  local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-  local email_preview_v2 = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+  -- Initialize modules
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  email_viewer_v2.setup(config.config)
-  email_composer_v2.setup(config.config)
-  email_preview_v2.setup(config.config)
+  email_viewer.setup(config.config)
+  email_composer.setup(config.config)
+  email_preview.setup(config.config)
   
   -- Sync state with sidebar configuration (non-intrusive)
   state.sync_with_sidebar()
@@ -100,9 +92,7 @@ end
 
 -- Read specific email
 function M.read_email(email_id)
-  -- Use v2 viewer for buffer-based viewing
-  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
-  return email_viewer_v2.view_email(email_id)
+  return email_viewer.view_email(email_id)
 end
 
 -- Format email content for display
@@ -117,9 +107,7 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
-  -- Always use v2 buffer-based composer
-  local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-  return email_composer_v2.compose_email({ to = to_address })
+  return email_composer.compose_email({ to = to_address })
 end
 
 -- Open email window (floating)
@@ -176,18 +164,11 @@ end
 
 -- Send current email (from compose buffer)
 function M.send_current_email()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    local buf = vim.api.nvim_get_current_buf()
-    if email_composer_v2.is_compose_buffer(buf) then
-      return email_composer_v2.send_email(buf)
-    end
-    notify.himalaya('Not in a compose buffer', notify.categories.ERROR)
-    return
-  else
-    return email_composer.send_current_email()
+  local buf = vim.api.nvim_get_current_buf()
+  if email_composer.is_compose_buffer(buf) then
+    return email_composer.send_email(buf)
   end
+  notify.himalaya('Not in a compose buffer', notify.categories.ERROR)
 end
 
 -- Check if email buffer is open (for backward compatibility)
@@ -200,53 +181,45 @@ end
 function M.close_without_saving()
   local buf = vim.api.nvim_get_current_buf()
   
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    if email_composer_v2.is_compose_buffer(buf) then
-      return email_composer_v2.discard_email(buf)
-    end
+  if email_composer.is_compose_buffer(buf) then
+    return email_composer.discard_email(buf)
   end
   
-  if vim.b[buf].himalaya_compose then
-    return email_composer.close_without_saving()
-  else
-    -- Original implementation for non-compose buffers
-    local parent_win = vim.b[buf].himalaya_parent_win
-    local parent_buf = vim.b[buf].himalaya_parent_buf
-    
-    -- Close the current window
-    local current_win = vim.api.nvim_get_current_win()
-    if vim.api.nvim_win_is_valid(current_win) then
-      vim.api.nvim_win_close(current_win, true)
-    end
-    
-    -- Delete the buffer
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
-    
-    -- Explicitly restore focus to email reading window
-    vim.defer_fn(function()
-      -- First try the stored email reading window (most reliable for replies)
-      if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
-        vim.api.nvim_set_current_win(M._email_reading_win)
-        M._email_reading_win = nil  -- Clear it after use
-      elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
-        vim.api.nvim_set_current_win(parent_win)
-      elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
-        -- Parent window was closed, try to find a window showing the parent buffer
-        for _, win in ipairs(vim.api.nvim_list_wins()) do
-          if vim.api.nvim_win_get_buf(win) == parent_buf then
-            vim.api.nvim_set_current_win(win)
-            break
-          end
+  -- Original implementation for non-compose buffers
+  local parent_win = vim.b[buf].himalaya_parent_win
+  local parent_buf = vim.b[buf].himalaya_parent_buf
+  
+  -- Close the current window
+  local current_win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_win_close(current_win, true)
+  end
+  
+  -- Delete the buffer
+  if vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+  
+  -- Explicitly restore focus to email reading window
+  vim.defer_fn(function()
+    -- First try the stored email reading window (most reliable for replies)
+    if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
+      vim.api.nvim_set_current_win(M._email_reading_win)
+      M._email_reading_win = nil  -- Clear it after use
+    elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
+      vim.api.nvim_set_current_win(parent_win)
+    elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
+      -- Parent window was closed, try to find a window showing the parent buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == parent_buf then
+          vim.api.nvim_set_current_win(win)
+          break
         end
       end
-    end, 50)
-    
-    notify.himalaya('Draft discarded', notify.categories.STATUS)
-  end
+    end
+  end, 50)
+  
+  notify.himalaya('Draft discarded', notify.categories.STATUS)
 end
 
 -- Navigate to next field in compose buffer
@@ -263,53 +236,42 @@ end
 function M.close_and_save_draft()
   local buf = vim.api.nvim_get_current_buf()
   
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    if email_composer_v2.is_compose_buffer(buf) then
-      return email_composer_v2.save_draft(buf)
-    end
+  if email_composer.is_compose_buffer(buf) then
+    return email_composer.save_draft(buf)
   end
   
-  if vim.b[buf].himalaya_compose then
-    return email_composer.close_and_save_draft()
-  else
-    -- Original implementation for non-compose buffers
-    local parent_win = vim.b[buf].himalaya_parent_win
-    local parent_buf = vim.b[buf].himalaya_parent_buf
-    
-    -- Close the current window
-    local current_win = vim.api.nvim_get_current_win()
-    if vim.api.nvim_win_is_valid(current_win) then
-      vim.api.nvim_win_close(current_win, true)
-    end
-    
-    -- Explicitly restore focus to email reading window
-    vim.defer_fn(function()
-      -- First try the stored email reading window (most reliable for replies)
-      if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
-        vim.api.nvim_set_current_win(M._email_reading_win)
-        M._email_reading_win = nil  -- Clear it after use
-      elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
-        vim.api.nvim_set_current_win(parent_win)
-      elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
-        -- Parent window was closed, try to find a window showing the parent buffer
-        for _, win in ipairs(vim.api.nvim_list_wins()) do
-          if vim.api.nvim_win_get_buf(win) == parent_buf then
-            vim.api.nvim_set_current_win(win)
-            break
-          end
+  -- Original implementation for non-compose buffers
+  local parent_win = vim.b[buf].himalaya_parent_win
+  local parent_buf = vim.b[buf].himalaya_parent_buf
+  
+  -- Close the current window
+  local current_win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_win_close(current_win, true)
+  end
+  
+  -- Explicitly restore focus to email reading window
+  vim.defer_fn(function()
+    -- First try the stored email reading window (most reliable for replies)
+    if M._email_reading_win and vim.api.nvim_win_is_valid(M._email_reading_win) then
+      vim.api.nvim_set_current_win(M._email_reading_win)
+      M._email_reading_win = nil  -- Clear it after use
+    elseif parent_win and vim.api.nvim_win_is_valid(parent_win) then
+      vim.api.nvim_set_current_win(parent_win)
+    elseif parent_buf and vim.api.nvim_buf_is_valid(parent_buf) then
+      -- Parent window was closed, try to find a window showing the parent buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == parent_buf then
+          vim.api.nvim_set_current_win(win)
+          break
         end
       end
-    end, 50)
-  end
+    end
+  end, 50)
 end
 
 -- Read current email (from email list buffer)
 function M.read_current_email()
-  -- Use v2 viewer for buffer-based viewing
-  local email_viewer_v2 = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
-  
   -- Get current email ID
   local email_id = M.get_current_email_id()
   if not email_id then
@@ -318,7 +280,7 @@ function M.read_current_email()
   end
   
   -- View email in buffer
-  email_viewer_v2.view_email(email_id)
+  email_viewer.view_email(email_id)
 end
 
 -- Helper function to get current email ID
@@ -468,94 +430,73 @@ end
 
 -- Reply to current email
 function M.reply_current_email()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email (check preview first, then buffer)
-    local email_id = state.get('preview_email_id')
-    if email_id then
-      -- Clear the preview email ID after use
-      state.set('preview_email_id', nil)
-    else
-      -- Get from current buffer
-      local buf = vim.api.nvim_get_current_buf()
-      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
-    end
-    
-    if email_id then
-      local account = state.get_current_account()
-      local folder = state.get_current_folder()
-      local email = utils.get_email_by_id(account, folder, email_id)
-      if email then
-        -- Debug: log what we got
-        logger.debug('Reply email data', { 
-          id = email.id, 
-          has_body = email.body ~= nil,
-          body_length = email.body and #email.body or 0
-        })
-        return email_composer_v2.reply_email(email, false)
-      end
-    end
-    notify.himalaya('No email to reply to', notify.categories.ERROR)
-    return
+  -- Get current email (check preview first, then buffer)
+  local email_id = state.get('preview_email_id')
+  if email_id then
+    -- Clear the preview email ID after use
+    state.set('preview_email_id', nil)
   else
-    return email_composer.reply_current_email()
+    -- Get from current buffer
+    local buf = vim.api.nvim_get_current_buf()
+    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
   end
-end
-
--- Reply all to current email
-function M.reply_all_current_email()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email (check preview first, then buffer)
-    local email_id = state.get('preview_email_id')
-    if email_id then
-      -- Clear the preview email ID after use
-      state.set('preview_email_id', nil)
-    else
-      -- Get from current buffer
-      local buf = vim.api.nvim_get_current_buf()
-      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
-    end
-    
-    if email_id then
-      local account = state.get_current_account()
-      local folder = state.get_current_folder()
-      local email = utils.get_email_by_id(account, folder, email_id)
-      if email then
-        -- Debug: log what we got
-        logger.debug('Reply all email data', { 
-          id = email.id, 
-          has_body = email.body ~= nil,
-          body_length = email.body and #email.body or 0
-        })
-        return email_composer_v2.reply_email(email, true)
-      end
-    end
-    notify.himalaya('No email to reply to', notify.categories.ERROR)
-    return
-  else
-    return email_composer.reply_all_current_email()
-  end
-end
-
--- Reply to email
-function M.reply_email(email_id, reply_all)
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+  
+  if email_id then
     local account = state.get_current_account()
     local folder = state.get_current_folder()
     local email = utils.get_email_by_id(account, folder, email_id)
     if email then
-      return email_composer_v2.reply_email(email, reply_all)
+      -- Debug: log what we got
+      logger.debug('Reply email data', { 
+        id = email.id, 
+        has_body = email.body ~= nil,
+        body_length = email.body and #email.body or 0
+      })
+      return email_composer.reply_email(email, false)
     end
-    notify.himalaya('Email not found', notify.categories.ERROR)
-    return
-  else
-    return email_composer.reply_email(email_id, reply_all)
   end
+  notify.himalaya('No email to reply to', notify.categories.ERROR)
+end
+
+-- Reply all to current email
+function M.reply_all_current_email()
+  -- Get current email (check preview first, then buffer)
+  local email_id = state.get('preview_email_id')
+  if email_id then
+    -- Clear the preview email ID after use
+    state.set('preview_email_id', nil)
+  else
+    -- Get from current buffer
+    local buf = vim.api.nvim_get_current_buf()
+    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+  end
+  
+  if email_id then
+    local account = state.get_current_account()
+    local folder = state.get_current_folder()
+    local email = utils.get_email_by_id(account, folder, email_id)
+    if email then
+      -- Debug: log what we got
+      logger.debug('Reply all email data', { 
+        id = email.id, 
+        has_body = email.body ~= nil,
+        body_length = email.body and #email.body or 0
+      })
+      return email_composer.reply_email(email, true)
+    end
+  end
+  notify.himalaya('No email to reply to', notify.categories.ERROR)
+end
+
+-- Reply to email
+function M.reply_email(email_id, reply_all)
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local email = utils.get_email_by_id(account, folder, email_id)
+  if email then
+    return email_composer.reply_email(email, reply_all)
+  end
+  notify.himalaya('Email not found', notify.categories.ERROR)
 end
 
 -- Parse email content for reply operations
@@ -565,33 +506,26 @@ end
 
 -- Forward current email
 function M.forward_current_email()
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    -- Get current email (check preview first, then buffer)
-    local email_id = state.get('preview_email_id')
-    if email_id then
-      -- Clear the preview email ID after use
-      state.set('preview_email_id', nil)
-    else
-      -- Get from current buffer
-      local buf = vim.api.nvim_get_current_buf()
-      email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
-    end
-    
-    if email_id then
-      local account = state.get_current_account()
-      local folder = state.get_current_folder()
-      local email = utils.get_email_by_id(account, folder, email_id)
-      if email then
-        return email_composer_v2.forward_email(email)
-      end
-    end
-    notify.himalaya('No email to forward', notify.categories.ERROR)
-    return
+  -- Get current email (check preview first, then buffer)
+  local email_id = state.get('preview_email_id')
+  if email_id then
+    -- Clear the preview email ID after use
+    state.set('preview_email_id', nil)
   else
-    return email_composer.forward_current_email()
+    -- Get from current buffer
+    local buf = vim.api.nvim_get_current_buf()
+    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
   end
+  
+  if email_id then
+    local account = state.get_current_account()
+    local folder = state.get_current_folder()
+    local email = utils.get_email_by_id(account, folder, email_id)
+    if email then
+      return email_composer.forward_email(email)
+    end
+  end
+  notify.himalaya('No email to forward', notify.categories.ERROR)
 end
 
 -- Shared sync implementation that handles OAuth refresh
@@ -741,20 +675,13 @@ end
 
 -- Forward email
 function M.forward_email(email_id)
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    local account = state.get_current_account()
-    local folder = state.get_current_folder()
-    local email = utils.get_email_by_id(account, folder, email_id)
-    if email then
-      return email_composer_v2.forward_email(email)
-    end
-    notify.himalaya('Email not found', notify.categories.ERROR)
-    return
-  else
-    return email_composer.forward_email(email_id)
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local email = utils.get_email_by_id(account, folder, email_id)
+  if email then
+    return email_composer.forward_email(email)
   end
+  notify.himalaya('Email not found', notify.categories.ERROR)
 end
 
 -- Delete current email

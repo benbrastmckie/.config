@@ -76,15 +76,12 @@ function M.setup()
   -- Initialize new UI modules
   local config = require('neotex.plugins.tools.himalaya.core.config')
   
-  -- Initialize email preview
+  -- Initialize modules
   local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-  email_preview.setup(config.config)
+  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
   
-  -- Initialize new composer if enabled
-  if config.get('compose.use_v2', false) then
-    local email_composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-    email_composer_v2.setup(config.config)
-  end
+  email_preview.setup(config.config)
+  email_composer.setup(config.config)
   
   -- Setup autocmds for email actions
   local group = vim.api.nvim_create_augroup('HimalayaEmailActions', { clear = true })

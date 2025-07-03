@@ -32,6 +32,7 @@ Plugin configuration management with account and UI settings:
 - Default configuration with user overrides
 - Account configurations for multiple email providers
 - Buffer and window keymap definitions
+- Mouse interaction handling for sidebar and preview
 - UI layout preferences and behavior settings
 
 Key functions:
@@ -40,8 +41,11 @@ Key functions:
 - `switch_account(name)` - Change active account
 - `setup_buffer_keymaps(buf)` - Configure buffer-specific keymaps
 
-<!-- TODO: Add validation for account configurations -->
-<!-- TODO: Support for account-specific keymap overrides -->
+Mouse handling:
+- Integrated mouse click handler for sidebar email selection
+- Preview window focus switching via mouse clicks
+- Background buffer clicks to close preview
+- Natural vim cursor movement with custom preview updates
 
 ### logger.lua
 Structured logging integrated with the unified notification system:

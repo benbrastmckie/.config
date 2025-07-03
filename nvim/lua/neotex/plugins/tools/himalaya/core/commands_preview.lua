@@ -2,7 +2,7 @@
 local M = {}
 
 -- Dependencies
-local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local notify = require('neotex.util.notifications')
 

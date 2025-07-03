@@ -593,8 +593,8 @@ return {
       pattern = "mail",
       callback = function()
         -- Only add these mappings if it's a Himalaya compose buffer
-        local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-        if composer_v2.is_compose_buffer(vim.api.nvim_get_current_buf()) then
+        local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+        if composer.is_compose_buffer(vim.api.nvim_get_current_buf()) then
           wk.add({
             { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", buffer = 0 },
             { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", buffer = 0 },
