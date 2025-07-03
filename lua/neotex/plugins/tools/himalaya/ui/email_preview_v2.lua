@@ -62,6 +62,37 @@ function M.setup(cfg)
       end
     end
   })
+  
+  -- Global handler for when preview mode is active - only close on non-Himalaya windows
+  vim.api.nvim_create_autocmd('WinEnter', {
+    group = himalaya_group,
+    callback = function()
+      if not preview_state.preview_mode then
+        return
+      end
+      
+      local current_win = vim.api.nvim_get_current_win()
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      local sidebar_win = sidebar.get_win()
+      
+      -- Only close preview if entering a window that's not preview, sidebar, or Himalaya-related
+      if preview_state.win and current_win ~= preview_state.win and current_win ~= sidebar_win then
+        -- Check if the new window is Himalaya-related
+        local buf = vim.api.nvim_win_get_buf(current_win)
+        local filetype = vim.api.nvim_buf_get_option(buf, 'filetype')
+        
+        -- Don't close preview for Himalaya windows
+        if not filetype:match('^himalaya') then
+          local notify = require('neotex.util.notifications')
+          notify.himalaya("Closing preview - entered non-Himalaya window", notify.categories.STATUS, {
+            filetype = filetype,
+            window = current_win
+          })
+          M.disable_preview_mode()
+        end
+      end
+    end
+  })
 end
 
 -- Get or create preview buffer from pool
@@ -264,7 +295,10 @@ function M.hide_preview()
   -- Close preview window if it exists
   if preview_state.win then
     if type(preview_state.win) == "number" and vim.api.nvim_win_is_valid(preview_state.win) then
-      vim.api.nvim_win_close(preview_state.win, true)
+      local ok, err = pcall(vim.api.nvim_win_close, preview_state.win, true)
+      if not ok then
+        logger.warn("Failed to close preview window", { error = err })
+      end
     end
     preview_state.win = nil
   end
@@ -624,6 +658,56 @@ function M.setup_preview_keymaps(buf)
   
   local opts = { buffer = buf, silent = true }
   
+  -- Mouse click handler for preview window - handle clicks outside
+  vim.keymap.set('n', '<LeftMouse>', function()
+    local mouse_pos = vim.fn.getmousepos()
+    local preview_win = preview_state.win
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    
+    -- Check where we clicked
+    if mouse_pos.winid == preview_win then
+      -- Clicked within preview - let vim handle cursor movement naturally
+      return '<LeftMouse>'
+    elseif sidebar_win and mouse_pos.winid == sidebar_win then
+      -- Clicked on sidebar - return focus to sidebar and process the click
+      vim.schedule(function()
+        vim.api.nvim_set_current_win(sidebar_win)
+        
+        -- Move cursor to clicked position
+        local sidebar_buf = sidebar.get_buf()
+        if sidebar_buf and vim.api.nvim_buf_is_valid(sidebar_buf) then
+          local line_count = vim.api.nvim_buf_line_count(sidebar_buf)
+          if mouse_pos.line > 0 and mouse_pos.line <= line_count then
+            vim.api.nvim_win_set_cursor(sidebar_win, {mouse_pos.line, math.max(0, mouse_pos.column - 1)})
+          end
+          
+          -- Update preview for the clicked email
+          if M.is_preview_mode() then
+            local main = require('neotex.plugins.tools.himalaya.ui.main')
+            local email_id = main.get_current_email_id()
+            local current_preview_id = M.get_current_preview_id()
+            
+            if email_id and email_id ~= current_preview_id then
+              M.show_preview(email_id, sidebar_win)
+            end
+          end
+        end
+      end)
+      return ''  -- Consume event
+    else
+      -- Clicked on a normal buffer - close preview and exit preview mode
+      vim.schedule(function()
+        M.disable_preview_mode()
+        -- Focus the clicked window
+        if mouse_pos.winid > 0 and vim.api.nvim_win_is_valid(mouse_pos.winid) then
+          vim.api.nvim_set_current_win(mouse_pos.winid)
+        end
+      end)
+      return ''  -- Consume event
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Handle mouse clicks in preview', expr = true }))
+  
   -- q to close preview and exit preview mode
   vim.keymap.set('n', 'q', function()
     M.disable_preview_mode()
@@ -774,7 +858,12 @@ function M.disable_preview_mode()
   preview_state.preview_mode = false
   M.hide_preview()
   logger.debug("Preview mode disabled")
-  notify.himalaya("Preview mode disabled", notify.categories.STATUS)
+  
+  -- Debug: show who called disable_preview_mode
+  local trace = debug.traceback("", 2)
+  notify.himalaya("Preview mode disabled", notify.categories.STATUS, {
+    caller = trace:match("([^\\n]+)")
+  })
 end
 
 -- Check if preview mode is enabled

@@ -51,7 +51,7 @@
   - [ ] 'Page 2 / 8 | 200 emails' has 200 hard coded
   - [ ] simplify '⟳ Syncing emails... (4s): 0/1 folders - Connecting' to '⟳ Sync (4s): 0/1 Folders - Connecting'
   - [ ] make preview end below the buffer line and above the status line
-  - [ ] make click between sidebar, preview, and buffers work
+  - [x] make click between sidebar, preview, and buffers work
   - [x] remove flicker between email previews
   - [x] add footer to email preview
   - [x] make 'gD', 'gA', 'gS' work in email preview

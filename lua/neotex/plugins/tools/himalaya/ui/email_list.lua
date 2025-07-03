@@ -941,17 +941,8 @@ function M.setup_hover_preview(buf)
   -- We don't hide preview on cursor move anymore as it conflicts with
   -- the preview update mechanism in config.lua
   
-  -- BufLeave - hide preview when leaving buffer
-  vim.api.nvim_create_autocmd('BufLeave', {
-    buffer = buf,
-    callback = function()
-      -- Only hide if we're not focusing the preview
-      local preview_state = email_preview.get_preview_state()
-      if not preview_state.is_focusing then
-        email_preview.hide_preview()
-      end
-    end
-  })
+  -- Don't hide preview on BufLeave - let the user control when to close it
+  -- This prevents the preview from being destroyed when clicking on it
   
   -- Mouse support is handled by the CursorMoved autocmd in config.lua
 end
