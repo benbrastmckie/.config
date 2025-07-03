@@ -266,19 +266,20 @@ function M.view_email(email_id)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', 'nowrite')
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.api.nvim_buf_set_option(buf, 'swapfile', false)
   
   -- Name the buffer
   local buf_name = string.format('[Email] %s', email.subject or 'No Subject')
   vim.api.nvim_buf_set_name(buf, buf_name)
   
-  -- Open in tab or split
+  -- Open buffer in tab or split
   if M.config.use_tab then
-    vim.cmd('tabnew')
+    -- Use tab sb to open buffer in new tab without creating empty buffer
+    vim.cmd('tab sb ' .. buf)
   else
     vim.cmd('vsplit')
+    vim.api.nvim_win_set_buf(0, buf)
   end
-  
-  vim.api.nvim_win_set_buf(0, buf)
   
   -- Window options
   vim.wo.wrap = M.config.wrap_text

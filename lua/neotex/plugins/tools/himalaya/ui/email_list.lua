@@ -433,9 +433,9 @@ function M.format_email_list(emails)
   if selected_count > 0 then
     table.insert(lines, string.format('%d selected: gD:delete gA:archive gS:spam n/N:select', selected_count))
   else
-    table.insert(lines, 'r:refresh gn:next-page gp:prev-page n/N:select')
+    table.insert(lines, 'gs:sync gn:next-page gp:prev-page n/N:select')
   end
-  table.insert(lines, 'gm:folder ga:account gw:write c:compose')
+  table.insert(lines, 'return:preview/focus gm:folder ga:account gw:write')
   
   return lines
 end
@@ -921,11 +921,12 @@ function M.setup_hover_preview(buf)
   -- Store sidebar window for preview positioning
   local sidebar_win = sidebar.get_win()
   
-  -- CursorHold - show preview after delay
+  -- CursorHold - show preview after delay (only in preview mode)
   vim.api.nvim_create_autocmd('CursorHold', {
     buffer = buf,
     callback = function()
       if not email_preview.config.enabled then return end
+      if not email_preview.is_preview_mode() then return end
       
       local line = vim.api.nvim_win_get_cursor(0)[1]
       local email_id = M.get_email_id_from_line(line)
@@ -936,21 +937,23 @@ function M.setup_hover_preview(buf)
     end
   })
   
-  -- CursorMoved - hide preview when cursor moves
-  vim.api.nvim_create_autocmd('CursorMoved', {
-    buffer = buf,
-    callback = function()
-      email_preview.hide_preview()
-    end
-  })
+  -- CursorMoved - handled by config.lua for preview updates
+  -- We don't hide preview on cursor move anymore as it conflicts with
+  -- the preview update mechanism in config.lua
   
   -- BufLeave - hide preview when leaving buffer
   vim.api.nvim_create_autocmd('BufLeave', {
     buffer = buf,
     callback = function()
-      email_preview.hide_preview()
+      -- Only hide if we're not focusing the preview
+      local preview_state = email_preview.get_preview_state()
+      if not preview_state.is_focusing then
+        email_preview.hide_preview()
+      end
     end
   })
+  
+  -- Mouse support is handled by the CursorMoved autocmd in config.lua
 end
 
 return M

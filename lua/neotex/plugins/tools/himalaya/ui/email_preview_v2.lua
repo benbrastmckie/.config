@@ -12,10 +12,15 @@ local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 
 -- Module state
-local preview_win = nil
-local preview_buf = nil
+-- Store preview state in a table to prevent corruption
+local preview_state = {
+  win = nil,
+  buf = nil,
+  email_id = nil,
+  is_focusing = false,  -- Flag to prevent hiding during focus
+  preview_mode = false, -- Whether preview mode is active
+}
 local hover_timer = nil
-local current_preview_id = nil
 local preview_generation = 0  -- Track preview requests
 local preview_buffers = {}  -- Buffer pool for performance
 
@@ -42,6 +47,20 @@ function M.setup(cfg)
     M.config = vim.tbl_extend('force', M.config, cfg.preview)
   end
   logger.debug('Email preview v2 initialized', { config = M.config })
+  
+  -- Set up autocmd for preview window keymaps only
+  local himalaya_group = vim.api.nvim_create_augroup('HimalayaPreview', { clear = true })
+  
+  vim.api.nvim_create_autocmd('WinEnter', {
+    group = himalaya_group,
+    callback = function()
+      local current_win = vim.api.nvim_get_current_win()
+      -- If entering the preview window, set up keymaps
+      if preview_state.win and current_win == preview_state.win then
+        M.setup_preview_keymaps(preview_state.buf)
+      end
+    end
+  })
 end
 
 -- Get or create preview buffer from pool
@@ -99,7 +118,7 @@ function M.calculate_preview_position(parent_win)
     border = M.config.border,
     title = ' Email Preview ',
     title_pos = 'center',
-    focusable = true,  -- Make it focusable so we can enter it
+    focusable = true,  -- Make it focusable so we can enter it with mouse
     zindex = 50,
   }
 end
@@ -142,16 +161,8 @@ local function process_email_body(body)
   -- Split body into lines
   for line in body:gmatch("([^\r\n]*)\r?\n?") do
     if line ~= "" or #lines > 0 then  -- Skip leading empty lines
-      -- Wrap long lines
-      if #line > M.config.width - 4 then
-        local pos = 1
-        while pos <= #line do
-          table.insert(lines, line:sub(pos, pos + M.config.width - 5))
-          pos = pos + M.config.width - 4
-        end
-      else
-        table.insert(lines, line)
-      end
+      -- Don't wrap lines - let the window handle it
+      table.insert(lines, line)
     end
   end
   
@@ -202,6 +213,12 @@ function M.render_preview(email, buf)
       table.insert(lines, "Loading email content...")
     end
     
+    -- Add footer with keymaps
+    table.insert(lines, "")
+    table.insert(lines, string.rep("─", M.config.width - 2))
+    table.insert(lines, "esc:sidebar gr:reply gR:reply-all gf:forward")
+    table.insert(lines, "q:exit gD:delete gA:archive gS:spam")
+    
     -- Update buffer with validation
     if buf and vim.api.nvim_buf_is_valid(buf) then
       -- Use modifiable pattern for safety
@@ -231,6 +248,11 @@ end
 
 -- Hide the preview window
 function M.hide_preview()
+  -- Don't hide if we're in the process of focusing or updating
+  if preview_state.is_focusing or preview_state.is_updating then
+    return
+  end
+  
   -- Cancel any pending preview
   if hover_timer then
     vim.loop.timer_stop(hover_timer)
@@ -238,18 +260,20 @@ function M.hide_preview()
   end
   
   -- Close preview window if it exists
-  if preview_win and vim.api.nvim_win_is_valid(preview_win) then
-    vim.api.nvim_win_close(preview_win, true)
-    preview_win = nil
+  if preview_state.win then
+    if type(preview_state.win) == "number" and vim.api.nvim_win_is_valid(preview_state.win) then
+      vim.api.nvim_win_close(preview_state.win, true)
+    end
+    preview_state.win = nil
   end
   
   -- Release preview buffer back to pool
-  if preview_buf then
-    M.release_preview_buffer(preview_buf)
-    preview_buf = nil
+  if preview_state.buf then
+    M.release_preview_buffer(preview_state.buf)
+    preview_state.buf = nil
   end
   
-  current_preview_id = nil
+  preview_state.email_id = nil
 end
 
 -- Queue preview with debouncing
@@ -280,10 +304,17 @@ function M.show_preview(email_id, parent_win)
     return
   end
   
-  -- Don't show preview for the same email
-  if email_id == current_preview_id and preview_win and vim.api.nvim_win_is_valid(preview_win) then
+  -- If showing the same email, just ensure window is visible
+  if email_id == preview_state.email_id and preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
     return
   end
+  
+  -- Store the previous email_id to detect if we're updating an existing preview
+  local is_update = preview_state.win and vim.api.nvim_win_is_valid(preview_state.win)
+  
+  -- Set updating flag to prevent window from closing during update
+  -- Set it for all preview operations, not just updates
+  preview_state.is_updating = true
   
   local account = state.get_current_account()
   local folder = state.get_current_folder()
@@ -303,30 +334,66 @@ function M.show_preview(email_id, parent_win)
   end
   
   -- Create or reuse preview window
-  if not preview_win or not vim.api.nvim_win_is_valid(preview_win) then
-    preview_buf = M.get_or_create_preview_buffer()
+  if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
+    preview_state.buf = M.get_or_create_preview_buffer()
     
     -- Get parent window
     local parent = parent_win or vim.api.nvim_get_current_win()
     local win_config = M.calculate_preview_position(parent)
     
-    preview_win = vim.api.nvim_open_win(preview_buf, false, win_config)
-    
-    -- Validate window was created
-    if not preview_win or type(preview_win) ~= "number" then
-      logger.error("Failed to create preview window", { win = preview_win })
+    -- Create window with pcall for safety
+    local ok, win_or_err = pcall(vim.api.nvim_open_win, preview_state.buf, false, win_config)
+    if not ok then
+      logger.error("Failed to create preview window", { error = win_or_err })
       return
     end
     
-    -- Set window options
-    vim.api.nvim_win_set_option(preview_win, 'wrap', true)
-    vim.api.nvim_win_set_option(preview_win, 'linebreak', true)
-    vim.api.nvim_win_set_option(preview_win, 'cursorline', false)
+    preview_state.win = win_or_err
+    
+    -- Validate window was created
+    if not preview_state.win or type(preview_state.win) ~= "number" then
+      logger.error("Failed to create preview window", { win = preview_state.win, type = type(preview_state.win) })
+      preview_state.win = nil
+      return
+    end
+    
+    -- Double-check validity
+    if not vim.api.nvim_win_is_valid(preview_state.win) then
+      logger.error("Preview window created but not valid", { win = preview_state.win })
+      preview_state.win = nil
+      return
+    end
+    
+    -- Set window options with error handling
+    local function safe_set_win_option(win, option, value)
+      local ok, err = pcall(vim.api.nvim_win_set_option, win, option, value)
+      if not ok then
+        logger.warn("Failed to set window option", { option = option, error = err })
+      end
+    end
+    
+    safe_set_win_option(preview_state.win, 'wrap', true)
+    safe_set_win_option(preview_state.win, 'linebreak', true)
+    safe_set_win_option(preview_state.win, 'cursorline', false)
+  else
+    -- Window exists, just get or create a buffer for the new content
+    if not preview_state.buf or not vim.api.nvim_buf_is_valid(preview_state.buf) then
+      preview_state.buf = M.get_or_create_preview_buffer()
+      vim.api.nvim_win_set_buf(preview_state.win, preview_state.buf)
+    end
   end
   
+  -- Update email_id first to prevent re-triggering
+  local old_email_id = preview_state.email_id
+  preview_state.email_id = email_id
+  
   -- Render cached content immediately
-  M.render_preview(cached_email, preview_buf)
-  current_preview_id = email_id
+  M.render_preview(cached_email, preview_state.buf)
+  
+  -- Clear updating flag after render with a longer delay
+  vim.defer_fn(function()
+    preview_state.is_updating = false
+  end, 150)  -- Increased to 150ms to cover the WinLeave autocmd delay
   
   -- Stage 2: Load full content asynchronously if not cached
   if not cached_body then
@@ -384,14 +451,14 @@ function M.show_preview(email_id, parent_win)
           body = body:gsub("\r\n", "\n")
           
           -- Update preview with full content if still showing
-          if current_preview_id == email_id and preview_win and vim.api.nvim_win_is_valid(preview_win) then
+          if preview_state.email_id == email_id and preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
             local cached = email_cache.get_email(account, folder, email_id)
             if cached then
               -- Cache the body
               email_cache.store_email_body(account, folder, email_id, body)
               -- Update the preview
               cached.body = body
-              M.render_preview(cached, preview_buf)
+              M.render_preview(cached, preview_state.buf)
             else
               -- Create minimal email object from output
               local email = {
@@ -419,7 +486,7 @@ function M.show_preview(email_id, parent_win)
                 end
               end
               
-              M.render_preview(email, preview_buf)
+              M.render_preview(email, preview_state.buf)
             end
           end
         elseif exit_code ~= 0 then
@@ -436,61 +503,182 @@ end
 
 -- Check if preview is currently shown
 function M.is_preview_shown()
-  return preview_win and vim.api.nvim_win_is_valid(preview_win)
+  return preview_state.win and vim.api.nvim_win_is_valid(preview_state.win)
 end
 
 -- Get current preview email ID
 function M.get_current_preview_id()
-  return current_preview_id
+  return preview_state.email_id
+end
+
+-- Return focus to sidebar without hiding preview
+function M.return_to_sidebar()
+  -- Set focusing flag to prevent hiding
+  preview_state.is_focusing = true
+  
+  -- Find the sidebar window
+  local sidebar_win = sidebar.get_win()
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    vim.api.nvim_set_current_win(sidebar_win)
+  end
+  
+  -- Clear the flag after a short delay
+  vim.defer_fn(function()
+    preview_state.is_focusing = false
+  end, 50)
 end
 
 -- Focus the preview window
 function M.focus_preview()
-  if not preview_win or not vim.api.nvim_win_is_valid(preview_win) then
+  -- Set focusing flag to prevent hiding
+  preview_state.is_focusing = true
+  
+  -- Schedule clearing the flag after focus operation
+  vim.schedule(function()
+    preview_state.is_focusing = false
+  end)
+  
+  -- Simple validation - check if we have a window
+  if not preview_state.win or not preview_state.buf then
+    logger.debug("No preview window or buffer to focus")
+    preview_state.is_focusing = false
     return false
   end
   
-  -- Ensure preview_win is a valid number
-  if type(preview_win) ~= "number" then
-    logger.error("Invalid preview window handle", { type = type(preview_win), value = preview_win })
+  -- Single validation check with pcall
+  local valid_ok, is_valid = pcall(vim.api.nvim_win_is_valid, preview_state.win)
+  if not valid_ok or not is_valid then
+    logger.debug("Preview window is not valid", { win = preview_state.win, valid_ok = valid_ok, is_valid = is_valid })
+    preview_state.win = nil
+    preview_state.buf = nil
+    preview_state.is_focusing = false
     return false
   end
   
-  vim.api.nvim_set_current_win(preview_win)
+  -- Try to focus the window
+  local focus_ok, focus_err = pcall(vim.api.nvim_set_current_win, preview_state.win)
+  if not focus_ok then
+    logger.debug("Failed to focus preview window", { error = focus_err })
+    preview_state.win = nil
+    preview_state.buf = nil
+    preview_state.is_focusing = false
+    return false
+  end
   
-  -- Set up keymaps for preview window
-  local buf = vim.api.nvim_win_get_buf(preview_win)
+  -- Use stored buffer - we know it exists from the check above
+  local buf = preview_state.buf
+  
+  -- Set up keymaps
+  M.setup_preview_keymaps(buf)
+  
+  -- Standard vim navigation should work for scrolling
+  return true
+end
+
+-- Set up keymaps for preview buffer
+function M.setup_preview_keymaps(buf)
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
-    return false
+    return
   end
   
   local opts = { buffer = buf, silent = true }
+  
+  -- q to close preview and exit preview mode
+  vim.keymap.set('n', 'q', function()
+    M.disable_preview_mode()
+    M.return_to_sidebar()
+  end, vim.tbl_extend('force', opts, { desc = 'Close preview and exit preview mode' }))
+  
+  -- Esc to return to sidebar
+  vim.keymap.set('n', '<Esc>', function()
+    M.return_to_sidebar()
+  end, vim.tbl_extend('force', opts, { desc = 'Return to sidebar' }))
+  
+  -- Enter does nothing in preview (as requested)
+  vim.keymap.set('n', '<CR>', '<Nop>', vim.tbl_extend('force', opts, { desc = 'Disabled in preview' }))
+  
+  -- No special mouse handling needed - default behavior works
+  
+  -- Override 'g' to handle our custom g-commands (same pattern as email list)
+  vim.keymap.set('n', 'g', function()
+    local char = vim.fn.getchar()
+    local key = vim.fn.nr2char(char)
     
-    -- q to return to sidebar
-    vim.keymap.set('n', 'q', function()
-      -- Find the sidebar window
-      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-      local sidebar_win = sidebar.get_win()
-      if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-        vim.api.nvim_set_current_win(sidebar_win)
-      end
-    end, vim.tbl_extend('force', opts, { desc = 'Return to sidebar' }))
-    
-    -- Enter to open in buffer
-    vim.keymap.set('n', '<CR>', function()
-      if current_preview_id then
-        -- Close preview
+    if key == 'r' then
+      -- Reply to email
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Close preview first
         M.hide_preview()
-        -- Open email in buffer
-        local viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer_v2')
-        viewer.view_email(current_preview_id)
+        -- Use main module's reply function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        -- Set the current email ID in state so reply_current_email can find it
+        state.set('preview_email_id', email_id)
+        main.reply_current_email()
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Open email in buffer' }))
-    
-    -- Standard vim navigation should work for scrolling
-    return true
-  end
-  return false
+    elseif key == 'R' then
+      -- Reply all
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Close preview first
+        M.hide_preview()
+        -- Use main module's reply all function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        state.set('preview_email_id', email_id)
+        main.reply_all_current_email()
+      end
+    elseif key == 'f' then
+      -- Forward email
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Close preview first
+        M.hide_preview()
+        -- Use main module's forward function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        state.set('preview_email_id', email_id)
+        main.forward_current_email()
+      end
+    elseif key == 'D' then
+      -- Delete email
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Set the current email ID in state
+        state.set('preview_email_id', email_id)
+        -- Use main module's delete function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        main.delete_current_email()
+        -- The delete function will handle closing views and refreshing
+        M.hide_preview()
+      end
+    elseif key == 'A' then
+      -- Archive email
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Set the current email ID in state
+        state.set('preview_email_id', email_id)
+        -- Use main module's archive function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        main.archive_current_email()
+        -- The archive function will handle closing views and refreshing
+        M.hide_preview()
+      end
+    elseif key == 'S' then
+      -- Mark as spam
+      if preview_state.email_id then
+        local email_id = preview_state.email_id
+        -- Set the current email ID in state
+        state.set('preview_email_id', email_id)
+        -- Use main module's spam function
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        main.spam_current_email()
+        -- The spam function will handle closing views and refreshing
+        M.hide_preview()
+      end
+    else
+      -- Pass through to built-in g commands
+      vim.api.nvim_feedkeys('g' .. key, 'n', false)
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Himalaya g-commands' }))
 end
 
 -- Update config
@@ -506,6 +694,95 @@ function M.cleanup_preview_buffers()
     end
   end
   preview_buffers = {}
+end
+
+-- Get preview state (for debugging)
+function M.get_preview_state()
+  return preview_state
+end
+
+-- Ensure preview window exists and is valid
+function M.ensure_preview_window()
+  if preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    return preview_state.win
+  end
+  return nil
+end
+
+-- Set up global mouse handler for preview mode
+local function setup_global_mouse_handler()
+  -- Nothing needed here anymore, we'll use autocmds
+end
+
+-- Remove global mouse handler
+local function remove_global_mouse_handler()
+  -- Nothing to remove
+end
+
+-- Enable preview mode
+function M.enable_preview_mode()
+  preview_state.preview_mode = true
+  logger.debug("Preview mode enabled")
+  notify.himalaya("Preview mode enabled", notify.categories.STATUS)
+  
+  -- Set up WinLeave autocmd to close preview when leaving himalaya windows
+  local preview_mouse_group = vim.api.nvim_create_augroup('HimalayaPreviewMouse', { clear = true })
+  vim.api.nvim_create_autocmd('WinLeave', {
+    group = preview_mouse_group,
+    callback = function()
+      -- Don't process if we're in the middle of updating or focusing
+      if preview_state.is_updating or preview_state.is_focusing then
+        return
+      end
+      
+      if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
+        return
+      end
+      
+      -- Check where we're going after a small delay
+      vim.defer_fn(function()
+        -- Double-check we're not updating after the delay
+        if preview_state.is_updating or preview_state.is_focusing then
+          return
+        end
+        
+        local current_win = vim.api.nvim_get_current_win()
+        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+        local sidebar_win = sidebar.get_win()
+        
+        -- If we're now in a non-himalaya window, close preview
+        if current_win ~= preview_state.win and 
+           (not sidebar_win or current_win ~= sidebar_win) then
+          M.hide_preview()
+        end
+      end, 100)  -- Increased delay to 100ms for more stability
+    end
+  })
+end
+
+-- Disable preview mode
+function M.disable_preview_mode()
+  preview_state.preview_mode = false
+  M.hide_preview()
+  logger.debug("Preview mode disabled")
+  notify.himalaya("Preview mode disabled", notify.categories.STATUS)
+  
+  -- Clear the autocmd group
+  vim.api.nvim_create_augroup('HimalayaPreviewMouse', { clear = true })
+end
+
+-- Check if preview mode is enabled
+function M.is_preview_mode()
+  return preview_state.preview_mode
+end
+
+-- Toggle preview mode
+function M.toggle_preview_mode()
+  if preview_state.preview_mode then
+    M.disable_preview_mode()
+  else
+    M.enable_preview_mode()
+  end
 end
 
 return M

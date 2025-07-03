@@ -134,21 +134,17 @@ M.command_registry.HimalayaTrashStats = {
 -- Email Actions
 M.command_registry.HimalayaSend = {
   fn = function()
-    local notify = require('neotex.util.notifications')
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
+    local buf = vim.api.nvim_get_current_buf()
+    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
     
-    local choice = confirm.show({
-      title = 'Send Email',
-      message = 'Send this email?',
-      options = { 'Send', 'Cancel' },
-      default = 1,
-    })
-    
-    if choice == 1 then
-      main.send_current_email()
+    -- Check if this is a compose buffer
+    if composer_v2.is_compose_buffer(buf) then
+      -- send_email already has its own confirmation dialog
+      composer_v2.send_email(buf)
     else
-      notify.himalaya('Send cancelled', notify.categories.STATUS)
+      -- Not a compose buffer
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Not in an email compose buffer', notify.categories.ERROR)
     end
   end,
   opts = {
@@ -158,31 +154,39 @@ M.command_registry.HimalayaSend = {
 
 M.command_registry.HimalayaSaveDraft = {
   fn = function()
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    main.close_and_save_draft()
+    local buf = vim.api.nvim_get_current_buf()
+    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+    
+    -- Check if this is a compose buffer
+    if composer_v2.is_compose_buffer(buf) then
+      composer_v2.save_draft(buf)
+      -- Don't close the buffer - let user continue editing
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Draft saved', notify.categories.USER_ACTION)
+    else
+      -- Not a compose buffer
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Not in an email compose buffer', notify.categories.ERROR)
+    end
   end,
   opts = {
-    desc = 'Save current email as draft and close'
+    desc = 'Save current email as draft'
   }
 }
 
 M.command_registry.HimalayaDiscard = {
   fn = function()
-    local notify = require('neotex.util.notifications')
-    local main = require('neotex.plugins.tools.himalaya.ui.main')
-    local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
+    local buf = vim.api.nvim_get_current_buf()
+    local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
     
-    local choice = confirm.show({
-      title = 'Discard Email',
-      message = 'Discard this email?',
-      options = { 'Discard', 'Cancel' },
-      default = 2,
-    })
-    
-    if choice == 1 then
-      main.close_without_saving()
+    -- Check if this is a compose buffer
+    if composer_v2.is_compose_buffer(buf) then
+      -- Call discard_email directly which will show the modern confirmation prompt
+      composer_v2.discard_email(buf)
     else
-      notify.himalaya('Discard cancelled', notify.categories.STATUS)
+      -- Not a compose buffer
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Not in an email compose buffer', notify.categories.ERROR)
     end
   end,
   opts = {
@@ -194,10 +198,9 @@ M.command_registry.HimalayaDiscard = {
 
 M.command_registry.HimalayaSyncInbox = {
   fn = function()
-    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
-    local ui = require('neotex.plugins.tools.himalaya.ui')
     local config = require('neotex.plugins.tools.himalaya.core.config')
     local notify = require('neotex.util.notifications')
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
     
     -- Check if config is initialized
     if not config.is_initialized() then
@@ -205,86 +208,8 @@ M.command_registry.HimalayaSyncInbox = {
       return
     end
     
-    local account = config.get_current_account()
-    if not account then
-      notify.himalaya('No email account configured', notify.categories.ERROR)
-      return
-    end
-    
-    local channel = account.mbsync and account.mbsync.inbox_channel or 'gmail-inbox'
-    notify.himalaya('Starting inbox sync...', notify.categories.STATUS)
-    notify.himalaya('Using channel: ' .. channel, notify.categories.BACKGROUND)
-    notify.himalaya('Account: ' .. tostring(config.get_current_account_name()), notify.categories.BACKGROUND)
-    
-    -- Use sync manager for consistent state management
-    local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
-    local account_name = config.get_current_account_name()
-    
-    -- Start sync through manager
-    sync_manager.start_sync('full', {
-      channel = channel,
-      account = account_name
-    })
-    
-    -- Start sidebar refresh timer
-    local refresh_timer = nil
-    if ui.is_email_buffer_open() then
-      refresh_timer = vim.fn.timer_start(5000, function()
-        -- Refresh the entire sidebar to show updated sync progress
-        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-        if sidebar.is_open() then
-          ui.refresh_email_list()
-        end
-      end, { ['repeat'] = -1 })
-    end
-    
-    mbsync.sync(channel, {
-      on_progress = function(progress)
-        -- Update progress through manager
-        sync_manager.update_progress(progress)
-        
-        if ui.notifications and ui.notifications.show_sync_progress then
-          ui.notifications.show_sync_progress(progress)
-        end
-      end,
-      callback = function(success, error)
-        -- Stop the refresh timer
-        if refresh_timer then
-          vim.fn.timer_stop(refresh_timer)
-        end
-        
-        -- Complete sync through manager
-        sync_manager.complete_sync('full', {
-          success = success,
-          error = error
-        })
-        
-        if not success then
-          ui.notifications.handle_sync_error(error)
-          -- Log error details in debug mode
-          local notify = require('neotex.util.notifications')
-          if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) and error then
-            notify.himalaya('Sync error details: ' .. error, notify.categories.BACKGROUND)
-          end
-        else
-          -- Clear cache and refresh UI
-          local utils = require('neotex.plugins.tools.himalaya.utils')
-          utils.clear_email_cache()
-          
-          local notify = require('neotex.util.notifications')
-          notify.himalaya('Sync completed successfully!', notify.categories.USER_ACTION)
-          
-          if ui.is_email_buffer_open() then
-            ui.refresh_email_list()
-          end
-        end
-        
-        -- Final sidebar refresh
-        if ui.is_email_buffer_open() then
-          ui.refresh_email_list()
-        end
-      end
-    })
+    -- Use the shared sync_inbox function from main UI module
+    main.sync_inbox()
   end,
   opts = {
     desc = 'Sync inbox only'

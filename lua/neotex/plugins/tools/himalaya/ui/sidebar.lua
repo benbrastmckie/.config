@@ -40,6 +40,7 @@ function M.create_buffer()
     vim.opt_local.relativenumber = false
     vim.opt_local.signcolumn = 'no'
     vim.opt_local.foldcolumn = '0'
+    vim.opt_local.mouse = 'a'  -- Ensure mouse is enabled
   end)
   
   return M.state.buf

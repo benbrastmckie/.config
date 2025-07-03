@@ -399,6 +399,7 @@ return {
       { "<leader>a", group = "actions", icon = "󰌵" },
       { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format", icon = "󰉣" },
       { "<leader>ah", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
+      { "<leader>ak", "<cmd>BufDeleteFile<CR>", desc = "kill file and buffer", icon = "󰆴" },
       { "<leader>au", "<cmd>cd %:p:h | Neotree reveal<CR>", desc = "update cwd", icon = "󰉖" },
       { "<leader>as", "<cmd>Neotree ~/.config/nvim/snippets/<CR>", desc = "snippets edit", icon = "󰩫" },
       { "<leader>aS", "<cmd>TermExec cmd='ssh brastmck@eofe10.mit.edu'<CR>", desc = "ssh", icon = "󰣀" },
@@ -587,15 +588,20 @@ return {
       end,
     })
 
-    -- EMAIL COMPOSE BUFFER specific keymaps (himalaya-compose filetype)
+    -- EMAIL COMPOSE BUFFER specific keymaps (mail filetype)
     vim.api.nvim_create_autocmd("FileType", {
-      pattern = "himalaya-compose",
+      pattern = "mail",
       callback = function()
-        wk.add({
-          { "<leader>mS", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", buffer = 0 },
-          { "<leader>mq", "<cmd>HimalayaSaveDraft<CR>", desc = "quit and save draft", icon = "󰆓", buffer = 0 },
-          { "<leader>mQ", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", buffer = 0 },
-        }, { buffer = 0 })
+        -- Only add these mappings if it's a Himalaya compose buffer
+        local composer_v2 = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
+        if composer_v2.is_compose_buffer(vim.api.nvim_get_current_buf()) then
+          wk.add({
+            { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", buffer = 0 },
+            { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", buffer = 0 },
+            { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", buffer = 0 },
+            { "<leader>mD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", buffer = 0 },
+          }, { buffer = 0 })
+        end
       end,
     })
     
