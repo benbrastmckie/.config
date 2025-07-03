@@ -459,8 +459,10 @@ function M.setup_buffer_keymaps(bufnr)
             is_valid_before = vim.api.nvim_win_is_valid(preview_win)
           })
           
-          -- Set a flag to prevent CursorMoved from updating preview
+          -- Set flags to prevent preview from being destroyed
           vim.g.himalaya_focusing_preview = true
+          local preview_state = preview.get_preview_state()
+          preview_state.is_focusing = true
           
           -- Simplify: just focus the window like in our test
           local before_win = vim.api.nvim_get_current_win()
@@ -501,9 +503,11 @@ function M.setup_buffer_keymaps(bufnr)
             end
           end)
           
-          -- Clear flag after a short delay
+          -- Clear flags after a short delay
           vim.defer_fn(function()
             vim.g.himalaya_focusing_preview = false
+            local preview_state = preview.get_preview_state()
+            preview_state.is_focusing = false
           end, 200)
           
           return ''  -- Consume the event
@@ -518,16 +522,23 @@ function M.setup_buffer_keymaps(bufnr)
         return '<LeftMouse>'
       end
       
-      -- Move cursor to clicked position in sidebar
-      local line_count = vim.api.nvim_buf_line_count(0)
-      if mouse_pos.line > 0 and mouse_pos.line <= line_count then
-        vim.api.nvim_win_set_cursor(0, {mouse_pos.line, math.max(0, mouse_pos.column - 1)})
-      end
+      notify.himalaya("Processing sidebar click", notify.categories.STATUS, {
+        clicked_line = mouse_pos.line,
+        sidebar_win = sidebar_win,
+        current_win = vim.api.nvim_get_current_win()
+      })
+      
+      -- Let vim handle the cursor movement naturally, then do our custom logic
+      notify.himalaya("Sidebar click processing", notify.categories.STATUS, {
+        clicked_line = mouse_pos.line,
+        current_line = vim.api.nvim_win_get_cursor(0)[1]
+      })
       
       -- Update preview immediately for mouse clicks
       vim.schedule(function()
         -- Skip if we're focusing the preview
         if vim.g.himalaya_focusing_preview then
+          notify.himalaya("Skipping preview update - focusing preview", notify.categories.STATUS)
           return
         end
         
@@ -536,14 +547,25 @@ function M.setup_buffer_keymaps(bufnr)
           local email_id = main.get_current_email_id()
           local current_preview_id = preview.get_current_preview_id()
           
+          notify.himalaya("Checking preview update", notify.categories.STATUS, {
+            email_id = email_id,
+            current_preview_id = current_preview_id,
+            preview_mode = preview.is_preview_mode()
+          })
+          
           if email_id and email_id ~= current_preview_id then
+            notify.himalaya("Updating preview for new email", notify.categories.STATUS)
             preview.show_preview(email_id, vim.api.nvim_get_current_win())
+          else
+            notify.himalaya("No preview update needed", notify.categories.STATUS)
           end
+        else
+          notify.himalaya("Not in preview mode", notify.categories.STATUS)
         end
       end)
       
-      -- For sidebar clicks, consume the event
-      return ''
+      -- For sidebar clicks, let vim handle the cursor movement naturally
+      return '<LeftMouse>'
     end, vim.tbl_extend('force', opts, { desc = 'Click to select email or focus preview', expr = true }))
     
     -- Debounced cursor movement handler for smooth j/k navigation
