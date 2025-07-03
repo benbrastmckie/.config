@@ -19,6 +19,7 @@ local preview_state = {
   email_id = nil,
   is_focusing = false,  -- Flag to prevent hiding during focus
   preview_mode = false, -- Whether preview mode is active
+  is_mouse_clicking = false, -- Flag to prevent closing during mouse clicks
 }
 local hover_timer = nil
 local preview_generation = 0  -- Track preview requests
@@ -120,6 +121,7 @@ function M.calculate_preview_position(parent_win)
     title_pos = 'center',
     focusable = true,  -- Make it focusable so we can enter it with mouse
     zindex = 50,
+    noautocmd = false,  -- Ensure autocmds fire for proper event handling
   }
 end
 
@@ -300,21 +302,32 @@ end
 
 -- Show preview for an email (two-stage loading)
 function M.show_preview(email_id, parent_win)
+  -- Log who called show_preview
+  local trace = debug.traceback("", 2)
+  notify.himalaya("show_preview called", notify.categories.BACKGROUND, {
+    email_id = email_id,
+    current_preview_id = preview_state.email_id,
+    has_window = preview_state.win ~= nil,
+    caller = trace:match("([^\n]+)\n[^\n]+\n([^\n]+)")
+  })
+  
   if not M.config.enabled then
     return
   end
   
   -- If showing the same email, just ensure window is visible
   if email_id == preview_state.email_id and preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    notify.himalaya("Preview already showing this email", notify.categories.STATUS, {
+      email_id = email_id,
+      window = preview_state.win
+    })
     return
   end
   
   -- Store the previous email_id to detect if we're updating an existing preview
   local is_update = preview_state.win and vim.api.nvim_win_is_valid(preview_state.win)
   
-  -- Set updating flag to prevent window from closing during update
-  -- Set it for all preview operations, not just updates
-  preview_state.is_updating = true
+  -- No longer need updating flag since we removed WinLeave autocmd
   
   local account = state.get_current_account()
   local folder = state.get_current_folder()
@@ -350,6 +363,21 @@ function M.show_preview(email_id, parent_win)
     
     preview_state.win = win_or_err
     
+    -- DIAGNOSTIC: Log window creation
+    logger.debug("Preview window created", { 
+      win_id = preview_state.win, 
+      focusable = win_config.focusable,
+      position = { row = win_config.row, col = win_config.col }
+    })
+    
+    -- Notify about window creation for debugging
+    notify.himalaya("Preview window created", notify.categories.STATUS, {
+      window_id = preview_state.win,
+      focusable = win_config.focusable,
+      position = string.format("row=%d, col=%d", win_config.row, win_config.col),
+      size = string.format("%dx%d", win_config.width, win_config.height)
+    })
+    
     -- Validate window was created
     if not preview_state.win or type(preview_state.win) ~= "number" then
       logger.error("Failed to create preview window", { win = preview_state.win, type = type(preview_state.win) })
@@ -375,6 +403,22 @@ function M.show_preview(email_id, parent_win)
     safe_set_win_option(preview_state.win, 'wrap', true)
     safe_set_win_option(preview_state.win, 'linebreak', true)
     safe_set_win_option(preview_state.win, 'cursorline', false)
+    safe_set_win_option(preview_state.win, 'mouse', 'a')  -- Ensure mouse is enabled for this window
+    
+    -- Set up window-specific autocmd for mouse clicks
+    local win_id = preview_state.win
+    vim.api.nvim_create_autocmd('WinEnter', {
+      callback = function()
+        local current_win = vim.api.nvim_get_current_win()
+        if current_win == win_id then
+          notify.himalaya("Preview window entered", notify.categories.STATUS, {
+            method = "WinEnter",
+            window = current_win
+          })
+        end
+      end,
+      desc = 'Track preview window entry'
+    })
   else
     -- Window exists, just get or create a buffer for the new content
     if not preview_state.buf or not vim.api.nvim_buf_is_valid(preview_state.buf) then
@@ -390,10 +434,7 @@ function M.show_preview(email_id, parent_win)
   -- Render cached content immediately
   M.render_preview(cached_email, preview_state.buf)
   
-  -- Clear updating flag after render with a longer delay
-  vim.defer_fn(function()
-    preview_state.is_updating = false
-  end, 150)  -- Increased to 150ms to cover the WinLeave autocmd delay
+  -- No cleanup needed anymore
   
   -- Stage 2: Load full content asynchronously if not cached
   if not cached_body then
@@ -597,7 +638,7 @@ function M.setup_preview_keymaps(buf)
   -- Enter does nothing in preview (as requested)
   vim.keymap.set('n', '<CR>', '<Nop>', vim.tbl_extend('force', opts, { desc = 'Disabled in preview' }))
   
-  -- No special mouse handling needed - default behavior works
+  -- Note: Mouse handling is done globally in preview mode, not buffer-locally
   
   -- Override 'g' to handle our custom g-commands (same pattern as email list)
   vim.keymap.set('n', 'g', function()
@@ -725,39 +766,7 @@ function M.enable_preview_mode()
   logger.debug("Preview mode enabled")
   notify.himalaya("Preview mode enabled", notify.categories.STATUS)
   
-  -- Set up WinLeave autocmd to close preview when leaving himalaya windows
-  local preview_mouse_group = vim.api.nvim_create_augroup('HimalayaPreviewMouse', { clear = true })
-  vim.api.nvim_create_autocmd('WinLeave', {
-    group = preview_mouse_group,
-    callback = function()
-      -- Don't process if we're in the middle of updating or focusing
-      if preview_state.is_updating or preview_state.is_focusing then
-        return
-      end
-      
-      if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
-        return
-      end
-      
-      -- Check where we're going after a small delay
-      vim.defer_fn(function()
-        -- Double-check we're not updating after the delay
-        if preview_state.is_updating or preview_state.is_focusing then
-          return
-        end
-        
-        local current_win = vim.api.nvim_get_current_win()
-        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-        local sidebar_win = sidebar.get_win()
-        
-        -- If we're now in a non-himalaya window, close preview
-        if current_win ~= preview_state.win and 
-           (not sidebar_win or current_win ~= sidebar_win) then
-          M.hide_preview()
-        end
-      end, 100)  -- Increased delay to 100ms for more stability
-    end
-  })
+  -- Don't use a global handler - we'll set window-specific handlers instead
 end
 
 -- Disable preview mode
@@ -766,9 +775,6 @@ function M.disable_preview_mode()
   M.hide_preview()
   logger.debug("Preview mode disabled")
   notify.himalaya("Preview mode disabled", notify.categories.STATUS)
-  
-  -- Clear the autocmd group
-  vim.api.nvim_create_augroup('HimalayaPreviewMouse', { clear = true })
 end
 
 -- Check if preview mode is enabled

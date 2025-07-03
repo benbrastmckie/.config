@@ -433,19 +433,104 @@ function M.setup_buffer_keymaps(bufnr)
       require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
     
-    -- Mouse click handler for sidebar
-    keymap('n', '<LeftMouse>', function()
+    -- Mouse click handler for sidebar with expr mapping to control behavior
+    vim.keymap.set('n', '<LeftMouse>', function()
       -- Get mouse position
       local mouse_pos = vim.fn.getmousepos()
+      local notify = require('neotex.util.notifications')
       
-      -- Move cursor to clicked position
-      if mouse_pos.line > 0 then
-        vim.api.nvim_win_set_cursor(0, {mouse_pos.line, mouse_pos.column - 1})
+      -- Check if we clicked on the preview window first
+      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+      if preview.is_preview_shown() then
+        local preview_win = preview.ensure_preview_window()
+        
+        -- Validate window before proceeding
+        if preview_win and not vim.api.nvim_win_is_valid(preview_win) then
+          notify.himalaya("Preview window invalid before focus attempt", notify.categories.ERROR, {
+            window_id = preview_win
+          })
+          return '<LeftMouse>'
+        end
+        
+        if preview_win and mouse_pos.winid == preview_win then
+          -- Clicked on preview - focus it
+          notify.himalaya("Sidebar handler: Click on preview detected", notify.categories.STATUS, {
+            preview_win = preview_win,
+            is_valid_before = vim.api.nvim_win_is_valid(preview_win)
+          })
+          
+          -- Set a flag to prevent CursorMoved from updating preview
+          vim.g.himalaya_focusing_preview = true
+          
+          -- Simplify: just focus the window like in our test
+          local before_win = vim.api.nvim_get_current_win()
+          
+          -- Schedule the focus change since we're in an expr mapping
+          vim.schedule(function()
+            -- Check validity again
+            if not vim.api.nvim_win_is_valid(preview_win) then
+              notify.himalaya("Window became invalid before scheduled focus", notify.categories.ERROR)
+              return
+            end
+            
+            local before_win = vim.api.nvim_get_current_win()
+            vim.api.nvim_set_current_win(preview_win)
+            local after_win = vim.api.nvim_get_current_win()
+            
+            notify.himalaya("Focus attempt", notify.categories.ERROR, {
+              before = before_win,
+              requested = preview_win,
+              after = after_win,
+              success = after_win == preview_win
+            })
+            
+            -- If focus failed, there might be an issue with the window
+            if after_win ~= preview_win then
+              local is_valid = vim.api.nvim_win_is_valid(preview_win)
+              notify.himalaya("Focus failed - checking window validity", notify.categories.ERROR, {
+                is_valid = is_valid,
+                window_id = preview_win,
+                -- Only get config if window is still valid
+                config = is_valid and pcall(vim.api.nvim_win_get_config, preview_win) or "window no longer valid"
+              })
+            else
+              -- Position cursor at click location
+              if mouse_pos.line > 0 and mouse_pos.column > 0 then
+                pcall(vim.api.nvim_win_set_cursor, preview_win, {mouse_pos.line, math.max(0, mouse_pos.column - 1)})
+              end
+            end
+          end)
+          
+          -- Clear flag after a short delay
+          vim.defer_fn(function()
+            vim.g.himalaya_focusing_preview = false
+          end, 200)
+          
+          return ''  -- Consume the event
+        end
+      end
+      
+      -- Only process if we clicked within the sidebar window
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      local sidebar_win = sidebar.get_win()
+      if mouse_pos.winid ~= sidebar_win then
+        -- Pass through to default mouse behavior
+        return '<LeftMouse>'
+      end
+      
+      -- Move cursor to clicked position in sidebar
+      local line_count = vim.api.nvim_buf_line_count(0)
+      if mouse_pos.line > 0 and mouse_pos.line <= line_count then
+        vim.api.nvim_win_set_cursor(0, {mouse_pos.line, math.max(0, mouse_pos.column - 1)})
       end
       
       -- Update preview immediately for mouse clicks
       vim.schedule(function()
-        local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
+        -- Skip if we're focusing the preview
+        if vim.g.himalaya_focusing_preview then
+          return
+        end
+        
         if preview.is_preview_mode() then
           local main = require('neotex.plugins.tools.himalaya.ui.main')
           local email_id = main.get_current_email_id()
@@ -456,7 +541,10 @@ function M.setup_buffer_keymaps(bufnr)
           end
         end
       end)
-    end, vim.tbl_extend('force', opts, { desc = 'Click to select email' }))
+      
+      -- For sidebar clicks, consume the event
+      return ''
+    end, vim.tbl_extend('force', opts, { desc = 'Click to select email or focus preview', expr = true }))
     
     -- Debounced cursor movement handler for smooth j/k navigation
     local preview_timer = nil
@@ -465,6 +553,11 @@ function M.setup_buffer_keymaps(bufnr)
       callback = function()
         local preview = require('neotex.plugins.tools.himalaya.ui.email_preview_v2')
         if not preview.is_preview_mode() then
+          return
+        end
+        
+        -- Don't update preview if we're focusing it
+        if vim.g.himalaya_focusing_preview then
           return
         end
         
