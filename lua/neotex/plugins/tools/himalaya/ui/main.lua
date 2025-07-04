@@ -714,6 +714,17 @@ function M.handle_missing_trash_folder(email_id, suggested_folders)
   
   vim.ui.select(options, {
     prompt = 'Trash Folder Not Found - How would you like to delete this email?',
+    format_item = function(item)
+      if item:match('Permanently delete') then
+        return ' ' .. item  -- Trash icon
+      elseif item:match('^Move to ') then
+        return ' ' .. item  -- Move icon
+      elseif item == 'Cancel' then
+        return ' ' .. item  -- Cancel icon
+      else
+        return item
+      end
+    end,
   }, function(selected_option, idx)
     if not selected_option then
       return
@@ -826,6 +837,19 @@ function M.archive_current_email()
         'Cancel'
       }, {
         prompt = 'No archive folder found. How would you like to archive this email?',
+        format_item = function(item)
+          if item == 'Move to All_Mail' then
+            return ' ' .. item  -- Move/archive icon
+          elseif item == 'Create Archive folder' then
+            return ' ' .. item  -- Create/plus icon
+          elseif item:match('Move to custom') then
+            return ' ' .. item  -- Folder icon
+          elseif item == 'Cancel' then
+            return ' ' .. item  -- Cancel icon
+          else
+            return item
+          end
+        end,
       }, function(choice)
         if choice == 'Move to All_Mail' then
           utils.move_email(email_id, 'All_Mail')
@@ -893,6 +917,17 @@ function M.spam_current_email()
         'Cancel'
       }, {
         prompt = 'No spam folder found. How would you like to handle this email?',
+        format_item = function(item)
+          if item:match('Move to') then
+            return ' ' .. item  -- Move/folder icon
+          elseif item == 'Delete permanently' then
+            return ' ' .. item  -- Trash icon
+          elseif item == 'Cancel' then
+            return ' ' .. item  -- Cancel icon
+          else
+            return item
+          end
+        end,
       }, function(choice)
         if choice == 'Move to Junk folder' then
           utils.move_email(email_id, 'Junk')
@@ -956,6 +991,15 @@ function M.restore_session()
     if selected_email and not is_headless then
       vim.ui.select({'Open previous email', 'Just show email list'}, {
         prompt = 'Restore previous email session:',
+        format_item = function(item)
+          if item == 'Open previous email' then
+            return ' ' .. item  -- Email/envelope icon
+          elseif item == 'Just show email list' then
+            return ' ' .. item  -- List icon
+          else
+            return item
+          end
+        end,
       }, function(choice)
         if choice == 'Open previous email' then
           vim.defer_fn(function()
@@ -1002,6 +1046,15 @@ function M.prompt_session_restore()
   else
     vim.ui.select({'Restore previous session', 'Start fresh'}, {
       prompt = message .. ' - Restore?',
+      format_item = function(item)
+        if item == 'Restore previous session' then
+          return ' ' .. item  -- Restore icon
+        elseif item == 'Start fresh' then
+          return ' ' .. item  -- New/plus icon
+        else
+          return item
+        end
+      end,
     }, function(choice)
       if choice == 'Restore previous session' then
         M.restore_session()

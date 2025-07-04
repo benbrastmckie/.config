@@ -181,48 +181,60 @@ function M.delete_file_and_buffer(buf)
     return
   end
   
-  -- Use simple confirmation prompt
-  local misc = require('neotex.util.misc')
+  -- Use async confirmation prompt
   local filename = vim.fn.fnamemodify(filepath, ':t')
+  local prompt = string.format(" Delete file \"%s\"?", filename)
   
-  if not misc.confirm('Delete file "' .. filename .. '"?', true) then
-    return
-  end
-  
-  -- Switch to alternate buffer before deleting (to prevent sidebar issues)
-  local current_win = vim.api.nvim_get_current_win()
-  local buffers = vim.api.nvim_list_bufs()
-  local alternate_buf = nil
-  
-  -- Find a suitable buffer to switch to
-  for _, b in ipairs(buffers) do
-    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
-      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
-      -- Skip special buffers
-      if buftype == '' then
-        alternate_buf = b
-        break
+  vim.ui.select({"No", "Yes"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
+    
+    -- Proceed with deletion
+    local current_win = vim.api.nvim_get_current_win()
+    local buffers = vim.api.nvim_list_bufs()
+    local alternate_buf = nil
+    
+    -- Find a suitable buffer to switch to
+    for _, b in ipairs(buffers) do
+      if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+        local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+        -- Skip special buffers
+        if buftype == '' then
+          alternate_buf = b
+          break
+        end
       end
     end
-  end
-  
-  -- If no alternate buffer found, create a new empty one
-  if not alternate_buf then
-    alternate_buf = vim.api.nvim_create_buf(true, false)
-  end
-  
-  -- Switch to the alternate buffer first
-  vim.api.nvim_win_set_buf(current_win, alternate_buf)
-  
-  -- Delete the file
-  local ok = vim.fn.delete(filepath)
-  if ok == 0 then
-    -- Delete the buffer
-    vim.api.nvim_buf_delete(buf, { force = true })
-    notify.editor('Deleted: ' .. filename, notify.categories.USER_ACTION)
-  else
-    notify.editor('Failed to delete file: ' .. filepath, notify.categories.ERROR)
-  end
+    
+    -- If no alternate buffer found, create a new empty one
+    if not alternate_buf then
+      alternate_buf = vim.api.nvim_create_buf(true, false)
+    end
+    
+    -- Switch to the alternate buffer first
+    vim.api.nvim_win_set_buf(current_win, alternate_buf)
+    
+    -- Delete the file
+    local ok = vim.fn.delete(filepath)
+    if ok == 0 then
+      -- Delete the buffer
+      vim.api.nvim_buf_delete(buf, { force = true })
+      notify.editor('Deleted: ' .. filename, notify.categories.USER_ACTION)
+    else
+      notify.editor('Failed to delete file: ' .. filepath, notify.categories.ERROR)
+    end
+  end)
 end
 
 -- Set up global buffer-related commands

@@ -3,8 +3,8 @@ return {
   event = "VimEnter",
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "stevearc/dressing.nvim",
-    "nvim-telescope/telescope-ui-select.nvim",
+    -- "stevearc/dressing.nvim",  -- Removed: will be loaded globally
+    -- "nvim-telescope/telescope-ui-select.nvim",  -- Not needed with dressing
   },
   config = function()
     local Path = require('plenary.path')
