@@ -60,6 +60,12 @@ M.state = {
     sync_job_id = nil,
     reader_job_id = nil,
   },
+  
+  -- Folder statistics
+  folders = {
+    counts = {}, -- Structure: account -> folder -> count
+    last_updated = {}, -- Structure: account -> folder -> timestamp
+  },
 }
 
 -- Get a state value by path (e.g., "sync.status")
@@ -153,6 +159,10 @@ function M.reset()
     processes = {
       sync_job_id = nil,
       reader_job_id = nil,
+    },
+    folders = {
+      counts = {},
+      last_updated = {},
     },
   }
 end
@@ -365,6 +375,71 @@ function M.is_selection_mode()
   return M.get("selection.selection_mode", false)
 end
 
+-- Folder count management functions
+
+-- Set email count for a specific folder
+function M.set_folder_count(account, folder, count)
+  if not account or not folder then return end
+  
+  -- Initialize structure if needed
+  local counts = M.get("folders.counts", {})
+  if not counts[account] then
+    counts[account] = {}
+  end
+  
+  counts[account][folder] = count
+  M.set("folders.counts", counts)
+  
+  -- Update timestamp
+  local timestamps = M.get("folders.last_updated", {})
+  if not timestamps[account] then
+    timestamps[account] = {}
+  end
+  timestamps[account][folder] = os.time()
+  M.set("folders.last_updated", timestamps)
+  
+  -- Trigger immediate UI update if this is the current folder
+  local current_account = M.get("ui.current_account")
+  local current_folder = M.get("ui.current_folder")
+  if account == current_account and folder == current_folder then
+    -- Import here to avoid circular dependencies
+    local ok, manager = pcall(require, 'neotex.plugins.tools.himalaya.sync.manager')
+    if ok and manager.notify_ui_update then
+      manager.notify_ui_update()
+    end
+  end
+end
+
+-- Get email count for a specific folder
+function M.get_folder_count(account, folder)
+  if not account or not folder then return nil end
+  
+  local counts = M.get("folders.counts", {})
+  if counts[account] and counts[account][folder] then
+    return counts[account][folder]
+  end
+  return nil
+end
+
+-- Get all folder counts for an account
+function M.get_all_folder_counts(account)
+  if not account then return {} end
+  
+  local counts = M.get("folders.counts", {})
+  return counts[account] or {}
+end
+
+-- Get folder count age in seconds
+function M.get_folder_count_age(account, folder)
+  if not account or not folder then return nil end
+  
+  local timestamps = M.get("folders.last_updated", {})
+  if timestamps[account] and timestamps[account][folder] then
+    return os.time() - timestamps[account][folder]
+  end
+  return nil
+end
+
 -- Session persistence
 
 -- State file path
@@ -381,9 +456,10 @@ function M.save()
   -- Add timestamp
   M.set("ui.session_timestamp", os.time())
   
-  -- Create a subset of state to persist (UI state only)
+  -- Create a subset of state to persist (UI state and folder counts)
   local persist_state = {
     ui = M.state.ui,
+    folders = M.state.folders,
   }
   
   local encoded = vim.fn.json_encode(persist_state)
@@ -409,9 +485,12 @@ function M.load()
     if #content > 0 then
       local ok, decoded = pcall(vim.fn.json_decode, content[1])
       if ok and type(decoded) == 'table' then
-        -- Merge UI state only
+        -- Merge UI state and folder counts
         if decoded.ui then
           M.state.ui = vim.tbl_extend('force', M.state.ui, decoded.ui)
+        end
+        if decoded.folders then
+          M.state.folders = vim.tbl_extend('force', M.state.folders, decoded.folders)
         end
         return true
       else

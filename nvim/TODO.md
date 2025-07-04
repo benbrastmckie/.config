@@ -13,8 +13,8 @@
 - [ ] neo-tree
   - [ ] make esc cancel delete
 - [ ] yank errors
+  - [ ] pasting text gives: Content is not an image.
   - paste: Error executing lua: vim/_editor.lua:0: Vim:E21: Cannot make changes, 'modifiable' is off^@stack traceback:^@^I[C]: in function 'nvim_put'^@^Ivim/_editor.lua: in function <vim/_editor.lua:0>  
-  - Content is not an image.
 - [x] blink
   - [ ] tab in command mode
   - [x] no ghost text insertions

@@ -1,11 +1,18 @@
 -- Himalaya Email Client Utilities
 -- Utility functions for CLI integration and email operations
+--
+-- Email Count Architecture:
+-- 1. Counts are fetched from himalaya using fetch_folder_count() with binary search
+-- 2. Counts are stored in state module using state.set_folder_count()
+-- 3. Counts are automatically updated after sync by sync/manager.lua
+-- 4. UI displays counts from state.get_folder_count() with age indicator
 
 local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local notify = require('neotex.util.notifications')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Truncate string to specified length
 function M.truncate_string(str, max_length)
@@ -105,6 +112,11 @@ function M.execute_himalaya(args, opts)
       -- This is expected for empty maildirs, return empty list
       return {}, 0
     end
+    -- Check if this is an "out of bounds" error - expected during binary search
+    if result and result:match('out of bounds') then
+      -- This is expected during pagination search, return nil silently
+      return nil
+    end
     notify.himalaya('Himalaya command failed: ' .. (result or 'unknown error'), notify.categories.ERROR)
     return nil
   end
@@ -167,67 +179,41 @@ function M.get_email_list(account, folder, page, page_size)
   page = page or 1
   page_size = page_size or 30  -- Default to 30 emails per page
   
-  local cache_key = account .. '|' .. folder
-  local current_time = vim.loop.now()
+  -- Fetch only the requested page
+  local args = { 'envelope', 'list' }
   
-  -- Check if we need to refresh the cache
-  local need_refresh = not email_cache[cache_key] or 
-                      (current_time - cache_timestamp) > cache_timeout
+  -- Add pagination flags
+  table.insert(args, '--page')
+  table.insert(args, tostring(page))
+  table.insert(args, '--page-size')
+  table.insert(args, tostring(page_size))
   
-  if need_refresh then
-    -- Remove fetching message - too noisy
-    
-    local args = { 'envelope', 'list' }
-    
-    -- Add page size flag first
-    table.insert(args, '--page-size')
-    table.insert(args, '200')  -- Fetch up to 200 emails
-    
-    -- Add sorting query as a single argument
-    table.insert(args, 'order by date desc')
-    
-    local result = M.execute_himalaya(args, { account = account, folder = folder })
-    
-    if result then
-      email_cache[cache_key] = result
-      cache_timestamp = current_time
-      -- Remove cached message - too noisy
-    else
-      -- If cache exists, use it; otherwise return empty list
-      if email_cache[cache_key] then
-        -- Remove message - too noisy
-      else
-        -- Return empty list with count 0 instead of nil
-        return {}, 0
-      end
-    end
+  -- Add sorting query as a single argument
+  table.insert(args, 'order by date desc')
+  
+  local result = M.execute_himalaya(args, { account = account, folder = folder })
+  
+  if not result then
+    return {}, 0
   end
   
-  local all_emails = email_cache[cache_key] or {}
+  -- Get stored count from state (from sync operations)
+  local stored_count = state.get_folder_count(account, folder)
   
-  if #all_emails > 0 then
-    -- Calculate the start and end indices for the requested page
-    local start_idx = (page - 1) * page_size + 1
-    local end_idx = math.min(start_idx + page_size - 1, #all_emails)
-    
-    -- Return only the emails for this page
-    if start_idx <= #all_emails then
-      local page_emails = {}
-      for i = start_idx, end_idx do
-        table.insert(page_emails, all_emails[i])
-      end
-      -- Remove pagination message - too noisy
-      -- Return page emails and total count
-      return page_emails, #all_emails
-    else
-      -- No emails for this page
-      notify.himalaya('No emails for page', notify.categories.STATUS, { page = page, total = #all_emails })
-      return {}, #all_emails
-    end
+  -- If we have a stored count, use it
+  if stored_count and stored_count > 0 then
+    return result, stored_count
   end
   
-  -- When no pagination is requested, return all emails and count
-  return all_emails, #all_emails
+  -- Otherwise, estimate based on the page results
+  -- If we got a full page, there might be more emails
+  local estimated_count = #result
+  if #result >= page_size then
+    -- We don't know the exact count, but there are at least page * page_size emails
+    estimated_count = page * page_size
+  end
+  
+  return result, estimated_count
 end
 
 -- Get email content by ID
@@ -542,50 +528,124 @@ function M.delete_email(account, folder, email_id)
   return true
 end
 
--- Get folder email count
-function M.get_folder_email_count(account, folder)
-  -- Try to get total count from the cached email list
-  local cache_key = account .. '|' .. folder
-  if email_cache[cache_key] and #email_cache[cache_key] > 0 then
-    -- If we have a full cache (200 emails), we might have more
-    if #email_cache[cache_key] == 200 then
-      -- Try to count files in maildir for accurate count
-      local account_config = config.get_account(account)
-      if account_config and account_config.maildir_path then
-        local maildir = account_config.maildir_path .. '/' .. folder .. '/cur/'
-        if vim.fn.isdirectory(maildir) == 1 then
-          local files = vim.fn.globpath(maildir, '*', 0, 1)
-          return #files
-        end
-      end
-      -- Return 200+ to indicate there might be more
-      return 200
-    else
-      -- Cache has less than 200, so that's the total
-      return #email_cache[cache_key]
+-- Map logical folder names to maildir paths
+local function get_maildir_folder_path(account, folder)
+  -- Special mappings for Gmail
+  if account == 'gmail' then
+    -- INBOX is at the root
+    if folder:upper() == 'INBOX' then
+      return ''  -- Empty string means root of maildir
     end
+    
+    -- Some folders have dots in front
+    local dotted_folders = {
+      ['Sent'] = '.Sent',
+      ['Drafts'] = '.Drafts',
+      ['Spam'] = '.Spam',
+      ['All_Mail'] = '.All_Mail',
+      ['Starred'] = '.Starred',
+      ['Important'] = '.Important'
+    }
+    
+    return dotted_folders[folder] or folder
   end
   
-  -- No cache, try maildir count first
-  local account_config = config.get_account(account)
-  if account_config and account_config.maildir_path then
-    local maildir = account_config.maildir_path .. '/' .. folder .. '/cur/'
-    if vim.fn.isdirectory(maildir) == 1 then
-      local files = vim.fn.globpath(maildir, '*', 0, 1)
-      if #files > 0 then
-        return #files
-      end
-    end
-  end
-  
-  -- Last resort: fetch one page to get some idea
-  local emails, count = M.get_email_list(account, folder, 1, 30)
-  return count or 0
+  -- Default: use folder name as-is
+  return folder
 end
 
--- Send email with account context
-function M.send_email(account, email_data)
-  return M.send_email_raw(email_data, account)
+-- Fetch actual email count from himalaya
+-- This is the unified count function that should be used everywhere
+function M.fetch_folder_count(account, folder)
+  folder = folder or 'INBOX'
+  
+  -- For small folders, just get the exact count quickly
+  local args = { 'envelope', 'list' }
+  table.insert(args, '--page')
+  table.insert(args, '1')
+  table.insert(args, '--page-size')
+  table.insert(args, '1000')
+  table.insert(args, 'order by date desc')
+  
+  local result = M.execute_himalaya(args, { account = account, folder = folder })
+  if not result then
+    return 0
+  end
+  
+  -- If we got less than 1000, that's the exact count
+  if type(result) == 'table' and #result < 1000 then
+    return #result
+  end
+  
+  -- For larger folders, use binary search
+  local page_size = 100
+  local low = 1
+  local high = 50  -- Start with assumption of max 5000 emails
+  local last_valid_page = 1
+  local last_page_count = 0
+  
+  -- First, find a page that's out of bounds
+  args = { 'envelope', 'list' }
+  table.insert(args, '--page')
+  table.insert(args, tostring(high))
+  table.insert(args, '--page-size') 
+  table.insert(args, tostring(page_size))
+  table.insert(args, 'order by date desc')
+  
+  result = M.execute_himalaya(args, { account = account, folder = folder })
+  if result and type(result) == 'table' and #result > 0 then
+    -- Need to search higher
+    high = 100
+  end
+  
+  -- Binary search for the last valid page
+  while low <= high do
+    local mid = math.floor((low + high) / 2)
+    
+    args = { 'envelope', 'list' }
+    table.insert(args, '--page')
+    table.insert(args, tostring(mid))
+    table.insert(args, '--page-size')
+    table.insert(args, tostring(page_size))
+    table.insert(args, 'order by date desc')
+    
+    -- Suppress error output for out of bounds pages
+    local save_notify = vim.notify
+    vim.notify = function() end
+    result = M.execute_himalaya(args, { account = account, folder = folder })
+    vim.notify = save_notify
+    
+    if result and type(result) == 'table' and #result > 0 then
+      -- This page has emails
+      last_valid_page = mid
+      last_page_count = #result
+      
+      -- If this page is not full, it's the last page
+      if #result < page_size then
+        break
+      end
+      
+      low = mid + 1
+    else
+      -- This page is invalid/empty, search lower
+      high = mid - 1
+    end
+  end
+  
+  -- Calculate total count
+  local total = (last_valid_page - 1) * page_size + last_page_count
+  
+  -- Log final count
+  logger.debug(string.format('Count for %s: %d emails (pages: %d, last page: %d emails)', 
+    folder, total, last_valid_page, last_page_count))
+  
+  return total
+end
+
+-- DEPRECATED: Use M.send_email(account, email_data) defined above
+-- This function is kept for backward compatibility only
+function M.send_email_raw(email_data, account)
+  error("send_email_raw is deprecated. Use M.send_email(account, email_data) instead")
 end
 
 -- Format email data for sending
@@ -830,5 +890,6 @@ function M.get_email_info(email_id)
   
   return result
 end
+
 
 return M

@@ -36,7 +36,7 @@ function M.parse_progress(data)
   local progress = existing_progress or {
     status = 'syncing',
     -- Simplified progress tracking
-    current_folder = nil,
+    current_folder = state.get("sync.target_folder"),  -- Use target folder if known
     folders_done = 0,
     folders_total = 0,
     current_operation = 'Initializing',
@@ -51,7 +51,7 @@ function M.parse_progress(data)
     start_time = state.get("sync.start_time"),
   }
   
-  -- Track folders we've seen to avoid double counting
+  -- Track folders we've seen
   if not progress.seen_folders then
     progress.seen_folders = {}
   end
@@ -205,24 +205,8 @@ function M.parse_progress(data)
         found_any_progress = true
       end
       
-      -- Look for message counts in verbose output
-      -- mbsync shows summary lines like "master: 358 messages, 11 recent"
-      local master_total, master_recent = line:match('master:%s*(%d+)%s*messages?,%s*(%d+)%s*recent')
-      local slave_total, slave_recent = line:match('slave:%s*(%d+)%s*messages?,%s*(%d+)%s*recent')
-      
-      if master_total and slave_total and progress.current_folder then
-        local server_count = tonumber(master_total)
-        local local_count = tonumber(slave_total)
-        local to_download = math.max(0, server_count - local_count)
-        
-        -- If we're downloading messages, set up the total
-        if to_download > 0 and progress.current_operation == "Synchronizing" then
-          progress.messages_total = to_download
-          -- messages_processed will be updated by the N: counter
-          logger.debug(string.format('Messages to download for %s: %d', 
-            progress.current_folder, to_download))
-        end
-      end
+      -- Note: We no longer try to capture counts from mbsync output
+      -- as it's unreliable. Counts are updated after sync completes.
       
       -- Simplify operation tracking to most meaningful states
       if line:match('Connecting') then
@@ -241,6 +225,7 @@ function M.parse_progress(data)
         progress.current_operation = 'Cleaning up'
       end
       
+      
       -- Look for completion messages
       if line:match('channel.*complete') or line:match('mailbox.*complete') then
         -- Current folder is done
@@ -249,6 +234,7 @@ function M.parse_progress(data)
         end
         if progress.current_folder then
           progress.completed_folders[progress.current_folder] = true
+          logger.debug(string.format('Folder sync complete: %s', progress.current_folder))
         end
       end
       
@@ -321,10 +307,25 @@ function M.sync(channel, opts)
   -- Using -V for verbose mode to get operation status
   local cmd = lock.wrap_command({'mbsync', '-V', channel})
   
+  -- Determine which folder we're syncing based on channel name
+  local sync_folder = nil
+  if channel:match('inbox') then
+    sync_folder = 'INBOX'
+  elseif channel:match('drafts') then
+    sync_folder = 'Drafts'
+  elseif channel:match('sent') then
+    sync_folder = 'Sent'
+  elseif channel:match('trash') then
+    sync_folder = 'Trash'
+  elseif channel:match('spam') then
+    sync_folder = 'Spam'
+  end
+  
   -- Update state
   state.set("sync.status", "running")
   state.set("sync.start_time", os.time())
   state.set("sync.error_lines", nil)  -- Clear any previous error lines
+  state.set("sync.target_folder", sync_folder)  -- Store which folder we're syncing
   
   -- Start job with pty to get progress output
   M.current_job = vim.fn.jobstart(cmd, {
@@ -332,7 +333,7 @@ function M.sync(channel, opts)
     stdout_buffered = false,
     pty = true,  -- Use pseudo-terminal to get progress counters
     on_stdout = function(_, data)
-      -- Also check stdout for authentication errors
+      -- Check stdout for authentication errors
       if data and #data > 0 then
         for _, line in ipairs(data) do
           if line ~= '' then
@@ -366,9 +367,7 @@ function M.sync(channel, opts)
                   if success then
                     logger.info("OAuth token refreshed successfully, retrying sync...")
                     if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-                      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-                notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
-              end
+                      notify.himalaya('OAuth token refreshed! Retrying sync...', notify.categories.SUCCESS)
                     end
                     vim.defer_fn(function()
                       M.sync(channel, opts)
@@ -378,9 +377,7 @@ function M.sync(channel, opts)
                     -- Always show errors, but less intrusive
                     logger.error("OAuth refresh failed - sync will fail")
                     if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-                      if (notify.config.debug_mode or notify.config.modules.himalaya.debug_mode) then
-                notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
-              end
+                      notify.himalaya('Failed to refresh OAuth token. Run :HimalayaOAuthRefresh manually.', notify.categories.ERROR)
                     end
                     state.set("sync.last_error", "Authentication failed - OAuth refresh failed")
                     if opts.callback then
@@ -689,6 +686,11 @@ function M.check_new_emails(opts)
       new_messages = far_count - near_count
     end
     
+    -- Store the remote count for INBOX
+    if far_count > 0 then
+      state.set_folder_count(account, folder, far_count)
+    end
+    
     return {
       has_new = new_messages > 0,
       local_count = local_count,
@@ -780,6 +782,11 @@ function M.check_new_emails(opts)
         
         logger.debug(string.format("Check complete - near: %d, far: %d, new: %d", 
                                   near_count, far_count, new_messages))
+        
+        -- Store the remote count for the folder if we have it
+        if far_count > 0 then
+          state.set_folder_count(account, folder, far_count)
+        end
         
         opts.callback({
           has_new = new_messages > 0,

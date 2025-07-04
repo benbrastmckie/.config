@@ -10,7 +10,6 @@ local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
-local email_viewer = require('neotex.plugins.tools.himalaya.ui.email_viewer')
 local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 local notify = require('neotex.util.notifications')
@@ -36,7 +35,6 @@ function M.init()
   
   -- Initialize modules
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  email_viewer.setup(config.config)
   email_composer.setup(config.config)
   email_preview.setup(config.config)
   
@@ -90,20 +88,8 @@ function M.refresh_sidebar_header()
   return email_list.refresh_sidebar_header()
 end
 
--- Read specific email
-function M.read_email(email_id)
-  return email_viewer.view_email(email_id)
-end
 
--- Format email content for display
-function M.format_email_content(email_content)
-  return email_viewer.format_email_content(email_content)
-end
 
--- Process email body text and extract URLs
-function M.process_email_body(body_lines, urls)
-  return email_viewer.process_email_body(body_lines, urls)
-end
 
 -- Compose new email
 function M.compose_email(to_address)
@@ -270,18 +256,6 @@ function M.close_and_save_draft()
   end, 50)
 end
 
--- Read current email (from email list buffer)
-function M.read_current_email()
-  -- Get current email ID
-  local email_id = M.get_current_email_id()
-  if not email_id then
-    notify.himalaya('No email selected', notify.categories.ERROR)
-    return
-  end
-  
-  -- View email in buffer
-  email_viewer.view_email(email_id)
-end
 
 -- Helper function to get current email ID
 function M.get_current_email_id()
@@ -359,9 +333,6 @@ function M.close_current_view()
   local current_win = vim.api.nvim_get_current_win()
   local current_buf = vim.api.nvim_get_current_buf()
   
-  -- Check if we're closing an email reading buffer
-  local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
-  
   -- Try to close using window stack first
   if not window_stack.close_current() then
     -- If not in stack, close normally
@@ -438,7 +409,7 @@ function M.reply_current_email()
   else
     -- Get from current buffer
     local buf = vim.api.nvim_get_current_buf()
-    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    email_id = M.get_current_email_id()
   end
   
   if email_id then
@@ -468,7 +439,7 @@ function M.reply_all_current_email()
   else
     -- Get from current buffer
     local buf = vim.api.nvim_get_current_buf()
-    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    email_id = M.get_current_email_id()
   end
   
   if email_id then
@@ -514,7 +485,7 @@ function M.forward_current_email()
   else
     -- Get from current buffer
     local buf = vim.api.nvim_get_current_buf()
-    email_id = vim.b[buf].himalaya_email_id or M.get_current_email_id()
+    email_id = M.get_current_email_id()
   end
   
   if email_id then
@@ -589,6 +560,8 @@ function M._perform_sync(mbsync_target, display_name)
         
         notify.himalaya('Sync completed for ' .. display_name, notify.categories.USER_ACTION)
         
+        -- Count update is now handled by sync manager
+        
         if M.is_email_buffer_open() then
           M.refresh_email_list()
         end
@@ -641,7 +614,9 @@ function M.sync_current_folder()
       -- Fallback to general sync if no specific channel
       mbsync_target = 'gmail'
       display_name = 'all folders'
-      notify.himalaya('Note: No specific channel for ' .. folder .. ', syncing all folders', notify.categories.INFO)
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('Note: No specific channel for ' .. folder .. ', syncing all folders', notify.categories.INFO)
+      end
     end
   else
     -- For non-Gmail accounts, use account:folder format
@@ -686,13 +661,7 @@ end
 
 -- Delete current email
 function M.delete_current_email()
-  local buf = vim.api.nvim_get_current_buf()
-  local email_id = vim.b[buf].himalaya_email_id
-  
-  -- If no email_id in buffer variable, try to get it from cursor position (sidebar)
-  if not email_id then
-    email_id = M.get_current_email_id()
-  end
+  local email_id = M.get_current_email_id()
   
   if not email_id then
     notify.himalaya('No email to delete', notify.categories.STATUS)
@@ -704,14 +673,7 @@ function M.delete_current_email()
   if success then
     notify.himalaya('Email deleted successfully', notify.categories.STATUS)
     
-    -- Only close view if we're in an email reading buffer, not the sidebar
-    local current_buf = vim.api.nvim_get_current_buf()
-    local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
-    local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
-    
-    if is_email_buffer and not is_sidebar then
-      M.close_current_view()
-    end
+    -- Since emails are only viewed in preview now, no need to close any buffers
     
     -- Always refresh the list to show the deletion
     vim.defer_fn(function()
@@ -750,27 +712,21 @@ function M.handle_missing_trash_folder(email_id, suggested_folders)
   table.insert(options, 'Move to custom folder...')
   table.insert(options, 'Cancel')
   
-  local confirm = require('neotex.plugins.tools.himalaya.ui.confirm')
-  local choice = confirm.show({
-    title = 'Trash Folder Not Found',
-    message = 'How would you like to delete this email?',
-    options = options,
-    default = #options,  -- Default to Cancel
-  })
-  
-  if not choice then
-    return
-  end
-  
-  local selected_option = options[choice]
-  if selected_option == 'Permanently delete (cannot be undone)' then
-    M.permanent_delete_email(email_id)
-  elseif selected_option:match('^Move to ') then
-    local folder = selected_option:gsub('^Move to ', '')
-    M.move_email_to_folder(email_id, folder)
-  elseif selected_option == 'Move to custom folder...' then
-    M.prompt_custom_folder_move(email_id)
-  end
+  vim.ui.select(options, {
+    prompt = 'Trash Folder Not Found - How would you like to delete this email?',
+  }, function(selected_option, idx)
+    if not selected_option then
+      return
+    end
+    if selected_option == 'Permanently delete (cannot be undone)' then
+      M.permanent_delete_email(email_id)
+    elseif selected_option:match('^Move to ') then
+      local folder = selected_option:gsub('^Move to ', '')
+      M.move_email_to_folder(email_id, folder)
+    elseif selected_option == 'Move to custom folder...' then
+      M.prompt_custom_folder_move(email_id)
+    end
+  end)
 end
 
 -- Permanently delete email
@@ -826,13 +782,6 @@ function M.archive_current_email()
   -- First try get_current_email_id which handles preview_email_id
   email_id = M.get_current_email_id()
   
-  -- If that didn't work, try to get email ID based on current buffer type
-  if not email_id then
-    if vim.b[current_buf].himalaya_email_id then
-      -- We're in email reading buffer
-      email_id = vim.b[current_buf].himalaya_email_id
-    end
-  end
   
   if email_id then
     -- Try different archive folder names that might exist
@@ -861,12 +810,7 @@ function M.archive_current_email()
         
         -- Close email view if we're reading the email
         local current_buf = vim.api.nvim_get_current_buf()
-        local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
-        local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
-        
-        if is_email_buffer and not is_sidebar then
-          M.close_current_view()
-        end
+        -- Since emails are only viewed in preview now, no need to close any buffers
         
         -- Always refresh the sidebar to show the change
         vim.defer_fn(function()
@@ -907,13 +851,6 @@ end
 function M.spam_current_email()
   local email_id = M.get_current_email_id()
   
-  -- If that didn't work, try to get from buffer variable
-  if not email_id then
-    local current_buf = vim.api.nvim_get_current_buf()
-    if vim.b[current_buf].himalaya_email_id then
-      email_id = vim.b[current_buf].himalaya_email_id
-    end
-  end
   
   if email_id then
     -- Try different spam folder names that might exist
@@ -940,14 +877,7 @@ function M.spam_current_email()
       if success then
         notify.himalaya('Email marked as spam', notify.categories.STATUS)
         
-        -- Close email view if we're reading the email
-        local current_buf = vim.api.nvim_get_current_buf()
-        local is_email_buffer = vim.b[current_buf].himalaya_email_id ~= nil
-        local is_sidebar = vim.bo[current_buf].filetype == 'himalaya-list'
-        
-        if is_email_buffer and not is_sidebar then
-          M.close_current_view()
-        end
+        -- Since emails are only viewed in preview now, no need to close any buffers
         
         -- Always refresh the sidebar to show the change
         vim.defer_fn(function()
@@ -983,20 +913,8 @@ function M.search_emails(query)
   return email_list.search_emails(query)
 end
 
--- Show attachments
-function M.show_attachments(email_id)
-  return email_viewer.show_attachments(email_id)
-end
 
--- Open link under cursor
-function M.open_link_under_cursor()
-  return email_viewer.open_link_under_cursor()
-end
 
--- Open URL using system default browser
-function M.open_url(url)
-  return email_viewer.open_url(url)
-end
 
 -- Session restoration functions
 function M.can_restore_session()

@@ -82,7 +82,7 @@ local function format_email_template(opts)
   opts = opts or {}
   
   local account_name = state.get_current_account()
-  local from = opts.from or config.get_account_email(account_name) or ''
+  local from = opts.from or config.get_formatted_from(account_name) or ''
   
   local lines = {
     'From: ' .. from,

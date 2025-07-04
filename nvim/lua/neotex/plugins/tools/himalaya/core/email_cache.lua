@@ -289,6 +289,14 @@ function M.evict_old_entries(account, folder)
   })
 end
 
+-- Get email count for a folder
+function M.get_folder_count(account, folder)
+  if cache[account] and cache[account][folder] then
+    return vim.tbl_count(cache[account][folder])
+  end
+  return 0
+end
+
 -- Clear cache for a specific folder
 function M.clear_folder(account, folder)
   if cache[account] and cache[account][folder] then

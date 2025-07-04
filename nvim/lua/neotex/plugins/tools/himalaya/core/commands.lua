@@ -37,8 +37,7 @@ M.command_registry.HimalayaToggle = {
     if himalaya_win then
       -- Close the window
       vim.api.nvim_win_close(himalaya_win, true)
-      local notify = require('neotex.util.notifications')
-      notify.himalaya('Himalaya closed', notify.categories.USER_ACTION)
+      -- Removed noisy "Himalaya closed" notification
     else
       -- Open the sidebar
       local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -128,6 +127,197 @@ M.command_registry.HimalayaTrashStats = {
   end,
   opts = {
     desc = 'Show trash statistics'
+  }
+}
+
+M.command_registry.HimalayaUpdateCounts = {
+  fn = function()
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local notify = require('neotex.util.notifications')
+    
+    local account_name = config.get_current_account_name()
+    if not account_name then
+      notify.himalaya('No account configured', notify.categories.ERROR)
+      return
+    end
+    
+    notify.himalaya('Updating folder counts...', notify.categories.STATUS)
+    
+    -- Get list of folders
+    local folders = utils.get_folders(account_name)
+    if not folders then
+      notify.himalaya('Failed to get folder list', notify.categories.ERROR)
+      return
+    end
+    
+    -- Update count for each folder
+    local updated = 0
+    local results = {}
+    for _, folder in ipairs(folders) do
+      notify.himalaya(string.format('Counting %s...', folder), notify.categories.STATUS)
+      local count = utils.fetch_folder_count(account_name, folder)
+      if count and count > 0 then
+        state.set_folder_count(account_name, folder, count)
+        updated = updated + 1
+        table.insert(results, string.format('%s: %d', folder, count))
+      else
+        table.insert(results, string.format('%s: 0', folder))
+      end
+    end
+    
+    -- Show all results
+    notify.himalaya(string.format('Updated %d folder counts:\n%s', updated, table.concat(results, '\n')), notify.categories.SUCCESS)
+  end,
+  opts = {
+    desc = 'Update email counts for all folders'
+  }
+}
+
+M.command_registry.HimalayaDebugCount = {
+  fn = function(args)
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local notify = require('neotex.util.notifications')
+    
+    local folder = args.args or 'INBOX'
+    local account = config.get_current_account_name()
+    
+    notify.himalaya(string.format('Checking %s count for %s...', folder, account), notify.categories.STATUS)
+    
+    -- Test different page sizes to see what himalaya returns
+    local tests = {
+      { page = 1, size = 100 },
+      { page = 1, size = 500 },
+      { page = 1, size = 1000 },
+      { page = 2, size = 1000 },
+    }
+    
+    for _, test in ipairs(tests) do
+      local args = { 'envelope', 'list' }
+      table.insert(args, '--page')
+      table.insert(args, tostring(test.page))
+      table.insert(args, '--page-size')
+      table.insert(args, tostring(test.size))
+      table.insert(args, 'order by date desc')
+      
+      local result = utils.execute_himalaya(args, { account = account, folder = folder })
+      
+      if result and type(result) == 'table' then
+        notify.himalaya(string.format('Page %d (size %d): %d emails returned', 
+          test.page, test.size, #result), notify.categories.STATUS)
+      else
+        notify.himalaya(string.format('Page %d (size %d): no result', 
+          test.page, test.size), notify.categories.ERROR)
+      end
+    end
+    
+    -- Also do the binary search
+    local count = utils.fetch_folder_count(account, folder)
+    notify.himalaya(string.format('Binary search count: %s', tostring(count)), notify.categories.SUCCESS)
+  end,
+  opts = {
+    nargs = '?',
+    desc = 'Debug email count for a folder'
+  }
+}
+
+M.command_registry.HimalayaFolderCounts = {
+  fn = function()
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local notify = require('neotex.util.notifications')
+    
+    local account_name = config.get_current_account_name()
+    if not account_name then
+      notify.himalaya('No account configured', notify.categories.ERROR)
+      return
+    end
+    
+    local folder_counts = state.get_all_folder_counts(account_name)
+    
+    if not folder_counts or vim.tbl_isempty(folder_counts) then
+      notify.himalaya('No folder counts available. Run a sync first.', notify.categories.STATUS)
+      return
+    end
+    
+    -- Create a display buffer
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].buftype = 'nofile'
+    
+    -- Format the folder counts
+    local lines = {
+      string.format('󰊫 Email counts for %s', account_name),
+      string.rep('─', 40),
+      ''
+    }
+    
+    -- Sort folders for consistent display
+    local folders = {}
+    for folder, _ in pairs(folder_counts) do
+      table.insert(folders, folder)
+    end
+    table.sort(folders)
+    
+    -- Add each folder with its count
+    for _, folder in ipairs(folders) do
+      local count = folder_counts[folder]
+      local age = state.get_folder_count_age(account_name, folder)
+      local age_str = ''
+      if age then
+        if age < 60 then
+          age_str = string.format(' (updated %ds ago)', age)
+        elseif age < 3600 then
+          age_str = string.format(' (updated %dm ago)', math.floor(age / 60))
+        else
+          age_str = string.format(' (updated %dh ago)', math.floor(age / 3600))
+        end
+      end
+      
+      table.insert(lines, string.format('  %-20s %6d emails%s', folder, count, age_str))
+    end
+    
+    -- Calculate total
+    local total = 0
+    for _, count in pairs(folder_counts) do
+      total = total + count
+    end
+    
+    table.insert(lines, '')
+    table.insert(lines, string.rep('─', 40))
+    table.insert(lines, string.format('  %-20s %6d emails', 'TOTAL', total))
+    
+    -- Set buffer content
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    
+    -- Now make it non-modifiable
+    vim.bo[buf].modifiable = false
+    
+    -- Open in a floating window
+    local width = 50
+    local height = #lines + 2
+    local row = math.floor((vim.o.lines - height) / 2)
+    local col = math.floor((vim.o.columns - width) / 2)
+    
+    local win = vim.api.nvim_open_win(buf, true, {
+      relative = 'editor',
+      width = width,
+      height = height,
+      row = row,
+      col = col,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' Folder Email Counts ',
+      title_pos = 'center'
+    })
+    
+    -- Set up keymaps to close
+    vim.keymap.set('n', 'q', ':close<CR>', { buffer = buf, silent = true })
+    vim.keymap.set('n', '<Esc>', ':close<CR>', { buffer = buf, silent = true })
+  end,
+  opts = {
+    desc = 'Show email counts for all folders'
   }
 }
 

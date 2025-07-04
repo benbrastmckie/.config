@@ -260,6 +260,58 @@ function M.get_account_email(account_name)
   return nil
 end
 
+-- Get account display name from himalaya config
+function M.get_account_display_name(account_name)
+  account_name = account_name or M.current_account
+  local account = M.config.accounts[account_name]
+  
+  -- If display_name is already configured, return it
+  if account and account.display_name then
+    return account.display_name
+  end
+  
+  -- Try to read display-name from himalaya config file
+  local config_file = vim.fn.expand('~/.config/himalaya/config.toml')
+  if vim.fn.filereadable(config_file) == 1 then
+    local handle = io.open(config_file, 'r')
+    if handle then
+      local content = handle:read('*a')
+      handle:close()
+      
+      -- Look for the account section and display-name field
+      local pattern = '%[accounts%.' .. account_name .. '%].-display%-name%s*=%s*["\']([^"\']+)["\']'
+      local display_name = content:match(pattern)
+      
+      if display_name then
+        -- Cache the display name in the config
+        if account then
+          account.display_name = display_name
+        end
+        return display_name
+      end
+    end
+  end
+  
+  -- No display name found
+  return nil
+end
+
+-- Get formatted From header (with display name if available)
+function M.get_formatted_from(account_name)
+  account_name = account_name or M.current_account
+  local email = M.get_account_email(account_name)
+  if not email then
+    return ''
+  end
+  
+  local display_name = M.get_account_display_name(account_name)
+  if display_name then
+    return string.format('%s <%s>', display_name, email)
+  else
+    return email
+  end
+end
+
 -- Get current account name
 function M.get_current_account_name()
   return M.current_account
