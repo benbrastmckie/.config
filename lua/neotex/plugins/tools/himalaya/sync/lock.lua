@@ -43,7 +43,7 @@ function M.is_locked(channel)
   local lock_file = channel and M.get_lock_path(channel) or M.LOCK_DIR .. '/mbsync-global.lock'
   
   -- Try to acquire lock non-blocking
-  local cmd = string.format('flock -n %s -c "echo unlocked" 2>/dev/null', vim.fn.shellescape(lock_file))
+  local cmd = string.format('flock -n %s -c "exit 0" 2>/dev/null', vim.fn.shellescape(lock_file))
   local result = os.execute(cmd)
   
   -- If we can acquire the lock, it wasn't locked
@@ -111,7 +111,7 @@ function M.get_active_locks()
   local global_lock = M.LOCK_DIR .. '/mbsync-global.lock'
   if vim.fn.filereadable(global_lock) == 1 then
     -- Try to acquire it to see if it's stale
-    local cmd = string.format('flock -n %s -c "echo unlocked" 2>/dev/null', vim.fn.shellescape(global_lock))
+    local cmd = string.format('flock -n %s -c "exit 0" 2>/dev/null', vim.fn.shellescape(global_lock))
     if os.execute(cmd) ~= 0 then
       -- Lock is held
       table.insert(locks, 'global')

@@ -49,7 +49,7 @@ function M.toggle_email_sidebar()
       sidebar.state.is_open = false
       sidebar.state.win = nil
       sidebar.state.buf = nil
-      notify.himalaya('Himalaya closed', notify.categories.STATUS)
+      -- Removed noisy "Himalaya closed" notification
       return
     end
   end
@@ -124,8 +124,10 @@ function M.show_email_list(args)
   if display_name == 'gmail' then
     display_name = 'Gmail'
   end
+  -- No longer show count in header as it's shown in pagination
+  
   local loading_lines = {
-    string.format('󰊫 %s (%s)', display_name, folder),
+    string.format('󰊫 %s - %s', display_name, folder),
     '',
     '󰔟 Loading emails...',
     '',
@@ -136,7 +138,11 @@ function M.show_email_list(args)
   -- Load emails asynchronously to avoid blocking UI
   vim.defer_fn(function()
     local account_name = config.get_current_account_name()
+    
+    -- Get email list from himalaya
+    
     local emails, total_count = utils.get_email_list(account_name, folder, state.get_current_page(), state.get_page_size())
+    
     if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
       -- Check if this is a fresh/empty maildir
       local account = config.get_current_account()
@@ -161,7 +167,7 @@ function M.show_email_list(args)
           if not has_emails then
             -- Fresh maildir with no emails
             local empty_lines = {
-              string.format('󰊫 %s (%s)', display_name, folder),
+              string.format('󰊫 %s - %s', display_name, folder),
               '',
               '󰇯 Maildir is empty',
               '',
@@ -175,7 +181,7 @@ function M.show_email_list(args)
             total_count = 0
           else
             local error_lines = {
-              string.format('󰊫 %s (%s)', display_name, folder),
+              string.format('󰊫 %s - %s', display_name, folder),
               '',
               '󰅙 Failed to get email list',
               '',
@@ -195,7 +201,7 @@ function M.show_email_list(args)
           end
         else
           local error_lines = {
-            string.format('󰊫 %s (%s)', display_name, folder),
+            string.format('󰊫 %s - %s', display_name, folder),
             '',
             '󰅙 Mail directory not found',
             '',
@@ -222,13 +228,17 @@ function M.show_email_list(args)
       email_cache.store_emails(account_name, folder, emails)
     end
     
-    -- Store total count
-    if total_count then
+    -- Store total count and folder count
+    if total_count and total_count > 0 then
       state.set_total_emails(total_count)
-      -- Update cached count
-      local account = state.get_current_account()
-      local folder = state.get_current_folder()
-      state.set('email_counts.' .. account .. '.' .. folder, total_count)
+      
+      -- Only store as folder count if it's an exact count (not an estimate)
+      -- We have an exact count when we get less than a full page
+      local page_size = state.get_page_size()
+      if emails and #emails < page_size then
+        -- This is the exact total count, store it
+        state.set_folder_count(account_name, folder, total_count)
+      end
     end
     
     -- Format and display email list
@@ -310,29 +320,73 @@ function M.format_email_list(emails)
   
   local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
   
-  -- Get accurate email count
+  -- Get accurate email count from stored sync data
   local account = state.get_current_account()
   local folder = state.get_current_folder()
-  local total_emails = state.get('email_counts.' .. account .. '.' .. folder)
+  local total_emails = state.get_folder_count(account, folder)
   
-  -- If no cached count, get it
-  if not total_emails then
-    total_emails = utils.get_folder_email_count(account, folder)
-    -- Only cache if we got a valid count
-    if total_emails and total_emails > 0 then
-      state.set('email_counts.' .. account .. '.' .. folder, total_emails)
-    else
-      -- If we couldn't get the count, use the number of emails we have
-      total_emails = #emails
+  -- Debug: show what we found
+  local notify = require('neotex.util.notifications')
+  if notify.config.modules.himalaya.debug_mode and total_emails then
+    notify.himalaya(string.format('Found stored count: %s/%s = %d', 
+      account, folder, total_emails), notify.categories.BACKGROUND)
+  end
+  
+  -- If no stored count, use what we got from the email list
+  if not total_emails or total_emails == 0 then
+    total_emails = state.get_total_emails()
+    -- If still no count, check if we have a full page (might be more)
+    if not total_emails or total_emails == 0 then
+      local page_size = state.get_page_size()
+      if #emails >= page_size then
+        -- We have a full page, so there might be more
+        total_emails = nil  -- Will show as "?" or "30+" etc
+      else
+        total_emails = #emails
+      end
     end
   end
   
   local page_size = state.get_page_size()
   local current_page = state.get_current_page()
-  local total_pages = math.max(1, math.ceil(total_emails / page_size))
   
-  local pagination_info = string.format('Page %d / %d | %d emails', 
-    current_page, total_pages, total_emails)
+  local pagination_info
+  if total_emails then
+    -- We know the exact count
+    local total_pages = math.max(1, math.ceil(total_emails / page_size))
+    
+    -- Format count display with optional age indicator
+    local count_age = state.get_folder_count_age(account, folder)
+    local count_display
+    
+    if count_age and count_age > 600 then  -- Show age if older than 10 minutes
+      local age_str
+      if count_age < 3600 then
+        age_str = string.format('%dm ago', math.floor(count_age / 60))
+      elseif count_age < 86400 then
+        age_str = string.format('%dh ago', math.floor(count_age / 3600))
+      else
+        age_str = string.format('%dd ago', math.floor(count_age / 86400))
+      end
+      count_display = string.format('%d emails (%s)', total_emails, age_str)
+    else
+      count_display = string.format('%d emails', total_emails)
+    end
+    
+    pagination_info = string.format('Page %d / %d | %s', 
+      current_page, total_pages, count_display)
+  else
+    -- We don't know the exact count
+    if #emails >= page_size then
+      -- Full page, might be more
+      pagination_info = string.format('Page %d / ? | %d+ emails', 
+        current_page, current_page * page_size)
+    else
+      -- Less than a page, this is all
+      pagination_info = string.format('Page %d / %d | %d emails', 
+        current_page, current_page, #emails)
+    end
+  end
   
   -- Remove selection info display
   
@@ -504,7 +558,7 @@ function M.get_sync_status_line_detailed()
           progress.folders_done or 0, progress.folders_total)
       end
     elseif progress.folders_total and progress.folders_total > 0 then
-      message = message .. string.format(": %d/%d folders", 
+      message = message .. string.format(": %d/%d Folders", 
         progress.folders_done or 0, progress.folders_total)
     end
     
@@ -620,8 +674,58 @@ function M.refresh_sidebar_header()
   local account_display = account_name:sub(1,1):upper() .. account_name:sub(2):lower()
   
   local header = string.format('Himalaya - %s - %s', account_display, folder_name)
-  local pagination_info = string.format('Page %d | %d emails', 
-    state.get_current_page(), state.get_total_emails())
+  
+  -- Get email count from stored sync data
+  local total_emails = state.get_folder_count(account_name, folder_name)
+  if not total_emails or total_emails == 0 then
+    -- Fallback to stored total
+    total_emails = state.get_total_emails()
+    if not total_emails or total_emails == 0 then
+      -- Last resort - show we don't know
+      total_emails = nil
+    end
+  end
+  
+  local page_size = state.get_page_size()
+  local current_page = state.get_current_page()
+  
+  local pagination_info
+  if total_emails then
+    -- We know the exact count
+    local total_pages = math.max(1, math.ceil(total_emails / page_size))
+    
+    -- Format count display with optional age indicator
+    local count_age = state.get_folder_count_age(account, folder)
+    local count_display
+    
+    if count_age and count_age > 600 then  -- Show age if older than 10 minutes
+      local age_str
+      if count_age < 3600 then
+        age_str = string.format('%dm ago', math.floor(count_age / 60))
+      elseif count_age < 86400 then
+        age_str = string.format('%dh ago', math.floor(count_age / 3600))
+      else
+        age_str = string.format('%dd ago', math.floor(count_age / 86400))
+      end
+      count_display = string.format('%d emails (%s)', total_emails, age_str)
+    else
+      count_display = string.format('%d emails', total_emails)
+    end
+    
+    pagination_info = string.format('Page %d / %d | %s', 
+      current_page, total_pages, count_display)
+  else
+    -- We don't know the exact count
+    if #emails >= page_size then
+      -- Full page, might be more
+      pagination_info = string.format('Page %d / ? | %d+ emails', 
+        current_page, current_page * page_size)
+    else
+      -- Less than a page, this is all
+      pagination_info = string.format('Page %d / %d | %d emails', 
+        current_page, current_page, #emails)
+    end
+  end
   
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
@@ -688,6 +792,8 @@ function M.refresh_email_list()
     
     local folder = state.get_current_folder()
     
+    -- Get email list from himalaya
+    
     -- Get updated email list
     local emails, total_count = utils.get_email_list(
       account_name,
@@ -701,8 +807,14 @@ function M.refresh_email_list()
       email_cache.store_emails(account_name, folder, emails)
       
       -- Store total count
-      if total_count then
+      if total_count and total_count > 0 then
         state.set_total_emails(total_count)
+        
+        -- Only store as folder count if it's an exact count
+        local page_size = state.get_page_size()
+        if emails and #emails < page_size then
+          state.set_folder_count(account_name, folder, total_count)
+        end
       end
       
       -- Update stored email data in state instead of buffer variables

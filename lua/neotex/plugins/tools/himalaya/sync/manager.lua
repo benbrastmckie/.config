@@ -60,6 +60,11 @@ function M.complete_sync(sync_type, result)
   -- Update history
   M.update_history(sync_type, result)
   
+  -- Update folder counts if sync was successful
+  if result.success then
+    M.update_folder_counts()
+  end
+  
   -- Notify UI immediately
   M.notify_ui_update()
   
@@ -77,7 +82,7 @@ end
 -- Get human-readable status message
 function M.get_status_message(sync_type)
   if sync_type == 'full' then
-    return '⟳ Syncing emails...'
+    return '⟳ Sync'
   end
   return nil
 end
@@ -146,6 +151,49 @@ end
 -- Get sync history
 function M.get_history()
   return state.get('sync.history', {})
+end
+
+-- Update folder counts after successful sync
+-- Update folder counts after sync completion
+-- This is the single source of truth for updating counts automatically
+function M.update_folder_counts()
+  -- Update counts immediately for responsiveness
+  local current_account = state.get('ui.current_account')
+  local current_folder = state.get('ui.current_folder')
+  
+  -- If we captured counts during sync, save them immediately
+  local progress = state.get('sync.progress')
+  if progress and progress.folder_counts then
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local account = config.get_current_account_name()
+    
+    if account then
+      for folder, count in pairs(progress.folder_counts) do
+        if count > 0 then
+          state.set_folder_count(account, folder, count)
+          logger.debug(string.format('Stored sync-captured count: %s/%s = %d', 
+            account, folder, count))
+        end
+      end
+    end
+  end
+  
+  -- Fetch the actual count with a minimal delay for file operations to complete
+  vim.defer_fn(function()
+    if current_account and current_folder then
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      local count = utils.fetch_folder_count(current_account, current_folder)
+      
+      if count and count > 0 then
+        state.set_folder_count(current_account, current_folder, count)
+        logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
+          current_account, current_folder, count))
+        
+        -- Trigger UI update immediately
+        M.notify_ui_update()
+      end
+    end
+  end, 100)  -- Minimal 100ms delay just for file operations
 end
 
 -- Clear sync state (for testing/debugging)
