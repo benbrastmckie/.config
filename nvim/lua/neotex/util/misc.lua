@@ -186,19 +186,6 @@ function M.copy_error_to_clipboard(error_msg)
   notify.editor('Error copied to clipboard', notify.categories.USER_ACTION)
 end
 
--- Simple confirmation prompt
-function M.confirm(message, default_no)
-  -- Use vim.fn.confirm which is simple and reliable
-  local options = default_no and "&No\n&Yes" or "&Yes\n&No"
-  local default = default_no and 1 or 1
-  local choice = vim.fn.confirm(message, options, default, "Question")
-  
-  if default_no then
-    return choice == 2  -- Yes is second option
-  else
-    return choice == 1  -- Yes is first option
-  end
-end
 
 -- Set up misc utilities
 function M.setup()

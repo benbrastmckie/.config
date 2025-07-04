@@ -110,18 +110,28 @@ return {
             local node = tree:get_node()
             if node.type == "file" or node.type == "directory" then
               local filename = node.name
-              local msg = "Delete " .. filename .. "? (Enter=yes, any text=no): "
-
-              -- Custom input that treats empty input as confirmation
-              local input = vim.fn.input(msg)
-
-              -- Empty input (just pressed Enter) or explicit 'y' confirms deletion
-              if input == "" or input:lower() == "y" then
-                local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
-                fs_actions.delete_node(node.path, function()
-                  require("neo-tree.sources.manager").refresh("filesystem")
-                end, true) -- noconfirm = true (skip neo-tree's own confirmation)
-              end
+              local item_type = node.type == "directory" and "directory" or "file"
+              local icon = node.type == "directory" and "" or ""
+              local prompt = string.format(" Delete %s \"%s\"?", item_type, filename)
+              
+              vim.ui.select({"No", "Yes"}, {
+                prompt = prompt,
+                kind = "confirmation",
+                format_item = function(item)
+                  if item == "Yes" then
+                    return " " .. item  -- Check mark
+                  else
+                    return " " .. item  -- X mark
+                  end
+                end,
+              }, function(choice)
+                if choice == "Yes" then
+                  local fs_actions = require("neo-tree.sources.filesystem.lib.fs_actions")
+                  fs_actions.delete_node(node.path, function()
+                    require("neo-tree.sources.manager").refresh("filesystem")
+                  end, true)
+                end
+              end)
             end
           end,
           ["r"] = "rename",

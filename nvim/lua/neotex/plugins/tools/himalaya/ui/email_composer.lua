@@ -441,35 +441,48 @@ function M.send_email(buf)
   end
   
   -- Show confirmation
-  local misc = require('neotex.util.misc')
-  if not misc.confirm('Send email to ' .. email.to .. '?', false) then
-    return
-  end
+  local prompt = string.format(" Send email to %s?", email.to)
   
-  -- Send email
-  notify.himalaya('Sending email...', notify.categories.STATUS)
-  
-  local ok, result = pcall(utils.send_email, draft_info.account, email)
-  
-  if ok and result then
-    notify.himalaya('Email sent successfully', notify.categories.USER_ACTION)
-    
-    -- Delete draft if configured
-    if M.config.delete_draft_on_send then
-      -- Delete file
-      vim.fn.delete(draft_info.file)
-      
-      -- Delete from maildir
-      if draft_info.draft_id then
-        delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
       end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
     end
     
-    -- Close buffer
-    vim.api.nvim_buf_delete(buf, { force = true })
-  else
-    notify.himalaya('Failed to send email: ' .. tostring(result), notify.categories.ERROR)
-  end
+    -- Send email
+    notify.himalaya('Sending email...', notify.categories.STATUS)
+    
+    local ok, result = pcall(utils.send_email, draft_info.account, email)
+    
+    if ok and result then
+      notify.himalaya('Email sent successfully', notify.categories.USER_ACTION)
+      
+      -- Delete draft if configured
+      if M.config.delete_draft_on_send then
+        -- Delete file
+        vim.fn.delete(draft_info.file)
+        
+        -- Delete from maildir
+        if draft_info.draft_id then
+          delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+        end
+      end
+      
+      -- Close buffer
+      vim.api.nvim_buf_delete(buf, { force = true })
+    else
+      notify.himalaya('Failed to send email: ' .. tostring(result), notify.categories.ERROR)
+    end
+  end)
 end
 
 -- Discard email with modern confirmation dialog
@@ -484,64 +497,76 @@ function M.discard_email(buf)
     return
   end
   
-  -- Use simple confirmation prompt
-  local misc = require('neotex.util.misc')
+  -- Use async confirmation prompt
   local modified = vim.api.nvim_buf_get_option(buf, 'modified')
-  local message = modified and 'Discard unsaved email draft?' or 'Discard email draft?'
+  local message = modified and 'unsaved email draft' or 'email draft'
+  local prompt = string.format(" Discard %s?", message)
   
-  if not misc.confirm(message, true) then
-    -- User cancelled or pressed Escape
-    return
-  end
-  
-  -- User pressed 'y', proceed with discard
-  -- Stop autosave
-  if autosave_timers[buf] then
-    vim.loop.timer_stop(autosave_timers[buf])
-    autosave_timers[buf] = nil
-  end
-  
-  -- Delete draft file
-  vim.fn.delete(draft_info.file)
-  
-  -- Delete from maildir
-  if draft_info.draft_id then
-    delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
-  end
-  
-  -- Switch to alternate buffer before deleting (like :bd behavior)
-  -- This prevents the sidebar from going full screen
-  local current_win = vim.api.nvim_get_current_win()
-  
-  -- Get list of all buffers
-  local buffers = vim.api.nvim_list_bufs()
-  local alternate_buf = nil
-  
-  -- Find a suitable buffer to switch to
-  for _, b in ipairs(buffers) do
-    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
-      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
-      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
-      -- Skip special buffers like the sidebar
-      if buftype == '' and not filetype:match('^himalaya%-') then
-        alternate_buf = b
-        break
+  vim.ui.select({"No", "Yes"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      -- User cancelled
+      return
+    end
+    
+    -- User selected Yes, proceed with discard
+    -- Stop autosave
+    if autosave_timers[buf] then
+      vim.loop.timer_stop(autosave_timers[buf])
+      autosave_timers[buf] = nil
+    end
+    
+    -- Delete draft file
+    vim.fn.delete(draft_info.file)
+    
+    -- Delete from maildir
+    if draft_info.draft_id then
+      delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+    end
+    
+    -- Switch to alternate buffer before deleting (like :bd behavior)
+    -- This prevents the sidebar from going full screen
+    local current_win = vim.api.nvim_get_current_win()
+    
+    -- Get list of all buffers
+    local buffers = vim.api.nvim_list_bufs()
+    local alternate_buf = nil
+    
+    -- Find a suitable buffer to switch to
+    for _, b in ipairs(buffers) do
+      if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+        local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+        local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+        -- Skip special buffers like the sidebar
+        if buftype == '' and not filetype:match('^himalaya%-') then
+          alternate_buf = b
+          break
+        end
       end
     end
-  end
+    
+    -- If no alternate buffer found, create a new empty one
+    if not alternate_buf then
+      alternate_buf = vim.api.nvim_create_buf(true, false)
+    end
+    
+    -- Switch to the alternate buffer first
+    vim.api.nvim_win_set_buf(current_win, alternate_buf)
+    
+    -- Now delete the draft buffer
+    vim.api.nvim_buf_delete(buf, { force = true })
   
-  -- If no alternate buffer found, create a new empty one
-  if not alternate_buf then
-    alternate_buf = vim.api.nvim_create_buf(true, false)
-  end
-  
-  -- Switch to the alternate buffer first
-  vim.api.nvim_win_set_buf(current_win, alternate_buf)
-  
-  -- Now delete the draft buffer
-  vim.api.nvim_buf_delete(buf, { force = true })
-  
-  notify.himalaya('Email discarded', notify.categories.STATUS)
+    notify.himalaya('Email discarded', notify.categories.STATUS)
+  end)
 end
 
 -- Check if buffer is a compose buffer
