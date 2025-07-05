@@ -1,4 +1,10 @@
 -- Buffer-based email composition with auto-save
+-- TODO: Add attachment support for composition
+-- TODO: Implement address book integration and auto-completion
+-- TODO: Add email templates and signatures management
+-- TODO: Implement spell checking and grammar checking integration
+-- TODO: Add email encryption support (PGP/GPG)
+
 local M = {}
 
 -- Dependencies

@@ -1,6 +1,11 @@
 -- State management module
 -- Centralized state tracking for the Himalaya plugin
 
+-- TODO: Add state migration for config format changes
+-- TODO: Implement state cleanup for old/stale entries
+-- TODO: Add validation for state values to prevent corruption
+-- TODO: Consider compressing state file for large email lists
+
 local M = {}
 
 -- State storage

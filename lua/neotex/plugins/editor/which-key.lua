@@ -156,18 +156,19 @@ LATEX (<leader>l)                               | DESCRIPTION
 MAIL (<leader>m)                                | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>mo - Toggle sidebar                     | Open/close Himalaya email sidebar
-<leader>mu - Update inbox                       | Sync inbox with server
-<leader>mU - Update all folders                 | Sync all email folders
-<leader>mc - Compose email                      | Write a new email
-<leader>ms - Send email                         | Send current compose buffer
+<leader>ms - Sync inbox                         | Sync inbox with server  
+<leader>mS - Full sync                          | Sync all email folders
+<leader>mw - Write email                        | Compose a new email
+<leader>me - Send email                         | Send current compose buffer
 <leader>md - Save draft                         | Save email as draft and close
 <leader>mD - Discard email                      | Discard compose buffer without saving
 <leader>mW - Setup wizard                       | Run Himalaya setup wizard
 <leader>mx - Cancel all syncs                   | Stop all running sync processes
 <leader>mh - Health check                       | Show Himalaya health status
-<leader>mi - Sync status                        | Show detailed sync information
+<leader>mi - Sync status                        | Show detailed sync & auto-sync information
 <leader>mf - Change folder                      | Switch to different email folder
 <leader>ma - Switch account                     | Change email account
+<leader>mt - Toggle auto-sync                   | Enable/disable automatic inbox syncing (15min)
 
 ----------------------------------------------------------------------------------
 NIXOS (<leader>n)                               | DESCRIPTION
@@ -560,9 +561,11 @@ return {
       { "<leader>mi", "<cmd>HimalayaSyncInfo<CR>", desc = "sync status", icon = "󰋼" },
       { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
       { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
+      -- Auto-sync commands  
+      { "<leader>mt", "<cmd>HimalayaAutoSyncToggle<CR>", desc = "toggle auto-sync", icon = "󰑖" },
       -- { "<leader>mO", "<cmd>HimalayaRefreshOAuth<CR>", desc = "refresh OAuth", icon = "󰌆" },
-      -- { "<leader>mt", "<cmd>HimalayaTrash<CR>", desc = "view trash", icon = "󰩺" },
-      -- { "<leader>mT", "<cmd>HimalayaTrashStats<CR>", desc = "trash stats", icon = "󰊢" },
+      -- { "<leader>mr", "<cmd>HimalayaTrash<CR>", desc = "view trash", icon = "󰩺" },
+      -- { "<leader>mR", "<cmd>HimalayaTrashStats<CR>", desc = "trash stats", icon = "󰊢" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
     })
 

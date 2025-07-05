@@ -7,6 +7,12 @@
 -- 3. Counts are automatically updated after sync by sync/manager.lua
 -- 4. UI displays counts from state.get_folder_count() with age indicator
 
+-- TODO: Add email caching with TTL and LRU eviction
+-- TODO: Implement parallel email fetching for better performance
+-- TODO: Add email search and filtering utilities
+-- TODO: Implement email attachment handling utilities
+-- TODO: Add email validation and sanitization functions
+
 local M = {}
 
 local config = require('neotex.plugins.tools.himalaya.core.config')

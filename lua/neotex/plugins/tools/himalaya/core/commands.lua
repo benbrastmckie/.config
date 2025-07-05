@@ -1,6 +1,10 @@
 -- Himalaya Command Registry
 -- Centralized command definitions for the Himalaya email plugin
 
+-- TODO: Split command registry by functionality (UI, email, sync, setup) for better organization
+-- TODO: Add command validation and error handling for malformed arguments
+-- TODO: Implement command help system with usage examples
+
 local M = {}
 
 -- Command registry containing all command definitions
@@ -576,6 +580,7 @@ M.command_registry.HimalayaSyncInfo = {
     local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
     local lock = require('neotex.plugins.tools.himalaya.sync.lock')
     local state = require('neotex.plugins.tools.himalaya.core.state')
+    local config = require('neotex.plugins.tools.himalaya.core.config')
     
     -- Helper function to format time ago
     local function format_time_ago(timestamp)
@@ -597,6 +602,11 @@ M.command_registry.HimalayaSyncInfo = {
     -- Get current sync info from unified manager
     local sync_info = sync_manager.get_sync_info()
     local history = sync_manager.get_history()
+    
+    -- Get auto-sync status
+    local is_auto_sync_running = sync_manager.is_auto_sync_running()
+    local is_auto_sync_enabled = config.get('ui.auto_sync_enabled', true)
+    local auto_sync_interval = config.get('ui.auto_sync_interval', 15 * 60)
     
     -- Get old status for process detection
     local status = mbsync.get_status()
@@ -672,6 +682,13 @@ M.command_registry.HimalayaSyncInfo = {
       end
       table.insert(lines, '  • Message: ' .. error_msg)
     end
+    
+    -- Auto-sync status
+    table.insert(lines, '')
+    table.insert(lines, ' Auto-Sync Status:')
+    table.insert(lines, '  • Configured: ' .. (is_auto_sync_enabled and 'enabled' or 'disabled'))
+    table.insert(lines, '  • Running: ' .. (is_auto_sync_running and 'YES' or 'NO'))
+    table.insert(lines, '  • Interval: ' .. math.floor(auto_sync_interval / 60) .. ' minutes')
     
     table.insert(lines, '')
     table.insert(lines, ' Process Information:')
@@ -762,6 +779,26 @@ M.command_registry.HimalayaSyncInfo = {
     desc = 'Show detailed sync status'
   }
 }
+
+-- Auto-sync Commands
+M.command_registry.HimalayaAutoSyncToggle = {
+  fn = function()
+    local manager = require('neotex.plugins.tools.himalaya.sync.manager')
+    local notify = require('neotex.util.notifications')
+    
+    if manager.is_auto_sync_running() then
+      manager.stop_auto_sync()
+      notify.himalaya('Auto-sync stopped', notify.categories.USER_ACTION)
+    else
+      manager.start_auto_sync()
+      notify.himalaya('Auto-sync started (every 15 minutes)', notify.categories.USER_ACTION)
+    end
+  end,
+  opts = {
+    desc = 'Toggle automatic inbox syncing'
+  }
+}
+
 
 -- Setup/Maintenance Commands
 M.command_registry.HimalayaSetup = {

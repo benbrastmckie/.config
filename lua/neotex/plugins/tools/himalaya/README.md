@@ -45,6 +45,7 @@ The plugin follows a clean layered architecture:
 
 ### Synchronization
 - **Unified Sync Management**: Single coordinator for all sync operations
+- **Automatic Sync**: Keep inbox synced every 15 minutes (starts 2s after Neovim)
 - **Progress Tracking**: Real-time progress updates with elapsed time
 - **Error Recovery**: Automatic UIDVALIDITY conflict resolution
 - **Process Locking**: Prevents concurrent sync operations
@@ -85,12 +86,16 @@ The plugin recently underwent comprehensive refactoring:
 - `:HimalayaSyncFull` - Full synchronization
 - `:HimalayaCancelSync` - Cancel running sync
 
+### Automatic Synchronization
+- `:HimalayaAutoSyncToggle` - Toggle automatic inbox syncing (every 15 minutes)
+
 ### Setup and Maintenance
 - `:HimalayaSetup` - Run setup wizard
 - `:HimalayaHealth` - Check system health
 - `:HimalayaFixUID` - Fix UIDVALIDITY issues
 
 ### Debugging
+- `:HimalayaSyncInfo` - Show detailed sync status (includes auto-sync information)
 - `:HimalayaDebug` - Show debug information
 - `:HimalayaDebugJson` - Test JSON parsing
 - `:checkhealth himalaya` - Neovim health check
@@ -115,14 +120,45 @@ Basic configuration via lazy.nvim:
           maildir_path = "~/Mail/gmail"
         }
       },
-      keymaps = {
-        toggle = "<leader>mh",
-        compose = "<leader>mc"
-      }
+      ui = {
+        auto_sync_enabled = true,        -- Enable automatic inbox syncing
+        auto_sync_interval = 15 * 60,    -- Sync every 15 minutes
+        auto_sync_startup_delay = 2,     -- Start 2 seconds after Neovim
+      },
+      -- Keymaps are defined in which-key.lua under <leader>m
+      -- See which-key.lua for complete keybinding reference
     })
   end
 }
 ```
+
+## Keybindings
+
+All keybindings are defined under `<leader>m` and configured in `which-key.lua`:
+
+### Core Operations
+- `<leader>mo` - Toggle email sidebar
+- `<leader>ms` - Sync inbox  
+- `<leader>mS` - Full sync (all folders)
+- `<leader>mw` - Write/compose new email
+- `<leader>mf` - Change folder
+- `<leader>ma` - Switch account
+
+### Auto-Sync Controls
+- `<leader>mt` - Toggle auto-sync (every 15 minutes)
+
+### Email Management
+- `<leader>me` - Send email (compose buffer)
+- `<leader>md` - Save draft (compose buffer)
+- `<leader>mD` - Discard email (compose buffer)
+
+### System & Debugging
+- `<leader>mh` - Health check
+- `<leader>mi` - Sync status (includes auto-sync information)
+- `<leader>mx` - Cancel running syncs
+- `<leader>mW` - Setup wizard
+
+See `which-key.lua` for complete keybinding reference and buffer-specific mappings.
 
 ## Requirements
 
