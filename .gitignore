@@ -77,7 +77,7 @@ Signal
 **/CLAUDE.md
 **/.claude/
 **/specs/
-**/spec/
+# **/spec/
 nvim/test.tex
 himalaya/config.toml
 himalaya/config.toml.bak

@@ -76,13 +76,14 @@
   - [x] change "From: benbrastmckie <benbrastmckie@gmail.com>" when emails are composed to "From: Benjamin Brast-McKie <benbrastmckie@gmail.com>"
   - [x] why vimscript: /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/after/syntax/mail.vim
 
-## REFINE REFACTOR
+## REFINE REFACTORS
 
 - [x] technical debt
   - [x] update documentation, adding TODOs to mark cruft or areas that could be improved
   - [x] update FEATURES_SPEC.md
   - [x] gather TODOs throughout himalaya/
   - [x] generate refine spec TECH_DEBT.md
+  - [ ] integrate with notification system
   - [ ] refactor
 - [ ] Phase 6: Critical Functionality Testing
   - [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
@@ -93,6 +94,16 @@
   - [ ] Post-refactor performance comparison
 
 ## FUTURE FEATURES
+
+- email management features
+  - create spec file
+  - move sections from TECH_DEBT.md
+- code quality improvements
+  - create spec file
+  - move sections from TECH_DEBT.md
+- developer experience
+  - create spec file
+  - move sections from TECH_DEBT.md
 
 All planned new features are documented in `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md` including:
 
