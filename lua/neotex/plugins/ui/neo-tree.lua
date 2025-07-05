@@ -114,7 +114,7 @@ return {
               local icon = node.type == "directory" and "" or ""
               local prompt = string.format(" Delete %s \"%s\"?", item_type, filename)
               
-              vim.ui.select({"No", "Yes"}, {
+              vim.ui.select({"Yes", "No"}, {
                 prompt = prompt,
                 kind = "confirmation",
                 format_item = function(item)

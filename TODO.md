@@ -41,6 +41,7 @@
     - [.] mcp
     - [x] switch to https://github.com/coder/claudecode.nvim
   - [ ] avante
+  - [ ] fix mappings in visual mode
     - [x] debug
     - [x] get mcp tools working
     - [x] reduce messages

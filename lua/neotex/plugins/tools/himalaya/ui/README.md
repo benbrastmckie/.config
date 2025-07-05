@@ -33,6 +33,9 @@ Key functions:
 ### email_list.lua
 Email list display and management in sidebar format:
 - Paginated email list with real-time sync status
+- **Smart page filling**: Automatically maintains 25 emails per page after deletions
+- **Fast email selection**: `n`/`N` keys use visual updates without server calls
+- **Batch selection clearing**: `Esc` key clears all selections instantly
 - Email selection and batch operations
 - Folder switching and account switching
 - Sync progress display with elapsed time tracking
@@ -43,7 +46,8 @@ Key functions:
 - `show_email_list(args)` - Display email list for folder/account
 - `format_email_list(emails)` - Format emails for display
 - `toggle_email_sidebar()` - Toggle sidebar visibility
-- `refresh_email_list()` - Refresh current view
+- `refresh_email_list()` - Refresh current view with smart page filling
+- `update_selection_display()` - Fast visual-only selection updates
 - Navigation: `next_page()`, `prev_page()`, `pick_folder()`
 
 ### email_preview.lua

@@ -418,11 +418,27 @@ function M.setup_buffer_keymaps(bufnr)
     
     -- ESC to exit preview mode
     keymap('n', '<Esc>', function()
+      local state = require('neotex.plugins.tools.himalaya.core.state')
       local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-      if preview.is_preview_mode() then
+      local notify = require('neotex.util.notifications')
+      
+      -- Check if we have selections first
+      local selection_count = state.get_selection_count()
+      if selection_count > 0 then
+        -- Clear all selections
+        state.clear_selection()
+        
+        -- Fast update display to show cleared selections
+        local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+        email_list.update_selection_display()
+        
+        -- Show feedback
+        notify.himalaya(string.format('Cleared %d selections', selection_count), notify.categories.STATUS)
+      elseif preview.is_preview_mode() then
+        -- No selections, handle preview mode
         preview.disable_preview_mode()
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Exit preview mode' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Clear selections / Exit preview mode' }))
     
     -- Removed 'c' mapping - use 'gw' to compose/write email
     -- Removed 'r' mapping - use 'gs' for sync which includes refresh
@@ -602,8 +618,9 @@ function M.setup_buffer_keymaps(bufnr)
           -- Toggle selection on current line
           state.toggle_email_selection(email_id, email)
           
-          -- Refresh to show the selection change
-          main.refresh_email_list()
+          -- Fast update display (no server calls)
+          local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+          email_list.update_selection_display()
           
           -- Move cursor down after selection
           vim.schedule(function()
@@ -639,8 +656,9 @@ function M.setup_buffer_keymaps(bufnr)
           -- Toggle selection on current line
           state.toggle_email_selection(email_id, email)
           
-          -- Refresh to show the selection change
-          main.refresh_email_list()
+          -- Fast update display (no server calls)
+          local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+          email_list.update_selection_display()
           
           -- Move cursor up after selection
           vim.schedule(function()
@@ -661,7 +679,7 @@ function M.setup_buffer_keymaps(bufnr)
         'Navigation:',
         '  j/k       - Move up/down',
         '  <CR>      - Enable preview mode / Focus preview',
-        '  <Esc>     - Exit preview mode',
+        '  <Esc>     - Clear selections / Exit preview mode',
         '  q         - Close Himalaya',
         '  gs        - Sync current folder',
         '  gn/gp     - Next/previous page',
@@ -669,6 +687,7 @@ function M.setup_buffer_keymaps(bufnr)
         'Selection:',
         '  n         - Select/deselect email and move down',
         '  N         - Select/deselect email and move up',
+        '  <Esc>     - Clear all selections (or exit preview mode)',
         '',
         'Email Actions:',
         '  gw        - Write new email',
