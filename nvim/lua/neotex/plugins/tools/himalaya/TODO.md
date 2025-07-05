@@ -78,10 +78,12 @@
 
 ## REFINE REFACTOR
 
-- [ ] prepare refactor
-  - [ ] update documentation, adding TODOs to mark cruft or areas that could be improved
-  - [ ] gather TODOs throughout himalaya
-  - [ ] generate refine spec
+- [x] technical debt
+  - [x] update documentation, adding TODOs to mark cruft or areas that could be improved
+  - [x] update FEATURES_SPEC.md
+  - [x] gather TODOs throughout himalaya/
+  - [x] generate refine spec TECH_DEBT.md
+  - [ ] refactor
 - [ ] Phase 6: Critical Functionality Testing
   - [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
   - [ ] State Persistence Testing

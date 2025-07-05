@@ -1,6 +1,12 @@
 -- Himalaya Email List UI Module
 -- Handles email list display, formatting, and navigation
 
+-- TODO: Add email search and filtering within the list
+-- TODO: Implement email threading/conversation view
+-- TODO: Add email sorting options (date, subject, sender, size)
+-- TODO: Implement virtual scrolling for large email lists
+-- TODO: Add email archiving with visual feedback
+
 local M = {}
 
 -- Dependencies

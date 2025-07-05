@@ -1,6 +1,11 @@
 -- Unified sync manager for all sync operations
 -- Handles both full sync (mbsync) and fast check (himalaya)
 
+-- TODO: Add sync queue for managing multiple sync requests
+-- TODO: Implement sync retry logic with exponential backoff
+-- TODO: Add sync operation cancellation support
+-- TODO: Implement sync scheduling and automatic sync intervals
+
 local M = {}
 
 -- Dependencies
@@ -205,6 +210,83 @@ function M.clear_sync_state()
   state.set('sync.end_time', nil)
   state.set('sync.full', {})
   M.notify_ui_update()
+end
+
+-- Auto-sync functionality
+local auto_sync_timer = nil
+
+-- Start automatic inbox syncing
+function M.start_auto_sync()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local notify = require('neotex.util.notifications')
+  
+  -- Check if auto-sync is enabled
+  if not config.get('ui.auto_sync_enabled', true) then
+    logger.debug('Auto-sync disabled in configuration')
+    return
+  end
+  
+  -- Get sync interval and startup delay from config
+  local sync_interval = config.get('ui.auto_sync_interval', 15 * 60) -- Default 15 minutes
+  local startup_delay = config.get('ui.auto_sync_startup_delay', 2) -- Default 2 seconds
+  
+  logger.debug('Starting auto-sync with interval: ' .. sync_interval .. 's, startup delay: ' .. startup_delay .. 's')
+  
+  -- Clear any existing timer
+  M.stop_auto_sync()
+  
+  -- Start timer with initial delay
+  auto_sync_timer = vim.loop.new_timer()
+  
+  -- Start recurring timer after startup delay
+  auto_sync_timer:start(startup_delay * 1000, sync_interval * 1000, vim.schedule_wrap(function()
+    -- Only sync if not already syncing
+    local current_status = state.get('sync.status', 'idle')
+    if current_status ~= 'idle' then
+      logger.debug('Skipping auto-sync: sync already in progress (' .. current_status .. ')')
+      return
+    end
+    
+    -- Check if config is initialized
+    if not config.is_initialized() then
+      logger.debug('Skipping auto-sync: config not initialized')
+      return
+    end
+    
+    -- Perform inbox sync
+    logger.debug('Starting automatic inbox sync')
+    
+    -- Show notification in debug mode only
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya('Auto-syncing inbox...', notify.categories.BACKGROUND)
+    end
+    
+    -- Use the sync_inbox function from main UI module
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    main.sync_inbox()
+  end))
+  
+  logger.debug('Auto-sync timer started')
+  
+  -- Show startup notification in debug mode
+  if notify.config.modules.himalaya.debug_mode then
+    notify.himalaya(string.format('Auto-sync enabled: every %d minutes', math.floor(sync_interval / 60)), notify.categories.BACKGROUND)
+  end
+end
+
+-- Stop automatic syncing
+function M.stop_auto_sync()
+  if auto_sync_timer then
+    auto_sync_timer:stop()
+    auto_sync_timer:close()
+    auto_sync_timer = nil
+    logger.debug('Auto-sync timer stopped')
+  end
+end
+
+-- Check if auto-sync is running
+function M.is_auto_sync_running()
+  return auto_sync_timer ~= nil
 end
 
 return M

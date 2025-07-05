@@ -96,6 +96,11 @@ M.defaults = {
     
     -- Auto-refresh
     auto_refresh_interval = 0, -- Disabled to prevent issues
+    
+    -- Auto-sync settings
+    auto_sync_enabled = true, -- Enable automatic inbox syncing
+    auto_sync_interval = 15 * 60, -- 15 minutes in seconds
+    auto_sync_startup_delay = 2, -- 2 seconds delay after startup
   },
   
   -- Binary paths

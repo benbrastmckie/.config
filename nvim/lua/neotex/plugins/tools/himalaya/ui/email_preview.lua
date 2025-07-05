@@ -1,5 +1,11 @@
 -- Email preview functionality with async loading
 -- Based on HOVER.md specification
+-- TODO: Add inline image display support
+-- TODO: Implement email content sanitization for security
+-- TODO: Add preview window customization options
+-- TODO: Implement email content caching with smart invalidation
+-- TODO: Add HTML email rendering support
+
 local M = {}
 
 -- Dependencies

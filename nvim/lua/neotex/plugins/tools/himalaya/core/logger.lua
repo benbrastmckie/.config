@@ -1,6 +1,11 @@
 -- Structured logging module
 -- Provides consistent logging with levels and formatting
 
+-- TODO: Add log rotation and persistence for debugging
+-- TODO: Add performance timing helpers for operation profiling
+-- TODO: Add log filtering by component/module for debugging
+-- TODO: Implement log buffering for high-frequency operations
+
 local M = {}
 
 -- Log levels

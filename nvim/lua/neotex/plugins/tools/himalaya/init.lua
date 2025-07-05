@@ -31,6 +31,10 @@ function M.setup(opts)
   -- Set up commands
   M.setup_commands()
 
+  -- Start auto-sync timer
+  local manager = require('neotex.plugins.tools.himalaya.sync.manager')
+  manager.start_auto_sync()
+
   -- Run health check on startup if configured
   if config.config.setup.check_health_on_startup then
     vim.defer_fn(function()
@@ -65,19 +69,9 @@ end
 
 -- Keymaps helper for which-key
 function M.get_keymaps()
-  return {
-    ['<leader>m'] = {
-      name = '+mail',
-      o = { ':HimalayaToggle<CR>', 'Toggle sidebar' },
-      l = { ':Himalaya<CR>', 'Email list' },
-      s = { ':HimalayaSyncInbox<CR>', 'Sync inbox' },
-      S = { ':HimalayaSyncFull<CR>', 'Sync all' },
-      c = { ':HimalayaWrite<CR>', 'Compose' },
-      f = { ':HimalayaFolder<CR>', 'Change folder' },
-      h = { ':HimalayaHealth<CR>', 'Health check' },
-      x = { ':HimalayaCancelSync<CR>', 'Cancel sync' },
-    }
-  }
+  -- Keymaps are now handled entirely in which-key.lua
+  -- This function is maintained for backward compatibility
+  return {}
 end
 
 -- Return plugin specification for lazy.nvim

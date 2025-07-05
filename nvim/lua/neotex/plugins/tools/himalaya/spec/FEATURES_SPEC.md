@@ -13,6 +13,12 @@ This document outlines planned features and enhancements for the Himalaya email 
 - **Improved Confirmations**: Use return/escape for confirmation dialogs ✅
 - **Accurate Email Count**: Fix "Page 1 | 200 emails" to reflect actual count ✅
 - **Remove Noisy Messages**: Remove "Himalaya closed" notification ✅
+- **Smart Sync Status**: Refactor sidebar status for sync operations ✅
+- **Auto-sync on Start**: Automatic sync when nvim opens ✅
+- **Automatic Inbox Sync**: Keep inbox synced every 15 minutes with 2s startup delay ✅
+  - Toggle auto-sync with `<leader>mt` ✅
+  - Auto-sync status integrated into sync info display ✅
+  - Configurable interval and startup delay ✅
 
 **Implementation Details**: See [ENHANCED_UI_UX_SPEC.md](ENHANCED_UI_UX_SPEC.md) for full implementation documentation.
 
@@ -28,14 +34,9 @@ This document outlines planned features and enhancements for the Himalaya email 
   - Automatic trash cleanup
 - **Himalaya FAQ Features**: Implement remaining features from [Himalaya FAQ](https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq)
 
-### 3. Sync Improvements
-
-- **Smart Sync Status**: Refactor sidebar status for sync operations
-- **Auto-sync on Start**: Automatic sync when nvim opens
-
 ## Medium Priority Features
 
-### 4. Code Quality Improvements
+### 3. Code Quality Improvements
 
 - **Enhanced Error Handling Module** (`core/errors.lua`):
 
@@ -57,7 +58,7 @@ This document outlines planned features and enhancements for the Himalaya email 
   - Optimize state persistence (currently saves entire UI state)
   - Profile and optimize slow operations
 
-### 5. Developer Experience
+### 4. Developer Experience
 
 - **Testing Infrastructure**:
 
@@ -80,7 +81,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 
 ## Low Priority Features
 
-### 6. Advanced Features
+### 5. Advanced Features
 
 - **Multiple Account Views**: View emails from multiple accounts simultaneously
 - **Advanced Search**: Full-text search with filters and operators
@@ -89,7 +90,7 @@ This document outlines planned features and enhancements for the Himalaya email 
 - **Encryption**: PGP/GPG email encryption support
 - **Rules and Filters**: Client-side email filtering rules
 
-### 7. Integration Features
+### 6. Integration Features
 
 - **Calendar Integration**: View and respond to calendar invites
 - **Contact Management**: Integrated address book
