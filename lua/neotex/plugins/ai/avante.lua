@@ -700,12 +700,7 @@ return {
         },
       },
     },
-    {
-      'MeanderingProgrammer/render-markdown.nvim',
-      opts = {
-        file_types = { "markdown", "Avante" },
-      },
-      ft = { "markdown", "Avante" },
-    },
+    -- render-markdown.nvim is now configured as a standalone plugin
+    -- for better UTF-8 handling in markdown files
   },
 }

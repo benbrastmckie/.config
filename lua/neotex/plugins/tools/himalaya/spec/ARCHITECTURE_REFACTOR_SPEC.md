@@ -1,143 +1,10 @@
-# Himalaya Future Features Specification
+# Architecture Refactoring
 
-This document outlines planned features and enhancements for the Himalaya email plugin. These features are organized by priority and complexity.
-
-## High Priority Features
-
-### 1. Enhanced UI/UX Features ✅ COMPLETE
-
-- **Hover Preview**: Preview emails in a second sidebar when hovering ✅
-- **Buffer-based Composition**: Compose/reply/forward emails in regular buffers ✅
-  - Auto-save to drafts folder ✅
-  - Delete drafts when discarding ✅
-- **Improved Confirmations**: Use return/escape for confirmation dialogs ✅
-- **Accurate Email Count**: Fix "Page 1 | 200 emails" to reflect actual count ✅
-- **Remove Noisy Messages**: Remove "Himalaya closed" notification ✅
-- **Smart Sync Status**: Refactor sidebar status for sync operations ✅
-- **Auto-sync on Start**: Automatic sync when nvim opens ✅
-- **Automatic Inbox Sync**: Keep inbox synced every 15 minutes with 2s startup delay ✅
-  - Toggle auto-sync with `<leader>mt` ✅
-  - Auto-sync status integrated into sync info display ✅
-  - Configurable interval and startup delay ✅
-
-**Implementation Details**: See [ENHANCED_UI_UX_SPEC.md](ENHANCED_UI_UX_SPEC.md) for full implementation documentation.
-
-### 2. Email Management Features
-
-- **Attachment Support**: View and manage email attachments
-- **Image Display**: Inline image viewing in emails
-- **Custom Headers**: Add custom header fields to emails
-- **Address Autocomplete**: Complete addresses in format "Name <user@domain>"
-- **Local Trash System**:
-  - Move deleted emails to local trash
-  - Mappings for viewing and recovering trash
-  - Automatic trash cleanup
-- **Himalaya FAQ Features**: Implement remaining features from [Himalaya FAQ](https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq)
-
-## Medium Priority Features
-
-### 3. Code Quality Improvements
-
-- **Enhanced Error Handling Module** (`core/errors.lua`):
-
-  - Centralized error types and codes
-  - Consistent error wrapping with context
-  - Error recovery strategies
-  - Integration with logging and notifications
-
-- **API Consistency Layer**:
-
-  - Standardize function return values (success, result, error)
-  - Implement consistent parameter validation
-  - Add type annotations for better IDE support
-  - Create module facades to hide implementation details
-
-- **Performance Optimizations**:
-  - Add lazy loading for heavy modules
-  - Implement caching for repeated operations
-  - Optimize state persistence (currently saves entire UI state)
-  - Profile and optimize slow operations
-
-### 4. Developer Experience
-
-- **Testing Infrastructure**:
-
-  - Create `test/` directory with unit tests
-  - Add integration test suite for critical paths
-  - Implement mock modules for external dependencies
-  - Add performance benchmarks
-
-- **Observability**:
-
-  - Enhanced logging with configurable log levels
-  - Add performance timing for slow operations
-  - Create debug mode with detailed operation traces
-  - Add health metrics collection
-
-- **Further Modularization**:
-  - Split `commands.lua` (1293 lines) by functionality
-  - Further modularize `ui/main.lua` (1025 lines)
-  - Create focused modules for specific features
-
-## Low Priority Features
-
-### 5. Advanced Features
-
-- **Multiple Account Views**: View emails from multiple accounts simultaneously
-- **Advanced Search**: Full-text search with filters and operators
-- **Email Templates**: Save and use email templates
-- **Scheduling**: Schedule emails to send later
-- **Encryption**: PGP/GPG email encryption support
-- **Rules and Filters**: Client-side email filtering rules
-
-### 6. Integration Features
-
-- **Calendar Integration**: View and respond to calendar invites
-- **Contact Management**: Integrated address book
-- **Task Integration**: Convert emails to tasks
-- **Note Taking**: Attach notes to emails
-- **External Tool Integration**: Integration with external email tools
-
-## Implementation Notes
-
-### From TODO.md
-
-The following features were originally planned and should be considered:
-
-- Improved confirmations using return/escape keys
-- Remove unnecessary notifications (e.g., "Himalaya closed")
-- Fix email count display accuracy
-- Implement attachment support
-- Add image viewing capabilities
-- Create local trash system with recovery options
-- Address autocomplete in "Name <email>" format
-
-### Technical Debt
-
-- Fix TODO in `ui/email_list.lua` line 81 (maildir check implementation)
-- Resolve backup directory execution issue (found during refactoring)
-- Standardize all error handling patterns
-- Complete migration to unified notification system
-
-## Priority Guidelines
-
-When implementing these features:
-
-1. Maintain compatibility with existing functionality
-2. Follow established architectural patterns
-3. Use the unified notification system consistently
-4. Add appropriate debug notifications for troubleshooting
-5. Write comprehensive documentation for new features
-6. Consider performance impact of new features
-7. Maintain clean separation between layers (Core → Service → UI)
-
-## Architecture Refactoring (Phase 8)
-
-### Overview
+## Overview
 
 Implement the ideal architecture with strict unidirectional dependencies, eliminating the current pragmatic compromises documented in ARCHITECTURE.md. This refactoring will establish a clean, maintainable architecture that follows SOLID principles. **This is a breaking change that intentionally removes all backward compatibility to achieve a tight, maintainable codebase.**
 
-### Goals
+## Goals
 
 1. **Eliminate cross-layer dependencies** - Remove UI dependencies from core layer
 2. **Implement event-driven architecture** - Decouple layers through events
@@ -146,7 +13,19 @@ Implement the ideal architecture with strict unidirectional dependencies, elimin
 5. **Improve testability** - Enable unit testing of individual layers
 6. **Reduce codebase size** - Remove legacy code, compatibility shims, and workarounds
 
-### Proposed Architecture
+## Priority Guidelines
+
+When implementing these features:
+
+1. Maintain existing functionality
+2. Follow established architectural patterns
+3. Use the unified notification system consistently
+4. Add appropriate debug notifications for troubleshooting
+5. Write comprehensive documentation for new features
+6. Consider performance impact of new features
+7. Maintain clean separation between layers (Core → Service → UI)
+
+## Proposed Architecture
 
 ```
 ┌─────────────┐
@@ -190,9 +69,9 @@ Implement the ideal architecture with strict unidirectional dependencies, elimin
 └─────────────────────────────────────────────┘
 ```
 
-### Implementation Plan
+## Implementation Plan
 
-#### Step 1: Create Event System
+### Step 1: Create Event System
 
 ```lua
 -- orchestration/events.lua
@@ -233,7 +112,7 @@ return {
 }
 ```
 
-#### Step 2: Extract Pure Configuration
+### Step 2: Extract Pure Configuration
 
 ```lua
 -- core/config.lua (pure data only)
@@ -262,7 +141,7 @@ function M.set(key, value)
 end
 ```
 
-#### Step 3: Move Keybindings to Orchestration
+### Step 3: Move Keybindings to Orchestration
 
 ```lua
 -- orchestration/keybindings.lua
@@ -286,7 +165,7 @@ function M.setup()
 end
 ```
 
-#### Step 4: Refactor Commands with Dependency Injection
+### Step 4: Refactor Commands with Dependency Injection
 
 ```lua
 -- orchestration/commands.lua
@@ -311,7 +190,7 @@ function M.setup(deps)
 end
 ```
 
-#### Step 5: Create Service Layer Abstractions
+### Step 5: Create Service Layer Abstractions
 
 ```lua
 -- service/email.lua
@@ -342,7 +221,7 @@ function M.send(email_data)
 end
 ```
 
-#### Step 6: Refactor UI Layer with Controllers
+### Step 6: Refactor UI Layer with Controllers
 
 ```lua
 -- ui/controllers/email_list.lua
@@ -365,7 +244,7 @@ function M.show_list(folder, page)
 end
 ```
 
-#### Step 7: Bootstrap Everything
+### Step 7: Bootstrap Everything
 
 ```lua
 -- orchestration/bootstrap.lua
@@ -432,9 +311,9 @@ function M.setup_event_routing(events)
 end
 ```
 
-### Migration Strategy - Clean Break Approach
+## Migration Strategy - Clean Break Approach
 
-#### Phase 8.1: Create New Architecture (Greenfield)
+### Phase 8.1: Create New Architecture (Greenfield)
 
 1. Create entirely new directory structure (himalaya-v2/)
 2. Implement clean event system from scratch
@@ -442,7 +321,7 @@ end
 4. Design service abstractions without compatibility concerns
 5. Write comprehensive test suite for new architecture
 
-#### Phase 8.2: Feature Parity Implementation
+### Phase 8.2: Feature Parity Implementation
 
 1. Reimplement all 31 commands in new architecture
 2. No compatibility layers or adapters
@@ -450,7 +329,7 @@ end
 4. Test new implementation thoroughly
 5. Document all breaking changes
 
-#### Phase 8.3: Hard Cutover
+### Phase 8.3: Hard Cutover
 
 1. Archive old implementation to himalaya-legacy/
 2. Move new implementation to main himalaya/
@@ -458,14 +337,14 @@ end
 4. Remove ALL deprecated code and patterns
 5. Update all documentation from scratch
 
-#### Phase 8.4: Cleanup and Optimization
+### Phase 8.4: Cleanup and Optimization
 
 1. Delete himalaya-legacy/ after verification period
 2. Remove any remaining compatibility code
 3. Optimize without legacy constraints
 4. Reduce total LOC by 30-40% target
 
-### Breaking Changes (Intentional)
+## Breaking Changes (Intentional)
 
 1. **Configuration Format**
 
@@ -540,7 +419,7 @@ events.emit('sync:progress', data)
    - **Mitigation**: Feature freeze on old codebase
    - **Philosophy**: All effort goes to new architecture
 
-### Success Criteria
+## Success Criteria
 
 1. All 31 commands work (may have different internals)
 2. Zero cross-layer dependencies (enforced by tooling)
@@ -549,16 +428,6 @@ events.emit('sync:progress', data)
 5. Zero backward compatibility code
 6. Performance improvement of 10%+ (no compatibility overhead)
 7. Clean dependency graph with no cycles or workarounds
-
-### Timeline Estimate
-
-- Phase 8.1: 3-4 days (greenfield development)
-- Phase 8.2: 7-10 days (reimplement everything cleanly)
-- Phase 8.3: 1 day (hard cutover)
-- Phase 8.4: 2-3 days (optimization and cleanup)
-
-**Total: 13-18 days of focused development**
-_(Longer than compatibility approach but results in cleaner codebase)_
 
 ### Implementation Philosophy
 
