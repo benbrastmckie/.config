@@ -16,7 +16,8 @@ util/
 ├── misc.lua           # Miscellaneous helper functions
 ├── optimize.lua       # Performance optimization utilities
 ├── lectic_extras.lua  # Lectic AI integration helpers
-└── neotree-width.lua  # Neo-tree width management
+├── neotree-width.lua  # Neo-tree width management
+└── notifications.lua  # Unified notification system
 ```
 
 ## Module Structure
@@ -29,6 +30,7 @@ util/
 - **diagnostics.lua**: LSP diagnostic utilities
 - **misc.lua**: Miscellaneous helper functions
 - **optimize.lua**: Performance optimization utilities
+- **notifications.lua**: Unified notification system for entire configuration
 
 ## Usage
 
@@ -90,35 +92,60 @@ notify.lsp('Formatting complete', notify.categories.USER_ACTION)
 
 See the [full notification documentation](../../docs/NOTIFICATIONS.md) for complete usage examples and configuration options.
 
-## Simple Confirmation Prompts
+## UI Selection and Confirmation System
 
-The `misc.lua` module includes a simple confirmation prompt function.
+The configuration uses a sophisticated UI selection system with telescope-ui-select.nvim for consistent, modern dialogs.
 
-### Features
+### Confirmation Dialog Features
 
-- **Native Dialog**: Uses Neovim's built-in confirmation dialog
-- **Smart Defaults**: Safe actions default to confirm, destructive actions default to cancel
-- **Keyboard Friendly**: Navigate with arrow keys or use shortcut keys
+- **Context-Aware Sizing**: Different themes based on selection type
+- **Smart Positioning**: Centered for file operations, cursor-relative for sidebar operations
+- **Consistent UX**: All confirmations use the same Yes/No pattern with icons
 
-### Usage
+### Selection Types
+
+1. **File Deletion Confirmations** (`<leader>ak`):
+   - **Centered dropdown theme** for visibility
+   - **Kind**: `"file_deletion"`
+   - **Icons**: ✓ Yes,  No
+
+2. **Email/Sidebar Confirmations** (`gD`, neo-tree):
+   - **Cursor-relative theme** for proximity
+   - **Kind**: `"confirmation"`
+   - **Fast updates** for responsive selection
+
+3. **Session Restoration**:
+   - **Large dropdown theme** for many options
+   - **Default telescope-ui-select** behavior
+
+### Performance Optimizations
+
+**Himalaya Email Selection**:
+- **Fast visual updates**: `n`/`N` keys use `update_selection_display()` instead of full refresh
+- **No server calls**: Selection changes only update UI, not email data
+- **Batch clearing**: `Esc` key clears all selections with single update
+
+### Usage Examples
 
 ```lua
-local misc = require('neotex.util.misc')
+-- File deletion (centered)
+vim.ui.select({"Yes", "No"}, {
+  prompt = " Delete file \"filename\"?",
+  kind = "file_deletion",
+  format_item = function(item)
+    return item == "Yes" and " " .. item or " " .. item
+  end,
+}, callback)
 
--- Safe action (defaults to Yes)
-if misc.confirm('Save changes?', false) then
-  -- User confirmed
-end
-
--- Destructive action (defaults to No)
-if misc.confirm('Delete this file?', true) then
-  -- User confirmed
-end
+-- Email/sidebar confirmation (cursor-relative)  
+vim.ui.select({"Yes", "No"}, {
+  prompt = " Delete current email?",
+  kind = "confirmation",
+  format_item = function(item)
+    return item == "Yes" and " " .. item or " " .. item
+  end,
+}, callback)
 ```
-
-The second parameter controls the default:
-- `false` = defaults to Yes (for safe actions)
-- `true` = defaults to No (for destructive actions)
 
 ## Available Commands
 

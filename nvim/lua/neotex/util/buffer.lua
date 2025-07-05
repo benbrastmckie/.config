@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- Buffer Management Utilities
--- 
+--
 -- This module provides functions for working with buffers, including:
 -- - Buffer navigation (goto_buffer)
 -- - Buffer cleanup (close_other_buffers, close_unused_buffers)
@@ -132,7 +132,7 @@ function M.close_unused_buffers(minutes)
   local threshold_time = os.time() - (minutes * 60)
   local current = vim.fn.bufnr('%')
   local closed_count = 0
-  
+
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(bufnr) and bufnr ~= current then
       local bufinfo = vim.fn.getbufinfo(bufnr)[1]
@@ -143,7 +143,7 @@ function M.close_unused_buffers(minutes)
       end
     end
   end
-  
+
   notify.editor(string.format("Closed %d unused buffers (inactive for >%d minutes)", closed_count, minutes), notify.categories.USER_ACTION)
 end
 
@@ -167,27 +167,27 @@ end
 -- Delete the file associated with the current buffer
 function M.delete_file_and_buffer(buf)
   buf = buf or vim.api.nvim_get_current_buf()
-  
+
   -- Get the file path
   local filepath = vim.api.nvim_buf_get_name(buf)
   if not filepath or filepath == '' then
     notify.editor('No file associated with this buffer', notify.categories.WARNING)
     return
   end
-  
+
   -- Check if file exists
   if vim.fn.filereadable(filepath) == 0 then
     notify.editor('File does not exist: ' .. filepath, notify.categories.WARNING)
     return
   end
-  
+
   -- Use async confirmation prompt
   local filename = vim.fn.fnamemodify(filepath, ':t')
   local prompt = string.format(" Delete file \"%s\"?", filename)
-  
-  vim.ui.select({"No", "Yes"}, {
+
+  vim.ui.select({"Yes", "No"}, {
     prompt = prompt,
-    kind = "confirmation",
+    kind = "file_deletion",
     format_item = function(item)
       if item == "Yes" then
         return " " .. item  -- Check mark
@@ -199,36 +199,41 @@ function M.delete_file_and_buffer(buf)
     if choice ~= "Yes" then
       return
     end
-    
+
     -- Proceed with deletion
     local current_win = vim.api.nvim_get_current_win()
     local buffers = vim.api.nvim_list_bufs()
     local alternate_buf = nil
-    
+
     -- Find a suitable buffer to switch to
     for _, b in ipairs(buffers) do
       if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
         local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
-        -- Skip special buffers
-        if buftype == '' then
+        local bufname = vim.api.nvim_buf_get_name(b)
+        -- Skip special buffers and ensure it has a real file
+        if buftype == '' and bufname ~= '' then
           alternate_buf = b
           break
         end
       end
     end
-    
+
     -- If no alternate buffer found, create a new empty one
     if not alternate_buf then
       alternate_buf = vim.api.nvim_create_buf(true, false)
     end
-    
-    -- Switch to the alternate buffer first
-    vim.api.nvim_win_set_buf(current_win, alternate_buf)
-    
-    -- Delete the file
+
+    -- Delete the file first
     local ok = vim.fn.delete(filepath)
     if ok == 0 then
-      -- Delete the buffer
+      -- Switch to alternate buffer in all windows showing this buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.api.nvim_win_get_buf(win) == buf then
+          vim.api.nvim_win_set_buf(win, alternate_buf)
+        end
+      end
+
+      -- Now delete the buffer
       vim.api.nvim_buf_delete(buf, { force = true })
       notify.editor('Deleted: ' .. filename, notify.categories.USER_ACTION)
     else
@@ -243,38 +248,38 @@ function M.setup()
   vim.api.nvim_create_user_command('ReloadConfig', function()
     M.reload_config()
   end, {})
-  
+
   -- Add more buffer-related commands
   vim.api.nvim_create_user_command('BufCloseOthers', function()
     M.close_other_buffers()
   end, {})
-  
+
   vim.api.nvim_create_user_command('BufCloseUnused', function(opts)
     local minutes = tonumber(opts.args) or 30
     M.close_unused_buffers(minutes)
   end, { nargs = '?' })
-  
+
   vim.api.nvim_create_user_command('BufSaveAll', function()
     M.save_all_buffers()
   end, {})
-  
+
   vim.api.nvim_create_user_command('BufDeleteFile', function()
     M.delete_file_and_buffer()
   end, {})
-  
+
   -- Set up global function aliases for backward compatibility
   _G.GotoBuffer = function(count, direction)
     M.goto_buffer(count, direction)
   end
-  
+
   _G.DisplayMessages = function()
     M.display_messages()
   end
-  
+
   _G.SearchWordUnderCursor = function()
     M.search_word_under_cursor()
   end
-  
+
   return true
 end
 

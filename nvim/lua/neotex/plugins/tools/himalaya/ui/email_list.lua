@@ -141,7 +141,12 @@ function M.show_email_list(args)
     
     -- Get email list from himalaya
     
-    local emails, total_count = utils.get_email_list(account_name, folder, state.get_current_page(), state.get_page_size())
+    local emails, total_count, actual_page = utils.get_email_list_smart_fill(account_name, folder, state.get_current_page(), state.get_page_size())
+    
+    -- Update page if it was adjusted during smart fill
+    if actual_page and actual_page ~= state.get_current_page() then
+      state.set_current_page(actual_page)
+    end
     
     if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
       -- Check if this is a fresh/empty maildir
@@ -794,13 +799,18 @@ function M.refresh_email_list()
     
     -- Get email list from himalaya
     
-    -- Get updated email list
-    local emails, total_count = utils.get_email_list(
+    -- Get updated email list with smart page filling
+    local emails, total_count, actual_page = utils.get_email_list_smart_fill(
       account_name,
       folder,
       state.get_current_page(),
       state.get_page_size()
     )
+    
+    -- Update page if it was adjusted during smart fill
+    if actual_page and actual_page ~= state.get_current_page() then
+      state.set_current_page(actual_page)
+    end
     
     if emails then
       -- Store emails in cache
@@ -836,10 +846,32 @@ function M.refresh_email_list()
   end
 end
 
+-- Fast selection display update (no server calls)
+function M.update_selection_display()
+  -- Get current sidebar buffer
+  local buf = sidebar.get_buf()
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  -- Get current email data from state
+  local emails = state.get('email_list.emails')
+  if not emails then
+    return
+  end
+  
+  -- Format email list with current selections and update display
+  local lines = M.format_email_list(emails)
+  sidebar.update_content(lines)
+  
+  -- Update line mapping in state
+  state.set('email_list.line_map', lines.metadata or {})
+end
+
 -- Update email display
 function M.update_email_display()
-  -- Get email list with current pagination settings
-  local emails = utils.get_email_list(
+  -- Get email list with smart page filling
+  local emails, total_count, actual_page = utils.get_email_list_smart_fill(
     state.get_current_account(),
     state.get_current_folder(),
     state.get_current_page(),
@@ -848,6 +880,16 @@ function M.update_email_display()
   if not emails then
     notify.himalaya('Failed to get email list', notify.categories.ERROR)
     return
+  end
+  
+  -- Update page if it was adjusted during smart fill
+  if actual_page and actual_page ~= state.get_current_page() then
+    state.set_current_page(actual_page)
+  end
+  
+  -- Update total count if available
+  if total_count and total_count > 0 then
+    state.set_total_emails(total_count)
   end
   
   -- Get existing sidebar buffer or create new one

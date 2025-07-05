@@ -663,6 +663,20 @@ return {
 
     return config
   end,
+  config = function(_, opts)
+    -- Disable dressing's select enhancement
+    local ok, dressing = pcall(require, "dressing")
+    if ok and dressing.setup then
+      dressing.setup({
+        select = {
+          enabled = false
+        }
+      })
+    end
+    
+    -- Apply avante configuration
+    require("avante").setup(opts)
+  end,
   build = "make",
   dependencies = {
     "stevearc/dressing.nvim",

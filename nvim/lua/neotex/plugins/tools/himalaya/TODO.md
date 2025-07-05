@@ -64,16 +64,24 @@
   - [x] centralized confirmation prompt
   - [x] `<leader>ak` deletes file and buffer
   - [x] in drafts, 'gs' gives: ⟳ Syncing emails... (21s): Sent 1/6 - Downloaded 178/26621
+- [x] cleanup
+  - [x] finish /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/ENHANCED_UI_UX_SPEC.md ✅ COMPLETE
+    - [x] Updated spec to reflect actual implementation
+    - [x] Removed "Himalaya closed" notifications
+    - [x] Added debug mode checks to all routine notifications
+  - [x] make telescope confirmation messages consistent
+  - [x] select with n/N in himalaya is slow
+  - [x] make himalaya refresh number of emails on a page with sync
+  - [x] can /home/benjamin/.config/nvim/lua/neotex/util/migrate_notifications.lua be removed
+  - [x] change "From: benbrastmckie <benbrastmckie@gmail.com>" when emails are composed to "From: Benjamin Brast-McKie <benbrastmckie@gmail.com>"
+  - [x] why vimscript: /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/after/syntax/mail.vim
 
 ## REFINE REFACTOR
 
-- [x] finish /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/ENHANCED_UI_UX_SPEC.md ✅ COMPLETE
-  - [x] Updated spec to reflect actual implementation
-  - [x] Removed "Himalaya closed" notifications
-  - [x] Added debug mode checks to all routine notifications
-- [ ] remove? /home/benjamin/.config/nvim/lua/neotex/util/migrate_notifications.lua
-- [ ] update documentation, adding TODOs to mark cruft or areas that could be improved
-- [ ] gather TODOs throughout himalaya
+- [ ] prepare refactor
+  - [ ] update documentation, adding TODOs to mark cruft or areas that could be improved
+  - [ ] gather TODOs throughout himalaya
+  - [ ] generate refine spec
 - [ ] Phase 6: Critical Functionality Testing
   - [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
   - [ ] State Persistence Testing

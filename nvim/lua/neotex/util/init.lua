@@ -69,8 +69,7 @@ function M._load_submodules()
     "misc",
     "optimize",
     "lectic_extras",
-    "migrate_notifications",
-    "notifications"  -- Add notifications module
+    "notifications"
   }
   
   local loaded = {}

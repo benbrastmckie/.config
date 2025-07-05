@@ -668,23 +668,41 @@ function M.delete_current_email()
     return
   end
   
-  local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
-  
-  if success then
-    notify.himalaya('Email deleted successfully', notify.categories.STATUS)
+  -- Confirm deletion
+  local prompt = " Delete current email?"
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
     
-    -- Since emails are only viewed in preview now, no need to close any buffers
+    local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
     
-    -- Always refresh the list to show the deletion
-    vim.defer_fn(function()
-      M.refresh_email_list()
-    end, 100)
-  elseif error_type == 'missing_trash' then
-    -- Trash folder doesn't exist, offer alternatives
-    M.handle_missing_trash_folder(email_id, extra)
-  else
-    notify.himalaya('Failed to delete email', notify.categories.STATUS)
-  end
+    if success then
+      notify.himalaya('Email deleted successfully', notify.categories.STATUS)
+      
+      -- Since emails are only viewed in preview now, no need to close any buffers
+      
+      -- Always refresh the list to show the deletion
+      vim.defer_fn(function()
+        M.refresh_email_list()
+      end, 100)
+    elseif error_type == 'missing_trash' then
+      -- Trash folder doesn't exist, offer alternatives
+      M.handle_missing_trash_folder(email_id, extra)
+    else
+      notify.himalaya('Failed to delete email', notify.categories.STATUS)
+    end
+  end)
 end
 
 -- Handle missing trash folder scenario
@@ -1085,10 +1103,19 @@ function M.delete_selected_emails()
   end
   
   -- Confirm batch operation
-  vim.ui.input({
-    prompt = string.format('Delete %d selected emails? (y/n): ', #selected)
-  }, function(input)
-    if input and input:lower() == 'y' then
+  local prompt = string.format(' Delete %d selected emails?', #selected)
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice == "Yes" then
       local success_count = 0
       local error_count = 0
       
@@ -1134,10 +1161,19 @@ function M.archive_selected_emails()
     return
   end
   
-  vim.ui.input({
-    prompt = string.format('Archive %d selected emails? (y/n): ', #selected)
-  }, function(input)
-    if input and input:lower() == 'y' then
+  local prompt = string.format(' Archive %d selected emails?', #selected)
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice == "Yes" then
       local success_count = 0
       local error_count = 0
       
@@ -1204,10 +1240,19 @@ function M.spam_selected_emails()
     return
   end
   
-  vim.ui.input({
-    prompt = string.format('Mark %d selected emails as spam? (y/n): ', #selected)
-  }, function(input)
-    if input and input:lower() == 'y' then
+  local prompt = string.format(' Mark %d selected emails as spam?', #selected)
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice == "Yes" then
       local success_count = 0
       local error_count = 0
       

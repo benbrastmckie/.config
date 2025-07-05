@@ -216,6 +216,49 @@ function M.get_email_list(account, folder, page, page_size)
   return result, estimated_count
 end
 
+-- Get email list with smart page filling (ensures full pages when possible)
+function M.get_email_list_smart_fill(account, folder, page, page_size)
+  folder = folder or 'INBOX'
+  page = page or 1
+  page_size = page_size or 25
+  
+  -- Get the initial page
+  local emails, total_count = M.get_email_list(account, folder, page, page_size)
+  
+  -- If we got fewer emails than page_size and we're not on page 1, 
+  -- try to get a full page by adjusting the page number
+  if #emails < page_size and page > 1 and total_count and total_count > 0 then
+    -- Calculate what page would give us a full page of emails
+    local total_pages = math.ceil(total_count / page_size)
+    local emails_before_current_page = (page - 1) * page_size
+    local remaining_emails = total_count - emails_before_current_page
+    
+    -- If there are fewer remaining emails than page_size, try to go back to get a full page
+    if remaining_emails < page_size and remaining_emails > 0 then
+      local target_page = math.max(1, math.ceil((total_count - page_size + 1) / page_size))
+      if target_page < page then
+        -- Get the emails from the adjusted page
+        local adjusted_emails, adjusted_count = M.get_email_list(account, folder, target_page, page_size)
+        if #adjusted_emails >= #emails then
+          -- Update the current page in state to reflect the change
+          local state = require('neotex.plugins.tools.himalaya.core.state')
+          state.set_current_page(target_page)
+          
+          -- Provide feedback about page adjustment (only in debug mode to avoid noise)
+          local notify = require('neotex.util.notifications')
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya(string.format('Page adjusted from %d to %d for full page view', page, target_page), notify.categories.BACKGROUND)
+          end
+          
+          return adjusted_emails, adjusted_count, target_page
+        end
+      end
+    end
+  end
+  
+  return emails, total_count, page
+end
+
 -- Get email content by ID
 function M.get_email_content(account, email_id, folder)
   local args = { 'message', 'read', tostring(email_id) }

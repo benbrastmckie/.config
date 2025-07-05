@@ -11,6 +11,7 @@ return {
     },
     "nvim-tree/nvim-web-devicons",
     "gbprod/yanky.nvim",
+    "nvim-telescope/telescope-ui-select.nvim",
   },
   config = function()
     local telescope = require("telescope")
@@ -59,13 +60,13 @@ return {
           },
         },
       },
-      load_extension = {
-        "fzf",
-        "yank_history",
-        "bibtex",
-        "lazygit"
-      },
       extensions = {
+        ["ui-select"] = {
+          require("telescope.themes").get_dropdown({
+            winblend = 10,
+            previewer = false,
+          })
+        },
         undo = {
           mappings = {
             i = {
@@ -114,5 +115,87 @@ return {
         },
       },
     })
+    
+    -- Load extensions
+    telescope.load_extension("fzf")
+    telescope.load_extension("yank_history")
+    telescope.load_extension("bibtex")
+    telescope.load_extension("ui-select")
+    
+    -- Override vim.ui.select for confirmations to use smaller cursor theme
+    local original_select = vim.ui.select
+    vim.ui.select = function(items, opts, on_choice)
+      opts = opts or {}
+      
+      -- Use small cursor theme for confirmations
+      if opts.kind == "confirmation" or opts.kind == "file_deletion" then
+        local pickers = require("telescope.pickers")
+        local finders = require("telescope.finders")
+        local conf = require("telescope.config").values
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local themes = require("telescope.themes")
+        
+        -- Use different themes based on the kind
+        local theme_config
+        
+        if opts.kind == "file_deletion" then
+          -- Center the dialog for file deletions (<leader>ak) using dropdown theme
+          theme_config = themes.get_dropdown({
+            layout_config = {
+              width = 0.25,   -- Slightly wider for centered dialog
+              height = 0.15,  -- 15% of screen height
+            },
+            prompt_title = "",
+            results_title = "",
+            previewer = false,
+          })
+        else
+          -- Keep cursor position for email deletions and other confirmations
+          theme_config = themes.get_cursor({
+            layout_config = {
+              width = 0.2,   -- 20% of screen width
+              height = 0.15, -- 15% of screen height  
+            },
+            prompt_title = "",
+            results_title = "",
+            previewer = false,
+          })
+        end
+        
+        local picker = pickers.new(theme_config, {
+          finder = finders.new_table({
+            results = items,
+            entry_maker = function(entry)
+              local display = entry
+              if opts.format_item then
+                display = opts.format_item(entry)
+              end
+              return {
+                value = entry,
+                display = display,
+                ordinal = entry,
+              }
+            end,
+          }),
+          sorter = conf.generic_sorter({}),
+          attach_mappings = function(prompt_bufnr, map)
+            actions.select_default:replace(function()
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+              if selection and on_choice then
+                on_choice(selection.value)
+              end
+            end)
+            return true
+          end,
+        })
+        
+        picker:find()
+      else
+        -- Use original (telescope dropdown) for everything else
+        original_select(items, opts, on_choice)
+      end
+    end
   end,
 }
