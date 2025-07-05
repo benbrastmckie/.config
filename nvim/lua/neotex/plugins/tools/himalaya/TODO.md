@@ -7,14 +7,44 @@
 - [x] document existing implementation ✅ PHASE 1 COMPLETE
   - [x] create refactor spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/SAFE_REFACTOR_PLAN.md ✅ COMPLETE
   - [x] implement refactor ✅ PHASES 2-5 COMPLETE
-- [ ] add new features to himalaya
+- [x] add new features to himalaya
   - [x] create new features spec in /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md ✅ COMPLETE
   - [x] implement Enhanced UI/UX Features ✅ COMPLETE (see ENHANCED_UI_UX_SPEC.md)
-  - [ ] implement remaining features (see FEATURES_SPEC.md for planned features)
-- [ ] complete remaining testing phases
-  - [ ] Phase 6: Critical Functionality Testing
-  - [ ] Phase 7: Performance Validation
-- [ ] update documentation
+  - [x] implement remaining features (see FEATURES_SPEC.md for planned features)
+- [x] complete technical debt analysis
+  - [x] gather TODOs and create TECH_DEBT.md ✅ COMPLETE
+  - [x] create implementation specs ✅ COMPLETE
+  - [x] update documentation ✅ COMPLETE
+- [ ] Phase 6: Event System Foundation (Week 1)
+  - [ ] implement event-driven architecture
+  - [ ] maintain backward compatibility
+- [ ] Phase 7: Command System Refactoring (Week 2)
+  - [ ] split monolithic commands.lua
+  - [ ] create orchestration layer
+- [ ] Phase 8: Core Features Implementation (Weeks 3-4)
+  - [ ] multiple account support
+  - [ ] attachment handling
+  - [ ] OAuth security enhancements
+  - [ ] address autocomplete
+- [ ] Phase 9: Advanced Features (Weeks 5-6)
+  - [ ] undo send system
+  - [ ] advanced search
+  - [ ] email templates
+  - [ ] local trash system
+- [ ] Phase 10: Integration & Polish (Week 7)
+  - [ ] performance optimizations
+  - [ ] testing infrastructure
+  - [ ] documentation updates
+- [ ] Additional Features (Post-Phase 10)
+  - [ ] email scheduling
+  - [ ] PGP/GPG encryption
+  - [ ] email rules & filters
+  - [ ] calendar integration
+  - [ ] task integration
+- [ ] Code Quality Improvements (Ongoing)
+  - [ ] error handling standardization
+  - [ ] API consistency
+  - [ ] developer experience enhancements
 
 ## GUIDELINES
 
@@ -83,44 +113,106 @@
   - [x] update FEATURES_SPEC.md
   - [x] gather TODOs throughout himalaya/
   - [x] generate refine spec TECH_DEBT.md
-  - [ ] integrate with notification system
-  - [ ] refactor
-- [ ] Phase 6: Critical Functionality Testing
-  - [ ] Email Workflow Testing (basic operations, compose/send, sync operations)
-  - [ ] State Persistence Testing
-  - [ ] Multi-Account Testing
-- [ ] Phase 7: Performance Validation
-  - [ ] Baseline metrics measurement
-  - [ ] Post-refactor performance comparison
+  - [x] integrate with notification system
+  - [x] generate spec files
 
 ## FUTURE FEATURES
 
-- email management features
-  - create spec file
-  - move sections from TECH_DEBT.md
-- code quality improvements
-  - create spec file
-  - move sections from TECH_DEBT.md
-- developer experience
-  - create spec file
-  - move sections from TECH_DEBT.md
+### Phase 6: Event System Foundation (Week 1)
 
-All planned new features are documented in `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/spec/FEATURES_SPEC.md` including:
+- [ ] implement event bus system (orchestration/events.lua)
+- [ ] define core event constants (core/events.lua)
+- [ ] add event emissions alongside existing calls
+- [ ] test event system without breaking existing functionality
 
-### High Priority Features
+### Phase 7: Command System Refactoring (Week 2)
 
-- ✅ Enhanced UI/UX (hover preview, buffer composition, improved confirmations) - COMPLETE
-- Email Management (attachments, images, custom headers, local trash)
-- Sync Improvements (smart status, auto-sync, error recovery)
+- [ ] split commands.lua into domain modules (ui, email, sync, setup)
+- [ ] create command orchestration layer
+- [ ] maintain backward compatibility for all commands
+- [ ] test all 31+ commands continue working
 
-### Medium Priority Features
+### Phase 8: Core Features Implementation (Weeks 3-4)
 
-- Code Quality Improvements (error handling, API consistency, performance)
-- Developer Experience (testing, observability, modularization)
+- [ ] **Multiple Account Support**
+  - [ ] implement account management service
+  - [ ] create provider detection and templates
+  - [ ] add account switching UI
+  - [ ] implement unified inbox view
+- [ ] **Attachment Handling**
+  - [ ] create attachment download/view functionality
+  - [ ] add attachment support in composer
+  - [ ] implement attachment caching
+- [ ] **OAuth Security**
+  - [ ] enhance token encryption
+  - [ ] add multi-provider OAuth support
+  - [ ] implement automatic token cleanup
+- [ ] **Address Autocomplete**
+  - [ ] build contact extraction system
+  - [ ] implement autocomplete UI
+  - [ ] add contact persistence
 
-### Low Priority Features
+### Phase 9: Advanced Features (Weeks 5-6)
 
-- Advanced Features (multiple accounts, advanced search, templates, encryption)
-- Integration Features (calendar, contacts, tasks, notes)
+- [ ] **Undo Send System**
+  - [ ] implement send queue with 60-second delay
+  - [ ] create undo notification UI
+  - [ ] add queue persistence
+- [ ] **Advanced Search**
+  - [ ] implement search query parser
+  - [ ] add search operators (from:, to:, subject:, etc.)
+  - [ ] create search results UI
+- [ ] **Email Templates**
+  - [ ] create template management system
+  - [ ] implement variable substitution
+  - [ ] add template picker UI
+- [ ] **Local Trash System**
+  - [ ] implement soft delete to local trash
+  - [ ] add trash viewer UI
+  - [ ] create retention policies
 
-Refer to FEATURES_SPEC.md for complete details on each planned feature.
+### Phase 10: Integration & Polish (Week 7)
+
+- [ ] **Performance Optimizations**
+  - [ ] implement lazy loading for heavy modules
+  - [ ] add performance timing and profiling
+  - [ ] optimize state persistence
+- [ ] **Testing Infrastructure**
+  - [ ] create unit test framework
+  - [ ] add integration tests for workflows
+  - [ ] implement performance benchmarks
+- [ ] **Documentation Updates**
+  - [ ] update all README files
+  - [ ] create user guide for new features
+  - [ ] document architecture changes
+
+### Additional Features (Post-Phase 10)
+
+- [ ] **Email Scheduling**
+  - [ ] scheduled send functionality
+  - [ ] recurring email support
+- [ ] **PGP/GPG Encryption**
+  - [ ] email encryption/signing
+  - [ ] key management UI
+- [ ] **Email Rules & Filters**
+  - [ ] rule engine implementation
+  - [ ] filter builder UI
+- [ ] **Calendar Integration**
+  - [ ] parse calendar invites
+  - [ ] respond to meeting requests
+- [ ] **Task Integration**
+  - [ ] convert emails to tasks
+  - [ ] task tracking system
+
+### Code Quality Improvements (Ongoing)
+
+- [ ] **Error Handling**
+  - [ ] centralized error types and recovery
+  - [ ] consistent error messaging
+- [ ] **API Consistency**
+  - [ ] standardize function returns
+  - [ ] implement facades for all services
+- [ ] **Developer Experience**
+  - [ ] enhanced logging with rotation
+  - [ ] debug mode improvements
+  - [ ] performance profiling tools
