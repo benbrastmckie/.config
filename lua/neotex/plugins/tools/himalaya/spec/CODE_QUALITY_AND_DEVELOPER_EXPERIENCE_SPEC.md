@@ -1,6 +1,16 @@
 # Himalaya Code Quality and Developer Experience Specification
 
+**Cross-Phase Implementation**  
+*These improvements span multiple phases (6-10) of the implementation plan*
+
 This specification details the implementation plan for code quality improvements and developer experience enhancements identified in the technical debt analysis and features specification.
+
+## Phase Mapping
+
+- **Phase 6**: Enhanced Error Handling (#1) - Core error module
+- **Phase 7**: API Consistency (#2), Observability/Logging (#5)  
+- **Phase 8**: Performance Optimizations (#3) - Applied during feature work
+- **Phase 10**: Testing Infrastructure (#4), Further Modularization (#6)
 
 ## Overview
 

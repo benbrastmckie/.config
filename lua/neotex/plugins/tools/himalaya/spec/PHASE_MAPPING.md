@@ -1,0 +1,116 @@
+# Himalaya Implementation Phase Mapping Quick Reference
+
+This document provides a quick reference for how all specification items map to implementation phases 6-10.
+
+## Phase 6: Event System & Architecture Foundation (Week 1)
+
+### Primary Deliverables
+- Event bus system implementation
+- Core event definitions  
+- Event integration with existing code
+
+### Supporting Items from Other Specs
+- **Error Handling Standardization** (CLEANUP #1.3, TODOS #1.3, CODE_QUALITY #1)
+- **State Management Improvements** (CLEANUP #1.2, TODOS #1.2)
+- **Performance Optimizations** (initial pass)
+
+## Phase 7: Command System & API Consistency (Week 2)
+
+### Primary Deliverables
+- Command system refactoring (split commands.lua)
+- Command orchestration layer
+- API consistency layer implementation
+
+### Supporting Items from Other Specs
+- **Command System Refactoring** (CLEANUP #1.1, TODOS #1.1, ARCHITECTURE Phase 7)
+- **API Consistency Layer** (CODE_QUALITY #2)
+- **Enhanced Logging System** (CLEANUP #3.1, TODOS #3.1, CODE_QUALITY #5)
+- **Utility Function Enhancements** (CLEANUP #3.2, TODOS #3.2)
+- **Setup System Automation** (CLEANUP #3.3, TODOS #3.3)
+
+## Phase 8: Core Email Features (Weeks 3-4)
+
+### Primary Deliverables (EMAIL_MANAGEMENT_FEATURES_SPEC.md)
+1. **Multiple Account Support** (#6) - Foundation for many features
+2. **Attachment Support** (#1) - View, download, send
+3. **Local Trash System** (#4) - With recovery capabilities
+4. **Custom Headers** (#5) - Full header support
+5. **Image Display** (#2) - Terminal image rendering
+6. **Address Autocomplete** (#3) - Contact management
+
+### Supporting Items from Other Specs
+- **Email Composition Enhancements** (TODOS #2.1)
+- **Email Preview Improvements** (TODOS #2.2)
+- **Email List Management** (TODOS #2.3)
+- **Missing Command Implementations** (TODOS #2.4)
+- **Performance Optimizations** (CODE_QUALITY #3) - Applied during implementation
+
+## Phase 9: Advanced Features & UI Evolution (Weeks 5-6)
+
+### Primary Deliverables (ADVANCED_FEATURES_SPEC.md)
+1. **Undo Send System** (#2) - 60-second delay queue
+2. **Advanced Search** (#3) - Search operators and filters
+3. **Email Templates** (#4) - Variable support
+4. **Email Scheduling** (#5) - Future send capability
+5. **Multiple Account Views** (#1) - Unified inbox, split, tabbed
+
+### UI Evolution Items
+- **Window Management Improvements** (CLEANUP #4.1, TODOS #4.1)
+- **Notification System Integration** (CLEANUP #4.2, TODOS #4.2)
+- **UI Layer Architecture** (ARCHITECTURE Phase 9)
+
+## Phase 10: Security, Polish & Integration (Week 7)
+
+### Primary Deliverables
+- **OAuth 2.0 Implementation** (EMAIL_MANAGEMENT #7, TODOS #4.3)
+- **PGP/GPG Encryption** (ADVANCED_FEATURES #6)
+- **Testing Infrastructure** (CODE_QUALITY #4)
+- **Documentation Updates** (CLEANUP #5.1, TODOS #5.1)
+
+### Final Polish Items
+- **Performance Optimization Final Pass** (CODE_QUALITY #3)
+- **Further Modularization** (CODE_QUALITY #6)
+- **Integration Testing** (ARCHITECTURE Phase 10)
+- **Documentation Tooling** (CLEANUP Phase 5)
+
+## Quick Navigation
+
+### By Specification Document
+
+**ARCHITECTURE_REFACTOR_SPEC.md**
+- Phases 6-10: Complete implementation guide
+
+**EMAIL_MANAGEMENT_FEATURES_SPEC.md**  
+- Phase 8: Features 1-6
+- Phase 10: Feature 7 (OAuth)
+
+**ADVANCED_FEATURES_SPEC.md**
+- Phase 9: Features 1-5, 7-9
+- Phase 10: Feature 6 (Encryption)
+
+**CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md**
+- Phase 6: Section 1 (Error Handling)
+- Phase 7: Sections 2, 5 (API, Logging)
+- Phase 8: Section 3 (Performance)
+- Phase 10: Sections 4, 6 (Testing, Modularization)
+
+**CLEANUP_AND_REFINEMENT_SPEC.md**
+- Phase 6: Sections 1.2, 1.3
+- Phase 7: Sections 1.1, 3.1-3.3
+- Phase 9: Sections 4.1, 4.2
+- Phase 10: Section 5.1
+
+**TODOS_TECH_DEBT_OVERVIEW.md**
+- Phase 6: Priority 1 items (except 1.1)
+- Phase 7: Item 1.1, Priority 3 items
+- Phase 8: Priority 2 items
+- Phase 9: Priority 4 items (4.1, 4.2)
+- Phase 10: Priority 4 item (4.3), Priority 5 items
+
+## Implementation Notes
+
+1. **Dependencies**: Phase order is important - each phase builds on previous work
+2. **Flexibility**: Some items can shift between adjacent phases if needed
+3. **Parallel Work**: Within a phase, multiple items can be worked on concurrently
+4. **Testing**: Each phase should include tests for new functionality
+5. **No Breaking Changes**: All work must maintain backward compatibility

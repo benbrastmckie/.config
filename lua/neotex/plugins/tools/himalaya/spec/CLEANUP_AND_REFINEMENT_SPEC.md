@@ -1,10 +1,14 @@
 # Himalaya Clean Up and Refinement Specification
 
-This specification details the cleanup and refinement tasks identified in the technical debt analysis, focusing on architecture improvements, code organization, and system standardization.
+This specification details the cleanup and refinement tasks identified in the technical debt analysis, focusing on architecture improvements, code organization, and system standardization. These items are mapped to the overall implementation phases 6-10.
 
-## Phase 1: Critical Architecture & Performance
+## Items for Phase 6: Event System & Architecture Foundation
 
-### 1.1 Command System Refactoring
+*Note: These critical architecture and performance improvements should be implemented alongside the event system in Phase 6.*
+
+### 1.1 Command System Refactoring [→ Phase 7]
+
+*Note: While listed here for context, the command system refactoring is the primary deliverable for Phase 7.*
 
 **Current State**: 
 - Single monolithic `core/commands.lua` file with 1,400+ lines
@@ -63,7 +67,7 @@ This specification details the cleanup and refinement tasks identified in the te
    - Update all internal references
    - Test each command group independently
 
-### 1.2 State Management Improvements
+### 1.2 State Management Improvements [→ Phase 6]
 
 **Current State**:
 - No migration system for state format changes
@@ -163,7 +167,7 @@ This specification details the cleanup and refinement tasks identified in the te
    end
    ```
 
-### 1.3 Error Handling Standardization
+### 1.3 Error Handling Standardization [→ Phase 6]
 
 **Current State**:
 - Inconsistent error handling across modules
@@ -272,7 +276,9 @@ This specification details the cleanup and refinement tasks identified in the te
    end
    ```
 
-## Phase 3: Developer Experience
+## Items for Phase 7: Command System & API Consistency
+
+*Note: These developer experience improvements align with the command system refactoring in Phase 7.*
 
 ### 3.1 Enhanced Logging System
 
@@ -492,7 +498,9 @@ This specification details the cleanup and refinement tasks identified in the te
    end
    ```
 
-## Phase 4: UI Polish & Enhancement
+## Items for Phase 9: Advanced Features & UI Evolution
+
+*Note: These UI polish and enhancement items should be implemented during the UI evolution work in Phase 9.*
 
 ### 4.1 Window Management Improvements
 
@@ -628,7 +636,9 @@ This specification details the cleanup and refinement tasks identified in the te
    ```
 
 
-## Phase 5: Documentation & Tooling
+## Items for Phase 10: Security, Polish & Integration
+
+*Note: These documentation and tooling items should be completed as part of the final polish in Phase 10.*
 
 ### 5.1 Documentation Completion
 

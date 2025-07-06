@@ -1,10 +1,13 @@
 # Himalaya Email Management Features Specification
 
+**Implementation Phase: Phase 8 - Core Email Features**  
+*Timeline: Weeks 3-4 of implementation*
+
 This specification details the implementation plan for email management features identified in the technical debt analysis and features specification, focusing on core email functionality enhancements.
 
 ## Overview
 
-The email management features enhance the core functionality of the Himalaya email client, adding essential features like attachment support, image display, address autocomplete, and advanced email operations.
+The email management features enhance the core functionality of the Himalaya email client, adding essential features like attachment support, image display, address autocomplete, and advanced email operations. These features form the primary deliverables for Phase 8, with OAuth/security features (#7) deferred to Phase 10.
 
 ## Feature Implementation Details
 
