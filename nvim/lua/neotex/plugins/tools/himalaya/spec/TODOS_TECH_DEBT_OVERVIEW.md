@@ -31,12 +31,18 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
 
 ## Refactoring Plan
 
-### Phase 1: Critical Architecture & Performance (Priority 1)
+*Note: The items below have been mapped to the overall project phases 6-10. Each section indicates which implementation phase it belongs to.*
+
+### Phase 6 Items: Event System & Architecture Foundation (Priority 1)
+
+*These critical architecture and performance items should be addressed in Phase 6 alongside the event system implementation.*
 
 **Goal**: Establish robust foundation for future development
 **Estimated Effort**: 2-3 weeks
 
-#### 1.1 Command System Refactoring
+#### 1.1 Command System Refactoring [→ Phase 7]
+
+*Note: While critical, this refactoring is the primary focus of Phase 7 to avoid conflicts with Phase 6 work.*
 - **File**: `core/commands.lua`
 - **Issue**: 1,400+ line monolithic command registry
 - **Solution**: 
@@ -51,7 +57,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
 - **Benefits**: Better organization, easier maintenance, faster loading
 
 
-#### 1.2 State Management Improvements
+#### 1.2 State Management Improvements [→ Phase 6]
 - **File**: `core/state.lua`
 - **Issue**: No migration system, potential corruption, no cleanup
 - **Solution**:
@@ -72,7 +78,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   ```
 - **Benefits**: Robust state handling, prevents corruption, easier updates
 
-#### 1.3 Error Handling Standardization
+#### 1.3 Error Handling Standardization [→ Phase 6]
 - **New File**: `core/errors.lua`
 - **Issue**: Inconsistent error handling across modules
 - **Solution**:
@@ -94,7 +100,9 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   ```
 - **Benefits**: Consistent error handling, better debugging, user-friendly messages
 
-### Phase 2: Major Feature Gaps (Priority 2)
+### Phase 8 Items: Core Email Features (Priority 2)
+
+*These major feature gaps align with the core email features planned for Phase 8.*
 
 **Goal**: Complete missing functionality essential for production use
 **Estimated Effort**: 4-5 weeks
@@ -134,12 +142,14 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   2. Implement trash management system
   3. Add trash statistics and cleanup
 
-### Phase 3: Developer Experience (Priority 3)
+### Phase 7 & 9 Items: Developer Experience (Priority 3)
+
+*These developer experience improvements are split between Phase 7 (logging/utilities) and Phase 9 (UI components).*
 
 **Goal**: Improve development workflow and debugging capabilities
 **Estimated Effort**: 2-3 weeks
 
-#### 3.1 Enhanced Logging System
+#### 3.1 Enhanced Logging System [→ Phase 7]
 - **File**: `core/logger.lua`
 - **Improvements**: Rotation, performance timing, filtering, buffering
 - **Implementation Strategy**:
@@ -160,7 +170,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   end
   ```
 
-#### 3.2 Utility Function Enhancements
+#### 3.2 Utility Function Enhancements [→ Phase 7]
 - **File**: `utils.lua`
 - **Improvements**: Better caching, parallel operations, validation
 - **Implementation Strategy**:
@@ -169,7 +179,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   3. Create comprehensive validation functions
   4. Add attachment handling utilities
 
-#### 3.3 Setup System Automation
+#### 3.3 Setup System Automation [→ Phase 7]
 - **Files**: `setup/wizard.lua`, `setup/health.lua`
 - **Improvements**: Multi-provider support, automated diagnostics
 - **Implementation Strategy**:
@@ -178,12 +188,14 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   3. Add network connectivity diagnostics
   4. Create automated fix suggestions
 
-### Phase 4: UI Polish & Enhancement (Priority 4)
+### Phase 9 & 10 Items: UI Polish & Security (Priority 4)
+
+*UI improvements go in Phase 9, while OAuth/security items belong in Phase 10.*
 
 **Goal**: Improve user interface and interaction quality
 **Estimated Effort**: 3-4 weeks
 
-#### 4.1 Window Management Improvements
+#### 4.1 Window Management Improvements [→ Phase 9]
 - **Files**: `ui/window_stack.lua`, `ui/sidebar.lua`
 - **Improvements**: Better window coordination, persistence, customization
 - **Implementation Strategy**:
@@ -192,7 +204,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   3. Implement window position memory
   4. Add sidebar themes and customization
 
-#### 4.2 Notification System Integration
+#### 4.2 Notification System Integration [→ Phase 9]
 - **File**: `ui/notifications.lua`
 - **Improvements**: Integrate with neotex unified notification system
 - **Implementation Strategy**:
@@ -201,7 +213,7 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   3. Add himalaya-specific notification configuration
   4. Use existing batching and rate limiting from unified system
 
-#### 4.3 OAuth & Security Improvements
+#### 4.3 OAuth & Security Improvements [→ Phase 10]
 - **Files**: `sync/oauth.lua`, `scripts/*`
 - **Improvements**: Multi-provider support, enhanced security
 - **Implementation Strategy**:
@@ -210,7 +222,9 @@ Analysis of the Himalaya codebase reveals **84 TODO comments** across 23 files, 
   3. Add automatic token cleanup
   4. Create migration path to native Himalaya OAuth
 
-### Phase 5: Documentation & Tooling (Priority 5)
+### Phase 10 Items: Documentation & Tooling (Priority 5)
+
+*Documentation and tooling improvements are part of the final polish in Phase 10.*
 
 **Goal**: Complete documentation and improve developer tooling
 **Estimated Effort**: 1-2 weeks

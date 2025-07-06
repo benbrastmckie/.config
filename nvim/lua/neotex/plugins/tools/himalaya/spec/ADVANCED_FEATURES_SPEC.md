@@ -1,10 +1,13 @@
 # Himalaya Advanced Features Specification
 
+**Implementation Phase: Phase 9 - Advanced Features & UI Evolution**  
+*Timeline: Weeks 5-6 of implementation*
+
 This specification details the implementation plan for advanced features that extend the Himalaya email client beyond basic email management, providing power-user functionality and integration capabilities.
 
 ## Overview
 
-The advanced features transform Himalaya from a basic email client into a comprehensive email productivity suite, including delayed sending, advanced search, templates, scheduling, encryption, filtering, and integration with external tools.
+The advanced features transform Himalaya from a basic email client into a comprehensive email productivity suite, including delayed sending, advanced search, templates, scheduling, encryption, filtering, and integration with external tools. Most features are targeted for Phase 9, with PGP/GPG encryption (#6) deferred to Phase 10 security work.
 
 ## Feature Implementation Details
 
