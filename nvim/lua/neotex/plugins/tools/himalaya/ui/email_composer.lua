@@ -325,14 +325,32 @@ function M.create_compose_buffer(opts)
   
   -- Open buffer in appropriate window
   if M.config.use_tab then
-    -- Check if we're in the sidebar
+    -- Check if we're in the sidebar or preview
     local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
     local sidebar_win = sidebar.get_win()
     local current_win = vim.api.nvim_get_current_win()
     
-    -- If in sidebar, move to next window (neo-tree style)
-    if sidebar_win and current_win == sidebar_win then
-      vim.cmd('wincmd w')
+    -- Store if we're in preview to maintain it
+    local preview_win = preview.ensure_preview_window()
+    local in_preview = preview_win and current_win == preview_win
+    
+    -- If in sidebar or preview, move to main window
+    if sidebar_win and (current_win == sidebar_win or in_preview) then
+      -- Find a non-sidebar, non-preview window
+      local found_main = false
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if win ~= sidebar_win and win ~= preview_win then
+          vim.api.nvim_set_current_win(win)
+          found_main = true
+          break
+        end
+      end
+      
+      -- If no main window found, create one
+      if not found_main then
+        vim.cmd('wincmd w')
+      end
     end
     
     -- Now edit the buffer in the current window
@@ -604,11 +622,7 @@ function M.show_scheduling_options(buf, draft_info, email)
       delay = delay,
       metadata = {
         draft_file = draft_info.file,
-        draft_id = draft_info.draft_id,
-        composer_cleanup = {
-          buf = buf,
-          draft_info = draft_info
-        }
+        draft_id = draft_info.draft_id
       }
     })
     

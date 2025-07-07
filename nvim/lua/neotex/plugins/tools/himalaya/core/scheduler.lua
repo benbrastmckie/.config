@@ -10,6 +10,7 @@ local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
+local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
 
 -- Enhanced configuration
 M.config = {
@@ -25,6 +26,39 @@ M.config = {
 M.queue = {}
 M.timer = nil
 M.running = false
+M.initialized = false
+
+-- Initialize scheduler with persistent queue
+function M.init()
+  if M.initialized then
+    return
+  end
+  
+  logger.debug('Initializing scheduler with persistence')
+  
+  -- Load existing queue from disk
+  M.queue = persistence.load_queue() or {}
+  
+  -- Clean up any expired entries
+  M.queue = persistence.cleanup_expired_emails(M.queue)
+  
+  -- Start the scheduler if we have pending emails
+  if vim.tbl_count(M.queue) > 0 then
+    M.start_processing()
+  end
+  
+  M.initialized = true
+  logger.info('Scheduler initialized with ' .. vim.tbl_count(M.queue) .. ' emails')
+end
+
+-- Persist queue to disk
+function M.persist_queue()
+  local success = persistence.save_queue(M.queue)
+  if not success then
+    logger.error('Failed to persist email queue')
+  end
+  return success
+end
 
 -- Enhanced queue item structure
 local function create_queue_item(email_data, account_id, options)
@@ -81,6 +115,11 @@ end
 
 -- Schedule email with flexible timing
 function M.schedule_email(email_data, account_id, options)
+  -- Ensure scheduler is initialized
+  if not M.initialized then
+    M.init()
+  end
+  
   local item = create_queue_item(email_data, account_id, options)
   
   M.queue[item.id] = item
@@ -326,10 +365,7 @@ function M.send_email_now(id)
       account_id = item.account_id
     })
     
-    -- Handle composer cleanup if available
-    if item.metadata and item.metadata.composer_cleanup then
-      M.handle_composer_cleanup(item.metadata.composer_cleanup)
-    end
+    -- No additional cleanup needed - compose buffer was already closed when scheduled
     
   else
     -- Handle failure
@@ -383,17 +419,6 @@ function M.send_email_now(id)
   return ok and result
 end
 
--- Handle composer cleanup after successful send
-function M.handle_composer_cleanup(cleanup_info)
-  if not cleanup_info then
-    return
-  end
-  
-  local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
-  if composer.cleanup_after_queue then
-    composer.cleanup_after_queue(cleanup_info.buf, cleanup_info.draft_info)
-  end
-end
 
 -- Format duration for display
 function M.format_duration(seconds)
@@ -403,6 +428,23 @@ function M.format_duration(seconds)
     return string.format("%dm", math.floor(seconds / 60))
   else
     return string.format("%dh %dm", math.floor(seconds / 3600), math.floor((seconds % 3600) / 60))
+  end
+end
+
+-- Format countdown timer for sidebar display
+function M.format_countdown(seconds)
+  if seconds <= 0 then
+    return " SENDING"
+  elseif seconds < 60 then
+    return string.format(" %02d:%02d", 0, seconds)
+  elseif seconds < 3600 then
+    local mins = math.floor(seconds / 60)
+    local secs = seconds % 60
+    return string.format(" %02d:%02d", mins, secs)
+  else
+    local hours = math.floor(seconds / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+    return string.format("%3d:%02d", hours, mins)
   end
 end
 
@@ -426,29 +468,31 @@ end
 
 -- Save queue to persistent storage
 function M.save_queue()
+  -- Use new persistent storage
+  M.persist_queue()
+  -- Also keep in state for backward compatibility
   state.set('scheduler_queue', M.queue)
 end
 
 -- Load queue from persistent storage
 function M.load_queue()
-  M.queue = state.get('scheduler_queue', {})
+  -- Initialize if not already done
+  if not M.initialized then
+    M.init()
+    return
+  end
+  
+  -- Load from persistent storage
+  M.queue = persistence.load_queue() or {}
   
   -- Clean up old completed items
-  local now = os.time()
-  local cleaned = false
+  M.queue = persistence.cleanup_expired_emails(M.queue)
   
-  for id, item in pairs(M.queue) do
-    -- Remove items older than 24 hours that are sent/cancelled/failed
-    if (item.status == "sent" or item.status == "cancelled" or item.status == "failed") and 
-       (now - item.created_at) > 86400 then
-      M.queue[id] = nil
-      cleaned = true
-    end
-  end
+  -- Save cleaned queue back
+  M.persist_queue()
   
-  if cleaned then
-    M.save_queue()
-  end
+  -- Also keep in state for backward compatibility
+  state.set('scheduler_queue', M.queue)
 end
 
 -- Get queue status
@@ -468,6 +512,55 @@ function M.get_queue_status()
   end
   
   return status
+end
+
+-- Get all scheduled emails (for sidebar display)
+function M.get_scheduled_emails()
+  -- Ensure scheduler is initialized
+  if not M.initialized then
+    M.init()
+  end
+  
+  local scheduled = {}
+  
+  for id, item in pairs(M.queue) do
+    if item.status == "scheduled" then
+      table.insert(scheduled, {
+        id = id,
+        email_data = item.email_data,
+        account_id = item.account_id,
+        scheduled_for = item.scheduled_for,
+        created_at = item.created_at,
+        modified = item.modified,
+        metadata = item.metadata
+      })
+    end
+  end
+  
+  -- Sort by scheduled time (earliest first)
+  table.sort(scheduled, function(a, b)
+    return a.scheduled_for < b.scheduled_for
+  end)
+  
+  return scheduled
+end
+
+-- Get a specific scheduled email
+function M.get_scheduled_email(id)
+  local item = M.queue[id]
+  if item and item.status == "scheduled" then
+    return {
+      id = id,
+      email_data = item.email_data,
+      account_id = item.account_id,
+      scheduled_for = item.scheduled_for,
+      created_at = item.created_at,
+      modified = item.modified,
+      metadata = item.metadata,
+      status = item.status
+    }
+  end
+  return nil
 end
 
 -- Show queue (placeholder for Phase 3)
@@ -503,13 +596,290 @@ function M.edit_from_queue_view()
   )
 end
 
--- Edit scheduled time (placeholder for Phase 2)
+-- Edit scheduled time with telescope picker
 function M.edit_scheduled_time(id)
-  local notify = require('neotex.util.notifications')
-  notify.himalaya(
-    " Schedule editing will be implemented in Phase 2",
-    notify.categories.STATUS
-  )
+  M.show_reschedule_picker(id)
+end
+
+-- Telescope reschedule picker with presets
+function M.show_reschedule_picker(id)
+  local item = M.queue[id]
+  if not item then 
+    local notify = require('neotex.util.notifications')
+    notify.himalaya("Scheduled email not found", notify.categories.ERROR)
+    return 
+  end
+  
+  local pickers = require('telescope.pickers')
+  local finders = require('telescope.finders')
+  local conf = require('telescope.config').values
+  local actions = require('telescope.actions')
+  local action_state = require('telescope.actions.state')
+  
+  local options = {
+    { text = "In 1 minute", value = 60 },
+    { text = "In 5 minutes", value = 300 },
+    { text = "In 30 minutes", value = 1800 },
+    { text = "In 1 hour", value = 3600 },
+    { text = "In 2 hours", value = 7200 },
+    { text = "Tomorrow morning (9 AM)", value = "tomorrow_9am" },
+    { text = "Tomorrow afternoon (2 PM)", value = "tomorrow_2pm" },
+    { text = "Next Monday (9 AM)", value = "next_monday_9am" },
+    { text = "Custom time...", value = "custom" }
+  }
+  
+  pickers.new({
+    layout_strategy = 'center',
+    layout_config = {
+      width = 60,  -- 60 characters wide
+      height = 12, -- 12 lines tall
+    },
+  }, {
+    prompt_title = "Reschedule Email",
+    finder = finders.new_table {
+      results = options,
+      entry_maker = function(entry)
+        return {
+          value = entry.value,
+          display = entry.text,
+          ordinal = entry.text,
+        }
+      end
+    },
+    sorter = conf.generic_sorter({}),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        actions.close(prompt_bufnr)
+        local selection = action_state.get_selected_entry()
+        if not selection then return end
+        
+        local value = selection.value
+        local new_time
+        local now = os.time()
+        
+        if type(value) == "number" then
+          new_time = now + value
+        elseif value == "tomorrow_9am" then
+          new_time = M.get_next_time(9, 0)
+        elseif value == "tomorrow_2pm" then
+          new_time = M.get_next_time(14, 0)
+        elseif value == "next_monday_9am" then
+          new_time = M.get_next_monday(9, 0)
+        elseif value == "custom" then
+          M.show_custom_time_picker(id)
+          return
+        end
+        
+        if new_time then
+          M.reschedule_email(id, new_time)
+        end
+      end)
+      return true
+    end,
+  }):find()
+end
+
+-- Helper to get next occurrence of specific time
+function M.get_next_time(hour, minute)
+  local now = os.time()
+  local date = os.date("*t", now)
+  
+  -- Set target time for today
+  date.hour = hour
+  date.min = minute
+  date.sec = 0
+  
+  local target_time = os.time(date)
+  
+  -- If target time has passed today, use tomorrow
+  if target_time <= now then
+    target_time = target_time + 86400  -- Add 24 hours
+  end
+  
+  return target_time
+end
+
+-- Helper to get next Monday at specific time
+function M.get_next_monday(hour, minute)
+  local now = os.time()
+  local date = os.date("*t", now)
+  
+  -- Calculate days until next Monday (1 = Sunday, 2 = Monday, etc.)
+  local days_until_monday = (9 - date.wday) % 7
+  if days_until_monday == 0 then
+    days_until_monday = 7  -- If today is Monday, use next Monday
+  end
+  
+  -- Set target time
+  date.hour = hour
+  date.min = minute
+  date.sec = 0
+  
+  local target_time = os.time(date) + (days_until_monday * 86400)
+  
+  return target_time
+end
+
+-- Custom time picker with smart parsing
+function M.show_custom_time_picker(id)
+  local item = M.queue[id]
+  if not item then return end
+  
+  local current = os.date("%Y-%m-%d %H:%M", item.scheduled_for)
+  
+  vim.ui.input({
+    prompt = " New send time: ",
+    default = current,
+    completion = "customlist,v:lua.require'neotex.plugins.tools.himalaya.core.scheduler'.complete_time"
+  }, function(input)
+    if not input then return end
+    
+    -- Parse various time formats
+    local new_time = M.parse_time_input(input)
+    
+    if new_time then
+      -- Validate time is in future
+      if new_time > os.time() then
+        M.reschedule_email(id, new_time)
+      else
+        local notify = require('neotex.util.notifications')
+        notify.himalaya(" Time must be in the future", notify.categories.ERROR)
+      end
+    else
+      local notify = require('neotex.util.notifications')
+      notify.himalaya(" Invalid time format. Try: YYYY-MM-DD HH:MM or '2h', 'tomorrow 9am'", 
+        notify.categories.ERROR)
+    end
+  end)
+end
+
+-- Parse flexible time inputs
+function M.parse_time_input(input)
+  -- Support various formats:
+  -- "2025-12-25 14:30" - Standard format
+  -- "2h" or "2 hours" - Relative time
+  -- "tomorrow 9am" - Natural language
+  -- "next monday" - Day references
+  
+  local now = os.time()
+  
+  -- Standard datetime format
+  local year, month, day, hour, min = input:match("(%d+)-(%d+)-(%d+)%s+(%d+):(%d+)")
+  if year then
+    return os.time({
+      year = tonumber(year),
+      month = tonumber(month),
+      day = tonumber(day),
+      hour = tonumber(hour),
+      min = tonumber(min),
+      sec = 0
+    })
+  end
+  
+  -- Relative time (e.g., "2h", "30m", "1d")
+  local amount, unit = input:match("^(%d+)%s*([hmd])$")
+  if amount then
+    amount = tonumber(amount)
+    if unit == 'h' then
+      return now + (amount * 3600)
+    elseif unit == 'm' then
+      return now + (amount * 60)
+    elseif unit == 'd' then
+      return now + (amount * 86400)
+    end
+  end
+  
+  -- Natural language parsing
+  local lower_input = input:lower()
+  
+  -- Tomorrow at specific time
+  if lower_input:match("tomorrow") then
+    local hour_str = lower_input:match("(%d+)%s*[ap]m") or lower_input:match("(%d+)")
+    local hour = tonumber(hour_str) or 9
+    
+    -- Handle PM
+    if lower_input:match("pm") and hour < 12 then
+      hour = hour + 12
+    end
+    
+    return M.get_next_time(hour, 0)
+  end
+  
+  -- Next weekday
+  local weekdays = {
+    monday = 2, tuesday = 3, wednesday = 4,
+    thursday = 5, friday = 6, saturday = 7, sunday = 1
+  }
+  
+  for day_name, day_num in pairs(weekdays) do
+    if lower_input:match("next " .. day_name) then
+      local hour_str = lower_input:match("(%d+)%s*[ap]m") or lower_input:match("(%d+)")
+      local hour = tonumber(hour_str) or 9
+      
+      -- Handle PM
+      if lower_input:match("pm") and hour < 12 then
+        hour = hour + 12
+      end
+      
+      -- Calculate days until target weekday
+      local date = os.date("*t", now)
+      local days_until = (day_num - date.wday + 7) % 7
+      if days_until == 0 then
+        days_until = 7  -- Next week if today
+      end
+      
+      date.hour = hour
+      date.min = 0
+      date.sec = 0
+      
+      return os.time(date) + (days_until * 86400)
+    end
+  end
+  
+  -- Time today (e.g., "3pm", "15:30")
+  local hour_str, min_str = lower_input:match("(%d+):(%d+)")
+  if hour_str then
+    local hour = tonumber(hour_str)
+    local min = tonumber(min_str)
+    return M.get_next_time(hour, min)
+  end
+  
+  -- Just hour with am/pm
+  local hour_match, ampm = lower_input:match("(%d+)%s*([ap]m)")
+  if hour_match then
+    local hour = tonumber(hour_match)
+    if ampm == "pm" and hour < 12 then
+      hour = hour + 12
+    elseif ampm == "am" and hour == 12 then
+      hour = 0  -- 12am is midnight
+    end
+    return M.get_next_time(hour, 0)
+  end
+  
+  return nil
+end
+
+-- Completion function for time input
+function M.complete_time(ArgLead, CmdLine, CursorPos)
+  local suggestions = {
+    os.date("%Y-%m-%d %H:%M", os.time() + 300),     -- 5 minutes
+    os.date("%Y-%m-%d %H:%M", os.time() + 3600),    -- 1 hour
+    "1h",
+    "2h", 
+    "30m",
+    "tomorrow 9am",
+    "tomorrow 2pm",
+    "next monday 10am"
+  }
+  
+  local matches = {}
+  for _, suggestion in ipairs(suggestions) do
+    if suggestion:find(ArgLead, 1, true) == 1 then
+      table.insert(matches, suggestion)
+    end
+  end
+  
+  return matches
 end
 
 return M

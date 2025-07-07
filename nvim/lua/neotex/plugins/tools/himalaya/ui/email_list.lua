@@ -23,6 +23,7 @@ local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 -- Module state
 local sync_status_timer = nil
 local last_sync_progress = nil
+local scheduled_timer = nil
 
 -- Buffer tracking (reference to main module's buffers)
 local buffers = nil
@@ -31,6 +32,46 @@ local buffers = nil
 function M.init(main_buffers)
   -- Store reference to main module's buffers
   buffers = main_buffers
+  
+  -- Register event listener for email scheduled
+  local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+  local event_types = require('neotex.plugins.tools.himalaya.core.events')
+  
+  events_bus.on(event_types.EMAIL_SCHEDULED, function(data)
+    -- Refresh sidebar if it's open
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
+  
+  -- Also refresh on reschedule
+  events_bus.on(event_types.EMAIL_RESCHEDULED, function(data)
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
+  
+  -- And on cancel
+  events_bus.on(event_types.EMAIL_CANCELLED, function(data)
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
+  
+  -- And when email is sent
+  events_bus.on(event_types.EMAIL_SENT, function(data)
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
 end
 
 -- Toggle email sidebar
@@ -55,6 +96,8 @@ function M.toggle_email_sidebar()
       sidebar.state.is_open = false
       sidebar.state.win = nil
       sidebar.state.buf = nil
+      -- Stop countdown timer
+      M.stop_scheduled_updates()
       -- Removed noisy "Himalaya closed" notification
       return
     end
@@ -141,159 +184,167 @@ function M.show_email_list(args)
   }
   sidebar.update_content(loading_lines)
   
-  -- Load emails asynchronously to avoid blocking UI
-  vim.defer_fn(function()
-    local account_name = config.get_current_account_name()
-    
-    -- Get email list from himalaya
-    
-    local emails, total_count, actual_page = utils.get_email_list_smart_fill(account_name, folder, state.get_current_page(), state.get_page_size())
-    
-    -- Update page if it was adjusted during smart fill
-    if actual_page and actual_page ~= state.get_current_page() then
-      state.set_current_page(actual_page)
-    end
-    
-    if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
-      -- Check if this is a fresh/empty maildir
-      local account = config.get_current_account()
-      if account then
-        local maildir = vim.fn.expand(account.maildir_path)
-        if vim.fn.isdirectory(maildir) == 1 then
-          -- Check if INBOX has any emails
-          local inbox_cur = maildir .. '/INBOX/cur'
-          local inbox_new = maildir .. '/INBOX/new'
-          local has_emails = false
-          
-          if vim.fn.isdirectory(inbox_cur) == 1 then
-            local cur_files = vim.fn.readdir(inbox_cur)
-            if #cur_files > 0 then has_emails = true end
-          end
-          
-          if not has_emails and vim.fn.isdirectory(inbox_new) == 1 then
-            local new_files = vim.fn.readdir(inbox_new)
-            if #new_files > 0 then has_emails = true end
-          end
-          
-          if not has_emails then
-            -- Fresh maildir with no emails
-            local empty_lines = {
-              string.format('󰊫 %s - %s', display_name, folder),
-              '',
-              '󰇯 Maildir is empty',
-              '',
-              'Run :HimalayaSyncInbox to sync emails',
-              'or :HimalayaSyncFull for all folders'
-            }
-            sidebar.update_content(empty_lines)
-            notify.himalaya('Maildir is empty. Run :HimalayaSyncInbox to sync emails.', notify.categories.STATUS)
-            -- Continue with empty list
-            emails = {}
-            total_count = 0
-          else
-            local error_lines = {
-              string.format('󰊫 %s - %s', display_name, folder),
-              '',
-              '󰅙 Failed to get email list',
-              '',
-              'This could be due to:',
-              '• Invalid Himalaya configuration',
-              '• JSON parsing error',
-              '• Network connectivity issues',
-              '',
-              'Try:',
-              '• :HimalayaDebugJson - Test JSON parsing',
-              '• :HimalayaRawTest - Test raw output',
-              '• :messages - Check error details'
-            }
-            sidebar.update_content(error_lines)
-            notify.himalaya('Failed to get email list - run :HimalayaDebugJson for details', notify.categories.ERROR)
-            return
-          end
+  -- Get email list from himalaya (synchronous)
+  local account_name = config.get_current_account_name()
+  local emails, total_count, adjusted_page = utils.get_email_list_smart_fill(account_name, folder, state.get_current_page(), state.get_page_size())
+  
+  -- Update page if it was adjusted
+  if adjusted_page and adjusted_page ~= state.get_current_page() then
+    state.set_current_page(adjusted_page)
+  end
+  
+  -- Handle errors or empty results
+  if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
+    -- Check if this is a fresh/empty maildir
+    local account = config.get_current_account()
+    if account then
+      local maildir = vim.fn.expand(account.maildir_path)
+      if vim.fn.isdirectory(maildir) == 1 then
+        -- Check if INBOX has any emails
+        local inbox_cur = maildir .. '/INBOX/cur'
+        local inbox_new = maildir .. '/INBOX/new'
+        local has_emails = false
+        
+        if vim.fn.isdirectory(inbox_cur) == 1 then
+          local cur_files = vim.fn.readdir(inbox_cur)
+          if #cur_files > 0 then has_emails = true end
+        end
+        
+        if not has_emails and vim.fn.isdirectory(inbox_new) == 1 then
+          local new_files = vim.fn.readdir(inbox_new)
+          if #new_files > 0 then has_emails = true end
+        end
+        
+        if not has_emails then
+          -- Fresh maildir with no emails
+          local empty_lines = {
+            string.format('󰊫 %s - %s', display_name, folder),
+            '',
+            '󰇯 Maildir is empty',
+            '',
+            'Run :HimalayaSyncInbox to sync emails',
+            'or :HimalayaSyncFull for all folders'
+          }
+          sidebar.update_content(empty_lines)
+          notify.himalaya('Maildir is empty. Run :HimalayaSyncInbox to sync emails.', notify.categories.STATUS)
+          -- Continue with empty list
+          emails = {}
+          total_count = 0
         else
           local error_lines = {
             string.format('󰊫 %s - %s', display_name, folder),
             '',
-            '󰅙 Mail directory not found',
+            '󰅙 Failed to get email list',
             '',
-            'Run :HimalayaSetup to configure'
+            'This could be due to:',
+            '• Invalid Himalaya configuration',
+            '• JSON parsing error',
+            '• Network connectivity issues',
+            '',
+            'Try:',
+            '• :HimalayaDebugJson - Test JSON parsing',
+            '• :HimalayaRawTest - Test raw output',
+            '• :messages - Check error details'
           }
           sidebar.update_content(error_lines)
-          notify.himalaya('Mail directory not found. Run :HimalayaSetup', notify.categories.ERROR)
+          notify.himalaya('Failed to get email list - run :HimalayaDebugJson for details', notify.categories.ERROR)
           return
         end
       else
         local error_lines = {
-          '󰊫 No account configured',
+          string.format('󰊫 %s - %s', display_name, folder),
+          '',
+          '󰅙 Mail directory not found',
           '',
           'Run :HimalayaSetup to configure'
         }
         sidebar.update_content(error_lines)
-        notify.himalaya('No account configured', notify.categories.ERROR)
+        notify.himalaya('Mail directory not found. Run :HimalayaSetup', notify.categories.ERROR)
         return
       end
+    else
+      local error_lines = {
+        '󰊫 No account configured',
+        '',
+        'Run :HimalayaSetup to configure'
+      }
+      sidebar.update_content(error_lines)
+      notify.himalaya('No account configured', notify.categories.ERROR)
+      return
     end
-    
-    -- Store emails in cache
-    if emails and #emails > 0 then
-      email_cache.store_emails(account_name, folder, emails)
-    end
-    
-    -- Store total count and folder count
-    if total_count and total_count > 0 then
-      state.set_total_emails(total_count)
-      
-      -- Only store as folder count if it's an exact count (not an estimate)
-      -- We have an exact count when we get less than a full page
-      local page_size = state.get_page_size()
-      if emails and #emails < page_size then
-        -- This is the exact total count, store it
-        state.set_folder_count(account_name, folder, total_count)
-      end
-    end
-    
-    -- Format and display email list
-    local lines = M.format_email_list(emails)
-    sidebar.update_content(lines)
-    
-    -- Store email data in state instead of buffer variables to avoid userdata issues
-    state.set('email_list.emails', emails)
-    state.set('email_list.account', state.get_current_account())
-    state.set('email_list.folder', folder)
-    
-    -- Store metadata in state
-    state.set('email_list.line_map', lines.metadata or {})
-    state.set('email_list.email_start_line', lines.email_start_line or 1)
-    
-    -- Keep buffer references for backwards compatibility but only with simple data
-    vim.b[buf].himalaya_account = state.get_current_account()
-    vim.b[buf].himalaya_folder = folder
-    
-    -- Set up buffer keymaps for the sidebar
-    config.setup_buffer_keymaps(buf)
-    
-    -- Set up hover preview
-    M.setup_hover_preview(buf)
-    
-    -- Check for running sync and start status updates
-    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
-    local status = mbsync.get_status()
-    
-    -- Start sync status updates if sync is running
-    if status.sync_running then
-      M.start_sync_status_updates()
-      -- Force refresh header immediately to show current status
-      M.refresh_sidebar_header()
-    end
-    
-    -- Save current view to state
-    state.save()
-    
-    -- Remove repetitive message - too noisy
-  end, 10) -- Very short delay to ensure sidebar opens immediately
+  end
   
-  -- Set up buffer keymaps immediately (before emails load)
+  -- Store emails in cache
+  if emails and #emails > 0 then
+    email_cache.store_emails(account_name, folder, emails)
+  end
+  
+  -- Store total count and folder count
+  if total_count and total_count > 0 then
+    state.set_total_emails(total_count)
+    
+    -- Only store as folder count if it's an exact count (not an estimate)
+    -- We have an exact count when we get less than a full page
+    local page_size = state.get_page_size()
+    if emails and #emails < page_size then
+      -- This is the exact total count, store it
+      state.set_folder_count(account_name, folder, total_count)
+    end
+  end
+  
+  -- Format and display email list
+  local lines = M.format_email_list(emails)
+  sidebar.update_content(lines)
+  
+  -- Store email data in state instead of buffer variables to avoid userdata issues
+  state.set('email_list.emails', emails)
+  state.set('email_list.account', state.get_current_account())
+  state.set('email_list.folder', folder)
+  
+  -- Store metadata in state
+  state.set('email_list.line_map', lines.metadata or {})
+  state.set('email_list.email_start_line', lines.email_start_line or 1)
+  
+  -- Position cursor at first email or restore previous position
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  if sidebar.get_win() and vim.api.nvim_win_is_valid(sidebar.get_win()) then
+    -- Get stored cursor position or default to first email
+    local email_start_line = lines.email_start_line or 1
+    local cursor_line = state.get('sidebar.cursor_line', email_start_line)
+    
+    -- Ensure cursor line is within valid range
+    local line_count = vim.api.nvim_buf_line_count(buf)
+    if cursor_line > line_count then
+      cursor_line = email_start_line
+    end
+    
+    -- Position cursor
+    vim.api.nvim_win_set_cursor(sidebar.get_win(), {cursor_line, 0})
+  end
+  
+  -- Keep buffer references for backwards compatibility but only with simple data
+  vim.b[buf].himalaya_account = state.get_current_account()
+  vim.b[buf].himalaya_folder = folder
+  
+  -- Set up buffer keymaps for the sidebar
   config.setup_buffer_keymaps(buf)
+  
+  -- Set up hover preview
+  M.setup_hover_preview(buf)
+  
+  -- Check for running sync and start status updates
+  local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+  local status = mbsync.get_status()
+  
+  -- Start sync status updates if sync is running
+  if status.sync_running then
+    M.start_sync_status_updates()
+    -- Force refresh header immediately to show current status
+    M.refresh_sidebar_header()
+  end
+  
+  -- Save current view to state
+  state.save()
   
   -- Focus the sidebar immediately
   sidebar.focus()
@@ -489,18 +540,83 @@ function M.format_email_list(emails)
   -- Store the email start line for easier access
   lines.email_start_line = email_start_line
   
+  -- Add scheduled emails section
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduled_items = scheduler.get_scheduled_emails()
+  
+  if #scheduled_items > 0 then
+    -- Add visual separator
+    table.insert(lines, "")
+    table.insert(lines, string.rep("─", 26) .. " Scheduled (" .. #scheduled_items .. ") " .. string.rep("─", 26))
+    table.insert(lines, "")
+    
+    -- Store where scheduled emails start
+    local scheduled_start_line = #lines + 1
+    
+    -- Add each scheduled email with countdown
+    for i, item in ipairs(scheduled_items) do
+      local line_num = #lines + 1
+      local time_left = item.scheduled_for - os.time()
+      local countdown = scheduler.format_countdown(time_left)
+      
+      -- Store metadata for navigation
+      if not lines.metadata then lines.metadata = {} end
+      lines.metadata[line_num] = {
+        type = 'scheduled',
+        id = item.id,
+        email_data = item.email_data,
+        scheduled_for = item.scheduled_for,
+        email_index = i + #emails  -- Continue index from regular emails
+      }
+      
+      -- Format: [countdown] [subject] to [recipient]
+      local subject = item.email_data.subject or "No subject"
+      if #subject > 30 then
+        subject = subject:sub(1, 27) .. "..."
+      end
+      
+      local to = item.email_data.to or ""
+      if #to > 25 then
+        to = to:sub(1, 22) .. "..."
+      end
+      
+      table.insert(lines, string.format(" %s   %-30s to %s", 
+        countdown, subject, to))
+    end
+    
+    -- Store scheduled section info
+    lines.scheduled_start_line = scheduled_start_line
+    lines.scheduled_count = #scheduled_items
+    
+    -- Start countdown timer if not already running
+    if not scheduled_timer then
+      M.start_scheduled_updates()
+    end
+  end
+  
   -- Footer with keymaps
   table.insert(lines, '')
   table.insert(lines, string.rep('─', 70))
   
-  -- Show different footer based on whether emails are selected
-  local selected_count = state.get_selection_count()
-  if selected_count > 0 then
-    table.insert(lines, string.format('%d selected: gD:delete gA:archive gS:spam n/N:select', selected_count))
+  -- Check if cursor is on a scheduled email (for context-aware footer)
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local line_data = lines.metadata and lines.metadata[current_line]
+  local is_on_scheduled = line_data and line_data.type == 'scheduled'
+  
+  -- Check if help is expanded (default to compact)
+  local help_expanded = state.get('ui.help_expanded', false)
+  
+  if help_expanded then
+    -- Full help footer
+    table.insert(lines, 'ga:account gm:folder gs:sync')
+    table.insert(lines, 'gn:next gp:previous n/N:select q:quit')
+    table.insert(lines, 'return:preview/reschedule esc:clear')
+    table.insert(lines, 'gr:reply gR:reply-all gf:forward')
+    table.insert(lines, 'gD:delete gA:archive gS:spam gH:help')
   else
-    table.insert(lines, 'gs:sync gn:next-page gp:prev-page n/N:select')
+    -- Compact help footer
+    table.insert(lines, 'gH:help')
   end
-  table.insert(lines, 'return:preview/focus gm:folder ga:account gw:write')
   
   return lines
 end
@@ -610,6 +726,116 @@ function M.stop_sync_status_updates()
   if sync_status_timer then
     vim.fn.timer_stop(sync_status_timer)
     sync_status_timer = nil
+  end
+end
+
+-- Start scheduled email countdown updates
+function M.start_scheduled_updates()
+  -- Stop existing timer if any
+  if scheduled_timer then
+    vim.fn.timer_stop(scheduled_timer)
+    scheduled_timer = nil
+  end
+  
+  -- Update every second for smooth countdown
+  scheduled_timer = vim.fn.timer_start(1000, function()
+    vim.schedule(function()
+      -- Only update if sidebar is open
+      if not sidebar.is_open() then
+        return
+      end
+      
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local scheduled_items = scheduler.get_scheduled_emails()
+      
+      if #scheduled_items == 0 then
+        -- No scheduled emails, stop timer
+        vim.fn.timer_stop(scheduled_timer)
+        scheduled_timer = nil
+        return
+      end
+      
+      -- Update only the scheduled section lines
+      M.update_scheduled_section()
+    end)
+  end, { ['repeat'] = -1 })
+end
+
+-- Stop scheduled updates
+function M.stop_scheduled_updates()
+  if scheduled_timer then
+    vim.fn.timer_stop(scheduled_timer)
+    scheduled_timer = nil
+  end
+end
+
+-- Efficient update of just the scheduled section
+function M.update_scheduled_section()
+  local buf = sidebar.get_buf()
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local metadata = state.get('email_list.line_map') or {}
+  
+  -- Find where scheduled section starts
+  local scheduled_start = nil
+  local scheduled_header_line = nil
+  for i, line in ipairs(lines) do
+    if line:match("─+ Scheduled %(") then
+      scheduled_header_line = i
+      scheduled_start = i + 2  -- Skip header and blank line
+      break
+    end
+  end
+  
+  if not scheduled_start then 
+    return 
+  end
+  
+  -- Update header with current count
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduled_items = scheduler.get_scheduled_emails()
+  
+  if scheduled_header_line then
+    local new_header = string.rep("─", 26) .. " Scheduled (" .. #scheduled_items .. ") " .. string.rep("─", 26)
+    -- Make buffer modifiable temporarily
+    local modifiable = vim.bo[buf].modifiable
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, scheduled_header_line - 1, scheduled_header_line, false, {new_header})
+    vim.bo[buf].modifiable = modifiable
+  end
+  
+  -- Update only the countdown timers in place
+  for i, item in ipairs(scheduled_items) do
+    local line_idx = scheduled_start + i - 1
+    local time_left = item.scheduled_for - os.time()
+    local countdown = scheduler.format_countdown(time_left)
+    
+    -- Get current line
+    if line_idx <= #lines then
+      local current_line = lines[line_idx]
+      if current_line then
+        -- Find the start of the subject (after countdown and 3 spaces)
+        -- Format is: " [countdown]   [subject] to [recipient]"
+        local subject_start = string.find(current_line, "   ", 2) -- Find "   " after countdown
+        local updated_line
+        if subject_start then
+          local rest_of_line = current_line:sub(subject_start)
+          updated_line = " " .. countdown .. rest_of_line
+        else
+          -- Fallback: just update countdown portion if pattern not found
+          updated_line = " " .. countdown .. current_line:sub(string.len(countdown) + 2)
+        end
+        
+        -- Make buffer modifiable temporarily
+        local modifiable = vim.bo[buf].modifiable
+        vim.bo[buf].modifiable = true
+        vim.api.nvim_buf_set_lines(buf, line_idx - 1, line_idx, false, {updated_line})
+        vim.bo[buf].modifiable = modifiable
+      end
+    end
   end
 end
 
@@ -1092,7 +1318,12 @@ function M.setup_hover_preview(buf)
       local email_id = M.get_email_id_from_line(line)
       
       if email_id then
-        email_preview.queue_preview(email_id, sidebar_win, 'keyboard')
+        -- Check if this is a scheduled email
+        local metadata = state.get('email_list.line_map') or {}
+        local line_data = metadata[line]
+        local email_type = line_data and line_data.type or 'regular'
+        
+        email_preview.queue_preview(email_id, sidebar_win, 'keyboard', email_type)
       end
     end
   })

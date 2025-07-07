@@ -78,18 +78,26 @@ This document provides a quick reference for how all specification items map to 
 
 ## Phase 9: Advanced Features & UI Evolution (Weeks 5-6) - IN PROGRESS
 
-### Completed Features (4/8)
-1. ✓ **Undo Send System** (#2) - 60-second delay queue - COMPLETED
+### Completed Features (6/8)
+1. ✓ **Undo Send System** (#2) - Replaced by unified scheduler - COMPLETED
 2. ✓ **Advanced Search** (#3) - Search operators and filters - COMPLETED  
 3. ✓ **Email Templates** (#4) - Variable support - COMPLETED
 4. ✓ **Notification System Integration** (CLEANUP #4.2, TODOS #4.2) - COMPLETED
+5. ✓ **Unified Email Scheduling** - ALL emails scheduled, no immediate send - COMPLETED
+6. ✓ **Enhanced Scheduling UI** - Sidebar integration, live countdowns - COMPLETED
 
 ### 🎉 COMPLETED Implementation - Unified Email Scheduling (Core Features)
 - **Specification**: [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)
 - **Breaking Changes**: ✅ Removed send_queue.lua, ✅ No immediate send option
 - **Key Features**: ✅ ALL emails scheduled, ✅ Minimum 60s delay, ✅ Comprehensive scheduling UI
-- **Status**: ✅ Phase 0, 1, 4, 5 complete - ⏳ Phase 2, 3 remaining (interactive windows, enhanced queue UI)
+- **Status**: ✅ Phase 0, 1, 4, 5 complete - ⏳ Phase 2, 3 remaining (see below)
 - **Test Results**: 5 passed, 0 failed - All core functionality verified
+
+### Enhanced Scheduling UI - ✅ COMPLETED
+- **Specification**: [PHASE_9_ENHANCED_SCHEDULING_UI.md](PHASE_9_ENHANCED_SCHEDULING_UI.md)
+- **Phase 2**: ✅ Sidebar integration with live countdown timers
+- **Phase 3**: ✅ Enhanced preview and context-aware keybindings
+- **Status**: All phases implemented and tested successfully
 
 ### Remaining Features - Not Implemented
 - **Specification**: [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)
@@ -144,13 +152,17 @@ This document provides a quick reference for how all specification items map to 
 - Phase 9 Remaining: Features 1, 5, 7, 8 (Multiple views, Scheduling, Rules, Integration)
 - Phase 10: Feature 6 (Encryption)
 
-**PHASE_9_NEXT_IMPLEMENTATION.md** (New)
-- Unified email scheduling system (breaking changes)
+**PHASE_9_NEXT_IMPLEMENTATION.md**
+- Unified email scheduling system (breaking changes) - CORE COMPLETE
 
-**PHASE_9_REMAINING_FEATURES.md** (New)
+**PHASE_9_ENHANCED_SCHEDULING_UI.md** (New)
+- Phase 2: Interactive scheduling windows
+- Phase 3: Enhanced queue management
+
+**PHASE_9_REMAINING_FEATURES.md**
 - Multiple account views, email rules, integration features
 
-**WINDOW_MANAGEMENT_SPEC.md** (New)
+**WINDOW_MANAGEMENT_SPEC.md**
 - Window layouts and management improvements
 
 **CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md**

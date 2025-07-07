@@ -42,19 +42,24 @@ This directory contains comprehensive specifications for the ongoing development
 
 ### Phase 9 Implementation Specifications
 
-8. **[PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)** - Unified Email Scheduling System 🆕
+8. **[PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)** - Unified Email Scheduling System ✅
    - Clean implementation replacing send_queue.lua
    - ALL emails must be scheduled (no immediate send)
    - Minimum 60-second safety delay
    - Full scheduling UI with custom times
-   - Breaking changes for better architecture
+   - **Status**: Core features COMPLETE (Phases 0,1,4,5)
 
-9. **[PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)** - Remaining Phase 9 Features 🆕
-   - Multiple Account Views (unified inbox, split, tabbed)
-   - Email Rules and Filters
-   - Integration Features (tasks, calendar, notes)
+9. **[PHASE_9_ENHANCED_SCHEDULING_UI.md](PHASE_9_ENHANCED_SCHEDULING_UI.md)** - Enhanced Scheduling UI ✅
+   - Phase 2: Sidebar integration with live countdown timers
+   - Phase 3: Enhanced preview and context-aware keybindings
+   - **Status**: COMPLETED - All phases implemented
 
-10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements 🆕
+10. **[PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)** - Remaining Phase 9 Features
+    - Multiple Account Views (unified inbox, split, tabbed)
+    - Email Rules and Filters
+    - Integration Features (tasks, calendar, notes)
+
+11. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements
     - Predefined layouts (classic, vertical, three-pane, focused)
     - Window coordination and smart focusing
     - Interactive resize mode
@@ -139,7 +144,8 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
 - **Key Deliverables**: Advanced search, templates, scheduling, UI improvements
 - **Primary Specs**: 
   - [ADVANCED_FEATURES_SPEC.md](ADVANCED_FEATURES_SPEC.md) - Feature implementations
-  - [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md) - Unified email scheduling
+  - [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md) - Unified email scheduling ✅
+  - [PHASE_9_ENHANCED_SCHEDULING_UI.md](PHASE_9_ENHANCED_SCHEDULING_UI.md) - Enhanced UI 🆕
   - [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md) - Remaining features
   - [WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md) - Window management
 - **Completed Features**:
@@ -148,10 +154,10 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
   - ✅ Email templates with variables
   - ✅ Notification system integration
   - ✅ **Unified email scheduling (core features)** - ALL emails now scheduled, no immediate send
-- **Next Implementation**:
-  - 🚧 Interactive scheduling windows (Phase 2)
-  - 🚧 Enhanced queue management UI (Phase 3)
-- **Remaining Features**:
+- **Enhanced UI Implementation** ([PHASE_9_ENHANCED_SCHEDULING_UI.md](PHASE_9_ENHANCED_SCHEDULING_UI.md)):
+  - ✅ Sidebar integration with live countdown timers (Phase 2)
+  - ✅ Enhanced preview and context-aware keybindings (Phase 3)
+- **Remaining Features** ([PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)):
   - ❌ Multiple account views
   - ❌ Email rules and filters
   - ❌ Integration features
@@ -253,11 +259,12 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
 - [✓] Address autocomplete functionality
 
 ### Phase 9: Advanced Features & UI Evolution (Weeks 5-6) 🚧 IN PROGRESS
-- [✓] Undo send system (60-second queue)
+- [✓] Undo send system → Unified email scheduling (core complete)
 - [✓] Advanced search with operators
 - [✓] Email template management
 - [✓] Notification system integration
-- [ ] Unified email scheduling (next implementation)
+- [✓] Sidebar integration with live countdowns (Phase 2 of scheduling)
+- [✓] Enhanced preview and keybindings (Phase 3 of scheduling)
 - [ ] Multiple account views
 - [ ] Email rules and filters
 - [ ] Integration features
@@ -324,4 +331,4 @@ Track progress using these metrics:
 *Last Updated: 2025-01-07*
 *Total Implementation Timeline: 7 weeks*
 *Phases Completed: 8/10*
-*Phase 9 Status: IN PROGRESS (4/8 features completed)*
+*Phase 9 Status: IN PROGRESS (6/10 features completed)*

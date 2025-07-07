@@ -69,7 +69,7 @@ function M.setup(cfg)
     end
   })
   
-  -- Global handler for when preview mode is active - only close on non-Himalaya windows
+  -- Global handler for when preview mode is active - hide/show preview based on window changes
   vim.api.nvim_create_autocmd('WinEnter', {
     group = himalaya_group,
     callback = function()
@@ -81,15 +81,26 @@ function M.setup(cfg)
       local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
       local sidebar_win = sidebar.get_win()
       
-      -- Only close preview if entering a window that's not preview, sidebar, or Himalaya-related
-      if preview_state.win and current_win ~= preview_state.win and current_win ~= sidebar_win then
+      -- If entering sidebar and preview mode is enabled, reopen preview for current email
+      if current_win == sidebar_win and preview_state.preview_mode then
+        -- Get current email ID and show preview if we have one
+        local main = require('neotex.plugins.tools.himalaya.ui.main')
+        local email_id = main.get_current_email_id()
+        if email_id then
+          -- Small delay to ensure sidebar is fully focused
+          vim.defer_fn(function()
+            M.show_preview(email_id, current_win)
+          end, 10)
+        end
+      -- If leaving sidebar/preview area for non-Himalaya windows, hide preview but keep mode enabled
+      elseif preview_state.win and current_win ~= preview_state.win and current_win ~= sidebar_win then
         -- Check if the new window is Himalaya-related
         local buf = vim.api.nvim_win_get_buf(current_win)
         local filetype = vim.api.nvim_buf_get_option(buf, 'filetype')
         
-        -- Don't close preview for Himalaya windows
+        -- Only hide preview for non-Himalaya windows (keep preview mode enabled)
         if not filetype:match('^himalaya') then
-          M.disable_preview_mode()
+          M.hide_preview()
         end
       end
     end
@@ -220,6 +231,17 @@ function M.render_preview(email, buf)
   
   -- Protected render function
   local function do_render()
+    -- Add scheduled email header if applicable
+    if email._is_scheduled then
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local time_left = email._scheduled_for - os.time()
+      table.insert(lines, "Status:  Scheduled")
+      table.insert(lines, "Send in: " .. scheduler.format_countdown(time_left))
+      table.insert(lines, "Send at: " .. os.date("%Y-%m-%d %H:%M", email._scheduled_for))
+      table.insert(lines, string.rep("-", M.config.width - 2))
+      table.insert(lines, "")
+    end
+    
     if M.config.show_headers then
       -- Safe string conversion for all fields
       local from = tostring(email.from or "Unknown")
@@ -250,8 +272,13 @@ function M.render_preview(email, buf)
     -- Add footer with keymaps
     table.insert(lines, "")
     table.insert(lines, string.rep("─", M.config.width - 2))
-    table.insert(lines, "esc:sidebar gr:reply gR:reply-all gf:forward")
-    table.insert(lines, "q:exit gD:delete gA:archive gS:spam")
+    if email._is_scheduled then
+      table.insert(lines, "esc:sidebar gD:cancel")
+      table.insert(lines, "q:exit")
+    else
+      table.insert(lines, "esc:sidebar gr:reply gR:reply-all gf:forward")
+      table.insert(lines, "q:exit gD:delete gA:archive gS:spam")
+    end
     
     -- Update buffer with validation
     if buf and vim.api.nvim_buf_is_valid(buf) then
@@ -314,7 +341,7 @@ function M.hide_preview()
 end
 
 -- Queue preview with debouncing
-function M.queue_preview(email_id, parent_win, trigger)
+function M.queue_preview(email_id, parent_win, trigger, email_type)
   -- Cancel pending previews
   preview_generation = preview_generation + 1
   local current_gen = preview_generation
@@ -330,13 +357,13 @@ function M.queue_preview(email_id, parent_win, trigger)
   hover_timer:start(delay, 0, vim.schedule_wrap(function()
     -- Check if this preview is still relevant
     if current_gen == preview_generation then
-      M.show_preview(email_id, parent_win)
+      M.show_preview(email_id, parent_win, email_type)
     end
   end))
 end
 
 -- Show preview for an email (two-stage loading)
-function M.show_preview(email_id, parent_win)
+function M.show_preview(email_id, parent_win, email_type)
   if not M.config.enabled then
     return
   end
@@ -349,8 +376,25 @@ function M.show_preview(email_id, parent_win)
   local account = state.get_current_account()
   local folder = state.get_current_folder()
   
-  -- Stage 1: Show immediate preview with cached data
-  local cached_email = email_cache.get_email(account, folder, email_id)
+  -- Check if this is a scheduled email
+  local is_scheduled = email_type == 'scheduled'
+  local cached_email = nil
+  
+  if is_scheduled then
+    -- Get scheduled email data
+    local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+    local scheduled_item = scheduler.get_scheduled_email(email_id)
+    if scheduled_item then
+      -- Convert to email format for preview
+      cached_email = scheduled_item.email_data
+      cached_email.id = email_id
+      cached_email._scheduled_for = scheduled_item.scheduled_for
+      cached_email._is_scheduled = true
+    end
+  else
+    -- Stage 1: Show immediate preview with cached data
+    cached_email = email_cache.get_email(account, folder, email_id)
+  end
   
   if not cached_email then
     logger.warn('Email not found in cache', { id = email_id })
@@ -425,8 +469,8 @@ function M.show_preview(email_id, parent_win)
   
   -- No cleanup needed anymore
   
-  -- Stage 2: Load full content asynchronously if not cached
-  if not cached_body then
+  -- Stage 2: Load full content asynchronously if not cached (skip for scheduled emails)
+  if not cached_body and not is_scheduled then
     local account_cfg = config.get_current_account()
     if not account_cfg then
       return
@@ -682,24 +726,20 @@ function M.setup_preview_keymaps(buf)
     local key = vim.fn.nr2char(char)
     
     if key == 'r' then
-      -- Reply to email
+      -- Reply to email (keep preview open)
       if preview_state.email_id then
         local email_id = preview_state.email_id
-        -- Close preview first
-        M.hide_preview()
-        -- Use main module's reply function
+        -- Use main module's reply function without closing preview
         local main = require('neotex.plugins.tools.himalaya.ui.main')
         -- Set the current email ID in state so reply_current_email can find it
         state.set('preview_email_id', email_id)
         main.reply_current_email()
       end
     elseif key == 'R' then
-      -- Reply all
+      -- Reply all (keep preview open)
       if preview_state.email_id then
         local email_id = preview_state.email_id
-        -- Close preview first
-        M.hide_preview()
-        -- Use main module's reply all function
+        -- Use main module's reply all function without closing preview
         local main = require('neotex.plugins.tools.himalaya.ui.main')
         state.set('preview_email_id', email_id)
         main.reply_all_current_email()
