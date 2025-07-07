@@ -276,7 +276,8 @@ function M.get_current_email_id()
   -- Use the line map from state
   local line_map = state.get('email_list.line_map')
   if line_map and line_map[line_num] then
-    return line_map[line_num].email_id
+    -- Handle both regular emails (email_id) and scheduled emails (id)
+    return line_map[line_num].email_id or line_map[line_num].id
   end
   
   -- Fallback to old method if line map not available

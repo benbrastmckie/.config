@@ -90,6 +90,11 @@ end
 -- Close sidebar window
 function M.close()
   if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
+    -- Save cursor position before closing
+    local cursor_pos = vim.api.nvim_win_get_cursor(M.state.win)
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set('sidebar.cursor_line', cursor_pos[1])
+    
     -- Get the window's buffer before closing
     local buf = vim.api.nvim_win_get_buf(M.state.win)
     

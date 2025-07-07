@@ -394,8 +394,21 @@ function M.setup_buffer_keymaps(bufnr)
   -- Email list keymaps
   if vim.bo[bufnr].filetype == 'himalaya-list' then
     keymap('n', '<CR>', function()
-      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
       local line = vim.api.nvim_win_get_cursor(0)[1]
+      local state = require('neotex.plugins.tools.himalaya.core.state')
+      local line_map = state.get('email_list.line_map')
+      
+      -- Check if this is a scheduled email
+      local metadata = line_map and line_map[line]
+      if metadata and metadata.type == 'scheduled' then
+        -- For scheduled emails, open reschedule picker
+        local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+        scheduler.show_reschedule_picker(metadata.id)
+        return
+      end
+      
+      -- For regular emails, handle preview mode
+      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
       local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
       local email_id = email_list.get_email_id_from_line(line)
       
@@ -419,7 +432,7 @@ function M.setup_buffer_keymaps(bufnr)
         -- Preview mode is on but no preview shown, show it
         preview.show_preview(email_id, vim.api.nvim_get_current_win())
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Toggle preview mode / Focus preview' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Toggle preview mode / Focus preview / Reschedule' }))
     
     -- ESC to exit preview mode
     keymap('n', '<Esc>', function()
@@ -466,8 +479,6 @@ function M.setup_buffer_keymaps(bufnr)
         require('neotex.plugins.tools.himalaya.ui.main').pick_folder()
       elseif key == 'a' then
         require('neotex.plugins.tools.himalaya.ui.main').pick_account()
-      elseif key == 'w' then
-        require('neotex.plugins.tools.himalaya.ui.main').compose_email()
       elseif key == 'r' then
         require('neotex.plugins.tools.himalaya.ui.main').reply_current_email()
       elseif key == 'R' then
@@ -477,7 +488,16 @@ function M.setup_buffer_keymaps(bufnr)
       elseif key == 's' then
         require('neotex.plugins.tools.himalaya.ui.main').sync_current_folder()
       elseif key == 'D' then
-        if has_selection then
+        -- Check if current line is a scheduled email
+        local line = vim.api.nvim_win_get_cursor(0)[1]
+        local metadata = require('neotex.plugins.tools.himalaya.core.state').get('email_list.line_map') or {}
+        local line_data = metadata[line]
+        
+        if line_data and line_data.type == 'scheduled' then
+          -- Cancel scheduled email
+          local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+          scheduler.cancel_send(line_data.id)
+        elseif has_selection then
           require('neotex.plugins.tools.himalaya.ui.main').delete_selected_emails()
         else
           require('neotex.plugins.tools.himalaya.ui.main').delete_current_email()
@@ -494,6 +514,12 @@ function M.setup_buffer_keymaps(bufnr)
         else
           require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
         end
+      elseif key == 'H' then
+        -- Toggle help display
+        local current_expanded = state.get('ui.help_expanded', false)
+        state.set('ui.help_expanded', not current_expanded)
+        -- Refresh the sidebar to show new footer
+        require('neotex.plugins.tools.himalaya.ui.email_list').refresh_email_list()
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
@@ -504,6 +530,7 @@ function M.setup_buffer_keymaps(bufnr)
     keymap('n', 'q', function()
       require('neotex.plugins.tools.himalaya.ui.main').close_himalaya()
     end, vim.tbl_extend('force', opts, { desc = 'Close Himalaya' }))
+    
     
     -- Mouse click handler for sidebar
     vim.keymap.set('n', '<LeftMouse>', function()

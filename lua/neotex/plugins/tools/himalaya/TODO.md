@@ -43,7 +43,7 @@
   - [ ] integration features (see PHASE_9_REMAINING_FEATURES.md)
   - [ ] window management (see WINDOW_MANAGEMENT_SPEC.md)
 - [ ] Phase 10: Integration & Polish (Week 7)
-  - [ ] nvim freezes while sync is going after startup
+  - [ ] nvim freezes while sync is running, for instance as soon as I start nvim
   - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption
   - [ ] testing infrastructure
@@ -168,6 +168,7 @@
 ### Phase 9: Advanced Features (Weeks 5-6) 🚧 IN PROGRESS
 
 #### Completed (4/8)
+
 - [x] **Undo Send System**
   - [x] implement send queue with 60-second delay
   - [x] create undo notification UI
@@ -184,11 +185,12 @@
   - [x] full integration with unified notification system
 
 #### 🎉 COMPLETED Implementation - Unified Email Scheduling (Core Features)
+
 **Status**: All core functionality implemented and tested (5/5 tests passing)
 
 - [x] **Phase 0**: Removed send_queue.lua entirely (breaking changes)
 - [x] **Phase 1**: Created comprehensive scheduler.lua module
-- [x] **Phase 4**: Updated composer for scheduling-only workflow  
+- [x] **Phase 4**: Updated composer for scheduling-only workflow
 - [x] **Phase 5**: Implemented new command structure
 - [x] removed "Send Now" option - ALL emails must be scheduled
 - [x] minimum 60-second safety delay for all emails
@@ -203,6 +205,7 @@
 - [x] See spec: PHASE_9_NEXT_IMPLEMENTATION.md - CORE COMPLETE
 
 #### Remaining Features
+
 - [ ] **Multiple Account Views** (see PHASE_9_REMAINING_FEATURES.md)
   - [ ] unified inbox showing all accounts
   - [ ] split view for side-by-side accounts
@@ -234,9 +237,6 @@
   - [ ] update all README files
   - [ ] create user guide for new features
   - [ ] document architecture changes
-
-### Phase 10: Integration & Polish (Week 7)
-
 - [ ] **OAuth 2.0 Implementation**
   - [ ] enhance token encryption
   - [ ] add multi-provider OAuth support
