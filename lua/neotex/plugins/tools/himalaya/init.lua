@@ -38,9 +38,9 @@ function M.setup(opts)
   integration.setup()
 
   -- Initialize Phase 9 features
-  -- Initialize send queue (Undo Send System)
-  local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
-  send_queue.init()
+  -- Initialize unified email scheduler
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  scheduler.setup()
 
   -- Set up commands
   M.setup_commands()

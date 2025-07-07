@@ -93,70 +93,42 @@ function M.setup(registry)
     }
   }
 
-  -- Send Queue Commands (Phase 9 - Undo Send System)
-  commands.HimalayaSendQueue = {
+  -- Scheduler Commands (Phase 9 - Unified Email Scheduling System)
+  commands.HimalayaSchedule = {
     fn = function()
-      local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
-      send_queue.show_queue()
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      scheduler.show_queue()
     end,
-    opts = {
-      desc = 'Show email send queue with undo options'
+    opts = { desc = 'Show scheduled emails' }
+  }
+
+  commands.HimalayaScheduleCancel = {
+    fn = function(opts)
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      if opts.args and opts.args ~= '' then
+        scheduler.cancel_send(opts.args)
+      else
+        scheduler.cancel_from_queue_view()
+      end
+    end,
+    opts = { 
+      nargs = '?',
+      desc = 'Cancel scheduled email' 
     }
   }
 
-  commands.HimalayaUndoSend = {
+  commands.HimalayaScheduleEdit = {
     fn = function(opts)
-      local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
-      
-      if opts.args == '' then
-        -- Show interactive picker for pending emails
-        local queue = send_queue.queue
-        local pending_items = {}
-        
-        for id, item in pairs(queue) do
-          if item.status == "pending" then
-            local remaining = math.max(0, item.send_at - os.time())
-            table.insert(pending_items, {
-              id = id,
-              label = string.format("%s (sends in %ds)", 
-                item.email_data.subject or "No subject", 
-                remaining)
-            })
-          end
-        end
-        
-        if #pending_items == 0 then
-          require('neotex.util.notifications').himalaya(
-            "No pending emails to cancel",
-            require('neotex.util.notifications').categories.STATUS
-          )
-          return
-        end
-        
-        local labels = vim.tbl_map(function(item) return item.label end, pending_items)
-        
-        vim.ui.select(labels, {
-          prompt = "Select email to cancel:",
-        }, function(choice, idx)
-          if choice and idx then
-            local selected = pending_items[idx]
-            send_queue.cancel_send(selected.id)
-          end
-        end)
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      if opts.args and opts.args ~= '' then
+        scheduler.edit_scheduled_time(opts.args)
       else
-        -- Cancel specific email by ID
-        local cancelled = send_queue.cancel_send(opts.args)
-        if not cancelled then
-          require('neotex.util.notifications').himalaya(
-            "Email ID not found or already sent",
-            require('neotex.util.notifications').categories.ERROR
-          )
-        end
+        scheduler.edit_from_queue_view()
       end
     end,
     opts = {
       nargs = '?',
-      desc = 'Cancel a queued email send'
+      desc = 'Edit scheduled time'
     }
   }
 

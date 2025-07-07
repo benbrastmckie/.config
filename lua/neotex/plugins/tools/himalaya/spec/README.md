@@ -143,12 +143,14 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
   - [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md) - Remaining features
   - [WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md) - Window management
 - **Completed Features**:
-  - ✅ Undo send system (60-second delay)
+  - ✅ Undo send system (60-second delay) → **REPLACED by unified scheduler**
   - ✅ Advanced search with 23+ operators
   - ✅ Email templates with variables
   - ✅ Notification system integration
+  - ✅ **Unified email scheduling (core features)** - ALL emails now scheduled, no immediate send
 - **Next Implementation**:
-  - 🚧 Unified email scheduling (breaking changes)
+  - 🚧 Interactive scheduling windows (Phase 2)
+  - 🚧 Enhanced queue management UI (Phase 3)
 - **Remaining Features**:
   - ❌ Multiple account views
   - ❌ Email rules and filters
