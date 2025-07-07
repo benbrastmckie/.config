@@ -1,16 +1,25 @@
-# OAuth and Utility Scripts
+# Scripts Directory
 
-OAuth token management and utility scripts providing authentication support until native Himalaya CLI OAuth handling is available.
+Utility scripts, OAuth token management, and testing tools for the Himalaya email plugin.
 
 ## Purpose
 
-These scripts provide OAuth2 token management for Gmail and other providers:
-- Automatic token refresh for expired credentials
-- Cross-platform token storage and retrieval
-- Debugging and validation utilities
-- Integration bridge between Neovim plugin and external OAuth flows
+This directory contains:
+- **OAuth2 token management** for Gmail and other providers
+- **Testing and validation tools** for plugin functionality
+- **Utility scripts** for maintenance and debugging
+- **Integration bridges** between Neovim plugin and external tools
 
 ## Scripts
+
+### test_commands.lua
+**Comprehensive Command Test Suite**
+- Tests all Himalaya commands and Phase 6 implementations (Event System, Error Handling, State Management)
+- Validates backward compatibility with existing functionality
+- Verifies integration between new and existing systems
+- **Runs silently** and displays results in a single floating window
+- **Usage**: `:HimalayaTestCommands` or `:lua require('neotex.plugins.tools.himalaya.scripts.test_commands').run_all_tests()`
+- **Auto-prompted** after successful health check completion
 
 ### refresh-gmail-oauth2
 Standard OAuth refresh script for Gmail accounts:

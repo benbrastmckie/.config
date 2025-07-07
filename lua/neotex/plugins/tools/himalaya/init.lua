@@ -16,6 +16,10 @@ function M.setup(opts)
   local config = require('neotex.plugins.tools.himalaya.core.config')
   config.setup(opts)
 
+  -- Initialize state with migration support (Phase 6)
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  state.init() -- Will handle migration and validation
+
   -- Initialize email cache
   local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
   email_cache.init(config.config.cache)
@@ -27,6 +31,11 @@ function M.setup(opts)
   -- Initialize UI system
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.setup()
+
+  -- Initialize event system (Phase 6) - after UI to ensure notifications work properly
+  local integration = require('neotex.plugins.tools.himalaya.orchestration.integration')
+  integration.setup_default_handlers()
+  integration.setup()
 
   -- Set up commands
   M.setup_commands()

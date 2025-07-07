@@ -1374,6 +1374,18 @@ M.command_registry.HimalayaRawTest = {
   }
 }
 
+M.command_registry.HimalayaTestCommands = {
+  fn = function()
+    -- Force reload to ensure we get the latest version
+    package.loaded['neotex.plugins.tools.himalaya.scripts.test_commands'] = nil
+    local test_suite = require('neotex.plugins.tools.himalaya.scripts.test_commands')
+    test_suite.run_all_tests()
+  end,
+  opts = {
+    desc = 'Run comprehensive command test suite'
+  }
+}
+
 -- Function to register all commands
 function M.register_all()
   local cmd = vim.api.nvim_create_user_command

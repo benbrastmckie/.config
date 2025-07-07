@@ -42,16 +42,11 @@ local function to_vim_level(level)
 end
 
 -- Format log message
-local function format_message(msg, context)
+local function format_message(msg, context, level)
   local formatted = M.prefix .. " " .. msg
   
-  if context then
-    if type(context) == "table" then
-      formatted = formatted .. " " .. vim.inspect(context)
-    else
-      formatted = formatted .. " " .. tostring(context)
-    end
-  end
+  -- Never show context in user-facing messages to keep them clean
+  -- Context is only for internal debugging in :messages
   
   return formatted
 end
@@ -79,20 +74,26 @@ function M.log(level, msg, context)
     category = notify.categories.STATUS
   end
   
-  -- Send through notification system (without prefix - notify system adds it)
-  notify.himalaya(msg, category, context)
-  
-  -- Also log to messages for debugging
-  local formatted = format_message(msg, context)
-  if level == M.levels.ERROR then
-    vim.api.nvim_err_writeln(formatted)
-  elseif level == M.levels.WARN then
-    vim.api.nvim_echo({{formatted, "WarningMsg"}}, true, {})
-  elseif level == M.levels.DEBUG then
-    -- Debug messages go only to :messages, not as notifications
-    vim.api.nvim_echo({{formatted, "Comment"}}, true, {})
+  -- Send through notification system (without context for user-facing messages)
+  if level >= M.levels.ERROR then
+    -- For errors and above, show clean message to user
+    notify.himalaya(msg, category)
+  elseif level >= M.levels.WARN then
+    -- For warnings, only show in debug mode
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya(msg, category)
+    end
   else
-    vim.api.nvim_echo({{formatted, "Normal"}}, true, {})
+    -- For info/debug, only log if in debug mode
+    if notify.config.modules.himalaya.debug_mode then
+      notify.himalaya(msg, category)
+    end
+  end
+  
+  -- Log technical details to :messages for debugging (only when context exists)
+  if context and (level == M.levels.DEBUG or notify.config.modules.himalaya.debug_mode) then
+    local formatted = format_message(msg, context, level)
+    vim.api.nvim_echo({{formatted, "Comment"}}, true, {})
   end
 end
 
