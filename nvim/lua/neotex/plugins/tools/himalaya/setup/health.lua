@@ -394,12 +394,29 @@ function M.show_report(silent)
     
     if result.ok then
       table.insert(lines, 'All checks passed!')
+      table.insert(lines, '')
+      table.insert(lines, 'Run command test suite? (y/n)')
     else
       table.insert(lines, 'Some issues detected. Run suggested fixes.')
     end
     
     -- Show in floating window
     float.show('Himalaya Health Check', lines)
+    
+    -- If all checks passed, prompt user to run command tests
+    if result.ok then
+      vim.defer_fn(function()
+        local choice = vim.fn.input('Health check passed! Run command test suite? (y/n): ')
+        vim.cmd('redraw')
+        if choice:lower() == 'y' or choice:lower() == 'yes' then
+          -- Run the test suite directly (it will show results in floating window)
+          local test_suite = require('neotex.plugins.tools.himalaya.scripts.test_commands')
+          test_suite.run_all_tests()
+        else
+          print('Command test suite skipped. You can run it manually with :HimalayaTestCommands')
+        end
+      end, 500) -- Small delay to let the health window show first
+    end
   end
   
   return result

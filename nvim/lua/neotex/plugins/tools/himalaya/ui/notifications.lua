@@ -181,21 +181,10 @@ end
 
 -- Wrap notifications with smart handling and unified system integration
 function M.notify(text, level)
-  -- Try to handle as error
-  if level == 'error' then
-    if M.handle_sync_error(text) then
-      return
-    end
-  end
+  -- For error handling from the error module, just show clean notification
+  -- Don't try to handle as sync error since that causes double logging
   
-  -- Try to handle as success
-  if level == 'info' then
-    if M.handle_success(text) then
-      return
-    end
-  end
-  
-  -- Use unified notification system
+  -- Use unified notification system directly
   if level == 'error' then
     notify.himalaya(text, notify.categories.ERROR)
   elseif level == 'warn' then
@@ -279,6 +268,17 @@ function M.setup()
   -- Nothing needed for now, using logger directly
 end
 
--- Remove duplicate show function - using the more sophisticated one above
+-- Convenience functions for backward compatibility and easier testing
+function M.error(message)
+  M.notify(message, "error")
+end
+
+function M.warn(message)
+  M.notify(message, "warn")
+end
+
+function M.info(message)
+  M.notify(message, "info")
+end
 
 return M

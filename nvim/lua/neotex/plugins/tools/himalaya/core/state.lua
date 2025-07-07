@@ -1,15 +1,15 @@
 -- State management module
 -- Centralized state tracking for the Himalaya plugin
-
--- TODO: Add state migration for config format changes
--- TODO: Implement state cleanup for old/stale entries
--- TODO: Add validation for state values to prevent corruption
--- TODO: Consider compressing state file for large email lists
+-- Version 2: Added versioning, migration support, and validation
 
 local M = {}
 
--- State storage
-M.state = {
+-- State version for migration support
+local STATE_VERSION = 2
+
+-- Default state schema
+local default_state = {
+  version = STATE_VERSION,
   -- Sync state
   sync = {
     status = "idle", -- idle, running, error
@@ -73,6 +73,88 @@ M.state = {
   },
 }
 
+-- Current state (initialized with defaults)
+M.state = vim.tbl_deep_extend("force", {}, default_state)
+
+-- State migrations
+local migrations = {
+  [1] = function(state)
+    -- Migrate from v1 to v2: Add version field and ensure all sections exist
+    state.version = 2
+    state.sync = state.sync or {}
+    state.oauth = state.oauth or {}
+    state.ui = state.ui or {}
+    state.selection = state.selection or {}
+    state.cache = state.cache or {}
+    state.processes = state.processes or {}
+    state.folders = state.folders or {}
+    return state
+  end,
+}
+
+-- Migrate state to current version
+function M.migrate_state(state)
+  local current_version = state.version or 1
+  
+  while current_version < STATE_VERSION do
+    if migrations[current_version] then
+      state = migrations[current_version](state)
+    end
+    current_version = current_version + 1
+  end
+  
+  state.version = STATE_VERSION
+  return state
+end
+
+-- Validate state structure
+function M.validate_state(state)
+  -- Check required fields
+  if not state.version then
+    return false, "Missing state version"
+  end
+  
+  -- Validate structure types
+  local required_tables = {
+    "sync", "oauth", "ui", "selection", 
+    "cache", "processes", "folders"
+  }
+  
+  for _, key in ipairs(required_tables) do
+    if state[key] and type(state[key]) ~= "table" then
+      return false, string.format("Invalid type for %s: expected table, got %s", key, type(state[key]))
+    end
+  end
+  
+  return true
+end
+
+-- Cleanup stale entries
+function M.cleanup_stale_entries()
+  local now = os.time()
+  local stale_threshold = 7 * 24 * 60 * 60 -- 7 days
+  
+  -- Clean old email cache
+  if M.state.cache and M.state.cache.emails then
+    for id, email in pairs(M.state.cache.emails) do
+      if email.cached_at and (now - email.cached_at) > stale_threshold then
+        M.state.cache.emails[id] = nil
+      end
+    end
+  end
+  
+  -- Clean old folder update timestamps
+  if M.state.folders and M.state.folders.last_updated then
+    for account, folders in pairs(M.state.folders.last_updated) do
+      for folder, timestamp in pairs(folders) do
+        if (now - timestamp) > stale_threshold then
+          M.state.folders.last_updated[account][folder] = nil
+        end
+      end
+    end
+  end
+end
+
 -- Get a state value by path (e.g., "sync.status")
 function M.get(path, default)
   local value = M.state
@@ -120,56 +202,42 @@ end
 
 -- Reset all state
 function M.reset()
-  M.state = {
-    sync = {
-      status = "idle",
-      last_sync = nil,
-      last_error = nil,
-      start_time = nil,
-      current_channel = nil,
-    },
-    oauth = {
-      last_refresh = 0,
-      refresh_in_progress = false,
-      last_check = 0,
-    },
-    ui = {
-      sidebar_open = false,
-      reader_open = false,
-      current_folder = "INBOX",
-      current_email_id = nil,
-      selected_emails = {},
-      -- UI view state
-      current_account = nil,
-      current_page = 1,
-      page_size = 25,
-      total_emails = 0,
-      selected_email = nil,
-      sidebar_width = 50,
-      sidebar_position = 'left',
-      last_query = nil,
-      last_search_results = nil,
-      window_positions = {},
-      session_timestamp = nil,
-    },
-    selection = {
-      selected_emails = {},
-      selection_mode = false,
-    },
-    cache = {
-      folders = {},
-      emails = {},
-      last_update = {},
-    },
-    processes = {
-      sync_job_id = nil,
-      reader_job_id = nil,
-    },
-    folders = {
-      counts = {},
-      last_updated = {},
-    },
-  }
+  M.state = vim.tbl_deep_extend("force", {}, default_state)
+end
+
+-- Reset to defaults (for error recovery)
+function M.reset_to_defaults()
+  local logger = require("neotex.plugins.tools.himalaya.core.logger")
+  logger.warn("Resetting state to defaults due to corruption")
+  
+  M.reset()
+  return true
+end
+
+-- Initialize state with migration and validation
+function M.init(existing_state)
+  if existing_state then
+    -- Validate existing state
+    local valid, error_msg = M.validate_state(existing_state)
+    if not valid then
+      local logger = require("neotex.plugins.tools.himalaya.core.logger")
+      logger.error("State validation failed: " .. error_msg)
+      M.reset()
+      return
+    end
+    
+    -- Migrate if needed
+    if existing_state.version and existing_state.version < STATE_VERSION then
+      existing_state = M.migrate_state(existing_state)
+    end
+    
+    M.state = existing_state
+  else
+    M.reset()
+  end
+  
+  -- Cleanup stale entries on init
+  M.cleanup_stale_entries()
 end
 
 -- Sync-specific helpers
