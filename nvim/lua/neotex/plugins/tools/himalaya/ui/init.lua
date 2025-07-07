@@ -72,9 +72,17 @@ function M.setup()
   -- Initialize modules
   local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
   local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+  local features = require('neotex.plugins.tools.himalaya.ui.features')
   
   email_preview.setup(config.config)
   email_composer.setup(config.config)
+  
+  -- Export Phase 8 UI functions
+  M.show_unified_inbox = features.show_unified_inbox
+  M.show_attachments_list = features.show_attachments_list
+  M.show_trash_list = features.show_trash_list
+  M.pick_attachment = features.pick_attachment
+  M.show_headers = features.show_headers
   
   -- Setup autocmds for email actions
   local group = vim.api.nvim_create_augroup('HimalayaEmailActions', { clear = true })
