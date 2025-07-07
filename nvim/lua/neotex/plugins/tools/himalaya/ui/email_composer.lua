@@ -474,7 +474,7 @@ function M.save_draft(buf)
   notify.himalaya('Draft saved', notify.categories.USER_ACTION)
 end
 
--- Send email with undo capability
+-- Send email with scheduling (no immediate send)
 function M.send_email(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -501,39 +501,8 @@ function M.send_email(buf)
     return
   end
   
-  -- Show send options
-  local prompt = string.format(" Send email to %s?", email.to)
-  
-  vim.ui.select({"Send Now", "Send with Undo (60s delay)", "Schedule Later", "Cancel"}, {
-    prompt = prompt,
-    kind = "confirmation",
-    format_item = function(item)
-      if item == "Send Now" then
-        return "⚡ " .. item
-      elseif item == "Send with Undo (60s delay)" then
-        return "⏰ " .. item
-      elseif item == "Schedule Later" then
-        return "📅 " .. item
-      else
-        return "❌ " .. item
-      end
-    end,
-  }, function(choice)
-    if not choice or choice == "Cancel" then
-      return
-    end
-    
-    if choice == "Send Now" then
-      -- Send immediately (original behavior)
-      M.send_immediate(buf, draft_info, email)
-    elseif choice == "Send with Undo (60s delay)" then
-      -- Use delayed send queue
-      M.send_with_undo(buf, draft_info, email)
-    elseif choice == "Schedule Later" then
-      -- TODO: Implement in Phase 9 scheduling feature
-      M.schedule_email(buf, draft_info, email)
-    end
-  end)
+  -- Show scheduling options (no immediate send)
+  M.show_scheduling_options(buf, draft_info, email)
 end
 
 -- Send email immediately (original behavior)
@@ -581,17 +550,159 @@ function M.send_with_undo(buf, draft_info, email)
   end
 end
 
--- Schedule email for later (placeholder for Phase 9 scheduling)
-function M.schedule_email(buf, draft_info, email)
-  -- This will be implemented in Phase 9 scheduling feature
-  notify.himalaya(
-    "📅 Email scheduling will be implemented in Phase 9",
-    notify.categories.STATUS
-  )
+-- Scheduling options (no immediate send)
+function M.show_scheduling_options(buf, draft_info, email)
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  
+  local options = {
+    "1 minute (default)",
+    "5 minutes",
+    "30 minutes",
+    "1 hour",
+    "2 hours",
+    "Tomorrow morning (9 AM)",
+    "Custom time...",
+    "Cancel"
+  }
+  
+  vim.ui.select(options, {
+    prompt = " When to send?",
+    format_item = function(item)
+      if item:match("1 minute") then
+        return " " .. item .. " (default)"
+      elseif item:match("Cancel") then
+        return " " .. item
+      else
+        return " " .. item
+      end
+    end
+  }, function(choice, idx)
+    if not choice or choice == "Cancel" then
+      return
+    end
+    
+    local delay
+    if idx == 1 then
+      delay = 60        -- 1 minute
+    elseif idx == 2 then
+      delay = 300       -- 5 minutes
+    elseif idx == 3 then
+      delay = 1800      -- 30 minutes
+    elseif idx == 4 then
+      delay = 3600      -- 1 hour
+    elseif idx == 5 then
+      delay = 7200      -- 2 hours
+    elseif idx == 6 then
+      -- Tomorrow morning
+      delay = M.calculate_delay_until_tomorrow(9, 0)
+    elseif idx == 7 then
+      -- Custom time picker
+      M.show_custom_schedule_picker(buf, draft_info, email)
+      return
+    end
+    
+    -- Schedule the email
+    local queue_id = scheduler.schedule_email(email, draft_info.account, {
+      delay = delay,
+      metadata = {
+        draft_file = draft_info.file,
+        draft_id = draft_info.draft_id,
+        composer_cleanup = {
+          buf = buf,
+          draft_info = draft_info
+        }
+      }
+    })
+    
+    if queue_id then
+      notify.himalaya(
+        string.format(" Email scheduled to send in %s", 
+          scheduler.format_duration(delay)),
+        notify.categories.USER_ACTION,
+        {
+          queue_id = queue_id,
+          delay = delay,
+          subject = email.subject
+        }
+      )
+      
+      -- Clean up composer
+      M.cleanup_after_queue(buf, draft_info)
+    end
+  end)
 end
 
--- Common cleanup after successful send
-function M.cleanup_after_send(buf, draft_info)
+-- Calculate delay until tomorrow at specific time
+function M.calculate_delay_until_tomorrow(hour, minute)
+  local now = os.time()
+  local tomorrow = now + 86400
+  local date = os.date("*t", tomorrow)
+  date.hour = hour
+  date.min = minute
+  date.sec = 0
+  
+  local target = os.time(date)
+  return target - now
+end
+
+-- Custom time picker (placeholder for Phase 2)
+function M.show_custom_schedule_picker(buf, draft_info, email)
+  local current = os.date("%Y-%m-%d %H:%M", os.time() + 3600) -- Default to 1 hour from now
+  
+  vim.ui.input({
+    prompt = "Send time (YYYY-MM-DD HH:MM): ",
+    default = current,
+  }, function(input)
+    if not input then return end
+    
+    local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+    local new_time = M.parse_time_input(input)
+    if new_time then
+      local delay = new_time - os.time()
+      if delay > 0 then
+        local queue_id = scheduler.schedule_email(email, draft_info.account, {
+          delay = delay,
+          metadata = {
+            composer_cleanup = {
+              buf = buf,
+              draft_info = draft_info
+            }
+          }
+        })
+        
+        if queue_id then
+          M.cleanup_after_queue(buf, draft_info)
+        end
+      else
+        notify.himalaya("Time must be in the future", notify.categories.ERROR)
+      end
+    else
+      notify.himalaya("Invalid time format", notify.categories.ERROR, {
+        input = input,
+        expected_format = "YYYY-MM-DD HH:MM"
+      })
+    end
+  end)
+end
+
+-- Parse time input
+function M.parse_time_input(input)
+  local year, month, day, hour, min = input:match("(%d+)-(%d+)-(%d+) (%d+):(%d+)")
+  if year and month and day and hour and min then
+    return os.time({
+      year = tonumber(year),
+      month = tonumber(month),
+      day = tonumber(day),
+      hour = tonumber(hour),
+      min = tonumber(min),
+      sec = 0
+    })
+  end
+  return nil
+end
+
+-- Common cleanup after queuing
+function M.cleanup_after_queue(buf, draft_info)
   -- Delete draft if configured
   if M.config.delete_draft_on_send then
     -- Delete file

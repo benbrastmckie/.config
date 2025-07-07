@@ -84,11 +84,11 @@ This document provides a quick reference for how all specification items map to 
 3. ✓ **Email Templates** (#4) - Variable support - COMPLETED
 4. ✓ **Notification System Integration** (CLEANUP #4.2, TODOS #4.2) - COMPLETED
 
-### Next Implementation - Unified Email Scheduling
+### ✅ Completed Implementation - Unified Email Scheduling (Core Features)
 - **Specification**: [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)
-- **Breaking Changes**: Remove send_queue.lua, no immediate send option
-- **Key Features**: ALL emails scheduled, minimum 60s delay, full scheduling UI
-- **Timeline**: 1 week
+- **Breaking Changes**: ✅ Removed send_queue.lua, ✅ No immediate send option
+- **Key Features**: ✅ ALL emails scheduled, ✅ Minimum 60s delay, ✅ Basic scheduling UI
+- **Status**: Phase 0, 1, 4, 5 complete - Phase 2, 3 remaining (interactive windows, enhanced queue UI)
 
 ### Remaining Features - Not Implemented
 - **Specification**: [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)
@@ -102,10 +102,12 @@ This document provides a quick reference for how all specification items map to 
 - **Priority**: Medium
 
 ### Implementation Files
-- `core/send_queue.lua` - Send queue with cancellation (to be replaced)
+- ✅ `core/scheduler.lua` - Unified email scheduling system (replaced send_queue.lua)
+- ✅ `ui/email_composer.lua` - Updated for scheduling-only workflow
+- ✅ `core/commands/email.lua` - New scheduler commands
 - `core/search.lua` - Advanced search with 23+ operators
 - `core/templates.lua` - Template system with variables and conditionals
-- `scripts/test_phase9.lua` - Comprehensive test suite
+- `scripts/test_phase9.lua` - Updated test suite for unified scheduler
 - `scripts/demo_phase9.lua` - Feature demonstrations
 - `scripts/demo_unified_scheduler.lua` - Unified scheduling demo
 

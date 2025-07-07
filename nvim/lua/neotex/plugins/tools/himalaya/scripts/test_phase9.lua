@@ -39,12 +39,12 @@ local function run_test_with_feedback(test_name, test_fn)
   end
 end
 
--- Test 1: Undo Send System
-function M.test_undo_send()
+-- Test 1: Unified Email Scheduling System
+function M.test_unified_scheduler()
   local notify = require('neotex.util.notifications')
-  local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   
-  local test_name = "Undo Send System"
+  local test_name = "Unified Email Scheduling System"
   local success = true
   local issues = {}
   
@@ -53,39 +53,38 @@ function M.test_undo_send()
     notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
   end
   
-  -- Check if send queue is initialized
-  local queue_status = send_queue.get_status()
-  if queue_status and queue_status.initialized then
+  -- Check if scheduler is available
+  local ok, queue_status = pcall(scheduler.get_queue_status)
+  if ok and queue_status then
     if is_debug_mode() then
-      notify.himalaya("✓ Send queue initialized", notify.categories.USER_ACTION)
-      notify.himalaya("Active queue items: " .. queue_status.active_count, notify.categories.STATUS)
-      notify.himalaya("Try: :HimalayaSendQueue to view queue", notify.categories.STATUS)
-      notify.himalaya("Try: :HimalayaUndoSend to cancel queued emails", notify.categories.STATUS)
+      notify.himalaya("✓ Scheduler module loaded", notify.categories.USER_ACTION)
+      notify.himalaya(string.format("Queue status: %d total, %d scheduled", 
+        queue_status.total, queue_status.scheduled), notify.categories.STATUS)
     end
   else
     success = false
-    table.insert(issues, "Send queue not initialized")
+    table.insert(issues, "Scheduler module not available")
     if is_debug_mode() then
-      notify.himalaya("✗ Send queue not initialized", notify.categories.ERROR)
+      notify.himalaya("✗ Scheduler module not available", notify.categories.ERROR)
     end
   end
   
-  -- Test queue functionality with a mock email
+  -- Test scheduling functionality with a mock email
   local test_email = {
     to = "test@example.com",
-    subject = "Test Email for Queue",
-    body = "This is a test email for the send queue system."
+    subject = "Test Email for Scheduler",
+    body = "This is a test email for the unified scheduling system."
   }
   
-  -- Queue test email (with override delay for quick testing)
-  local ok, queue_id = pcall(send_queue.queue_email, test_email, "test_account", 5) -- 5 second delay
-  if ok and queue_id then
+  -- Schedule test email (with override delay for quick testing)
+  local schedule_ok, queue_id = pcall(scheduler.schedule_email, test_email, "test_account", {delay = 5}) -- 5 second delay
+  if schedule_ok and queue_id then
     if is_debug_mode() then
-      notify.himalaya("✓ Test email queued successfully: " .. queue_id, notify.categories.USER_ACTION)
+      notify.himalaya("✓ Test email scheduled successfully: " .. queue_id, notify.categories.USER_ACTION)
     end
     
     -- Immediately cancel it for testing
-    local cancel_ok, cancelled = pcall(send_queue.cancel_send, queue_id)
+    local cancel_ok, cancelled = pcall(scheduler.cancel_send, queue_id)
     if cancel_ok and cancelled then
       if is_debug_mode() then
         notify.himalaya("✓ Test email cancelled successfully", notify.categories.USER_ACTION)
@@ -405,7 +404,7 @@ end
 -- Test 8: Run all tests
 function M.run_all_tests()
   local tests = {
-    { name = "Undo Send System", fn = M.test_undo_send },
+    { name = "Unified Email Scheduling System", fn = M.test_unified_scheduler },
     { name = "Advanced Search System", fn = M.test_advanced_search },
     { name = "Email Templates System", fn = M.test_email_templates },
     { name = "Email Scheduling", fn = M.test_email_scheduling },
@@ -546,7 +545,7 @@ function M.interactive_test()
   local action_state = require('telescope.actions.state')
   
   local test_options = {
-    { name = "Test Undo Send System", fn = M.test_undo_send, icon = "⏰" },
+    { name = "Test Unified Email Scheduling", fn = M.test_unified_scheduler, icon = "⏰" },
     { name = "Test Advanced Search System", fn = M.test_advanced_search, icon = "🔍" },
     { name = "Test Email Templates System", fn = M.test_email_templates, icon = "📧" },
     { name = "Test Email Scheduling", fn = M.test_email_scheduling, icon = "📅" },
@@ -586,7 +585,7 @@ end
 -- Fallback function using vim.ui.select
 function M.interactive_test_fallback()
   local test_options = {
-    { name = "1. Test Undo Send System", fn = M.test_undo_send },
+    { name = "1. Test Unified Email Scheduling", fn = M.test_unified_scheduler },
     { name = "2. Test Advanced Search System", fn = M.test_advanced_search },
     { name = "3. Test Email Templates System", fn = M.test_email_templates },
     { name = "4. Test Email Scheduling", fn = M.test_email_scheduling },

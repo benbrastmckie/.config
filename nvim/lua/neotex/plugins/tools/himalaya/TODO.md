@@ -179,11 +179,15 @@
 - [x] **Notification System Integration**
   - [x] full integration with unified notification system
 
-#### Next Implementation - Unified Email Scheduling
-- [ ] replace send_queue.lua with scheduler.lua (breaking changes)
-- [ ] remove "Send Now" option - ALL emails must be scheduled
-- [ ] minimum 60-second safety delay for all emails
-- [ ] full scheduling UI with preset and custom times
+#### ✅ Completed Implementation - Unified Email Scheduling (Core Features)
+- [x] replaced send_queue.lua with scheduler.lua (breaking changes)
+- [x] removed "Send Now" option - ALL emails must be scheduled
+- [x] minimum 60-second safety delay for all emails
+- [x] basic scheduling options with preset times
+- [x] composer integration for scheduling-only workflow
+- [x] new commands: HimalayaSchedule, HimalayaScheduleCancel, HimalayaScheduleEdit
+- [ ] **Phase 2**: interactive scheduling windows (undo notifications)
+- [ ] **Phase 3**: enhanced queue management UI
 - [ ] See spec: PHASE_9_NEXT_IMPLEMENTATION.md
 
 #### Remaining Features
