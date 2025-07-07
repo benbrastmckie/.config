@@ -24,21 +24,41 @@ This directory contains comprehensive specifications for the ongoing development
    - OAuth security (Phase 10)
 
 3. **[ADVANCED_FEATURES_SPEC.md](ADVANCED_FEATURES_SPEC.md)** - Phase 9 Advanced Features
-   - Undo send system (60-second delay queue)
-   - Advanced search with operators
-   - Email templates with variables
-   - Email scheduling and recurrence
-   - Multiple account views (unified inbox, split, tabbed)
-   - PGP/GPG encryption (Phase 10)
-   - Email rules and filters
-   - Integration features (calendar, tasks)
+   - ✅ Undo send system (60-second delay queue)
+   - ✅ Advanced search with operators
+   - ✅ Email templates with variables
+   - ❌ Email scheduling and recurrence
+   - ❌ Multiple account views (unified inbox, split, tabbed)
+   - ❌ PGP/GPG encryption (Phase 10)
+   - ❌ Email rules and filters
+   - ❌ Integration features (calendar, tasks)
 
 ### Supporting Specifications (Cross-Phase)
 
-4. **[PHASE_MAPPING.md](PHASE_MAPPING.md)** - Quick Reference Phase Mapping 🆕
+4. **[PHASE_MAPPING.md](PHASE_MAPPING.md)** - Quick Reference Phase Mapping
    - Complete mapping of all spec items to phases 6-10
    - Quick navigation by phase or specification
    - Implementation dependencies and notes
+
+### Phase 9 Implementation Specifications
+
+8. **[PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)** - Unified Email Scheduling System 🆕
+   - Clean implementation replacing send_queue.lua
+   - ALL emails must be scheduled (no immediate send)
+   - Minimum 60-second safety delay
+   - Full scheduling UI with custom times
+   - Breaking changes for better architecture
+
+9. **[PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)** - Remaining Phase 9 Features 🆕
+   - Multiple Account Views (unified inbox, split, tabbed)
+   - Email Rules and Filters
+   - Integration Features (tasks, calendar, notes)
+
+10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements 🆕
+    - Predefined layouts (classic, vertical, three-pane, focused)
+    - Window coordination and smart focusing
+    - Interactive resize mode
+    - Layout persistence
 
 5. **[CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md](CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md)** - Quality Improvements
    - Phase 6: Enhanced error handling system
@@ -114,18 +134,25 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
   6. ✅ Address autocomplete with contact management
 - **Implementation Notes**: All features integrated with event system, full backward compatibility maintained
 
-##### Phase 9: Advanced Features & UI Evolution (2 weeks)
+##### Phase 9: Advanced Features & UI Evolution (2 weeks) 🚧 IN PROGRESS
 - **Goal**: Add power user features and enhance UI components
 - **Key Deliverables**: Advanced search, templates, scheduling, UI improvements
 - **Primary Specs**: 
   - [ADVANCED_FEATURES_SPEC.md](ADVANCED_FEATURES_SPEC.md) - Feature implementations
-  - [ARCHITECTURE_REFACTOR_SPEC.md](ARCHITECTURE_REFACTOR_SPEC.md#phase-9-ui-layer-evolution) - UI architecture
-- **Features by Priority**:
-  1. Undo send system (high user value)
-  2. Advanced search with operators
-  3. Email templates with variables
-  4. Email scheduling
-  5. Address autocomplete
+  - [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md) - Unified email scheduling
+  - [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md) - Remaining features
+  - [WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md) - Window management
+- **Completed Features**:
+  - ✅ Undo send system (60-second delay)
+  - ✅ Advanced search with 23+ operators
+  - ✅ Email templates with variables
+  - ✅ Notification system integration
+- **Next Implementation**:
+  - 🚧 Unified email scheduling (breaking changes)
+- **Remaining Features**:
+  - ❌ Multiple account views
+  - ❌ Email rules and filters
+  - ❌ Integration features
 
 ##### Phase 10: Security, Polish & Integration (1 week)
 - **Goal**: Security hardening, testing, and final polish
@@ -223,12 +250,15 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
 - [✓] Image display in terminal
 - [✓] Address autocomplete functionality
 
-### Phase 9: Advanced Features & UI Evolution (Weeks 5-6)
-- [ ] Undo send system (60-second queue)
-- [ ] Advanced search with operators
-- [ ] Email template management
-- [ ] Email scheduling capabilities
-- [ ] UI component improvements
+### Phase 9: Advanced Features & UI Evolution (Weeks 5-6) 🚧 IN PROGRESS
+- [✓] Undo send system (60-second queue)
+- [✓] Advanced search with operators
+- [✓] Email template management
+- [✓] Notification system integration
+- [ ] Unified email scheduling (next implementation)
+- [ ] Multiple account views
+- [ ] Email rules and filters
+- [ ] Integration features
 - [ ] Enhanced window management
 
 ### Phase 10: Security, Polish & Integration (Week 7)
@@ -289,6 +319,7 @@ Track progress using these metrics:
 
 ---
 
-*Last Updated: Generated from current analysis*
+*Last Updated: 2025-01-07*
 *Total Implementation Timeline: 7 weeks*
 *Phases Completed: 8/10*
+*Phase 9 Status: IN PROGRESS (4/8 features completed)*

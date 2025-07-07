@@ -15,35 +15,40 @@
   - [x] gather TODOs and create TECH_DEBT.md ✅ COMPLETE
   - [x] create implementation specs ✅ COMPLETE
   - [x] update documentation ✅ COMPLETE
-- [ ] Phase 6: Event System Foundation (Week 1)
-  - [ ] implement event-driven architecture
-  - [ ] maintain backward compatibility
-- [ ] Phase 7: Command System Refactoring (Week 2)
-  - [ ] split monolithic commands.lua
-  - [ ] create orchestration layer
-- [ ] Phase 8: Core Features Implementation (Weeks 3-4)
-  - [ ] multiple account support
-  - [ ] attachment handling
-  - [ ] OAuth security enhancements
-  - [ ] address autocomplete
-- [ ] Phase 9: Advanced Features (Weeks 5-6)
-  - [ ] undo send system
-  - [ ] advanced search
-  - [ ] email templates
-  - [ ] local trash system
+- [x] Phase 6: Event System Foundation (Week 1) ✅ COMPLETE
+  - [x] implement event-driven architecture
+  - [x] maintain backward compatibility
+- [x] Phase 7: Command System Refactoring (Week 2) ✅ COMPLETE
+  - [x] split monolithic commands.lua
+  - [x] create orchestration layer
+- [x] Phase 8: Core Features Implementation (Weeks 3-4) ✅ COMPLETE
+  - [x] multiple account support
+  - [x] attachment handling
+  - [x] OAuth security enhancements
+  - [x] address autocomplete
+  - [x] local trash system
+  - [x] custom headers
+  - [x] image display
+- [ ] Phase 9: Advanced Features (Weeks 5-6) 🚧 IN PROGRESS (4/8 features)
+  - [x] undo send system ✅ COMPLETE
+  - [x] advanced search ✅ COMPLETE
+  - [x] email templates ✅ COMPLETE
+  - [x] notification system integration ✅ COMPLETE
+  - [ ] unified email scheduling (next - see PHASE_9_NEXT_IMPLEMENTATION.md)
+  - [ ] multiple account views (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] email rules & filters (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] integration features (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] window management (see WINDOW_MANAGEMENT_SPEC.md)
 - [ ] Phase 10: Integration & Polish (Week 7)
-  - [ ] performance optimizations
-  - [ ] testing infrastructure
-  - [ ] documentation updates
-- [ ] Additional Features (Post-Phase 10)
-  - [ ] email scheduling
+  - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption
-  - [ ] email rules & filters
-  - [ ] calendar integration
-  - [ ] task integration
+  - [ ] testing infrastructure
+  - [ ] performance optimization final pass
+  - [ ] documentation updates
 - [ ] Code Quality Improvements (Ongoing)
-  - [ ] error handling standardization
-  - [ ] API consistency
+  - [x] error handling standardization ✅ (Phase 6)
+  - [x] API consistency ✅ (Phase 7)
+  - [x] enhanced logging ✅ (Phase 7)
   - [ ] developer experience enhancements
 
 ## GUIDELINES
@@ -118,58 +123,86 @@
 
 ## FUTURE FEATURES
 
-### Phase 6: Event System Foundation (Week 1)
+### Phase 6: Event System Foundation (Week 1) ✅ COMPLETE
 
-- [ ] implement event bus system (orchestration/events.lua)
-- [ ] define core event constants (core/events.lua)
-- [ ] add event emissions alongside existing calls
-- [ ] test event system without breaking existing functionality
+- [x] implement event bus system (orchestration/events.lua)
+- [x] define core event constants (core/events.lua)
+- [x] add event emissions alongside existing calls
+- [x] test event system without breaking existing functionality
 
-### Phase 7: Command System Refactoring (Week 2)
+### Phase 7: Command System Refactoring (Week 2) ✅ COMPLETE
 
-- [ ] split commands.lua into domain modules (ui, email, sync, setup)
-- [ ] create command orchestration layer
-- [ ] maintain backward compatibility for all commands
-- [ ] test all 31+ commands continue working
+- [x] split commands.lua into domain modules (ui, email, sync, setup, debug)
+- [x] create command orchestration layer
+- [x] maintain backward compatibility for all commands
+- [x] test all 31+ commands continue working
 
-### Phase 8: Core Features Implementation (Weeks 3-4)
+### Phase 8: Core Features Implementation (Weeks 3-4) ✅ COMPLETE
 
-- [ ] **Multiple Account Support**
-  - [ ] implement account management service
-  - [ ] create provider detection and templates
-  - [ ] add account switching UI
-  - [ ] implement unified inbox view
-- [ ] **Attachment Handling**
-  - [ ] create attachment download/view functionality
-  - [ ] add attachment support in composer
-  - [ ] implement attachment caching
-- [ ] **OAuth Security**
-  - [ ] enhance token encryption
-  - [ ] add multi-provider OAuth support
-  - [ ] implement automatic token cleanup
-- [ ] **Address Autocomplete**
-  - [ ] build contact extraction system
-  - [ ] implement autocomplete UI
-  - [ ] add contact persistence
+- [x] **Multiple Account Support**
+  - [x] implement account management service
+  - [x] create provider detection and templates
+  - [x] add account switching UI
+  - [x] implement unified inbox view
+- [x] **Attachment Handling**
+  - [x] create attachment download/view functionality
+  - [x] add attachment support in composer
+  - [x] implement attachment caching
+- [x] **Local Trash System**
+  - [x] implement soft delete to local trash
+  - [x] add trash viewer UI
+  - [x] create retention policies
+- [x] **Address Autocomplete**
+  - [x] build contact extraction system
+  - [x] implement autocomplete UI
+  - [x] add contact persistence
+- [x] **Custom Headers**
+  - [x] full header support and validation
+- [x] **Image Display**
+  - [x] terminal image rendering
 
-### Phase 9: Advanced Features (Weeks 5-6)
+### Phase 9: Advanced Features (Weeks 5-6) 🚧 IN PROGRESS
 
-- [ ] **Undo Send System**
-  - [ ] implement send queue with 60-second delay
-  - [ ] create undo notification UI
-  - [ ] add queue persistence
-- [ ] **Advanced Search**
-  - [ ] implement search query parser
-  - [ ] add search operators (from:, to:, subject:, etc.)
-  - [ ] create search results UI
-- [ ] **Email Templates**
-  - [ ] create template management system
-  - [ ] implement variable substitution
-  - [ ] add template picker UI
-- [ ] **Local Trash System**
-  - [ ] implement soft delete to local trash
-  - [ ] add trash viewer UI
-  - [ ] create retention policies
+#### Completed (4/8)
+- [x] **Undo Send System**
+  - [x] implement send queue with 60-second delay
+  - [x] create undo notification UI
+  - [x] add queue persistence
+- [x] **Advanced Search**
+  - [x] implement search query parser with 23+ operators
+  - [x] add search operators (from:, to:, subject:, etc.)
+  - [x] create search results UI
+- [x] **Email Templates**
+  - [x] create template management system
+  - [x] implement variable substitution and conditionals
+  - [x] add template picker UI
+- [x] **Notification System Integration**
+  - [x] full integration with unified notification system
+
+#### Next Implementation - Unified Email Scheduling
+- [ ] replace send_queue.lua with scheduler.lua (breaking changes)
+- [ ] remove "Send Now" option - ALL emails must be scheduled
+- [ ] minimum 60-second safety delay for all emails
+- [ ] full scheduling UI with preset and custom times
+- [ ] See spec: PHASE_9_NEXT_IMPLEMENTATION.md
+
+#### Remaining Features
+- [ ] **Multiple Account Views** (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] unified inbox showing all accounts
+  - [ ] split view for side-by-side accounts
+  - [ ] tabbed view for account switching
+- [ ] **Email Rules and Filters** (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] rule engine implementation
+  - [ ] filter builder UI
+  - [ ] automatic actions
+- [ ] **Integration Features** (see PHASE_9_REMAINING_FEATURES.md)
+  - [ ] task management integration
+  - [ ] calendar integration
+  - [ ] note-taking integration
+- [ ] **Window Management** (see WINDOW_MANAGEMENT_SPEC.md)
+  - [ ] predefined layouts
+  - [ ] window coordination
+  - [ ] interactive resize mode
 
 ### Phase 10: Integration & Polish (Week 7)
 
@@ -186,33 +219,37 @@
   - [ ] create user guide for new features
   - [ ] document architecture changes
 
-### Additional Features (Post-Phase 10)
+### Phase 10: Integration & Polish (Week 7)
 
-- [ ] **Email Scheduling**
-  - [ ] scheduled send functionality
-  - [ ] recurring email support
-- [ ] **PGP/GPG Encryption**
+- [ ] **OAuth 2.0 Implementation**
+  - [ ] enhance token encryption
+  - [ ] add multi-provider OAuth support
+  - [ ] implement automatic token cleanup
+- [ ] **PGP/GPG Encryption** (optional)
   - [ ] email encryption/signing
   - [ ] key management UI
-- [ ] **Email Rules & Filters**
-  - [ ] rule engine implementation
-  - [ ] filter builder UI
-- [ ] **Calendar Integration**
-  - [ ] parse calendar invites
-  - [ ] respond to meeting requests
-- [ ] **Task Integration**
-  - [ ] convert emails to tasks
-  - [ ] task tracking system
+- [ ] **Testing Infrastructure**
+  - [ ] create unit test framework
+  - [ ] add integration tests for workflows
+  - [ ] implement performance benchmarks
+- [ ] **Performance Optimizations**
+  - [ ] implement lazy loading for heavy modules
+  - [ ] add performance timing and profiling
+  - [ ] optimize state persistence
+- [ ] **Documentation Updates**
+  - [ ] update all README files
+  - [ ] create user guide for new features
+  - [ ] document architecture changes
 
-### Code Quality Improvements (Ongoing)
+### Code Quality Improvements (Completed)
 
-- [ ] **Error Handling**
-  - [ ] centralized error types and recovery
-  - [ ] consistent error messaging
-- [ ] **API Consistency**
-  - [ ] standardize function returns
-  - [ ] implement facades for all services
-- [ ] **Developer Experience**
-  - [ ] enhanced logging with rotation
-  - [ ] debug mode improvements
-  - [ ] performance profiling tools
+- [x] **Error Handling** ✅ (Phase 6)
+  - [x] centralized error types and recovery
+  - [x] consistent error messaging
+- [x] **API Consistency** ✅ (Phase 7)
+  - [x] standardize function returns
+  - [x] implement facades for all services
+- [x] **Enhanced Logging** ✅ (Phase 7)
+  - [x] structured logging with handlers
+  - [x] debug mode improvements
+  - [x] performance timing
