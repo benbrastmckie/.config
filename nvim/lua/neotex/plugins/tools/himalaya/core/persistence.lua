@@ -130,12 +130,14 @@ function M.load_queue()
   
   if vim.fn.filereadable(M.config.queue_file) == 0 then
     logger.debug('No queue file found, starting with empty queue')
+    M._last_load_time = os.time()
     return {}
   end
   
   local content = vim.fn.readfile(M.config.queue_file)
   if not content or #content == 0 then
     logger.debug('Empty queue file, starting with empty queue')
+    M._last_load_time = os.time()
     return {}
   end
   
@@ -145,6 +147,7 @@ function M.load_queue()
   if not success then
     logger.error('Failed to parse queue file JSON: ' .. tostring(data))
     M.recover_from_corruption()
+    M._last_load_time = os.time()
     return {}
   end
   
@@ -152,8 +155,12 @@ function M.load_queue()
   if not valid then
     logger.error('Invalid queue data: ' .. error_msg)
     M.recover_from_corruption()
+    M._last_load_time = os.time()
     return {}
   end
+  
+  -- Track when we loaded this
+  M._last_load_time = os.time()
   
   logger.debug('Loaded queue with ' .. vim.tbl_count(data.queue) .. ' emails')
   return data.queue or {}
@@ -286,6 +293,10 @@ function M.save_queue(queue)
   end
   
   logger.debug('Saved queue with ' .. vim.tbl_count(queue or {}) .. ' emails')
+  
+  -- Update our load time to reflect this save
+  M._last_load_time = os.time()
+  
   return true
 end
 
@@ -317,6 +328,63 @@ function M.cleanup_expired_emails(queue)
   return cleaned_queue
 end
 
+-- Check if queue file has been modified since last load
+function M.is_queue_file_newer(last_load_time)
+  if vim.fn.filereadable(M.config.queue_file) == 0 then
+    return false
+  end
+  
+  local stat = vim.loop.fs_stat(M.config.queue_file)
+  if not stat then
+    return false
+  end
+  
+  -- Compare modification time
+  return stat.mtime.sec > (last_load_time or 0)
+end
+
+-- Get file modification time
+function M.get_queue_file_mtime()
+  if vim.fn.filereadable(M.config.queue_file) == 0 then
+    return 0
+  end
+  
+  local stat = vim.loop.fs_stat(M.config.queue_file)
+  return stat and stat.mtime.sec or 0
+end
+
+-- Merge external queue changes with current queue
+function M.merge_queue_changes(current_queue, disk_queue)
+  if not disk_queue then
+    return current_queue
+  end
+  
+  local merged_queue = {}
+  local changes_detected = false
+  
+  -- Add all disk items (external changes take precedence)
+  for id, disk_item in pairs(disk_queue) do
+    merged_queue[id] = disk_item
+    
+    -- Check if this is a new or changed item
+    if not current_queue[id] or 
+       (disk_item.status ~= current_queue[id].status) or
+       (disk_item.scheduled_for ~= current_queue[id].scheduled_for) then
+      changes_detected = true
+      logger.debug('External change detected for email: ' .. id)
+    end
+  end
+  
+  -- Keep current items that aren't on disk (may be new local changes)
+  for id, current_item in pairs(current_queue) do
+    if not disk_queue[id] then
+      merged_queue[id] = current_item
+    end
+  end
+  
+  return merged_queue, changes_detected
+end
+
 -- Get health information about persistence
 function M.health_check()
   M.ensure_directories()
@@ -328,6 +396,8 @@ function M.health_check()
     backup_count = #vim.fn.glob(M.config.backup_dir .. 'scheduled_emails_*.json', 0, 1),
     queue_file_size = vim.fn.getfsize(M.config.queue_file),
     instance_id = M.get_instance_id(),
+    last_load_time = M._last_load_time,
+    queue_file_mtime = M.get_queue_file_mtime(),
   }
 end
 

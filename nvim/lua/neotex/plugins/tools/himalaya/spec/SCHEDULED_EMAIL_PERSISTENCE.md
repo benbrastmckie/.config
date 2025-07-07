@@ -334,10 +334,31 @@ end
 - Automatic cleanup of expired emails
 - Health check functionality
 
-### Phase 2: Enable Multi-Instance Support
-1. Add file locking mechanism
-2. Implement periodic sync from disk
-3. Add conflict resolution
+### Phase 2: Enable Multi-Instance Support ✅ COMPLETED (Lightweight)
+1. ✅ Add file modification time tracking
+2. ✅ Implement sync-on-access from disk  
+3. ✅ Add intelligent conflict resolution
+4. ✅ Sync on sidebar refresh and toggle
+
+**Implementation Status**: Phase 2 implemented with a lightweight approach that avoids file locking complexity while providing robust multi-instance support.
+
+**Lightweight Design Decisions**:
+- **No file locking**: Avoids complexity and potential deadlocks
+- **Sync-on-access**: Only syncs when scheduled emails are accessed/displayed
+- **File modification time**: Uses filesystem timestamps to detect changes
+- **Merge strategy**: External changes take precedence, local changes preserved
+- **Trigger points**: Syncs on sidebar toggle, refresh, and scheduled email access
+
+**Files Modified**:
+- `core/persistence.lua` - Added sync detection and merge functions
+- `core/scheduler.lua` - Added sync_from_disk() and integration points
+- `ui/email_list.lua` - Added sync calls to refresh and toggle functions
+- `scripts/test_multi_instance.lua` - Test script for validation
+
+**User Experience**: Scheduled emails from other Neovim instances appear when:
+- Opening/toggling the sidebar
+- Refreshing the sidebar (gH toggle, account/folder changes, etc.)
+- Accessing scheduled email details (preview, reschedule)
 
 ### Phase 3: Add Resilience Features
 1. Implement backup and recovery

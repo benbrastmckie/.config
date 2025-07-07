@@ -60,6 +60,46 @@ function M.persist_queue()
   return success
 end
 
+-- Sync queue with external changes (from other instances)
+function M.sync_from_disk()
+  if not M.initialized then
+    return false
+  end
+  
+  -- Check if file has been modified since our last load
+  local last_load_time = persistence._last_load_time or 0
+  local file_mtime = persistence.get_queue_file_mtime()
+  
+  logger.debug(string.format('Sync check: last_load=%d, file_mtime=%d', last_load_time, file_mtime))
+  
+  if not persistence.is_queue_file_newer(last_load_time) then
+    logger.debug('No external changes detected')
+    return false -- No changes
+  end
+  
+  logger.debug('External changes detected, syncing from disk')
+  
+  -- Load the current disk state
+  local disk_queue = persistence.load_queue()
+  if not disk_queue then
+    logger.debug('Failed to load disk queue')
+    return false
+  end
+  
+  -- Merge external changes with our current queue
+  local merged_queue, changes_detected = persistence.merge_queue_changes(M.queue, disk_queue)
+  
+  if changes_detected then
+    M.queue = merged_queue
+    logger.info('Synced external changes: ' .. vim.tbl_count(M.queue) .. ' total emails')
+    return true
+  else
+    logger.debug('No meaningful changes detected after merge')
+  end
+  
+  return false
+end
+
 -- Enhanced queue item structure
 local function create_queue_item(email_data, account_id, options)
   options = options or {}
@@ -521,6 +561,9 @@ function M.get_scheduled_emails()
     M.init()
   end
   
+  -- Sync with external changes from other instances
+  M.sync_from_disk()
+  
   local scheduled = {}
   
   for id, item in pairs(M.queue) do
@@ -547,6 +590,9 @@ end
 
 -- Get a specific scheduled email
 function M.get_scheduled_email(id)
+  -- Sync with external changes before lookup
+  M.sync_from_disk()
+  
   local item = M.queue[id]
   if item and item.status == "scheduled" then
     return {

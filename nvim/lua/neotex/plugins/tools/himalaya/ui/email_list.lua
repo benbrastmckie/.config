@@ -104,6 +104,12 @@ function M.toggle_email_sidebar()
   end
   
   -- If we get here, sidebar is not open, so open it
+  -- Sync scheduled emails from other instances before opening
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  if scheduler.initialized then
+    scheduler.sync_from_disk()
+  end
+  
   M.show_email_list({})
 end
 
@@ -1012,6 +1018,12 @@ end
 
 -- Refresh current email list
 function M.refresh_email_list()
+  -- Sync scheduled emails from other instances before refresh
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  if scheduler.initialized then
+    scheduler.sync_from_disk()
+  end
+  
   -- Save current window to restore focus
   local current_win = vim.api.nvim_get_current_win()
   
