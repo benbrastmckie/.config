@@ -13,8 +13,11 @@ function M.perf.measure(fn, label)
   local duration = (vim.loop.hrtime() - start) / 1000000 -- ms
   
   if label then
-    local logger = require('neotex.plugins.tools.himalaya.core.logger')
-    logger.debug(string.format("Performance: %s took %.2fms", label, duration))
+    -- Lazy load logger to avoid circular dependencies
+    local ok, logger = pcall(require, 'neotex.plugins.tools.himalaya.core.logger')
+    if ok then
+      logger.debug(string.format("Performance: %s took %.2fms", label, duration))
+    end
   end
   
   return duration, unpack(result)
@@ -266,7 +269,7 @@ function M.async.promise(executor)
   
   local promise = {}
   
-  function promise:then(on_resolve, on_reject)
+  promise['then'] = function(self, on_resolve, on_reject)
     if state == "resolved" then
       if on_resolve then
         vim.schedule(function() on_resolve(value) end)

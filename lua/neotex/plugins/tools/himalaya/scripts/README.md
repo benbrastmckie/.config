@@ -21,6 +21,40 @@ This directory contains:
 - **Usage**: `:HimalayaTestCommands` or `:lua require('neotex.plugins.tools.himalaya.scripts.test_commands').run_all_tests()`
 - **Auto-prompted** after successful health check completion
 
+### test_phase8.lua
+**Interactive Phase 8 Feature Test Suite**
+- Interactive menu-driven testing for all Phase 8 features
+- Tests multiple accounts, attachments, trash, headers, images, and contacts
+- Individual feature tests or run all tests at once
+- Shows available Phase 8 commands with descriptions
+- **Usage**: `:HimalayaTestPhase8`
+
+Test options:
+1. Test Multiple Account Support - Account switching and unified inbox
+2. Test Attachment Features - View, download, and save attachments
+3. Test Trash System - Move to trash, recover, and empty
+4. Test Custom Headers - Header validation and viewing
+5. Test Image Display - Terminal image rendering capabilities
+6. Test Contact Management - Add, search, and scan contacts
+7. Run All Tests - Execute all tests sequentially
+8. Show Available Commands - Display all Phase 8 commands
+
+### demo_phase8.lua
+**Phase 8 Feature Demo and Documentation**
+- Comprehensive demo showing how to use all Phase 8 features
+- Example commands with explanations
+- Tips and best practices
+- Module verification utility
+- **Usage**: `:HimalayaDemoPhase8`
+
+Demonstrates:
+- Multiple account management with unified views
+- Attachment handling workflow
+- Trash system operations
+- Email header inspection
+- Terminal image display setup
+- Contact management and autocomplete
+
 ### refresh-gmail-oauth2
 Standard OAuth refresh script for Gmail accounts:
 - Refreshes access tokens using stored refresh tokens

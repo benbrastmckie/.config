@@ -36,6 +36,73 @@ function M.truncate_string(str, max_length)
   return str_value:sub(1, max_length - 3) .. '...'
 end
 
+-- Format email flags
+function M.format_flags(flags)
+  if not flags then return '  ' end
+  
+  local flag_chars = ''
+  if flags.seen then flag_chars = flag_chars .. 'R' else flag_chars = flag_chars .. ' ' end
+  if flags.answered then flag_chars = flag_chars .. 'A' else flag_chars = flag_chars .. ' ' end
+  if flags.flagged then flag_chars = flag_chars .. '*' else flag_chars = flag_chars .. ' ' end
+  if flags.draft then flag_chars = flag_chars .. 'D' else flag_chars = flag_chars .. ' ' end
+  
+  return flag_chars
+end
+
+-- Format date for display
+function M.format_date(date)
+  if not date then return 'Unknown' end
+  
+  -- If date is already a string, return it
+  if type(date) == 'string' then
+    -- Try to parse common date formats
+    local month, day = date:match('(%a+) (%d+)')
+    if month and day then
+      return month:sub(1, 3) .. ' ' .. string.format('%2s', day)
+    end
+    return date:sub(1, 10)
+  end
+  
+  -- If date is a timestamp
+  if type(date) == 'number' then
+    return os.date('%b %d', date)
+  end
+  
+  return 'Unknown'
+end
+
+-- Format from field
+function M.format_from(from)
+  if not from then return 'Unknown' end
+  
+  -- Extract name or email
+  local name = from:match('^"?([^"<]+)"?%s*<') or from:match('^([^@]+)@') or from
+  
+  -- Clean up and truncate
+  name = name:gsub('^%s+', ''):gsub('%s+$', '')
+  return M.truncate_string(name, 20)
+end
+
+-- Format file size
+function M.format_size(size)
+  if not size or size == 0 then return '0B' end
+  
+  local units = {'B', 'KB', 'MB', 'GB'}
+  local unit_index = 1
+  local formatted_size = tonumber(size) or 0
+  
+  while formatted_size >= 1024 and unit_index < #units do
+    formatted_size = formatted_size / 1024
+    unit_index = unit_index + 1
+  end
+  
+  if unit_index == 1 then
+    return string.format('%d%s', formatted_size, units[unit_index])
+  else
+    return string.format('%.1f%s', formatted_size, units[unit_index])
+  end
+end
+
 -- Cache for all emails to support pagination without repeatedly fetching
 local email_cache = {}
 local cache_timestamp = 0

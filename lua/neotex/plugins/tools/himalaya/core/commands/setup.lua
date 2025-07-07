@@ -136,6 +136,29 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaTestPhase8 = {
+    fn = function()
+      -- Force reload to ensure we get the latest version
+      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase8_v2'] = nil
+      local test_phase8 = require('neotex.plugins.tools.himalaya.scripts.test_phase8_v2')
+      test_phase8.interactive_test()
+    end,
+    opts = {
+      desc = 'Interactive Phase 8 feature testing'
+    }
+  }
+  
+  commands.HimalayaDemoPhase8 = {
+    fn = function()
+      package.loaded['neotex.plugins.tools.himalaya.scripts.demo_phase8'] = nil
+      local demo = require('neotex.plugins.tools.himalaya.scripts.demo_phase8')
+      demo.demo()
+    end,
+    opts = {
+      desc = 'Show Phase 8 feature demo and usage'
+    }
+  }
+  
   commands.HimalayaTestNotify = {
     fn = function()
       local notify = require('neotex.util.notifications')

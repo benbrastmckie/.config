@@ -26,6 +26,19 @@ function M.setup()
   require('neotex.plugins.tools.himalaya.core.commands.sync').setup(M)
   require('neotex.plugins.tools.himalaya.core.commands.setup').setup(M)
   require('neotex.plugins.tools.himalaya.core.commands.debug').setup(M)
+  require('neotex.plugins.tools.himalaya.core.commands.features').setup(M)
+  
+  -- Initialize Phase 8 features
+  local features_ok, _ = pcall(function()
+    require('neotex.plugins.tools.himalaya.features.attachments').setup()
+    require('neotex.plugins.tools.himalaya.features.trash').setup()
+    require('neotex.plugins.tools.himalaya.features.contacts').setup()
+  end)
+  
+  if not features_ok then
+    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+    logger.warn("Some Phase 8 features failed to initialize")
+  end
   
   -- Register all commands with vim
   M.register_all()
