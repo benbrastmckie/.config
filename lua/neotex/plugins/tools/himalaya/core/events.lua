@@ -36,4 +36,13 @@ M.SEARCH_COMPLETED = "search:completed"
 M.TEMPLATE_APPLIED = "template:applied"
 M.RULE_TRIGGERED = "rule:triggered"
 
+-- Error events
+M.ERROR_OCCURRED = "error:occurred"
+M.ERROR_RECOVERED = "error:recovered"
+
+-- Command events
+M.COMMAND_STARTED = "command:started"
+M.COMMAND_COMPLETED = "command:completed"
+M.COMMAND_FAILED = "command:failed"
+
 return M

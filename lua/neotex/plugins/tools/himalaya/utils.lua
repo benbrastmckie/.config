@@ -940,5 +940,18 @@ function M.get_email_info(email_id)
   return result
 end
 
+-- Import enhanced utilities
+local ok, enhanced = pcall(require, 'neotex.plugins.tools.himalaya.utils.enhanced')
+if ok then
+  -- Merge enhanced utilities into main module
+  for category, utils in pairs(enhanced) do
+    if type(utils) == "table" and category ~= "validate" then
+      M[category] = utils
+    end
+  end
+  
+  -- Add validate as top-level
+  M.validate = enhanced.validate
+end
 
 return M

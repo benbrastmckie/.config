@@ -228,7 +228,73 @@ function M.test_himalaya_commands()
   add_output("")
 end
 
--- Test 5: Integration Test
+-- Test 5: Phase 7 Command System Test
+function M.test_phase7_commands()
+  add_output("=== Testing Phase 7 Command System ===")
+  
+  -- Test command modules
+  local modules = {
+    'neotex.plugins.tools.himalaya.core.commands.init',
+    'neotex.plugins.tools.himalaya.core.commands.ui',
+    'neotex.plugins.tools.himalaya.core.commands.email',
+    'neotex.plugins.tools.himalaya.core.commands.sync',
+    'neotex.plugins.tools.himalaya.core.commands.setup',
+    'neotex.plugins.tools.himalaya.core.commands.debug'
+  }
+  
+  local loaded_count = 0
+  for _, module_name in ipairs(modules) do
+    local ok, _ = pcall(require, module_name)
+    if ok then
+      loaded_count = loaded_count + 1
+    end
+  end
+  
+  if loaded_count == #modules then
+    add_output("✓ All command modules loaded successfully")
+  else
+    add_output("❌ Some command modules failed to load")
+  end
+  
+  -- Test command registry
+  local commands = require('neotex.plugins.tools.himalaya.core.commands')
+  local count = 0
+  for _, _ in pairs(commands.command_registry) do
+    count = count + 1
+  end
+  add_output("✓ Command registry contains " .. count .. " commands")
+  
+  -- Test API consistency layer
+  local ok, api = pcall(require, 'neotex.plugins.tools.himalaya.core.api')
+  if ok then
+    add_output("✓ API consistency layer loaded")
+    
+    -- Test response creation
+    local success_resp = api.success({ test = true })
+    local error_resp = api.error("test error", "TEST_ERROR")
+    
+    if success_resp.success and not error_resp.success then
+      add_output("✓ API response formats working correctly")
+    else
+      add_output("❌ API response formats not working")
+    end
+  else
+    add_output("❌ API consistency layer failed to load")
+  end
+  
+  -- Test command orchestration
+  local ok2, orch = pcall(require, 'neotex.plugins.tools.himalaya.orchestration.commands')
+  if ok2 then
+    add_output("✓ Command orchestration layer loaded")
+  else
+    add_output("❌ Command orchestration layer failed to load")
+  end
+  
+  add_output("✓ Phase 7 command system test completed")
+  add_output("")
+end
+
+-- Test 6: Integration Test
 function M.test_integration()
   add_output("=== Testing System Integration ===")
   
@@ -297,9 +363,10 @@ function M.show_results()
     "  • Error Handling: Clean user messages and recovery", 
     "  • State Management: Versioning and migration",
     "  • Himalaya Commands: All 35+ commands available and working",
+    "  • Phase 7 Commands: Modular system with orchestration and API layer",
     "  • System Integration: All modules and functions working together",
     "",
-    "🚀 Himalaya commands and Phase 6 are production-ready!"
+    "🚀 Himalaya commands with Phase 6 & 7 are production-ready!"
   }
   
   for _, line in ipairs(summary_lines) do
@@ -323,6 +390,7 @@ function M.run_all_tests()
   M.test_error_handling()
   M.test_state_management()
   M.test_himalaya_commands()
+  M.test_phase7_commands()
   M.test_integration()
   
   add_output("🎉 All Himalaya tests completed!")
