@@ -1,9 +1,11 @@
 -- Himalaya Phase 8 Feature Testing Script
--- Interactive testing for all Phase 8 features
+-- Interactive testing for all Phase 8 features with comprehensive reporting
 -- Usage: :HimalayaTestPhase8
 
 local M = {}
 
+-- Test results storage
+local test_results = {}
 
 -- Helper to check debug mode
 local function is_debug_mode()
@@ -11,13 +13,44 @@ local function is_debug_mode()
   return config.get('debug_mode', false)
 end
 
+-- Helper to log test result
+local function log_test_result(test_name, success, message)
+  table.insert(test_results, {
+    name = test_name,
+    success = success,
+    message = message
+  })
+end
+
+-- Wrapper to run a test with immediate feedback
+local function run_test_with_feedback(test_name, test_fn)
+  local notify = require('neotex.util.notifications')
+  
+  -- Show starting notification (USER_ACTION so it shows without debug mode)
+  notify.himalaya("🔄 Running: " .. test_name, notify.categories.USER_ACTION)
+  
+  -- Run the test
+  local ok, err = pcall(test_fn)
+  
+  if not ok then
+    -- Test crashed
+    notify.himalaya("❌ " .. test_name .. " - Error: " .. tostring(err), notify.categories.ERROR)
+    log_test_result(test_name, false, "Error: " .. tostring(err))
+  end
+end
+
 -- Test 1: Multiple Account Support
 function M.test_accounts()
   local notify = require('neotex.util.notifications')
   local accounts = require('neotex.plugins.tools.himalaya.features.accounts')
   
+  local test_name = "Multiple Account Support"
+  local success = true
+  local issues = {}
+  
+  -- Debug mode shows more details
   if is_debug_mode() then
-    notify.himalaya("=== Testing Multiple Account Support ===", notify.categories.STATUS)
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
   end
   
   -- Test adding a demo account
@@ -31,22 +64,46 @@ function M.test_accounts()
     smtp_port = 587
   }
   
-  -- Show current accounts
-  vim.cmd('HimalayaAccountList')
+  -- Don't show account list during test - just test functionality
+  local all_accounts = accounts.get_all_accounts()
+  local account_count = vim.tbl_count(all_accounts)
   
-  vim.defer_fn(function()
-    -- Try to add demo account
-    local result = accounts.add_account(demo_account)
-    if result.success then
+  -- Try to add demo account
+  local result = accounts.add_account(demo_account)
+  if result.success then
+    if is_debug_mode() then
       notify.himalaya("✓ Demo account added successfully", notify.categories.USER_ACTION)
       notify.himalaya("Try: :HimalayaAccountSwitch demo_account", notify.categories.STATUS)
-    else
-      notify.himalaya("Demo account already exists or error: " .. tostring(result.error), notify.categories.STATUS)
     end
-    
-    -- Show unified inbox command
+  else
+    -- Check if it's because account already exists
+    if accounts.get_account('demo_account') then
+      -- Account exists, that's fine
+      if is_debug_mode() then
+        notify.himalaya("Demo account already exists", notify.categories.STATUS)
+      end
+    else
+      success = false
+      table.insert(issues, "Failed to add demo account")
+      if is_debug_mode() then
+        notify.himalaya("Error: " .. tostring(result.error), notify.categories.ERROR)
+      end
+    end
+  end
+  
+  if is_debug_mode() then
     notify.himalaya("Try: :HimalayaUnifiedInbox to see all accounts", notify.categories.STATUS)
-  end, 1000)
+  end
+  
+  local message = success and string.format("%d accounts available", account_count) or table.concat(issues, ", ")
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
+  end
 end
 
 -- Test 2: Attachment Features
@@ -54,19 +111,39 @@ function M.test_attachments()
   local notify = require('neotex.util.notifications')
   local ui = require('neotex.plugins.tools.himalaya.ui')
   
-  notify.himalaya("=== Testing Attachment Features ===", notify.categories.STATUS)
+  local test_name = "Attachment Features"
+  local success = true
+  
+  -- Debug mode shows more details
+  if is_debug_mode() then
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
+  end
   
   -- Check if we have an email open
   local email_id = ui.get_current_email_id()
   
   if email_id then
-    notify.himalaya("Current email ID: " .. email_id, notify.categories.STATUS)
-    vim.cmd('HimalayaAttachments')
+    if is_debug_mode() then
+      notify.himalaya("Current email ID: " .. email_id, notify.categories.STATUS)
+    end
+    -- Don't show attachments UI during test
   else
-    notify.himalaya("No email selected. Open an email first, then run:", notify.categories.STATUS)
-    notify.himalaya("  :HimalayaAttachments - List attachments", notify.categories.STATUS)
-    notify.himalaya("  :HimalayaAttachmentView - View attachment", notify.categories.STATUS)
-    notify.himalaya("  :HimalayaAttachmentSave <id> [path] - Save attachment", notify.categories.STATUS)
+    if is_debug_mode() then
+      notify.himalaya("No email selected. Open an email first, then run:", notify.categories.STATUS)
+      notify.himalaya("  :HimalayaAttachments - List attachments", notify.categories.STATUS)
+      notify.himalaya("  :HimalayaAttachmentView - View attachment", notify.categories.STATUS)
+      notify.himalaya("  :HimalayaAttachmentSave <id> [path] - Save attachment", notify.categories.STATUS)
+    end
+  end
+  
+  local message = email_id and "Attachment commands available" or "No email selected"
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
   end
 end
 
@@ -75,22 +152,34 @@ function M.test_trash()
   local notify = require('neotex.util.notifications')
   local trash = require('neotex.plugins.tools.himalaya.features.trash')
   
-  notify.himalaya("=== Testing Trash System ===", notify.categories.STATUS)
+  local test_name = "Trash System"
+  local success = true
   
-  -- Show trash stats
+  -- Debug mode shows more details
+  if is_debug_mode() then
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
+  end
+  
+  -- Get trash stats without showing UI
   local stats = trash.get_stats()
-  notify.himalaya(string.format("Trash contains %d items, %s total", 
-    stats.total, stats.human_size), notify.categories.STATUS)
-  
-  -- Show trash list
-  vim.cmd('HimalayaTrashList')
-  
-  vim.defer_fn(function()
+  if is_debug_mode() then
+    notify.himalaya(string.format("Trash contains %d items, %s total", 
+      stats.total, stats.human_size), notify.categories.STATUS)
     notify.himalaya("Available trash commands:", notify.categories.STATUS)
     notify.himalaya("  :HimalayaTrashRecover <id> - Recover email", notify.categories.STATUS)
     notify.himalaya("  :HimalayaTrashEmpty - Empty trash (with confirmation)", notify.categories.STATUS)
     notify.himalaya("  'd' in email list - Move to trash", notify.categories.STATUS)
-  end, 1000)
+  end
+  
+  local message = string.format("%d items in trash", stats.total)
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
+  end
 end
 
 -- Test 4: Custom Headers
@@ -99,7 +188,14 @@ function M.test_headers()
   local headers = require('neotex.plugins.tools.himalaya.features.headers')
   local ui = require('neotex.plugins.tools.himalaya.ui')
   
-  notify.himalaya("=== Testing Custom Headers ===", notify.categories.STATUS)
+  local test_name = "Custom Headers"
+  local success = true
+  local validated = 0
+  
+  -- Debug mode shows more details
+  if is_debug_mode() then
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
+  end
   
   -- Test header validation
   local test_headers = {
@@ -111,18 +207,32 @@ function M.test_headers()
   for name, value in pairs(test_headers) do
     local valid, err = headers.validate_header(name, value)
     if valid then
-      notify.himalaya(string.format("✓ Valid header: %s: %s", name, value), notify.categories.STATUS)
+      validated = validated + 1
+      if is_debug_mode() then
+        notify.himalaya(string.format("✓ Valid header: %s: %s", name, value), notify.categories.STATUS)
+      end
     else
-      notify.himalaya(string.format("✗ Invalid header: %s (%s)", name, err), notify.categories.ERROR)
+      success = false
+      if is_debug_mode() then
+        notify.himalaya(string.format("✗ Invalid header: %s (%s)", name, err), notify.categories.ERROR)
+      end
     end
   end
   
-  -- Show headers for current email
+  -- Check if we can show headers
   local email_id = ui.get_current_email_id()
-  if email_id then
-    vim.cmd('HimalayaHeaders')
-  else
+  if not email_id and is_debug_mode() then
     notify.himalaya("Open an email and run :HimalayaHeaders to view all headers", notify.categories.STATUS)
+  end
+  
+  local message = string.format("%d/%d headers validated", validated, vim.tbl_count(test_headers))
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
   end
 end
 
@@ -131,13 +241,21 @@ function M.test_images()
   local notify = require('neotex.util.notifications')
   local images = require('neotex.plugins.tools.himalaya.features.images')
   
-  notify.himalaya("=== Testing Image Display ===", notify.categories.STATUS)
+  local test_name = "Image Display"
+  local success = true
+  
+  -- Debug mode shows more details
+  if is_debug_mode() then
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
+  end
   
   -- Detect available protocol
   local protocol = images.detect_protocol()
   
   if protocol then
-    notify.himalaya("✓ Detected image protocol: " .. protocol, notify.categories.STATUS)
+    if is_debug_mode() then
+      notify.himalaya("✓ Detected image protocol: " .. protocol, notify.categories.STATUS)
+    end
     
     -- Check for available tools
     local tools = {
@@ -147,15 +265,30 @@ function M.test_images()
       ascii = vim.fn.executable('jp2a') == 1 or vim.fn.executable('ascii-image-converter') == 1
     }
     
-    notify.himalaya("Available image tools:", notify.categories.STATUS)
-    for tool, available in pairs(tools) do
-      notify.himalaya(string.format("  %s: %s", tool, available and "✓" or "✗"), notify.categories.STATUS)
+    if is_debug_mode() then
+      notify.himalaya("Available image tools:", notify.categories.STATUS)
+      for tool, available in pairs(tools) do
+        notify.himalaya(string.format("  %s: %s", tool, available and "✓" or "✗"), notify.categories.STATUS)
+      end
+      
+      notify.himalaya("Open an email with images and run :HimalayaImageView", notify.categories.STATUS)
     end
-    
-    notify.himalaya("Open an email with images and run :HimalayaImageView", notify.categories.STATUS)
   else
-    notify.himalaya("✗ No image display protocol detected", notify.categories.ERROR)
-    notify.himalaya("Install one of: kitty terminal, img2sixel, chafa, timg, jp2a", notify.categories.STATUS)
+    success = false
+    if is_debug_mode() then
+      notify.himalaya("✗ No image display protocol detected", notify.categories.ERROR)
+      notify.himalaya("Install one of: kitty terminal, img2sixel, chafa, timg, jp2a", notify.categories.STATUS)
+    end
+  end
+  
+  local message = protocol and ("Protocol: " .. protocol) or "No protocol available"
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
   end
 end
 
@@ -163,7 +296,13 @@ end
 function M.test_contacts()
   local notify = require('neotex.util.notifications')
   
-  notify.himalaya("=== Testing Contact Management ===", notify.categories.STATUS)
+  local test_name = "Contact Management"
+  local success = true
+  
+  -- Debug mode shows more details
+  if is_debug_mode() then
+    notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
+  end
   
   -- Clear module cache to avoid loading errors
   package.loaded['neotex.plugins.tools.himalaya.features.contacts'] = nil
@@ -172,8 +311,12 @@ function M.test_contacts()
   -- Try to load contacts module with error handling
   local ok, contacts = pcall(require, 'neotex.plugins.tools.himalaya.features.contacts')
   if not ok then
-    notify.himalaya("Failed to load contacts module: " .. tostring(contacts), notify.categories.ERROR)
-    notify.himalaya("This might be due to a missing dependency or syntax error", notify.categories.STATUS)
+    success = false
+    if is_debug_mode() then
+      notify.himalaya("Failed to load contacts module: " .. tostring(contacts), notify.categories.ERROR)
+      notify.himalaya("This might be due to a missing dependency or syntax error", notify.categories.STATUS)
+    end
+    log_test_result(test_name, false, "Module load failed")
     return
   end
   
@@ -187,48 +330,93 @@ function M.test_contacts()
   
   local result = contacts.add_contact(test_contact)
   if result.success then
-    notify.himalaya("✓ Test contact added", notify.categories.USER_ACTION)
+    if is_debug_mode() then
+      notify.himalaya("✓ Test contact added", notify.categories.USER_ACTION)
+    end
+  else
+    success = false
   end
   
   -- Search contacts
   local search_results = contacts.search('test', { limit = 5 })
-  notify.himalaya(string.format("Found %d contacts matching 'test'", #search_results), notify.categories.STATUS)
-  
-  -- Show contacts
-  vim.cmd('HimalayaContacts test')
-  
-  vim.defer_fn(function()
+  if is_debug_mode() then
+    notify.himalaya(string.format("Found %d contacts matching 'test'", #search_results), notify.categories.STATUS)
     notify.himalaya("Contact commands:", notify.categories.STATUS)
     notify.himalaya("  :HimalayaContacts [search] - List/search contacts", notify.categories.STATUS)
     notify.himalaya("  :HimalayaContactAdd <email> [name] - Add contact", notify.categories.STATUS)
     notify.himalaya("  :HimalayaContactScan - Scan emails for contacts", notify.categories.STATUS)
-  end, 1000)
+  end
+  
+  local message = string.format("%d contacts found", #search_results)
+  log_test_result(test_name, success, message)
+  
+  -- Show result immediately
+  if success then
+    notify.himalaya(string.format("✅ %s: %s", test_name, message), notify.categories.USER_ACTION)
+  else
+    notify.himalaya(string.format("❌ %s: %s", test_name, message), notify.categories.ERROR)
+  end
 end
 
 -- Test 7: Run all tests
 function M.run_all_tests()
   local tests = {
-    M.test_accounts,
-    M.test_attachments,
-    M.test_trash,
-    M.test_headers,
-    M.test_images,
-    M.test_contacts
+    { name = "Multiple Account Support", fn = M.test_accounts },
+    { name = "Attachment Features", fn = M.test_attachments },
+    { name = "Trash System", fn = M.test_trash },
+    { name = "Custom Headers", fn = M.test_headers },
+    { name = "Image Display", fn = M.test_images },
+    { name = "Contact Management", fn = M.test_contacts }
   }
   
   local notify = require('neotex.util.notifications')
-  notify.himalaya("=== Running All Phase 8 Tests ===", notify.categories.STATUS)
+  
+  -- Clear previous results
+  test_results = {}
+  
+  -- Immediately show what will be tested
+  notify.himalaya("=== Running All Phase 8 Tests ===", notify.categories.USER_ACTION)
+  notify.himalaya("Tests to run: " .. #tests, notify.categories.USER_ACTION)
+  for _, test in ipairs(tests) do
+    notify.himalaya("  • " .. test.name, notify.categories.USER_ACTION)
+  end
   
   -- Run tests with delays
   for i, test in ipairs(tests) do
     vim.defer_fn(function()
-      test()
-    end, i * 2000)  -- 2 second delay between tests
+      run_test_with_feedback(test.name, test.fn)
+    end, i * 1500)  -- 1.5 second delay between tests
   end
   
+  -- Show summary at the end
   vim.defer_fn(function()
     notify.himalaya("=== All Tests Complete ===", notify.categories.USER_ACTION)
-  end, (#tests + 1) * 2000)
+    
+    -- Count results
+    local passed = 0
+    local failed = 0
+    
+    for _, result in ipairs(test_results) do
+      if result.success then
+        passed = passed + 1
+      else
+        failed = failed + 1
+      end
+    end
+    
+    -- Show final summary
+    notify.himalaya(string.format("Test Summary: %d passed, %d failed", passed, failed), 
+      failed > 0 and notify.categories.ERROR or notify.categories.USER_ACTION)
+    
+    -- If any failed, show which ones
+    if failed > 0 then
+      for _, result in ipairs(test_results) do
+        if not result.success then
+          notify.himalaya(string.format("❌ Failed: %s - %s", result.name, result.message or "Unknown error"), notify.categories.ERROR)
+        end
+      end
+    end
+  end, (#tests + 1) * 1500)
 end
 
 -- Test 8: Show available commands

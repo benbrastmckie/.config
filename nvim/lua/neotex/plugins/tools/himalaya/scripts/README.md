@@ -10,6 +10,21 @@ This directory contains:
 - **Utility scripts** for maintenance and debugging
 - **Integration bridges** between Neovim plugin and external tools
 
+## Current Scripts (Post-Phase 8 Implementation)
+
+The scripts directory contains two main categories of tools:
+
+**Testing & Validation:**
+- `test_commands.lua` - Tests all core Himalaya commands and Phase 6 features  
+- `test_phase8.lua` - Interactive testing for Phase 8 features (accounts, attachments, etc.)
+- `demo_phase8.lua` - Feature demonstration and usage examples
+
+**OAuth Token Management:**
+- `refresh-gmail-oauth2` - Standard Gmail OAuth token refresh
+- `refresh-himalaya-oauth2` - Multi-account OAuth wrapper
+- `refresh-himalaya-oauth2-direct` - Direct OAuth implementation
+- `check-himalaya-tokens.sh` - Token validation and debugging
+
 ## Scripts
 
 ### test_commands.lua
@@ -23,21 +38,28 @@ This directory contains:
 
 ### test_phase8.lua
 **Interactive Phase 8 Feature Test Suite**
-- Interactive menu-driven testing for all Phase 8 features
+- Interactive Telescope-based menu for testing all Phase 8 features
 - Tests multiple accounts, attachments, trash, headers, images, and contacts
-- Individual feature tests or run all tests at once
+- Individual feature tests or run all tests with real-time feedback
 - Shows available Phase 8 commands with descriptions
+- Provides immediate pass/fail notifications during testing
 - **Usage**: `:HimalayaTestPhase8`
 
 Test options:
-1. Test Multiple Account Support - Account switching and unified inbox
-2. Test Attachment Features - View, download, and save attachments
-3. Test Trash System - Move to trash, recover, and empty
-4. Test Custom Headers - Header validation and viewing
-5. Test Image Display - Terminal image rendering capabilities
-6. Test Contact Management - Add, search, and scan contacts
-7. Run All Tests - Execute all tests sequentially
-8. Show Available Commands - Display all Phase 8 commands
+1. 📧 Test Multiple Account Support - Account switching and unified inbox
+2. 📎 Test Attachment Features - View, download, and save attachments  
+3. 🗑️ Test Trash System - Move to trash, recover, and empty
+4. 📋 Test Custom Headers - Header validation and viewing
+5. 🖼️ Test Image Display - Terminal image rendering capabilities
+6. 👥 Test Contact Management - Add, search, and scan contacts
+7. 🚀 Run All Tests - Execute all tests sequentially with summary
+8. 📖 Show Available Commands - Display all Phase 8 commands
+
+Features:
+- Real-time notifications for each test result (works with debug mode off)
+- Summary reporting with pass/fail counts
+- Error details for failed tests
+- Fallback to vim.ui.select if Telescope not available
 
 ### demo_phase8.lua
 **Phase 8 Feature Demo and Documentation**
