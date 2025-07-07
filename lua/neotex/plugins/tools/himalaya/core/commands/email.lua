@@ -92,6 +92,277 @@ function M.setup(registry)
       desc = 'Show trash statistics'
     }
   }
+
+  -- Send Queue Commands (Phase 9 - Undo Send System)
+  commands.HimalayaSendQueue = {
+    fn = function()
+      local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
+      send_queue.show_queue()
+    end,
+    opts = {
+      desc = 'Show email send queue with undo options'
+    }
+  }
+
+  commands.HimalayaUndoSend = {
+    fn = function(opts)
+      local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
+      
+      if opts.args == '' then
+        -- Show interactive picker for pending emails
+        local queue = send_queue.queue
+        local pending_items = {}
+        
+        for id, item in pairs(queue) do
+          if item.status == "pending" then
+            local remaining = math.max(0, item.send_at - os.time())
+            table.insert(pending_items, {
+              id = id,
+              label = string.format("%s (sends in %ds)", 
+                item.email_data.subject or "No subject", 
+                remaining)
+            })
+          end
+        end
+        
+        if #pending_items == 0 then
+          require('neotex.util.notifications').himalaya(
+            "No pending emails to cancel",
+            require('neotex.util.notifications').categories.STATUS
+          )
+          return
+        end
+        
+        local labels = vim.tbl_map(function(item) return item.label end, pending_items)
+        
+        vim.ui.select(labels, {
+          prompt = "Select email to cancel:",
+        }, function(choice, idx)
+          if choice and idx then
+            local selected = pending_items[idx]
+            send_queue.cancel_send(selected.id)
+          end
+        end)
+      else
+        -- Cancel specific email by ID
+        local cancelled = send_queue.cancel_send(opts.args)
+        if not cancelled then
+          require('neotex.util.notifications').himalaya(
+            "Email ID not found or already sent",
+            require('neotex.util.notifications').categories.ERROR
+          )
+        end
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Cancel a queued email send'
+    }
+  }
+
+  -- Advanced Search Commands (Phase 9)
+  commands.HimalayaSearch = {
+    fn = function(opts)
+      local search = require('neotex.plugins.tools.himalaya.core.search')
+      
+      if opts.args == '' then
+        -- Show interactive search UI
+        search.show_search_ui()
+      else
+        -- Execute search with provided query
+        search.execute_search(opts.args)
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Advanced email search with operators'
+    }
+  }
+
+  commands.HimalayaSearchClear = {
+    fn = function()
+      local search = require('neotex.plugins.tools.himalaya.core.search')
+      search.clear_cache()
+      require('neotex.util.notifications').himalaya(
+        "Search cache cleared",
+        require('neotex.util.notifications').categories.USER_ACTION
+      )
+    end,
+    opts = {
+      desc = 'Clear search result cache'
+    }
+  }
+
+  -- Email Templates Commands (Phase 9)
+  commands.HimalayaTemplates = {
+    fn = function()
+      local templates = require('neotex.plugins.tools.himalaya.core.templates')
+      templates.show_templates()
+    end,
+    opts = {
+      desc = 'Manage email templates'
+    }
+  }
+
+  commands.HimalayaTemplateNew = {
+    fn = function()
+      local templates = require('neotex.plugins.tools.himalaya.core.templates')
+      templates.edit_template(nil)
+    end,
+    opts = {
+      desc = 'Create new email template'
+    }
+  }
+
+  commands.HimalayaTemplateEdit = {
+    fn = function(opts)
+      local templates = require('neotex.plugins.tools.himalaya.core.templates')
+      
+      if opts.args == '' then
+        templates.pick_template(function(template_id)
+          templates.edit_template(template_id)
+        end)
+      else
+        templates.edit_template(opts.args)
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Edit email template'
+    }
+  }
+
+  commands.HimalayaTemplateDelete = {
+    fn = function(opts)
+      local templates = require('neotex.plugins.tools.himalaya.core.templates')
+      local notify = require('neotex.util.notifications')
+      
+      if opts.args == '' then
+        templates.pick_template(function(template_id)
+          local template = templates.get_template(template_id)
+          if template then
+            vim.ui.select({"No", "Yes"}, {
+              prompt = string.format("Delete template '%s'?", template.name)
+            }, function(choice)
+              if choice == "Yes" then
+                local success, error_msg = templates.delete_template(template_id)
+                if not success then
+                  notify.himalaya("Failed to delete template: " .. error_msg, notify.categories.ERROR)
+                end
+              end
+            end)
+          end
+        end)
+      else
+        local template = templates.get_template(opts.args)
+        if template then
+          vim.ui.select({"No", "Yes"}, {
+            prompt = string.format("Delete template '%s'?", template.name)
+          }, function(choice)
+            if choice == "Yes" then
+              local success, error_msg = templates.delete_template(opts.args)
+              if not success then
+                notify.himalaya("Failed to delete template: " .. error_msg, notify.categories.ERROR)
+              end
+            end
+          end)
+        else
+          notify.himalaya("Template not found: " .. opts.args, notify.categories.ERROR)
+        end
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Delete email template'
+    }
+  }
+
+  commands.HimalayaTemplateUse = {
+    fn = function(opts)
+      local templates = require('neotex.plugins.tools.himalaya.core.templates')
+      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+      
+      if opts.args == '' then
+        templates.pick_template(function(template_id, variables)
+          local result = templates.apply_template(template_id, variables)
+          if result then
+            composer.compose_email({
+              to = result.to,
+              cc = result.cc,
+              bcc = result.bcc,
+              subject = result.subject,
+              body = result.body,
+              template_id = template_id
+            })
+          end
+        end)
+      else
+        local template = templates.get_template(opts.args)
+        if template then
+          if #template.variables > 0 then
+            templates.get_template_variables(template, function(variables)
+              if variables then
+                local result = templates.apply_template(opts.args, variables)
+                if result then
+                  composer.compose_email({
+                    to = result.to,
+                    cc = result.cc,
+                    bcc = result.bcc,
+                    subject = result.subject,
+                    body = result.body,
+                    template_id = opts.args
+                  })
+                end
+              end
+            end)
+          else
+            local result = templates.apply_template(opts.args, {})
+            if result then
+              composer.compose_email({
+                to = result.to,
+                cc = result.cc,
+                bcc = result.bcc,
+                subject = result.subject,
+                body = result.body,
+                template_id = opts.args
+              })
+            end
+          end
+        else
+          require('neotex.util.notifications').himalaya(
+            "Template not found: " .. opts.args,
+            require('neotex.util.notifications').categories.ERROR
+          )
+        end
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Use email template to compose new email'
+    }
+  }
+
+  -- Phase 9 Test Command
+  commands.HimalayaTestPhase9 = {
+    fn = function()
+      local test_script = require('neotex.plugins.tools.himalaya.scripts.test_phase9')
+      test_script.interactive_test()
+    end,
+    opts = {
+      desc = 'Run interactive Phase 9 feature tests'
+    }
+  }
+
+  -- Phase 9 Demo Command
+  commands.HimalayaDemoPhase9 = {
+    fn = function()
+      local demo_script = require('neotex.plugins.tools.himalaya.scripts.demo_phase9')
+      demo_script.interactive_demo()
+    end,
+    opts = {
+      desc = 'Interactive Phase 9 feature demonstrations'
+    }
+  }
   
   -- Register all email commands
   registry.register_batch(commands)

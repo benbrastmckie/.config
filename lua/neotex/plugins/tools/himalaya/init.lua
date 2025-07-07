@@ -37,6 +37,11 @@ function M.setup(opts)
   integration.setup_default_handlers()
   integration.setup()
 
+  -- Initialize Phase 9 features
+  -- Initialize send queue (Undo Send System)
+  local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
+  send_queue.init()
+
   -- Set up commands
   M.setup_commands()
 

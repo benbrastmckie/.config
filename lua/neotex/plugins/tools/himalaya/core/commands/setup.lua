@@ -139,8 +139,8 @@ function M.setup(registry)
   commands.HimalayaTestPhase8 = {
     fn = function()
       -- Force reload to ensure we get the latest version
-      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase8_v2'] = nil
-      local test_phase8 = require('neotex.plugins.tools.himalaya.scripts.test_phase8_v2')
+      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase8'] = nil
+      local test_phase8 = require('neotex.plugins.tools.himalaya.scripts.test_phase8')
       test_phase8.interactive_test()
     end,
     opts = {
@@ -156,6 +156,29 @@ function M.setup(registry)
     end,
     opts = {
       desc = 'Show Phase 8 feature demo and usage'
+    }
+  }
+  
+  commands.HimalayaTestPhase9 = {
+    fn = function()
+      -- Force reload to ensure we get the latest version
+      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase9'] = nil
+      local test_phase9 = require('neotex.plugins.tools.himalaya.scripts.test_phase9')
+      test_phase9.run_all_tests()
+    end,
+    opts = {
+      desc = 'Test Phase 9 features (advanced functionality)'
+    }
+  }
+  
+  commands.HimalayaDemoPhase9 = {
+    fn = function()
+      package.loaded['neotex.plugins.tools.himalaya.scripts.demo_phase9'] = nil
+      local demo = require('neotex.plugins.tools.himalaya.scripts.demo_phase9')
+      demo.demo()
+    end,
+    opts = {
+      desc = 'Show Phase 9 feature demo and usage'
     }
   }
   

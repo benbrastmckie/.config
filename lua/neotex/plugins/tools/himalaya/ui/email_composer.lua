@@ -266,6 +266,51 @@ end
 function M.compose_email(opts)
   opts = opts or {}
   
+  -- If no template specified and no content, offer template selection
+  if not opts.template_id and not opts.to and not opts.subject and not opts.body then
+    local templates = require('neotex.plugins.tools.himalaya.core.templates')
+    local template_list = templates.get_templates()
+    
+    if vim.tbl_count(template_list) > 0 then
+      vim.ui.select({"Start from template", "Start blank"}, {
+        prompt = "How would you like to compose this email?",
+        format_item = function(item)
+          if item == "Start from template" then
+            return "📧 " .. item
+          else
+            return "📝 " .. item
+          end
+        end
+      }, function(choice)
+        if choice == "Start from template" then
+          templates.pick_template(function(template_id, variables)
+            local result = templates.apply_template(template_id, variables)
+            if result then
+              opts.to = result.to
+              opts.cc = result.cc
+              opts.bcc = result.bcc
+              opts.subject = result.subject
+              opts.body = result.body
+              opts.template_id = template_id
+              M.create_compose_buffer(opts)
+            end
+          end)
+          return
+        else
+          M.create_compose_buffer(opts)
+        end
+      end)
+      return
+    end
+  end
+  
+  M.create_compose_buffer(opts)
+end
+
+-- Create email composition buffer (internal function)
+function M.create_compose_buffer(opts)
+  opts = opts or {}
+  
   -- Generate draft filename
   local timestamp = os.date('%Y%m%d_%H%M%S')
   local draft_file = M.config.draft_dir .. 'draft_' .. timestamp .. '.eml'
@@ -315,9 +360,9 @@ function M.compose_email(opts)
   -- Setup syntax highlighting
   if M.config.syntax_highlighting then
     vim.api.nvim_buf_call(buf, function()
-      vim.cmd('syntax match mailHeader "^\\(From\\|To\\|Cc\\|Bcc\\|Subject\\|Date\\|Reply-To\\):"')
-      vim.cmd('syntax match mailEmail "<[^>]\\+@[^>]\\+>"')
-      vim.cmd('syntax match mailEmail "[a-zA-Z0-9._%+-]\\+@[a-zA-Z0-9.-]\\+\\.[a-zA-Z]\\{2,}"')
+      vim.cmd('syntax match mailHeader "^\\\\(From\\\\|To\\\\|Cc\\\\|Bcc\\\\|Subject\\\\|Date\\\\|Reply-To\\\\):"')
+      vim.cmd('syntax match mailEmail "<[^>]\\\\+@[^>]\\\\+>"')
+      vim.cmd('syntax match mailEmail "[a-zA-Z0-9._%+-]\\\\+@[a-zA-Z0-9.-]\\\\+\\\\.[a-zA-Z]\\\\{2,}"')
       vim.cmd('syntax region mailQuoted start="^>" end="$" contains=mailQuoted')
       vim.cmd('hi link mailHeader Keyword')
       vim.cmd('hi link mailEmail Underlined')
@@ -332,6 +377,7 @@ function M.compose_email(opts)
     account = state.get_current_account(),
     reply_to = opts.reply_to,
     forward_from = opts.forward_from,
+    template_id = opts.template_id,
   }
   
   composer_buffers[buf] = draft_info
@@ -344,7 +390,16 @@ function M.compose_email(opts)
   -- Initial save
   vim.cmd('silent write!')
   
-  notify.himalaya('Composing email (auto-save enabled)', notify.categories.STATUS)
+  local message = 'Composing email (auto-save enabled)'
+  if opts.template_id then
+    local templates = require('neotex.plugins.tools.himalaya.core.templates')
+    local template = templates.get_template(opts.template_id)
+    if template then
+      message = string.format('Composing from template: %s', template.name)
+    end
+  end
+  
+  notify.himalaya(message, notify.categories.STATUS)
   
   return buf
 end
@@ -419,7 +474,7 @@ function M.save_draft(buf)
   notify.himalaya('Draft saved', notify.categories.USER_ACTION)
 end
 
--- Send email
+-- Send email with undo capability
 function M.send_email(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -446,49 +501,110 @@ function M.send_email(buf)
     return
   end
   
-  -- Show confirmation
+  -- Show send options
   local prompt = string.format(" Send email to %s?", email.to)
   
-  vim.ui.select({"Yes", "No"}, {
+  vim.ui.select({"Send Now", "Send with Undo (60s delay)", "Schedule Later", "Cancel"}, {
     prompt = prompt,
     kind = "confirmation",
     format_item = function(item)
-      if item == "Yes" then
-        return " " .. item  -- Check mark
+      if item == "Send Now" then
+        return "⚡ " .. item
+      elseif item == "Send with Undo (60s delay)" then
+        return "⏰ " .. item
+      elseif item == "Schedule Later" then
+        return "📅 " .. item
       else
-        return " " .. item  -- X mark
+        return "❌ " .. item
       end
     end,
   }, function(choice)
-    if choice ~= "Yes" then
+    if not choice or choice == "Cancel" then
       return
     end
     
-    -- Send email
-    notify.himalaya('Sending email...', notify.categories.STATUS)
-    
-    local ok, result = pcall(utils.send_email, draft_info.account, email)
-    
-    if ok and result then
-      notify.himalaya('Email sent successfully', notify.categories.USER_ACTION)
-      
-      -- Delete draft if configured
-      if M.config.delete_draft_on_send then
-        -- Delete file
-        vim.fn.delete(draft_info.file)
-        
-        -- Delete from maildir
-        if draft_info.draft_id then
-          delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
-        end
-      end
-      
-      -- Close buffer
-      vim.api.nvim_buf_delete(buf, { force = true })
-    else
-      notify.himalaya('Failed to send email: ' .. tostring(result), notify.categories.ERROR)
+    if choice == "Send Now" then
+      -- Send immediately (original behavior)
+      M.send_immediate(buf, draft_info, email)
+    elseif choice == "Send with Undo (60s delay)" then
+      -- Use delayed send queue
+      M.send_with_undo(buf, draft_info, email)
+    elseif choice == "Schedule Later" then
+      -- TODO: Implement in Phase 9 scheduling feature
+      M.schedule_email(buf, draft_info, email)
     end
   end)
+end
+
+-- Send email immediately (original behavior)
+function M.send_immediate(buf, draft_info, email)
+  notify.himalaya('Sending email...', notify.categories.STATUS)
+  
+  local ok, result = pcall(utils.send_email, draft_info.account, email)
+  
+  if ok and result then
+    notify.himalaya('✅ Email sent immediately', notify.categories.USER_ACTION)
+    M.cleanup_after_send(buf, draft_info)
+  else
+    notify.himalaya('❌ Failed to send email: ' .. tostring(result), notify.categories.ERROR)
+  end
+end
+
+-- Send email with undo capability (60-second delay)
+function M.send_with_undo(buf, draft_info, email)
+  local send_queue = require('neotex.plugins.tools.himalaya.core.send_queue')
+  
+  -- Queue email for delayed send
+  local queue_id = send_queue.queue_email(email, draft_info.account)
+  
+  if queue_id then
+    -- Set up callback for successful send
+    local original_queue = send_queue.queue[queue_id]
+    if original_queue then
+      -- Store cleanup info for when email is actually sent
+      original_queue.composer_cleanup = {
+        buf = buf,
+        draft_info = draft_info
+      }
+    end
+    
+    -- Show queue status option
+    notify.himalaya(
+      "📨 Email queued with undo option. Use :HimalayaSendQueue to manage",
+      notify.categories.USER_ACTION
+    )
+    
+    -- Close composition buffer after queuing
+    M.cleanup_after_send(buf, draft_info)
+  else
+    notify.himalaya('❌ Failed to queue email', notify.categories.ERROR)
+  end
+end
+
+-- Schedule email for later (placeholder for Phase 9 scheduling)
+function M.schedule_email(buf, draft_info, email)
+  -- This will be implemented in Phase 9 scheduling feature
+  notify.himalaya(
+    "📅 Email scheduling will be implemented in Phase 9",
+    notify.categories.STATUS
+  )
+end
+
+-- Common cleanup after successful send
+function M.cleanup_after_send(buf, draft_info)
+  -- Delete draft if configured
+  if M.config.delete_draft_on_send then
+    -- Delete file
+    vim.fn.delete(draft_info.file)
+    
+    -- Delete from maildir
+    if draft_info.draft_id then
+      delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+    end
+  end
+  
+  -- Close buffer
+  vim.api.nvim_buf_delete(buf, { force = true })
 end
 
 -- Discard email with modern confirmation dialog
