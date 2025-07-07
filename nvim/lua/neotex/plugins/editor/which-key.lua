@@ -156,10 +156,10 @@ LATEX (<leader>l)                               | DESCRIPTION
 MAIL (<leader>m)                                | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>mo - Toggle sidebar                     | Open/close Himalaya email sidebar
-<leader>ms - Sync inbox                         | Sync inbox with server  
+<leader>ms - Sync inbox                         | Sync inbox with server (from any context)
 <leader>mS - Full sync                          | Sync all email folders
 <leader>mw - Write email                        | Compose a new email
-<leader>me - Send email                         | Send current compose buffer
+<leader>me - Send email                         | Send current compose buffer (with scheduling)
 <leader>md - Save draft                         | Save email as draft and close
 <leader>mD - Discard email                      | Discard compose buffer without saving
 <leader>mW - Setup wizard                       | Run Himalaya setup wizard
@@ -599,7 +599,6 @@ return {
         local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
         if composer.is_compose_buffer(vim.api.nvim_get_current_buf()) then
           wk.add({
-            { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", buffer = 0 },
             { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", buffer = 0 },
             { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", buffer = 0 },
             { "<leader>mD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", buffer = 0 },

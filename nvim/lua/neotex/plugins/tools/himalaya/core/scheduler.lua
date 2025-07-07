@@ -8,7 +8,8 @@ local M = {}
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
-local events = require('neotex.plugins.tools.himalaya.core.events')
+local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+local event_types = require('neotex.plugins.tools.himalaya.core.events')
 
 -- Enhanced configuration
 M.config = {
@@ -110,7 +111,7 @@ function M.schedule_email(email_data, account_id, options)
   )
   
   -- Emit event for other components
-  events.emit(events.EMAIL_SCHEDULED, {
+  events_bus.emit(event_types.EMAIL_SCHEDULED, {
     id = item.id,
     account_id = account_id,
     email_data = email_data,
@@ -171,7 +172,7 @@ function M.reschedule_email(id, new_time)
   )
   
   -- Emit event
-  events.emit(events.EMAIL_RESCHEDULED, {
+  events_bus.emit(event_types.EMAIL_RESCHEDULED, {
     id = id,
     old_time = item.scheduled_for,
     new_time = new_time
@@ -214,7 +215,7 @@ function M.cancel_send(id)
   )
   
   -- Emit event
-  events.emit(events.EMAIL_CANCELLED, {
+  events_bus.emit(event_types.EMAIL_CANCELLED, {
     id = id,
     email_data = item.email_data
   })
@@ -295,7 +296,7 @@ function M.send_email_now(id)
   end
   
   -- Emit event
-  events.emit(events.EMAIL_SENDING, {
+  events_bus.emit(event_types.EMAIL_SENDING, {
     id = id,
     email_data = item.email_data,
     account_id = item.account_id
@@ -319,7 +320,7 @@ function M.send_email_now(id)
     )
     
     -- Emit success event
-    events.emit(events.EMAIL_SENT, {
+    events_bus.emit(event_types.EMAIL_SENT, {
       id = id,
       email_data = item.email_data,
       account_id = item.account_id
@@ -370,7 +371,7 @@ function M.send_email_now(id)
     end
     
     -- Emit failure event
-    events.emit(events.EMAIL_SEND_FAILED, {
+    events_bus.emit(event_types.EMAIL_SEND_FAILED, {
       id = id,
       email_data = item.email_data,
       error = item.error,

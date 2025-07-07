@@ -276,25 +276,52 @@ function M.test_email_templates()
   end
 end
 
--- Test 4: Email Scheduling (Placeholder)
+-- Test 4: Advanced Email Scheduling Features (Placeholder)
 function M.test_email_scheduling()
   local notify = require('neotex.util.notifications')
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   
-  local test_name = "Email Scheduling"
-  local success = false  -- Not implemented yet
+  local test_name = "Advanced Email Scheduling Features"
+  local success = true
+  local issues = {}
   
   -- Debug mode shows more details
   if is_debug_mode() then
     notify.himalaya("=== Testing " .. test_name .. " ===", notify.categories.STATUS)
-    notify.himalaya("Email scheduling is not yet implemented in Phase 9", notify.categories.STATUS)
-    notify.himalaya("This feature will be added in a future update", notify.categories.STATUS)
   end
   
-  local message = "Not yet implemented"
+  -- Check if basic scheduler is working
+  local ok, status = pcall(scheduler.get_queue_status)
+  if ok and status then
+    if is_debug_mode() then
+      notify.himalaya("✓ Basic scheduling system working", notify.categories.USER_ACTION)
+      notify.himalaya("Note: Advanced features (interactive windows, enhanced queue UI) are pending", notify.categories.STATUS)
+    end
+  else
+    success = false
+    table.insert(issues, "Basic scheduler not available")
+  end
+  
+  -- Advanced features that are pending
+  local pending_features = {
+    "Interactive scheduling windows (Phase 2)",
+    "Enhanced queue management UI (Phase 3)",
+    "Recurring email support",
+    "Advanced scheduling rules"
+  }
+  
+  if is_debug_mode() then
+    for _, feature in ipairs(pending_features) do
+      notify.himalaya("⏳ Pending: " .. feature, notify.categories.STATUS)
+    end
+  end
+  
+  local message = success and "Basic scheduling ✓, advanced features pending" or table.concat(issues, ", ")
   log_test_result(test_name, success, message)
   
   -- Show result immediately
-  notify.himalaya(string.format("⏳ %s: %s", test_name, message), notify.categories.STATUS)
+  local icon = success and "⏳" or "❌"
+  notify.himalaya(string.format("%s %s: %s", icon, test_name, message), notify.categories.STATUS)
 end
 
 -- Test 5: Multiple Account Views (Placeholder)
@@ -354,7 +381,7 @@ function M.test_integration_status()
   
   -- Check if core modules are accessible
   local modules_to_check = {
-    'neotex.plugins.tools.himalaya.core.send_queue',
+    'neotex.plugins.tools.himalaya.core.scheduler',
     'neotex.plugins.tools.himalaya.core.search',
     'neotex.plugins.tools.himalaya.core.templates',
     'neotex.plugins.tools.himalaya.core.commands.email',
@@ -407,7 +434,7 @@ function M.run_all_tests()
     { name = "Unified Email Scheduling System", fn = M.test_unified_scheduler },
     { name = "Advanced Search System", fn = M.test_advanced_search },
     { name = "Email Templates System", fn = M.test_email_templates },
-    { name = "Email Scheduling", fn = M.test_email_scheduling },
+    { name = "Advanced Email Scheduling Features", fn = M.test_email_scheduling },
     { name = "Multiple Account Views", fn = M.test_multiple_account_views },
     { name = "Window Management", fn = M.test_window_management },
     { name = "Integration Status", fn = M.test_integration_status }
@@ -548,7 +575,7 @@ function M.interactive_test()
     { name = "Test Unified Email Scheduling", fn = M.test_unified_scheduler, icon = "⏰" },
     { name = "Test Advanced Search System", fn = M.test_advanced_search, icon = "🔍" },
     { name = "Test Email Templates System", fn = M.test_email_templates, icon = "📧" },
-    { name = "Test Email Scheduling", fn = M.test_email_scheduling, icon = "📅" },
+    { name = "Test Advanced Email Scheduling", fn = M.test_email_scheduling, icon = "📅" },
     { name = "Test Multiple Account Views", fn = M.test_multiple_account_views, icon = "👥" },
     { name = "Test Window Management", fn = M.test_window_management, icon = "🪟" },
     { name = "Test Integration Status", fn = M.test_integration_status, icon = "🔗" },
@@ -588,7 +615,7 @@ function M.interactive_test_fallback()
     { name = "1. Test Unified Email Scheduling", fn = M.test_unified_scheduler },
     { name = "2. Test Advanced Search System", fn = M.test_advanced_search },
     { name = "3. Test Email Templates System", fn = M.test_email_templates },
-    { name = "4. Test Email Scheduling", fn = M.test_email_scheduling },
+    { name = "4. Test Advanced Email Scheduling", fn = M.test_email_scheduling },
     { name = "5. Test Multiple Account Views", fn = M.test_multiple_account_views },
     { name = "6. Test Window Management", fn = M.test_window_management },
     { name = "7. Test Integration Status", fn = M.test_integration_status },

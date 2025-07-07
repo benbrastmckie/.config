@@ -568,9 +568,7 @@ function M.show_scheduling_options(buf, draft_info, email)
   vim.ui.select(options, {
     prompt = " When to send?",
     format_item = function(item)
-      if item:match("1 minute") then
-        return " " .. item .. " (default)"
-      elseif item:match("Cancel") then
+      if item:match("Cancel") then
         return " " .. item
       else
         return " " .. item
@@ -714,8 +712,42 @@ function M.cleanup_after_queue(buf, draft_info)
     end
   end
   
-  -- Close buffer
-  vim.api.nvim_buf_delete(buf, { force = true })
+  -- Switch to alternate buffer before deleting (like :bd behavior)
+  -- This prevents the sidebar from going full screen
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Get list of all buffers
+  local buffers = vim.api.nvim_list_bufs()
+  local alternate_buf = nil
+  
+  -- Find a suitable buffer to switch to
+  for _, b in ipairs(buffers) do
+    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+      -- Skip special buffers like the sidebar
+      if buftype == '' and not filetype:match('^himalaya%-') then
+        alternate_buf = b
+        break
+      end
+    end
+  end
+  
+  -- If no suitable buffer found, create a new one
+  if not alternate_buf then
+    alternate_buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(alternate_buf, '[No Name]')
+  end
+  
+  -- Switch to the alternate buffer
+  if vim.api.nvim_win_is_valid(current_win) then
+    vim.api.nvim_win_set_buf(current_win, alternate_buf)
+  end
+  
+  -- Close compose buffer safely
+  if vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
 end
 
 -- Discard email with modern confirmation dialog
