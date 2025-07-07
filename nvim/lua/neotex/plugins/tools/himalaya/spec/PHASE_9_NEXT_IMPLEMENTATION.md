@@ -147,7 +147,7 @@ function M.schedule_email(email_data, account_id, options)
   
   -- User action notification for scheduling
   notify.himalaya(
-    string.format("📨 Email scheduled for %s", 
+    string.format(" Email scheduled for %s", 
       delay <= 300 and M.format_duration(delay) or os.date("%Y-%m-%d %H:%M", item.scheduled_for)),
     notify.categories.USER_ACTION,
     {
@@ -201,7 +201,7 @@ function M.reschedule_email(id, new_time)
   -- Use unified notification system
   local notify = require('neotex.util.notifications')
   notify.himalaya(
-    string.format("✅ Email rescheduled for %s", 
+    string.format(" Email rescheduled for %s", 
       os.date("%Y-%m-%d %H:%M", new_time)),
     notify.categories.USER_ACTION,
     {
@@ -289,9 +289,9 @@ function M.update_notification_display(id, buf)
   
   -- Header with time info
   if time_until <= 300 then -- Near-term (5 minutes or less)
-    table.insert(lines, string.format("📨 Sending in %s", M.format_duration(time_until)))
+    table.insert(lines, string.format(" Sending in %s", M.format_duration(time_until)))
   else
-    table.insert(lines, string.format("📅 Scheduled for %s", 
+    table.insert(lines, string.format(" Scheduled for %s", 
       os.date("%Y-%m-%d %H:%M", scheduled_time)))
     table.insert(lines, string.format("   (%s from now)", M.format_duration(time_until)))
   end
@@ -439,14 +439,14 @@ function M.show_queue()
   
   -- Render categories
   local lines = {}
-  table.insert(lines, "📨 Scheduled Emails")
+  table.insert(lines, " Scheduled Emails")
   table.insert(lines, string.rep("─", 70))
   
-  M.render_category(lines, "⚡ Sending Soon", categories.immediate)
-  M.render_category(lines, "📅 Today", categories.today)
-  M.render_category(lines, "📆 Tomorrow", categories.tomorrow)
-  M.render_category(lines, "🗓️ Future", categories.future)
-  M.render_category(lines, "✅ Completed", categories.completed)
+  M.render_category(lines, " Sending Soon", categories.immediate)
+  M.render_category(lines, " Today", categories.today)
+  M.render_category(lines, " Tomorrow", categories.tomorrow)
+  M.render_category(lines, " Future", categories.future)
+  M.render_category(lines, " Completed", categories.completed)
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -511,11 +511,11 @@ function M.show_scheduling_options(buf, draft_info, email)
     prompt = " When to send?",
     format_item = function(item)
       if item:match("1 minute") then
-        return "⏰ " .. item .. " (default)"
+        return " " .. item .. " (default)"
       elseif item:match("Cancel") then
-        return "❌ " .. item
+        return " " .. item
       else
-        return "📅 " .. item
+        return " " .. item
       end
     end
   }, function(choice, idx)
@@ -555,7 +555,7 @@ function M.show_scheduling_options(buf, draft_info, email)
     if queue_id then
       local notify = require('neotex.util.notifications')
       notify.himalaya(
-        string.format("✅ Email scheduled to send in %s", 
+        string.format(" Email scheduled to send in %s", 
           scheduler.format_duration(delay)),
         notify.categories.USER_ACTION,
         {
@@ -690,385 +690,15 @@ notify.himalaya("Failed to send scheduled email", notify.categories.ERROR, {
 
 ## Success Criteria
 
-1. ✅ All emails go through the scheduler (no bypass)
-2. ✅ Default 60-second delay preserved
-3. ✅ Can modify scheduled time before send
-4. ✅ Clear visual feedback for all states
-5. ✅ Existing undo functionality intact
-6. ✅ Performance remains good with many scheduled emails
+1.  All emails go through the scheduler (no bypass)
+2.  Default 60-second delay preserved
+3.  Can modify scheduled time before send
+4.  Clear visual feedback for all states
+5.  Existing undo functionality intact
+6.  Performance remains good with many scheduled emails
 
-## Window Management Improvements (Separate Feature)
 
-### Overview
-Enhance window coordination, layouts, and navigation for better multi-window email management.
-
-### Implementation Plan
-
-#### 1. Window Manager Module
-Create `ui/window_manager.lua`:
-
-```lua
-local M = {}
-
--- Window layouts
-M.layouts = {
-  CLASSIC = "classic",      -- List | Preview
-  VERTICAL = "vertical",    -- List on top, Preview below
-  THREEPANE = "threepane",  -- Folders | List | Preview
-  FOCUSED = "focused",      -- Single window focus mode
-  CUSTOM = "custom"         -- User-defined layout
-}
-
--- Window state
-M.state = {
-  layout = M.layouts.CLASSIC,
-  windows = {},
-  last_focused = nil,
-  resize_mode = false
-}
-
--- Window types
-M.window_types = {
-  FOLDER_TREE = "folder_tree",
-  EMAIL_LIST = "email_list",
-  EMAIL_PREVIEW = "email_preview",
-  COMPOSER = "composer",
-  SEARCH = "search",
-  SETTINGS = "settings"
-}
-
--- Initialize window manager
-function M.setup()
-  -- Set up autocmds for window coordination
-  M.setup_autocmds()
-  
-  -- Load saved layout preferences
-  M.load_preferences()
-end
-
--- Create layout
-function M.create_layout(layout_name)
-  layout_name = layout_name or M.state.layout
-  M.state.layout = layout_name
-  
-  -- Close existing windows
-  M.close_all_windows()
-  
-  if layout_name == M.layouts.CLASSIC then
-    M.create_classic_layout()
-  elseif layout_name == M.layouts.VERTICAL then
-    M.create_vertical_layout()
-  elseif layout_name == M.layouts.THREEPANE then
-    M.create_threepane_layout()
-  elseif layout_name == M.layouts.FOCUSED then
-    M.create_focused_layout()
-  end
-  
-  -- Save layout preference
-  M.save_preferences()
-end
-
--- Classic layout: List | Preview
-function M.create_classic_layout()
-  -- Create email list window (left)
-  vim.cmd('vsplit')
-  local list_win = vim.api.nvim_get_current_win()
-  local list_buf = M.create_email_list_buffer()
-  vim.api.nvim_win_set_buf(list_win, list_buf)
-  vim.api.nvim_win_set_width(list_win, math.floor(vim.o.columns * 0.4))
-  
-  -- Create preview window (right)
-  vim.cmd('wincmd l')
-  local preview_win = vim.api.nvim_get_current_win()
-  local preview_buf = M.create_preview_buffer()
-  vim.api.nvim_win_set_buf(preview_win, preview_buf)
-  
-  -- Store window references
-  M.state.windows = {
-    [M.window_types.EMAIL_LIST] = {
-      win = list_win,
-      buf = list_buf
-    },
-    [M.window_types.EMAIL_PREVIEW] = {
-      win = preview_win,
-      buf = preview_buf
-    }
-  }
-  
-  -- Focus on list
-  vim.api.nvim_set_current_win(list_win)
-end
-
--- Three-pane layout: Folders | List | Preview
-function M.create_threepane_layout()
-  -- Create folder tree window (left)
-  vim.cmd('vsplit')
-  vim.cmd('vsplit')
-  
-  local folder_win = vim.api.nvim_get_current_win()
-  local folder_buf = M.create_folder_tree_buffer()
-  vim.api.nvim_win_set_buf(folder_win, folder_buf)
-  vim.api.nvim_win_set_width(folder_win, 20)
-  
-  -- Create email list window (middle)
-  vim.cmd('wincmd l')
-  local list_win = vim.api.nvim_get_current_win()
-  local list_buf = M.create_email_list_buffer()
-  vim.api.nvim_win_set_buf(list_win, list_buf)
-  vim.api.nvim_win_set_width(list_win, math.floor((vim.o.columns - 20) * 0.4))
-  
-  -- Create preview window (right)
-  vim.cmd('wincmd l')
-  local preview_win = vim.api.nvim_get_current_win()
-  local preview_buf = M.create_preview_buffer()
-  vim.api.nvim_win_set_buf(preview_win, preview_buf)
-  
-  -- Store window references
-  M.state.windows = {
-    [M.window_types.FOLDER_TREE] = {
-      win = folder_win,
-      buf = folder_buf
-    },
-    [M.window_types.EMAIL_LIST] = {
-      win = list_win,
-      buf = list_buf
-    },
-    [M.window_types.EMAIL_PREVIEW] = {
-      win = preview_win,
-      buf = preview_buf
-    }
-  }
-  
-  -- Focus on list
-  vim.api.nvim_set_current_win(list_win)
-end
-```
-
-#### 2. Window Coordination
-```lua
--- Coordinate window updates
-function M.update_preview(email_id)
-  local preview = M.state.windows[M.window_types.EMAIL_PREVIEW]
-  if not preview or not vim.api.nvim_win_is_valid(preview.win) then
-    return
-  end
-  
-  -- Update preview content
-  local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-  email_preview.show_email_in_buffer(email_id, preview.buf)
-  
-  -- Ensure window is visible
-  if M.state.layout == M.layouts.FOCUSED then
-    M.focus_window(M.window_types.EMAIL_PREVIEW)
-  end
-end
-
--- Smart window focusing
-function M.focus_window(window_type)
-  local window = M.state.windows[window_type]
-  if not window or not vim.api.nvim_win_is_valid(window.win) then
-    return
-  end
-  
-  -- Store last focused
-  M.state.last_focused = window_type
-  
-  if M.state.layout == M.layouts.FOCUSED then
-    -- In focused mode, maximize the window
-    M.maximize_window(window.win)
-  else
-    -- Just focus the window
-    vim.api.nvim_set_current_win(window.win)
-  end
-end
-
--- Window navigation
-function M.navigate(direction)
-  if M.state.layout == M.layouts.FOCUSED then
-    -- In focused mode, cycle through windows
-    M.cycle_focused_window(direction)
-  else
-    -- Normal vim window navigation
-    vim.cmd('wincmd ' .. direction)
-  end
-end
-
--- Resize windows
-function M.resize_window(window_type, size)
-  local window = M.state.windows[window_type]
-  if not window or not vim.api.nvim_win_is_valid(window.win) then
-    return
-  end
-  
-  if type(size) == "string" then
-    -- Relative resize
-    if size:match("^[+-]") then
-      local delta = tonumber(size)
-      local current = vim.api.nvim_win_get_width(window.win)
-      vim.api.nvim_win_set_width(window.win, current + delta)
-    end
-  else
-    -- Absolute size
-    vim.api.nvim_win_set_width(window.win, size)
-  end
-end
-
--- Interactive resize mode
-function M.enter_resize_mode()
-  M.state.resize_mode = true
-  local notify = require('neotex.util.notifications')
-  
-  notify.himalaya(
-    "Resize mode: h/l to resize horizontally, j/k vertically, q to quit",
-    notify.categories.STATUS
-  )
-  
-  -- Set up temporary keymaps
-  local current_win = vim.api.nvim_get_current_win()
-  local resize_keymaps = {
-    h = function() vim.cmd('vertical resize -2') end,
-    l = function() vim.cmd('vertical resize +2') end,
-    j = function() vim.cmd('resize -2') end,
-    k = function() vim.cmd('resize +2') end,
-    H = function() vim.cmd('vertical resize -10') end,
-    L = function() vim.cmd('vertical resize +10') end,
-    J = function() vim.cmd('resize -10') end,
-    K = function() vim.cmd('resize +10') end,
-    q = function() M.exit_resize_mode() end,
-    ['<Esc>'] = function() M.exit_resize_mode() end
-  }
-  
-  for key, fn in pairs(resize_keymaps) do
-    vim.keymap.set('n', key, fn, { 
-      buffer = 0, 
-      desc = "Resize window" 
-    })
-  end
-end
-```
-
-#### 3. Window Persistence
-```lua
--- Save window layout
-function M.save_layout(name)
-  local layout = {
-    name = name or "custom",
-    windows = {},
-    layout_type = M.state.layout
-  }
-  
-  -- Capture window dimensions and positions
-  for win_type, window in pairs(M.state.windows) do
-    if vim.api.nvim_win_is_valid(window.win) then
-      layout.windows[win_type] = {
-        width = vim.api.nvim_win_get_width(window.win),
-        height = vim.api.nvim_win_get_height(window.win),
-        position = vim.api.nvim_win_get_position(window.win)
-      }
-    end
-  end
-  
-  -- Save to state
-  local saved_layouts = state.get('window_layouts', {})
-  saved_layouts[name] = layout
-  state.set('window_layouts', saved_layouts)
-  
-  local notify = require('neotex.util.notifications')
-  notify.himalaya(
-    string.format("Layout '%s' saved", name),
-    notify.categories.USER_ACTION,
-    {
-      layout_name = name,
-      layout_type = layout.layout_type
-    }
-  )
-end
-
--- Load saved layout
-function M.load_layout(name)
-  local saved_layouts = state.get('window_layouts', {})
-  local layout = saved_layouts[name]
-  
-  if not layout then
-    local notify = require('neotex.util.notifications')
-    notify.himalaya(
-      string.format("Layout '%s' not found", name),
-      notify.categories.ERROR,
-      {
-        requested_layout = name,
-        available_layouts = vim.tbl_keys(saved_layouts)
-      }
-    )
-    return
-  end
-  
-  -- Recreate layout
-  M.create_layout(layout.layout_type)
-  
-  -- Restore window dimensions
-  for win_type, dimensions in pairs(layout.windows) do
-    local window = M.state.windows[win_type]
-    if window and vim.api.nvim_win_is_valid(window.win) then
-      vim.api.nvim_win_set_width(window.win, dimensions.width)
-      vim.api.nvim_win_set_height(window.win, dimensions.height)
-    end
-  end
-end
-```
-
-#### 4. Window Commands
-```lua
--- In core/commands/ui.lua, add:
-commands.HimalayaLayout = {
-  fn = function(opts)
-    local window_manager = require('neotex.plugins.tools.himalaya.ui.window_manager')
-    window_manager.create_layout(opts.args)
-  end,
-  opts = { 
-    nargs = '?',
-    complete = function()
-      return {'classic', 'vertical', 'threepane', 'focused'}
-    end,
-    desc = 'Change window layout' 
-  }
-}
-
-commands.HimalayaWindowResize = {
-  fn = function()
-    local window_manager = require('neotex.plugins.tools.himalaya.ui.window_manager')
-    window_manager.enter_resize_mode()
-  end,
-  opts = { desc = 'Enter window resize mode' }
-}
-
-commands.HimalayaWindowSave = {
-  fn = function(opts)
-    local window_manager = require('neotex.plugins.tools.himalaya.ui.window_manager')
-    window_manager.save_layout(opts.args)
-  end,
-  opts = { 
-    nargs = 1,
-    desc = 'Save current window layout' 
-  }
-}
-
-commands.HimalayaWindowLoad = {
-  fn = function(opts)
-    local window_manager = require('neotex.plugins.tools.himalaya.ui.window_manager')
-    window_manager.load_layout(opts.args)
-  end,
-  opts = { 
-    nargs = 1,
-    complete = function()
-      local saved = state.get('window_layouts', {})
-      return vim.tbl_keys(saved)
-    end,
-    desc = 'Load saved window layout' 
-  }
-}
-```
-
-## Combined Implementation Timeline
+## Implementation Timeline
 
 ### Week 1: Clean Implementation
 1. **Day 1**: Remove legacy code
@@ -1081,31 +711,20 @@ commands.HimalayaWindowLoad = {
    - Implement variable timing support
    - Add reschedule functionality
 
-2. **Day 3**: Notification system
-   - Enhanced notification windows
+3. **Day 4**: Enhanced UI
+   - Interactive scheduling windows
    - Schedule modification UI
    - Quick reschedule options
 
-3. **Days 4-5**: Integration & Testing
+4. **Days 5-6**: Integration & Testing
    - Update composer for scheduling-only
    - Implement new command structure
    - Test all scheduling scenarios
 
-### Week 2: Window Management
-4. **Days 6-7**: Layout system
-   - Basic layouts implementation
-   - Window coordination
-   - State management
-
-5. **Day 8**: Advanced features
-   - Interactive resize mode
-   - Layout persistence
-   - Smart navigation
-
-6. **Days 9-10**: Polish & Testing
-   - Integration testing
-   - Performance optimization
-   - Documentation
+### Testing Phase (2 days)
+- Comprehensive testing of all features
+- Performance optimization
+- Documentation updates
 
 ## Risk Mitigation
 
@@ -1114,10 +733,6 @@ commands.HimalayaWindowLoad = {
 2. **Performance**: Use efficient timer management
 3. **State Corruption**: Validate all state transitions
 
-### Window Management Risks
-1. **Layout Conflicts**: Validate window state before operations
-2. **Performance**: Lazy load content, debounce updates
-3. **Compatibility**: Test with various terminal sizes
 
 ## Conclusion
 
@@ -1132,5 +747,3 @@ Breaking changes are worth it for:
 - Easier maintenance
 - Better user experience
 - Reduced bugs from edge cases
-
-The window management improvements remain separate but complementary, enhancing the overall email management experience.

@@ -78,24 +78,36 @@ This document provides a quick reference for how all specification items map to 
 
 ## Phase 9: Advanced Features & UI Evolution (Weeks 5-6) - IN PROGRESS
 
-### Primary Deliverables (ADVANCED_FEATURES_SPEC.md)
+### Completed Features (4/8)
 1. ✓ **Undo Send System** (#2) - 60-second delay queue - COMPLETED
-2. ✓ **Advanced Search** (#3) - Search operators and filters - COMPLETED
+2. ✓ **Advanced Search** (#3) - Search operators and filters - COMPLETED  
 3. ✓ **Email Templates** (#4) - Variable support - COMPLETED
-4. **Email Scheduling** (#5) - Future send capability - NOT IMPLEMENTED
-5. **Multiple Account Views** (#1) - Unified inbox, split, tabbed - NOT IMPLEMENTED
+4. ✓ **Notification System Integration** (CLEANUP #4.2, TODOS #4.2) - COMPLETED
 
-### UI Evolution Items
-- **Window Management Improvements** (CLEANUP #4.1, TODOS #4.1) - NOT IMPLEMENTED
-- ✓ **Notification System Integration** (CLEANUP #4.2, TODOS #4.2) - COMPLETED
-- **UI Layer Architecture** (ARCHITECTURE Phase 9) - PARTIAL
+### Next Implementation - Unified Email Scheduling
+- **Specification**: [PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)
+- **Breaking Changes**: Remove send_queue.lua, no immediate send option
+- **Key Features**: ALL emails scheduled, minimum 60s delay, full scheduling UI
+- **Timeline**: 1 week
+
+### Remaining Features - Not Implemented
+- **Specification**: [PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)
+1. **Multiple Account Views** (#1) - Unified inbox, split, tabbed views
+2. **Email Rules and Filters** (#7) - Automatic filtering and actions
+3. **Integration Features** (#8) - Task management, calendar, notes
+
+### Window Management - Separate Implementation
+- **Specification**: [WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)
+- **Features**: Layouts, coordination, resize mode, persistence
+- **Priority**: Medium
 
 ### Implementation Files
-- `core/send_queue.lua` - Send queue with cancellation support
+- `core/send_queue.lua` - Send queue with cancellation (to be replaced)
 - `core/search.lua` - Advanced search with 23+ operators
 - `core/templates.lua` - Template system with variables and conditionals
 - `scripts/test_phase9.lua` - Comprehensive test suite
 - `scripts/demo_phase9.lua` - Feature demonstrations
+- `scripts/demo_unified_scheduler.lua` - Unified scheduling demo
 
 ## Phase 10: Security, Polish & Integration (Week 7)
 
@@ -123,8 +135,18 @@ This document provides a quick reference for how all specification items map to 
 - Phase 10: Feature 7 (OAuth)
 
 **ADVANCED_FEATURES_SPEC.md**
-- Phase 9: Features 1-5, 7-9
+- Phase 9 Completed: Features 2, 3, 4 (Undo send, Search, Templates)
+- Phase 9 Remaining: Features 1, 5, 7, 8 (Multiple views, Scheduling, Rules, Integration)
 - Phase 10: Feature 6 (Encryption)
+
+**PHASE_9_NEXT_IMPLEMENTATION.md** (New)
+- Unified email scheduling system (breaking changes)
+
+**PHASE_9_REMAINING_FEATURES.md** (New)
+- Multiple account views, email rules, integration features
+
+**WINDOW_MANAGEMENT_SPEC.md** (New)
+- Window layouts and management improvements
 
 **CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md**
 - Phase 6: Section 1 (Error Handling)
