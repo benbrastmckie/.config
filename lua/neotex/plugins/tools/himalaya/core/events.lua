@@ -17,6 +17,11 @@ M.EMAIL_OPENED = "email:opened"
 M.EMAIL_SENT = "email:sent"
 M.EMAIL_DELETED = "email:deleted"
 M.EMAIL_MOVED = "email:moved"
+M.EMAIL_SCHEDULED = "email:scheduled"
+M.EMAIL_RESCHEDULED = "email:rescheduled"
+M.EMAIL_CANCELLED = "email:cancelled"
+M.EMAIL_SENDING = "email:sending"
+M.EMAIL_SEND_FAILED = "email:send_failed"
 
 -- Sync Operation Events
 M.SYNC_REQUESTED = "sync:requested"
