@@ -106,6 +106,7 @@ The plugin recently underwent comprehensive refactoring:
 - `:HimalayaSyncInfo` - Show detailed sync status (includes auto-sync information)
 - `:HimalayaDebug` - Show debug information
 - `:HimalayaDebugJson` - Test JSON parsing
+- `:HimalayaTest` - Run tests with picker interface
 - `:checkhealth himalaya` - Neovim health check
 
 <!-- TODO: Add command auto-completion for folders and accounts -->
@@ -209,6 +210,39 @@ See `which-key.lua` for complete keybinding reference and buffer-specific mappin
 
 ### Debug Mode
 Enable debug notifications with `<leader>ad` to see detailed operation logs.
+
+## Testing
+
+### Running Tests
+The plugin includes a comprehensive testing infrastructure:
+
+- **Run all tests**: `:HimalayaTest` then select "Run All Tests"
+- **Run category tests**: `:HimalayaTest` then select category (commands, features, integration, performance)
+- **Run specific test**: `:HimalayaTest test_name`
+- **Test with picker**: `:HimalayaTest` opens interactive test picker
+
+### Test Organization
+Tests are organized in `scripts/` directory:
+- `commands/` - Command-specific tests
+- `features/` - Feature-specific tests (scheduler, search, templates)
+- `integration/` - Full workflow integration tests
+- `performance/` - Performance and memory tests
+- `utils/` - Test framework and mock data utilities
+
+### Writing Tests
+Tests use the included test framework:
+```lua
+local framework = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local assert = framework.assert
+
+local tests = {}
+table.insert(tests, framework.create_test('test_name', function()
+  -- Test code here
+  assert.equals(actual, expected, "Error message")
+end))
+
+_G.himalaya_test = framework.create_suite('Suite Name', tests)
+```
 
 ## Testing Guides
 
