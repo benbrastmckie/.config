@@ -174,61 +174,68 @@ function M.setup(registry)
   
   commands.HimalayaSyncStatus = {
     fn = function()
-      local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
-      local state = require('neotex.plugins.tools.himalaya.core.state')
-      local lock = require('neotex.plugins.tools.himalaya.sync.lock')
+      local coordinator = require('neotex.plugins.tools.himalaya.sync.coordinator')
       local float = require('neotex.plugins.tools.himalaya.ui.float')
       
-      local status = sync_manager.get_status()
-      local lines = {}
+      local coord_data = coordinator.read_coordination_file()
+      local lines = {
+        '# Himalaya Sync Coordination Status',
+        '',
+        '## Current Instance',
+        string.format('  Instance ID: %s', coordinator.instance_id),
+        string.format('  Role: %s', coordinator.is_primary and 'Primary Coordinator' or 'Secondary'),
+        string.format('  PID: %d', vim.fn.getpid()),
+        '',
+      }
       
-      table.insert(lines, '# Sync Status')
-      table.insert(lines, '')
-      
-      -- Current sync status
-      if status.is_syncing then
-        table.insert(lines, '🔄 **Sync in progress**')
-        table.insert(lines, string.format('  Type: %s', status.sync_type))
-        table.insert(lines, string.format('  Account: %s', status.account))
-        if status.progress then
-          table.insert(lines, string.format('  Progress: %s', status.progress))
-        end
+      if coord_data.primary then
+        table.insert(lines, '## Primary Coordinator')
+        table.insert(lines, string.format('  Instance: %s', coord_data.primary.instance_id))
+        table.insert(lines, string.format('  PID: %d', coord_data.primary.pid or 0))
+        
+        local heartbeat_age = os.time() - (coord_data.primary.last_heartbeat or 0)
+        table.insert(lines, string.format('  Last Heartbeat: %d seconds ago', heartbeat_age))
+        table.insert(lines, string.format('  Status: %s', 
+          heartbeat_age < 60 and 'Active' or 'Possibly Stale'))
+        table.insert(lines, '')
       else
-        table.insert(lines, '✅ No sync currently running')
+        table.insert(lines, '## Primary Coordinator')
+        table.insert(lines, '  No primary coordinator active')
+        table.insert(lines, '')
       end
       
-      -- Active locks
-      local active_locks = lock.get_active_locks()
-      if #active_locks > 0 then
-        table.insert(lines, '')
-        table.insert(lines, '## Active Locks')
-        for _, lock_info in ipairs(active_locks) do
-          table.insert(lines, string.format('  - %s', lock_info))
+      table.insert(lines, '## Sync History')
+      local last_sync = coord_data.last_sync_time or 0
+      if last_sync > 0 then
+        local sync_age = os.time() - last_sync
+        local age_str
+        if sync_age < 60 then
+          age_str = sync_age .. ' seconds ago'
+        elseif sync_age < 3600 then
+          age_str = math.floor(sync_age / 60) .. ' minutes ago'
+        else
+          age_str = math.floor(sync_age / 3600) .. ' hours ago'
         end
+        
+        table.insert(lines, string.format('  Last Sync: %s', age_str))
+        table.insert(lines, string.format('  By Instance: %s', 
+          coord_data.last_sync_instance or 'Unknown'))
+      else
+        table.insert(lines, '  No sync history recorded')
       end
       
-      -- Last sync info
-      local last_sync = state.get('sync.last_sync')
-      if last_sync then
-        table.insert(lines, '')
-        table.insert(lines, '## Last Sync')
-        local ago = os.time() - last_sync
-        local minutes = math.floor(ago / 60)
-        table.insert(lines, string.format('  Completed: %d minutes ago', minutes))
+      local cooldown_remaining = coordinator.config.sync_cooldown - 
+                                (os.time() - last_sync)
+      if cooldown_remaining > 0 then
+        table.insert(lines, string.format('  Cooldown: %d seconds remaining', cooldown_remaining))
+      else
+        table.insert(lines, '  Cooldown: Ready to sync')
       end
       
-      -- Last error
-      local last_error = state.get('sync.last_error')
-      if last_error then
-        table.insert(lines, '')
-        table.insert(lines, '## Last Error')
-        table.insert(lines, '  ' .. last_error)
-      end
-      
-      float.show('Sync Status', lines)
+      float.show('Sync Coordination Status', lines)
     end,
     opts = {
-      desc = 'Show sync status'
+      desc = 'Show sync coordination status'
     }
   }
   
