@@ -627,18 +627,7 @@ function M.show_scheduling_options(buf, draft_info, email)
     })
     
     if queue_id then
-      notify.himalaya(
-        string.format(" Email scheduled to send in %s", 
-          scheduler.format_duration(delay)),
-        notify.categories.USER_ACTION,
-        {
-          queue_id = queue_id,
-          delay = delay,
-          subject = email.subject
-        }
-      )
-      
-      -- Clean up composer
+      -- Clean up composer (notification is handled by scheduler)
       M.cleanup_after_queue(buf, draft_info)
     end
   end)

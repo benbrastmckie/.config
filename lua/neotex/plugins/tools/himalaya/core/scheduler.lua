@@ -308,6 +308,107 @@ function M.cancel_send(id)
   return true
 end
 
+-- Pause scheduled email (indefinite delay)
+function M.pause_email(id)
+  local item = M.queue[id]
+  
+  if not item then
+    return false, "Email not found"
+  end
+  
+  if item.status ~= "scheduled" then
+    return false, "Can only pause scheduled emails"
+  end
+  
+  -- Update status to paused
+  item.status = "paused"
+  item.paused_at = os.time()
+  item.original_scheduled_for = item.scheduled_for
+  M.save_queue()
+  
+  -- Close notification if open
+  if item.notification_window and vim.api.nvim_win_is_valid(item.notification_window) then
+    vim.api.nvim_win_close(item.notification_window, true)
+  end
+  
+  -- Notify user
+  local notify = require('neotex.util.notifications')
+  notify.himalaya(
+    string.format(" Email paused: %s", 
+      item.email_data.subject or "No subject"),
+    notify.categories.USER_ACTION,
+    {
+      id = id,
+      subject = item.email_data.subject
+    }
+  )
+  
+  -- Emit event
+  events_bus.emit(event_types.EMAIL_PAUSED, {
+    id = id,
+    email_data = item.email_data
+  })
+  
+  return true
+end
+
+-- Resume paused email
+function M.resume_email(id, new_time)
+  local item = M.queue[id]
+  
+  if not item then
+    return false, "Email not found"
+  end
+  
+  if item.status ~= "paused" then
+    return false, "Can only resume paused emails"
+  end
+  
+  -- Set new schedule time or restore original with remaining time
+  local now = os.time()
+  if new_time then
+    item.scheduled_for = new_time
+  elseif item.original_scheduled_for then
+    -- Calculate how much time was remaining when paused
+    local time_remaining_when_paused = item.original_scheduled_for - (item.paused_at or now)
+    if time_remaining_when_paused > 0 then
+      -- Resume with the remaining time
+      item.scheduled_for = now + time_remaining_when_paused
+    else
+      -- If the original time has passed, use default delay
+      item.scheduled_for = now + M.config.default_delay
+    end
+  else
+    -- Fallback to default delay if no original time
+    item.scheduled_for = now + M.config.default_delay
+  end
+  item.status = "scheduled"
+  item.paused_at = nil
+  M.save_queue()
+  
+  -- Notify user
+  local notify = require('neotex.util.notifications')
+  notify.himalaya(
+    string.format(" Email resumed for %s", 
+      os.date("%Y-%m-%d %H:%M", item.scheduled_for)),
+    notify.categories.USER_ACTION,
+    {
+      id = id,
+      subject = item.email_data.subject,
+      scheduled_for = item.scheduled_for
+    }
+  )
+  
+  -- Emit event
+  events_bus.emit(event_types.EMAIL_RESUMED, {
+    id = id,
+    email_data = item.email_data,
+    scheduled_for = item.scheduled_for
+  })
+  
+  return true
+end
+
 -- Start processing scheduled emails
 function M.start_processing()
   if M.running then
@@ -344,6 +445,7 @@ function M.process_queue()
   local sent_count = 0
   
   for id, item in pairs(M.queue) do
+    -- Only process scheduled emails (not paused)
     if item.status == "scheduled" and item.scheduled_for <= now then
       M.send_email_now(id)
       sent_count = sent_count + 1
@@ -567,7 +669,7 @@ function M.get_scheduled_emails()
   local scheduled = {}
   
   for id, item in pairs(M.queue) do
-    if item.status == "scheduled" then
+    if item.status == "scheduled" or item.status == "paused" then
       table.insert(scheduled, {
         id = id,
         email_data = item.email_data,
@@ -575,14 +677,23 @@ function M.get_scheduled_emails()
         scheduled_for = item.scheduled_for,
         created_at = item.created_at,
         modified = item.modified,
-        metadata = item.metadata
+        metadata = item.metadata,
+        status = item.status,
+        paused_at = item.paused_at,
+        original_scheduled_for = item.original_scheduled_for
       })
     end
   end
   
-  -- Sort by scheduled time (earliest first)
+  -- Sort by scheduled time (earliest first), but put paused emails at the end
   table.sort(scheduled, function(a, b)
-    return a.scheduled_for < b.scheduled_for
+    if a.status == "paused" and b.status ~= "paused" then
+      return false
+    elseif a.status ~= "paused" and b.status == "paused" then
+      return true
+    else
+      return a.scheduled_for < b.scheduled_for
+    end
   end)
   
   return scheduled
@@ -594,7 +705,7 @@ function M.get_scheduled_email(id)
   M.sync_from_disk()
   
   local item = M.queue[id]
-  if item and item.status == "scheduled" then
+  if item and (item.status == "scheduled" or item.status == "paused") then
     return {
       id = id,
       email_data = item.email_data,
@@ -603,7 +714,9 @@ function M.get_scheduled_email(id)
       created_at = item.created_at,
       modified = item.modified,
       metadata = item.metadata,
-      status = item.status
+      status = item.status,
+      paused_at = item.paused_at,
+      original_scheduled_for = item.original_scheduled_for
     }
   end
   return nil
@@ -661,26 +774,39 @@ function M.show_reschedule_picker(id)
   local conf = require('telescope.config').values
   local actions = require('telescope.actions')
   local action_state = require('telescope.actions.state')
+  local themes = require('telescope.themes')
   
-  local options = {
-    { text = "In 1 minute", value = 60 },
-    { text = "In 5 minutes", value = 300 },
-    { text = "In 30 minutes", value = 1800 },
-    { text = "In 1 hour", value = 3600 },
-    { text = "In 2 hours", value = 7200 },
-    { text = "Tomorrow morning (9 AM)", value = "tomorrow_9am" },
-    { text = "Tomorrow afternoon (2 PM)", value = "tomorrow_2pm" },
-    { text = "Next Monday (9 AM)", value = "next_monday_9am" },
-    { text = "Custom time...", value = "custom" }
-  }
+  local options = {}
   
-  pickers.new({
-    layout_strategy = 'center',
+  -- Add PAUSE or RESUME based on current status
+  if item.status == "paused" then
+    table.insert(options, { text = "RESUME", value = "resume" })
+  else
+    table.insert(options, { text = "PAUSE", value = "pause" })
+  end
+  
+  -- Add common scheduling options
+  table.insert(options, { text = "In 1 minute", value = 60 })
+  table.insert(options, { text = "In 5 minutes", value = 300 })
+  table.insert(options, { text = "In 30 minutes", value = 1800 })
+  table.insert(options, { text = "In 1 hour", value = 3600 })
+  table.insert(options, { text = "In 2 hours", value = 7200 })
+  table.insert(options, { text = "Tomorrow morning (9 AM)", value = "tomorrow_9am" })
+  table.insert(options, { text = "Tomorrow afternoon (2 PM)", value = "tomorrow_2pm" })
+  table.insert(options, { text = "Next Monday (9 AM)", value = "next_monday_9am" })
+  table.insert(options, { text = "Custom time...", value = "custom" })
+  
+  -- Use custom theme from telescope config
+  local theme_opts = themes.get_dropdown({
+    winblend = 10,
+    previewer = false,
     layout_config = {
-      width = 60,  -- 60 characters wide
-      height = 12, -- 12 lines tall
+      width = 80,  -- 80 characters wide
+      height = 15, -- 15 lines tall
     },
-  }, {
+  })
+  
+  pickers.new(theme_opts, {
     prompt_title = "Reschedule Email",
     finder = finders.new_table {
       results = options,
@@ -703,7 +829,13 @@ function M.show_reschedule_picker(id)
         local new_time
         local now = os.time()
         
-        if type(value) == "number" then
+        if value == "pause" then
+          M.pause_email(id)
+          return
+        elseif value == "resume" then
+          M.resume_email(id)
+          return
+        elseif type(value) == "number" then
           new_time = now + value
         elseif value == "tomorrow_9am" then
           new_time = M.get_next_time(9, 0)
