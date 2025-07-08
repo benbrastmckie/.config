@@ -72,6 +72,14 @@ M.defaults = {
     show_progress = true,
     notify_on_complete = true,
     notify_on_error = true,
+    
+    -- Multi-instance coordination
+    coordination = {
+      enabled = true,              -- Enable cross-instance coordination
+      heartbeat_interval = 30,     -- Seconds between heartbeats
+      takeover_threshold = 60,     -- Seconds before considering primary dead
+      sync_cooldown = 300,         -- Minimum seconds between syncs (5 minutes)
+    },
   },
   
   -- UI settings

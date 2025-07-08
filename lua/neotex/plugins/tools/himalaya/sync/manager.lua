@@ -11,6 +11,7 @@ local M = {}
 -- Dependencies
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local coordinator = require('neotex.plugins.tools.himalaya.sync.coordinator')
 
 -- Start any sync operation
 function M.start_sync(sync_type, options)
@@ -289,6 +290,9 @@ local startup_time = nil
 
 -- Start automatic inbox syncing
 function M.start_auto_sync()
+  -- Initialize coordination
+  coordinator.init()
+  
   -- Record startup time
   startup_time = os.time()
   
@@ -315,6 +319,12 @@ function M.start_auto_sync()
   
   -- Start recurring timer after startup delay
   auto_sync_timer:start(startup_delay * 1000, sync_interval * 1000, vim.schedule_wrap(function()
+    -- Check coordination before syncing
+    if not coordinator.should_allow_sync() then
+      logger.debug('Auto-sync skipped by coordinator')
+      return
+    end
+    
     -- Safety check: ensure we've waited the full startup delay
     if startup_time and (os.time() - startup_time) < startup_delay then
       logger.debug('Sync triggered too early, skipping. Time since startup: ' .. (os.time() - startup_time) .. 's')
@@ -335,26 +345,31 @@ function M.start_auto_sync()
     end
     
     -- Perform inbox sync
-    logger.debug('Starting automatic inbox sync')
+    logger.debug('Starting coordinated auto-sync')
     
     -- Show notification in debug mode only
     if notify.config.modules.himalaya.debug_mode then
-      notify.himalaya('Auto-syncing inbox...', notify.categories.BACKGROUND)
+      notify.himalaya('Auto-syncing inbox (primary coordinator)...', 
+                     notify.categories.BACKGROUND)
     end
     
     -- Use the sync_inbox function from main UI module
     local main = require('neotex.plugins.tools.himalaya.ui.main')
     main.sync_inbox()
+    
+    -- Record sync completion for coordination
+    coordinator.record_sync_completion()
   end))
   
   logger.debug('Auto-sync timer started')
   
   -- Show startup notification in debug mode
   if notify.config.modules.himalaya.debug_mode then
-    notify.himalaya(string.format('Auto-sync enabled: every %d minutes', math.floor(sync_interval / 60)), notify.categories.BACKGROUND)
+    local role = coordinator.is_primary and 'primary coordinator' or 'secondary instance'
+    notify.himalaya(string.format('Auto-sync enabled (%s): every %d minutes', 
+                                 role, math.floor(sync_interval / 60)), 
+                   notify.categories.BACKGROUND)
   end
-  
-  logger.debug('Auto-sync timer started')
 end
 
 -- Stop automatic syncing
@@ -365,6 +380,9 @@ function M.stop_auto_sync()
     auto_sync_timer = nil
     logger.debug('Auto-sync timer stopped')
   end
+  
+  -- Clean up coordination
+  coordinator.cleanup()
 end
 
 -- Check if auto-sync is running
