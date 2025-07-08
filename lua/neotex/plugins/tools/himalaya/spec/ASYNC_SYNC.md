@@ -308,6 +308,15 @@ end
 - [ ] Enhanced progress display with cancellation UI
 - [ ] Performance monitoring and metrics
 
+### ✅ Phase 4: Multi-Instance Auto-Sync Coordination (COMPLETED - 2025-01-08)
+- [x] Implement coordinator.lua module for primary/secondary election
+- [x] Add heartbeat mechanism for liveness detection
+- [x] Enforce 5-minute cooldown between syncs across all instances
+- [x] Integrate coordinator with sync manager
+- [x] Update HimalayaSyncStatus command to show coordination state
+- [x] Add coordination configuration to core/config.lua
+- [x] Test with multiple Neovim instances
+
 ## Configuration
 
 ### User Configuration Options

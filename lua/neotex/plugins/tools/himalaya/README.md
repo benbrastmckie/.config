@@ -52,6 +52,7 @@ The plugin follows a clean layered architecture:
 
 ### Account Management
 - **Multi-Account Support**: Switch between Gmail, IMAP, and other accounts
+- **Multiple Account Views**: Unified inbox, split, and tabbed views for multiple accounts
 - **OAuth Integration**: Automatic token refresh with fallback scripts
 - **Configuration Wizard**: Guided setup for new accounts
 
@@ -89,6 +90,13 @@ The plugin recently underwent comprehensive refactoring:
 ### Automatic Synchronization
 - `:HimalayaAutoSyncToggle` - Toggle automatic inbox syncing (every 15 minutes)
 
+### Multiple Account Views
+- `:HimalayaUnifiedInbox` - Show unified inbox for all accounts
+- `:HimalayaSplitView` - Show accounts in split windows
+- `:HimalayaTabbedView` - Show accounts in tabs
+- `:HimalayaToggleView` - Toggle between view modes
+- `:HimalayaAccountStatus` - Show account configuration status
+
 ### Setup and Maintenance
 - `:HimalayaSetup` - Run setup wizard
 - `:HimalayaHealth` - Check system health
@@ -124,6 +132,10 @@ Basic configuration via lazy.nvim:
         auto_sync_enabled = true,        -- Enable automatic inbox syncing
         auto_sync_interval = 15 * 60,    -- Sync every 15 minutes
         auto_sync_startup_delay = 2,     -- Start 2 seconds after Neovim
+        multi_account = {
+          default_mode = 'focused',      -- Start mode: 'focused', 'unified', 'split', 'tabbed'
+          show_account_colors = true,    -- Enable account color coding
+        },
       },
       -- Keymaps are defined in which-key.lua under <leader>m
       -- See which-key.lua for complete keybinding reference
@@ -198,12 +210,16 @@ See `which-key.lua` for complete keybinding reference and buffer-specific mappin
 ### Debug Mode
 Enable debug notifications with `<leader>ad` to see detailed operation logs.
 
+## Testing Guides
+
+- [Multiple Account Views Testing](docs/MULTIPLE_ACCOUNT_VIEWS.md) - Comprehensive guide for testing multi-account features
+
 ## Future Development
 
-See [spec/FEATURES_SPEC.md](spec/FEATURES_SPEC.md) for planned enhancements:
-- Enhanced UI/UX features (hover preview, buffer composition)
-- Advanced email management (attachments, images, local trash)
-- Performance optimizations and code quality improvements
+See [spec/README.md](spec/README.md) for implementation roadmap:
+- Phase 10: OAuth 2.0 implementation and security enhancements
+- Optional: PGP/GPG encryption support
+- Window management improvements
 
 ## Navigation
 - [< Neovim Tools](../README.md)
