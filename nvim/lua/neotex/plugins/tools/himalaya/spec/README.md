@@ -4,24 +4,27 @@ This directory contains comprehensive specifications for the ongoing development
 
 ## 📚 Specification Documents
 
+### ✅ Completed Specifications
+Fully implemented specs have been moved to the [done/](done/) directory. See [done/README.md](done/README.md) for details.
+
 ### Primary Implementation Guides (By Phase)
 
 1. **[ARCHITECTURE_REFACTOR_SPEC.md](ARCHITECTURE_REFACTOR_SPEC.md)** - Main Implementation Roadmap
    - ✅ Phases 1-5: Current architecture (complete)
-   - 📋 Phase 6: Event System Foundation
-   - 📋 Phase 7: Command System Refactoring  
-   - 📋 Phase 8: Service Layer Enhancement
-   - 📋 Phase 9: UI Layer Evolution
-   - 📋 Phase 10: Integration and Polish
+   - ✅ Phase 6: Event System Foundation - COMPLETED
+   - ✅ Phase 7: Command System Refactoring - COMPLETED
+   - ✅ Phase 8: Service Layer Enhancement - COMPLETED
+   - 🚧 Phase 9: UI Layer Evolution - IN PROGRESS (75%)
+   - ⏳ Phase 10: Integration and Polish - PENDING
 
-2. **[EMAIL_MANAGEMENT_FEATURES_SPEC.md](EMAIL_MANAGEMENT_FEATURES_SPEC.md)** - Phase 8 Core Features
-   - Multiple account integration (priority 1)
-   - Attachment support (view, download, send)
-   - Local trash system with recovery
-   - Custom email headers
-   - Image display in terminal
-   - Address autocomplete
-   - OAuth security (Phase 10)
+2. **[EMAIL_MANAGEMENT_FEATURES_SPEC.md](done/EMAIL_MANAGEMENT_FEATURES_SPEC.md)** - Phase 8 Core Features ✅ COMPLETED
+   - ✅ Multiple account integration (priority 1)
+   - ✅ Attachment support (view, download, send)
+   - ✅ Local trash system with recovery
+   - ✅ Custom email headers
+   - ✅ Image display in terminal
+   - ✅ Address autocomplete
+   - ⏳ OAuth security (Phase 10)
 
 3. **[ADVANCED_FEATURES_SPEC.md](ADVANCED_FEATURES_SPEC.md)** - Phase 9 Advanced Features
    - ✅ Undo send system (60-second delay queue)
@@ -35,54 +38,71 @@ This directory contains comprehensive specifications for the ongoing development
 
 ### Supporting Specifications (Cross-Phase)
 
-4. **[PHASE_MAPPING.md](PHASE_MAPPING.md)** - Quick Reference Phase Mapping
+4. **[PHASE_MAPPING.md](PHASE_MAPPING.md)** - Quick Reference Phase Mapping 📋
    - Complete mapping of all spec items to phases 6-10
    - Quick navigation by phase or specification
    - Implementation dependencies and notes
 
+5. **[SCHEDULED_EMAIL_PERSISTENCE.md](SCHEDULED_EMAIL_PERSISTENCE.md)** - Email Persistence ✅ COMPLETED
+   - ✅ Scheduled emails persist across sessions
+   - ✅ Multi-instance synchronization
+   - ✅ Atomic file operations
+   - **Status**: Phases 1-2 COMPLETE
+
+6. **[ASYNC_SYNC.md](ASYNC_SYNC.md)** - Asynchronous Sync Architecture ✅ PHASES 1-3 IMPLEMENTED
+   - ✅ Non-blocking sync operations (Phase 1)
+   - ✅ Async OAuth validation (Phase 1)
+   - ✅ Background email count fetching (Phase 1)
+   - ✅ Sync optimization and cancellation (Phase 2)
+   - 🆕 Multi-instance auto-sync coordination (Phase 4)
+   - **Status**: Phases 1-3 complete, Phase 4 specified
+
 ### Phase 9 Implementation Specifications
 
-8. **[PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)** - Unified Email Scheduling System ✅
-   - Clean implementation replacing send_queue.lua
-   - ALL emails must be scheduled (no immediate send)
-   - Minimum 60-second safety delay
-   - Full scheduling UI with custom times
-   - **Status**: Core features COMPLETE (Phases 0,1,4,5)
+7. **[PHASE_9_NEXT_IMPLEMENTATION.md](PHASE_9_NEXT_IMPLEMENTATION.md)** - Unified Email Scheduling System ✅ COMPLETED
+   - ✅ Clean implementation replacing send_queue.lua
+   - ✅ ALL emails must be scheduled (no immediate send)
+   - ✅ Minimum 60-second safety delay
+   - ✅ Full scheduling UI with custom times
+   - **Status**: Core features COMPLETE
 
-9. **[PHASE_9_ENHANCED_SCHEDULING_UI.md](PHASE_9_ENHANCED_SCHEDULING_UI.md)** - Enhanced Scheduling UI ✅
-   - Phase 2: Sidebar integration with live countdown timers
-   - Phase 3: Enhanced preview and context-aware keybindings
-   - **Status**: COMPLETED - All phases implemented
+8. **[PHASE_9_ENHANCED_SCHEDULING_UI.md](done/PHASE_9_ENHANCED_SCHEDULING_UI.md)** - Enhanced Scheduling UI ✅ COMPLETED
+   - ✅ Phase 2: Sidebar integration with live countdown timers
+   - ✅ Phase 3: Enhanced preview and context-aware keybindings
+   - **Status**: All phases implemented and tested
 
-10. **[PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)** - Remaining Phase 9 Features
-    - Multiple Account Views (unified inbox, split, tabbed)
-    - Email Rules and Filters
-    - Integration Features (tasks, calendar, notes)
+9. **[PHASE_9_REMAINING_FEATURES.md](PHASE_9_REMAINING_FEATURES.md)** - Remaining Phase 9 Features ❌
+   - ❌ Multiple Account Views (unified inbox, split, tabbed)
+   - ❌ Email Rules and Filters
+   - ❌ Integration Features (tasks, calendar, notes)
 
-11. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements
+10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements ⏳
     - Predefined layouts (classic, vertical, three-pane, focused)
     - Window coordination and smart focusing
     - Interactive resize mode
     - Layout persistence
 
-5. **[CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md](CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md)** - Quality Improvements
-   - Phase 6: Enhanced error handling system
-   - Phase 7: API consistency layer
-   - Phase 8: Performance optimization tools
-   - Phase 10: Testing framework & observability
-   - Cross-phase: Modularization guidelines
+### Quality and Maintenance Specifications
 
-6. **[CLEANUP_AND_REFINEMENT_SPEC.md](CLEANUP_AND_REFINEMENT_SPEC.md)** - Technical Debt Items
-   - Phase 6: Error handling patterns, performance
-   - Phase 7: Command system refactoring strategy
-   - Phase 8: State management improvements
-   - Phase 9: Window management, UI polish
-   - Phase 10: Documentation tooling
+11. **[CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md](CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md)** - Quality Improvements
+    - ✅ Phase 6: Enhanced error handling system
+    - ✅ Phase 7: API consistency layer
+    - ✅ Phase 8: Performance optimization tools
+    - ⏳ Phase 10: Testing framework & observability
+    - Cross-phase: Modularization guidelines
 
-7. **[TODOS_TECH_DEBT_OVERVIEW.md](TODOS_TECH_DEBT_OVERVIEW.md)** - Comprehensive TODO Tracking
-   - Analysis of 84 TODO comments across codebase
-   - Items mapped to phases 6-10 by priority
-   - Risk assessment and mitigation strategies
+12. **[CLEANUP_AND_REFINEMENT_SPEC.md](CLEANUP_AND_REFINEMENT_SPEC.md)** - Technical Debt Items
+    - ✅ Phase 6: Error handling patterns, performance
+    - ✅ Phase 7: Command system refactoring strategy
+    - ✅ Phase 8: State management improvements
+    - 🚧 Phase 9: Window management, UI polish
+    - ⏳ Phase 10: Documentation tooling
+
+13. **[TODOS_TECH_DEBT_OVERVIEW.md](TODOS_TECH_DEBT_OVERVIEW.md)** - Comprehensive TODO Tracking
+    - Analysis of 84 TODO comments across codebase
+    - Items mapped to phases 6-10 by priority
+    - Risk assessment and mitigation strategies
+    - **Note**: Most TODOs addressed in Phases 6-8
 
 ## 🗺️ Implementation Roadmap
 
@@ -258,17 +278,19 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
 - [✓] Image display in terminal
 - [✓] Address autocomplete functionality
 
-### Phase 9: Advanced Features & UI Evolution (Weeks 5-6) 🚧 IN PROGRESS
+### Phase 9: Advanced Features & UI Evolution (Weeks 5-6) 🚧 IN PROGRESS (75%)
 - [✓] Undo send system → Unified email scheduling (core complete)
 - [✓] Advanced search with operators
 - [✓] Email template management
 - [✓] Notification system integration
-- [✓] Sidebar integration with live countdowns (Phase 2 of scheduling)
-- [✓] Enhanced preview and keybindings (Phase 3 of scheduling)
+- [✓] Sidebar integration with live countdowns 
+- [✓] Enhanced preview and keybindings
+- [✓] Scheduled email persistence
+- [✓] Multi-instance synchronization
+- [✓] Async command architecture
 - [ ] Multiple account views
 - [ ] Email rules and filters
 - [ ] Integration features
-- [ ] Enhanced window management
 
 ### Phase 10: Security, Polish & Integration (Week 7)
 - [ ] OAuth 2.0 implementation
@@ -328,7 +350,7 @@ Track progress using these metrics:
 
 ---
 
-*Last Updated: 2025-01-07*
+*Last Updated: 2025-01-08*
 *Total Implementation Timeline: 7 weeks*
-*Phases Completed: 8/10*
-*Phase 9 Status: IN PROGRESS (6/10 features completed)*
+*Phases Completed: 8.75/10*
+*Phase 9 Status: IN PROGRESS (9/12 features completed - 75%)*
