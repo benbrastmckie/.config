@@ -44,10 +44,10 @@
   - [ ] window management (see WINDOW_MANAGEMENT_SPEC.md)
 - [ ] Phase 10: Integration & Polish (Week 7)
   - [x] nvim freezes while sync is running, for instance as soon as I start nvim ✅ FIXED
-    - Identified blocking `os.execute` in `oauth.has_token`
-    - Created async versions: `has_token_async` and `is_valid_async`
-    - Modified `mbsync.sync` to use async OAuth check
-    - Added comprehensive startup timing logs with `[STARTUP DEBUG]` markers
+    - [x] Identified blocking `os.execute` in `oauth.has_token`
+    - [x] Created async versions: `has_token_async` and `is_valid_async`
+    - [x] Modified `mbsync.sync` to use async OAuth check
+    - [x] Added comprehensive startup timing logs with `[STARTUP DEBUG]` markers
   - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption
   - [ ] testing infrastructure

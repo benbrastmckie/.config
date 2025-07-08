@@ -510,8 +510,9 @@ function M.format_email_list(emails)
   if sync_status_line then
     table.insert(lines, sync_status_line)
   end
-  table.insert(lines, string.rep('─', math.max(#header, #pagination_info, 
-    sync_status_line and #sync_status_line or 0)))
+  -- Use a fixed width separator to prevent visual jumping
+  local separator_width = 70  -- Reasonable width that accommodates most content
+  table.insert(lines, string.rep('─', separator_width))
   
   -- Only add blank line when NOT syncing
   if not sync_status_line then
@@ -1062,7 +1063,14 @@ function M.refresh_sidebar_header()
   if sync_status_line then
     table.insert(header_lines, sync_status_line)
   end
-  table.insert(header_lines, string.rep('─', math.max(#header, #pagination_info, sync_status_line and #sync_status_line or 0)))
+  -- Use a fixed width separator to prevent visual jumping
+  local separator_width = 70  -- Reasonable width that accommodates most content
+  table.insert(header_lines, string.rep('─', separator_width))
+  
+  -- Only add blank line when NOT syncing (must be included in header_lines)
+  if not sync_status_line then
+    table.insert(header_lines, '')
+  end
   
   -- Use optimized header update
   sidebar.update_header_lines(header_lines)
