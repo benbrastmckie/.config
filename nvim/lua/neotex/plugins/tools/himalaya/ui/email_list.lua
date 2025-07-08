@@ -72,6 +72,24 @@ function M.init(main_buffers)
       end)
     end
   end)
+  
+  -- And when email is paused
+  events_bus.on(event_types.EMAIL_PAUSED, function(data)
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
+  
+  -- And when email is resumed
+  events_bus.on(event_types.EMAIL_RESUMED, function(data)
+    if sidebar.is_open() then
+      vim.schedule(function()
+        M.refresh_email_list()
+      end)
+    end
+  end)
 end
 
 -- Toggle email sidebar
@@ -562,8 +580,14 @@ function M.format_email_list(emails)
     -- Add each scheduled email with countdown
     for i, item in ipairs(scheduled_items) do
       local line_num = #lines + 1
-      local time_left = item.scheduled_for - os.time()
-      local countdown = scheduler.format_countdown(time_left)
+      local countdown
+      
+      if item.status == "paused" then
+        countdown = " PAUSED"
+      else
+        local time_left = item.scheduled_for - os.time()
+        countdown = scheduler.format_countdown(time_left)
+      end
       
       -- Store metadata for navigation
       if not lines.metadata then lines.metadata = {} end
@@ -572,7 +596,8 @@ function M.format_email_list(emails)
         id = item.id,
         email_data = item.email_data,
         scheduled_for = item.scheduled_for,
-        email_index = i + #emails  -- Continue index from regular emails
+        email_index = i + #emails,  -- Continue index from regular emails
+        status = item.status
       }
       
       -- Format: [countdown] [subject] to [recipient]
@@ -816,8 +841,14 @@ function M.update_scheduled_section()
   -- Update only the countdown timers in place
   for i, item in ipairs(scheduled_items) do
     local line_idx = scheduled_start + i - 1
-    local time_left = item.scheduled_for - os.time()
-    local countdown = scheduler.format_countdown(time_left)
+    local countdown
+    
+    if item.status == "paused" then
+      countdown = " PAUSED"
+    else
+      local time_left = item.scheduled_for - os.time()
+      countdown = scheduler.format_countdown(time_left)
+    end
     
     -- Get current line
     if line_idx <= #lines then

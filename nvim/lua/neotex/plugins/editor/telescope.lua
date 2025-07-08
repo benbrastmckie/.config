@@ -67,6 +67,16 @@ return {
             previewer = false,
           })
         },
+        himalaya_reschedule = {
+          require("telescope.themes").get_dropdown({
+            winblend = 10,
+            previewer = false,
+            layout_config = {
+              width = 80,  -- 80 characters wide
+              height = 15, -- 15 lines tall
+            },
+          })
+        },
         undo = {
           mappings = {
             i = {
