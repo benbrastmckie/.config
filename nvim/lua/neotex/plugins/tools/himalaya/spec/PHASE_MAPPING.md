@@ -125,10 +125,11 @@ This document provides a quick reference for how all specification items map to 
 1. **Email Rules and Filters** (#7) - Automatic filtering and actions - SKIPPED
 2. **Integration Features** (#8) - Task management, calendar, notes - SKIPPED
 
-### Window Management - Separate Implementation
+### ❌ Window Management - Future Enhancement (SKIPPED)
 - **Specification**: [WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)
 - **Features**: Layouts, coordination, resize mode, persistence
-- **Priority**: Medium
+- **Priority**: Low - Nice-to-have UI enhancement
+- **Status**: Skipped - Not critical for core functionality
 
 ### Implementation Files
 - ✅ `core/scheduler.lua` - Unified email scheduling system (replaced send_queue.lua)

@@ -219,7 +219,11 @@ Enable debug notifications with `<leader>ad` to see detailed operation logs.
 See [spec/README.md](spec/README.md) for implementation roadmap:
 - Phase 10: OAuth 2.0 implementation and security enhancements
 - Optional: PGP/GPG encryption support
-- Window management improvements
+
+### Future Enhancements (Not Planned)
+- Window management improvements (see spec/WINDOW_MANAGEMENT_SPEC.md)
+- Email rules and filters
+- Integration features (calendar, tasks)
 
 ## Navigation
 - [< Neovim Tools](../README.md)

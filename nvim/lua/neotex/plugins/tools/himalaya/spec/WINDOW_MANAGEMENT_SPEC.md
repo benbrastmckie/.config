@@ -1,10 +1,13 @@
 # Window Management Improvements Specification
 
-**Status**: Ready for Implementation  
+**Status**: Planned - Not Implemented  
 **Created**: 2025-07-07  
-**Priority**: Medium - Enhanced UI Features
+**Updated**: 2025-01-08 - Revised for clarity, marked as future enhancement
+**Priority**: Low - Nice-to-have UI enhancement
 
-This specification outlines window management improvements for the Himalaya email client, focusing on better window coordination, layouts, and navigation for multi-window email management.
+This specification outlines window management improvements for the Himalaya email client, focusing on better window coordination, layouts, and navigation for multi-window email management within a single account view.
+
+**Note**: This is separate from Multiple Account Views (Phase 9) which manages different email accounts. This specification focuses on improving window layouts for email list, preview, and folder components.
 
 ## Overview
 
@@ -404,23 +407,36 @@ commands.HimalayaWindowLoad = {
 - Automatic preference saving
 - Session restoration support
 
-## Implementation Timeline
+## Implementation Considerations
 
-### Week 1: Core Window Management
-1. **Days 1-2**: Layout system
-   - Basic layouts implementation
-   - Window coordination
-   - State management
+### Architecture Notes
+1. **Reuse Existing Components**:
+   - Leverage existing sidebar and main window infrastructure
+   - Extend state management for window positions
+   - Use existing buffer management from ui modules
 
-2. **Day 3**: Advanced features
-   - Interactive resize mode
-   - Layout persistence
-   - Smart navigation
+2. **Avoid Conflicts**:
+   - Ensure compatibility with Multiple Account Views
+   - Don't interfere with existing keybindings
+   - Maintain backward compatibility
 
-3. **Days 4-5**: Polish & Testing
-   - Integration testing
-   - Performance optimization
-   - Documentation
+3. **Performance**:
+   - Lazy load window content
+   - Debounce resize operations
+   - Cache window configurations
+
+### Implementation Order (When Ready)
+1. **Phase 1**: Basic layouts (classic, vertical)
+2. **Phase 2**: Three-pane and focused layouts
+3. **Phase 3**: Interactive resize mode
+4. **Phase 4**: Layout persistence
+5. **Phase 5**: Polish and integration
+
+### Estimated Timeline
+- **Development**: 3-5 days
+- **Testing**: 1-2 days
+- **Documentation**: 1 day
+- **Total**: ~1 week
 
 ## Success Criteria
 
@@ -447,11 +463,32 @@ commands.HimalayaWindowLoad = {
 4. **Enhanced UX**: Consistent window behavior
 5. **Flexibility**: Adapt to different screen sizes
 
-## Integration with Notification System
+## Integration Points
 
-Window management features use the existing notification system:
-- Layout changes show USER_ACTION notifications
-- Resize mode shows STATUS notifications
-- Errors use ERROR notifications with context
+### With Existing Systems
+1. **Notification System**: Use existing categories (USER_ACTION, STATUS, ERROR)
+2. **State Management**: Extend existing state system for window preferences
+3. **Command System**: Add to ui commands module
+4. **Event System**: Emit events for window changes
 
-No new notification systems are created.
+### With Multiple Account Views
+- Window layouts should work within each account view mode
+- Focused view mode would use window management for its single account
+- Split/tabbed views might have limited window management options
+
+## Future Enhancement Ideas
+
+1. **Smart Layouts**: Auto-adjust based on terminal size
+2. **Quick Switch**: Hotkeys to quickly switch between saved layouts
+3. **Window Memory**: Remember window sizes per folder
+4. **Zen Mode**: Distraction-free email reading
+5. **Mini Preview**: Floating preview window option
+
+## Decision: Skipped for Now
+
+**Rationale**: While this would improve user experience, it's not critical for core email functionality. The current simple layout is sufficient for most use cases.
+
+**When to Revisit**: 
+- After Phase 10 completion
+- If users request better window management
+- When implementing advanced UI features
