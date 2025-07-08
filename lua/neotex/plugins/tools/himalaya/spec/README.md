@@ -76,11 +76,12 @@ Fully implemented specs have been moved to the [done/](done/) directory. See [do
    - ❌ Email Rules and Filters
    - ❌ Integration Features (tasks, calendar, notes)
 
-10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements ⏳
+10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements ❌ SKIPPED
     - Predefined layouts (classic, vertical, three-pane, focused)
     - Window coordination and smart focusing
     - Interactive resize mode
     - Layout persistence
+    - **Status**: Future enhancement - not critical for core functionality
 
 ### Quality and Maintenance Specifications
 
