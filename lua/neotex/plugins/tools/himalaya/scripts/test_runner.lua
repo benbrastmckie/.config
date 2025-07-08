@@ -70,19 +70,22 @@ function M.discover_tests()
     M.tests[dir] = {}
     local dir_path = script_path .. dir .. '/'
     
-    -- Find all test files in directory
-    local files = vim.fn.glob(dir_path .. 'test_*.lua', false, true)
-    
-    for _, file in ipairs(files) do
-      local name = vim.fn.fnamemodify(file, ':t:r')
-      local display_name = name:gsub('test_', ''):gsub('_', ' ')
+    -- Check if directory exists
+    if vim.fn.isdirectory(dir_path) == 1 then
+      -- Find all test files in directory
+      local files = vim.fn.glob(dir_path .. 'test_*.lua', false, true)
       
-      table.insert(M.tests[dir], {
-        name = name,
-        display_name = display_name,
-        path = file,
-        category = dir
-      })
+      for _, file in ipairs(files) do
+        local name = vim.fn.fnamemodify(file, ':t:r')
+        local display_name = name:gsub('test_', ''):gsub('_', ' ')
+        
+        table.insert(M.tests[dir], {
+          name = name,
+          display_name = display_name,
+          path = file,
+          category = dir
+        })
+      end
     end
   end
 end
@@ -223,6 +226,18 @@ function M.execute_test_selection(selection)
     notify.himalaya('Starting tests...', notify.categories.STATUS)
   end
   
+  -- Stop scheduler processing during tests
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local original_timer = scheduler.timer
+  local original_queue = vim.deepcopy(scheduler.queue)
+  
+  if scheduler.timer then
+    scheduler.stop_processing()
+  end
+  
+  -- Clear any existing scheduled emails to prevent interference
+  scheduler.queue = {}
+  
   local start_time = vim.loop.hrtime()
   
   if selection == 'all' then
@@ -235,6 +250,14 @@ function M.execute_test_selection(selection)
   
   -- Calculate duration
   M.results.duration = (vim.loop.hrtime() - start_time) / 1e6
+  
+  -- Restore original queue
+  scheduler.queue = original_queue
+  
+  -- Restore scheduler if it was running
+  if original_timer then
+    scheduler.start_processing()
+  end
   
   -- Show results
   M.show_results()

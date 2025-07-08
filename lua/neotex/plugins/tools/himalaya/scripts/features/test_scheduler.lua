@@ -12,6 +12,9 @@ local tests = {}
 table.insert(tests, framework.create_test('schedule_email_basic', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   
+  -- Save original state
+  local original_queue = vim.deepcopy(scheduler.queue)
+  
   -- Create test email
   local email = {
     to = { "test@example.com" },
@@ -40,11 +43,20 @@ table.insert(tests, framework.create_test('schedule_email_basic', function()
     end
   end
   assert.truthy(found, "Scheduled email should be in queue")
+  
+  -- Clean up - cancel the scheduled email
+  scheduler.cancel_send(result.id)
+  
+  -- Restore original queue state
+  scheduler.queue = original_queue
 end))
 
 -- Test scheduling with custom time
 table.insert(tests, framework.create_test('schedule_email_custom_time', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  
+  -- Save original state
+  local original_queue = vim.deepcopy(scheduler.queue)
   
   -- Schedule for specific time
   local email = helpers.create_test_email()
@@ -66,31 +78,44 @@ table.insert(tests, framework.create_test('schedule_email_custom_time', function
   
   assert.truthy(scheduled, "Email should be scheduled")
   assert.equals(scheduled.send_time, send_time, "Send time should match")
+  
+  -- Clean up
+  scheduler.cancel_send(result.id)
+  scheduler.queue = original_queue
 end))
 
 -- Test cancel scheduled email
 table.insert(tests, framework.create_test('cancel_scheduled_email', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   
+  -- Save original state
+  local original_queue = vim.deepcopy(scheduler.queue)
+  
   -- Schedule email
   local email = helpers.create_test_email()
   local result = scheduler.schedule_email(email, 300)
   assert.truthy(result.success)
   
-  -- Cancel it
-  local cancel_result = scheduler.cancel_scheduled_email(result.id)
-  assert.truthy(cancel_result.success, "Cancel should succeed")
+  -- Cancel it using the correct function name
+  local cancel_result = scheduler.cancel_send(result.id)
+  assert.truthy(cancel_result, "Cancel should succeed")
   
   -- Verify it's gone
   local queue = scheduler.get_scheduled_emails()
   for _, item in ipairs(queue) do
     assert.falsy(item.id == result.id, "Cancelled email should not be in queue")
   end
+  
+  -- Restore original state
+  scheduler.queue = original_queue
 end))
 
 -- Test edit scheduled email
 table.insert(tests, framework.create_test('edit_scheduled_email', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  
+  -- Save original state
+  local original_queue = vim.deepcopy(scheduler.queue)
   
   -- Schedule email
   local email = helpers.create_test_email()
@@ -99,7 +124,7 @@ table.insert(tests, framework.create_test('edit_scheduled_email', function()
   
   -- Edit it
   local new_time = os.time() + 600
-  local edit_result = scheduler.edit_scheduled_time(result.id, new_time)
+  local edit_result = scheduler.edit_scheduled_send_time(result.id, new_time)
   assert.truthy(edit_result.success, "Edit should succeed")
   
   -- Verify changes
@@ -114,42 +139,50 @@ table.insert(tests, framework.create_test('edit_scheduled_email', function()
   
   assert.truthy(edited, "Email should still be scheduled")
   assert.equals(edited.send_time, new_time, "Send time should be updated")
+  
+  -- Clean up
+  scheduler.cancel_send(result.id)
+  scheduler.queue = original_queue
 end))
 
 -- Test scheduler persistence
 table.insert(tests, framework.create_test('scheduler_persistence', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
   
-  -- Schedule multiple emails
-  local ids = {}
+  -- Save original state
+  local original_queue = vim.deepcopy(scheduler.queue)
+  
+  -- Create test emails (but don't actually schedule them)
+  local test_queue = {}
   for i = 1, 3 do
     local email = helpers.create_test_email({ subject = "Persistent " .. i })
-    local result = scheduler.schedule_email(email, 300 + i * 60)
-    assert.truthy(result.success)
-    table.insert(ids, result.id)
+    local id = "test-" .. os.time() .. "-" .. i
+    test_queue[id] = {
+      id = id,
+      email = email,
+      send_time = os.time() + 300 + i * 60,
+      attempts = 0
+    }
   end
   
-  -- Save state
-  scheduler.save_state()
+  -- Test persistence functions directly
+  -- Save test queue
+  local save_result = persistence.save_queue(test_queue)
+  assert.truthy(save_result, "Save should succeed")
   
-  -- Clear in-memory queue
-  scheduler._test_clear_queue()
+  -- Load queue
+  local loaded_queue = persistence.load_queue()
+  assert.truthy(loaded_queue, "Load should succeed")
   
-  -- Load state
-  scheduler.load_state()
-  
-  -- Verify all emails are restored
-  local queue = scheduler.get_scheduled_emails()
-  for _, id in ipairs(ids) do
-    local found = false
-    for _, item in ipairs(queue) do
-      if item.id == id then
-        found = true
-        break
-      end
-    end
-    assert.truthy(found, "Email " .. id .. " should be restored")
+  -- Verify all test emails are in loaded queue
+  for id, _ in pairs(test_queue) do
+    assert.truthy(loaded_queue[id], "Email " .. id .. " should be persisted")
   end
+  
+  -- Clean up - restore original state
+  persistence.save_queue(original_queue)
+  scheduler.queue = original_queue
 end))
 
 -- Export test suite
