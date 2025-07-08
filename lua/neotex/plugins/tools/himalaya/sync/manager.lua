@@ -254,9 +254,15 @@ function M.update_folder_counts()
         end
         
         if count and count > 0 then
-          state.set_folder_count(current_account, current_folder, count)
-          logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
-            current_account, current_folder, count))
+          -- Don't store count if it's exactly 1000, as that's just the page limit
+          if count == 1000 then
+            logger.debug(string.format('Got page limit count (1000) for %s/%s, not storing', 
+              current_account, current_folder))
+          else
+            state.set_folder_count(current_account, current_folder, count)
+            logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
+              current_account, current_folder, count))
+          end
           
           -- Trigger UI update immediately
           M.notify_ui_update()

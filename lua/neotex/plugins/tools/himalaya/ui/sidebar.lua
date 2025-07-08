@@ -389,9 +389,8 @@ function M.update_header_lines(header_lines)
   -- Update only the header lines
   vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', true)
   
-  for i = 1, #header_lines do
-    vim.api.nvim_buf_set_lines(M.state.buf, i-1, i, false, {header_lines[i]})
-  end
+  -- Replace all header lines at once to avoid intermediate states
+  vim.api.nvim_buf_set_lines(M.state.buf, 0, #header_lines, false, header_lines)
   
   vim.api.nvim_buf_set_option(M.state.buf, 'modifiable', false)
   
