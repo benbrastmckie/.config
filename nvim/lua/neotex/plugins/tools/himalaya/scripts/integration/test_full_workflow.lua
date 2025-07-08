@@ -14,6 +14,9 @@ table.insert(tests, framework.create_test('complete_email_workflow', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   local state = require('neotex.plugins.tools.himalaya.core.state')
   
+  -- Save original scheduler state
+  local original_queue = vim.deepcopy(scheduler.queue)
+  
   -- Initialize plugin
   himalaya.setup({
     accounts = {
@@ -53,7 +56,7 @@ table.insert(tests, framework.create_test('complete_email_workflow', function()
   
   -- 5. Edit scheduled time
   local new_time = os.time() + 120
-  local edit_result = scheduler.edit_scheduled_time(schedule_result.id, new_time)
+  local edit_result = scheduler.edit_scheduled_send_time(schedule_result.id, new_time)
   assert.truthy(edit_result.success, "Should edit scheduled time")
   
   -- 6. Save state
@@ -62,6 +65,10 @@ table.insert(tests, framework.create_test('complete_email_workflow', function()
   -- 7. Verify state persistence
   local saved_state = state.get()
   assert.truthy(saved_state, "State should be saved")
+  
+  -- Clean up - cancel the scheduled email and restore original state
+  scheduler.cancel_send(schedule_result.id)
+  scheduler.queue = original_queue
 end))
 
 -- Test multi-account workflow
