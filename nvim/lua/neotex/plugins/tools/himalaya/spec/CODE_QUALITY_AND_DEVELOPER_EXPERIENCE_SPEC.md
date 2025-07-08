@@ -758,22 +758,710 @@ return M
 ### 4. Testing Infrastructure
 
 **Priority**: High  
-**Estimated Effort**: 1 week
+**Estimated Effort**: 1-2 weeks
+**Updated**: 2025-01-08 - Enhanced with comprehensive test management system
 
-#### 4.1 Test Framework
+This section provides a complete testing infrastructure with script organization, test runners, picker interface, and comprehensive reporting.
 
-Create `test/framework.lua`:
+#### 4.1 Test Organization Structure
+
+Organize tests in `scripts/` directory by domain:
+
+```
+scripts/
+├── test_runner.lua          # Central test runner and picker
+├── commands/                # Command-specific tests
+│   ├── test_email_commands.lua
+│   ├── test_sync_commands.lua
+│   ├── test_ui_commands.lua
+│   └── test_account_commands.lua
+├── features/                # Feature-specific tests
+│   ├── test_scheduler.lua
+│   ├── test_search.lua
+│   ├── test_templates.lua
+│   └── test_multi_account.lua
+├── integration/             # Integration tests
+│   ├── test_full_workflow.lua
+│   ├── test_sync_integration.lua
+│   └── test_notification_flow.lua
+├── performance/             # Performance tests
+│   ├── test_large_mailbox.lua
+│   ├── test_search_speed.lua
+│   └── test_memory_usage.lua
+└── utils/                   # Test utilities
+    ├── test_helpers.lua
+    └── mock_data.lua
+```
+
+#### 4.2 Central Test Runner
+
+Create `scripts/test_runner.lua`:
 
 ```lua
 local M = {}
 
--- Test state
-local tests = {}
-local results = {
+-- Test infrastructure
+local notify = require('neotex.util.notifications')
+local float = require('neotex.plugins.tools.himalaya.ui.float')
+
+-- Test registry
+M.tests = {
+  commands = {},
+  features = {},
+  integration = {},
+  performance = {}
+}
+
+-- Test results
+M.results = {
+  total = 0,
   passed = 0,
   failed = 0,
   skipped = 0,
-  errors = {}
+  errors = {},
+  duration = 0
+}
+
+-- Configuration
+M.config = {
+  show_progress = true,
+  debug_notifications = false,
+  timeout_ms = 30000,
+  report_format = 'detailed' -- 'detailed', 'summary', 'minimal'
+}
+
+-- Initialize test runner
+function M.setup()
+  -- Check if debug mode is enabled
+  M.config.debug_notifications = notify.config.modules.himalaya.debug_mode
+  
+  -- Discover all test files
+  M.discover_tests()
+  
+  -- Create test command
+  vim.api.nvim_create_user_command('HimalayaTest', function(opts)
+    M.run_with_picker(opts.args)
+  end, {
+    nargs = '?',
+    complete = M.get_test_completions,
+    desc = 'Run Himalaya tests with picker'
+  })
+end
+
+-- Discover test files
+function M.discover_tests()
+  local test_dirs = {
+    'commands',
+    'features', 
+    'integration',
+    'performance'
+  }
+  
+  local script_path = vim.fn.expand('~/.config/nvim/lua/neotex/plugins/tools/himalaya/scripts/')
+  
+  for _, dir in ipairs(test_dirs) do
+    M.tests[dir] = {}
+    local dir_path = script_path .. dir .. '/'
+    
+    -- Find all test files in directory
+    local files = vim.fn.glob(dir_path .. 'test_*.lua', false, true)
+    
+    for _, file in ipairs(files) do
+      local name = vim.fn.fnamemodify(file, ':t:r')
+      local display_name = name:gsub('test_', ''):gsub('_', ' ')
+      
+      table.insert(M.tests[dir], {
+        name = name,
+        display_name = display_name,
+        path = file,
+        category = dir
+      })
+    end
+  end
+end
+
+-- Test picker interface
+function M.run_with_picker(filter)
+  local items = {
+    { text = '── Run All Tests ──', value = 'all', icon = '🚀' },
+    { text = '── Run All Command Tests ──', value = 'commands', icon = '📝' },
+    { text = '── Run All Feature Tests ──', value = 'features', icon = '✨' },
+    { text = '── Run All Integration Tests ──', value = 'integration', icon = '🔗' },
+    { text = '── Run All Performance Tests ──', value = 'performance', icon = '⚡' },
+    { text = '────────────────', value = nil, icon = '─' }
+  }
+  
+  -- Add individual tests
+  for category, tests in pairs(M.tests) do
+    for _, test in ipairs(tests) do
+      table.insert(items, {
+        text = string.format('[%s] %s', category:sub(1,3):upper(), test.display_name),
+        value = test,
+        icon = M.get_test_icon(category)
+      })
+    end
+  end
+  
+  -- Use telescope if available, otherwise simple picker
+  if pcall(require, 'telescope') then
+    M.telescope_picker(items)
+  else
+    M.simple_picker(items)
+  end
+end
+
+-- Simple picker implementation
+function M.simple_picker(items)
+  local lines = { '# Himalaya Test Runner', '', 'Select tests to run:' }
+  local choices = {}
+  
+  for i, item in ipairs(items) do
+    if item.value then
+      table.insert(lines, string.format('%d. %s %s', #choices + 1, item.icon, item.text))
+      table.insert(choices, item)
+    else
+      table.insert(lines, item.text)
+    end
+  end
+  
+  table.insert(lines, '')
+  table.insert(lines, 'Enter number (or q to quit): ')
+  
+  -- Show in float
+  local buf = float.create_float_buffer(lines)
+  local win = float.create_float_window(buf, {
+    title = 'Test Runner',
+    width = 60,
+    height = #lines + 2
+  })
+  
+  -- Get user input
+  vim.api.nvim_set_current_win(win)
+  vim.cmd('startinsert!')
+  
+  -- Handle input
+  vim.api.nvim_buf_set_keymap(buf, 'i', '<CR>', '', {
+    callback = function()
+      local line = vim.api.nvim_get_current_line()
+      local num = tonumber(line:match('%d+'))
+      
+      vim.api.nvim_win_close(win, true)
+      
+      if num and choices[num] then
+        M.execute_test_selection(choices[num].value)
+      end
+    end
+  })
+end
+
+-- Execute selected tests
+function M.execute_test_selection(selection)
+  -- Reset results
+  M.reset_results()
+  
+  -- Show start notification
+  if not M.config.debug_notifications then
+    notify.himalaya('Starting tests...', notify.categories.STATUS)
+  end
+  
+  local start_time = vim.loop.hrtime()
+  
+  if selection == 'all' then
+    M.run_all_tests()
+  elseif type(selection) == 'string' then
+    M.run_category_tests(selection)
+  else
+    M.run_single_test(selection)
+  end
+  
+  -- Calculate duration
+  M.results.duration = (vim.loop.hrtime() - start_time) / 1e6
+  
+  -- Show results
+  M.show_results()
+end
+
+-- Run all tests
+function M.run_all_tests()
+  for category, tests in pairs(M.tests) do
+    for _, test in ipairs(tests) do
+      M.run_test(test)
+    end
+  end
+end
+
+-- Run category tests
+function M.run_category_tests(category)
+  local tests = M.tests[category] or {}
+  for _, test in ipairs(tests) do
+    M.run_test(test)
+  end
+end
+
+-- Run single test
+function M.run_single_test(test)
+  M.run_test(test)
+end
+
+-- Execute individual test
+function M.run_test(test)
+  M.results.total = M.results.total + 1
+  
+  -- Debug notification
+  if M.config.debug_notifications then
+    notify.himalaya(
+      string.format('Running %s: %s', test.category, test.display_name),
+      notify.categories.BACKGROUND
+    )
+  end
+  
+  -- Load and execute test
+  local ok, result = pcall(function()
+    -- Clear any existing test state
+    if _G.himalaya_test then
+      _G.himalaya_test = nil
+    end
+    
+    -- Load test file
+    dofile(test.path)
+    
+    -- Execute test if it exported a run function
+    if _G.himalaya_test and _G.himalaya_test.run then
+      return _G.himalaya_test.run()
+    else
+      error('Test file must export himalaya_test.run function')
+    end
+  end)
+  
+  if ok then
+    if result and result.passed then
+      M.results.passed = M.results.passed + 1
+    elseif result and result.skipped then
+      M.results.skipped = M.results.skipped + 1
+      table.insert(M.results.errors, {
+        test = test.name,
+        category = test.category,
+        type = 'skipped',
+        message = result.reason or 'Test skipped'
+      })
+    else
+      M.results.failed = M.results.failed + 1
+      table.insert(M.results.errors, {
+        test = test.name,
+        category = test.category,
+        type = 'failed',
+        message = result and result.error or 'Unknown failure'
+      })
+    end
+  else
+    M.results.failed = M.results.failed + 1
+    table.insert(M.results.errors, {
+      test = test.name,
+      category = test.category,
+      type = 'error',
+      message = tostring(result)
+    })
+  end
+end
+
+-- Show test results
+function M.show_results()
+  -- Stop notification
+  if not M.config.debug_notifications then
+    notify.himalaya(
+      string.format('Tests complete: %d/%d passed', M.results.passed, M.results.total),
+      M.results.failed > 0 and notify.categories.WARNING or notify.categories.STATUS
+    )
+  end
+  
+  -- Build report
+  local lines = M.build_report()
+  
+  -- Show in float window
+  float.show('Test Results', lines)
+end
+
+-- Build test report
+function M.build_report()
+  local lines = {}
+  
+  -- Header
+  table.insert(lines, '# Himalaya Test Results')
+  table.insert(lines, '')
+  table.insert(lines, string.format('Date: %s', os.date('%Y-%m-%d %H:%M:%S')))
+  table.insert(lines, string.format('Duration: %.2f ms', M.results.duration))
+  table.insert(lines, '')
+  
+  -- Summary
+  table.insert(lines, '## Summary')
+  table.insert(lines, string.format('Total Tests: %d', M.results.total))
+  table.insert(lines, string.format('✅ Passed: %d', M.results.passed))
+  table.insert(lines, string.format('❌ Failed: %d', M.results.failed))
+  table.insert(lines, string.format('⏭️  Skipped: %d', M.results.skipped))
+  table.insert(lines, '')
+  
+  -- Success rate
+  local success_rate = M.results.total > 0 
+    and (M.results.passed / M.results.total * 100) or 0
+  table.insert(lines, string.format('Success Rate: %.1f%%', success_rate))
+  table.insert(lines, '')
+  
+  -- Errors if any
+  if #M.results.errors > 0 then
+    table.insert(lines, '## Failed Tests')
+    table.insert(lines, '')
+    
+    for _, error in ipairs(M.results.errors) do
+      local icon = error.type == 'skipped' and '⏭️' or '❌'
+      table.insert(lines, string.format('%s [%s] %s', 
+        icon, error.category:upper(), error.test))
+      table.insert(lines, '  ' .. error.message)
+      table.insert(lines, '')
+    end
+  end
+  
+  -- Performance metrics if available
+  if M.results.performance then
+    table.insert(lines, '## Performance Metrics')
+    table.insert(lines, '')
+    for metric, value in pairs(M.results.performance) do
+      table.insert(lines, string.format('- %s: %s', metric, value))
+    end
+  end
+  
+  return lines
+end
+
+-- Helper functions
+function M.get_test_icon(category)
+  local icons = {
+    commands = '📝',
+    features = '✨',
+    integration = '🔗',
+    performance = '⚡'
+  }
+  return icons[category] or '🧪'
+end
+
+function M.reset_results()
+  M.results = {
+    total = 0,
+    passed = 0,
+    failed = 0,
+    skipped = 0,
+    errors = {},
+    duration = 0
+  }
+end
+
+function M.get_test_completions()
+  local completions = { 'all', 'commands', 'features', 'integration', 'performance' }
+  
+  for _, tests in pairs(M.tests) do
+    for _, test in ipairs(tests) do
+      table.insert(completions, test.name)
+    end
+  end
+  
+  return completions
+end
+
+return M
+```
+
+#### 4.3 Test Framework
+
+Create `scripts/utils/test_framework.lua`:
+
+```lua
+local M = {}
+
+-- Test assertions
+M.assert = {
+  equals = function(actual, expected, message)
+    if actual ~= expected then
+      error(string.format(
+        "%s\nExpected: %s\nActual: %s",
+        message or "Values not equal",
+        vim.inspect(expected),
+        vim.inspect(actual)
+      ))
+    end
+  end,
+  
+  truthy = function(value, message)
+    if not value then
+      error(message or "Expected truthy value")
+    end
+  end,
+  
+  falsy = function(value, message)
+    if value then
+      error(message or "Expected falsy value")
+    end
+  end,
+  
+  contains = function(table, value, message)
+    if not vim.tbl_contains(table, value) then
+      error(string.format(
+        "%s\nTable does not contain: %s",
+        message or "Value not found",
+        vim.inspect(value)
+      ))
+    end
+  end,
+  
+  no_error = function(fn, message)
+    local ok, result = pcall(fn)
+    if not ok then
+      error(string.format(
+        "%s\nUnexpected error: %s",
+        message or "Function should not error",
+        result
+      ))
+    end
+    return result
+  end,
+  
+  error_matches = function(fn, pattern, message)
+    local ok, err = pcall(fn)
+    if ok then
+      error(message or "Expected function to error")
+    end
+    if not err:match(pattern) then
+      error(string.format(
+        "%s\nError '%s' does not match pattern '%s'",
+        message or "Error pattern mismatch",
+        err, pattern
+      ))
+    end
+  end
+}
+
+-- Test helpers
+M.helpers = {
+  -- Create test email data
+  create_test_email = function(overrides)
+    local email = {
+      id = "test-" .. math.random(10000),
+      subject = "Test Email",
+      from = "test@example.com",
+      to = { "recipient@example.com" },
+      date = os.date(),
+      flags = {},
+      body = "Test email body"
+    }
+    return vim.tbl_extend("force", email, overrides or {})
+  end,
+  
+  -- Create test account
+  create_test_account = function(name)
+    return {
+      name = name or "test_account",
+      email = "test@example.com",
+      maildir_path = "/tmp/test_mail/"
+    }
+  end,
+  
+  -- Setup test environment
+  setup_test_env = function()
+    -- Store original state
+    local original = {
+      config = vim.deepcopy(require('neotex.plugins.tools.himalaya.core.config').config),
+      state = vim.deepcopy(require('neotex.plugins.tools.himalaya.core.state').data)
+    }
+    
+    -- Return cleanup function
+    return function()
+      -- Restore original state
+      require('neotex.plugins.tools.himalaya.core.config').config = original.config
+      require('neotex.plugins.tools.himalaya.core.state').data = original.state
+    end
+  end,
+  
+  -- Mock vim functions
+  mock_vim = function()
+    local mocks = {}
+    
+    mocks.api = {
+      nvim_echo = function() end,
+      nvim_err_writeln = function() end,
+      nvim_notify = function() end
+    }
+    
+    mocks.fn = {
+      system = function() return "" end,
+      jobstart = function() return 1 end
+    }
+    
+    return mocks
+  end
+}
+
+-- Test runner interface
+function M.test(name, fn)
+  return {
+    name = name,
+    fn = fn,
+    run = function()
+      local cleanup = M.helpers.setup_test_env()
+      local ok, err = pcall(fn)
+      cleanup()
+      
+      if ok then
+        return { passed = true }
+      else
+        return { passed = false, error = tostring(err) }
+      end
+    end
+  }
+end
+
+-- Skip test
+function M.skip(name, fn, reason)
+  return {
+    name = name,
+    fn = fn,
+    run = function()
+      return { skipped = true, reason = reason }
+    end
+  }
+end
+
+-- Test suite
+function M.suite(name, tests)
+  return {
+    name = name,
+    tests = tests,
+    run = function()
+      local results = {
+        passed = 0,
+        failed = 0,
+        skipped = 0,
+        errors = {}
+      }
+      
+      for _, test in ipairs(tests) do
+        local result = test.run()
+        if result.passed then
+          results.passed = results.passed + 1
+        elseif result.skipped then
+          results.skipped = results.skipped + 1
+        else
+          results.failed = results.failed + 1
+          table.insert(results.errors, {
+            test = test.name,
+            error = result.error
+          })
+        end
+      end
+      
+      return results
+    end
+  }
+end
+
+return M
+```
+
+#### 4.4 Example Test Structure
+
+Create example tests following this pattern:
+
+```lua
+-- scripts/commands/test_email_commands.lua
+local test = require('scripts.utils.test_framework')
+local assert = test.assert
+local helpers = test.helpers
+
+-- Test suite
+_G.himalaya_test = test.suite("Email Commands", {
+  test.test("HimalayaWrite creates composer buffer", function()
+    -- Arrange
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    
+    -- Act
+    vim.cmd('HimalayaWrite')
+    
+    -- Assert
+    local buf = vim.api.nvim_get_current_buf()
+    assert.truthy(buf, "Should create buffer")
+    assert.equals(
+      vim.api.nvim_buf_get_option(buf, 'filetype'),
+      'himalaya-compose',
+      "Should set correct filetype"
+    )
+  end),
+  
+  test.test("HimalayaSend validates email fields", function()
+    -- Arrange
+    local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+    local email = helpers.create_test_email({ to = {} })
+    
+    -- Act & Assert
+    assert.error_matches(
+      function() composer.send_email(email) end,
+      "recipient required",
+      "Should validate recipient"
+    )
+  end),
+  
+  test.skip("HimalayaSchedule respects timezone", function()
+    -- Complex timezone test
+  end, "Timezone handling not yet implemented")
+})
+```
+
+#### 4.5 Integration with CI/CD
+
+Create `.github/workflows/test.yml`:
+
+```yaml
+name: Himalaya Tests
+
+on:
+  push:
+    paths:
+      - 'lua/neotex/plugins/tools/himalaya/**'
+  pull_request:
+    paths:  
+      - 'lua/neotex/plugins/tools/himalaya/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Neovim
+      uses: rhysd/action-setup-vim@v1
+      with:
+        neovim: true
+        version: stable
+    
+    - name: Run tests
+      run: |
+        nvim --headless -c "lua require('scripts.test_runner').setup()" \
+             -c "lua require('scripts.test_runner').run_all_tests()" \
+             -c "qa!"
+```
+
+#### 4.6 Test Coverage Goals
+
+1. **Command Coverage**: All user-facing commands tested
+2. **Feature Coverage**: Core features have integration tests
+3. **Error Handling**: Edge cases and error paths covered
+4. **Performance**: Key operations benchmarked
+5. **Regression**: Previously fixed bugs have tests
+
+#### 4.7 Implementation Steps
+
+1. **Phase 1**: Create test infrastructure (test_runner.lua, framework)
+2. **Phase 2**: Migrate existing tests to new structure
+3. **Phase 3**: Add missing command tests
+4. **Phase 4**: Add feature integration tests
+5. **Phase 5**: Add performance benchmarks
 }
 
 -- Test definition
