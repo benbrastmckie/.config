@@ -758,11 +758,6 @@ function M.fetch_folder_count(account, folder)
   return total
 end
 
--- DEPRECATED: Use M.send_email(account, email_data) defined above
--- This function is kept for backward compatibility only
-function M.send_email_raw(email_data, account)
-  error("send_email_raw is deprecated. Use M.send_email(account, email_data) instead")
-end
 
 -- Format email data for sending
 function M.format_email_for_sending(email_data)
@@ -1020,5 +1015,210 @@ if ok then
   -- Add validate as top-level
   M.validate = enhanced.validate
 end
+
+-- ==============================================
+-- ASYNC COMMAND IMPLEMENTATION (Phase 1)
+-- ==============================================
+
+-- Core async command executor
+function M.execute_himalaya_async(args, opts, callback)
+  local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+  return async_commands.execute_async(args, opts, callback)
+end
+
+-- Async email operations
+function M.get_emails_async(account, folder, page, page_size, callback)
+  local args = { 'envelope', 'list' }
+  table.insert(args, '--page')
+  table.insert(args, tostring(page))
+  table.insert(args, '--page-size')
+  table.insert(args, tostring(page_size))
+  table.insert(args, 'order by date desc')
+  
+  M.execute_himalaya_async(args, { 
+    account = account, 
+    folder = folder,
+    priority = M.async_commands and M.async_commands.priorities.ui or 2
+  }, function(result, error)
+    if error then
+      callback({}, 0, error)
+      return
+    end
+    
+    if not result then
+      callback({}, 0, nil)
+      return
+    end
+    
+    -- Get stored count from state (from sync operations)
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local stored_count = state.get_folder_count(account, folder)
+    
+    -- If we have a stored count, use it
+    if stored_count and stored_count > 0 then
+      callback(result, stored_count, nil)
+      return
+    end
+    
+    -- Otherwise, estimate based on the page results
+    local estimated_count = #result
+    if #result >= page_size then
+      estimated_count = page * page_size
+    end
+    
+    callback(result, estimated_count, nil)
+  end)
+end
+
+-- Async email reading
+function M.get_email_by_id_async(account, folder, email_id, callback)
+  local args = { 'message', 'read', tostring(email_id) }
+  local opts = { 
+    account = account,
+    priority = 1  -- user priority
+  }
+  if folder then
+    opts.folder = folder
+  end
+  
+  M.execute_himalaya_async(args, opts, callback)
+end
+
+-- Async folder operations
+function M.get_folders_async(account, callback)
+  local args = { 'folder', 'list' }
+  M.execute_himalaya_async(args, { 
+    account = account,
+    priority = M.async_commands and M.async_commands.priorities.ui or 2
+  }, function(result, error)
+    if error then
+      callback({}, error)
+      return
+    end
+    
+    local folders = {}
+    
+    -- Always include INBOX as first folder
+    table.insert(folders, 'INBOX')
+    
+    if result and type(result) == 'table' then
+      for _, folder_data in ipairs(result) do
+        local folder_name = nil
+        if type(folder_data) == 'string' then
+          folder_name = folder_data
+        elseif type(folder_data) == 'table' and folder_data.name then
+          folder_name = folder_data.name
+        end
+        
+        -- Add folder if it's not INBOX (to avoid duplicates)
+        if folder_name and folder_name ~= 'INBOX' then
+          table.insert(folders, folder_name)
+        end
+      end
+    end
+    
+    callback(folders, nil)
+  end)
+end
+
+-- Async count operations
+function M.fetch_folder_count_async(account, folder, callback)
+  -- Try quick method first - get first page with large page size
+  local args = { 'envelope', 'list' }
+  table.insert(args, '--page')
+  table.insert(args, '1')
+  table.insert(args, '--page-size')
+  table.insert(args, '1000')
+  table.insert(args, 'order by date desc')
+  
+  M.execute_himalaya_async(args, { 
+    account = account, 
+    folder = folder,
+    priority = 3  -- background priority
+  }, function(result, error)
+    if error then
+      callback(0, error)
+      return
+    end
+    
+    if not result then
+      callback(0, nil)
+      return
+    end
+    
+    -- If we got less than 1000, that's the exact count
+    if type(result) == 'table' and #result < 1000 then
+      callback(#result, nil)
+      return
+    end
+    
+    -- For larger folders, we need to do binary search
+    -- This will be implemented in a follow-up if needed
+    -- For now, return the estimate
+    callback(1000, nil)
+  end)
+end
+
+-- Async delete operations
+function M.delete_email_async(account, folder, email_id, callback)
+  local args = { 'message', 'delete', tostring(email_id) }
+  local opts = { 
+    account = account,
+    priority = 1  -- user priority
+  }
+  if folder then
+    opts.folder = folder
+  end
+  
+  M.execute_himalaya_async(args, opts, function(result, error)
+    if not error and result then
+      -- Clear cache after successful deletion
+      M.clear_email_cache()
+      
+      -- Trigger refresh after deletion
+      vim.defer_fn(function()
+        vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailDeleted' })
+      end, 100)
+    end
+    
+    callback(result ~= nil, error)
+  end)
+end
+
+-- Async move operations
+function M.move_email_async(account, folder, email_id, target_folder, callback)
+  local args = { 'message', 'move', target_folder, tostring(email_id) }
+  
+  M.execute_himalaya_async(args, { 
+    account = account,
+    folder = folder,
+    priority = 1  -- user priority
+  }, function(result, error)
+    if not error and result then
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Email moved', notify.categories.USER_ACTION, { folder = target_folder })
+      
+      -- Clear cache after move
+      M.clear_email_cache(account, folder)
+      M.clear_email_cache(account, target_folder)
+      
+      -- Trigger refresh after successful move
+      vim.defer_fn(function()
+        vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailMoved' })
+      end, 100)
+    end
+    
+    callback(result ~= nil, error)
+  end)
+end
+
+-- Initialize async commands reference
+M.async_commands = nil
+vim.defer_fn(function()
+  local ok, async_commands = pcall(require, 'neotex.plugins.tools.himalaya.core.async_commands')
+  if ok then
+    M.async_commands = async_commands
+  end
+end, 100)
 
 return M

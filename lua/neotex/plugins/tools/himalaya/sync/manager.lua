@@ -159,6 +159,56 @@ function M.get_history()
 end
 
 -- Update folder counts after successful sync
+-- Cancel current sync operation
+function M.cancel_sync()
+  local current_type = state.get('sync.type')
+  local current_status = state.get('sync.status')
+  
+  if not current_type or current_status ~= 'running' then
+    logger.debug('No sync running to cancel')
+    return false
+  end
+  
+  logger.info('Cancelling sync: ' .. current_type)
+  
+  -- Cancel MBSync if it's running
+  if current_type == 'full' then
+    local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+    mbsync.cancel_current_sync('user_cancelled')
+  end
+  
+  -- Cancel any async commands related to sync
+  local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+  local cancelled_count = async_commands.cancel_all_jobs('sync_cancelled')
+  
+  -- Update state
+  state.set('sync.status', 'cancelled')
+  state.set('sync.end_time', os.time())
+  
+  -- Notify user
+  local notify = require('neotex.util.notifications')
+  notify.himalaya('Sync cancelled by user', notify.categories.USER_ACTION)
+  
+  -- Clean up state after a delay
+  vim.defer_fn(function()
+    if state.get('sync.status') == 'cancelled' then
+      M.clear_sync_state()
+    end
+  end, 2000)
+  
+  -- Notify UI update
+  M.notify_ui_update()
+  
+  logger.debug('Cancelled sync and ' .. cancelled_count .. ' async commands')
+  return true
+end
+
+-- Check if sync can be cancelled
+function M.can_cancel_sync()
+  local current_status = state.get('sync.status')
+  return current_status == 'running'
+end
+
 -- Update folder counts after sync completion
 -- This is the single source of truth for updating counts automatically
 function M.update_folder_counts()
@@ -226,9 +276,9 @@ function M.start_auto_sync()
     return
   end
   
-  -- Get sync interval and startup delay from config
+  -- Get sync interval and startup delay from config (optimized for responsiveness)
   local sync_interval = config.get('ui.auto_sync_interval', 15 * 60) -- Default 15 minutes
-  local startup_delay = config.get('ui.auto_sync_startup_delay', 2) -- Default 2 seconds
+  local startup_delay = config.get('ui.auto_sync_startup_delay', 30) -- Default 30 seconds (vs old 2 seconds)
   
   logger.debug('Starting auto-sync with interval: ' .. sync_interval .. 's, startup delay: ' .. startup_delay .. 's')
   

@@ -15,6 +15,7 @@ local state = require("neotex.plugins.tools.himalaya.core.state")
 
 -- State
 M.current_job = nil
+M.current_job_id = nil
 
 -- Check if mbsync is available
 function M.check_mbsync()
@@ -328,7 +329,7 @@ function M.sync(channel, opts)
   state.set("sync.target_folder", sync_folder)  -- Store which folder we're syncing
   
   -- Start job with pty to get progress output
-  M.current_job = vim.fn.jobstart(cmd, {
+  M.current_job_id = vim.fn.jobstart(cmd, {
     detach = false,
     stdout_buffered = false,
     pty = true,  -- Use pseudo-terminal to get progress counters
@@ -596,8 +597,12 @@ function M.sync(channel, opts)
     end
   })
   
-  if M.current_job <= 0 then
+  -- Store job ID for cancellation
+  M.current_job = M.current_job_id
+  
+  if M.current_job_id <= 0 then
     M.current_job = nil
+    M.current_job_id = nil
     state.set("sync.status", "idle")
     return false, "Failed to start sync job"
   end
@@ -605,7 +610,7 @@ function M.sync(channel, opts)
   -- No timeout - let syncs run as long as needed
   -- Removed timeout to prevent "Sync timed out" errors
   
-  logger.info("Started sync job: " .. M.current_job)
+  logger.info("Started sync job: " .. M.current_job_id)
   return M.current_job
 end
 
@@ -864,6 +869,37 @@ function M.get_highest_email_id(emails)
   end
   
   return highest_id
+end
+
+-- Cancel current sync operation
+function M.cancel_current_sync(reason)
+  reason = reason or 'cancelled'
+  
+  if not M.current_job_id or M.current_job_id <= 0 then
+    logger.debug('No sync job running to cancel')
+    return false
+  end
+  
+  logger.info('Cancelling sync job: ' .. M.current_job_id .. ' (' .. reason .. ')')
+  
+  -- Stop the job gracefully first with SIGTERM
+  vim.fn.jobstop(M.current_job_id)
+  
+  -- Clean up state
+  M.current_job = nil
+  M.current_job_id = nil
+  
+  -- Update state
+  state.set("sync.status", "cancelled")
+  state.set("sync.end_time", os.time())
+  
+  logger.debug('Sync job cancelled successfully')
+  return true
+end
+
+-- Check if sync is currently running
+function M.is_sync_running()
+  return M.current_job_id and M.current_job_id > 0
 end
 
 return M
