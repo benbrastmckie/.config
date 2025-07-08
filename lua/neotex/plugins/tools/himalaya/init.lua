@@ -92,6 +92,10 @@ function M.get_keymaps()
   return {}
 end
 
+-- Export utilities for tests
+M.utils = require('neotex.plugins.tools.himalaya.utils')
+M.config = require('neotex.plugins.tools.himalaya.core.config')
+
 -- Return plugin specification for lazy.nvim
 return {
   {

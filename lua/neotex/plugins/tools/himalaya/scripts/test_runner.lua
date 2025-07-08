@@ -226,6 +226,10 @@ function M.execute_test_selection(selection)
     notify.himalaya('Starting tests...', notify.categories.STATUS)
   end
   
+  -- Setup test mocks to prevent real himalaya CLI calls
+  local mocks = require('neotex.plugins.tools.himalaya.scripts.utils.test_mocks')
+  mocks.setup()
+  
   -- Stop scheduler processing during tests
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   local original_timer = scheduler.timer
@@ -258,6 +262,9 @@ function M.execute_test_selection(selection)
   if original_timer then
     scheduler.start_processing()
   end
+  
+  -- Teardown test mocks
+  mocks.teardown()
   
   -- Show results
   M.show_results()

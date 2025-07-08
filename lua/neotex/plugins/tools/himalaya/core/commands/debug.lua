@@ -82,15 +82,17 @@ function M.setup(registry)
       
       local lines = {'# Sync Debug Information', ''}
       
-      -- Sync manager status
-      local status = sync_manager.get_status()
+      -- Sync manager info
+      local sync_info = sync_manager.get_sync_info()
       table.insert(lines, '## Sync Manager Status')
-      table.insert(lines, string.format('  Is syncing: %s', status.is_syncing and 'Yes' or 'No'))
-      if status.sync_type then
-        table.insert(lines, string.format('  Sync type: %s', status.sync_type))
+      table.insert(lines, string.format('  Type: %s', sync_info.type or 'none'))
+      table.insert(lines, string.format('  Status: %s', sync_info.status or 'idle'))
+      if sync_info.message then
+        table.insert(lines, string.format('  Message: %s', sync_info.message))
       end
-      if status.account then
-        table.insert(lines, string.format('  Account: %s', status.account))
+      if sync_info.start_time then
+        local elapsed = os.time() - sync_info.start_time
+        table.insert(lines, string.format('  Started: %d seconds ago', elapsed))
       end
       
       -- State info
@@ -131,6 +133,42 @@ function M.setup(registry)
         else
           table.insert(lines, '  No mbsync processes running')
         end
+      end
+      
+      -- Folder count information
+      table.insert(lines, '')
+      table.insert(lines, '## Folder Count Timestamps')
+      
+      local current_account = state.get('ui.current_account')
+      local current_folder = state.get('ui.current_folder')
+      table.insert(lines, string.format('  Current: %s/%s', current_account or 'none', current_folder or 'none'))
+      
+      -- Get all timestamps
+      local timestamps = state.get("folders.last_updated", {})
+      local counts = state.get("folders.counts", {})
+      
+      for account, folders in pairs(timestamps) do
+        table.insert(lines, string.format('  Account: %s', account))
+        for folder, timestamp in pairs(folders) do
+          local age = os.time() - timestamp
+          local age_str
+          if age < 3600 then
+            age_str = string.format('%dm ago', math.floor(age / 60))
+          elseif age < 86400 then
+            age_str = string.format('%dh ago', math.floor(age / 3600))
+          else
+            age_str = string.format('%dd ago', math.floor(age / 86400))
+          end
+          local count = counts[account] and counts[account][folder] or 'unknown'
+          table.insert(lines, string.format('    %s: %s emails (%s)', folder, tostring(count), age_str))
+        end
+      end
+      
+      -- Check current folder age
+      if current_account and current_folder then
+        local count_age = state.get_folder_count_age(current_account, current_folder)
+        table.insert(lines, '')
+        table.insert(lines, string.format('Current folder count age: %s seconds', tostring(count_age)))
       end
       
       float.show('Sync Debug Information', lines)
@@ -282,6 +320,64 @@ function M.setup(registry)
     end,
     opts = {
       desc = 'Clear all scheduled emails (useful after failed tests)'
+    }
+  }
+  
+  commands.HimalayaRefreshCount = {
+    fn = function()
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      local notify = require('neotex.util.notifications')
+      local logger = require('neotex.plugins.tools.himalaya.core.logger')
+      
+      local account = state.get('ui.current_account')
+      local folder = state.get('ui.current_folder')
+      
+      if not account or not folder then
+        notify.himalaya('No account/folder selected', notify.categories.ERROR)
+        return
+      end
+      
+      notify.himalaya(string.format('Refreshing count for %s/%s...', account, folder), 
+        notify.categories.STATUS)
+      
+      -- Log current state
+      logger.debug(string.format('Manual refresh requested for %s/%s', account, folder))
+      local current_age = state.get_folder_count_age(account, folder)
+      logger.debug(string.format('Current age: %s seconds', tostring(current_age)))
+      
+      -- Fetch count
+      utils.fetch_folder_count_async(account, folder, function(count, error)
+        if error then
+          notify.himalaya('Failed to fetch count: ' .. tostring(error), notify.categories.ERROR)
+          logger.error('Failed to fetch folder count: ' .. tostring(error))
+          return
+        end
+        
+        if count then
+          -- Force update even if count is 1000
+          state.set_folder_count(account, folder, count)
+          notify.himalaya(string.format('Updated count: %d emails', count), notify.categories.STATUS)
+          logger.debug(string.format('Successfully updated count to %d', count))
+          
+          -- Trigger UI update
+          local ok, manager = pcall(require, 'neotex.plugins.tools.himalaya.sync.manager')
+          if ok and manager.notify_ui_update then
+            manager.notify_ui_update()
+          end
+          
+          -- Also try to refresh the sidebar directly
+          local ok2, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+          if ok2 and main.refresh_email_list then
+            main.refresh_email_list()
+          end
+        else
+          notify.himalaya('No count returned', notify.categories.WARNING)
+          logger.warn('No count returned from fetch_folder_count_async')
+        end
+      end)
+    end,
+    opts = {
+      desc = 'Manually refresh current folder email count'
     }
   }
   

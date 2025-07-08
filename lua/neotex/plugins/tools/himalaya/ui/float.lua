@@ -5,13 +5,27 @@ local M = {}
 function M.show(title, lines)
   -- Create buffer
   local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  
+  -- Sanitize lines - split any that contain newlines
+  local sanitized_lines = {}
+  for _, line in ipairs(lines) do
+    if type(line) == "string" and line:find("\n") then
+      -- Split on newlines
+      for split_line in line:gmatch("[^\n]+") do
+        table.insert(sanitized_lines, split_line)
+      end
+    else
+      table.insert(sanitized_lines, tostring(line))
+    end
+  end
+  
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, sanitized_lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
   
   -- Calculate window size
   local width = math.min(80, math.floor(vim.o.columns * 0.8))
-  local height = math.min(#lines + 2, math.floor(vim.o.lines * 0.8))
+  local height = math.min(#sanitized_lines + 2, math.floor(vim.o.lines * 0.8))
   
   -- Calculate position (centered)
   local row = math.floor((vim.o.lines - height) / 2)

@@ -9,9 +9,12 @@ local tests = {}
 
 -- Test that plugin is loaded
 table.insert(tests, framework.create_test('plugin_loaded', function()
-  local himalaya = require('neotex.plugins.tools.himalaya')
-  assert.truthy(himalaya, "Himalaya plugin should be loaded")
-  assert.truthy(himalaya.setup, "Should have setup function")
+  -- The himalaya module returns a plugin spec, not the module itself
+  -- Check that core modules are available instead
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local utils = require('neotex.plugins.tools.himalaya.utils')
+  assert.truthy(config, "Config module should be loaded")
+  assert.truthy(utils, "Utils module should be loaded")
 end))
 
 -- Test config module
