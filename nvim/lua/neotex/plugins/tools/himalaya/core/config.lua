@@ -109,6 +109,14 @@ M.defaults = {
     auto_sync_enabled = true, -- Enable automatic inbox syncing
     auto_sync_interval = 15 * 60, -- 15 minutes in seconds
     auto_sync_startup_delay = 2, -- 2 seconds delay after startup
+    
+    -- Multi-account view settings
+    multi_account = {
+      default_mode = 'focused', -- 'focused', 'unified', 'split', 'tabbed'
+      unified_sort = 'date', -- 'date', 'account', 'subject'
+      show_account_colors = true,
+      account_abbreviation_length = 3,
+    },
   },
   
   -- Binary paths

@@ -31,6 +31,10 @@ function M.setup(opts)
   -- Initialize UI system
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.setup()
+  
+  -- Setup highlight groups
+  local highlights = require('neotex.plugins.tools.himalaya.ui.highlights')
+  highlights.setup()
 
   -- Initialize event system (Phase 6) - after UI to ensure notifications work properly
   local integration = require('neotex.plugins.tools.himalaya.orchestration.integration')
