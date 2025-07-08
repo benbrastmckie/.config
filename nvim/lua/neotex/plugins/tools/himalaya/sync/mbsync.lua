@@ -279,30 +279,42 @@ function M.sync(channel, opts)
     return false, "mbsync not found"
   end
   
-  -- Ensure OAuth token exists and is valid
-  if not oauth.is_valid() then
-    if opts.auto_refresh ~= false then  -- Default to true
-      logger.info("OAuth token may be invalid, ensuring token...")
-      oauth.ensure_token(nil, function(success)
-        if success then
-          -- Retry sync after token is ready
-          vim.defer_fn(function()
-            M.sync(channel, opts)
-          end, 500)
-        else
-          logger.error("Could not obtain valid OAuth token")
-          if opts.callback then
-            opts.callback(false, "OAuth token invalid")
+  -- Ensure OAuth token exists and is valid (use async version to prevent blocking)
+  oauth.is_valid_async(nil, function(is_valid)
+    if not is_valid then
+      if opts.auto_refresh ~= false then  -- Default to true
+        logger.info("OAuth token may be invalid, ensuring token...")
+        oauth.ensure_token(nil, function(success)
+          if success then
+            -- Retry sync after token is ready
+            vim.defer_fn(function()
+              M.sync(channel, opts)
+            end, 500)
+          else
+            logger.error("Could not obtain valid OAuth token")
+            if opts.callback then
+              opts.callback(false, "OAuth token invalid")
+            end
           end
+        end)
+      else
+        logger.error("OAuth token invalid")
+        if opts.callback then
+          opts.callback(false, "OAuth token invalid")
         end
-      end)
-      return false, "refreshing OAuth"
-    else
-      logger.error("OAuth token invalid")
-      return false, "OAuth token invalid"
+      end
+      return
     end
-  end
+    
+    -- Token is valid, continue with sync
+    M._perform_sync(channel, opts)
+      end)
   
+  return true, "sync initiated"
+end
+
+-- Internal function to perform the actual sync (after OAuth check)
+function M._perform_sync(channel, opts)
   -- Build command with lock
   -- Note: mbsync doesn't provide detailed X/Y progress, only cumulative stats
   -- Using -V for verbose mode to get operation status

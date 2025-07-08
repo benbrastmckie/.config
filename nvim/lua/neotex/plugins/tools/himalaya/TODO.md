@@ -43,11 +43,16 @@
   - [ ] integration features (see PHASE_9_REMAINING_FEATURES.md)
   - [ ] window management (see WINDOW_MANAGEMENT_SPEC.md)
 - [ ] Phase 10: Integration & Polish (Week 7)
-  - [ ] nvim freezes while sync is running, for instance as soon as I start nvim
+  - [x] nvim freezes while sync is running, for instance as soon as I start nvim ✅ FIXED
+    - Identified blocking `os.execute` in `oauth.has_token`
+    - Created async versions: `has_token_async` and `is_valid_async`
+    - Modified `mbsync.sync` to use async OAuth check
+    - Added comprehensive startup timing logs with `[STARTUP DEBUG]` markers
   - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption
   - [ ] testing infrastructure
   - [ ] performance optimization final pass
+  - [ ] final refactor and refinements removing backwards compatibility layers
   - [ ] documentation updates
 - [ ] Code Quality Improvements (Ongoing)
   - [x] error handling standardization ✅ (Phase 6)

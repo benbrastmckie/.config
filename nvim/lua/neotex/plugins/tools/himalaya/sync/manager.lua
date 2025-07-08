@@ -212,6 +212,14 @@ end
 -- Update folder counts after sync completion
 -- This is the single source of truth for updating counts automatically
 function M.update_folder_counts()
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  
+  -- Check if folder count update is disabled
+  if config.get('sync.skip_folder_count_update', false) then
+    logger.debug('Skipping folder count update after sync (disabled in config)')
+    return
+  end
+  
   -- Update counts immediately for responsiveness
   local current_account = state.get('ui.current_account')
   local current_folder = state.get('ui.current_folder')
@@ -237,16 +245,23 @@ function M.update_folder_counts()
   vim.defer_fn(function()
     if current_account and current_folder then
       local utils = require('neotex.plugins.tools.himalaya.utils')
-      local count = utils.fetch_folder_count(current_account, current_folder)
       
-      if count and count > 0 then
-        state.set_folder_count(current_account, current_folder, count)
-        logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
-          current_account, current_folder, count))
+      -- Use async version to prevent blocking
+      utils.fetch_folder_count_async(current_account, current_folder, function(count, error)
+        if error then
+          logger.warn('Failed to fetch folder count after sync: ' .. tostring(error))
+          return
+        end
         
-        -- Trigger UI update immediately
-        M.notify_ui_update()
-      end
+        if count and count > 0 then
+          state.set_folder_count(current_account, current_folder, count)
+          logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
+            current_account, current_folder, count))
+          
+          -- Trigger UI update immediately
+          M.notify_ui_update()
+        end
+      end)
     end
   end, 100)  -- Minimal 100ms delay just for file operations
 end
@@ -264,9 +279,13 @@ end
 
 -- Auto-sync functionality
 local auto_sync_timer = nil
+local startup_time = nil
 
 -- Start automatic inbox syncing
 function M.start_auto_sync()
+  -- Record startup time
+  startup_time = os.time()
+  
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local notify = require('neotex.util.notifications')
   
@@ -290,6 +309,12 @@ function M.start_auto_sync()
   
   -- Start recurring timer after startup delay
   auto_sync_timer:start(startup_delay * 1000, sync_interval * 1000, vim.schedule_wrap(function()
+    -- Safety check: ensure we've waited the full startup delay
+    if startup_time and (os.time() - startup_time) < startup_delay then
+      logger.debug('Sync triggered too early, skipping. Time since startup: ' .. (os.time() - startup_time) .. 's')
+      return
+    end
+    
     -- Only sync if not already syncing
     local current_status = state.get('sync.status', 'idle')
     if current_status ~= 'idle' then
@@ -322,6 +347,8 @@ function M.start_auto_sync()
   if notify.config.modules.himalaya.debug_mode then
     notify.himalaya(string.format('Auto-sync enabled: every %d minutes', math.floor(sync_interval / 60)), notify.categories.BACKGROUND)
   end
+  
+  logger.debug('Auto-sync timer started')
 end
 
 -- Stop automatic syncing
