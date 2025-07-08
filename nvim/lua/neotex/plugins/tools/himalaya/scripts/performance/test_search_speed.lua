@@ -7,9 +7,11 @@ local helpers = framework.helpers
 -- Test suite
 local tests = {}
 
+-- Use test search helper since core search module doesn't have filter_emails
+local search = require('neotex.plugins.tools.himalaya.scripts.utils.test_search')
+
 -- Test basic search performance
 table.insert(tests, framework.create_test('search_performance_basic', function()
-  local search = require('neotex.plugins.tools.himalaya.core.search')
   
   -- Create large email dataset
   local emails = {}
@@ -41,7 +43,7 @@ end))
 
 -- Test complex search performance
 table.insert(tests, framework.create_test('search_performance_complex', function()
-  local search = require('neotex.plugins.tools.himalaya.core.search')
+  -- Use the test search helper already loaded above
   
   -- Create dataset
   local emails = {}
@@ -72,7 +74,7 @@ end))
 
 -- Test search with date ranges
 table.insert(tests, framework.create_test('search_performance_date_range', function()
-  local search = require('neotex.plugins.tools.himalaya.core.search')
+  -- Use the test search helper already loaded above
   
   -- Create dated emails
   local emails = {}
@@ -101,7 +103,7 @@ end))
 
 -- Test search cache performance
 table.insert(tests, framework.create_test('search_cache_performance', function()
-  local search = require('neotex.plugins.tools.himalaya.core.search')
+  -- Use the test search helper already loaded above
   
   -- Create dataset
   local emails = {}
@@ -138,7 +140,7 @@ end))
 
 -- Test memory usage
 table.insert(tests, framework.create_test('search_memory_usage', function()
-  local search = require('neotex.plugins.tools.himalaya.core.search')
+  -- Use the test search helper already loaded above
   
   -- Get initial memory
   collectgarbage("collect")

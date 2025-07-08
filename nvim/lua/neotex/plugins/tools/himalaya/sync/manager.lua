@@ -19,6 +19,8 @@ function M.start_sync(sync_type, options)
   
   logger.debug('Starting sync: ' .. sync_type)
   
+  local notify = require('neotex.util.notifications')
+  
   
   -- Set common state
   state.set('sync.type', sync_type)
@@ -50,11 +52,16 @@ function M.complete_sync(sync_type, result)
   
   logger.debug('Completing sync: ' .. sync_type .. ', success: ' .. tostring(result.success))
   
+  local notify = require('neotex.util.notifications')
+  
   
   -- Only update if this is the current sync
-  if state.get('sync.type') ~= sync_type then
-    logger.warn('Sync type mismatch on completion')
-    return
+  local current_sync_type = state.get('sync.type')
+  
+  if current_sync_type ~= sync_type then
+    logger.warn('Sync type mismatch on completion: current=' .. tostring(current_sync_type) .. ', completing=' .. sync_type)
+    -- Don't return - continue with completion even if type doesn't match
+    -- This handles race conditions where sync.type gets cleared prematurely
   end
   
   -- Set completion state
@@ -68,6 +75,7 @@ function M.complete_sync(sync_type, result)
   
   -- Update folder counts if sync was successful
   if result.success then
+    logger.debug('Sync completed successfully, updating folder counts')
     M.update_folder_counts()
   end
   
@@ -76,7 +84,8 @@ function M.complete_sync(sync_type, result)
   
   -- Clear sync state after a delay
   vim.defer_fn(function()
-    if state.get('sync.type') == sync_type then
+    -- Only clear if we're still in the same sync and it's completed
+    if state.get('sync.type') == sync_type and state.get('sync.status') ~= 'running' then
       state.set('sync.type', nil)
       state.set('sync.status', 'idle')
       state.set('sync.message', nil)
@@ -214,6 +223,8 @@ end
 -- This is the single source of truth for updating counts automatically
 function M.update_folder_counts()
   local config = require('neotex.plugins.tools.himalaya.core.config')
+  local notify = require('neotex.util.notifications')
+  
   
   -- Check if folder count update is disabled
   if config.get('sync.skip_folder_count_update', false) then
@@ -224,6 +235,7 @@ function M.update_folder_counts()
   -- Update counts immediately for responsiveness
   local current_account = state.get('ui.current_account')
   local current_folder = state.get('ui.current_folder')
+  
   
   -- If we captured counts during sync, save them immediately
   local progress = state.get('sync.progress')
@@ -245,6 +257,7 @@ function M.update_folder_counts()
   -- Fetch the actual count with a minimal delay for file operations to complete
   vim.defer_fn(function()
     if current_account and current_folder then
+      logger.debug(string.format('Fetching folder count for %s/%s after sync', current_account, current_folder))
       local utils = require('neotex.plugins.tools.himalaya.utils')
       
       -- Use async version to prevent blocking
@@ -255,20 +268,22 @@ function M.update_folder_counts()
         end
         
         if count and count > 0 then
-          -- Don't store count if it's exactly 1000, as that's just the page limit
-          if count == 1000 then
-            logger.debug(string.format('Got page limit count (1000) for %s/%s, not storing', 
-              current_account, current_folder))
-          else
-            state.set_folder_count(current_account, current_folder, count)
-            logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
-              current_account, current_folder, count))
-          end
+          -- Always update the count and timestamp, even if it's 1000
+          state.set_folder_count(current_account, current_folder, count)
+          logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
+            current_account, current_folder, count))
+          
           
           -- Trigger UI update immediately
           M.notify_ui_update()
+        else
+          logger.debug(string.format('No valid count received for %s/%s (count=%s)', 
+            current_account, current_folder, tostring(count)))
         end
       end)
+    else
+      logger.debug(string.format('Cannot update folder count: account=%s, folder=%s', 
+        tostring(current_account), tostring(current_folder)))
     end
   end, 100)  -- Minimal 100ms delay just for file operations
 end

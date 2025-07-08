@@ -48,6 +48,7 @@
     - [x] created async versions: `has_token_async` and `is_valid_async`
     - [x] modified `mbsync.sync` to use async OAuth check
     - [x] added comprehensive startup timing logs with `[STARTUP DEBUG]` markers
+  - [ ] last sync time not updating in header
   - [ ] can't delete paused tests
   - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption

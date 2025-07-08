@@ -454,6 +454,10 @@ end
 function M.set_folder_count(account, folder, count)
   if not account or not folder then return end
   
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug(string.format('set_folder_count called: account=%s, folder=%s, count=%d', 
+    account, folder, count))
+  
   -- Initialize structure if needed
   local counts = M.get("folders.counts", {})
   if not counts[account] then
@@ -468,8 +472,12 @@ function M.set_folder_count(account, folder, count)
   if not timestamps[account] then
     timestamps[account] = {}
   end
+  local old_timestamp = timestamps[account][folder]
   timestamps[account][folder] = os.time()
   M.set("folders.last_updated", timestamps)
+  
+  logger.debug(string.format('Updated timestamp for %s/%s: old=%s, new=%d', 
+    account, folder, tostring(old_timestamp), timestamps[account][folder]))
   
   -- Trigger immediate UI update if this is the current folder
   local current_account = M.get("ui.current_account")
