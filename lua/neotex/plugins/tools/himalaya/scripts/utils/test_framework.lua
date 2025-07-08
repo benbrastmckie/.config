@@ -93,8 +93,8 @@ M.helpers = {
     local email = {
       id = "test-" .. os.time(),
       subject = "Test Email",
-      from = { name = "Test Sender", email = "sender@test.com" },
-      to = { { name = "Test Recipient", email = "recipient@test.com" } },
+      from = "sender@test.com",  -- String format for scheduler
+      to = { "recipient@test.com" },  -- Array of strings for scheduler
       date = os.date("%Y-%m-%d %H:%M:%S"),
       body = "This is a test email body.",
       folder = "INBOX",

@@ -287,7 +287,7 @@ end
 
 -- Execute individual test
 function M.run_test(test)
-  M.results.total = M.results.total + 1
+  -- Don't increment total here - we'll count actual tests run
   
   -- Debug notification
   if M.config.debug_notifications then
@@ -316,9 +316,32 @@ function M.run_test(test)
   end)
   
   if ok then
-    if result and result.passed then
+    -- Check if this is a test suite result (has total/passed/failed)
+    if result and result.total then
+      -- This is a suite result
+      M.results.total = M.results.total + result.total
+      M.results.passed = M.results.passed + result.passed
+      M.results.failed = M.results.failed + result.failed
+      
+      -- Add any errors from the suite
+      if result.errors then
+        for _, error in ipairs(result.errors) do
+          table.insert(M.results.errors, {
+            test = test.name .. ":" .. error.test,
+            category = test.category,
+            type = 'failed',
+            message = error.error
+          })
+        end
+      end
+    elseif result and result.passed then
+      -- Single test
+      M.results.total = M.results.total + 1
+      -- Single test passed
       M.results.passed = M.results.passed + 1
     elseif result and result.skipped then
+      -- Single test skipped
+      M.results.total = M.results.total + 1
       M.results.skipped = M.results.skipped + 1
       table.insert(M.results.errors, {
         test = test.name,
@@ -327,6 +350,8 @@ function M.run_test(test)
         message = result.reason or 'Test skipped'
       })
     else
+      -- Single test failed
+      M.results.total = M.results.total + 1
       M.results.failed = M.results.failed + 1
       table.insert(M.results.errors, {
         test = test.name,
@@ -336,6 +361,8 @@ function M.run_test(test)
       })
     end
   else
+    -- Error loading/running test file
+    M.results.total = M.results.total + 1
     M.results.failed = M.results.failed + 1
     table.insert(M.results.errors, {
       test = test.name,

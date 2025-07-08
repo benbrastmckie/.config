@@ -255,6 +255,36 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaClearScheduled = {
+    fn = function()
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
+      local notify = require('neotex.util.notifications')
+      
+      -- Stop scheduler
+      if scheduler.timer then
+        scheduler.stop_processing()
+      end
+      
+      -- Count emails before clearing
+      local count = vim.tbl_count(scheduler.queue)
+      
+      -- Clear queue
+      scheduler.queue = {}
+      
+      -- Save empty queue to disk
+      persistence.save_queue({})
+      
+      notify.himalaya(
+        string.format('Cleared %d scheduled emails', count),
+        notify.categories.STATUS
+      )
+    end,
+    opts = {
+      desc = 'Clear all scheduled emails (useful after failed tests)'
+    }
+  }
+  
   -- Register all debug commands
   registry.register_batch(commands)
 end
