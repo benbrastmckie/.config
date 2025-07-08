@@ -1015,7 +1015,7 @@ function M.refresh_sidebar_header()
     local total_pages = math.max(1, math.ceil(total_emails / page_size))
     
     -- Format count display with optional age indicator
-    local count_age = state.get_folder_count_age(account, folder)
+    local count_age = state.get_folder_count_age(account_name, folder_name)
     local count_display
     
     if count_age and count_age > 600 then  -- Show age if older than 10 minutes
@@ -1036,14 +1036,18 @@ function M.refresh_sidebar_header()
       current_page, total_pages, count_display)
   else
     -- We don't know the exact count
-    if #emails >= page_size then
+    -- Get stored emails from state to check if we have a full page
+    local stored_emails = state.get('email_list.emails')
+    local email_count = stored_emails and #stored_emails or 0
+    
+    if email_count >= page_size then
       -- Full page, might be more
       pagination_info = string.format('Page %d / ? | %d+ emails', 
         current_page, current_page * page_size)
     else
       -- Less than a page, this is all
       pagination_info = string.format('Page %d / %d | %d emails', 
-        current_page, current_page, #emails)
+        current_page, current_page, email_count)
     end
   end
   
