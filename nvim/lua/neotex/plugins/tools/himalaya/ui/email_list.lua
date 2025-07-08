@@ -208,14 +208,37 @@ function M.show_email_list(args)
   }
   sidebar.update_content(loading_lines)
   
-  -- Get email list from himalaya (synchronous)
+  -- Get email list from himalaya (async to prevent UI blocking)
   local account_name = config.get_current_account_name()
-  local emails, total_count, adjusted_page = utils.get_email_list_smart_fill(account_name, folder, state.get_current_page(), state.get_page_size())
   
-  -- Update page if it was adjusted
-  if adjusted_page and adjusted_page ~= state.get_current_page() then
-    state.set_current_page(adjusted_page)
-  end
+  -- Use async loading for better responsiveness
+  utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+    if error then
+      local error_lines = {
+        string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
+        '',
+        '󰅙 Failed to get email list',
+        '',
+        'Error: ' .. tostring(error),
+        '',
+        'Try:',
+        '• Check network connection',
+        '• Verify account configuration',
+        '• :messages for details'
+      }
+      sidebar.update_content(error_lines)
+      notify.himalaya('Failed to get email list: ' .. tostring(error), notify.categories.ERROR)
+      return
+    end
+    
+    -- Continue with original logic but inside the callback
+    M.process_email_list_results(emails, total_count, folder, account_name)
+  end)
+end
+
+-- Process email list results (extracted from original show_email_list)
+function M.process_email_list_results(emails, total_count, folder, account_name)
+  local display_name = config.get_account_display_name(account_name)
   
   -- Handle errors or empty results
   if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
@@ -331,7 +354,8 @@ function M.show_email_list(args)
   
   -- Position cursor at first email or restore previous position
   local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-  if sidebar.get_win() and vim.api.nvim_win_is_valid(sidebar.get_win()) then
+  local buf = sidebar.get_buf()
+  if sidebar.get_win() and vim.api.nvim_win_is_valid(sidebar.get_win()) and buf then
     -- Get stored cursor position or default to first email
     local email_start_line = lines.email_start_line or 1
     local cursor_line = state.get('sidebar.cursor_line', email_start_line)
@@ -344,17 +368,17 @@ function M.show_email_list(args)
     
     -- Position cursor
     vim.api.nvim_win_set_cursor(sidebar.get_win(), {cursor_line, 0})
+    
+    -- Keep buffer references for backwards compatibility but only with simple data
+    vim.b[buf].himalaya_account = state.get_current_account()
+    vim.b[buf].himalaya_folder = folder
+    
+    -- Set up buffer keymaps for the sidebar
+    config.setup_buffer_keymaps(buf)
+    
+    -- Set up hover preview
+    M.setup_hover_preview(buf)
   end
-  
-  -- Keep buffer references for backwards compatibility but only with simple data
-  vim.b[buf].himalaya_account = state.get_current_account()
-  vim.b[buf].himalaya_folder = folder
-  
-  -- Set up buffer keymaps for the sidebar
-  config.setup_buffer_keymaps(buf)
-  
-  -- Set up hover preview
-  M.setup_hover_preview(buf)
   
   -- Check for running sync and start status updates
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
@@ -372,7 +396,6 @@ function M.show_email_list(args)
   
   -- Focus the sidebar immediately
   sidebar.focus()
-  return win
 end
 
 -- Format email list for display (matching old UI exactly)
@@ -746,10 +769,32 @@ function M.start_sync_status_updates()
   -- Stop existing timer
   M.stop_sync_status_updates()
   
-  -- Start new timer to update every 5 seconds for real-time progress (5000ms)
-  sync_status_timer = vim.fn.timer_start(5000, function()
-    M.update_sidebar_sync_status()
-  end, { ['repeat'] = -1 })
+  -- Use adaptive refresh intervals based on sync status
+  local function get_refresh_interval()
+    local manager = require('neotex.plugins.tools.himalaya.sync.manager')
+    local sync_info = manager.get_sync_info()
+    
+    -- If sync is running, use 10-second intervals to reduce UI churn during sync
+    if sync_info.type and sync_info.status == 'running' then
+      return 10000  -- 10 seconds during sync
+    else
+      return 5000   -- 5 seconds when idle
+    end
+  end
+  
+  -- Start new timer with adaptive intervals
+  local function start_timer()
+    local interval = get_refresh_interval()
+    sync_status_timer = vim.fn.timer_start(interval, function()
+      M.update_sidebar_sync_status()
+      
+      -- Restart timer with potentially new interval
+      M.stop_sync_status_updates()
+      start_timer()
+    end)
+  end
+  
+  start_timer()
 end
 
 -- Stop sync status updates
@@ -1072,47 +1117,40 @@ function M.refresh_email_list()
     
     local folder = state.get_current_folder()
     
-    -- Get email list from himalaya
-    
-    -- Get updated email list with smart page filling
-    local emails, total_count, actual_page = utils.get_email_list_smart_fill(
-      account_name,
-      folder,
-      state.get_current_page(),
-      state.get_page_size()
-    )
-    
-    -- Update page if it was adjusted during smart fill
-    if actual_page and actual_page ~= state.get_current_page() then
-      state.set_current_page(actual_page)
-    end
-    
-    if emails then
-      -- Store emails in cache
-      email_cache.store_emails(account_name, folder, emails)
-      
-      -- Store total count
-      if total_count and total_count > 0 then
-        state.set_total_emails(total_count)
-        
-        -- Only store as folder count if it's an exact count
-        local page_size = state.get_page_size()
-        if emails and #emails < page_size then
-          state.set_folder_count(account_name, folder, total_count)
-        end
+    -- Get email list from himalaya (async for responsiveness)
+    utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+      if error then
+        notify.himalaya('Failed to refresh email list: ' .. tostring(error), notify.categories.ERROR)
+        return
       end
       
-      -- Update stored email data in state instead of buffer variables
-      state.set('email_list.emails', emails)
-      
-      -- Format and update display with optimized rendering
-      local lines = M.format_email_list(emails)
-      sidebar.update_content(lines)
-      
-      -- Update line mapping data in state
-      state.set('email_list.line_map', lines.metadata or {})
-      state.set('email_list.email_start_line', lines.email_start_line or 1)
-    end
+      if emails then
+        -- Store emails in cache
+        email_cache.store_emails(account_name, folder, emails)
+        
+        -- Store total count
+        if total_count and total_count > 0 then
+          state.set_total_emails(total_count)
+          
+          -- Only store as folder count if it's an exact count
+          local page_size = state.get_page_size()
+          if emails and #emails < page_size then
+            state.set_folder_count(account_name, folder, total_count)
+          end
+        end
+        
+        -- Update stored email data in state instead of buffer variables
+        state.set('email_list.emails', emails)
+        
+        -- Format and update display with optimized rendering
+        local lines = M.format_email_list(emails)
+        sidebar.update_content(lines)
+        
+        -- Update line mapping data in state
+        state.set('email_list.line_map', lines.metadata or {})
+        state.set('email_list.email_start_line', lines.email_start_line or 1)
+      end
+    end)
   end
   
   -- Restore focus to original window if it's still valid
