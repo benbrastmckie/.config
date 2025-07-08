@@ -66,6 +66,28 @@ function M.has_token(account)
   return result == 0
 end
 
+-- Async version of has_token to avoid blocking
+function M.has_token_async(account, callback)
+  account = account or 'gmail'
+  
+  -- Build the correct token name based on account
+  local token_name = account .. '-smtp-oauth2-access-token'
+  if account:match('-imap$') then
+    token_name = account .. '-imap-oauth2-access-token'
+  end
+  
+  -- Check using secret-tool asynchronously
+  local cmd = string.format('secret-tool lookup service himalaya-cli username %s 2>/dev/null | grep -q .', token_name)
+  
+  vim.fn.jobstart(cmd, {
+    on_exit = function(_, code)
+      if callback then
+        callback(code == 0)
+      end
+    end
+  })
+end
+
 -- Check if OAuth token is valid (not expired)
 function M.is_valid(account)
   account = account or 'gmail'
@@ -84,6 +106,27 @@ function M.is_valid(account)
   -- We can't easily check expiration without parsing the token
   -- So we'll rely on mbsync failing and triggering a refresh
   return true
+end
+
+-- Async version of is_valid to avoid blocking
+function M.is_valid_async(account, callback)
+  account = account or 'gmail'
+  
+  -- If we recently refreshed, assume it's valid
+  local last_refresh = state.get("oauth.last_refresh", 0)
+  if os.time() - last_refresh < REFRESH_COOLDOWN then
+    if callback then
+      callback(true)
+    end
+    return
+  end
+  
+  -- Check if token exists asynchronously
+  M.has_token_async(account, function(has_token)
+    if callback then
+      callback(has_token)
+    end
+  end)
 end
 
 -- Refresh OAuth token

@@ -197,6 +197,43 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaLogs = {
+    fn = function()
+      -- Create a new buffer for logs
+      vim.cmd('new')
+      local buf = vim.api.nvim_get_current_buf()
+      vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+      vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+      vim.api.nvim_buf_set_option(buf, 'filetype', 'log')
+      vim.api.nvim_buf_set_name(buf, 'Himalaya Logs')
+      
+      -- Capture messages
+      local messages = vim.fn.execute('messages')
+      local lines = vim.split(messages, '\n')
+      
+      -- Filter for Himalaya and STARTUP DEBUG messages
+      local filtered_lines = {}
+      for _, line in ipairs(lines) do
+        if line:match('Himalaya') or line:match('STARTUP DEBUG') then
+          table.insert(filtered_lines, line)
+        end
+      end
+      
+      -- Set content
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, filtered_lines)
+      
+      -- Set readonly
+      vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+      
+      -- Add keymaps
+      vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':bd<CR>', { noremap = true, silent = true })
+      vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', ':bd<CR>', { noremap = true, silent = true })
+    end,
+    opts = {
+      desc = 'Show Himalaya logs'
+    }
+  }
+  
   -- Register all debug commands
   registry.register_batch(commands)
 end

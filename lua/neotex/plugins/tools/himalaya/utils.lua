@@ -130,7 +130,14 @@ function M.execute_himalaya(args, opts)
     executable = config.config.binaries.himalaya
   end
   
-  local cmd = { executable }
+  -- Use flock to prevent concurrent Himalaya CLI access to ID mapper database
+  local cmd = {
+    'flock',
+    '-w', '30',  -- Wait up to 30 seconds for lock
+    '-x',        -- Exclusive lock
+    '/tmp/himalaya-cli-global.lock',
+    executable
+  }
   
   -- Separate query from other args
   local query = nil
@@ -188,6 +195,14 @@ function M.execute_himalaya(args, opts)
     -- Check if this is an "out of bounds" error - expected during binary search
     if result and result:match('out of bounds') then
       -- This is expected during pagination search, return nil silently
+      return nil
+    end
+    -- Check for ID mapper database lock conflicts
+    if result and (result:match('cannot open id mapper database') or 
+                   result:match('could not acquire lock') or 
+                   result:match('Resource temporarily unavailable')) then
+      logger.warn('ID mapper lock conflict in synchronous command')
+      -- Don't show error notification for lock conflicts, they're transient
       return nil
     end
     notify.himalaya('Himalaya command failed: ' .. (result or 'unknown error'), notify.categories.ERROR)
