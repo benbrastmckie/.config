@@ -296,11 +296,23 @@ end
    - Ensures minimum required fields
    - Logs validation errors for debugging
 
-### Week 3: Cache and Display
-1. Implement two-tier cache system
-2. Fix sidebar subject display
-3. Persist draft metadata across sessions
-4. Optimize cache invalidation strategy
+### Week 3: Cache and Display ✅
+1. ✅ Implement two-tier cache system
+   - Created draft_cache.lua with persistent metadata and volatile content
+   - Metadata persists to disk for sidebar display
+   - Content cache has 5-minute TTL
+2. ✅ Fix sidebar subject display
+   - Email list now checks draft cache first for subjects
+   - Subjects persist across sessions
+   - Cache not cleared on folder refresh
+3. ✅ Persist draft metadata across sessions
+   - Metadata saved to ~/.cache/nvim/himalaya_draft_metadata.json
+   - Automatically loaded on startup
+   - Survives neovim restarts
+4. ✅ Optimize cache invalidation strategy
+   - Only content cache cleared on refresh, not metadata
+   - Draft deletion removes from cache
+   - Old entries cleaned up after 30 days
 
 ### Week 4: Preview and Cleanup
 1. Rewrite preview system for drafts

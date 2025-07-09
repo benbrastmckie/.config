@@ -18,6 +18,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
@@ -324,11 +325,12 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   
   -- Store emails in cache
   if emails and #emails > 0 then
-    -- Clear draft folder cache first to ensure fresh data
+    -- For drafts, only clear content cache, not metadata
     local draft_folder = utils.find_draft_folder(account_name)
     if folder == draft_folder then
-      logger.info('Clearing draft folder cache before storing new emails')
-      email_cache.clear_folder(account_name, folder)
+      logger.info('Clearing draft content cache (preserving metadata)')
+      -- Only clear content cache, not the persistent metadata
+      draft_cache.clear_folder_drafts(account_name, folder)
       
       -- Debug: Log what we're getting from himalaya for drafts
       logger.info('Draft emails from himalaya envelope list', {
@@ -600,29 +602,39 @@ function M.format_email_list(emails)
       local subject = email.subject or ''
       
       -- For drafts, himalaya might not return the subject in envelope list
-      -- Try to get it from the cached email data if available
+      -- Try to get it from the draft cache first, then email cache
       if is_draft_folder and (subject == '' or subject == vim.NIL) then
-        local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
-        local cached = email_cache.get_email(current_account, current_folder, email_id)
-        logger.info('Checking cache for draft subject', {
-          email_id = email_id,
-          current_account = current_account,
-          current_folder = current_folder,
-          has_cached = cached ~= nil,
-          cached_subject = cached and cached.subject,
-          cached_id = cached and cached.id
-        })
-        if cached and cached.subject and cached.subject ~= '' then
-          subject = cached.subject
-          logger.info('Using cached subject for draft', {
+        -- First try the persistent draft cache
+        local draft_subject = draft_cache.get_draft_subject(current_account, current_folder, email_id)
+        if draft_subject and draft_subject ~= '' then
+          subject = draft_subject
+          logger.info('Using draft cache subject', {
             email_id = email_id,
-            cached_subject = subject
+            subject = subject
           })
         else
-          logger.info('No cached subject found for draft', {
+          -- Fallback to email cache
+          local cached = email_cache.get_email(current_account, current_folder, email_id)
+          logger.info('Checking email cache for draft subject', {
             email_id = email_id,
-            cached = cached
+            current_account = current_account,
+            current_folder = current_folder,
+            has_cached = cached ~= nil,
+            cached_subject = cached and cached.subject,
+            cached_id = cached and cached.id
           })
+          if cached and cached.subject and cached.subject ~= '' then
+            subject = cached.subject
+            logger.info('Using email cache subject for draft', {
+              email_id = email_id,
+              cached_subject = subject
+            })
+          else
+            logger.info('No cached subject found for draft', {
+              email_id = email_id,
+              cached = cached
+            })
+          end
         end
       end
       
