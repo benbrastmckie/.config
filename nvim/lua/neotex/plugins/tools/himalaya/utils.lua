@@ -151,6 +151,30 @@ function M.execute_himalaya(args, opts)
     end
   end
   
+  -- Special validation for message commands that take an ID
+  if args[1] == 'message' and (args[2] == 'read' or args[2] == 'delete') and args[3] then
+    -- The third argument should be the ID
+    local id_arg = args[3]
+    if type(id_arg) == 'string' and id_arg:match('^[A-Za-z]+$') and not tonumber(id_arg) then
+      logger.error('Invalid ID passed to message ' .. args[2], {
+        id = id_arg,
+        args = args,
+        opts = opts,
+        stack_trace = debug.traceback()
+      })
+      -- This is likely a folder name passed as ID
+      if id_arg == 'Drafts' or id_arg == opts.folder then
+        logger.error('ERROR: Folder name passed as email ID - blocking command', {
+          id_arg = id_arg,
+          command = 'message ' .. args[2],
+          stack_trace = debug.traceback()
+        })
+        notify.himalaya('Drafts folder name passed as email ID', notify.categories.ERROR)
+        return nil
+      end
+    end
+  end
+  
   -- Add the main arguments first (command and subcommand)
   vim.list_extend(cmd, clean_args)
   
@@ -167,8 +191,24 @@ function M.execute_himalaya(args, opts)
   end
   
   -- Add output format
-  table.insert(cmd, '-o')
-  table.insert(cmd, 'json')
+  -- Special case: for draft reading, use plain format as JSON seems broken
+  if args[1] == 'message' and args[2] == 'read' and opts.folder and 
+     (opts.folder == 'Drafts' or opts.folder:match('[Dd]raft')) then
+    table.insert(cmd, '-o')
+    table.insert(cmd, 'plain')
+  else
+    table.insert(cmd, '-o')
+    table.insert(cmd, 'json')
+  end
+  
+  -- Debug: Log the full command for message read
+  if args[1] == 'message' and args[2] == 'read' then
+    logger.debug('Full himalaya command', {
+      cmd = table.concat(cmd, ' '),
+      args = args,
+      opts = opts
+    })
+  end
   
   -- Add query last if present
   if query then
@@ -179,11 +219,11 @@ function M.execute_himalaya(args, opts)
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error
   
-  -- Debug logging for move commands
-  if args[1] == 'message' and args[2] == 'move' then
-    logger.debug('Move command: ' .. table.concat(cmd, ' '))
-    logger.debug('Move result: ' .. (result or 'nil'))
-    logger.debug('Move exit code: ' .. exit_code)
+  -- Debug logging for move commands and read commands
+  if args[1] == 'message' and (args[2] == 'move' or args[2] == 'read') then
+    logger.debug(args[2] .. ' command: ' .. table.concat(cmd, ' '))
+    logger.debug(args[2] .. ' result: ' .. (result or 'nil'))
+    logger.debug(args[2] .. ' exit code: ' .. exit_code)
   end
   
   if exit_code ~= 0 then
@@ -205,6 +245,17 @@ function M.execute_himalaya(args, opts)
       -- Don't show error notification for lock conflicts, they're transient
       return nil
     end
+    
+    -- Special error logging for the "Drafts" ID issue
+    if result and result:match("invalid value 'Drafts'") then
+      logger.error('Drafts folder name passed as email ID', {
+        command = table.concat(cmd, ' '),
+        args = args,
+        opts = opts,
+        result = result
+      })
+    end
+    
     notify.himalaya('Himalaya command failed: ' .. (result or 'unknown error'), notify.categories.ERROR)
     return nil
   end
@@ -213,6 +264,13 @@ function M.execute_himalaya(args, opts)
   if args[1] == 'message' and (args[2] == 'move' or args[2] == 'delete') then
     -- These commands may not return JSON, just check exit code
     return exit_code == 0
+  end
+  
+  -- Special handling for draft reads in plain format
+  if args[1] == 'message' and args[2] == 'read' and opts.folder and 
+     (opts.folder == 'Drafts' or opts.folder:match('[Dd]raft')) then
+    -- Return plain text result for drafts
+    return result
   end
   
   -- Parse JSON output for other commands
@@ -453,6 +511,20 @@ function M.send_email(account, email_data)
     return false
   end
   
+  -- Save copy to Sent folder
+  local sent_folder = M.find_sent_folder(account)
+  if sent_folder then
+    -- Save the sent email to the Sent folder
+    local save_ok, save_err = pcall(M.save_draft, account, sent_folder, email_data)
+    if not save_ok then
+      local logger = require('neotex.plugins.tools.himalaya.core.logger')
+      logger.warn('Failed to save copy to Sent folder', {
+        error = save_err,
+        folder = sent_folder
+      })
+    end
+  end
+  
   -- Trigger refresh after successful send
   vim.defer_fn(function()
     vim.api.nvim_exec_autocmds('User', { pattern = 'HimalayaEmailSent' })
@@ -484,6 +556,17 @@ function M.get_email_by_id(account, folder, email_id)
     body = output,
   }
   
+  -- Debug log for drafts
+  if folder and (folder == 'Drafts' or folder:match('[Dd]raft')) then
+    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+    logger.debug('Draft raw output from himalaya', {
+      email_id = email_id,
+      output_length = #output,
+      output_preview = output:sub(1, 200),
+      output_lines = #vim.split(output, '\n')
+    })
+  end
+  
   -- Extract headers from the output
   local in_headers = true
   local body_lines = {}
@@ -504,7 +587,109 @@ function M.get_email_by_id(account, folder, email_id)
   
   email.body = table.concat(body_lines, "\n")
   
+  -- WORKAROUND: If this is a draft and we only got headers, try to read from maildir directly
+  if folder and (folder == 'Drafts' or folder:match('[Dd]raft')) and 
+     (not email.body or email.body == '' or email.body == '\n' or email.body:match('^%s*$')) then
+    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+    logger.debug('Draft has empty body, attempting maildir read workaround', {
+      email_id = email_id,
+      folder = folder,
+      body = email.body,
+      body_length = email.body and #email.body or 0,
+      parsed_headers = {
+        from = email.from,
+        to = email.to,
+        subject = email.subject
+      }
+    })
+    
+    -- Try to find and read the draft file directly from maildir
+    local maildir_email = M.read_draft_from_maildir(account, email_id)
+    if maildir_email then
+      -- Merge the maildir content with what we got from himalaya
+      for k, v in pairs(maildir_email) do
+        if k ~= 'id' then  -- Don't override the ID
+          email[k] = v
+        end
+      end
+      logger.debug('Successfully read draft from maildir', {
+        has_body = email.body ~= nil and email.body ~= '',
+        body_length = email.body and #email.body or 0
+      })
+    end
+  end
+  
   return email
+end
+
+-- Read draft directly from maildir (workaround for himalaya bug)
+function M.read_draft_from_maildir(account, email_id)
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  
+  -- Get maildir path
+  local maildir_path = config.get_maildir_path(account)
+  if not maildir_path then
+    logger.debug('No maildir path configured for account', { account = account })
+    return nil
+  end
+  
+  -- Look for the draft file in maildir
+  local draft_folder_path = maildir_path .. '.Drafts/cur'
+  if vim.fn.isdirectory(draft_folder_path) == 0 then
+    -- Try without dot prefix
+    draft_folder_path = maildir_path .. 'Drafts/cur'
+    if vim.fn.isdirectory(draft_folder_path) == 0 then
+      logger.debug('Draft folder not found in maildir', { 
+        tried = { maildir_path .. '.Drafts/cur', maildir_path .. 'Drafts/cur' }
+      })
+      return nil
+    end
+  end
+  
+  -- Find the most recent draft file (since we don't have the exact filename)
+  -- This is a heuristic - in production you'd want to map IDs to filenames
+  local cmd = string.format('ls -t %s 2>/dev/null | head -20', vim.fn.shellescape(draft_folder_path))
+  local files = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 or not files or files == '' then
+    logger.debug('No draft files found in maildir', { 
+      folder = draft_folder_path,
+      cmd = cmd,
+      error = vim.v.shell_error
+    })
+    return nil
+  end
+  
+  logger.debug('Found draft files in maildir', {
+    folder = draft_folder_path,
+    file_count = #vim.split(files, '\n'),
+    first_files = vim.split(files, '\n')[1]
+  })
+  
+  -- Try to read the most recent files until we find one that matches
+  local file_list = vim.split(files, '\n', { plain = true })
+  for _, filename in ipairs(file_list) do
+    if filename and filename ~= '' then
+      local filepath = draft_folder_path .. '/' .. filename
+      local content = vim.fn.readfile(filepath)
+      if content and #content > 0 then
+        -- Parse the email content
+        local email = M.parse_email_content(content)
+        
+        -- If we have content, return it
+        if email and (email.body and email.body ~= '') then
+          logger.debug('Found draft in maildir', { 
+            file = filename,
+            has_body = true,
+            subject = email.subject
+          })
+          return email
+        end
+      end
+    end
+  end
+  
+  logger.debug('No matching draft found in maildir')
+  return nil
 end
 
 -- Find draft folder for account
@@ -527,6 +712,42 @@ function M.find_draft_folder(account)
   -- For most setups, 'Drafts' is the correct folder name
   -- This was confirmed to work with: himalaya message save --account gmail --folder "Drafts"
   return 'Drafts'
+end
+
+-- Find sent folder for account
+function M.find_sent_folder(account)
+  local account_config = config.get_account(account)
+  if not account_config then
+    return nil
+  end
+  
+  -- Check folder map for sent folder (look for local folder name)
+  if account_config.folder_map then
+    for imap, local_folder in pairs(account_config.folder_map) do
+      if imap:lower():match('sent') then
+        -- Return the local folder name (what himalaya CLI expects)
+        return local_folder
+      end
+    end
+  end
+  
+  -- Common sent folder names
+  local common_sent_folders = { 'Sent', 'Sent Mail', 'Sent Messages', 'SENT' }
+  
+  -- Try to find one that exists
+  local folders = M.get_folders(account)
+  if folders then
+    for _, folder_name in ipairs(common_sent_folders) do
+      for _, folder in ipairs(folders) do
+        if folder == folder_name then
+          return folder_name
+        end
+      end
+    end
+  end
+  
+  -- Default to 'Sent' - most common
+  return 'Sent'
 end
 
 -- Save draft to maildir
@@ -561,13 +782,21 @@ function M.save_draft(account, folder, email_data)
   
   -- Write content to temporary file instead of using echo
   local temp_file = vim.fn.tempname()
-  local file = io.open(temp_file, 'w')
+  local file = io.open(temp_file, 'wb')  -- Use binary mode to preserve line endings
   if not file then
     logger.error('Failed to create temp file for draft')
     return nil, 'Failed to create temporary file'
   end
   file:write(content)
   file:close()
+  
+  -- Debug: log the content being saved
+  logger.debug('Saving draft content to temp file', {
+    temp_file = temp_file,
+    content_length = #content,
+    first_200_chars = content:sub(1, 200),
+    has_crlf = content:find('\r\n') ~= nil
+  })
   
   -- Use cat to pipe content (more reliable than echo)
   local full_cmd = string.format(
@@ -593,16 +822,84 @@ function M.save_draft(account, folder, email_data)
   
   logger.debug('Draft save output', { output = output })
   
-  -- Extract draft ID from output if possible
-  -- Output format: "Message successfully saved to Drafts!"
-  local draft_id = output:match('Message saved with ID: (%S+)') or 
-                   output:match('id: (%S+)') or
-                   'draft_' .. os.time()
-  
   -- If we got a success message, the draft was saved successfully
   if output:match('Message successfully saved') then
-    logger.debug('Draft successfully saved', { draft_id = draft_id })
-    return { id = draft_id }
+    -- Since himalaya doesn't return the draft ID, we need to find it
+    -- by listing drafts and finding the most recent one
+    logger.debug('Draft successfully saved, fetching draft ID')
+    
+    -- Wait a moment to ensure the draft is indexed
+    vim.wait(100)
+    
+    -- Get the most recent draft to find its ID
+    local list_args = { 'envelope', 'list', '--page', '1', '--page-size', '10', 'order by date desc' }
+    local list_result = M.execute_himalaya(list_args, { account = account, folder = folder })
+    
+    if list_result and type(list_result) == 'table' and #list_result > 0 then
+      -- Find the draft that matches our subject
+      local draft_id = nil
+      local matched_draft = nil
+      
+      -- First, try to find exact subject match
+      for i, draft in ipairs(list_result) do
+        if draft.id and draft.id ~= '' and draft.id ~= 'Drafts' and
+           draft.subject == email_data.subject then
+          draft_id = draft.id
+          matched_draft = draft
+          logger.info('Found draft by exact subject match', { 
+            index = i,
+            draft_id = draft_id,
+            subject = draft.subject
+          })
+          break
+        end
+      end
+      
+      -- If no exact match, take the most recent valid draft
+      if not draft_id then
+        for i, draft in ipairs(list_result) do
+          if draft.id and draft.id ~= '' and draft.id ~= 'Drafts' then
+            draft_id = draft.id
+            matched_draft = draft
+            logger.info('Using most recent draft (no exact match)', { 
+              index = i,
+              draft_id = draft_id,
+              subject = draft.subject,
+              expected_subject = email_data.subject
+            })
+            break
+          end
+        end
+      end
+      
+      if draft_id then
+        logger.info('Found draft ID from listing', { 
+          draft_id = draft_id,
+          draft_subject = matched_draft and matched_draft.subject,
+          email_subject = email_data.subject,
+          all_drafts = list_result
+        })
+        -- Always show this important info
+        local notify = require('neotex.util.notifications')
+        notify.himalaya(string.format('Draft saved with ID: %s, Subject: %s', 
+          tostring(draft_id), tostring(email_data.subject or '(No subject)')), notify.categories.INFO)
+        return { id = draft_id }
+      else
+        logger.error('No valid draft ID found in listing', {
+          list_result = list_result
+        })
+        return nil, 'Could not find draft ID after save'
+      end
+    else
+      -- Fallback: generate a temporary ID
+      local temp_id = 'draft_' .. os.time()
+      logger.warn('Could not find draft ID, using temporary', { 
+        temp_id = temp_id,
+        list_result = list_result,
+        list_result_type = type(list_result)
+      })
+      return { id = temp_id }
+    end
   else
     logger.error('Unexpected save output format', { output = output })
     return nil, 'Unexpected output: ' .. output
@@ -611,17 +908,19 @@ end
 
 -- Delete email (for draft cleanup)
 function M.delete_email(account, folder, email_id)
-  local cmd = string.format(
-    '%s -a %s message delete -f %s %s',
-    config.config.binaries.himalaya or 'himalaya',
-    vim.fn.shellescape(account),
-    vim.fn.shellescape(folder),
-    vim.fn.shellescape(email_id)
-  )
+  -- Validate email_id
+  if not email_id or email_id == '' then
+    logger.error('Invalid email_id for delete', { email_id = email_id })
+    error('Invalid email ID')
+  end
   
-  local output = vim.fn.system(cmd)
-  if vim.v.shell_error ~= 0 then
-    error('Failed to delete email: ' .. output)
+  -- Use execute_himalaya for consistent command construction and validation
+  local args = { 'message', 'delete', tostring(email_id) }
+  local opts = { account = account, folder = folder }
+  
+  local output = M.execute_himalaya(args, opts)
+  if not output then
+    error('Failed to delete email')
   end
   
   return true
@@ -746,25 +1045,41 @@ end
 function M.format_email_for_sending(email_data)
   local lines = {}
   
-  -- Headers (only add non-empty headers)
+  -- Always include From header (required)
   if email_data.from and email_data.from ~= '' then
     table.insert(lines, 'From: ' .. email_data.from)
+  else
+    -- This should not happen, but add a placeholder if needed
+    local logger = require('neotex.plugins.tools.himalaya.core.logger')
+    logger.warn('Missing From address in draft')
+    table.insert(lines, 'From: ')
   end
-  if email_data.to and email_data.to ~= '' then
-    table.insert(lines, 'To: ' .. email_data.to)
-  end
+  
+  -- Always include To header (even if empty)
+  table.insert(lines, 'To: ' .. (email_data.to or ''))
+  
+  -- Optional headers
   if email_data.cc and email_data.cc ~= '' then
     table.insert(lines, 'Cc: ' .. email_data.cc)
   end
   if email_data.bcc and email_data.bcc ~= '' then
     table.insert(lines, 'Bcc: ' .. email_data.bcc)
   end
-  if email_data.subject and email_data.subject ~= '' then
-    table.insert(lines, 'Subject: ' .. email_data.subject)
-  end
+  
+  -- Always include Subject (even if empty)
+  local subject = email_data.subject or ''
+  -- Don't add "(No subject)" as part of the actual email header
+  -- This is just for display purposes
+  table.insert(lines, 'Subject: ' .. subject)
   
   -- Add Date header (required for proper email format)
   table.insert(lines, 'Date: ' .. os.date('!%a, %d %b %Y %H:%M:%S +0000'))
+  
+  -- Add Message-ID header for RFC compliance
+  local hostname = vim.fn.hostname() or 'localhost'
+  local timestamp = os.time()
+  local random = math.random(10000, 99999)
+  table.insert(lines, 'Message-ID: <' .. timestamp .. '.' .. random .. '@' .. hostname .. '>')
   
   -- Add MIME headers for plain text
   table.insert(lines, 'MIME-Version: 1.0')
@@ -775,11 +1090,25 @@ function M.format_email_for_sending(email_data)
   table.insert(lines, '')
   
   -- Body
-  if email_data.body then
+  if email_data.body and email_data.body ~= '' then
     table.insert(lines, email_data.body)
+  else
+    -- Always add at least a space for the body to ensure proper format
+    table.insert(lines, ' ')
   end
   
-  return table.concat(lines, '\n')
+  -- Debug what we're formatting
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug('format_email_for_sending', {
+    has_body = email_data.body ~= nil and email_data.body ~= '',
+    body_length = email_data.body and #email_data.body or 0,
+    body_preview = email_data.body and email_data.body:sub(1, 100) or 'no body',
+    total_lines = #lines,
+    formatted_preview = table.concat(lines, '\n'):sub(1, 300)
+  })
+  
+  -- Use CRLF line endings for RFC compliance as required by himalaya
+  return table.concat(lines, '\r\n')
 end
 
 -- Parse email content from buffer lines

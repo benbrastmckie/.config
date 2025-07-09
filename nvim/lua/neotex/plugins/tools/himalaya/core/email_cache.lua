@@ -10,6 +10,9 @@ local logger = require('neotex.plugins.tools.himalaya.core.logger')
 -- Cache structure: account -> folder -> email_id -> email_data
 local cache = {}
 
+-- Store email body separately (for preview content)
+local body_cache = {}
+
 -- Cache statistics for debugging
 local stats = {
   hits = 0,
@@ -168,6 +171,16 @@ function M.store_emails(account, folder, emails)
   for _, email in ipairs(emails or {}) do
     local normalized = M.normalize_email(email)
     if normalized and normalized.id then
+      -- Log what we're storing for drafts
+      if folder:lower():match('draft') then
+        logger.info('Storing draft in cache', {
+          id = normalized.id,
+          subject = normalized.subject,
+          has_subject = normalized.subject ~= nil and normalized.subject ~= '',
+          account = account,
+          folder = folder
+        })
+      end
       folder_cache[normalized.id] = normalized
       stored = stored + 1
       stats.stores = stats.stores + 1
@@ -189,6 +202,16 @@ end
 function M.store_email(account, folder, email)
   if not account or not folder or not email then
     return
+  end
+  
+  -- Log storing for drafts
+  if folder:lower():match('draft') then
+    logger.info('store_email called for draft', {
+      id = email.id,
+      subject = email.subject,
+      account = account,
+      folder = folder
+    })
   end
   
   M.store_emails(account, folder, { email })
@@ -344,8 +367,16 @@ function M.get_stats()
   })
 end
 
--- Store email body separately (for preview content)
-local body_cache = {}
+-- Clear a specific email from cache
+function M.clear_email(account, folder, email_id)
+  if cache[account] and cache[account][folder] then
+    cache[account][folder][tostring(email_id)] = nil
+  end
+  
+  -- Also clear body cache
+  local key = string.format('%s:%s:%s', account, folder, email_id)
+  body_cache[key] = nil
+end
 
 function M.store_email_body(account, folder, email_id, body)
   local key = string.format('%s:%s:%s', account, folder, email_id)

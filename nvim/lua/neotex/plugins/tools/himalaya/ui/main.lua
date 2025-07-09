@@ -289,6 +289,12 @@ function M.get_current_email_id()
     current_folder = state.get_current_folder()
   })
   
+  -- Check if we're on a header line by content
+  if current_line:match('^Himalaya%s*-') or current_line:match('^Page%s*%d+') or current_line:match('^[─]+$') then
+    logger.debug('Cursor is on header/separator line')
+    return nil
+  end
+  
   -- Use the line map from state
   local line_map = state.get('email_list.line_map')
   if line_map and line_map[line_num] then
@@ -309,6 +315,12 @@ function M.get_current_email_id()
   -- Fallback to old method if line map not available
   local emails = state.get('email_list.emails')
   local email_start_line = state.get('email_list.email_start_line')
+  
+  logger.debug('Fallback method for get_current_email_id', {
+    has_emails = emails ~= nil,
+    email_count = emails and #emails or 0,
+    email_start_line = email_start_line
+  })
   
   if not emails or #emails == 0 then
     logger.debug('No emails found in state')
@@ -359,7 +371,19 @@ function M.get_current_email_id()
   local email_index = line_num - email_start_line + 1
   
   if email_index > 0 and email_index <= #emails and emails[email_index] then
-    local id = emails[email_index].id
+    local email = emails[email_index]
+    local id = email.id
+    
+    -- Extra validation to prevent folder names
+    if type(id) == 'string' and (id == 'Drafts' or id == state.get_current_folder()) then
+      logger.error('Email has folder name as ID', {
+        email_index = email_index,
+        id = id,
+        email = email
+      })
+      return nil
+    end
+    
     logger.debug('Returning email ID from fallback method', {
       email_index = email_index,
       id = id,

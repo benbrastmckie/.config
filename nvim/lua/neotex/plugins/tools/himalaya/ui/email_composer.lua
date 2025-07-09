@@ -17,6 +17,7 @@ local notify = require('neotex.util.notifications')
 -- Module state
 local composer_buffers = {}
 local autosave_timers = {}
+local draft_id_to_buffer = {}  -- Track which buffer owns which draft ID
 
 -- Configuration
 M.config = {
@@ -75,12 +76,16 @@ local function parse_email_buffer(lines)
   
   email.body = table.concat(body_lines, '\n')
   
-  -- Debug what we parsed
-  logger.debug('Parsed email buffer', {
+  -- Debug what we parsed - ALWAYS show this
+  logger.info('Parsed email buffer', {
     header_count = vim.tbl_count(email.headers),
     headers = email.headers,
     body_length = #email.body,
-    body_preview = email.body:sub(1, 100)
+    body_content = email.body,  -- Show full body to debug
+    total_lines = #lines,
+    body_line_count = #body_lines,
+    found_empty_line = in_body,
+    first_10_lines = vim.list_slice(lines, 1, 10)
   })
   
   -- Map common headers (handle vim.NIL but keep empty strings)
@@ -101,6 +106,18 @@ local function parse_email_buffer(lines)
   if not email.body then
     email.body = ''
   end
+  
+  -- Debug the parsed email
+  logger.debug('parse_email_buffer result', {
+    has_from = email.from ~= nil and email.from ~= '',
+    has_to = email.to ~= nil and email.to ~= '',
+    has_subject = email.subject ~= nil and email.subject ~= '',
+    has_body = email.body ~= nil and email.body ~= '',
+    body_length = #email.body,
+    from = email.from,
+    to = email.to,
+    subject = email.subject
+  })
   
   return email
 end
@@ -130,10 +147,12 @@ local function format_email_template(opts)
       table.insert(lines, line)
     end
   else
+    -- Add at least one empty line for the body to ensure proper file format
+    table.insert(lines, '')
+    
     -- Add signature if configured
     local signature = config.get('compose.signature')
     if signature then
-      table.insert(lines, '')
       table.insert(lines, '--')
       for line in signature:gmatch('[^\r\n]+') do
         table.insert(lines, line)
@@ -145,7 +164,7 @@ local function format_email_template(opts)
 end
 
 -- Sync draft to maildir
-local function sync_draft_to_maildir(draft_file, account)
+local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
   -- Use provided account or fallback to current account
   account = account or state.get_current_account()
   
@@ -165,11 +184,24 @@ local function sync_draft_to_maildir(draft_file, account)
   local content = vim.fn.readfile(draft_file)
   
   -- Debug: log raw file content
-  logger.debug('Draft file raw content', {
+  logger.info('Draft file raw content', {
     file = draft_file,
     line_count = #content,
-    first_lines = vim.list_slice(content, 1, 10)
+    first_lines = vim.list_slice(content, 1, 10),
+    all_lines = content  -- Log all lines to see the complete content
   })
+  
+  -- If the file is empty or has no content, add basic headers
+  if not content or #content == 0 then
+    logger.warn('Draft file is empty', { file = draft_file })
+    content = { 
+      'From: ' .. config.get_formatted_from(account),
+      'To: ',
+      'Subject: ',
+      '',
+      ''
+    }
+  end
   
   local email = parse_email_buffer(content)
   
@@ -179,17 +211,31 @@ local function sync_draft_to_maildir(draft_file, account)
     email.from = config.get_formatted_from(account)
   end
   
-  -- Debug logging
-  logger.debug('Syncing draft to maildir', {
+  -- Debug logging - ALWAYS show this info
+  logger.info('Parsed email for draft sync', {
     file = draft_file,
     account = account,
     folder = draft_folder,
     has_body = email.body ~= nil and email.body ~= '',
     body_length = email.body and #email.body or 0,
+    body_content = email.body,  -- Show actual body content
     subject = email.subject,
     from = email.from,
-    to = email.to
+    to = email.to,
+    headers = email.headers
   })
+  
+  -- If we have an existing draft ID, we should update that draft
+  -- However, himalaya doesn't support update, so we need to delete and recreate
+  if existing_draft_id and existing_draft_id ~= '' then
+    logger.debug('Updating existing draft', {
+      existing_draft_id = existing_draft_id,
+      account = account,
+      folder = draft_folder
+    })
+    -- Note: We're not deleting the old draft here anymore to prevent duplicates
+    -- The himalaya CLI should handle this internally
+  end
   
   -- Save to maildir using himalaya
   local ok, result = pcall(utils.save_draft, account, draft_folder, email)
@@ -198,21 +244,63 @@ local function sync_draft_to_maildir(draft_file, account)
       file = draft_file,
       draft_id = result.id 
     })
+    
+    -- Cache the draft email data so the sidebar can show the subject
+    local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+    
+    -- Clear any existing cache for this draft ID to prevent stale data
+    email_cache.clear_email(account, draft_folder, result.id)
+    
+    local cached_email = {
+      id = result.id,
+      from = email.from,
+      to = email.to,
+      subject = email.subject,
+      body = email.body,
+      date = os.date('%Y-%m-%d %H:%M:%S'),
+      flags = { 'Draft' },
+      _is_draft = true
+    }
+    logger.info('Caching draft email data', {
+      draft_id = result.id,
+      subject = email.subject,
+      subject_length = email.subject and #email.subject or 0,
+      account = account,
+      folder = draft_folder
+    })
+    email_cache.store_email(account, draft_folder, cached_email)
+    
     -- Show success notification in debug mode
     if notify.config.modules.himalaya.debug_mode then
       notify.himalaya('Draft synced to ' .. draft_folder, notify.categories.BACKGROUND)
     end
+    
+    -- Refresh the email list if we're in the drafts folder AND the sidebar is open
+    local current_folder = state.get_current_folder()
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    if current_folder and current_folder:lower():match('draft') and sidebar.is_open() then
+      vim.defer_fn(function()
+        -- Double-check sidebar is still open before refreshing
+        if sidebar.is_open() then
+          local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+          email_list.refresh_email_list()
+        end
+      end, 500)
+    end
+    
     return result.id
   else
+    local error_msg = result or 'Unknown error'
     logger.error('Failed to sync draft', { 
       file = draft_file,
-      error = result 
+      error = error_msg,
+      email = email
     })
     -- Show user-friendly notification about draft sync failure
     if not email.from or email.from == '' then
       notify.himalaya('Draft saved locally but not synced: Missing From address', notify.categories.WARNING)
     else
-      notify.himalaya('Draft saved locally but sync failed: ' .. tostring(result), notify.categories.WARNING)
+      notify.himalaya('Draft saved locally but sync failed: ' .. tostring(error_msg), notify.categories.WARNING)
     end
     return nil
   end
@@ -220,10 +308,28 @@ end
 
 -- Delete draft from maildir
 local function delete_draft_from_maildir(account, draft_id)
-  if not draft_id then return end
+  if not draft_id then 
+    logger.warn('delete_draft_from_maildir: No draft_id provided')
+    return 
+  end
+  
+  -- Validate draft_id is not a folder name
+  if type(draft_id) == 'string' and (draft_id == 'Drafts' or draft_id:match('^[A-Za-z]+$') and not tonumber(draft_id)) then
+    logger.error('delete_draft_from_maildir: Invalid draft_id (folder name)', {
+      draft_id = draft_id,
+      account = account
+    })
+    return
+  end
   
   local draft_folder = utils.find_draft_folder(account)
   if not draft_folder then return end
+  
+  logger.info('Deleting draft from maildir', {
+    account = account,
+    folder = draft_folder,
+    draft_id = draft_id
+  })
   
   local ok, err = pcall(utils.delete_email, account, draft_folder, draft_id)
   if not ok then
@@ -231,6 +337,8 @@ local function delete_draft_from_maildir(account, draft_id)
       draft_id = draft_id,
       error = err
     })
+  else
+    logger.info('Draft deleted successfully', { draft_id = draft_id })
   end
 end
 
@@ -263,16 +371,65 @@ local function setup_autosave(buf, draft_file)
         -- Sync to maildir
         local draft_info = composer_buffers[buf]
         if draft_info and draft_info.file then
-          -- If we have an existing draft ID, delete the old one first
-          if draft_info.draft_id then
-            delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+          -- For already synced drafts, update the existing one
+          if draft_info.draft_id and draft_info.draft_synced then
+            -- Get current draft ID from buffer info
+            local current_id = draft_info.draft_id
+            
+            logger.debug('Auto-save: updating existing draft', {
+              current_id = current_id,
+              original_draft_id = draft_info.original_draft_id,
+              buf = buf
+            })
+            
+            -- Don't delete the old draft - this causes duplicates
+            -- Just update the existing draft in place
+            
+            -- Save the new version (update existing draft)
+            local new_id = sync_draft_to_maildir(draft_info.file, draft_info.account, current_id)
+            if new_id then
+              -- Only update if we got a different ID
+              if new_id ~= current_id then
+                draft_info.draft_id = new_id
+                composer_buffers[buf] = draft_info
+                state.set('compose.drafts.' .. buf, draft_info)
+                logger.debug('Auto-save: draft ID changed', {
+                  old_id = current_id,
+                  new_id = new_id,
+                  buf = buf
+                })
+              end
+            end
+          else
+            -- Initial sync for drafts that haven't been synced yet
+            logger.debug('Auto-save: initial draft sync', {
+              has_draft_id = draft_info.draft_id ~= nil,
+              draft_synced = draft_info.draft_synced,
+              buf = buf
+            })
+            
+            local new_id = sync_draft_to_maildir(draft_info.file, draft_info.account, nil)
+            if new_id then
+              -- Track which buffer owns this draft ID
+              if draft_id_to_buffer[new_id] and draft_id_to_buffer[new_id] ~= buf then
+                logger.warn('Draft ID already assigned to another buffer in auto-save', {
+                  draft_id = new_id,
+                  existing_buf = draft_id_to_buffer[new_id],
+                  new_buf = buf
+                })
+              end
+              draft_id_to_buffer[new_id] = buf
+              
+              draft_info.draft_id = new_id
+              draft_info.draft_synced = true
+              composer_buffers[buf] = draft_info
+              state.set('compose.drafts.' .. buf, draft_info)
+              logger.info('Auto-save: draft created', {
+                draft_id = new_id,
+                buf = buf
+              })
+            end
           end
-          
-          -- Create new draft
-          draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
-          
-          -- Update state
-          state.set('compose.drafts.' .. buf, draft_info)
         end
         
         -- Notify in debug mode
@@ -316,6 +473,45 @@ local function setup_buffer_mappings(buf)
       if autosave_timers[buf] then
         vim.loop.timer_stop(autosave_timers[buf])
         autosave_timers[buf] = nil
+      end
+      
+      -- Get draft info before cleanup
+      local draft_info = composer_buffers[buf]
+      
+      -- Clean up draft ID tracking
+      if draft_info and draft_info.draft_id then
+        if draft_id_to_buffer[draft_info.draft_id] == buf then
+          draft_id_to_buffer[draft_info.draft_id] = nil
+          logger.debug('Cleaned up draft ID tracking', {
+            draft_id = draft_info.draft_id,
+            buf = buf
+          })
+        end
+      end
+      
+      -- If this was a draft, invalidate its cache to ensure fresh preview
+      if draft_info and (draft_info.draft_id or draft_info.original_draft_id) then
+        local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+        local account = draft_info.account or state.get_current_account()
+        local folder = utils.find_draft_folder(account)
+        if folder then
+          -- Clear cache for this draft
+          local draft_id = draft_info.draft_id or draft_info.original_draft_id
+          email_cache.clear_email(account, folder, draft_id)
+        end
+        
+        -- Refresh the email list if we're in the drafts folder AND the sidebar is open
+        local current_folder = state.get_current_folder()
+        local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+        if current_folder and current_folder:lower():match('draft') and sidebar.is_open() then
+          vim.defer_fn(function()
+            -- Double-check sidebar is still open before refreshing
+            if sidebar.is_open() then
+              local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+              email_list.refresh_email_list()
+            end
+          end, 100)
+        end
       end
       
       -- Cleanup state
@@ -386,11 +582,22 @@ function M.create_compose_buffer(opts)
   
   -- Create buffer
   local buf = vim.api.nvim_create_buf(true, false)
-  vim.api.nvim_buf_set_name(buf, draft_file)
+  
+  -- Check if a buffer with this name already exists
+  local existing_buf = vim.fn.bufnr(draft_file)
+  if existing_buf ~= -1 and vim.api.nvim_buf_is_valid(existing_buf) then
+    -- Use the existing buffer instead
+    buf = existing_buf
+    logger.debug('Using existing buffer for draft file', { file = draft_file, buf = buf })
+  else
+    vim.api.nvim_buf_set_name(buf, draft_file)
+  end
   
   -- Set buffer options
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
+  vim.api.nvim_buf_set_option(buf, 'fileformat', 'dos')  -- Use DOS line endings for RFC compliance
+  vim.api.nvim_buf_set_option(buf, 'endofline', true)  -- Ensure EOL at end of file
   
   -- Open buffer in appropriate window
   if M.config.use_tab then
@@ -450,6 +657,14 @@ function M.create_compose_buffer(opts)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
   end
   
+  -- Debug: Log initial buffer content - ALWAYS show this
+  logger.info('Initial buffer content after setup', {
+    line_count = vim.api.nvim_buf_line_count(buf),
+    lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false),
+    has_empty_line = has_separator,
+    format_email_template_result = lines
+  })
+  
   -- Position cursor in To: field if empty
   local line_count = vim.api.nvim_buf_line_count(buf)
   if not opts.to or opts.to == '' then
@@ -460,8 +675,9 @@ function M.create_compose_buffer(opts)
     -- Position cursor at beginning of body (after empty line)
     -- Find the empty line that separates headers from body
     local body_line = 7  -- Default position
+    local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     for i = 1, line_count do
-      if lines[i] == '' then
+      if i <= #buf_lines and buf_lines[i] == '' then
         body_line = i + 1
         break
       end
@@ -491,6 +707,9 @@ function M.create_compose_buffer(opts)
     reply_to = opts.reply_to,
     forward_from = opts.forward_from,
     template_id = opts.template_id,
+    draft_id = opts.draft_id,  -- Preserve draft ID if reopening
+    original_draft_id = opts.original_draft_id,
+    draft_synced = opts.is_draft_reopen,  -- Mark reopened drafts as already synced
   }
   
   composer_buffers[buf] = draft_info
@@ -501,12 +720,54 @@ function M.create_compose_buffer(opts)
   setup_autosave(buf, draft_file)
   
   -- Initial save
-  vim.cmd('silent write!')
+  vim.api.nvim_buf_call(buf, function()
+    -- Ensure DOS line endings for RFC compliance
+    vim.bo.fileformat = 'dos'
+    vim.cmd('silent write!')
+  end)
   
-  -- Initial sync to maildir
-  draft_info.draft_id = sync_draft_to_maildir(draft_file, draft_info.account)
-  if draft_info.draft_id then
-    state.set('compose.drafts.' .. buf, draft_info)
+  -- Debug: Check what was saved initially
+  local initial_saved = vim.fn.readfile(draft_file)
+  logger.info('Initial draft file saved', {
+    file = draft_file,
+    line_count = #initial_saved,
+    content = initial_saved
+  })
+  
+  -- Initial sync to maildir with a small delay to ensure file is written
+  -- Only sync if this is a new draft (not a reopened one)
+  if not opts.is_draft_reopen then
+    vim.defer_fn(function()
+      local new_draft_id = sync_draft_to_maildir(draft_file, draft_info.account, nil)
+      if new_draft_id then
+        -- Track which buffer owns this draft ID
+        if draft_id_to_buffer[new_draft_id] and draft_id_to_buffer[new_draft_id] ~= buf then
+          logger.warn('Draft ID already assigned to another buffer', {
+            draft_id = new_draft_id,
+            existing_buf = draft_id_to_buffer[new_draft_id],
+            new_buf = buf
+          })
+        end
+        draft_id_to_buffer[new_draft_id] = buf
+        
+        draft_info.draft_id = new_draft_id
+        draft_info.draft_synced = true
+        state.set('compose.drafts.' .. buf, draft_info)
+        logger.info('Initial draft sync successful', { 
+          file = draft_file,
+          draft_id = new_draft_id,
+          buf = buf
+        })
+      else
+        logger.warn('Initial draft sync failed', { file = draft_file })
+      end
+    end, 500)  -- 500ms delay
+  else
+    -- For reopened drafts, mark as already synced
+    logger.info('Reopened draft - already synced', {
+      draft_id = draft_info.draft_id,
+      original_draft_id = draft_info.original_draft_id
+    })
   end
   
   local message = 'Composing email (auto-save enabled)'
@@ -587,6 +848,16 @@ function M.save_draft(buf)
   
   -- Force save to file to ensure latest content is written
   vim.api.nvim_buf_call(buf, function()
+    -- Get buffer content before saving
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    logger.debug('Buffer content before save', {
+      line_count = #lines,
+      lines = lines
+    })
+    
+    -- Make sure we have DOS line endings for RFC compliance
+    vim.bo.fileformat = 'dos'
+    
     -- Mark as modified to force write even if vim thinks it's not
     vim.bo.modified = true
     vim.cmd('write!')
@@ -605,14 +876,20 @@ function M.save_draft(buf)
     empty_line_position = vim.fn.index(saved_content, '')
   })
   
-  -- If we have an existing draft ID, we need to update it instead of creating a new one
-  if draft_info.draft_id then
-    -- Delete the old draft from maildir first
-    delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
-  end
+  -- Sync to maildir (update existing or create new)
+  local new_draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account, draft_info.draft_id)
   
-  -- Sync to maildir (this creates a new draft)
-  draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
+  -- Only update draft_id if we got a new one
+  if new_draft_id and new_draft_id ~= draft_info.draft_id then
+    -- Clean up old tracking
+    if draft_info.draft_id and draft_id_to_buffer[draft_info.draft_id] == buf then
+      draft_id_to_buffer[draft_info.draft_id] = nil
+    end
+    
+    -- Track new ID
+    draft_id_to_buffer[new_draft_id] = buf
+    draft_info.draft_id = new_draft_id
+  end
   
   -- Update stored draft info
   if draft_info.draft_id then
@@ -634,6 +911,28 @@ function M.send_email(buf)
     notify.himalaya('Not a compose buffer', notify.categories.ERROR)
     return
   end
+  
+  -- Ensure draft is synced before sending
+  if not draft_info.draft_id and draft_info.file then
+    logger.warn('Draft not synced before send, syncing now')
+    draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account, nil)
+    if draft_info.draft_id then
+      draft_info.draft_synced = true
+      composer_buffers[buf] = draft_info
+      state.set('compose.drafts.' .. buf, draft_info)
+    end
+  end
+  
+  logger.info('send_email: draft_info after sync check', {
+    draft_id = draft_info.draft_id,
+    original_draft_id = draft_info.original_draft_id,
+    draft_synced = draft_info.draft_synced,
+    file = draft_info.file
+  })
+  
+  -- Always show this info for debugging
+  notify.himalaya(string.format('Sending email with draft ID: %s', 
+    tostring(draft_info.draft_id or 'none')), notify.categories.INFO)
   
   -- Save current content
   vim.api.nvim_buf_call(buf, function()
@@ -749,6 +1048,13 @@ function M.show_scheduling_options(buf, draft_info, email)
     end
     
     -- Schedule the email
+    logger.info('Scheduling email with draft metadata', {
+      draft_file = draft_info.file,
+      draft_id = draft_info.draft_id,
+      draft_account = draft_info.account,
+      original_draft_id = draft_info.original_draft_id,
+      delay = delay
+    })
     local queue_id = scheduler.schedule_email(email, draft_info.account, {
       delay = delay,
       metadata = {
@@ -796,10 +1102,9 @@ function M.show_custom_schedule_picker(buf, draft_info, email)
         local queue_id = scheduler.schedule_email(email, draft_info.account, {
           delay = delay,
           metadata = {
-            composer_cleanup = {
-              buf = buf,
-              draft_info = draft_info
-            }
+            draft_file = draft_info.file,
+            draft_id = draft_info.draft_id,
+            draft_account = draft_info.account
           }
         })
         
@@ -836,16 +1141,8 @@ end
 
 -- Common cleanup after queuing
 function M.cleanup_after_queue(buf, draft_info)
-  -- Delete draft if configured
-  if M.config.delete_draft_on_send then
-    -- Delete file
-    vim.fn.delete(draft_info.file)
-    
-    -- Delete from maildir
-    if draft_info.draft_id then
-      delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
-    end
-  end
+  -- DO NOT delete draft here - let the scheduler handle it after sending
+  -- The scheduler needs the draft to remain until the email is actually sent
   
   -- Switch to alternate buffer before deleting (like :bd behavior)
   -- This prevents the sidebar from going full screen
@@ -1091,17 +1388,40 @@ function M.switch_to_normal_buffer(closing_buf)
 end
 
 -- Reopen existing draft for editing
-function M.reopen_draft()
-  local main = require('neotex.plugins.tools.himalaya.ui.main')
-  local email_id = main.get_current_email_id()
+function M.reopen_draft(provided_email_id)
+  -- Check if we already have this draft open
+  for buf, info in pairs(composer_buffers) do
+    if vim.api.nvim_buf_is_valid(buf) and 
+       (info.original_draft_id == provided_email_id or info.draft_id == provided_email_id) then
+      -- Draft is already open, just switch to it
+      local win = vim.fn.bufwinid(buf)
+      if win ~= -1 then
+        vim.api.nvim_set_current_win(win)
+      else
+        vim.cmd('buffer ' .. buf)
+      end
+      notify.himalaya('Draft already open', notify.categories.STATUS)
+      return buf
+    end
+  end
+  
+  local email_id = provided_email_id
+  
+  -- If no email_id provided, try to get it from current position
+  if not email_id then
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    email_id = main.get_current_email_id()
+  end
   
   -- Debug: Log what email_id we got
-  logger.debug('reopen_draft: email_id from get_current_email_id', {
+  logger.debug('reopen_draft: email_id', {
     email_id = email_id,
     email_id_type = type(email_id),
+    provided = provided_email_id ~= nil,
     current_line = vim.fn.getline('.'),
     line_num = vim.fn.line('.'),
-    current_folder = state.get_current_folder()
+    current_folder = state.get_current_folder(),
+    stack_trace = debug.traceback()
   })
   
   if not email_id then
@@ -1130,6 +1450,15 @@ function M.reopen_draft()
     return
   end
   
+  -- Additional safeguard: ensure it's not a folder name
+  if tostring(email_id) == 'Drafts' or tostring(email_id):match('^[A-Za-z]+$') then
+    logger.error('Email ID looks like a folder name', {
+      email_id = email_id
+    })
+    notify.himalaya('Invalid draft selection', notify.categories.ERROR)
+    return
+  end
+  
   -- Fetch draft content from current folder (we're already in drafts)
   local account = state.get_current_account()
   local current_folder = state.get_current_folder()
@@ -1139,35 +1468,63 @@ function M.reopen_draft()
     return
   end
   
+  -- Invalidate the draft cache to ensure preview shows fresh content when we return
+  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+  email_cache.store_email_body(account, current_folder, email_id, nil)
+  
   -- Debug: Log the email ID we're trying to read
   logger.debug('Reopening draft', {
     email_id = email_id,
+    numeric_id = numeric_id,
     account = account,
     folder = current_folder
   })
   
-  -- Use utils.execute_himalaya for consistent command execution
-  local args = { 'message', 'read', tostring(numeric_id), '--preview' }
-  local result = utils.execute_himalaya(args, { 
-    account = account, 
-    folder = current_folder 
-  })
+  -- Always use himalaya to get the correct draft by ID
+  -- Don't use local files as they don't have a mapping to draft IDs
+  local draft_content_found = false
+  local email = {}
   
-  if not result then
-    notify.himalaya('Failed to load draft content', notify.categories.ERROR)
-    return
-  end
-  
-  -- Handle both string output (plain text) and table output (JSON)
-  local output
-  if type(result) == 'string' then
-    output = result
-  elseif type(result) == 'table' then
-    -- If it's JSON, we need to extract the body
-    output = result.body or vim.json.encode(result)
-  else
-    output = tostring(result)
-  end
+  if true then  -- Always use himalaya
+    logger.debug('No local draft found, trying himalaya')
+    
+    -- Use utils.execute_himalaya for consistent command execution
+    -- Note: Don't include --preview as it's added by execute_himalaya if needed
+    local args = { 'message', 'read', tostring(numeric_id) }
+    
+    logger.debug('Calling execute_himalaya', {
+      args = args,
+      account = account,
+      folder = current_folder
+    })
+    
+    local result = utils.execute_himalaya(args, { 
+      account = account, 
+      folder = current_folder 
+    })
+    
+    if not result then
+      notify.himalaya('Failed to load draft content', notify.categories.ERROR)
+      return
+    end
+    
+    -- Debug: log what we got back
+    logger.debug('Draft read result', {
+      result_type = type(result),
+      result_length = type(result) == 'string' and #result or nil,
+      result_preview = type(result) == 'string' and result:sub(1, 500) or vim.inspect(result)
+    })
+    
+    -- Handle both string output (plain text) and table output (JSON)
+    local output
+    if type(result) == 'string' then
+      output = result
+    elseif type(result) == 'table' then
+      -- If it's JSON, we need to extract the body
+      output = result.body or vim.json.encode(result)
+    else
+      output = tostring(result)
+    end
   
   local exit_code = 0  -- execute_himalaya returns nil on error
   
@@ -1260,40 +1617,43 @@ function M.reopen_draft()
     })
   end
   
-  -- Create compose buffer with existing content
-  -- For reopened drafts, we should create a new local file since we don't know
-  -- which local file corresponds to this maildir draft
-  local opts = {
-    to = email.to,
-    cc = email.cc,
-    bcc = email.bcc,
-    subject = email.subject,
-    body = email.body,
-    is_draft_reopen = true,
-    original_draft_id = email_id,
-    -- Don't pass existing_draft_file - let it create a new local file
-  }
-  
-  local buf = M.create_compose_buffer(opts)
-  
-  -- Important: Delete the original draft from maildir to avoid duplicates
-  vim.defer_fn(function()
-    local draft_info = composer_buffers[buf]
-    if draft_info then
-      delete_draft_from_maildir(account, email_id)
-      -- Update the draft info to track this as the new draft
-      draft_info.original_draft_id = email_id
-      composer_buffers[buf] = draft_info
-    end
-  end, 100)
-  
-  -- Position cursor appropriately
-  -- Note: cursor positioning is already handled in create_compose_buffer
-  -- based on the opts we passed, so we don't need to do it again here
-  
-  notify.himalaya('Draft reopened for editing', notify.categories.STATUS)
-  
-  return buf
+    -- Create compose buffer with existing content
+    -- For reopened drafts, we should create a new local file since we don't know
+    -- which local file corresponds to this maildir draft
+    local opts = {
+      to = email.to,
+      cc = email.cc,
+      bcc = email.bcc,
+      subject = email.subject,
+      body = email.body,
+      is_draft_reopen = true,
+      original_draft_id = email_id,
+      -- Don't pass existing_draft_file - let it create a new local file
+    }
+    
+    local buf = M.create_compose_buffer(opts)
+    
+    -- Store the draft ID to prevent duplicates
+    vim.defer_fn(function()
+      local draft_info = composer_buffers[buf]
+      if draft_info then
+        -- Don't delete the original - just track it
+        draft_info.draft_id = email_id
+        draft_info.original_draft_id = email_id
+        draft_info.draft_synced = true  -- Mark as already synced
+        composer_buffers[buf] = draft_info
+        state.set('compose.drafts.' .. buf, draft_info)
+        logger.info('Reopened draft from himalaya', {
+          buf = buf,
+          draft_id = email_id
+        })
+      end
+    end, 100)
+    
+    notify.himalaya('Draft reopened for editing', notify.categories.STATUS)
+    
+    return buf
+  end  -- End of 'if not draft_content_found then'
 end
 
 return M

@@ -450,7 +450,12 @@ function M.setup_buffer_keymaps(bufnr)
       local lines_obj = email_list.get_current_lines()
       local email_metadata = lines_obj and lines_obj.metadata and lines_obj.metadata[line]
       
-      if email_metadata and email_metadata.is_draft then
+      -- Handle vim.NIL case
+      if email_metadata == vim.NIL then
+        email_metadata = nil
+      end
+      
+      if email_metadata and type(email_metadata) == 'table' and email_metadata.is_draft then
         -- Draft-specific handling
         local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
         
@@ -461,7 +466,16 @@ function M.setup_buffer_keymaps(bufnr)
         else
           -- Second return: open for editing
           local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
-          composer.reopen_draft()
+          -- Debug log before calling reopen_draft
+          local logger = require('neotex.plugins.tools.himalaya.core.logger')
+          logger.debug('About to call reopen_draft', {
+            email_id = email_id,
+            type = type(email_id),
+            line = line,
+            current_line = vim.fn.getline('.')
+          })
+          -- Pass the email_id we already validated
+          composer.reopen_draft(email_id)
         end
       else
         -- Regular email handling
@@ -637,7 +651,14 @@ function M.setup_buffer_keymaps(bufnr)
           local current_preview_id = preview.get_current_preview_id()
           
           if email_id and email_id ~= current_preview_id then
-            preview.show_preview(email_id, vim.api.nvim_get_current_win())
+            -- Check if we're in drafts folder to determine email type
+            local state = require('neotex.plugins.tools.himalaya.core.state')
+            local folder = state.get_current_folder()
+            local email_type = nil
+            if folder and folder:lower():match('draft') then
+              email_type = 'draft'
+            end
+            preview.show_preview(email_id, vim.api.nvim_get_current_win(), email_type)
           end
         end
       end)
@@ -672,7 +693,14 @@ function M.setup_buffer_keymaps(bufnr)
           local current_preview_id = preview.get_current_preview_id()
           
           if email_id and email_id ~= current_preview_id then
-            preview.show_preview(email_id, vim.api.nvim_get_current_win())
+            -- Check if we're in drafts folder to determine email type
+            local state = require('neotex.plugins.tools.himalaya.core.state')
+            local folder = state.get_current_folder()
+            local email_type = nil
+            if folder and folder:lower():match('draft') then
+              email_type = 'draft'
+            end
+            preview.show_preview(email_id, vim.api.nvim_get_current_win(), email_type)
           end
           preview_timer = nil
         end)
@@ -845,6 +873,32 @@ function M.setup_buffer_keymaps(bufnr)
   
   -- Email reading keymaps
   if vim.bo[bufnr].filetype == 'himalaya-email' then
+    -- Add Return handler for drafts
+    keymap('n', '<CR>', function()
+      -- Check if this is a draft preview
+      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+      local preview_state = preview.get_preview_state()
+      if preview_state and preview_state.email_id then
+        -- Check if the current email is a draft
+        local state = require('neotex.plugins.tools.himalaya.core.state')
+        local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+        local account = state.get_current_account()
+        local folder = state.get_current_folder()
+        local email = email_cache.get_email(account, folder, preview_state.email_id)
+        
+        if email and email._is_draft then
+          -- Open draft for editing
+          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+          logger.debug('Opening draft from preview', {
+            email_id = preview_state.email_id,
+            has_email = email ~= nil,
+            is_draft = email._is_draft
+          })
+          composer.reopen_draft(preview_state.email_id)
+        end
+      end
+    end, vim.tbl_extend('force', opts, { desc = 'Edit draft' }))
+    
     -- Override 'g' to handle our custom g-commands immediately
     keymap('n', 'g', function()
       local char = vim.fn.getchar()

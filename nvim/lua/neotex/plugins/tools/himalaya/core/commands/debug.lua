@@ -293,6 +293,27 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaDebugDraftList = {
+    fn = function()
+      local debug_drafts = require('neotex.plugins.tools.himalaya.debug_drafts')
+      debug_drafts.debug_draft_list()
+    end,
+    opts = {
+      desc = 'Debug draft list and subjects'
+    }
+  }
+  
+  commands.HimalayaDebugDraftContent = {
+    fn = function(opts)
+      local debug_drafts = require('neotex.plugins.tools.himalaya.debug_drafts')
+      debug_drafts.debug_draft_content(opts.args)
+    end,
+    opts = {
+      nargs = 1,
+      desc = 'Debug specific draft content'
+    }
+  }
+  
   commands.HimalayaClearScheduled = {
     fn = function()
       local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
