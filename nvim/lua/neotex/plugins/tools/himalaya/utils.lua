@@ -428,76 +428,6 @@ function M.send_email(account, email_data)
   return true
 end
 
--- Save email as draft
-function M.save_draft(account, email_data, folder)
-  -- Create temporary file with email content
-  local temp_file = vim.fn.tempname()
-  local content = M.format_email_for_sending(email_data)
-  
-  local file = io.open(temp_file, 'w')
-  if not file then
-    notify.himalaya('Failed to create temporary file', notify.categories.ERROR)
-    return false
-  end
-  
-  file:write(content)
-  file:close()
-  
-  -- Save draft using himalaya
-  local cmd = { config.config.binaries.himalaya or 'himalaya', 'message', 'save' }
-  
-  if account then
-    table.insert(cmd, '-a')
-    table.insert(cmd, account)
-  end
-  
-  if folder then
-    table.insert(cmd, '-f')
-    table.insert(cmd, folder)
-  end
-  
-  -- Use jobstart for better stdin handling
-  local result_lines = {}
-  local job_id = vim.fn.jobstart(cmd, {
-    stdin = 'pipe',
-    stdout_buffered = true,
-    stderr_buffered = true,
-    on_stdout = function(_, data)
-      vim.list_extend(result_lines, data)
-    end,
-    on_stderr = function(_, data)
-      vim.list_extend(result_lines, data)
-    end,
-  })
-  
-  if job_id <= 0 then
-    notify.himalaya('Failed to start save job', notify.categories.ERROR)
-    os.remove(temp_file)
-    return false
-  end
-  
-  -- Send the email content
-  local file = io.open(temp_file, 'r')
-  local content = file:read('*all')
-  file:close()
-  
-  vim.fn.chansend(job_id, content)
-  vim.fn.chanclose(job_id, 'stdin')
-  
-  -- Wait for completion
-  local exit_code = vim.fn.jobwait({job_id}, 5000)[1]
-  
-  -- Clean up temporary file
-  os.remove(temp_file)
-  
-  if exit_code ~= 0 then
-    local result = table.concat(result_lines, '\n')
-    notify.himalaya('Failed to save draft', notify.categories.ERROR, { result = result })
-    return false
-  end
-  
-  return true
-end
 
 -- Get email by ID
 function M.get_email_by_id(account, folder, email_id)
@@ -551,36 +481,29 @@ function M.find_draft_folder(account)
     return nil
   end
   
-  -- Check folder map for draft folder
+  -- Check folder map for draft folder (look for local folder name)
   if account_config.folder_map then
     for imap, local_folder in pairs(account_config.folder_map) do
       if imap:lower():match('draft') then
-        -- For maildir, we need the IMAP name, not the local folder name
-        return imap
+        -- Return the local folder name (what himalaya CLI expects)
+        return local_folder
       end
     end
   end
   
-  -- Check common draft folder names
-  local draft_folders = { '[Gmail]/Drafts', 'Drafts', 'DRAFTS', 'Draft', '.Drafts' }
-  
-  -- For Gmail specifically, use [Gmail]/Drafts
-  if account:lower() == 'gmail' then
-    return '[Gmail]/Drafts'
-  end
-  
-  -- Default to 'Drafts'
+  -- For most setups, 'Drafts' is the correct folder name
+  -- This was confirmed to work with: himalaya message save --account gmail --folder "Drafts"
   return 'Drafts'
 end
 
 -- Save draft to maildir
 function M.save_draft(account, folder, email_data)
-  -- Build himalaya command with correct v1.1.0 syntax
+  -- Build himalaya command with correct CLI syntax
   local cmd_parts = {
     config.config.binaries.himalaya or 'himalaya',
     'message', 'save',
-    '-a', account,
-    '-f', folder,
+    '--account', account,
+    '--folder', folder,
   }
   
   -- Create email content
@@ -634,11 +557,19 @@ function M.save_draft(account, folder, email_data)
   logger.debug('Draft save output', { output = output })
   
   -- Extract draft ID from output if possible
+  -- Output format: "Message successfully saved to Drafts!"
   local draft_id = output:match('Message saved with ID: (%S+)') or 
                    output:match('id: (%S+)') or
                    'draft_' .. os.time()
   
-  return { id = draft_id }
+  -- If we got a success message, the draft was saved successfully
+  if output:match('Message successfully saved') then
+    logger.debug('Draft successfully saved', { draft_id = draft_id })
+    return { id = draft_id }
+  else
+    logger.error('Unexpected save output format', { output = output })
+    return nil, 'Unexpected output: ' .. output
+  end
 end
 
 -- Delete email (for draft cleanup)
@@ -1018,6 +949,7 @@ function M.get_email_info(email_id)
 end
 
 -- Import enhanced utilities
+-- TODO: REMOVE BACKWARDS COMPATIBILITY - Import enhanced utilities directly instead of optional merge
 local ok, enhanced = pcall(require, 'neotex.plugins.tools.himalaya.utils.enhanced')
 if ok then
   -- Merge enhanced utilities into main module

@@ -76,7 +76,14 @@ Fully implemented specs have been moved to the [done/](done/) directory. See [do
    - ❌ Email Rules and Filters
    - ❌ Integration Features (tasks, calendar, notes)
 
-10. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements ❌ SKIPPED
+10. **[SAVE_AND_RETURN_TO_DRAFTS.md](SAVE_AND_RETURN_TO_DRAFTS.md)** - Draft Management Enhancement ⏳ NEW
+    - Draft detection and visual indicators in sidebar
+    - Enhanced return key behavior for drafts vs regular emails
+    - Draft reopening functionality with content restoration
+    - Context-sensitive UI and footer commands
+    - **Status**: Planned for Phase 10 implementation
+
+11. **[WINDOW_MANAGEMENT_SPEC.md](WINDOW_MANAGEMENT_SPEC.md)** - Window Management Improvements ❌ SKIPPED
     - Predefined layouts (classic, vertical, three-pane, focused)
     - Window coordination and smart focusing
     - Interactive resize mode
@@ -85,21 +92,21 @@ Fully implemented specs have been moved to the [done/](done/) directory. See [do
 
 ### Quality and Maintenance Specifications
 
-11. **[CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md](CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md)** - Quality Improvements
+12. **[CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md](CODE_QUALITY_AND_DEVELOPER_EXPERIENCE_SPEC.md)** - Quality Improvements
     - ✅ Phase 6: Enhanced error handling system
     - ✅ Phase 7: API consistency layer
     - ✅ Phase 8: Performance optimization tools
     - ⏳ Phase 10: Testing framework & observability
     - Cross-phase: Modularization guidelines
 
-12. **[CLEANUP_AND_REFINEMENT_SPEC.md](CLEANUP_AND_REFINEMENT_SPEC.md)** - Technical Debt Items
+13. **[CLEANUP_AND_REFINEMENT_SPEC.md](CLEANUP_AND_REFINEMENT_SPEC.md)** - Technical Debt Items
     - ✅ Phase 6: Error handling patterns, performance
     - ✅ Phase 7: Command system refactoring strategy
     - ✅ Phase 8: State management improvements
     - 🚧 Phase 9: Window management, UI polish
     - ⏳ Phase 10: Documentation tooling
 
-13. **[TODOS_TECH_DEBT_OVERVIEW.md](TODOS_TECH_DEBT_OVERVIEW.md)** - Comprehensive TODO Tracking
+14. **[TODOS_TECH_DEBT_OVERVIEW.md](TODOS_TECH_DEBT_OVERVIEW.md)** - Comprehensive TODO Tracking
     - Analysis of 84 TODO comments across codebase
     - Items mapped to phases 6-10 by priority
     - Risk assessment and mitigation strategies
@@ -301,16 +308,21 @@ The implementation is organized into 10 phases, with phases 6-10 representing th
   - Organized test structure by domain
   - Mock data utilities
   - `:HimalayaTest` command with completion
-- [ ] OAuth 2.0 implementation
+- [✓] Performance optimizations - COMPLETED
+  - [✓] Fixed blocking sync on startup (async OAuth)
+  - [✓] Fixed email count > 1000 with binary search
+  - [✓] Fixed sync timestamp updates
+  - [✓] Auto-sync with configurable delay
+  - [✓] Multi-instance coordination
+- [ ] OAuth 2.0 implementation enhancements
 - [ ] PGP/GPG encryption support (optional)
-- [ ] Performance optimization final pass
 - [ ] Documentation updates
 - [ ] Integration testing
 
 ## 🛠️ Development Guidelines
 
 ### Principles
-1. **No Breaking Changes**: All improvements must maintain backward compatibility
+1. **Clean Architecture**: Remove backwards compatibility to focus on clear, consistent, and maintainable configuration
 2. **Incremental Progress**: Small, tested changes over big rewrites
 3. **User First**: Features that provide immediate user value take priority
 4. **Event-Driven**: New features should use the event system
@@ -339,7 +351,7 @@ Track progress using these metrics:
 - 15-20% reduction in code complexity
 - 80%+ test coverage on new code
 - < 100ms response time for common operations
-- Zero breaking changes for users
+- Clean, maintainable code without legacy compatibility layers
 
 ## 🔗 Related Documentation
 
@@ -357,7 +369,6 @@ Track progress using these metrics:
 
 ---
 
-*Last Updated: 2025-01-08*
-*Total Implementation Timeline: 7 weeks*
-*Phases Completed: 9/10*
+*Phases Completed: 9.5/10*
 *Phase 9 Status: COMPLETED (11/12 features - 92%)*
+*Phase 10 Status: IN PROGRESS (50% complete)*

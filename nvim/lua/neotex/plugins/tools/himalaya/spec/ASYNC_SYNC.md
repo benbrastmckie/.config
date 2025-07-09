@@ -317,6 +317,14 @@ end
 - [x] Add coordination configuration to core/config.lua
 - [x] Test with multiple Neovim instances
 
+### ✅ Additional Sync Fixes (COMPLETED - 2025-01-08)
+- [x] Fixed `fetch_folder_count_async` bug - function didn't exist, now using synchronous version
+- [x] Fixed sync timestamp not updating after successful sync
+- [x] Fixed email count display showing "1000" for folders with >1000 emails
+- [x] Binary search algorithm now properly handles large folders (shows actual count like "2023 emails")
+- [x] Auto-sync startup delay properly configured and working
+- [x] Added debug notifications to track auto-sync initialization and execution
+
 ## Configuration
 
 ### User Configuration Options

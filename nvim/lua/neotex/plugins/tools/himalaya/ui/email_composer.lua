@@ -121,8 +121,15 @@ local function format_email_template(opts)
 end
 
 -- Sync draft to maildir
-local function sync_draft_to_maildir(draft_file)
-  local account = state.get_current_account()
+local function sync_draft_to_maildir(draft_file, account)
+  -- Use provided account or fallback to current account
+  account = account or state.get_current_account()
+  
+  if not account then
+    logger.warn('No account specified for draft sync')
+    return nil
+  end
+  
   local draft_folder = utils.find_draft_folder(account)
   
   if not draft_folder then
@@ -206,7 +213,7 @@ local function setup_autosave(buf, draft_file)
         -- Sync to maildir
         local draft_info = composer_buffers[buf]
         if draft_info then
-          draft_info.draft_id = sync_draft_to_maildir(draft_file)
+          draft_info.draft_id = sync_draft_to_maildir(draft_file, draft_info.account)
           
           -- Update state
           state.set('compose.drafts.' .. buf, draft_info)
@@ -225,8 +232,8 @@ end
 local function setup_buffer_mappings(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
   
-  -- Only set up Tab navigation helper, other keymaps are in which-key
-  vim.keymap.set('n', '<Tab>', function()
+  -- Only set up Tab navigation helper for insert mode, other keymaps are in which-key
+  vim.keymap.set('i', '<Tab>', function()
     -- Jump to next header field or body
     local line = vim.api.nvim_win_get_cursor(0)[1]
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -234,11 +241,11 @@ local function setup_buffer_mappings(buf)
     -- Find next field
     for i = line + 1, #lines do
       if lines[i] == '' then
-        -- Jump to body
+        -- Jump to body and stay in insert mode
         vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
         return
       elseif lines[i]:match('^[^:]+:%s*$') or lines[i]:match('^[^:]+:%s*$') then
-        -- Jump to end of header line
+        -- Jump to end of header line and stay in insert mode
         vim.api.nvim_win_set_cursor(0, { i, #lines[i] })
         return
       end
@@ -389,10 +396,11 @@ function M.create_compose_buffer(opts)
   end
   
   -- Store buffer info
+  local current_account = state.get_current_account() or config.get_current_account_name() or 'gmail'
   local draft_info = {
     file = draft_file,
     created = os.time(),
-    account = state.get_current_account(),
+    account = current_account,
     reply_to = opts.reply_to,
     forward_from = opts.forward_from,
     template_id = opts.template_id,
@@ -487,7 +495,7 @@ function M.save_draft(buf)
   end)
   
   -- Sync to maildir
-  draft_info.draft_id = sync_draft_to_maildir(draft_info.file)
+  draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
   
   notify.himalaya('Draft saved', notify.categories.USER_ACTION)
 end
@@ -717,35 +725,7 @@ function M.cleanup_after_queue(buf, draft_info)
   
   -- Switch to alternate buffer before deleting (like :bd behavior)
   -- This prevents the sidebar from going full screen
-  local current_win = vim.api.nvim_get_current_win()
-  
-  -- Get list of all buffers
-  local buffers = vim.api.nvim_list_bufs()
-  local alternate_buf = nil
-  
-  -- Find a suitable buffer to switch to
-  for _, b in ipairs(buffers) do
-    if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
-      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
-      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
-      -- Skip special buffers like the sidebar
-      if buftype == '' and not filetype:match('^himalaya%-') then
-        alternate_buf = b
-        break
-      end
-    end
-  end
-  
-  -- If no suitable buffer found, create a new one
-  if not alternate_buf then
-    alternate_buf = vim.api.nvim_create_buf(true, false)
-    vim.api.nvim_buf_set_name(alternate_buf, '[No Name]')
-  end
-  
-  -- Switch to the alternate buffer
-  if vim.api.nvim_win_is_valid(current_win) then
-    vim.api.nvim_win_set_buf(current_win, alternate_buf)
-  end
+  M.switch_to_normal_buffer(buf)
   
   -- Close compose buffer safely
   if vim.api.nvim_buf_is_valid(buf) then
@@ -803,32 +783,7 @@ function M.discard_email(buf)
     
     -- Switch to alternate buffer before deleting (like :bd behavior)
     -- This prevents the sidebar from going full screen
-    local current_win = vim.api.nvim_get_current_win()
-    
-    -- Get list of all buffers
-    local buffers = vim.api.nvim_list_bufs()
-    local alternate_buf = nil
-    
-    -- Find a suitable buffer to switch to
-    for _, b in ipairs(buffers) do
-      if b ~= buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
-        local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
-        local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
-        -- Skip special buffers like the sidebar
-        if buftype == '' and not filetype:match('^himalaya%-') then
-          alternate_buf = b
-          break
-        end
-      end
-    end
-    
-    -- If no alternate buffer found, create a new empty one
-    if not alternate_buf then
-      alternate_buf = vim.api.nvim_create_buf(true, false)
-    end
-    
-    -- Switch to the alternate buffer first
-    vim.api.nvim_win_set_buf(current_win, alternate_buf)
+    M.switch_to_normal_buffer(buf)
     
     -- Now delete the draft buffer
     vim.api.nvim_buf_delete(buf, { force = true })
@@ -858,6 +813,125 @@ function M.get_compose_buffers()
     end
   end
   return buffers
+end
+
+-- Force cleanup a compose buffer (for tests and edge cases)
+-- This bypasses confirmation but uses proper buffer switching
+function M.force_cleanup_compose_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  local draft_info = composer_buffers[buf]
+  if not draft_info then
+    -- Not a compose buffer, just delete it
+    vim.api.nvim_buf_delete(buf, { force = true })
+    return
+  end
+  
+  -- Stop autosave
+  if autosave_timers[buf] then
+    vim.loop.timer_stop(autosave_timers[buf])
+    autosave_timers[buf] = nil
+  end
+  
+  -- Switch to normal buffer before cleanup
+  M.switch_to_normal_buffer(buf)
+  
+  -- Clean up state
+  composer_buffers[buf] = nil
+  state.set('compose.drafts.' .. buf, nil)
+  
+  -- Delete the buffer
+  if vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_set_option(buf, 'modified', false)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+end
+
+-- Switch to a normal buffer before closing a compose buffer
+-- This prevents the sidebar from expanding to full screen
+function M.switch_to_normal_buffer(closing_buf)
+  local current_win = vim.api.nvim_get_current_win()
+  
+  -- Debug logging
+  logger.debug('switch_to_normal_buffer called', {
+    closing_buf = closing_buf,
+    current_win = current_win,
+    win_count = #vim.api.nvim_list_wins()
+  })
+  
+  -- Check if we're in a special window (sidebar, preview, etc.)
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  
+  if sidebar_win and current_win == sidebar_win then
+    -- If we're in the sidebar, don't switch - let it handle itself
+    logger.debug('Currently in sidebar window, skipping switch')
+    return
+  end
+  
+  -- Get list of all buffers and find a suitable normal buffer
+  local buffers = vim.api.nvim_list_bufs()
+  local alternate_buf = nil
+  
+  -- First pass: look for existing normal buffers
+  for _, b in ipairs(buffers) do
+    if b ~= closing_buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+      local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+      local name = vim.api.nvim_buf_get_name(b)
+      
+      -- Look for normal file buffers (not special buffers)
+      if buftype == '' and 
+         not filetype:match('^himalaya%-') and
+         not name:match('draft_.*%.eml$') and  -- Skip other draft files
+         not name:match('^%[.*%]$') then       -- Skip [No Name] type buffers
+        alternate_buf = b
+        break
+      end
+    end
+  end
+  
+  -- Second pass: look for any non-special buffer
+  if not alternate_buf then
+    for _, b in ipairs(buffers) do
+      if b ~= closing_buf and vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_is_loaded(b) then
+        local buftype = vim.api.nvim_buf_get_option(b, 'buftype')
+        local filetype = vim.api.nvim_buf_get_option(b, 'filetype')
+        
+        -- Any normal buffer will do
+        if buftype == '' and not filetype:match('^himalaya%-') then
+          alternate_buf = b
+          break
+        end
+      end
+    end
+  end
+  
+  -- If still no suitable buffer found, create a new scratch buffer
+  if not alternate_buf then
+    alternate_buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(alternate_buf, '[Scratch]')
+    -- Set some basic options
+    vim.api.nvim_buf_set_option(alternate_buf, 'buftype', '')
+    vim.api.nvim_buf_set_option(alternate_buf, 'filetype', 'text')
+  end
+  
+  -- Switch to the alternate buffer
+  if vim.api.nvim_win_is_valid(current_win) and alternate_buf then
+    logger.debug('Switching to alternate buffer', {
+      current_win = current_win,
+      alternate_buf = alternate_buf,
+      buf_name = vim.api.nvim_buf_get_name(alternate_buf)
+    })
+    vim.api.nvim_win_set_buf(current_win, alternate_buf)
+  else
+    logger.warn('Could not switch to alternate buffer', {
+      win_valid = vim.api.nvim_win_is_valid(current_win),
+      alternate_buf = alternate_buf
+    })
+  end
 end
 
 return M

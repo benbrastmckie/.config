@@ -256,34 +256,31 @@ function M.update_folder_counts()
   
   -- Fetch the actual count with a minimal delay for file operations to complete
   vim.defer_fn(function()
+    local notify = require('neotex.util.notifications')
+    
     if current_account and current_folder then
-      logger.debug(string.format('Fetching folder count for %s/%s after sync', current_account, current_folder))
-      local utils = require('neotex.plugins.tools.himalaya.utils')
+      logger.debug(string.format('Starting folder count update for %s/%s', current_account, current_folder))
+      notify.himalaya(string.format('Updating count for %s/%s...', current_account, current_folder), notify.categories.BACKGROUND)
       
-      -- Use async version to prevent blocking
-      utils.fetch_folder_count_async(current_account, current_folder, function(count, error)
-        if error then
-          logger.warn('Failed to fetch folder count after sync: ' .. tostring(error))
-          return
-        end
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      local count = utils.fetch_folder_count(current_account, current_folder)
+      
+      if count then
+        -- Always update the count and timestamp, regardless of value
+        state.set_folder_count(current_account, current_folder, count)
+        logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
+          current_account, current_folder, count))
+        notify.himalaya(string.format('Updated count: %s/%s = %d', current_account, current_folder, count), notify.categories.BACKGROUND)
         
-        if count and count > 0 then
-          -- Always update the count and timestamp, even if it's 1000
-          state.set_folder_count(current_account, current_folder, count)
-          logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
-            current_account, current_folder, count))
-          
-          
-          -- Trigger UI update immediately
-          M.notify_ui_update()
-        else
-          logger.debug(string.format('No valid count received for %s/%s (count=%s)', 
-            current_account, current_folder, tostring(count)))
-        end
-      end)
+        -- Trigger UI update immediately
+        M.notify_ui_update()
+      else
+        logger.warn(string.format('Failed to get folder count for %s/%s', current_account, current_folder))
+        notify.himalaya(string.format('Failed to get count for %s/%s', current_account, current_folder), notify.categories.ERROR)
+      end
     else
-      logger.debug(string.format('Cannot update folder count: account=%s, folder=%s', 
-        tostring(current_account), tostring(current_folder)))
+      logger.warn('Cannot update folder count: missing account or folder')
+      notify.himalaya('Cannot update count: missing account/folder', notify.categories.ERROR)
     end
   end, 100)  -- Minimal 100ms delay just for file operations
 end
@@ -314,17 +311,22 @@ function M.start_auto_sync()
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local notify = require('neotex.util.notifications')
   
+  -- Debug notification
+  notify.himalaya('Starting auto-sync initialization...', notify.categories.BACKGROUND)
+  
   -- Check if auto-sync is enabled
   if not config.get('ui.auto_sync_enabled', true) then
     logger.debug('Auto-sync disabled in configuration')
+    notify.himalaya('Auto-sync disabled in config', notify.categories.BACKGROUND)
     return
   end
   
-  -- Get sync interval and startup delay from config (optimized for responsiveness)
+  -- Get sync interval and startup delay from config
   local sync_interval = config.get('ui.auto_sync_interval', 15 * 60) -- Default 15 minutes
-  local startup_delay = config.get('ui.auto_sync_startup_delay', 30) -- Default 30 seconds (vs old 2 seconds)
+  local startup_delay = config.get('ui.auto_sync_startup_delay', 2) -- Default 2 seconds for testing
   
   logger.debug('Starting auto-sync with interval: ' .. sync_interval .. 's, startup delay: ' .. startup_delay .. 's')
+  notify.himalaya(string.format('Auto-sync: delay=%ds, interval=%dm', startup_delay, math.floor(sync_interval/60)), notify.categories.BACKGROUND)
   
   -- Clear any existing timer
   M.stop_auto_sync()
@@ -332,11 +334,20 @@ function M.start_auto_sync()
   -- Start timer with initial delay
   auto_sync_timer = vim.loop.new_timer()
   
+  if not auto_sync_timer then
+    logger.error('Failed to create auto-sync timer')
+    notify.himalaya('Failed to create auto-sync timer', notify.categories.ERROR)
+    return
+  end
+  
   -- Start recurring timer after startup delay
   auto_sync_timer:start(startup_delay * 1000, sync_interval * 1000, vim.schedule_wrap(function()
+    notify.himalaya('Auto-sync timer triggered', notify.categories.BACKGROUND)
+    
     -- Check coordination before syncing
     if not coordinator.should_allow_sync() then
       logger.debug('Auto-sync skipped by coordinator')
+      notify.himalaya('Auto-sync skipped by coordinator', notify.categories.BACKGROUND)
       return
     end
     
@@ -350,6 +361,7 @@ function M.start_auto_sync()
     local current_status = state.get('sync.status', 'idle')
     if current_status ~= 'idle' then
       logger.debug('Skipping auto-sync: sync already in progress (' .. current_status .. ')')
+      notify.himalaya('Skipping auto-sync: already ' .. current_status, notify.categories.BACKGROUND)
       return
     end
     

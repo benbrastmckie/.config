@@ -5,6 +5,7 @@
 local M = {}
 
 -- State version for migration support
+-- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove state versioning and migration system
 local STATE_VERSION = 2
 
 -- Default state schema
@@ -77,6 +78,7 @@ local default_state = {
 M.state = vim.tbl_deep_extend("force", {}, default_state)
 
 -- State migrations
+-- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove entire state migration system
 local migrations = {
   [1] = function(state)
     -- Migrate from v1 to v2: Add version field and ensure all sections exist
@@ -93,6 +95,7 @@ local migrations = {
 }
 
 -- Migrate state to current version
+-- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove state migration function
 function M.migrate_state(state)
   local current_version = state.version or 1
   
