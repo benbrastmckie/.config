@@ -13,6 +13,8 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
+local id_validator = require('neotex.plugins.tools.himalaya.core.id_validator')
 
 -- Module state
 local composer_buffers = {}
@@ -173,6 +175,12 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     return nil
   end
   
+  logger.info('Draft lifecycle: Starting sync to maildir', {
+    draft_file = draft_file,
+    account = account,
+    existing_draft_id = existing_draft_id
+  })
+  
   local draft_folder = utils.find_draft_folder(account)
   
   if not draft_folder then
@@ -240,9 +248,11 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
   -- Save to maildir using himalaya
   local ok, result = pcall(utils.save_draft, account, draft_folder, email)
   if ok and result then
-    logger.debug('Draft synced to maildir', { 
+    logger.info('Draft lifecycle: Successfully synced to maildir', { 
       file = draft_file,
-      draft_id = result.id 
+      draft_id = result.id,
+      account = account,
+      folder = draft_folder
     })
     
     -- Cache the draft email data so the sidebar can show the subject
@@ -291,10 +301,12 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     return result.id
   else
     local error_msg = result or 'Unknown error'
-    logger.error('Failed to sync draft', { 
+    logger.error('Draft lifecycle: Failed to sync draft', { 
       file = draft_file,
       error = error_msg,
-      email = email
+      email = email,
+      account = account,
+      folder = draft_folder
     })
     -- Show user-friendly notification about draft sync failure
     if not email.from or email.from == '' then
@@ -700,6 +712,26 @@ function M.create_compose_buffer(opts)
   
   -- Store buffer info
   local current_account = state.get_current_account() or config.get_current_account_name() or 'gmail'
+  local draft_folder = utils.find_draft_folder(current_account) or 'Drafts'
+  
+  -- Register draft with draft manager
+  local draft_state = draft_manager.register_draft(buf, current_account, draft_folder)
+  
+  -- Update draft content from options
+  draft_manager.update_content(buf, {
+    from = opts.from or config.get_account_email(current_account),
+    to = opts.to or '',
+    cc = opts.cc or '',
+    bcc = opts.bcc or '',
+    subject = opts.subject or '',
+    body = opts.body or ''
+  })
+  
+  -- If reopening a draft, set the draft ID
+  if opts.draft_id and id_validator.is_valid_id(opts.draft_id) then
+    draft_manager.set_draft_id(buf, opts.draft_id)
+  end
+  
   local draft_info = {
     file = draft_file,
     created = os.time(),
@@ -714,6 +746,16 @@ function M.create_compose_buffer(opts)
   
   composer_buffers[buf] = draft_info
   state.set('compose.drafts.' .. buf, draft_info)
+  
+  logger.info('Draft lifecycle: Buffer created', {
+    buffer_id = buf,
+    local_id = draft_state.local_id,
+    draft_id = opts.draft_id,
+    is_reopen = opts.is_draft_reopen,
+    account = current_account,
+    has_subject = (opts.subject ~= nil and opts.subject ~= ''),
+    has_to = (opts.to ~= nil and opts.to ~= '')
+  })
   
   -- Setup mappings and auto-save
   setup_buffer_mappings(buf)
