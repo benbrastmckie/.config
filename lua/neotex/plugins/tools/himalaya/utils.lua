@@ -233,13 +233,28 @@ end
 
 -- Get folder list for account
 function M.get_folders(account)
-  local args = { 'folder', 'list' }
-  local result = M.execute_himalaya(args, { account = account })
-  
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local account_config = config.get_account(account)
   local folders = {}
+  local folder_set = {}  -- To avoid duplicates
   
   -- Always include INBOX as first folder (it's the special default folder)
   table.insert(folders, 'INBOX')
+  folder_set['INBOX'] = true
+  
+  -- First, add all configured folders from config
+  if account_config and account_config.folder_map then
+    for _, local_name in pairs(account_config.folder_map) do
+      if not folder_set[local_name] then
+        table.insert(folders, local_name)
+        folder_set[local_name] = true
+      end
+    end
+  end
+  
+  -- Then check what folders actually exist via himalaya
+  local args = { 'folder', 'list' }
+  local result = M.execute_himalaya(args, { account = account })
   
   if result and type(result) == 'table' then
     -- Extract folder names from result
@@ -251,12 +266,20 @@ function M.get_folders(account)
         folder_name = folder_data.name
       end
       
-      -- Add folder if it's not INBOX (to avoid duplicates)
-      if folder_name and folder_name ~= 'INBOX' then
+      -- Add folder if we haven't seen it yet
+      if folder_name and not folder_set[folder_name] then
         table.insert(folders, folder_name)
+        folder_set[folder_name] = true
       end
     end
   end
+  
+  -- Sort folders with INBOX first
+  table.sort(folders, function(a, b)
+    if a == 'INBOX' then return true end
+    if b == 'INBOX' then return false end
+    return a < b
+  end)
   
   return #folders > 0 and folders or nil
 end
@@ -283,6 +306,16 @@ function M.get_email_list(account, folder, page, page_size)
   
   if not result then
     return {}, 0
+  end
+  
+  -- Debug logging for Drafts folder
+  if folder == 'Drafts' or folder:lower():match('draft') then
+    logger.debug('Drafts folder email list result', {
+      folder = folder,
+      result_type = type(result),
+      result_count = type(result) == 'table' and #result or 0,
+      first_email = type(result) == 'table' and result[1] or nil
+    })
   end
   
   -- Get stored count from state (from sync operations)
@@ -519,7 +552,11 @@ function M.save_draft(account, folder, email_data)
     content_length = content and #content or 0,
     from = email_data.from,
     to = email_data.to,
-    subject = email_data.subject
+    subject = email_data.subject,
+    has_body = email_data.body ~= nil and email_data.body ~= '',
+    body_length = email_data.body and #email_data.body or 0,
+    body_preview = email_data.body and email_data.body:sub(1, 100) or 'no body',
+    full_content_preview = content and content:sub(1, 200) or 'no content'
   })
   
   -- Write content to temporary file instead of using echo
@@ -709,22 +746,30 @@ end
 function M.format_email_for_sending(email_data)
   local lines = {}
   
-  -- Headers
-  if email_data.from then
+  -- Headers (only add non-empty headers)
+  if email_data.from and email_data.from ~= '' then
     table.insert(lines, 'From: ' .. email_data.from)
   end
-  if email_data.to then
+  if email_data.to and email_data.to ~= '' then
     table.insert(lines, 'To: ' .. email_data.to)
   end
-  if email_data.cc then
+  if email_data.cc and email_data.cc ~= '' then
     table.insert(lines, 'Cc: ' .. email_data.cc)
   end
-  if email_data.bcc then
+  if email_data.bcc and email_data.bcc ~= '' then
     table.insert(lines, 'Bcc: ' .. email_data.bcc)
   end
-  if email_data.subject then
+  if email_data.subject and email_data.subject ~= '' then
     table.insert(lines, 'Subject: ' .. email_data.subject)
   end
+  
+  -- Add Date header (required for proper email format)
+  table.insert(lines, 'Date: ' .. os.date('!%a, %d %b %Y %H:%M:%S +0000'))
+  
+  -- Add MIME headers for plain text
+  table.insert(lines, 'MIME-Version: 1.0')
+  table.insert(lines, 'Content-Type: text/plain; charset=UTF-8')
+  table.insert(lines, 'Content-Transfer-Encoding: 8bit')
   
   -- Empty line between headers and body
   table.insert(lines, '')
@@ -1033,20 +1078,41 @@ end
 
 -- Async folder operations
 function M.get_folders_async(account, callback)
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local account_config = config.get_account(account)
+  local folders = {}
+  local folder_set = {}  -- To avoid duplicates
+  
+  -- Always include INBOX as first folder
+  table.insert(folders, 'INBOX')
+  folder_set['INBOX'] = true
+  
+  -- First, add all configured folders from config
+  if account_config and account_config.folder_map then
+    for _, local_name in pairs(account_config.folder_map) do
+      if not folder_set[local_name] then
+        table.insert(folders, local_name)
+        folder_set[local_name] = true
+      end
+    end
+  end
+  
+  -- Then check what folders actually exist via himalaya
   local args = { 'folder', 'list' }
   M.execute_himalaya_async(args, { 
     account = account,
     priority = M.async_commands and M.async_commands.priorities.ui or 2
   }, function(result, error)
     if error then
-      callback({}, error)
+      -- Return configured folders even if himalaya fails
+      table.sort(folders, function(a, b)
+        if a == 'INBOX' then return true end
+        if b == 'INBOX' then return false end
+        return a < b
+      end)
+      callback(folders, nil)
       return
     end
-    
-    local folders = {}
-    
-    -- Always include INBOX as first folder
-    table.insert(folders, 'INBOX')
     
     if result and type(result) == 'table' then
       for _, folder_data in ipairs(result) do
@@ -1057,12 +1123,20 @@ function M.get_folders_async(account, callback)
           folder_name = folder_data.name
         end
         
-        -- Add folder if it's not INBOX (to avoid duplicates)
-        if folder_name and folder_name ~= 'INBOX' then
+        -- Add folder if we haven't seen it yet
+        if folder_name and not folder_set[folder_name] then
           table.insert(folders, folder_name)
+          folder_set[folder_name] = true
         end
       end
     end
+    
+    -- Sort folders with INBOX first
+    table.sort(folders, function(a, b)
+      if a == 'INBOX' then return true end
+      if b == 'INBOX' then return false end
+      return a < b
+    end)
     
     callback(folders, nil)
   end)

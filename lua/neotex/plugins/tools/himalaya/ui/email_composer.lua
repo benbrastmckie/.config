@@ -49,7 +49,7 @@ local function parse_email_buffer(lines)
   local in_body = false
   local body_lines = {}
   
-  for _, line in ipairs(lines) do
+  for i, line in ipairs(lines) do
     if in_body then
       table.insert(body_lines, line)
     elseif line == '' then
@@ -60,18 +60,35 @@ local function parse_email_buffer(lines)
       local header, value = line:match('^([^:]+):%s*(.*)$')
       if header and value then
         email.headers[header:lower()] = value
+      else
+        -- If we encounter a line that's not a header and we haven't found empty line yet,
+        -- this might be a malformed email - start body here
+        logger.debug('Non-header line found before empty line', { 
+          line_num = i, 
+          line = line 
+        })
+        in_body = true
+        table.insert(body_lines, line)
       end
     end
   end
   
   email.body = table.concat(body_lines, '\n')
   
-  -- Map common headers (handle vim.NIL)
+  -- Debug what we parsed
+  logger.debug('Parsed email buffer', {
+    header_count = vim.tbl_count(email.headers),
+    headers = email.headers,
+    body_length = #email.body,
+    body_preview = email.body:sub(1, 100)
+  })
+  
+  -- Map common headers (handle vim.NIL but keep empty strings)
   local function safe_value(val)
     if val == vim.NIL or val == 'vim.NIL' then
-      return nil
+      return ''
     end
-    return val
+    return val or ''
   end
   
   email.from = safe_value(email.headers.from)
@@ -79,6 +96,11 @@ local function parse_email_buffer(lines)
   email.cc = safe_value(email.headers.cc)
   email.bcc = safe_value(email.headers.bcc)
   email.subject = safe_value(email.headers.subject)
+  
+  -- Ensure body is not nil
+  if not email.body then
+    email.body = ''
+  end
   
   return email
 end
@@ -96,13 +118,15 @@ local function format_email_template(opts)
     'Cc: ' .. (opts.cc or ''),
     'Bcc: ' .. (opts.bcc or ''),
     'Subject: ' .. (opts.subject or ''),
-    'Date: ' .. os.date('%a, %d %b %Y %H:%M:%S %z'),
     '',  -- Empty line to separate headers from body
   }
   
   -- Add body content
-  if opts.body then
-    for line in opts.body:gmatch('[^\r\n]+') do
+  if opts.body and opts.body ~= '' then
+    -- Handle body content line by line, preserving empty lines
+    -- Use a different pattern that correctly handles empty lines
+    local body_lines = vim.split(opts.body, '\n', { plain = true })
+    for _, line in ipairs(body_lines) do
       table.insert(lines, line)
     end
   else
@@ -139,7 +163,33 @@ local function sync_draft_to_maildir(draft_file, account)
   
   -- Read draft content
   local content = vim.fn.readfile(draft_file)
+  
+  -- Debug: log raw file content
+  logger.debug('Draft file raw content', {
+    file = draft_file,
+    line_count = #content,
+    first_lines = vim.list_slice(content, 1, 10)
+  })
+  
   local email = parse_email_buffer(content)
+  
+  -- Make sure we have all the required fields
+  if not email.from or email.from == '' then
+    -- Try to get from account config
+    email.from = config.get_formatted_from(account)
+  end
+  
+  -- Debug logging
+  logger.debug('Syncing draft to maildir', {
+    file = draft_file,
+    account = account,
+    folder = draft_folder,
+    has_body = email.body ~= nil and email.body ~= '',
+    body_length = email.body and #email.body or 0,
+    subject = email.subject,
+    from = email.from,
+    to = email.to
+  })
   
   -- Save to maildir using himalaya
   local ok, result = pcall(utils.save_draft, account, draft_folder, email)
@@ -213,6 +263,12 @@ local function setup_autosave(buf, draft_file)
         -- Sync to maildir
         local draft_info = composer_buffers[buf]
         if draft_info and draft_info.file then
+          -- If we have an existing draft ID, delete the old one first
+          if draft_info.draft_id then
+            delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+          end
+          
+          -- Create new draft
           draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
           
           -- Update state
@@ -318,9 +374,15 @@ end
 function M.create_compose_buffer(opts)
   opts = opts or {}
   
-  -- Generate draft filename
-  local timestamp = os.date('%Y%m%d_%H%M%S')
-  local draft_file = M.config.draft_dir .. 'draft_' .. timestamp .. '.eml'
+  -- Use existing draft file if reopening, otherwise create new
+  local draft_file
+  if opts.is_draft_reopen and opts.existing_draft_file then
+    draft_file = opts.existing_draft_file
+  else
+    -- Generate new draft filename
+    local timestamp = os.date('%Y%m%d_%H%M%S')
+    draft_file = M.config.draft_dir .. 'draft_' .. timestamp .. '.eml'
+  end
   
   -- Create buffer
   local buf = vim.api.nvim_create_buf(true, false)
@@ -372,14 +434,39 @@ function M.create_compose_buffer(opts)
   local lines = format_email_template(opts)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
+  -- Ensure buffer always has the empty line separator
+  -- This is critical for proper email format
+  local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local has_separator = false
+  for i, line in ipairs(buf_lines) do
+    if line == '' then
+      has_separator = true
+      break
+    end
+  end
+  if not has_separator then
+    -- Add empty line after headers if missing
+    table.insert(buf_lines, 6, '')  -- After the 5 header lines
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
+  end
+  
   -- Position cursor in To: field if empty
-  if not opts.to then
-    vim.api.nvim_win_set_cursor(0, { 2, 4 })  -- After "To: "
-  elseif not opts.subject then
-    vim.api.nvim_win_set_cursor(0, { 5, 9 })  -- After "Subject: "
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  if not opts.to or opts.to == '' then
+    vim.api.nvim_win_set_cursor(0, { math.min(2, line_count), 4 })  -- After "To: "
+  elseif not opts.subject or opts.subject == '' then
+    vim.api.nvim_win_set_cursor(0, { math.min(5, line_count), 9 })  -- After "Subject: "
   else
-    -- Position in body
-    vim.api.nvim_win_set_cursor(0, { 8, 0 })
+    -- Position cursor at beginning of body (after empty line)
+    -- Find the empty line that separates headers from body
+    local body_line = 7  -- Default position
+    for i = 1, line_count do
+      if lines[i] == '' then
+        body_line = i + 1
+        break
+      end
+    end
+    vim.api.nvim_win_set_cursor(0, { math.min(body_line, line_count), 0 })
   end
   
   -- Setup syntax highlighting
@@ -449,13 +536,16 @@ function M.reply_email(email, reply_all)
     quoted_body = '> [No content]\n'
   end
   
+  -- Start with empty lines for user to type their reply
+  local reply_body = '\n\n\n' .. string.rep('-', 40) .. '\n' ..
+                     'On ' .. (email.date or 'Unknown date') .. ', ' .. 
+                     (email.from or 'Unknown') .. ' wrote:\n\n' ..
+                     quoted_body
+  
   local opts = {
     to = email.from,
     subject = 'Re: ' .. (email.subject or ''),
-    body = '\n\n' .. string.rep('-', 40) .. '\n' ..
-           'On ' .. (email.date or 'Unknown date') .. ', ' .. 
-           (email.from or 'Unknown') .. ' wrote:\n\n' ..
-           quoted_body,
+    body = reply_body,
     reply_to = email.id,
   }
   
@@ -495,13 +585,40 @@ function M.save_draft(buf)
     return
   end
   
-  -- Save to file
+  -- Force save to file to ensure latest content is written
   vim.api.nvim_buf_call(buf, function()
+    -- Mark as modified to force write even if vim thinks it's not
+    vim.bo.modified = true
     vim.cmd('write!')
   end)
   
-  -- Sync to maildir
+  -- Wait a moment to ensure file is written
+  vim.wait(100)
+  
+  -- Debug: Check what was actually saved
+  local saved_content = vim.fn.readfile(draft_info.file)
+  logger.debug('Draft file content after save', {
+    file = draft_info.file,
+    line_count = #saved_content,
+    first_10_lines = vim.list_slice(saved_content, 1, 10),
+    has_empty_line = vim.tbl_contains(saved_content, ''),
+    empty_line_position = vim.fn.index(saved_content, '')
+  })
+  
+  -- If we have an existing draft ID, we need to update it instead of creating a new one
+  if draft_info.draft_id then
+    -- Delete the old draft from maildir first
+    delete_draft_from_maildir(draft_info.account, draft_info.draft_id)
+  end
+  
+  -- Sync to maildir (this creates a new draft)
   draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
+  
+  -- Update stored draft info
+  if draft_info.draft_id then
+    composer_buffers[buf] = draft_info
+    state.set('compose.drafts.' .. buf, draft_info)
+  end
   
   notify.himalaya('Draft saved', notify.categories.USER_ACTION)
 end
@@ -856,6 +973,38 @@ function M.force_cleanup_compose_buffer(buf)
   end
 end
 
+-- Close compose buffer properly
+function M.close_compose_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  -- Switch to a normal buffer first
+  M.switch_to_normal_buffer(buf)
+  
+  -- Clean up the compose buffer
+  local draft_info = composer_buffers[buf]
+  if draft_info then
+    -- Stop autosave timer
+    if autosave_timers[buf] then
+      vim.loop.timer_stop(autosave_timers[buf])
+      autosave_timers[buf] = nil
+    end
+    
+    -- Clean up state
+    composer_buffers[buf] = nil
+    state.set('compose.drafts.' .. buf, nil)
+  end
+  
+  -- Delete the buffer
+  vim.schedule(function()
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_set_option(buf, 'modified', false)
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end)
+end
+
 -- Switch to a normal buffer before closing a compose buffer
 -- This prevents the sidebar from expanding to full screen
 function M.switch_to_normal_buffer(closing_buf)
@@ -946,8 +1095,38 @@ function M.reopen_draft()
   local main = require('neotex.plugins.tools.himalaya.ui.main')
   local email_id = main.get_current_email_id()
   
+  -- Debug: Log what email_id we got
+  logger.debug('reopen_draft: email_id from get_current_email_id', {
+    email_id = email_id,
+    email_id_type = type(email_id),
+    current_line = vim.fn.getline('.'),
+    line_num = vim.fn.line('.'),
+    current_folder = state.get_current_folder()
+  })
+  
   if not email_id then
     notify.himalaya('No draft selected', notify.categories.ERROR)
+    return
+  end
+  
+  -- Extra validation to catch the "Drafts" issue
+  if type(email_id) == 'string' and email_id == state.get_current_folder() then
+    logger.error('Email ID is same as folder name - this is a bug!', {
+      email_id = email_id,
+      folder = state.get_current_folder()
+    })
+    notify.himalaya('Error: Invalid draft selection (got folder name instead of ID)', notify.categories.ERROR)
+    return
+  end
+  
+  -- Validate email_id is a number or numeric string
+  local numeric_id = tonumber(email_id)
+  if not numeric_id then
+    logger.error('Invalid email ID for draft', {
+      email_id = email_id,
+      type = type(email_id)
+    })
+    notify.himalaya('Invalid draft ID: ' .. tostring(email_id), notify.categories.ERROR)
     return
   end
   
@@ -960,33 +1139,130 @@ function M.reopen_draft()
     return
   end
   
-  -- Use himalaya CLI to get email content (use table format like utils.lua)
-  local cmd = {
-    'himalaya',
-    'message', 'read',
-    tostring(email_id),
-    '--account', account,
-    '--folder', current_folder
-  }
+  -- Debug: Log the email ID we're trying to read
+  logger.debug('Reopening draft', {
+    email_id = email_id,
+    account = account,
+    folder = current_folder
+  })
   
-  local output = vim.fn.system(cmd)
-  local exit_code = vim.v.shell_error
+  -- Use utils.execute_himalaya for consistent command execution
+  local args = { 'message', 'read', tostring(numeric_id), '--preview' }
+  local result = utils.execute_himalaya(args, { 
+    account = account, 
+    folder = current_folder 
+  })
   
-  if exit_code ~= 0 then
-    logger.error('Command failed', { 
-      cmd = cmd, 
-      exit_code = exit_code, 
-      output = output 
-    })
-    notify.himalaya('Failed to load draft content: ' .. tostring(output), notify.categories.ERROR)
+  if not result then
+    notify.himalaya('Failed to load draft content', notify.categories.ERROR)
     return
   end
   
+  -- Handle both string output (plain text) and table output (JSON)
+  local output
+  if type(result) == 'string' then
+    output = result
+  elseif type(result) == 'table' then
+    -- If it's JSON, we need to extract the body
+    output = result.body or vim.json.encode(result)
+  else
+    output = tostring(result)
+  end
+  
+  local exit_code = 0  -- execute_himalaya returns nil on error
+  
   -- Parse draft content
+  -- Himalaya returns the draft with display headers, then our saved content
   local lines = vim.split(output, '\n')
-  local email = parse_email_buffer(lines)
+  local email = {}
+  
+  -- For JSON results, use the data directly
+  if type(result) == 'table' then
+    email = {
+      from = result.from,
+      to = result.to,
+      cc = result.cc,
+      bcc = result.bcc,
+      subject = result.subject,
+      body = result.body or ''
+    }
+  else
+    -- For text output, parse it
+    -- First, look for the divider line that himalaya adds after its display headers
+    local divider_line = nil
+    for i, line in ipairs(lines) do
+      if line:match('^%-+$') then  -- Line of dashes
+        divider_line = i
+        break
+      end
+    end
+    
+    -- If we found a divider, everything after it is our actual saved email
+    if divider_line then
+      -- Skip himalaya's display headers and parse our actual email
+      local actual_content = {}
+      for i = divider_line + 2, #lines do  -- +2 to skip divider and empty line
+        table.insert(actual_content, lines[i])
+      end
+      
+      -- Now parse our actual email content
+      email = utils.parse_email_content(actual_content)
+      
+      -- Check if body contains our headers (duplicate headers issue)
+      if email.body and email.body:match('^From:') then
+        -- The body contains another set of headers, parse it again
+        local body_lines = vim.split(email.body, '\n')
+        local inner_email = utils.parse_email_content(body_lines)
+        if inner_email.body then
+          email = inner_email
+        end
+      end
+    else
+      -- Fallback to original parsing
+      email = parse_email_buffer(lines)
+      if (not email.body or email.body == '') and #lines > 0 then
+        local raw_email = utils.parse_email_content(lines)
+        if raw_email then
+          email = raw_email
+        end
+      end
+    end
+  end
+  
+  -- Check for multipart markers and extract content
+  if email.body then
+    -- Handle <#part type=application/octet-stream> markers
+    local content_match = email.body:match('<#part type=application/octet%-stream>\n?(.-)\n?<#')
+    if content_match then
+      email.body = content_match
+      logger.debug('Extracted content from multipart markers', { 
+        extracted_length = #content_match 
+      })
+    end
+    
+    -- Also handle the case where the markers are at the beginning/end
+    email.body = email.body:gsub('^<#part type=application/octet%-stream>\n?', '')
+    email.body = email.body:gsub('\n?<#!part.->\n?<#!/part>\n?$', '')
+    email.body = email.body:gsub('<#!/part>\n?$', '')  -- Sometimes just the end marker
+  end
+  
+  -- If we still have no body, log what we got
+  if not email.body or email.body == '' then
+    logger.warn('Draft appears to have no body content', {
+      email_id = email_id,
+      parsed_headers = {
+        from = email.from,
+        to = email.to,
+        subject = email.subject
+      },
+      raw_output_length = #output,
+      raw_output_preview = output:sub(1, 200)
+    })
+  end
   
   -- Create compose buffer with existing content
+  -- For reopened drafts, we should create a new local file since we don't know
+  -- which local file corresponds to this maildir draft
   local opts = {
     to = email.to,
     cc = email.cc,
@@ -994,19 +1270,26 @@ function M.reopen_draft()
     subject = email.subject,
     body = email.body,
     is_draft_reopen = true,
-    original_draft_id = email_id
+    original_draft_id = email_id,
+    -- Don't pass existing_draft_file - let it create a new local file
   }
   
   local buf = M.create_compose_buffer(opts)
   
+  -- Important: Delete the original draft from maildir to avoid duplicates
+  vim.defer_fn(function()
+    local draft_info = composer_buffers[buf]
+    if draft_info then
+      delete_draft_from_maildir(account, email_id)
+      -- Update the draft info to track this as the new draft
+      draft_info.original_draft_id = email_id
+      composer_buffers[buf] = draft_info
+    end
+  end, 100)
+  
   -- Position cursor appropriately
-  if not email.to or email.to == '' then
-    vim.api.nvim_win_set_cursor(0, { 2, 4 })  -- To field
-  elseif not email.subject or email.subject == '' then
-    vim.api.nvim_win_set_cursor(0, { 5, 9 })  -- Subject field
-  else
-    vim.api.nvim_win_set_cursor(0, { 8, 0 })  -- Body
-  end
+  -- Note: cursor positioning is already handled in create_compose_buffer
+  -- based on the opts we passed, so we don't need to do it again here
   
   notify.himalaya('Draft reopened for editing', notify.categories.STATUS)
   

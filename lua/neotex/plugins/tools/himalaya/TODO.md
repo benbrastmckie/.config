@@ -70,6 +70,7 @@
         - [ ] setup/health.lua: old timestamp format detection
         - [ ] utils.lua: optional enhanced utilities import with merge
     - [ ] add search spec file
+    - [ ] start compose email in TO field
     - [ ] make drafts openable from sidebar with 'return'
       - [x] created comprehensive specification document: [SAVE_AND_RETURN_TO_DRAFTS.md](spec/SAVE_AND_RETURN_TO_DRAFTS.md)
       - [x] updated phase mapping and README.md to include new spec

@@ -567,6 +567,7 @@ return {
       -- { "<leader>mr", "<cmd>HimalayaTrash<CR>", desc = "view trash", icon = "󰩺" },
       -- { "<leader>mR", "<cmd>HimalayaTrashStats<CR>", desc = "trash stats", icon = "󰊢" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
+      { "<leader>mF", "<cmd>HimalayaRecreateFolders<CR>", desc = "recreate folders", icon = "󰝰" },
     })
 
     -- MAIL LIST BUFFER specific keymaps (himalaya-list filetype)

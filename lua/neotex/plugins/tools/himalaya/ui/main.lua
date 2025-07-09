@@ -223,7 +223,14 @@ function M.close_and_save_draft()
   local buf = vim.api.nvim_get_current_buf()
   
   if email_composer.is_compose_buffer(buf) then
-    return email_composer.save_draft(buf)
+    -- Save the draft first
+    email_composer.save_draft(buf)
+    
+    -- Then close the compose buffer after a short delay to ensure save completes
+    vim.defer_fn(function()
+      email_composer.close_compose_buffer(buf)
+    end, 200)
+    return
   end
   
   -- Original implementation for non-compose buffers
@@ -272,12 +279,31 @@ function M.get_current_email_id()
   end
   
   local line_num = vim.fn.line('.')
+  local current_line = vim.fn.getline('.')
+  
+  -- Debug logging
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug('get_current_email_id', {
+    line_num = line_num,
+    current_line = current_line,
+    current_folder = state.get_current_folder()
+  })
   
   -- Use the line map from state
   local line_map = state.get('email_list.line_map')
   if line_map and line_map[line_num] then
+    local metadata = line_map[line_num]
+    logger.debug('Found metadata for line', {
+      line_num = line_num,
+      metadata = metadata
+    })
     -- Handle both regular emails (email_id) and scheduled emails (id)
-    return line_map[line_num].email_id or line_map[line_num].id
+    local id = line_map[line_num].email_id or line_map[line_num].id
+    logger.debug('Returning email ID from line_map', {
+      id = id,
+      id_type = type(id)
+    })
+    return id
   end
   
   -- Fallback to old method if line map not available
@@ -285,6 +311,16 @@ function M.get_current_email_id()
   local email_start_line = state.get('email_list.email_start_line')
   
   if not emails or #emails == 0 then
+    logger.debug('No emails found in state')
+    return nil
+  end
+  
+  -- Additional check: if we're on a header line, return nil
+  if email_start_line and line_num < email_start_line then
+    logger.debug('Cursor is on header line, not an email', {
+      line_num = line_num,
+      email_start_line = email_start_line
+    })
     return nil
   end
   
@@ -323,9 +359,21 @@ function M.get_current_email_id()
   local email_index = line_num - email_start_line + 1
   
   if email_index > 0 and email_index <= #emails and emails[email_index] then
-    return emails[email_index].id
+    local id = emails[email_index].id
+    logger.debug('Returning email ID from fallback method', {
+      email_index = email_index,
+      id = id,
+      id_type = type(id)
+    })
+    return id
   end
   
+  logger.debug('No email ID found for line', {
+    line_num = line_num,
+    email_index = email_index,
+    emails_count = #emails,
+    email_start_line = email_start_line
+  })
   return nil
 end
 
