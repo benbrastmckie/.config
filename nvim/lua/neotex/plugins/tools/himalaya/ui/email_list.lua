@@ -372,6 +372,8 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     -- Keep buffer references for backwards compatibility but only with simple data
     vim.b[buf].himalaya_account = state.get_current_account()
     vim.b[buf].himalaya_folder = folder
+    -- Store lines object with metadata for draft detection
+    vim.b[buf].himalaya_lines = { metadata = lines.metadata }
     
     -- Set up buffer keymaps for the sidebar
     config.setup_buffer_keymaps(buf)
@@ -527,6 +529,12 @@ function M.format_email_list(emails)
   -- Store where emails start (before adding email lines)
   local email_start_line = #lines + 1
   
+  -- Check if current folder is draft folder for draft detection
+  local current_folder = state.get_current_folder()
+  local current_account = state.get_current_account()
+  local draft_folder = utils.find_draft_folder(current_account)
+  local is_draft_folder = current_folder == draft_folder
+  
   -- Email entries
   for i, email in ipairs(emails) do
     -- Validate email structure
@@ -569,7 +577,10 @@ function M.format_email_list(emails)
       from = utils.truncate_string(from, 25)
       subject = utils.truncate_string(subject, 50)
       
-      local line = string.format('%s%s | %s  %s', checkbox, from, subject, date)
+      -- Add draft indicator if this is a draft
+      local draft_indicator = is_draft_folder and '✏️ ' or ''
+      
+      local line = string.format('%s%s%s | %s  %s', checkbox, draft_indicator, from, subject, date)
       table.insert(lines, line)
       
       -- Store email metadata for highlighting
@@ -580,8 +591,10 @@ function M.format_email_list(emails)
         email_index = i,
         email_id = email_id,
         selected = is_selected,
-        from_start = #checkbox + 1,  -- Start position of author field
-        from_end = #checkbox + #from  -- End position of author field
+        from_start = #checkbox + #draft_indicator + 1,  -- Start position of author field (accounting for draft indicator)
+        from_end = #checkbox + #draft_indicator + #from,  -- End position of author field
+        is_draft = is_draft_folder,  -- Flag for draft detection
+        draft_folder = is_draft_folder and draft_folder or nil  -- Store draft folder for cleanup
       }
     else
       -- Log invalid email but continue
@@ -1428,5 +1441,30 @@ function M.setup_hover_preview(buf)
   
   -- Preview updates are handled by config.lua mouse and cursor handlers
 end
+
+-- Helper function to get the current lines object with metadata
+function M.get_current_lines()
+  local buf = sidebar.get_buf()
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return nil
+  end
+  
+  -- Try to get from buffer first
+  local lines = vim.b[buf].himalaya_lines
+  if lines and lines.metadata then
+    return lines
+  end
+  
+  -- Fallback to state
+  local metadata = state.get('email_list.line_map')
+  if not metadata then
+    return nil
+  end
+  
+  return {
+    metadata = metadata
+  }
+end
+
 
 return M

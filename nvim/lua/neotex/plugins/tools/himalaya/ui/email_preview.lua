@@ -275,6 +275,10 @@ function M.render_preview(email, buf)
     if email._is_scheduled then
       table.insert(lines, "esc:sidebar gD:cancel")
       table.insert(lines, "q:exit")
+    elseif email._is_draft then
+      -- Draft-specific footer
+      table.insert(lines, "esc:sidebar return:edit gD:delete")
+      table.insert(lines, "q:exit")
     else
       table.insert(lines, "esc:sidebar gr:reply gR:reply-all gf:forward")
       table.insert(lines, "q:exit gD:delete gA:archive gS:spam")
@@ -376,8 +380,9 @@ function M.show_preview(email_id, parent_win, email_type)
   local account = state.get_current_account()
   local folder = state.get_current_folder()
   
-  -- Check if this is a scheduled email
+  -- Check if this is a scheduled email or draft
   local is_scheduled = email_type == 'scheduled'
+  local is_draft = email_type == 'draft'
   local cached_email = nil
   
   if is_scheduled then
@@ -394,6 +399,11 @@ function M.show_preview(email_id, parent_win, email_type)
   else
     -- Stage 1: Show immediate preview with cached data
     cached_email = email_cache.get_email(account, folder, email_id)
+    
+    -- Mark as draft if needed
+    if is_draft and cached_email then
+      cached_email._is_draft = true
+    end
   end
   
   if not cached_email then
@@ -532,6 +542,10 @@ function M.show_preview(email_id, parent_win, email_type)
               email_cache.store_email_body(account, folder, email_id, body)
               -- Update the preview
               cached.body = body
+              -- Preserve draft flag if it was set
+              if is_draft then
+                cached._is_draft = true
+              end
               M.render_preview(cached, preview_state.buf)
             else
               -- Create minimal email object from output
@@ -543,6 +557,11 @@ function M.show_preview(email_id, parent_win, email_type)
                 date = "Unknown",
                 body = body
               }
+              
+              -- Mark as draft if needed
+              if is_draft then
+                email._is_draft = true
+              end
               
               -- Try to parse headers from output
               local headers_text = header_end and output:sub(1, header_end) or ""

@@ -507,7 +507,30 @@ function M.send_email_now(id)
       account_id = item.account_id
     })
     
-    -- No additional cleanup needed - compose buffer was already closed when scheduled
+    -- Clean up draft if metadata exists
+    if item.metadata and item.metadata.draft_id then
+      logger.debug('Cleaning up draft after send', {
+        draft_id = item.metadata.draft_id,
+        draft_file = item.metadata.draft_file
+      })
+      
+      -- Delete draft from maildir
+      local draft_folder = utils.find_draft_folder(item.account_id)
+      if draft_folder then
+        local del_ok, del_err = pcall(utils.delete_email, item.account_id, draft_folder, item.metadata.draft_id)
+        if not del_ok then
+          logger.warn('Failed to delete draft from maildir', {
+            error = del_err,
+            draft_id = item.metadata.draft_id
+          })
+        end
+      end
+      
+      -- Delete local draft file
+      if item.metadata.draft_file then
+        vim.fn.delete(item.metadata.draft_file)
+      end
+    end
     
   else
     -- Handle failure
