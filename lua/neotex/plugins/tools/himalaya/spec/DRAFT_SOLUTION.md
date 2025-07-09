@@ -280,11 +280,21 @@ end
    - Added lifecycle logging in email_composer.lua
    - Tracks draft creation, sync success, and sync failures
 
-### Week 2: Content Handling
-1. Implement robust draft parser with state machine
-2. Fix content loss in `reopen_draft()`
-3. Ensure all draft fields are preserved
-4. Add content validation and error recovery
+### Week 2: Content Handling ✅
+1. ✅ Implement robust draft parser with state machine
+   - Created draft_parser.lua with state-machine based parsing
+   - Handles himalaya's display headers and multipart content
+   - Properly cleans vim.NIL values
+2. ✅ Fix content loss in `reopen_draft()`
+   - Replaced fragile parsing with robust parser
+   - Fixed handling of nested headers and multipart markers
+3. ✅ Ensure all draft fields are preserved
+   - Parser preserves all headers and body content
+   - Updates draft manager with parsed content
+4. ✅ Add content validation and error recovery
+   - Added validate_email function
+   - Ensures minimum required fields
+   - Logs validation errors for debugging
 
 ### Week 3: Cache and Display
 1. Implement two-tier cache system
