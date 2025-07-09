@@ -1073,10 +1073,14 @@ function M.show_scheduling_options(buf, draft_info, email)
     end
     
     -- Schedule the email
+    -- Get draft folder for cleanup
+    local draft_folder = utils.find_draft_folder(draft_info.account)
+    
     logger.info('Scheduling email with draft metadata', {
       draft_file = draft_info.file,
       draft_id = draft_info.draft_id,
       draft_account = draft_info.account,
+      draft_folder = draft_folder,
       original_draft_id = draft_info.original_draft_id,
       delay = delay
     })
@@ -1085,7 +1089,8 @@ function M.show_scheduling_options(buf, draft_info, email)
       metadata = {
         draft_file = draft_info.file,
         draft_id = draft_info.draft_id,
-        draft_account = draft_info.account
+        draft_account = draft_info.account,
+        draft_folder = draft_folder
       }
     })
     

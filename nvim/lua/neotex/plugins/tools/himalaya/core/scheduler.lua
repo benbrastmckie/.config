@@ -12,6 +12,8 @@ local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
 local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
+local retry_handler = require('neotex.plugins.tools.himalaya.core.retry_handler')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
 
 -- Enhanced configuration
 M.config = {
@@ -521,26 +523,22 @@ function M.send_email_now(id)
       notify.himalaya(string.format('Deleting draft ID: %s after send', 
         tostring(item.metadata.draft_id)), notify.categories.INFO)
       
-      -- Delete draft from maildir
+      -- Delete draft from maildir with retry
       local draft_account = item.metadata.draft_account or item.account_id
-      local draft_folder = utils.find_draft_folder(draft_account)
+      local draft_folder = item.metadata.draft_folder or utils.find_draft_folder(draft_account)
       if draft_folder then
         logger.info('Deleting draft from maildir', {
           account = draft_account,
           folder = draft_folder,
           draft_id = item.metadata.draft_id
         })
-        local del_ok, del_err = pcall(utils.delete_email, draft_account, draft_folder, item.metadata.draft_id)
-        if not del_ok then
-          logger.warn('Failed to delete draft from maildir', {
-            error = del_err,
-            draft_id = item.metadata.draft_id,
-            folder = draft_folder,
-            account = draft_account
-          })
-          notify.himalaya(string.format('Failed to delete draft: %s', tostring(del_err)), 
-            notify.categories.WARNING)
-        else
+        
+        -- Use retry handler for draft deletion
+        local del_ok, del_result = retry_handler.retry_himalaya(function()
+          return utils.delete_email(draft_account, draft_folder, item.metadata.draft_id)
+        end, 'draft deletion')
+        
+        if del_ok then
           logger.info('Draft deleted from maildir successfully', {
             draft_id = item.metadata.draft_id
           })
@@ -548,6 +546,21 @@ function M.send_email_now(id)
           
           -- Remove from draft cache
           draft_cache.remove_draft_metadata(draft_account, draft_folder, item.metadata.draft_id)
+          
+          -- Also remove from draft manager if buffer exists
+          local buffer_id = draft_manager.find_buffer_for_draft(item.metadata.draft_id)
+          if buffer_id then
+            draft_manager.remove_draft(buffer_id)
+          end
+        else
+          logger.warn('Failed to delete draft from maildir after retries', {
+            error = del_result,
+            draft_id = item.metadata.draft_id,
+            folder = draft_folder,
+            account = draft_account
+          })
+          notify.himalaya(string.format('Failed to delete draft: %s', tostring(del_result)), 
+            notify.categories.WARNING)
         end
       else
         logger.warn('Could not find draft folder for account', {

@@ -16,6 +16,9 @@ local notify = require('neotex.util.notifications')
 local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local config = require('neotex.plugins.tools.himalaya.core.config')
+local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
+local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
 
 -- Module state
 -- Store preview state in a table to prevent corruption
@@ -382,6 +385,48 @@ function M.queue_preview(email_id, parent_win, trigger, email_type)
   end))
 end
 
+-- Load draft content with proper error handling
+local function load_draft_content(account, folder, draft_id)
+  logger.info('Loading draft content for preview', {
+    account = account,
+    folder = folder,
+    draft_id = draft_id
+  })
+  
+  -- First check draft cache
+  local cached_content = draft_cache.get_draft_content(account, folder, draft_id)
+  if cached_content then
+    logger.debug('Draft content loaded from cache')
+    return cached_content
+  end
+  
+  -- Try to get from draft manager (if buffer is open)
+  local draft_state = draft_manager.get_draft_by_id(draft_id)
+  if draft_state and draft_state.content then
+    logger.debug('Draft content loaded from draft manager')
+    return draft_state.content
+  end
+  
+  -- Load from himalaya
+  local result = utils.execute_himalaya(
+    { 'message', 'read', tostring(draft_id) },
+    { account = account, folder = folder }
+  )
+  
+  if not result then
+    logger.error('Failed to load draft from himalaya', { draft_id = draft_id })
+    return nil
+  end
+  
+  -- Parse the result
+  local parsed = draft_parser.parse_himalaya_draft(result)
+  
+  -- Cache the content
+  draft_cache.cache_draft_content(account, folder, draft_id, parsed)
+  
+  return parsed
+end
+
 -- Show preview for an email (two-stage loading)
 function M.show_preview(email_id, parent_win, email_type)
   if not M.config.enabled then
@@ -434,26 +479,22 @@ function M.show_preview(email_id, parent_win, email_type)
     -- Stage 1: Show immediate preview with cached data
     cached_email = email_cache.get_email(account, folder, email_id)
     
-    -- Mark as draft if needed
+    -- Handle drafts specially
     if is_draft then
-      if cached_email then
+      -- Load draft content using our dedicated loader
+      local draft_content = load_draft_content(account, folder, email_id)
+      if draft_content then
+        cached_email = draft_content
+        cached_email.id = email_id
         cached_email._is_draft = true
-      end
-      -- For drafts, ALWAYS clear the cache and reload fresh
-      logger.info('Clearing draft cache for preview', {
-        email_id = email_id,
-        account = account,
-        folder = folder
-      })
-      email_cache.clear_email(account, folder, email_id)
-      -- Create minimal cached_email for drafts to allow preview to proceed
-      if not cached_email then
+      else
+        -- Create minimal placeholder if loading fails
         cached_email = {
           id = email_id,
-          subject = 'Loading...',
+          subject = '(Unable to load draft)',
           from = '',
           to = '',
-          body = 'Loading draft content...',
+          body = 'Failed to load draft content. The draft may have been deleted or moved.',
           _is_draft = true
         }
       end
@@ -540,54 +581,9 @@ function M.show_preview(email_id, parent_win, email_type)
       return
     end
     
-    -- For drafts, try to load from local files first
+    -- Drafts are now loaded synchronously above, skip async loading
     if is_draft then
-      vim.schedule(function()
-        logger.debug('Loading draft content', { 
-          email_id = email_id,
-          account = account,
-          folder = folder
-        })
-        
-        -- Always use himalaya to get the correct draft by ID
-        -- Don't use local files as they don't have ID mapping
-        local email_data = utils.get_email_by_id(account, folder, email_id)
-        
-        if email_data then
-          logger.debug('Draft data loaded', {
-            has_body = email_data.body ~= nil and email_data.body ~= '',
-            body_length = email_data.body and #email_data.body or 0,
-            from = email_data.from,
-            to = email_data.to,
-            subject = email_data.subject
-          })
-          
-          -- Update cache with full email data
-          local cached = email_cache.get_email(account, folder, email_id) or {}
-          cached.id = email_id  -- Ensure ID is set
-          cached.body = email_data.body
-          cached.from = email_data.from or cached.from
-          cached.to = email_data.to or cached.to
-          cached.subject = email_data.subject or cached.subject
-          cached.cc = email_data.cc or cached.cc
-          cached._is_draft = true
-          
-          email_cache.store_email(account, folder, cached)
-          -- Also store body separately
-          if email_data.body then
-            email_cache.store_email_body(account, folder, email_id, email_data.body)
-          end
-          
-          -- Update preview
-          if vim.api.nvim_win_is_valid(preview_state.win) and 
-             vim.api.nvim_buf_is_valid(preview_state.buf) and
-             preview_state.email_id == email_id then
-            M.render_preview(cached, preview_state.buf)
-          end
-        else
-          logger.error('Failed to load draft', { email_id = email_id })
-        end
-      end)
+      logger.debug('Draft already loaded, skipping async load')
       return
     end
     
