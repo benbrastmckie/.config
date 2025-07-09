@@ -19,6 +19,7 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local notify = require('neotex.util.notifications')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local state = require('neotex.plugins.tools.himalaya.core.state')
+local id_validator = require('neotex.plugins.tools.himalaya.core.id_validator')
 
 -- Truncate string to specified length
 function M.truncate_string(str, max_length)
@@ -151,27 +152,29 @@ function M.execute_himalaya(args, opts)
     end
   end
   
-  -- Special validation for message commands that take an ID
+  -- Validate command arguments to prevent folder names as IDs
+  local valid, error_msg = id_validator.validate_command_args(args[2], args)
+  if not valid then
+    logger.error('Command validation failed', {
+      command = args[2],
+      args = args,
+      error = error_msg
+    })
+    notify.himalaya(error_msg, notify.categories.ERROR)
+    return nil
+  end
+  
+  -- Additional validation for message commands with IDs
   if args[1] == 'message' and (args[2] == 'read' or args[2] == 'delete') and args[3] then
-    -- The third argument should be the ID
     local id_arg = args[3]
-    if type(id_arg) == 'string' and id_arg:match('^[A-Za-z]+$') and not tonumber(id_arg) then
-      logger.error('Invalid ID passed to message ' .. args[2], {
-        id = id_arg,
-        args = args,
-        opts = opts,
-        stack_trace = debug.traceback()
+    if id_arg and not id_validator.is_valid_id(id_arg) then
+      logger.error('Invalid ID for message command', {
+        id_arg = id_arg,
+        command = 'message ' .. args[2],
+        is_folder_name = id_validator.is_folder_name(id_arg)
       })
-      -- This is likely a folder name passed as ID
-      if id_arg == 'Drafts' or id_arg == opts.folder then
-        logger.error('ERROR: Folder name passed as email ID - blocking command', {
-          id_arg = id_arg,
-          command = 'message ' .. args[2],
-          stack_trace = debug.traceback()
-        })
-        notify.himalaya('Drafts folder name passed as email ID', notify.categories.ERROR)
-        return nil
-      end
+      notify.himalaya('Invalid email ID: ' .. tostring(id_arg), notify.categories.ERROR)
+      return nil
     end
   end
   
@@ -246,9 +249,12 @@ function M.execute_himalaya(args, opts)
       return nil
     end
     
-    -- Special error logging for the "Drafts" ID issue
-    if result and result:match("invalid value 'Drafts'") then
-      logger.error('Drafts folder name passed as email ID', {
+    -- Special error logging for invalid ID issues
+    if result and result:match("invalid value '([^']+)'") then
+      local invalid_id = result:match("invalid value '([^']+)'")
+      logger.error('Invalid ID passed to himalaya', {
+        invalid_id = invalid_id,
+        is_folder_name = id_validator.is_folder_name(invalid_id),
         command = table.concat(cmd, ' '),
         args = args,
         opts = opts,
