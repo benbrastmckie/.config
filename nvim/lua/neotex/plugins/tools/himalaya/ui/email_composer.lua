@@ -15,6 +15,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local notify = require('neotex.util.notifications')
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
 local id_validator = require('neotex.plugins.tools.himalaya.core.id_validator')
+local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
 
 -- Module state
 local composer_buffers = {}
@@ -42,86 +43,28 @@ function M.setup(cfg)
   logger.debug('Email composer v2 initialized', { config = M.config })
 end
 
--- Parse email buffer content
+-- Parse email buffer content (now uses robust parser)
 local function parse_email_buffer(lines)
-  local email = {
-    headers = {},
-    body = '',
-  }
+  -- Use the robust parser
+  local parsed = draft_parser.parse_email(lines)
   
-  local in_body = false
-  local body_lines = {}
-  
-  for i, line in ipairs(lines) do
-    if in_body then
-      table.insert(body_lines, line)
-    elseif line == '' then
-      -- Empty line marks end of headers
-      in_body = true
-    else
-      -- Parse header
-      local header, value = line:match('^([^:]+):%s*(.*)$')
-      if header and value then
-        email.headers[header:lower()] = value
-      else
-        -- If we encounter a line that's not a header and we haven't found empty line yet,
-        -- this might be a malformed email - start body here
-        logger.debug('Non-header line found before empty line', { 
-          line_num = i, 
-          line = line 
-        })
-        in_body = true
-        table.insert(body_lines, line)
-      end
-    end
-  end
-  
-  email.body = table.concat(body_lines, '\n')
-  
-  -- Debug what we parsed - ALWAYS show this
-  logger.info('Parsed email buffer', {
-    header_count = vim.tbl_count(email.headers),
-    headers = email.headers,
-    body_length = #email.body,
-    body_content = email.body,  -- Show full body to debug
+  -- Log parsing result
+  logger.info('Parsed email buffer using robust parser', {
+    header_count = vim.tbl_count(parsed.headers),
+    headers = parsed.headers,
+    body_length = #parsed.body,
+    body_content = parsed.body,  -- Show full body to debug
     total_lines = #lines,
-    body_line_count = #body_lines,
-    found_empty_line = in_body,
-    first_10_lines = vim.list_slice(lines, 1, 10)
+    parse_errors = #(parsed.errors or {}),
+    parser_state = parsed.parser_state
   })
-  
-  -- Map common headers (handle vim.NIL but keep empty strings)
-  local function safe_value(val)
-    if val == vim.NIL or val == 'vim.NIL' then
-      return ''
-    end
-    return val or ''
-  end
-  
-  email.from = safe_value(email.headers.from)
-  email.to = safe_value(email.headers.to)
-  email.cc = safe_value(email.headers.cc)
-  email.bcc = safe_value(email.headers.bcc)
-  email.subject = safe_value(email.headers.subject)
   
   -- Ensure body is not nil
-  if not email.body then
-    email.body = ''
+  if not parsed.body then
+    parsed.body = ''
   end
   
-  -- Debug the parsed email
-  logger.debug('parse_email_buffer result', {
-    has_from = email.from ~= nil and email.from ~= '',
-    has_to = email.to ~= nil and email.to ~= '',
-    has_subject = email.subject ~= nil and email.subject ~= '',
-    has_body = email.body ~= nil and email.body ~= '',
-    body_length = #email.body,
-    from = email.from,
-    to = email.to,
-    subject = email.subject
-  })
-  
-  return email
+  return parsed
 end
 
 -- Format email for display in buffer
@@ -219,6 +162,9 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     email.from = config.get_formatted_from(account)
   end
   
+  -- Validate email content before saving
+  local is_valid, validation_errors = draft_parser.validate_email(email)
+  
   -- Debug logging - ALWAYS show this info
   logger.info('Parsed email for draft sync', {
     file = draft_file,
@@ -230,8 +176,21 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     subject = email.subject,
     from = email.from,
     to = email.to,
-    headers = email.headers
+    headers = email.headers,
+    is_valid = is_valid,
+    validation_errors = validation_errors
   })
+  
+  -- Error recovery: ensure minimum required fields
+  if not email.from or email.from == '' then
+    logger.warn('Draft missing From address, using account default')
+    email.from = config.get_formatted_from(account)
+  end
+  
+  -- Ensure body is not nil
+  if not email.body then
+    email.body = ''
+  end
   
   -- If we have an existing draft ID, we should update that draft
   -- However, himalaya doesn't support update, so we need to delete and recreate
@@ -283,6 +242,20 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     -- Show success notification in debug mode
     if notify.config.modules.himalaya.debug_mode then
       notify.himalaya('Draft synced to ' .. draft_folder, notify.categories.BACKGROUND)
+    end
+    
+    -- Update draft manager with the himalaya ID
+    local buffer_id = vim.fn.bufnr(draft_file)
+    if buffer_id ~= -1 then
+      draft_manager.set_draft_id(buffer_id, result.id)
+      draft_manager.update_content(buffer_id, {
+        from = email.from,
+        to = email.to,
+        cc = email.cc,
+        bcc = email.bcc,
+        subject = email.subject,
+        body = email.body
+      })
     end
     
     -- Refresh the email list if we're in the drafts folder AND the sidebar is open
@@ -1568,65 +1541,41 @@ function M.reopen_draft(provided_email_id)
       output = tostring(result)
     end
   
-  local exit_code = 0  -- execute_himalaya returns nil on error
-  
-  -- Parse draft content
-  -- Himalaya returns the draft with display headers, then our saved content
-  local lines = vim.split(output, '\n')
-  local email = {}
-  
-  -- For JSON results, use the data directly
+  -- Parse the draft content using our robust parser
+  local email
   if type(result) == 'table' then
+    -- JSON response - convert to email format
     email = {
-      from = result.from,
-      to = result.to,
-      cc = result.cc,
-      bcc = result.bcc,
-      subject = result.subject,
-      body = result.body or ''
+      from = result.from or '',
+      to = result.to or '',
+      cc = result.cc or '',
+      bcc = result.bcc or '',
+      subject = result.subject or '',
+      body = result.body or '',
+      headers = result.headers or {}
     }
   else
-    -- For text output, parse it
-    -- First, look for the divider line that himalaya adds after its display headers
-    local divider_line = nil
-    for i, line in ipairs(lines) do
-      if line:match('^%-+$') then  -- Line of dashes
-        divider_line = i
-        break
-      end
-    end
+    -- Text response - use robust parser
+    email = draft_parser.parse_himalaya_draft(result)
     
-    -- If we found a divider, everything after it is our actual saved email
-    if divider_line then
-      -- Skip himalaya's display headers and parse our actual email
-      local actual_content = {}
-      for i = divider_line + 2, #lines do  -- +2 to skip divider and empty line
-        table.insert(actual_content, lines[i])
-      end
-      
-      -- Now parse our actual email content
-      email = utils.parse_email_content(actual_content)
-      
-      -- Check if body contains our headers (duplicate headers issue)
-      if email.body and email.body:match('^From:') then
-        -- The body contains another set of headers, parse it again
-        local body_lines = vim.split(email.body, '\n')
-        local inner_email = utils.parse_email_content(body_lines)
-        if inner_email.body then
-          email = inner_email
-        end
-      end
-    else
-      -- Fallback to original parsing
-      email = parse_email_buffer(lines)
-      if (not email.body or email.body == '') and #lines > 0 then
-        local raw_email = utils.parse_email_content(lines)
-        if raw_email then
-          email = raw_email
-        end
-      end
+    -- Validate the parsed email
+    local is_valid, validation_errors = draft_parser.validate_email(email)
+    if not is_valid then
+      logger.warn('Draft validation issues', {
+        draft_id = numeric_id,
+        errors = validation_errors
+      })
     end
   end
+  
+  logger.info('Draft lifecycle: Parsed draft content', {
+    draft_id = numeric_id,
+    has_from = email.from ~= '',
+    has_to = email.to ~= '',
+    has_subject = email.subject ~= '',
+    body_length = #(email.body or ''),
+    parse_errors = #(email.errors or {})
+  })
   
   -- Check for multipart markers and extract content
   if email.body then
