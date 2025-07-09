@@ -314,11 +314,23 @@ end
    - Draft deletion removes from cache
    - Old entries cleaned up after 30 days
 
-### Week 4: Preview and Cleanup
-1. Rewrite preview system for drafts
-2. Fix draft deletion after send
-3. Handle all edge cases (network failures, etc.)
-4. Add retry logic for failed operations
+### Week 4: Preview and Cleanup ✅
+1. ✅ Rewrite preview system for drafts
+   - Created load_draft_content function with proper error handling
+   - Uses draft cache, draft manager, then himalaya as fallback
+   - Synchronous loading for immediate preview
+2. ✅ Fix draft deletion after send
+   - Added draft_folder to scheduler metadata
+   - Integrated with draft_manager for buffer cleanup
+   - Remove from all caches on successful deletion
+3. ✅ Handle all edge cases (network failures, etc.)
+   - Created retry_handler.lua for robust retries
+   - Handles lock conflicts and temporary failures
+   - Provides exponential backoff with jitter
+4. ✅ Add retry logic for failed operations
+   - Draft deletion uses retry_handler
+   - Distinguishes retryable vs permanent errors
+   - User notifications on retry attempts
 
 ### Week 5: Testing and Polish
 1. Create comprehensive test suite
