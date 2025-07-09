@@ -436,9 +436,14 @@ function M.format_email_list(emails)
   
   -- Debug: show what we found
   local notify = require('neotex.util.notifications')
-  if notify.config.modules.himalaya.debug_mode and total_emails then
-    notify.himalaya(string.format('Found stored count: %s/%s = %d', 
-      account, folder, total_emails), notify.categories.BACKGROUND)
+  if notify.config.modules.himalaya.debug_mode then
+    if total_emails then
+      notify.himalaya(string.format('Found stored count: %s/%s = %d', 
+        account, folder, total_emails), notify.categories.BACKGROUND)
+    else
+      notify.himalaya(string.format('No stored count for: %s/%s', 
+        account, folder), notify.categories.BACKGROUND)
+    end
   end
   
   -- If no stored count, use what we got from the email list

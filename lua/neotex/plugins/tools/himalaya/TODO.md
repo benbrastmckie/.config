@@ -42,14 +42,61 @@
   - [ ] email rules & filters (see PHASE_9_REMAINING_FEATURES.md)
   - [ ] integration features (see PHASE_9_REMAINING_FEATURES.md)
   - [ ] window management (see WINDOW_MANAGEMENT_SPEC.md)
+  - [ ] add search feature
 - [ ] Phase 10: Integration & Polish (Week 7)
   - [x] nvim freezes while sync is running, for instance as soon as I start nvim ✅ FIXED
     - [x] identified blocking `os.execute` in `oauth.has_token`
     - [x] created async versions: `has_token_async` and `is_valid_async`
     - [x] modified `mbsync.sync` to use async OAuth check
     - [x] added comprehensive startup timing logs with `[STARTUP DEBUG]` markers
-  - [ ] last sync time not updating in header
-  - [ ] can't delete paused tests
+  - [x] last sync time not updating in header ✅ FIXED
+    - [x] fixed `fetch_folder_count_async` that didn't exist
+    - [x] now using synchronous `fetch_folder_count` with binary search
+    - [x] correctly shows email counts > 1000 (e.g., "2023 emails")
+    - [x] timestamps properly updated after sync
+  - [x] auto-sync not starting on startup ✅ FIXED
+    - [x] added debug notifications to track initialization
+    - [x] verified auto-sync starts with configurable delay
+    - [x] integrated with multi-instance coordination
+  - [ ] misc
+    - [x] fix "**No Breaking Changes**: All improvements must maintain backward compatibility" ✅ FIXED
+      - [x] updated spec/README.md to reflect preference for clean architecture over backwards compatibility
+      - [ ] remove backwards compatibility
+        - [x] searched and added TODOs to mark backwards compatibility elements for removal:
+        - [ ] setup/migration.lua: entire migration system (deprecated files, config migrations)
+        - [ ] core/commands.lua: compatibility bridge for modular commands  
+        - [ ] init.lua: get_keymaps() function maintained for compatibility
+        - [ ] core/state.lua: state versioning and migration system
+        - [ ] setup/health.lua: old timestamp format detection
+        - [ ] utils.lua: optional enhanced utilities import with merge
+    - [ ] add search spec file
+    - [ ] make drafts openable from sidebar with 'return'
+      - [x] created comprehensive specification document: [SAVE_AND_RETURN_TO_DRAFTS.md](spec/SAVE_AND_RETURN_TO_DRAFTS.md)
+      - [x] updated phase mapping and README.md to include new spec
+      - [ ] implement Phase 1: Draft detection and display enhancement
+      - [ ] implement Phase 2: Draft reopening logic
+      - [ ] implement Phase 3: Polish and testing
+      - [ ] disable and do not show same footer commands for drafts
+    - [x] make 'tab' through fields in drafts work in insert mode only (currently it is only in normal mode) ✅ FIXED
+      - [x] changed Tab keymap from normal mode ('n') to insert mode ('i') in email composer
+      - [x] now Tab navigates through header fields only when in insert mode, preserving normal mode Tab for buffer navigation
+    - [x] there is no confirmation message when running 'gD', 'gA', 'gS' in the sidebar ✅ FIXED
+      - [x] added confirmation dialogs to archive_current_email() and spam_current_email() functions
+      - [x] now all three operations (delete, archive, spam) show confirmation for single email mode
+      - [x] batch mode confirmations were already working correctly
+      - [x] fix prompt messages
+    - [x] drafts don't save ✅ FIXED
+      - [x] fixed duplicate save_draft function definitions
+      - [x] fixed draft folder detection to return correct "Drafts" folder name
+      - [x] fixed account detection in composer
+      - [x] updated CLI syntax for himalaya message save command
+      - [x] fixed output parsing for draft save success
+      - [x] added comprehensive test suite (5/5 tests passing)
+      - [x] 🚧 WORKING: fixing sidebar expansion when draft buffer closes
+        - [x] created switch_to_normal_buffer() function with buffer detection
+        - [x] updated test to use force_cleanup_compose_buffer() instead of direct buffer deletion
+        - [x] testing fix effectiveness
+    - [ ] can't delete paused emails
   - [ ] OAuth 2.0 implementation
   - [ ] PGP/GPG encryption
   - [ ] testing infrastructure

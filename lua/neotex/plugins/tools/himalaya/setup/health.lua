@@ -35,6 +35,7 @@ function M.checks.uidvalidity()
         content_handle:close()
         
         -- Check for invalid formats
+        -- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove old timestamp format detection
         if content:match('^%d+$') and #content < 5 then
           -- Single digit - our old format
           table.insert(issues, {

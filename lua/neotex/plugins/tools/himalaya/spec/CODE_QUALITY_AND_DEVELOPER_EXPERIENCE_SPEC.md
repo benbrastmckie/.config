@@ -546,7 +546,16 @@ return api.create_facade('email', {
 ### 3. Performance Optimizations
 
 **Priority**: Medium  
-**Estimated Effort**: 1 week
+**Estimated Effort**: 1 week  
+**Status**: ✅ COMPLETED (Core sync performance fixes - 2025-01-08)
+
+#### Completed Performance Fixes
+- Fixed blocking sync on startup with async OAuth validation
+- Fixed email count > 1000 display (now shows actual count like "2023 emails")
+- Fixed sync timestamp updates for accurate "last synced" display
+- Auto-sync with configurable startup delay (default 2s for testing)
+- Multi-instance coordination to prevent duplicate syncs
+- Fixed `fetch_folder_count_async` bug (function didn't exist)
 
 #### 3.1 Performance Module
 

@@ -1,5 +1,6 @@
 -- Migration module for updating from old Himalaya plugin version
 -- Handles configuration updates, file cleanup, and state migration
+-- TODO: REMOVE BACKWARDS COMPATIBILITY - This entire migration system should be removed to focus on clean, maintainable code
 
 local M = {}
 

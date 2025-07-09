@@ -156,7 +156,6 @@ return {
               width = 0.25,   -- Slightly wider for centered dialog
               height = 0.15,  -- 15% of screen height
             },
-            prompt_title = "",
             results_title = "",
             previewer = false,
           })
@@ -167,13 +166,13 @@ return {
               width = 0.2,   -- 20% of screen width
               height = 0.15, -- 15% of screen height  
             },
-            prompt_title = "",
             results_title = "",
             previewer = false,
           })
         end
         
         local picker = pickers.new(theme_config, {
+          prompt_title = opts.prompt or "",
           finder = finders.new_table({
             results = items,
             entry_maker = function(entry)

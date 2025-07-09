@@ -670,7 +670,7 @@ function M.delete_current_email()
   end
   
   -- Confirm deletion
-  local prompt = " Delete current email?"
+  local prompt = "Delete current email?"
   vim.ui.select({"Yes", "No"}, {
     prompt = prompt,
     kind = "confirmation",
@@ -812,7 +812,34 @@ function M.archive_current_email()
   -- First try get_current_email_id which handles preview_email_id
   email_id = M.get_current_email_id()
   
+  if not email_id then
+    return
+  end
   
+  -- Show confirmation dialog
+  local prompt = "Archive current email?"
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
+    
+    -- User confirmed, proceed with archiving
+    M.do_archive_current_email(email_id)
+  end)
+end
+
+-- Internal function to perform the actual archiving
+function M.do_archive_current_email(email_id)
   if email_id then
     -- Try different archive folder names that might exist
     local archive_folders = {'All_Mail', 'Archive', 'All Mail', 'ARCHIVE', 'Archived'}
@@ -894,7 +921,35 @@ end
 function M.spam_current_email()
   local email_id = M.get_current_email_id()
   
+  if not email_id then
+    notify.himalaya('No email selected', notify.categories.STATUS)
+    return
+  end
   
+  -- Show confirmation dialog
+  local prompt = "Mark current email as spam?"
+  vim.ui.select({"Yes", "No"}, {
+    prompt = prompt,
+    kind = "confirmation",
+    format_item = function(item)
+      if item == "Yes" then
+        return " " .. item  -- Check mark
+      else
+        return " " .. item  -- X mark
+      end
+    end,
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
+    
+    -- User confirmed, proceed with spam marking
+    M.do_spam_current_email(email_id)
+  end)
+end
+
+-- Internal function to perform the actual spam marking
+function M.do_spam_current_email(email_id)
   if email_id then
     -- Try different spam folder names that might exist
     local spam_folders = {'Spam', 'Junk', 'SPAM', 'JUNK'}
