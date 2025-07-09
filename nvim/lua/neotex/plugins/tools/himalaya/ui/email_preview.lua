@@ -520,13 +520,74 @@ function M.show_preview(email_id, parent_win, email_type)
         if exit_code == 0 and #stdout_buffer > 0 then
           local output = table.concat(stdout_buffer, '\n')
           
-          -- Parse plain text output
+          -- Parse plain text output from himalaya
           local body = output
           
-          -- Try to extract body after headers
-          local header_end = output:find("\n\n")
-          if header_end then
-            body = output:sub(header_end + 2)
+          -- Himalaya message read returns:
+          -- 1. Display headers (From, To, Subject, Date)
+          -- 2. A line of dashes
+          -- 3. Empty line
+          -- 4. The actual email content
+          
+          -- Find the divider line (dashes)
+          local divider_pos = output:find("\n%-+\n")
+          if divider_pos then
+            -- Skip past the divider and empty line to get actual content
+            local content_start = output:find("\n", divider_pos + 1) + 1
+            if content_start then
+              body = output:sub(content_start)
+              
+              -- If the body starts with email headers again, parse them out
+              if body:match("^From:") then
+                local real_body_start = body:find("\n\n")
+                if real_body_start then
+                  body = body:sub(real_body_start + 2)
+                end
+              end
+            end
+          else
+            -- Fallback: Try to extract body after headers
+            local header_end = output:find("\n\n")
+            if header_end then
+              body = output:sub(header_end + 2)
+            end
+          end
+          
+          -- Additional cleanup for drafts that may have multipart markers
+          if is_draft and body then
+            -- Remove multipart markers
+            body = body:gsub("<#part type=application/octet%-stream>", "")
+            body = body:gsub("<#/part>", "")
+            body = body:gsub("<#!part.->\n?", "")
+            body = body:gsub("<#!/part>\n?", "")
+            
+            -- If body still starts with headers, it might be a nested email structure
+            if body:match("^From:") or body:match("^To:") or body:match("^Subject:") then
+              -- Find the actual body content after headers
+              local actual_body_start = body:find("\n\n")
+              if actual_body_start then
+                -- Also capture the headers for updating the preview
+                local header_section = body:sub(1, actual_body_start - 1)
+                body = body:sub(actual_body_start + 2)
+                
+                -- Update cached email with the actual headers from draft
+                for line in header_section:gmatch("[^\n]+") do
+                  local header, value = line:match("^([^:]+):%s*(.*)$")
+                  if header and value then
+                    local lower_header = header:lower()
+                    if lower_header == "from" then
+                      cached.from = value
+                    elseif lower_header == "to" then
+                      cached.to = value
+                    elseif lower_header == "subject" then
+                      cached.subject = value
+                    elseif lower_header == "cc" then
+                      cached.cc = value
+                    end
+                  end
+                end
+              end
+            end
           end
           
           -- Remove HTML wrapper if present

@@ -484,6 +484,7 @@ function M.is_setup_complete()
 end
 
 -- Delete all mailboxes with confirmation
+-- Flow: 1) Backup? 2) Delete? 3) Recreate folders? 4) Run wizard?
 function M.delete_all_mailboxes()
   local notify = require('neotex.util.notifications')
   local account = config.get_current_account()
@@ -535,9 +536,17 @@ function M.delete_all_mailboxes()
       -- Perform deletion
       notify.himalaya('Deleting all mailboxes...', notify.categories.STATUS)
       
-      -- Kill any running sync processes first
+      -- Stop any running sync processes first
       local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
-      mbsync.kill_all()
+      if mbsync.is_running() then
+        mbsync.stop()
+      end
+      
+      -- Also kill any external mbsync processes
+      vim.fn.system('pkill -f mbsync 2>/dev/null')
+      
+      -- Wait a moment for processes to stop
+      vim.wait(500)
       
       -- Delete the maildir
       local rm_cmd = string.format('rm -rf %s', vim.fn.shellescape(maildir))
@@ -549,20 +558,78 @@ function M.delete_all_mailboxes()
       end
       
       -- Clear all state and cache
-      state.clear_all()
+      state.reset()
       local utils = require('neotex.plugins.tools.himalaya.utils')
       utils.clear_email_cache()
       
       -- Close any open Himalaya windows
       local ui = require('neotex.plugins.tools.himalaya.ui.main')
-      if ui.is_email_buffer_open then
-        ui.close_all_windows()
-      end
+      ui.close_himalaya()
       
       notify.himalaya(' All mailboxes deleted successfully', notify.categories.USER_ACTION)
-      notify.himalaya('Run :HimalayaSetup to reconfigure', notify.categories.STATUS)
+      
+      -- Third prompt: Recreate empty folders?
+      vim.defer_fn(function()
+        vim.ui.select({'Yes', 'No'}, {
+          prompt = 'Recreate empty folder structure?',
+          kind = 'confirmation',
+        }, function(folder_choice)
+          if folder_choice == 'Yes' then
+            -- Recreate folders
+            local success = M.create_maildir()
+            if success then
+              notify.himalaya('Folder structure recreated successfully', notify.categories.USER_ACTION)
+            else
+              notify.himalaya('Failed to recreate folders', notify.categories.ERROR)
+            end
+          end
+          
+          -- Fourth prompt: Run setup wizard?
+          vim.defer_fn(function()
+            vim.ui.select({'Yes', 'No'}, {
+              prompt = 'Run setup wizard to reconfigure?',
+              kind = 'confirmation',
+            }, function(wizard_choice)
+              if wizard_choice == 'Yes' then
+                -- Run the setup wizard
+                vim.defer_fn(function()
+                  M.run()
+                end, 100)
+              else
+                notify.himalaya('Run :HimalayaSetup when ready to reconfigure', notify.categories.STATUS)
+              end
+            end)
+          end, 500)
+        end)
+      end, 500)
     end)
   end)
+end
+
+-- Recreate folder structure without full setup
+function M.recreate_folders()
+  local notify = require('neotex.util.notifications')
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local account = config.get_current_account()
+  
+  if not account or not account.maildir_path then
+    notify.himalaya('No account configured', notify.categories.ERROR)
+    return false
+  end
+  
+  notify.himalaya('Recreating folder structure...', notify.categories.STATUS)
+  
+  -- Create the folders
+  local success = M.create_maildir()
+  
+  if success then
+    notify.himalaya('Folder structure recreated successfully', notify.categories.USER_ACTION)
+    notify.himalaya('Run :HimalayaSyncInbox to sync with server', notify.categories.STATUS)
+  else
+    notify.himalaya('Failed to recreate folders', notify.categories.ERROR)
+  end
+  
+  return success
 end
 
 return M

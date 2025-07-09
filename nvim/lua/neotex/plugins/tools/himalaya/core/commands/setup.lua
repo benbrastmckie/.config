@@ -72,6 +72,16 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaRecreateFolders = {
+    fn = function()
+      local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+      wizard.recreate_folders()
+    end,
+    opts = {
+      desc = 'Recreate empty folder structure'
+    }
+  }
+  
   commands.HimalayaFixCommon = {
     fn = function()
       local health = require('neotex.plugins.tools.himalaya.setup.health')

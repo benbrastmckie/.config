@@ -36,9 +36,13 @@ function M.setup()
   M.load_database()
   
   -- Scan existing emails for contacts
-  if config.get('contacts.auto_scan', true) then
+  -- Disabled by default to avoid startup errors
+  if config.get('contacts.auto_scan', false) then
     vim.defer_fn(function()
-      M.scan_emails_for_contacts()
+      local ok, err = pcall(M.scan_emails_for_contacts)
+      if not ok then
+        logger.debug("Contact scan failed: " .. tostring(err))
+      end
     end, 5000) -- Delay to avoid startup impact
   end
 end
@@ -313,6 +317,19 @@ end
 
 -- Scan emails for contacts
 function M.scan_emails_for_contacts()
+  -- Check if himalaya is available
+  if vim.fn.executable('himalaya') ~= 1 then
+    logger.debug("Himalaya not available, skipping contact scan")
+    return
+  end
+  
+  -- Check if setup is complete
+  local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+  if not wizard.is_setup_complete() then
+    logger.debug("Himalaya setup not complete, skipping contact scan")
+    return
+  end
+  
   logger.info("Scanning emails for contacts...")
   
   local account = config.get_current_account_name()
@@ -325,7 +342,7 @@ function M.scan_emails_for_contacts()
     { account = account, folder = 'INBOX' }
   )
   
-  if result.success and result.data then
+  if result and result.success and result.data then
     for _, email in ipairs(result.data) do
       local contacts = M.extract_from_email(email)
       
@@ -345,22 +362,35 @@ function M.scan_emails_for_contacts()
     end
   end
   
-  -- Also scan sent folder
-  result = utils.execute_himalaya(
-    {'envelope', 'list', '--page', '1', '--page-size', '100'},
-    { account = account, folder = 'Sent' }
-  )
+  -- Try to scan sent folder (may not exist for all accounts)
+  local sent_folders = {'Sent', '[Gmail]/Sent Mail', 'Sent Messages', 'Sent Items'}
+  local sent_scanned = false
   
-  if result.success and result.data then
-    for _, email in ipairs(result.data) do
-      local contacts = M.extract_from_email(email)
+  for _, folder_name in ipairs(sent_folders) do
+    if not sent_scanned then
+      result = utils.execute_himalaya(
+        {'envelope', 'list', '--page', '1', '--page-size', '100'},
+        { account = account, folder = folder_name }
+      )
       
-      for _, contact in ipairs(contacts) do
-        M.update_contact_frequency(contact.email)
+      if result and result.success and result.data then
+        for _, email in ipairs(result.data) do
+          local contacts = M.extract_from_email(email)
+          
+          for _, contact in ipairs(contacts) do
+            M.update_contact_frequency(contact.email)
+          end
+          
+          scanned = scanned + 1
+        end
+        sent_scanned = true
+        logger.debug("Successfully scanned sent folder: " .. folder_name)
       end
-      
-      scanned = scanned + 1
     end
+  end
+  
+  if not sent_scanned then
+    logger.debug("Could not find sent folder, skipping sent folder scan")
   end
   
   logger.info(string.format("Scanned %d emails, added %d new contacts", scanned, added))

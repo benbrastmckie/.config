@@ -555,6 +555,20 @@ function M.format_email_list(emails)
       
       -- Selection checkbox (always shown)
       local email_id = email.id or tostring(i)
+      
+      -- Debug logging for draft emails
+      if is_draft_folder then
+        local logger = require('neotex.plugins.tools.himalaya.core.logger')
+        logger.debug('Draft email entry', {
+          index = i,
+          email_id = email_id,
+          id = email.id,
+          subject = email.subject,
+          from = email.from,
+          has_id = email.id ~= nil
+        })
+      end
+      
       local is_selected = state.is_email_selected(email_id)
       local checkbox = is_selected and '[x] ' or '[ ] '
       
@@ -585,17 +599,29 @@ function M.format_email_list(emails)
       
       -- Store email metadata for highlighting
       if not lines.metadata then lines.metadata = {} end
-      lines.metadata[#lines] = {
-        seen = seen,
-        starred = starred,
-        email_index = i,
-        email_id = email_id,
-        selected = is_selected,
-        from_start = #checkbox + #draft_indicator + 1,  -- Start position of author field (accounting for draft indicator)
-        from_end = #checkbox + #draft_indicator + #from,  -- End position of author field
-        is_draft = is_draft_folder,  -- Flag for draft detection
-        draft_folder = is_draft_folder and draft_folder or nil  -- Store draft folder for cleanup
-      }
+      
+      -- Validate email_id before storing
+      if email_id and tonumber(email_id) then
+        lines.metadata[#lines] = {
+          seen = seen,
+          starred = starred,
+          email_index = i,
+          email_id = email_id,
+          selected = is_selected,
+          from_start = #checkbox + #draft_indicator + 1,  -- Start position of author field (accounting for draft indicator)
+          from_end = #checkbox + #draft_indicator + #from,  -- End position of author field
+          is_draft = is_draft_folder,  -- Flag for draft detection
+          draft_folder = is_draft_folder and draft_folder or nil  -- Store draft folder for cleanup
+        }
+      else
+        -- Log invalid email ID
+        logger.warn('Invalid email ID detected', {
+          email_id = email_id,
+          email_index = i,
+          subject = email.subject,
+          from = from
+        })
+      end
     else
       -- Log invalid email but continue
       local logger = require('neotex.plugins.tools.himalaya.core.logger')

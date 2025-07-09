@@ -164,6 +164,12 @@ M.defaults = {
   notifications = {
     show_routine_operations = false,
   },
+  
+  -- Contacts settings
+  contacts = {
+    auto_scan = false, -- Disabled by default to avoid startup errors
+    scan_folders = {'INBOX'}, -- Only scan INBOX by default
+  },
 }
 
 -- Current configuration (merged with defaults)
@@ -428,6 +434,15 @@ function M.setup_buffer_keymaps(bufnr)
       local email_id = email_list.get_email_id_from_line(line)
       
       if not email_id then
+        -- No email on this line (could be header, separator, etc.)
+        return
+      end
+      
+      -- Validate email_id is not a folder name
+      local state = require('neotex.plugins.tools.himalaya.core.state')
+      if type(email_id) == 'string' and email_id == state.get_current_folder() then
+        local notify = require('neotex.util.notifications')
+        notify.himalaya('Cannot open header line as email', notify.categories.ERROR)
         return
       end
       
