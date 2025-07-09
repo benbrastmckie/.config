@@ -74,6 +74,8 @@
     - [ ] make drafts openable from sidebar with 'return'
       - [x] created comprehensive specification document: [SAVE_AND_RETURN_TO_DRAFTS.md](spec/SAVE_AND_RETURN_TO_DRAFTS.md)
       - [x] updated phase mapping and README.md to include new spec
+      - [ ] subject lines don't show content
+      - [ ] drafts should be removed from the 'Drafts' folder when sent
       - [ ] implement Phase 1: Draft detection and display enhancement
       - [ ] implement Phase 2: Draft reopening logic
       - [ ] implement Phase 3: Polish and testing

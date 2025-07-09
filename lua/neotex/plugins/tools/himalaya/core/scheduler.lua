@@ -509,27 +509,60 @@ function M.send_email_now(id)
     
     -- Clean up draft if metadata exists
     if item.metadata and item.metadata.draft_id then
-      logger.debug('Cleaning up draft after send', {
+      logger.info('Cleaning up draft after send', {
         draft_id = item.metadata.draft_id,
-        draft_file = item.metadata.draft_file
+        draft_file = item.metadata.draft_file,
+        draft_account = item.metadata.draft_account or item.account_id
       })
       
+      -- Always show this for debugging
+      local notify = require('neotex.util.notifications')
+      notify.himalaya(string.format('Deleting draft ID: %s after send', 
+        tostring(item.metadata.draft_id)), notify.categories.INFO)
+      
       -- Delete draft from maildir
-      local draft_folder = utils.find_draft_folder(item.account_id)
+      local draft_account = item.metadata.draft_account or item.account_id
+      local draft_folder = utils.find_draft_folder(draft_account)
       if draft_folder then
-        local del_ok, del_err = pcall(utils.delete_email, item.account_id, draft_folder, item.metadata.draft_id)
+        logger.info('Deleting draft from maildir', {
+          account = draft_account,
+          folder = draft_folder,
+          draft_id = item.metadata.draft_id
+        })
+        local del_ok, del_err = pcall(utils.delete_email, draft_account, draft_folder, item.metadata.draft_id)
         if not del_ok then
           logger.warn('Failed to delete draft from maildir', {
             error = del_err,
+            draft_id = item.metadata.draft_id,
+            folder = draft_folder,
+            account = draft_account
+          })
+          notify.himalaya(string.format('Failed to delete draft: %s', tostring(del_err)), 
+            notify.categories.WARNING)
+        else
+          logger.info('Draft deleted from maildir successfully', {
             draft_id = item.metadata.draft_id
           })
+          notify.himalaya('Draft cleaned up successfully', notify.categories.INFO)
         end
+      else
+        logger.warn('Could not find draft folder for account', {
+          account = draft_account
+        })
       end
       
       -- Delete local draft file
       if item.metadata.draft_file then
         vim.fn.delete(item.metadata.draft_file)
+        logger.debug('Local draft file deleted', {
+          file = item.metadata.draft_file
+        })
       end
+    else
+      logger.debug('No draft cleanup needed - missing metadata', {
+        has_metadata = item.metadata ~= nil,
+        has_draft_id = item.metadata and item.metadata.draft_id ~= nil
+      })
     end
     
   else

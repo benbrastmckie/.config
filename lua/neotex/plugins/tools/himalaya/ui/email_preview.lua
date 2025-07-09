@@ -89,7 +89,14 @@ function M.setup(cfg)
         if email_id then
           -- Small delay to ensure sidebar is fully focused
           vim.defer_fn(function()
-            M.show_preview(email_id, current_win)
+            -- Check if we're in drafts folder to determine email type
+            local state = require('neotex.plugins.tools.himalaya.core.state')
+            local folder = state.get_current_folder()
+            local email_type = nil
+            if folder and folder:lower():match('draft') then
+              email_type = 'draft'
+            end
+            M.show_preview(email_id, current_win, email_type)
           end, 10)
         end
       -- If leaving sidebar/preview area for non-Himalaya windows, hide preview but keep mode enabled
@@ -243,17 +250,26 @@ function M.render_preview(email, buf)
     end
     
     if M.config.show_headers then
-      -- Safe string conversion for all fields
-      local from = tostring(email.from or "Unknown")
-      local to = tostring(email.to or "Unknown")
-      local subject = tostring(email.subject or "No Subject")
-      local date = tostring(email.date or "Unknown")
+      -- Safe string conversion for all fields with vim.NIL handling
+      local function safe_tostring(val, default)
+        if val == vim.NIL or val == nil then
+          return default or ""
+        end
+        return tostring(val)
+      end
+      
+      local from = safe_tostring(email.from, "Unknown")
+      local to = safe_tostring(email.to, "")
+      local subject = safe_tostring(email.subject, "")
+      local date = safe_tostring(email.date, "Unknown")
       
       table.insert(lines, "From: " .. from)
       table.insert(lines, "To: " .. to)
-      if email.cc then
-        local cc = tostring(email.cc)
-        table.insert(lines, "Cc: " .. cc)
+      if email.cc and email.cc ~= vim.NIL then
+        local cc = safe_tostring(email.cc, "")
+        if cc ~= "" then
+          table.insert(lines, "Cc: " .. cc)
+        end
       end
       table.insert(lines, "Subject: " .. subject)
       table.insert(lines, "Date: " .. date)
@@ -372,18 +388,36 @@ function M.show_preview(email_id, parent_win, email_type)
     return
   end
   
-  -- If showing the same email, just ensure window is visible
-  if email_id == preview_state.email_id and preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
-    return
-  end
-  
   local account = state.get_current_account()
   local folder = state.get_current_folder()
   
-  -- Check if this is a scheduled email or draft
+  -- If showing the same email, just ensure window is visible
+  -- BUT: For drafts, always refresh to show latest content
+  local is_draft = email_type == 'draft' or (folder and folder:lower():match('draft'))
+  if email_id == preview_state.email_id and preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) and not is_draft then
+    return
+  end
+  
+  -- Clear any stale preview state when switching emails
+  if email_id ~= preview_state.email_id then
+    preview_state.email_id = nil
+    preview_state.body_loaded = false
+  end
+  
+  -- Check if this is a scheduled email
   local is_scheduled = email_type == 'scheduled'
-  local is_draft = email_type == 'draft'
+  -- is_draft already defined above
   local cached_email = nil
+  
+  -- Validate email_id
+  if not email_id or (type(email_id) == 'string' and email_id == 'Drafts') then
+    logger.error('Invalid email ID in show_preview', {
+      email_id = email_id,
+      email_type = email_type,
+      stack_trace = debug.traceback()
+    })
+    return
+  end
   
   if is_scheduled then
     -- Get scheduled email data
@@ -401,8 +435,28 @@ function M.show_preview(email_id, parent_win, email_type)
     cached_email = email_cache.get_email(account, folder, email_id)
     
     -- Mark as draft if needed
-    if is_draft and cached_email then
-      cached_email._is_draft = true
+    if is_draft then
+      if cached_email then
+        cached_email._is_draft = true
+      end
+      -- For drafts, ALWAYS clear the cache and reload fresh
+      logger.info('Clearing draft cache for preview', {
+        email_id = email_id,
+        account = account,
+        folder = folder
+      })
+      email_cache.clear_email(account, folder, email_id)
+      -- Create minimal cached_email for drafts to allow preview to proceed
+      if not cached_email then
+        cached_email = {
+          id = email_id,
+          subject = 'Loading...',
+          from = '',
+          to = '',
+          body = 'Loading draft content...',
+          _is_draft = true
+        }
+      end
     end
   end
   
@@ -483,6 +537,57 @@ function M.show_preview(email_id, parent_win, email_type)
   if not cached_body and not is_scheduled then
     local account_cfg = config.get_current_account()
     if not account_cfg then
+      return
+    end
+    
+    -- For drafts, try to load from local files first
+    if is_draft then
+      vim.schedule(function()
+        logger.debug('Loading draft content', { 
+          email_id = email_id,
+          account = account,
+          folder = folder
+        })
+        
+        -- Always use himalaya to get the correct draft by ID
+        -- Don't use local files as they don't have ID mapping
+        local email_data = utils.get_email_by_id(account, folder, email_id)
+        
+        if email_data then
+          logger.debug('Draft data loaded', {
+            has_body = email_data.body ~= nil and email_data.body ~= '',
+            body_length = email_data.body and #email_data.body or 0,
+            from = email_data.from,
+            to = email_data.to,
+            subject = email_data.subject
+          })
+          
+          -- Update cache with full email data
+          local cached = email_cache.get_email(account, folder, email_id) or {}
+          cached.id = email_id  -- Ensure ID is set
+          cached.body = email_data.body
+          cached.from = email_data.from or cached.from
+          cached.to = email_data.to or cached.to
+          cached.subject = email_data.subject or cached.subject
+          cached.cc = email_data.cc or cached.cc
+          cached._is_draft = true
+          
+          email_cache.store_email(account, folder, cached)
+          -- Also store body separately
+          if email_data.body then
+            email_cache.store_email_body(account, folder, email_id, email_data.body)
+          end
+          
+          -- Update preview
+          if vim.api.nvim_win_is_valid(preview_state.win) and 
+             vim.api.nvim_buf_is_valid(preview_state.buf) and
+             preview_state.email_id == email_id then
+            M.render_preview(cached, preview_state.buf)
+          end
+        else
+          logger.error('Failed to load draft', { email_id = email_id })
+        end
+      end)
       return
     end
     
@@ -660,6 +765,11 @@ end
 -- Get current preview email ID
 function M.get_current_preview_id()
   return preview_state.email_id
+end
+
+-- Get preview state (for draft handling)
+function M.get_preview_state()
+  return preview_state
 end
 
 -- Return focus to sidebar without hiding preview

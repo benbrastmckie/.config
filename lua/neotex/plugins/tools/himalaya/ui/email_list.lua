@@ -19,6 +19,7 @@ local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
 -- Module state
 local sync_status_timer = nil
@@ -323,6 +324,18 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   
   -- Store emails in cache
   if emails and #emails > 0 then
+    -- Clear draft folder cache first to ensure fresh data
+    local draft_folder = utils.find_draft_folder(account_name)
+    if folder == draft_folder then
+      logger.info('Clearing draft folder cache before storing new emails')
+      email_cache.clear_folder(account_name, folder)
+      
+      -- Debug: Log what we're getting from himalaya for drafts
+      logger.info('Draft emails from himalaya envelope list', {
+        count = #emails,
+        first_3 = vim.list_slice(emails, 1, 3)
+      })
+    end
     email_cache.store_emails(account_name, folder, emails)
   end
   
@@ -584,7 +597,50 @@ function M.format_email_list(emails)
         end
       end
       
-      local subject = email.subject or '(No subject)'
+      local subject = email.subject or ''
+      
+      -- For drafts, himalaya might not return the subject in envelope list
+      -- Try to get it from the cached email data if available
+      if is_draft_folder and (subject == '' or subject == vim.NIL) then
+        local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+        local cached = email_cache.get_email(current_account, current_folder, email_id)
+        logger.info('Checking cache for draft subject', {
+          email_id = email_id,
+          current_account = current_account,
+          current_folder = current_folder,
+          has_cached = cached ~= nil,
+          cached_subject = cached and cached.subject,
+          cached_id = cached and cached.id
+        })
+        if cached and cached.subject and cached.subject ~= '' then
+          subject = cached.subject
+          logger.info('Using cached subject for draft', {
+            email_id = email_id,
+            cached_subject = subject
+          })
+        else
+          logger.info('No cached subject found for draft', {
+            email_id = email_id,
+            cached = cached
+          })
+        end
+      end
+      
+      if subject == '' then
+        subject = '(No subject)'
+      end
+      
+      -- Debug logging for draft subjects
+      if is_draft_folder then
+        logger.debug('Draft subject in sidebar', {
+          index = i,
+          email_id = email_id,
+          raw_subject = email.subject,
+          subject_type = type(email.subject),
+          is_empty = subject == '',
+          display_subject = subject
+        })
+      end
       local date = email.date or ''
       
       -- Truncate long fields
@@ -1181,6 +1237,13 @@ function M.refresh_email_list()
       end
       
       if emails then
+        -- Clear draft folder cache first to ensure fresh data
+        local draft_folder = utils.find_draft_folder(account_name)
+        if folder == draft_folder then
+          logger.info('Clearing draft folder cache in refresh')
+          email_cache.clear_folder(account_name, folder)
+        end
+        
         -- Store emails in cache
         email_cache.store_emails(account_name, folder, emails)
         
@@ -1477,13 +1540,22 @@ function M.get_current_lines()
   
   -- Try to get from buffer first
   local lines = vim.b[buf].himalaya_lines
-  if lines and lines.metadata then
+  -- Handle vim.NIL case
+  if lines == vim.NIL then
+    lines = nil
+  end
+  if lines and type(lines) == 'table' and lines.metadata then
     return lines
   end
   
   -- Fallback to state
   local metadata = state.get('email_list.line_map')
-  if not metadata then
+  if not metadata or metadata == vim.NIL then
+    return nil
+  end
+  
+  -- Ensure metadata is a proper table
+  if type(metadata) ~= 'table' then
     return nil
   end
   
