@@ -16,6 +16,7 @@ local notify = require('neotex.util.notifications')
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
 local id_validator = require('neotex.plugins.tools.himalaya.core.id_validator')
 local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
+local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
 
 -- Module state
 local composer_buffers = {}
@@ -214,10 +215,19 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
       folder = draft_folder
     })
     
-    -- Cache the draft email data so the sidebar can show the subject
-    local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+    -- Cache the draft metadata using the new draft cache
+    draft_cache.cache_draft_metadata(account, draft_folder, result.id, {
+      subject = email.subject,
+      from = email.from,
+      to = email.to,
+      cc = email.cc,
+      bcc = email.bcc,
+      date = os.date('%Y-%m-%d %H:%M:%S'),
+      flags = { 'Draft' }
+    })
     
-    -- Clear any existing cache for this draft ID to prevent stale data
+    -- Also cache in email_cache for compatibility
+    local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
     email_cache.clear_email(account, draft_folder, result.id)
     
     local cached_email = {

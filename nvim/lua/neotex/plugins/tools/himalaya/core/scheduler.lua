@@ -11,6 +11,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
+local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
 
 -- Enhanced configuration
 M.config = {
@@ -544,6 +545,9 @@ function M.send_email_now(id)
             draft_id = item.metadata.draft_id
           })
           notify.himalaya('Draft cleaned up successfully', notify.categories.INFO)
+          
+          -- Remove from draft cache
+          draft_cache.remove_draft_metadata(draft_account, draft_folder, item.metadata.draft_id)
         end
       else
         logger.warn('Could not find draft folder for account', {
