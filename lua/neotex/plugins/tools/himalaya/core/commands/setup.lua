@@ -64,40 +64,11 @@ function M.setup(registry)
   
   commands.HimalayaBackupAndFresh = {
     fn = function()
-      local utils = require('neotex.plugins.tools.himalaya.utils')
-      local config = require('neotex.plugins.tools.himalaya.core.config')
-      local notify = require('neotex.util.notifications')
-      
-      -- Get maildir path
-      local account = config.get_current_account()
-      local maildir = vim.fn.expand(account.maildir_path)
-      
-      -- Create backup
-      local backup_name = 'maildir_backup_' .. os.date('%Y%m%d_%H%M%S')
-      local backup_path = vim.fn.expand('~/') .. backup_name
-      
-      local cmd = string.format('cp -r %s %s', vim.fn.shellescape(maildir), vim.fn.shellescape(backup_path))
-      local result = vim.fn.system(cmd)
-      
-      if vim.v.shell_error == 0 then
-        notify.himalaya('Backup created at: ' .. backup_path, notify.categories.USER_ACTION)
-        
-        -- Clear cache
-        utils.clear_email_cache()
-        
-        -- Refresh UI if open
-        local ui = require('neotex.plugins.tools.himalaya.ui')
-        if ui.is_email_buffer_open() then
-          ui.refresh_email_list()
-        end
-        
-        notify.himalaya('Fresh start complete!', notify.categories.USER_ACTION)
-      else
-        notify.himalaya('Backup failed: ' .. result, notify.categories.ERROR)
-      end
+      local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
+      wizard.delete_all_mailboxes()
     end,
     opts = {
-      desc = 'Backup maildir and start fresh'
+      desc = 'Delete all mailboxes (with optional backup)'
     }
   }
   

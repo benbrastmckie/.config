@@ -483,4 +483,86 @@ function M.is_setup_complete()
   return state.get('setup.completed', false)
 end
 
+-- Delete all mailboxes with confirmation
+function M.delete_all_mailboxes()
+  local notify = require('neotex.util.notifications')
+  local account = config.get_current_account()
+  
+  if not account or not account.maildir_path then
+    notify.himalaya('No account configured', notify.categories.ERROR)
+    return
+  end
+  
+  local maildir = vim.fn.expand(account.maildir_path)
+  
+  -- First prompt: Create backup?
+  vim.ui.select({'Yes', 'No'}, {
+    prompt = 'Create backup before deletion?',
+    kind = 'confirmation',
+  }, function(choice)
+    if not choice then
+      -- User cancelled
+      return
+    end
+    
+    -- Create backup if requested
+    if choice == 'Yes' then
+      local backup_name = 'maildir_backup_' .. os.date('%Y%m%d_%H%M%S')
+      local backup_path = vim.fn.expand('~/') .. backup_name
+      
+      notify.himalaya('Creating backup...', notify.categories.STATUS)
+      local cmd = string.format('cp -r %s %s', vim.fn.shellescape(maildir), vim.fn.shellescape(backup_path))
+      local result = vim.fn.system(cmd)
+      
+      if vim.v.shell_error ~= 0 then
+        notify.himalaya('Backup failed: ' .. result, notify.categories.ERROR)
+        return
+      end
+      
+      notify.himalaya('Backup created at: ' .. backup_path, notify.categories.USER_ACTION)
+    end
+    
+    -- Second prompt: Confirm deletion
+    vim.ui.select({'Yes, delete all mailboxes', 'Cancel'}, {
+      prompt = 'Are you sure you want to delete all mailboxes? This cannot be undone!',
+      kind = 'confirmation',
+    }, function(delete_choice)
+      if delete_choice ~= 'Yes, delete all mailboxes' then
+        notify.himalaya('Deletion cancelled', notify.categories.STATUS)
+        return
+      end
+      
+      -- Perform deletion
+      notify.himalaya('Deleting all mailboxes...', notify.categories.STATUS)
+      
+      -- Kill any running sync processes first
+      local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
+      mbsync.kill_all()
+      
+      -- Delete the maildir
+      local rm_cmd = string.format('rm -rf %s', vim.fn.shellescape(maildir))
+      local rm_result = vim.fn.system(rm_cmd)
+      
+      if vim.v.shell_error ~= 0 then
+        notify.himalaya('Failed to delete maildir: ' .. rm_result, notify.categories.ERROR)
+        return
+      end
+      
+      -- Clear all state and cache
+      state.clear_all()
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      utils.clear_email_cache()
+      
+      -- Close any open Himalaya windows
+      local ui = require('neotex.plugins.tools.himalaya.ui.main')
+      if ui.is_email_buffer_open then
+        ui.close_all_windows()
+      end
+      
+      notify.himalaya(' All mailboxes deleted successfully', notify.categories.USER_ACTION)
+      notify.himalaya('Run :HimalayaSetup to reconfigure', notify.categories.STATUS)
+    end)
+  end)
+end
+
 return M
