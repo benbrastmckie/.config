@@ -423,8 +423,7 @@ function M.setup_buffer_keymaps(bufnr)
         return
       end
       
-      -- For regular emails, handle preview mode
-      local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+      -- Check if current email is a draft
       local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
       local email_id = email_list.get_email_id_from_line(line)
       
@@ -432,23 +431,45 @@ function M.setup_buffer_keymaps(bufnr)
         return
       end
       
-      -- First CR: Enable preview mode and show preview for current email
-      if not preview.is_preview_mode() then
-        preview.enable_preview_mode()
-        -- Show preview for current email immediately
-        preview.show_preview(email_id, vim.api.nvim_get_current_win())
-      -- Second CR: Focus the preview if it's showing
-      elseif preview.is_preview_shown() then
-        local focused = preview.focus_preview()
-        if not focused then
-          -- If focus failed, try showing the preview again
-          preview.show_preview(email_id, vim.api.nvim_get_current_win())
+      -- Get email metadata to check if it's a draft
+      local lines_obj = email_list.get_current_lines()
+      local email_metadata = lines_obj and lines_obj.metadata and lines_obj.metadata[line]
+      
+      if email_metadata and email_metadata.is_draft then
+        -- Draft-specific handling
+        local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+        
+        if not preview.is_preview_mode() then
+          -- First return: show preview
+          preview.enable_preview_mode()
+          preview.show_preview(email_id, vim.api.nvim_get_current_win(), 'draft')
+        else
+          -- Second return: open for editing
+          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+          composer.reopen_draft()
         end
       else
-        -- Preview mode is on but no preview shown, show it
-        preview.show_preview(email_id, vim.api.nvim_get_current_win())
+        -- Regular email handling
+        local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+        
+        -- First CR: Enable preview mode and show preview for current email
+        if not preview.is_preview_mode() then
+          preview.enable_preview_mode()
+          -- Show preview for current email immediately
+          preview.show_preview(email_id, vim.api.nvim_get_current_win())
+        -- Second CR: Focus the preview if it's showing
+        elseif preview.is_preview_shown() then
+          local focused = preview.focus_preview()
+          if not focused then
+            -- If focus failed, try showing the preview again
+            preview.show_preview(email_id, vim.api.nvim_get_current_win())
+          end
+        else
+          -- Preview mode is on but no preview shown, show it
+          preview.show_preview(email_id, vim.api.nvim_get_current_win())
+        end
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Toggle preview mode / Focus preview / Reschedule' }))
+    end, vim.tbl_extend('force', opts, { desc = 'Toggle preview mode / Focus preview / Reschedule / Open draft' }))
     
     -- ESC to exit preview mode
     keymap('n', '<Esc>', function()

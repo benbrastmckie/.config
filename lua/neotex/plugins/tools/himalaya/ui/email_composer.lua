@@ -212,8 +212,8 @@ local function setup_autosave(buf, draft_file)
         
         -- Sync to maildir
         local draft_info = composer_buffers[buf]
-        if draft_info then
-          draft_info.draft_id = sync_draft_to_maildir(draft_file, draft_info.account)
+        if draft_info and draft_info.file then
+          draft_info.draft_id = sync_draft_to_maildir(draft_info.file, draft_info.account)
           
           -- Update state
           state.set('compose.drafts.' .. buf, draft_info)
@@ -415,6 +415,12 @@ function M.create_compose_buffer(opts)
   
   -- Initial save
   vim.cmd('silent write!')
+  
+  -- Initial sync to maildir
+  draft_info.draft_id = sync_draft_to_maildir(draft_file, draft_info.account)
+  if draft_info.draft_id then
+    state.set('compose.drafts.' .. buf, draft_info)
+  end
   
   local message = 'Composing email (auto-save enabled)'
   if opts.template_id then
@@ -630,7 +636,8 @@ function M.show_scheduling_options(buf, draft_info, email)
       delay = delay,
       metadata = {
         draft_file = draft_info.file,
-        draft_id = draft_info.draft_id
+        draft_id = draft_info.draft_id,
+        draft_account = draft_info.account
       }
     })
     
@@ -932,6 +939,78 @@ function M.switch_to_normal_buffer(closing_buf)
       alternate_buf = alternate_buf
     })
   end
+end
+
+-- Reopen existing draft for editing
+function M.reopen_draft()
+  local main = require('neotex.plugins.tools.himalaya.ui.main')
+  local email_id = main.get_current_email_id()
+  
+  if not email_id then
+    notify.himalaya('No draft selected', notify.categories.ERROR)
+    return
+  end
+  
+  -- Fetch draft content from current folder (we're already in drafts)
+  local account = state.get_current_account()
+  local current_folder = state.get_current_folder()
+  
+  if not current_folder then
+    notify.himalaya('No current folder', notify.categories.ERROR)
+    return
+  end
+  
+  -- Use himalaya CLI to get email content (use table format like utils.lua)
+  local cmd = {
+    'himalaya',
+    'message', 'read',
+    tostring(email_id),
+    '--account', account,
+    '--folder', current_folder
+  }
+  
+  local output = vim.fn.system(cmd)
+  local exit_code = vim.v.shell_error
+  
+  if exit_code ~= 0 then
+    logger.error('Command failed', { 
+      cmd = cmd, 
+      exit_code = exit_code, 
+      output = output 
+    })
+    notify.himalaya('Failed to load draft content: ' .. tostring(output), notify.categories.ERROR)
+    return
+  end
+  
+  -- Parse draft content
+  local lines = vim.split(output, '\n')
+  local email = parse_email_buffer(lines)
+  
+  -- Create compose buffer with existing content
+  local opts = {
+    to = email.to,
+    cc = email.cc,
+    bcc = email.bcc,
+    subject = email.subject,
+    body = email.body,
+    is_draft_reopen = true,
+    original_draft_id = email_id
+  }
+  
+  local buf = M.create_compose_buffer(opts)
+  
+  -- Position cursor appropriately
+  if not email.to or email.to == '' then
+    vim.api.nvim_win_set_cursor(0, { 2, 4 })  -- To field
+  elseif not email.subject or email.subject == '' then
+    vim.api.nvim_win_set_cursor(0, { 5, 9 })  -- Subject field
+  else
+    vim.api.nvim_win_set_cursor(0, { 8, 0 })  -- Body
+  end
+  
+  notify.himalaya('Draft reopened for editing', notify.categories.STATUS)
+  
+  return buf
 end
 
 return M
