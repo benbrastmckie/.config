@@ -37,6 +37,11 @@ function M.setup(opts)
   local_storage.setup(config)
   sync_engine.setup(config)
   
+  -- Recover drafts from previous session (Phase 2)
+  vim.defer_fn(function()
+    draft_manager.recover_session()
+  end, 100)
+  
   -- Initialize UI system
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.setup()
