@@ -22,7 +22,7 @@ function M.setup(registry)
     fn = function()
       local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
       local buf = vim.api.nvim_get_current_buf()
-      composer.send_email(buf)
+      composer.send_and_close(buf)
     end,
     opts = {
       desc = 'Send current email (with scheduling)'
@@ -352,7 +352,7 @@ function M.setup(registry)
         templates.pick_template(function(template_id, variables)
           local result = templates.apply_template(template_id, variables)
           if result then
-            composer.compose_email({
+            composer.create_compose_buffer({
               to = result.to,
               cc = result.cc,
               bcc = result.bcc,
@@ -370,7 +370,7 @@ function M.setup(registry)
               if variables then
                 local result = templates.apply_template(opts.args, variables)
                 if result then
-                  composer.compose_email({
+                  composer.create_compose_buffer({
                     to = result.to,
                     cc = result.cc,
                     bcc = result.bcc,
@@ -384,7 +384,7 @@ function M.setup(registry)
           else
             local result = templates.apply_template(opts.args, {})
             if result then
-              composer.compose_email({
+              composer.create_compose_buffer({
                 to = result.to,
                 cc = result.cc,
                 bcc = result.bcc,

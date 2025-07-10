@@ -330,13 +330,67 @@ function M.toggle_preview_mode()
   return preview_state.preview_mode
 end
 
+-- Check if preview mode is enabled
+function M.is_preview_mode()
+  return preview_state.preview_mode
+end
+
+-- Enable preview mode
+function M.enable_preview_mode()
+  preview_state.preview_mode = true
+  return true
+end
+
+-- Disable preview mode
+function M.disable_preview_mode()
+  preview_state.preview_mode = false
+  if preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    vim.api.nvim_win_close(preview_state.win, true)
+  end
+  preview_state.win = nil
+  preview_state.email_id = nil
+  return true
+end
+
 -- Check if preview is visible
 function M.is_preview_visible()
   return preview_state.win and vim.api.nvim_win_is_valid(preview_state.win)
 end
 
+-- Check if preview is shown (alias for is_preview_visible)
+function M.is_preview_shown()
+  return M.is_preview_visible()
+end
+
+-- Ensure preview window exists and is valid
+function M.ensure_preview_window()
+  if preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    return preview_state.win
+  end
+  return nil
+end
+
+-- Focus the preview window
+function M.focus_preview()
+  if preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    vim.api.nvim_set_current_win(preview_state.win)
+    return true
+  end
+  return false
+end
+
+-- Get current preview email ID
+function M.get_current_preview_id()
+  return preview_state.email_id
+end
+
 -- Get preview state
 function M.get_state()
+  return preview_state
+end
+
+-- Get preview state (alias for consistency)
+function M.get_preview_state()
   return preview_state
 end
 

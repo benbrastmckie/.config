@@ -92,19 +92,35 @@ function M._check_orphaned_drafts()
   -- Check for orphaned drafts
   for _, stored in ipairs(stored_drafts) do
     if not state_ids[stored.local_id] and not M.drafts[stored.local_id] then
-      -- Found orphaned draft
-      logger.info("Found orphaned draft", {
-        local_id = stored.local_id,
-        subject = stored.metadata and stored.metadata.subject,
-        modified = stored.updated_at
-      })
+      -- Check if draft has any meaningful content
+      local has_content = false
+      if stored.metadata then
+        has_content = (stored.metadata.subject and stored.metadata.subject ~= "") or
+                     (stored.metadata.to and stored.metadata.to ~= "") or
+                     (stored.content and stored.content:match("[^\n%s]"))
+      end
       
-      -- Emit recovery needed event
-      events_bus.emit(event_types.DRAFT_RECOVERY_NEEDED, {
-        draft_id = stored.local_id,
-        last_modified = stored.updated_at,
-        metadata = stored.metadata
-      })
+      if has_content then
+        -- Found orphaned draft with content
+        logger.info("Found orphaned draft", {
+          local_id = stored.local_id,
+          subject = stored.metadata and stored.metadata.subject,
+          modified = stored.updated_at
+        })
+        
+        -- Emit recovery needed event
+        events_bus.emit(event_types.DRAFT_RECOVERY_NEEDED, {
+          draft_id = stored.local_id,
+          last_modified = stored.updated_at,
+          metadata = stored.metadata
+        })
+      else
+        -- Clean up empty orphaned draft
+        logger.debug("Cleaning up empty orphaned draft", {
+          local_id = stored.local_id
+        })
+        storage.delete(stored.local_id)
+      end
     end
   end
 end

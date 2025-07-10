@@ -7,6 +7,9 @@ local M = {}
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
 local sync_engine = require('neotex.plugins.tools.himalaya.core.sync_engine')
 
+-- Store timers indexed by buffer number
+local timers = {}
+
 -- Get draft status for statusline
 function M.get_draft_status(buf)
   local draft = draft_manager.get_by_buffer(buf)
@@ -92,6 +95,7 @@ function M.setup_statusline(buf)
   timer:start(1000, 1000, vim.schedule_wrap(function()
     if not vim.api.nvim_buf_is_valid(buf) then
       timer:stop()
+      timers[buf] = nil
       return
     end
     
@@ -101,16 +105,17 @@ function M.setup_statusline(buf)
     end)
   end))
   
-  -- Store timer for cleanup
-  vim.api.nvim_buf_set_var(buf, 'himalaya_status_timer', timer)
+  -- Store timer in module table
+  timers[buf] = timer
   
   -- Clean up timer on buffer unload
   vim.api.nvim_create_autocmd('BufUnload', {
     buffer = buf,
     once = true,
     callback = function()
-      if timer then
-        timer:stop()
+      if timers[buf] then
+        timers[buf]:stop()
+        timers[buf] = nil
       end
     end
   })

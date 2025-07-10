@@ -93,7 +93,7 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
-  return email_composer.compose_email({ to = to_address })
+  return email_composer.create_compose_buffer({ to = to_address })
 end
 
 -- Open email window (floating)
