@@ -72,6 +72,26 @@ local default_state = {
     counts = {}, -- Structure: account -> folder -> count
     last_updated = {}, -- Structure: account -> folder -> timestamp
   },
+  
+  -- Draft state
+  draft = {
+    -- Active drafts
+    drafts = {}, -- Map of buffer_id -> draft_data
+    
+    -- Draft metadata
+    metadata = {
+      total_count = 0,
+      last_sync = nil,
+      sync_in_progress = false,
+    },
+    
+    -- Recovery data
+    recovery = {
+      unsaved_buffers = {}, -- Buffers with unsaved changes
+      last_recovery = nil,
+      pending_syncs = {}, -- Queue of drafts waiting to sync
+    },
+  },
 }
 
 -- Current state (initialized with defaults)
@@ -90,6 +110,7 @@ local migrations = {
     state.cache = state.cache or {}
     state.processes = state.processes or {}
     state.folders = state.folders or {}
+    state.draft = state.draft or {}
     return state
   end,
 }
@@ -120,7 +141,7 @@ function M.validate_state(state)
   -- Validate structure types
   local required_tables = {
     "sync", "oauth", "ui", "selection", 
-    "cache", "processes", "folders"
+    "cache", "processes", "folders", "draft"
   }
   
   for _, key in ipairs(required_tables) do
@@ -540,10 +561,28 @@ function M.save()
   -- Add timestamp
   M.set("ui.session_timestamp", os.time())
   
-  -- Create a subset of state to persist (UI state and folder counts)
+  -- Create a subset of state to persist (UI state, folder counts, and draft metadata)
   local persist_state = {
     ui = M.state.ui,
     folders = M.state.folders,
+    draft = {
+      metadata = M.state.draft.metadata,
+      recovery = M.state.draft.recovery,
+      -- Store draft metadata, not full content
+      drafts = vim.tbl_map(function(draft)
+        return {
+          id = draft.id,
+          local_id = draft.local_id,
+          remote_id = draft.remote_id,
+          subject = draft.metadata and draft.metadata.subject or nil,
+          to = draft.metadata and draft.metadata.to or nil,
+          modified = draft.modified,
+          synced = draft.synced,
+          local_path = draft.local_path,
+          account = draft.account,
+        }
+      end, M.state.draft.drafts or {})
+    }
   }
   
   local encoded = vim.fn.json_encode(persist_state)
@@ -569,12 +608,15 @@ function M.load()
     if #content > 0 then
       local ok, decoded = pcall(vim.fn.json_decode, content[1])
       if ok and type(decoded) == 'table' then
-        -- Merge UI state and folder counts
+        -- Merge UI state, folder counts, and draft state
         if decoded.ui then
           M.state.ui = vim.tbl_extend('force', M.state.ui, decoded.ui)
         end
         if decoded.folders then
           M.state.folders = vim.tbl_extend('force', M.state.folders, decoded.folders)
+        end
+        if decoded.draft then
+          M.state.draft = vim.tbl_extend('force', M.state.draft, decoded.draft)
         end
         return true
       else
@@ -689,6 +731,120 @@ end
 -- Debug helper
 function M.dump()
   return vim.inspect(M.state)
+end
+
+-- Draft-specific state helpers
+
+--- Get draft data by buffer ID
+--- @param buffer_id number The buffer ID to look up
+--- @return table|nil draft The draft data or nil if not found
+function M.get_draft_by_buffer(buffer_id)
+  return M.get("draft.drafts." .. tostring(buffer_id))
+end
+
+--- Store draft data for a buffer and update metadata
+--- @param buffer_id number The buffer ID to associate with the draft
+--- @param draft_data table The draft data containing:
+---   - local_id: string Unique local identifier
+---   - remote_id: string|nil Remote server ID (if synced)
+---   - account: string Email account name
+---   - metadata: table Subject, to, from, etc.
+---   - modified: boolean Whether draft has unsaved changes
+---   - synced: boolean Whether draft is synced with server
+function M.set_draft(buffer_id, draft_data)
+  M.set("draft.drafts." .. tostring(buffer_id), draft_data)
+  M.set("draft.metadata.total_count", M.get_draft_count())
+end
+
+--- Remove draft data from state and update count
+--- @param buffer_id number The buffer ID of the draft to remove
+function M.remove_draft(buffer_id)
+  M.set("draft.drafts." .. tostring(buffer_id), nil)
+  M.set("draft.metadata.total_count", M.get_draft_count())
+end
+
+--- Get total number of active drafts
+--- @return number count The number of drafts in state
+function M.get_draft_count()
+  local count = 0
+  for _ in pairs(M.get("draft.drafts", {})) do
+    count = count + 1
+  end
+  return count
+end
+
+--- Check if any draft sync operation is in progress
+--- @return boolean syncing True if sync is in progress
+function M.is_draft_syncing()
+  return M.get("draft.metadata.sync_in_progress", false)
+end
+
+--- Update draft sync status and timestamp
+--- @param in_progress boolean Whether sync is in progress
+function M.set_draft_sync_status(in_progress)
+  M.set("draft.metadata.sync_in_progress", in_progress)
+  if not in_progress then
+    M.set("draft.metadata.last_sync", os.time())
+  end
+end
+
+--- Get all drafts with unsaved changes
+--- @return table unsaved Map of buffer_id -> draft_info for unsaved drafts
+function M.get_unsaved_drafts()
+  return M.get("draft.recovery.unsaved_buffers", {})
+end
+
+--- Track a draft with unsaved changes for recovery
+--- @param buffer_id number The buffer ID with unsaved changes
+--- @param draft_info table Basic info about the draft:
+---   - local_id: string Draft identifier
+---   - subject: string Draft subject line
+---   - timestamp: number When marked as unsaved
+function M.add_unsaved_draft(buffer_id, draft_info)
+  local unsaved = M.get("draft.recovery.unsaved_buffers", {})
+  unsaved[tostring(buffer_id)] = draft_info
+  M.set("draft.recovery.unsaved_buffers", unsaved)
+end
+
+--- Remove draft from unsaved tracking (after successful sync)
+--- @param buffer_id number The buffer ID to remove from tracking
+function M.remove_unsaved_draft(buffer_id)
+  local unsaved = M.get("draft.recovery.unsaved_buffers", {})
+  unsaved[tostring(buffer_id)] = nil
+  M.set("draft.recovery.unsaved_buffers", unsaved)
+end
+
+--- Get queue of drafts waiting to be synced
+--- @return table pending Array of draft info waiting for sync
+function M.get_pending_syncs()
+  return M.get("draft.recovery.pending_syncs", {})
+end
+
+--- Add draft to sync queue for batch processing
+--- @param draft_info table Draft information to queue:
+---   - local_id: string Draft identifier
+---   - account: string Email account
+---   - subject: string Draft subject
+function M.add_pending_sync(draft_info)
+  local pending = M.get("draft.recovery.pending_syncs", {})
+  table.insert(pending, draft_info)
+  M.set("draft.recovery.pending_syncs", pending)
+end
+
+--- Clear all pending sync operations
+function M.clear_pending_syncs()
+  M.set("draft.recovery.pending_syncs", {})
+end
+
+--- Update last recovery timestamp
+function M.set_last_recovery()
+  M.set("draft.recovery.last_recovery", os.time())
+end
+
+--- Get all active drafts from state
+--- @return table drafts Map of buffer_id -> draft_data
+function M.get_all_drafts()
+  return M.get("draft.drafts", {})
 end
 
 return M
