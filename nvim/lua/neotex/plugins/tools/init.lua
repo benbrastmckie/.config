@@ -51,6 +51,20 @@ local function safe_require(module)
       vim.notify("Module " .. module .. " only has a setup function and is not a valid plugin spec", vim.log.levels.WARN)
       return {}
     end
+    
+    -- Special case: himalaya-plugin should return its own spec, not expose the full module
+    if module == "neotex.plugins.tools.himalaya-plugin" then
+      -- This should be a direct plugin spec table with dir, name, etc.
+      if result.dir and result.name then
+        return result
+      end
+    end
+    
+    -- If we're getting a complex module with utils, setup, etc. instead of a plugin spec
+    if result.utils and result.setup and result.get_config and not result[1] and not result.dir then
+      vim.notify("Module " .. module .. " appears to be a full module, not a plugin spec", vim.log.levels.WARN)
+      return {}
+    end
   end
   
   return result
@@ -65,14 +79,14 @@ local mini_module = safe_require("neotex.plugins.tools.mini")
 local surround_module = safe_require("neotex.plugins.tools.surround")
 local todo_comments_module = safe_require("neotex.plugins.tools.todo-comments")
 local yanky_module = safe_require("neotex.plugins.tools.yanky")
-local himalaya_module = safe_require("neotex.plugins.tools.himalaya")
+local himalaya_module = safe_require("neotex.plugins.tools.himalaya-plugin")
 
 -- Create array of valid plugin specs
 local plugins = {}
 
 -- Helper function to add valid specs to the plugins array
 local function add_if_valid(spec)
-  if type(spec) == "table" and (spec[1] or spec.import) then
+  if type(spec) == "table" and (spec[1] or spec.import or spec.dir) then
     table.insert(plugins, spec)
   end
 end
@@ -87,15 +101,8 @@ add_if_valid(surround_module)
 add_if_valid(todo_comments_module)
 add_if_valid(yanky_module)
 
--- Himalaya returns multiple specs, handle them separately
-if type(himalaya_module) == "table" and not himalaya_module[1] and not himalaya_module.import then
-  -- It's an array of plugin specs
-  for _, spec in ipairs(himalaya_module) do
-    add_if_valid(spec)
-  end
-else
-  add_if_valid(himalaya_module)
-end
+-- Himalaya returns a single spec, add it directly
+add_if_valid(himalaya_module)
 
 -- Return only valid plugin specs
 return plugins

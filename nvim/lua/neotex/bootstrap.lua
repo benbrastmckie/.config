@@ -76,9 +76,18 @@ local function setup_lazy()
     -- Try to load the new plugin system first
     local ok, plugins = pcall(require, "neotex.plugins")
     
+    -- Load individual plugin categories to build the complete plugin list
+    if ok then
+      -- Load tools plugins explicitly to avoid auto-discovery issues
+      local tools_ok, tools_plugins = pcall(require, "neotex.plugins.tools")
+      if tools_ok and type(tools_plugins) == "table" then
+        vim.list_extend(plugins, tools_plugins)
+      end
+    end
+    
     -- If the new plugin system fails, fall back to the old import-based method
     if not ok then
-      vim.notify("Using legacy plugin import system", vim.log.levels.DEBUG)
+      vim.notify("Using legacy plugin import system (new system failed)", vim.log.levels.WARN)
       
       require("lazy").setup({
         -- Legacy imports
@@ -120,7 +129,8 @@ local function setup_lazy()
         -- Phase 2 imports
         -- coding plugins have been moved to editor directory
         { import = "neotex.plugins.editor" },  -- editor enhancement plugins (includes former coding plugins)
-        { import = "neotex.plugins.tools" },   -- tool integration plugins
+        -- NOTE: tools import disabled - tools are loaded explicitly above to avoid auto-discovery issues
+        -- { import = "neotex.plugins.tools" },   -- tool integration plugins
         { import = "neotex.plugins.text" },    -- text format-specific plugins
         { import = "neotex.plugins.ui" },      -- UI enhancement plugins
         
