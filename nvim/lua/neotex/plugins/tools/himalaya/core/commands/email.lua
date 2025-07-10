@@ -55,7 +55,8 @@ function M.setup(registry)
       local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
       local recovered = draft_manager.recover_session()
       if recovered == 0 then
-        vim.notify("No drafts to recover", vim.log.levels.INFO)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya("No drafts to recover", notify.categories.USER_ACTION)
       end
     end,
     opts = {
@@ -70,7 +71,8 @@ function M.setup(registry)
       
       local drafts = draft_manager.get_recovered_drafts()
       if #drafts == 0 then
-        vim.notify("No recovered drafts available", vim.log.levels.INFO)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya("No recovered drafts available", notify.categories.USER_ACTION)
         return
       end
       
@@ -105,7 +107,8 @@ function M.setup(registry)
       local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
       
       if not opts.args or opts.args == '' then
-        vim.notify("Please provide a draft ID", vim.log.levels.ERROR)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya("Please provide a draft ID", notify.categories.ERROR)
         return
       end
       
@@ -113,7 +116,8 @@ function M.setup(registry)
       local index = tonumber(opts.args)
       
       if not index or index < 1 or index > #drafts then
-        vim.notify("Invalid draft index", vim.log.levels.ERROR)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya("Invalid draft index", notify.categories.ERROR)
         return
       end
       
@@ -122,9 +126,14 @@ function M.setup(registry)
       
       if buf then
         vim.api.nvim_set_current_buf(buf)
-        vim.notify(string.format("Opened recovered draft: %s", draft.subject), vim.log.levels.INFO)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya(
+          string.format("Opened recovered draft: %s", draft.subject),
+          notify.categories.USER_ACTION
+        )
       else
-        vim.notify("Failed to open draft", vim.log.levels.ERROR)
+        local notify = require('neotex.util.notifications')
+        notify.himalaya("Failed to open draft", notify.categories.ERROR)
       end
     end,
     opts = {
