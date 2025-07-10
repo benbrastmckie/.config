@@ -49,6 +49,90 @@ function M.setup(registry)
     }
   }
   
+  -- Draft recovery command (Phase 2)
+  commands.HimalayaRecoverDrafts = {
+    fn = function()
+      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+      local recovered = draft_manager.recover_session()
+      if recovered == 0 then
+        vim.notify("No drafts to recover", vim.log.levels.INFO)
+      end
+    end,
+    opts = {
+      desc = 'Recover drafts from previous session'
+    }
+  }
+  
+  commands.HimalayaListRecoveredDrafts = {
+    fn = function()
+      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+      local float = require('neotex.plugins.tools.himalaya.ui.float')
+      
+      local drafts = draft_manager.get_recovered_drafts()
+      if #drafts == 0 then
+        vim.notify("No recovered drafts available", vim.log.levels.INFO)
+        return
+      end
+      
+      local lines = {
+        "# Recovered Drafts",
+        "",
+        string.format("Found %d recovered draft(s):", #drafts),
+        ""
+      }
+      
+      for i, draft in ipairs(drafts) do
+        table.insert(lines, string.format("%d. %s", i, draft.subject))
+        if draft.to then
+          table.insert(lines, string.format("   To: %s", draft.to))
+        end
+        table.insert(lines, string.format("   Modified: %s", os.date("%Y-%m-%d %H:%M", draft.modified_at or 0)))
+        table.insert(lines, string.format("   Status: %s", draft.synced and "Synced" or "Unsaved"))
+        table.insert(lines, "")
+      end
+      
+      table.insert(lines, "Use :HimalayaOpenRecoveredDraft <id> to open a draft")
+      
+      float.show('Recovered Drafts', lines)
+    end,
+    opts = {
+      desc = 'List recovered drafts'
+    }
+  }
+  
+  commands.HimalayaOpenRecoveredDraft = {
+    fn = function(opts)
+      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+      
+      if not opts.args or opts.args == '' then
+        vim.notify("Please provide a draft ID", vim.log.levels.ERROR)
+        return
+      end
+      
+      local drafts = draft_manager.get_recovered_drafts()
+      local index = tonumber(opts.args)
+      
+      if not index or index < 1 or index > #drafts then
+        vim.notify("Invalid draft index", vim.log.levels.ERROR)
+        return
+      end
+      
+      local draft = drafts[index]
+      local buf = draft_manager.open_recovered_draft(draft.local_id)
+      
+      if buf then
+        vim.api.nvim_set_current_buf(buf)
+        vim.notify(string.format("Opened recovered draft: %s", draft.subject), vim.log.levels.INFO)
+      else
+        vim.notify("Failed to open draft", vim.log.levels.ERROR)
+      end
+    end,
+    opts = {
+      nargs = 1,
+      desc = 'Open a recovered draft by index'
+    }
+  }
+  
   -- Email management commands
   commands.HimalayaTrash = {
     fn = function()
