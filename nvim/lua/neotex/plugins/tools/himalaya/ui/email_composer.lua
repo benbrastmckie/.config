@@ -11,6 +11,7 @@ local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack') -- Phase 6
 
 -- Module state
 local autosave_timers = {}
@@ -168,6 +169,19 @@ local function setup_buffer_mappings(buf)
     end
   })
   
+  -- Handle window close for window stack (Phase 6)
+  vim.api.nvim_create_autocmd('BufWinLeave', {
+    buffer = buf,
+    once = true,
+    callback = function()
+      local current_config = config.get()
+      if current_config.draft and current_config.draft.integration and 
+         current_config.draft.integration.use_window_stack then
+        window_stack.close_current()
+      end
+    end
+  })
+  
   -- Set filetype for syntax highlighting
   if M.config.syntax_highlighting then
     vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
@@ -226,12 +240,22 @@ function M.create_compose_buffer(opts)
   setup_autosave(buf)
   
   -- Open buffer in window
+  local parent_win = vim.api.nvim_get_current_win()
+  
   if M.config.use_tab then
     vim.cmd('tabnew')
   else
     vim.cmd('vsplit')
   end
   vim.api.nvim_win_set_buf(0, buf)
+  
+  -- Track window in stack if enabled (Phase 6)
+  local current_config = config.get()
+  if current_config.draft and current_config.draft.integration and 
+     current_config.draft.integration.use_window_stack then
+    local win_id = vim.api.nvim_get_current_win()
+    window_stack.push_draft(win_id, draft.local_id, parent_win)
+  end
   
   -- Position cursor on To: field if empty
   if not opts.to or opts.to == '' then
@@ -303,12 +327,22 @@ function M.open_draft(draft_id, account)
   setup_autosave(buf)
   
   -- Open buffer
+  local parent_win = vim.api.nvim_get_current_win()
+  
   if M.config.use_tab then
     vim.cmd('tabnew')
   else
     vim.cmd('vsplit')
   end
   vim.api.nvim_win_set_buf(0, buf)
+  
+  -- Track window in stack if enabled (Phase 6)
+  local current_config = config.get()
+  if current_config.draft and current_config.draft.integration and 
+     current_config.draft.integration.use_window_stack then
+    local win_id = vim.api.nvim_get_current_win()
+    window_stack.push_draft(win_id, draft.local_id, parent_win)
+  end
   
   return buf
 end

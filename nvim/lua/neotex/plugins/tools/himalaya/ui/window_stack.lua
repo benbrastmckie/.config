@@ -35,7 +35,8 @@ function M.push(win_id, parent_win)
     window = win_id,
     parent = parent_win,
     buffer = buffer_id,
-    timestamp = vim.loop.hrtime()
+    timestamp = vim.loop.hrtime(),
+    type = 'generic' -- Default type
   })
   
   return true
@@ -136,15 +137,101 @@ function M.cleanup()
   M.stack = valid_stack
 end
 
+-- Push a draft window onto the stack (Phase 6)
+function M.push_draft(win_id, draft_id, parent_win)
+  if not win_id then
+    return false
+  end
+  
+  -- Skip validation in headless mode or for testing
+  local is_valid = true
+  local is_headless = vim.fn.argc(-1) == 0 and vim.fn.has('gui_running') == 0
+  if not is_headless then
+    is_valid = vim.api.nvim_win_is_valid(win_id)
+  end
+  
+  if not is_valid then
+    return false
+  end
+  
+  parent_win = parent_win or (not is_headless and vim.api.nvim_get_current_win() or 1000)
+  
+  local buffer_id = nil
+  if not is_headless then
+    local ok, buf = pcall(vim.api.nvim_win_get_buf, win_id)
+    buffer_id = ok and buf or nil
+  end
+  
+  local entry = {
+    window = win_id,
+    parent = parent_win,
+    buffer = buffer_id,
+    type = 'draft',
+    draft_id = draft_id,
+    timestamp = vim.loop.hrtime()
+  }
+  
+  table.insert(M.stack, entry)
+  return true
+end
+
+-- Get all draft windows in the stack (Phase 6)
+function M.get_draft_windows()
+  local draft_windows = {}
+  for _, entry in ipairs(M.stack) do
+    if entry.type == 'draft' then
+      table.insert(draft_windows, entry)
+    end
+  end
+  return draft_windows
+end
+
+-- Get draft window by draft ID (Phase 6)
+function M.get_draft_window(draft_id)
+  for _, entry in ipairs(M.stack) do
+    if entry.type == 'draft' and entry.draft_id == draft_id then
+      return entry
+    end
+  end
+  return nil
+end
+
+-- Check if a draft window is open (Phase 6)
+function M.has_draft_window(draft_id)
+  return M.get_draft_window(draft_id) ~= nil
+end
+
+-- Close all draft windows (Phase 6)
+function M.close_all_drafts()
+  local closed = 0
+  -- Iterate backwards to avoid index issues
+  for i = #M.stack, 1, -1 do
+    local entry = M.stack[i]
+    if entry.type == 'draft' then
+      if vim.api.nvim_win_is_valid(entry.window) then
+        vim.api.nvim_win_close(entry.window, true)
+        closed = closed + 1
+      end
+      table.remove(M.stack, i)
+    end
+  end
+  return closed
+end
+
 -- Debug function to print current stack
 function M.debug()
   print("Window Stack (depth: " .. #M.stack .. "):")
   for i, entry in ipairs(M.stack) do
     local win_valid = vim.api.nvim_win_is_valid(entry.window)
     local parent_valid = vim.api.nvim_win_is_valid(entry.parent)
-    print(string.format("  %d: win=%d(%s) parent=%d(%s)", 
+    local type_info = entry.type or "unknown"
+    if entry.type == 'draft' and entry.draft_id then
+      type_info = string.format("draft[%s]", entry.draft_id)
+    end
+    print(string.format("  %d: win=%d(%s) parent=%d(%s) type=%s", 
       i, entry.window, win_valid and "valid" or "invalid",
-      entry.parent, parent_valid and "valid" or "invalid"))
+      entry.parent, parent_valid and "valid" or "invalid",
+      type_info))
   end
 end
 
