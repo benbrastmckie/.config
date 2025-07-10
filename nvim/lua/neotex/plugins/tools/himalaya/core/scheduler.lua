@@ -11,9 +11,8 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
-local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
 local retry_handler = require('neotex.plugins.tools.himalaya.core.retry_handler')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
 
 -- Enhanced configuration
 M.config = {
@@ -544,13 +543,10 @@ function M.send_email_now(id)
           })
           notify.himalaya('Draft cleaned up successfully', notify.categories.INFO)
           
-          -- Remove from draft cache
-          draft_cache.remove_draft_metadata(draft_account, draft_folder, item.metadata.draft_id)
-          
-          -- Also remove from draft manager if buffer exists
-          local buffer_id = draft_manager.find_buffer_for_draft(item.metadata.draft_id)
-          if buffer_id then
-            draft_manager.remove_draft(buffer_id)
+          -- Remove draft using new system
+          local draft = draft_manager.get_by_remote_id(tostring(item.metadata.draft_id))
+          if draft and draft.buffer then
+            draft_manager.delete(draft.buffer)
           end
         else
           logger.warn('Failed to delete draft from maildir after retries', {
