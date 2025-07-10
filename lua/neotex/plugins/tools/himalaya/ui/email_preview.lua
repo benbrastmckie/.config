@@ -18,14 +18,15 @@ local preview_state = {
   buf = nil,
   email_id = nil,
   preview_mode = false,
+  autocmd_id = nil,  -- Track autocmd for cleanup
 }
 
 -- Configuration
 M.config = {
   enabled = true,
   keyboard_delay = 100,
-  width = 80,
-  max_height = 30,
+  width = 100,  -- Increased from 80
+  max_height = 40,  -- Increased from 30
   position = 'smart',
   border = 'single',
   show_headers = true,
@@ -128,31 +129,47 @@ end
 
 -- Calculate preview window position
 function M.calculate_preview_position(parent_win)
-  local width = vim.api.nvim_win_get_width(parent_win)
-  local height = vim.api.nvim_win_get_height(parent_win)
+  local win_width = vim.api.nvim_win_get_width(parent_win)
+  local win_height = vim.api.nvim_win_get_height(parent_win)
+  local screen_width = vim.o.columns
+  local screen_height = vim.o.lines
+  
   local row = 0
-  local col = width + 1
+  local col = win_width + 1
+  local width = M.config.width
+  local height = M.config.max_height
   
   -- Smart positioning
   if M.config.position == 'smart' then
-    if width > 120 then
+    if win_width > 100 then
       -- Wide screen: show on right
-      col = width + 1
+      col = win_width + 1
+      -- Use more width when space is available
+      width = math.min(width, screen_width - win_width - 4)
+      height = math.min(height, win_height - 2)
     else
       -- Narrow screen: show at bottom
-      row = height + 1
+      row = win_height + 1
       col = 0
+      width = math.min(width, win_width - 2)
+      height = math.min(height, screen_height - win_height - 6)
     end
   elseif M.config.position == 'bottom' then
-    row = height + 1
+    row = win_height + 1
     col = 0
+    width = math.min(width, win_width - 2)
+    height = math.min(height, screen_height - win_height - 6)
+  else
+    -- Right position
+    width = math.min(width, screen_width - win_width - 4)
+    height = math.min(height, win_height - 2)
   end
   
   return {
     relative = 'win',
     win = parent_win,
-    width = math.min(M.config.width, vim.o.columns - col - 2),
-    height = math.min(M.config.max_height, vim.o.lines - row - 4),
+    width = width,
+    height = height,
     row = row,
     col = col,
     border = M.config.border,
@@ -362,6 +379,38 @@ function M.show_preview(email_id, parent_win, email_type)
     vim.api.nvim_win_set_option(preview_state.win, 'wrap', true)
     vim.api.nvim_win_set_option(preview_state.win, 'linebreak', true)
     vim.api.nvim_win_set_option(preview_state.win, 'cursorline', false)
+    
+    -- Setup auto-close when leaving sidebar (but keep preview mode enabled)
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_buf = sidebar.get_buf()
+    if sidebar_buf and vim.api.nvim_buf_is_valid(sidebar_buf) then
+      -- Clear any existing autocmd
+      if preview_state.autocmd_id then
+        vim.api.nvim_del_autocmd(preview_state.autocmd_id)
+      end
+      
+      preview_state.autocmd_id = vim.api.nvim_create_autocmd('WinLeave', {
+        buffer = sidebar_buf,
+        callback = function()
+          -- Only hide preview if we're leaving the sidebar to a normal buffer
+          vim.schedule(function()
+            if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
+              return
+            end
+            
+            local current_win = vim.api.nvim_get_current_win()
+            local current_buf = vim.api.nvim_win_get_buf(current_win)
+            
+            -- Check if we moved to a non-himalaya buffer
+            if current_buf ~= preview_state.buf and current_buf ~= sidebar_buf then
+              -- Hide preview but keep preview mode enabled
+              M.hide_preview()
+            end
+          end)
+        end,
+        desc = 'Hide preview when leaving sidebar'
+      })
+    end
   else
     -- Reuse existing window
     if not preview_state.buf or not vim.api.nvim_buf_is_valid(preview_state.buf) then
@@ -395,6 +444,12 @@ function M.hide_preview()
   end
   preview_state.win = nil
   preview_state.email_id = nil
+  
+  -- Clean up autocmd
+  if preview_state.autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
+    preview_state.autocmd_id = nil
+  end
 end
 
 -- Toggle preview mode
