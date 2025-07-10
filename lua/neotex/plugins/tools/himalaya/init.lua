@@ -75,9 +75,7 @@ function M.setup(opts)
   local debug_commands = require('neotex.plugins.tools.himalaya.core.debug_commands')
   debug_commands.setup()
   
-  -- Set up migration commands for new draft system
-  local migrate_drafts = require('neotex.plugins.tools.himalaya.core.migrate_drafts')
-  migrate_drafts.setup_commands()
+  -- Migration commands removed - no old drafts exist to migrate
   
   -- Draft debug modules removed - using new draft system
   
@@ -131,22 +129,13 @@ end
 
 -- Export utilities for tests
 M.utils = require('neotex.plugins.tools.himalaya.utils')
-M.config = require('neotex.plugins.tools.himalaya.core.config')
+-- Config access is lazy to avoid circular dependencies
+M.get_config = function() 
+  return require('neotex.plugins.tools.himalaya.core.config') 
+end
 
--- Return plugin specification for lazy.nvim
-return {
-  {
-    -- Virtual plugin for Himalaya setup
-    dir = vim.fn.stdpath('config') .. '/lua/neotex/plugins/tools/himalaya',
-    name = 'himalaya-email',
-    event = { 'VeryLazy' }, -- Load after startup
-    config = function(_, opts)
-      M.setup(opts)
-    end,
-  },
-  -- Dependencies
-  {
-    'nvim-telescope/telescope.nvim',
-    optional = true,
-  },
-}
+-- Note: Plugin specification has been moved to himalaya-plugin.lua
+-- This module is no longer directly loaded as a plugin by lazy.nvim
+
+-- Return the module (proper Lua module pattern)
+return M

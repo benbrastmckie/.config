@@ -322,6 +322,53 @@ function M.check()
     {name = 'Sync Status', test = M.checks.sync_status},
   }
   
+  -- Add draft system health check if module exists (Phase 7)
+  local draft_health_ok, draft_health = pcall(require, 'neotex.plugins.tools.himalaya.core.health.draft')
+  if draft_health_ok then
+    table.insert(checks, {name = 'Draft System', test = function()
+      local result = {}
+      -- Capture health output
+      local original_report_start = vim.health.report_start
+      local original_report_ok = vim.health.report_ok
+      local original_report_warn = vim.health.report_warn
+      local original_report_error = vim.health.report_error
+      local original_report_info = vim.health.report_info
+      
+      local messages = {}
+      local has_errors = false
+      local has_warnings = false
+      
+      vim.health.report_start = function(msg) table.insert(messages, 'START: ' .. msg) end
+      vim.health.report_ok = function(msg) table.insert(messages, 'OK: ' .. msg) end
+      vim.health.report_warn = function(msg) 
+        table.insert(messages, 'WARN: ' .. msg)
+        has_warnings = true
+      end
+      vim.health.report_error = function(msg) 
+        table.insert(messages, 'ERROR: ' .. msg)
+        has_errors = true
+      end
+      vim.health.report_info = function(msg) table.insert(messages, 'INFO: ' .. msg) end
+      
+      -- Run draft health check
+      draft_health.check()
+      
+      -- Restore original functions
+      vim.health.report_start = original_report_start
+      vim.health.report_ok = original_report_ok
+      vim.health.report_warn = original_report_warn
+      vim.health.report_error = original_report_error
+      vim.health.report_info = original_report_info
+      
+      return {
+        ok = not has_errors,
+        details = messages,
+        issues = has_errors and {'Draft system has errors'} or (has_warnings and {'Draft system has warnings'} or {}),
+        fix = (has_errors or has_warnings) and 'Check draft configuration and storage' or nil
+      }
+    end})
+  end
+  
   local report = {}
   local all_ok = true
   
