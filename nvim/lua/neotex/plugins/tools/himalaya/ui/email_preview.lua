@@ -39,6 +39,33 @@ function M.setup(cfg)
   end
 end
 
+-- Extract body from draft content that includes headers
+local function extract_body_from_content(content)
+  if not content then return '' end
+  
+  -- Find the empty line that separates headers from body
+  local lines = vim.split(content, '\n', { plain = true })
+  local body_start = 0
+  
+  for i, line in ipairs(lines) do
+    if line:match('^%s*$') then
+      body_start = i + 1
+      break
+    end
+  end
+  
+  if body_start > 0 and body_start <= #lines then
+    -- Join the body lines
+    local body_lines = {}
+    for i = body_start, #lines do
+      table.insert(body_lines, lines[i])
+    end
+    return table.concat(body_lines, '\n')
+  end
+  
+  return content
+end
+
 -- Load draft content with new system
 local function load_draft_content(account, folder, draft_id)
   -- First check if this is an active draft in editor
@@ -60,7 +87,7 @@ local function load_draft_content(account, folder, draft_id)
         to = stored.metadata.to or active_draft.metadata.to,
         cc = stored.metadata.cc or active_draft.metadata.cc,
         bcc = stored.metadata.bcc or active_draft.metadata.bcc,
-        body = stored.content or '',
+        body = extract_body_from_content(stored.content or ''),
         _is_draft = true,
         _draft_state = active_draft.state,
         _sync_error = active_draft.sync_error
@@ -80,7 +107,7 @@ local function load_draft_content(account, folder, draft_id)
       to = draft_data.metadata.to,
       cc = draft_data.metadata.cc,
       bcc = draft_data.metadata.bcc,
-      body = draft_data.content or '',
+      body = extract_body_from_content(draft_data.content or ''),
       _is_draft = true
     }
   else
@@ -156,67 +183,113 @@ end
 function M.render_preview(email, buf)
   local lines = {}
   
-  -- Add draft state indicator if applicable
-  if email._is_draft and email._draft_state then
-    local state_line = '─── Draft Status: '
-    if email._draft_state == draft_manager.states.NEW then
-      state_line = state_line .. '📝 New (not synced)'
-    elseif email._draft_state == draft_manager.states.SYNCING then
-      state_line = state_line .. '🔄 Syncing...'
-    elseif email._draft_state == draft_manager.states.SYNCED then
-      state_line = state_line .. '✅ Synced'
-    elseif email._draft_state == draft_manager.states.ERROR then
-      state_line = state_line .. '❌ Sync Error: ' .. (email._sync_error or 'Unknown')
-    end
-    state_line = state_line .. ' ───'
-    table.insert(lines, state_line)
-    table.insert(lines, '')
-  end
-  
-  -- Headers
-  if M.config.show_headers then
-    if email.from then
-      table.insert(lines, 'From: ' .. email.from)
-    end
-    if email.to then
-      table.insert(lines, 'To: ' .. email.to)
-    end
-    if email.cc and email.cc ~= '' then
-      table.insert(lines, 'Cc: ' .. email.cc)
-    end
-    if email.bcc and email.bcc ~= '' then
-      table.insert(lines, 'Bcc: ' .. email.bcc)
-    end
-    if email.subject then
-      table.insert(lines, 'Subject: ' .. email.subject)
-    end
-    if email.date then
-      table.insert(lines, 'Date: ' .. email.date)
+  -- Protected render function
+  local function do_render()
+    -- Safe string conversion for all fields with vim.NIL handling
+    local function safe_tostring(val, default)
+      if val == vim.NIL or val == nil then
+        return default or ""
+      end
+      return tostring(val)
     end
     
-    -- Add scheduled info if present
+    -- Add scheduled email header if applicable
     if email._is_scheduled and email._scheduled_for then
       local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
       local time_left = email._scheduled_for - os.time()
-      local countdown = scheduler.format_countdown(time_left)
-      table.insert(lines, 'Scheduled: ' .. countdown)
+      table.insert(lines, "Status:  Scheduled")
+      table.insert(lines, "Send in: " .. scheduler.format_countdown(time_left))
+      table.insert(lines, "Send at: " .. os.date("%Y-%m-%d %H:%M", email._scheduled_for))
+      table.insert(lines, string.rep("-", M.config.width - 2))
+      table.insert(lines, "")
     end
     
-    -- Separator
-    table.insert(lines, string.rep('─', 70))
+    -- Add draft state indicator if applicable
+    if email._is_draft and email._draft_state then
+      local state_line = 'Status:  '
+      if email._draft_state == draft_manager.states.NEW then
+        state_line = state_line .. '📝 New (not synced)'
+      elseif email._draft_state == draft_manager.states.SYNCING then
+        state_line = state_line .. '🔄 Syncing...'
+      elseif email._draft_state == draft_manager.states.SYNCED then
+        state_line = state_line .. '✅ Synced'
+      elseif email._draft_state == draft_manager.states.ERROR then
+        state_line = state_line .. '❌ Sync Error: ' .. (email._sync_error or 'Unknown')
+      end
+      table.insert(lines, state_line)
+      table.insert(lines, string.rep("-", M.config.width - 2))
+      table.insert(lines, "")
+    end
+    
+    -- Headers
+    if M.config.show_headers then
+      local from = safe_tostring(email.from, "Unknown")
+      local to = safe_tostring(email.to, "")
+      local subject = safe_tostring(email.subject, "")
+      local date = safe_tostring(email.date, "Unknown")
+      
+      table.insert(lines, "From: " .. from)
+      table.insert(lines, "To: " .. to)
+      if email.cc and email.cc ~= vim.NIL then
+        local cc = safe_tostring(email.cc, "")
+        if cc ~= "" then
+          table.insert(lines, "Cc: " .. cc)
+        end
+      end
+      if email.bcc and email.bcc ~= vim.NIL then
+        local bcc = safe_tostring(email.bcc, "")
+        if bcc ~= "" then
+          table.insert(lines, "Bcc: " .. bcc)
+        end
+      end
+      table.insert(lines, "Subject: " .. subject)
+      table.insert(lines, "Date: " .. date)
+      table.insert(lines, string.rep("-", M.config.width - 2))
+      table.insert(lines, "")
+    end
+    
+    -- Check for empty drafts
+    if email._is_draft then
+      local is_empty = (
+        (not email.to or email.to == '') and
+        (not email.subject or email.subject == '') and
+        (not email.body or email.body:match('^%s*$'))
+      )
+      
+      if is_empty then
+        table.insert(lines, "[Empty draft - add content to see preview]")
+        table.insert(lines, "")
+        table.insert(lines, "Tip: Start by filling in:")
+        table.insert(lines, "  • To: recipient email")
+        table.insert(lines, "  • Subject: email subject")
+        table.insert(lines, "  • Body: your message")
+      elseif email.body then
+        -- Split body into lines
+        local body_lines = vim.split(email.body, '\n', { plain = true })
+        for _, line in ipairs(body_lines) do
+          table.insert(lines, line)
+        end
+      end
+    else
+      -- Non-draft email body
+      if email.body then
+        -- Split body into lines
+        local body_lines = vim.split(email.body, '\n', { plain = true })
+        for _, line in ipairs(body_lines) do
+          table.insert(lines, line)
+        end
+      elseif email._error then
+        table.insert(lines, '(No content available)')
+      else
+        table.insert(lines, '(Loading...)')
+      end
+    end
   end
   
-  -- Body
-  if email.body then
-    -- Split body into lines
-    local body_lines = vim.split(email.body, '\n', { plain = true })
-    for _, line in ipairs(body_lines) do
-      table.insert(lines, line)
-    end
-  elseif email._error then
-    table.insert(lines, '(No content available)')
-  else
-    table.insert(lines, '(Loading...)')
+  -- Execute render with error protection
+  local ok, err = pcall(do_render)
+  if not ok then
+    lines = {"Error rendering preview:", tostring(err)}
   end
   
   -- Update buffer
