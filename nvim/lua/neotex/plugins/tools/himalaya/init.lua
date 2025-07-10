@@ -53,6 +53,11 @@ function M.setup(opts)
   local debug_commands = require('neotex.plugins.tools.himalaya.core.debug_commands')
   debug_commands.setup()
   
+  -- Load draft debug modules
+  require('neotex.plugins.tools.himalaya.core.draft_save_debug')
+  require('neotex.plugins.tools.himalaya.core.draft_sync_debug')
+  require('neotex.plugins.tools.himalaya.core.compose_debug')
+  
   -- Initialize performance monitoring (Phase 5)
   local performance = require('neotex.plugins.tools.himalaya.core.performance')
   performance.setup()
