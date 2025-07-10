@@ -170,6 +170,47 @@ M.defaults = {
     auto_scan = false, -- Disabled by default to avoid startup errors
     scan_folders = {'INBOX'}, -- Only scan INBOX by default
   },
+  
+  -- Draft system configuration (Phase 5)
+  draft = {
+    -- Storage settings
+    storage = {
+      base_dir = vim.fn.stdpath('data') .. '/himalaya/drafts',
+      format = 'json', -- 'json' or 'eml'
+      compression = false,
+    },
+    
+    -- Sync settings
+    sync = {
+      auto_sync = true,
+      sync_interval = 300, -- 5 minutes (in seconds)
+      sync_on_save = true,
+      retry_attempts = 3,
+      retry_delay = 5000, -- milliseconds
+    },
+    
+    -- Recovery settings
+    recovery = {
+      enabled = true,
+      check_on_startup = true,
+      max_age_days = 7,
+      backup_unsaved = true,
+    },
+    
+    -- UI settings
+    ui = {
+      show_status_line = true,
+      confirm_delete = true,
+      auto_save_delay = 30000, -- 30 seconds (in milliseconds)
+    },
+    
+    -- Integration settings
+    integration = {
+      use_window_stack = true,
+      emit_events = true,
+      use_notifications = true,
+    }
+  },
 }
 
 -- Current configuration (merged with defaults)
@@ -236,7 +277,120 @@ function M.validate()
     end
   end
   
+  -- Validate draft configuration (Phase 5)
+  if M.config.draft then
+    local draft = M.config.draft
+    
+    -- Validate storage settings
+    if draft.storage then
+      if type(draft.storage.base_dir) ~= 'string' then
+        table.insert(issues, {
+          level = 'error',
+          message = 'draft.storage.base_dir must be a string',
+          fix = 'Set draft.storage.base_dir to a valid directory path'
+        })
+      end
+      
+      if draft.storage.format and draft.storage.format ~= 'json' and draft.storage.format ~= 'eml' then
+        table.insert(issues, {
+          level = 'error',
+          message = "draft.storage.format must be 'json' or 'eml'",
+          fix = "Set draft.storage.format to 'json' or 'eml'"
+        })
+      end
+    end
+    
+    -- Validate sync settings
+    if draft.sync then
+      if type(draft.sync.sync_interval) ~= 'number' or draft.sync.sync_interval <= 0 then
+        table.insert(issues, {
+          level = 'error',
+          message = 'draft.sync.sync_interval must be a positive number',
+          fix = 'Set draft.sync.sync_interval to a positive number (seconds)'
+        })
+      end
+      
+      if type(draft.sync.retry_attempts) ~= 'number' or draft.sync.retry_attempts < 0 then
+        table.insert(issues, {
+          level = 'warning',
+          message = 'draft.sync.retry_attempts should be a non-negative number',
+          fix = 'Set draft.sync.retry_attempts to 0 or higher'
+        })
+      end
+    end
+    
+    -- Validate recovery settings
+    if draft.recovery then
+      if type(draft.recovery.max_age_days) ~= 'number' or draft.recovery.max_age_days <= 0 then
+        table.insert(issues, {
+          level = 'warning',
+          message = 'draft.recovery.max_age_days should be a positive number',
+          fix = 'Set draft.recovery.max_age_days to a positive number'
+        })
+      end
+    end
+    
+    -- Validate UI settings
+    if draft.ui then
+      if type(draft.ui.auto_save_delay) ~= 'number' or draft.ui.auto_save_delay < 0 then
+        table.insert(issues, {
+          level = 'warning',
+          message = 'draft.ui.auto_save_delay should be a non-negative number',
+          fix = 'Set draft.ui.auto_save_delay to 0 or higher (milliseconds)'
+        })
+      end
+    end
+  end
+  
   return issues
+end
+
+-- Validate draft configuration (Phase 5)
+function M.validate_draft_config(config)
+  local draft = config.draft or {}
+  local issues = {}
+  
+  -- Validate storage settings
+  if draft.storage then
+    if type(draft.storage.base_dir) ~= 'string' then
+      return false, "draft.storage.base_dir must be a string"
+    end
+    
+    if draft.storage.format ~= nil and draft.storage.format ~= 'json' and draft.storage.format ~= 'eml' then
+      return false, "draft.storage.format must be 'json' or 'eml'"
+    end
+  end
+  
+  -- Validate sync settings
+  if draft.sync then
+    if type(draft.sync.sync_interval) ~= 'number' or draft.sync.sync_interval <= 0 then
+      return false, "draft.sync.sync_interval must be a positive number"
+    end
+    
+    if draft.sync.retry_attempts ~= nil and (type(draft.sync.retry_attempts) ~= 'number' or draft.sync.retry_attempts < 0) then
+      return false, "draft.sync.retry_attempts must be a non-negative number"
+    end
+    
+    if draft.sync.retry_delay ~= nil and (type(draft.sync.retry_delay) ~= 'number' or draft.sync.retry_delay < 0) then
+      return false, "draft.sync.retry_delay must be a non-negative number"
+    end
+  end
+  
+  -- Validate recovery settings
+  if draft.recovery then
+    if draft.recovery.max_age_days ~= nil and (type(draft.recovery.max_age_days) ~= 'number' or draft.recovery.max_age_days <= 0) then
+      return false, "draft.recovery.max_age_days must be a positive number"
+    end
+  end
+  
+  -- Validate UI settings
+  if draft.ui then
+    if draft.ui.auto_save_delay ~= nil and (type(draft.ui.auto_save_delay) ~= 'number' or draft.ui.auto_save_delay < 0) then
+      return false, "draft.ui.auto_save_delay must be a non-negative number"
+    end
+  end
+  
+  return true
 end
 
 -- Get current account configuration

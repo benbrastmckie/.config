@@ -28,6 +28,7 @@ function M.setup()
   require('neotex.plugins.tools.himalaya.core.commands.debug').setup(M)
   require('neotex.plugins.tools.himalaya.core.commands.features').setup(M)
   require('neotex.plugins.tools.himalaya.core.commands.accounts').setup(M)
+  require('neotex.plugins.tools.himalaya.core.commands.draft').setup(M) -- Phase 5
   
   -- Initialize Phase 8 features
   local features_ok, _ = pcall(function()
