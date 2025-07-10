@@ -519,6 +519,66 @@ local context = {
 }
 ```
 
+## Design Guidelines for New Features
+
+When implementing new features or refactoring existing ones, follow these principles:
+
+### 1. No Backwards Compatibility
+- Focus on clean, maintainable architecture
+- Remove legacy code and compatibility layers
+- Document breaking changes clearly
+- Provide migration guides when needed
+
+### 2. Test-Driven Development Process
+For each implementation phase:
+1. **Implement**: Write clean code without legacy constraints
+2. **Test**: Create comprehensive tests using `:HimalayaTest`
+3. **Document**: Update spec files and inline documentation
+4. **Commit**: Make atomic commits with clear messages
+5. **Proceed**: Only move to next phase after tests pass
+
+### 3. Notification Integration
+- **User Actions** (always shown): Save, delete, send operations
+- **Status Updates** (debug only): Progress, loading states
+- **Background Tasks** (debug only): Auto-save, sync operations
+- **Errors** (always shown): Include recovery actions
+
+### 4. Debug Mode Behavior
+When debug mode is enabled (`<leader>ad`):
+- Show detailed lifecycle events
+- Display timing information
+- Log state transitions
+- Include diagnostic context
+
+### 5. Testing Best Practices
+- Keep tests focused on single behaviors
+- Clean up test artifacts (drafts, files)
+- Use mocks for external operations
+- Include clear failure messages
+- Remove development-only tests before commit
+
+### Example: Draft System Refactoring
+```lua
+-- Good: Clean, focused notification
+notify.himalaya(
+  string.format("Draft saved: %s", subject or "Untitled"),
+  notify.categories.USER_ACTION,
+  { draft_id = draft_id }
+)
+
+-- Good: Debug-only lifecycle tracking
+if notify.config.modules.himalaya.debug_mode then
+  notify.himalaya(
+    "[Draft] State transition: new → syncing",
+    notify.categories.BACKGROUND,
+    { draft_id = draft_id, trigger = "manual_save" }
+  )
+end
+
+-- Bad: Too verbose for normal mode
+notify.himalaya("Starting draft save process...")  -- Don't do this
+```
+
 ## Support and Contributing
 
 ### Getting Help

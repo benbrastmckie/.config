@@ -21,6 +21,7 @@ local performance = require('neotex.plugins.tools.himalaya.core.performance')
 local draft_debug = require('neotex.plugins.tools.himalaya.core.draft_debug')
 local draft_maildir = require('neotex.plugins.tools.himalaya.core.draft_maildir')
 local local_draft_cache = require('neotex.plugins.tools.himalaya.core.local_draft_cache')
+local draft_cache_manager = require('neotex.plugins.tools.himalaya.core.draft_cache_manager')
 
 -- Module state
 local composer_buffers = {}
@@ -282,20 +283,8 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
       folder = draft_folder
     })
     
-    -- Cache the draft metadata using the new draft cache
-    draft_cache.cache_draft_metadata(account, draft_folder, result.id, {
-      subject = email.subject or '',
-      from = email.from,
-      to = email.to,
-      cc = email.cc,
-      bcc = email.bcc,
-      date = os.date('%Y-%m-%d %H:%M:%S'),
-      flags = { 'Draft' }
-    })
-    
-    -- Save full content to local cache as fallback
-    local full_content = draft_parser.format_email(email)
-    local_draft_cache.save_draft_content(account, result.id, full_content)
+    -- Use enhanced caching that reads draft back while body is available
+    draft_cache_manager.cache_draft_after_save(account, draft_folder, result.id, email)
     
     -- Update draft manager content for preview refresh
     local buf = draft_manager.find_buffer_for_draft(result.id)
@@ -469,48 +458,19 @@ local function setup_autosave(buf, draft_file)
         -- Sync to maildir
         local draft_info = composer_buffers[buf]
         if draft_info and draft_info.file then
-          -- For already synced drafts, update the existing one
-          if draft_info.draft_id and draft_info.draft_synced then
-            -- Get current draft ID from buffer info
-            local current_id = draft_info.draft_id
-            
-            logger.debug('Auto-save: updating existing draft', {
-              current_id = current_id,
-              original_draft_id = draft_info.original_draft_id,
-              buf = buf
-            })
-            
-            -- Don't delete the old draft - this causes duplicates
-            -- Just update the existing draft in place
-            
-            -- Save the new version (update existing draft)
-            local new_id = sync_draft_to_maildir(draft_info.file, draft_info.account, current_id)
-            if new_id then
-              -- Only update if we got a different ID
-              if new_id ~= current_id then
-                draft_info.draft_id = new_id
-                composer_buffers[buf] = draft_info
-                state.set('compose.drafts.' .. buf, draft_info)
-                logger.debug('Auto-save: draft ID changed', {
-                  old_id = current_id,
-                  new_id = new_id,
-                  buf = buf
-                })
-              end
-            end
-          else
-            -- Initial sync for drafts that haven't been synced yet
+          -- Check if this is the first save for a new draft
+          if draft_info.needs_initial_sync and not draft_info.draft_id then
+            -- Initial sync for new drafts
             logger.debug('Auto-save: initial draft sync', {
-              has_draft_id = draft_info.draft_id ~= nil,
-              draft_synced = draft_info.draft_synced,
-              buf = buf
+              buf = buf,
+              file = draft_info.file
             })
             
             local new_id = sync_draft_to_maildir(draft_info.file, draft_info.account, nil)
             if new_id then
               -- Track which buffer owns this draft ID
               if draft_id_to_buffer[new_id] and draft_id_to_buffer[new_id] ~= buf then
-                logger.warn('Draft ID already assigned to another buffer in auto-save', {
+                logger.warn('Draft ID already assigned to another buffer', {
                   draft_id = new_id,
                   existing_buf = draft_id_to_buffer[new_id],
                   new_buf = buf
@@ -520,13 +480,53 @@ local function setup_autosave(buf, draft_file)
               
               draft_info.draft_id = new_id
               draft_info.draft_synced = true
+              draft_info.needs_initial_sync = false
               composer_buffers[buf] = draft_info
               state.set('compose.drafts.' .. buf, draft_info)
-              logger.info('Auto-save: draft created', {
+              vim.api.nvim_buf_set_var(buf, 'himalaya_draft_info', draft_info)
+              
+              -- Update draft manager with the new ID
+              draft_manager.set_draft_id(buf, new_id)
+              
+              logger.info('Draft created on first save', {
                 draft_id = new_id,
                 buf = buf
               })
             end
+          elseif draft_info.draft_id and draft_info.draft_synced then
+            -- Update existing draft
+            local current_id = draft_info.draft_id
+            
+            logger.debug('Auto-save: updating existing draft', {
+              current_id = current_id,
+              original_draft_id = draft_info.original_draft_id,
+              buf = buf
+            })
+            
+            -- Save the new version (update existing draft)
+            local new_id = sync_draft_to_maildir(draft_info.file, draft_info.account, current_id)
+            if new_id then
+              -- Only update if we got a different ID
+              if new_id ~= current_id then
+                draft_info.draft_id = new_id
+                composer_buffers[buf] = draft_info
+                state.set('compose.drafts.' .. buf, draft_info)
+                vim.api.nvim_buf_set_var(buf, 'himalaya_draft_info', draft_info)
+                logger.debug('Auto-save: draft ID changed', {
+                  old_id = current_id,
+                  new_id = new_id,
+                  buf = buf
+                })
+              end
+            end
+          else
+            -- Draft in inconsistent state - log for debugging
+            logger.warn('Auto-save: draft in unexpected state', {
+              has_draft_id = draft_info.draft_id ~= nil,
+              draft_synced = draft_info.draft_synced,
+              needs_initial_sync = draft_info.needs_initial_sync,
+              buf = buf
+            })
           end
         end
         
@@ -865,6 +865,9 @@ function M.create_compose_buffer(opts)
   composer_buffers[buf] = draft_info
   state.set('compose.drafts.' .. buf, draft_info)
   
+  -- Also set as buffer variable for easier access
+  vim.api.nvim_buf_set_var(buf, 'himalaya_draft_info', draft_info)
+  
   logger.info('Draft lifecycle: Buffer created', {
     buffer_id = buf,
     local_id = draft_state.local_id,
@@ -895,38 +898,20 @@ function M.create_compose_buffer(opts)
     content = initial_saved
   })
   
-  -- Initial sync to maildir with a small delay to ensure file is written
-  -- Only sync if this is a new draft (not a reopened one)
+  -- Skip initial sync for new drafts - wait for user to save
+  -- This prevents creating empty drafts that cause duplicates
   if not opts.is_draft_reopen then
-    vim.defer_fn(function()
-      local new_draft_id = sync_draft_to_maildir(draft_file, draft_info.account, nil)
-      if new_draft_id then
-        -- Track which buffer owns this draft ID
-        if draft_id_to_buffer[new_draft_id] and draft_id_to_buffer[new_draft_id] ~= buf then
-          logger.warn('Draft ID already assigned to another buffer', {
-            draft_id = new_draft_id,
-            existing_buf = draft_id_to_buffer[new_draft_id],
-            new_buf = buf
-          })
-        end
-        draft_id_to_buffer[new_draft_id] = buf
-        
-        draft_info.draft_id = new_draft_id
-        draft_info.draft_synced = true
-        state.set('compose.drafts.' .. buf, draft_info)
-        
-        -- Update draft manager with the new ID
-        draft_manager.set_draft_id(buf, new_draft_id)
-        
-        logger.info('Initial draft sync successful', { 
-          file = draft_file,
-          draft_id = new_draft_id,
-          buf = buf
-        })
-      else
-        logger.warn('Initial draft sync failed', { file = draft_file })
-      end
-    end, 500)  -- 500ms delay
+    -- Don't sync immediately - wait for first save
+    logger.info('New draft created - will sync on first save', {
+      file = draft_file,
+      account = draft_info.account
+    })
+    
+    -- Mark that we haven't synced yet
+    draft_info.draft_synced = false
+    draft_info.needs_initial_sync = true
+    composer_buffers[buf] = draft_info
+    state.set('compose.drafts.' .. buf, draft_info)
   else
     -- For reopened drafts, mark as already synced
     logger.info('Reopened draft - already synced', {
