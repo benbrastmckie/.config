@@ -1534,7 +1534,7 @@ function M.setup_hover_preview(buf)
         local line_data = metadata[line]
         local email_type = line_data and line_data.type or 'regular'
         
-        email_preview.queue_preview(email_id, sidebar_win, 'keyboard', email_type)
+        email_preview.show_preview(email_id, sidebar_win, email_type)
       end
     end
   })

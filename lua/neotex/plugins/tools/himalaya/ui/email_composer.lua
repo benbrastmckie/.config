@@ -136,16 +136,68 @@ local function setup_buffer_mappings(buf)
     local line = vim.api.nvim_win_get_cursor(0)[1]
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     
-    -- Find next field
+    -- Find next field or body
     for i = line + 1, #lines do
       if lines[i] == '' then
-        -- Jump to body
-        vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+        -- Found empty line (header/body separator)
+        -- Make sure we have a line after it for the body
+        if i == #lines then
+          -- Add a new line for the body
+          vim.api.nvim_buf_set_lines(buf, -1, -1, false, {''})
+          lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        end
+        -- Jump to body (line after the empty line)
+        local body_line = math.min(i + 1, #lines)
+        vim.api.nvim_win_set_cursor(0, { body_line, 0 })
+        -- Exit insert mode and re-enter to position cursor properly
+        vim.cmd('stopinsert')
+        vim.schedule(function()
+          vim.cmd('startinsert')
+        end)
         return
       elseif lines[i]:match('^[^:]+:%s*$') then
         -- Jump to end of header line
         vim.api.nvim_win_set_cursor(0, { i, #lines[i] })
         return
+      end
+    end
+    
+    -- If we're at the end and no empty line found, we're likely in the body already
+    -- Just insert a tab
+    vim.api.nvim_feedkeys('\t', 'n', false)
+  end, opts)
+  
+  -- Shift-Tab to go to previous field in insert mode
+  vim.keymap.set('i', '<S-Tab>', function()
+    local pos = vim.api.nvim_win_get_cursor(0)
+    local line = pos[1]
+    local col = pos[2]
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    
+    -- If we're in the body (after empty line), go back to last header
+    local empty_line = 0
+    for i = 1, #lines do
+      if lines[i] == '' then
+        empty_line = i
+        break
+      end
+    end
+    
+    if line > empty_line and empty_line > 0 then
+      -- We're in body, go to Subject line
+      for i = empty_line - 1, 1, -1 do
+        if lines[i]:match('^Subject:') then
+          vim.api.nvim_win_set_cursor(0, { i, #lines[i] })
+          return
+        end
+      end
+    else
+      -- Find previous field
+      for i = line - 1, 1, -1 do
+        if lines[i]:match('^[^:]+:%s*') then
+          vim.api.nvim_win_set_cursor(0, { i, #lines[i] })
+          return
+        end
       end
     end
   end, opts)
