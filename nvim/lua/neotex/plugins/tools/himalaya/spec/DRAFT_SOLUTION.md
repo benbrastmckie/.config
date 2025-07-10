@@ -332,11 +332,24 @@ end
    - Distinguishes retryable vs permanent errors
    - User notifications on retry attempts
 
-### Week 5: Testing and Polish
-1. Create comprehensive test suite
-2. Add debug commands for troubleshooting
-3. Document all workarounds and limitations
-4. Performance optimization
+### Week 5: Testing and Polish ✅
+1. ✅ Create comprehensive test suite
+   - Created test_draft_refactor.lua with 18 tests
+   - Tests cover all refactor components
+   - Integrated with HimalayaTest framework
+2. ✅ Add debug commands for troubleshooting
+   - Created debug_commands.lua with diagnostic tools
+   - :HimalayaDraftDebug command with subcommands
+   - :HimalayaLogLevel for dynamic log control
+3. ✅ Document all workarounds and limitations
+   - Created DRAFT_SYSTEM_WORKAROUNDS.md
+   - Created draft_system_README.md
+   - Documented all himalaya CLI limitations
+4. ✅ Performance optimization
+   - Created performance.lua module
+   - Added debounced draft saving
+   - Implemented memoization and caching
+   - Added performance monitoring commands
 
 ## Migration Strategy
 
@@ -367,13 +380,280 @@ end
 3. **Conflict Resolution**: Handle concurrent edits to same draft
 4. **Mobile Sync**: Consider future mobile client integration
 
-## Conclusion
+## Post-Implementation Analysis: Empty Draft Handling
 
-This comprehensive refactor addresses all current draft issues by:
-- Creating a robust state management layer
-- Implementing proper ID validation
-- Building a smart caching system
-- Fixing content parsing and preview
-- Ensuring reliable draft cleanup
+### Issue Discovered
+After implementing the 5-phase refactor, testing revealed that new empty drafts created with `<leader>mw` were not being handled properly:
 
-The modular design allows for incremental implementation while maintaining system stability. Each phase builds on the previous, creating a solid foundation for reliable draft functionality.
+1. **Empty drafts appear with "(No subject)" in sidebar**
+2. **Empty content is not preserved through save/parse cycles**
+3. **Draft previews show no content when reopened**
+
+### Root Cause Analysis
+
+The issue is not that drafts should have default content, but that the system doesn't handle the natural lifecycle of empty drafts properly. The problem occurs at several points:
+
+#### 1. Empty Content Preservation
+- Empty drafts have minimal structure (just headers + empty body)
+- When parsed and re-saved, empty content gets lost
+- Parser doesn't distinguish between "no content" and "content parsing failed"
+
+#### 2. Sidebar Display Issues
+- Empty subjects show as "(No subject)" which is unclear
+- No way to distinguish between "user hasn't added subject yet" vs "failed to load subject"
+- Timestamps missing for identification
+
+#### 3. Preview System Gaps
+- Empty drafts may not preview correctly
+- No indication of draft state (new, edited, etc.)
+
+## Comprehensive Empty Draft Solution
+
+### Phase 6: Elegant Empty Draft Handling
+
+#### 6.1 Draft State Enhancement
+
+**Problem**: Current system doesn't track draft editing state
+**Solution**: Enhanced draft state tracking
+
+```lua
+-- Enhanced draft state in draft_manager.lua
+draft_state = {
+  buffer_id = number,
+  draft_id = string|nil,
+  local_id = string,
+  account = string,
+  folder = string,
+  content = {
+    from = string,
+    to = string,
+    subject = string,
+    body = string,
+    headers = table
+  },
+  state = 'new'|'editing'|'syncing'|'synced'|'sending',
+  created_at = timestamp,
+  last_saved = timestamp,
+  last_synced = timestamp,
+  last_modified = timestamp,  -- NEW: track when user last edited
+  is_empty = boolean,         -- NEW: track if draft is still empty
+  user_touched = boolean      -- NEW: track if user has made any edits
+}
+```
+
+#### 6.2 Smart Subject Handling
+
+**Problem**: Empty subjects show as "(No subject)" which is confusing
+**Solution**: Context-aware subject display
+
+```lua
+-- In draft_cache.lua - enhanced subject retrieval
+function M.get_draft_display_subject(account, folder, draft_id)
+  local metadata = M.get_draft_metadata(account, folder, draft_id)
+  
+  if metadata and metadata.subject and metadata.subject ~= '' then
+    return metadata.subject
+  end
+  
+  -- Check draft state for better context
+  local draft_state = draft_manager.get_draft_by_id(draft_id)
+  if draft_state then
+    if not draft_state.user_touched then
+      return string.format("New Draft (%s)", os.date("%H:%M", draft_state.created_at))
+    elseif draft_state.last_modified then
+      return string.format("Draft (%s)", os.date("%H:%M", draft_state.last_modified))
+    end
+  end
+  
+  -- Fallback with timestamp
+  return string.format("Draft (%s)", os.date("%H:%M", metadata.cached_at or os.time()))
+end
+```
+
+#### 6.3 Content Preservation Pipeline
+
+**Problem**: Empty content gets lost during save/parse cycles
+**Solution**: Content-aware preservation
+
+```lua
+-- In email_composer.lua - enhanced content tracking
+local function track_content_changes(buf)
+  -- Track when user makes actual changes
+  vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
+    buffer = buf,
+    callback = function()
+      local draft_state = draft_manager.get_draft(buf)
+      if draft_state then
+        draft_state.user_touched = true
+        draft_state.last_modified = os.time()
+        
+        -- Check if content is still effectively empty
+        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        local parsed = parse_email_buffer(lines)
+        
+        draft_state.is_empty = (
+          (not parsed.to or parsed.to == '') and
+          (not parsed.subject or parsed.subject == '') and
+          (not parsed.body or parsed.body:match('^%s*$'))
+        )
+        
+        draft_manager.update_draft_state(buf, draft_state)
+      end
+    end
+  })
+end
+```
+
+#### 6.4 Smart Save Strategy
+
+**Problem**: Empty drafts may not save meaningfully
+**Solution**: State-aware saving
+
+```lua
+-- In sync_draft_to_maildir - enhanced empty draft handling
+local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
+  local content = vim.fn.readfile(draft_file)
+  local email = parse_email_buffer(content)
+  
+  -- Enhanced empty draft detection
+  local is_effectively_empty = (
+    (not email.to or email.to == '') and
+    (not email.subject or email.subject == '') and
+    (not email.body or email.body:match('^%s*$'))
+  )
+  
+  -- For empty drafts, ensure minimal but valid structure
+  if is_effectively_empty then
+    email.subject = ''  -- Explicitly empty, not nil
+    email.body = ''     -- Explicitly empty, not nil
+    
+    -- Add metadata to track empty state
+    email.headers = email.headers or {}
+    email.headers['X-Draft-State'] = 'empty'
+    email.headers['X-Draft-Created'] = os.date('!%Y-%m-%dT%H:%M:%SZ')
+  else
+    -- Remove empty state marker if content added
+    if email.headers and email.headers['X-Draft-State'] then
+      email.headers['X-Draft-State'] = nil
+    end
+  end
+  
+  -- Proceed with save using enhanced structure
+  local ok, result = pcall(utils.save_draft, account, draft_folder, email)
+  return ok and result
+end
+```
+
+#### 6.5 Enhanced Preview System
+
+**Problem**: Empty drafts may not preview correctly
+**Solution**: State-aware preview
+
+```lua
+-- In email_preview.lua - enhanced empty draft preview
+function M.show_empty_draft_preview(draft_id, draft_state)
+  local preview_lines = {
+    '# Empty Draft',
+    '',
+    string.format('Created: %s', os.date('%Y-%m-%d %H:%M:%S', draft_state.created_at)),
+  }
+  
+  if draft_state.user_touched then
+    table.insert(preview_lines, string.format('Last Modified: %s', 
+      os.date('%Y-%m-%d %H:%M:%S', draft_state.last_modified)))
+  else
+    table.insert(preview_lines, 'Status: New (not yet edited)')
+  end
+  
+  table.insert(preview_lines, '')
+  table.insert(preview_lines, '## Instructions')
+  table.insert(preview_lines, '- Press Enter to open for editing')
+  table.insert(preview_lines, '- Draft will be saved automatically as you type')
+  table.insert(preview_lines, '- Add recipients in the To: field')
+  table.insert(preview_lines, '- Add a subject line')
+  table.insert(preview_lines, '- Write your message in the body')
+  
+  M.set_preview_content(preview_lines, 'markdown')
+end
+```
+
+#### 6.6 User Experience Enhancements
+
+**Problem**: Users don't understand draft states
+**Solution**: Clear status indicators
+
+```lua
+-- Enhanced notifications for draft states
+function M.show_draft_status(buf)
+  local draft_state = draft_manager.get_draft(buf)
+  if not draft_state then return end
+  
+  local status_msg
+  if not draft_state.user_touched then
+    status_msg = "New empty draft - start typing to begin composing"
+  elseif draft_state.is_empty then
+    status_msg = "Draft is empty - add recipients and content"
+  else
+    status_msg = string.format("Draft saved (%s)", 
+      os.date('%H:%M:%S', draft_state.last_saved))
+  end
+  
+  notify.himalaya(status_msg, notify.categories.STATUS)
+end
+```
+
+### Implementation Plan ✅ COMPLETED
+
+#### Step 1: Enhanced Draft State ✅ COMPLETED (1-2 hours)
+1. ✅ Updated `draft_manager.lua` with new state fields (last_modified, is_empty, user_touched)
+2. ✅ Added content change tracking in `email_composer.lua`
+3. ✅ Implemented `is_empty` and `user_touched` logic and update functions
+
+#### Step 2: Smart Subject Display ✅ COMPLETED (1 hour)
+1. ✅ Added `get_draft_display_subject` function to `draft_cache.lua`
+2. ✅ Modified email list to use new smart subject function
+3. ✅ Smart display shows "New Draft (HH:MM)" or "Draft (HH:MM)" based on state
+
+#### Step 3: Content Preservation ✅ COMPLETED (2-3 hours)
+1. ✅ Enhanced `sync_draft_to_maildir` with empty draft detection
+2. ✅ Added X-Draft-State and X-Draft-Created metadata headers
+3. ✅ Empty drafts now maintain structure with explicit empty fields
+
+#### Step 4: Preview Enhancements ✅ COMPLETED (1-2 hours)
+1. ✅ Added `show_empty_draft_preview` function to `email_preview.lua`
+2. ✅ Updated preview logic to detect and handle empty drafts
+3. ✅ Shows helpful instructions, creation time, and editing status
+
+#### Step 5: User Experience ✅ COMPLETED (1 hour)
+1. ✅ Content tracking provides seamless state updates
+2. ✅ Smart subjects eliminate confusing "(No subject)" displays
+3. ✅ Empty draft preview guides users with clear instructions
+
+### Success Criteria
+
+1. **Empty Draft Creation**: `<leader>mw` creates draft that shows meaningful info in sidebar
+2. **Content Preservation**: Empty drafts save/load without losing structure
+3. **Progressive Enhancement**: Adding content updates all views immediately
+4. **Clear Status**: Users understand what state their draft is in
+5. **Graceful Handling**: No "(No subject)" or missing content issues
+
+### Testing Protocol
+
+1. **Empty Draft Lifecycle**:
+   - Create empty draft
+   - Verify sidebar shows timestamp-based title
+   - Open preview (should show helpful info)
+   - Open for editing (should have clean structure)
+
+2. **Content Addition**:
+   - Add recipient → verify auto-save and sidebar update
+   - Add subject → verify sidebar shows real subject
+   - Add body → verify content preserved
+
+3. **Edge Cases**:
+   - Drafts with only recipient
+   - Drafts with only subject
+   - Drafts with only body
+   - Mixed states across multiple drafts
+
+This solution maintains the natural workflow while ensuring robust handling of all draft states.

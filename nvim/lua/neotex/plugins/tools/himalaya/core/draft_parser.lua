@@ -8,6 +8,7 @@ local M = {}
 
 -- Dependencies
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local performance = require('neotex.plugins.tools.himalaya.core.performance')
 
 -- Parser states
 local STATES = {
@@ -237,6 +238,7 @@ end
 
 -- Parse himalaya draft output specifically
 function M.parse_himalaya_draft(content)
+  local timer = performance.start_timer('draft_parse_himalaya')
   local lines
   
   -- Handle string vs table input
@@ -246,6 +248,7 @@ function M.parse_himalaya_draft(content)
     lines = content
   else
     logger.error('Invalid content type for parsing', { type = type(content) })
+    performance.end_timer(timer)
     return {
       headers = {},
       from = '',
@@ -270,6 +273,7 @@ function M.parse_himalaya_draft(content)
     result.body = result.body:gsub('\n%s*$', '')
   end
   
+  performance.end_timer(timer)
   return result
 end
 
@@ -353,6 +357,44 @@ function M.debug_test_parser()
     print("  Body lines: " .. vim.tbl_count(vim.split(result.body, '\n')))
     print("  Errors: " .. #result.errors)
   end
+end
+
+-- Format email object back to himalaya text format
+function M.format_email(email)
+  local lines = {}
+  
+  -- Add headers
+  table.insert(lines, 'From: ' .. (email.from or ''))
+  table.insert(lines, 'To: ' .. (email.to or ''))
+  
+  if email.cc and email.cc ~= '' then
+    table.insert(lines, 'Cc: ' .. email.cc)
+  end
+  
+  if email.bcc and email.bcc ~= '' then
+    table.insert(lines, 'Bcc: ' .. email.bcc)
+  end
+  
+  table.insert(lines, 'Subject: ' .. (email.subject or ''))
+  
+  -- Add any custom headers
+  if email.headers then
+    for name, value in pairs(email.headers) do
+      if not name:match('^[FfTtCcSs]') then  -- Skip standard headers
+        table.insert(lines, name .. ': ' .. value)
+      end
+    end
+  end
+  
+  -- Empty line between headers and body
+  table.insert(lines, '')
+  
+  -- Add body
+  if email.body then
+    table.insert(lines, email.body)
+  end
+  
+  return table.concat(lines, '\n')
 end
 
 -- Register debug command

@@ -35,6 +35,9 @@ local function create_draft_state(buffer_id, account, folder)
     last_saved = nil,
     last_synced = nil,
     created_at = os.time(),
+    last_modified = nil,         -- NEW: when user last edited content
+    is_empty = true,             -- NEW: track if draft is still empty
+    user_touched = false,        -- NEW: track if user has made any edits
     error = nil                  -- Last error if any
   }
 end
@@ -179,6 +182,42 @@ function M.remove_draft(buffer_id)
   
   M.drafts[buffer_id] = nil
   return true
+end
+
+-- Update draft state tracking (NEW for Phase 6)
+function M.update_draft_state(buffer_id, updates)
+  local draft_state = M.drafts[buffer_id]
+  if not draft_state then
+    return false
+  end
+  
+  -- Apply updates
+  for key, value in pairs(updates) do
+    draft_state[key] = value
+  end
+  
+  logger.debug('Draft state updated', {
+    buffer_id = buffer_id,
+    local_id = draft_state.local_id,
+    updates = updates
+  })
+  
+  return true
+end
+
+-- Check if draft is effectively empty (NEW for Phase 6)
+function M.is_draft_empty(buffer_id)
+  local draft_state = M.drafts[buffer_id]
+  if not draft_state then
+    return true
+  end
+  
+  local content = draft_state.content
+  return (
+    (not content.to or content.to == '') and
+    (not content.subject or content.subject == '') and
+    (not content.body or content.body:match('^%s*$'))
+  )
 end
 
 -- Clean up drafts for closed buffers

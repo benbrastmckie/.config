@@ -19,6 +19,8 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
 local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
+local draft_maildir = require('neotex.plugins.tools.himalaya.core.draft_maildir')
+local local_draft_cache = require('neotex.plugins.tools.himalaya.core.local_draft_cache')
 
 -- Module state
 -- Store preview state in a table to prevent corruption
@@ -235,6 +237,41 @@ local function process_email_body(body)
   return lines
 end
 
+-- Show empty draft preview (NEW for Phase 6)
+function M.show_empty_draft_preview(email, lines)
+  -- Try to get draft state for better context
+  local draft_state = draft_manager.get_draft_by_id(email.id)
+  
+  table.insert(lines, '# Empty Draft')
+  table.insert(lines, '')
+  
+  if draft_state then
+    table.insert(lines, string.format('Created: %s', os.date('%Y-%m-%d %H:%M:%S', draft_state.created_at)))
+    
+    if draft_state.user_touched then
+      table.insert(lines, string.format('Last Modified: %s', 
+        os.date('%Y-%m-%d %H:%M:%S', draft_state.last_modified)))
+    else
+      table.insert(lines, 'Status: New (not yet edited)')
+    end
+  else
+    table.insert(lines, 'Status: Empty draft')
+  end
+  
+  table.insert(lines, '')
+  table.insert(lines, '## Instructions')
+  table.insert(lines, '- Press Enter to open for editing')
+  table.insert(lines, '- Draft will be saved automatically as you type')
+  table.insert(lines, '- Add recipients in the To: field')
+  table.insert(lines, '- Add a subject line')
+  table.insert(lines, '- Write your message in the body')
+  table.insert(lines, '')
+  table.insert(lines, '## Tips')
+  table.insert(lines, '- Use Tab to jump between fields')
+  table.insert(lines, '- Changes are saved every 30 seconds')
+  table.insert(lines, '- Press Ctrl+S to save manually')
+end
+
 -- Render email content in preview buffer
 function M.render_preview(email, buf)
   local lines = {}
@@ -278,6 +315,21 @@ function M.render_preview(email, buf)
       table.insert(lines, "Date: " .. date)
       table.insert(lines, string.rep("-", M.config.width - 2))
       table.insert(lines, "")
+    end
+    
+    -- Check for empty drafts (NEW for Phase 6)
+    if email._is_draft then
+      local is_empty = (
+        (not email.to or email.to == '') and
+        (not email.subject or email.subject == '') and
+        (not email.body or email.body:match('^%s*$'))
+      )
+      
+      if is_empty then
+        -- Show empty draft preview
+        M.show_empty_draft_preview(email, lines)
+        return -- Skip normal body handling
+      end
     end
     
     -- Body handling
@@ -387,10 +439,19 @@ end
 
 -- Load draft content with proper error handling
 local function load_draft_content(account, folder, draft_id)
+  local draft_debug = require('neotex.plugins.tools.himalaya.core.draft_debug')
+  
   logger.info('Loading draft content for preview', {
     account = account,
     folder = folder,
     draft_id = draft_id
+  })
+  
+  -- Debug tracking
+  draft_debug.debug_lifecycle_event('preview_load_start', nil, draft_id, {
+    account = account,
+    folder = folder,
+    source = 'preview'
   })
   
   -- First check draft cache
@@ -420,6 +481,44 @@ local function load_draft_content(account, folder, draft_id)
   
   -- Parse the result
   local parsed = draft_parser.parse_himalaya_draft(result)
+  
+  -- Debug parsed content
+  draft_debug.debug_draft_content('preview_parsed', 'preview_draft_' .. draft_id, parsed)
+  
+  -- If body is empty, try maildir fallback (himalaya bug workaround)
+  if not parsed.body or parsed.body == '' then
+    logger.warn('Draft preview has no body, trying maildir fallback', {
+      draft_id = draft_id
+    })
+    
+    local draft_maildir = require('neotex.plugins.tools.himalaya.core.draft_maildir')
+    local maildir_content = draft_maildir.read_draft_from_maildir(account, draft_id)
+    
+    if maildir_content then
+      logger.info('Using maildir fallback for draft preview')
+      local maildir_parsed = draft_parser.parse_himalaya_draft(maildir_content)
+      
+      -- Use maildir body if available
+      if maildir_parsed.body and maildir_parsed.body ~= '' then
+        parsed.body = maildir_parsed.body
+        logger.info('Successfully recovered draft body from maildir for preview')
+      end
+    else
+      -- Try local cache as final fallback
+      logger.warn('Maildir fallback failed - trying local cache')
+      local local_content = local_draft_cache.load_draft_content(account, draft_id)
+      
+      if local_content then
+        logger.info('Using local cache fallback for draft preview')
+        local cached_parsed = draft_parser.parse_himalaya_draft(local_content)
+        
+        if cached_parsed.body and cached_parsed.body ~= '' then
+          parsed.body = cached_parsed.body
+          logger.info('Successfully recovered draft body from local cache for preview')
+        end
+      end
+    end
+  end
   
   -- Cache the content
   draft_cache.cache_draft_content(account, folder, draft_id, parsed)

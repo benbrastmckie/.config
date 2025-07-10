@@ -137,6 +137,11 @@ function M.get_level_name(level)
   return "UNKNOWN"
 end
 
+-- Get current log level
+function M.get_level()
+  return M.get_level_name(M.current_level):lower()
+end
+
 -- Log with timing
 function M.time(label, fn)
   local start = vim.loop.hrtime()
