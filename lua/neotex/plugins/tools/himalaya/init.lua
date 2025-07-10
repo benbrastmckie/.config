@@ -48,6 +48,14 @@ function M.setup(opts)
 
   -- Set up commands
   M.setup_commands()
+  
+  -- Initialize debug commands (Phase 5)
+  local debug_commands = require('neotex.plugins.tools.himalaya.core.debug_commands')
+  debug_commands.setup()
+  
+  -- Initialize performance monitoring (Phase 5)
+  local performance = require('neotex.plugins.tools.himalaya.core.performance')
+  performance.setup()
 
   -- Start auto-sync timer
   local manager = require('neotex.plugins.tools.himalaya.sync.manager')

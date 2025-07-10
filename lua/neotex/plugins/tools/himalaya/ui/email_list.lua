@@ -604,11 +604,11 @@ function M.format_email_list(emails)
       -- For drafts, himalaya might not return the subject in envelope list
       -- Try to get it from the draft cache first, then email cache
       if is_draft_folder and (subject == '' or subject == vim.NIL) then
-        -- First try the persistent draft cache
-        local draft_subject = draft_cache.get_draft_subject(current_account, current_folder, email_id)
+        -- First try the smart display subject (NEW for Phase 6)
+        local draft_subject = draft_cache.get_draft_display_subject(current_account, current_folder, email_id)
         if draft_subject and draft_subject ~= '' then
           subject = draft_subject
-          logger.info('Using draft cache subject', {
+          logger.info('Using smart draft display subject', {
             email_id = email_id,
             subject = subject
           })

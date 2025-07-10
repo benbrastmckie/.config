@@ -8,6 +8,7 @@ local M = {}
 
 -- Dependencies
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local performance = require('neotex.plugins.tools.himalaya.core.performance')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Cache data structures
@@ -33,12 +34,19 @@ end
 
 -- Cache draft metadata (persisted to disk)
 function M.cache_draft_metadata(account, folder, draft_id, metadata)
+  local timer = performance.start_timer('cache_draft_metadata')
   if not draft_id or draft_id == '' then
     logger.warn('Cannot cache metadata without draft ID')
+    performance.end_timer(timer)
     return false
   end
   
   local key = make_cache_key(account, folder, draft_id)
+  
+  -- Check if we're updating existing metadata
+  local existing = M.metadata_cache[key]
+  local is_update = existing ~= nil
+  local subject_changed = existing and existing.subject ~= (metadata.subject or '')
   
   M.metadata_cache[key] = {
     subject = metadata.subject or '',
@@ -58,9 +66,13 @@ function M.cache_draft_metadata(account, folder, draft_id, metadata)
   logger.info('Draft metadata cached', {
     key = key,
     subject = metadata.subject,
-    has_subject = (metadata.subject ~= nil and metadata.subject ~= '')
+    has_subject = (metadata.subject ~= nil and metadata.subject ~= ''),
+    is_update = is_update,
+    subject_changed = subject_changed,
+    old_subject = existing and existing.subject or nil
   })
   
+  performance.end_timer(timer)
   return true
 end
 
@@ -91,6 +103,45 @@ function M.get_draft_subject(account, folder, draft_id)
     return metadata.subject
   end
   return nil
+end
+
+-- Get smart display subject for drafts (NEW for Phase 6)
+function M.get_draft_display_subject(account, folder, draft_id)
+  local metadata = M.get_draft_metadata(account, folder, draft_id)
+  
+  -- ALWAYS prefer the actual subject if it exists
+  if metadata and metadata.subject and metadata.subject ~= '' then
+    logger.debug('Using cached subject for display', {
+      draft_id = draft_id,
+      subject = metadata.subject
+    })
+    return metadata.subject
+  end
+  
+  -- Only use smart display for truly empty subjects
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager')
+  local draft_state = draft_manager.get_draft_by_id(draft_id)
+  
+  if draft_state then
+    -- Check if draft state has a subject
+    if draft_state.content and draft_state.content.subject and draft_state.content.subject ~= '' then
+      logger.debug('Using draft state subject for display', {
+        draft_id = draft_id,
+        subject = draft_state.content.subject
+      })
+      return draft_state.content.subject
+    end
+    
+    -- Only show time-based subjects for truly empty drafts
+    if not draft_state.user_touched then
+      return string.format("New Draft (%s)", os.date("%H:%M", draft_state.created_at))
+    elseif draft_state.last_modified then
+      return string.format("Draft (%s)", os.date("%H:%M", draft_state.last_modified))
+    end
+  end
+  
+  -- Fallback with timestamp
+  return string.format("Draft (%s)", os.date("%H:%M", metadata and metadata.cached_at or os.time()))
 end
 
 -- Cache full draft content (volatile)

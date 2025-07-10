@@ -17,11 +17,16 @@ local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager'
 local id_validator = require('neotex.plugins.tools.himalaya.core.id_validator')
 local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
 local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
+local performance = require('neotex.plugins.tools.himalaya.core.performance')
+local draft_debug = require('neotex.plugins.tools.himalaya.core.draft_debug')
+local draft_maildir = require('neotex.plugins.tools.himalaya.core.draft_maildir')
+local local_draft_cache = require('neotex.plugins.tools.himalaya.core.local_draft_cache')
 
 -- Module state
 local composer_buffers = {}
 local autosave_timers = {}
 local draft_id_to_buffer = {}  -- Track which buffer owns which draft ID
+local debounced_saves = {}  -- Track debounced save functions per buffer
 
 -- Configuration
 M.config = {
@@ -40,6 +45,9 @@ function M.setup(cfg)
   
   -- Ensure draft directory exists
   vim.fn.mkdir(M.config.draft_dir, 'p')
+  
+  -- Initialize draft debug module
+  draft_debug.setup()
   
   logger.debug('Email composer v2 initialized', { config = M.config })
 end
@@ -143,6 +151,27 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     all_lines = content  -- Log all lines to see the complete content
   })
   
+  -- Add draft debug tracking
+  draft_debug.debug_draft_content('file_read', draft_file, content)
+  draft_debug.debug_lifecycle_event('sync_start', nil, existing_draft_id, {
+    account = account,
+    draft_folder = draft_folder,
+    file = draft_file
+  })
+  
+  -- Extra debug: Check for subject in raw content
+  local subject_line = nil
+  for _, line in ipairs(content) do
+    if line:match('^Subject:') then
+      subject_line = line
+      break
+    end
+  end
+  logger.info('Subject line in raw content', {
+    subject_line = subject_line,
+    has_subject = subject_line ~= nil
+  })
+  
   -- If the file is empty or has no content, add basic headers
   if not content or #content == 0 then
     logger.warn('Draft file is empty', { file = draft_file })
@@ -156,6 +185,9 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
   end
   
   local email = parse_email_buffer(content)
+  
+  -- Debug parsed content
+  draft_debug.debug_draft_content('after_parse', draft_file, email)
   
   -- Make sure we have all the required fields
   if not email.from or email.from == '' then
@@ -175,6 +207,7 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     body_length = email.body and #email.body or 0,
     body_content = email.body,  -- Show actual body content
     subject = email.subject,
+    subject_empty = email.subject == nil or email.subject == '',
     from = email.from,
     to = email.to,
     headers = email.headers,
@@ -191,6 +224,40 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
   -- Ensure body is not nil
   if not email.body then
     email.body = ''
+  end
+  
+  -- Enhanced empty draft detection and handling (NEW for Phase 6)
+  local is_effectively_empty = (
+    (not email.to or email.to == '') and
+    (not email.subject or email.subject == '') and
+    (not email.body or email.body:match('^%s*$'))
+  )
+  
+  -- For empty drafts, ensure minimal but valid structure
+  if is_effectively_empty then
+    email.subject = ''  -- Explicitly empty, not nil
+    email.body = ''     -- Explicitly empty, not nil
+    
+    -- Add metadata to track empty state
+    email.headers = email.headers or {}
+    email.headers['X-Draft-State'] = 'empty'
+    email.headers['X-Draft-Created'] = os.date('!%Y-%m-%dT%H:%M:%SZ')
+    
+    logger.info('Empty draft detected - adding state metadata', {
+      draft_file = draft_file,
+      account = account,
+      state_header = email.headers['X-Draft-State'],
+      created_header = email.headers['X-Draft-Created']
+    })
+  else
+    -- Remove empty state marker if content added
+    if email.headers and email.headers['X-Draft-State'] then
+      email.headers['X-Draft-State'] = nil
+      logger.info('Draft has content - removing empty state marker', {
+        draft_file = draft_file,
+        account = account
+      })
+    end
   end
   
   -- If we have an existing draft ID, we should update that draft
@@ -217,7 +284,7 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
     
     -- Cache the draft metadata using the new draft cache
     draft_cache.cache_draft_metadata(account, draft_folder, result.id, {
-      subject = email.subject,
+      subject = email.subject or '',
       from = email.from,
       to = email.to,
       cc = email.cc,
@@ -225,6 +292,42 @@ local function sync_draft_to_maildir(draft_file, account, existing_draft_id)
       date = os.date('%Y-%m-%d %H:%M:%S'),
       flags = { 'Draft' }
     })
+    
+    -- Save full content to local cache as fallback
+    local full_content = draft_parser.format_email(email)
+    local_draft_cache.save_draft_content(account, result.id, full_content)
+    
+    -- Update draft manager content for preview refresh
+    local buf = draft_manager.find_buffer_for_draft(result.id)
+    if not buf then
+      -- Try to find by existing draft ID if this is an update
+      if existing_draft_id then
+        buf = draft_manager.find_buffer_for_draft(existing_draft_id)
+      end
+    end
+    
+    if buf then
+      draft_manager.update_content(buf, email)
+      -- Also update the draft ID if it changed
+      if existing_draft_id and existing_draft_id ~= result.id then
+        draft_manager.set_draft_id(buf, result.id)
+      end
+    else
+      logger.warn('Could not find buffer for draft to update content', {
+        draft_id = result.id,
+        existing_draft_id = existing_draft_id
+      })
+    end
+    
+    -- Refresh sidebar if we're in drafts folder and sidebar is open
+    local current_folder = state.get_current_folder()
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    if current_folder and current_folder == draft_folder and sidebar.is_open() then
+      vim.defer_fn(function()
+        local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+        email_list.refresh_email_list()
+      end, 100)
+    end
     
     -- Also cache in email_cache for compatibility
     local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
@@ -511,8 +614,40 @@ local function setup_buffer_mappings(buf)
       
       -- Cleanup state
       composer_buffers[buf] = nil
+      debounced_saves[buf] = nil
       state.set('compose.drafts.' .. buf, nil)
     end,
+  })
+end
+
+-- Setup content change tracking for empty draft handling (NEW for Phase 6)
+local function setup_content_tracking(buf)
+  -- Track when user makes actual changes
+  vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
+    buffer = buf,
+    callback = function()
+      local draft_state = draft_manager.get_draft(buf)
+      if draft_state then
+        -- Update tracking fields
+        local updates = {
+          user_touched = true,
+          last_modified = os.time()
+        }
+        
+        -- Check if content is still effectively empty
+        updates.is_empty = draft_manager.is_draft_empty(buf)
+        
+        draft_manager.update_draft_state(buf, updates)
+        
+        logger.debug('Content tracking update', {
+          buffer_id = buf,
+          local_id = draft_state.local_id,
+          user_touched = true,
+          is_empty = updates.is_empty,
+          last_modified = updates.last_modified
+        })
+      end
+    end
   })
 end
 
@@ -742,6 +877,7 @@ function M.create_compose_buffer(opts)
   
   -- Setup mappings and auto-save
   setup_buffer_mappings(buf)
+  setup_content_tracking(buf)  -- NEW for Phase 6
   setup_autosave(buf, draft_file)
   
   -- Initial save
@@ -778,6 +914,10 @@ function M.create_compose_buffer(opts)
         draft_info.draft_id = new_draft_id
         draft_info.draft_synced = true
         state.set('compose.drafts.' .. buf, draft_info)
+        
+        -- Update draft manager with the new ID
+        draft_manager.set_draft_id(buf, new_draft_id)
+        
         logger.info('Initial draft sync successful', { 
           file = draft_file,
           draft_id = new_draft_id,
@@ -860,7 +1000,24 @@ function M.forward_email(email)
 end
 
 -- Save draft manually
+-- Create debounced save function for buffer
+local function get_debounced_save(buf)
+  if not debounced_saves[buf] then
+    debounced_saves[buf] = performance.debounce(function()
+      M.save_draft_immediate(buf)
+    end, 1000)  -- 1 second debounce
+  end
+  return debounced_saves[buf]
+end
+
+-- Save draft to maildir (debounced version)
 function M.save_draft(buf)
+  local debounced = get_debounced_save(buf)
+  debounced()
+end
+
+-- Save draft to maildir immediately
+function M.save_draft_immediate(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
@@ -1510,6 +1667,13 @@ function M.reopen_draft(provided_email_id)
     folder = current_folder
   })
   
+  -- Add draft debug tracking
+  draft_debug.debug_lifecycle_event('reopen_attempt', nil, email_id, {
+    account = account,
+    folder = current_folder,
+    numeric_id = numeric_id
+  })
+  
   -- Always use himalaya to get the correct draft by ID
   -- Don't use local files as they don't have a mapping to draft IDs
   local draft_content_found = false
@@ -1592,6 +1756,12 @@ function M.reopen_draft(provided_email_id)
     parse_errors = #(email.errors or {})
   })
   
+  -- Debug parsed draft
+  draft_debug.debug_draft_content('reopen_parsed', 'draft_' .. numeric_id, email)
+  draft_debug.debug_lifecycle_event('reopen_parsed', nil, numeric_id, {
+    parsed_email = email
+  })
+  
   -- Check for multipart markers and extract content
   if email.body then
     -- Handle <#part type=application/octet-stream> markers
@@ -1609,9 +1779,9 @@ function M.reopen_draft(provided_email_id)
     email.body = email.body:gsub('<#!/part>\n?$', '')  -- Sometimes just the end marker
   end
   
-  -- If we still have no body, log what we got
+  -- If we still have no body, try maildir fallback
   if not email.body or email.body == '' then
-    logger.warn('Draft appears to have no body content', {
+    logger.warn('Draft appears to have no body content, trying maildir fallback', {
       email_id = email_id,
       parsed_headers = {
         from = email.from,
@@ -1621,6 +1791,58 @@ function M.reopen_draft(provided_email_id)
       raw_output_length = #output,
       raw_output_preview = output:sub(1, 200)
     })
+    
+    -- Try to read directly from maildir (known himalaya bug workaround)
+    local maildir_content = draft_maildir.read_draft_from_maildir(account, numeric_id)
+    if maildir_content then
+      logger.info('Using maildir fallback for draft content')
+      -- Parse the maildir content
+      local maildir_email = draft_parser.parse_himalaya_draft(maildir_content)
+      
+      -- Merge with what we got from himalaya (prefer maildir body, himalaya headers)
+      if maildir_email.body and maildir_email.body ~= '' then
+        email.body = maildir_email.body
+        logger.info('Successfully recovered draft body from maildir', {
+          body_length = #email.body
+        })
+      end
+      
+      -- Also update other fields if they were missing
+      if (not email.subject or email.subject == '') and maildir_email.subject then
+        email.subject = maildir_email.subject
+      end
+      if (not email.to or email.to == '') and maildir_email.to then
+        email.to = maildir_email.to
+      end
+    else
+      logger.warn('Maildir fallback failed - trying local cache')
+      
+      -- Try local cache as final fallback
+      local local_content = local_draft_cache.load_draft_content(account, numeric_id)
+      if local_content then
+        logger.info('Using local cache fallback for draft content')
+        -- Parse the cached content
+        local cached_email = draft_parser.parse_himalaya_draft(local_content)
+        
+        -- Merge with what we got from himalaya
+        if cached_email.body and cached_email.body ~= '' then
+          email.body = cached_email.body
+          logger.info('Successfully recovered draft body from local cache', {
+            body_length = #email.body
+          })
+        end
+        
+        -- Also update other fields if they were missing
+        if (not email.subject or email.subject == '') and cached_email.subject then
+          email.subject = cached_email.subject
+        end
+        if (not email.to or email.to == '') and cached_email.to then
+          email.to = cached_email.to
+        end
+      else
+        logger.error('All fallbacks failed - draft content lost')
+      end
+    end
   end
   
     -- Create compose buffer with existing content
