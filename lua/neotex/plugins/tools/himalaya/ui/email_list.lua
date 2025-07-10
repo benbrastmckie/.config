@@ -18,7 +18,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-local draft_cache = require('neotex.plugins.tools.himalaya.core.draft_cache')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
@@ -329,8 +329,7 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     local draft_folder = utils.find_draft_folder(account_name)
     if folder == draft_folder then
       logger.info('Clearing draft content cache (preserving metadata)')
-      -- Only clear content cache, not the persistent metadata
-      draft_cache.clear_folder_drafts(account_name, folder)
+      -- With new draft system, no need to clear cache as it's managed per buffer
       
       -- Debug: Log what we're getting from himalaya for drafts
       logger.info('Draft emails from himalaya envelope list', {
@@ -602,13 +601,13 @@ function M.format_email_list(emails)
       local subject = email.subject or ''
       
       -- For drafts, himalaya might not return the subject in envelope list
-      -- Try to get it from the draft cache first, then email cache
+      -- Try to get it from the draft manager first, then email cache
       if is_draft_folder and (subject == '' or subject == vim.NIL) then
-        -- First try the smart display subject (NEW for Phase 6)
-        local draft_subject = draft_cache.get_draft_display_subject(current_account, current_folder, email_id)
-        if draft_subject and draft_subject ~= '' then
-          subject = draft_subject
-          logger.info('Using smart draft display subject', {
+        -- Check if this is an active draft
+        local draft = draft_manager.get_by_remote_id(tostring(email_id))
+        if draft and draft.metadata.subject then
+          subject = draft.metadata.subject
+          logger.info('Using draft manager subject', {
             email_id = email_id,
             subject = subject
           })

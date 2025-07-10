@@ -25,6 +25,13 @@ M.EMAIL_RESUMED = "email:resumed"
 M.EMAIL_SENDING = "email:sending"
 M.EMAIL_SEND_FAILED = "email:send_failed"
 
+-- Draft Events
+M.DRAFT_CREATED = "draft:created"
+M.DRAFT_SAVED = "draft:saved"
+M.DRAFT_SYNCED = "draft:synced"
+M.DRAFT_SYNC_FAILED = "draft:sync_failed"
+M.DRAFT_DELETED = "draft:deleted"
+
 -- Sync Operation Events
 M.SYNC_REQUESTED = "sync:requested"
 M.SYNC_STARTED = "sync:started"

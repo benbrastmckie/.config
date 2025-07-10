@@ -28,6 +28,15 @@ function M.setup(opts)
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   oauth.setup()
 
+  -- Initialize new draft system
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+  local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+  local sync_engine = require('neotex.plugins.tools.himalaya.core.sync_engine')
+  
+  draft_manager.setup(config)
+  local_storage.setup(config)
+  sync_engine.setup(config)
+  
   -- Initialize UI system
   local ui = require('neotex.plugins.tools.himalaya.ui')
   ui.setup()
@@ -35,6 +44,10 @@ function M.setup(opts)
   -- Setup highlight groups
   local highlights = require('neotex.plugins.tools.himalaya.ui.highlights')
   highlights.setup()
+  
+  -- Setup enhanced sidebar features
+  local sidebar_v2 = require('neotex.plugins.tools.himalaya.ui.sidebar_v2')
+  sidebar_v2.setup()
 
   -- Initialize event system (Phase 6) - after UI to ensure notifications work properly
   local integration = require('neotex.plugins.tools.himalaya.orchestration.integration')
@@ -53,10 +66,11 @@ function M.setup(opts)
   local debug_commands = require('neotex.plugins.tools.himalaya.core.debug_commands')
   debug_commands.setup()
   
-  -- Load draft debug modules
-  require('neotex.plugins.tools.himalaya.core.draft_save_debug')
-  require('neotex.plugins.tools.himalaya.core.draft_sync_debug')
-  require('neotex.plugins.tools.himalaya.core.compose_debug')
+  -- Set up migration commands for new draft system
+  local migrate_drafts = require('neotex.plugins.tools.himalaya.core.migrate_drafts')
+  migrate_drafts.setup_commands()
+  
+  -- Draft debug modules removed - using new draft system
   
   -- Initialize performance monitoring (Phase 5)
   local performance = require('neotex.plugins.tools.himalaya.core.performance')
