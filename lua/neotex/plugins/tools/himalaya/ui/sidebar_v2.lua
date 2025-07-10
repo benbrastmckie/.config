@@ -102,14 +102,26 @@ function M.enhance_email_list_formatting(original_format_fn)
             
             -- Get original components
             local checkbox = meta.selected and '[x] ' or '[ ] '
-            local from = email.from or ''
-            if from:match('<(.+)>') then
-              from = from:match('<(.+)>')
+            
+            -- Parse from field (it can be a table, string, or other type)
+            local from = ''
+            if email.from then
+              if type(email.from) == 'table' then
+                from = email.from.name or email.from.addr or ''
+              elseif type(email.from) == 'string' then
+                from = email.from
+                -- Extract email from "Name <email@example.com>" format
+                if from:match('<(.+)>') then
+                  from = from:match('<(.+)>')
+                end
+              else
+                from = tostring(email.from)
+              end
             end
             local subject = email.subject or '(No subject)'
             local date = email.date or ''
             
-            -- Create enhanced line
+            -- Create enhanced line (pass the parsed from string, not the raw email.from)
             lines[line_num] = M.format_draft_line(email, checkbox, from, subject, date)
           end
         end

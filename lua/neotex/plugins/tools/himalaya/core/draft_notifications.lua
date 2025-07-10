@@ -226,9 +226,17 @@ function M.setup()
   
   -- Subscribe to recovery events
   events_bus.on(event_types.DRAFT_RECOVERY_NEEDED, function(data)
+    local identifier = "(empty draft)"
+    if data.metadata and data.metadata.subject and data.metadata.subject ~= "" then
+      identifier = data.metadata.subject
+    elseif data.metadata and data.metadata.to and data.metadata.to ~= "" then
+      identifier = "to: " .. data.metadata.to
+    elseif data.draft_id then
+      identifier = "ID: " .. tostring(data.draft_id)
+    end
+    
     notify.himalaya(
-      string.format("Draft needs recovery: %s", 
-        data.metadata and data.metadata.subject or data.draft_id),
+      string.format("Draft needs recovery: %s", identifier),
       notify.categories.WARNING,
       data
     )

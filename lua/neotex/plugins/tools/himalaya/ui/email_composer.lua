@@ -174,9 +174,7 @@ local function setup_buffer_mappings(buf)
     buffer = buf,
     once = true,
     callback = function()
-      local current_config = config.get()
-      if current_config.draft and current_config.draft.integration and 
-         current_config.draft.integration.use_window_stack then
+      if config.get('draft.integration.use_window_stack', false) then
         window_stack.close_current()
       end
     end
@@ -250,9 +248,7 @@ function M.create_compose_buffer(opts)
   vim.api.nvim_win_set_buf(0, buf)
   
   -- Track window in stack if enabled (Phase 6)
-  local current_config = config.get()
-  if current_config.draft and current_config.draft.integration and 
-     current_config.draft.integration.use_window_stack then
+  if config.get('draft.integration.use_window_stack', false) then
     local win_id = vim.api.nvim_get_current_win()
     window_stack.push_draft(win_id, draft.local_id, parent_win)
   end
@@ -337,9 +333,7 @@ function M.open_draft(draft_id, account)
   vim.api.nvim_win_set_buf(0, buf)
   
   -- Track window in stack if enabled (Phase 6)
-  local current_config = config.get()
-  if current_config.draft and current_config.draft.integration and 
-     current_config.draft.integration.use_window_stack then
+  if config.get('draft.integration.use_window_stack', false) then
     local win_id = vim.api.nvim_get_current_win()
     window_stack.push_draft(win_id, draft.local_id, parent_win)
   end
