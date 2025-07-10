@@ -25,12 +25,35 @@ M.EMAIL_RESUMED = "email:resumed"
 M.EMAIL_SENDING = "email:sending"
 M.EMAIL_SEND_FAILED = "email:send_failed"
 
--- Draft Events
+-- Draft Lifecycle Events
 M.DRAFT_CREATED = "draft:created"
 M.DRAFT_SAVED = "draft:saved"
-M.DRAFT_SYNCED = "draft:synced"
-M.DRAFT_SYNC_FAILED = "draft:sync_failed"
 M.DRAFT_DELETED = "draft:deleted"
+M.DRAFT_BUFFER_OPENED = "draft:buffer:opened"
+M.DRAFT_BUFFER_CLOSED = "draft:buffer:closed"
+
+-- Draft Sync Events
+M.DRAFT_SYNC_QUEUED = "draft:sync:queued"
+M.DRAFT_SYNC_STARTED = "draft:sync:started"
+M.DRAFT_SYNC_PROGRESS = "draft:sync:progress"
+M.DRAFT_SYNCED = "draft:synced"
+M.DRAFT_SYNC_FAILED = "draft:sync:failed"
+M.DRAFT_SYNC_COMPLETED = "draft:sync:completed"
+
+-- Draft Autosave Events
+M.DRAFT_AUTOSAVE_TRIGGERED = "draft:autosave:triggered"
+M.DRAFT_AUTOSAVE_COMPLETED = "draft:autosave:completed"
+M.DRAFT_AUTOSAVE_FAILED = "draft:autosave:failed"
+
+-- Draft Recovery Events
+M.DRAFT_RECOVERED = "draft:recovered"
+M.DRAFT_RECOVERY_NEEDED = "draft:recovery:needed"
+M.DRAFT_RECOVERY_COMPLETED = "draft:recovery:completed"
+M.DRAFT_RECOVERY_FAILED = "draft:recovery:failed"
+
+-- Draft Conflict Events
+M.DRAFT_CONFLICT_DETECTED = "draft:conflict:detected"
+M.DRAFT_CONFLICT_RESOLVED = "draft:conflict:resolved"
 
 -- Sync Operation Events
 M.SYNC_REQUESTED = "sync:requested"

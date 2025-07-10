@@ -37,6 +37,10 @@ function M.setup(opts)
   local_storage.setup(config)
   sync_engine.setup(config)
   
+  -- Setup draft notifications (Phase 3)
+  local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
+  draft_notifications.setup()
+  
   -- Recover drafts from previous session (Phase 2)
   vim.defer_fn(function()
     draft_manager.recover_session()

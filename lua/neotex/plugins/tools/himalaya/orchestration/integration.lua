@@ -161,6 +161,24 @@ function M.setup_default_handlers()
     })
   end
   
+  -- Add draft events logging (Phase 3)
+  local draft_events = {
+    event_constants.DRAFT_CREATED,
+    event_constants.DRAFT_SAVED,
+    event_constants.DRAFT_DELETED,
+    event_constants.DRAFT_SYNCED,
+    event_constants.DRAFT_SYNC_FAILED,
+  }
+  
+  for _, event_name in ipairs(draft_events) do
+    events.on(event_name, function(data)
+      logger.debug(string.format("Draft Event: %s", event_name), data)
+    end, {
+      priority = 10,
+      module = "draft_event_logger"
+    })
+  end
+  
   -- Log sync events only for troubleshooting
   local sync_events = {
     event_constants.SYNC_REQUESTED,
