@@ -5,7 +5,7 @@ local M = {}
 
 -- Dependencies
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-local sync_engine = require('neotex.plugins.tools.himalaya.core.sync_engine')
+-- sync_engine removed - using himalaya template save directly
 
 -- Store timers indexed by buffer number
 local timers = {}
@@ -62,21 +62,13 @@ end
 
 -- Get sync queue status
 function M.get_sync_status()
-  local status = sync_engine.get_status()
-  
-  if status.queue_size == 0 then
-    return ''
-  end
-  
-  local parts = {}
-  
-  if status.in_progress > 0 then
-    table.insert(parts, '⟳ Syncing')
-  elseif status.pending > 0 then
-    table.insert(parts, '⏳ Pending')
-  end
-  
-  if status.failed > 0 then
+  -- Sync status is now handled per-draft
+  return ''
+end
+
+-- REMOVED: The rest of the old sync status code
+local function removed_code()
+  if false then
     table.insert(parts, string.format('⚠️  %d failed', status.failed))
   end
   

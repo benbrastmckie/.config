@@ -6,7 +6,7 @@ local M = {}
 -- Dependencies
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
-local draft_parser = require('neotex.plugins.tools.himalaya.core.draft_parser')
+-- draft_parser removed - we now save raw content without parsing
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
@@ -57,6 +57,9 @@ local function format_email_template(opts)
   if opts.body and opts.body ~= '' then
     local body_lines = vim.split(opts.body, '\n', { plain = true })
     vim.list_extend(lines, body_lines)
+  else
+    -- Add a blank line for the body to make it clear where to type
+    table.insert(lines, '')
   end
   
   return lines
@@ -92,6 +95,29 @@ local function setup_autosave(buf)
   )
 end
 
+-- Parse headers only for display purposes
+function M.parse_headers_for_display(lines)
+  local headers = {}
+  
+  for _, line in ipairs(lines) do
+    if line == '' then
+      break  -- End of headers
+    end
+    local key, value = line:match('^([^:]+):%s*(.*)$')
+    if key then
+      headers[key:lower()] = value
+    end
+  end
+  
+  return {
+    from = headers.from or '',
+    to = headers.to or '',
+    subject = headers.subject or '',
+    cc = headers.cc or '',
+    bcc = headers.bcc or ''
+  }
+end
+
 -- Save draft (manual or auto)
 function M.save_draft(buf, trigger)
   local draft = draft_manager.get_by_buffer(buf)
@@ -99,50 +125,259 @@ function M.save_draft(buf, trigger)
     return false, "No draft associated with buffer"
   end
   
-  -- Debug notification for autosave
-  if trigger == 'autosave' then
-    draft_notifications.draft_autosave(draft.local_id, trigger)
-  end
+  -- Get the ENTIRE buffer content as-is
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local content = table.concat(lines, '\n')
   
-  -- Save to local storage first
-  local ok, err = draft_manager.save_local(buf)
+  -- Save to .eml file (for :w behavior)
+  vim.api.nvim_buf_call(buf, function()
+    vim.cmd('silent write!')
+  end)
+  
+  -- Save complete content to draft storage
+  local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+  local ok, err = storage.save(draft.local_id, {
+    content = content,  -- Save ENTIRE content, don't parse yet
+    account = draft.account,
+    remote_id = draft.remote_id,
+    -- Parse metadata only for display purposes
+    metadata = M.parse_headers_for_display(lines),
+    created_at = draft.created_at,
+    updated_at = os.time()
+  })
+  
   if not ok then
     draft_notifications.draft_save_failed(draft.local_id, err)
     return false, err
   end
   
-  -- Save buffer to file
-  vim.api.nvim_buf_call(buf, function()
-    vim.cmd('silent write!')
-  end)
-  
   -- Mark buffer as unmodified
   vim.api.nvim_buf_set_option(buf, 'modified', false)
   
-  -- Queue remote sync and UI updates
-  vim.defer_fn(function()
-    draft_manager.sync_remote(buf)
-    
-    -- Refresh sidebar only if it's already open and showing drafts
-    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-    if sidebar.is_open() and sidebar.is_showing_drafts() then
-      local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
-      email_list.refresh_email_list()
+  -- Update draft object with latest metadata for UI
+  draft.metadata = M.parse_headers_for_display(lines)
+  
+  -- Queue remote sync only if draft has meaningful content
+  -- Check if body has content (not just headers)
+  local has_body = false
+  local in_body = false
+  for _, line in ipairs(lines) do
+    if in_body and line:match('%S') then  -- Non-whitespace in body
+      has_body = true
+      break
+    elseif line == '' then  -- Empty line marks start of body
+      in_body = true
     end
-    
-    -- Update preview if showing this draft
-    local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-    if preview.is_preview_visible() then
-      local draft = draft_manager.get_by_buffer(buf)
-      if draft and preview.get_current_preview_id() == (draft.remote_id or draft.local_id) then
-        -- Re-render the preview with updated content
-        preview.hide_preview()
-        preview.show_preview(draft.remote_id or draft.local_id, nil, 'draft')
-      end
-    end
-  end, 100)
+  end
+  
+  -- Don't auto-sync to remote - keep everything local until manual sync
+  draft_notifications.debug_lifecycle('local_save_only', draft.local_id, {
+    trigger = trigger,
+    has_body = has_body
+  })
+  
+  -- Update UI to show local draft
+  M.update_ui_after_save(draft)
   
   return true
+end
+
+-- Sync draft to remote using himalaya template save
+function M.sync_draft_to_remote(draft, content)
+  -- Check if content has actual body content before attempting sync
+  local lines = vim.split(content, '\n')
+  local has_body = false
+  local in_body = false
+  for _, line in ipairs(lines) do
+    if in_body and line:match('%S') then
+      has_body = true
+      break
+    elseif line == '' then
+      in_body = true
+    end
+  end
+  
+  if not has_body then
+    draft_notifications.debug_lifecycle('sync_skipped', draft.local_id, {
+      reason = 'no_body_content_in_sync'
+    })
+    -- Still update UI to show local draft
+    M.update_ui_after_save(draft)
+    return
+  end
+  
+  -- Create temp file with content
+  local tmpfile = vim.fn.tempname()
+  vim.fn.writefile(vim.split(content, '\n'), tmpfile)
+  
+  -- Build himalaya command using shell to handle redirection
+  local cmd_str = string.format(
+    'himalaya template save --account %s --folder Drafts < %s',
+    vim.fn.shellescape(draft.account),
+    vim.fn.shellescape(tmpfile)
+  )
+  
+  -- Use shell to execute the command with proper redirection
+  vim.fn.jobstart({'sh', '-c', cmd_str}, {
+    on_stdout = function(_, data)
+      -- Capture any output for debugging
+      if data and #data > 0 then
+        for _, line in ipairs(data) do
+          if line ~= '' then
+            draft_notifications.debug_lifecycle('sync_output', draft.local_id, { output = line })
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        -- Filter out empty lines and combine error messages
+        local error_lines = {}
+        for _, line in ipairs(data) do
+          if line ~= '' and not line:match('^%s*$') then
+            table.insert(error_lines, line)
+          end
+        end
+        if #error_lines > 0 then
+          -- Extract the main error message
+          local error_msg = error_lines[1]
+          for _, line in ipairs(error_lines) do
+            if line:match('cannot parse MML message') or line:match('empty body') then
+              error_msg = 'Draft needs content before syncing'
+              break
+            end
+          end
+          -- Store error but don't notify if it's just empty body
+          draft.sync_error = error_msg
+          if not error_msg:match('needs content') then
+            draft_notifications.draft_sync_failed(draft.local_id, error_msg)
+          end
+        end
+      end
+    end,
+    on_exit = function(_, exit_code)
+      vim.fn.delete(tmpfile)
+      if exit_code == 0 then
+        -- Success - update sync status
+        draft.state = draft_manager.states.SYNCED
+        draft.last_sync = os.time()
+        draft_notifications.draft_synced(draft.local_id)
+        
+        -- After successful sync, refresh the sidebar if showing drafts
+        vim.schedule(function()
+          M.update_ui_after_save(draft)
+        end)
+        
+        -- If this was first sync, we need to get the remote_id
+        if not draft.remote_id then
+          -- Schedule a refresh to get the new remote_id
+          vim.defer_fn(function()
+            M.fetch_remote_id_for_draft(draft)
+          end, 500)  -- Reduced from 1000ms to 500ms for faster update
+        end
+      else
+        -- Sync failed - check if we already reported error
+        if not draft.sync_error or not draft.sync_error:match('needs content') then
+          draft.state = draft_manager.states.ERROR
+          draft.sync_error = draft.sync_error or 'Failed to sync to remote'
+          draft_notifications.draft_sync_failed(draft.local_id, draft.sync_error)
+        end
+      end
+    end
+  })
+end
+
+-- Update UI after saving draft
+function M.update_ui_after_save(draft)
+  -- Refresh sidebar if showing drafts
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  if sidebar.is_open() and sidebar.is_showing_drafts() then
+    local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+    email_list.refresh_email_list()
+  end
+  
+  -- Update preview if showing this draft
+  local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+  if preview.is_preview_visible() then
+    if preview.get_current_preview_id() == (draft.remote_id or draft.local_id) then
+      -- Re-render the preview with updated content
+      preview.hide_preview()
+      preview.show_preview(draft.remote_id or draft.local_id, nil, 'draft')
+    end
+  end
+end
+
+-- Fetch remote ID for a newly synced draft
+function M.fetch_remote_id_for_draft(draft)
+  -- Get the most recent draft from the server
+  local cmd = {
+    'himalaya', 'envelope', 'list',
+    '--account', draft.account,
+    '--folder', 'Drafts',
+    '--page', '1',
+    '--page-size', '10',
+    '-o', 'json'
+  }
+  
+  local output = {}
+  vim.fn.jobstart(cmd, {
+    on_stdout = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          if line ~= '' then
+            table.insert(output, line)
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        for _, line in ipairs(data) do
+          if line ~= '' then
+            draft_notifications.debug_lifecycle('fetch_remote_id_error', draft.local_id, {
+              error = line
+            })
+          end
+        end
+      end
+    end,
+    on_exit = function(_, exit_code)
+      if exit_code == 0 and #output > 0 then
+        -- Parse JSON output
+        local ok, result = pcall(vim.json.decode, table.concat(output, '\n'))
+        if ok and type(result) == 'table' then
+          -- Look for our draft by matching subject or find the most recent
+          for _, envelope in ipairs(result) do
+            if envelope.id and envelope.subject == draft.metadata.subject then
+              draft.remote_id = tostring(envelope.id)
+              -- Update storage with remote_id
+              local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+              local stored = storage.load(draft.local_id)
+              if stored then
+                stored.remote_id = draft.remote_id
+                storage.save(draft.local_id, stored)
+              end
+              
+              draft_notifications.debug_lifecycle('remote_id_found', draft.local_id, {
+                remote_id = draft.remote_id
+              })
+              
+              -- Update UI now that we have the remote ID
+              vim.schedule(function()
+                M.update_ui_after_save(draft)
+              end)
+              break
+            end
+          end
+        end
+      else
+        draft_notifications.debug_lifecycle('fetch_remote_id_failed', draft.local_id, {
+          exit_code = exit_code,
+          output_lines = #output
+        })
+      end
+    end
+  })
 end
 
 -- Setup buffer keymaps and autocmds
@@ -224,6 +459,17 @@ local function setup_buffer_mappings(buf)
   vim.keymap.set('n', '<C-s>', function()
     M.save_draft(buf, 'manual')
   end, opts)
+  
+  -- Override default write behavior to use our save
+  vim.api.nvim_create_autocmd('BufWriteCmd', {
+    buffer = buf,
+    callback = function()
+      M.save_draft(buf, 'write_cmd')
+      -- Prevent default write behavior
+      return true
+    end,
+    desc = 'Handle :w for draft buffer'
+  })
   
   -- Close draft properly
   vim.keymap.set('n', '<leader>q', function()
@@ -416,8 +662,8 @@ function M.create_compose_buffer(opts)
   if not opts.to or opts.to == '' then
     vim.api.nvim_win_set_cursor(0, { 2, 4 })
   else
-    -- Position at end of headers
-    vim.api.nvim_win_set_cursor(0, { 6, 0 })
+    -- Position in body (after empty line separator)
+    vim.api.nvim_win_set_cursor(0, { 7, 0 })
   end
   
   -- Start in insert mode
@@ -429,53 +675,122 @@ function M.create_compose_buffer(opts)
   return buf
 end
 
+-- Open local draft by local_id
+function M.open_local_draft(local_id, account)
+  local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+  local draft_data = storage.load(local_id)
+  
+  if not draft_data or not draft_data.content then
+    draft_notifications.draft_load_failed(local_id, "Local draft not found")
+    return nil
+  end
+  
+  -- Create buffer and set content
+  local buf = vim.api.nvim_create_buf(true, false)
+  local draft_file = string.format('%s/%s.eml',
+    vim.fn.stdpath('data') .. '/himalaya/drafts', local_id)
+  vim.api.nvim_buf_set_name(buf, draft_file)
+  
+  -- Set content without parsing
+  local lines = vim.split(draft_data.content, '\n')
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  
+  -- Parse headers for metadata
+  local metadata = M.parse_headers_for_display(lines)
+  
+  -- Create draft in manager
+  local draft = draft_manager.create(buf, account, {
+    local_id = local_id,
+    subject = metadata.subject,
+    to = metadata.to,
+    from = metadata.from,
+    cc = metadata.cc,
+    bcc = metadata.bcc,
+    compose_type = 'edit'
+  })
+  
+  -- Set remote ID if available
+  if draft_data.remote_id then
+    draft.remote_id = draft_data.remote_id
+    draft.state = draft_manager.states.SYNCED
+  end
+  
+  -- Setup buffer
+  setup_buffer_mappings(buf)
+  setup_autosave(buf)
+  
+  -- Open buffer in tab/window
+  local parent_win = vim.api.nvim_get_current_win()
+  
+  if M.config.use_tab then
+    vim.cmd('tabedit ' .. vim.fn.fnameescape(draft_file))
+    if vim.api.nvim_get_current_buf() ~= buf then
+      vim.api.nvim_win_set_buf(0, buf)
+    end
+  else
+    vim.cmd('vsplit')
+    vim.api.nvim_win_set_buf(0, buf)
+  end
+  
+  -- Track window in stack if enabled
+  if config.get('draft.integration.use_window_stack', false) then
+    local win_id = vim.api.nvim_get_current_win()
+    window_stack.push_draft(win_id, draft.local_id, parent_win)
+  end
+  
+  return buf
+end
+
 -- Open existing draft
 function M.open_draft(draft_id, account)
   -- Check if draft already exists locally
   local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
   local existing = storage.find_by_remote_id(draft_id, account)
   
-  -- Load draft data
-  local draft_data, err = draft_manager.load(draft_id, account)
-  if not draft_data then
-    -- If draft_manager.load fails, try loading directly from local storage
-    if existing then
-      draft_data = existing
-      draft_data.metadata = draft_data.metadata or {}
+  local content = nil
+  local local_id = nil
+  
+  if existing then
+    -- Load from local storage
+    content = existing.content
+    local_id = existing.local_id
+  else
+    -- Try to load from himalaya
+    local ok, result = pcall(utils.execute_himalaya, 
+      { 'message', 'read', tostring(draft_id) },
+      { account = account, folder = 'Drafts' }
+    )
+    
+    if ok and result then
+      content = result
+      local_id = 'draft_' .. draft_id .. '_' .. os.time()
     else
-      draft_notifications.draft_load_failed(draft_id, err)
+      draft_notifications.draft_load_failed(draft_id, result or "Failed to load draft")
       return nil
     end
   end
   
-  -- Determine local_id
-  local local_id = existing and existing.local_id or ('draft_' .. draft_id .. '_' .. os.time())
-  
-  -- Create buffer with draft content
-  local lines = format_email_template({
-    to = draft_data.metadata.to,
-    from = draft_data.metadata.from,
-    cc = draft_data.metadata.cc,
-    bcc = draft_data.metadata.bcc,
-    subject = draft_data.metadata.subject,
-    body = draft_data.content
-  })
-  
-  -- Create buffer with consistent naming
+  -- Create buffer and set content as-is
   local buf = vim.api.nvim_create_buf(true, false)
   local draft_file = string.format('%s/%s.eml',
     vim.fn.stdpath('data') .. '/himalaya/drafts', local_id)
   vim.api.nvim_buf_set_name(buf, draft_file)
+  
+  -- Set content without parsing
+  local lines = vim.split(content, '\n')
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  
+  -- Parse headers for metadata
+  local metadata = M.parse_headers_for_display(lines)
   
   -- Create draft in manager with explicit local_id
   local draft = draft_manager.create(buf, account, {
     local_id = local_id,  -- Pass explicit local_id
-    subject = draft_data.metadata.subject,
-    to = draft_data.metadata.to,
-    from = draft_data.metadata.from,
-    cc = draft_data.metadata.cc,
-    bcc = draft_data.metadata.bcc,
+    subject = metadata.subject,
+    to = metadata.to,
+    from = metadata.from,
+    cc = metadata.cc,
+    bcc = metadata.bcc,
     compose_type = 'edit'
   })
   
@@ -531,21 +846,39 @@ function M.send_and_close(buf)
     return false, "No draft associated with buffer"
   end
   
-  -- Parse current buffer content
+  -- Get current buffer content
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local email = draft_parser.parse_email(lines)
+  local metadata = M.parse_headers_for_display(lines)
+  
+  -- Extract body
+  local body_start = 1
+  for i, line in ipairs(lines) do
+    if line == '' then
+      body_start = i + 1
+      break
+    end
+  end
+  
+  local body = ''
+  if body_start <= #lines then
+    local body_lines = {}
+    for i = body_start, #lines do
+      table.insert(body_lines, lines[i])
+    end
+    body = table.concat(body_lines, '\n')
+  end
   
   -- Schedule email
   local schedule_time = os.time() + 60 -- 1 minute from now
   local scheduled_id = scheduler.schedule_email({
     account = draft.account,
     email = {
-      to = email.to,
-      from = email.from,
-      cc = email.cc,
-      bcc = email.bcc,
-      subject = email.subject,
-      body = email.body
+      to = metadata.to,
+      from = metadata.from,
+      cc = metadata.cc,
+      bcc = metadata.bcc,
+      subject = metadata.subject,
+      body = body
     }
   }, schedule_time)
   

@@ -31,11 +31,9 @@ function M.setup(opts)
   -- Initialize new draft system
   local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
   local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-  local sync_engine = require('neotex.plugins.tools.himalaya.core.sync_engine')
   
   draft_manager.setup(config)
   local_storage.setup(config)
-  sync_engine.setup(config)
   
   -- Setup draft notifications (Phase 3)
   local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
@@ -54,9 +52,7 @@ function M.setup(opts)
   local highlights = require('neotex.plugins.tools.himalaya.ui.highlights')
   highlights.setup()
   
-  -- Setup enhanced sidebar features
-  local sidebar_v2 = require('neotex.plugins.tools.himalaya.ui.sidebar_v2')
-  sidebar_v2.setup()
+  -- Sidebar v2 removed - using main sidebar module
 
   -- Initialize event system (Phase 6) - after UI to ensure notifications work properly
   local integration = require('neotex.plugins.tools.himalaya.orchestration.integration')
@@ -71,9 +67,7 @@ function M.setup(opts)
   -- Set up commands
   M.setup_commands()
   
-  -- Initialize debug commands (Phase 5)
-  local debug_commands = require('neotex.plugins.tools.himalaya.core.debug_commands')
-  debug_commands.setup()
+  -- Debug commands removed
   
   -- Migration commands removed - no old drafts exist to migrate
   
