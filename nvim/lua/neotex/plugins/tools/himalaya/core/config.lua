@@ -629,7 +629,8 @@ function M.setup_buffer_keymaps(bufnr)
             current_line = vim.fn.getline('.')
           })
           -- Pass the email_id we already validated
-          composer.reopen_draft(email_id)
+          local account = state.get_current_account()
+          composer.open_draft(email_id, account)
         end
       else
         -- Regular email handling

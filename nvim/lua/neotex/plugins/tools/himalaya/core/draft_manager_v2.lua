@@ -9,6 +9,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
+local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
 -- Draft notification helper (Phase 4)
 --- Send draft-specific notifications using the unified notification system
@@ -135,7 +136,7 @@ function M.create(buffer, account, opts)
   
   local draft = {
     buffer = buffer,
-    local_id = vim.fn.tempname():match('[^/]+$'), -- Generate unique local ID
+    local_id = opts.local_id or ('draft_' .. os.time() .. '_' .. vim.loop.hrtime()), -- Use provided or generate
     remote_id = nil,
     state = M.states.NEW,
     local_file = vim.api.nvim_buf_get_name(buffer),
@@ -216,13 +217,15 @@ function M.save_local(buffer)
   -- Update metadata from buffer content
   M._update_metadata_from_content(draft, lines)
   
-  -- Save to local storage
+  -- Save to local storage (content now contains just the body)
   local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
   local ok, err = storage.save(draft.local_id, {
     metadata = draft.metadata,
-    content = content,
+    content = draft.content,  -- Use extracted body content
     account = draft.account,
-    remote_id = draft.remote_id
+    remote_id = draft.remote_id,
+    created_at = draft.created_at,
+    updated_at = os.time()
   })
   
   if not ok then
@@ -241,6 +244,7 @@ function M.save_local(buffer)
   draft.modified_at = os.time()
   draft.modified = true
   draft.synced = false
+  draft.content = draft.content  -- Ensure content field is updated
   
   -- Update buffer variable
   vim.api.nvim_buf_set_var(buffer, 'himalaya_draft', draft)
@@ -300,9 +304,13 @@ function M.sync_remote(buffer)
     return false, draft.sync_error
   end
   
+  -- Update draft metadata with fresh data from storage
+  draft.metadata = data.metadata
+  
   -- Add content to draft info for sync engine
   local draft_info = vim.tbl_extend('force', draft, {
-    content = data.content
+    content = data.content,
+    metadata = data.metadata  -- Ensure fresh metadata is used
   })
   
   -- Use sync engine for actual sync
@@ -369,6 +377,14 @@ function M.handle_sync_completion(local_id, remote_id, success, error)
     draft.synced = true
     draft.modified = false
     
+    -- Update local storage with remote_id
+    local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+    local data = storage.load(draft.local_id)
+    if data then
+      data.remote_id = draft.remote_id
+      storage.save(draft.local_id, data)
+    end
+    
     -- Emit sync success event
     events_bus.emit(event_types.DRAFT_SYNCED, {
       draft_id = draft.local_id,
@@ -431,22 +447,38 @@ function M.load(remote_id, account)
     { account = account, folder = 'Drafts' }
   )
   
+  local email = nil
+  
   if ok and result then
     -- Parse email content
-    local email = require('neotex.plugins.tools.himalaya.core.draft_parser').parse_email(
+    email = require('neotex.plugins.tools.himalaya.core.draft_parser').parse_email(
       vim.split(result, '\n')
     )
-    
-    -- Check if we have body content (himalaya bug workaround)
-    if not email.body or email.body == '' then
-      -- Try local storage fallback
-      local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-      local cached = storage.find_by_remote_id(remote_id, account)
-      if cached then
-        email.body = cached.content
-      end
+  end
+  
+  -- If himalaya failed or returned empty body, try local storage
+  if not email or not email.body or email.body == '' then
+    local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+    local cached = storage.find_by_remote_id(remote_id, account)
+    if cached then
+      -- Use cached data
+      return {
+        remote_id = remote_id,
+        account = account,
+        metadata = cached.metadata or {
+          subject = email and email.subject or '',
+          to = email and email.to or '',
+          from = email and email.from or '',
+          cc = email and email.cc or '',
+          bcc = email and email.bcc or ''
+        },
+        content = cached.content or (email and email.body or '')
+      }
     end
-    
+  end
+  
+  -- If we have email from himalaya, return it
+  if email then
     return {
       remote_id = remote_id,
       account = account,
@@ -580,6 +612,47 @@ end
 function M.cleanup_draft(buffer)
   local draft = M.drafts[buffer]
   if draft then
+    -- First, save the draft if buffer is still valid and modified
+    if vim.api.nvim_buf_is_valid(buffer) then
+      local modified = vim.api.nvim_buf_get_option(buffer, 'modified')
+      if modified then
+        -- Save before cleanup
+        M.save_local(buffer)
+      end
+    end
+    
+    -- Check if draft has any meaningful content
+    -- Load from storage to get the latest content
+    local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+    local stored = storage.load(draft.local_id)
+    local has_content = false
+    
+    if stored and stored.metadata then
+      has_content = (stored.metadata.subject and stored.metadata.subject ~= "") or
+                   (stored.metadata.to and stored.metadata.to ~= "") or
+                   (stored.content and stored.content:match("[^%s\n]"))
+    elseif draft.metadata then
+      -- Fallback to in-memory draft
+      has_content = (draft.metadata.subject and draft.metadata.subject ~= "") or
+                   (draft.metadata.to and draft.metadata.to ~= "") or
+                   (draft.content and draft.content:match("[^%s\n]"))
+    end
+    
+    -- If draft is empty and was never synced, just delete it completely
+    if not has_content and draft.state == M.states.NEW then
+      -- Delete from local storage
+      local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+      storage.delete(draft.local_id)
+      
+      -- Remove from memory
+      M.drafts[buffer] = nil
+      state.remove_draft(buffer)
+      state.remove_unsaved_draft(buffer)
+      
+      logger.debug("Cleaned up empty draft", { local_id = draft.local_id })
+      return
+    end
+    
     -- Only remove from memory, keep on disk/remote
     M.drafts[buffer] = nil
     
@@ -614,6 +687,7 @@ function M._update_metadata_from_content(draft, lines)
   local in_headers = true
   local headers = {}
   local body_start = 1
+  local current_header = nil
   
   for i, line in ipairs(lines) do
     if in_headers then
@@ -622,19 +696,37 @@ function M._update_metadata_from_content(draft, lines)
         body_start = i + 1
         break
       else
+        -- Check if this is a header line or continuation
         local key, value = line:match('^([^:]+):%s*(.*)$')
         if key and value then
-          headers[key:lower()] = value
+          -- New header
+          current_header = key:lower()
+          headers[current_header] = value
+        elseif line:match('^%s+') and current_header then
+          -- Continuation of previous header
+          headers[current_header] = headers[current_header] .. ' ' .. line:match('^%s+(.*)$')
         end
       end
     end
   end
   
-  -- Update metadata
-  draft.metadata.subject = headers.subject or draft.metadata.subject
-  draft.metadata.to = headers.to or draft.metadata.to
-  draft.metadata.cc = headers.cc or draft.metadata.cc
-  draft.metadata.bcc = headers.bcc or draft.metadata.bcc
+  -- Update ALL metadata fields
+  draft.metadata.from = headers.from or draft.metadata.from or ''
+  draft.metadata.to = headers.to or ''
+  draft.metadata.cc = headers.cc or ''
+  draft.metadata.bcc = headers.bcc or ''
+  draft.metadata.subject = headers.subject or ''
+  
+  -- Extract body content for separate storage
+  if body_start <= #lines then
+    local body_lines = {}
+    for i = body_start, #lines do
+      table.insert(body_lines, lines[i])
+    end
+    draft.content = table.concat(body_lines, '\n')
+  else
+    draft.content = ''
+  end
 end
 
 -- Save draft (user-initiated)

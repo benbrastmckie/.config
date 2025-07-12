@@ -105,15 +105,23 @@ function M.sync_item(key, item)
     has_remote_id = draft_info.remote_id ~= nil
   })
   
-  -- Prepare email data
+  -- Prepare email data with validation
   local email = {
-    subject = draft_info.metadata.subject,
-    to = draft_info.metadata.to,
-    from = draft_info.metadata.from,
-    cc = draft_info.metadata.cc,
-    bcc = draft_info.metadata.bcc,
+    subject = draft_info.metadata.subject or '',
+    to = draft_info.metadata.to or '',
+    from = draft_info.metadata.from or '',
+    cc = draft_info.metadata.cc or '',
+    bcc = draft_info.metadata.bcc or '',
     body = draft_info.content or ''
   }
+  
+  -- Validate required fields
+  if not email.from or email.from == '' then
+    draft_notifications.debug_sync('validation_failed', draft_info.local_id, {
+      error = 'Missing From address'
+    })
+    -- Don't fail, let himalaya handle it
+  end
   
   -- Try to sync
   local ok, result = pcall(function()
