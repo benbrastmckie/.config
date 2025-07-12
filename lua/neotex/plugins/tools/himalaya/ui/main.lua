@@ -573,7 +573,7 @@ function M.forward_current_email()
 end
 
 -- Shared sync implementation that handles OAuth refresh
-function M._perform_sync(mbsync_target, display_name)
+function M._perform_sync(mbsync_target, display_name, callback)
   -- Use sync manager for consistent state management
   local sync_manager = require('neotex.plugins.tools.himalaya.sync.manager')
   local mbsync = require('neotex.plugins.tools.himalaya.sync.mbsync')
@@ -644,6 +644,11 @@ function M._perform_sync(mbsync_target, display_name)
       if M.is_email_buffer_open() then
         M.refresh_email_list()
       end
+      
+      -- Call custom callback if provided
+      if callback then
+        callback(success)
+      end
     end
   })
 end
@@ -655,6 +660,12 @@ function M.sync_current_folder()
   
   if not account or not folder then
     notify.himalaya('No folder selected', notify.categories.ERROR)
+    return
+  end
+  
+  -- Special handling for Drafts folder
+  if folder == 'Drafts' or folder:lower():match('draft') then
+    M.sync_drafts_folder(account, folder)
     return
   end
   
@@ -721,6 +732,21 @@ function M.sync_inbox()
   M._perform_sync(channel, 'inbox')
 end
 
+-- Sync drafts folder (handles local drafts)
+function M.sync_drafts_folder(account, folder)
+  -- For now, just do a regular sync like other folders
+  -- Local drafts are already visible in the UI
+  local mbsync_target
+  if account:lower() == 'gmail' then
+    mbsync_target = 'gmail-drafts'
+  else
+    mbsync_target = account .. ':Drafts'
+  end
+  
+  -- Use shared sync implementation
+  M._perform_sync(mbsync_target, 'drafts')
+end
+
 -- Forward email
 function M.forward_email(email_id)
   local account = state.get_current_account()
@@ -741,8 +767,33 @@ function M.delete_current_email()
     return
   end
   
+  -- Check if this is a local draft
+  local line_num = vim.fn.line('.')
+  local line_map = state.get('email_list.line_map')
+  local emails = state.get('email_list.emails')
+  local is_local_draft = false
+  local local_id = nil
+  
+  if line_map and line_map[line_num] then
+    local metadata = line_map[line_num]
+    -- Check metadata first for is_local flag
+    if metadata.is_local then
+      is_local_draft = true
+      -- Extract local_id from email_id if it's a local draft ID
+      if metadata.email_id and tostring(metadata.email_id):match('^draft_%d+_') then
+        local_id = metadata.email_id
+      end
+    elseif metadata.email_index and emails and emails[metadata.email_index] then
+      local email = emails[metadata.email_index]
+      if email.is_local then
+        is_local_draft = true
+        local_id = email.local_id or (email.id and tostring(email.id):match('^draft_%d+_') and email.id)
+      end
+    end
+  end
+  
   -- Confirm deletion
-  local prompt = "Delete current email?"
+  local prompt = is_local_draft and "Delete local draft?" or "Delete current email?"
   vim.ui.select({"Yes", "No"}, {
     prompt = prompt,
     kind = "confirmation",
@@ -758,22 +809,41 @@ function M.delete_current_email()
       return
     end
     
-    local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
-    
-    if success then
-      notify.himalaya('Email deleted successfully', notify.categories.STATUS)
+    if is_local_draft and local_id then
+      -- Delete local draft
+      local logger = require('neotex.plugins.tools.himalaya.core.logger')
+      logger.debug('Deleting local draft', { local_id = local_id })
       
-      -- Since emails are only viewed in preview now, no need to close any buffers
+      local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+      local success = local_storage.delete(local_id)
       
-      -- Always refresh the list to show the deletion
-      vim.defer_fn(function()
-        M.refresh_email_list()
-      end, 100)
-    elseif error_type == 'missing_trash' then
-      -- Trash folder doesn't exist, offer alternatives
-      M.handle_missing_trash_folder(email_id, extra)
+      if success then
+        notify.himalaya('Local draft deleted', notify.categories.STATUS)
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
+      else
+        notify.himalaya('Failed to delete local draft', notify.categories.ERROR)
+      end
     else
-      notify.himalaya('Failed to delete email', notify.categories.STATUS)
+      -- Delete regular email
+      local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
+      
+      if success then
+        notify.himalaya('Email deleted successfully', notify.categories.STATUS)
+        
+        -- Since emails are only viewed in preview now, no need to close any buffers
+        
+        -- Always refresh the list to show the deletion
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100)
+      elseif error_type == 'missing_trash' then
+        -- Trash folder doesn't exist, offer alternatives
+        M.handle_missing_trash_folder(email_id, extra)
+      else
+        notify.himalaya('Failed to delete email', notify.categories.STATUS)
+      end
     end
   end)
 end

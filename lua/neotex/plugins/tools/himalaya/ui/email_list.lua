@@ -213,29 +213,36 @@ function M.show_email_list(args)
   -- Get email list from himalaya (async to prevent UI blocking)
   local account_name = config.get_current_account_name()
   
-  -- Use async loading for better responsiveness
-  utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
-    if error then
-      local error_lines = {
-        string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
-        '',
-        '󰅙 Failed to get email list',
-        '',
-        'Error: ' .. tostring(error),
-        '',
-        'Try:',
-        '• Check network connection',
-        '• Verify account configuration',
-        '• :messages for details'
-      }
-      sidebar.update_content(error_lines)
-      notify.himalaya('Failed to get email list: ' .. tostring(error), notify.categories.ERROR)
-      return
-    end
-    
-    -- Continue with original logic but inside the callback
-    M.process_email_list_results(emails, total_count, folder, account_name)
-  end)
+  -- Special handling for drafts folder (local-first)
+  local draft_folder = utils.find_draft_folder(account_name)
+  if folder == draft_folder then
+    -- For drafts, directly show local drafts without fetching remote
+    M.process_email_list_results({}, 0, folder, account_name)
+  else
+    -- Use async loading for other folders
+    utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+      if error then
+        local error_lines = {
+          string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
+          '',
+          '󰅙 Failed to get email list',
+          '',
+          'Error: ' .. tostring(error),
+          '',
+          'Try:',
+          '• Check network connection',
+          '• Verify account configuration',
+          '• :messages for details'
+        }
+        sidebar.update_content(error_lines)
+        notify.himalaya('Failed to get email list: ' .. tostring(error), notify.categories.ERROR)
+        return
+      end
+      
+      -- Continue with original logic but inside the callback
+      M.process_email_list_results(emails, total_count, folder, account_name)
+    end)
+  end
 end
 
 -- Process email list results (extracted from original show_email_list)
@@ -323,20 +330,60 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     end
   end
   
+  -- For drafts folder, merge local drafts with remote drafts
+  local draft_folder = utils.find_draft_folder(account_name)
+  if folder == draft_folder then
+    logger.info('Processing drafts folder', {
+      remote_count = emails and #emails or 0
+    })
+    
+    -- Get local drafts from storage
+    local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+    local local_drafts = local_storage.list()
+    
+    -- Create a map of remote IDs for deduplication
+    local remote_ids = {}
+    if emails then
+      for _, email in ipairs(emails) do
+        if email.id then
+          remote_ids[tostring(email.id)] = true
+        end
+      end
+    end
+    
+    -- Add local drafts (local-first approach)
+    emails = emails or {}
+    for _, local_draft in ipairs(local_drafts) do
+      -- Add all local drafts for the current account
+      if local_draft.account == account_name then
+        -- Create email entry from local draft
+        logger.debug('Adding local draft to list', {
+          local_id = local_draft.local_id,
+          subject = local_draft.subject,
+          has_remote_id = local_draft.remote_id ~= nil
+        })
+        table.insert(emails, 1, {  -- Insert at beginning (newest first)
+          id = local_draft.remote_id or local_draft.local_id,
+          subject = local_draft.subject or '(No subject)',
+          from = config.get_formatted_from(account_name) or '',
+          date = os.date('%Y-%m-%d %H:%M', local_draft.modified or local_draft.created_at),
+          has_attachments = false,
+          flags = {},
+          is_local = true,  -- Mark as local-only draft
+          local_id = local_draft.local_id
+        })
+      end
+    end
+    
+    logger.info('Merged drafts', {
+      remote_count = #remote_ids,
+      local_count = #local_drafts,
+      total_count = #emails
+    })
+  end
+  
   -- Store emails in cache
   if emails and #emails > 0 then
-    -- For drafts, only clear content cache, not metadata
-    local draft_folder = utils.find_draft_folder(account_name)
-    if folder == draft_folder then
-      logger.info('Clearing draft content cache (preserving metadata)')
-      -- With new draft system, no need to clear cache as it's managed per buffer
-      
-      -- Debug: Log what we're getting from himalaya for drafts
-      logger.info('Draft emails from himalaya envelope list', {
-        count = #emails,
-        first_3 = vim.list_slice(emails, 1, 3)
-      })
-    end
     email_cache.store_emails(account_name, folder, emails)
   end
   
@@ -667,8 +714,8 @@ function M.format_email_list(emails)
       -- Store email metadata for highlighting
       if not lines.metadata then lines.metadata = {} end
       
-      -- Validate email_id before storing
-      if email_id and tonumber(email_id) then
+      -- Validate email_id before storing (allow local draft IDs)
+      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_%d+_')) then
         lines.metadata[#lines] = {
           seen = seen,
           starred = starred,
@@ -678,7 +725,8 @@ function M.format_email_list(emails)
           from_start = #checkbox + #draft_indicator + 1,  -- Start position of author field (accounting for draft indicator)
           from_end = #checkbox + #draft_indicator + #from,  -- End position of author field
           is_draft = is_draft_folder,  -- Flag for draft detection
-          draft_folder = is_draft_folder and draft_folder or nil  -- Store draft folder for cleanup
+          draft_folder = is_draft_folder and draft_folder or nil,  -- Store draft folder for cleanup
+          is_local = email.is_local  -- Store local flag
         }
       else
         -- Log invalid email ID

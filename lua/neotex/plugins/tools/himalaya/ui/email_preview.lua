@@ -71,69 +71,118 @@ local function extract_body_from_content(content)
   return content
 end
 
+-- Load local draft content by local_id
+local function load_local_draft_content(account, local_id)
+  logger.debug('Loading local draft by local_id', { local_id = local_id, account = account })
+  local stored = local_storage.load(local_id)
+  
+  if stored and stored.content then
+    logger.debug('Found local draft', { 
+      local_id = local_id, 
+      has_content = stored.content ~= nil,
+      content_length = #stored.content 
+    })
+    
+    -- Parse content for display
+    local metadata = stored.metadata or {}
+    local body = extract_body_from_content(stored.content)
+    
+    return {
+      id = local_id,
+      subject = metadata.subject or '',
+      from = metadata.from or '',
+      to = metadata.to or '',
+      cc = metadata.cc or '',
+      bcc = metadata.bcc or '',
+      body = body,
+      _is_draft = true,
+      _is_local = true
+    }
+  else
+    logger.warn('Local draft not found', { local_id = local_id })
+    return {
+      id = local_id,
+      subject = '(Local draft not found)',
+      from = '',
+      to = '',
+      body = 'Failed to load local draft content',
+      _is_draft = true,
+      _is_local = true,
+      _error = true
+    }
+  end
+end
+
 -- Load draft content with new system
 local function load_draft_content(account, folder, draft_id)
-  -- First check if this is an active draft in editor
-  local active_draft = draft_manager.get_by_remote_id(draft_id)
-  
-  if active_draft then
-    -- Get latest content from local storage
-    local stored = local_storage.load(active_draft.local_id)
-    if stored then
-      draft_notifications.debug_lifecycle('preview_from_active', active_draft.local_id, {
-        remote_id = draft_id,
-        has_content = stored.content ~= nil
-      })
-      
-      return {
-        id = draft_id,
-        subject = stored.metadata.subject or active_draft.metadata.subject,
-        from = stored.metadata.from or active_draft.metadata.from,
-        to = stored.metadata.to or active_draft.metadata.to,
-        cc = stored.metadata.cc or active_draft.metadata.cc,
-        bcc = stored.metadata.bcc or active_draft.metadata.bcc,
-        body = extract_body_from_content(stored.content or ''),
-        _is_draft = true,
-        _draft_state = active_draft.state,
-        _sync_error = active_draft.sync_error
-      }
-    end
-  end
-  
-  -- Not an active draft, try local storage directly by remote_id
+  -- Try local storage first
   logger.debug('Looking for draft in local storage', { remote_id = draft_id, account = account })
   local stored = local_storage.find_by_remote_id(draft_id, account)
-  if stored then
+  
+  if stored and stored.content then
     logger.debug('Found draft in local storage', { 
       remote_id = draft_id, 
       has_content = stored.content ~= nil,
-      content_length = stored.content and #stored.content or 0 
+      content_length = #stored.content 
     })
+    
+    -- Parse content for display
+    local lines = vim.split(stored.content, '\n')
+    local metadata = stored.metadata or {}
+    local body = extract_body_from_content(stored.content)
+    
     return {
       id = draft_id,
-      subject = stored.metadata and stored.metadata.subject or '',
-      from = stored.metadata and stored.metadata.from or '',
-      to = stored.metadata and stored.metadata.to or '',
-      cc = stored.metadata and stored.metadata.cc or '',
-      bcc = stored.metadata and stored.metadata.bcc or '',
-      body = extract_body_from_content(stored.content or ''),
+      subject = metadata.subject or '',
+      from = metadata.from or '',
+      to = metadata.to or '',
+      cc = metadata.cc or '',
+      bcc = metadata.bcc or '',
+      body = body,
       _is_draft = true
     }
   end
   
-  -- Try to load from himalaya as last resort
+  -- Try to load from himalaya
   draft_notifications.draft_loading(draft_id, 'himalaya')
   
   local draft_data, err = draft_manager.load(draft_id, account)
-  if draft_data then
+  if draft_data and draft_data.content then
+    -- Parse the raw content for preview
+    local lines = vim.split(draft_data.content, '\n')
+    local headers = {}
+    local body_start = 1
+    
+    -- Quick header parse for preview
+    for i, line in ipairs(lines) do
+      if line == '' then
+        body_start = i + 1
+        break
+      end
+      local key, value = line:match('^([^:]+):%s*(.*)$')
+      if key then
+        headers[key:lower()] = value
+      end
+    end
+    
+    -- Extract body
+    local body = ''
+    if body_start <= #lines then
+      local body_lines = {}
+      for i = body_start, #lines do
+        table.insert(body_lines, lines[i])
+      end
+      body = table.concat(body_lines, '\n')
+    end
+    
     return {
       id = draft_id,
-      subject = draft_data.metadata.subject,
-      from = draft_data.metadata.from,
-      to = draft_data.metadata.to,
-      cc = draft_data.metadata.cc,
-      bcc = draft_data.metadata.bcc,
-      body = extract_body_from_content(draft_data.content or ''),
+      subject = headers.subject or '',
+      from = headers.from or '',
+      to = headers.to or '',
+      cc = headers.cc or '',
+      bcc = headers.bcc or '',
+      body = body,
       _is_draft = true
     }
   else
@@ -370,7 +419,7 @@ function M.render_preview(email, buf)
 end
 
 -- Show preview for an email
-function M.show_preview(email_id, parent_win, email_type)
+function M.show_preview(email_id, parent_win, email_type, local_id)
   if not M.config.enabled then
     return
   end
@@ -399,7 +448,12 @@ function M.show_preview(email_id, parent_win, email_type)
   
   if is_draft then
     -- Load draft using new system
-    email_content = load_draft_content(account, folder, email_id)
+    if local_id then
+      -- Load local draft by local_id
+      email_content = load_local_draft_content(account, local_id)
+    else
+      email_content = load_draft_content(account, folder, email_id)
+    end
   else
     -- Load regular email from cache
     email_content = email_cache.get_email(account, folder, email_id)

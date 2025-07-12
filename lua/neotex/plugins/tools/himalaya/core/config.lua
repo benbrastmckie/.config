@@ -613,24 +613,50 @@ function M.setup_buffer_keymaps(bufnr)
         -- Draft-specific handling
         local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
         
+        -- Check if this is a local-only draft
+        local emails = state.get('email_list.emails')
+        local email = emails and emails[email_metadata.email_index]
+        local is_local_draft = email_metadata.is_local or (email and email.is_local)
+        
         if not preview.is_preview_mode() then
           -- First return: show preview
           preview.enable_preview_mode()
-          preview.show_preview(email_id, vim.api.nvim_get_current_win(), 'draft')
+          preview.show_preview(email_id, vim.api.nvim_get_current_win(), 'draft', is_local_draft and email.local_id or nil)
         else
           -- Second return: open for editing
           local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
           -- Debug log before calling reopen_draft
           local logger = require('neotex.plugins.tools.himalaya.core.logger')
-          logger.debug('About to call reopen_draft', {
+          logger.debug('About to call open_draft', {
             email_id = email_id,
+            is_local = is_local_draft,
+            local_id = is_local_draft and email.local_id or nil,
             type = type(email_id),
             line = line,
             current_line = vim.fn.getline('.')
           })
-          -- Pass the email_id we already validated
-          local account = state.get_current_account()
-          composer.open_draft(email_id, account)
+          
+          if is_local_draft then
+            -- Get local_id from email or from the email_id if it's already a local ID
+            local local_id = nil
+            if email and email.local_id then
+              local_id = email.local_id
+            elseif email_id and tostring(email_id):match('^draft_%d+_') then
+              local_id = email_id
+            end
+            
+            if local_id then
+              logger.debug('Opening local draft', { local_id = local_id })
+              composer.open_local_draft(local_id, state.get_current_account())
+            else
+              logger.error('Local draft missing local_id', { email_id = email_id })
+              local notify = require('neotex.util.notifications')
+              notify.himalaya('Failed to open local draft - missing ID', notify.categories.ERROR)
+            end
+          else
+            -- Open remote draft
+            composer.open_draft(email_id, state.get_current_account())
+          end
         end
       else
         -- Regular email handling

@@ -190,159 +190,25 @@ function M.create(buffer, account, opts)
   return draft
 end
 
--- Save draft locally
+-- Save draft locally (DEPRECATED - kept for compatibility)
+-- The new save flow is handled entirely in email_composer.save_draft
 -- @param buffer number Buffer number
 -- @return boolean success
 -- @return string|nil error
 function M.save_local(buffer)
-  local draft = M.drafts[buffer]
-  if not draft then
-    notify_draft("No draft associated with this buffer", notify.categories.WARNING)
-    return false, "No draft found for buffer"
-  end
-  
-  -- Get buffer content
-  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  -- Calculate content hash to detect changes
-  local new_hash = vim.fn.sha256(content)
-  local changed = new_hash ~= draft.content_hash
-  
-  if not changed and draft.state == M.states.SYNCED then
-    -- No changes, skip save
-    return true
-  end
-  
-  -- Update metadata from buffer content
-  M._update_metadata_from_content(draft, lines)
-  
-  -- Save to local storage (content now contains just the body)
-  local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-  local ok, err = storage.save(draft.local_id, {
-    metadata = draft.metadata,
-    content = draft.content,  -- Use extracted body content
-    account = draft.account,
-    remote_id = draft.remote_id,
-    created_at = draft.created_at,
-    updated_at = os.time()
-  })
-  
-  if not ok then
-    draft.state = M.states.ERROR
-    draft.sync_error = err
-    notify_draft(
-      string.format("Failed to save draft: %s", err),
-      notify.categories.ERROR,
-      { draft_id = draft.local_id }
-    )
-    return false, err
-  end
-  
-  -- Update draft state
-  draft.content_hash = new_hash
-  draft.modified_at = os.time()
-  draft.modified = true
-  draft.synced = false
-  draft.content = draft.content  -- Ensure content field is updated
-  
-  -- Update buffer variable
-  vim.api.nvim_buf_set_var(buffer, 'himalaya_draft', draft)
-  
-  -- Update centralized state
-  state.set_draft(buffer, draft)
-  
-  -- Track as unsaved if not synced
-  if draft.state ~= M.states.SYNCED then
-    state.add_unsaved_draft(buffer, {
-      local_id = draft.local_id,
-      subject = draft.metadata.subject,
-      modified_at = draft.modified_at
-    })
-  end
-  
-  -- Emit draft saved event
-  events_bus.emit(event_types.DRAFT_SAVED, {
-    draft_id = draft.local_id,
-    buffer = buffer,
-    is_autosave = false,
-    content_length = #content
-  })
-  
-  -- User notification for manual saves
-  notify_draft(
-    string.format("Draft saved: %s", draft.metadata.subject or "Untitled"),
-    notify.categories.USER_ACTION,
-    { file = draft.local_path, draft_id = draft.local_id }
-  )
-  
+  -- This function is now just a stub that returns success
+  -- All saving is handled by email_composer.save_draft
   return true
 end
 
--- Sync draft to remote
+-- Sync draft to remote (DEPRECATED - kept for compatibility)
+-- The new sync flow is handled by email_composer.sync_draft_to_remote
 -- @param buffer number Buffer number
 -- @return boolean success
 -- @return string|nil error
 function M.sync_remote(buffer)
-  local draft = M.drafts[buffer]
-  if not draft then
-    notify_draft("No draft associated with this buffer", notify.categories.WARNING)
-    return false, "No draft found for buffer"
-  end
-  
-  -- Get content from local storage
-  local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-  local data = storage.load(draft.local_id)
-  if not data then
-    draft.state = M.states.ERROR
-    draft.sync_error = "Failed to load local content"
-    notify_draft(
-      "Failed to sync: Could not load draft content",
-      notify.categories.ERROR,
-      { draft_id = draft.local_id }
-    )
-    return false, draft.sync_error
-  end
-  
-  -- Update draft metadata with fresh data from storage
-  draft.metadata = data.metadata
-  
-  -- Add content to draft info for sync engine
-  local draft_info = vim.tbl_extend('force', draft, {
-    content = data.content,
-    metadata = data.metadata  -- Ensure fresh metadata is used
-  })
-  
-  -- Use sync engine for actual sync
-  local sync_engine = require('neotex.plugins.tools.himalaya.core.sync_engine')
-  sync_engine.queue_sync(draft_info)
-  
-  -- User notification
-  notify_draft(
-    "Syncing draft...",
-    notify.categories.STATUS,
-    { allow_batching = true, draft_id = draft.local_id }
-  )
-  
-  -- Emit sync queued event
-  events_bus.emit(event_types.DRAFT_SYNC_QUEUED, {
-    draft_id = draft.local_id,
-    account = draft.account,
-    has_remote_id = draft.remote_id ~= nil
-  })
-  
-  -- Change state to syncing
-  draft.state = M.states.SYNCING
-  
-  -- Update buffer variable
-  vim.api.nvim_buf_set_var(buffer, 'himalaya_draft', draft)
-  
-  -- Update centralized state
-  state.set_draft(buffer, draft)
-  state.set_draft_sync_status(true)
-  
-  -- The sync engine will handle the actual sync asynchronously
-  -- and call our sync completion handler when done
+  -- This function is now just a stub that returns success
+  -- All syncing is handled by email_composer.sync_draft_to_remote
   return true
 end
 
@@ -435,61 +301,32 @@ function M.handle_sync_completion(local_id, remote_id, success, error)
   end
 end
 
--- Load draft from remote
+-- Load draft from remote (returns raw content)
 -- @param remote_id string Remote draft ID
 -- @param account string Account name
--- @return table|nil Draft data
+-- @return table|nil Draft data with raw content
 -- @return string|nil error
 function M.load(remote_id, account)
-  -- Try to load from himalaya first
+  -- First check local storage
+  local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+  local cached = storage.find_by_remote_id(remote_id, account)
+  if cached and cached.content then
+    return cached
+  end
+  
+  -- Try to load from himalaya
   local ok, result = pcall(utils.execute_himalaya, 
     { 'message', 'read', tostring(remote_id) },
     { account = account, folder = 'Drafts' }
   )
   
-  local email = nil
-  
   if ok and result then
-    -- Parse email content
-    email = require('neotex.plugins.tools.himalaya.core.draft_parser').parse_email(
-      vim.split(result, '\n')
-    )
-  end
-  
-  -- If himalaya failed or returned empty body, try local storage
-  if not email or not email.body or email.body == '' then
-    local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-    local cached = storage.find_by_remote_id(remote_id, account)
-    if cached then
-      -- Use cached data
-      return {
-        remote_id = remote_id,
-        account = account,
-        metadata = cached.metadata or {
-          subject = email and email.subject or '',
-          to = email and email.to or '',
-          from = email and email.from or '',
-          cc = email and email.cc or '',
-          bcc = email and email.bcc or ''
-        },
-        content = cached.content or (email and email.body or '')
-      }
-    end
-  end
-  
-  -- If we have email from himalaya, return it
-  if email then
+    -- Return raw content without parsing
     return {
       remote_id = remote_id,
       account = account,
-      metadata = {
-        subject = email.subject,
-        to = email.to,
-        from = email.from,
-        cc = email.cc,
-        bcc = email.bcc
-      },
-      content = email.body or ''
+      content = result,
+      metadata = {}  -- Will be parsed for display only
     }
   end
   
@@ -612,30 +449,14 @@ end
 function M.cleanup_draft(buffer)
   local draft = M.drafts[buffer]
   if draft then
-    -- First, save the draft if buffer is still valid and modified
-    if vim.api.nvim_buf_is_valid(buffer) then
-      local modified = vim.api.nvim_buf_get_option(buffer, 'modified')
-      if modified then
-        -- Save before cleanup
-        M.save_local(buffer)
-      end
-    end
-    
-    -- Check if draft has any meaningful content
-    -- Load from storage to get the latest content
+    -- Check if draft has any meaningful content by looking at storage
     local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
     local stored = storage.load(draft.local_id)
     local has_content = false
     
-    if stored and stored.metadata then
-      has_content = (stored.metadata.subject and stored.metadata.subject ~= "") or
-                   (stored.metadata.to and stored.metadata.to ~= "") or
-                   (stored.content and stored.content:match("[^%s\n]"))
-    elseif draft.metadata then
-      -- Fallback to in-memory draft
-      has_content = (draft.metadata.subject and draft.metadata.subject ~= "") or
-                   (draft.metadata.to and draft.metadata.to ~= "") or
-                   (draft.content and draft.content:match("[^%s\n]"))
+    if stored and stored.content then
+      -- Check if content has more than just headers template
+      has_content = stored.content:match("[^%s\n]") and #stored.content > 50
     end
     
     -- If draft is empty and was never synced, just delete it completely
@@ -679,55 +500,7 @@ function M.cleanup_draft(buffer)
   end
 end
 
--- Update metadata from buffer content
--- @param draft table Draft object
--- @param lines table Buffer lines
-function M._update_metadata_from_content(draft, lines)
-  -- Parse headers from content
-  local in_headers = true
-  local headers = {}
-  local body_start = 1
-  local current_header = nil
-  
-  for i, line in ipairs(lines) do
-    if in_headers then
-      if line == '' then
-        in_headers = false
-        body_start = i + 1
-        break
-      else
-        -- Check if this is a header line or continuation
-        local key, value = line:match('^([^:]+):%s*(.*)$')
-        if key and value then
-          -- New header
-          current_header = key:lower()
-          headers[current_header] = value
-        elseif line:match('^%s+') and current_header then
-          -- Continuation of previous header
-          headers[current_header] = headers[current_header] .. ' ' .. line:match('^%s+(.*)$')
-        end
-      end
-    end
-  end
-  
-  -- Update ALL metadata fields
-  draft.metadata.from = headers.from or draft.metadata.from or ''
-  draft.metadata.to = headers.to or ''
-  draft.metadata.cc = headers.cc or ''
-  draft.metadata.bcc = headers.bcc or ''
-  draft.metadata.subject = headers.subject or ''
-  
-  -- Extract body content for separate storage
-  if body_start <= #lines then
-    local body_lines = {}
-    for i = body_start, #lines do
-      table.insert(body_lines, lines[i])
-    end
-    draft.content = table.concat(body_lines, '\n')
-  else
-    draft.content = ''
-  end
-end
+-- REMOVED: _update_metadata_from_content - parsing is now done only for display
 
 -- Save draft (user-initiated)
 -- @param buffer number Buffer number

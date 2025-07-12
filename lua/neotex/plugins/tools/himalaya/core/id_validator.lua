@@ -47,7 +47,13 @@ function M.is_valid_id(id)
     return false
   end
   
-  -- Valid IDs should be numeric strings (himalaya uses numeric IDs)
+  -- Check if it's a local draft ID (draft_timestamp_uniqueid)
+  if id:match('^draft_%d+_') then
+    logger.debug('ID validation: local draft ID', { id = id })
+    return true  -- Local draft IDs are valid
+  end
+  
+  -- Valid himalaya IDs should be numeric strings
   if not id:match('^%d+$') then
     logger.debug('ID validation failed: non-numeric ID', { id = id })
     return false
