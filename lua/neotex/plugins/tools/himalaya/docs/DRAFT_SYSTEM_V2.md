@@ -11,6 +11,8 @@ The new draft system (v2) provides a robust, local-first approach to email draft
 - **Live status indicators**: Visual feedback for draft state throughout the UI
 - **Zero data loss**: Local persistence ensures drafts survive crashes
 - **Performance optimized**: Fast operations even with many drafts
+- **Full field sync**: All email fields (To, From, Cc, Bcc, Subject) are synchronized
+- **Content separation**: Headers stored in metadata, body stored separately
 
 ## Architecture
 
@@ -137,6 +139,20 @@ The system is optimized for hundreds of drafts. If experiencing issues:
 1. Check draft count with `:HimalayaVerifyMigration`
 2. Clear old drafts from the Drafts folder
 3. Increase sync interval in configuration
+
+### Fields not updating?
+
+If email fields (To, From, Subject, etc.) are not syncing:
+
+1. Ensure you save the draft after making changes (Ctrl+S or `:HimalayaSave`)
+2. Check that the buffer contains valid email headers
+3. Enable debug mode to see field extraction details
+4. Verify headers are separated from body by an empty line
+
+Common issues:
+- Missing empty line between headers and body
+- Malformed email addresses
+- Multi-line headers not properly indented
 
 ## Technical Details
 

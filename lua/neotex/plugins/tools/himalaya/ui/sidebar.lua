@@ -127,7 +127,8 @@ end
 
 -- Toggle sidebar visibility
 function M.toggle()
-  if M.state.is_open then
+  -- Check actual window state instead of relying on cached state
+  if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
     M.close()
   else
     M.open()
@@ -511,6 +512,20 @@ end
 -- Export state for debugging
 M.get_state = function()
   return M.state
+end
+
+-- Check if sidebar is showing drafts
+function M.is_showing_drafts()
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  return state.get_current_folder() == 'Drafts'
+end
+
+-- Force refresh current display
+function M.refresh_current()
+  if M.is_open() then
+    local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+    email_list.refresh_email_list()
+  end
 end
 
 return M

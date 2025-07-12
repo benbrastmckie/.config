@@ -54,7 +54,9 @@ function M.save(local_id, data)
     remote_id = data.remote_id,
     account = data.account,
     subject = data.metadata and data.metadata.subject or '',
-    modified = os.time()
+    modified = os.time(),
+    created_at = data.created_at,
+    updated_at = data.updated_at or os.time()
   }
   M._save_index()
   

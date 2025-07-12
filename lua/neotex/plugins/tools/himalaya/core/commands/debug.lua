@@ -349,6 +349,7 @@ function M.setup(registry)
       local utils = require('neotex.plugins.tools.himalaya.utils')
       local notify = require('neotex.util.notifications')
       local logger = require('neotex.plugins.tools.himalaya.core.logger')
+      local state = require('neotex.plugins.tools.himalaya.core.state')
       
       local account = state.get('ui.current_account')
       local folder = state.get('ui.current_folder')
@@ -399,6 +400,17 @@ function M.setup(registry)
     end,
     opts = {
       desc = 'Manually refresh current folder email count'
+    }
+  }
+  
+  commands.HimalayaDebugOutput = {
+    fn = function(opts)
+      local debug_cmd = require('neotex.plugins.tools.himalaya.commands.debug_himalaya_output')
+      debug_cmd.debug_himalaya_output(opts.args)
+    end,
+    opts = {
+      nargs = 1,
+      desc = 'Debug raw himalaya output for an email ID'
     }
   }
   

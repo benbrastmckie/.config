@@ -1223,14 +1223,18 @@ function M.refresh_email_list()
     scheduler.sync_from_disk()
   end
   
-  -- Save current window to restore focus
+  -- Save current window and mode to restore focus
   local current_win = vim.api.nvim_get_current_win()
+  local current_mode = vim.api.nvim_get_mode().mode
+  if current_mode == 'i' or current_mode == 'ic' or current_mode == 'ix' then
+    vim.b.himalaya_was_insert_mode = true
+  end
   
   -- Get current sidebar buffer
   local buf = sidebar.get_buf()
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
-    -- No sidebar open, do full show
-    M.show_email_list({state.get_current_folder()})
+    -- No sidebar open, don't open it
+    return
   else
     -- Sidebar is open, do optimized refresh
     local account_name = config.get_current_account_name()
@@ -1284,9 +1288,17 @@ function M.refresh_email_list()
   end
   
   -- Restore focus to original window if it's still valid
-  if vim.api.nvim_win_is_valid(current_win) then
-    vim.api.nvim_set_current_win(current_win)
-  end
+  vim.schedule(function()
+    if vim.api.nvim_win_is_valid(current_win) then
+      vim.api.nvim_set_current_win(current_win)
+      -- If we were in insert mode, restore it
+      local mode = vim.api.nvim_get_mode().mode
+      if mode == 'n' and vim.b.himalaya_was_insert_mode then
+        vim.cmd('startinsert')
+        vim.b.himalaya_was_insert_mode = nil
+      end
+    end
+  end)
 end
 
 -- Fast selection display update (no server calls)

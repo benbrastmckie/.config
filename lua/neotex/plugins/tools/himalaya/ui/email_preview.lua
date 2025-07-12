@@ -18,19 +18,23 @@ local preview_state = {
   buf = nil,
   email_id = nil,
   preview_mode = false,
-  autocmd_id = nil,  -- Track autocmd for cleanup
+  autocmd_id = nil,  -- Track sidebar autocmd for cleanup
+  preview_autocmd_id = nil,  -- Track preview window autocmd for cleanup
 }
 
 -- Configuration
 M.config = {
   enabled = true,
   keyboard_delay = 100,
-  width = 100,  -- Increased from 80
-  max_height = 40,  -- Increased from 30
-  position = 'smart',
+  mouse_delay = 1000,  -- From old version
+  width = 80,  -- Fixed 80 character width as in old version
+  max_height = 30,  -- Original height
+  position = 'smart',  -- 'right', 'bottom', or 'smart'
   border = 'single',
   show_headers = true,
   syntax_highlight = true,
+  auto_close = true,
+  focusable = false,  -- Can be toggled with double-press
 }
 
 -- Initialize module
@@ -96,7 +100,28 @@ local function load_draft_content(account, folder, draft_id)
     end
   end
   
-  -- Not an active draft, try to load from himalaya
+  -- Not an active draft, try local storage directly by remote_id
+  logger.debug('Looking for draft in local storage', { remote_id = draft_id, account = account })
+  local stored = local_storage.find_by_remote_id(draft_id, account)
+  if stored then
+    logger.debug('Found draft in local storage', { 
+      remote_id = draft_id, 
+      has_content = stored.content ~= nil,
+      content_length = stored.content and #stored.content or 0 
+    })
+    return {
+      id = draft_id,
+      subject = stored.metadata and stored.metadata.subject or '',
+      from = stored.metadata and stored.metadata.from or '',
+      to = stored.metadata and stored.metadata.to or '',
+      cc = stored.metadata and stored.metadata.cc or '',
+      bcc = stored.metadata and stored.metadata.bcc or '',
+      body = extract_body_from_content(stored.content or ''),
+      _is_draft = true
+    }
+  end
+  
+  -- Try to load from himalaya as last resort
   draft_notifications.draft_loading(draft_id, 'himalaya')
   
   local draft_data, err = draft_manager.load(draft_id, account)
@@ -129,53 +154,51 @@ end
 
 -- Calculate preview window position
 function M.calculate_preview_position(parent_win)
-  local win_width = vim.api.nvim_win_get_width(parent_win)
+  local sidebar_width = vim.api.nvim_win_get_width(parent_win)
   local win_height = vim.api.nvim_win_get_height(parent_win)
-  local screen_width = vim.o.columns
-  local screen_height = vim.o.lines
+  local win_pos = vim.api.nvim_win_get_position(parent_win)
   
-  local row = 0
-  local col = win_width + 1
-  local width = M.config.width
-  local height = M.config.max_height
-  
-  -- Smart positioning
-  if M.config.position == 'smart' then
-    if win_width > 100 then
-      -- Wide screen: show on right
-      col = win_width + 1
-      -- Use more width when space is available
-      width = math.min(width, screen_width - win_width - 4)
-      height = math.min(height, win_height - 2)
-    else
-      -- Narrow screen: show at bottom
-      row = win_height + 1
-      col = 0
-      width = math.min(width, win_width - 2)
-      height = math.min(height, screen_height - win_height - 6)
-    end
-  elseif M.config.position == 'bottom' then
-    row = win_height + 1
-    col = 0
-    width = math.min(width, win_width - 2)
-    height = math.min(height, screen_height - win_height - 6)
-  else
-    -- Right position
-    width = math.min(width, screen_width - win_width - 4)
-    height = math.min(height, win_height - 2)
-  end
-  
+  -- Always position to the right of sidebar
+  -- Adjust height and position to avoid buffer line and status bar
   return {
-    relative = 'win',
-    win = parent_win,
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    border = M.config.border,
+    relative = 'editor',
+    width = 80,  -- Fixed 80 character width
+    height = win_height - 2,  -- Reduce height by 2 (top and bottom)
+    row = win_pos[1],     -- Match sidebar position
+    col = win_pos[2] + sidebar_width + 1,  -- Position after sidebar + 1 for border
     style = 'minimal',
-    focusable = true,
+    border = M.config.border,
+    title = ' Email Preview ',
+    title_pos = 'center',
+    focusable = true,  -- Make it focusable so we can enter it with mouse
+    zindex = 50,
+    noautocmd = false,  -- Ensure autocmds fire for proper event handling
   }
+end
+
+-- Setup keymaps for preview buffer
+local function setup_preview_keymaps(buf, email_id, email_type)
+  local opts = { buffer = buf, noremap = true, silent = true }
+  
+  -- ESC to return to sidebar
+  vim.keymap.set('n', '<Esc>', function()
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      vim.api.nvim_set_current_win(sidebar_win)
+    end
+  end, opts)
+  
+  -- q to exit preview mode and return to sidebar
+  vim.keymap.set('n', 'q', function()
+    M.disable_preview_mode()
+    M.hide_preview()
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      vim.api.nvim_set_current_win(sidebar_win)
+    end
+  end, opts)
 end
 
 -- Get or create preview buffer
@@ -183,15 +206,13 @@ function M.get_or_create_preview_buffer()
   -- Create new buffer
   local buf = vim.api.nvim_create_buf(false, true)
   
-  -- Buffer settings
+  -- Buffer settings (matching old version)
   vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(buf, 'bufhidden', 'hide')  -- Keep in memory
   vim.api.nvim_buf_set_option(buf, 'swapfile', false)
-  vim.api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
-  
-  if M.config.syntax_highlight then
-    vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
-  end
+  vim.api.nvim_buf_set_option(buf, 'undolevels', -1)
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   
   return buf
 end
@@ -238,7 +259,7 @@ function M.render_preview(email, buf)
       table.insert(lines, "")
     end
     
-    -- Headers
+    -- Always show headers from cache (since we use --no-headers for body)
     if M.config.show_headers then
       local from = safe_tostring(email.from, "Unknown")
       local to = safe_tostring(email.to, "")
@@ -246,7 +267,9 @@ function M.render_preview(email, buf)
       local date = safe_tostring(email.date, "Unknown")
       
       table.insert(lines, "From: " .. from)
-      table.insert(lines, "To: " .. to)
+      if to ~= "" and to ~= "vim.NIL" then
+        table.insert(lines, "To: " .. to)
+      end
       if email.cc and email.cc ~= vim.NIL then
         local cc = safe_tostring(email.cc, "")
         if cc ~= "" then
@@ -261,7 +284,7 @@ function M.render_preview(email, buf)
       end
       table.insert(lines, "Subject: " .. subject)
       table.insert(lines, "Date: " .. date)
-      table.insert(lines, string.rep("-", M.config.width - 2))
+      table.insert(lines, string.rep("─", M.config.width - 2))
       table.insert(lines, "")
     end
     
@@ -286,11 +309,14 @@ function M.render_preview(email, buf)
         for _, line in ipairs(body_lines) do
           table.insert(lines, line)
         end
+      else
+        table.insert(lines, "Loading email content...")
       end
     else
       -- Non-draft email body
       if email.body then
-        -- Split body into lines
+        -- Since we use --no-headers, the body is clean without headers
+        -- Just add it line by line
         local body_lines = vim.split(email.body, '\n', { plain = true })
         for _, line in ipairs(body_lines) do
           table.insert(lines, line)
@@ -298,8 +324,23 @@ function M.render_preview(email, buf)
       elseif email._error then
         table.insert(lines, '(No content available)')
       else
-        table.insert(lines, '(Loading...)')
+        table.insert(lines, 'Loading email content...')
       end
+    end
+    
+    -- Add footer with keymaps
+    table.insert(lines, "")
+    table.insert(lines, string.rep("─", M.config.width - 2))
+    if email._is_scheduled then
+      table.insert(lines, "esc:sidebar gD:cancel")
+      table.insert(lines, "q:exit")
+    elseif email._is_draft then
+      -- Draft-specific footer
+      table.insert(lines, "esc:sidebar return:edit gD:delete")
+      table.insert(lines, "q:exit")
+    else
+      table.insert(lines, "esc:sidebar gr:reply gR:reply-all gf:forward")
+      table.insert(lines, "q:exit gD:delete gA:archive gS:spam")
     end
   end
   
@@ -313,6 +354,19 @@ function M.render_preview(email, buf)
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Apply syntax highlighting if enabled
+  if M.config.syntax_highlight then
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd('syntax match mailHeader "^\\(From\\|To\\|Cc\\|Subject\\|Date\\):"')
+      vim.cmd('syntax match mailEmail "<[^>]\\+@[^>]\\+>"')
+      vim.cmd('syntax match mailEmail "[a-zA-Z0-9._%+-]\\+@[a-zA-Z0-9.-]\\+\\.[a-zA-Z]\\{2,}"')
+      vim.cmd('syntax match mailQuoted "^>.*$"')
+      vim.cmd('hi link mailHeader Keyword')
+      vim.cmd('hi link mailEmail Underlined')
+      vim.cmd('hi link mailQuoted Comment')
+    end)
+  end
 end
 
 -- Show preview for an email
@@ -320,6 +374,9 @@ function M.show_preview(email_id, parent_win, email_type)
   if not M.config.enabled then
     return
   end
+  
+  -- Ensure email_id is a string
+  email_id = tostring(email_id)
   
   local account = state.get_current_account()
   local folder = state.get_current_folder()
@@ -379,38 +436,58 @@ function M.show_preview(email_id, parent_win, email_type)
     vim.api.nvim_win_set_option(preview_state.win, 'wrap', true)
     vim.api.nvim_win_set_option(preview_state.win, 'linebreak', true)
     vim.api.nvim_win_set_option(preview_state.win, 'cursorline', false)
+    vim.api.nvim_win_set_option(preview_state.win, 'mouse', 'a')  -- Ensure mouse is enabled for this window
     
-    -- Setup auto-close when leaving sidebar (but keep preview mode enabled)
+    -- Setup keymaps for preview buffer
+    setup_preview_keymaps(preview_state.buf, email_id, email_type)
+    
+    -- Setup auto-close when leaving sidebar or preview (but keep preview mode enabled)
     local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
     local sidebar_buf = sidebar.get_buf()
+    
+    -- Clear any existing autocmds
+    if preview_state.autocmd_id then
+      pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
+      preview_state.autocmd_id = nil
+    end
+    if preview_state.preview_autocmd_id then
+      pcall(vim.api.nvim_del_autocmd, preview_state.preview_autocmd_id)
+      preview_state.preview_autocmd_id = nil
+    end
+    
+    -- Function to check if we should hide preview
+    local function check_hide_preview()
+      vim.schedule(function()
+        if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
+          return
+        end
+        
+        local current_win = vim.api.nvim_get_current_win()
+        local current_buf = vim.api.nvim_win_get_buf(current_win)
+        
+        -- Check if we moved to a non-himalaya buffer
+        if current_buf ~= preview_state.buf and current_buf ~= sidebar_buf then
+          -- Hide preview but keep preview mode enabled
+          M.hide_preview()
+        end
+      end)
+    end
+    
+    -- Autocmd for leaving sidebar
     if sidebar_buf and vim.api.nvim_buf_is_valid(sidebar_buf) then
-      -- Clear any existing autocmd
-      if preview_state.autocmd_id then
-        vim.api.nvim_del_autocmd(preview_state.autocmd_id)
-      end
-      
       preview_state.autocmd_id = vim.api.nvim_create_autocmd('WinLeave', {
         buffer = sidebar_buf,
-        callback = function()
-          -- Only hide preview if we're leaving the sidebar to a normal buffer
-          vim.schedule(function()
-            if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
-              return
-            end
-            
-            local current_win = vim.api.nvim_get_current_win()
-            local current_buf = vim.api.nvim_win_get_buf(current_win)
-            
-            -- Check if we moved to a non-himalaya buffer
-            if current_buf ~= preview_state.buf and current_buf ~= sidebar_buf then
-              -- Hide preview but keep preview mode enabled
-              M.hide_preview()
-            end
-          end)
-        end,
+        callback = check_hide_preview,
         desc = 'Hide preview when leaving sidebar'
       })
     end
+    
+    -- Autocmd for leaving preview window
+    preview_state.preview_autocmd_id = vim.api.nvim_create_autocmd('WinLeave', {
+      buffer = preview_state.buf,
+      callback = check_hide_preview,
+      desc = 'Hide preview when leaving preview window'
+    })
   else
     -- Reuse existing window
     if not preview_state.buf or not vim.api.nvim_buf_is_valid(preview_state.buf) then
@@ -433,8 +510,97 @@ end
 
 -- Load full email content asynchronously
 function M.load_full_content_async(email_id, account, folder)
-  -- Implementation would go here for loading regular emails
-  -- For now, this is a placeholder
+  if not email_id or not account or not folder then
+    return
+  end
+  
+  -- Build himalaya command to read email
+  local cmd = {
+    'himalaya',
+    'message', 'read',
+    '-a', account,
+    '-f', folder,
+    '--preview',  -- Don't mark as read when previewing
+    '--no-headers',  -- Get only the body, we'll use cached headers
+    tostring(email_id)
+  }
+  
+  local stdout_buffer = {}
+  
+  vim.fn.jobstart(cmd, {
+    on_stdout = function(_, data, _)
+      if data then
+        for _, line in ipairs(data) do
+          if line ~= "" then
+            table.insert(stdout_buffer, line)
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data, _)
+      if data and #data > 0 then
+        local error_msg = table.concat(data, '\n')
+        if error_msg ~= "" then
+          logger.error('Himalaya error loading email', { error = error_msg, id = email_id })
+        end
+      end
+    end,
+    on_exit = function(_, exit_code, _)
+      if exit_code == 0 and #stdout_buffer > 0 then
+        local output = table.concat(stdout_buffer, '\n')
+        
+        logger.debug('Himalaya body-only output received', { 
+          email_id = email_id,
+          output_length = #output,
+          first_100_chars = output:sub(1, 100)
+        })
+        
+        -- Since we used --no-headers, the output is just the body
+        local body = output
+        
+        -- Update cache with full body
+        email_cache.store_email_body(account, folder, email_id, body)
+        
+        -- If this is still the current email being previewed, update the preview
+        if preview_state.email_id == email_id and preview_state.win and 
+           vim.api.nvim_win_is_valid(preview_state.win) then
+          -- Get the cached email and update with body
+          local email = email_cache.get_email(account, folder, email_id)
+          if email then
+            email.body = body
+            -- Re-render the preview with full content
+            vim.schedule(function()
+              if preview_state.buf and vim.api.nvim_buf_is_valid(preview_state.buf) then
+                M.render_preview(email, preview_state.buf)
+              end
+            end)
+          else
+            -- If email not in cache, create a minimal structure
+            logger.warn('Email not in cache, creating minimal structure', { email_id = email_id })
+            local minimal_email = {
+              id = email_id,
+              body = body,
+              subject = '(Email loaded directly)',
+              from = '',
+              to = '',
+              date = ''
+            }
+            vim.schedule(function()
+              if preview_state.buf and vim.api.nvim_buf_is_valid(preview_state.buf) then
+                M.render_preview(minimal_email, preview_state.buf)
+              end
+            end)
+          end
+        end
+      elseif exit_code ~= 0 then
+        logger.error('Failed to load email content', { 
+          email_id = email_id, 
+          exit_code = exit_code,
+          output = table.concat(stdout_buffer, '\n')
+        })
+      end
+    end
+  })
 end
 
 -- Hide preview window
@@ -445,10 +611,14 @@ function M.hide_preview()
   preview_state.win = nil
   preview_state.email_id = nil
   
-  -- Clean up autocmd
+  -- Clean up autocmds
   if preview_state.autocmd_id then
     pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
     preview_state.autocmd_id = nil
+  end
+  if preview_state.preview_autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.preview_autocmd_id)
+    preview_state.preview_autocmd_id = nil
   end
 end
 
