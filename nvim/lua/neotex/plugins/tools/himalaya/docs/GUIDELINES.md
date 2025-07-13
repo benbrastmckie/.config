@@ -247,6 +247,117 @@ return M
 -- Then DELETE the compatibility wrapper entirely
 ```
 
+## Post-Refactor Testing Support
+
+### Helping Users Run Tests
+After completing a refactor, actively help users validate the changes:
+
+1. **Provide Clear Test Commands**
+   ```vim
+   " Add these to documentation
+   :HimalayaTest[Feature]           " Run specific feature tests
+   :HimalayaTestIntegration         " Run full integration tests
+   :HimalayaTestAll                 " Run complete test suite
+   ```
+
+2. **Create Test Guides**
+   ```markdown
+   ## Testing Your Installation
+   1. Run `:HimalayaTest[Feature]` to verify the refactor
+   2. If errors occur, see troubleshooting below
+   3. Report issues with full error output
+   ```
+
+### Root Cause Analysis
+
+**CRITICAL**: When tests fail, use error outputs to identify and fix ROOT CAUSES, not just symptoms:
+
+1. **Analyze Error Patterns**
+   ```lua
+   -- Don't just patch the error
+   -- Ask: WHY did this error occur?
+   -- What architectural issue caused it?
+   -- How can we prevent similar errors?
+   ```
+
+2. **Improve Code Quality**
+   ```lua
+   -- BAD: Add try/catch to suppress error
+   -- GOOD: Fix the underlying design flaw
+   
+   -- BAD: Add nil check as bandaid
+   -- GOOD: Ensure value is never nil through better design
+   ```
+
+3. **Document Root Causes**
+   ```markdown
+   ## Common Issues and Root Causes
+   
+   ### Issue: Module not found error
+   **Symptom**: `module 'xyz' not found`
+   **Root Cause**: Inconsistent module naming convention
+   **Fix**: Standardize all module paths and update requires
+   **Prevention**: Add module path validation in tests
+   ```
+
+### Error-Driven Improvements
+
+Use test failures as opportunities to improve the codebase:
+
+1. **Strengthen Architecture**
+   - If a test reveals coupling issues, decouple the modules
+   - If a test shows missing validation, add it at the source
+   - If a test exposes race conditions, fix the async design
+
+2. **Add Defensive Programming**
+   ```lua
+   -- Based on test failures, add:
+   - Input validation at module boundaries
+   - Clear error messages with context
+   - Assertions for invariants
+   ```
+
+3. **Improve Test Coverage**
+   ```lua
+   -- For each bug found, add:
+   - Unit test for the specific case
+   - Integration test for the workflow
+   - Regression test to prevent recurrence
+   ```
+
+### Test Failure Response Protocol
+
+When users report test failures:
+
+1. **Gather Complete Information**
+   ```vim
+   " Request full error output
+   :messages
+   " Check debug logs
+   :HimalayaDebugLog
+   " Get system info
+   :HimalayaSystemInfo
+   ```
+
+2. **Identify Root Cause**
+   - What assumption was violated?
+   - What edge case was missed?
+   - What integration point failed?
+
+3. **Fix Systematically**
+   - Address the root cause, not the symptom
+   - Improve the architecture if needed
+   - Add tests to prevent regression
+
+4. **Document the Fix**
+   ```markdown
+   ## Fixed Issues
+   - **Issue**: [Description]
+   - **Root Cause**: [Why it happened]
+   - **Fix**: [What was changed]
+   - **Prevention**: [How we prevent recurrence]
+   ```
+
 ## Quality Checklist
 
 Before considering any refactor complete:
@@ -258,6 +369,9 @@ Before considering any refactor complete:
 - [ ] Documentation updated
 - [ ] README.md files complete with working links
 - [ ] Code reduction metrics documented
+- [ ] Test commands documented for users
+- [ ] Root cause analysis process documented
+- [ ] Common issues and fixes documented
 - [ ] Final review for elegance and unity
 
 ## Example: Maildir Migration
