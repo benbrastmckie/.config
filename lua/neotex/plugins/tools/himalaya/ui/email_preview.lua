@@ -126,7 +126,6 @@ local function load_local_draft_content(account, local_id)
       _is_local = true,
       _error = true
     }
-  end
 end
 
 -- Load draft content with new system

@@ -71,7 +71,7 @@ function M.setup()
   
   -- Initialize modules
   local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
   local features = require('neotex.plugins.tools.himalaya.ui.features')
   
   email_preview.setup(config.config)
