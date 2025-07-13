@@ -326,6 +326,64 @@ function M.setup(registry)
     }
   }
   
+  -- Migration commands
+  commands.HimalayaMigrateDraftsToMaildir = {
+    fn = function(opts)
+      local migration = require('neotex.plugins.tools.himalaya.migrations.draft_to_maildir')
+      local dry_run = opts.args == 'preview'
+      
+      local result = migration.migrate({ dry_run = dry_run })
+      
+      if dry_run then
+        notify.himalaya(
+          string.format('Would migrate %d draft(s) to Maildir format', result.total),
+          notify.categories.USER_ACTION
+        )
+      end
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Migrate drafts to Maildir format',
+      complete = function()
+        return { 'preview' }
+      end
+    }
+  }
+  
+  commands.HimalayaDraftMigrationVerify = {
+    fn = function()
+      local migration = require('neotex.plugins.tools.himalaya.migrations.draft_to_maildir')
+      migration.verify()
+    end,
+    opts = {
+      desc = 'Verify draft migration status'
+    }
+  }
+  
+  commands.HimalayaDraftMigrationRollback = {
+    fn = function(opts)
+      local migration = require('neotex.plugins.tools.himalaya.migrations.draft_to_maildir')
+      local backup_dir = opts.args ~= '' and opts.args or nil
+      
+      migration.rollback(backup_dir)
+    end,
+    opts = {
+      nargs = '?',
+      desc = 'Rollback draft migration from backup'
+    }
+  }
+  
+  -- Test command (development only)
+  commands.HimalayaTestMaildir = {
+    fn = function()
+      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_foundation')
+      test.run()
+    end,
+    opts = {
+      desc = 'Run Maildir foundation tests'
+    }
+  }
+  
   -- Register all draft commands
   registry.register_batch(commands)
 end
