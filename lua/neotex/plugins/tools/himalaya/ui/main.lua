@@ -734,17 +734,19 @@ end
 
 -- Sync drafts folder (handles local drafts)
 function M.sync_drafts_folder(account, folder)
-  -- For now, just do a regular sync like other folders
-  -- Local drafts are already visible in the UI
-  local mbsync_target
-  if account:lower() == 'gmail' then
-    mbsync_target = 'gmail-drafts'
-  else
-    mbsync_target = account .. ':Drafts'
-  end
+  -- For drafts, we don't use mbsync - just refresh the list
+  -- This will re-fetch from himalaya and update local storage
+  notify.himalaya('Refreshing drafts...', notify.categories.STATUS)
   
-  -- Use shared sync implementation
-  M._perform_sync(mbsync_target, 'drafts')
+  -- Clear cache to force fresh fetch
+  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+  email_cache.clear_folder_cache(account, folder)
+  
+  -- Refresh the email list
+  vim.defer_fn(function()
+    M.refresh_email_list()
+    notify.himalaya('Drafts refreshed', notify.categories.STATUS)
+  end, 100)
 end
 
 -- Forward email
@@ -774,20 +776,24 @@ function M.delete_current_email()
   local is_local_draft = false
   local local_id = nil
   
-  if line_map and line_map[line_num] then
+  -- First check if email_id looks like a local draft ID
+  if email_id and tostring(email_id):match('^draft_') then
+    is_local_draft = true
+    local_id = email_id
+  elseif line_map and line_map[line_num] then
     local metadata = line_map[line_num]
     -- Check metadata first for is_local flag
     if metadata.is_local then
       is_local_draft = true
       -- Extract local_id from email_id if it's a local draft ID
-      if metadata.email_id and tostring(metadata.email_id):match('^draft_%d+_') then
+      if metadata.email_id and tostring(metadata.email_id):match('^draft_') then
         local_id = metadata.email_id
       end
     elseif metadata.email_index and emails and emails[metadata.email_index] then
       local email = emails[metadata.email_index]
       if email.is_local then
         is_local_draft = true
-        local_id = email.local_id or (email.id and tostring(email.id):match('^draft_%d+_') and email.id)
+        local_id = email.local_id or (email.id and tostring(email.id):match('^draft_') and email.id)
       end
     end
   end
@@ -1323,13 +1329,28 @@ function M.delete_selected_emails()
       end
       
       for i, email in ipairs(selected) do
-        local success, error_type = utils.smart_delete_email(state.get_current_account(), email.id)
-        if success then
-          success_count = success_count + 1
+        -- Check if it's a local draft
+        if email.is_local or (email.id and tostring(email.id):match('^draft_')) then
+          -- Delete local draft
+          local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+          local local_id = email.local_id or email.id
+          local success = local_storage.delete(local_id)
+          if success then
+            success_count = success_count + 1
+          else
+            error_count = error_count + 1
+            notify.himalaya(string.format('Failed to delete local draft %s', email.subject or local_id), notify.categories.BACKGROUND)
+          end
         else
-          error_count = error_count + 1
-          -- Log specific error for debugging
-          notify.himalaya(string.format('Failed to delete email %s: %s', email.subject or email.id, error_type or 'unknown error'), notify.categories.BACKGROUND)
+          -- Delete regular email
+          local success, error_type = utils.smart_delete_email(state.get_current_account(), email.id)
+          if success then
+            success_count = success_count + 1
+          else
+            error_count = error_count + 1
+            -- Log specific error for debugging
+            notify.himalaya(string.format('Failed to delete email %s: %s', email.subject or email.id, error_type or 'unknown error'), notify.categories.BACKGROUND)
+          end
         end
         
         -- Update progress for large batches
@@ -1344,6 +1365,13 @@ function M.delete_selected_emails()
       notify.himalaya(string.format('Deleted %d emails (%d errors)', success_count, error_count),
         error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
+      
+      -- Ensure local storage is refreshed if we're in drafts folder
+      local current_folder = state.get_current_folder()
+      if current_folder and current_folder:lower():match('draft') then
+        local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+        local_storage.setup()  -- Reinitialize to ensure index is current
+      end
       
       M.refresh_email_list()
     end

@@ -169,7 +169,7 @@ function M.execute_himalaya(args, opts)
     local id_arg = args[3]
     
     -- Skip himalaya for local draft IDs
-    if id_arg and id_arg:match('^draft_%d+_') then
+    if id_arg and id_arg:match('^draft_') then
       logger.info('Skipping himalaya for local draft ID', { id = id_arg })
       return nil, 'Local draft operation'
     end
@@ -1209,7 +1209,7 @@ end
 -- Smart delete email with trash folder detection
 function M.smart_delete_email(account, email_id)
   -- Check if this is a local draft ID
-  if email_id and tostring(email_id):match('^draft_%d+_') then
+  if email_id and tostring(email_id):match('^draft_') then
     logger.info('Cannot use smart_delete_email for local draft', { id = email_id })
     return false, 'local_draft', 'Use local draft deletion instead'
   end

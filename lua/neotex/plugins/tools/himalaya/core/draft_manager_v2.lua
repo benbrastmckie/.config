@@ -116,11 +116,11 @@ function M._check_orphaned_drafts()
           metadata = stored.metadata
         })
       else
-        -- Clean up empty orphaned draft
-        logger.debug("Cleaning up empty orphaned draft", {
+        -- Keep all drafts for local-first approach
+        -- Don't delete even if empty
+        logger.debug("Keeping draft (local-first approach)", {
           local_id = stored.local_id
         })
-        storage.delete(stored.local_id)
       end
     end
   end
