@@ -72,7 +72,7 @@ end
 
 -- Get the Maildir path for an account
 local function get_maildir_path(account)
-  local config = require('neotex.plugins.tools.himalaya.core.config').get()
+  local config = require('neotex.plugins.tools.himalaya.core.config').config
   
   -- Use configured maildir path or default
   local base_path = config.sync.maildir_root or (vim.fn.expand('~') .. '/Mail')
@@ -353,7 +353,7 @@ function M.verify()
   end
   
   -- Check Maildir for drafts
-  local config = require('neotex.plugins.tools.himalaya.core.config').get()
+  local config = require('neotex.plugins.tools.himalaya.core.config').config
   local draft_count = 0
   
   if config.accounts then

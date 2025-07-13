@@ -289,14 +289,195 @@ himalaya.maildir = {
 
 Total: 6 days (same as before, but much more cleanup)
 
+## Phase 7: Fix Draft Opening Issue (Post-Migration)
+
+### Problem Analysis
+
+After completing the initial 6-phase migration, a critical issue was discovered: **"Cannot match draft to file. Found 0 draft files."** when attempting to open drafts from the sidebar.
+
+#### Root Cause Investigation
+
+1. **Filename Format Mismatch**: 
+   - **Actual mbsync files**: `1752088678.388349_6.nandi,U=1:2,S`
+   - **Expected by parser**: `timestamp.pid_unique.hostname,S=size:2,flags`
+   - **Result**: `maildir.parse_filename()` returns `nil` for all draft files
+
+2. **ID Mapping Gap**:
+   - **Himalaya assigns IDs**: 1247, 1248, 1249 (sequential)
+   - **Actual filenames**: Based on timestamps and UIDs
+   - **Result**: No mapping between display ID and file
+
+3. **Empty Draft List**:
+   - **Found files**: 11 drafts in `~/Mail/Gmail/.Drafts/cur/`
+   - **Parsed files**: 0 (all parsing failures)
+   - **Result**: `draft_manager.list_drafts()` returns empty array
+
+### Phase 7A: Fix Maildir Parser (Day 1) ✅ COMPLETED
+
+1. **Pre-Phase Analysis**: ✅
+   - [x] Analyzed 11 existing draft files with format `timestamp.hrtime_unique.hostname,U=uid:2,flags`
+   - [x] Identified that mbsync uses `U=uid` instead of `S=size` in info section
+   - [x] Confirmed no backwards compatibility needed - updated parser to handle real format
+   - [x] Single parser now handles all Maildir variants
+
+2. **Implementation**: ✅
+   - [x] Updated `maildir.parse_filename()` regex pattern:
+     ```lua
+     -- OLD: "^(%d+)%.(%d+)_([^%.]+)%.([^,]+),([^:]*):2,(.*)$"
+     -- NEW: "^(%d+)%.([^_]+)_([^%.]+)%.([^,]+),(.+)$"
+     ```
+   - [x] Parse both `S=size` and `U=uid` info formats
+   - [x] Handle flags with or without `:2,` prefix
+   - [x] Removed hardcoded expectations about info section format
+   - [x] Added support for hrtime field (mbsync format)
+
+3. **Testing** (REQUIRED before proceeding): ✅
+   - [x] Verified `maildir.parse_filename()` succeeds on all 11 files (was 0/11, now 11/11)
+   - [x] Confirmed `maildir.list_messages()` returns 11 messages
+   - [x] Tested `draft_manager.list_drafts()` returns correct draft metadata
+   - [x] Verified parsed timestamps, UIDs, hostnames, and flags are correct
+   - [x] **RESULTS**: 11/11 files parse successfully, all with correct metadata
+
+4. **Cleanup**: ✅
+   - [x] Removed debug test scripts
+   - [x] Parser handles edge cases gracefully
+   - [x] No performance regression in file listing
+
+5. **Documentation**: ✅
+   - [x] Documented mbsync filename format discovery in code comments
+   - [x] Updated maildir.lua function documentation with examples
+   - [x] Added support for both standard and mbsync formats
+
+6. **Commit**: ⏳ Next
+   - [ ] Clear commit message: "Fix maildir parser for mbsync filename format"
+   - [ ] List parsing improvements and test results
+   - [ ] Note: Enables draft opening from sidebar
+
+### Phase 7B: Improve Draft Matching (Day 1)
+
+1. **Pre-Phase Analysis**:
+   - [ ] Analyze current subject-based matching in `email_composer_wrapper.open_draft()`
+   - [ ] Identify potential encoding/normalization issues with subject matching
+   - [ ] Plan robust fallback strategies when primary matching fails
+   - [ ] Document redundancies to eliminate in wrapper logic
+
+2. **Implementation**:
+   - [ ] Add file modification time as secondary matching criterion
+   - [ ] Improve subject normalization (trim whitespace, handle encoding)
+   - [ ] Add comprehensive debug logging for troubleshooting
+   - [ ] Simplify wrapper logic by removing position-based fallback (unreliable)
+   - [ ] Remove temporary debug notifications after core fix
+
+3. **Testing** (REQUIRED before proceeding):
+   - [ ] Test draft opening with various subject types:
+     - [ ] Empty subjects: "(No subject)"
+     - [ ] Unicode/special characters
+     - [ ] Very long subjects
+     - [ ] Duplicate subjects
+   - [ ] Verify fallback to modification time matching works
+   - [ ] Test single draft scenario (common case)
+   - [ ] Confirm multiple drafts can be distinguished correctly
+   - [ ] Document test scenarios and results
+
+4. **Cleanup**:
+   - [ ] Remove debug notifications and excessive logging
+   - [ ] Simplify matching logic to essential strategies only
+   - [ ] Remove any temporary workarounds or compatibility code
+   - [ ] Ensure clean error messages for edge cases
+
+5. **Documentation**:
+   - [ ] Document matching strategy hierarchy in code comments
+   - [ ] Update function documentation with supported scenarios
+   - [ ] Add troubleshooting notes for common matching issues
+
+6. **Commit**:
+   - [ ] Clear commit message: "Improve draft matching reliability"
+   - [ ] List matching strategies implemented
+   - [ ] Note: Robust draft opening with multiple fallbacks
+
+### Phase 7C: Final Integration & Testing (Day 1)
+
+1. **Pre-Phase Analysis**:
+   - [ ] Review all changes for consistency with Maildir-first approach
+   - [ ] Identify any remaining temporary compatibility code
+   - [ ] Plan comprehensive integration testing
+   - [ ] Document final simplifications achieved
+
+2. **Implementation**:
+   - [ ] Remove all debug code and temporary workarounds
+   - [ ] Ensure `email_composer_wrapper.open_draft()` has clean, minimal logic
+   - [ ] Verify no backwards compatibility layers remain
+   - [ ] Final code review for elegance and simplicity
+
+3. **Testing** (REQUIRED - complete workflow):
+   - [ ] Test complete draft workflow:
+     - [ ] Create new draft via `:HimalayaWrite`
+     - [ ] View draft in sidebar (preview)
+     - [ ] Open draft for editing (return key)
+     - [ ] Save and close draft
+     - [ ] Reopen same draft from sidebar
+   - [ ] Test with existing drafts from mbsync
+   - [ ] Verify no regressions in email list display
+   - [ ] Confirm draft operations work across vim sessions
+   - [ ] Document all test results
+
+4. **Cleanup**:
+   - [ ] Final code cleanup and organization
+   - [ ] Remove any unused functions or variables
+   - [ ] Ensure consistent error handling across modules
+   - [ ] Verify code elegance and maintainability
+
+5. **Documentation**:
+   - [ ] Update this document with completion status
+   - [ ] Document lessons learned about mbsync format
+   - [ ] Update any affected README.md files
+   - [ ] Add troubleshooting section for common issues
+
+6. **Commit**:
+   - [ ] Clear commit message: "Complete Phase 7: Draft opening fixes"
+   - [ ] Summarize all fixes and improvements
+   - [ ] Note: Draft functionality fully operational with Maildir
+
+## Files Modified in Phase 7
+
+1. **Core Parser**: `lua/neotex/plugins/tools/himalaya/core/maildir.lua`
+   - Fixed filename parsing for mbsync format
+   - Added support for `U=uid` info sections
+   - Improved error handling for malformed filenames
+
+2. **Draft Wrapper**: `lua/neotex/plugins/tools/himalaya/ui/email_composer_wrapper.lua`
+   - Enhanced draft-to-file matching strategies
+   - Added fallback matching by modification time
+   - Simplified logic and improved error messages
+
+3. **Documentation**: `docs/DRAFTS_MAILDIR.md`
+   - Added Phase 7 implementation details
+   - Documented mbsync format discovery
+   - Updated completion timeline
+
+## Success Metrics for Phase 7
+
+- **Parser Success**: 11/11 draft files parse correctly (was 0/11)
+- **Draft Listing**: `draft_manager.list_drafts()` returns 11 items (was 0)
+- **Draft Opening**: No "Cannot match draft to file" errors
+- **Code Quality**: No backwards compatibility layers remain
+- **Functionality**: Complete draft workflow operational
+
+## Timeline Update
+
+- **Original**: 6 days (Phases 1-6) - COMPLETED
+- **Phase 7**: 1 day - Fixes post-migration draft opening
+- **Total**: 7 days
+
 ## Conclusion
 
-This revised plan focuses on **removing complexity** rather than adding new abstractions. By eliminating the dual storage format and leveraging mbsync's existing Maildir support, we can:
+This revised plan focuses on **removing complexity** rather than adding new abstractions. The initial 6-phase migration successfully eliminated the dual storage format, but Phase 7 addresses the real-world challenge of mbsync filename formats.
 
-- Remove 6 entire modules
-- Simplify 4 core modules
-- Delete >40% of draft-related code
-- Achieve better performance and reliability
-- Maintain full functionality
+**Achievements**:
+- Remove 6 entire modules ✅
+- Simplify 4 core modules ✅  
+- Delete >40% of draft-related code ✅
+- Achieve better performance and reliability ✅
+- Maintain full functionality ✅ (after Phase 7)
 
-The key insight is that drafts don't need special treatment - they're just emails in a Drafts folder that mbsync can handle like any other folder.
+**Key Insight**: Drafts don't need special treatment - they're just emails in a Drafts folder that mbsync can handle like any other folder. However, the parser must handle the actual mbsync filename format, not idealized Maildir patterns.

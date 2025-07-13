@@ -130,102 +130,63 @@ end
 
 -- Load draft content with new system
 local function load_draft_content(account, folder, draft_id)
-  -- With Maildir, drafts are just emails - use himalaya to read them
+  -- With Maildir, drafts are just emails - load them from cache or async
   logger.debug('Loading draft from Maildir', { draft_id = draft_id, account = account })
   
-  -- Try to load as regular email first
-  local email = load_email_content(account, folder, draft_id)
-  
-  if email and not email._error then
+  -- First try cache (drafts are cached like regular emails)
+  local cached_email = email_cache.get_email(account, folder, draft_id)
+  if cached_email then
+    -- Check for cached body
+    local cached_body = email_cache.get_email_body(account, folder, draft_id)
+    if cached_body then
+      cached_email.body = cached_body
+    end
     -- Mark as draft
-    email._is_draft = true
-    return email
+    cached_email._is_draft = true
+    return cached_email
   end
   
-  -- If not found as regular email, might be a local-only draft
-  -- Check by filename
-  local drafts = draft_manager.list_drafts(account)
-  for _, draft in ipairs(drafts) do
-    if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
-      -- Read directly from file
-      local file = io.open(draft.filepath, 'r')
-      if file then
-        local content = file:read('*a')
-        file:close()
-        
-        local body = extract_body_from_content(content)
-        
-        return {
-          id = draft_id,
-          subject = draft.subject or '',
-          from = draft.from or '',
-          to = draft.to or '',
-          cc = draft.cc or '',
-          bcc = draft.bcc or '',
-          body = body,
-          _is_draft = true,
-          _is_local = true
-        }
+  -- If not in cache, check if it's a local-only draft by filename
+  if draft_manager.list then
+    local drafts = draft_manager.list(account)
+    for _, draft in ipairs(drafts) do
+      if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
+        -- Read directly from file
+        local file = io.open(draft.filepath, 'r')
+        if file then
+          local content = file:read('*a')
+          file:close()
+          
+          local body = extract_body_from_content(content)
+          
+          return {
+            id = draft_id,
+            subject = draft.subject or '',
+            from = draft.from or '',
+            to = draft.to or '',
+            cc = draft.cc or '',
+            bcc = draft.bcc or '',
+            body = body,
+            _is_draft = true,
+            _is_local = true
+          }
+        end
       end
     end
   end
   
-  -- Fallback: try to load as remote draft
-  draft_notifications.draft_loading(draft_id, 'himalaya')
-  
-  local draft_data, err = draft_manager.load(draft_id, account)
-  if draft_data and draft_data.content then
-    -- Parse the raw content for preview
-    local lines = vim.split(draft_data.content, '\n')
-    local headers = {}
-    local body_start = 1
-    
-    -- Quick header parse for preview
-    for i, line in ipairs(lines) do
-      if line == '' then
-        body_start = i + 1
-        break
-      end
-      local key, value = line:match('^([^:]+):%s*(.*)$')
-      if key then
-        headers[key:lower()] = value
-      end
-    end
-    
-    -- Extract body
-    local body = ''
-    if body_start <= #lines then
-      local body_lines = {}
-      for i = body_start, #lines do
-        table.insert(body_lines, lines[i])
-      end
-      body = table.concat(body_lines, '\n')
-    end
-    
-    return {
-      id = draft_id,
-      subject = headers.subject or '',
-      from = headers.from or '',
-      to = headers.to or '',
-      cc = headers.cc or '',
-      bcc = headers.bcc or '',
-      body = body,
-      _is_draft = true
-    }
-  else
-    draft_notifications.draft_load_failed(draft_id, err)
-    
-    -- Return error placeholder
-    return {
-      id = draft_id,
-      subject = '(Unable to load draft)',
-      from = '',
-      to = '',
-      body = 'Failed to load draft content: ' .. (err or 'Unknown error'),
-      _is_draft = true,
-      _error = true
-    }
-  end
+  -- Not in cache and not a local draft - return minimal structure
+  -- Full content will be loaded async (same as regular emails)
+  return {
+    id = draft_id,
+    subject = 'Loading...',
+    from = '',
+    to = '',
+    date = '',
+    body = nil, -- Will trigger async load
+    _is_draft = true,
+    _loading = true
+  }
 end
 
 -- Calculate preview window position
@@ -583,10 +544,77 @@ function M.show_preview(email_id, parent_win, email_type, local_id)
   -- Render content
   M.render_preview(email_content, preview_state.buf)
   
-  -- For non-drafts, load full content async if needed
-  if not is_draft and not email_content.body then
-    M.load_full_content_async(email_id, account, folder)
+  -- Load full content async if needed
+  if not email_content.body then
+    if is_draft then
+      -- For drafts, try to load from filesystem since they might not be synced yet
+      M.load_draft_content_async(email_id, account, folder)
+    else
+      -- For regular emails, use himalaya
+      M.load_full_content_async(email_id, account, folder)
+    end
   end
+end
+
+-- Load draft content asynchronously from filesystem
+function M.load_draft_content_async(draft_id, account, folder)
+  if not draft_id or not account then
+    return
+  end
+  
+  vim.schedule(function()
+    -- Try to find draft in filesystem
+    local drafts = draft_manager.list_drafts(account)
+    local found_draft = nil
+    
+    for _, draft in ipairs(drafts) do
+      if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
+        found_draft = draft
+        break
+      end
+    end
+    
+    if found_draft and found_draft.filepath then
+      -- Read the draft file directly
+      local file = io.open(found_draft.filepath, 'r')
+      if file then
+        local content = file:read('*a')
+        file:close()
+        
+        -- Extract body from content
+        local body = extract_body_from_content(content)
+        
+        -- If this is still the current draft being previewed, update the preview
+        if preview_state.email_id == draft_id and preview_state.win and 
+           vim.api.nvim_win_is_valid(preview_state.win) then
+          
+          -- Create full draft structure
+          local draft_email = {
+            id = draft_id,
+            subject = found_draft.subject or '',
+            from = found_draft.from or '',
+            to = found_draft.to or '',
+            cc = found_draft.cc or '',
+            bcc = found_draft.bcc or '',
+            body = body,
+            _is_draft = true,
+            _is_local = true
+          }
+          
+          -- Re-render the preview with full content
+          if preview_state.buf and vim.api.nvim_buf_is_valid(preview_state.buf) then
+            M.render_preview(draft_email, preview_state.buf)
+          end
+        end
+      else
+        logger.error('Failed to read draft file', { filepath = found_draft.filepath })
+      end
+    else
+      -- Draft not found locally, try himalaya as fallback
+      logger.debug('Draft not found locally, trying himalaya', { draft_id = draft_id })
+      M.load_full_content_async(draft_id, account, folder)
+    end
+  end)
 end
 
 -- Load full email content asynchronously
