@@ -394,6 +394,16 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaTestEmailComposer = {
+    fn = function()
+      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_email_composer_maildir')
+      test.run()
+    end,
+    opts = {
+      desc = 'Run Email Composer Maildir tests'
+    }
+  }
+  
   -- Register all draft commands
   registry.register_batch(commands)
 end
