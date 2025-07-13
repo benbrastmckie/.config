@@ -175,17 +175,19 @@ function M.create(buffer, account, opts)
     compose_type = opts.compose_type
   })
   
-  -- Debug notification for draft creation
-  notify_draft(
-    "New draft created",
-    notify.categories.BACKGROUND,
-    {
-      local_id = draft.local_id,
-      buffer = buffer,
-      account = account,
-      compose_type = draft.metadata.compose_type
-    }
-  )
+  -- Debug notification for draft creation (only for new drafts, not edits)
+  if opts.compose_type ~= 'edit' then
+    notify_draft(
+      "New draft created",
+      notify.categories.BACKGROUND,
+      {
+        local_id = draft.local_id,
+        buffer = buffer,
+        account = account,
+        compose_type = draft.metadata.compose_type
+      }
+    )
+  end
   
   return draft
 end
@@ -491,12 +493,12 @@ function M.cleanup_draft(buffer)
       })
     end
     
-    -- Debug notification for cleanup
-    notify_draft(
-      "Draft buffer closed",
-      notify.categories.STATUS,
-      { local_id = draft.local_id, buffer = buffer }
-    )
+    -- Debug notification for cleanup (commented out to reduce noise)
+    -- notify_draft(
+    --   "Draft buffer closed",
+    --   notify.categories.STATUS,
+    --   { local_id = draft.local_id, buffer = buffer }
+    -- )
   end
 end
 

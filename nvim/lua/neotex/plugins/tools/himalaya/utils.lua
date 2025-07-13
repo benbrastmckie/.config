@@ -1394,6 +1394,7 @@ function M.get_emails_async(account, folder, page, page_size, callback)
   table.insert(args, tostring(page))
   table.insert(args, '--page-size')
   table.insert(args, tostring(page_size))
+  -- Add the query as a single string that will be recognized by build_command
   table.insert(args, 'order by date desc')
   
   M.execute_himalaya_async(args, { 

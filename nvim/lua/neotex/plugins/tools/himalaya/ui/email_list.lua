@@ -96,31 +96,15 @@ end
 
 -- Toggle email sidebar
 function M.toggle_email_sidebar()
-  -- Check if we have an email list buffer open
-  local email_list_buf = buffers.email_list
-  if email_list_buf and vim.api.nvim_buf_is_valid(email_list_buf) then
-    -- Find the window showing this buffer
-    local win_found = false
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      if vim.api.nvim_win_get_buf(win) == email_list_buf then
-        -- Close this window
-        vim.api.nvim_win_close(win, true)
-        win_found = true
-        break
-      end
-    end
-    
-    if win_found then
-      -- Clean up
-      buffers.email_list = nil
-      sidebar.state.is_open = false
-      sidebar.state.win = nil
-      sidebar.state.buf = nil
-      -- Stop countdown timer
-      M.stop_scheduled_updates()
-      -- Removed noisy "Himalaya closed" notification
-      return
-    end
+  -- Check if sidebar is already open using sidebar module's state
+  if sidebar.is_open() then
+    -- Close the sidebar
+    sidebar.close()
+    -- Clean up our buffer tracking
+    buffers.email_list = nil
+    -- Stop countdown timer
+    M.stop_scheduled_updates()
+    return
   end
   
   -- If we get here, sidebar is not open, so open it
@@ -213,14 +197,8 @@ function M.show_email_list(args)
   -- Get email list from himalaya (async to prevent UI blocking)
   local account_name = config.get_current_account_name()
   
-  -- Special handling for drafts folder (local-first)
-  local draft_folder = utils.find_draft_folder(account_name)
-  if folder == draft_folder then
-    -- For drafts, directly show local drafts without fetching remote
-    M.process_email_list_results({}, 0, folder, account_name)
-  else
-    -- Use async loading for other folders
-    utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+  -- Use async loading for all folders (including drafts - they're synced via mbsync)
+  utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
       if error then
         local error_lines = {
           string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
@@ -239,10 +217,9 @@ function M.show_email_list(args)
         return
       end
       
-      -- Continue with original logic but inside the callback
-      M.process_email_list_results(emails, total_count, folder, account_name)
-    end)
-  end
+    -- Continue with original logic but inside the callback
+    M.process_email_list_results(emails, total_count, folder, account_name)
+  end)
 end
 
 -- Process email list results (extracted from original show_email_list)
@@ -339,78 +316,8 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     end  -- Close the else block for non-drafts folders
   end
   
-  -- For drafts folder, merge local drafts with remote drafts
-  if is_drafts then
-    logger.info('Processing drafts folder', {
-      remote_count = emails and #emails or 0
-    })
-    
-    -- Get local drafts from storage
-    local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-    -- Ensure local storage is initialized
-    local_storage.setup()
-    
-    -- Check if migration is needed
-    local migration = require('neotex.plugins.tools.himalaya.core.draft_migration')
-    if migration.needs_migration() then
-      logger.info('Running draft migration')
-      migration.migrate_eml_to_json()
-    end
-    
-    local local_drafts = local_storage.list()
-    
-    logger.info('Loading local drafts', {
-      draft_count = #local_drafts,
-      index_size = vim.tbl_count(local_storage.index)
-    })
-    
-    -- Create a map of remote IDs for deduplication
-    local remote_ids = {}
-    if emails then
-      for _, email in ipairs(emails) do
-        if email.id then
-          remote_ids[tostring(email.id)] = true
-        end
-      end
-    end
-    
-    -- Add local drafts (local-first approach)
-    emails = emails or {}
-    for _, local_draft in ipairs(local_drafts) do
-      -- Add all local drafts for the current account
-      logger.debug('Checking draft account match', {
-        draft_account = local_draft.account,
-        current_account = account_name,
-        matches = local_draft.account == account_name
-      })
-      -- For now, show all local drafts regardless of account
-      -- This handles the case where drafts were migrated with 'default' account
-      if true then  -- local_draft.account == account_name then
-        -- Create email entry from local draft
-        logger.debug('Adding local draft to list', {
-          local_id = local_draft.local_id,
-          subject = local_draft.subject,
-          has_remote_id = local_draft.remote_id ~= nil
-        })
-        table.insert(emails, 1, {  -- Insert at beginning (newest first)
-          id = local_draft.remote_id or local_draft.local_id,
-          subject = local_draft.subject or '(No subject)',
-          from = config.get_formatted_from(account_name) or '',
-          date = os.date('%Y-%m-%d %H:%M', local_draft.modified or local_draft.created_at),
-          has_attachments = false,
-          flags = {},
-          is_local = true,  -- Mark as local-only draft
-          local_id = local_draft.local_id
-        })
-      end
-    end
-    
-    logger.info('Merged drafts', {
-      remote_count = #remote_ids,
-      local_count = #local_drafts,
-      total_count = #emails
-    })
-  end
+  -- For drafts folder, we now rely on mbsync sync (no special local handling)
+  -- Drafts are synced like any other folder via mbsync
   
   -- Store emails in cache
   if emails and #emails > 0 then
@@ -487,8 +394,8 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   -- Save current view to state
   state.save()
   
-  -- Focus the sidebar immediately
-  sidebar.focus()
+  -- Don't auto-focus sidebar - let user control focus
+  -- sidebar.focus()
 end
 
 -- Format email list for display (matching old UI exactly)
@@ -1322,13 +1229,8 @@ function M.refresh_email_list()
     
     local folder = state.get_current_folder()
     
-    -- Special handling for drafts folder (local-first)
-    local draft_folder = utils.find_draft_folder(account_name)
-    if folder == draft_folder then
-      -- For drafts, directly show local drafts without fetching remote
-      M.process_email_list_results({}, 0, folder, account_name)
-      return
-    end
+    -- No special handling for drafts - treat them like any other folder
+    -- They are synced via mbsync just like inbox
     
     -- Get email list from himalaya (async for responsiveness)
     utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
@@ -1456,8 +1358,8 @@ function M.update_email_display()
   -- Save current view to state
   state.save()
   
-  -- Focus the sidebar
-  sidebar.focus()
+  -- Don't auto-focus sidebar - let user control focus
+  -- sidebar.focus()
 end
 
 -- Refresh current view

@@ -104,27 +104,39 @@
   - [x] surround
   - [x] pairs
 - [:] email
+  - [ ] appearances
+    - [ ] remove emojis
   - [ ] features
-    - [ ] save-drafts
-      - [ ] q:save-draft
+    - [ ] drafts
+      - [ ] migrate to maildir format
+      - [ ] create new drafts
+      - [ ] save-draft to update content
+      - [ ] reopen drafts to edit
+      - [x] open drafts in normal buffer
     - [ ] trash
-    - [.] sync
-      - [x] smart_sync using himalaya
-      - [ ] sidebar status for smart_sync
-      - [ ] auto_sync when nvim opens
+      - [ ] view
+      - [ ] restore
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
       - [ ] attachments
+        - [ ] render
+        - [ ] indicate in sidebar
       - [ ] images
-      - [ ] add header field to email
+      - [x] add header field to email
     - [ ] autocomplete
       - [ ] addresses in the form: Name <user@domain>
+      - [ ] sync from gmail
+      - [ ] configure blink.cmp
+    - [x] sync
+      - [x] smart_sync using himalaya
+      - [x] sidebar status for smart_sync
+      - [x] auto_sync when nvim opens
     - [x] email
       - [x] gs:send
       - [x] start cursor in email field
       - [x] tab fields
     - [x] remove/fix mappings
-  - [:] sidebar
+  - [x] sidebar
     - [x] batch operation
       - [x] spec
       - [x] colors for stared and unread
@@ -132,11 +144,11 @@
       - [x] fix visual select
       - [x] remove boxes
     - [x] appearances
-      - [ ] `<leader>mz` leaves an extra line when already up to date
-      - [ ] confirm messages use return/escape
-      - [ ] "Himalaya closed" can be removed
+      - [x] sync leaves an extra line when already up to date
+      - [x] confirm messages use return/escape
+      - [x] "Himalaya closed" can be removed
       - [x] header
-        - [ ] Page 1 | 200 emails
+        - [x] Page 1 | 200 emails
       - [x] remove 'unlocked' that shows on start
       - [x] subject in bold
       - [x] unicode icons instead of emojis
@@ -147,10 +159,10 @@
       - [x] wizard output
       - [x] health output
       - [x] read email color updates slowly
-    - [ ] hover and buffers
-      - [ ] spec
-      - [ ] hover emails
-      - [ ] reply/forward/compose in buffers
+    - [x] hover and buffers
+      - [x] spec
+      - [x] hover emails
+      - [x] reply/forward/compose in buffers
   - [ ] documentation
     - [ ] spec
     - [ ] refactor
