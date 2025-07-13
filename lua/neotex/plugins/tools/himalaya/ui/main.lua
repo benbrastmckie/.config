@@ -734,19 +734,16 @@ end
 
 -- Sync drafts folder (handles local drafts)
 function M.sync_drafts_folder(account, folder)
-  -- For drafts, we don't use mbsync - just refresh the list
-  -- This will re-fetch from himalaya and update local storage
-  notify.himalaya('Refreshing drafts...', notify.categories.STATUS)
+  -- Use mbsync like other folders for proper sync
+  local mbsync_target
+  if account:lower() == 'gmail' then
+    mbsync_target = 'gmail-drafts'
+  else
+    mbsync_target = account .. ':Drafts'
+  end
   
-  -- Clear cache to force fresh fetch
-  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
-  email_cache.clear_folder_cache(account, folder)
-  
-  -- Refresh the email list
-  vim.defer_fn(function()
-    M.refresh_email_list()
-    notify.himalaya('Drafts refreshed', notify.categories.STATUS)
-  end, 100)
+  -- Use shared sync implementation (mbsync)
+  M._perform_sync(mbsync_target, 'drafts')
 end
 
 -- Forward email

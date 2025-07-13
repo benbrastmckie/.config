@@ -636,6 +636,9 @@ function M.setup_buffer_keymaps(bufnr)
             current_line = vim.fn.getline('.')
           })
           
+          -- Disable preview mode when opening draft for editing
+          preview.disable_preview_mode()
+          
           if is_local_draft then
             -- Get local_id from email or from the email_id if it's already a local ID
             local local_id = nil

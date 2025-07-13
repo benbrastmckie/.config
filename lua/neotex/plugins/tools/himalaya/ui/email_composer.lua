@@ -289,12 +289,8 @@ end
 
 -- Update UI after saving draft
 function M.update_ui_after_save(draft)
-  -- Refresh sidebar if showing drafts
-  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-  if sidebar.is_open() and sidebar.is_showing_drafts() then
-    local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
-    email_list.refresh_email_list()
-  end
+  -- Don't refresh the sidebar automatically - it's disruptive
+  -- Users can manually refresh with 'gs' if needed
   
   -- Update preview if showing this draft
   local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
@@ -636,20 +632,40 @@ function M.create_compose_buffer(opts)
   setup_buffer_mappings(buf)
   setup_autosave(buf)
   
-  -- Open buffer in window
+  -- Open buffer like a normal file
   local parent_win = vim.api.nvim_get_current_win()
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
   
-  if M.config.use_tab then
-    -- Create new tab with the buffer directly to avoid empty buffer
-    vim.cmd('tabedit ' .. vim.fn.fnameescape(draft_file))
-    -- Get the new window and set the buffer (in case tabedit didn't use our buffer)
-    local win = vim.api.nvim_get_current_win()
-    if vim.api.nvim_win_get_buf(win) ~= buf then
-      vim.api.nvim_win_set_buf(win, buf)
+  -- If we're in the sidebar, find or create a window to the right
+  if parent_win == sidebar_win then
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    local target_win = nil
+    
+    -- Find a non-sidebar window
+    for _, win in ipairs(wins) do
+      if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
+        target_win = win
+        break
+      end
+    end
+    
+    if target_win then
+      -- Use existing window
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_set_buf(target_win, buf)
+    else
+      -- Create a new window to the right of sidebar
+      vim.cmd('wincmd l')  -- Try to move right
+      if vim.api.nvim_get_current_win() == sidebar_win then
+        -- Still in sidebar, create a new window
+        vim.cmd('vsplit')
+      end
+      vim.api.nvim_win_set_buf(0, buf)
     end
   else
-    vim.cmd('vsplit')
-    vim.api.nvim_win_set_buf(0, buf)
+    -- Not in sidebar, just open in current window (like :edit)
+    vim.api.nvim_win_set_buf(parent_win, buf)
   end
   
   -- Track window in stack if enabled (Phase 6)
@@ -677,6 +693,12 @@ end
 
 -- Open local draft by local_id
 function M.open_local_draft(local_id, account)
+  -- Validate local_id
+  if not local_id or local_id == "" or local_id == "nil" then
+    draft_notifications.draft_load_failed(local_id or "nil", "Invalid local draft ID")
+    return nil
+  end
+  
   local storage = require('neotex.plugins.tools.himalaya.core.local_storage')
   local draft_data = storage.load(local_id)
   
@@ -719,17 +741,40 @@ function M.open_local_draft(local_id, account)
   setup_buffer_mappings(buf)
   setup_autosave(buf)
   
-  -- Open buffer in tab/window
+  -- Open buffer like a normal file
   local parent_win = vim.api.nvim_get_current_win()
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
   
-  if M.config.use_tab then
-    vim.cmd('tabedit ' .. vim.fn.fnameescape(draft_file))
-    if vim.api.nvim_get_current_buf() ~= buf then
+  -- If we're in the sidebar, find or create a window to the right
+  if parent_win == sidebar_win then
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    local target_win = nil
+    
+    -- Find a non-sidebar window
+    for _, win in ipairs(wins) do
+      if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
+        target_win = win
+        break
+      end
+    end
+    
+    if target_win then
+      -- Use existing window
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_set_buf(target_win, buf)
+    else
+      -- Create a new window to the right of sidebar
+      vim.cmd('wincmd l')  -- Try to move right
+      if vim.api.nvim_get_current_win() == sidebar_win then
+        -- Still in sidebar, create a new window
+        vim.cmd('vsplit')
+      end
       vim.api.nvim_win_set_buf(0, buf)
     end
   else
-    vim.cmd('vsplit')
-    vim.api.nvim_win_set_buf(0, buf)
+    -- Not in sidebar, just open in current window (like :edit)
+    vim.api.nvim_win_set_buf(parent_win, buf)
   end
   
   -- Track window in stack if enabled
@@ -770,6 +815,15 @@ function M.open_draft(draft_id, account)
     end
   end
   
+  -- Validate local_id to prevent nil.eml
+  if not local_id or local_id == "" then
+    local_id = 'draft_' .. tostring(draft_id) .. '_' .. os.time()
+    draft_notifications.debug_lifecycle('generated_local_id', nil, {
+      draft_id = draft_id,
+      local_id = local_id
+    })
+  end
+  
   -- Create buffer and set content as-is
   local buf = vim.api.nvim_create_buf(true, false)
   local draft_file = string.format('%s/%s.eml',
@@ -808,26 +862,40 @@ function M.open_draft(draft_id, account)
   setup_buffer_mappings(buf)
   setup_autosave(buf)
   
-  -- Open buffer
+  -- Open buffer like a normal file
   local parent_win = vim.api.nvim_get_current_win()
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
   
-  if M.config.use_tab then
-    -- Use tabedit with the buffer's filename to avoid creating [No Name] buffer
-    local draft_file = vim.api.nvim_buf_get_name(buf)
-    if draft_file and draft_file ~= '' then
-      vim.cmd('tabedit ' .. vim.fn.fnameescape(draft_file))
-      -- Ensure we're using the right buffer
-      if vim.api.nvim_get_current_buf() ~= buf then
-        vim.api.nvim_win_set_buf(0, buf)
+  -- If we're in the sidebar, find or create a window to the right
+  if parent_win == sidebar_win then
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    local target_win = nil
+    
+    -- Find a non-sidebar window
+    for _, win in ipairs(wins) do
+      if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
+        target_win = win
+        break
       end
+    end
+    
+    if target_win then
+      -- Use existing window
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_set_buf(target_win, buf)
     else
-      -- Fallback: create tab then set buffer
-      vim.cmd('tabnew')
+      -- Create a new window to the right of sidebar
+      vim.cmd('wincmd l')  -- Try to move right
+      if vim.api.nvim_get_current_win() == sidebar_win then
+        -- Still in sidebar, create a new window
+        vim.cmd('vsplit')
+      end
       vim.api.nvim_win_set_buf(0, buf)
     end
   else
-    vim.cmd('vsplit')
-    vim.api.nvim_win_set_buf(0, buf)
+    -- Not in sidebar, just open in current window (like :edit)
+    vim.api.nvim_win_set_buf(parent_win, buf)
   end
   
   -- Track window in stack if enabled (Phase 6)
