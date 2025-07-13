@@ -20,7 +20,7 @@ function M.setup(registry)
   
   commands.HimalayaSend = {
     fn = function()
-      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
       local buf = vim.api.nvim_get_current_buf()
       composer.send_and_close(buf)
     end,
@@ -346,7 +346,7 @@ function M.setup(registry)
   commands.HimalayaTemplateUse = {
     fn = function(opts)
       local templates = require('neotex.plugins.tools.himalaya.core.templates')
-      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
       
       if opts.args == '' then
         templates.pick_template(function(template_id, variables)
