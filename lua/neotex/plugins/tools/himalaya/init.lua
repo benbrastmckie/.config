@@ -28,12 +28,10 @@ function M.setup(opts)
   local oauth = require('neotex.plugins.tools.himalaya.sync.oauth')
   oauth.setup()
 
-  -- Initialize new draft system
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-  local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+  -- Initialize new draft system (Maildir-based)
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
   
   draft_manager.setup(config)
-  local_storage.setup(config)
   
   -- Setup draft notifications (Phase 3)
   local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
