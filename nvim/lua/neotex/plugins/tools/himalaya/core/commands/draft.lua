@@ -404,6 +404,16 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaTestMaildirIntegration = {
+    fn = function()
+      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_integration')
+      test.run()
+    end,
+    opts = {
+      desc = 'Run comprehensive Maildir integration tests'
+    }
+  }
+  
   -- Register all draft commands
   registry.register_batch(commands)
 end
