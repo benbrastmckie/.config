@@ -17,12 +17,17 @@ function M.setup()
   -- Ensure directories exist
   vim.fn.mkdir(M.config.base_dir, 'p')
   
+  -- Initialize index if not already done
+  if M.index == nil then
+    M.index = {}
+  end
+  
   -- Load or create index
   M._load_index()
 end
 
--- Storage index for quick lookups
-M.index = {}
+-- Storage index for quick lookups (initialized in setup)
+M.index = nil
 
 -- Save draft data
 -- @param local_id string Unique local identifier
@@ -121,10 +126,12 @@ function M.delete(local_id)
     return false
   end
   
-  local file_path = M.config.base_dir .. local_id .. '.json'
+  local json_path = M.config.base_dir .. local_id .. '.json'
+  local eml_path = M.config.base_dir .. local_id .. '.eml'
   
-  -- Delete file
-  local ok = pcall(vim.fn.delete, file_path)
+  -- Delete both JSON and EML files
+  local json_ok = pcall(vim.fn.delete, json_path)
+  local eml_ok = pcall(vim.fn.delete, eml_path)
   
   -- Remove from index
   M.index[local_id] = nil
@@ -133,19 +140,28 @@ function M.delete(local_id)
   -- Debug notification
   if notify.config.modules.himalaya.debug_mode then
     notify.himalaya(
-      "[Storage] Deleted draft file",
+      "[Storage] Deleted draft files",
       notify.categories.BACKGROUND,
-      { local_id = local_id, success = ok }
+      { 
+        local_id = local_id, 
+        json_deleted = json_ok,
+        eml_deleted = eml_ok
+      }
     )
   end
   
-  return ok
+  return json_ok or eml_ok
 end
 
 -- List all stored drafts
 -- @return table List of draft info
 function M.list()
   local drafts = {}
+  
+  -- Ensure index is loaded
+  if M.index == nil then
+    M.setup()
+  end
   
   for local_id, info in pairs(M.index) do
     table.insert(drafts, vim.tbl_extend('force', info, { local_id = local_id }))

@@ -250,10 +250,18 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   local display_name = config.get_account_display_name(account_name)
   
   -- Handle errors or empty results
+  local draft_folder = utils.find_draft_folder(account_name)
+  local is_drafts = folder == draft_folder
+  
   if not emails or (type(emails) == "table" and #emails == 0 and (total_count == 0 or total_count == nil)) then
-    -- Check if this is a fresh/empty maildir
-    local account = config.get_current_account()
-    if account then
+    -- Skip empty maildir check for drafts folder (we'll add local drafts below)
+    if is_drafts then
+      emails = {}
+      total_count = 0
+    else
+      -- Check if this is a fresh/empty maildir
+      local account = config.get_current_account()
+      if account then
       local maildir = vim.fn.expand(account.maildir_path)
       if vim.fn.isdirectory(maildir) == 1 then
         -- Check if INBOX has any emails
@@ -328,18 +336,33 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
       notify.himalaya('No account configured', notify.categories.ERROR)
       return
     end
+    end  -- Close the else block for non-drafts folders
   end
   
   -- For drafts folder, merge local drafts with remote drafts
-  local draft_folder = utils.find_draft_folder(account_name)
-  if folder == draft_folder then
+  if is_drafts then
     logger.info('Processing drafts folder', {
       remote_count = emails and #emails or 0
     })
     
     -- Get local drafts from storage
     local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+    -- Ensure local storage is initialized
+    local_storage.setup()
+    
+    -- Check if migration is needed
+    local migration = require('neotex.plugins.tools.himalaya.core.draft_migration')
+    if migration.needs_migration() then
+      logger.info('Running draft migration')
+      migration.migrate_eml_to_json()
+    end
+    
     local local_drafts = local_storage.list()
+    
+    logger.info('Loading local drafts', {
+      draft_count = #local_drafts,
+      index_size = vim.tbl_count(local_storage.index)
+    })
     
     -- Create a map of remote IDs for deduplication
     local remote_ids = {}
@@ -355,7 +378,14 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     emails = emails or {}
     for _, local_draft in ipairs(local_drafts) do
       -- Add all local drafts for the current account
-      if local_draft.account == account_name then
+      logger.debug('Checking draft account match', {
+        draft_account = local_draft.account,
+        current_account = account_name,
+        matches = local_draft.account == account_name
+      })
+      -- For now, show all local drafts regardless of account
+      -- This handles the case where drafts were migrated with 'default' account
+      if true then  -- local_draft.account == account_name then
         -- Create email entry from local draft
         logger.debug('Adding local draft to list', {
           local_id = local_draft.local_id,
@@ -715,7 +745,7 @@ function M.format_email_list(emails)
       if not lines.metadata then lines.metadata = {} end
       
       -- Validate email_id before storing (allow local draft IDs)
-      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_%d+_')) then
+      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_')) then
         lines.metadata[#lines] = {
           seen = seen,
           starred = starred,
@@ -1291,6 +1321,14 @@ function M.refresh_email_list()
     end
     
     local folder = state.get_current_folder()
+    
+    -- Special handling for drafts folder (local-first)
+    local draft_folder = utils.find_draft_folder(account_name)
+    if folder == draft_folder then
+      -- For drafts, directly show local drafts without fetching remote
+      M.process_email_list_results({}, 0, folder, account_name)
+      return
+    end
     
     -- Get email list from himalaya (async for responsiveness)
     utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)

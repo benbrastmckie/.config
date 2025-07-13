@@ -202,6 +202,91 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaMigrateDrafts = {
+    fn = function()
+      local migration = require('neotex.plugins.tools.himalaya.core.draft_migration')
+      local notify = require('neotex.util.notifications')
+      if migration.needs_migration() then
+        local count = migration.migrate_eml_to_json()
+        notify.himalaya(
+          string.format('Migrated %d drafts to JSON format', count),
+          notify.categories.USER_ACTION
+        )
+      else
+        notify.himalaya('All drafts already in JSON format', notify.categories.STATUS)
+      end
+    end,
+    opts = {
+      desc = 'Migrate EML drafts to JSON format'
+    }
+  }
+  
+  commands.HimalayaFixDraftAccounts = {
+    fn = function()
+      local fix = require('neotex.plugins.tools.himalaya.core.draft_account_fix')
+      fix.fix_draft_accounts()
+    end,
+    opts = {
+      desc = 'Fix draft accounts (update default to current account)'
+    }
+  }
+  
+  commands.HimalayaCleanupDrafts = {
+    fn = function()
+      local cleanup = require('neotex.plugins.tools.himalaya.core.draft_cleanup')
+      vim.ui.select({
+        'Clean up ALL drafts',
+        'Clean up empty drafts only',
+        'Clean up drafts older than 7 days',
+        'NUCLEAR cleanup (remove everything)',
+        'Cancel'
+      }, {
+        prompt = 'Choose cleanup option:',
+        format_item = function(item)
+          if item:match('ALL') then
+            return '🗑️  ' .. item
+          elseif item:match('empty') then
+            return '📭 ' .. item
+          elseif item:match('older') then
+            return '📅 ' .. item
+          elseif item:match('NUCLEAR') then
+            return '☢️  ' .. item
+          else
+            return '❌ ' .. item
+          end
+        end
+      }, function(choice)
+        if choice == 'Clean up ALL drafts' then
+          vim.ui.select({'Yes', 'No'}, {
+            prompt = 'Are you sure you want to delete ALL drafts?',
+            kind = 'confirmation'
+          }, function(confirm)
+            if confirm == 'Yes' then
+              cleanup.cleanup_all_drafts()
+            end
+          end)
+        elseif choice == 'Clean up empty drafts only' then
+          cleanup.cleanup_empty_drafts()
+        elseif choice == 'Clean up drafts older than 7 days' then
+          cleanup.cleanup_old_drafts(7)
+        elseif choice == 'NUCLEAR cleanup (remove everything)' then
+          vim.ui.select({'Yes, DELETE EVERYTHING', 'No'}, {
+            prompt = '⚠️  WARNING: This will delete ALL draft files. Are you SURE?',
+            kind = 'confirmation'
+          }, function(confirm)
+            if confirm == 'Yes, DELETE EVERYTHING' then
+              local nuclear = require('neotex.plugins.tools.himalaya.core.draft_nuclear')
+              nuclear.nuclear_cleanup()
+            end
+          end)
+        end
+      end)
+    end,
+    opts = {
+      desc = 'Clean up local drafts'
+    }
+  }
+  
   -- Register all setup commands
   registry.register_batch(commands)
 end

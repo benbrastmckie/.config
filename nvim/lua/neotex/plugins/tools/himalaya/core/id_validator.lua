@@ -47,8 +47,8 @@ function M.is_valid_id(id)
     return false
   end
   
-  -- Check if it's a local draft ID (draft_timestamp_uniqueid)
-  if id:match('^draft_%d+_') then
+  -- Check if it's a local draft ID (draft_*)
+  if id:match('^draft_') then
     logger.debug('ID validation: local draft ID', { id = id })
     return true  -- Local draft IDs are valid
   end
