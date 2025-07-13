@@ -18,7 +18,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
