@@ -163,7 +163,7 @@ function M.setup(registry)
       end
       
       -- Confirm deletion if configured
-      local config = require('neotex.plugins.tools.himalaya.core.config').get()
+      local config = require('neotex.plugins.tools.himalaya.core.config').config
       if config.draft and config.draft.ui and config.draft.ui.confirm_delete then
         vim.ui.select({"No", "Yes"}, {
           prompt = string.format("Delete draft '%s'?", 

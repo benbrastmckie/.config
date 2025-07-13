@@ -32,15 +32,18 @@ M.buffer_drafts = {}  -- buffer -> filepath
 
 -- Get Maildir path for account
 local function get_drafts_maildir(account)
-  local config = require('neotex.plugins.tools.himalaya.core.config').get()
+  local config = require('neotex.plugins.tools.himalaya.core.config').config
   
   -- Use configured maildir path or default
   local base_path = config.sync.maildir_root or (vim.fn.expand('~') .. '/Mail')
   
-  -- Map account to maildir folder
+  -- Map account to maildir folder - handle case sensitivity
   local account_name = account or 'Gmail'
   if account == 'default' and config.accounts and #config.accounts > 0 then
     account_name = config.accounts[1].name
+  elseif account == 'gmail' then
+    -- Map lowercase 'gmail' to 'Gmail' (mbsync folder name)
+    account_name = 'Gmail'
   end
   
   return base_path .. '/' .. account_name .. '/.Drafts'
@@ -324,7 +327,7 @@ end
 -- @return table Array of draft info
 function M.list(account)
   local drafts = {}
-  local config = require('neotex.plugins.tools.himalaya.core.config').get()
+  local config = require('neotex.plugins.tools.himalaya.core.config').config
   
   -- Get accounts to check
   local accounts = {}
@@ -341,8 +344,8 @@ function M.list(account)
     local drafts_dir = get_drafts_maildir(acc_name)
     
     if maildir.is_maildir(drafts_dir) then
-      -- List messages with Draft flag
-      local messages = maildir.list_messages(drafts_dir, {D = true})
+      -- List all messages in drafts folder (they don't have D flag when synced via mbsync)
+      local messages = maildir.list_messages(drafts_dir)
       
       for _, msg in ipairs(messages) do
         -- Read headers for metadata

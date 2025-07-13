@@ -14,6 +14,123 @@ end
 
 -- Compatibility shims for old API if needed
 
+-- Old API: open_draft(email_id, account)
+-- New API: open_draft(filepath)
+-- This wrapper finds the filepath from email_id
+function M.open_draft(email_id, account)
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  local notify = require('neotex.util.notifications')
+  logger.debug('open_draft called', { email_id = email_id, account = account })
+  
+  -- Since drafts are now regular emails in Maildir, we need to find the actual file
+  -- The best approach is to directly open the draft using the Maildir path
+  
+  -- Get the maildir path for drafts
+  local config = require('neotex.plugins.tools.himalaya.core.config').config
+  local maildir_root = config.sync.maildir_root or vim.fn.expand('~/Mail')
+  local account_folder = account == 'gmail' and 'Gmail' or account
+  local drafts_path = maildir_root .. '/' .. account_folder .. '/.Drafts'
+  
+  -- Read the draft content from himalaya to get unique identifiers
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  local folder = state.get_current_folder()
+  
+  -- Get email from cache first
+  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+  local cached_email = email_cache.get_email(account, folder, email_id)
+  
+  if not cached_email then
+    notify.himalaya('Draft not in cache, please refresh the email list', notify.categories.ERROR)
+    return nil
+  end
+  
+  local subject = cached_email.subject or ''
+  local from = cached_email.from or ''
+  local date = cached_email.date
+  
+  logger.debug('Looking for draft', { 
+    email_id = email_id,
+    subject = subject,
+    from = from,
+    date = date
+  })
+  
+  -- List all draft files in Maildir
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+  local drafts = draft_manager.list_drafts(account)
+  
+  -- Try to match by subject first (most reliable)
+  if subject and subject ~= '' then
+    for _, draft in ipairs(drafts) do
+      if draft.subject == subject then
+        logger.info('Found draft by subject match', { 
+          email_id = email_id, 
+          filepath = draft.filepath,
+          subject = subject
+        })
+        return maildir_composer.open_draft(draft.filepath)
+      end
+    end
+  end
+  
+  -- Try fuzzy subject match (in case of encoding differences)
+  if subject and subject ~= '' then
+    local subject_lower = subject:lower()
+    for _, draft in ipairs(drafts) do
+      if draft.subject and draft.subject:lower():find(subject_lower, 1, true) then
+        logger.info('Found draft by fuzzy subject match', { 
+          email_id = email_id, 
+          filepath = draft.filepath,
+          subject = subject,
+          draft_subject = draft.subject
+        })
+        return maildir_composer.open_draft(draft.filepath)
+      end
+    end
+  end
+  
+  -- If we have exactly one draft and no subject, open it
+  if #drafts == 1 and (not subject or subject == '' or subject == '(No subject)') then
+    logger.info('Only one draft without subject, opening it', { 
+      email_id = email_id, 
+      filepath = drafts[1].filepath 
+    })
+    return maildir_composer.open_draft(drafts[1].filepath)
+  end
+  
+  -- Last resort: try to match by position in list
+  -- This assumes the order is consistent between himalaya list and our list
+  local email_list = state.get('email_list.emails') or {}
+  local position = nil
+  for i, email in ipairs(email_list) do
+    if tostring(email.id) == tostring(email_id) then
+      position = i
+      break
+    end
+  end
+  
+  if position and position <= #drafts then
+    logger.info('Opening draft by position', { 
+      email_id = email_id,
+      position = position,
+      filepath = drafts[position].filepath 
+    })
+    notify.himalaya('Opening draft by position - this may not be accurate', notify.categories.WARNING)
+    return maildir_composer.open_draft(drafts[position].filepath)
+  end
+  
+  -- Not found
+  notify.himalaya('Cannot match draft to file. Found ' .. #drafts .. ' draft files.', notify.categories.ERROR)
+  if #drafts > 0 then
+    notify.himalaya('Draft subjects: ' .. table.concat(vim.tbl_map(function(d) return d.subject or 'none' end, drafts), ', '), notify.categories.DEBUG)
+  end
+  return nil
+end
+
+-- Old API: open_local_draft(local_id, account)
+-- This is just an alias for open_draft since all drafts are local now
+M.open_local_draft = M.open_draft
+
 -- Old API: save_draft(buffer, trigger)
 -- New API: save_draft(buffer, trigger) - same signature
 -- No change needed

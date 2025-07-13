@@ -48,16 +48,42 @@ end
 -- @param filename string Maildir filename
 -- @return table|nil Parsed metadata or nil if invalid
 function M.parse_filename(filename)
-  -- Match Maildir pattern: timestamp.pid_unique.hostname,info:2,flags
-  local pattern = "^(%d+)%.(%d+)_([^%.]+)%.([^,]+),([^:]*):2,(.*)$"
-  local timestamp, pid, unique, hostname, info, flags = filename:match(pattern)
+  -- Match mbsync/Maildir pattern: timestamp.hrtime_unique.hostname,info:2,flags
+  -- Examples: 
+  --   mbsync: "1752088678.388349_6.nandi,U=1:2,S"
+  --   standard: "1234567890.123_456.hostname,S=1024:2,RS"
+  local pattern = "^(%d+)%.([^_]+)_([^%.]+)%.([^,]+),(.+)$"
+  local timestamp, hrtime, unique, hostname, info_and_flags = filename:match(pattern)
   
   if not timestamp then
     return nil
   end
   
-  -- Parse info section (S=size,W=width,etc)
-  local size = info:match("S=(%d+)")
+  -- Parse info and flags section - handle both ":2," and direct format
+  local info, flags
+  if info_and_flags:match("^(.+):2,(.*)$") then
+    -- Standard format with :2, separator
+    info, flags = info_and_flags:match("^(.+):2,(.*)$")
+  else
+    -- Simple format - assume everything before last char is info, last char is flags
+    local last_comma = info_and_flags:find(",[^,]*$")
+    if last_comma then
+      info = info_and_flags:sub(1, last_comma - 1)
+      flags = info_and_flags:sub(last_comma + 1)
+    else
+      -- No comma - treat as all info, no flags
+      info = info_and_flags
+      flags = ""
+    end
+  end
+  
+  -- Parse info section - handle both S=size and U=uid formats
+  local size = 0
+  local uid = nil
+  if info then
+    size = tonumber(info:match("S=(%d+)")) or 0
+    uid = tonumber(info:match("U=(%d+)"))
+  end
   
   -- Parse flags into table
   local flag_table = {}
@@ -69,10 +95,11 @@ function M.parse_filename(filename)
   
   return {
     timestamp = tonumber(timestamp),
-    pid = tonumber(pid),
+    hrtime = hrtime, -- Keep hrtime instead of pid for mbsync files
     unique = unique,
     hostname = hostname,
-    size = tonumber(size) or 0,
+    size = size,
+    uid = uid, -- Add UID for mbsync files
     flags = flag_table,
     filename = filename
   }
@@ -169,6 +196,101 @@ function M.atomic_write(tmp_path, target_path, content)
     target = target_path,
     size = #content
   })
+  
+  return true
+end
+
+-- List messages in a Maildir folder
+-- @param maildir_path string Path to the Maildir folder
+-- @param filter table|nil Optional filter for flags (e.g., {D = true} for drafts)
+-- @return table Array of message info
+function M.list_messages(maildir_path, filter)
+  local messages = {}
+  
+  -- Check both cur/ and new/ subdirectories
+  local subdirs = {'cur', 'new'}
+  
+  for _, subdir in ipairs(subdirs) do
+    local dir_path = maildir_path .. '/' .. subdir
+    
+    -- Check if directory exists
+    if vim.fn.isdirectory(dir_path) == 1 then
+      -- List all files
+      local files = vim.fn.readdir(dir_path)
+      
+      for _, filename in ipairs(files) do
+        -- Skip non-maildir files (., .., etc)
+        if not filename:match('^%.') then
+          -- Parse the filename
+          local metadata = M.parse_filename(filename)
+          
+          if metadata then
+            -- Apply filter if provided
+            local include = true
+            if filter then
+              for flag, required in pairs(filter) do
+                if required and not metadata.flags[flag] then
+                  include = false
+                  break
+                end
+              end
+            end
+            
+            if include then
+              table.insert(messages, {
+                path = dir_path .. '/' .. filename,
+                filename = filename,
+                timestamp = metadata.timestamp,
+                size = metadata.size,
+                flags = metadata.flags,
+                subdir = subdir
+              })
+            end
+          end
+        end
+      end
+    end
+  end
+  
+  return messages
+end
+
+-- Check if a directory is a valid Maildir
+-- @param path string Path to check
+-- @return boolean true if valid Maildir
+function M.is_maildir(path)
+  if vim.fn.isdirectory(path) == 0 then
+    return false
+  end
+  
+  -- Check for required subdirectories
+  local required = {'cur', 'new', 'tmp'}
+  for _, subdir in ipairs(required) do
+    if vim.fn.isdirectory(path .. '/' .. subdir) == 0 then
+      return false
+    end
+  end
+  
+  return true
+end
+
+-- Create a Maildir structure
+-- @param path string Path where to create the Maildir
+-- @return boolean success
+-- @return string|nil error message
+function M.create_maildir(path)
+  -- Create main directory
+  vim.fn.mkdir(path, 'p')
+  
+  -- Create subdirectories
+  local subdirs = {'cur', 'new', 'tmp'}
+  for _, subdir in ipairs(subdirs) do
+    local subpath = path .. '/' .. subdir
+    local ok = vim.fn.mkdir(subpath, 'p')
+    if ok ~= 1 then
+      return false, "Failed to create " .. subpath
+    end
+  end
   
   return true
 end
