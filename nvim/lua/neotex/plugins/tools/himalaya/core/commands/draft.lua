@@ -373,7 +373,7 @@ function M.setup(registry)
     }
   }
   
-  -- Test command (development only)
+  -- Test commands (development only)
   commands.HimalayaTestMaildir = {
     fn = function()
       local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_foundation')
@@ -381,6 +381,16 @@ function M.setup(registry)
     end,
     opts = {
       desc = 'Run Maildir foundation tests'
+    }
+  }
+  
+  commands.HimalayaTestDraftManager = {
+    fn = function()
+      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_draft_manager_maildir')
+      test.run()
+    end,
+    opts = {
+      desc = 'Run Draft Manager Maildir tests'
     }
   }
   
