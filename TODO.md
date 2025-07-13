@@ -106,6 +106,8 @@
 - [:] email
   - [ ] appearances
     - [ ] remove emojis
+  - [ ] indicate attachments in the sidebar
+  - [ ] make emails in the inbox that have been replied to gray
   - [ ] features
     - [ ] drafts
       - [ ] migrate to maildir format
