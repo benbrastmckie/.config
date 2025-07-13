@@ -4,8 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local utils = require('neotex.plugins.tools.himalaya.utils')
@@ -74,33 +73,50 @@ end
 -- Load local draft content by local_id
 local function load_local_draft_content(account, local_id)
   logger.debug('Loading local draft by local_id', { local_id = local_id, account = account })
-  local stored = local_storage.load(local_id)
   
-  if stored and stored.content then
-    logger.debug('Found local draft', { 
-      local_id = local_id, 
-      has_content = stored.content ~= nil,
-      content_length = #stored.content 
-    })
-    
-    -- Parse content for display
-    local metadata = stored.metadata or {}
-    local body = extract_body_from_content(stored.content)
-    
-    return {
-      id = local_id,
-      subject = metadata.subject or '',
-      from = metadata.from or '',
-      to = metadata.to or '',
-      cc = metadata.cc or '',
-      bcc = metadata.bcc or '',
-      body = body,
-      _is_draft = true,
-      _is_local = true
-    }
-  else
-    logger.warn('Local draft not found', { local_id = local_id })
-    return {
+  -- With Maildir, local_id is the filename - find draft by it
+  local drafts = draft_manager.list_drafts(account)
+  local found_draft = nil
+  
+  for _, draft in ipairs(drafts) do
+    if draft.filename == local_id then
+      found_draft = draft
+      break
+    end
+  end
+  
+  if found_draft and found_draft.filepath then
+    -- Read the draft file directly
+    local file = io.open(found_draft.filepath, 'r')
+    if file then
+      local content = file:read('*a')
+      file:close()
+      
+      logger.debug('Found local draft', { 
+        local_id = local_id, 
+        has_content = content ~= nil,
+        content_length = #content 
+      })
+      
+      -- Extract body from content
+      local body = extract_body_from_content(content)
+      
+      return {
+        id = local_id,
+        subject = found_draft.subject or '',
+        from = found_draft.from or '',
+        to = found_draft.to or '',
+        cc = found_draft.cc or '',
+        bcc = found_draft.bcc or '',
+        body = body,
+        _is_draft = true,
+        _is_local = true
+      }
+    end
+  end
+  
+  logger.warn('Local draft not found', { local_id = local_id })
+  return {
       id = local_id,
       subject = '(Local draft not found)',
       from = '',
@@ -115,35 +131,47 @@ end
 
 -- Load draft content with new system
 local function load_draft_content(account, folder, draft_id)
-  -- Try local storage first
-  logger.debug('Looking for draft in local storage', { remote_id = draft_id, account = account })
-  local stored = local_storage.find_by_remote_id(draft_id, account)
+  -- With Maildir, drafts are just emails - use himalaya to read them
+  logger.debug('Loading draft from Maildir', { draft_id = draft_id, account = account })
   
-  if stored and stored.content then
-    logger.debug('Found draft in local storage', { 
-      remote_id = draft_id, 
-      has_content = stored.content ~= nil,
-      content_length = #stored.content 
-    })
-    
-    -- Parse content for display
-    local lines = vim.split(stored.content, '\n')
-    local metadata = stored.metadata or {}
-    local body = extract_body_from_content(stored.content)
-    
-    return {
-      id = draft_id,
-      subject = metadata.subject or '',
-      from = metadata.from or '',
-      to = metadata.to or '',
-      cc = metadata.cc or '',
-      bcc = metadata.bcc or '',
-      body = body,
-      _is_draft = true
-    }
+  -- Try to load as regular email first
+  local email = load_email_content(account, folder, draft_id)
+  
+  if email and not email._error then
+    -- Mark as draft
+    email._is_draft = true
+    return email
   end
   
-  -- Try to load from himalaya
+  -- If not found as regular email, might be a local-only draft
+  -- Check by filename
+  local drafts = draft_manager.list_drafts(account)
+  for _, draft in ipairs(drafts) do
+    if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
+      -- Read directly from file
+      local file = io.open(draft.filepath, 'r')
+      if file then
+        local content = file:read('*a')
+        file:close()
+        
+        local body = extract_body_from_content(content)
+        
+        return {
+          id = draft_id,
+          subject = draft.subject or '',
+          from = draft.from or '',
+          to = draft.to or '',
+          cc = draft.cc or '',
+          bcc = draft.bcc or '',
+          body = body,
+          _is_draft = true,
+          _is_local = true
+        }
+      end
+    end
+  end
+  
+  -- Fallback: try to load as remote draft
   draft_notifications.draft_loading(draft_id, 'himalaya')
   
   local draft_data, err = draft_manager.load(draft_id, account)

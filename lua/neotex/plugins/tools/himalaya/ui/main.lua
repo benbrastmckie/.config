@@ -817,8 +817,32 @@ function M.delete_current_email()
       local logger = require('neotex.plugins.tools.himalaya.core.logger')
       logger.debug('Deleting local draft', { local_id = local_id })
       
-      local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-      local success = local_storage.delete(local_id)
+      -- Use draft manager to delete
+      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+      
+      -- Find buffer for this draft
+      local buffer = nil
+      for buf, _ in pairs(draft_manager.drafts) do
+        local draft = draft_manager.get_by_buffer(buf)
+        if draft and draft.local_id == local_id then
+          buffer = buf
+          break
+        end
+      end
+      
+      local success = false
+      if buffer then
+        success = draft_manager.delete(buffer)
+      else
+        -- Try direct file deletion if no buffer
+        local drafts = draft_manager.list_drafts(state.get_current_account())
+        for _, draft in ipairs(drafts) do
+          if draft.filename == local_id then
+            success = vim.fn.delete(draft.filepath) == 0
+            break
+          end
+        end
+      end
       
       if success then
         notify.himalaya('Local draft deleted', notify.categories.STATUS)
@@ -1329,9 +1353,18 @@ function M.delete_selected_emails()
         -- Check if it's a local draft
         if email.is_local or (email.id and tostring(email.id):match('^draft_')) then
           -- Delete local draft
-          local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+          local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
           local local_id = email.local_id or email.id
-          local success = local_storage.delete(local_id)
+          
+          -- Try to delete through draft manager
+          local success = false
+          local drafts = draft_manager.list_drafts(state.get_current_account())
+          for _, draft in ipairs(drafts) do
+            if draft.filename == local_id then
+              success = vim.fn.delete(draft.filepath) == 0
+              break
+            end
+          end
           if success then
             success_count = success_count + 1
           else
@@ -1363,12 +1396,8 @@ function M.delete_selected_emails()
         error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
       
-      -- Ensure local storage is refreshed if we're in drafts folder
-      local current_folder = state.get_current_folder()
-      if current_folder and current_folder:lower():match('draft') then
-        local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
-        local_storage.setup()  -- Reinitialize to ensure index is current
-      end
+      -- With Maildir, no need to refresh local storage
+      -- Drafts are handled the same as regular emails
       
       M.refresh_email_list()
     end

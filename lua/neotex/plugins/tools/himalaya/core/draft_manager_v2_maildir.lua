@@ -164,6 +164,33 @@ function M.list_drafts(account)
   return maildir_manager.list(account)
 end
 
+-- Load draft by ID (compatibility)
+function M.load(draft_id, account)
+  -- Try to find draft by ID
+  local drafts = M.list_drafts(account)
+  for _, draft in ipairs(drafts) do
+    if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
+      -- Read file content
+      local file = io.open(draft.filepath, 'r')
+      if file then
+        local content = file:read('*a')
+        file:close()
+        return {
+          content = content,
+          metadata = {
+            subject = draft.subject,
+            from = draft.from,
+            to = draft.to,
+            cc = draft.cc,
+            bcc = draft.bcc
+          }
+        }
+      end
+    end
+  end
+  return nil, "Draft not found"
+end
+
 -- Compatibility functions that are no longer needed
 function M.update_remote_id(buffer, remote_id)
   -- No-op - Maildir doesn't track remote IDs
