@@ -323,7 +323,8 @@ function M.check()
   }
   
   -- Add draft system health check if module exists (Phase 7)
-  local draft_health_ok, draft_health = pcall(require, 'neotex.plugins.tools.himalaya.core.health.draft')
+  -- Draft health check removed - drafts now use standard Maildir
+  local draft_health_ok = false
   if draft_health_ok then
     table.insert(checks, {name = 'Draft System', test = function()
       local result = {}
@@ -351,7 +352,7 @@ function M.check()
       vim.health.report_info = function(msg) table.insert(messages, 'INFO: ' .. msg) end
       
       -- Run draft health check
-      draft_health.check()
+      -- draft_health.check() -- removed
       
       -- Restore original functions
       vim.health.report_start = original_report_start
