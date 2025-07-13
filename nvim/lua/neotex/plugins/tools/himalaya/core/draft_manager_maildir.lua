@@ -209,33 +209,104 @@ function M.save(buffer)
   return true
 end
 
+-- Find or create a suitable window for editing (not sidebar/preview)
+local function find_or_create_edit_window()
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  
+  -- Look for a non-sidebar, non-preview window
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if win ~= sidebar_win then
+      local buf = vim.api.nvim_win_get_buf(win)
+      local buftype = vim.api.nvim_buf_get_option(buf, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(buf, 'filetype')
+      
+      -- Skip special buffers (preview, floating, etc)
+      if buftype == '' and filetype ~= 'himalaya-preview' then
+        return win
+      end
+    end
+  end
+  
+  -- No suitable window found, need to create one
+  -- Save current window
+  local original_win = vim.api.nvim_get_current_win()
+  
+  -- Focus sidebar to ensure split is created in the right place
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    vim.api.nvim_set_current_win(sidebar_win)
+    -- Move to the right and create a split there
+    vim.cmd('wincmd l')
+    -- If we're still in sidebar, we need to create a new split
+    if vim.api.nvim_get_current_win() == sidebar_win then
+      vim.cmd('rightbelow vsplit')
+    else
+      -- We moved to an existing window, use it
+      local existing_win = vim.api.nvim_get_current_win()
+      -- Return to sidebar
+      vim.api.nvim_set_current_win(sidebar_win)
+      return existing_win
+    end
+  else
+    -- No sidebar, just create a new split
+    vim.cmd('vsplit')
+  end
+  
+  local new_win = vim.api.nvim_get_current_win()
+  
+  -- Return to original window
+  if original_win and vim.api.nvim_win_is_valid(original_win) then
+    vim.api.nvim_set_current_win(original_win)
+  end
+  
+  return new_win
+end
+
 -- Open an existing draft from Maildir
 -- @param filepath string Path to draft file
 -- @return number|nil buffer Buffer number or nil on error
 -- @return string|nil error Error message if failed
 function M.open(filepath)
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  local original_win = vim.api.nvim_get_current_win()
+  
   -- Check if already open
   for buf, path in pairs(M.buffer_drafts) do
     if path == filepath and vim.api.nvim_buf_is_valid(buf) then
+      -- Find suitable window and show buffer there
+      local target_win = find_or_create_edit_window()
+      
+      -- Switch to target window temporarily to load buffer
+      local saved_win = vim.api.nvim_get_current_win()
+      vim.api.nvim_set_current_win(target_win)
+      vim.cmd('buffer ' .. buf)
+      
+      -- Focus the target window where we opened the draft
+      vim.api.nvim_set_current_win(target_win)
       return buf
     end
   end
   
-  -- Create buffer
-  local buf = vim.api.nvim_create_buf(true, false)
-  vim.api.nvim_buf_set_name(buf, filepath)
+  -- Find or create suitable window for editing
+  local target_win = find_or_create_edit_window()
   
-  -- Load content
-  vim.cmd('buffer ' .. buf)
+  -- Switch to target window temporarily to open file
+  local saved_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_set_current_win(target_win)
   vim.cmd('edit ' .. vim.fn.fnameescape(filepath))
+  local buf = vim.api.nvim_get_current_buf()
   
-  -- Set options
+  -- Set buffer options
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   
   -- Track buffer
   M.buffer_drafts[buf] = filepath
+  
+  -- Focus the target window where we opened the draft
+  vim.api.nvim_set_current_win(target_win)
   
   return buf
 end

@@ -447,8 +447,10 @@ After completing the initial 6-phase migration, a critical issue was discovered:
 **Expected Results**:
 - ✅ No "Cannot match draft to file. Found 0 draft files." error
 - ✅ Draft preview shows actual content
-- ✅ Draft opens in editable buffer
+- ✅ Draft opens in editable buffer in main editing area (not sidebar)
 - ✅ All 11 existing drafts accessible
+- ✅ Sidebar remains open when draft is opened
+- ✅ Draft opens in existing editor window or creates new split if needed
 
 If any issues remain, they will be specific matching problems (not the core parsing failure that was fixed).
 
