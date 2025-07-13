@@ -7,7 +7,7 @@ local M = {}
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
 local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
-local local_storage = require('neotex.plugins.tools.himalaya.core.local_storage')
+-- local_storage removed - migration reads directly from filesystem
 
 -- Migration state
 M.state = {
@@ -157,16 +157,47 @@ local function migrate_draft(draft_data, backup_dir)
   return true
 end
 
+-- Read drafts directly from filesystem
+local function read_legacy_drafts()
+  local drafts_dir = vim.fn.stdpath('data') .. '/himalaya/drafts'
+  local drafts = {}
+  
+  -- Check if directory exists
+  if vim.fn.isdirectory(drafts_dir) ~= 1 then
+    return drafts
+  end
+  
+  -- Read .index.json if it exists
+  local index_file = drafts_dir .. '/.index.json'
+  if vim.fn.filereadable(index_file) == 1 then
+    local content = table.concat(vim.fn.readfile(index_file), '\n')
+    local ok, index_data = pcall(vim.json.decode, content)
+    if ok and index_data then
+      drafts = index_data
+    end
+  else
+    -- Scan for .eml files
+    local files = vim.fn.glob(drafts_dir .. '/*.eml', false, true)
+    for _, file in ipairs(files) do
+      local filename = vim.fn.fnamemodify(file, ':t:r')
+      table.insert(drafts, {
+        local_id = filename,
+        account = 'default',
+        metadata = { subject = 'Unknown' }
+      })
+    end
+  end
+  
+  return drafts
+end
+
 -- Main migration function
 function M.migrate(opts)
   opts = opts or {}
   local dry_run = opts.dry_run or false
   
-  -- Setup local storage
-  local_storage.setup()
-  
-  -- Get all drafts
-  local drafts = local_storage.list()
+  -- Get all drafts from filesystem
+  local drafts = read_legacy_drafts()
   if #drafts == 0 then
     notify.himalaya('No drafts to migrate', notify.categories.USER_ACTION)
     return {

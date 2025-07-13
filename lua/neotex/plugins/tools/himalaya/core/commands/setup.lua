@@ -202,6 +202,8 @@ function M.setup(registry)
     }
   }
   
+  -- Old draft migration removed - use HimalayaMigrateDraftsToMaildir instead
+  --[[
   commands.HimalayaMigrateDrafts = {
     fn = function()
       local migration = require('neotex.plugins.tools.himalaya.core.draft_migration')
@@ -220,7 +222,10 @@ function M.setup(registry)
       desc = 'Migrate EML drafts to JSON format'
     }
   }
+  --]]
   
+  -- Draft account fix removed - Maildir drafts use standard account handling
+  --[[
   commands.HimalayaFixDraftAccounts = {
     fn = function()
       local fix = require('neotex.plugins.tools.himalaya.core.draft_account_fix')
@@ -230,7 +235,10 @@ function M.setup(registry)
       desc = 'Fix draft accounts (update default to current account)'
     }
   }
+  --]]
   
+  -- Draft cleanup command removed - use standard file management for Maildir drafts
+  --[[
   commands.HimalayaCleanupDrafts = {
     fn = function()
       local cleanup = require('neotex.plugins.tools.himalaya.core.draft_cleanup')
@@ -286,6 +294,7 @@ function M.setup(registry)
       desc = 'Clean up local drafts'
     }
   }
+  --]]
   
   -- Register all setup commands
   registry.register_batch(commands)
