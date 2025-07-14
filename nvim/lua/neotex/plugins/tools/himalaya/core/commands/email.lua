@@ -20,9 +20,8 @@ function M.setup(registry)
   
   commands.HimalayaSend = {
     fn = function()
-      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
-      local buf = vim.api.nvim_get_current_buf()
-      composer.send_and_close(buf)
+      local main = require('neotex.plugins.tools.himalaya.ui.main')
+      main.send_current_email()
     end,
     opts = {
       desc = 'Send current email (with scheduling)'

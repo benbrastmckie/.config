@@ -923,10 +923,12 @@ function M.save_draft(account, folder, email_data)
           email_subject = email_data.subject,
           all_drafts = list_result
         })
-        -- Always show this important info
-        local notify = require('neotex.util.notifications')
-        notify.himalaya(string.format('Draft saved with ID: %s, Subject: %s', 
-          tostring(draft_id), tostring(email_data.subject or '(No subject)')), notify.categories.INFO)
+        -- Only show notification if this is actually a draft folder
+        if folder and (folder == 'Drafts' or folder:match('[Dd]raft')) then
+          local notify = require('neotex.util.notifications')
+          notify.himalaya(string.format('Draft saved with ID: %s, Subject: %s', 
+            tostring(draft_id), tostring(email_data.subject or '(No subject)')), notify.categories.INFO)
+        end
         return { id = draft_id }
       else
         logger.error('No valid draft ID found in listing', {

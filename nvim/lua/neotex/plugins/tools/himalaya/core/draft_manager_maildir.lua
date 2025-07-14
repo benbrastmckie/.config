@@ -130,16 +130,12 @@ function M.create(account, metadata)
   local buf = vim.api.nvim_create_buf(true, false)
   vim.api.nvim_buf_set_name(buf, filepath)
   
-  -- Format for editing (show only key headers and body)
+  -- Format for editing (show all key headers)
   local edit_lines = {}
   table.insert(edit_lines, 'From: ' .. (metadata.from or ''))
   table.insert(edit_lines, 'To: ' .. (metadata.to or ''))
-  if metadata.cc and metadata.cc ~= '' then
-    table.insert(edit_lines, 'Cc: ' .. metadata.cc)
-  end
-  if metadata.bcc and metadata.bcc ~= '' then
-    table.insert(edit_lines, 'Bcc: ' .. metadata.bcc)
-  end
+  table.insert(edit_lines, 'Cc: ' .. (metadata.cc or ''))
+  table.insert(edit_lines, 'Bcc: ' .. (metadata.bcc or ''))
   table.insert(edit_lines, 'Subject: ' .. (metadata.subject or ''))
   table.insert(edit_lines, '') -- Empty line between headers and body
   if metadata.body and metadata.body ~= '' then
@@ -304,9 +300,10 @@ end
 
 -- Save draft buffer to Maildir
 -- @param buffer number Buffer number
+-- @param silent boolean Don't show notification
 -- @return boolean success
 -- @return string|nil error
-function M.save(buffer)
+function M.save(buffer, silent)
   local filepath = M.buffer_drafts[buffer]
   if not filepath then
     return false, 'No draft associated with buffer'
@@ -341,11 +338,14 @@ function M.save(buffer)
     buffer = buffer
   })
   
-  notify_draft(
-    'Draft saved',
-    notify.categories.USER_ACTION,
-    { filepath = filepath }
-  )
+  -- Only show notification if not silent
+  if not silent then
+    notify_draft(
+      'Draft saved',
+      notify.categories.USER_ACTION,
+      { filepath = filepath }
+    )
+  end
   
   return true
 end
@@ -650,8 +650,8 @@ function M.send(buffer)
     return false, 'No draft associated with buffer'
   end
   
-  -- Save current state
-  M.save(buffer)
+  -- Save current state (silently)
+  M.save(buffer, true)
   
   -- Read headers to get account
   local headers = maildir.read_headers(filepath)
@@ -659,17 +659,57 @@ function M.send(buffer)
     return false, 'Failed to read draft headers'
   end
   
-  local account = headers['x-himalaya-account'] or 'default'
+  -- Get account from header or use current account
+  local state = require('neotex.plugins.tools.himalaya.core.state')
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local account = headers['x-himalaya-account'] or config.get_current_account_name() or 'gmail'
   
-  -- Use himalaya to send
-  local himalaya = require('neotex.plugins.tools.himalaya.core.himalaya_wrapper')
-  local result = himalaya.email.send({
+  -- Read the full email content to get the body
+  local file = io.open(filepath, 'r')
+  if not file then
+    return false, 'Failed to open draft file'
+  end
+  
+  local content = file:read('*all')
+  file:close()
+  
+  -- Split headers and body
+  local body = ''
+  local header_end = content:find('\n\n')
+  if header_end then
+    body = content:sub(header_end + 2)
+  end
+  
+  -- Parse email data from the file for sending
+  local email_data = {
+    from = headers['from'],
+    to = headers['to'],
+    cc = headers['cc'],
+    bcc = headers['bcc'],
+    subject = headers['subject'],
+    body = body
+  }
+  
+  -- Use utils to send email
+  local utils = require('neotex.plugins.tools.himalaya.utils')
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  
+  logger.debug('Sending email', {
     account = account,
-    filepath = filepath
+    to = email_data.to,
+    subject = email_data.subject,
+    has_body = email_data.body ~= nil,
+    body_length = email_data.body and #email_data.body or 0
   })
   
-  if not result.success then
-    return false, result.error or 'Failed to send email'
+  local success = utils.send_email(account, email_data)
+  
+  if not success then
+    logger.error('Failed to send email via utils', {
+      account = account,
+      email_data = email_data
+    })
+    return false, 'Failed to send email'
   end
   
   -- Delete draft after successful send

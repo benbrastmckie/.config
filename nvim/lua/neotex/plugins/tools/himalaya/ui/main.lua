@@ -94,42 +94,77 @@ end
 -- Compose new email
 function M.compose_email(to_address)
   local buf = email_composer.create_compose_buffer({ to = to_address })
-  if buf then
-    -- Find or create a suitable window for editing (not sidebar)
-    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-    local sidebar_win = sidebar.get_win()
-    local target_win = nil
-    
-    -- Look for a non-sidebar window
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      if win ~= sidebar_win then
-        local win_buf = vim.api.nvim_win_get_buf(win)
-        local buftype = vim.api.nvim_buf_get_option(win_buf, 'buftype')
-        local filetype = vim.api.nvim_buf_get_option(win_buf, 'filetype')
-        
-        -- Skip special buffers
-        if buftype == '' and filetype ~= 'himalaya-preview' then
-          target_win = win
-          break
-        end
+  if not buf then
+    return nil
+  end
+  
+  -- Find or create a suitable window for editing (not sidebar)
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  local current_win = vim.api.nvim_get_current_win()
+  local target_win = nil
+  
+  -- Look for a non-sidebar window
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
+      local win_buf = vim.api.nvim_win_get_buf(win)
+      local buftype = vim.api.nvim_buf_get_option(win_buf, 'buftype')
+      local filetype = vim.api.nvim_buf_get_option(win_buf, 'filetype')
+      
+      -- Skip special buffers
+      if buftype == '' and filetype ~= 'himalaya-preview' then
+        target_win = win
+        break
       end
     end
+  end
+  
+  -- If no suitable window, create one
+  if not target_win then
+    -- Save current window position
+    local saved_win = current_win
     
-    -- If no suitable window, create one
-    if not target_win then
-      if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-        vim.api.nvim_set_current_win(sidebar_win)
-        vim.cmd('rightbelow vsplit')
-      else
-        vim.cmd('vsplit')
+    -- If we have a sidebar, position the split correctly
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      -- Move to sidebar temporarily to create split in right place
+      vim.api.nvim_set_current_win(sidebar_win)
+      vim.cmd('rightbelow vsplit')
+      target_win = vim.api.nvim_get_current_win()
+      -- Return to original window
+      if saved_win ~= sidebar_win and vim.api.nvim_win_is_valid(saved_win) then
+        vim.api.nvim_set_current_win(saved_win)
       end
+    else
+      -- No sidebar, just split current window
+      vim.cmd('vsplit')
       target_win = vim.api.nvim_get_current_win()
     end
-    
-    -- Show buffer in the target window
-    vim.api.nvim_set_current_win(target_win)
-    vim.api.nvim_win_set_buf(target_win, buf)
   end
+  
+  -- Now set up the compose buffer in the target window
+  vim.api.nvim_set_current_win(target_win)
+  vim.api.nvim_win_set_buf(target_win, buf)
+  
+  -- Track in window stack
+  local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
+  window_stack.push({
+    type = 'compose',
+    buffer = buf,
+    window = target_win
+  })
+  
+  -- Position cursor on empty field and enter insert mode
+  vim.schedule(function()
+    -- Ensure we're still in the right window
+    if vim.api.nvim_win_is_valid(target_win) then
+      vim.api.nvim_set_current_win(target_win)
+    end
+    -- Position cursor
+    email_composer.position_cursor_on_empty_field(buf)
+    -- Enter insert mode
+    vim.cmd('startinsert!')
+  end)
+  
   return buf
 end
 
@@ -779,8 +814,16 @@ function M.sync_drafts_folder(account, folder)
     mbsync_target = account .. ':Drafts'
   end
   
-  -- Use shared sync implementation (mbsync)
-  M._perform_sync(mbsync_target, 'drafts')
+  -- Use shared sync implementation (mbsync) with special callback for drafts
+  M._perform_sync(mbsync_target, 'drafts', function(success)
+    if success then
+      -- For drafts, ensure we continue using filesystem-based display
+      -- The email_list module will detect we're in drafts folder and use filesystem
+      vim.defer_fn(function()
+        M.refresh_email_list()
+      end, 100)
+    end
+  end)
 end
 
 -- Forward email
@@ -803,37 +846,38 @@ function M.delete_current_email()
     return
   end
   
-  -- Check if this is a local draft
-  local line_num = vim.fn.line('.')
-  local line_map = state.get('email_list.line_map')
-  local emails = state.get('email_list.emails')
-  local is_local_draft = false
-  local local_id = nil
+  -- Check if this is a draft
+  local folder = state.get_current_folder()
+  local draft_folder = require('neotex.plugins.tools.himalaya.utils').find_draft_folder(state.get_current_account())
+  local is_draft = folder == draft_folder
   
-  -- First check if email_id looks like a local draft ID
-  if email_id and tostring(email_id):match('^draft_') then
-    is_local_draft = true
-    local_id = email_id
-  elseif line_map and line_map[line_num] then
-    local metadata = line_map[line_num]
-    -- Check metadata first for is_local flag
-    if metadata.is_local then
-      is_local_draft = true
-      -- Extract local_id from email_id if it's a local draft ID
-      if metadata.email_id and tostring(metadata.email_id):match('^draft_') then
-        local_id = metadata.email_id
-      end
-    elseif metadata.email_index and emails and emails[metadata.email_index] then
-      local email = emails[metadata.email_index]
-      if email.is_local then
-        is_local_draft = true
-        local_id = email.local_id or (email.id and tostring(email.id):match('^draft_') and email.id)
+  -- For filesystem-based drafts, we need to handle deletion differently
+  local draft_filepath = nil
+  if is_draft then
+    -- Get the draft filepath from the email data
+    local line_num = vim.fn.line('.')
+    local line_map = state.get('email_list.line_map')
+    local emails = state.get('email_list.emails')
+    
+    if line_map and line_map[line_num] and line_map[line_num].email_index then
+      local email = emails[line_map[line_num].email_index]
+      if email and email.draft_filepath then
+        draft_filepath = email.draft_filepath
       end
     end
+    
+    -- Debug logging
+    logger.debug('Draft deletion check', {
+      is_draft = is_draft,
+      has_draft_filepath = draft_filepath ~= nil,
+      draft_filepath = draft_filepath,
+      email_id = email_id,
+      line_num = line_num
+    })
   end
   
   -- Confirm deletion
-  local prompt = is_local_draft and "Delete local draft?" or "Delete current email?"
+  local prompt = is_draft and "Delete draft?" or "Delete current email?"
   vim.ui.select({"Yes", "No"}, {
     prompt = prompt,
     kind = "confirmation",
@@ -849,48 +893,31 @@ function M.delete_current_email()
       return
     end
     
-    if is_local_draft and local_id then
-      -- Delete local draft
-      local logger = require('neotex.plugins.tools.himalaya.core.logger')
-      logger.debug('Deleting local draft', { local_id = local_id })
-      
-      -- Use draft manager to delete
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
-      
-      -- Find buffer for this draft
-      local buffer = nil
-      for buf, _ in pairs(draft_manager.drafts) do
-        local draft = draft_manager.get_by_buffer(buf)
-        if draft and draft.local_id == local_id then
-          buffer = buf
-          break
+    if is_draft then
+      -- All drafts in the drafts folder should use filesystem deletion
+      if draft_filepath then
+        -- Delete filesystem-based draft
+        local success = vim.fn.delete(draft_filepath) == 0
+        
+        if success then
+          notify.himalaya('Draft deleted', notify.categories.STATUS)
+          vim.defer_fn(function()
+            M.refresh_email_list()
+          end, 100)
+        else
+          notify.himalaya('Failed to delete draft', notify.categories.ERROR)
         end
-      end
-      
-      local success = false
-      if buffer then
-        success = draft_manager.delete(buffer)
       else
-        -- Try direct file deletion if no buffer
-        local drafts = draft_manager.list_drafts(state.get_current_account())
-        for _, draft in ipairs(drafts) do
-          if draft.filename == local_id then
-            success = vim.fn.delete(draft.filepath) == 0
-            break
-          end
-        end
-      end
-      
-      if success then
-        notify.himalaya('Local draft deleted', notify.categories.STATUS)
-        vim.defer_fn(function()
-          M.refresh_email_list()
-        end, 100)
-      else
-        notify.himalaya('Failed to delete local draft', notify.categories.ERROR)
+        -- Draft without filepath - this shouldn't happen with our filesystem approach
+        notify.himalaya('Draft filepath not found. Cannot delete.', notify.categories.ERROR)
+        logger.error('Draft without filepath', {
+          email_id = email_id,
+          line_num = vim.fn.line('.'),
+          emails = state.get('email_list.emails')
+        })
       end
     else
-      -- Delete regular email
+      -- Delete regular email (non-draft)
       local success, error_type, extra = utils.smart_delete_email(state.get_current_account(), email_id)
       
       if success then
@@ -1386,27 +1413,20 @@ function M.delete_selected_emails()
         notify.himalaya(string.format('Deleting %d emails...', #selected), notify.categories.STATUS)
       end
       
+      -- Check if we're in drafts folder
+      local current_folder = state.get_current_folder()
+      local draft_folder = utils.find_draft_folder(state.get_current_account())
+      local is_drafts_folder = current_folder == draft_folder
+      
       for i, email in ipairs(selected) do
-        -- Check if it's a local draft
-        if email.is_local or (email.id and tostring(email.id):match('^draft_')) then
-          -- Delete local draft
-          local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
-          local local_id = email.local_id or email.id
-          
-          -- Try to delete through draft manager
-          local success = false
-          local drafts = draft_manager.list_drafts(state.get_current_account())
-          for _, draft in ipairs(drafts) do
-            if draft.filename == local_id then
-              success = vim.fn.delete(draft.filepath) == 0
-              break
-            end
-          end
+        if is_drafts_folder and email.draft_filepath then
+          -- Delete filesystem-based draft
+          local success = vim.fn.delete(email.draft_filepath) == 0
           if success then
             success_count = success_count + 1
           else
             error_count = error_count + 1
-            notify.himalaya(string.format('Failed to delete local draft %s', email.subject or local_id), notify.categories.BACKGROUND)
+            notify.himalaya(string.format('Failed to delete draft %s', email.subject or email.id), notify.categories.BACKGROUND)
           end
         else
           -- Delete regular email

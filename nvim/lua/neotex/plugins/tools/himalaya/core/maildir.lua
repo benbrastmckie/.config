@@ -17,8 +17,9 @@ function M.generate_filename(flags)
   local pid = vim.loop.getpid()
   local hostname = vim.loop.os_gethostname() or 'localhost'
   
-  -- Create unique component
-  local unique = string.format("%d", hrtime)
+  -- Convert hrtime to milliseconds to avoid scientific notation
+  -- hrtime is in nanoseconds, divide by 1,000,000 to get milliseconds
+  local hrtime_ms = math.floor(hrtime / 1000000)
   
   -- Build info string (size=0, we'll update after write)
   local info = "S=0"
@@ -30,12 +31,13 @@ function M.generate_filename(flags)
     flag_str = table.concat(flags, "")
   end
   
-  -- Construct filename using hrtime format (like mbsync)
+  -- Construct filename compatible with mbsync format
+  -- Using milliseconds timestamp and pid for uniqueness
   local filename = string.format(
-    "%d.%s_%s.%s,%s:2,%s",
+    "%d.%d_%d.%s,%s:2,%s",
     timestamp,
-    hrtime,
-    unique,
+    hrtime_ms,
+    pid,
     hostname,
     info,
     flag_str
