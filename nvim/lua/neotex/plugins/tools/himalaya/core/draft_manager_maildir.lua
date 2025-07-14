@@ -63,17 +63,8 @@ function M.setup()
     desc = 'Clean up draft when buffer is deleted'
   })
   
-  -- Auto-save drafts on buffer write
-  vim.api.nvim_create_autocmd('BufWritePost', {
-    group = group,
-    pattern = '*.eml',
-    callback = function(args)
-      if M.buffer_drafts[args.buf] then
-        M.save(args.buf)
-      end
-    end,
-    desc = 'Auto-save draft on buffer write'
-  })
+  -- Note: Auto-save is handled by email_composer_maildir.lua via BufWriteCmd
+  -- No need for BufWritePost autocmd as it would create duplicate saves/notifications
 end
 
 -- Create a new draft

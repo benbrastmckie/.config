@@ -216,8 +216,8 @@ function M.prev_page()
 end
 
 -- Refresh current email list
-function M.refresh_email_list()
-  return email_list.refresh_email_list()
+function M.refresh_email_list(opts)
+  return email_list.refresh_email_list(opts)
 end
 
 -- Send current email (from compose buffer)
@@ -902,7 +902,7 @@ function M.delete_current_email()
         if success then
           notify.himalaya('Draft deleted', notify.categories.STATUS)
           vim.defer_fn(function()
-            M.refresh_email_list()
+            M.refresh_email_list({ restore_insert_mode = false })
           end, 100)
         else
           notify.himalaya('Failed to delete draft', notify.categories.ERROR)
@@ -927,7 +927,7 @@ function M.delete_current_email()
         
         -- Always refresh the list to show the deletion
         vim.defer_fn(function()
-          M.refresh_email_list()
+          M.refresh_email_list({ restore_insert_mode = false })
         end, 100)
       elseif error_type == 'missing_trash' then
         -- Trash folder doesn't exist, offer alternatives
@@ -1456,7 +1456,7 @@ function M.delete_selected_emails()
       -- With Maildir, no need to refresh local storage
       -- Drafts are handled the same as regular emails
       
-      M.refresh_email_list()
+      M.refresh_email_list({ restore_insert_mode = false })
     end
   end)
 end

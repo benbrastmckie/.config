@@ -29,6 +29,7 @@ M.queue = {}
 M.timer = nil
 M.running = false
 M.initialized = false
+M.draft_cleanup_map = {} -- Maps scheduled_id to draft filepath for cleanup
 
 -- Initialize scheduler with persistent queue
 function M.init()
@@ -501,6 +502,9 @@ function M.send_email_now(id)
         subject = item.email_data.subject
       }
     )
+    
+    -- Clean up draft after successful send
+    M.cleanup_draft_after_send(id)
     
     -- Emit success event
     events_bus.emit(event_types.EMAIL_SENT, {
@@ -1124,6 +1128,38 @@ function M.complete_time(ArgLead, CmdLine, CursorPos)
   end
   
   return matches
+end
+
+-- Register a draft for cleanup after successful send
+function M.register_draft_for_cleanup(scheduled_id, draft_filepath)
+  if scheduled_id and draft_filepath then
+    M.draft_cleanup_map[scheduled_id] = draft_filepath
+    logger.debug('Registered draft for cleanup', {
+      scheduled_id = scheduled_id,
+      draft_filepath = draft_filepath
+    })
+  end
+end
+
+-- Clean up draft after successful send
+function M.cleanup_draft_after_send(scheduled_id)
+  local draft_filepath = M.draft_cleanup_map[scheduled_id]
+  if draft_filepath then
+    local success = vim.fn.delete(draft_filepath) == 0
+    if success then
+      logger.debug('Draft cleaned up after successful send', {
+        scheduled_id = scheduled_id,
+        draft_filepath = draft_filepath
+      })
+    else
+      logger.error('Failed to cleanup draft after send', {
+        scheduled_id = scheduled_id,
+        draft_filepath = draft_filepath
+      })
+    end
+    -- Remove from cleanup map regardless of success
+    M.draft_cleanup_map[scheduled_id] = nil
+  end
 end
 
 return M
