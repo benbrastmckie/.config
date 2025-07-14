@@ -466,10 +466,18 @@ If any issues remain, they will be specific matching problems (not the core pars
    - Added fallback matching by modification time
    - Simplified logic and improved error messages
 
-3. **Documentation**: `docs/DRAFTS_MAILDIR.md`
+3. **Draft Manager**: `lua/neotex/plugins/tools/himalaya/core/draft_manager_maildir.lua`
+   - Fixed draft opening to use main editing area, not sidebar
+   - Added MIME parsing to show only editable content
+   - Extracts plain text from multipart emails for editing
+   - Reconstructs proper MIME format on save
+   - Preserves technical headers while allowing editing of key fields
+
+4. **Documentation**: `docs/DRAFTS_MAILDIR.md`
    - Added Phase 7 implementation details
    - Documented mbsync format discovery
    - Updated completion timeline
+   - Added draft content parsing improvements
 
 ## Success Metrics for Phase 7 ✅ ACHIEVED
 

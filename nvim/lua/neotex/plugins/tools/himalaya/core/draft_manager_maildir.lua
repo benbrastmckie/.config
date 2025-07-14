@@ -97,7 +97,8 @@ function M.create(account, metadata)
   
   -- Generate Maildir filename with Draft flag
   local filename = maildir.generate_filename({'D'})
-  local filepath = drafts_dir .. '/new/' .. filename
+  -- Write directly to cur/ folder - no need for new/ folder for drafts
+  local filepath = drafts_dir .. '/cur/' .. filename
   
   -- Create email content
   local headers = {
@@ -121,16 +122,51 @@ function M.create(account, metadata)
     return nil, err
   end
   
-  -- Update size in filename
-  maildir.update_size(filepath)
+  -- Note: We intentionally do NOT update the size in the filename
+  -- This avoids file renames that can cause duplicate drafts and confusion
+  -- The size in Maildir filenames is optional and not updating it is fine
   
-  -- Create buffer
+  -- Create buffer with editable format
   local buf = vim.api.nvim_create_buf(true, false)
   vim.api.nvim_buf_set_name(buf, filepath)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(content, '\n'))
+  
+  -- Format for editing (show only key headers and body)
+  local edit_lines = {}
+  table.insert(edit_lines, 'From: ' .. (metadata.from or ''))
+  table.insert(edit_lines, 'To: ' .. (metadata.to or ''))
+  if metadata.cc and metadata.cc ~= '' then
+    table.insert(edit_lines, 'Cc: ' .. metadata.cc)
+  end
+  if metadata.bcc and metadata.bcc ~= '' then
+    table.insert(edit_lines, 'Bcc: ' .. metadata.bcc)
+  end
+  table.insert(edit_lines, 'Subject: ' .. (metadata.subject or ''))
+  table.insert(edit_lines, '') -- Empty line between headers and body
+  if metadata.body and metadata.body ~= '' then
+    table.insert(edit_lines, metadata.body)
+  end
+  
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, edit_lines)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  vim.api.nvim_buf_set_option(buf, 'modified', false)
+  
+  -- Store original headers for reconstruction on save
+  local all_headers = {}
+  for _, header in ipairs(headers) do
+    local key, value = header:match("^([^:]+):%s*(.*)$")
+    if key then
+      all_headers[key:lower()] = value
+    end
+  end
+  vim.api.nvim_buf_set_var(buf, 'himalaya_original_headers', all_headers)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_is_multipart', false) -- New drafts are not multipart
+  
+  -- Ensure date is always preserved
+  if not all_headers['date'] then
+    all_headers['date'] = os.date('!%a, %d %b %Y %H:%M:%S +0000')
+  end
   
   -- Track buffer
   M.buffer_drafts[buf] = filepath
@@ -150,6 +186,122 @@ function M.create(account, metadata)
   return buf
 end
 
+-- Reconstruct MIME email from edited content
+local function reconstruct_mime_email(buffer)
+  -- Get edited lines
+  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+  
+  -- Get stored original headers
+  local ok, orig_headers = pcall(vim.api.nvim_buf_get_var, buffer, 'himalaya_original_headers')
+  if not ok then
+    orig_headers = {}
+  end
+  
+  local ok2, was_multipart = pcall(vim.api.nvim_buf_get_var, buffer, 'himalaya_is_multipart')
+  if not ok2 then
+    was_multipart = false
+  end
+  
+  -- Parse edited content back into headers and body
+  local edited_headers = {}
+  local body_lines = {}
+  local in_body = false
+  
+  for _, line in ipairs(lines) do
+    if in_body then
+      table.insert(body_lines, line)
+    elseif line == "" then
+      in_body = true
+    else
+      local key, value = line:match("^([^:]+):%s*(.*)$")
+      if key then
+        edited_headers[key:lower()] = value
+      end
+    end
+  end
+  
+  local body = table.concat(body_lines, '\n')
+  
+  -- Merge edited headers with original headers (preserve technical headers)
+  local final_headers = vim.tbl_deep_extend('force', orig_headers, edited_headers)
+  
+  -- Always update Date header to current time for proper sorting
+  -- This ensures drafts are sorted by when they were last modified
+  final_headers['date'] = os.date('!%a, %d %b %Y %H:%M:%S +0000')
+  
+  -- Build the email content
+  local email_lines = {}
+  
+  -- Add MIME-Version if not present
+  if not final_headers['mime-version'] then
+    table.insert(email_lines, 'MIME-Version: 1.0')
+  end
+  
+  -- Add headers (preserving some original headers)
+  local header_order = {
+    'received', 'mime-version', 'date', 'message-id', 
+    'from', 'to', 'cc', 'bcc', 'subject', 'reply-to', 'in-reply-to', 'references',
+    'content-type', 'x-himalaya-account', 'x-tuid'
+  }
+  
+  local added = {}
+  for _, key in ipairs(header_order) do
+    if final_headers[key] and not added[key] then
+      local display_key = key:gsub("^%l", string.upper):gsub("%-(%l)", function(c) return "-" .. c:upper() end)
+      table.insert(email_lines, display_key .. ": " .. final_headers[key])
+      added[key] = true
+    end
+  end
+  
+  -- Add any remaining headers
+  for key, value in pairs(final_headers) do
+    if not added[key] and value ~= "" then
+      local display_key = key:gsub("^%l", string.upper):gsub("%-(%l)", function(c) return "-" .. c:upper() end)
+      table.insert(email_lines, display_key .. ": " .. value)
+    end
+  end
+  
+  -- Add blank line between headers and body
+  table.insert(email_lines, "")
+  
+  -- For multipart emails, reconstruct the MIME structure
+  if was_multipart and final_headers['content-type'] and final_headers['content-type']:match('multipart') then
+    local boundary = final_headers['content-type']:match('boundary="?([^"]+)"?')
+    if not boundary then
+      boundary = final_headers['content-type']:match("boundary=([^%s;]+)")
+    end
+    
+    if boundary then
+      -- Add text/plain part
+      table.insert(email_lines, "--" .. boundary)
+      table.insert(email_lines, "Content-Type: text/plain; charset=UTF-8")
+      table.insert(email_lines, "")
+      table.insert(email_lines, body)
+      table.insert(email_lines, "")
+      
+      -- Add HTML part (convert plain text to simple HTML)
+      table.insert(email_lines, "--" .. boundary)
+      table.insert(email_lines, "Content-Type: text/html; charset=UTF-8")
+      table.insert(email_lines, "Content-Transfer-Encoding: quoted-printable")
+      table.insert(email_lines, "")
+      
+      -- Simple text to HTML conversion
+      local html = '<div dir="ltr">' .. body:gsub('\n\n', '</div><div><br></div><div>'):gsub('\n', '<br>') .. '</div>'
+      table.insert(email_lines, html)
+      table.insert(email_lines, "")
+      table.insert(email_lines, "--" .. boundary .. "--")
+    else
+      -- Fallback to plain text if boundary not found
+      table.insert(email_lines, body)
+    end
+  else
+    -- Single part email
+    table.insert(email_lines, body)
+  end
+  
+  return table.concat(email_lines, '\n')
+end
+
 -- Save draft buffer to Maildir
 -- @param buffer number Buffer number
 -- @return boolean success
@@ -160,36 +312,25 @@ function M.save(buffer)
     return false, 'No draft associated with buffer'
   end
   
-  -- Get buffer content
-  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
-  local content = table.concat(lines, '\n')
+  -- Reconstruct the MIME email
+  local content = reconstruct_mime_email(buffer)
   
-  -- Check if we need to move from new/ to cur/
-  local dir = vim.fn.fnamemodify(filepath, ':h:t')
-  if dir == 'new' then
-    -- Move to cur/ on first save
-    local filename = vim.fn.fnamemodify(filepath, ':t')
-    local drafts_dir = vim.fn.fnamemodify(filepath, ':h:h')
-    local new_filepath = drafts_dir .. '/cur/' .. filename
-    
-    -- Write to new location
-    local ok = vim.fn.writefile(lines, new_filepath) == 0
-    if ok then
-      -- Delete old file
-      vim.fn.delete(filepath)
-      -- Update tracking
-      M.buffer_drafts[buffer] = new_filepath
-      filepath = new_filepath
-      -- Update buffer name
-      vim.api.nvim_buf_set_name(buffer, new_filepath)
-    end
+  -- Save directly to file (always in cur/ folder now)
+  local file = io.open(filepath, 'w')
+  if file then
+    file:write(content)
+    file:close()
   else
-    -- Save in place
-    vim.cmd('silent write!')
+    return false, 'Failed to write file'
   end
   
-  -- Update size in filename
-  maildir.update_size(filepath)
+  -- Note: We intentionally do NOT update the size in the filename
+  -- This avoids file renames that can cause duplicate drafts and confusion
+  -- The size in Maildir filenames is optional and not updating it is fine
+  
+  -- Touch the file to update modification time
+  -- This helps ensure proper sorting by modification time
+  vim.loop.fs_utime(filepath, os.time(), os.time())
   
   -- Mark buffer as unmodified
   vim.api.nvim_buf_set_option(buffer, 'modified', false)
@@ -262,6 +403,129 @@ local function find_or_create_edit_window()
   return new_win
 end
 
+-- Parse MIME email content to extract headers and body
+local function parse_email_content(content)
+  local headers = {}
+  local body = ""
+  local in_headers = true
+  local in_body = false
+  local multipart_boundary = nil
+  local in_text_part = false
+  
+  -- Split content into lines
+  local lines = vim.split(content, '\n', { plain = true })
+  local i = 1
+  
+  -- Parse headers
+  while i <= #lines and in_headers do
+    local line = lines[i]
+    
+    if line == "" then
+      -- Empty line marks end of headers
+      in_headers = false
+      i = i + 1
+      break
+    elseif line:match("^%s") and i > 1 then
+      -- Continuation of previous header
+      local last_key = nil
+      for k, _ in pairs(headers) do
+        last_key = k
+      end
+      if last_key then
+        headers[last_key] = headers[last_key] .. " " .. line:gsub("^%s+", "")
+      end
+    else
+      -- New header
+      local key, value = line:match("^([^:]+):%s*(.*)$")
+      if key then
+        headers[key:lower()] = value
+        
+        -- Check for multipart boundary
+        if key:lower() == "content-type" and value:match("multipart") then
+          multipart_boundary = value:match('boundary="?([^"]+)"?')
+          if not multipart_boundary then
+            multipart_boundary = value:match("boundary=([^%s;]+)")
+          end
+        end
+      end
+    end
+    
+    i = i + 1
+  end
+  
+  -- If multipart, extract text/plain part
+  if multipart_boundary then
+    local boundary_pattern = "--" .. multipart_boundary
+    local in_plain_text = false
+    
+    while i <= #lines do
+      local line = lines[i]
+      
+      if line == boundary_pattern or line == boundary_pattern .. "--" then
+        if in_plain_text then
+          -- End of text part
+          break
+        end
+        in_plain_text = false
+        -- Look ahead for Content-Type
+        local j = i + 1
+        while j <= #lines and lines[j] ~= "" do
+          if lines[j]:lower():match("^content%-type:%s*text/plain") then
+            in_plain_text = true
+            -- Skip to empty line after part headers
+            while j <= #lines and lines[j] ~= "" do
+              j = j + 1
+            end
+            i = j
+            break
+          end
+          j = j + 1
+        end
+      elseif in_plain_text and line ~= boundary_pattern .. "--" then
+        if body ~= "" then body = body .. "\n" end
+        body = body .. line
+      end
+      
+      i = i + 1
+    end
+  else
+    -- Single part email, rest is body
+    while i <= #lines do
+      if body ~= "" then body = body .. "\n" end
+      body = body .. lines[i]
+      i = i + 1
+    end
+  end
+  
+  return headers, body
+end
+
+-- Format email for editing (simplified view)
+local function format_for_editing(headers, body)
+  local lines = {}
+  
+  -- Add main headers in standard order
+  local header_order = {"from", "to", "cc", "bcc", "subject", "reply-to", "in-reply-to"}
+  for _, key in ipairs(header_order) do
+    if headers[key] and headers[key] ~= "" then
+      table.insert(lines, key:gsub("^%l", string.upper):gsub("%-(%l)", function(c) return "-" .. c:upper() end) .. ": " .. headers[key])
+    end
+  end
+  
+  -- Add blank line between headers and body
+  table.insert(lines, "")
+  
+  -- Add body
+  if body and body ~= "" then
+    -- Split body and add lines
+    for _, line in ipairs(vim.split(body, '\n', { plain = true })) do
+      table.insert(lines, line)
+    end
+  end
+  
+  return lines
+end
+
 -- Open an existing draft from Maildir
 -- @param filepath string Path to draft file
 -- @return number|nil buffer Buffer number or nil on error
@@ -288,22 +552,49 @@ function M.open(filepath)
     end
   end
   
+  -- Read and parse the draft file
+  local file = io.open(filepath, 'r')
+  if not file then
+    return nil, "Failed to open draft file: " .. filepath
+  end
+  
+  local content = file:read('*a')
+  file:close()
+  
+  -- Parse the email content
+  local headers, body = parse_email_content(content)
+  
+  -- Format for editing
+  local edit_lines = format_for_editing(headers, body)
+  
   -- Find or create suitable window for editing
   local target_win = find_or_create_edit_window()
   
-  -- Switch to target window temporarily to open file
-  local saved_win = vim.api.nvim_get_current_win()
+  -- Create new buffer for editing
   vim.api.nvim_set_current_win(target_win)
-  vim.cmd('edit ' .. vim.fn.fnameescape(filepath))
-  local buf = vim.api.nvim_get_current_buf()
+  local buf = vim.api.nvim_create_buf(true, false)
+  
+  -- Set buffer content
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, edit_lines)
+  
+  -- Set buffer name to the file path (for saving)
+  vim.api.nvim_buf_set_name(buf, filepath)
   
   -- Set buffer options
   vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  vim.api.nvim_buf_set_option(buf, 'modified', false)
   
-  -- Track buffer
+  -- Show buffer in window
+  vim.api.nvim_win_set_buf(target_win, buf)
+  
+  -- Track buffer with original filepath
   M.buffer_drafts[buf] = filepath
+  
+  -- Store original headers for reconstruction on save
+  vim.api.nvim_buf_set_var(buf, 'himalaya_original_headers', headers)
+  vim.api.nvim_buf_set_var(buf, 'himalaya_is_multipart', headers['content-type'] and headers['content-type']:match('multipart') ~= nil)
   
   -- Focus the target window where we opened the draft
   vim.api.nvim_set_current_win(target_win)
@@ -422,6 +713,10 @@ function M.list(account)
         -- Read headers for metadata
         local headers = maildir.read_headers(msg.path)
         if headers then
+          -- Get file modification time for proper sorting
+          local stat = vim.loop.fs_stat(msg.path)
+          local mtime = stat and stat.mtime.sec or msg.timestamp
+          
           table.insert(drafts, {
             filepath = msg.path,
             filename = msg.filename,
@@ -430,6 +725,7 @@ function M.list(account)
             from = headers.from,
             to = headers.to,
             timestamp = msg.timestamp,
+            mtime = mtime,  -- Modification time for sorting
             size = msg.size
           })
         end
@@ -437,9 +733,9 @@ function M.list(account)
     end
   end
   
-  -- Sort by timestamp (newest first)
+  -- Sort by modification time (newest first)
   table.sort(drafts, function(a, b)
-    return a.timestamp > b.timestamp
+    return (a.mtime or a.timestamp) > (b.mtime or b.timestamp)
   end)
   
   return drafts

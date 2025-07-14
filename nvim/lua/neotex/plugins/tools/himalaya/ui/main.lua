@@ -93,7 +93,44 @@ end
 
 -- Compose new email
 function M.compose_email(to_address)
-  return email_composer.create_compose_buffer({ to = to_address })
+  local buf = email_composer.create_compose_buffer({ to = to_address })
+  if buf then
+    -- Find or create a suitable window for editing (not sidebar)
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    local sidebar_win = sidebar.get_win()
+    local target_win = nil
+    
+    -- Look for a non-sidebar window
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if win ~= sidebar_win then
+        local win_buf = vim.api.nvim_win_get_buf(win)
+        local buftype = vim.api.nvim_buf_get_option(win_buf, 'buftype')
+        local filetype = vim.api.nvim_buf_get_option(win_buf, 'filetype')
+        
+        -- Skip special buffers
+        if buftype == '' and filetype ~= 'himalaya-preview' then
+          target_win = win
+          break
+        end
+      end
+    end
+    
+    -- If no suitable window, create one
+    if not target_win then
+      if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+        vim.api.nvim_set_current_win(sidebar_win)
+        vim.cmd('rightbelow vsplit')
+      else
+        vim.cmd('vsplit')
+      end
+      target_win = vim.api.nvim_get_current_win()
+    end
+    
+    -- Show buffer in the target window
+    vim.api.nvim_set_current_win(target_win)
+    vim.api.nvim_win_set_buf(target_win, buf)
+  end
+  return buf
 end
 
 -- Open email window (floating)

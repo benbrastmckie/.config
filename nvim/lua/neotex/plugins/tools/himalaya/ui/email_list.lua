@@ -92,6 +92,48 @@ function M.init(main_buffers)
       end)
     end
   end)
+  
+  -- Listen to draft events for automatic refresh
+  events_bus.on(event_types.DRAFT_CREATED, function(data)
+    if sidebar.is_open() then
+      local current_folder = state.get_current_folder()
+      local draft_folder = utils.find_draft_folder(state.get_current_account())
+      -- Only refresh if we're viewing the drafts folder
+      if current_folder == draft_folder then
+        -- Small delay to ensure filesystem write is complete
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 100) -- 100ms delay
+      end
+    end
+  end)
+  
+  events_bus.on(event_types.DRAFT_SAVED, function(data)
+    if sidebar.is_open() then
+      local current_folder = state.get_current_folder()
+      local draft_folder = utils.find_draft_folder(state.get_current_account())
+      -- Only refresh if we're viewing the drafts folder
+      if current_folder == draft_folder then
+        -- Add a small delay to allow himalaya's index to update
+        vim.defer_fn(function()
+          M.refresh_email_list()
+        end, 500) -- 500ms delay
+      end
+    end
+  end)
+  
+  events_bus.on(event_types.DRAFT_DELETED, function(data)
+    if sidebar.is_open() then
+      local current_folder = state.get_current_folder()
+      local draft_folder = utils.find_draft_folder(state.get_current_account())
+      -- Only refresh if we're viewing the drafts folder
+      if current_folder == draft_folder then
+        vim.schedule(function()
+          M.refresh_email_list()
+        end)
+      end
+    end
+  end)
 end
 
 -- Toggle email sidebar
@@ -318,6 +360,85 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   
   -- For drafts folder, we now rely on mbsync sync (no special local handling)
   -- Drafts are synced like any other folder via mbsync
+  
+  -- Special handling for drafts: Ensure correct ordering
+  -- This ensures drafts appear in the correct order even if himalaya's cache is stale
+  if is_drafts and emails then
+    -- Get all drafts directly from the filesystem for accurate timestamps
+    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+    local draft_list = draft_manager.list(account_name)
+    
+    -- Create a map of drafts by multiple criteria for better matching
+    local draft_map = {}
+    for _, draft in ipairs(draft_list) do
+      -- Create multiple keys for matching
+      local key1 = (draft.subject or 'Untitled') .. '|' .. (draft.from or '')
+      local key2 = draft.filename
+      draft_map[key1] = draft
+      draft_map[key2] = draft
+    end
+    
+    -- Update emails with accurate modification times
+    for _, email in ipairs(emails) do
+      -- Handle from/sender being either string or table
+      local from_str = ''
+      if email.from then
+        from_str = type(email.from) == 'table' and (email.from.addr or email.from.email or '') or tostring(email.from)
+      elseif email.sender then
+        from_str = type(email.sender) == 'table' and (email.sender.addr or email.sender.email or '') or tostring(email.sender)
+      end
+      
+      local key = (email.subject or 'Untitled') .. '|' .. from_str
+      local draft = draft_map[key] or draft_map[email.id]
+      if draft then
+        email.mtime = draft.mtime or draft.timestamp
+        email.draft_filepath = draft.filepath
+      end
+    end
+    
+    -- Add any drafts that aren't in himalaya's list yet (e.g., just created)
+    local email_keys = {}
+    for _, email in ipairs(emails) do
+      -- Handle from/sender being either string or table
+      local from_str = ''
+      if email.from then
+        from_str = type(email.from) == 'table' and (email.from.addr or email.from.email or '') or tostring(email.from)
+      elseif email.sender then
+        from_str = type(email.sender) == 'table' and (email.sender.addr or email.sender.email or '') or tostring(email.sender)
+      end
+      
+      local key = (email.subject or 'Untitled') .. '|' .. from_str
+      email_keys[key] = true
+    end
+    
+    for _, draft in ipairs(draft_list) do
+      local key = (draft.subject or 'Untitled') .. '|' .. (draft.from or '')
+      if not email_keys[key] then
+        -- This draft isn't in himalaya's list, add it
+        local email = {
+          id = draft.filename or '',
+          subject = draft.subject or 'Untitled',
+          from = draft.from or '',
+          to = draft.to or '',
+          date = os.date('%Y-%m-%d %H:%M:%S', draft.mtime or draft.timestamp),
+          mtime = draft.mtime or draft.timestamp,
+          draft_filepath = draft.filepath,
+          flags = { draft = true }
+        }
+        table.insert(emails, email)
+      end
+    end
+    
+    -- Sort all emails by modification time (newest first)
+    table.sort(emails, function(a, b)
+      local a_time = a.mtime or 0
+      local b_time = b.mtime or 0
+      return a_time > b_time
+    end)
+    
+    -- Update total count
+    total_count = #emails
+  end
   
   -- Store emails in cache
   if emails and #emails > 0 then
@@ -587,37 +708,28 @@ function M.format_email_list(emails)
       -- For drafts, himalaya might not return the subject in envelope list
       -- Try to get it from the draft manager first, then email cache
       if is_draft_folder and (subject == '' or subject == vim.NIL) then
-        -- Check if this is an active draft
-        local draft = draft_manager.get_by_remote_id(tostring(email_id))
-        if draft and draft.metadata.subject then
-          subject = draft.metadata.subject
-          logger.info('Using draft manager subject', {
+        -- With Maildir, drafts are just regular emails in the Drafts folder
+        -- Check email cache for the subject
+        local cached = email_cache.get_email(current_account, current_folder, email_id)
+        logger.info('Checking email cache for draft subject', {
+          email_id = email_id,
+          current_account = current_account,
+          current_folder = current_folder,
+          has_cached = cached ~= nil,
+          cached_subject = cached and cached.subject,
+          cached_id = cached and cached.id
+        })
+        if cached and cached.subject and cached.subject ~= '' then
+          subject = cached.subject
+          logger.info('Using email cache subject for draft', {
             email_id = email_id,
-            subject = subject
+            cached_subject = subject
           })
         else
-          -- Fallback to email cache
-          local cached = email_cache.get_email(current_account, current_folder, email_id)
-          logger.info('Checking email cache for draft subject', {
+          logger.info('No cached subject found for draft', {
             email_id = email_id,
-            current_account = current_account,
-            current_folder = current_folder,
-            has_cached = cached ~= nil,
-            cached_subject = cached and cached.subject,
-            cached_id = cached and cached.id
+            cached = cached
           })
-          if cached and cached.subject and cached.subject ~= '' then
-            subject = cached.subject
-            logger.info('Using email cache subject for draft', {
-              email_id = email_id,
-              cached_subject = subject
-            })
-          else
-            logger.info('No cached subject found for draft', {
-              email_id = email_id,
-              cached = cached
-            })
-          end
         end
       end
       

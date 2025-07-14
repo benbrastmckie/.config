@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
 -- sync_engine removed - using himalaya template save directly
 
 -- Store timers indexed by buffer number
