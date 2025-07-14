@@ -47,6 +47,22 @@ end
 local function extract_body_from_content(content)
   if not content then return '' end
   
+  -- Check if content has MML tags (Message Markup Language)
+  if content:match('<#part') then
+    -- Extract text from MML format
+    local body = content
+    
+    -- Remove MML part tags
+    body = body:gsub('<#part[^>]*>', '')
+    body = body:gsub('<#/part>', '')
+    
+    -- Clean up extra whitespace
+    body = body:gsub('^%s+', '')
+    body = body:gsub('%s+$', '')
+    
+    return body
+  end
+  
   -- Find the empty line that separates headers from body
   local lines = vim.split(content, '\n', { plain = true })
   local body_start = 0
@@ -341,8 +357,17 @@ function M.render_preview(email, buf)
         table.insert(lines, "  • Subject: email subject")
         table.insert(lines, "  • Body: your message")
       elseif email.body then
+        -- Clean MML tags if present
+        local clean_body = email.body
+        if clean_body:match('<#part') then
+          clean_body = clean_body:gsub('<#part[^>]*>', '')
+          clean_body = clean_body:gsub('<#/part>', '')
+          clean_body = clean_body:gsub('^%s+', '')
+          clean_body = clean_body:gsub('%s+$', '')
+        end
+        
         -- Split body into lines
-        local body_lines = vim.split(email.body, '\n', { plain = true })
+        local body_lines = vim.split(clean_body, '\n', { plain = true })
         for _, line in ipairs(body_lines) do
           table.insert(lines, line)
         end
@@ -352,9 +377,18 @@ function M.render_preview(email, buf)
     else
       -- Non-draft email body
       if email.body then
+        -- Clean MML tags if present
+        local clean_body = email.body
+        if clean_body:match('<#part') then
+          clean_body = clean_body:gsub('<#part[^>]*>', '')
+          clean_body = clean_body:gsub('<#/part>', '')
+          clean_body = clean_body:gsub('^%s+', '')
+          clean_body = clean_body:gsub('%s+$', '')
+        end
+        
         -- Since we use --no-headers, the body is clean without headers
         -- Just add it line by line
-        local body_lines = vim.split(email.body, '\n', { plain = true })
+        local body_lines = vim.split(clean_body, '\n', { plain = true })
         for _, line in ipairs(body_lines) do
           table.insert(lines, line)
         end

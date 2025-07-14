@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
 -- draft_parser removed - we now save raw content without parsing
 local state = require('neotex.plugins.tools.himalaya.core.state')
@@ -477,22 +477,8 @@ local function setup_buffer_mappings(buf)
     M.send_and_close(buf)
   end, opts)
   
-  -- Save on first change
-  local saved_once = false
-  vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
-    buffer = buf,
-    callback = function()
-      if not saved_once then
-        saved_once = true
-        -- Defer save to ensure content is captured
-        vim.defer_fn(function()
-          if vim.api.nvim_buf_is_valid(buf) then
-            M.save_draft(buf, 'first_change')
-          end
-        end, 100)
-      end
-    end
-  })
+  -- Note: Removed "save on first change" autocmd to prevent creating drafts with incomplete content
+  -- The autosave timer (every 5 seconds) will handle saving once the user has added meaningful content
   
   -- Save draft before unload
   vim.api.nvim_create_autocmd('BufUnload', {
@@ -1019,7 +1005,7 @@ end
 
 -- Check if buffer is a compose buffer
 function M.is_compose_buffer(buf)
-  return draft_manager.has_draft(buf)
+  return draft_manager.is_draft(buf)
 end
 
 -- Get all compose buffers

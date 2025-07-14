@@ -4,7 +4,7 @@
 local M = {}
 
 function M.setup(registry)
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
   local state = require('neotex.plugins.tools.himalaya.core.state')
   local notify = require('neotex.util.notifications')
   local ui = require('neotex.plugins.tools.himalaya.ui')

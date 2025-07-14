@@ -225,6 +225,16 @@ function M.execute_himalaya(args, opts)
     table.insert(cmd, query)
   end
   
+  -- Debug log for envelope list commands
+  if args[1] == 'envelope' and args[2] == 'list' then
+    logger.debug('Himalaya envelope list command', {
+      full_cmd = table.concat(cmd, ' '),
+      has_query = query ~= nil,
+      query = query,
+      folder = opts.folder
+    })
+  end
+  
   -- Execute command
   local result = vim.fn.system(cmd)
   local exit_code = vim.v.shell_error

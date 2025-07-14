@@ -49,96 +49,35 @@ function M.setup(registry)
     }
   }
   
-  -- Draft recovery command (Phase 2)
+  -- Draft recovery command (No longer needed with Maildir - drafts persist automatically)
   commands.HimalayaRecoverDrafts = {
     fn = function()
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-      local recovered = draft_manager.recover_session()
-      if recovered == 0 then
-        local notify = require('neotex.util.notifications')
-        notify.himalaya("No drafts to recover", notify.categories.USER_ACTION)
-      end
+      local notify = require('neotex.util.notifications')
+      notify.himalaya("Draft recovery not needed - drafts are automatically saved in Maildir", notify.categories.INFO)
     end,
     opts = {
-      desc = 'Recover drafts from previous session'
+      desc = 'Recover drafts from previous session (deprecated)'
     }
   }
   
   commands.HimalayaListRecoveredDrafts = {
     fn = function()
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-      local float = require('neotex.plugins.tools.himalaya.ui.float')
-      
-      local drafts = draft_manager.get_recovered_drafts()
-      if #drafts == 0 then
-        local notify = require('neotex.util.notifications')
-        notify.himalaya("No recovered drafts available", notify.categories.USER_ACTION)
-        return
-      end
-      
-      local lines = {
-        "# Recovered Drafts",
-        "",
-        string.format("Found %d recovered draft(s):", #drafts),
-        ""
-      }
-      
-      for i, draft in ipairs(drafts) do
-        table.insert(lines, string.format("%d. %s", i, draft.subject))
-        if draft.to then
-          table.insert(lines, string.format("   To: %s", draft.to))
-        end
-        table.insert(lines, string.format("   Modified: %s", os.date("%Y-%m-%d %H:%M", draft.modified_at or 0)))
-        table.insert(lines, string.format("   Status: %s", draft.synced and "Synced" or "Unsaved"))
-        table.insert(lines, "")
-      end
-      
-      table.insert(lines, "Use :HimalayaOpenRecoveredDraft <id> to open a draft")
-      
-      float.show('Recovered Drafts', lines)
+      local notify = require('neotex.util.notifications')
+      notify.himalaya("Use :HimalayaToggleSidebar and navigate to Drafts folder", notify.categories.INFO)
     end,
     opts = {
-      desc = 'List recovered drafts'
+      desc = 'List recovered drafts (deprecated - use sidebar)'
     }
   }
   
   commands.HimalayaOpenRecoveredDraft = {
     fn = function(opts)
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2')
-      
-      if not opts.args or opts.args == '' then
-        local notify = require('neotex.util.notifications')
-        notify.himalaya("Please provide a draft ID", notify.categories.ERROR)
-        return
-      end
-      
-      local drafts = draft_manager.get_recovered_drafts()
-      local index = tonumber(opts.args)
-      
-      if not index or index < 1 or index > #drafts then
-        local notify = require('neotex.util.notifications')
-        notify.himalaya("Invalid draft index", notify.categories.ERROR)
-        return
-      end
-      
-      local draft = drafts[index]
-      local buf = draft_manager.open_recovered_draft(draft.local_id)
-      
-      if buf then
-        vim.api.nvim_set_current_buf(buf)
-        local notify = require('neotex.util.notifications')
-        notify.himalaya(
-          string.format("Opened recovered draft: %s", draft.subject),
-          notify.categories.USER_ACTION
-        )
-      else
-        local notify = require('neotex.util.notifications')
-        notify.himalaya("Failed to open draft", notify.categories.ERROR)
-      end
+      local notify = require('neotex.util.notifications')
+      notify.himalaya("Use :HimalayaToggleSidebar to access drafts", notify.categories.INFO)
     end,
     opts = {
       nargs = 1,
-      desc = 'Open a recovered draft by index'
+      desc = 'Open a recovered draft by index (deprecated - use sidebar)'
     }
   }
   

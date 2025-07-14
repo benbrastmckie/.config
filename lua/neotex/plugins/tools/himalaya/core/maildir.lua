@@ -30,11 +30,11 @@ function M.generate_filename(flags)
     flag_str = table.concat(flags, "")
   end
   
-  -- Construct filename
+  -- Construct filename using hrtime format (like mbsync)
   local filename = string.format(
-    "%d.%d_%s.%s,%s:2,%s",
+    "%d.%s_%s.%s,%s:2,%s",
     timestamp,
-    pid,
+    hrtime,
     unique,
     hostname,
     info,
@@ -333,11 +333,11 @@ function M.update_size(filepath)
       flag_str = table.concat(flags, "")
     end
     
-    -- Construct new filename
+    -- Construct new filename (use hrtime or pid based on what's available)
     local new_filename = string.format(
-      "%d.%d_%s.%s,%s:2,%s",
+      "%d.%s_%s.%s,%s:2,%s",
       metadata.timestamp,
-      metadata.pid,
+      metadata.hrtime or metadata.pid or "0",
       metadata.unique,
       metadata.hostname,
       new_info,

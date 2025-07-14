@@ -440,4 +440,9 @@ function M.get_draft_display_info(buf)
   }
 end
 
+-- Check if buffer is a compose buffer
+function M.is_compose_buffer(buf)
+  return draft_manager.is_draft(buf)
+end
+
 return M
