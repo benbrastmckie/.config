@@ -207,13 +207,8 @@ function M.save_draft(buf, trigger)
     return false
   end
   
-  -- Show notification for manual saves only
-  if trigger == 'manual' then
-    notify.himalaya(
-      'Draft saved',
-      notify.categories.USER_ACTION
-    )
-  end
+  -- Notification is handled by draft_manager.save() when silent=false
+  -- No need to duplicate notification here
   
   return true
 end
@@ -304,9 +299,14 @@ function M.send_email(buf)
     return false
   end
   
-  -- Delete draft after successful scheduling
+  -- Store draft info for cleanup after actual send (not just scheduling)
   if M.config.delete_draft_on_send then
-    draft_manager.delete(buf)
+    local draft = draft_manager.get_by_buffer(buf)
+    if draft then
+      -- Store the draft path with the scheduled email for later cleanup
+      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      scheduler.register_draft_for_cleanup(scheduled_id, draft.filepath)
+    end
   end
   
   -- Email scheduled successfully, close compose window
@@ -414,11 +414,24 @@ function M._do_close_buffer(buf, compose_win)
   local current_win = vim.api.nvim_get_current_win()
   if current_win == sidebar_win then
     -- Find a non-sidebar window to focus
+    local found_window = false
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
         vim.api.nvim_set_current_win(win)
+        found_window = true
         break
       end
+    end
+    
+    -- If no other window exists, create a new window to the right of sidebar
+    if not found_window then
+      -- Focus the sidebar first to ensure proper split behavior
+      vim.api.nvim_set_current_win(sidebar_win)
+      
+      -- Create a vertical split to the right of the sidebar
+      vim.cmd('rightbelow vertical new')
+      
+      -- The new window should now be focused automatically
     end
   end
 end

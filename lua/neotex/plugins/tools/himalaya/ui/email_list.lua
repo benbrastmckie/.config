@@ -1305,7 +1305,9 @@ function M.prev_page()
 end
 
 -- Refresh current email list
-function M.refresh_email_list()
+function M.refresh_email_list(opts)
+  opts = opts or {}
+  
   -- Sync scheduled emails from other instances before refresh
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   if scheduler.initialized then
@@ -1317,6 +1319,7 @@ function M.refresh_email_list()
   local current_buf = vim.api.nvim_get_current_buf()
   local current_mode = vim.api.nvim_get_mode().mode
   local was_insert_mode = (current_mode == 'i' or current_mode == 'ic' or current_mode == 'ix')
+  local should_restore_insert = opts.restore_insert_mode ~= false and was_insert_mode
   local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
   
   -- Check if we're in a compose buffer
@@ -1359,7 +1362,7 @@ function M.refresh_email_list()
           end
           
           -- If we were in insert mode, restore it
-          if was_insert_mode then
+          if should_restore_insert then
             vim.cmd('startinsert')
           end
         end
@@ -1425,7 +1428,7 @@ function M.refresh_email_list()
       end
       
       -- If we were in insert mode, restore it
-      if was_insert_mode then
+      if should_restore_insert then
         vim.cmd('startinsert')
       end
     end
