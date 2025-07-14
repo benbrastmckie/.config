@@ -18,7 +18,7 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
@@ -98,12 +98,18 @@ function M.init(main_buffers)
     if sidebar.is_open() then
       local current_folder = state.get_current_folder()
       local draft_folder = utils.find_draft_folder(state.get_current_account())
-      -- Only refresh if we're viewing the drafts folder
+      
       if current_folder == draft_folder then
-        -- Small delay to ensure filesystem write is complete
+        -- Already in drafts folder, just refresh
         vim.defer_fn(function()
           M.refresh_email_list()
-        end, 100) -- 100ms delay
+        end, 100)
+      else
+        -- Navigate to drafts folder to show the new draft
+        state.set_current_folder(draft_folder)
+        vim.defer_fn(function()
+          M.show_email_list({ draft_folder })
+        end, 100)
       end
     end
   end)
@@ -112,12 +118,13 @@ function M.init(main_buffers)
     if sidebar.is_open() then
       local current_folder = state.get_current_folder()
       local draft_folder = utils.find_draft_folder(state.get_current_account())
-      -- Only refresh if we're viewing the drafts folder
+      
+      -- Always refresh if we're viewing the drafts folder
       if current_folder == draft_folder then
-        -- Add a small delay to allow himalaya's index to update
+        -- Small delay to ensure filesystem write is complete
         vim.defer_fn(function()
           M.refresh_email_list()
-        end, 500) -- 500ms delay
+        end, 200) -- Increased delay to 200ms
       end
     end
   end)
@@ -239,29 +246,39 @@ function M.show_email_list(args)
   -- Get email list from himalaya (async to prevent UI blocking)
   local account_name = config.get_current_account_name()
   
-  -- Use async loading for all folders (including drafts - they're synced via mbsync)
-  utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
-      if error then
-        local error_lines = {
-          string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
-          '',
-          '󰅙 Failed to get email list',
-          '',
-          'Error: ' .. tostring(error),
-          '',
-          'Try:',
-          '• Check network connection',
-          '• Verify account configuration',
-          '• :messages for details'
-        }
-        sidebar.update_content(error_lines)
-        notify.himalaya('Failed to get email list: ' .. tostring(error), notify.categories.ERROR)
-        return
-      end
-      
-    -- Continue with original logic but inside the callback
-    M.process_email_list_results(emails, total_count, folder, account_name)
-  end)
+  -- Check if this is the drafts folder
+  local draft_folder = utils.find_draft_folder(account_name)
+  local is_drafts_folder = folder == draft_folder
+  
+  if is_drafts_folder then
+    -- For drafts, bypass himalaya and use filesystem directly
+    -- This ensures immediate updates and eliminates sync issues
+    M.process_email_list_results(nil, 0, folder, account_name)
+  else
+    -- Use async loading for non-draft folders
+    utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+        if error then
+          local error_lines = {
+            string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
+            '',
+            '󰅙 Failed to get email list',
+            '',
+            'Error: ' .. tostring(error),
+            '',
+            'Try:',
+            '• Check network connection',
+            '• Verify account configuration',
+            '• :messages for details'
+          }
+          sidebar.update_content(error_lines)
+          notify.himalaya('Failed to get email list: ' .. tostring(error), notify.categories.ERROR)
+          return
+        end
+        
+      -- Continue with original logic but inside the callback
+      M.process_email_list_results(emails, total_count, folder, account_name)
+    end)
+  end
 end
 
 -- Process email list results (extracted from original show_email_list)
@@ -358,85 +375,31 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
     end  -- Close the else block for non-drafts folders
   end
   
-  -- For drafts folder, we now rely on mbsync sync (no special local handling)
-  -- Drafts are synced like any other folder via mbsync
-  
-  -- Special handling for drafts: Ensure correct ordering
-  -- This ensures drafts appear in the correct order even if himalaya's cache is stale
-  if is_drafts and emails then
-    -- Get all drafts directly from the filesystem for accurate timestamps
+  -- Special handling for drafts: Use filesystem as single source of truth
+  -- This bypasses himalaya's cache entirely for the drafts folder
+  if is_drafts then
+    -- Get all drafts directly from the filesystem
     local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
     local draft_list = draft_manager.list(account_name)
     
-    -- Create a map of drafts by multiple criteria for better matching
-    local draft_map = {}
+    -- Convert draft list to email format for display
+    emails = {}
     for _, draft in ipairs(draft_list) do
-      -- Create multiple keys for matching
-      local key1 = (draft.subject or 'Untitled') .. '|' .. (draft.from or '')
-      local key2 = draft.filename
-      draft_map[key1] = draft
-      draft_map[key2] = draft
+      local email = {
+        id = draft.filename,  -- Use filename as stable ID
+        subject = draft.subject or 'Untitled',
+        from = draft.from or '',
+        to = draft.to or '',
+        date = os.date('%Y-%m-%d %H:%M:%S', draft.mtime or draft.timestamp),
+        mtime = draft.mtime or draft.timestamp,
+        draft_filepath = draft.filepath,  -- Store filepath for preview
+        flags = { draft = true }
+      }
+      table.insert(emails, email)
     end
     
-    -- Update emails with accurate modification times
-    for _, email in ipairs(emails) do
-      -- Handle from/sender being either string or table
-      local from_str = ''
-      if email.from then
-        from_str = type(email.from) == 'table' and (email.from.addr or email.from.email or '') or tostring(email.from)
-      elseif email.sender then
-        from_str = type(email.sender) == 'table' and (email.sender.addr or email.sender.email or '') or tostring(email.sender)
-      end
-      
-      local key = (email.subject or 'Untitled') .. '|' .. from_str
-      local draft = draft_map[key] or draft_map[email.id]
-      if draft then
-        email.mtime = draft.mtime or draft.timestamp
-        email.draft_filepath = draft.filepath
-      end
-    end
-    
-    -- Add any drafts that aren't in himalaya's list yet (e.g., just created)
-    local email_keys = {}
-    for _, email in ipairs(emails) do
-      -- Handle from/sender being either string or table
-      local from_str = ''
-      if email.from then
-        from_str = type(email.from) == 'table' and (email.from.addr or email.from.email or '') or tostring(email.from)
-      elseif email.sender then
-        from_str = type(email.sender) == 'table' and (email.sender.addr or email.sender.email or '') or tostring(email.sender)
-      end
-      
-      local key = (email.subject or 'Untitled') .. '|' .. from_str
-      email_keys[key] = true
-    end
-    
-    for _, draft in ipairs(draft_list) do
-      local key = (draft.subject or 'Untitled') .. '|' .. (draft.from or '')
-      if not email_keys[key] then
-        -- This draft isn't in himalaya's list, add it
-        local email = {
-          id = draft.filename or '',
-          subject = draft.subject or 'Untitled',
-          from = draft.from or '',
-          to = draft.to or '',
-          date = os.date('%Y-%m-%d %H:%M:%S', draft.mtime or draft.timestamp),
-          mtime = draft.mtime or draft.timestamp,
-          draft_filepath = draft.filepath,
-          flags = { draft = true }
-        }
-        table.insert(emails, email)
-      end
-    end
-    
-    -- Sort all emails by modification time (newest first)
-    table.sort(emails, function(a, b)
-      local a_time = a.mtime or 0
-      local b_time = b.mtime or 0
-      return a_time > b_time
-    end)
-    
-    -- Update total count
+    -- Draft list from draft_manager is already sorted by mtime (newest first)
+    -- so we don't need to sort again
     total_count = #emails
   end
   
@@ -691,15 +654,43 @@ function M.format_email_list(emails)
       local is_selected = state.is_email_selected(email_id)
       local checkbox = is_selected and '[x] ' or '[ ] '
       
-      -- Parse from field (it's an object with name and addr)
-      local from = 'Unknown'
-      if email.from then
-        if type(email.from) == 'table' then
-          from = email.from.name or email.from.addr or 'Unknown'
-        elseif type(email.from) == 'string' then
-          from = email.from
-        else
-          from = tostring(email.from)
+      -- For drafts, show To field instead of From
+      local display_field = 'Unknown'
+      if is_draft_folder then
+        -- Show To field for drafts
+        if email.to then
+          if type(email.to) == 'table' then
+            -- Extract name from "Name <email@example.com>" format or just use the address
+            if email.to.name then
+              display_field = email.to.name
+            elseif email.to.addr then
+              display_field = email.to.addr
+            else
+              display_field = tostring(email.to)
+            end
+          elseif type(email.to) == 'string' then
+            -- Parse "Name <email@example.com>" format
+            local name = email.to:match('^([^<]+)%s*<')
+            if name then
+              display_field = name:gsub('^%s+', ''):gsub('%s+$', '') -- Trim whitespace
+            else
+              -- Just an email address or already a name
+              display_field = email.to
+            end
+          else
+            display_field = tostring(email.to)
+          end
+        end
+      else
+        -- Show From field for non-drafts
+        if email.from then
+          if type(email.from) == 'table' then
+            display_field = email.from.name or email.from.addr or 'Unknown'
+          elseif type(email.from) == 'string' then
+            display_field = email.from
+          else
+            display_field = tostring(email.from)
+          end
         end
       end
       
@@ -751,28 +742,29 @@ function M.format_email_list(emails)
       local date = email.date or ''
       
       -- Truncate long fields
-      from = utils.truncate_string(from, 25)
+      display_field = utils.truncate_string(display_field, 25)
       subject = utils.truncate_string(subject, 50)
       
       -- Add draft indicator if this is a draft
       local draft_indicator = is_draft_folder and '✏️ ' or ''
       
-      local line = string.format('%s%s%s | %s  %s', checkbox, draft_indicator, from, subject, date)
+      local line = string.format('%s%s%s | %s  %s', checkbox, draft_indicator, display_field, subject, date)
       table.insert(lines, line)
       
       -- Store email metadata for highlighting
       if not lines.metadata then lines.metadata = {} end
       
-      -- Validate email_id before storing (allow local draft IDs)
-      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_')) then
+      -- Validate email_id before storing (allow local draft IDs and maildir filenames)
+      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_') or 
+                      (is_draft_folder and tostring(email_id):match('%..*,.*:2,'))) then
         lines.metadata[#lines] = {
           seen = seen,
           starred = starred,
           email_index = i,
           email_id = email_id,
           selected = is_selected,
-          from_start = #checkbox + #draft_indicator + 1,  -- Start position of author field (accounting for draft indicator)
-          from_end = #checkbox + #draft_indicator + #from,  -- End position of author field
+          from_start = #checkbox + #draft_indicator + 1,  -- Start position of author/recipient field
+          from_end = #checkbox + #draft_indicator + #display_field,  -- End position of author/recipient field
           is_draft = is_draft_folder,  -- Flag for draft detection
           draft_folder = is_draft_folder and draft_folder or nil,  -- Store draft folder for cleanup
           is_local = email.is_local  -- Store local flag
@@ -1322,10 +1314,14 @@ function M.refresh_email_list()
   
   -- Save current window and mode to restore focus
   local current_win = vim.api.nvim_get_current_win()
+  local current_buf = vim.api.nvim_get_current_buf()
   local current_mode = vim.api.nvim_get_mode().mode
-  if current_mode == 'i' or current_mode == 'ic' or current_mode == 'ix' then
-    vim.b.himalaya_was_insert_mode = true
-  end
+  local was_insert_mode = (current_mode == 'i' or current_mode == 'ic' or current_mode == 'ix')
+  local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+  
+  -- Check if we're in a compose buffer
+  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+  local is_compose_buffer = email_composer.is_compose_buffer(current_buf)
   
   -- Get current sidebar buffer
   local buf = sidebar.get_buf()
@@ -1341,8 +1337,35 @@ function M.refresh_email_list()
     
     local folder = state.get_current_folder()
     
-    -- No special handling for drafts - treat them like any other folder
-    -- They are synced via mbsync just like inbox
+    -- Check if this is drafts folder for special handling
+    local draft_folder = utils.find_draft_folder(account_name)
+    local is_drafts = folder == draft_folder
+    
+    if is_drafts then
+      -- For drafts, use filesystem as single source of truth
+      M.show_email_list({ folder })
+      
+      -- Restore focus for drafts folder too
+      vim.schedule(function()
+        if vim.api.nvim_win_is_valid(current_win) and vim.api.nvim_buf_is_valid(current_buf) then
+          -- Set focus back to original window
+          vim.api.nvim_set_current_win(current_win)
+          
+          -- Restore cursor position if it was moved
+          local ok, _ = pcall(vim.api.nvim_win_set_cursor, current_win, cursor_pos)
+          if not ok then
+            -- If cursor position is invalid, just go to line 1
+            pcall(vim.api.nvim_win_set_cursor, current_win, {1, 0})
+          end
+          
+          -- If we were in insert mode, restore it
+          if was_insert_mode then
+            vim.cmd('startinsert')
+          end
+        end
+      end)
+      return
+    end
     
     -- Get email list from himalaya (async for responsiveness)
     utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
@@ -1388,14 +1411,22 @@ function M.refresh_email_list()
   end
   
   -- Restore focus to original window if it's still valid
+  -- Use vim.schedule_wrap to ensure this happens after all other scheduled operations
   vim.schedule(function()
-    if vim.api.nvim_win_is_valid(current_win) then
+    if vim.api.nvim_win_is_valid(current_win) and vim.api.nvim_buf_is_valid(current_buf) then
+      -- Set focus back to original window
       vim.api.nvim_set_current_win(current_win)
+      
+      -- Restore cursor position if it was moved
+      local ok, _ = pcall(vim.api.nvim_win_set_cursor, current_win, cursor_pos)
+      if not ok then
+        -- If cursor position is invalid, just go to line 1
+        pcall(vim.api.nvim_win_set_cursor, current_win, {1, 0})
+      end
+      
       -- If we were in insert mode, restore it
-      local mode = vim.api.nvim_get_mode().mode
-      if mode == 'n' and vim.b.himalaya_was_insert_mode then
+      if was_insert_mode then
         vim.cmd('startinsert')
-        vim.b.himalaya_was_insert_mode = nil
       end
     end
   end)
@@ -1413,6 +1444,17 @@ function M.update_selection_display()
   local emails = state.get('email_list.emails')
   if not emails then
     return
+  end
+  
+  -- Check if we're in drafts folder to preserve filesystem data
+  local current_folder = state.get_current_folder()
+  local account_name = state.get_current_account()
+  local draft_folder = utils.find_draft_folder(account_name)
+  local is_drafts = current_folder == draft_folder
+  
+  -- For drafts, ensure we have the filesystem data preserved
+  if is_drafts and emails[1] and emails[1].draft_filepath then
+    -- We have filesystem-based drafts, good to proceed
   end
   
   -- Format email list with current selections and update display

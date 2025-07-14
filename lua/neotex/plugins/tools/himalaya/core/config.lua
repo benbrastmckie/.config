@@ -765,11 +765,26 @@ function M.setup_buffer_keymaps(bufnr)
           require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
         end
       elseif key == 'H' then
-        -- Toggle help display
-        local current_expanded = state.get('ui.help_expanded', false)
-        state.set('ui.help_expanded', not current_expanded)
-        -- Refresh the sidebar to show new footer
-        require('neotex.plugins.tools.himalaya.ui.email_list').refresh_email_list()
+        -- Check if we're in drafts folder
+        local current_folder = state.get_current_folder()
+        local notify = require('neotex.util.notifications')
+        
+        -- Debug logging
+        if notify.config.modules.himalaya.debug_mode then
+          notify.himalaya('gH pressed, current folder: ' .. tostring(current_folder), notify.categories.BACKGROUND)
+        end
+        
+        if current_folder and current_folder:lower():match('draft') then
+          -- Show draft-specific help
+          local draft_help = require('neotex.plugins.tools.himalaya.ui.draft_help')
+          draft_help.show_draft_help()
+        else
+          -- Toggle regular help display
+          local current_expanded = state.get('ui.help_expanded', false)
+          state.set('ui.help_expanded', not current_expanded)
+          -- Refresh the sidebar to show new footer
+          require('neotex.plugins.tools.himalaya.ui.email_list').refresh_email_list()
+        end
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)
@@ -895,6 +910,7 @@ function M.setup_buffer_keymaps(bufnr)
     keymap('n', 'n', function()
       local state = require('neotex.plugins.tools.himalaya.core.state')
       local main = require('neotex.plugins.tools.himalaya.ui.main')
+      local notify = require('neotex.util.notifications')
       
       local current_pos = vim.api.nvim_win_get_cursor(0)
       local current_line = current_pos[1]
@@ -903,6 +919,14 @@ function M.setup_buffer_keymaps(bufnr)
       local line_map = state.get('email_list.line_map')
       local email_data = state.get('email_list.emails')
       
+      -- Debug logging
+      if notify.config.modules.himalaya.debug_mode then
+        notify.himalaya('n key pressed on line ' .. current_line, notify.categories.BACKGROUND)
+        local has_line_map = line_map ~= nil
+        local has_line_info = line_map and line_map[current_line] ~= nil
+        notify.himalaya('Line map exists: ' .. tostring(has_line_map) .. ', Line info exists: ' .. tostring(has_line_info), notify.categories.BACKGROUND)
+      end
+      
       if line_map and line_map[current_line] then
         local line_info = line_map[current_line]
         local email_idx = line_info.email_index
@@ -910,6 +934,11 @@ function M.setup_buffer_keymaps(bufnr)
         
         if email then
           local email_id = email.id or tostring(email_idx)
+          
+          -- Debug logging
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('Toggling selection for email ID: ' .. tostring(email_id), notify.categories.BACKGROUND)
+          end
           
           -- Toggle selection on current line
           state.toggle_email_selection(email_id, email)
@@ -922,6 +951,10 @@ function M.setup_buffer_keymaps(bufnr)
           vim.schedule(function()
             vim.cmd('normal! j')
           end)
+        else
+          if notify.config.modules.himalaya.debug_mode then
+            notify.himalaya('No email found at index ' .. tostring(email_idx), notify.categories.BACKGROUND)
+          end
         end
       else
         -- If not on an email line, just move down

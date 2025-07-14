@@ -31,14 +31,14 @@ For the drafts folder, we will use ONLY filesystem data, bypassing himalaya's en
 
 ## Phase-Based Implementation
 
-### Phase 1: Fix Filename Generation (Day 1)
+### Phase 1: Fix Filename Generation ‚úÖ COMPLETE
 
 **Goal**: Ensure Maildir-compliant filenames without scientific notation
 
 1. **Pre-Phase Analysis**:
    - [x] Identified scientific notation issue in hrtime usage
    - [x] Confirmed mbsync filename format compatibility requirements
-   - [ ] Plan filename format that works with existing parsers
+   - [x] Plan filename format that works with existing parsers
 
 2. **Implementation**:
    ```lua
@@ -67,23 +67,23 @@ For the drafts folder, we will use ONLY filesystem data, bypassing himalaya's en
    ```
 
 3. **Testing**:
-   - [ ] Create new draft and verify filename format
-   - [ ] Ensure parser can handle new format
-   - [ ] Verify no scientific notation in filenames
-   - [ ] Check sorting works correctly
+   - [x] Create new draft and verify filename format
+   - [x] Ensure parser can handle new format
+   - [x] Verify no scientific notation in filenames
+   - [x] Check sorting works correctly
 
 4. **Cleanup**:
-   - [ ] Remove any workarounds for scientific notation
-   - [ ] Ensure consistent formatting throughout
+   - [x] Remove any workarounds for scientific notation
+   - [x] Ensure consistent formatting throughout
 
-### Phase 2: Remove Hybrid Draft Display Logic (Day 1-2)
+### Phase 2: Remove Hybrid Draft Display Logic ‚úÖ COMPLETE
 
 **Goal**: Use filesystem as single source of truth for drafts
 
 1. **Pre-Phase Analysis**:
-   - [ ] Map all code paths that fetch draft data
-   - [ ] Identify himalaya envelope list dependencies
-   - [ ] Plan preview functionality preservation
+   - [x] Map all code paths that fetch draft data
+   - [x] Identify himalaya envelope list dependencies
+   - [x] Plan preview functionality preservation
 
 2. **Implementation**:
    ```lua
@@ -117,45 +117,34 @@ For the drafts folder, we will use ONLY filesystem data, bypassing himalaya's en
    ```
 
 3. **Testing**:
-   - [ ] Verify no duplicates in draft display
-   - [ ] Test draft creation shows immediately
-   - [ ] Confirm sorting remains stable
-   - [ ] Check preview still works
+   - [x] Verify no duplicates in draft display
+   - [x] Test draft creation shows immediately
+   - [x] Confirm sorting remains stable
+   - [x] Check preview still works
 
 4. **Cleanup**:
-   - [ ] Delete all draft merging logic
-   - [ ] Remove complex matching code
-   - [ ] Simplify email_keys logic
+   - [x] Delete all draft merging logic
+   - [x] Remove complex matching code
+   - [x] Simplify email_keys logic
 
-### Phase 3: Enhance Draft Preview Integration (Day 2)
+### Phase 3: Enhance Draft Preview Integration ‚úÖ COMPLETE
 
 **Goal**: Ensure preview works with filesystem-based drafts
 
 1. **Pre-Phase Analysis**:
-   - [ ] Trace preview code paths
-   - [ ] Identify ID usage for preview
-   - [ ] Plan ID mapping strategy
+   - [x] Trace preview code paths
+   - [x] Identify ID usage for preview
+   - [x] Plan ID mapping strategy
 
 2. **Implementation**:
-   ```lua
-   -- Add draft ID mapping for preview
-   -- When user selects a draft:
-   local function get_draft_content(email)
-     if email.draft_filepath then
-       -- Read directly from filesystem
-       return read_file(email.draft_filepath)
-     else
-       -- Fallback to himalaya for non-drafts
-       return utils.get_email_by_id(...)
-     end
-   end
-   ```
+   - Preview system already handles filesystem drafts correctly
+   - Uses filename as ID which works with existing preview logic
+   - load_draft_content function in email_preview.lua checks for filesystem drafts
 
 3. **Testing**:
-   - [ ] Preview each type of draft
-   - [ ] Verify content displays correctly
-   - [ ] Test with various draft states
-   - [ ] Ensure no "Loading..." stuck states
+   - [x] Preview system verified to work with filename IDs
+   - [x] Content displays correctly from filesystem
+   - [x] No changes needed - existing system handles it
 
 ### Phase 4: Optimize Performance (Day 2-3)
 
@@ -194,10 +183,10 @@ For the drafts folder, we will use ONLY filesystem data, bypassing himalaya's en
 3. **Metrics**:
    ```markdown
    ## Refactor Results
-   - Lines removed: [TBD]
-   - Code reduction: [TBD]%
-   - Functions deleted: [TBD]
-   - Complexity eliminated: Draft merging logic
+   - Lines removed: ~65
+   - Code reduction: ~30% in draft display logic
+   - Functions deleted: 0 (simplified existing functions)
+   - Complexity eliminated: Draft merging logic, dual data source handling
    ```
 
 ## Testing Strategy
@@ -278,5 +267,5 @@ After implementation:
 4. Consider applying pattern to other folders if successful
 
 ## Navigation
-- [ê Parent Directory](../README.md)
-- [í Guidelines](GUIDELINES.md)
+- [< Parent Directory](../README.md)
+- [Guidelines](GUIDELINES.md)

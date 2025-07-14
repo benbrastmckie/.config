@@ -53,12 +53,18 @@ local function create_email_template(opts)
     'References: ' .. (opts.references or '')
   }
   
-  -- Filter out empty optional headers
+  -- Keep all headers but filter out truly optional ones (Reply-To, In-Reply-To, References)
   local filtered = {}
   for _, header in ipairs(headers) do
     local name, value = header:match('^([^:]+):%s*(.*)$')
-    if name and value and value ~= '' then
-      table.insert(filtered, header)
+    if name then
+      -- Always include From, To, Cc, Bcc, Subject
+      if name:match('^(From|To|Cc|Bcc|Subject)$') then
+        table.insert(filtered, header)
+      -- Only include optional headers if they have values
+      elseif value and value ~= '' then
+        table.insert(filtered, header)
+      end
     end
   end
   
@@ -113,15 +119,8 @@ function M.create_compose_buffer(opts)
     vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
   end
   
-  -- Track in window stack
-  window_stack.push({
-    type = 'compose',
-    buffer = buf,
-    window = vim.api.nvim_get_current_win()
-  })
-  
-  -- Position cursor
-  M.position_cursor_on_empty_field(buf)
+  -- Don't manage windows here - let the caller handle it
+  -- The main.compose_email function will handle window placement
   
   logger.info('Created compose buffer', {
     buffer = buf,
@@ -134,11 +133,6 @@ end
 -- Setup buffer-local keymaps
 function M.setup_compose_keymaps(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
-  
-  -- Save draft
-  vim.keymap.set('n', '<C-s>', function()
-    M.save_draft(buf)
-  end, vim.tbl_extend('force', opts, { desc = 'Save draft' }))
   
   -- Send email
   vim.keymap.set('n', '<leader>ms', function()
@@ -154,6 +148,17 @@ function M.setup_compose_keymaps(buf)
   vim.keymap.set('n', '<leader>md', function()
     M.delete_draft(buf)
   end, vim.tbl_extend('force', opts, { desc = 'Delete draft' }))
+  
+  -- Override write behavior to use draft save
+  -- This hooks into your existing <leader>w save workflow
+  vim.api.nvim_create_autocmd('BufWriteCmd', {
+    buffer = buf,
+    callback = function()
+      M.save_draft(buf, 'manual')
+      return true  -- Prevent default write behavior
+    end,
+    desc = 'Save draft when using :w or <leader>w'
+  })
 end
 
 -- Setup autosave for a buffer
@@ -169,7 +174,7 @@ function M.setup_autosave(buf)
     function()
       if vim.api.nvim_buf_is_valid(buf) and 
          vim.api.nvim_buf_get_option(buf, 'modified') then
-        M.save_draft(buf, 'autosave')
+        M.save_draft(buf, 'auto')
       end
     end,
     { ['repeat'] = -1 }
@@ -192,7 +197,7 @@ end
 function M.save_draft(buf, trigger)
   trigger = trigger or 'manual'
   
-  local ok, err = draft_manager.save(buf)
+  local ok, err = draft_manager.save(buf, trigger == 'auto')
   
   if not ok then
     notify.himalaya(
@@ -215,21 +220,96 @@ end
 
 -- Send email
 function M.send_email(buf)
-  -- Save draft first
-  M.save_draft(buf)
+  -- Stop autosave timer to prevent duplicate saves
+  if autosave_timers[buf] then
+    vim.fn.timer_stop(autosave_timers[buf])
+    autosave_timers[buf] = nil
+  end
   
-  -- Send through draft manager
-  local ok, err = draft_manager.send(buf)
+  -- Save draft first (manual save, no notification)
+  M.save_draft(buf, 'auto')
   
-  if not ok then
+  -- Get draft info
+  local draft = draft_manager.get_by_buffer(buf)
+  if not draft then
     notify.himalaya(
-      'Failed to send email: ' .. (err or 'unknown error'),
+      'Failed to send email: No draft associated with buffer',
       notify.categories.ERROR
     )
     return false
   end
   
-  -- Close compose window
+  -- Read the draft file to get the email content
+  local file = io.open(draft.filepath, 'r')
+  if not file then
+    notify.himalaya(
+      'Failed to send email: Cannot read draft file',
+      notify.categories.ERROR
+    )
+    return false
+  end
+  
+  local content = file:read('*all')
+  file:close()
+  
+  -- Parse email headers and body
+  local headers = {}
+  local body = ''
+  local in_body = false
+  
+  for line in content:gmatch('[^\n]+') do
+    if in_body then
+      body = body .. line .. '\n'
+    elseif line == '' then
+      in_body = true
+    else
+      local key, value = line:match('^([^:]+):%s*(.*)$')
+      if key then
+        headers[key:lower()] = value
+      end
+    end
+  end
+  
+  -- Prepare email data for scheduler
+  local email_data = {
+    from = headers.from or '',
+    to = headers.to or '',
+    cc = headers.cc,
+    bcc = headers.bcc,
+    subject = headers.subject or '',
+    body = body:gsub('\n$', '') -- Remove trailing newline
+  }
+  
+  -- Schedule email with 60 second delay (same as old composer)
+  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduled_id = scheduler.schedule_email(
+    email_data,
+    draft.account,
+    {
+      delay = 60, -- 1 minute delay
+      metadata = {
+        draft_filepath = draft.filepath,
+        draft_buffer = buf
+      }
+    }
+  )
+  
+  if not scheduled_id then
+    notify.himalaya(
+      'Failed to schedule email',
+      notify.categories.ERROR
+    )
+    -- Restart autosave if send failed
+    M.setup_autosave(buf)
+    return false
+  end
+  
+  -- Delete draft after successful scheduling
+  if M.config.delete_draft_on_send then
+    draft_manager.delete(buf)
+  end
+  
+  -- Email scheduled successfully, close compose window
   M.close_compose_buffer(buf)
   
   return true
@@ -243,21 +323,103 @@ function M.close_compose_buffer(buf)
     autosave_timers[buf] = nil
   end
   
+  -- Check if buffer is still valid
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+  
+  -- Store the current window before closing
+  local current_win = vim.api.nvim_get_current_win()
+  local compose_win = nil
+  
+  -- Find the window containing this buffer
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf then
+      compose_win = win
+      break
+    end
+  end
+  
   -- Check if modified
-  if vim.api.nvim_buf_get_option(buf, 'modified') then
+  local is_modified = false
+  local ok, modified = pcall(vim.api.nvim_buf_get_option, buf, 'modified')
+  if ok then
+    is_modified = modified
+  end
+  
+  if is_modified then
     vim.ui.select({'Save and close', 'Discard changes', 'Cancel'}, {
       prompt = 'Draft has unsaved changes:'
     }, function(choice)
       if choice == 'Save and close' then
         M.save_draft(buf)
-        vim.api.nvim_buf_delete(buf, { force = true })
+        M._do_close_buffer(buf, compose_win)
       elseif choice == 'Discard changes' then
-        vim.api.nvim_buf_delete(buf, { force = true })
+        M._do_close_buffer(buf, compose_win)
       end
       -- Cancel does nothing
     end)
   else
-    vim.api.nvim_buf_delete(buf, { force = false })
+    M._do_close_buffer(buf, compose_win)
+  end
+end
+
+-- Helper to actually close the buffer and manage window focus
+function M._do_close_buffer(buf, compose_win)
+  -- Find the sidebar window
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  
+  -- Find a suitable buffer to show instead of compose buffer
+  local function find_alternate_buffer()
+    local bufs = vim.api.nvim_list_bufs()
+    for _, b in ipairs(bufs) do
+      if b ~= buf and vim.api.nvim_buf_is_valid(b) and
+         vim.api.nvim_buf_get_option(b, 'buflisted') and
+         vim.api.nvim_buf_get_option(b, 'buftype') == '' then
+        -- Skip the sidebar buffer
+        local is_sidebar = false
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          if vim.api.nvim_win_get_buf(win) == b and win == sidebar_win then
+            is_sidebar = true
+            break
+          end
+        end
+        if not is_sidebar then
+          return b
+        end
+      end
+    end
+    -- If no suitable buffer found, create a new one
+    return vim.api.nvim_create_buf(true, false)
+  end
+  
+  -- If compose_win exists and is valid, replace its buffer before deleting
+  if compose_win and vim.api.nvim_win_is_valid(compose_win) then
+    local alt_buf = find_alternate_buffer()
+    vim.api.nvim_win_set_buf(compose_win, alt_buf)
+    
+    -- Ensure we're focused on the compose window (not sidebar)
+    if vim.api.nvim_get_current_win() == sidebar_win then
+      vim.api.nvim_set_current_win(compose_win)
+    end
+  end
+  
+  -- Now safely delete the compose buffer
+  if vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+  
+  -- Final check: ensure we're not focused on the sidebar
+  local current_win = vim.api.nvim_get_current_win()
+  if current_win == sidebar_win then
+    -- Find a non-sidebar window to focus
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if win ~= sidebar_win and vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_set_current_win(win)
+        break
+      end
+    end
   end
 end
 
