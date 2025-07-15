@@ -317,6 +317,14 @@ end
 function M.execute_async(args, opts, callback)
   opts = opts or {}
   
+  -- In test mode, return early to avoid CLI calls that will fail
+  if _G.HIMALAYA_TEST_MODE then
+    if type(callback) == 'function' then
+      callback(nil, "Test mode: CLI calls disabled")
+    end
+    return nil
+  end
+  
   if type(callback) ~= 'function' then
     logger.error('execute_async requires a callback function')
     return nil

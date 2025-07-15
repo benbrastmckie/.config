@@ -21,6 +21,9 @@ function M.save_state()
     
     -- Event ignore state
     eventignore = vim.o.eventignore,
+    
+    -- Save test mode
+    test_mode = _G.HIMALAYA_TEST_MODE,
   }
   
   return state
@@ -64,6 +67,9 @@ function M.restore_state(state)
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)
   end
   
+  -- Restore test mode flag
+  _G.HIMALAYA_TEST_MODE = state.test_mode
+  
   -- Restore eventignore
   vim.o.eventignore = old_eventignore
 end
@@ -82,10 +88,7 @@ function M.run_isolated(fn)
   -- Run the function
   local ok, result = pcall(fn)
   
-  -- Clear test mode
-  _G.HIMALAYA_TEST_MODE = false
-  
-  -- Restore state
+  -- Always restore state, even if test failed
   M.restore_state(state)
   
   -- Return result
