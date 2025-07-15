@@ -1162,4 +1162,39 @@ function M.cleanup_draft_after_send(scheduled_id)
   end
 end
 
+-- Get a queue item by ID
+function M.get_queue_item(id)
+  return M.queue[id]
+end
+
+-- Remove an item from the queue (for both scheduled and paused emails)
+function M.remove_from_queue(id)
+  local item = M.queue[id]
+  
+  if not item then
+    return false, "Email not found"
+  end
+  
+  -- Remove from queue
+  M.queue[id] = nil
+  M.save_queue()
+  
+  -- Close notification if open
+  if item.notification_window and vim.api.nvim_win_is_valid(item.notification_window) then
+    vim.api.nvim_win_close(item.notification_window, true)
+  end
+  
+  -- Notify user
+  local status_text = item.status == "paused" and "Paused" or "Scheduled"
+  vim.notify(status_text .. " email deleted", vim.log.levels.INFO)
+  
+  -- Refresh the email list
+  vim.defer_fn(function()
+    local main = require('neotex.plugins.tools.himalaya.ui.main')
+    main.refresh_email_list({ restore_insert_mode = false })
+  end, 100)
+  
+  return true
+end
+
 return M

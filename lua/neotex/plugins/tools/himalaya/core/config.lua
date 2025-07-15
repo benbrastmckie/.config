@@ -745,9 +745,17 @@ function M.setup_buffer_keymaps(bufnr)
         local line_data = metadata[line]
         
         if line_data and line_data.type == 'scheduled' then
-          -- Cancel scheduled email
+          -- Cancel/delete scheduled email
           local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
-          scheduler.cancel_send(line_data.id)
+          local queue_item = scheduler.get_queue_item(line_data.id)
+          
+          if queue_item and (queue_item.status == 'scheduled' or queue_item.status == 'paused') then
+            -- For both scheduled and paused emails, remove them
+            scheduler.remove_from_queue(line_data.id)
+          else
+            -- Fallback to cancel_send for backwards compatibility
+            scheduler.cancel_send(line_data.id)
+          end
         elseif has_selection then
           require('neotex.plugins.tools.himalaya.ui.main').delete_selected_emails()
         else
