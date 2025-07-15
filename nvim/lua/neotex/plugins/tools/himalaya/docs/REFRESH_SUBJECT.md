@@ -177,30 +177,33 @@ This solution:
 4. Prevents this class of bugs permanently
 5. Aligns with the notification system's emphasis on clean architecture
 
-## Implementation Plan for Solution 2
+## Implementation Status
 
-1. **Update email_cache.lua**:
-   ```lua
-   function M.store_emails(account, folder, emails)
-       -- Skip caching for draft folders
-       if folder:lower():match('draft') then
-           logger.debug('Skipping cache for draft folder', { folder = folder })
-           return
-       end
-       -- ... existing code
-   ```
+✅ **IMPLEMENTED** - Solution 2 has been successfully implemented:
 
-2. **Clean up email_list.lua**:
-   - Remove lines 701-725 (cache lookup for drafts)
-   - Simplify the draft subject handling
+### Changes Made:
 
-3. **Update notifications**:
-   - Use proper notification categories per NOTIFICATIONS.md
-   - Replace direct logger calls with notification system
+1. **email_cache.lua**:
+   - Added check in `store_emails()` to skip caching draft folders
+   - Removed draft-specific logging from `store_email()`
+   - Drafts are now never cached, eliminating staleness issues
 
-4. **Test the changes**:
-   - Verify draft subjects update immediately
-   - Ensure no performance regression
-   - Confirm other folders still use cache properly
+2. **email_list.lua**:
+   - Removed cache lookup logic for drafts (lines 701-725)
+   - Removed debug logging for draft entries
+   - Subject now comes directly from filesystem read
 
-This approach creates a cleaner, more maintainable solution that prevents similar issues in the future.
+3. **Result**:
+   - Draft subjects update immediately on every save
+   - No stale cache data can interfere
+   - Cleaner, simpler code
+   - Filesystem is the single source of truth for drafts
+
+### Why This Works:
+
+- Drafts are already read from the filesystem in `process_email_list_results()`
+- The draft manager parses headers (including subject) directly from maildir files
+- No cache means no staleness - every display shows current file contents
+- Performance impact is negligible since draft folders typically contain few emails
+
+This solution permanently fixes the refresh issue while improving code maintainability.

@@ -22,107 +22,47 @@ function M.open_draft(email_id, account)
   local notify = require('neotex.util.notifications')
   logger.debug('open_draft called', { email_id = email_id, account = account })
   
-  -- Since drafts are now regular emails in Maildir, we need to find the actual file
-  -- The best approach is to directly open the draft using the Maildir path
-  
-  -- Get the maildir path for drafts
-  local config = require('neotex.plugins.tools.himalaya.core.config').config
-  local maildir_root = config.sync.maildir_root or vim.fn.expand('~/Mail')
-  local account_folder = account == 'gmail' and 'Gmail' or account
-  local drafts_path = maildir_root .. '/' .. account_folder .. '/.Drafts'
-  
-  -- Read the draft content from himalaya to get unique identifiers
+  -- First, check if we already have the filepath in the email list
   local state = require('neotex.plugins.tools.himalaya.core.state')
-  local folder = state.get_current_folder()
+  local emails = state.get('email_list.emails')
   
-  -- Get email from cache first
-  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
-  local cached_email = email_cache.get_email(account, folder, email_id)
-  
-  if not cached_email then
-    notify.himalaya('Draft not in cache, please refresh the email list', notify.categories.ERROR)
-    return nil
+  if emails then
+    -- Look for the email with matching ID
+    for _, email in ipairs(emails) do
+      if email.id == email_id and email.draft_filepath then
+        logger.info('Found draft filepath directly from email list', {
+          email_id = email_id,
+          filepath = email.draft_filepath
+        })
+        return maildir_composer.open_draft(email.draft_filepath)
+      end
+    end
   end
   
-  local subject = cached_email.subject or ''
-  local from = cached_email.from or ''
-  local date = cached_email.date
-  
-  logger.debug('Looking for draft', { 
-    email_id = email_id,
-    subject = subject,
-    from = from,
-    date = date
-  })
-  
-  -- List all draft files in Maildir
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
-  local drafts = draft_manager.list_drafts(account)
-  
-  -- Try to match by subject first (most reliable)
-  if subject and subject ~= '' then
+  -- Fallback: If email_id is actually a filename (for drafts), use it to find the file
+  if type(email_id) == 'string' and email_id:match('%.') then
+    -- This looks like a maildir filename
+    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+    local drafts = draft_manager.list(account)
+    
     for _, draft in ipairs(drafts) do
-      if draft.subject == subject then
-        logger.info('Found draft by subject match', { 
-          email_id = email_id, 
-          filepath = draft.filepath,
-          subject = subject
+      if draft.filename == email_id then
+        logger.info('Found draft by filename match', {
+          email_id = email_id,
+          filepath = draft.filepath
         })
         return maildir_composer.open_draft(draft.filepath)
       end
     end
   end
   
-  -- Try fuzzy subject match (in case of encoding differences)
-  if subject and subject ~= '' and subject ~= '(No subject)' then
-    local subject_lower = subject:lower():gsub('^%s+', ''):gsub('%s+$', '') -- trim whitespace
-    for _, draft in ipairs(drafts) do
-      if draft.subject then
-        local draft_subject_lower = draft.subject:lower():gsub('^%s+', ''):gsub('%s+$', '')
-        if draft_subject_lower:find(subject_lower, 1, true) then
-          logger.info('Found draft by fuzzy subject match', { 
-            email_id = email_id, 
-            filepath = draft.filepath,
-            subject = subject,
-            draft_subject = draft.subject
-          })
-          return maildir_composer.open_draft(draft.filepath)
-        end
-      end
-    end
-  end
-  
-  -- If we have exactly one draft and no subject, open it
-  if #drafts == 1 and (not subject or subject == '' or subject == '(No subject)') then
-    logger.info('Only one draft without subject, opening it', { 
-      email_id = email_id, 
-      filepath = drafts[1].filepath 
-    })
-    return maildir_composer.open_draft(drafts[1].filepath)
-  end
-  
-  -- Not found - provide helpful error messages
-  logger.warn('Cannot match draft to file', {
+  -- If we couldn't find it, show an error
+  logger.warn('Cannot find draft filepath', {
     email_id = email_id,
-    subject = subject,
-    drafts_found = #drafts,
-    draft_subjects = vim.tbl_map(function(d) return d.subject or 'none' end, drafts)
+    account = account
   })
   
-  notify.himalaya('Cannot match draft to file.', notify.categories.ERROR)
-  
-  if #drafts == 0 then
-    notify.himalaya('No draft files found. Try refreshing the email list.', notify.categories.ERROR)
-  else
-    notify.himalaya(string.format('Found %d drafts but none match subject "%s"', #drafts, subject or 'none'), notify.categories.ERROR)
-    -- Show available subjects for debugging
-    local subjects = {}
-    for _, draft in ipairs(drafts) do
-      table.insert(subjects, draft.subject or '(no subject)')
-    end
-    logger.debug('Available draft subjects', { subjects = subjects })
-  end
-  
+  notify.himalaya('Cannot open draft. Please refresh the email list and try again.', notify.categories.ERROR)
   return nil
 end
 

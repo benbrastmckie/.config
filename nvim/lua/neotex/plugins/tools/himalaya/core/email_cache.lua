@@ -161,6 +161,15 @@ function M.store_emails(account, folder, emails)
     return
   end
   
+  -- Skip caching for draft folders - filesystem is the source of truth
+  if folder:lower():match('draft') then
+    logger.debug('Skipping cache for draft folder', { 
+      folder = folder,
+      account = account 
+    })
+    return
+  end
+  
   -- Initialize cache structure
   if not cache[account] then cache[account] = {} end
   if not cache[account][folder] then cache[account][folder] = {} end
@@ -171,16 +180,6 @@ function M.store_emails(account, folder, emails)
   for _, email in ipairs(emails or {}) do
     local normalized = M.normalize_email(email)
     if normalized and normalized.id then
-      -- Log what we're storing for drafts
-      if folder:lower():match('draft') then
-        logger.info('Storing draft in cache', {
-          id = normalized.id,
-          subject = normalized.subject,
-          has_subject = normalized.subject ~= nil and normalized.subject ~= '',
-          account = account,
-          folder = folder
-        })
-      end
       folder_cache[normalized.id] = normalized
       stored = stored + 1
       stats.stores = stats.stores + 1
@@ -202,16 +201,6 @@ end
 function M.store_email(account, folder, email)
   if not account or not folder or not email then
     return
-  end
-  
-  -- Log storing for drafts
-  if folder:lower():match('draft') then
-    logger.info('store_email called for draft', {
-      id = email.id,
-      subject = email.subject,
-      account = account,
-      folder = folder
-    })
   end
   
   M.store_emails(account, folder, { email })
