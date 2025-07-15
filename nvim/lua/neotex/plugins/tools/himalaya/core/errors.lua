@@ -42,7 +42,6 @@ M.types = {
   
   -- State errors
   STATE_CORRUPTED = "state_corrupted",
-  STATE_VERSION_MISMATCH = "state_version_mismatch",
   
   -- System errors
   PERMISSION_DENIED = "permission_denied",
