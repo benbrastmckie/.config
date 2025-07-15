@@ -638,19 +638,6 @@ function M.format_email_list(emails)
       -- Selection checkbox (always shown)
       local email_id = email.id or tostring(i)
       
-      -- Debug logging for draft emails
-      if is_draft_folder then
-        local logger = require('neotex.plugins.tools.himalaya.core.logger')
-        logger.debug('Draft email entry', {
-          index = i,
-          email_id = email_id,
-          id = email.id,
-          subject = email.subject,
-          from = email.from,
-          has_id = email.id ~= nil
-        })
-      end
-      
       local is_selected = state.is_email_selected(email_id)
       local checkbox = is_selected and '[x] ' or '[ ] '
       
@@ -696,49 +683,13 @@ function M.format_email_list(emails)
       
       local subject = email.subject or ''
       
-      -- For drafts, himalaya might not return the subject in envelope list
-      -- Try to get it from the draft manager first, then email cache
-      if is_draft_folder and (subject == '' or subject == vim.NIL) then
-        -- With Maildir, drafts are just regular emails in the Drafts folder
-        -- Check email cache for the subject
-        local cached = email_cache.get_email(current_account, current_folder, email_id)
-        logger.info('Checking email cache for draft subject', {
-          email_id = email_id,
-          current_account = current_account,
-          current_folder = current_folder,
-          has_cached = cached ~= nil,
-          cached_subject = cached and cached.subject,
-          cached_id = cached and cached.id
-        })
-        if cached and cached.subject and cached.subject ~= '' then
-          subject = cached.subject
-          logger.info('Using email cache subject for draft', {
-            email_id = email_id,
-            cached_subject = subject
-          })
-        else
-          logger.info('No cached subject found for draft', {
-            email_id = email_id,
-            cached = cached
-          })
-        end
-      end
+      -- For drafts, the subject comes directly from filesystem
+      -- No cache lookup needed - filesystem is the source of truth
       
       if subject == '' then
         subject = '(No subject)'
       end
       
-      -- Debug logging for draft subjects
-      if is_draft_folder then
-        logger.debug('Draft subject in sidebar', {
-          index = i,
-          email_id = email_id,
-          raw_subject = email.subject,
-          subject_type = type(email.subject),
-          is_empty = subject == '',
-          display_subject = subject
-        })
-      end
       local date = email.date or ''
       
       -- Truncate long fields
