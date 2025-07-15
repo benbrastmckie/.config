@@ -7,6 +7,7 @@ local M = {}
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
 local float = require('neotex.plugins.tools.himalaya.ui.float')
+local isolation = require('neotex.plugins.tools.himalaya.test.utils.test_isolation')
 
 -- Test registry
 M.tests = {
@@ -54,6 +55,43 @@ function M.setup()
   })
 end
 
+-- Format test name for display
+function M.format_test_display_name(name)
+  -- Remove test_ prefix
+  local display = name:gsub('^test_', '')
+  
+  -- Special case formatting
+  local special_names = {
+    ['basic_commands'] = 'Basic Commands',
+    ['email_commands'] = 'Email Commands',
+    ['sync_commands'] = 'Sync Commands',
+    ['draft_commands_config'] = 'Draft Commands & Config',
+    ['draft_manager_maildir'] = 'Draft Manager (Maildir)',
+    ['draft_saving'] = 'Draft Saving',
+    ['email_composer_maildir'] = 'Email Composer (Maildir)',
+    ['maildir_foundation'] = 'Maildir Foundation',
+    ['maildir_integration'] = 'Maildir Integration',
+    ['scheduler'] = 'Email Scheduler',
+    ['full_workflow'] = 'Full Email Workflow',
+    ['search_speed'] = 'Search Performance'
+  }
+  
+  -- Check for special name
+  if special_names[display] then
+    return special_names[display]
+  end
+  
+  -- General formatting: replace underscores and capitalize words
+  display = display:gsub('_', ' ')
+  
+  -- Capitalize first letter of each word
+  display = display:gsub("(%a)([%w_']*)", function(first, rest)
+    return first:upper() .. rest:lower()
+  end)
+  
+  return display
+end
+
 -- Discover test files
 function M.discover_tests()
   local test_dirs = {
@@ -76,7 +114,7 @@ function M.discover_tests()
       
       for _, file in ipairs(files) do
         local name = vim.fn.fnamemodify(file, ':t:r')
-        local display_name = name:gsub('test_', ''):gsub('_', ' ')
+        local display_name = M.format_test_display_name(name)
         
         table.insert(M.tests[dir], {
           name = name,
@@ -92,6 +130,9 @@ end
 
 -- Test picker interface
 function M.run_with_picker(filter)
+  -- Ensure we start from a clean state
+  vim.cmd('stopinsert')
+  
   -- Handle direct test name argument
   if filter and filter ~= '' then
     -- Try to run specific test by name
@@ -114,22 +155,34 @@ function M.run_with_picker(filter)
     return
   end
   
-  local items = {
-    { text = '── Run All Tests ──', value = 'all', icon = '🚀' },
-    { text = '── Run All Command Tests ──', value = 'commands', icon = '📝' },
-    { text = '── Run All Feature Tests ──', value = 'features', icon = '✨' },
-    { text = '── Run All Integration Tests ──', value = 'integration', icon = '🔗' },
-    { text = '── Run All Performance Tests ──', value = 'performance', icon = '⚡' },
-    { text = '────────────────', value = nil, icon = '─' }
+  -- Create cleaner menu structure
+  local items = {}
+  
+  -- Count total tests
+  local total_tests = 0
+  for _, tests in pairs(M.tests) do
+    total_tests = total_tests + #tests
+  end
+  
+  -- Add main options
+  table.insert(items, { text = string.format('Run All Tests (%d total)', total_tests), value = 'all', icon = '🚀' })
+  table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
+  
+  -- Add test suites with better descriptions
+  local suites = {
+    { category = 'commands', name = 'Command Tests', desc = 'Core command functionality', icon = '📝' },
+    { category = 'features', name = 'Feature Tests', desc = 'Email, drafts, scheduler', icon = '✨' },
+    { category = 'integration', name = 'Integration Tests', desc = 'End-to-end workflows', icon = '🔗' },
+    { category = 'performance', name = 'Performance Tests', desc = 'Speed and efficiency', icon = '⚡' },
   }
   
-  -- Add individual tests
-  for category, tests in pairs(M.tests) do
-    for _, test in ipairs(tests) do
+  for _, suite in ipairs(suites) do
+    if M.tests[suite.category] and #M.tests[suite.category] > 0 then
+      local count = #M.tests[suite.category]
       table.insert(items, {
-        text = string.format('[%s] %s', category:sub(1,3):upper(), test.display_name),
-        value = test,
-        icon = M.get_test_icon(category)
+        text = string.format('%s (%d tests) • %s', suite.name, count, suite.desc),
+        value = suite.category,
+        icon = suite.icon
       })
     end
   end
@@ -163,7 +216,7 @@ function M.telescope_picker(items)
   end
   
   pickers.new({}, {
-    prompt_title = 'Himalaya Test Runner',
+    prompt_title = 'Select Test Suite',
     finder = finders.new_table {
       results = picker_items,
       entry_maker = function(entry)
@@ -202,8 +255,13 @@ function M.simple_picker(items)
     end
   end
   
+  -- Don't show picker in test mode
+  if _G.HIMALAYA_TEST_MODE then
+    return
+  end
+  
   vim.ui.select(choices, {
-    prompt = 'Select test to run:',
+    prompt = 'Select Test Suite:',
     format_item = function(item)
       return string.format('%s %s', item.icon, item.text)
     end
@@ -216,26 +274,29 @@ end
 
 -- Execute selected tests
 function M.execute_test_selection(selection)
-  -- Reset results
+  -- Reset results before isolation
   M.reset_results()
   
   -- Show start notification
   notify.himalaya('Starting tests...', notify.categories.STATUS)
   
-  local start_time = vim.loop.hrtime()
+  -- Run test execution in isolation
+  isolation.run_isolated(function()
+    local start_time = vim.loop.hrtime()
+    
+    if selection == 'all' then
+      M.run_all_tests()
+    elseif type(selection) == 'string' then
+      M.run_category_tests(selection)
+    else
+      M.run_single_test(selection)
+    end
+    
+    -- Calculate duration
+    M.results.duration = (vim.loop.hrtime() - start_time) / 1e6
+  end)
   
-  if selection == 'all' then
-    M.run_all_tests()
-  elseif type(selection) == 'string' then
-    M.run_category_tests(selection)
-  else
-    M.run_single_test(selection)
-  end
-  
-  -- Calculate duration
-  M.results.duration = (vim.loop.hrtime() - start_time) / 1e6
-  
-  -- Show results
+  -- Show results after isolation is complete
   M.show_results()
 end
 
@@ -433,16 +494,18 @@ function M.show_results()
   end
   
   -- Show detailed results in floating window
-  float.show('Test Results', lines)
+  local buf, win = float.show('Test Results', lines)
+  
+  -- Ensure the float window has focus
+  if win and vim.api.nvim_win_is_valid(win) then
+    vim.api.nvim_set_current_win(win)
+    -- Ensure we're in normal mode in the results window
+    vim.cmd('stopinsert')
+  end
   
   -- Final cleanup: ensure all test buffers are cleaned up
   vim.defer_fn(function()
     M.cleanup_test_buffers()
-    
-    -- Ensure we're in normal mode after tests
-    if vim.api.nvim_get_mode().mode ~= 'n' then
-      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)
-    end
     
     if M.results.passed == M.results.total then
       notify.himalaya('Test execution completed - no background processes should be running', notify.categories.STATUS)

@@ -89,22 +89,143 @@ Testing utilities and mock implementations.
 
 ## Test Status
 
-### Overall Status: ✅ 100% Pass Rate (84/84 tests)
+### Overall Status: ✅ 100% Pass Rate
 
 The test suite has been fully consolidated and optimized, achieving 100% pass rate across all categories:
 
-- **Commands**: 21/21 tests passing
-- **Features**: 46/46 tests passing  
-- **Integration**: 23/23 tests passing
-- **Performance**: 1/1 tests passing
+- **Commands**: All tests passing
+- **Features**: All tests passing  
+- **Integration**: All tests passing
+- **Performance**: All tests passing
 
-### Recent Improvements
+### Recent Improvements (Phase 2)
 
-1. **Consolidated Test Files**: Moved all working tests from `scripts/` to `test/` directory
-2. **Removed Outdated Tests**: Eliminated `.disabled` files and obsolete test cases
-3. **Fixed Configuration Issues**: Resolved config initialization problems across all tests
-4. **Improved Error Reporting**: Enhanced test failure messages for better debugging
-5. **Eliminated Console Pollution**: Removed direct console output from all tests
+1. **Test Infrastructure Enhancements**
+   - Enhanced test assertions with more specific checks
+   - Added better error reporting in test failures
+   - Improved test setup/teardown consistency
+   - Added test timing and performance metrics
+   - Standardized test naming conventions
+
+2. **Test Quality Improvements**
+   - Added edge case testing for all modules
+   - Enhanced error condition testing
+   - Created test utilities for common patterns
+   - Added test data factories and fixtures
+   - Added test categorization and filtering
+   - Created performance benchmarking tests
+
+3. **Infrastructure Fixes**
+   - Fixed buffer cleanup issues (test buffers now properly closed)
+   - Fixed mode normalization (no longer leaves cursor in insert mode)
+   - Fixed "Account configuration not found" notification during tests
+   - Improved test names in :HimalayaTest picker
+   - Disabled auto-sync during test execution
+
+### Historical Issues (Resolved)
+
+These issues were encountered and resolved during test infrastructure development:
+
+1. **Module Path Issues** - Fixed imports from `scripts.utils.*` to `test.utils.*`
+2. **Draft System Incompatibilities** - Migrated to new maildir-based draft system
+3. **Config Initialization** - Ensured proper config setup in test environment
+4. **Maildir Tests** - Fixed parsing, atomic writes, and filtering issues
+
+## Test Writing Standards
+
+### Test Structure
+
+Each test file should follow this structure:
+
+```lua
+-- Test Description
+-- Brief description of what this test file covers
+
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
+local assert = framework.assert
+local helpers = framework.helpers
+
+-- Module under test
+local module = require('neotex.plugins.tools.himalaya.module.name')
+
+-- Test results tracking
+local M = {}
+M.test_results = {}
+
+-- Helper function for reporting
+local function report_test(name, success, error_info, context)
+  local result = framework.create_test_result(name, success, error_info, context)
+  table.insert(M.test_results, result)
+  return result
+end
+
+-- Individual test functions
+function M.test_feature_name()
+  local test_name = 'Feature description'
+  
+  -- Test implementation
+  local success, result = pcall(function()
+    -- Test logic here
+    assert.equals(actual, expected, 'Error message')
+  end)
+  
+  report_test(test_name, success, result)
+  return success
+end
+
+-- Run function
+function M.run()
+  M.test_results = {}
+  
+  -- Run all tests
+  M.test_feature_name()
+  
+  -- Return aggregate results
+  return {
+    passed = passed_count,
+    failed = failed_count,
+    total = total_count,
+    errors = errors_array
+  }
+end
+
+return M
+```
+
+### Best Practices
+
+1. **Use Test Environment**: Always use `framework.helpers.create_test_env()` for tests that need configuration
+2. **Clean Up Resources**: Always clean up test environments and buffers
+3. **Mock External Calls**: Never make real Himalaya CLI calls in tests
+4. **Descriptive Names**: Use clear, descriptive test names that explain what is being tested
+5. **Edge Cases**: Include tests for error conditions and edge cases
+6. **Performance**: Add timing assertions for performance-critical code
+
+### Common Patterns
+
+#### Testing with Environment
+```lua
+local env = helpers.create_test_env()
+-- Test code here
+helpers.cleanup_test_env(env)
+```
+
+#### Mocking CLI Calls
+```lua
+local original = utils.execute_himalaya
+utils.execute_himalaya = mock.himalaya_cli({ 
+  list = { success = true, data = test_emails }
+})
+-- Test code
+utils.execute_himalaya = original
+```
+
+#### Testing Async Operations
+```lua
+helpers.wait_for(function()
+  return condition_met
+end, timeout_ms)
+```
 
 ### Test Coverage
 

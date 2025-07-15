@@ -100,9 +100,22 @@ Currently on `himalaya_drafts` branch with recent work on:
    - [ ] Implement test quality metrics
    - [ ] Create test review guidelines
 
+5. **Test Documentation Refactoring**
+   - [ ] Refactor tests/README.md for clarity and consistency
+   - [ ] Create overview of each test subdirectory with purpose and scope
+   - [ ] Add README.md to each subdirectory (commands/, features/, integration/, performance/, utils/)
+   - [ ] Document test running procedures for users
+   - [ ] Add contributing guide for writing new tests
+   - [ ] Explain test architecture and patterns
+   - [ ] Document debug notifications usage (only in debug mode)
+   - [ ] Explain how to pipe output to Test Results window
+   - [ ] Add examples of test result formatting
+   - [ ] Document test isolation and cleanup procedures
+
 ### Other Tasks
 
-- After running `:HimalayaTest`, I get many buffers with the following content:
+- ✅ **FIXED**: Added comprehensive buffer cleanup in test framework
+  - After running `:HimalayaTest`, I get many buffers with the following content:
   ```
     From: 
     To: 
@@ -115,13 +128,29 @@ Currently on `himalaya_drafts` branch with recent work on:
     MIME-Version: 1.0
   ```
   - It would be better if these were not opened as buffers (unless this is important for the test), or at least closed afterwards
-  - ✅ **FIXED**: Added comprehensive buffer cleanup in test framework
-- Improve the names for the tests that are displayed in the `:HimalayaTest` picker
-- Running all tests puts the cursor in insert mode but shouldn't
-- ✅ **FIXED**: Added mode normalization after test cleanup
-- Clean up misc docs in the `himalaya/test/` directory
-  - Remove irrelevant information
-  - Consolidate relevant information in `test/README.md`
+- ✅ **FIXED**: Improve the names for the tests that are displayed in the `:HimalayaTest` picker
+  - Added proper formatting with capitalization and descriptive names
+  - Added special case handling for common test names
+  - Improved category labels (CMD, FEAT, INT, PERF)
+- ✅ **FIXED**: Running all tests puts the cursor in insert mode but shouldn't
+  - Created comprehensive test isolation module (test_isolation.lua)
+  - Added global HIMALAYA_TEST_MODE flag to prevent insert mode in tests
+  - Modified email_composer, email_list, and search modules to check test mode
+  - Test runner now saves/restores complete editor state
+  - Ignores buffer/window events during test execution
+  - Forces normal mode and clears pending keys after tests
+- ✅ **FIXED**: Clean up misc docs in the `himalaya/test/` directory
+  - Consolidated all test documentation into comprehensive test/README.md
+  - Removed 5 redundant documentation files (CONFIG_FIXES.md, CURRENT_STATUS.md, etc.)
+  - Added test writing standards and common patterns to README
+- ✅ **FIXED**: "Account configuration not found" notification during tests
+  - Issue was caused by auto-sync timer running during tests
+  - Fixed by disabling auto-sync in test environment configuration
+  - Added cleanup to stop auto-sync timer when tests start and complete
+- ✅ **FIXED**: "Reschedule Email" picker appearing during tests
+  - Added test mode checks to scheduler.edit_scheduled_time
+  - Modified function to accept direct time parameter in test mode
+  - Added safeguard to show_reschedule_picker to prevent UI in tests
 
 ### Success Criteria
  ✅ 96%+ test coverage across all modules (exceeded 85% target)

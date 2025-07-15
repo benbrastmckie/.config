@@ -826,12 +826,30 @@ function M.edit_from_queue_view()
 end
 
 -- Edit scheduled time with telescope picker
-function M.edit_scheduled_time(id)
+function M.edit_scheduled_time(id, new_time)
+  -- In test mode, directly update the time without showing picker
+  if _G.HIMALAYA_TEST_MODE and new_time then
+    local item = M.queue[id]
+    if not item then
+      return false, "Scheduled email not found"
+    end
+    
+    item.scheduled_time = new_time
+    M.persist_queue()
+    return true
+  end
+  
+  -- Normal mode: show picker
   M.show_reschedule_picker(id)
 end
 
 -- Telescope reschedule picker with presets
 function M.show_reschedule_picker(id)
+  -- Don't show picker in test mode
+  if _G.HIMALAYA_TEST_MODE then
+    return
+  end
+  
   local item = M.queue[id]
   if not item then 
     local notify = require('neotex.util.notifications')
