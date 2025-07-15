@@ -109,22 +109,6 @@
   - [ ] indicate attachments in the sidebar
   - [ ] make emails in the inbox that have been replied to gray
   - [ ] features
-    - [ ] reply
-      - [ ] commands in sidebar
-      - [ ] commands in preview
-    - [x] sent
-      - [x] showing doubles
-      - [x] not showing content
-    - [:] drafts
-      - [ ] update subject line
-      - [x] migrate to maildir format
-      - [x] create new drafts
-      - [x] save-draft to update content
-      - [x] reopen drafts to edit
-      - [x] open drafts in normal buffer
-    - [x] trash
-      - [x] view
-      - [x] move to
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
       - [ ] attachments
@@ -136,6 +120,23 @@
       - [ ] addresses in the form: Name <user@domain>
       - [ ] sync from gmail
       - [ ] configure blink.cmp
+    - [:] drafts
+      - [ ] update subject line
+        - `/home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/docs/REFRESH_SUBJECT.md`
+      - [x] migrate to maildir format
+      - [x] create new drafts
+      - [x] save-draft to update content
+      - [x] reopen drafts to edit
+      - [x] open drafts in normal buffer
+    - [x] reply
+      - [x] commands in sidebar
+      - [x] commands in preview
+    - [x] sent
+      - [x] showing doubles
+      - [x] not showing content
+    - [x] trash
+      - [x] view
+      - [x] move to
     - [x] sync
       - [x] smart_sync using himalaya
       - [x] sidebar status for smart_sync
@@ -145,6 +146,13 @@
       - [x] start cursor in email field
       - [x] tab fields
     - [x] remove/fix mappings
+  - [ ] polishing
+    - [ ] refine testing harness
+    - [ ] documentation
+    - [ ] refactor
+    - [ ] works with non-nix just as well?
+    - [ ] update docs
+  - [ ] publish plugin
   - [x] sidebar
     - [x] batch operation
       - [x] spec
@@ -172,11 +180,6 @@
       - [x] spec
       - [x] hover emails
       - [x] reply/forward/compose in buffers
-  - [ ] documentation
-    - [ ] spec
-    - [ ] refactor
-    - [ ] works with non-nix just as well?
-  - [ ] publish plugin
   - [x] remove GMAIL_CLIENT_ID from private.fish?
   - [x] install himalaya
   - [x] get mbsync to work

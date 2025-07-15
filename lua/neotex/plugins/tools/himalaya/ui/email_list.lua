@@ -105,11 +105,9 @@ function M.init(main_buffers)
           M.refresh_email_list()
         end, 100)
       else
-        -- Navigate to drafts folder to show the new draft
-        state.set_current_folder(draft_folder)
-        vim.defer_fn(function()
-          M.show_email_list({ draft_folder })
-        end, 100)
+        -- Don't navigate to drafts folder automatically
+        -- This was changing the sidebar when replying/forwarding
+        -- Users can manually navigate to drafts if they want to see them
       end
     end
   end)

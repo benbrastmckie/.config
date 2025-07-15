@@ -88,15 +88,13 @@ function M.refresh_sidebar_header()
   return email_list.refresh_sidebar_header()
 end
 
-
-
-
--- Compose new email
-function M.compose_email(to_address)
-  local buf = email_composer.create_compose_buffer({ to = to_address })
+-- Helper function to open a compose buffer in a proper window
+local function open_compose_buffer_in_window(buf, opts)
   if not buf then
     return nil
   end
+  
+  opts = opts or {}
   
   -- Find or create a suitable window for editing (not sidebar)
   local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
@@ -159,13 +157,23 @@ function M.compose_email(to_address)
     if vim.api.nvim_win_is_valid(target_win) then
       vim.api.nvim_set_current_win(target_win)
     end
-    -- Position cursor
-    email_composer.position_cursor_on_empty_field(buf)
+    -- Position cursor based on operation type
+    if opts.position_to_body then
+      email_composer.position_cursor_in_body(buf)
+    else
+      email_composer.position_cursor_on_empty_field(buf)
+    end
     -- Enter insert mode
     vim.cmd('startinsert!')
   end)
   
   return buf
+end
+
+-- Compose new email
+function M.compose_email(to_address)
+  local buf = email_composer.create_compose_buffer({ to = to_address })
+  return open_compose_buffer_in_window(buf)
 end
 
 -- Open email window (floating)
@@ -344,6 +352,15 @@ function M.get_current_email_id()
     -- Clear it after use
     state.set('preview_email_id', nil)
     return preview_email_id
+  end
+  
+  -- Check if we're in preview window
+  if vim.bo.filetype == 'himalaya-email' then
+    local preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
+    local preview_state = preview.get_preview_state()
+    if preview_state and preview_state.email_id then
+      return preview_state.email_id
+    end
   end
   
   if vim.bo.filetype ~= 'himalaya-list' then
@@ -546,16 +563,8 @@ end
 
 -- Reply to current email
 function M.reply_current_email()
-  -- Get current email (check preview first, then buffer)
-  local email_id = state.get('preview_email_id')
-  if email_id then
-    -- Clear the preview email ID after use
-    state.set('preview_email_id', nil)
-  else
-    -- Get from current buffer
-    local buf = vim.api.nvim_get_current_buf()
-    email_id = M.get_current_email_id()
-  end
+  -- Get current email ID (handles both sidebar and preview)
+  local email_id = M.get_current_email_id()
   
   if email_id then
     local account = state.get_current_account()
@@ -568,7 +577,8 @@ function M.reply_current_email()
         has_body = email.body ~= nil,
         body_length = email.body and #email.body or 0
       })
-      return email_composer.reply_email(email, false)
+      local buf = email_composer.reply_to_email(email, false)
+      return open_compose_buffer_in_window(buf, { position_to_body = true })
     end
   end
   notify.himalaya('No email to reply to', notify.categories.ERROR)
@@ -576,16 +586,8 @@ end
 
 -- Reply all to current email
 function M.reply_all_current_email()
-  -- Get current email (check preview first, then buffer)
-  local email_id = state.get('preview_email_id')
-  if email_id then
-    -- Clear the preview email ID after use
-    state.set('preview_email_id', nil)
-  else
-    -- Get from current buffer
-    local buf = vim.api.nvim_get_current_buf()
-    email_id = M.get_current_email_id()
-  end
+  -- Get current email ID (handles both sidebar and preview)
+  local email_id = M.get_current_email_id()
   
   if email_id then
     local account = state.get_current_account()
@@ -598,7 +600,8 @@ function M.reply_all_current_email()
         has_body = email.body ~= nil,
         body_length = email.body and #email.body or 0
       })
-      return email_composer.reply_email(email, true)
+      local buf = email_composer.reply_to_email(email, true)
+      return open_compose_buffer_in_window(buf, { position_to_body = true })
     end
   end
   notify.himalaya('No email to reply to', notify.categories.ERROR)
@@ -610,7 +613,8 @@ function M.reply_email(email_id, reply_all)
   local folder = state.get_current_folder()
   local email = utils.get_email_by_id(account, folder, email_id)
   if email then
-    return email_composer.reply_email(email, reply_all)
+    local buf = email_composer.reply_to_email(email, reply_all)
+    return open_compose_buffer_in_window(buf, { position_to_body = true })
   end
   notify.himalaya('Email not found', notify.categories.ERROR)
 end
@@ -622,23 +626,16 @@ end
 
 -- Forward current email
 function M.forward_current_email()
-  -- Get current email (check preview first, then buffer)
-  local email_id = state.get('preview_email_id')
-  if email_id then
-    -- Clear the preview email ID after use
-    state.set('preview_email_id', nil)
-  else
-    -- Get from current buffer
-    local buf = vim.api.nvim_get_current_buf()
-    email_id = M.get_current_email_id()
-  end
+  -- Get current email ID (handles both sidebar and preview)
+  local email_id = M.get_current_email_id()
   
   if email_id then
     local account = state.get_current_account()
     local folder = state.get_current_folder()
     local email = utils.get_email_by_id(account, folder, email_id)
     if email then
-      return email_composer.forward_email(email)
+      local buf = email_composer.forward_email(email)
+      return open_compose_buffer_in_window(buf)
     end
   end
   notify.himalaya('No email to forward', notify.categories.ERROR)
