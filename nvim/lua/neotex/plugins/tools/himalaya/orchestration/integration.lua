@@ -197,6 +197,28 @@ function M.setup_default_handlers()
     })
   end
   
+  -- Add handler to refresh email list when draft is saved
+  events.on(event_constants.DRAFT_SAVED, function(data)
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    local current_folder = state.get_current_folder()
+    
+    -- Only refresh if we're currently viewing the drafts folder
+    if current_folder and (current_folder == 'Drafts' or current_folder:lower():match('draft')) then
+      -- Check if sidebar is actually open
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      if sidebar.is_open() then
+        -- Small delay to ensure filesystem changes are visible
+        vim.defer_fn(function()
+          local main = require('neotex.plugins.tools.himalaya.ui.main')
+          main.refresh_email_list({ restore_insert_mode = false })
+        end, 100)
+      end
+    end
+  end, {
+    priority = 50,
+    module = "draft_ui_refresh"
+  })
+  
   -- Don't log init events - they're not useful to users
 end
 
