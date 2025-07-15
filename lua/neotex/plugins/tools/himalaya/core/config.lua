@@ -152,6 +152,7 @@ M.defaults = {
     delete_draft_on_send = true,
     syntax_highlighting = true,
     draft_dir = vim.fn.expand('~/.local/share/himalaya/drafts/'),
+    save_sent_copy = false,  -- Disable manual saving to Sent (providers usually do this automatically)
   },
   
   -- Confirmation dialog settings
@@ -774,17 +775,9 @@ function M.setup_buffer_keymaps(bufnr)
           notify.himalaya('gH pressed, current folder: ' .. tostring(current_folder), notify.categories.BACKGROUND)
         end
         
-        if current_folder and current_folder:lower():match('draft') then
-          -- Show draft-specific help
-          local draft_help = require('neotex.plugins.tools.himalaya.ui.draft_help')
-          draft_help.show_draft_help()
-        else
-          -- Toggle regular help display
-          local current_expanded = state.get('ui.help_expanded', false)
-          state.set('ui.help_expanded', not current_expanded)
-          -- Refresh the sidebar to show new footer
-          require('neotex.plugins.tools.himalaya.ui.email_list').refresh_email_list()
-        end
+        -- Show context-aware help based on current folder type
+        local folder_help = require('neotex.plugins.tools.himalaya.ui.folder_help')
+        folder_help.show_folder_help()
       else
         -- Pass through to built-in g commands
         vim.api.nvim_feedkeys('g' .. key, 'n', false)

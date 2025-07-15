@@ -252,7 +252,10 @@ function M.send_email(buf)
   local body = ''
   local in_body = false
   
-  for line in content:gmatch('[^\n]+') do
+  -- Split content into lines, preserving empty lines
+  local lines = vim.split(content, '\n', { plain = true })
+  
+  for _, line in ipairs(lines) do
     if in_body then
       body = body .. line .. '\n'
     elseif line == '' then
