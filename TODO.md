@@ -147,13 +147,13 @@
       - [x] tab fields
     - [x] remove/fix mappings
   - [ ] polishing
-    - [.] refine testing harness
+    - [x] refine testing
       - [x] get old tests to pass
-      - [ ] improve tests displayed in picker
-      - [ ] remove backup tests
-      - [ ] consolidate scripts
-      - [ ] improve testing coverage
-      - [ ] update documentation
+      - [x] improve tests displayed in picker
+      - [x] remove backup tests
+      - [x] consolidate scripts
+      - [x] improve testing coverage
+      - [x] update documentation
         - `himalaya/docs/REFINE.md`
         - `himalaya/test/README.md`
     - [ ] remove cruft
