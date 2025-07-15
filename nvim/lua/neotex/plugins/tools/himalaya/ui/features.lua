@@ -202,7 +202,7 @@ function M.show_trash_list(trash_items)
     if id and not line:match('^#') then
       local confirm = vim.fn.input('Permanently delete? (y/N): ')
       if confirm:lower() == 'y' then
-        require('neotex.plugins.tools.himalaya.features.trash').delete_permanently(id)
+        -- Complex trash system removed - use standard delete
         -- Refresh view
         vim.defer_fn(function()
           vim.cmd('HimalayaTrashList')

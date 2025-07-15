@@ -185,70 +185,71 @@ function M.setup(registry)
   }
   
   -- Trash Commands  
-  commands.HimalayaTrashList = {
-    fn = function()
-      local trash = require('neotex.plugins.tools.himalaya.features.trash')
-      local ui = require('neotex.plugins.tools.himalaya.ui')
-      
-      local result = trash.list_trash({ limit = 50 })
-      
-      if result.success then
-        ui.show_trash_list(result.data.items)
-      end
-    end,
-    opts = {
-      desc = 'Show trash folder'
-    }
-  }
+  -- Complex trash commands removed - using standard IMAP trash folder
+  -- commands.HimalayaTrashList = {
+  --   fn = function()
+  --     local trash = require('neotex.plugins.tools.himalaya.features.trash')
+  --     local ui = require('neotex.plugins.tools.himalaya.ui')
+  --     
+  --     local result = trash.list_trash({ limit = 50 })
+  --     
+  --     if result.success then
+  --       ui.show_trash_list(result.data.items)
+  --     end
+  --   end,
+  --   opts = {
+  --     desc = 'Show trash folder'
+  --   }
+  -- }
   
-  commands.HimalayaTrashRecover = {
-    fn = function(opts)
-      local trash = require('neotex.plugins.tools.himalaya.features.trash')
-      local notify = require('neotex.util.notifications')
-      
-      if opts.args == '' then
-        notify.himalaya('Usage: :HimalayaTrashRecover <trash-id>', notify.categories.ERROR)
-        return
-      end
-      
-      local result = trash.recover_email(opts.args)
-      
-      if result.success then
-        notify.himalaya('Email recovered to ' .. result.data.folder, notify.categories.USER_ACTION)
-      else
-        notify.himalaya(result.error.message, notify.categories.ERROR)
-      end
-    end,
-    opts = {
-      nargs = 1,
-      desc = 'Recover email from trash'
-    }
-  }
-  
-  commands.HimalayaTrashEmpty = {
-    fn = function()
-      local trash = require('neotex.plugins.tools.himalaya.features.trash')
-      local notify = require('neotex.util.notifications')
-      
-      -- Confirm
-      local confirm = vim.fn.input('Empty trash? This cannot be undone. (y/N): ')
-      if confirm:lower() ~= 'y' then
-        return
-      end
-      
-      local result = trash.empty_trash()
-      
-      if result.success then
-        notify.himalaya('Emptied trash: ' .. result.data.deleted_count .. ' items deleted', 
-          notify.categories.USER_ACTION)
-      end
-    end,
-    opts = {
-      desc = 'Empty trash permanently'
-    }
-  }
-  
-  -- Image Display Commands
+  --   commands.HimalayaTrashRecover = {
+  --     fn = function(opts)
+  --       local trash = require('neotex.plugins.tools.himalaya.features.trash')
+  --       local notify = require('neotex.util.notifications')
+  --       
+  --       if opts.args == '' then
+  --         notify.himalaya('Usage: :HimalayaTrashRecover <trash-id>', notify.categories.ERROR)
+  --         return
+  --       end
+  --       
+  --       local result = trash.recover_email(opts.args)
+  --       
+  --       if result.success then
+  --         notify.himalaya('Email recovered to ' .. result.data.folder, notify.categories.USER_ACTION)
+  --       else
+  --         notify.himalaya(result.error.message, notify.categories.ERROR)
+  --       end
+  --     end,
+  --     opts = {
+  --       nargs = 1,
+  --       desc = 'Recover email from trash'
+  --     }
+  --   }
+  --   
+  --   commands.HimalayaTrashEmpty = {
+  --     fn = function()
+  --       local trash = require('neotex.plugins.tools.himalaya.features.trash')
+  --       local notify = require('neotex.util.notifications')
+  --       
+  --       -- Confirm
+  --       local confirm = vim.fn.input('Empty trash? This cannot be undone. (y/N): ')
+  --       if confirm:lower() ~= 'y' then
+  --         return
+  --       end
+  --       
+  --       local result = trash.empty_trash()
+  --       
+  --       if result.success then
+  --         notify.himalaya('Emptied trash: ' .. result.data.deleted_count .. ' items deleted', 
+  --           notify.categories.USER_ACTION)
+  --       end
+  --     end,
+  --     opts = {
+  --       desc = 'Empty trash permanently'
+  --     }
+  --   }
+  --   
+  --   -- Image Display Commands
   commands.HimalayaImageView = {
     fn = function()
       local images = require('neotex.plugins.tools.himalaya.features.images')

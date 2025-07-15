@@ -33,7 +33,7 @@ function M.setup()
   -- Initialize Phase 8 features
   local features_ok, _ = pcall(function()
     require('neotex.plugins.tools.himalaya.features.attachments').setup()
-    require('neotex.plugins.tools.himalaya.features.trash').setup()
+    -- Trash system removed - using standard IMAP trash folder
     require('neotex.plugins.tools.himalaya.features.contacts').setup()
   end)
   

@@ -758,6 +758,7 @@ function M.format_email_list(emails)
       if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_') or 
                       (is_draft_folder and tostring(email_id):match('%..*,.*:2,'))) then
         lines.metadata[#lines] = {
+          type = 'email',  -- Add type field for regular emails
           seen = seen,
           starred = starred,
           email_index = i,

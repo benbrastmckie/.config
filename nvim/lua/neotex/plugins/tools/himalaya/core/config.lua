@@ -765,6 +765,13 @@ function M.setup_buffer_keymaps(bufnr)
         else
           require('neotex.plugins.tools.himalaya.ui.main').spam_current_email()
         end
+      elseif key == 'M' then
+        -- Move email to another folder
+        if has_selection then
+          require('neotex.plugins.tools.himalaya.ui.main').move_selected_emails()
+        else
+          require('neotex.plugins.tools.himalaya.ui.main').move_current_email()
+        end
       elseif key == 'H' then
         -- Check if we're in drafts folder
         local current_folder = state.get_current_folder()

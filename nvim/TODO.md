@@ -112,18 +112,19 @@
     - [ ] reply
       - [ ] commands in sidebar
       - [ ] commands in preview
-    - [ ] sent
+    - [x] sent
       - [x] showing doubles
       - [x] not showing content
-    - [x] drafts
+    - [:] drafts
+      - [ ] update subject line
       - [x] migrate to maildir format
       - [x] create new drafts
       - [x] save-draft to update content
       - [x] reopen drafts to edit
       - [x] open drafts in normal buffer
-    - [ ] trash
+    - [x] trash
       - [x] view
-      - [ ] move to
+      - [x] move to
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
       - [ ] attachments

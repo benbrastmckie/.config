@@ -1619,5 +1619,186 @@ function M.spam_selected_emails()
   end)
 end
 
+-- Move current email to another folder
+function M.move_current_email()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local metadata = state.get('email_list.line_map') or {}
+  local line_data = metadata[current_line]
+  
+  -- Debug logging
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug('move_current_email', {
+    current_line = current_line,
+    has_metadata = metadata ~= nil,
+    has_line_data = line_data ~= nil,
+    line_data_type = line_data and line_data.type,
+    line_data = line_data
+  })
+  
+  if not line_data or line_data.type ~= 'email' then
+    notify.himalaya('No email on current line', notify.categories.STATUS)
+    return
+  end
+  
+  -- Get list of folders
+  local account = state.get_current_account()
+  if not account then
+    notify.himalaya('No account selected', notify.categories.ERROR)
+    return
+  end
+  
+  local folders = utils.get_folders(account)
+  if not folders or #folders == 0 then
+    notify.himalaya('No folders available', notify.categories.ERROR)
+    return
+  end
+  
+  -- Filter out current folder
+  local current_folder = state.get_current_folder()
+  local available_folders = {}
+  for _, folder in ipairs(folders) do
+    if folder ~= current_folder then
+      table.insert(available_folders, folder)
+    end
+  end
+  
+  -- Show folder picker
+  vim.ui.select(available_folders, {
+    prompt = ' Move email to folder:',
+    format_item = function(folder)
+      -- Add icon for special folders
+      if folder:lower():match('inbox') then
+        return '📥 ' .. folder
+      elseif folder:lower():match('sent') then
+        return '📤 ' .. folder
+      elseif folder:lower():match('draft') then
+        return '📝 ' .. folder
+      elseif folder:lower():match('trash') then
+        return '🗑️ ' .. folder
+      elseif folder:lower():match('spam') or folder:lower():match('junk') then
+        return '⚠️ ' .. folder
+      elseif folder:lower():match('archive') or folder:lower():match('all.mail') then
+        return '📦 ' .. folder
+      else
+        return '📁 ' .. folder
+      end
+    end
+  }, function(choice)
+    if choice then
+      local success = utils.move_email(line_data.email_id or line_data.id, choice)
+      if success then
+        notify.himalaya(string.format('Email moved to %s', choice), notify.categories.USER_ACTION)
+        -- Refresh to show the email is gone
+        vim.defer_fn(function()
+          M.refresh_email_list({ restore_insert_mode = false })
+        end, 100)
+      else
+        notify.himalaya('Failed to move email', notify.categories.ERROR)
+      end
+    end
+  end)
+end
+
+-- Move selected emails to another folder
+function M.move_selected_emails()
+  local selected = state.get_selected_emails()
+  
+  if #selected == 0 then
+    notify.himalaya('No emails selected', notify.categories.STATUS)
+    return
+  end
+  
+  -- Get list of folders
+  local account = state.get_current_account()
+  if not account then
+    notify.himalaya('No account selected', notify.categories.ERROR)
+    return
+  end
+  
+  local folders = utils.get_folders(account)
+  if not folders or #folders == 0 then
+    notify.himalaya('No folders available', notify.categories.ERROR)
+    return
+  end
+  
+  -- Filter out current folder
+  local current_folder = state.get_current_folder()
+  local available_folders = {}
+  for _, folder in ipairs(folders) do
+    if folder ~= current_folder then
+      table.insert(available_folders, folder)
+    end
+  end
+  
+  -- Show folder picker
+  vim.ui.select(available_folders, {
+    prompt = string.format(' Move %d emails to folder:', #selected),
+    format_item = function(folder)
+      -- Add icon for special folders
+      if folder:lower():match('inbox') then
+        return '📥 ' .. folder
+      elseif folder:lower():match('sent') then
+        return '📤 ' .. folder
+      elseif folder:lower():match('draft') then
+        return '📝 ' .. folder
+      elseif folder:lower():match('trash') then
+        return '🗑️ ' .. folder
+      elseif folder:lower():match('spam') or folder:lower():match('junk') then
+        return '⚠️ ' .. folder
+      elseif folder:lower():match('archive') or folder:lower():match('all.mail') then
+        return '📦 ' .. folder
+      else
+        return '📁 ' .. folder
+      end
+    end
+  }, function(choice)
+    if choice then
+      local success_count = 0
+      local error_count = 0
+      
+      -- Show progress notification for large batches
+      if #selected > 5 then
+        notify.himalaya(string.format('Moving %d emails to %s...', #selected, choice), notify.categories.STATUS)
+      end
+      
+      for i, email in ipairs(selected) do
+        -- Debug logging
+        local logger = require('neotex.plugins.tools.himalaya.core.logger')
+        logger.debug('Processing selected email for move', {
+          index = i,
+          email_id = email.id,
+          email_id_type = type(email.id),
+          email_subject = email.subject,
+          target_folder = choice,
+          email_keys = vim.tbl_keys(email)
+        })
+        
+        if not email.id then
+          notify.himalaya(string.format('Email missing ID: %s', vim.inspect(email)), notify.categories.ERROR)
+          error_count = error_count + 1
+        else
+          local success = utils.move_email(email.id, choice)
+          if success then
+            success_count = success_count + 1
+          else
+            error_count = error_count + 1
+            notify.himalaya(string.format('Failed to move email %s (ID: %s)', 
+              email.subject or 'unknown', tostring(email.id)), notify.categories.BACKGROUND)
+          end
+        end
+      end
+      
+      -- Clear selection mode
+      state.toggle_selection_mode() -- Exit selection mode
+      
+      notify.himalaya(string.format('Moved %d emails to %s (%d errors)', 
+        success_count, choice, error_count),
+        error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
+      )
+      
+      M.refresh_email_list({ restore_insert_mode = false })
+    end
+  end)
+end
 
 return M

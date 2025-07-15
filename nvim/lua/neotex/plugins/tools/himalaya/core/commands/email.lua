@@ -93,7 +93,7 @@ function M.setup(registry)
   
   commands.HimalayaTrashStats = {
     fn = function()
-      local trash = require('neotex.plugins.tools.himalaya.email.trash')
+      -- Complex trash system removed
       local float = require('neotex.plugins.tools.himalaya.ui.float')
       
       local stats = trash.get_stats()
