@@ -4,13 +4,8 @@
 
 local M = {}
 
--- State version for migration support
--- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove state versioning and migration system
-local STATE_VERSION = 2
-
 -- Default state schema
 local default_state = {
-  version = STATE_VERSION,
   -- Sync state
   sync = {
     status = "idle", -- idle, running, error
@@ -97,47 +92,8 @@ local default_state = {
 -- Current state (initialized with defaults)
 M.state = vim.tbl_deep_extend("force", {}, default_state)
 
--- State migrations
--- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove entire state migration system
-local migrations = {
-  [1] = function(state)
-    -- Migrate from v1 to v2: Add version field and ensure all sections exist
-    state.version = 2
-    state.sync = state.sync or {}
-    state.oauth = state.oauth or {}
-    state.ui = state.ui or {}
-    state.selection = state.selection or {}
-    state.cache = state.cache or {}
-    state.processes = state.processes or {}
-    state.folders = state.folders or {}
-    state.draft = state.draft or {}
-    return state
-  end,
-}
-
--- Migrate state to current version
--- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove state migration function
-function M.migrate_state(state)
-  local current_version = state.version or 1
-  
-  while current_version < STATE_VERSION do
-    if migrations[current_version] then
-      state = migrations[current_version](state)
-    end
-    current_version = current_version + 1
-  end
-  
-  state.version = STATE_VERSION
-  return state
-end
-
 -- Validate state structure
 function M.validate_state(state)
-  -- Check required fields
-  if not state.version then
-    return false, "Missing state version"
-  end
-  
   -- Validate structure types
   local required_tables = {
     "sync", "oauth", "ui", "selection", 
@@ -238,7 +194,7 @@ function M.reset_to_defaults()
   return true
 end
 
--- Initialize state with migration and validation
+-- Initialize state with validation
 function M.init(existing_state)
   if existing_state then
     -- Validate existing state
@@ -248,11 +204,6 @@ function M.init(existing_state)
       logger.error("State validation failed: " .. error_msg)
       M.reset()
       return
-    end
-    
-    -- Migrate if needed
-    if existing_state.version and existing_state.version < STATE_VERSION then
-      existing_state = M.migrate_state(existing_state)
     end
     
     M.state = existing_state
