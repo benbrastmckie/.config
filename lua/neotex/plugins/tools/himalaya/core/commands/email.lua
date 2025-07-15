@@ -349,8 +349,8 @@ function M.setup(registry)
   -- Phase 9 Test Command
   commands.HimalayaTestPhase9 = {
     fn = function()
-      local test_script = require('neotex.plugins.tools.himalaya.scripts.test_phase9')
-      test_script.interactive_test()
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Run interactive Phase 9 feature tests'
@@ -360,8 +360,8 @@ function M.setup(registry)
   -- Phase 9 Demo Command
   commands.HimalayaDemoPhase9 = {
     fn = function()
-      local demo_script = require('neotex.plugins.tools.himalaya.scripts.demo_phase9')
-      demo_script.interactive_demo()
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Interactive Phase 9 feature demonstrations'

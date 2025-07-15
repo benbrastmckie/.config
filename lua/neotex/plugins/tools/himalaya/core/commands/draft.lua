@@ -376,7 +376,7 @@ function M.setup(registry)
   -- Test commands (development only)
   commands.HimalayaTestMaildir = {
     fn = function()
-      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_foundation')
+      local test = require('neotex.plugins.tools.himalaya.test.features.test_maildir_foundation')
       test.run()
     end,
     opts = {
@@ -386,7 +386,7 @@ function M.setup(registry)
   
   commands.HimalayaTestDraftManager = {
     fn = function()
-      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_draft_manager_maildir')
+      local test = require('neotex.plugins.tools.himalaya.test.features.test_draft_manager_maildir')
       test.run()
     end,
     opts = {
@@ -396,7 +396,7 @@ function M.setup(registry)
   
   commands.HimalayaTestEmailComposer = {
     fn = function()
-      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_email_composer_maildir')
+      local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer_maildir')
       test.run()
     end,
     opts = {
@@ -406,7 +406,7 @@ function M.setup(registry)
   
   commands.HimalayaTestMaildirIntegration = {
     fn = function()
-      local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_integration')
+      local test = require('neotex.plugins.tools.himalaya.test.features.test_maildir_integration')
       test.run()
     end,
     opts = {

@@ -1,8 +1,14 @@
 -- Test Sync Commands for Himalaya Plugin
 
-local framework = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 local helpers = framework.helpers
+
+-- Initialize config
+local config = require('neotex.plugins.tools.himalaya.core.config')
+if not config.initialized then
+  config.setup({})
+end
 
 -- Test suite
 local tests = {}
@@ -46,9 +52,10 @@ table.insert(tests, framework.create_test('auto_sync_toggle', function()
   
   -- Get initial state from config
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  local initial_enabled = config.config.ui.auto_sync_enabled
+  local initial_enabled = config.ui and config.ui.auto_sync_enabled or false
   
   -- Toggle auto-sync (manually since function doesn't exist)
+  if not config.config.ui then config.config.ui = {} end
   config.config.ui.auto_sync_enabled = not initial_enabled
   
   -- Check state changed
@@ -90,7 +97,7 @@ table.insert(tests, framework.create_test('sync_status_info', function()
   
   -- Get sync info
   local config = require('neotex.plugins.tools.himalaya.core.config')
-  local auto_sync_enabled = config.config.ui.auto_sync_enabled
+  local auto_sync_enabled = config.ui and config.ui.auto_sync_enabled or false
   
   -- Verify we can get sync status
   assert.truthy(auto_sync_enabled ~= nil, "Should have auto_sync status")

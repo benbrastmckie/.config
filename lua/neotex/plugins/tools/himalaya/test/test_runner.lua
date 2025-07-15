@@ -6,6 +6,7 @@ local M = {}
 -- Test infrastructure
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
+local float = require('neotex.plugins.tools.himalaya.ui.float')
 
 -- Test registry
 M.tests = {
@@ -219,7 +220,7 @@ function M.execute_test_selection(selection)
   M.reset_results()
   
   -- Show start notification
-  notify.info('Starting tests...')
+  notify.himalaya('Starting tests...', notify.categories.STATUS)
   
   local start_time = vim.loop.hrtime()
   
@@ -262,6 +263,9 @@ end
 
 -- Execute individual test
 function M.run_test(test_info)
+  -- Clear module cache to ensure fresh version
+  package.loaded[test_info.module_path] = nil
+  
   -- Load and execute test
   local ok, test_module = pcall(require, test_info.module_path)
   
@@ -332,17 +336,32 @@ function M.run_test(test_info)
           end
         end
       elseif success then
-        -- Simple pass/fail result
+        -- Simple pass/fail result or boolean
         M.results.total = M.results.total + 1
-        if result ~= false then
+        if result == true or (result ~= false and result ~= nil) then
           M.results.passed = M.results.passed + 1
         else
           M.results.failed = M.results.failed + 1
+          
+          -- Try to get more details if test module has test_results
+          local details = 'Test returned false'
+          if test_module.test_results and #test_module.test_results > 0 then
+            local failures = {}
+            for _, tr in ipairs(test_module.test_results) do
+              if not tr.success then
+                table.insert(failures, tr.name .. ': ' .. (tr.error or 'Failed'))
+              end
+            end
+            if #failures > 0 then
+              details = table.concat(failures, '; ')
+            end
+          end
+          
           table.insert(M.results.errors, {
             test = test_info.name,
             category = test_info.category,
             type = 'failed',
-            message = 'Test returned false'
+            message = details
           })
         end
       else
@@ -405,19 +424,23 @@ function M.show_results()
   local lines = M.build_report()
   
   -- Notification
-  local status = M.results.failed > 0 and 'error' or 'info'
-  notify[status](string.format('Tests complete: %d/%d passed', M.results.passed, M.results.total))
+  local category = M.results.failed > 0 and notify.categories.ERROR or notify.categories.STATUS
+  notify.himalaya(string.format('Tests complete: %d/%d passed', M.results.passed, M.results.total), category)
   
-  -- Show detailed results in buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  -- Debug: Check if there are any background processes still running
+  if M.results.passed == M.results.total then
+    notify.himalaya('All tests passed! (' .. M.results.passed .. '/' .. M.results.total .. ')', notify.categories.USER_ACTION)
+  end
   
-  -- Open in split
-  vim.cmd('botright split')
-  vim.api.nvim_win_set_buf(0, buf)
-  vim.api.nvim_win_set_height(0, math.min(#lines, 20))
+  -- Show detailed results in floating window
+  float.show('Test Results', lines)
+  
+  -- Debug: Add a small delay to see if any background processes are still outputting
+  vim.defer_fn(function()
+    if M.results.passed == M.results.total then
+      notify.himalaya('Test execution completed - no background processes should be running', notify.categories.STATUS)
+    end
+  end, 1000)
 end
 
 -- Build test report
