@@ -14,6 +14,9 @@ table.insert(tests, framework.create_test('complete_email_workflow', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   local state = require('neotex.plugins.tools.himalaya.core.state')
   
+  -- Set test mode flag explicitly for this test
+  _G.HIMALAYA_TEST_MODE = true
+  
   -- Save original scheduler state
   local original_queue = vim.deepcopy(scheduler.queue)
   
@@ -76,6 +79,9 @@ end))
 table.insert(tests, framework.create_test('multi_account_workflow', function()
   local utils = require('neotex.plugins.tools.himalaya.utils')
   local multi_account = require('neotex.plugins.tools.himalaya.ui.multi_account')
+  
+  -- Set test mode flag explicitly for this test
+  _G.HIMALAYA_TEST_MODE = true
   
   -- Plugin is already initialized by lazy.nvim
   

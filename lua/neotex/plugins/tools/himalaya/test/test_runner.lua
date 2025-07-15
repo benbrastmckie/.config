@@ -73,7 +73,10 @@ function M.format_test_display_name(name)
     ['maildir_integration'] = 'Maildir Integration',
     ['scheduler'] = 'Email Scheduler',
     ['full_workflow'] = 'Full Email Workflow',
-    ['search_speed'] = 'Search Performance'
+    ['search_speed'] = 'Search Performance',
+    ['email_operations_simple'] = 'Email Operations (Simple)',
+    ['sync_simple'] = 'Sync Operations (Simple)',
+    ['draft_simple'] = 'Draft System (Simple)'
   }
   
   -- Check for special name

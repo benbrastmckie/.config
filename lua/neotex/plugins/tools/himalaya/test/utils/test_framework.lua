@@ -197,6 +197,53 @@ M.helpers = {
       pcall(manager.stop_auto_sync)
     end
     
+    -- Also mock the auto-sync functions to prevent them from starting
+    env.original_start_auto_sync = manager.start_auto_sync
+    manager.start_auto_sync = function()
+      -- Don't actually start auto-sync during tests
+      return false
+    end
+    
+    -- Disable notifications during tests
+    env.original_notify = vim.notify
+    vim.notify = function(msg, level, opts)
+      -- Silently ignore all notifications during tests
+      -- This prevents the verbose test output
+    end
+    
+    -- Also disable himalaya-specific notifications
+    local notify = require('neotex.util.notifications')
+    env.original_himalaya_notify = notify.himalaya
+    notify.himalaya = function(msg, category, context)
+      -- Silently ignore all himalaya notifications during tests
+      -- This prevents "Draft saved", "Email cancelled" etc. messages
+    end
+    
+    -- Mock himalaya command execution during tests
+    local utils = require('neotex.plugins.tools.himalaya.utils')
+    env.original_execute_himalaya = utils.execute_himalaya
+    utils.execute_himalaya = function(args, opts)
+      -- Return mock data for common commands to prevent actual CLI calls
+      if args[1] == 'envelope' and args[2] == 'list' then
+        return {} -- Empty email list
+      elseif args[1] == 'folder' and args[2] == 'list' then
+        return {} -- Empty folder list
+      elseif args[1] == 'message' and args[2] == 'read' then
+        return "Subject: Test\nFrom: test@example.com\n\nTest content"
+      elseif args[1] == 'message' and args[2] == 'send' then
+        return true -- Simulate successful send
+      else
+        return nil -- Other commands fail silently
+      end
+    end
+    
+    -- Instead of mocking scheduler, just prevent actual external commands
+    -- The scheduler should work normally but not send real emails
+    -- This way tests verify the actual implementation behavior
+    
+    -- Don't mock draft manager as it needs to work normally for tests
+    -- Just ensure it uses the test directory
+    
     -- Setup config (always provide default config)
     local config = require('neotex.plugins.tools.himalaya.core.config')
     if config.config then
@@ -216,8 +263,12 @@ M.helpers = {
           email = 'test@example.com',
           display_name = 'Test User'
         }
-      }
+      },
+      test_mode = true -- Global test mode flag
     }, config_overrides or {}))
+    
+    -- Set global test mode flag
+    _G.HIMALAYA_TEST_MODE = true
     
     return env
   end,
@@ -251,6 +302,42 @@ M.helpers = {
         end
       end
     end
+    
+    -- Close sidebar if it's open
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    if sidebar and sidebar.close then
+      pcall(sidebar.close)
+    end
+    
+    -- Restore original notification function
+    if env.original_notify then
+      vim.notify = env.original_notify
+    end
+    
+    -- Restore original himalaya notification function
+    if env.original_himalaya_notify then
+      local notify = require('neotex.util.notifications')
+      notify.himalaya = env.original_himalaya_notify
+    end
+    
+    -- Restore original execute_himalaya function
+    if env.original_execute_himalaya then
+      local utils = require('neotex.plugins.tools.himalaya.utils')
+      utils.execute_himalaya = env.original_execute_himalaya
+    end
+    
+    -- No scheduler function restoration needed since we're not mocking them
+    
+    -- Restore original auto-sync function
+    if env.original_start_auto_sync then
+      local manager = require('neotex.plugins.tools.himalaya.sync.manager')
+      manager.start_auto_sync = env.original_start_auto_sync
+    end
+    
+    -- Draft manager functions not mocked, no need to restore
+    
+    -- Clear test mode flag
+    _G.HIMALAYA_TEST_MODE = nil
     
     -- Restore original config
     if env.original_config then
@@ -459,9 +546,16 @@ M.create_test = function(name, fn)
   return {
     name = name,
     run = function()
+      -- Set test mode flag for all tests using create_test
+      local original_test_mode = _G.HIMALAYA_TEST_MODE
+      _G.HIMALAYA_TEST_MODE = true
+      
       local start = vim.loop.hrtime()
       local ok, err = pcall(fn)
       local duration = (vim.loop.hrtime() - start) / 1e6
+      
+      -- Restore original test mode
+      _G.HIMALAYA_TEST_MODE = original_test_mode
       
       if ok then
         return {
