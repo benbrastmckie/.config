@@ -109,15 +109,21 @@
   - [ ] indicate attachments in the sidebar
   - [ ] make emails in the inbox that have been replied to gray
   - [ ] features
-    - [ ] drafts
-      - [ ] migrate to maildir format
-      - [ ] create new drafts
-      - [ ] save-draft to update content
-      - [ ] reopen drafts to edit
+    - [ ] reply
+      - [ ] commands in sidebar
+      - [ ] commands in preview
+    - [ ] sent
+      - [x] showing doubles
+      - [x] not showing content
+    - [x] drafts
+      - [x] migrate to maildir format
+      - [x] create new drafts
+      - [x] save-draft to update content
+      - [x] reopen drafts to edit
       - [x] open drafts in normal buffer
     - [ ] trash
-      - [ ] view
-      - [ ] restore
+      - [x] view
+      - [ ] move to
     - [ ] email extras
       - [ ] https://github.com/pimalaya/himalaya?tab=readme-ov-file#faq
       - [ ] attachments

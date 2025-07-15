@@ -534,17 +534,20 @@ function M.send_email(account, email_data)
     return false
   end
   
-  -- Save copy to Sent folder
-  local sent_folder = M.find_sent_folder(account)
-  if sent_folder then
-    -- Save the sent email to the Sent folder
-    local save_ok, save_err = pcall(M.save_draft, account, sent_folder, email_data)
-    if not save_ok then
-      local logger = require('neotex.plugins.tools.himalaya.core.logger')
-      logger.warn('Failed to save copy to Sent folder', {
-        error = save_err,
-        folder = sent_folder
-      })
+  -- Save copy to Sent folder (only if configured to do so)
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  if config.config.compose.save_sent_copy then
+    local sent_folder = M.find_sent_folder(account)
+    if sent_folder then
+      -- Save the sent email to the Sent folder
+      local save_ok, save_err = pcall(M.save_draft, account, sent_folder, email_data)
+      if not save_ok then
+        local logger = require('neotex.plugins.tools.himalaya.core.logger')
+        logger.warn('Failed to save copy to Sent folder', {
+          error = save_err,
+          folder = sent_folder
+        })
+      end
     end
   end
   

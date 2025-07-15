@@ -746,7 +746,7 @@ function M.format_email_list(emails)
       subject = utils.truncate_string(subject, 50)
       
       -- Add draft indicator if this is a draft
-      local draft_indicator = is_draft_folder and '✏️ ' or ''
+      local draft_indicator = is_draft_folder and '' or ''
       
       local line = string.format('%s%s%s | %s  %s', checkbox, draft_indicator, display_field, subject, date)
       table.insert(lines, line)
@@ -858,20 +858,8 @@ function M.format_email_list(emails)
   local line_data = lines.metadata and lines.metadata[current_line]
   local is_on_scheduled = line_data and line_data.type == 'scheduled'
   
-  -- Check if help is expanded (default to compact)
-  local help_expanded = state.get('ui.help_expanded', false)
-  
-  if help_expanded then
-    -- Full help footer
-    table.insert(lines, 'ga:account gm:folder gs:sync')
-    table.insert(lines, 'gn:next gp:previous n/N:select q:quit')
-    table.insert(lines, 'return:preview/reschedule esc:clear')
-    table.insert(lines, 'gr:reply gR:reply-all gf:forward')
-    table.insert(lines, 'gD:delete gA:archive gS:spam gH:help')
-  else
-    -- Compact help footer
-    table.insert(lines, 'gH:help')
-  end
+  -- Show compact help footer (gH shows context-aware help in floating window)
+  table.insert(lines, 'gH:help')
   
   return lines
 end
