@@ -275,7 +275,7 @@ function M.setup(registry)
   commands.HimalayaTest = {
     fn = function(opts)
       -- Initialize test runner if not already done
-      local test_runner = require('neotex.plugins.tools.himalaya.scripts.test_runner')
+      local test_runner = require('neotex.plugins.tools.himalaya.test.test_runner')
       if not test_runner.tests.commands or #test_runner.tests.commands == 0 then
         test_runner.setup()
       end
@@ -286,7 +286,7 @@ function M.setup(registry)
     opts = {
       nargs = '?',
       complete = function()
-        local test_runner = require('neotex.plugins.tools.himalaya.scripts.test_runner')
+        local test_runner = require('neotex.plugins.tools.himalaya.test.test_runner')
         return test_runner.get_test_completions()
       end,
       desc = 'Run Himalaya tests with picker interface'
