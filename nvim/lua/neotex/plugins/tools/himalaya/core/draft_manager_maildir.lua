@@ -130,7 +130,11 @@ function M.create(account, metadata)
   table.insert(edit_lines, 'Subject: ' .. (metadata.subject or ''))
   table.insert(edit_lines, '') -- Empty line between headers and body
   if metadata.body and metadata.body ~= '' then
-    table.insert(edit_lines, metadata.body)
+    -- Split body into lines if it contains newlines
+    local body_lines = vim.split(metadata.body, '\n', { plain = true })
+    for _, line in ipairs(body_lines) do
+      table.insert(edit_lines, line)
+    end
   end
   
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, edit_lines)

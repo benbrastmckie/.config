@@ -231,27 +231,11 @@ end
 
 -- Setup keymaps for preview buffer
 local function setup_preview_keymaps(buf, email_id, email_type)
-  local opts = { buffer = buf, noremap = true, silent = true }
+  -- Store the email_id in preview state so commands can access it
+  preview_state.email_id = email_id
   
-  -- ESC to return to sidebar
-  vim.keymap.set('n', '<Esc>', function()
-    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-    local sidebar_win = sidebar.get_win()
-    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-      vim.api.nvim_set_current_win(sidebar_win)
-    end
-  end, opts)
-  
-  -- q to exit preview mode and return to sidebar
-  vim.keymap.set('n', 'q', function()
-    M.disable_preview_mode()
-    M.hide_preview()
-    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-    local sidebar_win = sidebar.get_win()
-    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-      vim.api.nvim_set_current_win(sidebar_win)
-    end
-  end, opts)
+  -- The keymaps are now handled by config.setup_buffer_keymaps
+  -- which is called when creating the buffer
 end
 
 -- Get or create preview buffer
@@ -264,8 +248,12 @@ function M.get_or_create_preview_buffer()
   vim.api.nvim_buf_set_option(buf, 'bufhidden', 'hide')  -- Keep in memory
   vim.api.nvim_buf_set_option(buf, 'swapfile', false)
   vim.api.nvim_buf_set_option(buf, 'undolevels', -1)
-  vim.api.nvim_buf_set_option(buf, 'filetype', 'mail')
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-email')
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Set up Himalaya keymaps for this buffer
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  config.setup_buffer_keymaps(buf)
   
   return buf
 end
@@ -366,10 +354,47 @@ function M.render_preview(email, buf)
           clean_body = clean_body:gsub('%s+$', '')
         end
         
-        -- Split body into lines
+        -- Split body into lines and add spacing between emails in reply chains
         local body_lines = vim.split(clean_body, '\n', { plain = true })
-        for _, line in ipairs(body_lines) do
+        local in_email_body = false
+        local in_header_block = false
+        local last_was_header = false
+        
+        for i, line in ipairs(body_lines) do
+          local is_header_line = line:match('^From:%s+') or
+                                 line:match('^To:%s+') or
+                                 line:match('^Subject:%s+') or
+                                 line:match('^Date:%s+') or
+                                 line:match('^Cc:%s+') or
+                                 line:match('^Bcc:%s+')
+          
+          -- Check if this line starts a new email in the chain
+          if in_email_body and line:match('^From:%s+') then
+            -- Add two blank lines and a horizontal bar before the new email
+            table.insert(lines, "")
+            table.insert(lines, "")
+            table.insert(lines, string.rep("─", M.config.width - 2))
+            in_header_block = true
+            in_email_body = false
+          elseif is_header_line then
+            in_header_block = true
+          end
+          
+          -- Add blank line after header block ends
+          if in_header_block and last_was_header and not is_header_line and not line:match('^%s*$') then
+            table.insert(lines, "")
+            in_header_block = false
+          end
+          
           table.insert(lines, line)
+          
+          -- Track if we've seen non-header content (actual email body)
+          if not line:match('^%s*$') and not is_header_line then
+            in_email_body = true
+            in_header_block = false
+          end
+          
+          last_was_header = is_header_line
         end
       else
         table.insert(lines, "Loading email content...")
@@ -387,10 +412,47 @@ function M.render_preview(email, buf)
         end
         
         -- Since we use --no-headers, the body is clean without headers
-        -- Just add it line by line
+        -- Split body into lines and add spacing between emails in reply chains
         local body_lines = vim.split(clean_body, '\n', { plain = true })
-        for _, line in ipairs(body_lines) do
+        local in_email_body = false
+        local in_header_block = false
+        local last_was_header = false
+        
+        for i, line in ipairs(body_lines) do
+          local is_header_line = line:match('^From:%s+') or
+                                 line:match('^To:%s+') or
+                                 line:match('^Subject:%s+') or
+                                 line:match('^Date:%s+') or
+                                 line:match('^Cc:%s+') or
+                                 line:match('^Bcc:%s+')
+          
+          -- Check if this line starts a new email in the chain
+          if in_email_body and line:match('^From:%s+') then
+            -- Add two blank lines and a horizontal bar before the new email
+            table.insert(lines, "")
+            table.insert(lines, "")
+            table.insert(lines, string.rep("─", M.config.width - 2))
+            in_header_block = true
+            in_email_body = false
+          elseif is_header_line then
+            in_header_block = true
+          end
+          
+          -- Add blank line after header block ends
+          if in_header_block and last_was_header and not is_header_line and not line:match('^%s*$') then
+            table.insert(lines, "")
+            in_header_block = false
+          end
+          
           table.insert(lines, line)
+          
+          -- Track if we've seen non-header content (actual email body)
+          if not line:match('^%s*$') and not is_header_line then
+            in_email_body = true
+            in_header_block = false
+          end
+          
+          last_was_header = is_header_line
         end
       elseif email._error then
         table.insert(lines, '(No content available)')

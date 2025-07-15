@@ -470,6 +470,20 @@ function M.position_cursor_on_empty_field(buf)
   end
 end
 
+-- Position cursor in email body (for replies)
+function M.position_cursor_in_body(buf)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  
+  -- Find empty line that separates headers from body
+  for i, line in ipairs(lines) do
+    if line == '' then
+      -- Position cursor at the start of body (line after empty line)
+      vim.api.nvim_win_set_cursor(0, {i + 1, 0})
+      return
+    end
+  end
+end
+
 -- Open existing draft for editing
 function M.open_draft(filepath)
   local buf, err = draft_manager.open(filepath)
@@ -531,12 +545,14 @@ function M.reply_to_email(original_email, reply_all)
   opts.subject = subject
   
   -- Set In-Reply-To and References
-  opts.in_reply_to = original_email.message_id
-  opts.references = original_email.references or ''
-  if opts.references ~= '' then
-    opts.references = opts.references .. ' '
+  if original_email.message_id then
+    opts.in_reply_to = original_email.message_id
+    opts.references = original_email.references or ''
+    if opts.references ~= '' then
+      opts.references = opts.references .. ' '
+    end
+    opts.references = opts.references .. original_email.message_id
   end
-  opts.references = opts.references .. original_email.message_id
   
   -- Quote original message
   local quoted_body = M.quote_email_body(original_email)
