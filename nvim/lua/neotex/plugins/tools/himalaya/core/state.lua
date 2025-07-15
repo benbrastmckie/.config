@@ -569,19 +569,28 @@ function M.save()
       metadata = M.state.draft.metadata,
       recovery = M.state.draft.recovery,
       -- Store draft metadata, not full content
-      drafts = vim.tbl_map(function(draft)
-        return {
-          id = draft.id,
-          local_id = draft.local_id,
-          remote_id = draft.remote_id,
-          subject = draft.metadata and draft.metadata.subject or nil,
-          to = draft.metadata and draft.metadata.to or nil,
-          modified = draft.modified,
-          synced = draft.synced,
-          local_path = draft.local_path,
-          account = draft.account,
-        }
-      end, M.state.draft.drafts or {})
+      drafts = (function()
+        local draft_array = {}
+        local drafts_table = M.state.draft.drafts or {}
+        
+        -- Only iterate over non-numeric keys to avoid mixed key issues
+        for key, draft in pairs(drafts_table) do
+          if type(key) == "string" and type(draft) == "table" then
+            table.insert(draft_array, {
+              id = draft.id,
+              local_id = draft.local_id,
+              remote_id = draft.remote_id,
+              subject = draft.metadata and draft.metadata.subject or nil,
+              to = draft.metadata and draft.metadata.to or nil,
+              modified = draft.modified,
+              synced = draft.synced,
+              local_path = draft.local_path,
+              account = draft.account,
+            })
+          end
+        end
+        return draft_array
+      end)()
     }
   }
   

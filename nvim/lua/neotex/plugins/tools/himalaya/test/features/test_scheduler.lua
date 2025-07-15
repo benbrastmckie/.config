@@ -115,6 +115,9 @@ end))
 table.insert(tests, framework.create_test('edit_scheduled_email', function()
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   
+  -- Set test mode flag explicitly for this test
+  _G.HIMALAYA_TEST_MODE = true
+  
   -- Save original state
   local original_queue = vim.deepcopy(scheduler.queue)
   
@@ -125,6 +128,10 @@ table.insert(tests, framework.create_test('edit_scheduled_email', function()
   
   -- Edit it
   local new_time = os.time() + 600
+  -- Verify test mode is set before calling edit
+  if not _G.HIMALAYA_TEST_MODE then
+    error("Test mode not set before edit_scheduled_time call")
+  end
   -- The edit_scheduled_time function might not return a result object
   local ok, err = pcall(scheduler.edit_scheduled_time, id, new_time)
   assert.truthy(ok, "Edit should succeed: " .. tostring(err))
