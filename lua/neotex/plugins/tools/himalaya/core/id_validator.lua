@@ -169,23 +169,42 @@ function M.validate_command_args(command, args)
     return true
   end
   
-  -- Get the ID argument (next argument after command)
-  local id_index = command_index + 1
-  if id_index <= #args then
-    local potential_id = args[id_index]
-    
-    -- Check if it looks like a folder name
-    if M.is_folder_name(potential_id) then
-      logger.error('Folder name used where ID expected', {
-        command = command,
-        invalid_id = potential_id,
-        args = args
-      })
-      return false, string.format("Invalid ID '%s' for command '%s'", potential_id, command)
+  -- Special handling for move command - folder comes before ID
+  if command == 'move' then
+    -- For move: himalaya message move <TARGET_FOLDER> <ID>
+    local id_index = command_index + 2  -- Skip the folder argument
+    if id_index <= #args then
+      local potential_id = args[id_index]
+      
+      -- Check if it looks like a folder name
+      if M.is_folder_name(potential_id) then
+        logger.error('Folder name used where ID expected', {
+          command = command,
+          invalid_id = potential_id,
+          args = args
+        })
+        return false, string.format("Invalid ID '%s' for command '%s'", potential_id, command)
+      end
     end
-    
-    -- For strict validation, could also check is_valid_id
-    -- but that might be too restrictive for some himalaya commands
+  else
+    -- Get the ID argument (next argument after command)
+    local id_index = command_index + 1
+    if id_index <= #args then
+      local potential_id = args[id_index]
+      
+      -- Check if it looks like a folder name
+      if M.is_folder_name(potential_id) then
+        logger.error('Folder name used where ID expected', {
+          command = command,
+          invalid_id = potential_id,
+          args = args
+        })
+        return false, string.format("Invalid ID '%s' for command '%s'", potential_id, command)
+      end
+      
+      -- For strict validation, could also check is_valid_id
+      -- but that might be too restrictive for some himalaya commands
+    end
   end
   
   return true

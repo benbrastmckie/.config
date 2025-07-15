@@ -1312,6 +1312,18 @@ function M.move_email(email_id, target_folder)
   local state = require('neotex.plugins.tools.himalaya.core.state')
   local current_folder = state.get_current_folder() or 'INBOX'
   
+  -- Debug logging
+  local logger = require('neotex.plugins.tools.himalaya.core.logger')
+  logger.debug('move_email called', {
+    email_id = email_id,
+    email_id_type = type(email_id),
+    target_folder = target_folder,
+    target_folder_type = type(target_folder),
+    current_folder = current_folder,
+    args = args,
+    args_string = table.concat(args, ' ')
+  })
+  
   local result = M.execute_himalaya(args, { 
     account = config.get_current_account_name(),
     folder = current_folder  -- Add source folder
