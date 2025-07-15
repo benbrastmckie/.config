@@ -108,9 +108,8 @@ function M.setup(registry)
   commands.HimalayaTestCommands = {
     fn = function()
       -- Force reload to ensure we get the latest version
-      package.loaded['neotex.plugins.tools.himalaya.scripts.test_commands'] = nil
-      local test_suite = require('neotex.plugins.tools.himalaya.scripts.test_commands')
-      test_suite.run_all_tests()
+      -- Test commands no longer available - use HimalayaTest instead
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Run comprehensive command test suite'
@@ -120,9 +119,8 @@ function M.setup(registry)
   commands.HimalayaTestPhase8 = {
     fn = function()
       -- Force reload to ensure we get the latest version
-      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase8'] = nil
-      local test_phase8 = require('neotex.plugins.tools.himalaya.scripts.test_phase8')
-      test_phase8.interactive_test()
+      -- Phase 8 tests no longer available - use HimalayaTest instead
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Interactive Phase 8 feature testing'
@@ -131,9 +129,8 @@ function M.setup(registry)
   
   commands.HimalayaDemoPhase8 = {
     fn = function()
-      package.loaded['neotex.plugins.tools.himalaya.scripts.demo_phase8'] = nil
-      local demo = require('neotex.plugins.tools.himalaya.scripts.demo_phase8')
-      demo.demo()
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Show Phase 8 feature demo and usage'
@@ -142,10 +139,8 @@ function M.setup(registry)
   
   commands.HimalayaTestPhase9 = {
     fn = function()
-      -- Force reload to ensure we get the latest version
-      package.loaded['neotex.plugins.tools.himalaya.scripts.test_phase9'] = nil
-      local test_phase9 = require('neotex.plugins.tools.himalaya.scripts.test_phase9')
-      test_phase9.run_all_tests()
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Test Phase 9 features (advanced functionality)'
@@ -154,9 +149,8 @@ function M.setup(registry)
   
   commands.HimalayaDemoPhase9 = {
     fn = function()
-      package.loaded['neotex.plugins.tools.himalaya.scripts.demo_phase9'] = nil
-      local demo = require('neotex.plugins.tools.himalaya.scripts.demo_phase9')
-      demo.demo()
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Use :HimalayaTest to run the comprehensive test suite', notify.categories.USER_ACTION)
     end,
     opts = {
       desc = 'Show Phase 9 feature demo and usage'

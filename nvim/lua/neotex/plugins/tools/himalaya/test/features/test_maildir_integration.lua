@@ -22,45 +22,45 @@ M.test_results = {
 function M.test_foundation()
   notify.himalaya('Testing Maildir foundation...', notify.categories.STATUS)
   
-  local test = require('neotex.plugins.tools.himalaya.scripts.features.test_maildir_foundation')
-  local success = test.run()
+  local test = require('neotex.plugins.tools.himalaya.test.features.test_maildir_foundation')
+  local result = test.run()
   
   M.test_results.foundation = {
-    success = success,
+    success = result.success,
     tests = test.test_results
   }
   
-  return success
+  return result.success
 end
 
 -- Run draft manager tests
 function M.test_draft_manager()
   notify.himalaya('Testing Draft Manager...', notify.categories.STATUS)
   
-  local test = require('neotex.plugins.tools.himalaya.scripts.features.test_draft_manager_maildir')
-  local success = test.run()
+  local test = require('neotex.plugins.tools.himalaya.test.features.test_draft_manager_maildir')
+  local result = test.run()
   
   M.test_results.draft_manager = {
-    success = success,
+    success = result.success,
     tests = test.test_results
   }
   
-  return success
+  return result.success
 end
 
 -- Run composer tests
 function M.test_composer()
   notify.himalaya('Testing Email Composer...', notify.categories.STATUS)
   
-  local test = require('neotex.plugins.tools.himalaya.scripts.features.test_email_composer_maildir')
-  local success = test.run()
+  local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer_maildir')
+  local result = test.run()
   
   M.test_results.composer = {
-    success = success,
+    success = result.success,
     tests = test.test_results
   }
   
-  return success
+  return result.success
 end
 
 -- Integration test: Full workflow
@@ -91,6 +91,13 @@ function M.test_integration()
   
   -- Test 1: Create draft through UI
   local function test_ui_create()
+    -- Clear directory before test to ensure clean state
+    local draft_dir = test_dir .. '/TestAccount/.Drafts'
+    if vim.fn.isdirectory(draft_dir .. '/cur') == 1 then
+      vim.fn.delete(draft_dir .. '/cur', 'rf')
+      vim.fn.mkdir(draft_dir .. '/cur', 'p')
+    end
+    
     local buf = composer.create_compose_buffer({
       account = 'TestAccount',
       to = 'recipient@example.com',
@@ -181,6 +188,11 @@ function M.test_integration()
   
   -- Test 4: Migration compatibility
   local function test_migration()
+    -- Ensure config is set up with maildir_root for migration
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local original_config = vim.deepcopy(config.config)
+    config.config.sync.maildir_root = test_dir
+    
     -- Create legacy draft structure
     local legacy_dir = vim.fn.stdpath('data') .. '/himalaya/drafts'
     vim.fn.mkdir(legacy_dir, 'p')
@@ -209,8 +221,14 @@ This is a legacy draft for migration testing.]]
     local migration = require('neotex.plugins.tools.himalaya.migrations.draft_to_maildir')
     local result = migration.migrate({ dry_run = false })
     
-    if result.migrated ~= 1 then
-      return false, 'Migration failed'
+    if not result or result.migrated ~= 1 then
+      local err_msg = string.format(
+        'Migration failed: expected 1 migrated, got %s (total: %s, failed: %s)',
+        result and result.migrated or 'nil',
+        result and result.total or 'nil',
+        result and result.failed or 'nil'
+      )
+      return false, err_msg
     end
     
     -- Verify migrated draft
@@ -231,6 +249,9 @@ This is a legacy draft for migration testing.]]
     -- Cleanup
     vim.fn.delete(legacy_dir, 'rf')
     
+    -- Restore original config
+    config.config = original_config
+    
     return true
   end
   
@@ -250,12 +271,10 @@ This is a legacy draft for migration testing.]]
       error = err
     })
     
-    if ok then
-      logger.info('Integration test passed: ' .. test.name)
-    else
-      logger.error('Integration test failed: ' .. test.name, { error = err })
+    if not ok then
       all_passed = false
     end
+    -- Results are stored in results table for structured reporting
   end
   
   -- Cleanup
@@ -298,24 +317,18 @@ function M.run()
     end
   end
   
-  -- Display results
-  print('\n=== Maildir Integration Test Results ===')
-  print(string.format('Foundation:    %s', foundation_ok and '✓ PASSED' or '✗ FAILED'))
-  print(string.format('Draft Manager: %s', manager_ok and '✓ PASSED' or '✗ FAILED'))
-  print(string.format('Composer:      %s', composer_ok and '✓ PASSED' or '✗ FAILED'))
-  print(string.format('Integration:   %s', integration_ok and '✓ PASSED' or '✗ FAILED'))
-  print(string.format('\nTotal: %d/%d tests passed (%.1f%%) in %.2fs',
-    passed_tests, total_tests, (passed_tests / total_tests) * 100, elapsed))
+  -- Build detailed error list
+  local error_list = {}
   
-  -- Show failures
   if passed_tests < total_tests then
-    print('\n=== Failed Tests ===')
     for suite_name, suite in pairs(M.test_results) do
       if suite.tests then
         for _, test in ipairs(suite.tests) do
           if not test.success then
-            print(string.format('[%s] %s: %s',
-              suite_name, test.name, test.error or 'Unknown error'))
+            table.insert(error_list, {
+              test = string.format('[%s] %s', suite_name, test.name),
+              error = test.error or 'Unknown error'
+            })
           end
         end
       end
@@ -324,6 +337,7 @@ function M.run()
   
   local all_passed = foundation_ok and manager_ok and composer_ok and integration_ok
   
+  -- Notification
   if all_passed then
     notify.himalaya(
       string.format('All tests passed! (%d/%d)', passed_tests, total_tests),
@@ -336,7 +350,21 @@ function M.run()
     )
   end
   
-  return all_passed
+  -- Return structured results for test runner
+  return {
+    total = total_tests,
+    passed = passed_tests,
+    failed = total_tests - passed_tests,
+    errors = error_list,
+    success = all_passed,
+    details = {
+      foundation = foundation_ok,
+      draft_manager = manager_ok,
+      composer = composer_ok,
+      integration = integration_ok,
+      duration_seconds = elapsed
+    }
+  }
 end
 
 -- Generate test report

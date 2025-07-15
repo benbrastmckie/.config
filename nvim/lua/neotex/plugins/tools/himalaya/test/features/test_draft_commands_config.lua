@@ -1,7 +1,7 @@
 -- Test for Draft Commands and Configuration (Phase 5)
 -- Tests command registration and configuration validation
 
-local Test = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local Test = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local commands = require('neotex.plugins.tools.himalaya.core.commands')
 

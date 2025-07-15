@@ -147,12 +147,26 @@
       - [x] tab fields
     - [x] remove/fix mappings
   - [ ] polishing
-    - [ ] refine testing harness
-    - [ ] documentation
+    - [.] refine testing harness
+      - [x] get old tests to pass
+      - [ ] improve tests displayed in picker
+      - [ ] remove backup tests
+      - [ ] consolidate scripts
+      - [ ] improve testing coverage
+      - [ ] update documentation
+        - `himalaya/docs/REFINE.md`
+        - `himalaya/test/README.md`
+    - [ ] remove cruft
+      - [ ] delete specs
+    - [ ] annotate docs with TODOs
     - [ ] refactor
-    - [ ] works with non-nix just as well?
     - [ ] update docs
+      - [ ] works with non-nix just as well?
   - [ ] publish plugin
+    - [ ] move to new repo
+    - [ ] versioning
+    - [ ] licensing
+    - [ ] installation docs
   - [x] sidebar
     - [x] batch operation
       - [x] spec
@@ -457,3 +471,4 @@
   - [x] need to extend cycle
 * [x] lsp no menu without typing
   - [x] could refine cmd-commandline plugin which was the problem
+

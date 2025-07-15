@@ -1,6 +1,6 @@
 -- Test Email Commands for Himalaya Plugin
 
-local framework = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 local helpers = framework.helpers
 local mock = framework.mock
@@ -93,7 +93,7 @@ end))
 
 -- Test email search command
 table.insert(tests, framework.create_test('email_search_command', function()
-  local search = require('neotex.plugins.tools.himalaya.scripts.utils.test_search')
+  local search = require('neotex.plugins.tools.himalaya.test.utils.test_search')
   
   -- Create test emails
   local emails = {

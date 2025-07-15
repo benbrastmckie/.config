@@ -62,11 +62,7 @@ local function report_test(name, success, error_msg)
     error = error_msg
   })
   
-  if success then
-    logger.info('Test passed: ' .. name)
-  else
-    logger.error('Test failed: ' .. name, { error = error_msg })
-  end
+  -- Results are stored in M.test_results for structured reporting
 end
 
 -- Test 1: Create draft
@@ -157,6 +153,21 @@ end
 -- Test 3: List drafts
 function M.test_list_drafts()
   local test_name = 'List drafts'
+  
+  -- Clear existing drafts from previous tests
+  local draft_dir = M.test_dir .. '/TestAccount/.Drafts'
+  if vim.fn.isdirectory(draft_dir) == 1 then
+    -- Remove all files in maildir subdirectories
+    for _, subdir in ipairs({'new', 'cur', 'tmp'}) do
+      local path = draft_dir .. '/' .. subdir
+      if vim.fn.isdirectory(path) == 1 then
+        local files = vim.fn.readdir(path)
+        for _, file in ipairs(files) do
+          vim.fn.delete(path .. '/' .. file)
+        end
+      end
+    end
+  end
   
   -- Create multiple drafts
   local draft_count = 3
@@ -346,19 +357,24 @@ function M.run()
   -- Cleanup
   cleanup_test_env()
   
-  -- Summary
+  -- Calculate results
   local passed = 0
   local failed = 0
+  local errors = {}
   
   for _, result in ipairs(M.test_results) do
     if result.success then
       passed = passed + 1
     else
       failed = failed + 1
+      table.insert(errors, {
+        test = result.name,
+        error = result.error or 'Unknown error'
+      })
     end
   end
   
-  -- Display results
+  -- Display summary notification
   local msg = string.format(
     'Draft Manager tests complete: %d/%d passed',
     passed,
@@ -367,18 +383,18 @@ function M.run()
   
   if failed > 0 then
     notify.himalaya(msg, notify.categories.ERROR)
-    
-    -- Show failures
-    for _, result in ipairs(M.test_results) do
-      if not result.success then
-        print(string.format('FAILED: %s - %s', result.name, result.error or 'Unknown error'))
-      end
-    end
   else
     notify.himalaya(msg, notify.categories.USER_ACTION)
   end
   
-  return failed == 0
+  -- Return structured results for test runner
+  return {
+    total = passed + failed,
+    passed = passed,
+    failed = failed,
+    errors = errors,
+    success = failed == 0
+  }
 end
 
 return M

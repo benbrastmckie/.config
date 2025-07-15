@@ -35,11 +35,7 @@ local function report_test(name, success, error_msg)
     error = error_msg
   })
   
-  if success then
-    logger.info('Test passed: ' .. name)
-  else
-    logger.error('Test failed: ' .. name, { error = error_msg })
-  end
+  -- Results are stored in M.test_results for structured reporting
 end
 
 -- Test 1: Generate Maildir filename
@@ -77,7 +73,7 @@ function M.test_parse_filename()
   
   -- Validate parsed data
   local valid = metadata.timestamp and
-                metadata.pid and
+                metadata.hrtime and
                 metadata.unique and
                 metadata.hostname and
                 metadata.flags.D and
@@ -153,7 +149,12 @@ This is a test email body.
   
   -- Verify file exists and content matches
   if vim.fn.filereadable(target_path) == 1 then
-    local read_content = table.concat(vim.fn.readfile(target_path), '\n')
+    local lines = vim.fn.readfile(target_path)
+    local read_content = table.concat(lines, '\n')
+    -- Add final newline if original content ends with one
+    if content:sub(-1) == '\n' and read_content:sub(-1) ~= '\n' then
+      read_content = read_content .. '\n'
+    end
     if read_content == content then
       report_test(test_name, true)
       cleanup_test_dir()
@@ -220,14 +221,39 @@ function M.test_list_messages()
   local drafts = 0
   local regular = 0
   
+  -- Ensure cur directory exists
+  vim.fn.mkdir(test_path .. '/cur', 'p')
+  
+  local created = 0
   for i = 1, 5 do
     local content = string.format("Subject: Test %d\n\nBody %d", i, i)
     local flags = i <= 3 and {'D'} or {}
     if i <= 3 then drafts = drafts + 1 else regular = regular + 1 end
     
+    -- Add a small delay to ensure unique filenames
+    vim.wait(10)
+    
     local filename = maildir.generate_filename(flags)
     local filepath = test_path .. '/cur/' .. filename
-    maildir.atomic_write(test_path .. '/tmp', filepath, content)
+    local ok, err = maildir.atomic_write(test_path .. '/tmp', filepath, content)
+    if ok then
+      created = created + 1
+    else
+      report_test(test_name, false, 'Failed to create message ' .. i .. ': ' .. (err or 'unknown error'))
+      cleanup_test_dir()
+      return false
+    end
+  end
+  
+  -- Verify files were created
+  local cur_files = vim.fn.readdir(test_path .. '/cur')
+  if #cur_files ~= 5 then
+    report_test(test_name, false, string.format(
+      'Expected 5 files in cur/, found %d',
+      #cur_files
+    ))
+    cleanup_test_dir()
+    return false
   end
   
   -- List all messages
@@ -292,8 +318,6 @@ end
 function M.run()
   M.test_results = {}
   
-  notify.himalaya('Running Maildir foundation tests...', notify.categories.STATUS)
-  
   -- Run each test
   M.test_generate_filename()
   M.test_parse_filename()
@@ -303,39 +327,27 @@ function M.run()
   M.test_list_messages()
   M.test_update_size()
   
-  -- Summary
+  -- Return results for test runner to handle
   local passed = 0
   local failed = 0
+  local details = {}
   
   for _, result in ipairs(M.test_results) do
     if result.success then
       passed = passed + 1
     else
       failed = failed + 1
+      table.insert(details, string.format('%s: %s', result.name, result.error or 'Unknown error'))
     end
   end
   
-  -- Display results
-  local msg = string.format(
-    'Maildir tests complete: %d/%d passed',
-    passed,
-    passed + failed
-  )
-  
-  if failed > 0 then
-    notify.himalaya(msg, notify.categories.ERROR)
-    
-    -- Show failures
-    for _, result in ipairs(M.test_results) do
-      if not result.success then
-        print(string.format('FAILED: %s - %s', result.name, result.error or 'Unknown error'))
-      end
-    end
-  else
-    notify.himalaya(msg, notify.categories.USER_ACTION)
-  end
-  
-  return failed == 0
+  return {
+    passed = passed,
+    failed = failed,
+    total = passed + failed,
+    details = details,
+    success = failed == 0
+  }
 end
 
 return M

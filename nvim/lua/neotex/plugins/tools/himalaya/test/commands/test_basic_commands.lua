@@ -1,7 +1,7 @@
 -- Basic Command Tests for Himalaya Plugin
 -- Simple tests to verify test infrastructure
 
-local framework = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 
 -- Test suite
@@ -20,9 +20,16 @@ end))
 -- Test config module
 table.insert(tests, framework.create_test('config_module', function()
   local config = require('neotex.plugins.tools.himalaya.core.config')
+  -- Always setup config for this test to ensure it has binaries
+  config.setup({
+    binaries = {
+      himalaya = 'himalaya'
+    }
+  })
   assert.truthy(config, "Config module should exist")
   assert.truthy(config.config, "Should have config table")
   assert.truthy(config.config.binaries, "Should have binaries config")
+  assert.truthy(config.config.binaries.himalaya, "Should have himalaya binary configured")
 end))
 
 -- Test state module

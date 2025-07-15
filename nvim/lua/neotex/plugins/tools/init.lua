@@ -76,9 +76,11 @@ local firenvim_module = safe_require("neotex.plugins.tools.firenvim")
 local snacks_module = safe_require("neotex.plugins.tools.snacks")
 local autolist_module = safe_require("neotex.plugins.tools.autolist")
 local mini_module = safe_require("neotex.plugins.tools.mini")
+local autopairs_module = safe_require("neotex.plugins.tools.autopairs")
 local surround_module = safe_require("neotex.plugins.tools.surround")
 local todo_comments_module = safe_require("neotex.plugins.tools.todo-comments")
 local yanky_module = safe_require("neotex.plugins.tools.yanky")
+local luasnip_module = safe_require("neotex.plugins.tools.luasnip")
 local himalaya_module = safe_require("neotex.plugins.tools.himalaya-plugin")
 
 -- Create array of valid plugin specs
@@ -97,9 +99,11 @@ add_if_valid(firenvim_module)
 add_if_valid(snacks_module)
 add_if_valid(autolist_module)
 add_if_valid(mini_module)
+add_if_valid(autopairs_module)
 add_if_valid(surround_module)
 add_if_valid(todo_comments_module)
 add_if_valid(yanky_module)
+add_if_valid(luasnip_module)
 
 -- Himalaya returns a single spec, add it directly
 add_if_valid(himalaya_module)

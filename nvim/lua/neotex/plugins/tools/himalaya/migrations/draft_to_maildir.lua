@@ -196,6 +196,14 @@ function M.migrate(opts)
   opts = opts or {}
   local dry_run = opts.dry_run or false
   
+  -- Reset state for new migration
+  M.state = {
+    backup_dir = nil,
+    migrated_count = 0,
+    failed_count = 0,
+    errors = {}
+  }
+  
   -- Get all drafts from filesystem
   local drafts = read_legacy_drafts()
   if #drafts == 0 then

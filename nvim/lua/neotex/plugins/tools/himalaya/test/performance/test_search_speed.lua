@@ -1,6 +1,6 @@
 -- Test Search Performance for Himalaya Plugin
 
-local framework = require('neotex.plugins.tools.himalaya.scripts.utils.test_framework')
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 local helpers = framework.helpers
 
@@ -8,7 +8,7 @@ local helpers = framework.helpers
 local tests = {}
 
 -- Use test search helper since core search module doesn't have filter_emails
-local search = require('neotex.plugins.tools.himalaya.scripts.utils.test_search')
+local search = require('neotex.plugins.tools.himalaya.test.utils.test_search')
 
 -- Test basic search performance
 table.insert(tests, framework.create_test('search_performance_basic', function()

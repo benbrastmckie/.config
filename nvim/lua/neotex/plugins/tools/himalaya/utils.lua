@@ -799,6 +799,12 @@ end
 
 -- Save draft to maildir
 function M.save_draft(account, folder, email_data)
+  -- Ensure config is initialized
+  if not config.config then
+    logger.error('Config not initialized')
+    return false, 'Config not initialized'
+  end
+  
   -- Build himalaya command with correct CLI syntax
   local cmd_parts = {
     config.config.binaries.himalaya or 'himalaya',
