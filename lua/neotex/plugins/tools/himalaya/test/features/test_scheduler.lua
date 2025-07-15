@@ -3,7 +3,6 @@
 local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 local helpers = framework.helpers
-local mock = framework.mock
 
 -- Test suite
 local tests = {}

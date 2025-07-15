@@ -1,5 +1,5 @@
 -- Test Framework Utilities for Himalaya Plugin
--- Provides assertions, helpers, and mock utilities for tests
+-- Provides assertions and helpers for tests
 
 local M = {}
 
@@ -204,38 +204,8 @@ M.helpers = {
       return false
     end
     
-    -- Disable notifications during tests
-    env.original_notify = vim.notify
-    vim.notify = function(msg, level, opts)
-      -- Silently ignore all notifications during tests
-      -- This prevents the verbose test output
-    end
-    
-    -- Also disable himalaya-specific notifications
-    local notify = require('neotex.util.notifications')
-    env.original_himalaya_notify = notify.himalaya
-    notify.himalaya = function(msg, category, context)
-      -- Silently ignore all himalaya notifications during tests
-      -- This prevents "Draft saved", "Email cancelled" etc. messages
-    end
-    
-    -- Mock himalaya command execution during tests
-    local utils = require('neotex.plugins.tools.himalaya.utils')
-    env.original_execute_himalaya = utils.execute_himalaya
-    utils.execute_himalaya = function(args, opts)
-      -- Return mock data for common commands to prevent actual CLI calls
-      if args[1] == 'envelope' and args[2] == 'list' then
-        return {} -- Empty email list
-      elseif args[1] == 'folder' and args[2] == 'list' then
-        return {} -- Empty folder list
-      elseif args[1] == 'message' and args[2] == 'read' then
-        return "Subject: Test\nFrom: test@example.com\n\nTest content"
-      elseif args[1] == 'message' and args[2] == 'send' then
-        return true -- Simulate successful send
-      else
-        return nil -- Other commands fail silently
-      end
-    end
+    -- No mocking - let notifications work normally during tests
+    -- This allows us to see real behavior and catch actual issues
     
     -- Instead of mocking scheduler, just prevent actual external commands
     -- The scheduler should work normally but not send real emails
@@ -309,32 +279,13 @@ M.helpers = {
       pcall(sidebar.close)
     end
     
-    -- Restore original notification function
-    if env.original_notify then
-      vim.notify = env.original_notify
-    end
-    
-    -- Restore original himalaya notification function
-    if env.original_himalaya_notify then
-      local notify = require('neotex.util.notifications')
-      notify.himalaya = env.original_himalaya_notify
-    end
-    
-    -- Restore original execute_himalaya function
-    if env.original_execute_himalaya then
-      local utils = require('neotex.plugins.tools.himalaya.utils')
-      utils.execute_himalaya = env.original_execute_himalaya
-    end
-    
-    -- No scheduler function restoration needed since we're not mocking them
+    -- No mocking to restore - all functions work normally
     
     -- Restore original auto-sync function
     if env.original_start_auto_sync then
       local manager = require('neotex.plugins.tools.himalaya.sync.manager')
       manager.start_auto_sync = env.original_start_auto_sync
     end
-    
-    -- Draft manager functions not mocked, no need to restore
     
     -- Clear test mode flag
     _G.HIMALAYA_TEST_MODE = nil
@@ -440,83 +391,7 @@ M.helpers = {
   end
 }
 
--- Mock utilities
-M.mock = {
-  -- Create a mock function
-  fn = function(return_value)
-    local mock = {
-      calls = {},
-      return_value = return_value
-    }
-    
-    setmetatable(mock, {
-      __call = function(self, ...)
-        table.insert(self.calls, {...})
-        if type(self.return_value) == 'function' then
-          return self.return_value(...)
-        else
-          return self.return_value
-        end
-      end
-    })
-    
-    mock.called = function(self)
-      return #self.calls > 0
-    end
-    
-    mock.call_count = function(self)
-      return #self.calls
-    end
-    
-    mock.called_with = function(self, ...)
-      local args = {...}
-      for _, call in ipairs(self.calls) do
-        local match = true
-        for i, arg in ipairs(args) do
-          if call[i] ~= arg then
-            match = false
-            break
-          end
-        end
-        if match then
-          return true
-        end
-      end
-      return false
-    end
-    
-    return mock
-  end,
-  
-  -- Mock himalaya CLI
-  himalaya_cli = function(responses)
-    local mock = {}
-    mock.responses = responses or {}
-    mock.calls = {}
-    
-    mock.execute = function(cmd, args)
-      table.insert(mock.calls, { cmd = cmd, args = args })
-      
-      local key = cmd
-      if args and #args > 0 then
-        key = key .. " " .. table.concat(args, " ")
-      end
-      
-      local response = mock.responses[key] or mock.responses[cmd]
-      if response then
-        if type(response) == 'function' then
-          return response(cmd, args)
-        else
-          return response
-        end
-      end
-      
-      return { success = false, error = "No mock response for: " .. key }
-    end
-    
-    return mock
-  end
-}
+-- No mock utilities - tests should use real implementations
 
 -- Enhanced test result reporting
 M.create_test_result = function(name, success, error_info, context)
