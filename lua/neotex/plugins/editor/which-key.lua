@@ -600,23 +600,14 @@ return {
         local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
         if composer.is_compose_buffer(vim.api.nvim_get_current_buf()) then
           wk.add({
-            { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", buffer = 0 },
+            -- Only add quit mapping - md and mD are already in mail group
             { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", buffer = 0 },
-            { "<leader>mD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", buffer = 0 },
           }, { buffer = 0 })
         end
       end,
     })
     
-    -- Markdown-specific format mapping
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = { "markdown", "md" },
-      callback = function()
-        wk.add({
-          { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format buffer", icon = "󰉣", buffer = 0 },
-        })
-      end,
-    })
+    -- Markdown-specific mappings (format mapping already in actions group)
 
     -- SESSIONS group
     wk.add({
@@ -755,10 +746,55 @@ return {
       { "<leader>yc", function() require("yanky").clear_history() end, desc = "clear history", icon = "󰃢" },
     })
 
-    -- Visual mode mappings for surround operations
+    -- Visual mode mappings
     wk.add({
+      -- Surround operations
       { "<leader>s", group = "surround", icon = "󰅪", mode = "v" },
       { "<leader>ss", "<Plug>(nvim-surround-visual)", desc = "add surrounding to selection", icon = "󰅪", mode = "v" },
+      
+      -- AI Help operations that work on selected text
+      { "<leader>h", group = "ai help", icon = "󰚩", mode = "v" },
+      { "<leader>ha", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteAsk") end, desc = "ask about selection", icon = "󰞋", mode = "v" },
+      { "<leader>hs", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, desc = "edit selection", icon = "󰏫", mode = "v" },
+      { "<leader>hc", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteChat") end, desc = "chat about selection", icon = "󰻞", mode = "v" },
+      { "<leader>hL", "<cmd>LecticSubmitSelection<CR>", desc = "submit selection with message", icon = "󰚟", mode = "v" },
+      
+      -- Format selected text
+      { "<leader>a", group = "actions", icon = "󰌵", mode = "v" },
+      { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format selection", icon = "󰉣", mode = "v" },
+      
+      -- LSP operations on selection
+      { "<leader>i", group = "lsp", icon = "󰅴", mode = "v" },
+      { "<leader>ic", "<cmd>lua vim.lsp.buf.code_action()<CR>", desc = "code action", icon = "󰌵", mode = "v" },
+      
+      -- Git operations on selection
+      { "<leader>g", group = "git", icon = "󰊢", mode = "v" },
+      { "<leader>gl", "<cmd>Gitsigns blame_line<CR>", desc = "blame selected lines", icon = "󰊢", mode = "v" },
+      
+      -- Text operations
+      { "<leader>x", group = "text", icon = "󰤌", mode = "v" },
+      { "<leader>xa", desc = "align selection", icon = "󰉞", mode = "v" },
+      { "<leader>xA", desc = "align selection with preview", icon = "󰉞", mode = "v" },
+      { "<leader>xs", desc = "split/join selection", icon = "󰤋", mode = "v" },
+      
+      -- Search operations on selection
+      { "<leader>f", group = "find", icon = "󰍉", mode = "v" },
+      { "<leader>fs", "<cmd>Telescope grep_string<CR>", desc = "search selection", icon = "󰊄", mode = "v" },
+      { "<leader>fw", "<cmd>lua SearchWordUnderCursor()<CR>", desc = "search selection", icon = "󰊄", mode = "v" },
+      
+      -- Yank operations
+      { "<leader>y", group = "yank", icon = "󰆏", mode = "v" },
+      { "<leader>yh", function() _G.YankyTelescopeHistory() end, desc = "yank history", icon = "󰞋", mode = "v" },
+    })
+    
+    -- Jupyter visual mode mapping (for sending selected text to REPL)
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "ipynb", "python" },
+      callback = function()
+        wk.add({
+          { "<leader>jv", "<cmd>lua require('iron.core').visual_send()<CR>", desc = "send selection to REPL", icon = "󰊠", mode = "v", buffer = 0 },
+        })
+      end,
     })
   end,
 }
