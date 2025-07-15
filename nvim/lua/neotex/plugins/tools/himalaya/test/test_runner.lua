@@ -435,12 +435,78 @@ function M.show_results()
   -- Show detailed results in floating window
   float.show('Test Results', lines)
   
-  -- Debug: Add a small delay to see if any background processes are still outputting
+  -- Final cleanup: ensure all test buffers are cleaned up
   vim.defer_fn(function()
+    M.cleanup_test_buffers()
+    
+    -- Ensure we're in normal mode after tests
+    if vim.api.nvim_get_mode().mode ~= 'n' then
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)
+    end
+    
     if M.results.passed == M.results.total then
       notify.himalaya('Test execution completed - no background processes should be running', notify.categories.STATUS)
     end
   end, 1000)
+end
+
+-- Global cleanup function for test buffers
+function M.cleanup_test_buffers()
+  local cleaned_buffers = 0
+  
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      local name = vim.api.nvim_buf_get_name(buf)
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, 5, false)
+      
+      -- Check if this looks like a test buffer
+      local is_test_buffer = false
+      
+      -- Check for test patterns
+      if name and (name:match('compose') or name:match('test')) then
+        is_test_buffer = true
+      end
+      
+      -- Check for email headers in unnamed buffers
+      if not name or name == '' then
+        local content = table.concat(lines, '\n')
+        if content:match('X%-Himalaya%-Account: TestAccount') or 
+           content:match('Subject: Save Test') or 
+           content:match('Subject: Test') or
+           content:match('Subject: Existing Draft') or
+           content:match('Draft to reopen') or
+           content:match('From: Test User <test@example%.com>') then
+          is_test_buffer = true
+        end
+      end
+      
+      if is_test_buffer then
+        -- Try to delete the buffer directly (this will work even if it's displayed)
+        local ok, err = pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        if ok then
+          cleaned_buffers = cleaned_buffers + 1
+        else
+          -- If deletion fails, try to switch to a different buffer first
+          local current_buf = vim.api.nvim_get_current_buf()
+          if current_buf == buf then
+            -- Create a new empty buffer and switch to it
+            local new_buf = vim.api.nvim_create_buf(false, true)
+            vim.api.nvim_set_current_buf(new_buf)
+            
+            -- Now try to delete the test buffer again
+            local ok2, err2 = pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            if ok2 then
+              cleaned_buffers = cleaned_buffers + 1
+            end
+          end
+        end
+      end
+    end
+  end
+  
+  if cleaned_buffers > 0 then
+    notify.himalaya(string.format('Cleaned up %d test buffers', cleaned_buffers), notify.categories.STATUS)
+  end
 end
 
 -- Build test report
@@ -467,6 +533,37 @@ function M.build_report()
     and (M.results.passed / M.results.total * 100) or 0
   table.insert(lines, string.format('Success Rate: %.1f%%', success_rate))
   table.insert(lines, '')
+  
+  -- Performance summary
+  local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
+  local perf_metrics = framework.performance.metrics
+  
+  if next(perf_metrics.test_durations) then
+    table.insert(lines, '## Performance Summary')
+    
+    local total_duration = 0
+    local perf_categories = { fast = 0, medium = 0, slow = 0, very_slow = 0 }
+    
+    for test_name, duration in pairs(perf_metrics.test_durations) do
+      total_duration = total_duration + duration
+      local category = framework.performance.categorize_performance(duration)
+      perf_categories[category] = perf_categories[category] + 1
+    end
+    
+    table.insert(lines, string.format('Total Test Duration: %.2f ms', total_duration))
+    table.insert(lines, string.format('Average Test Duration: %.2f ms', total_duration / M.results.total))
+    table.insert(lines, '')
+    
+    table.insert(lines, '### Performance Distribution')
+    for category, count in pairs(perf_categories) do
+      if count > 0 then
+        local percentage = (count / M.results.total) * 100
+        table.insert(lines, string.format('- %s: %d tests (%.1f%%)', 
+          category, count, percentage))
+      end
+    end
+    table.insert(lines, '')
+  end
   
   -- Errors if any
   if #M.results.errors > 0 then

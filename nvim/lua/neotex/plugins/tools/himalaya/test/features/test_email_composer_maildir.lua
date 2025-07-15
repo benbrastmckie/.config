@@ -8,135 +8,73 @@ local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_maildi
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
+local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
 -- Test state
-M.test_dir = nil
 M.test_results = {}
-M.test_buffers = {}
+M.test_env = nil
 
--- Helper to create test environment
-local function setup_test_env()
-  M.test_dir = vim.fn.tempname() .. '_composer_test'
-  
-  -- Set up test config properly
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  config.setup({
-    sync = {
-      maildir_root = M.test_dir
-    },
-    accounts = {
-      TestAccount = {
-        name = 'TestAccount',
-        email = 'test@example.com',
-        display_name = 'Test User'
-      }
-    }
-  })
-  
-  -- Set current account
-  config.current_account = 'TestAccount'
-  
-  -- Create test maildir
-  vim.fn.mkdir(M.test_dir .. '/TestAccount/.Drafts', 'p')
-  
-  -- Setup modules
-  draft_manager.setup()
-  composer.setup({
-    compose = {
-      auto_save_interval = 0  -- Disable autosave for tests
-    }
-  })
-  
-  return M.test_dir
-end
-
--- Helper to cleanup test environment
-local function cleanup_test_env()
-  -- Delete test buffers
-  for _, buf in ipairs(M.test_buffers) do
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
-  end
-  M.test_buffers = {}
-  
-  -- Delete test directory
-  if M.test_dir and vim.fn.isdirectory(M.test_dir) == 1 then
-    vim.fn.delete(M.test_dir, 'rf')
-  end
-  M.test_dir = nil
-end
-
--- Helper to report test result
-local function report_test(name, success, error_msg)
-  table.insert(M.test_results, {
-    name = name,
-    success = success,
-    error = error_msg
-  })
-  
-  -- Results are stored in M.test_results for structured reporting
+-- Helper to report test result with enhanced context
+local function report_test(name, success, error_info, context)
+  local result = framework.create_test_result(name, success, error_info, context)
+  table.insert(M.test_results, result)
+  return result
 end
 
 -- Test 1: Create compose buffer
 function M.test_create_compose_buffer()
   local test_name = 'Create compose buffer'
   
-  -- Debug: Check if config is set up properly
-  local config = require('neotex.plugins.tools.himalaya.core.config')
-  local state = require('neotex.plugins.tools.himalaya.core.state')
+  -- Use managed test environment
+  local env = framework.helpers.create_test_env()
   
-  -- Set current account in state
-  state.set_current_account('TestAccount')
+  local success, result = pcall(function()
+    -- Set up test environment
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    -- Validate config setup
+    local config = require('neotex.plugins.tools.himalaya.core.config')
+    local from_test = config.get_formatted_from('TestAccount')
+    framework.assert.truthy(from_test, 'config.get_formatted_from should return valid value')
+    
+    -- Create compose buffer
+    local buf = composer.create_compose_buffer({
+      account = 'TestAccount',
+      to = 'recipient@example.com',
+      subject = 'Test Subject'
+    })
+    
+    framework.assert.buffer_valid(buf, 'create_compose_buffer should return valid buffer')
+    framework.helpers.register_buffer(env, buf)
+    
+    -- Verify buffer content with enhanced assertions
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    framework.assert.email_headers(content, {
+      from = 'Test User <test@example.com>',
+      to = 'recipient@example.com',
+      subject = 'Test Subject'
+    }, 'Email headers should match expected values')
+    
+    return {
+      buffer_id = buf,
+      content_length = #content,
+      account = 'TestAccount'
+    }
+  end)
   
-  -- Debug: Check if get_formatted_from works
-  local from_test = config.get_formatted_from('TestAccount')
-  if not from_test or from_test == '' then
-    report_test(test_name, false, 'config.get_formatted_from returned: ' .. tostring(from_test))
-    return false
-  end
+  -- Always cleanup
+  framework.helpers.cleanup_test_env(env)
   
-  local buf = composer.create_compose_buffer({
-    account = 'TestAccount',
-    to = 'recipient@example.com',
-    subject = 'Test Subject'
-  })
-  
-  if not buf then
-    report_test(test_name, false, 'Failed to create compose buffer')
-    return false
-  end
-  
-  table.insert(M.test_buffers, buf)
-  
-  -- Verify buffer content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  local has_from = content:match('From: Test User <test@example%.com>')
-  local has_to = content:match('To: recipient@example%.com')
-  local has_subject = content:match('Subject: Test Subject')
-  
-  if has_from and has_to and has_subject then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    -- Better error reporting
-    local error_details = {
-      'Buffer content incorrect:',
-      'Expected patterns:',
-      '  From: Test User <test@example.com>',
-      '  To: recipient@example.com', 
-      '  Subject: Test Subject',
-      'Actual content:',
-      content,
-      'Pattern matches:',
-      '  has_from: ' .. tostring(has_from),
-      '  has_to: ' .. tostring(has_to),
-      '  has_subject: ' .. tostring(has_subject)
-    }
-    
-    report_test(test_name, false, table.concat(error_details, '\n'))
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -145,39 +83,45 @@ end
 function M.test_save_draft()
   local test_name = 'Save draft from composer'
   
-  local buf = composer.create_compose_buffer({
-    account = 'TestAccount',
-    subject = 'Save Test'
-  })
+  local env = framework.helpers.create_test_env()
   
-  if not buf then
-    report_test(test_name, false, 'Failed to create buffer')
-    return false
-  end
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    local buf = composer.create_compose_buffer({
+      account = 'TestAccount',
+      subject = 'Save Test'
+    })
+    
+    framework.assert.buffer_valid(buf, 'Should create compose buffer')
+    framework.helpers.register_buffer(env, buf)
+    
+    -- Modify content
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    table.insert(lines, 'Test body content')
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    
+    -- Save draft
+    local ok = composer.save_draft(buf)
+    framework.assert.truthy(ok, 'Should save draft successfully')
+    
+    -- Verify buffer is marked as unmodified
+    local modified = vim.api.nvim_buf_get_option(buf, 'modified')
+    framework.assert.falsy(modified, 'Buffer should not be modified after save')
+    
+    return { buffer_id = buf, content_added = true }
+  end)
   
-  table.insert(M.test_buffers, buf)
+  framework.helpers.cleanup_test_env(env)
   
-  -- Modify content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  table.insert(lines, 'Test body content')
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  
-  -- Save draft
-  local ok = composer.save_draft(buf)
-  
-  if not ok then
-    report_test(test_name, false, 'Failed to save draft')
-    return false
-  end
-  
-  -- Verify buffer is marked as unmodified
-  local modified = vim.api.nvim_buf_get_option(buf, 'modified')
-  
-  if not modified then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    report_test(test_name, false, 'Buffer still marked as modified after save')
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -186,37 +130,45 @@ end
 function M.test_reply_to_email()
   local test_name = 'Reply to email'
   
-  local original = {
-    from = 'sender@example.com',
-    to = 'recipient@example.com',
-    cc = 'cc@example.com',
-    subject = 'Original Subject',
-    message_id = '<original@example.com>',
-    body = 'Original message body'
-  }
+  local env = framework.helpers.create_test_env()
   
-  local buf = composer.reply_to_email(original, false)
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    local original = {
+      from = 'sender@example.com',
+      to = 'recipient@example.com',
+      cc = 'cc@example.com',
+      subject = 'Original Subject',
+      message_id = '<original@example.com>',
+      body = 'Original message body'
+    }
+    
+    local buf = composer.reply_to_email(original, false)
+    framework.assert.buffer_valid(buf, 'Should create reply buffer')
+    framework.helpers.register_buffer(env, buf)
+    
+    -- Verify reply content with enhanced assertions
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    framework.assert.matches(content, 'To: sender@example%.com', 'Should reply to sender')
+    framework.assert.matches(content, 'Subject: Re: Original Subject', 'Should add Re: prefix')
+    framework.assert.matches(content, '> Original message body', 'Should quote original message')
+    
+    return { buffer_id = buf, reply_type = 'simple' }
+  end)
   
-  if not buf then
-    report_test(test_name, false, 'Failed to create reply buffer')
-    return false
-  end
+  framework.helpers.cleanup_test_env(env)
   
-  table.insert(M.test_buffers, buf)
-  
-  -- Verify reply content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  local has_to = content:match('To: sender@example%.com')
-  local has_subject = content:match('Subject: Re: Original Subject')
-  local has_quote = content:match('> Original message body')
-  
-  if has_to and has_subject and has_quote then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    report_test(test_name, false, 'Reply content incorrect')
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -225,36 +177,44 @@ end
 function M.test_reply_all()
   local test_name = 'Reply all to email'
   
-  local original = {
-    from = 'sender@example.com',
-    to = 'recipient@example.com, other@example.com',
-    cc = 'cc@example.com',
-    subject = 'Original Subject',
-    message_id = '<original@example.com>',
-    body = 'Original message'
-  }
+  local env = framework.helpers.create_test_env()
   
-  local buf = composer.reply_to_email(original, true)
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    local original = {
+      from = 'sender@example.com',
+      to = 'recipient@example.com, other@example.com',
+      cc = 'cc@example.com',
+      subject = 'Original Subject',
+      message_id = '<original@example.com>',
+      body = 'Original message'
+    }
+    
+    local buf = composer.reply_to_email(original, true)
+    framework.assert.buffer_valid(buf, 'Should create reply all buffer')
+    framework.helpers.register_buffer(env, buf)
+    
+    -- Verify reply all content
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    framework.assert.matches(content, 'To: sender@example%.com', 'Should reply to sender')
+    framework.assert.matches(content, 'Cc:.*recipient@example%.com', 'Should CC original recipients')
+    
+    return { buffer_id = buf, reply_type = 'all' }
+  end)
   
-  if not buf then
-    report_test(test_name, false, 'Failed to create reply all buffer')
-    return false
-  end
+  framework.helpers.cleanup_test_env(env)
   
-  table.insert(M.test_buffers, buf)
-  
-  -- Verify reply all content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  local has_to = content:match('To: sender@example%.com')
-  local has_cc = content:match('Cc:.*recipient@example%.com')
-  
-  if has_to and has_cc then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    report_test(test_name, false, 'Reply all recipients incorrect')
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -263,36 +223,44 @@ end
 function M.test_forward_email()
   local test_name = 'Forward email'
   
-  local original = {
-    from = 'sender@example.com',
-    to = 'recipient@example.com',
-    subject = 'Original Subject',
-    date = 'Mon, 13 Jan 2025 10:00:00 +0000',
-    body = 'Original message to forward'
-  }
+  local env = framework.helpers.create_test_env()
   
-  local buf = composer.forward_email(original)
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    local original = {
+      from = 'sender@example.com',
+      to = 'recipient@example.com',
+      subject = 'Original Subject',
+      date = 'Mon, 13 Jan 2025 10:00:00 +0000',
+      body = 'Original message to forward'
+    }
+    
+    local buf = composer.forward_email(original)
+    framework.assert.buffer_valid(buf, 'Should create forward buffer')
+    framework.helpers.register_buffer(env, buf)
+    
+    -- Verify forward content
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    framework.assert.matches(content, 'Subject: Fwd: Original Subject', 'Should add Fwd: prefix')
+    framework.assert.matches(content, '---------- Forwarded message', 'Should have forward separator')
+    framework.assert.matches(content, 'Original message to forward', 'Should include original message')
+    
+    return { buffer_id = buf, forward_type = 'standard' }
+  end)
   
-  if not buf then
-    report_test(test_name, false, 'Failed to create forward buffer')
-    return false
-  end
+  framework.helpers.cleanup_test_env(env)
   
-  table.insert(M.test_buffers, buf)
-  
-  -- Verify forward content
-  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  local has_subject = content:match('Subject: Fwd: Original Subject')
-  local has_separator = content:match('---------- Forwarded message')
-  local has_original = content:match('Original message to forward')
-  
-  if has_subject and has_separator and has_original then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    report_test(test_name, false, 'Forward content incorrect')
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -301,52 +269,233 @@ end
 function M.test_open_existing_draft()
   local test_name = 'Open existing draft'
   
-  -- Create and save a draft first
-  local buf1 = composer.create_compose_buffer({
-    account = 'TestAccount',
-    subject = 'Existing Draft',
-    body = 'Draft to reopen'
-  })
+  local env = framework.helpers.create_test_env()
   
-  if not buf1 then
-    report_test(test_name, false, 'Failed to create initial draft')
-    return false
-  end
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    -- Create and save a draft first
+    local buf1 = composer.create_compose_buffer({
+      account = 'TestAccount',
+      subject = 'Existing Draft',
+      body = 'Draft to reopen'
+    })
+    
+    framework.assert.buffer_valid(buf1, 'Should create initial draft')
+    framework.helpers.register_buffer(env, buf1)
+    composer.save_draft(buf1)
+    
+    -- Get draft filepath
+    local draft_info = draft_manager.get_by_buffer(buf1)
+    framework.assert.truthy(draft_info, 'Should get draft info')
+    
+    local filepath = draft_info.filepath
+    
+    -- Close buffer
+    vim.api.nvim_buf_delete(buf1, { force = true })
+    
+    -- Open draft again
+    local buf2 = composer.open_draft(filepath)
+    framework.assert.buffer_valid(buf2, 'Should open existing draft')
+    framework.helpers.register_buffer(env, buf2)
+    
+    -- Verify content
+    local lines = vim.api.nvim_buf_get_lines(buf2, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    framework.assert.matches(content, 'Subject: Existing Draft', 'Should have correct subject')
+    framework.assert.matches(content, 'Draft to reopen', 'Should have correct body')
+    
+    return { buffer_id = buf2, filepath = filepath }
+  end)
   
-  table.insert(M.test_buffers, buf1)
-  composer.save_draft(buf1)
+  framework.helpers.cleanup_test_env(env)
   
-  -- Get draft filepath
-  local draft_info = draft_manager.get_by_buffer(buf1)
-  if not draft_info then
-    report_test(test_name, false, 'Failed to get draft info')
-    return false
-  end
-  
-  local filepath = draft_info.filepath
-  
-  -- Close buffer
-  vim.api.nvim_buf_delete(buf1, { force = true })
-  
-  -- Open draft again
-  local buf2 = composer.open_draft(filepath)
-  
-  if not buf2 then
-    report_test(test_name, false, 'Failed to open existing draft')
-    return false
-  end
-  
-  table.insert(M.test_buffers, buf2)
-  
-  -- Verify content
-  local lines = vim.api.nvim_buf_get_lines(buf2, 0, -1, false)
-  local content = table.concat(lines, '\n')
-  
-  if content:match('Subject: Existing Draft') and content:match('Draft to reopen') then
-    report_test(test_name, true)
+  if success then
+    report_test(test_name, true, nil, result)
     return true
   else
-    report_test(test_name, false, 'Reopened draft content incorrect')
+    report_test(test_name, false, result)
+    return false
+  end
+end
+
+-- Test 7: Edge case - Empty email headers
+function M.test_edge_case_empty_headers()
+  local test_name = 'Edge case: Empty email headers'
+  
+  local env = framework.helpers.create_test_env()
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    -- Test with empty/nil values
+    local buf = composer.create_compose_buffer({
+      account = 'TestAccount',
+      to = '',
+      subject = '',
+      body = ''
+    })
+    
+    framework.assert.buffer_valid(buf, 'Should create buffer even with empty headers')
+    framework.helpers.register_buffer(env, buf)
+    
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    -- Should still have From header (even if empty due to empty fields)
+    framework.assert.matches(content, 'From:', 'Should always have From header field')
+    
+    return { buffer_id = buf, content_length = #content }
+  end)
+  
+  framework.helpers.cleanup_test_env(env)
+  
+  if success then
+    report_test(test_name, true, nil, result)
+    return true
+  else
+    report_test(test_name, false, result)
+    return false
+  end
+end
+
+-- Test 8: Edge case - Invalid account
+function M.test_edge_case_invalid_account()
+  local test_name = 'Edge case: Invalid account'
+  
+  local env = framework.helpers.create_test_env()
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    -- Test with non-existent account
+    local buf = composer.create_compose_buffer({
+      account = 'NonExistentAccount',
+      to = 'test@example.com',
+      subject = 'Test'
+    })
+    
+    -- The composer may create a buffer but with empty/default headers
+    -- This is acceptable behavior - the test is to ensure it doesn't crash
+    if buf then
+      framework.helpers.register_buffer(env, buf)
+      
+      -- Check that the buffer content indicates the account issue
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local content = table.concat(lines, '\n')
+      
+      -- Should have empty or default From header since account doesn't exist
+      framework.assert.matches(content, 'From:', 'Should have From header even for invalid account')
+    end
+    
+    return { account_handled = true, buffer_created = buf ~= nil }
+  end)
+  
+  framework.helpers.cleanup_test_env(env)
+  
+  if success then
+    report_test(test_name, true, nil, result)
+    return true
+  else
+    report_test(test_name, false, result)
+    return false
+  end
+end
+
+-- Test 9: Edge case - Malformed email addresses
+function M.test_edge_case_malformed_email()
+  local test_name = 'Edge case: Malformed email addresses'
+  
+  local env = framework.helpers.create_test_env()
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    -- Test with malformed email
+    local buf = composer.create_compose_buffer({
+      account = 'TestAccount',
+      to = 'invalid-email-address',
+      subject = 'Test Malformed'
+    })
+    
+    framework.assert.buffer_valid(buf, 'Should create buffer with malformed email')
+    framework.helpers.register_buffer(env, buf)
+    
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local content = table.concat(lines, '\n')
+    
+    -- Should still contain the invalid email (validation happens later)
+    framework.assert.matches(content, 'To: invalid%-email%-address', 'Should preserve original email format')
+    
+    return { buffer_id = buf, malformed_email = 'invalid-email-address' }
+  end)
+  
+  framework.helpers.cleanup_test_env(env)
+  
+  if success then
+    report_test(test_name, true, nil, result)
+    return true
+  else
+    report_test(test_name, false, result)
+    return false
+  end
+end
+
+-- Test 10: Performance test - Create multiple buffers
+function M.test_performance_multiple_buffers()
+  local test_name = 'Performance: Create multiple buffers'
+  
+  local env = framework.helpers.create_test_env()
+  local success, result = pcall(function()
+    framework.helpers.create_maildir(env.temp_dir, 'TestAccount')
+    
+    local state = require('neotex.plugins.tools.himalaya.core.state')
+    state.set_current_account('TestAccount')
+    
+    -- Performance test: create 10 buffers quickly
+    local start_time = vim.loop.hrtime()
+    local buffers = {}
+    
+    for i = 1, 10 do
+      local buf = composer.create_compose_buffer({
+        account = 'TestAccount',
+        to = 'test' .. i .. '@example.com',
+        subject = 'Performance Test ' .. i
+      })
+      
+      framework.assert.buffer_valid(buf, 'Buffer ' .. i .. ' should be valid')
+      table.insert(buffers, buf)
+      framework.helpers.register_buffer(env, buf)
+    end
+    
+    local duration = (vim.loop.hrtime() - start_time) / 1e6
+    
+    -- Should complete within reasonable time (500ms for 10 buffers)
+    if duration > 500 then
+      error(string.format('Performance test failed: %.2fms (expected < 500ms)', duration))
+    end
+    
+    return { 
+      buffer_count = #buffers,
+      duration_ms = duration,
+      avg_per_buffer = duration / #buffers
+    }
+  end)
+  
+  framework.helpers.cleanup_test_env(env)
+  
+  if success then
+    report_test(test_name, true, nil, result)
+    return true
+  else
+    report_test(test_name, false, result)
     return false
   end
 end
@@ -355,12 +504,20 @@ end
 function M.run()
   M.test_results = {}
   
-  notify.himalaya('Running Email Composer Maildir tests...', notify.categories.STATUS)
+  -- Create captured notifications to avoid console spam
+  local captured_notifications = framework.helpers.capture_notifications(function()
+    notify.himalaya('Running Email Composer Maildir tests...', notify.categories.STATUS)
+  end)
   
-  -- Setup test environment
-  setup_test_env()
+  -- Setup modules (no environment setup needed - each test manages its own)
+  draft_manager.setup()
+  composer.setup({
+    compose = {
+      auto_save_interval = 0  -- Disable autosave for tests
+    }
+  })
   
-  -- Run each test
+  -- Run each test (core functionality)
   M.test_create_compose_buffer()
   M.test_save_draft()
   M.test_reply_to_email()
@@ -368,8 +525,11 @@ function M.run()
   M.test_forward_email()
   M.test_open_existing_draft()
   
-  -- Cleanup
-  cleanup_test_env()
+  -- Run edge case tests
+  M.test_edge_case_empty_headers()
+  M.test_edge_case_invalid_account()
+  M.test_edge_case_malformed_email()
+  M.test_performance_multiple_buffers()
   
   -- Calculate results
   local passed = 0
