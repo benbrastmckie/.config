@@ -1299,8 +1299,8 @@ function M.refresh_email_list(opts)
             pcall(vim.api.nvim_win_set_cursor, current_win, {1, 0})
           end
           
-          -- If we were in insert mode, restore it
-          if should_restore_insert then
+          -- If we were in insert mode, restore it (unless in test mode)
+          if should_restore_insert and not _G.HIMALAYA_TEST_MODE then
             vim.cmd('startinsert')
           end
         end
@@ -1365,8 +1365,8 @@ function M.refresh_email_list(opts)
         pcall(vim.api.nvim_win_set_cursor, current_win, {1, 0})
       end
       
-      -- If we were in insert mode, restore it
-      if should_restore_insert then
+      -- If we were in insert mode, restore it (unless in test mode)
+      if should_restore_insert and not _G.HIMALAYA_TEST_MODE then
         vim.cmd('startinsert')
       end
     end

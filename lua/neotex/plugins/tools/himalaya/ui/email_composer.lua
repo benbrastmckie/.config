@@ -398,11 +398,13 @@ local function setup_buffer_mappings(buf)
         -- Jump to body (line after the empty line)
         local body_line = math.min(i + 1, #lines)
         vim.api.nvim_win_set_cursor(0, { body_line, 0 })
-        -- Exit insert mode and re-enter to position cursor properly
+        -- Exit insert mode and re-enter to position cursor properly (unless in test mode)
         vim.cmd('stopinsert')
-        vim.schedule(function()
-          vim.cmd('startinsert')
-        end)
+        if not _G.HIMALAYA_TEST_MODE then
+          vim.schedule(function()
+            vim.cmd('startinsert')
+          end)
+        end
         return
       elseif lines[i]:match('^[^:]+:%s*$') then
         -- Jump to end of header line
@@ -663,8 +665,10 @@ function M.create_compose_buffer(opts)
     vim.api.nvim_win_set_cursor(0, { 7, 0 })
   end
   
-  -- Start in insert mode
-  vim.cmd('startinsert!')
+  -- Start in insert mode (unless in test mode)
+  if not _G.HIMALAYA_TEST_MODE then
+    vim.cmd('startinsert!')
+  end
   
   -- Don't save immediately - wait for actual content
   -- The autosave timer will handle the first save when content is added

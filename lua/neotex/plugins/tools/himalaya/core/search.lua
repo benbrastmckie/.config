@@ -734,8 +734,10 @@ function M.show_search_ui()
   
   vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', ':close<CR>', { buffer = buf })
   
-  -- Start in insert mode
-  vim.cmd('startinsert')
+  -- Start in insert mode (unless in test mode)
+  if not _G.HIMALAYA_TEST_MODE then
+    vim.cmd('startinsert')
+  end
 end
 
 -- Execute search and display results
