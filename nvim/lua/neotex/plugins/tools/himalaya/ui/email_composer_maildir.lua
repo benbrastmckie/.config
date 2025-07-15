@@ -134,20 +134,11 @@ end
 function M.setup_compose_keymaps(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
   
-  -- Send email
-  vim.keymap.set('n', '<leader>ms', function()
-    M.send_email(buf)
-  end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
-  
-  -- Cancel/close
-  vim.keymap.set('n', '<leader>mc', function()
-    M.close_compose_buffer(buf)
-  end, vim.tbl_extend('force', opts, { desc = 'Cancel compose' }))
-  
-  -- Delete draft
-  vim.keymap.set('n', '<leader>md', function()
-    M.delete_draft(buf)
-  end, vim.tbl_extend('force', opts, { desc = 'Delete draft' }))
+  -- NOTE: Leader mappings are now defined in which-key.lua
+  -- The following mappings have been moved:
+  -- <leader>ms - Send email -> HimalayaSend command
+  -- <leader>mc - Cancel compose -> Moved to <leader>mq in which-key
+  -- <leader>md - Delete draft -> HimalayaSaveDraft command
   
   -- Override write behavior to use draft save
   -- This hooks into your existing <leader>w save workflow

@@ -467,15 +467,10 @@ local function setup_buffer_mappings(buf)
     desc = 'Handle :w for draft buffer'
   })
   
-  -- Close draft properly
-  vim.keymap.set('n', '<leader>q', function()
-    M.close_compose_buffer(buf)
-  end, opts)
-  
-  -- Send and close
-  vim.keymap.set('n', '<leader>s', function()
-    M.send_and_close(buf)
-  end, opts)
+  -- NOTE: Leader mappings are now defined in which-key.lua
+  -- The following mappings have been moved:
+  -- <leader>q - Close compose buffer -> Moved to <leader>mq in which-key
+  -- <leader>s - Send and close -> Conflicts with surround, use <leader>me instead
   
   -- Note: Removed "save on first change" autocmd to prevent creating drafts with incomplete content
   -- The autosave timer (every 5 seconds) will handle saving once the user has added meaningful content
