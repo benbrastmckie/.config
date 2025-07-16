@@ -50,7 +50,7 @@ end))
 
 -- Test command registry
 table.insert(tests, framework.create_test('command_registry', function()
-  local commands = require('neotex.plugins.tools.himalaya.core.commands.init')
+  local commands = require('neotex.plugins.tools.himalaya.commands.init')
   assert.truthy(commands, "Commands module should exist")
   assert.truthy(commands.command_registry, "Should have command registry")
   

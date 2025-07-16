@@ -15,13 +15,15 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ **Phase 2.3**: Consolidate Loggers (removed 332 lines)
 - ✅ **Phase 3.1**: Improve Async Command Layer (enhanced with debugging/monitoring)
 - ✅ **Phase 3.2**: Consolidate Command Modules (8→4 modules, 50% reduction)
+- ✅ **Phase 3.3**: Command Structure Refactor (flattened to single location)
 
 ### Results So Far
 - **Lines removed**: 1,582+ lines of redundant code
-- **Files removed**: 15 files (7 initial + 8 command modules)
-- **Module consolidation**: Command modules reduced from 8 to 4
-- **Architecture improvements**: Single implementations for core managers, enhanced async layer, consolidated commands
+- **Files removed**: 17 files (7 initial + 8 command modules + 2 orphaned scripts)
+- **Module consolidation**: Command modules reduced from 8 to 4, then flattened to single location
+- **Architecture improvements**: Single implementations for core managers, enhanced async layer, consolidated and flattened commands
 - **New features**: Debug mode, metrics tracking, better error handling, 4 new debug commands
+- **Cleaner structure**: Commands now in single `himalaya/commands/` directory
 
 ### Remaining Work
 - Phase 4: Consolidate Orchestration
@@ -245,6 +247,32 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ Maintained all 106 commands with exact functionality
 - ✅ More logical grouping by functionality
 - ✅ Easier to find related commands
+
+### 3.3 Command Structure Refactor ✅ COMPLETE
+**Previous structure**: Commands in 3 locations
+- `himalaya/commands/` - 2 orphaned utility scripts
+- `himalaya/core/commands/` - Active command system
+- `orchestration/commands.lua` - Unused orchestration
+
+**New structure**: Single flat location
+- ✅ All commands in `himalaya/commands/`
+- ✅ Removed nested `core/commands/` directory
+- ✅ Moved orchestration to `commands/orchestrator.lua`
+- ✅ Removed orphaned utility scripts
+
+**Files updated**:
+- ✅ Moved 5 command modules to flat structure
+- ✅ Updated all require paths (4 files)
+- ✅ Cleaned up empty directories
+- ✅ Removed 2 orphaned scripts
+
+**Testing**: ✅ All commands load successfully
+
+**Phase 3.3 Results**:
+- ✅ Single, clear location for all commands
+- ✅ Follows Neovim plugin conventions
+- ✅ Shorter, cleaner require paths
+- ✅ No more confusion about command locations
 
 ## Phase 4: Consolidate Orchestration (Medium Priority)
 

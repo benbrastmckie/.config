@@ -107,7 +107,7 @@ end
 
 -- Setup user commands
 function M.setup_commands()
-  local commands = require('neotex.plugins.tools.himalaya.core.commands.init')
+  local commands = require('neotex.plugins.tools.himalaya.commands.init')
   commands.setup()
 end
 
