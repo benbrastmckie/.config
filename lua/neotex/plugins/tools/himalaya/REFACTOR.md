@@ -90,21 +90,28 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 
 ## Phase 2: Consolidate Duplicate Managers (High Priority)
 
-### 2.1 Consolidate Draft Managers
-**Files to remove**:
-- `core/draft_manager_v2.lua` (old unified draft manager)
-- `core/draft_manager_v2_maildir.lua` (wrapper)
+### 2.1 Consolidate Draft Managers ✅ COMPLETE
+**Files removed**:
+- ✅ `core/draft_manager_v2.lua` (872 lines)
+- ✅ `core/draft_manager_v2_maildir.lua` (215 lines)
 
-**Files to keep**: `core/draft_manager_maildir.lua` (current implementation)
+**Files kept**: ✅ `core/draft_manager_maildir.lua` (current implementation)
 
-**Files to modify**: Update all requires to point to `draft_manager_maildir`
-- `ui/email_composer_maildir.lua`
-- `ui/email_list.lua`
-- `ui/sidebar.lua`
-- `core/commands/ui.lua`
-- Any other files requiring draft manager
+**Files updated**: 
+- ✅ `init.lua` - use direct implementation
+- ✅ `scheduler.lua` - use direct implementation
+- ✅ `utils.lua` - implemented load() inline
+- ✅ `core/commands/draft.lua` - adapted to direct API
+- ✅ `ui/compose_status.lua` - simplified for maildir
+- ✅ `ui/email_preview.lua` - removed sync states
+- ✅ `ui/email_composer.lua` - updated require only (needs Phase 2.2)
 
-**Testing**: Verify draft functionality works correctly
+**Testing**: ✅ Draft functionality preserved
+
+**Phase 2.1 Results**:
+- ✅ Removed 1,087 lines of wrapper/compatibility code
+- ✅ Single draft manager implementation
+- ✅ Cleaner, more maintainable API
 
 ### 2.2 Consolidate Email Composers
 **Files to remove**:
