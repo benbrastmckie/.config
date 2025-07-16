@@ -107,8 +107,8 @@ end
 
 -- Setup user commands
 function M.setup_commands()
-  local commands = require('neotex.plugins.tools.himalaya.core.commands')
-  commands.register_all()
+  local commands = require('neotex.plugins.tools.himalaya.core.commands.init')
+  commands.setup()
 end
 
 -- Keymaps helper for which-key
