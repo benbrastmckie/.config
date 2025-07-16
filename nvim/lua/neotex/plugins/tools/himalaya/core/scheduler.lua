@@ -11,7 +11,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 local retry_handler = require('neotex.plugins.tools.himalaya.core.retry_handler')
 
 -- Enhanced configuration
