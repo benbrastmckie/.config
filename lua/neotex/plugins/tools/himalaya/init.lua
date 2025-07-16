@@ -111,13 +111,6 @@ function M.setup_commands()
   commands.setup()
 end
 
--- Keymaps helper for which-key
--- TODO: REMOVE BACKWARDS COMPATIBILITY - Remove this function as keymaps are handled in which-key.lua
-function M.get_keymaps()
-  -- Keymaps are now handled entirely in which-key.lua
-  -- This function is maintained for backward compatibility
-  return {}
-end
 
 -- Export utilities for tests
 M.utils = require('neotex.plugins.tools.himalaya.utils')
