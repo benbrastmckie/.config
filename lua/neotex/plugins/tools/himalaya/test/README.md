@@ -114,30 +114,91 @@ Testing utilities and framework components.
 
 ## Running Tests
 
-### Interactive Test Runner
-```vim
-:HimalayaTest
-```
-Opens an interactive picker to select and run tests by category or individual test.
+### Two Ways to Run Tests
 
-### Run All Tests
+Tests can be run either **interactively within Neovim** or **from the command line** for test-driven development.
+
+### 1. Interactive Testing (Within Neovim)
+
+Use the `:HimalayaTest` command when you have Neovim open:
+
 ```vim
-:HimalayaTest all
+:HimalayaTest              " Opens interactive picker
+:HimalayaTest all          " Run all tests
+:HimalayaTest commands     " Run command tests
+:HimalayaTest features     " Run feature tests
+:HimalayaTest integration  " Run integration tests
+:HimalayaTest performance  " Run performance tests
+:HimalayaTest test_scheduler  " Run specific test
 ```
 
-### Run by Category
-```vim
-:HimalayaTest commands     # Run all command tests
-:HimalayaTest features     # Run all feature tests
-:HimalayaTest integration  # Run all integration tests
-:HimalayaTest performance  # Run all performance tests
+Results appear in a floating window with syntax highlighting.
+
+### 2. Command Line Testing (Test-Driven Development)
+
+Use `dev_cli.lua` for headless testing during development or CI/CD:
+
+```bash
+# From anywhere (absolute path):
+nvim --headless -l /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/test/dev_cli.lua
+
+# Or from the himalaya directory:
+cd /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya
+nvim --headless -l test/dev_cli.lua
+
+# Run specific test categories:
+nvim --headless -l test/dev_cli.lua commands     # Command tests only
+nvim --headless -l test/dev_cli.lua features     # Feature tests only
+nvim --headless -l test/dev_cli.lua integration  # Integration tests only
+nvim --headless -l test/dev_cli.lua performance  # Performance tests only
+
+# Run a specific test by name:
+nvim --headless -l test/dev_cli.lua test_scheduler
+nvim --headless -l test/dev_cli.lua test_draft_manager
+
+# Default behavior (no argument = run all tests):
+nvim --headless -l test/dev_cli.lua
 ```
 
-### Run Specific Test
-```vim
-:HimalayaTest test_scheduler
-:HimalayaTest test_full_workflow
-:HimalayaTest test_search_speed
+#### Key Features of dev_cli.lua:
+- **Exit codes**: Returns 0 on success, 1 on failure (perfect for CI/CD)
+- **Full output**: All test results and error messages print to stdout
+- **No UI**: Runs completely headless, no windows or prompts
+- **Fast feedback**: Ideal for test-driven development workflows
+
+#### Example Output:
+```
+# Himalaya Test Results
+
+Date: 2025-07-16 11:15:00
+Duration: 5702.09 ms
+
+## Summary
+Total Tests: 160
+✅ Passed: 158
+❌ Failed: 2
+⏭️  Skipped: 0
+
+Success Rate: 98.8%
+
+## Failed Tests
+
+❌ [FEATURES] test_async_timing:Timer accuracy test
+  ...ugins/tools/himalaya/test/features/test_async_timing.lua:56: Timing not in acceptable range: expected 15ms--150ms, got 0.08ms
+
+❌ [INTEGRATION] test_email_operations:Email list display
+  ...ig/nvim/lua/neotex/plugins/tools/himalaya/utils/cli.lua:237: attempt to call field 'execute' (a nil value)
+```
+
+#### Quick Test During Development:
+```bash
+# Create an alias for convenience:
+alias htest='nvim --headless -l /home/benjamin/.config/nvim/lua/neotex/plugins/tools/himalaya/test/dev_cli.lua'
+
+# Then use:
+htest              # Run all tests
+htest features     # Run feature tests
+htest test_scheduler  # Run specific test
 ```
 
 ## Test Runner Features

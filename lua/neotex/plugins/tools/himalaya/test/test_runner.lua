@@ -1,5 +1,13 @@
 -- Test Runner for Himalaya Plugin
 -- Central test management with picker interface
+--
+-- This is the core test engine that:
+-- - Discovers and organizes all test files
+-- - Executes tests and collects results
+-- - Provides interactive UI (for :HimalayaTest command)
+-- - Can be used both interactively and in headless mode
+--
+-- For command-line usage, see run_tests.lua which wraps this module
 
 local M = {}
 
