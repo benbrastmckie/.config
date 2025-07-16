@@ -155,13 +155,14 @@ end
 
 -- Check maildir structure
 function M.checks.maildir()
+  local account_name = config.get_current_account_name()
   local account = config.get_current_account()
-  local maildir = vim.fn.expand(account.maildir_path)
+  local maildir = config.get_maildir_path(account_name)
   
   local issues = {}
   
-  -- Check trailing slash
-  if not account.maildir_path:match('/$') then
+  -- Check trailing slash (maildir path from folders module should already have it)
+  if not maildir:match('/$') then
     table.insert(issues, 'Maildir path missing trailing slash (required for Maildir++ format)')
   end
   
@@ -174,7 +175,10 @@ function M.checks.maildir()
   end
   
   -- Check folder structure
-  for imap_name, local_name in pairs(account.folder_map or {}) do
+  -- Get folders from the folders module
+  local folders = config.folders.get_all_folders(account_name)
+  for _, folder_info in ipairs(folders) do
+    local local_name = folder_info.local_name
     if local_name ~= 'INBOX' then
       local folder_path = maildir .. '.' .. local_name
       if vim.fn.isdirectory(folder_path) == 1 then
