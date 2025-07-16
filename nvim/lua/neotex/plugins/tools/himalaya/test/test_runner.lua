@@ -561,7 +561,8 @@ function M.cleanup_test_buffers()
            content:match('Draft to reopen') or
            content:match('From: Test User <test@example%.com>') or
            content:match('Subject: Draft Test Email') or
-           content:match('From: test@example%.com') then
+           content:match('From: test@example%.com') or
+           content:match('To: recipient@example%.com') then
           is_test_buffer = true
         end
       end
