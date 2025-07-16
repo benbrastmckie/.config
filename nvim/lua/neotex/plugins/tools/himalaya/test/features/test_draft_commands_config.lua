@@ -13,9 +13,9 @@ M.tests = {
     name = "Draft Configuration - Default Values",
     fn = function()
       -- Check draft config exists in defaults
-      Test.assert.truthy(config.defaults.draft, "Draft config should exist in defaults")
+      Test.assert.truthy(config.defaults.drafts, "Draft config should exist in defaults")
       
-      local draft_config = config.defaults.draft
+      local draft_config = config.defaults.drafts
       
       -- Check storage settings
       Test.assert.truthy(draft_config.storage, "Storage config should exist")
@@ -49,7 +49,7 @@ M.tests = {
     name = "Draft Configuration Validation - Valid Config",
     fn = function()
       local valid_config = {
-        draft = {
+        drafts = {
           storage = {
             base_dir = "/tmp/drafts",
             format = "json"
@@ -61,9 +61,9 @@ M.tests = {
         }
       }
       
-      local ok, err = config.validate_draft_config(valid_config)
+      local ok, errors = config.validate_draft_config(valid_config)
       Test.assert.truthy(ok, "Valid config should pass validation")
-      Test.assert.falsy(err, "Should have no error message")
+      Test.assert.equals(#errors, 0, "Should have no error messages")
       
       return true
     end
@@ -73,7 +73,7 @@ M.tests = {
     name = "Draft Configuration Validation - Invalid Storage",
     fn = function()
       local invalid_config = {
-        draft = {
+        drafts = {
           storage = {
             base_dir = 123, -- Should be string
             format = "invalid" -- Should be json or eml
@@ -81,15 +81,29 @@ M.tests = {
         }
       }
       
-      local ok, err = config.validate_draft_config(invalid_config)
+      local ok, errors = config.validate_draft_config(invalid_config)
       Test.assert.falsy(ok, "Invalid config should fail validation")
-      Test.assert.truthy(err:match("base_dir must be a string"), "Should have base_dir error")
+      local found = false
+      for _, err in ipairs(errors) do
+        if err:match("base_dir must be a string") then
+          found = true
+          break
+        end
+      end
+      Test.assert.truthy(found, "Should have base_dir error")
       
       -- Test invalid format
-      invalid_config.draft.storage.base_dir = "/tmp/drafts"
-      ok, err = config.validate_draft_config(invalid_config)
+      invalid_config.drafts.storage.base_dir = "/tmp/drafts"
+      ok, errors = config.validate_draft_config(invalid_config)
       Test.assert.falsy(ok, "Invalid format should fail")
-      Test.assert.truthy(err:match("format must be 'json' or 'eml'"), "Should have format error")
+      found = false
+      for _, err in ipairs(errors) do
+        if err:match("format must be 'json' or 'eml'") then
+          found = true
+          break
+        end
+      end
+      Test.assert.truthy(found, "Should have format error")
       
       return true
     end
@@ -99,7 +113,7 @@ M.tests = {
     name = "Draft Configuration Validation - Invalid Sync",
     fn = function()
       local invalid_config = {
-        draft = {
+        drafts = {
           sync = {
             sync_interval = -5, -- Should be positive
             retry_attempts = "three" -- Should be number
@@ -107,9 +121,16 @@ M.tests = {
         }
       }
       
-      local ok, err = config.validate_draft_config(invalid_config)
+      local ok, errors = config.validate_draft_config(invalid_config)
       Test.assert.falsy(ok, "Invalid sync config should fail")
-      Test.assert.truthy(err:match("sync_interval must be a positive number"), 
+      local found = false
+      for _, err in ipairs(errors) do
+        if err:match("sync_interval must be a positive number") then
+          found = true
+          break
+        end
+      end
+      Test.assert.truthy(found, 
         "Should have sync_interval error")
       
       return true
@@ -172,7 +193,7 @@ M.tests = {
       local config_module = require('neotex.plugins.tools.himalaya.core.config')
       
       -- Set a test configuration
-      config_module.config.draft.ui.confirm_delete = false
+      config_module.config.drafts.ui.confirm_delete = false
       
       -- The delete command should check this config
       local delete_cmd = commands.get_command('HimalayaDraftDelete')

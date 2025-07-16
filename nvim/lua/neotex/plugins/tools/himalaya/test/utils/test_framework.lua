@@ -44,6 +44,22 @@ M.assert = {
     ))
   end,
   
+  is_nil = function(value, message)
+    if value ~= nil then
+      error(string.format(
+        "%s\nExpected nil, got: %s",
+        message or "Expected nil value",
+        vim.inspect(value)
+      ))
+    end
+  end,
+  
+  is_not_nil = function(value, message)
+    if value == nil then
+      error(message or "Expected non-nil value")
+    end
+  end,
+  
   matches = function(str, pattern, message)
     if not str:match(pattern) then
       error(string.format(
