@@ -127,6 +127,13 @@ table.insert(tests, framework.create_test('composer_draft_saving', function()
   if vim.api.nvim_buf_is_valid(buf) then
     -- Use the close method to cleanup
     composer.close_compose_buffer(buf)
+    
+    -- Force buffer deletion if it still exists (test cleanup)
+    vim.schedule(function()
+      if vim.api.nvim_buf_is_valid(buf) then
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      end
+    end)
   end
 end))
 
