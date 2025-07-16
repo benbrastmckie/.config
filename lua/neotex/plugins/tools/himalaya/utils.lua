@@ -376,7 +376,7 @@ function M.save_draft(account, folder, email_data)
   end
   
   -- Save draft
-  local draft_id = draft_manager.save_draft(account, folder, email_data)
+  local draft_id = draft_manager.create(account, email_data)
   
   if draft_id then
     -- Clear cache for draft folder
@@ -392,7 +392,15 @@ function M.save_draft(account, folder, email_data)
     })
   end
   
-  return draft_id
+  -- Return in expected format
+  if draft_id then
+    return {
+      id = tostring(draft_id),
+      folder = folder
+    }
+  end
+  
+  return nil
 end
 
 -- Delete email

@@ -22,7 +22,9 @@ table.insert(tests, framework.create_test('complete_email_workflow', function()
   -- Plugin is already initialized by lazy.nvim
   
   -- 1. Open email list (will use real himalaya or fail gracefully)
-  local list_result = utils.get_email_list("INBOX")
+  local config = require('neotex.plugins.tools.himalaya.core.config')
+  local default_account = config.get_current_account_name() or 'default'
+  local list_result = utils.get_email_list(default_account, "INBOX")
   -- Note: This may fail if himalaya is not configured, which is expected in test environment
   
   -- 2. Compose new email

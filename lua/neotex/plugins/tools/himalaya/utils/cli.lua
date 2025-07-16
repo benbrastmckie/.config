@@ -21,12 +21,18 @@ function M.execute_himalaya(args, opts)
   end
   
   -- Build command
-  local cmd = { 'himalaya', '-a', account_name, '-o', 'json' }
+  local cmd = { 'himalaya' }
   
-  -- Add arguments
+  -- Add subcommand arguments first
   for _, arg in ipairs(args) do
     table.insert(cmd, arg)
   end
+  
+  -- Add account and output format after subcommand
+  table.insert(cmd, '-a')
+  table.insert(cmd, account_name)
+  table.insert(cmd, '-o')
+  table.insert(cmd, 'json')
   
   -- Add options
   if opts.folder then
@@ -35,11 +41,17 @@ function M.execute_himalaya(args, opts)
   end
   
   -- Log command for debugging
+  local cmd_string_for_log = table.concat(cmd, ' ')
   logger.debug('Executing himalaya command', { 
-    cmd = table.concat(cmd, ' '),
+    cmd = cmd_string_for_log,
     account = account_name,
     folder = opts.folder 
   })
+  
+  -- Also log to console if in debug mode
+  if config.config and config.config.debug then
+    print("HIMALAYA CMD: " .. cmd_string_for_log)
+  end
   
   -- Show loading notification for long operations
   local show_loading = opts.show_loading
@@ -63,8 +75,9 @@ function M.execute_himalaya(args, opts)
     notify.himalaya(loading_msg or 'Processing...', notify.categories.STATUS)
   end
   
-  -- Execute command  
-  local output = vim.fn.system(cmd)
+  -- Execute command (join table to string)
+  local cmd_string = table.concat(cmd, ' ')
+  local output = vim.fn.system(cmd_string)
   local exit_code = vim.v.shell_error
   
   -- Check for errors
@@ -182,12 +195,18 @@ function M.execute_himalaya_async(args, opts, callback)
   end
   
   -- Build command
-  local cmd = { 'himalaya', '-a', account_name, '-o', 'json' }
+  local cmd = { 'himalaya' }
   
-  -- Add arguments
+  -- Add subcommand arguments first
   for _, arg in ipairs(args) do
     table.insert(cmd, arg)
   end
+  
+  -- Add account and output format after subcommand
+  table.insert(cmd, '-a')
+  table.insert(cmd, account_name)
+  table.insert(cmd, '-o')
+  table.insert(cmd, 'json')
   
   -- Add options
   if opts.folder then
