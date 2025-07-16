@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 -- sync_engine removed - using himalaya template save directly
 
 -- Store timers indexed by buffer number
@@ -20,29 +20,18 @@ function M.get_draft_status(buf)
   local parts = {}
   
   -- Draft state icon
-  local state_icon = ''
-  if draft.state == draft_manager.states.NEW then
-    state_icon = '📝'
-  elseif draft.state == draft_manager.states.SYNCING then
-    state_icon = '🔄'
-  elseif draft.state == draft_manager.states.SYNCED then
-    state_icon = '✅'
-  elseif draft.state == draft_manager.states.ERROR then
-    state_icon = '❌'
-  end
+  local is_modified = draft.buffer and vim.api.nvim_buf_is_valid(draft.buffer) and 
+                     vim.api.nvim_buf_get_option(draft.buffer, 'modified')
+  local state_icon = is_modified and '📝' or '✅'
   
   table.insert(parts, state_icon)
   
-  -- Draft ID if synced
-  if draft.remote_id then
-    table.insert(parts, '#' .. draft.remote_id)
-  else
-    table.insert(parts, 'Local')
-  end
+  -- Draft filename
+  table.insert(parts, draft.filename or 'Local')
   
-  -- Last sync time
-  if draft.last_sync then
-    local age = os.time() - draft.last_sync
+  -- Draft age
+  if draft.timestamp then
+    local age = os.time() - draft.timestamp
     if age < 60 then
       table.insert(parts, 'just now')
     elseif age < 3600 then
@@ -50,11 +39,6 @@ function M.get_draft_status(buf)
     else
       table.insert(parts, string.format('%dh ago', math.floor(age / 3600)))
     end
-  end
-  
-  -- Error message if any
-  if draft.sync_error then
-    table.insert(parts, '(' .. draft.sync_error .. ')')
   end
   
   return table.concat(parts, ' ')
@@ -143,58 +127,8 @@ end
 
 -- Setup module
 function M.setup()
-  -- Subscribe to sync events for real-time updates
-  local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
-  local event_types = require('neotex.plugins.tools.himalaya.core.events')
-  
-  events_bus.on(event_types.DRAFT_SYNC_PROGRESS, function(data)
-    -- Update status for relevant buffer
-    local draft = draft_manager.get_by_local_id(data.draft_id)
-    if draft and vim.api.nvim_buf_is_valid(draft.buffer) then
-      vim.schedule(function()
-        -- Force statusline redraw
-        vim.api.nvim_buf_call(draft.buffer, function()
-          vim.cmd('redrawstatus')
-        end)
-      end)
-    end
-  end)
-  
-  -- Also subscribe to other draft events for immediate updates
-  local update_events = {
-    event_types.DRAFT_SYNC_STARTED,
-    event_types.DRAFT_SYNCED,
-    event_types.DRAFT_SYNC_FAILED,
-    event_types.DRAFT_SAVED
-  }
-  
-  for _, event in ipairs(update_events) do
-    events_bus.on(event, function(data)
-      -- Find buffer for this draft
-      local draft = draft_manager.get_by_local_id(data.draft_id)
-      if draft and vim.api.nvim_buf_is_valid(draft.buffer) then
-        vim.schedule(function()
-          vim.api.nvim_buf_call(draft.buffer, function()
-            vim.cmd('redrawstatus')
-          end)
-        end)
-      end
-    end)
-  end
-  
-  -- Hook into composer setup
-  local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_v2')
-  local original_setup_mappings = composer.setup_buffer_mappings
-  
-  if original_setup_mappings then
-    composer.setup_buffer_mappings = function(buf)
-      -- Call original
-      original_setup_mappings(buf)
-      
-      -- Add statusline
-      M.setup_statusline(buf)
-    end
-  end
+  -- Simplified setup - sync events no longer needed with maildir
+  -- Status is determined by buffer modified state
 end
 
 return M
