@@ -6,7 +6,6 @@ local M = {}
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
-local utils_enhanced = require('neotex.plugins.tools.himalaya.utils.enhanced')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local api = require('neotex.plugins.tools.himalaya.core.api')
 
@@ -86,7 +85,7 @@ end
 -- Add or update contact
 function M.add_contact(contact_info)
   -- Validate email
-  if not contact_info.email or not utils_enhanced.validate.email(contact_info.email) then
+  if not contact_info.email or not utils.validate.email(contact_info.email) then
     return api.error("Invalid email address", "INVALID_EMAIL")
   end
   
@@ -503,7 +502,7 @@ function M.import(data, format)
       if line ~= "" then
         local email, name, org = line:match('^"([^"]+)","([^"]*)","([^"]*)"')
         
-        if email and utils_enhanced.validate.email(email) then
+        if email and utils.validate.email(email) then
           M.add_contact({
             email = email,
             name = name ~= "" and name or nil,
@@ -524,7 +523,7 @@ function M.import(data, format)
     
     local imported = 0
     for email, contact in pairs(contacts) do
-      if utils_enhanced.validate.email(email) then
+      if utils.validate.email(email) then
         M.add_contact(contact)
         imported = imported + 1
       end
