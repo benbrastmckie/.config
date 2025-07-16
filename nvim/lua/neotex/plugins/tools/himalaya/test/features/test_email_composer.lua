@@ -548,17 +548,19 @@ function M.run()
     end
   end
   
-  -- Display summary notification
-  local msg = string.format(
-    'Email Composer tests complete: %d/%d passed',
-    passed,
-    passed + failed
-  )
-  
-  if failed > 0 then
-    notify.himalaya(msg, notify.categories.ERROR)
-  else
-    notify.himalaya(msg, notify.categories.USER_ACTION)
+  -- Display summary notification (suppress in test mode)
+  if not _G.HIMALAYA_TEST_MODE then
+    local msg = string.format(
+      'Email Composer tests complete: %d/%d passed',
+      passed,
+      passed + failed
+    )
+    
+    if failed > 0 then
+      notify.himalaya(msg, notify.categories.ERROR)
+    else
+      notify.himalaya(msg, notify.categories.USER_ACTION)
+    end
   end
   
   -- Return structured results for test runner

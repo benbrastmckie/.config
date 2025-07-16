@@ -348,12 +348,16 @@ function M.start_auto_sync()
   
   -- Start recurring timer after startup delay
   auto_sync_timer:start(startup_delay * 1000, sync_interval * 1000, vim.schedule_wrap(function()
-    notify.himalaya('Auto-sync timer triggered', notify.categories.BACKGROUND)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya('Auto-sync timer triggered', notify.categories.BACKGROUND)
+    end
     
     -- Check coordination before syncing
     if not coordinator.should_allow_sync() then
       logger.debug('Auto-sync skipped by coordinator')
-      notify.himalaya('Auto-sync skipped by coordinator', notify.categories.BACKGROUND)
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya('Auto-sync skipped by coordinator', notify.categories.BACKGROUND)
+      end
       return
     end
     
