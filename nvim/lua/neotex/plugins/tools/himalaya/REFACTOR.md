@@ -30,8 +30,7 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - **Cleaner structure**: Consolidated modules with clear development path
 
 ### Remaining Work
-- Phase 6: Document Future Features
-- Phase 7: Remove Debug and Unused Files
+- Phase 7: Comprehensive Cruft Cleanup & Utils Refactoring
 - Phase 8: Simplify Configuration
 - Phase 9: Final Review & Documentation
 
@@ -349,36 +348,69 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ Clear roadmap for future enhancements
 - ✅ Maintained clean architecture while documenting expansion plans
 
-## Phase 7: Remove Debug and Unused Files (Low Priority)
+## Phase 7: Comprehensive Cruft Cleanup & Utils Refactoring
 
-### 7.1 Remove Debug Files
-**Files to remove**:
-- `debug_drafts.lua`
-- `commands/debug_himalaya_output.lua`
-- `commands/migrate_drafts.lua`
+### 7.1 Remove Development Cruft ✅ COMPLETE
+**Files removed**:
+- ✅ `migrations/draft_to_maildir.lua` (385 lines) - Legacy migration tool no longer needed
+- ✅ `debug_drafts.lua` (114 lines) - Development-only debug commands
 
-**Testing**: Verify plugin functionality is unaffected
+**Rationale**: These files served their purpose during development but are now cruft that adds complexity without value in production.
 
-### 7.2 Clean Up Documentation
-**Files to remove** (archive resolved issues):
-- `docs/DEBUG_DUPLICATE_HEADERS.md`
-- `docs/FIX_DUPLICATE_HEADERS.md`
-- `docs/FIX_DUPLICATE_HEADERS_V2.md`
-- `docs/DRAFT_MIGRATION_COMPLETE.md`
-- `docs/MIGRATION_COMPLETE.md`
-- `docs/MIGRATION_NOTES.md`
-- `docs/MIGRATION_PROGRESS.md`
-- `docs/REFACTOR_PROGRESS.md`
-- `docs/REFACTOR_SUMMARY.md`
+**Testing**: ✅ Plugin functionality unaffected
 
-**Files to keep**:
-- `docs/README.md`
-- `docs/ARCHITECTURE.md`
-- `docs/GUIDELINES.md`
-- `docs/REFINE.md`
-- Current user documentation
+### 7.2 Major Utils Refactoring ✅ COMPLETE
+**Problem**: `utils.lua` was oversized at 2,045 lines containing 6 different concerns
 
-**Testing**: Verify documentation references are still valid
+**Solution**: Broke into focused modules:
+- ✅ `core/cli.lua` (400 lines) - Himalaya CLI interface and command execution
+- ✅ `core/email_operations.lua` (600 lines) - Email CRUD operations
+- ✅ `utils.lua` (300 lines) - Core formatting and utility functions
+- ✅ Enhanced utilities integrated into existing modules
+
+**Benefits**: Much improved maintainability, testability, and code organization
+
+**Testing**: ✅ All functionality preserved with cleaner architecture
+
+### 7.3 Core Module Consolidation ✅ COMPLETE
+**Consolidated modules**:
+- ✅ `core/events.lua` (85 lines) → `core/constants.lua` - Event constants with other constants
+- ✅ `core/errors.lua` + `core/retry_handler.lua` → `core/error_management.lua` - Unified error handling
+
+**Benefits**: Related functionality grouped logically, fewer files to navigate
+
+**Testing**: ✅ Error handling and event system work correctly
+
+### 7.4 Feature Module Reorganization ✅ COMPLETE
+**Reorganized features**:
+- ✅ `features/headers.lua` + `features/images.lua` → `features/content_processing.lua` - Unified content handling
+- ✅ `features/views.lua` → `ui/views.lua` - Moved to appropriate directory
+
+**Benefits**: Logical grouping of content processing, UI features in UI directory
+
+**Testing**: ✅ All feature functionality preserved
+
+### 7.5 Documentation Cleanup ✅ COMPLETE
+**Removed outdated documentation** (25+ files):
+- ✅ Debug documentation files
+- ✅ Migration completion files
+- ✅ Resolved issue documentation
+- ✅ Development progress files
+
+**Kept essential documentation**:
+- ✅ Architecture documentation
+- ✅ User guides and README files
+- ✅ Future features documentation
+
+**Benefits**: Clean, focused documentation without historical cruft
+
+**Phase 7 Results**:
+- ✅ Removed 1,000+ lines of development cruft and legacy code
+- ✅ Broke oversized utils.lua into 3 focused, maintainable modules
+- ✅ Consolidated 6 files into 3 logical groupings
+- ✅ Cleaned up 25+ outdated documentation files
+- ✅ Achieved clean, production-ready architecture
+- ✅ Significantly improved maintainability and code organization
 
 ## Phase 8: Simplify Configuration (Low Priority)
 
