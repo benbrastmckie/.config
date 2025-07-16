@@ -20,15 +20,11 @@ end
 
 -- Setup function to load all command modules
 function M.setup()
-  -- Load command modules in order
-  require('neotex.plugins.tools.himalaya.core.commands.ui').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.email').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.sync').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.setup').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.debug').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.features').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.accounts').setup(M)
-  require('neotex.plugins.tools.himalaya.core.commands.draft').setup(M) -- Phase 5
+  -- Load consolidated command modules
+  require('neotex.plugins.tools.himalaya.core.commands.email_commands').setup(M)
+  require('neotex.plugins.tools.himalaya.core.commands.ui_commands').setup(M)
+  require('neotex.plugins.tools.himalaya.core.commands.sync_commands').setup(M)
+  require('neotex.plugins.tools.himalaya.core.commands.utility_commands').setup(M)
   
   -- Initialize Phase 8 features
   local features_ok, _ = pcall(function()
