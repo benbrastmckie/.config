@@ -284,7 +284,7 @@ function M.setup(registry)
   commands.HimalayaTemplateUse = {
     fn = function(opts)
       local templates = require('neotex.plugins.tools.himalaya.core.templates')
-      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+      local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
       
       if opts.args == '' then
         templates.pick_template(function(template_id, variables)

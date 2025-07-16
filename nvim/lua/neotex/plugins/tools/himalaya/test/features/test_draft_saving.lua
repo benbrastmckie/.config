@@ -92,7 +92,7 @@ end))
 
 -- Test 3: Composer workflow
 table.insert(tests, framework.create_test('composer_draft_saving', function()
-  local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+  local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
   
   -- Setup composer
   composer.setup()

@@ -1261,7 +1261,7 @@ function M.refresh_email_list(opts)
   local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
   
   -- Check if we're in a compose buffer
-  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+  local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
   local is_compose_buffer = email_composer.is_compose_buffer(current_buf)
   
   -- Get current sidebar buffer

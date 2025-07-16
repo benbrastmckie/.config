@@ -6,7 +6,7 @@ local M = {}
 -- Dependencies
 local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
 local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
-local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_maildir')
+local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
 local notify = require('neotex.util.notifications')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
@@ -52,7 +52,7 @@ end
 function M.test_composer()
   notify.himalaya('Testing Email Composer...', notify.categories.STATUS)
   
-  local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer_maildir')
+  local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer')
   local result = test.run()
   
   M.test_results.composer = {
