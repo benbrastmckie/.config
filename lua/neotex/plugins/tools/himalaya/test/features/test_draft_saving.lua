@@ -133,6 +133,18 @@ table.insert(tests, framework.create_test('composer_draft_saving', function()
       if vim.api.nvim_buf_is_valid(buf) then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
       end
+      
+      -- Also cleanup any buffers with test email content
+      for _, b in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_valid(b) then
+          local lines = vim.api.nvim_buf_get_lines(b, 0, 5, false)
+          local content = table.concat(lines, '\n')
+          if content:match('From: test@example%.com') and 
+             content:match('Subject: Draft Test Email') then
+            pcall(vim.api.nvim_buf_delete, b, { force = true })
+          end
+        end
+      end
     end)
   end
 end))
