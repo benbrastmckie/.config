@@ -36,7 +36,7 @@ function M.init(main_buffers)
   buffers = main_buffers
   
   -- Register event listener for email scheduled
-  local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+  local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
   local event_types = require('neotex.plugins.tools.himalaya.core.events')
   
   events_bus.on(event_types.EMAIL_SCHEDULED, function(data)

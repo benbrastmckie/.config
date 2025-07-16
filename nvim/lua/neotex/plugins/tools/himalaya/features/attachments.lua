@@ -8,7 +8,7 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local api = require('neotex.plugins.tools.himalaya.core.api')
-local events = require('neotex.plugins.tools.himalaya.orchestration.events')
+local events = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local errors = require('neotex.plugins.tools.himalaya.core.errors')
 
 -- Attachment cache directory

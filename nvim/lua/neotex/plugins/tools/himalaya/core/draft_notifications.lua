@@ -209,7 +209,7 @@ end
 
 -- Setup event subscriptions for progress notifications
 function M.setup()
-  local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+  local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
   local event_types = require('neotex.plugins.tools.himalaya.core.events')
   
   -- Subscribe to sync progress events

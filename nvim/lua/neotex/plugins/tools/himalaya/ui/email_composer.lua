@@ -10,7 +10,7 @@ local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
-local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 

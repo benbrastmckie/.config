@@ -16,21 +16,22 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ **Phase 3.1**: Improve Async Command Layer (enhanced with debugging/monitoring)
 - ✅ **Phase 3.2**: Consolidate Command Modules (8→4 modules, 50% reduction)
 - ✅ **Phase 3.3**: Command Structure Refactor (flattened to single location)
+- ✅ **Phase 4**: Consolidate Orchestration (merged into commands/orchestrator.lua)
 
 ### Results So Far
-- **Lines removed**: 1,582+ lines of redundant code
-- **Files removed**: 17 files (7 initial + 8 command modules + 2 orphaned scripts)
-- **Module consolidation**: Command modules reduced from 8 to 4, then flattened to single location
-- **Architecture improvements**: Single implementations for core managers, enhanced async layer, consolidated and flattened commands
+- **Lines removed**: 2,109+ lines of redundant code
+- **Files removed**: 19 files (7 initial + 8 command modules + 2 orphaned scripts + 2 orchestration)
+- **Module consolidation**: Command modules reduced from 8 to 4, then flattened; orchestration merged
+- **Architecture improvements**: Single implementations, enhanced async layer, unified orchestration
 - **New features**: Debug mode, metrics tracking, better error handling, 4 new debug commands
-- **Cleaner structure**: Commands now in single `himalaya/commands/` directory
+- **Cleaner structure**: Commands and orchestration in single `himalaya/commands/` directory
 
 ### Remaining Work
-- Phase 4: Consolidate Orchestration
-- Phase 5: API Standardization  
-- Phase 6: Performance Optimization
-- Phase 7: Feature Completion
-- Phase 8: Final Review & Documentation
+- Phase 5: Consolidate Utilities
+- Phase 6: Simplify Features  
+- Phase 7: Remove Debug and Unused Files
+- Phase 8: Simplify Configuration
+- Phase 9: Final Review & Documentation
 
 ## Current State Analysis
 
@@ -274,21 +275,28 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ Shorter, cleaner require paths
 - ✅ No more confusion about command locations
 
-## Phase 4: Consolidate Orchestration (Medium Priority)
+## Phase 4: Consolidate Orchestration ✅ COMPLETE
 
-### 4.1 Merge Orchestration Modules
-**Files to remove**:
-- `orchestration/events.lua`
-- `orchestration/integration.lua`
+### 4.1 Merge Orchestration Modules ✅ COMPLETE
+**Files removed**:
+- ✅ `orchestration/events.lua` (77 lines)
+- ✅ `orchestration/integration.lua` (225 lines)
 
-**Files to keep**: `orchestration/commands.lua` (expand to include all orchestration)
+**Files consolidated**: ✅ `commands/orchestrator.lua` (expanded to 501 lines)
 
-**Files to modify**:
-- Merge event bus functionality into `orchestration/commands.lua`
-- Merge integration functionality into `orchestration/commands.lua`
-- Rename to `orchestration/orchestrator.lua`
+**Files updated**:
+- ✅ Merged event bus functionality into `commands/orchestrator.lua`
+- ✅ Merged integration functionality into `commands/orchestrator.lua`
+- ✅ Updated 9 files to use new require path
+- ✅ Removed orchestration directory entirely
 
-**Testing**: Verify event handling and command orchestration works correctly
+**Testing**: ✅ Plugin loads correctly, orchestration functionality preserved
+
+**Phase 4 Results**:
+- ✅ Removed 2 files and entire orchestration directory
+- ✅ Consolidated 527 lines into unified orchestrator
+- ✅ Single location for all orchestration logic
+- ✅ Cleaner architecture with commands and orchestration together
 
 ## Phase 5: Consolidate Utilities (Medium Priority)
 
