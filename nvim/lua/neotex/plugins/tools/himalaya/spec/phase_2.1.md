@@ -26,7 +26,7 @@ This phase consolidates three draft manager implementations into one:
 
 ## API Differences Analysis
 
-### Wrapper Functions � Direct Implementation Mapping
+### Wrapper Functions � Direct Implementation Mapping
 
 | Wrapper Function | Direct Implementation | Notes |
 |-----------------|----------------------|-------|
@@ -92,7 +92,7 @@ For each file using the wrapper, identify:
 
 ### Step 2: Update Function Calls
 
-1. **Simple mappings**: Update function names (e.g., `list_drafts` � `list`)
+1. **Simple mappings**: Update function names (e.g., `list_drafts` � `list`)
 2. **Signature changes**: Adjust parameters (e.g., `create_draft`)
 3. **Structure changes**: Update code that uses returned draft objects
 
@@ -165,3 +165,22 @@ If issues arise:
 - All draft functionality works as before
 - No test failures
 - Clean, consistent API usage throughout
+
+## Phase 2.1 Completion Status ✅
+
+### Completed Tasks:
+1. ✅ Removed unused `draft_manager_v2.lua` (872 lines)
+2. ✅ Updated `init.lua` to use direct implementation
+3. ✅ Updated `scheduler.lua` to use direct implementation
+4. ✅ Updated `utils.lua` - implemented load() functionality inline
+5. ✅ Updated `core/commands/draft.lua` - adapted to direct API
+6. ✅ Updated `compose_status.lua` - simplified for maildir
+7. ✅ Updated `email_preview.lua` - removed sync states
+8. ✅ Updated `email_composer.lua` require (full migration needed later)
+9. ✅ Removed `draft_manager_v2_maildir.lua` wrapper
+
+### Results:
+- **Files removed**: 2 (draft_manager_v2.lua, draft_manager_v2_maildir.lua)
+- **Lines removed**: ~1,087 lines of wrapper/compatibility code
+- **API simplified**: Single consistent draft manager implementation
+- **Next step**: Phase 2.2 - Consolidate email composers

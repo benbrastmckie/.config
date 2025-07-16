@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
 -- draft_parser removed - we now save raw content without parsing
 local state = require('neotex.plugins.tools.himalaya.core.state')
