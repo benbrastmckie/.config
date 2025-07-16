@@ -11,11 +11,21 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 M.command_queue = {}
 M.running_jobs = {}
 M.job_counter = 0
+M.debug_mode = false
+M.metrics = {
+  total_jobs = 0,
+  successful_jobs = 0,
+  failed_jobs = 0,
+  retry_count = 0,
+  total_duration = 0,
+  lock_conflicts = 0,
+}
 M.config = {
   max_concurrent = 1,       -- Reduced to 1 to prevent ID mapper conflicts  
   default_timeout = 60000,  -- 60 seconds (increased for lock waiting)
   retry_attempts = 3,       -- Increased retries for lock conflicts
   retry_delay = 2000,       -- 2 seconds
+  debug_mode = false,       -- Can be overridden by config
 }
 
 -- Job priorities
@@ -132,7 +142,18 @@ function M.execute_job_now(job)
   local job_id = job.id
   local cmd = build_command(job.args, job.opts)
   
-  logger.debug('Starting async job: ' .. job_id .. ' with command: ' .. table.concat(cmd, ' '))
+  -- Track metrics
+  M.metrics.total_jobs = M.metrics.total_jobs + 1
+  
+  -- Debug logging
+  if M.debug_mode or M.config.debug_mode then
+    logger.info('[ASYNC DEBUG] Starting job: ' .. job_id)
+    logger.info('[ASYNC DEBUG] Command: ' .. table.concat(cmd, ' '))
+    logger.info('[ASYNC DEBUG] Priority: ' .. (job.priority or 'none'))
+    logger.info('[ASYNC DEBUG] Queue depth: ' .. #M.command_queue)
+  else
+    logger.debug('Starting async job: ' .. job_id .. ' with command: ' .. table.concat(cmd, ' '))
+  end
   
   -- Store job info
   M.running_jobs[job_id] = {
@@ -153,7 +174,7 @@ function M.execute_job_now(job)
   end
   
   -- Start the job
-  local vim_job_id = vim.fn.jobstart(cmd, {
+  local job_opts = {
     stdout_buffered = true,
     stderr_buffered = true,
     detach = false,  -- Keep job attached to Neovim
@@ -193,7 +214,20 @@ function M.execute_job_now(job)
         M.handle_job_completion(job_id, exit_code)
       end)
     end,
-  })
+  }
+  
+  -- Add stdin handling if provided
+  if job.opts.stdin then
+    job_opts.stdin = 'pipe'
+  end
+  
+  local vim_job_id = vim.fn.jobstart(cmd, job_opts)
+  
+  -- Send stdin data if provided
+  if vim_job_id > 0 and job.opts.stdin then
+    vim.fn.chansend(vim_job_id, job.opts.stdin)
+    vim.fn.chanclose(vim_job_id, 'stdin')
+  end
   
   if vim_job_id <= 0 then
     -- Job failed to start
@@ -222,8 +256,20 @@ function M.handle_job_completion(job_id, exit_code)
   local job = job_info.job
   local duration = os.time() - job_info.start_time
   
-  logger.debug(string.format('Job completed: %s (exit: %d, duration: %ds)', 
-    job_id, exit_code, duration))
+  -- Update metrics
+  M.metrics.total_duration = M.metrics.total_duration + duration
+  
+  -- Debug logging
+  if M.debug_mode or M.config.debug_mode then
+    logger.info(string.format('[ASYNC DEBUG] Job completed: %s', job_id))
+    logger.info(string.format('[ASYNC DEBUG] Exit code: %d', exit_code))
+    logger.info(string.format('[ASYNC DEBUG] Duration: %ds', duration))
+    logger.info(string.format('[ASYNC DEBUG] Output lines: %d', #job_info.output_lines))
+    logger.info(string.format('[ASYNC DEBUG] Error lines: %d', #job_info.error_lines))
+  else
+    logger.debug(string.format('Job completed: %s (exit: %d, duration: %ds)', 
+      job_id, exit_code, duration))
+  end
   
   -- Clean up
   M.running_jobs[job_id] = nil
@@ -275,10 +321,18 @@ function M.handle_job_completion(job_id, exit_code)
            error_output:match('Resource temporarily unavailable') then
       -- ID mapper database lock conflict - should retry
       error_msg = 'Database lock conflict - will retry'
+      M.metrics.lock_conflicts = M.metrics.lock_conflicts + 1
       logger.warn('ID mapper lock conflict detected for job: ' .. job_id)
     else
       error_msg = error_output and error_output ~= '' and error_output or 'Command failed'
     end
+  end
+  
+  -- Update metrics
+  if success then
+    M.metrics.successful_jobs = M.metrics.successful_jobs + 1
+  else
+    M.metrics.failed_jobs = M.metrics.failed_jobs + 1
   end
   
   -- Call the callback
@@ -292,7 +346,13 @@ function M.handle_job_completion(job_id, exit_code)
       
       if should_retry and (is_lock_error or not error_msg:match('Database lock conflict')) then
         local retry_delay = is_lock_error and (M.config.retry_delay * (job.retry_count + 1)) or M.config.retry_delay
-        logger.debug('Retrying job: ' .. job_id .. ' (attempt ' .. (job.retry_count + 1) .. ') after ' .. retry_delay .. 'ms')
+        M.metrics.retry_count = M.metrics.retry_count + 1
+        
+        if M.debug_mode or M.config.debug_mode then
+          logger.info('[ASYNC DEBUG] Retrying job: ' .. job_id .. ' (attempt ' .. (job.retry_count + 1) .. ') after ' .. retry_delay .. 'ms')
+        else
+          logger.debug('Retrying job: ' .. job_id .. ' (attempt ' .. (job.retry_count + 1) .. ') after ' .. retry_delay .. 'ms')
+        end
         
         -- Create retry job
         local retry_job = vim.deepcopy(job)
@@ -430,8 +490,17 @@ end
 -- Get status information
 function M.get_status()
   local running_count = 0
-  for _ in pairs(M.running_jobs) do
+  local running_details = {}
+  for job_id, job_info in pairs(M.running_jobs) do
     running_count = running_count + 1
+    if M.debug_mode or M.config.debug_mode then
+      table.insert(running_details, {
+        id = job_id,
+        start_time = job_info.start_time,
+        duration = os.time() - job_info.start_time,
+        command = table.concat(job_info.job.args, ' ')
+      })
+    end
   end
   
   return {
@@ -439,7 +508,45 @@ function M.get_status()
     queued_jobs = #M.command_queue,
     max_concurrent = M.config.max_concurrent,
     can_start_new = can_start_job(),
+    running_details = running_details,
   }
+end
+
+-- Get metrics
+function M.get_metrics()
+  local avg_duration = M.metrics.total_jobs > 0 and 
+    math.floor(M.metrics.total_duration / M.metrics.total_jobs) or 0
+  
+  return {
+    total_jobs = M.metrics.total_jobs,
+    successful_jobs = M.metrics.successful_jobs,
+    failed_jobs = M.metrics.failed_jobs,
+    retry_count = M.metrics.retry_count,
+    lock_conflicts = M.metrics.lock_conflicts,
+    average_duration = avg_duration,
+    success_rate = M.metrics.total_jobs > 0 and 
+      math.floor((M.metrics.successful_jobs / M.metrics.total_jobs) * 100) or 0,
+  }
+end
+
+-- Reset metrics
+function M.reset_metrics()
+  M.metrics = {
+    total_jobs = 0,
+    successful_jobs = 0,
+    failed_jobs = 0,
+    retry_count = 0,
+    total_duration = 0,
+    lock_conflicts = 0,
+  }
+  logger.info('[ASYNC] Metrics reset')
+end
+
+-- Enable/disable debug mode
+function M.set_debug_mode(enabled)
+  M.debug_mode = enabled
+  M.config.debug_mode = enabled
+  logger.info('[ASYNC] Debug mode ' .. (enabled and 'enabled' or 'disabled'))
 end
 
 -- Batch operations
@@ -474,6 +581,111 @@ function M.execute_batch(commands, callback)
       check_completion()
     end)
   end
+end
+
+-- Higher-level API abstractions for common email operations
+
+-- List emails with pagination
+function M.list_emails(account, folder, page, page_size, callback)
+  local args = {'message', 'list'}
+  local opts = {
+    account = account,
+    folder = folder,
+    priority = M.priorities.ui
+  }
+  
+  -- Add pagination
+  if page and page_size then
+    table.insert(args, '-p')
+    table.insert(args, tostring(page))
+    table.insert(args, '-s')
+    table.insert(args, tostring(page_size))
+  end
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- Get email by ID
+function M.get_email(account, folder, email_id, callback)
+  local args = {'message', 'read', tostring(email_id)}
+  local opts = {
+    account = account,
+    folder = folder,
+    priority = M.priorities.user
+  }
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- Send email
+function M.send_email(account, email_content, callback)
+  local args = {'message', 'send'}
+  local opts = {
+    account = account,
+    priority = M.priorities.user,
+    stdin = email_content
+  }
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- Move email
+function M.move_email(account, folder, email_id, target_folder, callback)
+  local args = {'message', 'move', tostring(email_id), target_folder}
+  local opts = {
+    account = account,
+    folder = folder,
+    priority = M.priorities.user
+  }
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- Delete email
+function M.delete_email(account, folder, email_id, callback)
+  local args = {'message', 'delete', tostring(email_id)}
+  local opts = {
+    account = account,
+    folder = folder,
+    priority = M.priorities.user
+  }
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- List folders
+function M.list_folders(account, callback)
+  local args = {'folder', 'list'}
+  local opts = {
+    account = account,
+    priority = M.priorities.ui
+  }
+  
+  return M.execute_async(args, opts, callback)
+end
+
+-- Count emails in folder
+function M.count_emails(account, folder, callback)
+  -- Use a high page number to get total count
+  local args = {'message', 'list', '-p', '999999', '-s', '1'}
+  local opts = {
+    account = account,
+    folder = folder,
+    priority = M.priorities.background
+  }
+  
+  return M.execute_async(args, opts, function(result, error)
+    if error then
+      callback(nil, error)
+    else
+      -- Extract count from pagination info
+      local count = 0
+      if result and result.page and result.page.total then
+        count = result.page.total
+      end
+      callback(count, nil)
+    end
+  end)
 end
 
 return M
