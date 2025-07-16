@@ -579,22 +579,28 @@ function M.get_email_by_id(account, folder, email_id)
   -- Check if this is a local draft ID
   if email_id and tostring(email_id):match('^draft_%d+_') then
     logger.info('Loading local draft from Maildir', { id = email_id })
-    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
-    local draft_data, err = draft_manager.load(tostring(email_id), account)
-    if draft_data and draft_data.content then
-      -- Parse the content to extract headers and body
-      local lines = vim.split(draft_data.content, '\n')
-      local email = {
-        id = email_id,
-        subject = draft_data.metadata and draft_data.metadata.subject or '',
-        from = draft_data.metadata and draft_data.metadata.from or '',
-        to = draft_data.metadata and draft_data.metadata.to or '',
-        body = draft_data.content
-      }
-      return email
-    else
-      return nil, err or 'Local draft not found'
+    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+    -- List drafts and find the one matching the ID
+    local drafts = draft_manager.list(account)
+    for _, draft in ipairs(drafts) do
+      if draft.filename == tostring(email_id) or tostring(draft.timestamp) == tostring(email_id) then
+        -- Read the draft file content
+        local file = io.open(draft.filepath, 'r')
+        if file then
+          local content = file:read('*a')
+          file:close()
+          local email = {
+            id = email_id,
+            subject = draft.subject or '',
+            from = draft.from or '',
+            to = draft.to or '',
+            body = content
+          }
+          return email
+        end
+      end
     end
+    return nil, 'Local draft not found'
   end
   
   -- Use execute_himalaya for consistent command construction
