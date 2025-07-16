@@ -101,7 +101,8 @@ function M.discover_tests()
     'commands',
     'features', 
     'integration',
-    'performance'
+    'performance',
+    'unit'
   }
   
   local test_path = vim.fn.stdpath('config') .. '/lua/neotex/plugins/tools/himalaya/test/'
@@ -115,16 +116,32 @@ function M.discover_tests()
       -- Find all test files in directory
       local files = vim.fn.glob(dir_path .. 'test_*.lua', false, true)
       
+      -- For unit tests, also check subdirectories
+      if dir == 'unit' then
+        local subdirs = vim.fn.glob(dir_path .. '*/', false, true)
+        for _, subdir in ipairs(subdirs) do
+          local subdir_files = vim.fn.glob(subdir .. 'test_*.lua', false, true)
+          vim.list_extend(files, subdir_files)
+        end
+      end
+      
       for _, file in ipairs(files) do
         local name = vim.fn.fnamemodify(file, ':t:r')
         local display_name = M.format_test_display_name(name)
+        
+        -- Determine module path based on file location
+        local relative_path = file:gsub(test_path, '')
+        local module_parts = vim.split(relative_path, '/')
+        -- Remove .lua extension from last part
+        module_parts[#module_parts] = module_parts[#module_parts]:gsub('%.lua$', '')
+        local module_path = 'neotex.plugins.tools.himalaya.test.' .. table.concat(module_parts, '.')
         
         table.insert(M.tests[dir], {
           name = name,
           display_name = display_name,
           path = file,
           category = dir,
-          module_path = 'neotex.plugins.tools.himalaya.test.' .. dir .. '.' .. name
+          module_path = module_path
         })
       end
     end
@@ -177,6 +194,7 @@ function M.run_with_picker(filter)
     { category = 'features', name = 'Feature Tests', desc = 'Email, drafts, scheduler', icon = '✨' },
     { category = 'integration', name = 'Integration Tests', desc = 'End-to-end workflows', icon = '🔗' },
     { category = 'performance', name = 'Performance Tests', desc = 'Speed and efficiency', icon = '⚡' },
+    { category = 'unit', name = 'Unit Tests', desc = 'Module-level testing', icon = '🧪' },
   }
   
   for _, suite in ipairs(suites) do
