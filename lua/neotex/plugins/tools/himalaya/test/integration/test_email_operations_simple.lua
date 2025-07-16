@@ -84,14 +84,14 @@ function M.test_email_list_display()
   state.set('current_account', 'TestAccount')
   state.set('current_folder', 'INBOX')
   
-  -- Test showing email list
-  local success = pcall(email_list.show_email_list)
+  -- Test showing email list with better error capture
+  local success, err = pcall(email_list.show_email_list)
   
   if not success then
     test_results.failed = test_results.failed + 1
     table.insert(test_results.errors, {
       test = test_name,
-      error = "Failed to show email list"
+      error = "Failed to show email list: " .. tostring(err)
     })
     return false
   end

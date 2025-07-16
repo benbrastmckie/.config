@@ -13,6 +13,21 @@ local string_utils = require('neotex.plugins.tools.himalaya.utils.string')
 function M.execute_himalaya(args, opts)
   opts = opts or {}
   
+  -- Skip in test mode for certain commands
+  if _G.HIMALAYA_TEST_MODE then
+    -- Return mock data for folder list
+    if args[1] == 'folder' and args[2] == 'list' then
+      return {
+        { name = "INBOX" },
+        { name = "Sent" },
+        { name = "Drafts" },
+        { name = "Trash" }
+      }
+    end
+    -- For other commands in test mode, return nil without error
+    return nil, 'Test mode: CLI calls disabled'
+  end
+  
   -- Get account name
   local account_name = opts.account or config.get_current_account_name()
   if not account_name then
@@ -140,11 +155,13 @@ function M.execute_himalaya(args, opts)
       end
     else
       -- Other errors
-      logger.error('Himalaya command failed', { 
-        error = error_msg, 
-        exit_code = exit_code,
-        cmd = table.concat(cmd, ' ')
-      })
+      if not _G.HIMALAYA_TEST_MODE then
+        logger.error('Himalaya command failed', { 
+          error = error_msg, 
+          exit_code = exit_code,
+          cmd = table.concat(cmd, ' ')
+        })
+      end
       
       -- User-friendly error messages
       if error_msg:match('no such file or directory') then
@@ -234,26 +251,43 @@ function M.execute_himalaya_async(args, opts, callback)
   -- Use async command execution
   local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
   
-  async_commands.execute({
-    cmd = cmd,
-    on_success = function(output)
-      -- Parse JSON output
-      local ok, result = pcall(vim.json.decode, output)
-      if ok then
-        callback(result)
+  -- Build success callback
+  local on_success = function(output)
+    -- Parse JSON output
+    local ok, result = pcall(vim.json.decode, output)
+    if ok then
+      callback(result)
+    else
+      -- Some commands don't return JSON
+      if args[1] == 'send' or args[1] == 'move' or args[1] == 'delete' then
+        callback(string_utils.trim(output))
       else
-        -- Some commands don't return JSON
-        if args[1] == 'send' or args[1] == 'move' or args[1] == 'delete' then
-          callback(string_utils.trim(output))
-        else
-          callback(nil, 'Failed to parse response')
-        end
+        callback(nil, 'Failed to parse response')
       end
-    end,
-    on_error = function(error_msg)
-      callback(nil, error_msg)
     end
-  })
+  end
+  
+  -- Build error callback
+  local on_error = function(error_msg)
+    callback(nil, error_msg)
+  end
+  
+  -- Execute async
+  async_commands.execute_async(cmd, {
+    timeout = opts.timeout,
+    priority = async_commands.priorities.user
+  }, function(job_result, error_msg)
+    -- Handle test mode callback (nil, error_msg) format
+    if job_result == nil and error_msg then
+      on_error(error_msg)
+    elseif job_result and job_result.success then
+      on_success(job_result.output)
+    elseif job_result then
+      on_error(job_result.error or 'Command failed')
+    else
+      on_error('Unknown error')
+    end
+  end)
 end
 
 -- Parse CLI arguments
