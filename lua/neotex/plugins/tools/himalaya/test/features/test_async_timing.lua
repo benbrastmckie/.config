@@ -8,7 +8,7 @@ local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framew
 local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
 local sync_coordinator = require('neotex.plugins.tools.himalaya.sync.coordinator')
 local state = require('neotex.plugins.tools.himalaya.core.state')
-local events_bus = require('neotex.plugins.tools.himalaya.orchestration.events')
+local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 
 -- Test environment

@@ -5,7 +5,7 @@ local M = {}
 
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
-local events = require('neotex.plugins.tools.himalaya.orchestration.events')
+local events = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local event_constants = require('neotex.plugins.tools.himalaya.core.events')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local api = require('neotex.plugins.tools.himalaya.core.api')

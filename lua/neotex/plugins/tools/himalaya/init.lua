@@ -52,10 +52,9 @@ function M.setup(opts)
   
   -- Sidebar v2 removed - using main sidebar module
 
-  -- Initialize event system (Phase 6) - after UI to ensure notifications work properly
-  local integration = require('neotex.plugins.tools.himalaya.orchestration.integration')
-  integration.setup_default_handlers()
-  integration.setup()
+  -- Initialize event system (Phase 4) - after UI to ensure notifications work properly
+  local orchestrator = require('neotex.plugins.tools.himalaya.commands.orchestrator')
+  orchestrator.setup()
 
   -- Initialize Phase 9 features
   -- Initialize unified email scheduler
