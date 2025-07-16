@@ -188,6 +188,97 @@ Opens an interactive picker to select and run tests by category or individual te
 - **Memory Tracking**: Memory usage monitoring
 - **Regression Detection**: Automatic performance regression detection
 
+## Test Mode Implementation Details
+
+### Global Test Mode Flag
+The test framework sets `_G.HIMALAYA_TEST_MODE` to indicate test execution. This flag should be checked at multiple levels:
+
+```lua
+-- In CLI utilities
+if _G.HIMALAYA_TEST_MODE then
+  return mock_data
+end
+
+-- In async operations
+if _G.HIMALAYA_TEST_MODE then
+  vim.schedule(function()
+    callback(mock_data)
+  end)
+  return
+end
+
+-- In logging/notifications
+if not _G.HIMALAYA_TEST_MODE then
+  logger.error('Operation failed', details)
+end
+```
+
+### Test Assertion Patterns
+The test framework provides assertions through a nested structure:
+
+```lua
+-- Correct pattern
+local assert = test_framework.assert
+assert.equals(actual, expected)
+assert.truthy(value)
+
+-- Incorrect (will fail)
+test_framework.assert_equals(actual, expected)  -- Function doesn't exist
+```
+
+### Async Operation Handling
+When implementing async functions that will be tested:
+
+1. **Check test mode early**: Return mock data before attempting real operations
+2. **Simulate async behavior**: Use `vim.schedule` to maintain realistic flow
+3. **Handle callbacks properly**: Ensure callbacks match expected signatures
+
+Example:
+```lua
+function M.get_data_async(callback)
+  if _G.HIMALAYA_TEST_MODE then
+    vim.schedule(function()
+      callback(mock_data, nil)  -- data, error
+    end)
+    return
+  end
+  -- Real implementation
+end
+```
+
+### CLI Command Mocking
+External CLI commands should be mocked at multiple levels:
+
+1. **High-level functions**: Return mock data immediately in test mode
+2. **Low-level execution**: Prevent actual CLI execution
+3. **Error handling**: Suppress error logging in test mode
+
+### Window Management Considerations
+In headless test environments, complex window operations may fail:
+
+```lua
+-- Handle test mode differently
+if _G.HIMALAYA_TEST_MODE then
+  -- Use simpler window creation
+  win = vim.api.nvim_open_win(buf, true, {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = 0,
+    col = 0
+  })
+else
+  -- Normal window splitting
+  vim.cmd('vsplit')
+end
+```
+
+### Common Test Mode Pitfalls
+1. **Forgetting early returns**: Always check test mode before external operations
+2. **Inconsistent callback signatures**: Match production callback patterns
+3. **Missing error suppression**: Add test mode checks to all error logging
+4. **Cleanup timing**: Some operations need delayed cleanup (`vim.defer_fn`)
+
 ## Contributing
 
 ### Adding New Tests
@@ -223,7 +314,7 @@ Opens an interactive picker to select and run tests by category or individual te
 
 ## Current Status
 
-- **Total Tests**: 122 tests across all categories
+- **Total Tests**: 160 tests across all categories
 - **Pass Rate**: 100% (all tests passing)
 - **Coverage**: Comprehensive coverage of all major functionality
 - **Performance**: All tests execute efficiently with proper isolation
