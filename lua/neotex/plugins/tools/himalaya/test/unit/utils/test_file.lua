@@ -102,17 +102,21 @@ function M.test_file_operations()
 end
 
 function M.test_list_dir()
-  -- Create test files
-  file_utils.write_file(test_dir .. '/file1.txt', 'content')
-  file_utils.write_file(test_dir .. '/file2.lua', 'content')
-  vim.fn.mkdir(test_dir .. '/subdir', 'p')
+  -- Clean the test directory first to ensure consistent state
+  local list_test_dir = test_dir .. '/list_test'
+  vim.fn.mkdir(list_test_dir, 'p')
+  
+  -- Create test files in isolated subdirectory
+  file_utils.write_file(list_test_dir .. '/file1.txt', 'content')
+  file_utils.write_file(list_test_dir .. '/file2.lua', 'content')
+  vim.fn.mkdir(list_test_dir .. '/subdir', 'p')
   
   -- List all
-  local files = file_utils.list_dir(test_dir)
+  local files = file_utils.list_dir(list_test_dir)
   assert.equals(#files, 3, 'Should list all items')
   
   -- List with filter
-  files = file_utils.list_dir(test_dir, function(name, type)
+  files = file_utils.list_dir(list_test_dir, function(name, type)
     return type == 'file' and name:match('%.txt$')
   end)
   assert.equals(#files, 1, 'Should filter txt files')
