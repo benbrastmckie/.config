@@ -4,7 +4,7 @@
 local M = {}
 
 function M.setup(registry)
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
   local state = require('neotex.plugins.tools.himalaya.core.state')
   local notify = require('neotex.util.notifications')
   local ui = require('neotex.plugins.tools.himalaya.ui')
@@ -51,7 +51,7 @@ function M.setup(registry)
       local draft = draft_manager.get_by_buffer(buf)
       
       if draft then
-        draft_manager.sync_remote(buf)
+        draft_manager.save(buf)
       else
         notify.himalaya(
           "No draft associated with current buffer",
@@ -70,10 +70,10 @@ function M.setup(registry)
       local to_sync = 0
       
       for _, draft in ipairs(drafts) do
-        if draft.modified and not draft.synced then
+        if draft.buffer and vim.api.nvim_buf_get_option(draft.buffer, 'modified') then
           to_sync = to_sync + 1
           if draft.buffer and vim.api.nvim_buf_is_valid(draft.buffer) then
-            draft_manager.sync_remote(draft.buffer)
+            draft_manager.save(draft.buffer)
           end
         end
       end
@@ -113,29 +113,27 @@ function M.setup(registry)
         ""
       }
       
-      -- Sort drafts by modified time (newest first)
+      -- Sort drafts by timestamp (newest first)
       table.sort(drafts, function(a, b)
-        return (a.modified_at or 0) > (b.modified_at or 0)
+        return (a.timestamp or 0) > (b.timestamp or 0)
       end)
       
       for i, draft in ipairs(drafts) do
-        local status = draft.synced and "✓" or "✗"
-        local subject = draft.metadata.subject or "Untitled"
+        local is_modified = draft.buffer and vim.api.nvim_buf_is_valid(draft.buffer) and 
+                           vim.api.nvim_buf_get_option(draft.buffer, 'modified')
+        local status = is_modified and "✗" or "✓"
+        local subject = draft.subject or "Untitled"
         
         table.insert(lines, string.format("%d. [%s] %s", i, status, subject))
         
-        if draft.metadata.to then
-          table.insert(lines, string.format("   To: %s", draft.metadata.to))
+        if draft.to then
+          table.insert(lines, string.format("   To: %s", draft.to))
         end
         
         table.insert(lines, string.format("   Modified: %s", 
-          os.date("%Y-%m-%d %H:%M", draft.modified_at or 0)))
+          os.date("%Y-%m-%d %H:%M", draft.timestamp or 0)))
         
-        if draft.remote_id then
-          table.insert(lines, string.format("   Remote ID: %s", draft.remote_id))
-        else
-          table.insert(lines, "   Status: Local only")
-        end
+        table.insert(lines, string.format("   File: %s", draft.filename or "Unknown"))
         
         table.insert(lines, "")
       end
@@ -258,37 +256,26 @@ function M.setup(registry)
       local lines = {
         "# Draft Information",
         "",
-        string.format("Subject: %s", draft.metadata.subject or "Untitled"),
-        string.format("Account: %s", draft.account),
+        string.format("Subject: %s", draft.subject or "Untitled"),
+        string.format("File: %s", draft.filename or "Unknown"),
         "",
         "## Metadata",
-        string.format("To: %s", draft.metadata.to or ""),
-        string.format("From: %s", draft.metadata.from or ""),
-        string.format("CC: %s", draft.metadata.cc or ""),
-        string.format("BCC: %s", draft.metadata.bcc or ""),
+        string.format("To: %s", draft.to or ""),
+        string.format("From: %s", draft.from or ""),
+        string.format("CC: %s", draft.cc or ""),
+        string.format("BCC: %s", draft.bcc or ""),
         "",
         "## Status",
-        string.format("Local ID: %s", draft.local_id),
-        string.format("Remote ID: %s", draft.remote_id or "Not synced"),
-        string.format("State: %s", draft.state),
-        string.format("Synced: %s", draft.synced and "Yes" or "No"),
-        string.format("Modified: %s", draft.modified and "Yes" or "No"),
+        string.format("Buffer: %s", draft.buffer or "N/A"),
+        string.format("Path: %s", draft.filepath or "Unknown"),
+        string.format("Modified: %s", 
+          draft.buffer and vim.api.nvim_buf_is_valid(draft.buffer) and 
+          vim.api.nvim_buf_get_option(draft.buffer, 'modified') and "Yes" or "No"),
         "",
         "## Timestamps",
-        string.format("Created: %s", os.date("%Y-%m-%d %H:%M:%S", draft.created_at or 0)),
-        string.format("Modified: %s", os.date("%Y-%m-%d %H:%M:%S", draft.modified_at or 0)),
+        string.format("Timestamp: %s", os.date("%Y-%m-%d %H:%M:%S", draft.timestamp or 0)),
       }
       
-      if draft.last_sync then
-        table.insert(lines, string.format("Last Sync: %s", 
-          os.date("%Y-%m-%d %H:%M:%S", draft.last_sync)))
-      end
-      
-      if draft.sync_error then
-        table.insert(lines, "")
-        table.insert(lines, "## Last Error")
-        table.insert(lines, draft.sync_error)
-      end
       
       float.show('Draft Information', lines)
     end,
