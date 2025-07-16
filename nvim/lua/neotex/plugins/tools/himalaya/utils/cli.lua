@@ -110,16 +110,22 @@ function M.execute_himalaya(args, opts)
             logger.info('Command succeeded after OAuth refresh')
           else
             error_msg = string_utils.trim(output)
-            notify.himalaya('Command failed after OAuth refresh: ' .. error_msg, notify.categories.ERROR)
+            if not _G.HIMALAYA_TEST_MODE then
+              notify.himalaya('Command failed after OAuth refresh: ' .. error_msg, notify.categories.ERROR)
+            end
             return nil, error_msg
           end
         else
-          notify.himalaya('OAuth refresh failed', notify.categories.ERROR)
+          if not _G.HIMALAYA_TEST_MODE then
+            notify.himalaya('OAuth refresh failed', notify.categories.ERROR)
+          end
           return nil, 'OAuth refresh failed'
         end
       else
         -- No OAuth configured or auto-refresh disabled
-        notify.himalaya('Authentication failed: ' .. error_msg, notify.categories.ERROR)
+        if not _G.HIMALAYA_TEST_MODE then
+          notify.himalaya('Authentication failed: ' .. error_msg, notify.categories.ERROR)
+        end
         return nil, error_msg
       end
     else
@@ -141,7 +147,8 @@ function M.execute_himalaya(args, opts)
         error_msg = 'Request timed out. Try again later.'
       end
       
-      if show_loading then
+      -- Only show error notification if not in test mode
+      if show_loading and not _G.HIMALAYA_TEST_MODE then
         notify.himalaya(error_msg, notify.categories.ERROR)
       end
       
