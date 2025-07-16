@@ -20,7 +20,9 @@ M.test_results = {
 
 -- Run foundation tests
 function M.test_foundation()
-  notify.himalaya('Testing Maildir foundation...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Testing Maildir foundation...', notify.categories.STATUS)
+  end
   
   local test = require('neotex.plugins.tools.himalaya.test.features.test_maildir_foundation')
   local result = test.run()
@@ -35,7 +37,9 @@ end
 
 -- Run draft manager tests
 function M.test_draft_manager()
-  notify.himalaya('Testing Draft Manager...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Testing Draft Manager...', notify.categories.STATUS)
+  end
   
   local test = require('neotex.plugins.tools.himalaya.test.features.test_draft_manager_maildir')
   local result = test.run()
@@ -50,7 +54,9 @@ end
 
 -- Run composer tests
 function M.test_composer()
-  notify.himalaya('Testing Email Composer...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Testing Email Composer...', notify.categories.STATUS)
+  end
   
   local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer')
   local result = test.run()
@@ -65,7 +71,9 @@ end
 
 -- Integration test: Full workflow
 function M.test_integration()
-  notify.himalaya('Testing full integration...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Testing full integration...', notify.categories.STATUS)
+  end
   
   local test_dir = vim.fn.tempname() .. '_integration_test'
   local results = {}
@@ -290,7 +298,9 @@ end
 
 -- Run all tests
 function M.run()
-  notify.himalaya('Running comprehensive Maildir integration tests...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Running comprehensive Maildir integration tests...', notify.categories.STATUS)
+  end
   
   local start_time = vim.loop.hrtime()
   

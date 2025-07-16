@@ -254,11 +254,13 @@ function M.validate(config)
       errors = all_errors
     })
     
-    -- Show user notification for critical errors
-    notify.himalaya(
-      string.format('Configuration errors: %d issues found', #all_errors),
-      notify.categories.ERROR
-    )
+    -- Show user notification for critical errors (not in test mode)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya(
+        string.format('Configuration errors: %d issues found', #all_errors),
+        notify.categories.ERROR
+      )
+    end
   else
     logger.info('Configuration validation passed')
   end

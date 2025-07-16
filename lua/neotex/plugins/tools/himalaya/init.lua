@@ -90,14 +90,18 @@ function M.setup(opts)
     end, 1000)
   end
 
-  -- Check if setup wizard should run
+  -- Check if setup wizard should run (only notify once per session)
   if config.config.setup.auto_run then
     local wizard = require('neotex.plugins.tools.himalaya.setup.wizard')
     if not wizard.is_setup_complete() then
-      vim.defer_fn(function()
-        local notify = require('neotex.util.notifications')
-        notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.USER_ACTION)
-      end, 2000)
+      -- Only show notification if we haven't shown it this session
+      if not state.get('setup.notification_shown') then
+        vim.defer_fn(function()
+          local notify = require('neotex.util.notifications')
+          notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.USER_ACTION)
+          state.set('setup.notification_shown', true)
+        end, 2000)
+      end
     end
   end
 

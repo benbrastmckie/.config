@@ -207,7 +207,9 @@ function M.migrate(opts)
   -- Get all drafts from filesystem
   local drafts = read_legacy_drafts()
   if #drafts == 0 then
-    notify.himalaya('No drafts to migrate', notify.categories.USER_ACTION)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya('No drafts to migrate', notify.categories.USER_ACTION)
+    end
     return {
       total = 0,
       migrated = 0,
@@ -216,10 +218,12 @@ function M.migrate(opts)
     }
   end
   
-  notify.himalaya(
-    string.format('Found %d draft(s) to migrate', #drafts),
-    notify.categories.STATUS
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format('Found %d draft(s) to migrate', #drafts),
+      notify.categories.STATUS
+    )
+  end
   
   if dry_run then
     -- Just report what would be migrated
@@ -243,20 +247,24 @@ function M.migrate(opts)
   
   -- Create backup directory
   M.state.backup_dir = create_backup_dir()
-  notify.himalaya(
-    'Creating backup at: ' .. M.state.backup_dir,
-    notify.categories.STATUS
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      'Creating backup at: ' .. M.state.backup_dir,
+      notify.categories.STATUS
+    )
+  end
   
   -- Migrate each draft
   local progress_shown = false
   for i, draft in ipairs(drafts) do
     -- Show progress for large migrations
     if #drafts > 5 and not progress_shown then
-      notify.himalaya(
-        string.format('Migrating %d/%d drafts...', i, #drafts),
-        notify.categories.STATUS
-      )
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya(
+          string.format('Migrating %d/%d drafts...', i, #drafts),
+          notify.categories.STATUS
+        )
+      end
       progress_shown = true
     end
     
@@ -297,7 +305,9 @@ function M.migrate(opts)
     notify.himalaya(msg, notify.categories.ERROR)
   else
     msg = msg .. '. Backup saved at: ' .. M.state.backup_dir
-    notify.himalaya(msg, notify.categories.USER_ACTION)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya(msg, notify.categories.USER_ACTION)
+    end
   end
   
   return {
