@@ -117,8 +117,26 @@ function M.create(account, metadata)
   -- This avoids file renames that can cause duplicate drafts and confusion
   -- The size in Maildir filenames is optional and not updating it is fine
   
-  -- Create buffer with editable format
-  local buf = vim.api.nvim_create_buf(true, false)
+  -- Check if a buffer with this name already exists
+  local existing_buf = nil
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_get_name(b) == filepath then
+      existing_buf = b
+      break
+    end
+  end
+  
+  -- Create or reuse buffer
+  local buf
+  if existing_buf then
+    -- Clean up buffer tracking before deleting
+    M.buffer_drafts[existing_buf] = nil
+    -- Delete the existing buffer to avoid conflicts
+    pcall(vim.api.nvim_buf_delete, existing_buf, { force = true })
+  end
+  
+  -- Create new buffer with editable format
+  buf = vim.api.nvim_create_buf(true, false)
   vim.api.nvim_buf_set_name(buf, filepath)
   
   -- Format for editing (show all key headers)
