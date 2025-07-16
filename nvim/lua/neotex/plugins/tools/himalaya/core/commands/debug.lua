@@ -11,7 +11,12 @@ function M.setup(registry)
     fn = function()
       local config = require('neotex.plugins.tools.himalaya.core.config')
       local state = require('neotex.plugins.tools.himalaya.core.state')
+      local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
       local float = require('neotex.plugins.tools.himalaya.ui.float')
+      
+      -- Get async status and metrics
+      local async_status = async_commands.get_status()
+      local async_metrics = async_commands.get_metrics()
       
       local lines = {
         '# Himalaya Debug Information',
@@ -24,6 +29,19 @@ function M.setup(registry)
         string.format('  State file: %s', vim.fn.stdpath('data') .. '/himalaya_state.json'),
         string.format('  Current folder: %s', state.get('current_folder') or 'INBOX'),
         string.format('  Is syncing: %s', state.get('sync.is_syncing') and 'Yes' or 'No'),
+        '',
+        '## Async Commands',
+        string.format('  Debug mode: %s', async_commands.debug_mode and 'On' or 'Off'),
+        string.format('  Running jobs: %d', async_status.running_jobs),
+        string.format('  Queued jobs: %d', async_status.queued_jobs),
+        string.format('  Max concurrent: %d', async_status.max_concurrent),
+        '',
+        '## Async Metrics',
+        string.format('  Total jobs: %d', async_metrics.total_jobs),
+        string.format('  Success rate: %d%%', async_metrics.success_rate),
+        string.format('  Lock conflicts: %d', async_metrics.lock_conflicts),
+        string.format('  Retries: %d', async_metrics.retry_count),
+        string.format('  Avg duration: %ds', async_metrics.average_duration),
         '',
         '## Paths',
         string.format('  Himalaya binary: %s', config.config.binaries.himalaya),
@@ -411,6 +429,87 @@ function M.setup(registry)
     opts = {
       nargs = 1,
       desc = 'Debug raw himalaya output for an email ID'
+    }
+  }
+  
+  -- Async debug commands
+  commands.HimalayaAsyncDebugOn = {
+    fn = function()
+      local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+      local notify = require('neotex.util.notifications')
+      async_commands.set_debug_mode(true)
+      notify.himalaya('Async debug mode enabled', notify.categories.STATUS)
+    end,
+    opts = {
+      desc = 'Enable async commands debug mode'
+    }
+  }
+  
+  commands.HimalayaAsyncDebugOff = {
+    fn = function()
+      local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+      local notify = require('neotex.util.notifications')
+      async_commands.set_debug_mode(false)
+      notify.himalaya('Async debug mode disabled', notify.categories.STATUS)
+    end,
+    opts = {
+      desc = 'Disable async commands debug mode'
+    }
+  }
+  
+  commands.HimalayaAsyncStatus = {
+    fn = function()
+      local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+      local float = require('neotex.plugins.tools.himalaya.ui.float')
+      
+      local status = async_commands.get_status()
+      local metrics = async_commands.get_metrics()
+      
+      local lines = {
+        '# Async Commands Status',
+        '',
+        '## Current Status',
+        string.format('  Running jobs: %d', status.running_jobs),
+        string.format('  Queued jobs: %d', status.queued_jobs),
+        string.format('  Max concurrent: %d', status.max_concurrent),
+        string.format('  Can start new: %s', status.can_start_new and 'Yes' or 'No'),
+        '',
+        '## Metrics',
+        string.format('  Total jobs: %d', metrics.total_jobs),
+        string.format('  Successful: %d', metrics.successful_jobs),
+        string.format('  Failed: %d', metrics.failed_jobs),
+        string.format('  Success rate: %d%%', metrics.success_rate),
+        string.format('  Lock conflicts: %d', metrics.lock_conflicts),
+        string.format('  Retries: %d', metrics.retry_count),
+        string.format('  Average duration: %ds', metrics.average_duration),
+      }
+      
+      -- Add running job details if in debug mode
+      if #status.running_details > 0 then
+        table.insert(lines, '')
+        table.insert(lines, '## Running Jobs')
+        for _, job in ipairs(status.running_details) do
+          table.insert(lines, string.format('  [%s] %s (running for %ds)', 
+            job.id, job.command, job.duration))
+        end
+      end
+      
+      float.show('Async Commands Status', lines)
+    end,
+    opts = {
+      desc = 'Show async commands status and metrics'
+    }
+  }
+  
+  commands.HimalayaAsyncResetMetrics = {
+    fn = function()
+      local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
+      local notify = require('neotex.util.notifications')
+      async_commands.reset_metrics()
+      notify.himalaya('Async metrics reset', notify.categories.STATUS)
+    end,
+    opts = {
+      desc = 'Reset async commands metrics'
     }
   }
   

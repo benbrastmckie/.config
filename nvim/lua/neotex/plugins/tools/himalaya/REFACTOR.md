@@ -4,6 +4,8 @@
 
 This document outlines a comprehensive refactoring plan to clean up the Himalaya email plugin codebase. The goal is to remove cruft, eliminate redundancies, simplify architecture, and create a tight, maintainable plugin ready for release.
 
+**Note**: Phase 3.1 was revised to improve rather than remove the async command layer, as it provides essential non-blocking functionality for a growing email client.
+
 ## Current State Analysis
 
 ### Architecture Issues Identified
@@ -153,11 +155,42 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 
 ## Phase 3: Simplify Command System (Medium Priority)
 
-### 3.1 Remove Async Command Layer
-**Files to remove**: `core/async_commands.lua`
-**Files to modify**: Move async functionality directly into relevant command modules
+### 3.1 Improve Async Command Layer ✅ COMPLETE
+**Files kept**: `core/async_commands.lua` (enhanced)
 
-**Testing**: Verify async commands still work correctly
+**Improvements implemented**:
+1. ✅ **Enhanced debugging**:
+   - Added debug mode with detailed logging
+   - Timing information for all operations
+   - Command visibility and queue tracking
+   
+2. ✅ **Added monitoring and metrics**:
+   - Total jobs, success rate, lock conflicts tracking
+   - Average duration calculations
+   - Retry count monitoring
+   - New debug commands: HimalayaAsyncStatus, HimalayaAsyncDebugOn/Off
+   
+3. ✅ **Improved API**:
+   - Higher-level convenience methods (list_emails, get_email, send_email, etc.)
+   - Consistent error handling
+   - Better stdin support for email sending
+   
+4. ✅ **Better lock conflict handling**:
+   - Track lock conflicts in metrics
+   - Improved retry logic with exponential backoff
+   - Clear error messages
+
+**Still to do** (future improvements):
+- Migrate remaining vim.fn.system calls
+- Research solutions to ID mapper concurrency
+- Implement caching strategies
+
+**Phase 3.1 Results**:
+- ✅ Enhanced async_commands.lua with debugging and monitoring
+- ✅ Added 7 new convenience methods for common operations
+- ✅ Added 4 new debug commands
+- ✅ Improved error handling and retry logic
+- ✅ All functionality preserved with better visibility
 
 ### 3.2 Consolidate Command Modules
 **Current structure**: 8 separate command modules in `core/commands/`
