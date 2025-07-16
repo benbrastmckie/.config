@@ -39,8 +39,8 @@ M.config = {
 -- Initialize test runner
 function M.setup()
   -- Check if debug mode is enabled
-  local ok, himalaya = pcall(require, 'neotex.plugins.tools.himalaya')
-  if ok and himalaya.config and himalaya.config.debug then
+  local ok, himalaya = pcall(require, 'neotex.plugins.tools.himalaya.init')
+  if ok and himalaya.get_config and himalaya.get_config().config and himalaya.get_config().config.debug then
     M.config.debug_notifications = true
   end
   

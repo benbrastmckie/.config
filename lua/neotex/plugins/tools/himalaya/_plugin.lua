@@ -8,7 +8,7 @@ return {
     name = 'himalaya-email',
     event = { 'VeryLazy' }, -- Load after startup
     config = function(_, opts)
-      require('neotex.plugins.tools.himalaya').setup(opts)
+      require('neotex.plugins.tools.himalaya.init').setup(opts)
     end,
   },
   -- Dependencies
