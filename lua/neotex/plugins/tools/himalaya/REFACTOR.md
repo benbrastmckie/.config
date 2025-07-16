@@ -18,6 +18,7 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ **Phase 3.3**: Command Structure Refactor (flattened to single location)
 - ✅ **Phase 4**: Consolidate Orchestration (merged into commands/orchestrator.lua)
 - ✅ **Phase 5**: Consolidate Utilities (merged utils/enhanced.lua into utils.lua)
+- ✅ **Phase 6**: Document Future Features (created docs/FUTURE_FEATURES.md)
 
 ### Results So Far
 - **Lines removed**: 2,509+ lines of redundant code
@@ -25,10 +26,11 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - **Module consolidation**: Commands 8→4, orchestration 3→1, utilities 2→1
 - **Architecture improvements**: Single implementations throughout, unified modules
 - **New features**: Debug mode, metrics tracking, better error handling, 4 new debug commands
-- **Cleaner structure**: Consolidated modules in appropriate directories
+- **Documentation**: Comprehensive future features roadmap with integration plans
+- **Cleaner structure**: Consolidated modules with clear development path
 
 ### Remaining Work
-- Phase 6: Simplify Features  
+- Phase 6: Document Future Features
 - Phase 7: Remove Debug and Unused Files
 - Phase 8: Simplify Configuration
 - Phase 9: Final Review & Documentation
@@ -319,24 +321,33 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ Single location for all utility functions
 - ✅ Rich utility library with perf, string, table, fn, async, path, and validate utilities
 
-## Phase 6: Simplify Features (Low Priority)
+## Phase 6: Document Future Features ✅ COMPLETE
 
-### 6.1 Integrate Feature Modules
-**Files to remove**:
-- `features/accounts.lua` (33 lines - integrate into core)
-- `features/attachments.lua` (integrate into email composer)
-- `features/contacts.lua` (integrate into core)
-- `features/headers.lua` (integrate into email utilities)
-- `features/images.lua` (integrate into UI utilities)
+### 6.1 Create Feature Documentation ✅ COMPLETE
+**Goal**: Document existing feature modules as future additions rather than integrating them immediately
 
-**Files to modify**:
-- Move account functionality to `core/accounts.lua`
-- Move attachment functionality to `ui/email_composer_maildir.lua`
-- Move contact functionality to `core/contacts.lua`
-- Move header functionality to `utils.lua`
-- Move image functionality to `ui/utils.lua`
+**Rationale**: 
+- Current feature modules are partially implemented and would benefit from future integration
+- Better to document the intended architecture than rush incomplete integrations
+- Maintains clean codebase while preserving future development plans
 
-**Testing**: Verify all feature functionality works correctly
+**Files documented**: 
+- ✅ `features/accounts.lua` - Multi-account management enhancements
+- ✅ `features/attachments.lua` - Email attachment handling
+- ✅ `features/contacts.lua` - Contact management and autocomplete
+- ✅ `features/headers.lua` - Advanced email header processing
+- ✅ `features/images.lua` - Image preview and handling
+- ✅ `features/views.lua` - Alternative email view modes
+
+**Documentation created**: ✅ `docs/FUTURE_FEATURES.md`
+
+**Testing**: ✅ Feature modules remain available but documented as future work
+
+**Phase 6 Results**:
+- ✅ Created comprehensive documentation for future feature development
+- ✅ Preserved existing feature modules without rushing integration
+- ✅ Clear roadmap for future enhancements
+- ✅ Maintained clean architecture while documenting expansion plans
 
 ## Phase 7: Remove Debug and Unused Files (Low Priority)
 
