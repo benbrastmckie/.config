@@ -1,37 +1,39 @@
 # Himalaya Development Guidelines
 
-This document provides comprehensive guidelines for development in the Himalaya project. These principles ensure clean, maintainable, and efficient code.
+This document provides comprehensive guidelines for development in the Himalaya project. These principles ensure clean, maintainable, and efficient code while respecting the realities of a working Neovim plugin.
 
 ## Core Philosophy
 
-### No Backwards Compatibility Layers
-**IMPORTANT**: This codebase maintains zero backwards compatibility layers. While temporary compatibility wrappers may be used during migration phases to facilitate testing, ALL backwards compatibility code MUST be removed by the final phase of any refactor.
+### Evolution, Not Revolution
+**IMPORTANT**: While we strive for architectural purity, this codebase acknowledges pragmatic compromises necessary for a functional Neovim plugin. Document these compromises clearly and work toward better patterns over time.
 
 ### Systematic Analysis Before Implementation
 Before implementing any changes, conduct a thorough analysis to understand:
 1. How new changes will integrate with existing code
-2. What redundancies can be eliminated
+2. What redundancies can be eliminated without breaking functionality
 3. How to improve simplicity and maintainability
-4. What existing code can be reused or refactored
+4. What existing patterns and working code can be preserved
+5. Where pragmatic compromises are acceptable
 
-The goal is to enhance the unity, elegance, and integrity of the codebase.
+The goal is to enhance the unity, elegance, and integrity of the codebase through thoughtful evolution.
 
 ## Design Principles
 
 ### Core Principles
-1. **Single Source of Truth**: One authoritative module for each domain
-2. **No Redundancy**: Eliminate duplicate code and functionality
-3. **Clean Architecture**: No backwards compatibility cruft
-4. **Systematic Integration**: New code must enhance overall codebase quality
-5. **Test Between Phases**: Verify each phase works before proceeding
-6. **Complete Documentation**: All directories must have updated README.md files
+1. **Single Source of Truth**: One authoritative module for each domain (e.g., `core/state.lua` for all state)
+2. **Pragmatic Architecture**: Accept necessary compromises (e.g., config UI dependencies for keybindings)
+3. **Incremental Improvement**: Evolve the codebase gradually while maintaining functionality
+4. **Systematic Integration**: New code must work with existing patterns
+5. **Test-Driven Migration**: Run `:HimalayaTest all` with 100% pass rate before proceeding
+6. **Living Documentation**: Keep documentation accurate to implementation reality
 
 ### Code Quality Goals
 Every refactor should improve:
-- **Simplicity**: Reduce complexity and cognitive load
-- **Unity**: Ensure components work together harmoniously
-- **Maintainability**: Make future changes easier
-- **Integrity**: Ensure the codebase is internally consistent
+- **Simplicity**: Reduce complexity where possible without losing functionality
+- **Unity**: Ensure components work together (even with some coupling)
+- **Maintainability**: Balance ideal patterns with practical needs
+- **Reliability**: Preserve all working functionality through migrations
+- **Testability**: Improve test coverage with each change
 
 ## Development Process
 
@@ -64,124 +66,136 @@ Before writing any code:
 
 ### Phase-Based Development
 
-Each refactor MUST follow a phase-based approach:
+Each refactor MUST follow a phase-based approach with rigorous testing:
 
 ```markdown
 ### Phase X: [Name] (Timeline)
 
 1. **Pre-Phase Analysis**:
-   - [ ] Analyze affected modules
-   - [ ] Identify redundancies to eliminate
-   - [ ] Plan integration strategy
-   - [ ] Document expected simplifications
+   - [ ] Analyze affected modules and dependencies
+   - [ ] Identify what can be improved without breaking functionality
+   - [ ] Document current architectural compromises
+   - [ ] Plan migration path that preserves working code
 
 2. **Implementation**:
-   - [ ] Write clean code (NO backwards compatibility)
-   - [ ] Delete redundant code
-   - [ ] Simplify existing modules
-   - [ ] Use temporary wrappers ONLY if needed for testing
+   - [ ] Preserve backward compatibility during migration
+   - [ ] Write new tests for refactored modules
+   - [ ] Update existing code incrementally
+   - [ ] Document any pragmatic compromises made
 
-3. **Testing** (REQUIRED before next phase):
-   - [ ] Create/update test files
-   - [ ] Run all affected tests
-   - [ ] Verify integration with existing code
-   - [ ] Confirm no regressions
-   - [ ] Document test results
+3. **Testing Protocol** (MANDATORY):
+   - [ ] Run `:HimalayaTest all` - MUST achieve 100% pass rate
+   - [ ] Write new unit tests for refactored modules
+   - [ ] Update integration tests as needed
+   - [ ] Manual testing of key workflows
+   - [ ] Document any test failures and fixes
 
-4. **Cleanup**:
-   - [ ] Remove ANY temporary compatibility code
-   - [ ] Delete unused functions/modules
-   - [ ] Simplify complex logic
-   - [ ] Ensure code elegance
-
-5. **Documentation**:
-   - [ ] Update module documentation
+4. **Documentation**:
+   - [ ] Update REFACTOR.md with progress
+   - [ ] Document architectural decisions and compromises
    - [ ] Update affected README.md files
-   - [ ] Verify all links work
-   - [ ] Document design decisions
+   - [ ] Create migration notes if needed
 
-6. **Commit**:
-   - [ ] Clear commit message
-   - [ ] List all deletions/simplifications
-   - [ ] Note code reduction metrics
+5. **Commit & Review**:
+   - [ ] Atomic commit for each phase
+   - [ ] Clear message: "Phase X: [Description]"
+   - [ ] List improvements and any compromises
+   - [ ] Request manual testing from users
+
+6. **User Approval**:
+   - [ ] Wait for manual testing confirmation
+   - [ ] Address any issues found
+   - [ ] Only proceed to next phase after approval
 ```
 
-### Final Phase Requirements
+### Architectural Patterns
 
-The final phase of ANY refactor MUST:
+The codebase follows these established patterns:
 
-1. **Remove ALL Compatibility Layers**
+1. **Unified State Management**
    ```lua
-   -- DELETE any temporary wrappers
-   -- DELETE any migration helpers
-   -- DELETE any backwards compatibility code
+   -- All state goes through core/state.lua
+   local state = require('neotex.plugins.tools.himalaya.core.state')
+   state.set_current_folder('INBOX')
    ```
 
-2. **Final Codebase Review**
-   - Re-examine entire affected codebase
-   - Identify any remaining redundancies
-   - Simplify any complex abstractions
-   - Ensure architectural unity
+2. **Consistent Error Handling**
+   ```lua
+   local ok, result = pcall(operation)
+   if not ok then
+     logger.error('Operation failed', { context = 'function_name' })
+     notify.himalaya('Operation failed', notify.categories.ERROR)
+     return nil, result
+   end
+   ```
 
-3. **Documentation Sweep**
-   - Update ALL affected README.md files
-   - Verify forward/backward links work
-   - Ensure consistent coverage
-   - Document the new architecture
+3. **Event-Driven Orchestration**
+   ```lua
+   -- Commands emit events through orchestrator
+   local orchestrator = require('...commands.orchestrator')
+   orchestrator.emit(event_constants.EMAIL_SENT, data)
+   ```
+
+4. **Pragmatic Compromises (Documented)**
+   ```lua
+   -- core/config.lua contains UI dependencies for keybindings
+   -- This violates layering but provides essential functionality
+   -- Future: Move to event-based keybinding system
+   ```
 
 ## Testing Requirements
 
-### Inter-Phase Testing
-**CRITICAL**: Testing MUST be performed between EVERY phase:
+### Mandatory Testing Protocol
+**CRITICAL**: Each phase MUST achieve 100% test pass rate before proceeding:
 
-1. **Unit Tests**: Test individual components
-2. **Integration Tests**: Test component interactions
-3. **Full Workflow Tests**: Test complete user workflows
-4. **Regression Tests**: Ensure existing functionality works
-
-### Test Before Proceeding
 ```vim
-" Run tests after each phase
-:HimalayaTest[Feature]
+" Run all tests after each phase
+:HimalayaTest all
 
-" Only proceed to next phase if ALL tests pass
-" Document any test failures and fixes
+" Expected output: All tests passing
+" If any test fails, fix before proceeding
 ```
+
+### Test Coverage Expectations
+| Phase | Description | New Tests Required |
+|-------|-------------|-------------------|
+| Utils Refactor | Split utils.lua | ~25 unit tests |
+| Config Restructure | Split config modules | ~20 unit tests |
+| UI Cleanup | Reorganize UI | ~15 unit tests |
+| Data Layer | Organize data ops | ~30 unit tests |
 
 ### Test Structure
 ```
-/scripts/features/
-├── test_[feature]_foundation.lua    # Core infrastructure tests
-├── test_[feature]_integration.lua   # Integration tests
-└── test_[feature]_full.lua         # Complete workflow tests
+test/
+├── unit/              # New unit tests for refactored modules
+│   ├── utils/        # Test each utils module
+│   ├── config/       # Test configuration modules
+│   └── data/         # Test data operations
+├── integration/      # Cross-module tests
+├── commands/         # Command-specific tests
+└── performance/      # Performance regression tests
 ```
 
-## Code Cleanup Guidelines
+## Code Organization Guidelines
 
-### Identifying Redundancy
-Look for:
-- Duplicate functionality across modules
-- Unused functions or variables
-- Complex abstractions that can be simplified
-- Multiple ways to do the same thing
-- Dead code paths
+### Module Size Limits
+- **Target**: 200-350 lines per file
+- **Maximum**: 400 lines (requires justification)
+- **Directories**: 6-8 files maximum
 
-### Simplification Strategies
-1. **Merge Similar Modules**: Combine modules with overlapping functionality
-2. **Delete Unused Code**: Remove any code not actively used
-3. **Flatten Abstractions**: Remove unnecessary layers of indirection
-4. **Unify APIs**: Ensure consistent interfaces across modules
+### Current Architectural Realities
+The codebase contains pragmatic compromises:
+- **config.lua**: Contains UI dependencies for keybindings
+- **commands.lua**: Cross-layer dependencies for coordination
+- **sync/manager.lua**: Soft UI dependencies via pcall
 
-### Example Refactor Metrics
-Track and report simplification metrics:
-```markdown
-## Refactor Results
-- Modules deleted: 6
-- Lines removed: 931
-- Code reduction: 40%
-- Abstractions eliminated: 3
-- APIs unified: 2
-```
+These are documented and accepted until better patterns emerge.
+
+### Refactoring Approach
+1. **Preserve Working Code**: Don't break functionality for purity
+2. **Document Compromises**: Clearly mark architectural debt
+3. **Plan Future Improvements**: Note migration paths in comments
+4. **Test Everything**: 100% pass rate required at each step
 
 ## Documentation Standards
 
@@ -224,48 +238,57 @@ After refactor completion:
 
 ## Migration Strategy
 
-### Temporary Compatibility
-When necessary for testing:
+### Backward Compatibility Approach
+Maintain functionality during migrations:
 ```lua
--- TEMPORARY: Remove in final phase
--- This wrapper allows testing during migration
-local M = {}
-local new_module = require('new_implementation')
+-- utils/init.lua provides backward compatibility
+local M = {
+  string = require('...utils.string'),
+  email = require('...utils.email'),
+  -- ... other modules
+}
 
--- Redirect old API to new
-M.old_function = new_module.new_function
+-- Preserve existing API during migration
+function M.truncate_string(...)
+  return M.string.truncate(...)
+end
 
 return M
 ```
 
-### Final Cleanup
+### Incremental Migration
 ```lua
--- In final phase, replace ALL references:
--- OLD: require('old_module').old_function()
--- NEW: require('new_module').new_function()
-
--- Then DELETE the compatibility wrapper entirely
+-- Phase 1: Create new structure, maintain old API
+-- Phase 2: Update high-traffic imports
+-- Phase 3: Update remaining imports
+-- Phase 4: Remove compatibility layer (if safe)
 ```
 
 ## Post-Refactor Testing Support
 
-### Helping Users Run Tests
-After completing a refactor, actively help users validate the changes:
+### Phase Completion Workflow
+After implementing each phase:
 
-1. **Provide Clear Test Commands**
+1. **Run Comprehensive Tests**
    ```vim
-   " Add these to documentation
-   :HimalayaTest[Feature]           " Run specific feature tests
-   :HimalayaTestIntegration         " Run full integration tests
-   :HimalayaTestAll                 " Run complete test suite
+   :HimalayaTest all
+   " Must see: All tests passing (100%)
    ```
 
-2. **Create Test Guides**
+2. **Update Documentation**
    ```markdown
-   ## Testing Your Installation
-   1. Run `:HimalayaTest[Feature]` to verify the refactor
-   2. If errors occur, see troubleshooting below
-   3. Report issues with full error output
+   ## Phase X Complete
+   - Tests: 100% passing
+   - New tests added: [count]
+   - Files refactored: [list]
+   - Architectural compromises: [documented]
+   ```
+
+3. **Commit and Request Testing**
+   ```bash
+   git add -A
+   git commit -m "Phase X: [Description]"
+   # Request user to manually test
    ```
 
 ### Root Cause Analysis
@@ -360,33 +383,37 @@ When users report test failures:
 
 ## Quality Checklist
 
-Before considering any refactor complete:
+Before proceeding to next phase:
 
-- [ ] All backwards compatibility removed
-- [ ] All tests passing between phases
-- [ ] Redundant code eliminated
-- [ ] Architecture simplified
-- [ ] Documentation updated
-- [ ] README.md files complete with working links
-- [ ] Code reduction metrics documented
-- [ ] Test commands documented for users
-- [ ] Root cause analysis process documented
-- [ ] Common issues and fixes documented
-- [ ] Final review for elegance and unity
+- [ ] `:HimalayaTest all` shows 100% pass rate
+- [ ] New unit tests written for refactored modules
+- [ ] Architectural compromises documented
+- [ ] Working functionality preserved
+- [ ] Documentation updated (REFACTOR.md, README.md)
+- [ ] Atomic commit created
+- [ ] Manual testing requested from user
+- [ ] User approval received
 
-## Example: Maildir Migration
+## Example: Recent Refactoring Success
 
-The recent Maildir migration exemplifies these principles:
+The Phase 1-5 refactoring demonstrates pragmatic evolution:
 
-1. **Analysis**: Identified 6 redundant modules and dual storage system
-2. **Simplification**: Reduced code by 40% (931 lines)
-3. **No Compatibility**: Removed all dual-storage code
-4. **Testing**: Comprehensive tests between each phase
-5. **Documentation**: Created new docs and updated all READMEs
-6. **Unity**: Single storage format for all emails
+1. **Phase 4**: Consolidated orchestration (2 files → 1, preserved all functionality)
+2. **Phase 5**: Merged utilities (400 lines integrated, backward compatibility maintained)
+3. **Testing**: 100% pass rate maintained throughout
+4. **Documentation**: Created ARCHITECTURE_V3.md with realistic migration plan
+5. **Compromises**: Acknowledged config.lua UI dependencies as necessary
+
+## Current Architecture Status
+
+The codebase reflects pragmatic realities:
+- **Working State Management**: Unified through `core/state.lua`
+- **Event System**: Functional orchestration in `commands/orchestrator.lua`
+- **Documented Compromises**: Config UI dependencies, command layer coupling
+- **Future Path**: Clear migration strategy in ARCHITECTURE_V3.md
 
 ## Summary
 
-These guidelines ensure that every change improves the overall quality of the codebase. By focusing on simplification, elimination of redundancy, and systematic testing, we maintain a clean, efficient, and maintainable system.
+These guidelines balance architectural ideals with the practical needs of a working Neovim plugin. By acknowledging necessary compromises while working toward better patterns, we maintain a reliable, testable, and evolvable codebase.
 
-Remember: The goal is not just to add features, but to enhance the elegance and integrity of the entire codebase with each change.
+Remember: Evolution, not revolution. Every change should preserve functionality while incrementally improving architecture.
