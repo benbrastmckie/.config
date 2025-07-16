@@ -81,7 +81,8 @@ function M.test_email_list_display()
   
   local emails = create_test_emails()
   state.set('emails', emails)
-  state.set('current_account', 'test_account')
+  state.set('current_account', 'TestAccount')
+  state.set('current_folder', 'INBOX')
   
   -- Test showing email list
   local success = pcall(email_list.show_email_list)
