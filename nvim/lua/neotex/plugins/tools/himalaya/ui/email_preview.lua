@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_v2_maildir')
+local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local utils = require('neotex.plugins.tools.himalaya.utils')
@@ -91,7 +91,7 @@ local function load_local_draft_content(account, local_id)
   logger.debug('Loading local draft by local_id', { local_id = local_id, account = account })
   
   -- With Maildir, local_id is the filename - find draft by it
-  local drafts = draft_manager.list_drafts(account)
+  local drafts = draft_manager.list(account)
   local found_draft = nil
   
   for _, draft in ipairs(drafts) do
@@ -163,8 +163,7 @@ local function load_draft_content(account, folder, draft_id)
   end
   
   -- If not in cache, check if it's a local-only draft by filename
-  if draft_manager.list then
-    local drafts = draft_manager.list(account)
+  local drafts = draft_manager.list(account)
     for _, draft in ipairs(drafts) do
       if draft.filename == draft_id or tostring(draft.timestamp) == draft_id then
         -- Read directly from file
@@ -189,7 +188,6 @@ local function load_draft_content(account, folder, draft_id)
         end
       end
     end
-  end
   
   -- Not in cache and not a local draft - return minimal structure
   -- Full content will be loaded async (same as regular emails)
@@ -284,17 +282,8 @@ function M.render_preview(email, buf)
     end
     
     -- Add draft state indicator if applicable
-    if email._is_draft and email._draft_state then
-      local state_line = 'Status:  '
-      if email._draft_state == draft_manager.states.NEW then
-        state_line = state_line .. '📝 New (not synced)'
-      elseif email._draft_state == draft_manager.states.SYNCING then
-        state_line = state_line .. '🔄 Syncing...'
-      elseif email._draft_state == draft_manager.states.SYNCED then
-        state_line = state_line .. '✅ Synced'
-      elseif email._draft_state == draft_manager.states.ERROR then
-        state_line = state_line .. '❌ Sync Error: ' .. (email._sync_error or 'Unknown')
-      end
+    if email._is_draft then
+      local state_line = 'Status:  📝 Draft'
       table.insert(lines, state_line)
       table.insert(lines, string.rep("-", M.config.width - 2))
       table.insert(lines, "")
@@ -660,7 +649,7 @@ function M.load_draft_content_async(draft_id, account, folder)
   
   vim.schedule(function()
     -- Try to find draft in filesystem
-    local drafts = draft_manager.list_drafts(account)
+    local drafts = draft_manager.list(account)
     local found_draft = nil
     
     for _, draft in ipairs(drafts) do
