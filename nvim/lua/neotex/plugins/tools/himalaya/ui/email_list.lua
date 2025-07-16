@@ -181,8 +181,17 @@ function M.show_email_list(args)
   
   -- Check if config is properly initialized
   if not config.is_initialized() then
-    notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.ERROR)
-    return
+    -- Try to initialize config with defaults if not done yet
+    local init = require('neotex.plugins.tools.himalaya.init')
+    if not init.loaded then
+      init.setup({})
+    end
+    
+    -- Check again after initialization attempt
+    if not config.is_initialized() then
+      notify.himalaya('Himalaya not configured. Run :HimalayaSetup to begin.', notify.categories.ERROR)
+      return
+    end
   end
   
   -- Check if maildir exists and set up if needed

@@ -469,13 +469,18 @@ function M.is_setup_complete()
     return false
   end
   
-  -- 2. Check if maildir exists
-  local account = config.get_current_account()
-  if account and account.maildir_path then
-    local maildir = vim.fn.expand(account.maildir_path)
-    if vim.fn.isdirectory(maildir) == 1 then
-      -- If maildir exists and himalaya is available, assume setup is complete
-      return true
+  -- 2. Check if himalaya has any accounts configured (check CLI)
+  local output = vim.fn.system('himalaya account list -o json 2>/dev/null')
+  if vim.v.shell_error == 0 then
+    local ok, accounts = pcall(vim.json.decode, output)
+    if ok and accounts and #accounts > 0 then
+      -- Himalaya has accounts configured
+      -- Now check if maildir exists
+      local maildir_root = vim.fn.expand('~/Mail')
+      if vim.fn.isdirectory(maildir_root) == 1 then
+        -- Basic setup appears complete
+        return true
+      end
     end
   end
   

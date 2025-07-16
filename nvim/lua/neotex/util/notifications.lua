@@ -295,6 +295,10 @@ function M.notify(message, category, context)
   end
   
   -- Send the notification via Snacks.nvim (which overrides vim.notify)
+  -- Suppress non-error notifications in test mode
+  if _G.HIMALAYA_TEST_MODE and category.level ~= vim.log.levels.ERROR then
+    return
+  end
   vim.notify(enhanced_message, category.level)
 end
 
@@ -443,6 +447,12 @@ end
 function M.notify_force(message, level, context)
   context = context or {}
   local enhanced_message = M._enhance_message(message, context)
+  
+  -- Still suppress non-error notifications in test mode
+  if _G.HIMALAYA_TEST_MODE and level ~= vim.log.levels.ERROR then
+    return
+  end
+  
   vim.notify(enhanced_message, level or vim.log.levels.INFO)
   
   -- Still log to history and stats
