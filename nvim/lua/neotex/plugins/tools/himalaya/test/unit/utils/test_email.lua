@@ -1,6 +1,7 @@
 -- Unit tests for email utilities
 
 local test_framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
+local assert = test_framework.assert
 local email_utils = require('neotex.plugins.tools.himalaya.utils.email')
 
 local M = {}
@@ -13,7 +14,7 @@ function M.test_format_flags()
     flagged = true,
     draft = true
   }
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_flags(flags),
     'RA*D',
     'Should format all flags correctly'
@@ -26,14 +27,14 @@ function M.test_format_flags()
     flagged = false,
     draft = false
   }
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_flags(flags),
     '    ',
     'Should show spaces for no flags'
   )
   
   -- Test nil flags
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_flags(nil),
     '  ',
     'Should handle nil flags'
@@ -41,7 +42,7 @@ function M.test_format_flags()
   
   -- Test partial flags
   flags = { seen = true, flagged = true }
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_flags(flags),
     'R * ',
     'Should format partial flags'
@@ -50,28 +51,28 @@ end
 
 function M.test_validate_email()
   -- Valid emails
-  test_framework.assert_true(
+  assert.truthy(
     email_utils.validate_email('test@example.com'),
     'Should validate simple email'
   )
   
-  test_framework.assert_true(
+  assert.truthy(
     email_utils.validate_email('user.name+tag@example.co.uk'),
     'Should validate complex email'
   )
   
   -- Invalid emails
-  test_framework.assert_false(
+  assert.falsy(
     email_utils.validate_email('invalid'),
     'Should reject invalid email'
   )
   
-  test_framework.assert_false(
+  assert.falsy(
     email_utils.validate_email('missing@domain'),
     'Should reject email without TLD'
   )
   
-  test_framework.assert_false(
+  assert.falsy(
     email_utils.validate_email(nil),
     'Should reject nil'
   )
@@ -80,66 +81,66 @@ end
 function M.test_extract_emails()
   -- Single email
   local emails = email_utils.extract_emails('Contact me at test@example.com')
-  test_framework.assert_equals(#emails, 1, 'Should extract one email')
-  test_framework.assert_equals(emails[1], 'test@example.com', 'Should extract correct email')
+  assert.equals(#emails, 1, 'Should extract one email')
+  assert.equals(emails[1], 'test@example.com', 'Should extract correct email')
   
   -- Multiple emails
   emails = email_utils.extract_emails('CC: alice@example.com, bob@test.org')
-  test_framework.assert_equals(#emails, 2, 'Should extract multiple emails')
-  test_framework.assert_equals(emails[1], 'alice@example.com', 'First email')
-  test_framework.assert_equals(emails[2], 'bob@test.org', 'Second email')
+  assert.equals(#emails, 2, 'Should extract multiple emails')
+  assert.equals(emails[1], 'alice@example.com', 'First email')
+  assert.equals(emails[2], 'bob@test.org', 'Second email')
   
   -- No emails
   emails = email_utils.extract_emails('No emails here')
-  test_framework.assert_equals(#emails, 0, 'Should find no emails')
+  assert.equals(#emails, 0, 'Should find no emails')
   
   -- Nil handling
   emails = email_utils.extract_emails(nil)
-  test_framework.assert_equals(#emails, 0, 'Should handle nil')
+  assert.equals(#emails, 0, 'Should handle nil')
 end
 
 function M.test_parse_address()
   -- Full address
   local parsed = email_utils.parse_address('John Doe <john@example.com>')
-  test_framework.assert_equals(parsed.name, 'John Doe', 'Should parse name')
-  test_framework.assert_equals(parsed.email, 'john@example.com', 'Should parse email')
+  assert.equals(parsed.name, 'John Doe', 'Should parse name')
+  assert.equals(parsed.email, 'john@example.com', 'Should parse email')
   
   -- Quoted name
   parsed = email_utils.parse_address('"Doe, John" <john@example.com>')
-  test_framework.assert_equals(parsed.name, 'Doe, John', 'Should handle quoted name')
+  assert.equals(parsed.name, 'Doe, John', 'Should handle quoted name')
   
   -- Plain email
   parsed = email_utils.parse_address('john@example.com')
-  test_framework.assert_nil(parsed.name, 'Should have no name')
-  test_framework.assert_equals(parsed.email, 'john@example.com', 'Should parse plain email')
+  assert.falsy(parsed.name, 'Should have no name')
+  assert.equals(parsed.email, 'john@example.com', 'Should parse plain email')
   
   -- No email format
   parsed = email_utils.parse_address('Just a name')
-  test_framework.assert_equals(parsed.name, 'Just a name', 'Should use as name')
-  test_framework.assert_nil(parsed.email, 'Should have no email')
+  assert.equals(parsed.name, 'Just a name', 'Should use as name')
+  assert.falsy(parsed.email, 'Should have no email')
   
   -- Nil handling
   parsed = email_utils.parse_address(nil)
-  test_framework.assert_nil(parsed, 'Should handle nil')
+  assert.falsy(parsed, 'Should handle nil')
 end
 
 function M.test_format_address()
   -- With name
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_address('John Doe <john@example.com>'),
     'John Doe',
     'Should format name'
   )
   
   -- Email only
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_address('john@example.com'),
     'john@example.com',
     'Should format email'
   )
   
   -- Unknown
-  test_framework.assert_equals(
+  assert.equals(
     email_utils.format_address(nil),
     'Unknown',
     'Should handle nil'
@@ -156,17 +157,17 @@ function M.test_format_email_for_sending()
   }
   
   local formatted = email_utils.format_email_for_sending(email_data)
-  test_framework.assert_match(formatted, 'From: sender@example%.com', 'Should have From header')
-  test_framework.assert_match(formatted, 'To: recipient@example%.com', 'Should have To header')
-  test_framework.assert_match(formatted, 'Subject: Test Subject', 'Should have Subject header')
-  test_framework.assert_match(formatted, '\n\nTest body', 'Should have body after blank line')
+  assert.matches(formatted, 'From: sender@example%.com', 'Should have From header')
+  assert.matches(formatted, 'To: recipient@example%.com', 'Should have To header')
+  assert.matches(formatted, 'Subject: Test Subject', 'Should have Subject header')
+  assert.matches(formatted, '\n\nTest body', 'Should have body after blank line')
   
   -- With CC and BCC
   email_data.cc = 'cc@example.com'
   email_data.bcc = 'bcc@example.com'
   formatted = email_utils.format_email_for_sending(email_data)
-  test_framework.assert_match(formatted, 'Cc: cc@example%.com', 'Should have CC header')
-  test_framework.assert_match(formatted, 'Bcc: bcc@example%.com', 'Should have BCC header')
+  assert.matches(formatted, 'Cc: cc@example%.com', 'Should have CC header')
+  assert.matches(formatted, 'Bcc: bcc@example%.com', 'Should have BCC header')
   
   -- With custom headers
   email_data.headers = {
@@ -174,8 +175,8 @@ function M.test_format_email_for_sending()
     ['X-Custom'] = 'value'
   }
   formatted = email_utils.format_email_for_sending(email_data)
-  test_framework.assert_match(formatted, 'X%-Priority: 1', 'Should have custom header')
-  test_framework.assert_match(formatted, 'X%-Custom: value', 'Should have custom header')
+  assert.matches(formatted, 'X%-Priority: 1', 'Should have custom header')
+  assert.matches(formatted, 'X%-Custom: value', 'Should have custom header')
 end
 
 function M.test_parse_email_content()
@@ -190,10 +191,10 @@ function M.test_parse_email_content()
   }
   
   local email = email_utils.parse_email_content(lines)
-  test_framework.assert_equals(email.headers.from, 'sender@example.com', 'Should parse From')
-  test_framework.assert_equals(email.headers.to, 'recipient@example.com', 'Should parse To')
-  test_framework.assert_equals(email.headers.subject, 'Test', 'Should parse Subject')
-  test_framework.assert_equals(email.body, 'This is the body.\nSecond line.', 'Should parse body')
+  assert.equals(email.headers.from, 'sender@example.com', 'Should parse From')
+  assert.equals(email.headers.to, 'recipient@example.com', 'Should parse To')
+  assert.equals(email.headers.subject, 'Test', 'Should parse Subject')
+  assert.equals(email.body, 'This is the body.\nSecond line.', 'Should parse body')
   
   -- Header continuation
   lines = {
@@ -203,7 +204,7 @@ function M.test_parse_email_content()
     'Body'
   }
   email = email_utils.parse_email_content(lines)
-  test_framework.assert_equals(email.headers.subject, 'Very long subject line', 'Should handle continuation')
+  assert.equals(email.headers.subject, 'Very long subject line', 'Should handle continuation')
 end
 
 function M.test_create_reply()
@@ -220,30 +221,30 @@ function M.test_create_reply()
   }
   
   local reply = email_utils.create_reply(original, false)
-  test_framework.assert_equals(reply.headers.from, 'me@example.com', 'Should swap From/To')
-  test_framework.assert_equals(reply.headers.to, 'sender@example.com', 'Should swap From/To')
-  test_framework.assert_equals(reply.headers.subject, 'Re: Original Subject', 'Should add Re: prefix')
-  test_framework.assert_equals(reply.headers['in-reply-to'], '<123@example.com>', 'Should set In-Reply-To')
-  test_framework.assert_match(reply.body, '> Original message', 'Should quote original')
+  assert.equals(reply.headers.from, 'me@example.com', 'Should swap From/To')
+  assert.equals(reply.headers.to, 'sender@example.com', 'Should swap From/To')
+  assert.equals(reply.headers.subject, 'Re: Original Subject', 'Should add Re: prefix')
+  assert.equals(reply.headers['in-reply-to'], '<123@example.com>', 'Should set In-Reply-To')
+  assert.matches(reply.body, '> Original message', 'Should quote original')
   
   -- Reply with existing Re:
   original.headers.subject = 'Re: Already a reply'
   reply = email_utils.create_reply(original, false)
-  test_framework.assert_equals(reply.headers.subject, 'Re: Already a reply', 'Should not double Re:')
+  assert.equals(reply.headers.subject, 'Re: Already a reply', 'Should not double Re:')
   
   -- Reply all
   original.headers.cc = 'cc1@example.com, cc2@example.com'
   reply = email_utils.create_reply(original, true)
-  test_framework.assert_match(reply.headers.cc, 'cc1@example%.com', 'Should include CC')
-  test_framework.assert_match(reply.headers.cc, 'cc2@example%.com', 'Should include CC')
+  assert.matches(reply.headers.cc, 'cc1@example%.com', 'Should include CC')
+  assert.matches(reply.headers.cc, 'cc2@example%.com', 'Should include CC')
 end
 
 function M.test_generate_message_id()
   local id1 = email_utils.generate_message_id()
   local id2 = email_utils.generate_message_id()
   
-  test_framework.assert_match(id1, '^<.+@.+>$', 'Should have correct format')
-  test_framework.assert_not_equals(id1, id2, 'Should generate unique IDs')
+  assert.matches(id1, '^<.+@.+>$', 'Should have correct format')
+  assert.truthy(id1 ~= id2, 'Should generate unique IDs')
 end
 
 function M.test_has_attachments()
@@ -260,20 +261,20 @@ Content-Type: application/pdf
 Content-Disposition: attachment; filename="file.pdf"
 ]]
   
-  test_framework.assert_true(
+  assert.truthy(
     email_utils.has_attachments(content),
     'Should detect multipart content'
   )
   
   -- No attachments
   content = "Content-Type: text/plain\n\nJust text"
-  test_framework.assert_false(
+  assert.falsy(
     email_utils.has_attachments(content),
     'Should not detect attachments in plain text'
   )
   
   -- Nil handling
-  test_framework.assert_false(
+  assert.falsy(
     email_utils.has_attachments(nil),
     'Should handle nil'
   )

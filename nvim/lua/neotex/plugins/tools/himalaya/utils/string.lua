@@ -14,10 +14,19 @@ function M.truncate(str, max_length, ellipsis)
   local str_value = tostring(str)
   
   ellipsis = ellipsis or '...'
-  if #str_value <= max_length then
+  
+  -- Use vim.fn.strcharlen for proper UTF-8 character counting
+  local str_len = vim.fn.strcharlen(str_value)
+  if str_len <= max_length then
     return str_value
   end
-  return str_value:sub(1, max_length - #ellipsis) .. ellipsis
+  
+  -- Calculate how many characters to keep
+  local ellipsis_len = vim.fn.strcharlen(ellipsis)
+  local keep_chars = max_length - ellipsis_len
+  
+  -- Use vim.fn.strcharpart to handle UTF-8 properly
+  return vim.fn.strcharpart(str_value, 0, keep_chars) .. ellipsis
 end
 
 -- Backward compatibility wrapper
@@ -182,8 +191,13 @@ end
 
 -- Convert to title case
 function M.title_case(str)
-  return str:gsub("(%a)([%w_']*)", function(first, rest)
-    return first:upper() .. rest:lower()
+  -- Handle each word (separated by spaces or underscores)
+  return str:gsub("([^%s_]*)([%s_]?)", function(word, separator)
+    if word ~= "" then
+      -- Capitalize first letter, lowercase the rest
+      word = word:sub(1,1):upper() .. word:sub(2):lower()
+    end
+    return word .. separator
   end)
 end
 
