@@ -113,19 +113,30 @@ This document outlines a comprehensive refactoring plan to clean up the Himalaya
 - ✅ Single draft manager implementation
 - ✅ Cleaner, more maintainable API
 
-### 2.2 Consolidate Email Composers
-**Files to remove**:
-- `ui/email_composer.lua` (v2 refactored)
-- `ui/email_composer_wrapper.lua` (compatibility wrapper)
+### 2.2 Consolidate Email Composers ✅ COMPLETE
+**Files removed**:
+- ✅ `ui/email_composer.lua` (old v2 refactored - replaced)
+- ✅ `ui/email_composer_wrapper.lua` (112 lines)
+- ✅ `ui/email_composer_maildir.lua` (renamed to email_composer.lua)
 
-**Files to keep**: `ui/email_composer_maildir.lua` (current implementation)
+**Files kept**: ✅ `ui/email_composer.lua` (was email_composer_maildir.lua)
 
-**Files to modify**: Update all requires to point to `email_composer_maildir`
-- `core/commands/ui.lua`
-- `ui/email_list.lua`
-- Any other files requiring email composer
+**Files updated**: 
+- ✅ `ui/main.lua` - use email_composer directly
+- ✅ `ui/init.lua` - use email_composer directly
+- ✅ `ui/email_list.lua` - use email_composer directly
+- ✅ `test/features/test_draft_saving.lua` - use email_composer directly
+- ✅ `core/config.lua` - use email_composer directly
+- ✅ `core/commands/email.lua` - use email_composer directly
+- ✅ `editor/which-key.lua` - use email_composer directly
+- ✅ Test files renamed and updated
 
-**Testing**: Verify email composition works correctly
+**Testing**: ✅ Email composition functionality preserved
+
+**Phase 2.2 Results**:
+- ✅ Single email composer implementation
+- ✅ Removed wrapper indirection (112 lines)
+- ✅ Cleaner, more direct API usage
 
 ### 2.3 Consolidate Loggers
 **Files to remove**: `core/logger.lua` (basic logger)

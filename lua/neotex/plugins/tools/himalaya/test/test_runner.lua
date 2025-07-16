@@ -68,7 +68,7 @@ function M.format_test_display_name(name)
     ['draft_commands_config'] = 'Draft Commands & Config',
     ['draft_manager_maildir'] = 'Draft Manager (Maildir)',
     ['draft_saving'] = 'Draft Saving',
-    ['email_composer_maildir'] = 'Email Composer (Maildir)',
+    ['email_composer'] = 'Email Composer',
     ['maildir_foundation'] = 'Maildir Foundation',
     ['maildir_integration'] = 'Maildir Integration',
     ['scheduler'] = 'Email Scheduler',

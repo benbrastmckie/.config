@@ -63,7 +63,7 @@ function M.setup()
     desc = 'Clean up draft when buffer is deleted'
   })
   
-  -- Note: Auto-save is handled by email_composer_maildir.lua via BufWriteCmd
+  -- Note: Auto-save is handled by email_composer.lua via BufWriteCmd
   -- No need for BufWritePost autocmd as it would create duplicate saves/notifications
 end
 

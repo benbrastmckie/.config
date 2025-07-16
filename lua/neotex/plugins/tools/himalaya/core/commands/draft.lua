@@ -383,11 +383,11 @@ function M.setup(registry)
   
   commands.HimalayaTestEmailComposer = {
     fn = function()
-      local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer_maildir')
+      local test = require('neotex.plugins.tools.himalaya.test.features.test_email_composer')
       test.run()
     end,
     opts = {
-      desc = 'Run Email Composer Maildir tests'
+      desc = 'Run Email Composer tests'
     }
   }
   

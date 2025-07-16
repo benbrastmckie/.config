@@ -625,7 +625,7 @@ function M.setup_buffer_keymaps(bufnr)
           preview.show_preview(email_id, vim.api.nvim_get_current_win(), 'draft', is_local_draft and email.local_id or nil)
         else
           -- Second return: open for editing
-          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
           -- Debug log before calling reopen_draft
           local logger = require('neotex.plugins.tools.himalaya.core.logger')
           logger.debug('About to call open_draft', {
@@ -1113,7 +1113,7 @@ function M.setup_buffer_keymaps(bufnr)
         
         if email and email._is_draft then
           -- Open draft for editing
-          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer_wrapper')
+          local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
           logger.debug('Opening draft from preview', {
             email_id = preview_state.email_id,
             has_email = email ~= nil,
