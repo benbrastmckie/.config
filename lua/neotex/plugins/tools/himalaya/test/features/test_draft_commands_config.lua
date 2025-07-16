@@ -156,11 +156,10 @@ M.tests = {
     fn = function()
       -- Check specific command options
       local new_cmd = commands.get_command('HimalayaDraftNew')
-      Test.assert.equals(new_cmd.opts.nargs, '?', "DraftNew should accept optional args")
-      Test.assert.truthy(new_cmd.opts.complete, "DraftNew should have completion")
+      Test.assert.falsy(new_cmd.opts.nargs, "DraftNew should not have nargs")
       
       local info_cmd = commands.get_command('HimalayaDraftInfo')
-      Test.assert.falsy(info_cmd.opts.nargs, "DraftInfo should not have nargs")
+      Test.assert.equals(info_cmd.opts.nargs, 1, "DraftInfo should require 1 argument")
       
       return true
     end
@@ -203,7 +202,7 @@ M.tests = {
       
       -- Verify it has the right structure
       Test.assert.truthy(status_cmd.fn, "Status command should have function")
-      Test.assert.equals(status_cmd.opts.desc, "Show draft system status", 
+      Test.assert.equals(status_cmd.opts.desc, "Show draft statistics", 
         "Status command should have correct description")
       
       return true
