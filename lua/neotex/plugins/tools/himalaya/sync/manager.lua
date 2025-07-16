@@ -312,12 +312,16 @@ function M.start_auto_sync()
   local notify = require('neotex.util.notifications')
   
   -- Debug notification
-  notify.himalaya('Starting auto-sync initialization...', notify.categories.BACKGROUND)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Starting auto-sync initialization...', notify.categories.BACKGROUND)
+  end
   
   -- Check if auto-sync is enabled
   if not config.get('ui.auto_sync_enabled', true) then
     logger.debug('Auto-sync disabled in configuration')
-    notify.himalaya('Auto-sync disabled in config', notify.categories.BACKGROUND)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya('Auto-sync disabled in config', notify.categories.BACKGROUND)
+    end
     return
   end
   
@@ -326,7 +330,9 @@ function M.start_auto_sync()
   local startup_delay = config.get('ui.auto_sync_startup_delay', 2) -- Default 2 seconds for testing
   
   logger.debug('Starting auto-sync with interval: ' .. sync_interval .. 's, startup delay: ' .. startup_delay .. 's')
-  notify.himalaya(string.format('Auto-sync: delay=%ds, interval=%dm', startup_delay, math.floor(sync_interval/60)), notify.categories.BACKGROUND)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(string.format('Auto-sync: delay=%ds, interval=%dm', startup_delay, math.floor(sync_interval/60)), notify.categories.BACKGROUND)
+  end
   
   -- Clear any existing timer
   M.stop_auto_sync()
@@ -361,7 +367,9 @@ function M.start_auto_sync()
     local current_status = state.get('sync.status', 'idle')
     if current_status ~= 'idle' then
       logger.debug('Skipping auto-sync: sync already in progress (' .. current_status .. ')')
-      notify.himalaya('Skipping auto-sync: already ' .. current_status, notify.categories.BACKGROUND)
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya('Skipping auto-sync: already ' .. current_status, notify.categories.BACKGROUND)
+      end
       return
     end
     

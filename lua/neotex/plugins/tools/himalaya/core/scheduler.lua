@@ -178,19 +178,21 @@ function M.schedule_email(email_data, account_id, options)
   -- Use existing notification system
   local notify = require('neotex.util.notifications')
   
-  -- User action notification for scheduling
-  notify.himalaya(
-    string.format(" Email scheduled for %s", 
-      item.original_delay <= 300 and M.format_duration(item.original_delay) or os.date("%Y-%m-%d %H:%M", item.scheduled_for)),
-    notify.categories.USER_ACTION,
-    {
-      id = item.id,
-      delay = item.original_delay,
-      scheduled_for = item.scheduled_for,
-      subject = email_data.subject,
-      can_undo = true
-    }
-  )
+  -- User action notification for scheduling (suppress in test mode)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format(" Email scheduled for %s", 
+        item.original_delay <= 300 and M.format_duration(item.original_delay) or os.date("%Y-%m-%d %H:%M", item.scheduled_for)),
+      notify.categories.USER_ACTION,
+      {
+        id = item.id,
+        delay = item.original_delay,
+        scheduled_for = item.scheduled_for,
+        subject = email_data.subject,
+        can_undo = true
+      }
+    )
+  end
   
   -- Emit event for other components
   events_bus.emit(event_types.EMAIL_SCHEDULED, {
@@ -241,17 +243,19 @@ function M.reschedule_email(id, new_time)
   
   -- Use unified notification system
   local notify = require('neotex.util.notifications')
-  notify.himalaya(
-    string.format(" Email rescheduled for %s", 
-      os.date("%Y-%m-%d %H:%M", new_time)),
-    notify.categories.USER_ACTION,
-    {
-      id = id,
-      old_time = item.scheduled_for,
-      new_time = new_time,
-      subject = item.email_data.subject
-    }
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format(" Email rescheduled for %s", 
+        os.date("%Y-%m-%d %H:%M", new_time)),
+      notify.categories.USER_ACTION,
+      {
+        id = id,
+        old_time = item.scheduled_for,
+        new_time = new_time,
+        subject = item.email_data.subject
+      }
+    )
+  end
   
   -- Emit event
   events_bus.emit(event_types.EMAIL_RESCHEDULED, {
@@ -286,15 +290,17 @@ function M.cancel_send(id)
   
   -- Notify user
   local notify = require('neotex.util.notifications')
-  notify.himalaya(
-    string.format(" Email cancelled: %s", 
-      item.email_data.subject or "No subject"),
-    notify.categories.USER_ACTION,
-    {
-      id = id,
-      subject = item.email_data.subject
-    }
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format(" Email cancelled: %s", 
+        item.email_data.subject or "No subject"),
+      notify.categories.USER_ACTION,
+      {
+        id = id,
+        subject = item.email_data.subject
+      }
+    )
+  end
   
   -- Emit event
   events_bus.emit(event_types.EMAIL_CANCELLED, {
@@ -493,15 +499,17 @@ function M.send_email_now(id)
     item.status = "sent"
     
     local notify = require('neotex.util.notifications')
-    notify.himalaya(
-      string.format(" Email sent: %s", 
-        item.email_data.subject or "No subject"),
-      notify.categories.USER_ACTION,
-      {
-        id = id,
-        subject = item.email_data.subject
-      }
-    )
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya(
+        string.format(" Email sent: %s", 
+          item.email_data.subject or "No subject"),
+        notify.categories.USER_ACTION,
+        {
+          id = id,
+          subject = item.email_data.subject
+        }
+      )
+    end
     
     -- Clean up draft after successful send
     M.cleanup_draft_after_send(id)
@@ -521,10 +529,12 @@ function M.send_email_now(id)
         draft_account = item.metadata.draft_account or item.account_id
       })
       
-      -- Always show this for debugging
+      -- Show this for debugging (not in test mode)
       local notify = require('neotex.util.notifications')
-      notify.himalaya(string.format('Deleting draft ID: %s after send', 
-        tostring(item.metadata.draft_id)), notify.categories.INFO)
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya(string.format('Deleting draft ID: %s after send', 
+          tostring(item.metadata.draft_id)), notify.categories.INFO)
+      end
       
       -- Delete draft from maildir with retry
       local draft_account = item.metadata.draft_account or item.account_id
@@ -545,7 +555,9 @@ function M.send_email_now(id)
           logger.info('Draft deleted from maildir successfully', {
             draft_id = item.metadata.draft_id
           })
-          notify.himalaya('Draft cleaned up successfully', notify.categories.INFO)
+          if not _G.HIMALAYA_TEST_MODE then
+            notify.himalaya('Draft cleaned up successfully', notify.categories.INFO)
+          end
           
           -- With Maildir, drafts are deleted directly via himalaya
           -- No need to track buffers since the draft file is already deleted
@@ -556,8 +568,10 @@ function M.send_email_now(id)
             folder = draft_folder,
             account = draft_account
           })
-          notify.himalaya(string.format('Failed to delete draft: %s', tostring(del_result)), 
-            notify.categories.WARNING)
+          if not _G.HIMALAYA_TEST_MODE then
+            notify.himalaya(string.format('Failed to delete draft: %s', tostring(del_result)), 
+              notify.categories.WARNING)
+          end
         end
       else
         logger.warn('Could not find draft folder for account', {
@@ -592,30 +606,34 @@ function M.send_email_now(id)
       item.scheduled_for = os.time() + (M.config.retry_backoff * item.retries)
       item.status = "scheduled"
       
-      notify.himalaya(
-        string.format(" Email send failed, retrying in %ds (attempt %d/%d)", 
-          M.config.retry_backoff * item.retries,
-          item.retries + 1,
-          M.config.max_retries),
-        notify.categories.ERROR,
-        {
-          id = id,
-          error = item.error,
-          retry_count = item.retries
-        }
-      )
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya(
+          string.format(" Email send failed, retrying in %ds (attempt %d/%d)", 
+            M.config.retry_backoff * item.retries,
+            item.retries + 1,
+            M.config.max_retries),
+          notify.categories.ERROR,
+          {
+            id = id,
+            error = item.error,
+            retry_count = item.retries
+          }
+        )
+      end
     else
       -- Max retries reached
-      notify.himalaya(
-        string.format(" Email send failed permanently: %s", 
-          item.error),
-        notify.categories.ERROR,
-        {
-          id = id,
-          error = item.error,
-          max_retries_reached = true
-        }
-      )
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya(
+          string.format(" Email send failed permanently: %s", 
+            item.error),
+          notify.categories.ERROR,
+          {
+            id = id,
+            error = item.error,
+            max_retries_reached = true
+          }
+        )
+      end
     end
     
     -- Emit failure event

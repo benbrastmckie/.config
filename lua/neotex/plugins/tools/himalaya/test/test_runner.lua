@@ -307,7 +307,9 @@ function M.execute_test_selection(selection)
   M.reset_results()
   
   -- Show start notification
-  notify.himalaya('Starting tests...', notify.categories.STATUS)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya('Starting tests...', notify.categories.STATUS)
+  end
   
   -- Run test execution in isolation
   isolation.run_isolated(function()
@@ -515,11 +517,15 @@ function M.show_results()
   
   -- Notification
   local category = M.results.failed > 0 and notify.categories.ERROR or notify.categories.STATUS
-  notify.himalaya(string.format('Tests complete: %d/%d passed', M.results.passed, M.results.total), category)
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(string.format('Tests complete: %d/%d passed', M.results.passed, M.results.total), category)
+  end
   
   -- Debug: Check if there are any background processes still running
   if M.results.passed == M.results.total then
-    notify.himalaya('All tests passed! (' .. M.results.passed .. '/' .. M.results.total .. ')', notify.categories.USER_ACTION)
+    if not _G.HIMALAYA_TEST_MODE then
+      notify.himalaya('All tests passed! (' .. M.results.passed .. '/' .. M.results.total .. ')', notify.categories.USER_ACTION)
+    end
   end
   
   -- Show detailed results in floating window
@@ -537,7 +543,9 @@ function M.show_results()
     M.cleanup_test_buffers()
     
     if M.results.passed == M.results.total then
-      notify.himalaya('Test execution completed - no background processes should be running', notify.categories.STATUS)
+      if not _G.HIMALAYA_TEST_MODE then
+        notify.himalaya('Test execution completed - no background processes should be running', notify.categories.STATUS)
+      end
     end
   end, 1000)
 end
@@ -599,7 +607,7 @@ function M.cleanup_test_buffers()
     end
   end
   
-  if cleaned_buffers > 0 then
+  if cleaned_buffers > 0 and not _G.HIMALAYA_TEST_MODE then
     notify.himalaya(string.format('Cleaned up %d test buffers', cleaned_buffers), notify.categories.STATUS)
   end
 end
