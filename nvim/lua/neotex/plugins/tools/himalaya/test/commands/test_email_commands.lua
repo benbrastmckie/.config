@@ -10,7 +10,8 @@ local tests = {}
 -- Test email list command
 table.insert(tests, framework.create_test('email_list_command', function()
   local utils = require('neotex.plugins.tools.himalaya.utils')
-  local commands = require('neotex.plugins.tools.himalaya.core.commands.email')
+  -- Note: commands module has been consolidated into email_commands.lua
+  -- This test verifies the utils module functionality
   
   -- Test that email listing function exists
   assert.truthy(type(utils.get_email_list) == "function", "get_email_list should be a function")
@@ -55,7 +56,8 @@ end))
 
 -- Test email delete command
 table.insert(tests, framework.create_test('email_delete_command', function()
-  local commands = require('neotex.plugins.tools.himalaya.core.commands.email')
+  -- Note: commands module has been consolidated into email_commands.lua
+  -- This test verifies the utils module functionality
   local utils = require('neotex.plugins.tools.himalaya.utils')
   
   -- Test that delete function exists
