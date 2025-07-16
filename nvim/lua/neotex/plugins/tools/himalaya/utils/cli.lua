@@ -84,6 +84,16 @@ function M.execute_himalaya(args, opts)
   if exit_code ~= 0 then
     local error_msg = string_utils.trim(output)
     
+    -- Debug logging for test failures
+    if _G.HIMALAYA_TEST_MODE then
+      logger.debug('Himalaya CLI error in test mode', {
+        exit_code = exit_code,
+        raw_output = output,
+        trimmed_error = error_msg,
+        cmd = cmd_string
+      })
+    end
+    
     -- Special handling for authentication errors
     if error_msg:match('401') or error_msg:match('[Uu]nauthorized') or error_msg:match('[Aa]uthentication') then
       logger.error('Authentication failed', { error = error_msg, account = account_name })
