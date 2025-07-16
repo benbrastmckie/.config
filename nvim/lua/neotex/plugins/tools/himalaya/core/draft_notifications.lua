@@ -6,29 +6,35 @@ local M = {}
 -- Dependencies
 local notify = require('neotex.util.notifications')
 
--- User-initiated actions (always shown)
+-- User-initiated actions (always shown except in test mode)
 function M.draft_saved(draft_id, subject)
-  notify.himalaya(
-    string.format("Draft saved: %s", subject or "Untitled"),
-    notify.categories.USER_ACTION,
-    { draft_id = draft_id }
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format("Draft saved: %s", subject or "Untitled"),
+      notify.categories.USER_ACTION,
+      { draft_id = draft_id }
+    )
+  end
 end
 
 function M.draft_deleted(draft_id)
-  notify.himalaya(
-    "Draft deleted",
-    notify.categories.USER_ACTION,
-    { draft_id = draft_id }
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      "Draft deleted",
+      notify.categories.USER_ACTION,
+      { draft_id = draft_id }
+    )
+  end
 end
 
 function M.draft_sent(subject, recipient)
-  notify.himalaya(
-    string.format("Email sent: %s", subject or "Untitled"),
-    notify.categories.USER_ACTION,
-    { recipient = recipient }
-  )
+  if not _G.HIMALAYA_TEST_MODE then
+    notify.himalaya(
+      string.format("Email sent: %s", subject or "Untitled"),
+      notify.categories.USER_ACTION,
+      { recipient = recipient }
+    )
+  end
 end
 
 -- Status updates (debug mode only)

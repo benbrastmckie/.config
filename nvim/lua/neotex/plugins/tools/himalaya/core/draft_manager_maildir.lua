@@ -14,6 +14,11 @@ local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
 
 -- Draft notification helper
 local function notify_draft(message, category, context)
+  -- Suppress notifications in test mode unless they're errors
+  if _G.HIMALAYA_TEST_MODE and category ~= notify.categories.ERROR then
+    return
+  end
+  
   context = vim.tbl_extend('force', context or {}, {
     module = 'himalaya',
     feature = 'drafts'
