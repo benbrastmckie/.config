@@ -15,7 +15,7 @@ function M.setup(registry)
   local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
   local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
   local search = require('neotex.plugins.tools.himalaya.core.search')
-  local templates = require('neotex.plugins.tools.himalaya.features.templates')
+  local templates = require('neotex.plugins.tools.himalaya.core.templates')
   
   -- ======================
   -- Core Email Operations
