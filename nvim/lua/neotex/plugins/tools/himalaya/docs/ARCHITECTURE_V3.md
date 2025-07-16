@@ -132,122 +132,103 @@ himalaya/
 2. **commands/** → May access any layer (coordination responsibility)
 3. **setup/** → May access any layer (initialization responsibility)
 
-## Implementation Strategy
+## Test-Driven Development Protocol
 
-### Phase 1: Foundation Refactoring 🔥 **High Impact**
+### 🧪 **Core Testing Philosophy**
+Every phase follows strict test-driven development:
 
-#### 1.1 Split Oversized Utils (Week 1)
-**Target**: Break `utils.lua` (2,046 lines) into focused modules
+1. **Pre-Phase**: Analyze and plan with test coverage in mind
+2. **Implementation**: Write tests alongside refactoring
+3. **Validation**: `:HimalayaTest all` must pass 100% before proceeding
+4. **Documentation**: Update test results and coverage metrics
+5. **User Approval**: Manual testing confirmation required
 
-**Implementation**:
-```lua
--- Step 1: Create utils/ directory structure
-mkdir -p utils/
-
--- Step 2: Extract modules
-utils.lua → utils/string.lua    # String utilities (250 lines)
-         → utils/email.lua     # Email formatting (300 lines)  
-         → utils/cli.lua       # CLI operations (350 lines)
-         → utils/file.lua      # File operations (200 lines)
-         → utils/async.lua     # Async utilities (300 lines)
-         → utils/init.lua      # Exports & common (100 lines)
-
--- Step 3: Update imports across codebase
--- Before: local utils = require('...utils')
--- After:  local utils = require('...utils') -- Still works via init.lua
---    Or:  local cli = require('...utils.cli') -- Direct access
+### 📋 **Testing Checklist Template**
+Each phase must complete:
+```markdown
+- [ ] Run `:HimalayaTest all` - baseline before changes
+- [ ] Implement refactoring with backward compatibility
+- [ ] Write new unit tests for refactored modules
+- [ ] Run `:HimalayaTest all` - must achieve 100% pass rate
+- [ ] Update integration tests if needed
+- [ ] Document any test failures and fixes
+- [ ] Commit with descriptive message
+- [ ] Request manual testing from user
+- [ ] Receive approval before next phase
 ```
 
-**Benefits**: 
-- Immediate 83% reduction in utils.lua size
-- Clear separation of concerns
-- Easier testing and maintenance
-- Backward compatibility via utils/init.lua
+## Implementation Timeline
 
-#### 1.2 Configuration Restructuring (Week 2)  
-**Target**: Break `core/config.lua` (1,204 lines) into specialized modules
+### Phase 1: Utils Refactoring (Week 1)
+**Goal**: Split `utils.lua` (2,046 lines) into focused modules
 
-**Implementation**:
-```lua
--- Step 1: Create config/ directory
-mkdir -p config/
-
--- Step 2: Extract configuration concerns
-core/config.lua → config/accounts.lua    # Account management (300 lines)
-                → config/folders.lua     # Folder mapping (200 lines)
-                → config/oauth.lua       # OAuth settings (250 lines)
-                → config/ui.lua          # UI & keybindings (250 lines)
-                → config/validation.lua  # Validation logic (300 lines)
-                → config/init.lua        # Unified interface (100 lines)
-
--- Step 3: Preserve existing API
--- config/init.lua provides backward compatibility:
-local config = {
-  accounts = require('...config.accounts'),
-  -- ... other modules
-}
-function config.get_current_account() 
-  return config.accounts.get_current()
-end
-return config
+**Structure**:
+```
+utils/
+├── init.lua       # Backward compatibility & exports (100 lines)
+├── string.lua     # String utilities (250 lines)
+├── email.lua      # Email formatting (300 lines)
+├── cli.lua        # CLI operations (350 lines)
+├── file.lua       # File operations (200 lines)
+└── async.lua      # Async utilities (300 lines)
 ```
 
-**Pragmatic Compromise**: 
-- `config/ui.lua` may contain UI function references for keybindings
-- This violates pure layering but provides essential functionality
-- Document this as intentional architectural compromise
+**New Tests Required**: ~25 unit tests across utils modules
 
-#### 1.3 UI Coordination Split (Week 3)
-**Target**: Break `ui/main.lua` (1,800 lines) into focused components
+### Phase 2: Configuration Restructuring (Week 2)
+**Goal**: Split `core/config.lua` (1,204 lines) into domain modules
 
-**Implementation**:
-```lua
--- Extract coordination logic
-ui/main.lua → ui/coordinator.lua    # Main UI coordination (350 lines)
-            → ui/session.lua        # Session & buffer mgmt (300 lines)
-            
--- Keep existing modules but trim to target sizes
-ui/email_list.lua     # Trim to 400 lines (currently 1,674)
-ui/email_preview.lua  # Trim to 350 lines (currently 888)
+**Structure**:
+```
+config/
+├── init.lua       # Unified interface (100 lines)
+├── accounts.lua   # Account management (300 lines)
+├── folders.lua    # Folder mapping (200 lines)
+├── oauth.lua      # OAuth settings (250 lines)
+├── ui.lua         # UI & keybindings (250 lines)*
+└── validation.lua # Config validation (300 lines)
 ```
 
-### Phase 2: Data Layer Organization (Week 4)
+**Pragmatic Compromise**: `config/ui.lua` contains UI dependencies (documented)  
+**New Tests Required**: ~20 unit tests for config modules
 
-#### 2.1 Create Data Directory
-**Target**: Organize data operations logically
+### Phase 3: UI Architecture Cleanup (Week 3)
+**Goal**: Split `ui/main.lua` (1,800 lines) into manageable components
 
-**Implementation**:
-```lua
--- Move data-related modules to data/
-mkdir -p data/
+**Changes**:
+- Extract `ui/coordinator.lua` (350 lines)
+- Extract `ui/session.lua` (300 lines)
+- Trim `ui/email_list.lua` to 400 lines
+- Trim `ui/email_preview.lua` to 350 lines
 
-core/draft_manager_maildir.lua → data/drafts.lua
-core/search.lua                → data/search.lua  
-core/templates.lua             → data/templates.lua
-core/scheduler.lua             → data/scheduler.lua
-core/maildir.lua               → data/maildir.lua
-# Add data/cache.lua (extracted from utils)
-# Add data/init.lua (exports)
+**New Tests Required**: ~15 unit tests for UI modules
+
+### Phase 4: Data Layer Organization (Week 4)
+**Goal**: Create `data/` directory for data operations
+
+**Structure**:
+```
+data/
+├── init.lua       # Module exports (50 lines)
+├── cache.lua      # Email caching (300 lines)
+├── drafts.lua     # Draft management (350 lines)
+├── search.lua     # Search operations (300 lines)
+├── templates.lua  # Template system (350 lines)
+├── scheduler.lua  # Email scheduling (350 lines)
+└── maildir.lua    # Maildir operations (250 lines)
 ```
 
-### Phase 3: Testing & Validation (Week 5)
+**New Tests Required**: ~30 unit tests for data modules
 
-#### 3.1 Comprehensive Testing
-```bash
-# Validate architecture compliance
-./scripts/check_dependencies.sh
+### Phase 5: Final Validation (Week 5)
+**Goal**: Complete architecture validation and documentation
 
-# Run full test suite
-:HimalayaTest all
-
-# Performance regression testing
-./scripts/performance_check.sh
-```
-
-#### 3.2 Documentation Updates
-- Update import statements throughout codebase
-- Refresh README with new structure
-- Update development documentation
+**Tasks**:
+- Run architecture compliance scripts
+- Full integration testing
+- Performance regression testing
+- Documentation updates
+- Final manual testing approval
 
 ## Development Patterns (Preserved from Current Architecture)
 
@@ -579,167 +560,16 @@ return M
 :HimalayaTest unit/config
 ```
 
-## Migration Timeline & Testing Protocol
+## Test Coverage Growth
 
-### 🧪 **Testing Requirements for Each Phase**
-
-**CRITICAL**: Each phase must follow this strict testing protocol:
-
-1. **Run Full Test Suite**: Execute `:HimalayaTest all` after each major change
-2. **Achieve 100% Pass Rate**: All existing tests must pass
-3. **Write New Tests**: Add tests for any new functionality or refactored modules
-4. **Update Documentation**: Update ARCHITECTURE_V3.md with completion status
-5. **Commit Changes**: Create atomic commits for each successful phase
-6. **Manual Testing**: Request manual testing from user before next phase
-
-### Phase 1: Utils Refactoring 🚀
-
-#### Implementation Steps
-1. Split `utils.lua` into domain modules
-2. Create backward-compatible `utils/init.lua`
-3. Update high-traffic import statements
-
-#### Testing Protocol
-```vim
-:HimalayaTest all
-```
-
-#### New Tests Required
-- `test/unit/utils/test_string.lua` - Test string utilities
-- `test/unit/utils/test_email.lua` - Test email formatting
-- `test/unit/utils/test_cli.lua` - Test CLI operations
-- `test/unit/utils/test_file.lua` - Test file operations
-- `test/unit/utils/test_async.lua` - Test async utilities
-
-#### Completion Checklist
-- [ ] All existing tests pass
-- [ ] New module tests written and passing
-- [ ] Backward compatibility verified
-- [ ] ARCHITECTURE_V3.md updated with completion status
-- [ ] Changes committed with message: "Phase 1: Utils refactoring complete"
-- [ ] Manual testing requested from user
-
-### Phase 2: Configuration Restructuring ⚙️
-
-#### Implementation Steps  
-1. Create `config/` directory structure
-2. Split configuration concerns into focused modules
-3. Preserve keybinding functionality (pragmatic compromise)
-4. Update configuration access patterns
-
-#### Testing Protocol
-```vim
-:HimalayaTest all
-```
-
-#### New Tests Required
-- `test/unit/config/test_accounts.lua` - Test account configuration
-- `test/unit/config/test_folders.lua` - Test folder mapping
-- `test/unit/config/test_oauth.lua` - Test OAuth settings
-- `test/unit/config/test_ui.lua` - Test UI configuration
-- `test/unit/config/test_validation.lua` - Test config validation
-
-#### Completion Checklist
-- [ ] All existing tests pass
-- [ ] Configuration functionality preserved
-- [ ] Keybindings still functional
-- [ ] New config tests written and passing
-- [ ] ARCHITECTURE_V3.md updated with completion status
-- [ ] Changes committed with message: "Phase 2: Configuration restructuring complete"
-- [ ] Manual testing requested from user
-
-### Phase 3: UI Architecture Cleanup 🎨
-
-#### Implementation Steps
-1. Split `ui/main.lua` into coordinator and session management
-2. Trim oversized UI modules to target sizes
-3. Preserve all UI functionality
-4. Test UI workflows thoroughly
-
-#### Testing Protocol
-```vim
-:HimalayaTest all
-```
-
-#### New Tests Required
-- `test/unit/ui/test_coordinator.lua` - Test UI coordination
-- `test/unit/ui/test_session.lua` - Test session management
-- `test/integration/test_ui_workflows.lua` - Test complete UI workflows
-
-#### Completion Checklist
-- [ ] All existing UI tests pass
-- [ ] UI functionality fully preserved
-- [ ] New UI module tests written and passing
-- [ ] All UI commands still work
-- [ ] ARCHITECTURE_V3.md updated with completion status
-- [ ] Changes committed with message: "Phase 3: UI architecture cleanup complete"
-- [ ] Manual testing requested from user
-
-### Phase 4: Data Layer Organization 🗄️
-
-#### Implementation Steps
-1. Create `data/` directory for data operations
-2. Move data-related modules from `core/`
-3. Create unified data access patterns
-4. Validate data operation integrity
-
-#### Testing Protocol
-```vim
-:HimalayaTest all
-```
-
-#### New Tests Required
-- `test/unit/data/test_cache.lua` - Test caching operations
-- `test/unit/data/test_drafts.lua` - Test draft management
-- `test/unit/data/test_search.lua` - Test search functionality
-- `test/unit/data/test_templates.lua` - Test template system
-- `test/unit/data/test_scheduler.lua` - Test email scheduling
-- `test/unit/data/test_maildir.lua` - Test Maildir operations
-
-#### Completion Checklist
-- [ ] All existing data operation tests pass
-- [ ] Data functionality fully preserved
-- [ ] New data module tests written and passing
-- [ ] All data operations verified
-- [ ] ARCHITECTURE_V3.md updated with completion status
-- [ ] Changes committed with message: "Phase 4: Data layer organization complete"
-- [ ] Manual testing requested from user
-
-### Phase 5: Final Validation & Documentation 📝
-
-#### Implementation Steps
-1. Architecture compliance validation
-2. Full integration testing
-3. Performance regression testing  
-4. Documentation updates
-
-#### Testing Protocol
-```vim
-:HimalayaTest all
-:HimalayaTest performance
-:HimalayaTest integration
-```
-
-#### Validation Scripts
-```bash
-# Run architecture compliance check
-./scripts/check_architecture.sh
-
-# Run performance regression tests
-./scripts/performance_check.sh
-
-# Validate all imports
-./scripts/validate_imports.sh
-```
-
-#### Completion Checklist
-- [ ] All tests pass (100% success rate)
-- [ ] Architecture compliance verified
-- [ ] Performance metrics acceptable
-- [ ] All documentation updated
-- [ ] ARCHITECTURE_V3.md marked as complete
-- [ ] Final commit with message: "Phase 5: Architecture V3 migration complete"
-- [ ] Final manual testing requested from user
+| Phase | Starting Tests | New Tests | Total Tests |
+|-------|----------------|-----------|-------------|
+| Current | 122 | 0 | 122 |
+| Phase 1 (Utils) | 122 | ~25 | ~147 |
+| Phase 2 (Config) | 147 | ~20 | ~167 |
+| Phase 3 (UI) | 167 | ~15 | ~182 |
+| Phase 4 (Data) | 182 | ~30 | ~212 |
+| Phase 5 (Final) | 212 | ~10 | ~222 |
 
 ## Benefits Realized
 
@@ -801,35 +631,9 @@ return M
 2. **Command Interface Standardization**: Formal command interface contracts  
 3. **Dependency Graph Visualization**: Tools to understand and optimize dependencies
 
-## Testing-Driven Migration Process
+## Success Criteria
 
-### 🔄 **Phase Workflow**
-
-```mermaid
-graph LR
-    A[Implement Phase] --> B[Run :HimalayaTest all]
-    B --> C{All Tests Pass?}
-    C -->|No| D[Fix Issues/Write Tests]
-    D --> B
-    C -->|Yes| E[Update ARCHITECTURE_V3.md]
-    E --> F[Commit Changes]
-    F --> G[Request Manual Testing]
-    G --> H{User Approves?}
-    H -->|No| D
-    H -->|Yes| I[Proceed to Next Phase]
-```
-
-### 📊 **Test Coverage Requirements**
-
-| Phase | Existing Tests | New Tests Required | Total Tests |
-|-------|---------------|-------------------|-------------|
-| Phase 1 (Utils) | 122 | ~25 | ~147 |
-| Phase 2 (Config) | 147 | ~20 | ~167 |
-| Phase 3 (UI) | 167 | ~15 | ~182 |
-| Phase 4 (Data) | 182 | ~30 | ~212 |
-| Phase 5 (Final) | 212 | ~10 | ~222 |
-
-### 🎯 **Success Criteria Per Phase**
+### 🎯 **Per-Phase Requirements**
 
 1. **100% existing test pass rate** - No regression allowed
 2. **New module test coverage** - All new modules must have tests
