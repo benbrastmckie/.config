@@ -18,10 +18,15 @@ local persistence = require("neotex.plugins.tools.himalaya.core.persistence")
 
 -- Test setup
 local function setup()
-  -- Reset scheduler state
+  -- Reset scheduler state BEFORE mocking
   scheduler.queue = {}
   scheduler.running = false
   scheduler.initialized = false
+  scheduler.timer = nil
+  
+  -- Clear module cache to ensure clean state
+  package.loaded['neotex.plugins.tools.himalaya.core.persistence'] = nil
+  local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
   
   -- Mock persistence to avoid disk I/O
   persistence.save_queue = function() return true end
@@ -38,8 +43,11 @@ local function setup()
     return true
   end
   
-  -- Initialize scheduler
+  -- Initialize scheduler with clean state
   scheduler.init()
+  
+  -- Double-check queue is empty after init
+  scheduler.queue = {}
 end
 
 local function teardown()
