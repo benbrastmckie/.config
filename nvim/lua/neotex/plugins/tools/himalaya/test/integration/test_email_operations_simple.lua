@@ -1,6 +1,16 @@
 -- Simplified integration tests for email operations that match actual functionality
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Email Operations Simple Integration Tests",
+  description = "Simplified integration tests for email operations that match actual functionality",
+  count = 5,
+  category = "integration",
+  tags = {"email", "operations", "integration", "simple"},
+  estimated_duration_ms = 1500
+}
+
 -- Test infrastructure
 local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
@@ -171,6 +181,18 @@ function M.run()
   M.teardown()
   
   return test_results
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Email list initialization",
+    "Email fetching",
+    "Email display",
+    "Email state management",
+    "Error handling"
+  }
 end
 
 return M

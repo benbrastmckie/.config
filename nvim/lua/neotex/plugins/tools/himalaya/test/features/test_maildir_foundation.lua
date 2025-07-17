@@ -3,6 +3,16 @@
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Maildir Foundation Tests",
+  description = "Tests for the core Maildir module functionality",
+  count = 14,
+  category = "feature",
+  tags = {"maildir", "foundation", "filesystem", "core"},
+  estimated_duration_ms = 1500
+}
+
 -- Dependencies
 local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
@@ -579,6 +589,27 @@ function M.run()
     total = passed + failed,
     details = details,
     success = failed == 0
+  }
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Maildir structure creation",
+    "Path resolution",
+    "Directory operations",
+    "File operations",
+    "Draft creation",
+    "Draft listing",
+    "Draft deletion",
+    "Error handling",
+    "Permissions",
+    "Cleanup",
+    "Concurrent access",
+    "Edge cases",
+    "Performance",
+    "Integration"
   }
 end
 

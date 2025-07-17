@@ -3,6 +3,16 @@
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Maildir Integration Tests",
+  description = "Comprehensive tests for the complete Maildir draft system",
+  count = 32,
+  category = "integration",
+  tags = {"maildir", "integration", "drafts", "comprehensive"},
+  estimated_duration_ms = 5000
+}
+
 -- Dependencies
 local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
 local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
@@ -421,6 +431,17 @@ function M.report()
   end
   
   return table.concat(report, '\n')
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Foundation Tests (8 tests)",
+    "Draft Manager Tests (8 tests)",
+    "Composer Tests (8 tests)", 
+    "Integration Tests (8 tests)"
+  }
 end
 
 return M

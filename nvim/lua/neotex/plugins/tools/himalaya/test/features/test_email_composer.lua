@@ -3,6 +3,16 @@
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Email Composer Tests",
+  description = "Tests for email composer functionality with Maildir integration",
+  count = 10,
+  category = "feature",
+  tags = {"composer", "ui", "maildir", "email-editing"},
+  estimated_duration_ms = 1000
+}
+
 -- Dependencies
 local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
 local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
@@ -570,6 +580,23 @@ function M.run()
     failed = failed,
     errors = errors,
     success = failed == 0
+  }
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Create compose buffer",
+    "Save draft",
+    "Reply to email",
+    "Reply all",
+    "Forward email",
+    "Open existing draft",
+    "Edge case empty headers",
+    "Edge case invalid account",
+    "Edge case malformed email",
+    "Performance multiple buffers"
   }
 end
 
