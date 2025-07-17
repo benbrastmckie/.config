@@ -389,7 +389,7 @@ function M.setup(registry)
   
   commands.HimalayaClearScheduled = {
     fn = function()
-      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
       local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
       local notify = require('neotex.util.notifications')
       
@@ -483,7 +483,7 @@ function M.setup(registry)
   
   commands.HimalayaMigrateDraftsToMaildir = {
     fn = function()
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+      local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
       local notify = require('neotex.util.notifications')
       
       notify.himalaya('Starting draft migration...', notify.categories.STATUS)
@@ -509,7 +509,7 @@ function M.setup(registry)
   
   commands.HimalayaDraftMigrationVerify = {
     fn = function()
-      local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+      local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
       local float = require('neotex.plugins.tools.himalaya.ui.float')
       
       local stats = draft_manager.get_stats()

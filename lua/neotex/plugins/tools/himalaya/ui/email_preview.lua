@@ -4,12 +4,12 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local draft_notifications = require('neotex.plugins.tools.himalaya.core.draft_notifications')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
-local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 
 -- Module state
 local preview_state = {
@@ -272,7 +272,7 @@ function M.render_preview(email, buf)
     
     -- Add scheduled email header if applicable
     if email._is_scheduled and email._scheduled_for then
-      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
       local time_left = email._scheduled_for - os.time()
       table.insert(lines, "Status:  Scheduled")
       table.insert(lines, "Send in: " .. scheduler.format_countdown(time_left))

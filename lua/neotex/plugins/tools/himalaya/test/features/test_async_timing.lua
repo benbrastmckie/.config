@@ -5,7 +5,7 @@ local M = {}
 local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
 -- Core modules
-local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
 local sync_coordinator = require('neotex.plugins.tools.himalaya.sync.coordinator')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')

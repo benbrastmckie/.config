@@ -58,7 +58,30 @@ function M.parse_filename(filename)
   local timestamp, hrtime, unique, hostname, info_and_flags = filename:match(pattern)
   
   if not timestamp then
-    return nil
+    -- Try simpler pattern: timestamp.unique.hostname[:2,flags]
+    pattern = "^(%d+)%.([^%.]+)%.([^:,]+)(.*)$"
+    timestamp, unique, hostname, info_and_flags = filename:match(pattern)
+    if timestamp then
+      hrtime = unique  -- Use unique as hrtime for backward compatibility
+      info_and_flags = info_and_flags:gsub("^:", "")  -- Remove leading colon if present
+      if info_and_flags == "" then
+        info_and_flags = "2,"  -- Default to empty flags
+      end
+    else
+      -- Try even simpler pattern: timestamp.unique[:2,flags]
+      pattern = "^(%d+)%.([^:,]+)(.*)$"
+      timestamp, unique, info_and_flags = filename:match(pattern)
+      if timestamp then
+        hrtime = unique
+        hostname = "localhost"  -- Default hostname
+        info_and_flags = info_and_flags:gsub("^:", "")  -- Remove leading colon if present
+        if info_and_flags == "" then
+          info_and_flags = "2,"  -- Default to empty flags
+        end
+      else
+        return nil
+      end
+    end
   end
   
   -- Parse info and flags section - handle both ":2," and direct format
@@ -87,11 +110,13 @@ function M.parse_filename(filename)
     uid = tonumber(info:match("U=(%d+)"))
   end
   
-  -- Parse flags into table
+  -- Parse flags into table (both array and hash for compatibility)
   local flag_table = {}
   if flags and flags ~= "" then
     for i = 1, #flags do
-      flag_table[flags:sub(i, i)] = true
+      local flag = flags:sub(i, i)
+      flag_table[flag] = true  -- Hash access
+      table.insert(flag_table, flag)  -- Array access for vim.tbl_contains
     end
   end
   
@@ -303,7 +328,7 @@ end
 function M.update_size(filepath)
   local stat = vim.loop.fs_stat(filepath)
   if not stat then
-    return 0
+    return filepath  -- Return unchanged path if can't stat
   end
   
   local size = stat.size
@@ -313,7 +338,7 @@ function M.update_size(filepath)
   -- Parse current filename
   local metadata = M.parse_filename(filename)
   if not metadata then
-    return size
+    return filepath  -- Return unchanged path if can't parse
   end
   
   -- Update size in filename if different
@@ -355,10 +380,11 @@ function M.update_size(filepath)
         new = new_filename,
         size = size
       })
+      return new_filepath
     end
   end
   
-  return size
+  return filepath
 end
 
 -- Check if a path is a valid Maildir directory

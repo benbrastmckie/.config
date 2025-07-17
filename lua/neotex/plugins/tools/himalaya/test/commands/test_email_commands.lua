@@ -26,7 +26,7 @@ end))
 
 -- Test email send command
 table.insert(tests, framework.create_test('email_send_command', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   
   -- Create test email
   local email_data = {

@@ -270,7 +270,7 @@ end
 
 -- Read draft from maildir
 function M.read_draft_from_maildir(account, email_id)
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+  local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
   
   -- Extract filename from draft ID
   local filename = email_id:match('^draft_(.+)$')
@@ -370,7 +370,7 @@ end
 
 -- Save draft using maildir
 function M.save_draft(account, folder, email_data)
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+  local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
   
   -- Ensure we have a draft folder
   folder = folder or M.find_draft_folder(account)
@@ -410,7 +410,7 @@ end
 function M.delete_email(account, folder, email_id)
   -- For draft IDs, use draft manager
   if email_id and email_id:match('^draft_') then
-    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+    local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
     return draft_manager.delete_draft(account, folder, email_id)
   end
   

@@ -187,29 +187,116 @@ function M.run_with_picker(filter)
   local items = {}
   
   -- Count total tests
-  local total_tests = 0
-  for _, tests in pairs(M.tests) do
-    total_tests = total_tests + #tests
-  end
+  local total_tests = M.count_all_test_functions()
   
-  -- Add main options
-  table.insert(items, { text = string.format('Run All Tests (%d total)', total_tests), value = 'all', icon = '🚀' })
+  -- Add main options  
+  table.insert(items, { text = string.format('Run All Tests (%d tests)', total_tests), value = 'all', icon = '🚀' })
   table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
   
-  -- Add test suites with better descriptions
-  local suites = {
-    { category = 'commands', name = 'Command Tests', desc = 'Core command functionality', icon = '📝' },
-    { category = 'features', name = 'Feature Tests', desc = 'Email, drafts, scheduler', icon = '✨' },
-    { category = 'integration', name = 'Integration Tests', desc = 'End-to-end workflows', icon = '🔗' },
-    { category = 'performance', name = 'Performance Tests', desc = 'Speed and efficiency', icon = '⚡' },
-    { category = 'unit', name = 'Unit Tests', desc = 'Module-level testing', icon = '🧪' },
+  -- Create meaningful test categories
+  local categories = {
+    {
+      name = 'Core Data & Storage',
+      icon = '💾',
+      desc = 'Cache, drafts, maildir, search, templates',
+      tests = {
+        { category = 'unit', pattern = 'test_cache' },
+        { category = 'unit', pattern = 'test_drafts' },
+        { category = 'unit', pattern = 'test_maildir' },
+        { category = 'unit', pattern = 'test_search' },
+        { category = 'unit', pattern = 'test_templates' },
+        { category = 'features', pattern = 'test_maildir_foundation' },
+        { category = 'features', pattern = 'test_maildir_integration' },
+      }
+    },
+    {
+      name = 'Email Operations',
+      icon = '📧',
+      desc = 'Composer, scheduler, commands',
+      tests = {
+        { category = 'unit', pattern = 'test_scheduler' },
+        { category = 'features', pattern = 'test_email_composer' },
+        { category = 'features', pattern = 'test_scheduler' },
+        { category = 'features', pattern = 'test_draft_manager_maildir' },
+        { category = 'commands', pattern = 'test_email_commands' },
+        { category = 'commands', pattern = 'test_basic_commands' },
+      }
+    },
+    {
+      name = 'UI & Interface',
+      icon = '🖥️',
+      desc = 'UI components, session management',
+      tests = {
+        { category = 'unit', pattern = 'test_coordinator' },
+        { category = 'unit', pattern = 'test_session' },
+        { category = 'features', pattern = 'test_draft_commands_config' },
+        { category = 'features', pattern = 'test_async_timing' },
+      }
+    },
+    {
+      name = 'Workflows & Integration',
+      icon = '🔗',
+      desc = 'End-to-end workflows and integration tests',
+      tests = {
+        { category = 'integration', pattern = 'test_draft_simple' },
+        { category = 'integration', pattern = 'test_full_workflow' },
+        { category = 'integration', pattern = 'test_email_operations_simple' },
+        { category = 'integration', pattern = 'test_sync_simple' },
+        { category = 'features', pattern = 'test_draft_saving' },
+      }
+    }
   }
   
-  for _, suite in ipairs(suites) do
-    if M.tests[suite.category] and #M.tests[suite.category] > 0 then
-      local count = #M.tests[suite.category]
+  -- Add meaningful categories
+  for _, cat in ipairs(categories) do
+    local total_count = 0
+    for _, test_spec in ipairs(cat.tests) do
+      if M.tests[test_spec.category] then
+        for _, test_info in ipairs(M.tests[test_spec.category]) do
+          if test_info.name:match(test_spec.pattern) then
+            local success, test_module = pcall(require, test_info.module_path)
+            if success then
+              if test_module.tests and type(test_module.tests) == 'table' then
+                for _, _ in pairs(test_module.tests) do
+                  total_count = total_count + 1
+                end
+              else
+                total_count = total_count + M.estimate_test_count(test_module, test_info.name)
+              end
+            else
+              total_count = total_count + 1
+            end
+          end
+        end
+      end
+    end
+    
+    if total_count > 0 then
       table.insert(items, {
-        text = string.format('%s (%d tests) • %s', suite.name, count, suite.desc),
+        text = string.format('%s (%d tests) • %s', cat.name, total_count, cat.desc),
+        value = cat,
+        icon = cat.icon
+      })
+    end
+  end
+  
+  -- Add original categories for fallback
+  table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
+  table.insert(items, { text = 'Original Categories:', value = nil, icon = '' })
+  
+  local original_suites = {
+    { category = 'commands', name = 'Commands', icon = '📝' },
+    { category = 'features', name = 'Features', icon = '✨' },
+    { category = 'integration', name = 'Integration', icon = '🔗' },
+    { category = 'performance', name = 'Performance', icon = '⚡' },
+    { category = 'unit', name = 'Unit', icon = '🧪' },
+  }
+  
+  for _, suite in ipairs(original_suites) do
+    if M.tests[suite.category] and #M.tests[suite.category] > 0 then
+      local count = M.count_test_functions_in_category(suite.category)
+      table.insert(items, {
+        text = string.format('%s (%d tests)', suite.name, count),
         value = suite.category,
         icon = suite.icon
       })
@@ -311,6 +398,9 @@ function M.execute_test_selection(selection)
     notify.himalaya('Starting tests...', notify.categories.STATUS)
   end
   
+  -- Set flag to suppress print output from unit tests
+  _G.HIMALAYA_TEST_RUNNER_ACTIVE = true
+  
   -- Run test execution in isolation
   isolation.run_isolated(function()
     local start_time = vim.loop.hrtime()
@@ -319,6 +409,9 @@ function M.execute_test_selection(selection)
       M.run_all_tests()
     elseif type(selection) == 'string' then
       M.run_category_tests(selection)
+    elseif type(selection) == 'table' and selection.tests then
+      -- Running a custom category
+      M.run_custom_category(selection)
     else
       M.run_single_test(selection)
     end
@@ -326,6 +419,9 @@ function M.execute_test_selection(selection)
     -- Calculate duration
     M.results.duration = (vim.loop.hrtime() - start_time) / 1e6
   end)
+  
+  -- Clear the flag
+  _G.HIMALAYA_TEST_RUNNER_ACTIVE = false
   
   -- Show results after isolation is complete
   M.show_results()
@@ -336,6 +432,19 @@ function M.run_all_tests()
   for category, tests in pairs(M.tests) do
     for _, test in ipairs(tests) do
       M.run_test(test)
+    end
+  end
+end
+
+-- Run tests for a custom category
+function M.run_custom_category(category_def)
+  for _, test_spec in ipairs(category_def.tests) do
+    if M.tests[test_spec.category] then
+      for _, test_info in ipairs(M.tests[test_spec.category]) do
+        if test_info.name:match(test_spec.pattern) then
+          M.run_test(test_info)
+        end
+      end
     end
   end
 end
@@ -731,6 +840,70 @@ function M.get_test_completions()
   end
   
   return completions
+end
+
+-- Count test functions in a specific category
+function M.count_test_functions_in_category(category)
+  local count = 0
+  
+  if not M.tests[category] then
+    return 0
+  end
+  
+  for _, test_info in ipairs(M.tests[category]) do
+    local success, test_module = pcall(require, test_info.module_path)
+    if success then
+      if test_module.tests and type(test_module.tests) == 'table' then
+        -- Unit tests: count individual test functions
+        for _, _ in pairs(test_module.tests) do
+          count = count + 1
+        end
+      elseif test_module.run and type(test_module.run) == 'function' then
+        -- Feature/integration tests: inspect module structure to estimate
+        local estimated_count = M.estimate_test_count(test_module, test_info.name)
+        count = count + estimated_count
+      else
+        -- Fallback: assume 1 test per file
+        count = count + 1
+      end
+    else
+      -- If module can't be loaded, assume 1 test
+      count = count + 1
+    end
+  end
+  
+  return count
+end
+
+-- Estimate test count for non-unit test modules
+function M.estimate_test_count(test_module, test_name)
+  -- Look for test functions in the module
+  local function_count = 0
+  for key, value in pairs(test_module) do
+    if type(value) == 'function' and key:match('^test_') then
+      function_count = function_count + 1
+    end
+  end
+  
+  -- If we found test functions, use that count
+  if function_count > 0 then
+    return function_count
+  end
+  
+  -- For now, just return 1 as fallback
+  -- TODO: Implement proper test counting that doesn't run tests
+  return 1
+end
+
+-- Count all test functions across all categories
+function M.count_all_test_functions()
+  local total = 0
+  
+  for category, _ in pairs(M.tests) do
+    total = total + M.count_test_functions_in_category(category)
+  end
+  
+  return total
 end
 
 return M
