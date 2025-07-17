@@ -156,8 +156,26 @@ end))
 
 -- Test scheduler persistence
 table.insert(tests, framework.create_test('scheduler_persistence', function()
+  -- Clear module cache to ensure test mode is picked up
+  package.loaded['neotex.plugins.tools.himalaya.core.persistence'] = nil
+  
   local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
+  
+  -- Clear test persistence file to ensure clean state
+  if _G.HIMALAYA_TEST_MODE then
+    vim.fn.delete('/tmp/himalaya_test_scheduled_emails.json')
+    vim.fn.delete('/tmp/himalaya_test_backups/', 'rf')
+  end
+  
+  -- Force persistence module to update its config for test mode
+  persistence.config = persistence.get_config()
+  
+  -- Debug: Print the queue file path
+  if not _G.HIMALAYA_TEST_MODE then
+    error("Test mode not set!")
+  end
+  -- print("Queue file: " .. persistence.get_config().queue_file)
   
   -- Save original state
   local original_queue = vim.deepcopy(scheduler.queue)
@@ -178,13 +196,53 @@ table.insert(tests, framework.create_test('scheduler_persistence', function()
   end
   
   -- Test persistence functions directly
+  -- First, ensure we can write to /tmp
+  local test_file = "/tmp/himalaya_test_write_check.txt"
+  vim.fn.writefile({"test"}, test_file)
+  assert.truthy(vim.fn.filereadable(test_file) == 1, "Should be able to write to /tmp")
+  vim.fn.delete(test_file)
+  
   -- Save test queue
   local save_result = persistence.save_queue(test_queue)
+  if not save_result then
+    -- Try to get more info about why save failed
+    local valid, err = persistence.validate_queue_data({
+      version = "1.0",
+      queue = test_queue,
+      statistics = {}
+    })
+    if not valid then
+      error("Queue validation failed: " .. err)
+    else
+      error("Save failed but validation passed")
+    end
+  end
   assert.truthy(save_result, "Save should succeed")
+  
+  -- Check if file was created
+  local queue_file = persistence.get_config().queue_file
+  assert.truthy(vim.fn.filereadable(queue_file) == 1, 
+    "Queue file should exist at: " .. queue_file)
   
   -- Load queue
   local loaded_queue = persistence.load_queue()
   assert.truthy(loaded_queue, "Load should succeed")
+  
+  -- Debug: Check what's actually in the loaded queue
+  local loaded_count = 0
+  for k, v in pairs(loaded_queue) do
+    loaded_count = loaded_count + 1
+  end
+  
+  -- Verify we got back the same number of items
+  local test_count = 0
+  for _, _ in pairs(test_queue) do
+    test_count = test_count + 1
+  end
+  
+  if loaded_count ~= test_count then
+    error(string.format("Queue size mismatch: saved %d, loaded %d", test_count, loaded_count))
+  end
   
   -- Verify all test emails are in loaded queue
   for id, _ in pairs(test_queue) do
