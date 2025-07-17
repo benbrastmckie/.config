@@ -91,7 +91,8 @@ function M.log(level, msg, context)
   end
   
   -- Log technical details to :messages for debugging (only when context exists)
-  if context and (level == M.levels.DEBUG or notify.config.modules.himalaya.debug_mode) then
+  -- Skip echo during test mode to avoid console output
+  if context and not _G.HIMALAYA_TEST_MODE and (level == M.levels.DEBUG or notify.config.modules.himalaya.debug_mode) then
     local formatted = format_message(msg, context, level)
     vim.api.nvim_echo({{formatted, "Comment"}}, true, {})
   end
