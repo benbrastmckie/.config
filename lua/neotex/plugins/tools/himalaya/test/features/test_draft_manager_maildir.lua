@@ -157,13 +157,19 @@ function M.test_list_drafts()
   -- Clear existing drafts from previous tests
   local draft_dir = M.test_dir .. '/TestAccount/.Drafts'
   if vim.fn.isdirectory(draft_dir) == 1 then
+    -- Get all existing drafts and delete them
+    local existing_drafts = draft_manager.list('TestAccount')
+    for _, draft in ipairs(existing_drafts) do
+      draft_manager.delete(draft.id, 'TestAccount')
+    end
     -- Remove all files in maildir subdirectories
     for _, subdir in ipairs({'new', 'cur', 'tmp'}) do
       local path = draft_dir .. '/' .. subdir
       if vim.fn.isdirectory(path) == 1 then
-        local files = vim.fn.readdir(path)
+        -- Use glob to get all files
+        local files = vim.fn.glob(path .. '/*', true, true)
         for _, file in ipairs(files) do
-          vim.fn.delete(path .. '/' .. file)
+          vim.fn.delete(file)
         end
       end
     end
@@ -171,6 +177,7 @@ function M.test_list_drafts()
   
   -- Create multiple drafts
   local draft_count = 3
+  local created_count = 0
   for i = 1, draft_count do
     local buf = draft_manager.create('TestAccount', {
       subject = 'Draft ' .. i,
@@ -178,8 +185,21 @@ function M.test_list_drafts()
     })
     if buf then
       table.insert(M.test_buffers, buf)
-      draft_manager.save(buf)
+      local saved = draft_manager.save(buf)
+      if saved then
+        created_count = created_count + 1
+      end
     end
+  end
+  
+  -- Verify all drafts were created
+  if created_count ~= draft_count then
+    report_test(test_name, false, string.format(
+      'Failed to create all drafts: created %d of %d',
+      created_count,
+      draft_count
+    ))
+    return false
   end
   
   -- List drafts
