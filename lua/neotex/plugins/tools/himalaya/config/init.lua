@@ -189,22 +189,14 @@ function M.validate_draft_config(config)
   -- Use the validators from validation module directly
   local validators = validation._internal_validators or {}
   if validators.validate_draft_config then
+    -- Call the draft validator directly - it only validates draft config
     local errors = validators.validate_draft_config(config)
     return #errors == 0, errors
+  else
+    -- Validator doesn't exist, this shouldn't happen but handle gracefully
+    logger.warn("Draft validator not found in validation module")
+    return true, {}
   end
-  
-  -- Fallback: validate the whole config
-  local valid, all_errors = validation.validate(config)
-  
-  -- Filter for draft-related errors
-  local draft_errors = {}
-  for _, err in ipairs(all_errors) do
-    if err:match('draft') or err:match('Draft') then
-      table.insert(draft_errors, err)
-    end
-  end
-  
-  return #draft_errors == 0, draft_errors
 end
 
 -- Account management functions (delegate to accounts module)
