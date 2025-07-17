@@ -228,7 +228,9 @@ function validators.validate_ui(config)
 end
 
 -- Main validation function
-function M.validate(config)
+function M.validate(config, options)
+  options = options or {}
+  local is_test_validation = options.test_validation or false
   local all_errors = {}
   
   -- Run all validators
@@ -249,20 +251,23 @@ function M.validate(config)
   
   -- Log validation results
   if #all_errors > 0 then
-    logger.error('Configuration validation failed', { 
-      error_count = #all_errors,
-      errors = all_errors
-    })
-    
-    -- Show user notification for critical errors (not in test mode)
-    if not _G.HIMALAYA_TEST_MODE then
+    -- Skip logging for test validations or during test mode
+    if not is_test_validation and not _G.HIMALAYA_TEST_MODE then
+      logger.error('Configuration validation failed', { 
+        error_count = #all_errors,
+        errors = all_errors
+      })
+      
       notify.himalaya(
         string.format('Configuration errors: %d issues found', #all_errors),
         notify.categories.ERROR
       )
     end
   else
-    logger.info('Configuration validation passed')
+    -- Also skip success logging for test validations or in test mode
+    if not is_test_validation and not _G.HIMALAYA_TEST_MODE then
+      logger.info('Configuration validation passed')
+    end
   end
   
   return #all_errors == 0, all_errors
