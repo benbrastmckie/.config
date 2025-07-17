@@ -19,8 +19,14 @@ local module_state = {
 
 -- Initialize session module
 function M.init(config)
-  if module_state.initialized then
+  -- Allow re-initialization for tests
+  if module_state.initialized and not _G.HIMALAYA_TEST_MODE then
     return
+  end
+  
+  -- Reset state for test mode
+  if _G.HIMALAYA_TEST_MODE then
+    module_state.auto_restore_enabled = false
   end
   
   -- Set default session file
@@ -63,6 +69,13 @@ function M.save_session()
   -- Write session data to file
   local ok, err = pcall(function()
     local json = vim.fn.json_encode(session_data)
+    
+    -- Ensure directory exists
+    local dir = vim.fn.fnamemodify(module_state.session_file, ':h')
+    if vim.fn.isdirectory(dir) == 0 then
+      vim.fn.mkdir(dir, 'p')
+    end
+    
     local file = io.open(module_state.session_file, 'w')
     if file then
       file:write(json)
@@ -185,8 +198,8 @@ end
 
 -- Get session info
 function M.get_session_info()
-  if vim.fn.filereadable(module_state.session_file) == 0 then
-    return nil
+  if not module_state.session_file or vim.fn.filereadable(module_state.session_file) == 0 then
+    return { exists = false }
   end
   
   local ok, session_data = pcall(function()

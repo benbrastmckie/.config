@@ -18,6 +18,9 @@ end
 function M.test_session_init_with_config()
   _G.HIMALAYA_TEST_MODE = true
   
+  -- Clear any existing module state
+  package.loaded['neotex.plugins.tools.himalaya.ui.session'] = nil
+  
   local session = require('neotex.plugins.tools.himalaya.ui.session')
   
   local test_config = {
