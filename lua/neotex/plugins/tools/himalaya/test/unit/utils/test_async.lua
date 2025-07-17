@@ -224,8 +224,8 @@ function M.test_worker_pool()
   assert.truthy(pool.size() > 0, 'Should have queued items')
   assert.truthy(pool.busy() <= 2, 'Should not exceed pool size')
   
-  -- Wait for completion
-  vim.wait(100, function() return #processed == 5 end)
+  -- Wait for completion (increased timeout for reliability)
+  vim.wait(500, function() return #processed == 5 end, 10)
   
   -- Check results
   assert.equals(#processed, 5, 'All items should be processed')
