@@ -193,6 +193,13 @@ M.tests = {
       local config_module = require('neotex.plugins.tools.himalaya.core.config')
       
       -- Set a test configuration
+      -- Note: confirm_delete is under drafts.ui in the config
+      if not config_module.config.drafts then
+        config_module.config.drafts = {}
+      end
+      if not config_module.config.drafts.ui then
+        config_module.config.drafts.ui = {}
+      end
       config_module.config.drafts.ui.confirm_delete = false
       
       -- The delete command should check this config
