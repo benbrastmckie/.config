@@ -261,7 +261,7 @@ function M.run_with_picker(filter)
                   total_count = total_count + 1
                 end
               else
-                total_count = total_count + M.estimate_test_count(test_module, test_info.name)
+                total_count = total_count + 1
               end
             else
               total_count = total_count + 1
@@ -476,6 +476,16 @@ function M.run_test(test_info)
   end
   
   if ok and test_module then
+    -- Direct metadata validation - no adapters
+    if not test_module.test_metadata then
+      -- TODO: Remove this warning after migration complete
+      local notify = require('neotex.util.notifications')
+      notify.himalaya(
+        string.format("Test %s missing metadata - needs migration", test_info.name),
+        notify.categories.WARNING
+      )
+    end
+    
     -- Setup test environment
     if test_module.setup then
       pcall(test_module.setup)
@@ -512,9 +522,27 @@ function M.run_test(test_info)
       
       if success and type(result) == 'table' then
         -- Module returned aggregate results
-        M.results.total = M.results.total + (result.total or test_count)
-        M.results.passed = M.results.passed + (result.passed or test_passed)
-        M.results.failed = M.results.failed + (result.failed or test_failed)
+        local expected_count = test_module.test_metadata and test_module.test_metadata.count or test_count
+        local total = result.total or expected_count
+        local passed = result.passed or test_passed
+        local failed = result.failed or test_failed
+        
+        -- Validate counts match metadata
+        if test_module.test_metadata and total ~= expected_count then
+          if not _G.HIMALAYA_TEST_MODE then
+            local notify = require('neotex.util.notifications')
+            notify.himalaya(
+              string.format("Test count mismatch in %s: metadata says %d, execution says %d",
+                test_info.name, expected_count, total),
+              notify.categories.ERROR
+            )
+          end
+        end
+        
+        -- Update results
+        M.results.total = M.results.total + total
+        M.results.passed = M.results.passed + passed
+        M.results.failed = M.results.failed + failed
         
         -- Add errors
         if result.errors then
@@ -853,21 +881,22 @@ function M.count_test_functions_in_category(category)
   for _, test_info in ipairs(M.tests[category]) do
     local success, test_module = pcall(require, test_info.module_path)
     if success then
-      if test_module.tests and type(test_module.tests) == 'table' then
-        -- Unit tests: count individual test functions
-        for _, _ in pairs(test_module.tests) do
+      -- Direct metadata access - no adapters
+      if test_module.test_metadata and test_module.test_metadata.count then
+        count = count + test_module.test_metadata.count
+      else
+        -- Temporary fallback during migration
+        -- TODO: Remove after all tests have metadata
+        if test_module.tests and type(test_module.tests) == 'table' then
+          for _, _ in pairs(test_module.tests) do
+            count = count + 1
+          end
+        else
           count = count + 1
         end
-      elseif test_module.run and type(test_module.run) == 'function' then
-        -- Feature/integration tests: inspect module structure to estimate
-        local estimated_count = M.estimate_test_count(test_module, test_info.name)
-        count = count + estimated_count
-      else
-        -- Fallback: assume 1 test per file
-        count = count + 1
       end
     else
-      -- If module can't be loaded, assume 1 test
+      -- Module loading failed
       count = count + 1
     end
   end
@@ -875,32 +904,34 @@ function M.count_test_functions_in_category(category)
   return count
 end
 
--- Estimate test count for non-unit test modules
-function M.estimate_test_count(test_module, test_name)
-  -- Look for test functions in the module
-  local function_count = 0
-  for key, value in pairs(test_module) do
-    if type(value) == 'function' and key:match('^test_') then
-      function_count = function_count + 1
+-- Remove the estimate_test_count function (no longer needed)
+
+-- Enhanced count_all_test_functions with validation
+function M.count_all_test_functions()
+  local total = 0
+  local validation_errors = {}
+  
+  for category, _ in pairs(M.tests) do
+    local category_count = M.count_test_functions_in_category(category)
+    total = total + category_count
+    
+    -- Optional: Add validation to catch discrepancies
+    if M.config.validate_counts then
+      local actual_count = M.validate_category_count(category)
+      if actual_count ~= category_count then
+        table.insert(validation_errors, {
+          category = category,
+          expected = category_count,
+          actual = actual_count
+        })
+      end
     end
   end
   
-  -- If we found test functions, use that count
-  if function_count > 0 then
-    return function_count
-  end
-  
-  -- For now, just return 1 as fallback
-  -- TODO: Implement proper test counting that doesn't run tests
-  return 1
-end
-
--- Count all test functions across all categories
-function M.count_all_test_functions()
-  local total = 0
-  
-  for category, _ in pairs(M.tests) do
-    total = total + M.count_test_functions_in_category(category)
+  -- Report validation errors if any
+  if #validation_errors > 0 and not _G.HIMALAYA_TEST_MODE then
+    local notify = require('neotex.util.notifications')
+    notify.himalaya("Test count validation failed", notify.categories.ERROR)
   end
   
   return total

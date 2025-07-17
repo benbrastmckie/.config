@@ -32,6 +32,9 @@ local function setup()
       { name = "TestAccount" }
     }
   }
+  
+  -- Initialize draft manager
+  drafts.setup()
 end
 
 local function teardown()

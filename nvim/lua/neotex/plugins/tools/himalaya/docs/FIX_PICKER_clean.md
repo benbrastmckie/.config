@@ -151,26 +151,18 @@ Following GUIDELINES.md requirements, each phase MUST achieve 100% test pass rat
 
 Each phase follows the structured approach from GUIDELINES.md:
 
-### Phase 1: Core Infrastructure (Week 1) ✅ COMPLETED
+### Phase 1: Core Infrastructure (Week 1)
 
 **Pre-Phase Analysis**:
-- [x] Analyze test runner discovery and counting mechanisms
-- [x] Identify redundant counting logic that can be consolidated
-- [x] Document current test execution patterns
-- [x] Plan metadata integration without breaking existing tests
+- [ ] Analyze test runner discovery and counting mechanisms
+- [ ] Identify redundant counting logic that can be consolidated
+- [ ] Document current test execution patterns
+- [ ] Plan metadata integration without breaking existing tests
 
 **Implementation Goals**:
-- [x] Create test metadata framework without technical debt
-- [x] Update test runner to use metadata directly
-- [x] Add temporary fallback for unmigrated tests
-
-**Progress Update (2025-07-17)**:
-- Created `test/utils/test_metadata.lua` with validation and interface creation
-- Updated `test_runner.lua` to check for metadata first with fallback
-- Removed obsolete `estimate_test_count` function
-- All tests running with 99.6% pass rate (260/261 passing)
-- Metadata warnings displayed for all unmigrated tests
-- Fixed draft test issues during implementation
+- Create test metadata framework without technical debt
+- Update test runner to use metadata directly
+- Begin direct migration of test files
 
 #### 1.1 Create Test Metadata Framework
 
@@ -540,11 +532,11 @@ function M.run_with_picker(filter)
   table.insert(items, { 
     text = all_tests_text, 
     value = 'all', 
-    icon = '🚀',
+    icon = '💾',
     metadata = validation_info
   })
   
-  table.insert(items, { text = '-------------------------', value = nil, icon = '' })
+  table.insert(items, { text = '                         ', value = nil, icon = '' })
   
   -- Create enhanced categories with metadata
   local categories = M.build_enhanced_categories()
@@ -871,27 +863,27 @@ end, {
 **Test Requirement**: 100% pass rate before proceeding
 
 1. **Pre-Phase Analysis**:
-   - [x] Document current test counting discrepancies (196 vs 111 vs 261)
-   - [x] Analyze test runner patterns and identify consolidation opportunities
-   - [x] Review existing test framework integration points
-   - [x] Plan direct migration strategy (no backward compatibility layers)
+   - [ ] Document current test counting discrepancies (196 vs 111 vs 261)
+   - [ ] Analyze test runner patterns and identify consolidation opportunities
+   - [ ] Review existing test framework integration points
+   - [ ] Plan backward compatibility strategy
 
 2. **Implementation**:
-   - [x] Create test metadata framework
-   - [x] Update test runner to check for metadata first
-   - [x] Add temporary fallback for unmigrated tests
-   - [x] Add validation utilities (partial - validate_category_count placeholder)
+   - [ ] Create test metadata framework
+   - [ ] Update test runner to check for metadata first
+   - [ ] Add temporary fallback for unmigrated tests
+   - [ ] Add validation utilities
 
 3. **Testing Protocol**:
-   - [x] Run tests via `dev_cli.lua` - achieved 99.6% pass rate (260/261)
-   - [x] Verify headless mode `dev_cli.lua` still works
-   - [x] Test individual test file execution
-   - [x] Document test failures and fixes (draft tests fixed)
+   - [ ] Run `:HimalayaTest all` - MUST achieve 100% pass rate
+   - [ ] Verify headless mode `dev_cli.lua` still works
+   - [ ] Test individual test file execution
+   - [ ] Document any test failures and fixes
 
 4. **Documentation**:
-   - [x] Update this document with progress
-   - [x] Document temporary fallback approach
-   - [x] Create migration checklist for test files
+   - [ ] Update this document with progress
+   - [ ] Document temporary fallback approach
+   - [ ] Create migration checklist for test files
 
 5. **Commit & Review**:
    - [ ] Atomic commit: "Phase 1: Test metadata infrastructure"
