@@ -6,6 +6,16 @@ local string_utils = require('neotex.plugins.tools.himalaya.utils.string')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "String Utility Tests",
+  description = "Tests for string manipulation utilities",
+  count = 10,
+  category = "unit",
+  tags = {"utils", "string", "formatting"},
+  estimated_duration_ms = 200
+}
+
 function M.test_truncate()
   -- Test normal truncation
   assert.equals(
@@ -257,6 +267,18 @@ function M.test_title_case()
     'Hello_World',
     'Should handle underscores'
   )
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

@@ -6,6 +6,16 @@ local email_utils = require('neotex.plugins.tools.himalaya.utils.email')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Email Utility Tests",
+  description = "Tests for email formatting and manipulation utilities",
+  count = 10,
+  category = "unit",
+  tags = {"utils", "email", "formatting"},
+  estimated_duration_ms = 200
+}
+
 function M.test_format_flags()
   -- Test all flags
   local flags = {
@@ -278,6 +288,18 @@ Content-Disposition: attachment; filename="file.pdf"
     email_utils.has_attachments(nil),
     'Should handle nil'
   )
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

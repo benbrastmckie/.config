@@ -5,6 +5,16 @@ local ui = require('neotex.plugins.tools.himalaya.config.ui')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "UI Configuration Tests",
+  description = "Tests for UI configuration and display settings",
+  count = 8,
+  category = "unit",
+  tags = {"config", "ui", "display"},
+  estimated_duration_ms = 150
+}
+
 -- Test module initialization
 function M.test_init()
   local config = {
@@ -251,6 +261,18 @@ function M.test_defaults_preserved()
     ui.requires_confirmation('delete'),
     'Should default to requiring confirmation'
   )
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

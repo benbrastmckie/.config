@@ -3,6 +3,16 @@
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Draft Management Tests",
+  description = "Tests for draft creation, storage, and recovery",
+  count = 6,
+  category = "unit",
+  tags = {"drafts", "storage", "recovery"},
+  estimated_duration_ms = 400
+}
+
 -- Load test framework
 package.path = package.path .. ";/home/benjamin/.config/nvim/lua/?.lua"
 local framework = require("neotex.plugins.tools.himalaya.test.utils.test_framework")
@@ -249,6 +259,16 @@ end
 -- Execute if running directly
 if vim.fn.expand('%:t') == 'test_drafts.lua' then
   M.run()
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for name, _ in pairs(M.tests) do
+    table.insert(names, name:gsub("^test_", ""):gsub("_", " "))
+  end
+  return names
 end
 
 return M

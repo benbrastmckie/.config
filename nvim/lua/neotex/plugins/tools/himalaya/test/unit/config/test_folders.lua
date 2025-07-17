@@ -5,6 +5,16 @@ local folders = require('neotex.plugins.tools.himalaya.config.folders')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Folder Configuration Tests",
+  description = "Tests for folder configuration and management",
+  count = 7,
+  category = "unit",
+  tags = {"config", "folders", "mailbox"},
+  estimated_duration_ms = 150
+}
+
 -- Test module initialization
 function M.test_init()
   local config = {
@@ -259,6 +269,18 @@ function M.test_has_folder()
     folders.has_folder('unknown', 'any'),
     'Should not find folder in non-existent account'
   )
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

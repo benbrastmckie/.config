@@ -6,6 +6,16 @@ local file_utils = require('neotex.plugins.tools.himalaya.utils.file')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "File Utility Tests",
+  description = "Tests for file system operations and utilities",
+  count = 9,
+  category = "unit",
+  tags = {"utils", "filesystem", "io"},
+  estimated_duration_ms = 400
+}
+
 -- Test temp directory for tests
 local test_dir = vim.fn.tempname() .. '/himalaya_file_tests'
 
@@ -195,6 +205,18 @@ function M.test_home_and_expand()
   local expanded = file_utils.expand('~/test')
   assert.matches(expanded, '^/', 'Should expand to absolute path')
   assert.falsy(expanded:match('~'), 'Should not contain tilde')
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

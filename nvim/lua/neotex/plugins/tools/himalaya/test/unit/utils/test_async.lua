@@ -6,6 +6,16 @@ local async_utils = require('neotex.plugins.tools.himalaya.utils.async')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Async Utility Tests",
+  description = "Tests for asynchronous utilities and patterns",
+  count = 9,
+  category = "unit",
+  tags = {"utils", "async", "concurrency"},
+  estimated_duration_ms = 1500
+}
+
 function M.test_debounce()
   local call_count = 0
   local last_value = nil
@@ -232,6 +242,18 @@ function M.test_worker_pool()
   for i = 1, 5 do
     assert.equals(results[i], i * 2, 'Should have correct result')
   end
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M
