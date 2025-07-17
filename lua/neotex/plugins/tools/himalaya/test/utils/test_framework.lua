@@ -60,6 +60,28 @@ M.assert = {
     end
   end,
   
+  is_table = function(value, message)
+    if type(value) ~= 'table' then
+      error(string.format(
+        "%s\nExpected table, got: %s (%s)",
+        message or "Expected table value",
+        vim.inspect(value),
+        type(value)
+      ))
+    end
+  end,
+  
+  is_number = function(value, message)
+    if type(value) ~= 'number' then
+      error(string.format(
+        "%s\nExpected number, got: %s (%s)",
+        message or "Expected number value",
+        vim.inspect(value),
+        type(value)
+      ))
+    end
+  end,
+  
   matches = function(str, pattern, message)
     if not str:match(pattern) then
       error(string.format(
