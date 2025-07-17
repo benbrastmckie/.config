@@ -247,9 +247,9 @@ htest test_scheduler  # Run specific test
 ### Notification System Integration
 The test framework integrates with the unified notification system:
 
-1. **ERROR notifications are always shown** - This is by design
+1. **ERROR notifications are always shown** - This is by design for visibility of critical issues
 2. **Test mode suppresses non-critical notifications** - STATUS, BACKGROUND categories
-3. **Validation errors can be suppressed** - Using `test_validation` flag
+3. **Validation errors require special handling** - Use `test_validation` flag
 
 ```lua
 -- Notification categories and test behavior:
@@ -258,6 +258,8 @@ The test framework integrates with the unified notification system:
 -- STATUS: Suppressed in test mode (debug info)
 -- BACKGROUND: Suppressed in test mode (internal operations)
 ```
+
+**Important**: The notification system's design principle is that ERROR messages should always be visible. This is why we use the `test_validation` flag rather than suppressing ERROR notifications globally.
 
 ### Performance Monitoring
 - **Timing Precision**: High-resolution timing for performance tests
