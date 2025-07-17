@@ -76,7 +76,7 @@ function M.test_validate_draft_config()
       }
     }
   }
-  local valid, errors = validation.validate(config)
+  local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid storage type')
   
   -- Test invalid sync interval
@@ -115,7 +115,7 @@ function M.test_validate_sync()
       lock_timeout = 'not_a_number'
     }
   }
-  local valid, errors = validation.validate(config)
+  local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid lock timeout')
   
   -- Test invalid coordination settings
@@ -145,7 +145,7 @@ function M.test_validate_ui()
       }
     }
   }
-  local valid, errors = validation.validate(config)
+  local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid sidebar settings')
   
   -- Test invalid email list settings
@@ -313,7 +313,7 @@ function M.test_complete_validation()
     }
   }
   
-  local valid, errors = validation.validate(config)
+  local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.truthy(valid, 'Complete config should be valid')
   test_framework.assert.equals(#errors, 0, 'Should have no validation errors')
 end

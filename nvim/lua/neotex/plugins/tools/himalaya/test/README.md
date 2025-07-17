@@ -240,9 +240,24 @@ htest test_scheduler  # Run specific test
 
 ### Test Mode Features
 - **CLI Protection**: Prevents external Himalaya CLI calls
-- **Notification Suppression**: Reduces test noise in test mode
+- **Notification Control**: Context-aware notification handling
 - **State Isolation**: Tests don't affect user environment
 - **Buffer Management**: Automatic cleanup of test buffers
+
+### Notification System Integration
+The test framework integrates with the unified notification system:
+
+1. **ERROR notifications are always shown** - This is by design
+2. **Test mode suppresses non-critical notifications** - STATUS, BACKGROUND categories
+3. **Validation errors can be suppressed** - Using `test_validation` flag
+
+```lua
+-- Notification categories and test behavior:
+-- ERROR, WARNING: Always shown (unless test_validation = true)
+-- USER_ACTION: Always shown (real user actions)
+-- STATUS: Suppressed in test mode (debug info)
+-- BACKGROUND: Suppressed in test mode (internal operations)
+```
 
 ### Performance Monitoring
 - **Timing Precision**: High-resolution timing for performance tests
@@ -273,6 +288,24 @@ if not _G.HIMALAYA_TEST_MODE then
   logger.error('Operation failed', details)
 end
 ```
+
+### Critical: Test Mode Timing
+The `_G.HIMALAYA_TEST_MODE` flag MUST be set before any configuration or module initialization:
+
+```lua
+-- CORRECT: Set test mode first
+_G.HIMALAYA_TEST_MODE = true
+config.setup({ ... })
+
+-- INCORRECT: Config validation will trigger notifications
+config.setup({ ... })
+_G.HIMALAYA_TEST_MODE = true
+```
+
+This is especially important for:
+- Test environment setup (`create_test_env`)
+- Direct config.setup calls in test files
+- Any module initialization that might validate configuration
 
 ### Test Assertion Patterns
 The test framework provides assertions through a nested structure:
@@ -307,6 +340,22 @@ function M.get_data_async(callback)
 end
 ```
 
+### Async Test Timing
+When testing async operations, ensure adequate wait times:
+
+```lua
+-- GOOD: Sufficient timeout with polling interval
+vim.wait(500, function() return operation_complete end, 10)
+
+-- BAD: Too short, may fail intermittently
+vim.wait(100, function() return operation_complete end)
+```
+
+For async tests:
+- Use at least 500ms timeout for operations involving multiple async steps
+- Include a polling interval (3rd parameter) for more responsive checks
+- Consider system load when setting timeouts
+
 ### CLI Command Mocking
 External CLI commands should be mocked at multiple levels:
 
@@ -334,11 +383,29 @@ else
 end
 ```
 
+### Validation Error Handling
+When testing configuration validation or intentionally invalid configs:
+
+```lua
+-- For direct validation testing, use test_validation flag
+local valid, errors = validation.validate(config, { test_validation = true })
+
+-- For functions that validate internally
+if _G.HIMALAYA_TEST_MODE then
+  -- The function should pass test mode flag internally
+  local result = someFunction(config)
+end
+```
+
+This prevents validation errors from appearing in test output while still allowing proper error handling tests.
+
 ### Common Test Mode Pitfalls
 1. **Forgetting early returns**: Always check test mode before external operations
 2. **Inconsistent callback signatures**: Match production callback patterns
 3. **Missing error suppression**: Add test mode checks to all error logging
 4. **Cleanup timing**: Some operations need delayed cleanup (`vim.defer_fn`)
+5. **Test mode timing**: Setting `_G.HIMALAYA_TEST_MODE` after config initialization
+6. **Validation noise**: Not using `test_validation` flag when testing invalid configs
 
 ## Contributing
 
@@ -373,9 +440,45 @@ end
 - **Error Handling**: Handle both success and failure cases appropriately
 - **Performance Awareness**: Consider performance implications of tests
 
+## Troubleshooting Test Issues
+
+### Common Problems and Solutions
+
+#### "Configuration validation failed" messages during tests
+**Cause**: Test mode flag not set before config initialization or validation tests not using test flag.
+
+**Solution**:
+1. Ensure `_G.HIMALAYA_TEST_MODE = true` is set before any `config.setup()` calls
+2. Use `validation.validate(config, { test_validation = true })` when testing invalid configs
+3. Check that `validate_draft_config` passes test flag in fallback scenarios
+
+#### Async test failures (intermittent)
+**Cause**: Insufficient wait time for async operations to complete.
+
+**Solution**:
+1. Increase `vim.wait()` timeout from 100ms to 500ms or more
+2. Add polling interval as third parameter: `vim.wait(500, condition, 10)`
+3. Consider system load and add buffer to timing expectations
+
+#### Test notifications appearing in message log
+**Cause**: ERROR and WARNING notifications are always shown by design.
+
+**Solution**:
+1. Use appropriate notification categories (STATUS/BACKGROUND for debug info)
+2. Check `_G.HIMALAYA_TEST_MODE` before logging errors in test scenarios
+3. Use `test_validation` flag for validation-specific tests
+
+#### Buffer cleanup failures
+**Cause**: Test buffers not properly tracked or cleaned up.
+
+**Solution**:
+1. Use `test_framework.helpers.register_buffer(env, buf)` for all test buffers
+2. Ensure `cleanup_test_env(env)` is called even on test failure
+3. Use `force = true` when deleting buffers: `vim.api.nvim_buf_delete(buf, { force = true })`
+
 ## Current Status
 
-- **Total Tests**: 160 tests across all categories
+- **Total Tests**: 196 tests across all categories
 - **Pass Rate**: 100% (all tests passing)
 - **Coverage**: Comprehensive coverage of all major functionality
 - **Performance**: All tests execute efficiently with proper isolation
