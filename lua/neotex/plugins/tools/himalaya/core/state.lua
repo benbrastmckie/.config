@@ -429,6 +429,9 @@ end
 function M.set_folder_count(account, folder, count)
   if not account or not folder then return end
   
+  -- Ensure count is a number
+  count = tonumber(count) or 0
+  
   local logger = require('neotex.plugins.tools.himalaya.core.logger')
   logger.debug(string.format('set_folder_count called: account=%s, folder=%s, count=%d', 
     account, folder, count))

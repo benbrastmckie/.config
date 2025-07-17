@@ -24,6 +24,29 @@ function M.execute_himalaya(args, opts)
         { name = "Trash" }
       }
     end
+    -- Return mock data for envelope list (used by fetch_folder_count)
+    if args[1] == 'envelope' and args[2] == 'list' then
+      -- Create mock emails based on requested size
+      local size = 10 -- default
+      for i, arg in ipairs(args) do
+        if arg == '-s' and args[i+1] then
+          size = tonumber(args[i+1]) or 10
+        end
+      end
+      
+      -- Return fewer emails than requested to simulate a folder with 5 emails
+      local mock_count = math.min(5, size)
+      local emails = {}
+      for i = 1, mock_count do
+        table.insert(emails, {
+          id = tostring(i),
+          subject = "Test Email " .. i,
+          from = { email = "test@example.com" },
+          date = os.time() - (i * 3600)
+        })
+      end
+      return emails
+    end
     -- For other commands in test mode, return nil without error
     return nil, 'Test mode: CLI calls disabled'
   end
