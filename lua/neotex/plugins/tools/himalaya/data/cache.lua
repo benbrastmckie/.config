@@ -314,6 +314,12 @@ function M.clear_folder(account, folder)
   if cache[account] and cache[account][folder] then
     local count = vim.tbl_count(cache[account][folder])
     cache[account][folder] = {}
+    
+    -- Also clear body cache for this folder
+    if body_cache[account] and body_cache[account][folder] then
+      body_cache[account][folder] = {}
+    end
+    
     logger.debug('Cleared folder cache', {
       account = account,
       folder = folder,
@@ -332,6 +338,7 @@ function M.clear_all()
   end
   
   cache = {}
+  body_cache = {}
   logger.debug('Cleared all cache', { cleared = total })
 end
 
