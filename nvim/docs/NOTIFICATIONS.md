@@ -341,6 +341,34 @@ Access recent notifications and statistics:
 :Notifications clear
 ```
 
+## Test Mode Behavior
+
+When running tests (`_G.HIMALAYA_TEST_MODE` is set):
+
+### Notification Behavior
+- **ERROR and WARNING**: Still shown by design (critical issues should always be visible)
+- **USER_ACTION**: Still shown (represents actual user actions)
+- **STATUS and BACKGROUND**: Suppressed automatically
+
+### Special Handling for Validation
+Configuration validation errors can be suppressed during tests by passing a `test_validation` flag:
+
+```lua
+-- In test code that intentionally tests invalid configs
+local valid, errors = validation.validate(config, { test_validation = true })
+
+-- In production code that should respect test mode
+local valid, errors = validation.validate(config, { test_validation = _G.HIMALAYA_TEST_MODE })
+```
+
+This allows tests to validate error handling without generating visible ERROR notifications.
+
+### Implementation Guidelines
+1. Check `_G.HIMALAYA_TEST_MODE` before operations that might generate errors
+2. Pass `test_validation` flag when testing configuration validation
+3. Set test mode BEFORE initializing modules or configurations
+4. Remember that ERROR notifications are intentionally always visible
+
 ## Best Practices
 
 ### For Users
@@ -356,6 +384,7 @@ Access recent notifications and statistics:
 2. **Provide context**: Include relevant information in the context parameter
 3. **Use module-specific functions**: Use `notify.himalaya()`, `notify.ai()`, etc. instead of generic `notify()`
 4. **Batch bulk operations**: Use batching for operations that might generate many notifications
+5. **Consider test mode**: Use appropriate categories and flags to prevent test noise
 
 ## Integration with Other Tools
 
