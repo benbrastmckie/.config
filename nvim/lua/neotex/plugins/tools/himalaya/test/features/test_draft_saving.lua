@@ -19,6 +19,8 @@ local tests = {}
 -- Initialize config before tests
 local config = require('neotex.plugins.tools.himalaya.core.config')
 if not config.initialized then
+  -- Set test mode before config setup
+  _G.HIMALAYA_TEST_MODE = true
   config.setup({
     binaries = {
       himalaya = 'himalaya'

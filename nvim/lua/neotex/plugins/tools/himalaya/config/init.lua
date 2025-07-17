@@ -193,8 +193,8 @@ function M.validate_draft_config(config)
     return #errors == 0, errors
   end
   
-  -- Fallback: validate the whole config
-  local valid, all_errors = validation.validate(config)
+  -- Fallback: validate the whole config with test flag if in test mode
+  local valid, all_errors = validation.validate(config, { test_validation = _G.HIMALAYA_TEST_MODE })
   
   -- Filter for draft-related errors
   local draft_errors = {}

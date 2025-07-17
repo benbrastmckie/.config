@@ -230,6 +230,9 @@ M.helpers = {
     -- Don't mock draft manager as it needs to work normally for tests
     -- Just ensure it uses the test directory
     
+    -- Set global test mode flag BEFORE any config operations
+    _G.HIMALAYA_TEST_MODE = true
+    
     -- Setup config (always provide default config)
     local config = require('neotex.plugins.tools.himalaya.core.config')
     if config.config then
@@ -252,9 +255,6 @@ M.helpers = {
       },
       test_mode = true -- Global test mode flag
     }, config_overrides or {}))
-    
-    -- Set global test mode flag
-    _G.HIMALAYA_TEST_MODE = true
     
     return env
   end,
