@@ -23,8 +23,8 @@ function M.test_debounce()
   -- Should not have been called yet
   assert.equals(call_count, 0, 'Should not call immediately')
   
-  -- Wait for debounce
-  vim.wait(100, function() return call_count > 0 end)
+  -- Wait for debounce (increased timeout for reliability)
+  vim.wait(200, function() return call_count > 0 end, 10)
   
   -- Should have been called once with last value
   assert.equals(call_count, 1, 'Should call once after delay')

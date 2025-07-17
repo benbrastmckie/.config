@@ -163,8 +163,8 @@ function M.setup(opts)
   oauth.init(M.config)
   ui.init(M.config)
   
-  -- Validate configuration
-  local valid, errors = validation.validate(M.config)
+  -- Validate configuration with test mode check
+  local valid, errors = validation.validate(M.config, { test_validation = _G.HIMALAYA_TEST_MODE })
   if not valid then
     logger.warn('Configuration validation failed', { errors = errors })
   end
@@ -177,7 +177,7 @@ end
 
 -- Validate configuration (delegate to validation module)
 function M.validate()
-  return validation.validate(M.config)
+  return validation.validate(M.config, { test_validation = _G.HIMALAYA_TEST_MODE })
 end
 
 -- Validate draft configuration (backward compatibility)
