@@ -9,7 +9,7 @@ local M = {}
 function M.test_validate_accounts()
   -- Test no accounts
   local config = {}
-  local valid, errors = validation.validate(config)
+  local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with no accounts')
   
   local found_account_error = false
@@ -27,7 +27,7 @@ function M.test_validate_accounts()
       ['invalid@name'] = { email = 'test@example.com' }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid account name')
   
   -- Test maildir path without trailing slash
@@ -39,7 +39,7 @@ function M.test_validate_accounts()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail without trailing slash')
   
   found_slash_error = false
@@ -60,7 +60,7 @@ function M.test_validate_accounts()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.truthy(valid, 'Should pass with valid config')
   test_framework.assert.equals(#errors, 0, 'Should have no errors')
 end
@@ -88,7 +88,7 @@ function M.test_validate_draft_config()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with negative interval')
   
   -- Test invalid recovery settings
@@ -101,7 +101,7 @@ function M.test_validate_draft_config()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid recovery settings')
   test_framework.assert.truthy(#errors >= 2, 'Should have multiple errors')
 end
@@ -129,7 +129,7 @@ function M.test_validate_sync()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid coordination settings')
 end
 
@@ -158,7 +158,7 @@ function M.test_validate_ui()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid email list settings')
   
   -- Test invalid preview settings
@@ -172,7 +172,7 @@ function M.test_validate_ui()
       }
     }
   }
-  valid, errors = validation.validate(config)
+  valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.falsy(valid, 'Should fail with invalid preview settings')
   test_framework.assert.truthy(#errors >= 3, 'Should have multiple UI errors')
 end
