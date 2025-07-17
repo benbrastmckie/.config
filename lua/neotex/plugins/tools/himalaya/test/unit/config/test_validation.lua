@@ -5,6 +5,16 @@ local validation = require('neotex.plugins.tools.himalaya.config.validation')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Config Validation Tests",
+  description = "Tests for configuration validation and error handling",
+  count = 7,
+  category = "unit",
+  tags = {"config", "validation", "error-handling"},
+  estimated_duration_ms = 200
+}
+
 -- Test account validation
 function M.test_validate_accounts()
   -- Test no accounts
@@ -316,6 +326,18 @@ function M.test_complete_validation()
   local valid, errors = validation.validate(config, { test_validation = true })
   test_framework.assert.truthy(valid, 'Complete config should be valid')
   test_framework.assert.equals(#errors, 0, 'Should have no validation errors')
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

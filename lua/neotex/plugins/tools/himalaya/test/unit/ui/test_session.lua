@@ -5,6 +5,16 @@ local assert = test_framework.assert
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Session Management Tests",
+  description = "Tests for session management and state handling",
+  count = 10,
+  category = "unit",
+  tags = {"ui", "session", "state-management"},
+  estimated_duration_ms = 300
+}
+
 function M.test_session_init()
   _G.HIMALAYA_TEST_MODE = true
   
@@ -199,6 +209,18 @@ function M.test_clear_nonexistent_session()
   -- Clear non-existent session should succeed
   local success = session.clear_session()
   assert.truthy(success, 'Should handle clearing non-existent session')
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M

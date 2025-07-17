@@ -5,6 +5,16 @@ local oauth = require('neotex.plugins.tools.himalaya.config.oauth')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "OAuth Configuration Tests",
+  description = "Tests for OAuth configuration and token management",
+  count = 7,
+  category = "unit",
+  tags = {"config", "oauth", "authentication"},
+  estimated_duration_ms = 200
+}
+
 -- Save original env values
 local saved_env = {}
 
@@ -297,6 +307,18 @@ function M.test_defaults()
     'refresh-gmail-oauth2',
     'Should use default refresh command'
   )
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  local names = {}
+  for key, value in pairs(M) do
+    if type(value) == "function" and key:match("^test_") then
+      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
+    end
+  end
+  return names
 end
 
 return M
