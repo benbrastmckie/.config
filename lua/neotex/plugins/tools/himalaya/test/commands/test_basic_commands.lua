@@ -4,6 +4,16 @@
 local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 
+-- Test metadata
+local test_metadata = {
+  name = "Basic Command Tests",
+  description = "Simple tests to verify test infrastructure",
+  count = 5,
+  category = "command",
+  tags = {"commands", "basic", "infrastructure"},
+  estimated_duration_ms = 500
+}
+
 -- Test suite
 local tests = {}
 
@@ -71,7 +81,18 @@ table.insert(tests, framework.create_test('notification_system', function()
   assert.truthy(notify.categories.WARNING, "Should have WARNING category")
 end))
 
--- Export test suite
+-- Export test suite with metadata
 _G.himalaya_test = framework.create_suite('Basic Commands', tests)
+_G.himalaya_test.test_metadata = test_metadata
+_G.himalaya_test.get_test_count = function() return test_metadata.count end
+_G.himalaya_test.get_test_list = function()
+  return {
+    "Plugin loaded",
+    "Config loading",
+    "Command registration",
+    "Basic functionality",
+    "Error handling"
+  }
+end
 
 return _G.himalaya_test

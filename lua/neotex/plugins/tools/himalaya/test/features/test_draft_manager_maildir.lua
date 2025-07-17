@@ -421,4 +421,19 @@ function M.run()
   }
 end
 
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Create draft",
+    "Save draft", 
+    "List drafts",
+    "Delete draft",
+    "Get by buffer",
+    "Open draft",
+    "Buffer tracking",
+    "Cleanup on exit"
+  }
+end
+
 return M

@@ -1,6 +1,16 @@
 -- Simplified sync integration tests that match actual functionality
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Sync Simple Integration Tests",
+  description = "Simplified sync integration tests that match actual functionality",
+  count = 4,
+  category = "integration",
+  tags = {"sync", "integration", "simple", "coordinator"},
+  estimated_duration_ms = 1000
+}
+
 -- Test infrastructure
 local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
@@ -129,6 +139,17 @@ function M.run()
   M.teardown()
   
   return test_results
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Sync coordinator initialization",
+    "Basic sync operation",
+    "Sync state management",
+    "Error handling"
+  }
 end
 
 return M

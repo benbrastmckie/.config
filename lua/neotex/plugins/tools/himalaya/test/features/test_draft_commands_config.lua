@@ -7,6 +7,16 @@ local commands = require('neotex.plugins.tools.himalaya.commands.init')
 
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Draft Commands Config Tests",
+  description = "Tests command registration and configuration validation",
+  count = 8,
+  category = "feature",
+  tags = {"commands", "config", "validation", "drafts"},
+  estimated_duration_ms = 500
+}
+
 -- Test suite definition
 M.tests = {
   {
@@ -244,7 +254,21 @@ for _, test_def in ipairs(M.tests) do
   table.insert(tests, Test.create_test(test_def.name, test_def.fn))
 end
 
--- Export test suite
+-- Export test suite with metadata
 _G.draft_commands_config_test = Test.create_suite('Draft Commands & Configuration', tests)
+_G.draft_commands_config_test.test_metadata = M.test_metadata
+_G.draft_commands_config_test.get_test_count = function() return M.test_metadata.count end
+_G.draft_commands_config_test.get_test_list = function()
+  return {
+    "Draft Configuration - Default Values",
+    "Draft Configuration Validation - Valid Config",
+    "Draft Configuration Validation - Invalid Storage",
+    "Draft Configuration Validation - Invalid Sync",
+    "Draft Commands Registration",
+    "Draft Command Options",
+    "Configuration Integration in Commands",
+    "Draft Status Command Output"
+  }
+end
 
 return _G.draft_commands_config_test

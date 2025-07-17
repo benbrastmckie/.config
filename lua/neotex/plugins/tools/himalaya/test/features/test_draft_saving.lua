@@ -2,6 +2,16 @@
 -- Tests the complete draft saving workflow for email composition
 
 local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
+
+-- Test metadata
+local test_metadata = {
+  name = "Draft Saving Feature Tests",
+  description = "Tests the complete draft saving workflow for email composition",
+  count = 5,
+  category = "feature",
+  tags = {"drafts", "saving", "workflow", "composer"},
+  estimated_duration_ms = 2000
+}
 local assert = framework.assert
 local notify = require('neotex.util.notifications')
 
@@ -230,7 +240,18 @@ table.insert(tests, framework.create_test('cleanup_drafts', function()
   end
 end))
 
--- Export test suite
+-- Export test suite with metadata
 _G.himalaya_test = framework.create_suite('Draft Saving Feature', tests)
+_G.himalaya_test.test_metadata = test_metadata
+_G.himalaya_test.get_test_count = function() return test_metadata.count end
+_G.himalaya_test.get_test_list = function()
+  return {
+    "Draft folder detection",
+    "Save draft function",
+    "Composer draft saving",
+    "Drafts in maildir",
+    "Cleanup drafts"
+  }
+end
 
 return _G.himalaya_test

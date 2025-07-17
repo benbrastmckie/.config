@@ -1,6 +1,16 @@
 -- Tests for async operations and timing functionality
 local M = {}
 
+-- Test metadata
+M.test_metadata = {
+  name = "Async Timing Feature Tests",
+  description = "Tests for async operations and timing functionality",
+  count = 9,
+  category = "feature",
+  tags = {"async", "timing", "scheduler", "concurrency"},
+  estimated_duration_ms = 3000
+}
+
 -- Test infrastructure
 local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
@@ -489,6 +499,22 @@ function M.run()
   
   test_utils.helpers.cleanup_test_env(test_env)
   return results
+end
+
+-- Add standardized interface
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
+  return {
+    "Async timer creation",
+    "Timer callback execution",
+    "Multiple timers",
+    "Timer cancellation",
+    "Scheduler timing",
+    "Sync coordinator timing",
+    "State updates async",
+    "Error handling async",
+    "Performance timing"
+  }
 end
 
 return M

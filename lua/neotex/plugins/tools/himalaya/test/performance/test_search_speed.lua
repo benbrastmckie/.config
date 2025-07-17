@@ -4,6 +4,16 @@ local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framewo
 local assert = framework.assert
 local helpers = framework.helpers
 
+-- Test metadata
+local test_metadata = {
+  name = "Search Performance Tests",
+  description = "Performance tests for search functionality",
+  count = 5,
+  category = "performance",
+  tags = {"search", "performance", "speed", "benchmarks"},
+  estimated_duration_ms = 3000
+}
+
 -- Test suite
 local tests = {}
 
@@ -176,7 +186,18 @@ table.insert(tests, framework.create_test('search_memory_usage', function()
   end
 end))
 
--- Export test suite
+-- Export test suite with metadata
 _G.himalaya_test = framework.create_suite('Search Performance', tests)
+_G.himalaya_test.test_metadata = test_metadata
+_G.himalaya_test.get_test_count = function() return test_metadata.count end
+_G.himalaya_test.get_test_list = function()
+  return {
+    "Basic search speed",
+    "Complex query performance",
+    "Large dataset search",
+    "Concurrent search",
+    "Memory usage"
+  }
+end
 
 return _G.himalaya_test
