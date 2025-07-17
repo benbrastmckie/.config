@@ -6,23 +6,31 @@ local M = {}
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
 
--- Configuration
-M.config = {
-  queue_file = vim.fn.expand('~/.config/himalaya/scheduled_emails.json'),
-  backup_dir = vim.fn.expand('~/.config/himalaya/backups/'),
-  max_backups = 5,
-  version = "1.0",
-}
+-- Configuration (dynamically check test mode)
+function M.get_config()
+  return {
+    queue_file = _G.HIMALAYA_TEST_MODE and '/tmp/himalaya_test_scheduled_emails.json' 
+      or vim.fn.expand('~/.config/himalaya/scheduled_emails.json'),
+    backup_dir = _G.HIMALAYA_TEST_MODE and '/tmp/himalaya_test_backups/' 
+      or vim.fn.expand('~/.config/himalaya/backups/'),
+    max_backups = 5,
+    version = "1.0",
+  }
+end
+
+-- For backward compatibility
+M.config = M.get_config()
 
 -- Ensure required directories exist
 function M.ensure_directories()
-  local queue_dir = vim.fn.fnamemodify(M.config.queue_file, ':h')
+  local config = M.get_config()
+  local queue_dir = vim.fn.fnamemodify(config.queue_file, ':h')
   if vim.fn.isdirectory(queue_dir) == 0 then
     vim.fn.mkdir(queue_dir, 'p')
   end
   
-  if vim.fn.isdirectory(M.config.backup_dir) == 0 then
-    vim.fn.mkdir(M.config.backup_dir, 'p')
+  if vim.fn.isdirectory(config.backup_dir) == 0 then
+    vim.fn.mkdir(config.backup_dir, 'p')
   end
 end
 
@@ -72,18 +80,18 @@ end
 
 -- Create backup of current queue file
 function M.backup_queue_file()
-  if vim.fn.filereadable(M.config.queue_file) == 0 then
+  if vim.fn.filereadable(M.get_config().queue_file) == 0 then
     return true -- No file to backup
   end
   
   M.ensure_directories()
   
   local timestamp = os.date('%Y%m%d_%H%M%S')
-  local backup_file = M.config.backup_dir .. 'scheduled_emails_' .. timestamp .. '.json'
+  local backup_file = M.get_config().backup_dir .. 'scheduled_emails_' .. timestamp .. '.json'
   
   -- Copy file to backup location
   local success = vim.fn.writefile(
-    vim.fn.readfile(M.config.queue_file),
+    vim.fn.readfile(M.get_config().queue_file),
     backup_file
   )
   
@@ -102,7 +110,7 @@ function M.cleanup_old_backups()
   local backups = {}
   
   -- Get all backup files
-  local files = vim.fn.glob(M.config.backup_dir .. 'scheduled_emails_*.json', 0, 1)
+  local files = vim.fn.glob(M.get_config().backup_dir .. 'scheduled_emails_*.json', 0, 1)
   
   for _, file in ipairs(files) do
     local stat = vim.loop.fs_stat(file)
@@ -118,7 +126,7 @@ function M.cleanup_old_backups()
   table.sort(backups, function(a, b) return a.mtime > b.mtime end)
   
   -- Remove old backups beyond max_backups
-  for i = M.config.max_backups + 1, #backups do
+  for i = M.get_config().max_backups + 1, #backups do
     vim.fn.delete(backups[i].file)
     logger.debug('Removed old backup: ' .. backups[i].file)
   end
@@ -128,13 +136,13 @@ end
 function M.load_queue()
   M.ensure_directories()
   
-  if vim.fn.filereadable(M.config.queue_file) == 0 then
+  if vim.fn.filereadable(M.get_config().queue_file) == 0 then
     logger.debug('No queue file found, starting with empty queue')
     M._last_load_time = os.time()
     return {}
   end
   
-  local content = vim.fn.readfile(M.config.queue_file)
+  local content = vim.fn.readfile(M.get_config().queue_file)
   if not content or #content == 0 then
     logger.debug('Empty queue file, starting with empty queue')
     M._last_load_time = os.time()
@@ -171,7 +179,7 @@ function M.recover_from_corruption()
   logger.warn("Queue file corrupted, attempting recovery from backups")
   
   -- Get backup files sorted by newest first
-  local files = vim.fn.glob(M.config.backup_dir .. 'scheduled_emails_*.json', 0, 1)
+  local files = vim.fn.glob(M.get_config().backup_dir .. 'scheduled_emails_*.json', 0, 1)
   local backups = {}
   
   for _, file in ipairs(files) do
@@ -194,7 +202,7 @@ function M.recover_from_corruption()
       -- Copy the good backup to main location
       vim.fn.writefile(
         vim.fn.readfile(backup.file),
-        M.config.queue_file
+        M.get_config().queue_file
       )
       return queue
     end
@@ -241,7 +249,7 @@ function M.save_queue(queue)
   
   -- Prepare data structure
   local data = {
-    version = M.config.version,
+    version = M.get_config().version,
     created = os.date('%Y-%m-%dT%H:%M:%SZ'),
     last_modified = os.date('%Y-%m-%dT%H:%M:%SZ'),
     queue = queue or {},
@@ -273,8 +281,14 @@ function M.save_queue(queue)
     return false
   end
   
+  -- Debug in test mode
+  if _G.HIMALAYA_TEST_MODE then
+    local config = M.get_config()
+    -- print("DEBUG: Saving to file: " .. config.queue_file)
+  end
+  
   -- Atomic write: write to temp file first
-  local temp_file = M.config.queue_file .. '.tmp'
+  local temp_file = M.get_config().queue_file .. '.tmp'
   local write_result = vim.fn.writefile(vim.split(json_str, '\n'), temp_file)
   
   if write_result ~= 0 then
@@ -283,7 +297,7 @@ function M.save_queue(queue)
   end
   
   -- Move temp file to final location (atomic on most filesystems)
-  local move_success = vim.fn.rename(temp_file, M.config.queue_file)
+  local move_success = vim.fn.rename(temp_file, M.get_config().queue_file)
   
   if move_success ~= 0 then
     logger.error('Failed to move temporary file to final location')
@@ -330,11 +344,11 @@ end
 
 -- Check if queue file has been modified since last load
 function M.is_queue_file_newer(last_load_time)
-  if vim.fn.filereadable(M.config.queue_file) == 0 then
+  if vim.fn.filereadable(M.get_config().queue_file) == 0 then
     return false
   end
   
-  local stat = vim.loop.fs_stat(M.config.queue_file)
+  local stat = vim.loop.fs_stat(M.get_config().queue_file)
   if not stat then
     return false
   end
@@ -345,11 +359,11 @@ end
 
 -- Get file modification time
 function M.get_queue_file_mtime()
-  if vim.fn.filereadable(M.config.queue_file) == 0 then
+  if vim.fn.filereadable(M.get_config().queue_file) == 0 then
     return 0
   end
   
-  local stat = vim.loop.fs_stat(M.config.queue_file)
+  local stat = vim.loop.fs_stat(M.get_config().queue_file)
   return stat and stat.mtime.sec or 0
 end
 
@@ -390,11 +404,11 @@ function M.health_check()
   M.ensure_directories()
   
   return {
-    queue_file_exists = vim.fn.filereadable(M.config.queue_file) == 1,
-    queue_file_writable = vim.fn.filewritable(M.config.queue_file) ~= 0,
-    backup_dir_exists = vim.fn.isdirectory(M.config.backup_dir) == 1,
-    backup_count = #vim.fn.glob(M.config.backup_dir .. 'scheduled_emails_*.json', 0, 1),
-    queue_file_size = vim.fn.getfsize(M.config.queue_file),
+    queue_file_exists = vim.fn.filereadable(M.get_config().queue_file) == 1,
+    queue_file_writable = vim.fn.filewritable(M.get_config().queue_file) ~= 0,
+    backup_dir_exists = vim.fn.isdirectory(M.get_config().backup_dir) == 1,
+    backup_count = #vim.fn.glob(M.get_config().backup_dir .. 'scheduled_emails_*.json', 0, 1),
+    queue_file_size = vim.fn.getfsize(M.get_config().queue_file),
     instance_id = M.get_instance_id(),
     last_load_time = M._last_load_time,
     queue_file_mtime = M.get_queue_file_mtime(),
