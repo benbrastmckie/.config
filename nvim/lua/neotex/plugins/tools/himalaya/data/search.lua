@@ -512,13 +512,58 @@ end
 
 -- Get searchable text from email
 function M.get_searchable_text(email)
-  local parts = {
-    email.from or "",
-    table.concat(email.to or {}, " "),
-    table.concat(email.cc or {}, " "),
-    email.subject or "",
-    email.body or email.preview or ""
-  }
+  local parts = {}
+  
+  -- Add from field
+  if email.from then
+    if type(email.from) == "string" then
+      table.insert(parts, email.from)
+    elseif type(email.from) == "table" and email.from.email then
+      table.insert(parts, email.from.email)
+    end
+  end
+  
+  -- Add to field
+  if email.to then
+    if type(email.to) == "string" then
+      table.insert(parts, email.to)
+    elseif type(email.to) == "table" then
+      for _, recipient in ipairs(email.to) do
+        if type(recipient) == "string" then
+          table.insert(parts, recipient)
+        elseif type(recipient) == "table" and recipient.email then
+          table.insert(parts, recipient.email)
+        end
+      end
+    end
+  end
+  
+  -- Add cc field
+  if email.cc then
+    if type(email.cc) == "string" then
+      table.insert(parts, email.cc)
+    elseif type(email.cc) == "table" then
+      for _, recipient in ipairs(email.cc) do
+        if type(recipient) == "string" then
+          table.insert(parts, recipient)
+        elseif type(recipient) == "table" and recipient.email then
+          table.insert(parts, recipient.email)
+        end
+      end
+    end
+  end
+  
+  -- Add subject
+  if email.subject then
+    table.insert(parts, tostring(email.subject))
+  end
+  
+  -- Add body/preview
+  if email.body then
+    table.insert(parts, tostring(email.body))
+  elseif email.preview then
+    table.insert(parts, tostring(email.preview))
+  end
   
   return table.concat(parts, " ")
 end
