@@ -5,7 +5,7 @@ local M = {}
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local utils = require('neotex.plugins.tools.himalaya.utils')
 local config = require('neotex.plugins.tools.himalaya.core.config')
-local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 
 function M.debug_draft_list()
   local account = config.get_current_account_name()

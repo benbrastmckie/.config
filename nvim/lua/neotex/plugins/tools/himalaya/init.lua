@@ -21,7 +21,7 @@ function M.setup(opts)
   state.init() -- Will handle migration and validation
 
   -- Initialize email cache
-  local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+  local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
   email_cache.init(config.config.cache)
 
   -- Initialize OAuth module
@@ -29,7 +29,7 @@ function M.setup(opts)
   oauth.setup()
 
   -- Initialize new draft system (Maildir-based)
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+  local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
   
   draft_manager.setup()
   
@@ -58,7 +58,7 @@ function M.setup(opts)
 
   -- Initialize Phase 9 features
   -- Initialize unified email scheduler
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   scheduler.setup()
 
   -- Set up commands

@@ -5,7 +5,7 @@ local M = {}
 local test_utils = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 
 -- Core modules
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local state = require('neotex.plugins.tools.himalaya.core.state')
 
 -- Test data

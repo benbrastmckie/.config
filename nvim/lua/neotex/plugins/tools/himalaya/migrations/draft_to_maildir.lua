@@ -6,7 +6,7 @@ local M = {}
 -- Dependencies
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
-local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
+local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
 -- local_storage removed - migration reads directly from filesystem
 
 -- Migration state

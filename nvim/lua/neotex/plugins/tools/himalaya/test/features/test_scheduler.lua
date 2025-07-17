@@ -9,7 +9,7 @@ local tests = {}
 
 -- Test email scheduling
 table.insert(tests, framework.create_test('schedule_email_basic', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   
   -- Save original state
   local original_queue = vim.deepcopy(scheduler.queue)
@@ -51,7 +51,7 @@ end))
 
 -- Test scheduling with custom time
 table.insert(tests, framework.create_test('schedule_email_custom_time', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   
   -- Save original state
   local original_queue = vim.deepcopy(scheduler.queue)
@@ -86,7 +86,7 @@ end))
 
 -- Test cancel scheduled email
 table.insert(tests, framework.create_test('cancel_scheduled_email', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   
   -- Save original state
   local original_queue = vim.deepcopy(scheduler.queue)
@@ -112,7 +112,7 @@ end))
 
 -- Test edit scheduled email
 table.insert(tests, framework.create_test('edit_scheduled_email', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   
   -- Set test mode flag explicitly for this test
   _G.HIMALAYA_TEST_MODE = true
@@ -156,7 +156,7 @@ end))
 
 -- Test scheduler persistence
 table.insert(tests, framework.create_test('scheduler_persistence', function()
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
   
   -- Save original state

@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local notify = require('neotex.util.notifications')
 local state = require('neotex.plugins.tools.himalaya.core.state')
 local config = require('neotex.plugins.tools.himalaya.core.config')
@@ -270,7 +270,7 @@ function M.send_email(buf)
   }
   
   -- Schedule email with 60 second delay (same as old composer)
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local scheduled_id = scheduler.schedule_email(
     email_data,
     draft.account,
@@ -298,7 +298,7 @@ function M.send_email(buf)
     local draft = draft_manager.get_by_buffer(buf)
     if draft then
       -- Store the draft path with the scheduled email for later cleanup
-      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
       scheduler.register_draft_for_cleanup(scheduled_id, draft.filepath)
     end
   end

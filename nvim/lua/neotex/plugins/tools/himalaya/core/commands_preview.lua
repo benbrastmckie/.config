@@ -3,7 +3,7 @@ local M = {}
 
 -- Dependencies
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 local notify = require('neotex.util.notifications')
 
 -- Register preview-related commands

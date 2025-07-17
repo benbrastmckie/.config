@@ -11,7 +11,7 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local retry_handler = require('neotex.plugins.tools.himalaya.core.retry_handler')
 
 -- Enhanced configuration
@@ -653,11 +653,13 @@ end
 -- Format duration for display
 function M.format_duration(seconds)
   if seconds < 60 then
-    return string.format("%ds", seconds)
+    return string.format("%d seconds", seconds)
   elseif seconds < 3600 then
-    return string.format("%dm", math.floor(seconds / 60))
+    local mins = math.floor(seconds / 60 + 0.5)  -- Round to nearest minute
+    return string.format("%d minute%s", mins, mins == 1 and "" or "s")
   else
-    return string.format("%dh %dm", math.floor(seconds / 3600), math.floor((seconds % 3600) / 60))
+    local hours = math.floor(seconds / 3600)
+    return string.format("%d hour%s", hours, hours == 1 and "" or "s")
   end
 end
 
@@ -1014,7 +1016,7 @@ function M.show_custom_time_picker(id)
   vim.ui.input({
     prompt = " New send time: ",
     default = current,
-    completion = "customlist,v:lua.require'neotex.plugins.tools.himalaya.core.scheduler'.complete_time"
+    completion = "customlist,v:lua.require('neotex.plugins.tools.himalaya.data.scheduler').complete_time"
   }, function(input)
     if not input then return end
     

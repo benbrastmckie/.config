@@ -4,7 +4,7 @@
 local M = {}
 
 -- Dependencies
-local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
+local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local notify = require('neotex.util.notifications')
 local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
@@ -286,14 +286,14 @@ function M.test_update_size()
   maildir.atomic_write(test_path .. '/tmp', filepath, content)
   
   -- Update size
-  local size = maildir.update_size(filepath)
+  local updated_path = maildir.update_size(filepath)
   
   -- Check if filename was updated
   local files = vim.fn.readdir(test_path .. '/cur')
   local updated = false
   
   for _, file in ipairs(files) do
-    if file:match('S=' .. size) then
+    if file:match('S=' .. #content) then
       updated = true
       break
     end
@@ -301,7 +301,7 @@ function M.test_update_size()
   
   cleanup_test_dir()
   
-  if updated and size == #content then
+  if updated and updated_path ~= filepath then
     report_test(test_name, true)
     return true
   else

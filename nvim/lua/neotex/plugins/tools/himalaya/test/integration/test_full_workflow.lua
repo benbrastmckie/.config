@@ -10,7 +10,7 @@ local tests = {}
 -- Test complete email workflow
 table.insert(tests, framework.create_test('complete_email_workflow', function()
   local utils = require('neotex.plugins.tools.himalaya.utils')
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local state = require('neotex.plugins.tools.himalaya.core.state')
   
   -- Set test mode flag explicitly for this test

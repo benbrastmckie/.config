@@ -10,7 +10,7 @@ local state = require('neotex.plugins.tools.himalaya.core.state')
 local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
 local event_types = require('neotex.plugins.tools.himalaya.core.events')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
-local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
+local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
 
 -- Draft notification helper
 local function notify_draft(message, category, context)

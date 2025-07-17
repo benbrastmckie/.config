@@ -11,11 +11,11 @@ function M.setup(registry)
   local logger = require('neotex.plugins.tools.himalaya.core.logger')
   local config = require('neotex.plugins.tools.himalaya.core.config')
   local utils = require('neotex.plugins.tools.himalaya.utils')
-  local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local persistence = require('neotex.plugins.tools.himalaya.core.persistence')
-  local search = require('neotex.plugins.tools.himalaya.core.search')
-  local templates = require('neotex.plugins.tools.himalaya.core.templates')
+  local search = require("neotex.plugins.tools.himalaya.data.search")
+  local templates = require("neotex.plugins.tools.himalaya.data.templates")
   
   -- ======================
   -- Core Email Operations

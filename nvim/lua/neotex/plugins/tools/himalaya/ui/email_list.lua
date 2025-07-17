@@ -18,8 +18,8 @@ local notifications = require('neotex.plugins.tools.himalaya.ui.notifications')
 local window_stack = require('neotex.plugins.tools.himalaya.ui.window_stack')
 local notify = require('neotex.util.notifications')
 local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
-local email_cache = require('neotex.plugins.tools.himalaya.core.email_cache')
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
+local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 
 -- Module state
@@ -156,7 +156,7 @@ function M.toggle_email_sidebar()
   
   -- If we get here, sidebar is not open, so open it
   -- Sync scheduled emails from other instances before opening
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   if scheduler.initialized then
     scheduler.sync_from_disk()
   end
@@ -386,7 +386,7 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   -- This bypasses himalaya's cache entirely for the drafts folder
   if is_drafts then
     -- Get all drafts directly from the filesystem
-    local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+    local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
     local draft_list = draft_manager.list(account_name)
     
     -- Convert draft list to email format for display
@@ -748,7 +748,7 @@ function M.format_email_list(emails)
   lines.email_start_line = email_start_line
   
   -- Add scheduled emails section
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local scheduled_items = scheduler.get_scheduled_emails()
   
   if #scheduled_items > 0 then
@@ -969,7 +969,7 @@ function M.start_scheduled_updates()
         return
       end
       
-      local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+      local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
       local scheduled_items = scheduler.get_scheduled_emails()
       
       if #scheduled_items == 0 then
@@ -1019,7 +1019,7 @@ function M.update_scheduled_section()
   end
   
   -- Update header with current count
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   local scheduled_items = scheduler.get_scheduled_emails()
   
   if scheduled_header_line then
@@ -1256,7 +1256,7 @@ function M.refresh_email_list(opts)
   opts = opts or {}
   
   -- Sync scheduled emails from other instances before refresh
-  local scheduler = require('neotex.plugins.tools.himalaya.core.scheduler')
+  local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
   if scheduler.initialized then
     scheduler.sync_from_disk()
   end

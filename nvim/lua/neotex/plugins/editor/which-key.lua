@@ -667,6 +667,7 @@ return {
       { "<leader>rn", "function() vim.diagnostic.goto_next{popup_opts = {show_header = false}} end", desc = "next", icon = "󰮰" },
       { "<leader>rp", "function() vim.diagnostic.goto_prev{popup_opts = {show_header = false}} end", desc = "prev", icon = "󰮲" },
       { "<leader>rr", "<cmd>ReloadConfig<cr>", desc = "reload configs", icon = "󰜉" },
+      { "<leader>rt", "<cmd>HimalayaTest<cr>", desc = "test himalaya", icon = "󰙨" },
       { "<leader>rm", "<cmd>lua Snacks.notifier.show_history()<cr>", desc = "show messages", icon = "󰍡" },
     })
 

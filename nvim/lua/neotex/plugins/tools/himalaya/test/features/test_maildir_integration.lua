@@ -4,8 +4,8 @@
 local M = {}
 
 -- Dependencies
-local maildir = require('neotex.plugins.tools.himalaya.core.maildir')
-local draft_manager = require('neotex.plugins.tools.himalaya.core.draft_manager_maildir')
+local maildir = require("neotex.plugins.tools.himalaya.data.maildir")
+local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
 local notify = require('neotex.util.notifications')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')

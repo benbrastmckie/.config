@@ -503,7 +503,8 @@ end
 -- Match boolean field
 function M.match_boolean_field(email, field, value)
   if field == "has_attachment" then
-    return email.attachments and #email.attachments > 0
+    local has_attachment = (email.attachments and #email.attachments > 0) or email.has_attachment == true
+    return has_attachment == value
   end
   
   return false
