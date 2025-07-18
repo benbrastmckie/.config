@@ -1,11 +1,13 @@
 -- Test Full Email Workflow for Himalaya Plugin
 
+local M = {}
+
 local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
 local assert = framework.assert
 local helpers = framework.helpers
 
 -- Test metadata
-local test_metadata = {
+M.test_metadata = {
   name = "Full Email Workflow Tests",
   description = "Tests complete email workflow integration",
   count = 5,
@@ -162,11 +164,9 @@ table.insert(tests, framework.create_test('sync_integration', function()
   end
 end))
 
--- Export test suite with metadata
-_G.himalaya_test = framework.create_suite('Full Workflow Integration', tests)
-_G.himalaya_test.test_metadata = test_metadata
-_G.himalaya_test.get_test_count = function() return test_metadata.count end
-_G.himalaya_test.get_test_list = function()
+-- Add standardized interface to M
+M.get_test_count = function() return M.test_metadata.count end
+M.get_test_list = function()
   return {
     "Complete email workflow",
     "Multi-account workflow", 
@@ -176,4 +176,11 @@ _G.himalaya_test.get_test_list = function()
   }
 end
 
-return _G.himalaya_test
+-- Create test suite and assign run function to M
+local suite = framework.create_suite('Full Workflow Integration', tests)
+M.run = suite.run
+
+-- Export to global for test runner compatibility
+_G.himalaya_test = M
+
+return M
