@@ -276,19 +276,8 @@ function M.run_with_picker(filter)
         for _, test_info in ipairs(M.tests[test_spec.category]) do
           if test_info.name:match(test_spec.pattern) then
             local success, test_module = pcall(require, test_info.module_path)
-            if success then
-              if test_module.test_metadata and test_module.test_metadata.count then
-                total_count = total_count + test_module.test_metadata.count
-              else
-                missing_metadata = missing_metadata + 1
-                if test_module.tests and type(test_module.tests) == 'table' then
-                  for _, _ in pairs(test_module.tests) do
-                    total_count = total_count + 1
-                  end
-                else
-                  total_count = total_count + 1
-                end
-              end
+            if success and test_module.test_metadata and test_module.test_metadata.count then
+              total_count = total_count + test_module.test_metadata.count
             else
               total_count = total_count + 1
               missing_metadata = missing_metadata + 1
@@ -515,14 +504,17 @@ function M.run_test(test_info)
   end
   
   if ok and test_module then
-    -- Direct metadata validation - no adapters
+    -- Validate metadata exists (required for all tests)
     if not test_module.test_metadata then
-      -- TODO: Remove this warning after migration complete
-      local notify = require('neotex.util.notifications')
-      notify.himalaya(
-        string.format("Test %s missing metadata - needs migration", test_info.name),
-        notify.categories.WARNING
-      )
+      M.results.total = M.results.total + 1
+      M.results.failed = M.results.failed + 1
+      table.insert(M.results.errors, {
+        test = test_info.name,
+        category = test_info.category,
+        type = 'error',
+        message = 'Test module missing required metadata'
+      })
+      return
     end
     
     -- Setup test environment
@@ -919,31 +911,16 @@ function M.count_test_functions_in_category(category)
   
   for _, test_info in ipairs(M.tests[category]) do
     local success, test_module = pcall(require, test_info.module_path)
-    if success then
-      -- Direct metadata access - no adapters
-      if test_module.test_metadata and test_module.test_metadata.count then
-        count = count + test_module.test_metadata.count
-      else
-        -- Temporary fallback during migration
-        -- TODO: Remove after all tests have metadata
-        if test_module.tests and type(test_module.tests) == 'table' then
-          for _, _ in pairs(test_module.tests) do
-            count = count + 1
-          end
-        else
-          count = count + 1
-        end
-      end
+    if success and test_module.test_metadata and test_module.test_metadata.count then
+      count = count + test_module.test_metadata.count
     else
-      -- Module loading failed
+      -- Module loading failed or missing metadata - count as 1 test that will fail
       count = count + 1
     end
   end
   
   return count
 end
-
--- Remove the estimate_test_count function (no longer needed)
 
 -- Get detailed count information for a category
 function M.get_category_count_info(category)
@@ -963,25 +940,11 @@ function M.get_category_count_info(category)
   
   for _, test_info in ipairs(M.tests[category]) do
     local success, test_module = pcall(require, test_info.module_path)
-    if success then
-      if test_module.test_metadata and test_module.test_metadata.count then
-        total = total + test_module.test_metadata.count
-        explicit = explicit + test_module.test_metadata.count
-      else
-        -- Test missing metadata
-        missing_metadata = missing_metadata + 1
-        if test_module.tests and type(test_module.tests) == 'table' then
-          local actual = 0
-          for _, _ in pairs(test_module.tests) do
-            actual = actual + 1
-          end
-          total = total + actual
-        else
-          total = total + 1
-        end
-      end
+    if success and test_module.test_metadata and test_module.test_metadata.count then
+      total = total + test_module.test_metadata.count
+      explicit = explicit + test_module.test_metadata.count
     else
-      -- Module loading failed
+      -- Module loading failed or missing metadata
       total = total + 1
       missing_metadata = missing_metadata + 1
     end
