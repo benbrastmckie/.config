@@ -186,11 +186,31 @@ function M.run_with_picker(filter)
   -- Create cleaner menu structure
   local items = {}
   
-  -- Count total tests
-  local total_tests = M.count_all_test_functions()
+  -- Count total tests with validation
+  local total_tests, validation_info = M.count_all_tests_with_validation()
   
-  -- Add main options  
-  table.insert(items, { text = string.format('Run All Tests (%d tests)', total_tests), value = 'all', icon = '🚀' })
+  -- Add main options with validation indicators
+  local all_tests_text = string.format('Run All Tests (%d tests)', total_tests)
+  if validation_info.has_missing_metadata then
+    all_tests_text = all_tests_text .. ' ⚠️'
+  end
+  
+  table.insert(items, { 
+    text = all_tests_text, 
+    value = 'all', 
+    icon = '🚀',
+    metadata = validation_info
+  })
+  
+  -- Add validation summary if there are issues
+  if validation_info.has_missing_metadata then
+    table.insert(items, { 
+      text = string.format('  ⚠️  %d files missing metadata', validation_info.missing_metadata_count), 
+      value = nil, 
+      icon = ''
+    })
+  end
+  
   table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
   
   -- Create meaningful test categories
@@ -247,24 +267,31 @@ function M.run_with_picker(filter)
     }
   }
   
-  -- Add meaningful categories
+  -- Add meaningful categories with enhanced metadata
   for _, cat in ipairs(categories) do
     local total_count = 0
+    local missing_metadata = 0
     for _, test_spec in ipairs(cat.tests) do
       if M.tests[test_spec.category] then
         for _, test_info in ipairs(M.tests[test_spec.category]) do
           if test_info.name:match(test_spec.pattern) then
             local success, test_module = pcall(require, test_info.module_path)
             if success then
-              if test_module.tests and type(test_module.tests) == 'table' then
-                for _, _ in pairs(test_module.tests) do
+              if test_module.test_metadata and test_module.test_metadata.count then
+                total_count = total_count + test_module.test_metadata.count
+              else
+                missing_metadata = missing_metadata + 1
+                if test_module.tests and type(test_module.tests) == 'table' then
+                  for _, _ in pairs(test_module.tests) do
+                    total_count = total_count + 1
+                  end
+                else
                   total_count = total_count + 1
                 end
-              else
-                total_count = total_count + 1
               end
             else
               total_count = total_count + 1
+              missing_metadata = missing_metadata + 1
             end
           end
         end
@@ -272,8 +299,13 @@ function M.run_with_picker(filter)
     end
     
     if total_count > 0 then
+      local display_text = string.format('%s (%d tests) • %s', cat.name, total_count, cat.desc)
+      -- Add indicator if any tests are missing metadata
+      if missing_metadata > 0 then
+        display_text = display_text .. ' ⚠️'
+      end
       table.insert(items, {
-        text = string.format('%s (%d tests) • %s', cat.name, total_count, cat.desc),
+        text = display_text,
         value = cat,
         icon = cat.icon
       })
@@ -294,9 +326,16 @@ function M.run_with_picker(filter)
   
   for _, suite in ipairs(original_suites) do
     if M.tests[suite.category] and #M.tests[suite.category] > 0 then
-      local count = M.count_test_functions_in_category(suite.category)
+      local count_info = M.get_category_count_info(suite.category)
+      local display_text = string.format('%s (%d tests)', suite.name, count_info.total)
+      
+      -- Add metadata indicators
+      if count_info.missing_metadata > 0 then
+        display_text = display_text .. string.format(' [%d missing metadata]', count_info.missing_metadata)
+      end
+      
       table.insert(items, {
-        text = string.format('%s (%d tests)', suite.name, count),
+        text = display_text,
         value = suite.category,
         icon = suite.icon
       })
@@ -905,6 +944,79 @@ function M.count_test_functions_in_category(category)
 end
 
 -- Remove the estimate_test_count function (no longer needed)
+
+-- Get detailed count information for a category
+function M.get_category_count_info(category)
+  local total = 0
+  local explicit = 0
+  local missing_metadata = 0
+  local has_mismatches = false
+  
+  if not M.tests[category] then
+    return {
+      total = 0,
+      explicit = 0,
+      missing_metadata = 0,
+      has_mismatches = false
+    }
+  end
+  
+  for _, test_info in ipairs(M.tests[category]) do
+    local success, test_module = pcall(require, test_info.module_path)
+    if success then
+      if test_module.test_metadata and test_module.test_metadata.count then
+        total = total + test_module.test_metadata.count
+        explicit = explicit + test_module.test_metadata.count
+      else
+        -- Test missing metadata
+        missing_metadata = missing_metadata + 1
+        if test_module.tests and type(test_module.tests) == 'table' then
+          local actual = 0
+          for _, _ in pairs(test_module.tests) do
+            actual = actual + 1
+          end
+          total = total + actual
+        else
+          total = total + 1
+        end
+      end
+    else
+      -- Module loading failed
+      total = total + 1
+      missing_metadata = missing_metadata + 1
+    end
+  end
+  
+  return {
+    total = total,
+    explicit = explicit,
+    missing_metadata = missing_metadata,
+    has_mismatches = has_mismatches
+  }
+end
+
+-- Count all tests with validation information
+function M.count_all_tests_with_validation()
+  local total = 0
+  local validation_info = {
+    has_missing_metadata = false,
+    missing_metadata_count = 0,
+    categories_with_issues = {}
+  }
+  
+  for category, _ in pairs(M.tests) do
+    local count_info = M.get_category_count_info(category)
+    total = total + count_info.total
+    
+    if count_info.missing_metadata > 0 then
+      validation_info.has_missing_metadata = true
+      validation_info.missing_metadata_count = validation_info.missing_metadata_count + count_info.missing_metadata
+      table.insert(validation_info.categories_with_issues, category)
+    end
+  end
+  
+  return total, validation_info
+end
 
 -- Enhanced count_all_test_functions with validation
 function M.count_all_test_functions()
