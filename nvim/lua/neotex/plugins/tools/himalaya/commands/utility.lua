@@ -383,6 +383,41 @@ function M.setup(registry)
     }
   }
   
+  commands.HimalayaTestValidate = {
+    fn = function()
+      local validation = require('neotex.plugins.tools.himalaya.commands.test_validation')
+      validation.validate_test_counts()
+    end,
+    opts = {
+      desc = 'Validate test count accuracy and metadata'
+    }
+  }
+  
+  commands.HimalayaTestDebug = {
+    fn = function()
+      local validation = require('neotex.plugins.tools.himalaya.commands.test_validation')
+      validation.debug_test_counts()
+    end,
+    opts = {
+      desc = 'Debug test count discrepancies'
+    }
+  }
+  
+  commands.HimalayaTestDetails = {
+    fn = function(opts)
+      local validation = require('neotex.plugins.tools.himalaya.commands.test_validation')
+      validation.show_test_details(opts.args ~= '' and opts.args or nil)
+    end,
+    opts = {
+      nargs = '?',
+      complete = function()
+        local test_runner = require('neotex.plugins.tools.himalaya.test.test_runner')
+        return test_runner.get_test_completions()
+      end,
+      desc = 'Show detailed test information'
+    }
+  }
+  
   -- ======================
   -- Maintenance Commands
   -- ======================

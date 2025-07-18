@@ -976,21 +976,39 @@ end, {
 
 **Note**: Test count mismatches still exist in some files but all tests pass
 
-### Phase 4: Picker Enhancement
+### Phase 4: Picker Enhancement ✅ COMPLETED
 **Timeline**: Week 4
 **Test Requirement**: Enhanced UI without breaking changes
 
+**Progress Update (2025-07-17)**:
+- Enhanced picker to show metadata validation information
+- Added warning indicators (⚠️) for missing metadata
+- Improved category counting with detailed metadata info
+- Added three new debugging commands for test validation
+- All tests continue to pass (261/261)
+
 1. **Implementation**:
-   - [ ] Update picker display logic
-   - [ ] Add validation indicators
-   - [ ] Improve category organization
-   - [ ] Add debugging commands
+   - [x] Update picker display logic
+   - [x] Add validation indicators
+   - [x] Improve category organization
+   - [x] Add debugging commands
 
 2. **Testing Protocol**:
-   - [ ] Test picker in interactive mode
-   - [ ] Verify telescope integration (if available)
-   - [ ] Test simple picker fallback
-   - [ ] All counts must be accurate
+   - [x] Test picker in interactive mode
+   - [x] Verify telescope integration (if available)
+   - [x] Test simple picker fallback
+   - [x] All counts must be accurate
+
+**New Features Added**:
+- `M.get_category_count_info()` - Returns detailed metadata status per category
+- `M.count_all_tests_with_validation()` - Enhanced counting with validation info
+- Enhanced picker display showing metadata warnings
+- Category counts now show missing metadata indicators
+
+**New Commands**:
+- `:HimalayaTestValidate` - Validate test count accuracy and metadata
+- `:HimalayaTestDebug` - Debug test count discrepancies
+- `:HimalayaTestDetails [test_name]` - Show detailed test information
 
 ### Phase 5: Validation and Documentation
 **Timeline**: Week 5
