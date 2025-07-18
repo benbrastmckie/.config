@@ -123,12 +123,12 @@ Tests can be run either **interactively within Neovim** or **from the command li
 Use the `:HimalayaTest` command when you have Neovim open:
 
 ```vim
-:HimalayaTest              " Opens interactive picker
-:HimalayaTest all          " Run all tests
-:HimalayaTest commands     " Run command tests
-:HimalayaTest features     " Run feature tests
-:HimalayaTest integration  " Run integration tests
-:HimalayaTest performance  " Run performance tests
+:HimalayaTest                 " Opens interactive picker
+:HimalayaTest all             " Run all tests
+:HimalayaTest commands        " Run command tests
+:HimalayaTest features        " Run feature tests
+:HimalayaTest integration     " Run integration tests
+:HimalayaTest performance     " Run performance tests
 :HimalayaTest test_scheduler  " Run specific test
 ```
 

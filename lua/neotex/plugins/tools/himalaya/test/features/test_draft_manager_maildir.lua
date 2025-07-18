@@ -3,6 +3,16 @@
 
 local M = {}
 
+-- Add test metadata
+M.test_metadata = {
+  name = "Draft Manager Maildir Tests",
+  description = "Tests for the Maildir-based draft manager",
+  count = 6,
+  category = "feature",
+  tags = {"drafts", "maildir", "storage"},
+  estimated_duration_ms = 1000
+}
+
 -- Dependencies
 local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
