@@ -103,13 +103,5 @@ end))
 _G.himalaya_test = framework.create_suite('Email Commands', tests)
 _G.himalaya_test.test_metadata = test_metadata
 _G.himalaya_test.get_test_count = function() return test_metadata.count end
-_G.himalaya_test.get_test_list = function()
-  return {
-    "Email list command",
-    "Email preview command",
-    "Email reply command",
-    "Email forward command"
-  }
-end
 
 return _G.himalaya_test
