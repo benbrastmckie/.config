@@ -594,6 +594,12 @@ function M.run_test(test_info)
       end
     end
     
+    -- Variables to track final test counts
+    local final_total = 0
+    local final_passed = 0
+    local final_failed = 0
+    local used_run_function = false
+    
     -- Run module's run function if it exists
     if test_module.run and type(test_module.run) == 'function' then
       local success, result = pcall(test_module.run)
@@ -602,17 +608,15 @@ function M.run_test(test_info)
         -- Module returned aggregate results
         local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
         local expected_count = registry.get_test_count(test_info.module_path) or test_count
-        local total = result.total or expected_count
-        local passed = result.passed or test_passed
-        local failed = result.failed or test_failed
-        
-        -- Registry will track validation issues
-        -- No need to notify here as registry handles it
+        final_total = result.total or expected_count
+        final_passed = result.passed or test_passed
+        final_failed = result.failed or test_failed
+        used_run_function = true
         
         -- Update results
-        M.results.total = M.results.total + total
-        M.results.passed = M.results.passed + passed
-        M.results.failed = M.results.failed + failed
+        M.results.total = M.results.total + final_total
+        M.results.passed = M.results.passed + final_passed
+        M.results.failed = M.results.failed + final_failed
         
         -- Add errors
         if result.errors then
@@ -675,26 +679,15 @@ function M.run_test(test_info)
         })
       end
       
-      -- Update registry with execution results
-      local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
-      registry.update_execution_results(test_info.module_path, {
-        total = total,
-        passed = passed,
-        failed = failed
-      })
     elseif test_count > 0 then
       -- No run function but individual tests were found
+      final_total = test_count
+      final_passed = test_passed
+      final_failed = test_failed
+      
       M.results.total = M.results.total + test_count
       M.results.passed = M.results.passed + test_passed
       M.results.failed = M.results.failed + test_failed
-      
-      -- Update registry with execution results
-      local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
-      registry.update_execution_results(test_info.module_path, {
-        total = test_count,
-        passed = test_passed,
-        failed = test_failed
-      })
       
       for _, error in ipairs(test_errors) do
         table.insert(M.results.errors, {
@@ -713,6 +706,16 @@ function M.run_test(test_info)
         category = test_info.category,
         type = 'error',
         message = 'No test functions found'
+      })
+    end
+    
+    -- Update registry with execution results if we ran any tests
+    if final_total > 0 then
+      local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+      registry.update_execution_results(test_info.module_path, {
+        total = final_total,
+        passed = final_passed,
+        failed = final_failed
       })
     end
     
@@ -878,6 +881,27 @@ function M.build_report()
     end
     if counts.summary.total_with_hardcoded_lists > 0 then
       table.insert(lines, string.format('- %d modules with hardcoded list issues', counts.summary.total_with_hardcoded_lists))
+    end
+    table.insert(lines, '')
+  end
+  
+  -- Add execution summary
+  local exec_summary = registry.get_execution_summary()
+  if exec_summary.execution_mismatches > 0 then
+    table.insert(lines, '## 📊 Execution Validation')
+    table.insert(lines, string.format('- %d/%d modules executed', 
+      exec_summary.modules_executed, exec_summary.total_modules))
+    table.insert(lines, string.format('- %d execution count mismatches detected', 
+      exec_summary.execution_mismatches))
+    
+    if #exec_summary.details > 0 then
+      table.insert(lines, '')
+      table.insert(lines, '### Execution Mismatches:')
+      for _, detail in ipairs(exec_summary.details) do
+        local module_name = detail.module:match('([^.]+)$') or detail.module
+        table.insert(lines, string.format('- %s: registry=%d, executed=%d', 
+          module_name, detail.registered, detail.executed))
+      end
     end
     table.insert(lines, '')
   end

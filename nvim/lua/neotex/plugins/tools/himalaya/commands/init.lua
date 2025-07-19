@@ -75,6 +75,10 @@ function M.setup()
     vim.api.nvim_create_user_command('HimalayaTestRegistry', registry_cmds.show_validation_report, {
       desc = 'Show test registry validation report'
     })
+    
+    vim.api.nvim_create_user_command('HimalayaTestExecution', registry_cmds.show_execution_summary, {
+      desc = 'Show test execution summary with count validation'
+    })
   end
   
   -- Register all commands with vim
