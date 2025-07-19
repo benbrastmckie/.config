@@ -33,6 +33,20 @@ function M.inspect_module(module_path)
     end
   end
   
+  -- Also check if module returns himalaya_test
+  if test_module == _G.himalaya_test and test_module.test_metadata then
+    -- Module directly returned the test suite
+    if test_module.run and type(test_module.run) == 'function' then
+      -- This pattern needs execution to count
+      return {
+        suite = true,
+        needs_execution = true,
+        metadata = test_module.test_metadata,
+        has_run = true
+      }
+    end
+  end
+  
   -- Pattern 2: M.tests table (unit test pattern)
   if test_module.tests and type(test_module.tests) == 'table' then
     for name, func in pairs(test_module.tests) do

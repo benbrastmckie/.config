@@ -18,19 +18,45 @@ function M.show_validation_report()
   table.insert(lines, '')
   
   -- Summary
-  table.insert(lines, '## Summary')
+  table.insert(lines, '## Overall Summary')
+  table.insert(lines, string.format('**Total tests found: %d**', counts.summary.total_tests))
+  table.insert(lines, '')
   table.insert(lines, string.format('Total modules: %d', counts.by_status.total))
   table.insert(lines, string.format('Successfully inspected: %d', counts.by_status.inspected))
   table.insert(lines, string.format('Inspection errors: %d', counts.by_status.error))
   table.insert(lines, '')
+  table.insert(lines, '### Metadata Status')
+  table.insert(lines, string.format('With metadata: %d', counts.summary.total_with_metadata))
+  table.insert(lines, string.format('Missing metadata: %d', counts.summary.total_missing_metadata))
+  table.insert(lines, '')
+  table.insert(lines, '### Validation Issues')
+  table.insert(lines, string.format('Count mismatches: %d modules', counts.summary.total_with_mismatches))
+  table.insert(lines, string.format('Hardcoded list issues: %d modules', counts.summary.total_with_hardcoded_lists))
+  table.insert(lines, '')
   
   -- Category breakdown
   table.insert(lines, '## Test Counts by Category')
-  for category, info in pairs(counts.by_category) do
-    table.insert(lines, string.format('- %s: %d tests', category, info.total))
+  local categories = {}
+  for cat, _ in pairs(counts.by_category) do
+    table.insert(categories, cat)
+  end
+  table.sort(categories)
+  
+  for _, category in ipairs(categories) do
+    local info = counts.by_category[category]
+    table.insert(lines, string.format('\n### %s', category:upper()))
+    table.insert(lines, string.format('- Tests: %d', info.total))
+    table.insert(lines, string.format('- Modules: %d', info.modules))
+    if info.missing_metadata > 0 then
+      table.insert(lines, string.format('- Missing metadata: %d', info.missing_metadata))
+    end
+    if info.with_issues > 0 then
+      table.insert(lines, string.format('- With validation issues: %d', info.with_issues))
+    end
     if #info.errors > 0 then
+      table.insert(lines, '- Errors:')
       for _, err in ipairs(info.errors) do
-        table.insert(lines, string.format('  ⚠️  Error in %s', err.module))
+        table.insert(lines, string.format('  ⚠️  %s', err.module))
       end
     end
   end
