@@ -38,6 +38,39 @@ function M.setup()
     logger.warn("Some Phase 8 features failed to initialize")
   end
   
+  -- Register test validation commands
+  local validation_ok, validation_cmds = pcall(require, 'neotex.plugins.tools.himalaya.commands.test_validation')
+  if validation_ok then
+    local test_completions = function()
+      local test_runner = require('neotex.plugins.tools.himalaya.test.test_runner')
+      return test_runner.get_test_completions()
+    end
+    
+    vim.api.nvim_create_user_command('HimalayaTestValidate', validation_cmds.validate_test_counts, {
+      desc = 'Validate test counts across all categories'
+    })
+    
+    vim.api.nvim_create_user_command('HimalayaTestDebug', validation_cmds.debug_test_mismatch, {
+      nargs = 1,
+      complete = test_completions,
+      desc = 'Debug test count mismatch for a specific test'
+    })
+    
+    vim.api.nvim_create_user_command('HimalayaTestDetails', validation_cmds.show_test_details, {
+      nargs = 1,
+      complete = test_completions,
+      desc = 'Show detailed test information'
+    })
+  end
+  
+  -- Register test registry commands
+  local registry_ok, registry_cmds = pcall(require, 'neotex.plugins.tools.himalaya.commands.test_registry_debug')
+  if registry_ok then
+    vim.api.nvim_create_user_command('HimalayaTestRegistry', registry_cmds.show_validation_report, {
+      desc = 'Show test registry validation report'
+    })
+  end
+  
   -- Register all commands with vim
   M.register_all()
 end

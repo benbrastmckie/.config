@@ -105,6 +105,9 @@ end
 
 -- Discover test files
 function M.discover_tests()
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  registry.clear() -- Start fresh
+  
   local test_dirs = {
     'commands',
     'features', 
@@ -144,13 +147,23 @@ function M.discover_tests()
         module_parts[#module_parts] = module_parts[#module_parts]:gsub('%.lua$', '')
         local module_path = 'neotex.plugins.tools.himalaya.test.' .. table.concat(module_parts, '.')
         
-        table.insert(M.tests[dir], {
+        local test_info = {
           name = name,
           display_name = display_name,
           path = file,
           category = dir,
           module_path = module_path
-        })
+        }
+        
+        -- Register each discovered file
+        local success, error = registry.inspect_and_register(test_info)
+        
+        if not success then
+          -- Store error for display but continue discovery
+          test_info.discovery_error = error
+        end
+        
+        table.insert(M.tests[dir], test_info)
       end
     end
   end
@@ -635,11 +648,27 @@ function M.run_test(test_info)
           message = tostring(result)
         })
       end
+      
+      -- Update registry with execution results
+      local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+      registry.update_execution_results(test_info.module_path, {
+        total = total,
+        passed = passed,
+        failed = failed
+      })
     elseif test_count > 0 then
       -- No run function but individual tests were found
       M.results.total = M.results.total + test_count
       M.results.passed = M.results.passed + test_passed
       M.results.failed = M.results.failed + test_failed
+      
+      -- Update registry with execution results
+      local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+      registry.update_execution_results(test_info.module_path, {
+        total = test_count,
+        passed = test_passed,
+        failed = test_failed
+      })
       
       for _, error in ipairs(test_errors) do
         table.insert(M.results.errors, {
@@ -903,50 +932,64 @@ end
 
 -- Count test functions in a specific category
 function M.count_test_functions_in_category(category)
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local tests = registry.get_category_tests(category)
+  
   local count = 0
+  local errors = {}
   
-  if not M.tests[category] then
-    return 0
-  end
-  
-  for _, test_info in ipairs(M.tests[category]) do
-    local success, test_module = pcall(require, test_info.module_path)
-    if success and test_module.test_metadata and test_module.test_metadata.count then
-      count = count + test_module.test_metadata.count
+  for _, test in ipairs(tests) do
+    local test_count = registry.get_test_count(test.module_path)
+    if test_count then
+      count = count + test_count
     else
-      -- Module loading failed or missing metadata - count as 1 test that will fail
-      count = count + 1
+      table.insert(errors, {
+        module = test.module_path,
+        error = test.inspection_error
+      })
     end
   end
+  
+  -- Store errors for display (but don't interrupt counting)
+  M._last_count_errors = errors
   
   return count
 end
 
 -- Get detailed count information for a category
 function M.get_category_count_info(category)
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local tests = registry.get_category_tests(category)
+  
   local total = 0
   local explicit = 0
   local missing_metadata = 0
   local has_mismatches = false
+  local validation_issues = 0
   
-  if not M.tests[category] then
-    return {
-      total = 0,
-      explicit = 0,
-      missing_metadata = 0,
-      has_mismatches = false
-    }
-  end
-  
-  for _, test_info in ipairs(M.tests[category]) do
-    local success, test_module = pcall(require, test_info.module_path)
-    if success and test_module.test_metadata and test_module.test_metadata.count then
-      total = total + test_module.test_metadata.count
-      explicit = explicit + test_module.test_metadata.count
+  for _, test in ipairs(tests) do
+    local test_count = registry.get_test_count(test.module_path)
+    if test_count then
+      total = total + test_count
+      if test.metadata and test.metadata.count then
+        explicit = explicit + test.metadata.count
+      end
     else
-      -- Module loading failed or missing metadata
-      total = total + 1
+      total = total + 1 -- Count as 1 for failed modules
+    end
+    
+    if not test.metadata then
       missing_metadata = missing_metadata + 1
+    end
+    
+    if test.validation_issues and #test.validation_issues > 0 then
+      validation_issues = validation_issues + #test.validation_issues
+      -- Check for count mismatches
+      for _, issue in ipairs(test.validation_issues) do
+        if issue.type == 'count_mismatch' then
+          has_mismatches = true
+        end
+      end
     end
   end
   
@@ -954,22 +997,32 @@ function M.get_category_count_info(category)
     total = total,
     explicit = explicit,
     missing_metadata = missing_metadata,
-    has_mismatches = has_mismatches
+    has_mismatches = has_mismatches,
+    validation_issues = validation_issues
   }
 end
 
 -- Count all tests with validation information
 function M.count_all_tests_with_validation()
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
+  
   local total = 0
+  for category, info in pairs(counts.by_category) do
+    total = total + info.total
+  end
+  
   local validation_info = {
     has_missing_metadata = false,
     missing_metadata_count = 0,
-    categories_with_issues = {}
+    categories_with_issues = {},
+    has_validation_errors = #counts.validation_issues > 0,
+    validation_issue_count = #counts.validation_issues
   }
   
+  -- Check each category for issues
   for category, _ in pairs(M.tests) do
     local count_info = M.get_category_count_info(category)
-    total = total + count_info.total
     
     if count_info.missing_metadata > 0 then
       validation_info.has_missing_metadata = true
