@@ -46,17 +46,23 @@ function M.setup()
       return test_runner.get_test_completions()
     end
     
-    vim.api.nvim_create_user_command('HimalayaTestValidate', validation_cmds.validate_test_counts, {
+    vim.api.nvim_create_user_command('HimalayaTestValidate', function()
+      validation_cmds.validate_test_counts()
+    end, {
       desc = 'Validate test counts across all categories'
     })
     
-    vim.api.nvim_create_user_command('HimalayaTestDebug', validation_cmds.debug_test_mismatch, {
+    vim.api.nvim_create_user_command('HimalayaTestDebug', function(opts)
+      validation_cmds.debug_test_mismatch(opts.args)
+    end, {
       nargs = 1,
       complete = test_completions,
       desc = 'Debug test count mismatch for a specific test'
     })
     
-    vim.api.nvim_create_user_command('HimalayaTestDetails', validation_cmds.show_test_details, {
+    vim.api.nvim_create_user_command('HimalayaTestDetails', function(opts)
+      validation_cmds.show_test_details(opts.args)
+    end, {
       nargs = 1,
       complete = test_completions,
       desc = 'Show detailed test information'
