@@ -143,4 +143,86 @@ function M.show_module_details(module_name)
   float.show('Module Details', lines)
 end
 
+-- Show execution summary
+function M.show_execution_summary()
+  local exec_summary = registry.get_execution_summary()
+  local lines = {}
+  
+  -- Header
+  table.insert(lines, '# Test Execution Summary')
+  table.insert(lines, '')
+  table.insert(lines, string.format('Generated: %s', os.date('%Y-%m-%d %H:%M:%S')))
+  table.insert(lines, '')
+  
+  -- Summary stats
+  table.insert(lines, '## Execution Statistics')
+  table.insert(lines, string.format('Total modules: %d', exec_summary.total_modules))
+  table.insert(lines, string.format('Modules executed: %d', exec_summary.modules_executed))
+  table.insert(lines, string.format('Total tests executed: %d', exec_summary.total_executed))
+  table.insert(lines, string.format('Execution mismatches: %d', exec_summary.execution_mismatches))
+  table.insert(lines, '')
+  
+  -- Execution mismatches
+  if exec_summary.execution_mismatches > 0 and #exec_summary.details > 0 then
+    table.insert(lines, '## Execution Mismatches')
+    table.insert(lines, '')
+    table.insert(lines, 'These modules show different test counts between registry and execution:')
+    table.insert(lines, '')
+    
+    for _, detail in ipairs(exec_summary.details) do
+      local module_name = detail.module:match('([^.]+)$') or detail.module
+      table.insert(lines, string.format('### %s', module_name))
+      table.insert(lines, string.format('- Registry count: %d', detail.registered))
+      table.insert(lines, string.format('- Execution count: %d', detail.executed))
+      table.insert(lines, string.format('- Difference: %d', detail.executed - detail.registered))
+      table.insert(lines, '')
+    end
+  else
+    table.insert(lines, '## ✅ No Execution Mismatches')
+    table.insert(lines, '')
+    table.insert(lines, 'All executed modules match their registered test counts.')
+  end
+  
+  -- Unexecuted modules
+  local unexecuted = {}
+  for module_path, entry in pairs(registry.registry) do
+    if not entry.last_execution then
+      table.insert(unexecuted, {
+        module = module_path,
+        category = entry.category,
+        count = #entry.actual_tests
+      })
+    end
+  end
+  
+  if #unexecuted > 0 then
+    table.insert(lines, '')
+    table.insert(lines, '## Unexecuted Modules')
+    table.insert(lines, '')
+    table.insert(lines, string.format('%d modules have not been executed:', #unexecuted))
+    table.insert(lines, '')
+    
+    -- Sort by category
+    table.sort(unexecuted, function(a, b) 
+      if a.category == b.category then
+        return a.module < b.module
+      end
+      return a.category < b.category
+    end)
+    
+    local current_category = nil
+    for _, info in ipairs(unexecuted) do
+      if info.category ~= current_category then
+        current_category = info.category
+        table.insert(lines, string.format('### %s', current_category:upper()))
+      end
+      local module_name = info.module:match('([^.]+)$') or info.module
+      table.insert(lines, string.format('- %s (%d tests)', module_name, info.count))
+    end
+  end
+  
+  -- Show in floating window
+  float.show('Execution Summary', lines)
+end
+
 return M

@@ -238,6 +238,87 @@ function M.get_pattern_count(test_infos)
   return count, issues
 end
 
+-- Update execution results for a module
+function M.update_execution_results(module_path, results)
+  if not M.registry[module_path] then
+    return
+  end
+  
+  local entry = M.registry[module_path]
+  entry.last_execution = {
+    total = results.total or 0,
+    passed = results.passed or 0,
+    failed = results.failed or 0
+  }
+  
+  -- Validate execution count against registered count
+  local registered_count = #entry.actual_tests
+  if entry.needs_execution then
+    -- For suites that need execution, we now have the real count
+    registered_count = results.total
+  end
+  
+  -- Check for execution/registry mismatch
+  if results.total and results.total ~= registered_count and registered_count > 0 then
+    -- Add validation issue if not already present
+    local has_execution_mismatch = false
+    for _, issue in ipairs(entry.validation_issues) do
+      if issue.type == 'execution_mismatch' then
+        has_execution_mismatch = true
+        -- Update the details
+        issue.details = string.format("Registry has %d tests, execution found %d tests", 
+          registered_count, results.total)
+        break
+      end
+    end
+    
+    if not has_execution_mismatch then
+      table.insert(entry.validation_issues, {
+        type = 'execution_mismatch',
+        details = string.format("Registry has %d tests, execution found %d tests", 
+          registered_count, results.total)
+      })
+    end
+  end
+end
+
+-- Get execution summary across all tests
+function M.get_execution_summary()
+  local summary = {
+    total_executed = 0,
+    total_modules = 0,
+    modules_executed = 0,
+    execution_mismatches = 0,
+    details = {}
+  }
+  
+  for module_path, entry in pairs(M.registry) do
+    summary.total_modules = summary.total_modules + 1
+    
+    if entry.last_execution then
+      summary.modules_executed = summary.modules_executed + 1
+      summary.total_executed = summary.total_executed + entry.last_execution.total
+      
+      -- Check for mismatches
+      local registered_count = #entry.actual_tests
+      if entry.needs_execution and entry.last_execution.total > 0 then
+        registered_count = entry.last_execution.total
+      end
+      
+      if registered_count > 0 and entry.last_execution.total ~= registered_count then
+        summary.execution_mismatches = summary.execution_mismatches + 1
+        table.insert(summary.details, {
+          module = module_path,
+          registered = registered_count,
+          executed = entry.last_execution.total
+        })
+      end
+    end
+  end
+  
+  return summary
+end
+
 -- Clear the registry (useful for testing)
 function M.clear()
   M.registry = {}
