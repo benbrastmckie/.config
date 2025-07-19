@@ -199,26 +199,39 @@ function M.run_with_picker(filter)
   -- Create cleaner menu structure
   local items = {}
   
-  -- Count total tests with validation
-  local total_tests, validation_info = M.count_all_tests_with_validation()
+  -- Get comprehensive counts from registry
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
   
   -- Add main options with validation indicators
-  local all_tests_text = string.format('Run All Tests (%d tests)', total_tests)
-  if validation_info.has_missing_metadata then
-    all_tests_text = all_tests_text .. ' ⚠️'
+  local all_tests_text = string.format('Run All Tests (%d tests)', counts.summary.total_tests)
+  local indicators = {}
+  
+  if counts.summary.total_missing_metadata > 0 then
+    table.insert(indicators, '⚠️')
+  end
+  if counts.summary.total_with_mismatches > 0 then
+    table.insert(indicators, '❌')
+  end
+  
+  if #indicators > 0 then
+    all_tests_text = all_tests_text .. ' ' .. table.concat(indicators, ' ')
   end
   
   table.insert(items, { 
     text = all_tests_text, 
     value = 'all', 
     icon = '🚀',
-    metadata = validation_info
+    metadata = counts
   })
   
   -- Add validation summary if there are issues
-  if validation_info.has_missing_metadata then
+  if counts.summary.total_missing_metadata > 0 or counts.summary.total_with_mismatches > 0 then
     table.insert(items, { 
-      text = string.format('  ⚠️  %d files missing metadata', validation_info.missing_metadata_count), 
+      text = string.format('  📊 %d modules | ⚠️ %d missing metadata | ❌ %d count mismatches', 
+        counts.by_status.total, 
+        counts.summary.total_missing_metadata,
+        counts.summary.total_with_mismatches), 
       value = nil, 
       icon = ''
     })
@@ -341,9 +354,20 @@ function M.run_with_picker(filter)
       local count_info = M.get_category_count_info(suite.category)
       local display_text = string.format('%s (%d tests)', suite.name, count_info.total)
       
-      -- Add metadata indicators
+      -- Add validation indicators
+      local indicators = {}
       if count_info.missing_metadata > 0 then
-        display_text = display_text .. string.format(' [%d missing metadata]', count_info.missing_metadata)
+        table.insert(indicators, string.format('⚠️ %d', count_info.missing_metadata))
+      end
+      if count_info.has_mismatches then
+        table.insert(indicators, '❌')
+      end
+      if count_info.validation_issues > 0 then
+        table.insert(indicators, string.format('⚠ %d issues', count_info.validation_issues))
+      end
+      
+      if #indicators > 0 then
+        display_text = display_text .. ' [' .. table.concat(indicators, ' ') .. ']'
       end
       
       table.insert(items, {
@@ -836,6 +860,28 @@ function M.build_report()
   table.insert(lines, string.format('Success Rate: %.1f%%', success_rate))
   table.insert(lines, '')
   
+  -- Add validation summary
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
+  
+  if counts.summary.total_with_mismatches > 0 or counts.summary.total_missing_metadata > 0 then
+    table.insert(lines, '## ⚠️  Registry Validation Summary')
+    if counts.summary.total_tests ~= M.results.total then
+      table.insert(lines, string.format('**Registry reports %d tests, execution found %d tests**', 
+        counts.summary.total_tests, M.results.total))
+    end
+    if counts.summary.total_missing_metadata > 0 then
+      table.insert(lines, string.format('- %d modules missing metadata', counts.summary.total_missing_metadata))
+    end
+    if counts.summary.total_with_mismatches > 0 then
+      table.insert(lines, string.format('- %d modules with count mismatches', counts.summary.total_with_mismatches))
+    end
+    if counts.summary.total_with_hardcoded_lists > 0 then
+      table.insert(lines, string.format('- %d modules with hardcoded list issues', counts.summary.total_with_hardcoded_lists))
+    end
+    table.insert(lines, '')
+  end
+  
   -- Performance summary
   local framework = require('neotex.plugins.tools.himalaya.test.utils.test_framework')
   local perf_metrics = framework.performance.metrics
@@ -887,6 +933,36 @@ function M.build_report()
     table.insert(lines, '')
     for metric, value in pairs(M.results.performance) do
       table.insert(lines, string.format('- %s: %s', metric, value))
+    end
+  end
+  
+  -- Validation issues from registry
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
+  
+  if #counts.validation_issues > 0 then
+    table.insert(lines, '')
+    table.insert(lines, '## Test Count Validation Issues')
+    table.insert(lines, '')
+    table.insert(lines, string.format('Found %d modules with validation issues:', #counts.validation_issues))
+    table.insert(lines, '')
+    
+    for _, issue in ipairs(counts.validation_issues) do
+      local module_name = issue.module:match('([^.]+)$') or issue.module
+      table.insert(lines, string.format('### %s', module_name))
+      
+      for _, detail in ipairs(issue.issues) do
+        if detail.type == 'count_mismatch' then
+          table.insert(lines, string.format('- ❌ %s', detail.details))
+        elseif detail.type == 'missing_metadata' then
+          table.insert(lines, string.format('- ⚠️  %s', detail.details))
+        elseif detail.type == 'hardcoded_list_mismatch' or detail.type == 'hardcoded_list_invalid' then
+          table.insert(lines, string.format('- 📋 %s', detail.details))
+        else
+          table.insert(lines, string.format('- ⚠  %s', detail.details))
+        end
+      end
+      table.insert(lines, '')
     end
   end
   
