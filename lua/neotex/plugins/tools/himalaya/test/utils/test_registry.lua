@@ -139,7 +139,14 @@ function M.get_comprehensive_counts()
       error = 0,
       total = 0
     },
-    validation_issues = {}
+    validation_issues = {},
+    summary = {
+      total_tests = 0,
+      total_with_metadata = 0,
+      total_missing_metadata = 0,
+      total_with_mismatches = 0,
+      total_with_hardcoded_lists = 0
+    }
   }
   
   -- Process each registered module
@@ -156,13 +163,19 @@ function M.get_comprehensive_counts()
     if not counts.by_category[entry.category] then
       counts.by_category[entry.category] = {
         total = 0,
-        errors = {}
+        errors = {},
+        modules = 0,
+        missing_metadata = 0,
+        with_issues = 0
       }
     end
+    
+    counts.by_category[entry.category].modules = counts.by_category[entry.category].modules + 1
     
     local test_count = M.get_test_count(module_path)
     if test_count then
       counts.by_category[entry.category].total = counts.by_category[entry.category].total + test_count
+      counts.summary.total_tests = counts.summary.total_tests + test_count
     else
       table.insert(counts.by_category[entry.category].errors, {
         module = module_path,
@@ -170,16 +183,59 @@ function M.get_comprehensive_counts()
       })
     end
     
+    -- Track metadata status
+    if entry.metadata then
+      counts.summary.total_with_metadata = counts.summary.total_with_metadata + 1
+    else
+      counts.summary.total_missing_metadata = counts.summary.total_missing_metadata + 1
+      counts.by_category[entry.category].missing_metadata = counts.by_category[entry.category].missing_metadata + 1
+    end
+    
     -- Collect validation issues
     if #entry.validation_issues > 0 then
+      counts.by_category[entry.category].with_issues = counts.by_category[entry.category].with_issues + 1
+      
       table.insert(counts.validation_issues, {
         module = module_path,
         issues = entry.validation_issues
       })
+      
+      -- Check for specific issue types
+      for _, issue in ipairs(entry.validation_issues) do
+        if issue.type == 'count_mismatch' then
+          counts.summary.total_with_mismatches = counts.summary.total_with_mismatches + 1
+          break
+        end
+      end
+      
+      for _, issue in ipairs(entry.validation_issues) do
+        if issue.type == 'hardcoded_list_mismatch' or issue.type == 'hardcoded_list_invalid' then
+          counts.summary.total_with_hardcoded_lists = counts.summary.total_with_hardcoded_lists + 1
+          break
+        end
+      end
     end
   end
   
   return counts
+end
+
+-- Get count for tests matching a pattern
+function M.get_pattern_count(test_infos)
+  local count = 0
+  local issues = 0
+  
+  for _, test_info in ipairs(test_infos) do
+    local test_count = M.get_test_count(test_info.module_path)
+    if test_count then
+      count = count + test_count
+    else
+      count = count + 1 -- Fallback count
+      issues = issues + 1
+    end
+  end
+  
+  return count, issues
 end
 
 -- Clear the registry (useful for testing)

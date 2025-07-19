@@ -281,18 +281,28 @@ function M.run_with_picker(filter)
   }
   
   -- Add meaningful categories with enhanced metadata
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
   for _, cat in ipairs(categories) do
     local total_count = 0
     local missing_metadata = 0
+    local has_errors = false
+    
     for _, test_spec in ipairs(cat.tests) do
       if M.tests[test_spec.category] then
         for _, test_info in ipairs(M.tests[test_spec.category]) do
           if test_info.name:match(test_spec.pattern) then
-            local success, test_module = pcall(require, test_info.module_path)
-            if success and test_module.test_metadata and test_module.test_metadata.count then
-              total_count = total_count + test_module.test_metadata.count
+            local test_count = registry.get_test_count(test_info.module_path)
+            if test_count then
+              total_count = total_count + test_count
             else
+              -- Registry couldn't determine count
               total_count = total_count + 1
+              has_errors = true
+            end
+            
+            -- Check for missing metadata
+            local entry = registry.registry[test_info.module_path]
+            if entry and not entry.metadata then
               missing_metadata = missing_metadata + 1
             end
           end
@@ -302,8 +312,8 @@ function M.run_with_picker(filter)
     
     if total_count > 0 then
       local display_text = string.format('%s (%d tests) • %s', cat.name, total_count, cat.desc)
-      -- Add indicator if any tests are missing metadata
-      if missing_metadata > 0 then
+      -- Add indicator if any tests have issues
+      if missing_metadata > 0 or has_errors then
         display_text = display_text .. ' ⚠️'
       end
       table.insert(items, {
@@ -566,22 +576,14 @@ function M.run_test(test_info)
       
       if success and type(result) == 'table' then
         -- Module returned aggregate results
-        local expected_count = test_module.test_metadata and test_module.test_metadata.count or test_count
+        local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+        local expected_count = registry.get_test_count(test_info.module_path) or test_count
         local total = result.total or expected_count
         local passed = result.passed or test_passed
         local failed = result.failed or test_failed
         
-        -- Validate counts match metadata
-        if test_module.test_metadata and total ~= expected_count then
-          if not _G.HIMALAYA_TEST_MODE then
-            local notify = require('neotex.util.notifications')
-            notify.himalaya(
-              string.format("Test count mismatch in %s: metadata says %d, execution says %d",
-                test_info.name, expected_count, total),
-              notify.categories.ERROR
-            )
-          end
-        end
+        -- Registry will track validation issues
+        -- No need to notify here as registry handles it
         
         -- Update results
         M.results.total = M.results.total + total
@@ -1034,35 +1036,11 @@ function M.count_all_tests_with_validation()
   return total, validation_info
 end
 
--- Enhanced count_all_test_functions with validation
+-- Get total test count across all categories
 function M.count_all_test_functions()
-  local total = 0
-  local validation_errors = {}
-  
-  for category, _ in pairs(M.tests) do
-    local category_count = M.count_test_functions_in_category(category)
-    total = total + category_count
-    
-    -- Optional: Add validation to catch discrepancies
-    if M.config.validate_counts then
-      local actual_count = M.validate_category_count(category)
-      if actual_count ~= category_count then
-        table.insert(validation_errors, {
-          category = category,
-          expected = category_count,
-          actual = actual_count
-        })
-      end
-    end
-  end
-  
-  -- Report validation errors if any
-  if #validation_errors > 0 and not _G.HIMALAYA_TEST_MODE then
-    local notify = require('neotex.util.notifications')
-    notify.himalaya("Test count validation failed", notify.categories.ERROR)
-  end
-  
-  return total
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
+  return counts.summary.total_tests
 end
 
 return M
