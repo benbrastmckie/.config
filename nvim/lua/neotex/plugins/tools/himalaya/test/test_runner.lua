@@ -275,36 +275,124 @@ function M.run_with_picker(filter)
         display_text = display_text .. ' [' .. table.concat(indicators, ' ') .. ']'
       end
       
-      -- Special handling for features category (hierarchical display)
-      if suite.category == 'features' then
-        -- Collect individual test files first
-        local feature_items = {}
+      -- Special handling for features and unit categories (hierarchical display)
+      if suite.category == 'features' or suite.category == 'unit' then
         local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
-        for _, test_info in ipairs(M.tests[suite.category]) do
-          local test_count = registry.get_test_count(test_info.module_path) or 1
-          local test_name = M.format_test_display_name(test_info.name)
-          local test_text = string.format('  - %s (%d tests)', test_name, test_count)
+        
+        if suite.category == 'unit' then
+          -- Group unit tests by subdirectory
+          local subdirs = {}
           
-          table.insert(feature_items, {
-            text = test_text,
-            value = test_info,
-            icon = '',
-            is_single_test = true
+          -- Organize tests by subdirectory
+          for _, test_info in ipairs(M.tests[suite.category]) do
+            -- Extract subdirectory from path
+            local subdir = test_info.path:match('/unit/([^/]+)/')
+            if subdir then
+              if not subdirs[subdir] then
+                subdirs[subdir] = {
+                  name = subdir,
+                  tests = {},
+                  total_count = 0
+                }
+              end
+              
+              local test_count = registry.get_test_count(test_info.module_path) or 1
+              subdirs[subdir].total_count = subdirs[subdir].total_count + test_count
+              
+              table.insert(subdirs[subdir].tests, {
+                info = test_info,
+                count = test_count
+              })
+            end
+          end
+          
+          -- Sort subdirectories for consistent display
+          local sorted_subdirs = {}
+          for name, data in pairs(subdirs) do
+            table.insert(sorted_subdirs, data)
+          end
+          table.sort(sorted_subdirs, function(a, b) return a.name < b.name end)
+          
+          -- Add items in reverse order for picker display
+          -- First add individual tests grouped by subdirectory
+          for _, subdir in ipairs(sorted_subdirs) do
+            -- Add subdirectory tests
+            for _, test_data in ipairs(subdir.tests) do
+              local test_name = M.format_test_display_name(test_data.info.name)
+              local test_text = string.format('    - %s (%d tests)', test_name, test_data.count)
+              
+              table.insert(items, {
+                text = test_text,
+                value = test_data.info,
+                icon = '',
+                is_single_test = true
+              })
+            end
+            
+            -- Add subdirectory header
+            local subdir_name = subdir.name:gsub("^%l", string.upper)
+            -- Special case for UI
+            if subdir_name == "Ui" then
+              subdir_name = "UI"
+            end
+            
+            -- Choose appropriate icon for each subdirectory
+            local subdir_icons = {
+              config = '⚙️',
+              data = '💾',
+              ui = '🖥️',
+              utils = '🔧'
+            }
+            
+            local subdir_text = string.format('%s (%d tests)', subdir_name, subdir.total_count)
+            table.insert(items, {
+              text = subdir_text,
+              value = {
+                is_subdir = true,
+                category = suite.category,
+                subdir = subdir.name,
+                tests = subdir.tests
+              },
+              icon = '  ' .. (subdir_icons[subdir.name] or '📁')
+            })
+          end
+          
+          -- Add "Run All Unit Tests" last (so it appears first in reversed display)
+          local unit_tests_text = string.format('Run All Unit Tests (%d tests)', count_info.total)
+          table.insert(items, {
+            text = unit_tests_text,
+            value = suite.category,
+            icon = '🧪'  -- Use same icon as unit
+          })
+        else
+          -- Features category - keep existing logic
+          local feature_items = {}
+          for _, test_info in ipairs(M.tests[suite.category]) do
+            local test_count = registry.get_test_count(test_info.module_path) or 1
+            local test_name = M.format_test_display_name(test_info.name)
+            local test_text = string.format('  - %s (%d tests)', test_name, test_count)
+            
+            table.insert(feature_items, {
+              text = test_text,
+              value = test_info,
+              icon = '',
+              is_single_test = true
+            })
+          end
+          
+          -- Add individual test files first (they'll appear after "Run All" in reversed display)
+          for _, item in ipairs(feature_items) do
+            table.insert(items, item)
+          end
+          
+          -- Add "Run All Feature Tests" last (so it appears first in reversed display)
+          local feature_tests_text = string.format('Run All Feature Tests (%d tests)', count_info.total)
+          table.insert(items, {
+            text = feature_tests_text,
+            value = suite.category,
+            icon = '✨'  -- Use same icon as features
           })
         end
-        
-        -- Add individual test files first (they'll appear after "Run All" in reversed display)
-        for _, item in ipairs(feature_items) do
-          table.insert(items, item)
-        end
-        
-        -- Add "Run All Feature Tests" last (so it appears first in reversed display)
-        local feature_tests_text = string.format('Run All Feature Tests (%d tests)', count_info.total)
-        table.insert(items, {
-          text = feature_tests_text,
-          value = suite.category,
-          icon = '✨'  -- Use same icon as features
-        })
       else
         -- Regular category display
         table.insert(items, {
@@ -422,6 +510,9 @@ function M.execute_test_selection(selection)
       M.run_all_tests()
     elseif type(selection) == 'string' then
       M.run_category_tests(selection)
+    elseif type(selection) == 'table' and selection.is_subdir then
+      -- Running a subdirectory of tests
+      M.run_subdir_tests(selection)
     else
       M.run_single_test(selection)
     end
@@ -452,6 +543,15 @@ function M.run_category_tests(category)
   local tests = M.tests[category] or {}
   for _, test in ipairs(tests) do
     M.run_test(test)
+  end
+end
+
+-- Run subdirectory tests
+function M.run_subdir_tests(selection)
+  if selection.tests then
+    for _, test_data in ipairs(selection.tests) do
+      M.run_test(test_data.info)
+    end
   end
 end
 
