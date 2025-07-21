@@ -7,8 +7,9 @@ local notify = require('neotex.util.notifications')
 
 -- Command to validate test counts
 M.validate_test_counts = function()
-  -- Ensure tests are discovered
-  test_runner.discover_tests()
+  -- Use registry for comprehensive validation
+  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+  local counts = registry.get_comprehensive_counts()
   
   local lines = {
     "# Test Count Validation Report",
@@ -19,53 +20,113 @@ M.validate_test_counts = function()
     ""
   }
   
-  local total_tests = 0
-  local total_with_metadata = 0
-  local total_missing_metadata = 0
+  -- Overall counts
+  table.insert(lines, string.format("Total Tests: %d", counts.summary.total_tests))
+  table.insert(lines, string.format("Total Modules: %d", counts.by_status.total))
+  table.insert(lines, string.format("Successfully Inspected: %d", counts.by_status.inspected))
+  table.insert(lines, string.format("Inspection Errors: %d", counts.by_status.error))
+  table.insert(lines, "")
   
-  -- Check each category
-  for category, tests in pairs(test_runner.tests) do
-    local category_info = test_runner.get_category_count_info(category)
-    
-    table.insert(lines, string.format("### %s Tests", category:upper()))
-    table.insert(lines, string.format("- Total: %d tests", category_info.total))
-    table.insert(lines, string.format("- With metadata: %d tests", category_info.explicit))
-    table.insert(lines, string.format("- Missing metadata: %d files", category_info.missing_metadata))
+  -- Architecture Summary
+  table.insert(lines, "## Test Architecture")
+  local suite_count = 0
+  local test_file_count = 0
+  
+  for module_path, entry in pairs(registry.registry) do
+    if entry.is_suite then
+      suite_count = suite_count + 1
+    else
+      test_file_count = test_file_count + 1
+    end
+  end
+  
+  table.insert(lines, string.format("Test Files: %d (contribute to count)", test_file_count))
+  table.insert(lines, string.format("Test Suites: %d (orchestrate other tests, count=0)", suite_count))
+  table.insert(lines, "")
+  
+  -- List suites
+  if suite_count > 0 then
+    table.insert(lines, "### Test Suites")
+    for module_path, entry in pairs(registry.registry) do
+      if entry.is_suite then
+        local name = module_path:match("([^.]+)$") or module_path
+        local aggregated = registry.get_suite_aggregated_count(module_path)
+        table.insert(lines, string.format("- %s (aggregates %d tests)", name, aggregated))
+        if entry.runs_tests and #entry.runs_tests > 0 then
+          for _, test_name in ipairs(entry.runs_tests) do
+            table.insert(lines, string.format("  - %s", test_name))
+          end
+        end
+      end
+    end
+    table.insert(lines, "")
+  end
+  
+  -- Validation Issues
+  if #counts.validation_issues > 0 then
+    table.insert(lines, "## ⚠️  Validation Issues")
     table.insert(lines, "")
     
-    -- List files missing metadata
-    if category_info.missing_metadata > 0 then
-      table.insert(lines, "Files missing metadata:")
-      for _, test_info in ipairs(tests) do
-        local success, test_module = pcall(require, test_info.module_path)
-        if success then
-          if not test_module.test_metadata then
-            table.insert(lines, string.format("  - %s", test_info.name))
-          end
+    for _, issue in ipairs(counts.validation_issues) do
+      local module_name = issue.module:match("([^.]+)$") or issue.module
+      table.insert(lines, string.format("### %s", module_name))
+      
+      for _, detail in ipairs(issue.issues) do
+        if detail.type == 'count_mismatch' then
+          table.insert(lines, string.format("- ❌ %s", detail.details))
+        elseif detail.type == 'missing_metadata' then
+          table.insert(lines, string.format("- ⚠️  %s", detail.details))
         else
-          table.insert(lines, string.format("  - %s (failed to load)", test_info.name))
+          table.insert(lines, string.format("- ⚠  %s", detail.details))
         end
       end
       table.insert(lines, "")
     end
-    
-    total_tests = total_tests + category_info.total
-    total_with_metadata = total_with_metadata + category_info.explicit
-    total_missing_metadata = total_missing_metadata + category_info.missing_metadata
+  else
+    table.insert(lines, "## ✅ No Validation Issues")
+    table.insert(lines, "")
   end
   
-  -- Overall summary
-  table.insert(lines, "## Overall Summary")
-  table.insert(lines, string.format("- Total tests: %d", total_tests))
-  table.insert(lines, string.format("- Tests with metadata: %d", total_with_metadata))
-  table.insert(lines, string.format("- Files missing metadata: %d", total_missing_metadata))
+  -- Category breakdown
+  table.insert(lines, "## Category Breakdown")
+  table.insert(lines, "")
   
-  if total_missing_metadata == 0 then
+  for category, info in pairs(counts.by_category) do
+    table.insert(lines, string.format("### %s", category:upper()))
+    table.insert(lines, string.format("- Modules: %d", info.modules))
+    table.insert(lines, string.format("- Total Tests: %d", info.total))
+    if info.missing_metadata > 0 then
+      table.insert(lines, string.format("- Missing Metadata: %d ⚠️", info.missing_metadata))
+    end
+    if info.with_issues > 0 then
+      table.insert(lines, string.format("- Modules with Issues: %d ⚠️", info.with_issues))
+    end
     table.insert(lines, "")
-    table.insert(lines, "✅ All test files have metadata!")
+  end
+  
+  -- Final status
+  if counts.summary.total_missing_metadata == 0 and 
+     counts.summary.total_with_mismatches == 0 and
+     counts.by_status.error == 0 then
+    table.insert(lines, "## ✅ All Validations Passed!")
+    table.insert(lines, "")
+    table.insert(lines, "The test system is in perfect health:")
+    table.insert(lines, "- All modules have metadata")
+    table.insert(lines, "- No count mismatches")
+    table.insert(lines, "- Clear test/suite architecture")
+    table.insert(lines, "- Registry and execution counts match")
   else
+    table.insert(lines, "## ⚠️  Action Required")
     table.insert(lines, "")
-    table.insert(lines, "⚠️  Some test files are missing metadata")
+    if counts.summary.total_missing_metadata > 0 then
+      table.insert(lines, string.format("- Add metadata to %d modules", counts.summary.total_missing_metadata))
+    end
+    if counts.summary.total_with_mismatches > 0 then
+      table.insert(lines, string.format("- Fix count mismatches in %d modules", counts.summary.total_with_mismatches))
+    end
+    if counts.by_status.error > 0 then
+      table.insert(lines, string.format("- Fix load errors in %d modules", counts.by_status.error))
+    end
   end
   
   -- Show in floating window

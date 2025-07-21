@@ -48,6 +48,8 @@ function M.inspect_and_register(test_info)
     metadata = inspection_result.metadata,
     has_run_function = inspection_result.has_run,
     needs_execution = inspection_result.needs_execution,
+    is_suite = inspection_result.is_suite,
+    runs_tests = inspection_result.runs_tests,
     validation_issues = validation_issues
   }
   
@@ -63,6 +65,11 @@ function M.get_test_count(module_path)
   
   if entry.inspection_error then
     return nil, entry.inspection_error
+  end
+  
+  -- If this is a test suite, it contributes 0 to test count
+  if entry.is_suite then
+    return 0
   end
   
   -- If this is a test suite that needs execution to determine count
@@ -81,6 +88,31 @@ function M.get_test_count(module_path)
   
   -- Return actual test count
   return #entry.actual_tests
+end
+
+-- Get aggregated test count for a suite
+function M.get_suite_aggregated_count(module_path)
+  local entry = M.registry[module_path]
+  if not entry or not entry.is_suite then
+    return 0
+  end
+  
+  local total = 0
+  if entry.runs_tests then
+    for _, test_name in ipairs(entry.runs_tests) do
+      -- Find the test module in the registry
+      for reg_path, reg_entry in pairs(M.registry) do
+        if reg_path:match(test_name .. "$") then
+          local count = M.get_test_count(reg_path)
+          if count then
+            total = total + count
+          end
+        end
+      end
+    end
+  end
+  
+  return total
 end
 
 -- Get all tests in a category

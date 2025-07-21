@@ -252,7 +252,7 @@ function M.run_with_picker(filter)
         { category = 'unit', pattern = 'test_search' },
         { category = 'unit', pattern = 'test_templates' },
         { category = 'features', pattern = 'test_maildir_foundation' },
-        { category = 'features', pattern = 'test_maildir_integration' },
+        { category = 'features', pattern = 'test_maildir_integration$' },
       }
     },
     {
@@ -551,6 +551,14 @@ function M.run_test(test_info)
   end
   
   if ok and test_module then
+    -- Check if this is a test suite
+    local suite_util = require('neotex.plugins.tools.himalaya.test.utils.test_suite')
+    if suite_util.is_suite(test_module) then
+      -- Skip suites - they should not be run as individual tests
+      -- Suites orchestrate other tests and contribute 0 to test count
+      return
+    end
+    
     -- Metadata is now optional - used for documentation only
     -- The registry tracks actual test counts
     
