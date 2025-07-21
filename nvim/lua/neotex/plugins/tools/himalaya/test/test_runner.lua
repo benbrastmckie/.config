@@ -163,7 +163,14 @@ function M.discover_tests()
           test_info.discovery_error = error
         end
         
-        table.insert(M.tests[dir], test_info)
+        -- Check if this is a suite after registration
+        local entry = registry.registry[module_path]
+        if entry and entry.is_suite then
+          -- Skip suites - they orchestrate other tests but don't run themselves
+          -- This ensures picker count matches execution count
+        else
+          table.insert(M.tests[dir], test_info)
+        end
       end
     end
   end
@@ -1138,6 +1145,8 @@ end
 function M.count_all_test_functions()
   local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
   local counts = registry.get_comprehensive_counts()
+  -- Note: This returns the registry count which includes all modules
+  -- During execution, suites are skipped, so the actual executed count may be lower
   return counts.summary.total_tests
 end
 
