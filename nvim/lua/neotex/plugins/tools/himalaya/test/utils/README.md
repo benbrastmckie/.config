@@ -66,6 +66,49 @@ Search-specific testing utilities and helpers.
 - `create_search_dataset()` - Generate test data for search
 - Search result validation and verification
 
+### test_suite.lua
+Test suite infrastructure for distinguishing test files from test suites.
+
+**What it provides:**
+- **Suite Definition**: Clear distinction between test files and test suites
+- **Suite Marker**: `TEST_SUITE` marker for suite identification
+- **Suite Creation**: Utilities to create and identify test suites
+- **Count Management**: Suites contribute 0 to test count
+
+**Key functions:**
+- `create_suite(name, config)` - Create a test suite definition
+- `is_suite(module)` - Check if a module is a test suite
+- Suite orchestration support
+
+### test_registry.lua
+Central registry for test information and validation.
+
+**What it provides:**
+- **Single Source of Truth**: Accurate test counts and metadata
+- **Dynamic Inspection**: Analyzes modules to find actual tests
+- **Validation**: Detects count mismatches and missing metadata
+- **Suite Support**: Handles test suites properly (count = 0)
+
+**Key functions:**
+- `inspect_and_register(test_info)` - Register a test module
+- `get_test_count(module_path)` - Get accurate test count
+- `get_suite_aggregated_count(module_path)` - Get aggregated count for suites
+- `get_comprehensive_counts()` - Get validation report
+
+### test_inspector.lua
+Module inspection utilities for test discovery.
+
+**What it provides:**
+- **Test Discovery**: Finds actual test functions in modules
+- **Pattern Support**: Handles multiple test patterns
+- **Suite Detection**: Recognizes TEST_SUITE markers
+- **Validation**: Checks module structure and metadata
+
+**Key functions:**
+- `inspect_module(module_path)` - Analyze a module for tests
+- `validate_structure(inspection_result)` - Validate test structure
+- `get_actual_test_names(test_module)` - Extract test names
+
 ## Testing Architecture
 
 ### Framework Design

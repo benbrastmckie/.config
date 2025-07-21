@@ -11,6 +11,19 @@ function M.inspect_module(module_path)
     return nil, "Failed to load module: " .. tostring(test_module)
   end
   
+  -- Check if this is a test suite
+  local suite_util = require('neotex.plugins.tools.himalaya.test.utils.test_suite')
+  if suite_util.is_suite(test_module) then
+    return {
+      is_suite = true,
+      suite_info = test_module,
+      runs_tests = test_module.runs_tests or {},
+      count = 0,  -- Suites contribute 0 to count
+      metadata = test_module.test_metadata,
+      module = test_module
+    }
+  end
+  
   local tests = {}
   local count = 0
   

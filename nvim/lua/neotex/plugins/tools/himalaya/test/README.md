@@ -478,13 +478,43 @@ This prevents validation errors from appearing in test output while still allowi
 2. Ensure `cleanup_test_env(env)` is called even on test failure
 3. Use `force = true` when deleting buffers: `vim.api.nvim_buf_delete(buf, { force = true })`
 
+## Test Architecture
+
+The test system uses a clear hierarchy:
+
+### 1. Test Files (233 total)
+- Contain actual test functions
+- Located in `commands/`, `features/`, `integration/`, `performance/`, `unit/`
+- Each contributes to the total test count
+- Use standardized metadata for documentation
+
+### 2. Test Suites (1 currently: test_maildir_integration)
+- Orchestrate related test files
+- Do NOT add to test count (count = 0)
+- Marked with `TEST_SUITE` marker
+- Show aggregated counts in picker
+
+### 3. Categories
+- Logical groupings for the test picker
+- May include both test files and suites
+- Used for organization and filtering
+
+### Test Discovery and Registry
+The test system uses a sophisticated registry that:
+- Dynamically inspects modules to find actual test functions
+- Distinguishes between test files and test suites
+- Validates metadata accuracy
+- Prevents double counting
+- Provides comprehensive validation reports
+
 ## Current Status
 
-- **Total Tests**: 261 tests across all categories
-- **Pass Rate**: 100% (all tests passing)
+- **Total Tests**: 233 tests across all categories
+- **Pass Rate**: 99.1% (231/233 tests passing)
 - **Coverage**: Comprehensive coverage of all major functionality
 - **Performance**: All tests execute efficiently with proper isolation
 - **Metadata**: All test files have standardized metadata
+- **Architecture**: Clean separation between test files and test suites
 
 The test suite provides reliable validation of the Himalaya plugin functionality, ensuring stability and correctness across all components and workflows.
 
