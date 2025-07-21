@@ -184,15 +184,5 @@ function M.run()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Email list initialization",
-    "Email fetching",
-    "Email display",
-    "Email state management",
-    "Error handling"
-  }
-end
 
 return M

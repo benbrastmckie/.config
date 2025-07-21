@@ -267,16 +267,6 @@ table.insert(tests, framework.create_test('scheduler_persistence', function()
 end))
 
 -- Add standardized interface to M
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Email scheduling",
-    "Delayed send",
-    "Schedule cancellation",
-    "Batch scheduling",
-    "Schedule persistence"
-  }
-end
 
 -- Create test suite and assign run function to M
 local suite = framework.create_suite('Scheduler Feature', tests)

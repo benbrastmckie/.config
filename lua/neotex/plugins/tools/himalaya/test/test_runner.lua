@@ -551,18 +551,8 @@ function M.run_test(test_info)
   end
   
   if ok and test_module then
-    -- Validate metadata exists (required for all tests)
-    if not test_module.test_metadata then
-      M.results.total = M.results.total + 1
-      M.results.failed = M.results.failed + 1
-      table.insert(M.results.errors, {
-        test = test_info.name,
-        category = test_info.category,
-        type = 'error',
-        message = 'Test module missing required metadata'
-      })
-      return
-    end
+    -- Metadata is now optional - used for documentation only
+    -- The registry tracks actual test counts
     
     -- Setup test environment
     if test_module.setup then

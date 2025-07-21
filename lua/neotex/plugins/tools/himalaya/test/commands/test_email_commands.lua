@@ -102,6 +102,5 @@ end))
 -- Export test suite with metadata
 _G.himalaya_test = framework.create_suite('Email Commands', tests)
 _G.himalaya_test.test_metadata = test_metadata
-_G.himalaya_test.get_test_count = function() return test_metadata.count end
 
 return _G.himalaya_test

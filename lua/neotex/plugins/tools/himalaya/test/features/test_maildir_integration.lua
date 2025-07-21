@@ -434,14 +434,5 @@ function M.report()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Foundation Tests (8 tests)",
-    "Draft Manager Tests (8 tests)",
-    "Composer Tests (8 tests)", 
-    "Integration Tests (8 tests)"
-  }
-end
 
 return M

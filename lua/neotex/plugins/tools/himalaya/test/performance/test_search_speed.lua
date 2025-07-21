@@ -189,15 +189,5 @@ end))
 -- Export test suite with metadata
 _G.himalaya_test = framework.create_suite('Search Performance', tests)
 _G.himalaya_test.test_metadata = test_metadata
-_G.himalaya_test.get_test_count = function() return test_metadata.count end
-_G.himalaya_test.get_test_list = function()
-  return {
-    "Basic search speed",
-    "Complex query performance",
-    "Large dataset search",
-    "Concurrent search",
-    "Memory usage"
-  }
-end
 
 return _G.himalaya_test

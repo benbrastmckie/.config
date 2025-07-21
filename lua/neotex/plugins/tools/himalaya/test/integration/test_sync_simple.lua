@@ -142,14 +142,5 @@ function M.run()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Sync coordinator initialization",
-    "Basic sync operation",
-    "Sync state management",
-    "Error handling"
-  }
-end
 
 return M

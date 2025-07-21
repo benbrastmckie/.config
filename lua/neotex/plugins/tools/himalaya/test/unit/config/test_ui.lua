@@ -264,15 +264,5 @@ function M.test_defaults_preserved()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  local names = {}
-  for key, value in pairs(M) do
-    if type(value) == "function" and key:match("^test_") then
-      table.insert(names, key:gsub("^test_", ""):gsub("_", " "))
-    end
-  end
-  return names
-end
 
 return M

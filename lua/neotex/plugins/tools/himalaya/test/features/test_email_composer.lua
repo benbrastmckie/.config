@@ -584,20 +584,5 @@ function M.run()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Create compose buffer",
-    "Save draft",
-    "Reply to email",
-    "Reply all",
-    "Forward email",
-    "Open existing draft",
-    "Edge case empty headers",
-    "Edge case invalid account",
-    "Edge case malformed email",
-    "Performance multiple buffers"
-  }
-end
 
 return M

@@ -27,7 +27,6 @@ M.create_test_interface = function(metadata, test_functions)
   
   return {
     test_metadata = metadata,
-    get_test_count = function() return metadata.count end,
     get_test_list = function()
       local names = {}
       for name, _ in pairs(test_functions) do
