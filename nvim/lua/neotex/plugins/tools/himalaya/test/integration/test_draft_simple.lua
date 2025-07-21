@@ -174,14 +174,5 @@ function M.run()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Simple draft creation",
-    "Draft persistence",
-    "Draft listing",
-    "Draft cleanup"
-  }
-end
 
 return M

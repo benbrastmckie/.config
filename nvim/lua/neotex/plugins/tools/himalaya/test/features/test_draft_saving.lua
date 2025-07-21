@@ -243,16 +243,6 @@ table.insert(tests, framework.create_test('cleanup_drafts', function()
 end))
 
 -- Add standardized interface to M
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Draft folder detection",
-    "Save draft function",
-    "Composer draft saving",
-    "Drafts in maildir",
-    "Cleanup drafts"
-  }
-end
 
 -- Create test suite and assign run function to M
 local suite = framework.create_suite('Draft Saving Feature', tests)

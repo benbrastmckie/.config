@@ -593,24 +593,5 @@ function M.run()
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Maildir structure creation",
-    "Path resolution",
-    "Directory operations",
-    "File operations",
-    "Draft creation",
-    "Draft listing",
-    "Draft deletion",
-    "Error handling",
-    "Permissions",
-    "Cleanup",
-    "Concurrent access",
-    "Edge cases",
-    "Performance",
-    "Integration"
-  }
-end
 
 return M

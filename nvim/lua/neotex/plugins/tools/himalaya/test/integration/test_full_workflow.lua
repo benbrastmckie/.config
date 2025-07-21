@@ -165,16 +165,6 @@ table.insert(tests, framework.create_test('sync_integration', function()
 end))
 
 -- Add standardized interface to M
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  return {
-    "Complete email workflow",
-    "Multi-account workflow", 
-    "Notification integration",
-    "Error handling workflow",
-    "Sync integration"
-  }
-end
 
 -- Create test suite and assign run function to M
 local suite = framework.create_suite('Full Workflow Integration', tests)

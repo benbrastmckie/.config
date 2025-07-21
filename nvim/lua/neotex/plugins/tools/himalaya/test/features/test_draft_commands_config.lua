@@ -257,18 +257,5 @@ end
 -- Export test suite with metadata
 _G.draft_commands_config_test = Test.create_suite('Draft Commands & Configuration', tests)
 _G.draft_commands_config_test.test_metadata = M.test_metadata
-_G.draft_commands_config_test.get_test_count = function() return M.test_metadata.count end
-_G.draft_commands_config_test.get_test_list = function()
-  return {
-    "Draft Configuration - Default Values",
-    "Draft Configuration Validation - Valid Config",
-    "Draft Configuration Validation - Invalid Storage",
-    "Draft Configuration Validation - Invalid Sync",
-    "Draft Commands Registration",
-    "Draft Command Options",
-    "Configuration Integration in Commands",
-    "Draft Status Command Output"
-  }
-end
 
 return _G.draft_commands_config_test

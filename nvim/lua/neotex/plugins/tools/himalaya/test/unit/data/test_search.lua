@@ -245,13 +245,5 @@ if vim.fn.expand('%:t') == 'test_search.lua' then
 end
 
 -- Add standardized interface
-M.get_test_count = function() return M.test_metadata.count end
-M.get_test_list = function()
-  local names = {}
-  for name, _ in pairs(M.tests) do
-    table.insert(names, name:gsub("^test_", ""):gsub("_", " "))
-  end
-  return names
-end
 
 return M
