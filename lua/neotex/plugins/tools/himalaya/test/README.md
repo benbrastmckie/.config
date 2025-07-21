@@ -132,6 +132,15 @@ Use the `:HimalayaTest` command when you have Neovim open:
 :HimalayaTest test_scheduler  " Run specific test
 ```
 
+The interactive picker shows a directory-based organization:
+- **Run All Tests** (233) - Execute entire test suite
+- **Commands** (10 tests) - Command interface tests
+- **Features** (215 tests) - Feature-specific tests
+  - Hierarchical display with "Run All Feature Tests"
+  - Individual test files listed with counts
+- **Integration** (3 tests) - End-to-end workflow tests
+- **Performance** (5 tests) - Performance benchmarks
+
 Results appear in a floating window with syntax highlighting.
 
 ### 2. Command Line Testing (Test-Driven Development)

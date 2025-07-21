@@ -246,108 +246,6 @@ function M.run_with_picker(filter)
   
   table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
   
-  -- Create meaningful test categories
-  local categories = {
-    {
-      name = 'Core Data & Storage',
-      icon = '💾',
-      desc = 'Cache, drafts, maildir, search, templates',
-      tests = {
-        { category = 'unit', pattern = 'test_cache' },
-        { category = 'unit', pattern = 'test_drafts' },
-        { category = 'unit', pattern = 'test_maildir' },
-        { category = 'unit', pattern = 'test_search' },
-        { category = 'unit', pattern = 'test_templates' },
-        { category = 'features', pattern = 'test_maildir_foundation' },
-        { category = 'features', pattern = 'test_maildir_integration$' },
-      }
-    },
-    {
-      name = 'Email Operations',
-      icon = '📧',
-      desc = 'Composer, scheduler, commands',
-      tests = {
-        { category = 'unit', pattern = 'test_scheduler' },
-        { category = 'features', pattern = 'test_email_composer' },
-        { category = 'features', pattern = 'test_scheduler' },
-        { category = 'features', pattern = 'test_draft_manager_maildir' },
-        { category = 'commands', pattern = 'test_email_commands' },
-        { category = 'commands', pattern = 'test_basic_commands' },
-      }
-    },
-    {
-      name = 'UI & Interface',
-      icon = '🖥️',
-      desc = 'UI components, session management',
-      tests = {
-        { category = 'unit', pattern = 'test_coordinator' },
-        { category = 'unit', pattern = 'test_session' },
-        { category = 'features', pattern = 'test_draft_commands_config' },
-        { category = 'features', pattern = 'test_async_timing' },
-      }
-    },
-    {
-      name = 'Workflows & Integration',
-      icon = '🔗',
-      desc = 'End-to-end workflows and integration tests',
-      tests = {
-        { category = 'integration', pattern = 'test_draft_simple' },
-        { category = 'integration', pattern = 'test_full_workflow' },
-        { category = 'integration', pattern = 'test_email_operations_simple' },
-        { category = 'integration', pattern = 'test_sync_simple' },
-        { category = 'features', pattern = 'test_draft_saving' },
-      }
-    }
-  }
-  
-  -- Add meaningful categories with enhanced metadata
-  local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
-  for _, cat in ipairs(categories) do
-    local total_count = 0
-    local missing_metadata = 0
-    local has_errors = false
-    
-    for _, test_spec in ipairs(cat.tests) do
-      if M.tests[test_spec.category] then
-        for _, test_info in ipairs(M.tests[test_spec.category]) do
-          if test_info.name:match(test_spec.pattern) then
-            local test_count = registry.get_test_count(test_info.module_path)
-            if test_count then
-              total_count = total_count + test_count
-            else
-              -- Registry couldn't determine count
-              total_count = total_count + 1
-              has_errors = true
-            end
-            
-            -- Check for missing metadata
-            local entry = registry.registry[test_info.module_path]
-            if entry and not entry.metadata then
-              missing_metadata = missing_metadata + 1
-            end
-          end
-        end
-      end
-    end
-    
-    if total_count > 0 then
-      local display_text = string.format('%s (%d tests) • %s', cat.name, total_count, cat.desc)
-      -- Add indicator if any tests have issues
-      if missing_metadata > 0 or has_errors then
-        display_text = display_text .. ' ⚠️'
-      end
-      table.insert(items, {
-        text = display_text,
-        value = cat,
-        icon = cat.icon
-      })
-    end
-  end
-  
-  -- Add original categories for fallback
-  table.insert(items, { text = '─────────────────────────', value = nil, icon = '' })
-  table.insert(items, { text = 'Original Categories:', value = nil, icon = '' })
-  
   local original_suites = {
     { category = 'commands', name = 'Commands', icon = '📝' },
     { category = 'features', name = 'Features', icon = '✨' },
@@ -377,11 +275,44 @@ function M.run_with_picker(filter)
         display_text = display_text .. ' [' .. table.concat(indicators, ' ') .. ']'
       end
       
-      table.insert(items, {
-        text = display_text,
-        value = suite.category,
-        icon = suite.icon
-      })
+      -- Special handling for features category (hierarchical display)
+      if suite.category == 'features' then
+        -- Collect individual test files first
+        local feature_items = {}
+        local registry = require('neotex.plugins.tools.himalaya.test.utils.test_registry')
+        for _, test_info in ipairs(M.tests[suite.category]) do
+          local test_count = registry.get_test_count(test_info.module_path) or 1
+          local test_name = M.format_test_display_name(test_info.name)
+          local test_text = string.format('  - %s (%d tests)', test_name, test_count)
+          
+          table.insert(feature_items, {
+            text = test_text,
+            value = test_info,
+            icon = '',
+            is_single_test = true
+          })
+        end
+        
+        -- Add individual test files first (they'll appear after "Run All" in reversed display)
+        for _, item in ipairs(feature_items) do
+          table.insert(items, item)
+        end
+        
+        -- Add "Run All Feature Tests" last (so it appears first in reversed display)
+        local feature_tests_text = string.format('Run All Feature Tests (%d tests)', count_info.total)
+        table.insert(items, {
+          text = feature_tests_text,
+          value = suite.category,
+          icon = '✨'  -- Use same icon as features
+        })
+      else
+        -- Regular category display
+        table.insert(items, {
+          text = display_text,
+          value = suite.category,
+          icon = suite.icon
+        })
+      end
     end
   end
   
@@ -491,9 +422,6 @@ function M.execute_test_selection(selection)
       M.run_all_tests()
     elseif type(selection) == 'string' then
       M.run_category_tests(selection)
-    elseif type(selection) == 'table' and selection.tests then
-      -- Running a custom category
-      M.run_custom_category(selection)
     else
       M.run_single_test(selection)
     end
@@ -518,18 +446,6 @@ function M.run_all_tests()
   end
 end
 
--- Run tests for a custom category
-function M.run_custom_category(category_def)
-  for _, test_spec in ipairs(category_def.tests) do
-    if M.tests[test_spec.category] then
-      for _, test_info in ipairs(M.tests[test_spec.category]) do
-        if test_info.name:match(test_spec.pattern) then
-          M.run_test(test_info)
-        end
-      end
-    end
-  end
-end
 
 -- Run category tests
 function M.run_category_tests(category)
