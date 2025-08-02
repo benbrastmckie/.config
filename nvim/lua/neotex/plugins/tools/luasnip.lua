@@ -29,6 +29,29 @@ return {
       if ok and loader then
         loader.load({ paths = { vim.fn.stdpath("config") .. "/snippets" } })
       end
+      
+      -- Clear snippet jump points when leaving insert mode
+      vim.api.nvim_create_autocmd("InsertLeave", {
+        callback = function()
+          if ls.session.current_nodes[vim.api.nvim_get_current_buf()] 
+            and not ls.session.jump_active then
+            ls.unlink_current()
+          end
+        end,
+      })
+      
+      -- Add explicit keymaps for snippet navigation
+      vim.keymap.set({"i", "s"}, "<C-l>", function()
+        if ls.jumpable(1) then
+          ls.jump(1)
+        end
+      end, { silent = true, desc = "Jump to next snippet field" })
+      
+      vim.keymap.set({"i", "s"}, "<C-h>", function()
+        if ls.jumpable(-1) then
+          ls.jump(-1)
+        end
+      end, { silent = true, desc = "Jump to previous snippet field" })
     end
   }
 }
