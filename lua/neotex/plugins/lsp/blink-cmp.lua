@@ -72,7 +72,7 @@ return {
         ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'hide', 'fallback' },
         ['<CR>'] = { 'accept', 'fallback' },
-        ['<Tab>'] = { 'snippet_forward', 'select_next', 'fallback' },
+        ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
 
@@ -109,7 +109,7 @@ return {
       sources = {
         default = { 'lsp', 'path', 'snippets', 'buffer' },
         per_filetype = {
-          tex = { 'lsp', 'omni', 'snippets', 'path', 'buffer' }, -- Use 'omni' instead of 'vimtex'
+          tex = { 'lsp', 'snippets', 'omni', 'path', 'buffer' }, -- Snippets higher priority in LaTeX
           lua = { 'lsp', 'path', 'snippets', 'buffer' },
           python = { 'lsp', 'path', 'snippets', 'buffer' },
         },
@@ -195,6 +195,16 @@ return {
               use_cache = true,                -- Enable caching for performance
             },
           },
+          snippets = {
+            name = 'snippets',
+            enabled = true,
+            max_items = 10,
+            min_keyword_length = 1,
+            score_offset = function()
+              -- Slightly higher priority for snippets in LaTeX files
+              return vim.bo.filetype == 'tex' and 20 or 0
+            end,
+          },
           omni = {
             name = 'omni',
             enabled = function()
@@ -214,19 +224,6 @@ return {
           },
         },
       },
-
-      -- trigger = {
-      --   completion = {
-      --     keyword_length = 1,
-      --     blocked_trigger_characters = { ' ', '\n', '\t' },
-      --     show_in_snippet = true,
-      --     debounce = 60,
-      --   },
-      --   signature_help = {
-      --     enabled = false,
-      --   },
-      -- },
-
       completion = {
         accept = {
           auto_brackets = {
