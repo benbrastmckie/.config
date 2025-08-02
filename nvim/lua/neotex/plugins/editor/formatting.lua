@@ -59,24 +59,35 @@ return {
         -- Python formatters
         black = {
           args = { "--quiet", "--line-length", "88", "-" },
+          stdin = true,
         },
         isort = {
           args = { "--profile", "black", "-" },
+          stdin = true,
         },
         
         -- Lua formatter
         stylua = {
           args = { "--indent-type", "Spaces", "--indent-width", "2", "--quote-style", "AutoPreferDouble", "-" },
+          stdin = true,
         },
         
         -- LaTeX formatter
         latexindent = {
           args = { "-m", "-l" },
+          stdin = false,
         },
         
         -- Shell formatter
         shfmt = {
           args = { "-i", "2", "-ci", "-bn" },
+          stdin = true,
+        },
+        
+        -- Prettier formatter - explicitly configure
+        prettier = {
+          args = { "--stdin-filepath", "$FILENAME" },
+          stdin = true,
         },
       },
       
@@ -100,11 +111,11 @@ return {
       
       -- Set up formatting options
       format_after_save = false,
-      log_level = vim.log.levels.ERROR,
+      log_level = vim.log.levels.DEBUG,  -- Changed to DEBUG for troubleshooting
       notify_on_error = true,
       
-      -- Respect .editorconfig when present
-      respect_gitignore = true,
+      -- Don't respect gitignore to format all files
+      respect_gitignore = false,
     })
 
     -- Add which-key integration if available

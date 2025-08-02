@@ -72,7 +72,7 @@ return {
         ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'hide', 'fallback' },
         ['<CR>'] = { 'accept', 'fallback' },
-        ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
+        ['<Tab>'] = { 'snippet_forward', 'select_next', 'fallback' },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
 
@@ -271,6 +271,12 @@ return {
               }
             }
           },
+        },
+        list = {
+          selection = {
+            preselect = false,  -- Automatically select first item
+            auto_insert = true,  -- Don't auto-insert, wait for Tab/Enter
+          }
         },
         documentation = {
           auto_show = true,
