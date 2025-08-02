@@ -188,6 +188,12 @@ return {
             max_items = 8,
             min_keyword_length = 2,
             fallbacks = {},
+            -- Settings for large file support
+            opts = {
+              max_async_buffer_size = 500000,  -- Increase from 200KB to 500KB
+              max_total_buffer_size = 1000000, -- Increase from 500KB to 1MB
+              use_cache = true,                -- Enable caching for performance
+            },
           },
           omni = {
             name = 'omni',
