@@ -39,19 +39,6 @@ return {
           end
         end,
       })
-      
-      -- Add explicit keymaps for snippet navigation
-      vim.keymap.set({"i", "s"}, "<C-l>", function()
-        if ls.jumpable(1) then
-          ls.jump(1)
-        end
-      end, { silent = true, desc = "Jump to next snippet field" })
-      
-      vim.keymap.set({"i", "s"}, "<C-h>", function()
-        if ls.jumpable(-1) then
-          ls.jump(-1)
-        end
-      end, { silent = true, desc = "Jump to previous snippet field" })
     end
   }
 }
