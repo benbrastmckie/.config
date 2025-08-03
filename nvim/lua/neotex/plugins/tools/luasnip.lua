@@ -1,6 +1,7 @@
 return {
   {
     "L3MON4D3/LuaSnip",
+    version = "v2.3.0",  -- Pin to stable version that works with blink.cmp
     lazy = true,
     event = "InsertEnter",
     dependencies = {

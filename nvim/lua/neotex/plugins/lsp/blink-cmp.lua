@@ -14,7 +14,7 @@ return {
     event = { "InsertEnter", "CmdlineEnter" },
     dependencies = {
       "saghen/blink.compat",
-      "L3MON4D3/LuaSnip",
+      { "L3MON4D3/LuaSnip", version = "v2.3.0" },  -- Use stable version to avoid snippet navigation bugs
       {
         "micangl/cmp-vimtex",
         config = function()
@@ -59,12 +59,14 @@ return {
     end,
 
     opts = {
+      -- Use LuaSnip for snippet expansion (loads SnipMate format from /snippets)
       snippets = {
         preset = 'luasnip'
       },
 
       keymap = {
         preset = 'default',
+        -- Navigation without accepting (good for browsing options)
         ['<C-k>'] = { 'select_prev', 'fallback' },
         ['<C-j>'] = { 'select_next', 'fallback' },
         ['<C-b>'] = { 'scroll_documentation_up', 'fallback' },
@@ -72,7 +74,12 @@ return {
         ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'hide', 'fallback' },
         ['<CR>'] = { 'accept', 'fallback' },
-        ['<Tab>'] = { 'snippet_forward', 'select_and_accept', 'fallback' },
+        -- Tab: Navigate snippets or accept completion
+        ['<Tab>'] = { 
+          'snippet_forward',      -- First try to jump in snippet
+          'select_and_accept',    -- Then select & accept completion
+          'fallback'              -- Finally fallback to normal Tab
+        },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
 
@@ -195,16 +202,8 @@ return {
               use_cache = true,                -- Enable caching for performance
             },
           },
-          snippets = {
-            name = 'snippets',
-            enabled = true,
-            max_items = 10,
-            min_keyword_length = 1,
-            score_offset = function()
-              -- Slightly higher priority for snippets in LaTeX files
-              return vim.bo.filetype == 'tex' and 20 or 0
-            end,
-          },
+          -- NOTE: Snippet provider removed - blink.cmp handles LuaSnip integration
+          -- automatically when preset = 'luasnip' is set
           omni = {
             name = 'omni',
             enabled = function()
@@ -271,8 +270,8 @@ return {
         },
         list = {
           selection = {
-            preselect = false,  -- Automatically select first item
-            auto_insert = true,  -- Don't auto-insert, wait for Tab/Enter
+            preselect = false,  -- Don't preselect first item
+            auto_insert = true,  -- Auto-insert when navigating with C-j/k
           }
         },
         documentation = {
