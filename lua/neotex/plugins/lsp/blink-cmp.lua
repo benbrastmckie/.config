@@ -202,8 +202,6 @@ return {
               use_cache = true,                -- Enable caching for performance
             },
           },
-          -- NOTE: Snippet provider removed - blink.cmp handles LuaSnip integration
-          -- automatically when preset = 'luasnip' is set
           omni = {
             name = 'omni',
             enabled = function()
