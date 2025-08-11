@@ -64,7 +64,7 @@ function PdfAnnots()
   local md = vim.fn.printf("Annotations/%s.md", vim.fn.fnamemodify(pdf, ":t:r"))
   -- vim.fn.system(vim.fn.printf('pdfannots -o "%s" "%s"', md, pdf))
   vim.fn.system(string.format('pdfannots -o "%s" "%s"', md, pdf))
-  vim.cmd.split(vim.fn.fnameescape(md))
+  vim.cmd.edit(vim.fn.fnameescape(md))
 
   vim.fn.chdir(cwd)
 end

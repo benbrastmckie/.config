@@ -303,7 +303,7 @@ return {
         sources = function()
           local type = vim.fn.getcmdtype()
           if type == '/' or type == '?' then
-            return { 'buffer' }
+            return {} -- Disable completion for search
           elseif type == ':' then
             return { 'cmdline', 'path' }
           end

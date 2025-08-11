@@ -470,7 +470,7 @@ return {
       { "<leader>gb", "<cmd>Telescope git_branches<CR>", desc = "checkout branch", icon = "󰘬" },
       { "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "git commits", icon = "󰜘" },
       { "<leader>gd", "<cmd>Gitsigns diffthis HEAD<CR>", desc = "diff", icon = "󰦓" },
-      { "<leader>gg", "<cmd>lua vim.schedule(function() require('neotex.plugins.tools.snacks.utils').safe_lazygit() end)<cr>", desc = "lazygit", icon = "󰊢" },
+      { "<leader>gg", function() require("snacks").lazygit() end, desc = "lazygit", icon = "󰊢" },
       { "<leader>gk", "<cmd>Gitsigns prev_hunk<CR>", desc = "prev hunk", icon = "󰮲" },
       { "<leader>gj", "<cmd>Gitsigns next_hunk<CR>", desc = "next hunk", icon = "󰮰" },
       { "<leader>gl", "<cmd>Gitsigns blame_line<CR>", desc = "line blame", icon = "󰊢" },

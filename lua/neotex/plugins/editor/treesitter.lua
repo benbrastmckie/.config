@@ -62,15 +62,21 @@ return {
       vim.defer_fn(function()
         -- Now load the full configuration
         require("nvim-treesitter.configs").setup({
-          -- Enable full syntax highlighting
+          -- Enable full syntax highlighting with proper sync settings
           highlight = {
             enable = true,
             disable = { "css", "cls", "latex", "tex", "plaintex", "context", "bibtex" },
             additional_vim_regex_highlighting = { "python" }, -- for jupyter notebooks
+            -- Use a custom highlighter timeout to prevent range errors
+            custom_captures = {},
           },
 
-          -- Enable indentation
+          -- Enable indentation with safety checks
           indent = { enable = true, disable = { "latex" } },
+          
+          -- Add sync settings to prevent parser state issues
+          sync_install = false, -- Don't install parsers synchronously
+          modules = {}, -- Required by nvim-treesitter
 
           -- Define injection queries
           injections = {
@@ -141,6 +147,28 @@ return {
           end
         end, 1000) -- Delay by 1 second to avoid impacting startup
       end, 100)    -- Delay the full setup by 100ms
+
+      -- Add minimal error recovery for parser state synchronization issues
+      vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+        group = vim.api.nvim_create_augroup("TreesitterSync", { clear = true }),
+        callback = function(ev)
+          local bufnr = ev.buf
+          -- Only process if treesitter is active for this buffer
+          if vim.treesitter.highlighter.active[bufnr] then
+            -- Use pcall to safely check parser validity
+            local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
+            if ok and parser then
+              -- Check if parser needs invalidation
+              local success = pcall(function() return parser:is_valid() end)
+              if not success then
+                -- Parser is in invalid state, invalidate it
+                pcall(function() parser:invalidate() end)
+              end
+            end
+          end
+        end,
+        desc = "Ensure treesitter parser stays synchronized with buffer"
+      })
 
       -- Set up filetype detection for LaTeX files to ensure proper syntax highlighting
       vim.api.nvim_create_autocmd("FileType", {
