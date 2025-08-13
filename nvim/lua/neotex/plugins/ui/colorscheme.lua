@@ -14,6 +14,11 @@ return {
         DiagnosticSignInfo = { fg = "#d3869b", bg = "#282828" },
         DiffText = { fg = "#ebdbb2", bg = "#3c3836" },
         DiffAdd = { fg = "#ebdbb2", bg = "#32361a" },
+        -- Markdown comment highlighting (muted)
+        htmlComment = { fg = "#928374", italic = true },
+        htmlCommentPart = { fg = "#928374", italic = true },
+        markdownHtmlComment = { fg = "#928374", italic = true },
+        RenderMarkdownHtmlComment = { fg = "#928374", italic = true },
       }
     })
     vim.cmd("colorscheme gruvbox")

@@ -171,6 +171,16 @@ return {
       top_pad = 0,
       bottom_pad = 0,
     },
+    html = {
+      enabled = true,
+      comment = {
+        -- Turn off HTML comment concealing so comments are always visible
+        conceal = false,
+        -- Optional: Add text/icon before comments
+        text = '<!-- -->',
+        highlight = 'RenderMarkdownHtmlComment',
+      },
+    },
     win_options = {
       conceallevel = {
         default = vim.o.conceallevel,
