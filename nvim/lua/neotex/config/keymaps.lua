@@ -5,7 +5,7 @@
 --[[ KEYBINDINGS - COMPLETE REFERENCE
 -----------------------------------------------------------
 
-📖 COMPLETE DOCUMENTATION: See docs/MAPPINGS.md for comprehensive keybinding reference
+COMPLETE DOCUMENTATION: See docs/MAPPINGS.md for comprehensive keybinding reference
 Please maintain consistency between this file and docs/MAPPINGS.md when making changes.
 
 This file defines global keybindings, with special handling for terminal, markdown,

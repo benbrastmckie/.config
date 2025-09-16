@@ -1,16 +1,17 @@
 -- neotex.plugins.editor.which-key
--- Keymapping configuration
+-- Keybinding configuration and display using which-key.nvim v3 API
 
 --[[ WHICH-KEY MAPPINGS - COMPLETE REFERENCE
 -----------------------------------------------------------
 
-📖 COMPLETE DOCUMENTATION: See docs/MAPPINGS.md for comprehensive keybinding reference
-Please maintain consistency between this file and docs/MAPPINGS.md when making changes.
+This module configures which-key.nvim using the modern v3 API with icon support 
+and logical grouping by application domain. The configuration uses a hybrid approach:
+- Static groups for always-available functionality  
+- Dynamic groups with cond functions for filetype-specific features
+- Autocmds for individual keymaps in filetype-specific groups
 
-This module configures which-key.nvim using the modern v3 API with proper icon 
-support and logical grouping by application domain. All LaTeX commands are 
-consolidated under <leader>l, LSP commands moved to <leader>i, and TODO commands 
-use <leader>t with TEMPLATES under <leader>T.
+All LaTeX commands are consolidated under <leader>l, LSP commands under <leader>i,
+and TODO commands use <leader>t with TEMPLATES under <leader>T.
 
 ----------------------------------------------------------------------------------
 TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
@@ -18,7 +19,7 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 <leader>c - Create vertical split               | Split window vertically
 <leader>d - Save and delete buffer              | Save file and close buffer
 <leader>e - Toggle NvimTree explorer            | Open/close file explorer
-<leader>k - Maximize split                      | Make current window full screen
+<leader>k - Kill/close split                    | Close current split window
 <leader>q - Save all and quit                   | Save all files and exit Neovim
 <leader>u - Open Telescope undo                 | Show undo history with preview
 <leader>w - Write all files                     | Save all open files
@@ -27,7 +28,7 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 ACTIONS (<leader>a)                             | DESCRIPTION
 ----------------------------------------------------------------------------------
 <leader>ad - Toggle debug mode                  | Enable/disable debug mode
-<leader>af - Format buffer                      | Format current buffer via LSP
+<leader>af - Format buffer                      | Format current buffer using conform.nvim
 <leader>ah - Toggle local highlight             | Highlight current word occurrences
 <leader>al - Toggle Lean info view              | Show/hide Lean information panel
 <leader>am - Run model checker                  | Execute model checker on file
@@ -91,6 +92,9 @@ AI HELP (<leader>h)                             | DESCRIPTION
 <leader>hm - Select model                       | Choose AI model for current provider
 <leader>hp - Select prompt                      | Choose system prompt
 <leader>hf - Refresh                            | Reload AI assistant
+<leader>hl - Run Lectic                         | Execute Lectic AI on current file
+<leader>hn - New Lectic file                    | Create a new file for Lectic processing
+<leader>hL - Submit selection                   | Submit selected text to Lectic with message
 
 ----------------------------------------------------------------------------------
 LSP & LINT (<leader>i)                          | DESCRIPTION
@@ -202,6 +206,7 @@ RUN (<leader>r)                                 | DESCRIPTION
 <leader>rp - Previous error                     | Go to previous diagnostic/error
 <leader>rr - Reload configs                     | Reload Neovim configuration
 <leader>rm - Show messages                      | Display notification history
+<leader>rt - Test Himalaya                      | Run Himalaya email client tests
 
 ----------------------------------------------------------------------------------
 SESSIONS (<leader>S)                            | DESCRIPTION
@@ -319,14 +324,14 @@ return {
       { "<leader>c", "<cmd>vert sb<CR>", desc = "create split", icon = "󰯌" },
       { "<leader>d", "<cmd>update! | lua Snacks.bufdelete()<CR>", desc = "delete buffer", icon = "󰩺" },
       { "<leader>e", "<cmd>Neotree toggle<CR>", desc = "explorer", icon = "󰙅" },
-      { "<leader>k", "<cmd>on<CR>", desc = "max split", icon = "󰖲" },
+      { "<leader>k", "<cmd>close<CR>", desc = "kill split", icon = "󰆴" },
       { "<leader>q", "<cmd>wa! | qa!<CR>", desc = "quit", icon = "󰗼" },
       { "<leader>u", "<cmd>Telescope undo<CR>", desc = "undo", icon = "󰕌" },
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
 
-    -- FILETYPE-DEPENDENT GROUPS (hybrid approach)
-    -- Groups use modern cond for dynamic visibility, individual mappings use autocmds
+    -- FILETYPE-DEPENDENT GROUPS
+    -- Uses hybrid approach: dynamic group headers with cond, individual mappings via autocmds
     
     -- LaTeX group (dynamic group header)
     wk.add({
@@ -364,7 +369,7 @@ return {
       end,
     })
 
-    -- LSP & LINT group (MOVED from <leader>l to <leader>i)
+    -- LSP & LINT group
     wk.add({
       { "<leader>i", group = "lsp", icon = "󰅴" },
       { "<leader>ib", "<cmd>Telescope diagnostics bufnr=0<CR>", desc = "buffer diagnostics", icon = "󰒓" },
@@ -395,7 +400,7 @@ return {
       { "<leader>iB", "<cmd>LintToggle buffer<CR>", desc = "toggle buffer linting", icon = "󰔡" },
     })
 
-    -- ACTIONS group (global actions only)
+    -- ACTIONS group
     wk.add({
       { "<leader>a", group = "actions", icon = "󰌵" },
       { "<leader>af", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format", icon = "󰉣" },
@@ -425,7 +430,7 @@ return {
       end,
     })
     
-    -- Python actions (only for .py files) - This fixes the model checker issue!
+    -- Python actions (only for .py files)
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "python" },
       callback = function()
@@ -544,7 +549,7 @@ return {
       end,
     })
 
-    -- MAIL group (complete commands from init.lua)
+    -- MAIL group
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
       { "<leader>mo", "<cmd>HimalayaToggle<CR>", desc = "toggle sidebar", icon = "󰊫" },
@@ -557,15 +562,10 @@ return {
       { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mx", "<cmd>HimalayaCancelSync<CR>", desc = "cancel all syncs", icon = "󰚌" },
       { "<leader>mh", "<cmd>HimalayaHealth<CR>", desc = "health check", icon = "󰸉" },
-      -- { "<leader>mr", "<cmd>HimalayaRestore<CR>", desc = "restore session", icon = "󰑓" },
       { "<leader>mi", "<cmd>HimalayaSyncInfo<CR>", desc = "sync status", icon = "󰋼" },
       { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
       { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
-      -- Auto-sync commands  
       { "<leader>mt", "<cmd>HimalayaAutoSyncToggle<CR>", desc = "toggle auto-sync", icon = "󰑖" },
-      -- { "<leader>mO", "<cmd>HimalayaRefreshOAuth<CR>", desc = "refresh OAuth", icon = "󰌆" },
-      -- { "<leader>mr", "<cmd>HimalayaTrash<CR>", desc = "view trash", icon = "󰩺" },
-      -- { "<leader>mR", "<cmd>HimalayaTrashStats<CR>", desc = "trash stats", icon = "󰊢" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
       { "<leader>mF", "<cmd>HimalayaRecreateFolders<CR>", desc = "recreate folders", icon = "󰝰" },
     })
@@ -575,8 +575,7 @@ return {
       pattern = "himalaya-list",
       callback = function()
         wk.add({
-          -- These keymaps are defined in config.lua setup_buffer_keymaps
-          -- which-key will automatically detect them from the buffer
+          -- Buffer-specific keymaps are defined in himalaya config
         }, { buffer = 0 })
       end,
     })
@@ -586,8 +585,7 @@ return {
       pattern = "himalaya-email",
       callback = function()
         wk.add({
-          -- These keymaps are defined in config.lua setup_buffer_keymaps
-          -- which-key will automatically detect them from the buffer
+          -- Buffer-specific keymaps are defined in himalaya config
         }, { buffer = 0 })
       end,
     })
@@ -600,15 +598,13 @@ return {
         local composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
         if composer.is_compose_buffer(vim.api.nvim_get_current_buf()) then
           wk.add({
-            -- Only add quit mapping - md and mD are already in mail group
+            -- Additional compose buffer mapping
             { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", buffer = 0 },
           }, { buffer = 0 })
         end
       end,
     })
     
-    -- Markdown-specific mappings (format mapping already in actions group)
-
     -- SESSIONS group
     wk.add({
       { "<leader>S", group = "sessions", icon = "󰆔" },

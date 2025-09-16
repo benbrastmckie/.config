@@ -33,10 +33,50 @@ function M.setup()
     }
   )
 
-  -- Setup terminal keymaps
+  -- Pre-emptively suppress terminal messages
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
+    pattern = { "term://*" },
+    callback = function()
+      vim.opt_local.shortmess:append("I")
+      vim.cmd([[silent! echo ""]])
+    end,
+  })
+  
+  -- Setup terminal keymaps and suppress native terminal message
   api.nvim_create_autocmd({ "TermOpen" }, {
     pattern = { "term://*" }, -- use term://*toggleterm#* for only ToggleTerm
-    command = "lua set_terminal_keymaps()",
+    callback = function(ev)
+      set_terminal_keymaps()
+      
+      -- Aggressive suppression of the native terminal message
+      local bufname = vim.api.nvim_buf_get_name(ev.buf)
+      
+      -- Set buffer-local option to suppress messages
+      vim.bo[ev.buf].modifiable = true
+      
+      -- Multiple approaches to clear the message
+      vim.cmd([[silent! echo ""]])
+      vim.cmd([[silent! redraw!]])
+      
+      -- For Claude Code, use additional suppression
+      if bufname:match("claude%-code") or bufname:match("ClaudeCode") then
+        -- Clear any messages immediately and after a short delay
+        vim.defer_fn(function()
+          vim.cmd([[silent! echo ""]])
+          vim.cmd([[silent! redraw!]])
+        end, 1)
+        
+        -- Also try clearing with messages command
+        vim.defer_fn(function()
+          vim.cmd([[silent! messages clear]])
+        end, 10)
+      end
+      
+      -- Final clear for all terminals
+      vim.defer_fn(function()
+        vim.cmd([[silent! echo ""]])
+      end, 50)
+    end,
   })
 
   -- Setup markdown keymaps
