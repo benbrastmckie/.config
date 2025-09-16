@@ -282,12 +282,11 @@ return {
         },
       },
 
-      -- fuzzy = {
-      --   use_typo_resistance = true,
-      --   use_frecency = true,
-      --   use_proximity = true,
-      --   sorts = { 'label', 'kind', 'score' },
-      -- },
+      fuzzy = {
+        prebuilt_binaries = {
+          download = true,  -- Enable downloading prebuilt binaries
+        },
+      },
 
       cmdline = {
         enabled = true,
