@@ -31,10 +31,16 @@ return {
         show_tab_indicators = false,
         show_close_icon = false,
         
-        -- Simple filter to exclude quickfix windows
+        -- Simple filter to exclude quickfix windows and claude-code terminals
         custom_filter = function(buf_number, buf_numbers)
           local buf_ft = vim.bo[buf_number].filetype
+          local buf_name = vim.api.nvim_buf_get_name(buf_number)
+          -- Exclude quickfix windows
           if buf_ft == "qf" then
+            return false
+          end
+          -- Exclude claude-code terminal buffers
+          if string.match(buf_name, "claude%-code") then
             return false
           end
           return true
@@ -57,9 +63,14 @@ return {
         options = {
           mode = "buffers",
           custom_filter = function(buf_number, buf_numbers)
-            -- filter out quickfix buffers
+            -- filter out quickfix buffers and claude-code terminals
             local buf_ft = vim.bo[buf_number].filetype
+            local buf_name = vim.api.nvim_buf_get_name(buf_number)
             if buf_ft == "qf" then -- qf is the filetype for quickfix windows
+              return false
+            end
+            -- Exclude claude-code terminal buffers
+            if string.match(buf_name, "claude%-code") then
               return false
             end
             return true
