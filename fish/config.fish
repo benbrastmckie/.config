@@ -12,6 +12,7 @@ bind --erase --all \ct
 fish_config prompt choose scales
 
 # set -x TERM tmux-256color
+set -x EDITOR nvim
 
 # # modify the prompt
 # function fish_prompt

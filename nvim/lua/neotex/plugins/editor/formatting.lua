@@ -30,7 +30,7 @@ return {
         vue = { "prettier" },
         css = { "prettier" },
         html = { "prettier" },
-        json = { "prettier" },
+        json = { "jq" },
         yaml = { "prettier" },
         markdown = { "prettier" },
         
@@ -87,6 +87,12 @@ return {
         -- Prettier formatter - explicitly configure
         prettier = {
           args = { "--stdin-filepath", "$FILENAME" },
+          stdin = true,
+        },
+        
+        -- jq formatter for JSON
+        jq = {
+          args = { "." },
           stdin = true,
         },
       },

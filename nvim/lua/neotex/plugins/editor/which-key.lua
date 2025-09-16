@@ -486,7 +486,7 @@ return {
       { "<leader>hc", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteChat") end, desc = "chat", icon = "󰻞" },
       { "<leader>ht", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteToggle") end, desc = "toggle avante", icon = "󰔡" },
       { "<leader>hs", function() require("neotex.plugins.ai.util.avante_mcp").with_mcp("AvanteEdit") end, desc = "selected edit", icon = "󰏫" },
-      { "<leader>ho", "<cmd>ClaudeCode<CR>", desc = "open claude code", icon = "󰚩" },
+      { "<leader>ho", "<cmd>ClaudeCodeFocus<CR>", desc = "toggle claude code", icon = "󰚩" },
       { "<leader>hb", "<cmd>ClaudeCodeAddBuffer<CR>", desc = "add buffer to claude", icon = "󰈙" },
       { "<leader>hr", "<cmd>ClaudeCodeAddDir<CR>", desc = "add directory to claude", icon = "󰉖" },
       { "<leader>hx", "<cmd>MCPHubOpen<CR>", desc = "open mcp hub", icon = "󰚩" },
@@ -786,6 +786,7 @@ return {
       -- Yank operations
       { "<leader>y", group = "yank", icon = "󰆏", mode = "v" },
       { "<leader>yh", function() _G.YankyTelescopeHistory() end, desc = "yank history", icon = "󰞋", mode = "v" },
+      
     })
     
     -- Jupyter visual mode mapping (for sending selected text to REPL)

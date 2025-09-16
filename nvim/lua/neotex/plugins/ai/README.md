@@ -10,6 +10,7 @@ ai/
 ├── init.lua           # AI plugins loader
 ├── avante.lua         # Avante AI assistant
 ├── claude-code.lua    # Claude Code integration
+├── opencode.lua       # OpenCode terminal AI assistant
 ├── lectic.lua         # AI-assisted writing
 ├── mcp-hub.lua        # Model Context Protocol hub
 └── util/              # AI utility modules
@@ -27,6 +28,7 @@ ai/
 
 - **Avante Integration**: Connect with the Avante plugin for AI-assisted coding and chat
 - **Claude Code Integration**: Seamless terminal integration with Claude Code CLI
+- **OpenCode Integration**: Terminal-based AI assistant with context-aware editing and MCP support
 - **Lectic Integration**: Add AI-assisted writing with structured prompts
 - **MCP-Hub Integration**: Access multiple AI services through a unified hub
 - **System Prompts**: Manage and customize AI behavior with templates
@@ -39,6 +41,7 @@ lua/neotex/plugins/ai/
 ├── init.lua               # AI plugins loader with event registration
 ├── avante.lua             # Avante AI assistant configuration
 ├── claude-code.lua        # Claude Code terminal integration
+├── opencode.lua           # OpenCode terminal AI assistant
 ├── lectic.lua             # Lectic AI writing integration
 ├── mcp-hub.lua            # MCP-Hub plugin configuration
 └── util/                  # Utility modules for AI integration
@@ -163,6 +166,89 @@ opts = {
 4. Select text and use `<leader>cs` to send selection to Claude
 5. Use Claude Code CLI commands as normal in the terminal
 6. Toggle the terminal off with `<leader>ho` again when done
+
+### OpenCode Terminal AI Assistant
+
+OpenCode provides a powerful terminal-based AI assistant with native MCP (Model Context Protocol) support and context-aware editing capabilities.
+
+**Key Features:**
+- Terminal UI built by Neovim users for optimal integration
+- Native MCP server support (local and remote)
+- Context-aware buffer editing with auto-reload
+- Provider-agnostic (supports Anthropic, OpenAI, Google, local models)
+- Smart prompt library with custom definitions
+- Real-time buffer synchronization when OpenCode edits files
+- Client/server architecture for flexible deployment
+
+**NixOS Dependencies:**
+For full functionality on NixOS, ensure these packages are in your environment:
+```nix
+environment.systemPackages = with pkgs; [
+  nodejs_20  # Required for npx commands (MCP servers)
+  uv         # Required for uvx commands (Python-based MCP servers)
+  bun        # Optional: OpenCode development requirement
+];
+```
+
+**OpenCode Configuration:**
+OpenCode uses `~/.config/opencode/opencode.json` for configuration, including MCP servers:
+```json
+{
+  "mcp": {
+    "filesystem": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
+      "args": ["${HOME}"],
+      "enabled": true
+    },
+    "neovim": {
+      "type": "local",
+      "command": ["npx", "-y", "mcp-neovim-server"],
+      "environment": {
+        "NVIM_SOCKET_PATH": "/tmp/nvim"
+      }
+    }
+  }
+}
+```
+
+**Commands:**
+- `OpenCodeToggle`: Toggle OpenCode terminal
+- `OpenCodeAsk [question]`: Ask OpenCode a question
+- `OpenCodeAddBuffer`: Add current buffer to context
+- `OpenCodeAddDir`: Add current directory to context
+
+**Keymaps:**
+- `<leader>ot`: Toggle OpenCode terminal
+- `<leader>oA`: General OpenCode prompt
+- `<leader>oa`: Ask about code at cursor/selection
+- `<leader>ob`: Add buffer to OpenCode context
+- `<leader>od`: Add directory to context
+- `<leader>op`: Open prompt library
+- `<leader>oe`: Explain code at cursor
+- `<leader>or`: Refactor code at cursor
+- `<leader>of`: Fix code at cursor
+
+**MCP Integration:**
+OpenCode's native MCP support allows direct configuration of MCP servers without requiring MCPHub:
+- Supports both stdio and SSE (Server-Sent Events) server types
+- Per-agent configuration for selective server enabling
+- Automatic tool availability alongside built-in tools
+- Works independently from MCPHub for terminal-based workflows
+
+**Neovim Socket Integration:**
+For OpenCode to control Neovim through MCP, start Neovim with:
+```bash
+nvim --listen /tmp/nvim
+```
+
+**Usage Workflow:**
+1. Ensure OpenCode is installed (via your NixOS config or npm)
+2. Press `<leader>ot` to toggle OpenCode terminal
+3. Add files/directories to context with `<leader>ob` and `<leader>od`
+4. Ask questions with `<leader>oa` or use the prompt library `<leader>op`
+5. OpenCode can edit files directly, which auto-reload in Neovim
+6. Use OpenCode's native MCP servers for enhanced capabilities
 
 ### Lectic AI-Assisted Writing
 
