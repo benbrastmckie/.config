@@ -7,174 +7,60 @@ return {
   opts = {
     -- Port range for WebSocket connection
     port_range = { min = 10000, max = 65535 },
-    auto_start = true,     -- Automatically start Claude Code
-    log_level = "info",    -- Logging level
+    auto_start = true,
+    log_level = "info",
     
     -- Terminal configuration
     terminal = {
-      split_side = "right",  -- Open terminal on right side (matches your preference)
-      split_width_percentage = 0.40,  -- Set sidebar width to 40% of screen (default is 30%)
-      provider = "native",   -- Use native terminal (or "snacks" if you have it)
-      auto_close = true,     -- Auto-close terminal when Claude Code exits
+      split_side = "right",
+      split_width_percentage = 0.40,
+      provider = "native",
+      auto_close = true,  -- Auto-close terminal when switching away
+      show_native_term_exit_tip = false,  -- Disable the "Press Ctrl-\ Ctrl-N" message
     },
     
-    -- Diff configuration - attempt to disable diff functionality
+    -- Diff configuration - minimize diff disruption
     diff_opts = {
-      auto_close_on_accept = true,
-      vertical_split = false,       -- Use horizontal split instead of vertical
-      open_in_current_tab = true,
-      keep_terminal_focus = true,   -- Keep focus on terminal
-      show_diff_stats = false,      -- Disable diff statistics
-      enabled = false,              -- Try to disable diff functionality entirely
+      auto_close_on_accept = true,  -- Auto-close diff after accepting
+      vertical_split = false,  -- Use horizontal split to be less intrusive
+      open_in_current_tab = false,  -- Don't take over current tab
+      keep_terminal_focus = true,  -- Keep focus on terminal, not diff
     },
+    
+    -- Don't auto-focus terminal after sending content
+    focus_after_send = false,
   },
   
-  -- NOTE: Key mappings are now defined in which-key.lua under the AI HELP group
-  -- to avoid conflicts with other leader mappings
   keys = {
-    -- Add <C-c> as a global toggle for Claude Code
-    { "<C-c>", "<cmd>ClaudeCodeFocus<CR>", mode = "n", desc = "Toggle Claude Code" },
+    -- Main toggle with <C-c> - uses built-in ClaudeCodeFocus for smart toggle
+    { "<C-c>", "<cmd>ClaudeCodeFocus<CR>", desc = "Toggle Claude Code sidebar", mode = { "n", "i", "v", "t" } },
+    
+    -- Additional convenience mappings
+    { "<leader>ac", "<cmd>ClaudeCode<CR>", desc = "Start/restart Claude Code" },
+    { "<leader>af", "<cmd>ClaudeCodeFocus<CR>", desc = "Focus/toggle Claude Code" },
+    { "<leader>as", "<cmd>ClaudeCodeSend<CR>", desc = "Send selection to Claude", mode = "v" },
+    { "<leader>aa", "<cmd>ClaudeCodeAdd %<CR>", desc = "Add current file to Claude context" },
   },
   
   config = function(_, opts)
     require("claudecode").setup(opts)
     
-    -- Multiple approaches to disable the open_diff tool
-    
-    -- Approach 1: Immediate override attempt
-    local function override_diff_tool()
-      local ok, tools = pcall(require, "claudecode.tools")
-      if ok and tools and tools.tools then
-        if tools.tools.openDiff then
-          tools.tools.openDiff.handler = function(params)
-            -- Completely disable diff functionality - just return success
-            return { content = {} }
-          end
-          vim.notify("Claude Code: open_diff tool disabled", vim.log.levels.INFO)
-        end
+    -- Configure escape key behavior in Claude Code terminal
+    -- This keeps escape within the terminal instead of exiting to Neovim normal mode
+    vim.api.nvim_create_autocmd("TermOpen", {
+      pattern = "*claude*",
+      callback = function()
+        -- Make buffer unlisted to prevent it from appearing in tabs/bufferline
+        -- This keeps the buffer accessible via <C-c> but not via :bnext/:bprev or tabs
+        vim.bo.buflisted = false
         
-        -- Also try to disable any variants
-        if tools.tools.open_diff then
-          tools.tools.open_diff.handler = function(params)
-            return { content = {} }
-          end
-        end
+        -- In Claude Code terminal, don't let escape exit to normal mode
+        -- Use Ctrl-\ Ctrl-n if you need to exit to normal mode
+        vim.api.nvim_buf_set_keymap(0, "t", "<Esc>", "<Esc>", { noremap = true })
         
-        if tools.tools["open-diff"] then
-          tools.tools["open-diff"].handler = function(params)
-            return { content = {} }
-          end
-        end
-      end
-    end
-    
-    -- Approach 2: Schedule override for after plugin load
-    vim.schedule(override_diff_tool)
-    
-    -- Approach 3: Delayed override with multiple attempts
-    for i = 1, 5 do
-      vim.defer_fn(override_diff_tool, i * 500) -- Try every 500ms for 2.5 seconds
-    end
-    
-    -- Approach 4: Hook into Claude Code events if available
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "ClaudeCodeReady",
-      callback = override_diff_tool,
-      once = true,
-    })
-    
-    -- Clean up any existing Claude Code related buffers on startup
-    vim.schedule(function()
-      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        local bufname = vim.api.nvim_buf_get_name(buf)
-        local filetype = vim.bo[buf].filetype
-        if bufname:match("claude%-code") or bufname:match("ClaudeCode") or
-           bufname:match("claude") or bufname:match("Claude") or
-           bufname:match("%.diff$") or bufname:match("%.patch$") or
-           filetype == "diff" and (bufname:match("^/tmp/") or bufname:match("^/var/")) then
-          vim.bo[buf].buflisted = false
-          vim.bo[buf].bufhidden = "wipe"
-        end
-      end
-    end)
-    
-    -- Create additional commands for convenience (maintaining compatibility)
-    vim.api.nvim_create_user_command("ClaudeCodeToggle", function()
-      vim.cmd("ClaudeCode")
-    end, { desc = "Toggle Claude Code terminal" })
-    
-    -- Command to add current buffer to Claude context
-    vim.api.nvim_create_user_command("ClaudeCodeAddBuffer", function()
-      local file = vim.fn.expand("%:p")
-      if file ~= "" then
-        vim.cmd("ClaudeCodeAdd " .. file)
-      else
-        require('neotex.util.notifications').ai('No file to add to Claude context', require('neotex.util.notifications').categories.WARNING)
-      end
-    end, { desc = "Add current buffer to Claude Code context" })
-    
-    -- Command to add current directory to Claude context
-    vim.api.nvim_create_user_command("ClaudeCodeAddDir", function()
-      local cwd = vim.fn.getcwd()
-      vim.cmd("ClaudeCodeAdd " .. cwd)
-    end, { desc = "Add current directory to Claude Code context" })
-    
-    -- Prevent Claude Code from creating a new tab
-    local function prevent_claude_tab()
-      vim.defer_fn(function()
-        -- Check if we're in a 'claude' tab that was just created
-        local current_tab = vim.fn.tabpagenr()
-        local tab_name = vim.fn.bufname()
-        
-        if tab_name:match("claude") and vim.fn.tabpagenr("$") > 1 then
-          -- Get the windows in the current tab
-          local wins = vim.api.nvim_tabpage_list_wins(0)
-          
-          -- If this tab only has the claude window, move it to the previous tab
-          if #wins == 1 then
-            local buf = vim.api.nvim_win_get_buf(wins[1])
-            vim.cmd("tabprevious")
-            vim.cmd("vsplit")
-            vim.api.nvim_win_set_buf(0, buf)
-            vim.cmd("tabnext " .. current_tab)
-            vim.cmd("tabclose")
-            vim.cmd("wincmd L")  -- Move to right side
-          end
-        end
-      end, 50)  -- Small delay to let the tab creation complete
-    end
-    
-    -- Hook into tab creation
-    vim.api.nvim_create_autocmd("TabNew", {
-      callback = prevent_claude_tab
-    })
-    
-    -- Set up autocmd to configure Claude Code buffers
-    vim.api.nvim_create_autocmd({"TermOpen", "BufEnter", "BufWinEnter", "BufAdd", "BufNew"}, {
-      pattern = "*",
-      callback = function(event)
-        local bufname = vim.api.nvim_buf_get_name(event.buf)
-        local filetype = vim.bo[event.buf].filetype
-        -- Check if this is any Claude Code related buffer (terminal, diff, or any other)
-        if bufname:match("claude%-code") or bufname:match("ClaudeCode") or 
-           bufname:match("claude") or bufname:match("Claude") or
-           bufname:match("%.diff$") or bufname:match("%.patch$") or
-           filetype == "diff" and (bufname:match("^/tmp/") or bufname:match("^/var/")) then
-          -- Make the buffer unlisted so it doesn't appear in tabline
-          vim.bo[event.buf].buflisted = false
-          -- Set bufhidden to wipe to remove it completely when hidden
-          vim.bo[event.buf].bufhidden = "wipe"
-          
-          -- Set buffer-local keymaps for Claude Code terminal
-          -- Pass escape directly to Claude Code without leaving insert mode
-          vim.api.nvim_buf_set_keymap(event.buf, 't', '<Esc>', [[<Esc>]], { noremap = true, silent = true })
-          -- Use <C-\><C-n> to exit terminal mode and enter Neovim normal mode
-          vim.api.nvim_buf_set_keymap(event.buf, 't', '<C-\\><C-n>', '<C-\\><C-n>', { noremap = true, desc = "Exit terminal mode to Neovim normal mode" })
-          -- Alternative: use <leader><Esc> to exit terminal mode to Neovim normal mode
-          vim.api.nvim_buf_set_keymap(event.buf, 't', '<leader><Esc>', '<C-\\><C-n>', { noremap = true, desc = "Exit terminal mode to Neovim normal mode" })
-          -- Use <C-c> to toggle the Claude Code sidebar (close the window)
-          vim.api.nvim_buf_set_keymap(event.buf, 't', '<C-c>', '<C-\\><C-n>:close<CR>', { noremap = true, silent = true, desc = "Toggle Claude Code sidebar closed" })
-        end
+        -- Alternative: Use double escape or leader+escape to exit terminal mode
+        vim.api.nvim_buf_set_keymap(0, "t", "<Esc><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
+        vim.api.nvim_buf_set_keymap(0, "t", "<leader><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
       end,
     })
   end,

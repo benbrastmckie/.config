@@ -49,7 +49,7 @@ function M.setup()
     splitright = true,              -- force all vertical splits to go to the right of current window
     scrolloff = 7,                  -- minimal number of screen lines to keep above and below the cursor
     sidescrolloff = 7,              -- minimal number of screen columns either side of cursor if wrap is `false`
-    shortmess = "filnxtToOFc",      -- which errors to suppress
+    shortmess = "filnxtToOFcI",     -- which errors to suppress (I suppresses intro message)
     mousemoveevent = true,
 
     -- INDENT
