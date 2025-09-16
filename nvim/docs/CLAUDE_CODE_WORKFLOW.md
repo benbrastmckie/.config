@@ -1,80 +1,91 @@
-# Claude Code in Neovim: Advanced Multi-Agent Workflow with Git Worktrees
+# Claude Code Multi-Agent Workflow: Streamlined Neovim Integration
 
-A comprehensive guide for leveraging Claude Code's multi-agent capabilities with git worktrees to maximize development efficiency and avoid conflicts.
+A production-ready workflow for managing multiple Claude Code agents across git worktrees using a focused 4-plugin architecture.
+
+## Quick Start
+
+```bash
+# Prerequisites
+clause --version              # Claude Code CLI installed
+git worktree list             # Git 2.5+ with worktree support
+wezterm --version             # WezTerm terminal emulator
+nvim --version                # Neovim 0.9+
+```
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Prerequisites](#prerequisites)
-3. [Git Worktrees Setup](#git-worktrees-setup)
-4. [Claude Code Multi-Agent Architecture](#claude-code-multi-agent-architecture)
-5. [Neovim Integration](#neovim-integration)
-6. [Workflow Patterns](#workflow-patterns)
+1. [Architecture Overview](#architecture-overview)
+2. [Plugin Stack](#plugin-stack)
+3. [Workflow Phases](#workflow-phases)
+4. [Commands & Keybindings](#commands--keybindings)
+5. [Implementation Guide](#implementation-guide)
+6. [Use Cases](#use-cases)
 7. [Best Practices](#best-practices)
-8. [Troubleshooting](#troubleshooting)
-9. [Advanced Techniques](#advanced-techniques)
 
-## Overview
+## Architecture Overview
 
-Claude Code supports running multiple concurrent sessions, each with specialized agents that can work on different aspects of your project simultaneously. By combining this with git worktrees, you can achieve true parallel development without context switching or merge conflicts.
+This workflow enables parallel Claude Code sessions across isolated git worktrees, orchestrated through Neovim with seamless tab management in WezTerm.
 
-### Key Benefits
-
-- **Parallel Development**: Multiple Claude Code sessions working on different branches simultaneously
-- **Context Isolation**: Each agent maintains its own working directory and conversation context
-- **No Stashing Required**: Switch between features without committing incomplete work
-- **Reduced Conflicts**: Isolated workspaces minimize merge conflicts
-- **Specialized Agents**: Different agents optimized for different tasks (backend, frontend, testing, etc.)
-
-### Architecture Diagram
+### System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Main Repository (.git)                   │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-     ┌───────────────┼───────────────┬───────────────┐
-     │               │               │               │
-┌────▼────┐    ┌────▼────┐    ┌────▼────┐    ┌────▼────┐
-│Worktree1│    │Worktree2│    │Worktree3│    │Worktree4│
-│feature-a│    │feature-b│    │bugfix-c │    │refactor │
-│         │    │         │    │         │    │         │
-│ Claude  │    │ Claude  │    │ Claude  │    │ Claude  │
-│ Build   │    │ Plan    │    │ Build   │    │ Build   │
-│ Agent   │    │ Agent   │    │ Agent   │    │ Agent   │
-└─────────┘    └─────────┘    └─────────┘    └─────────┘
+│                         Neovim                              │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │                  Plugin Stack                         │  │
+│  │                                                       │  │
+│  │  claude-code.nvim ──► Claude sidebar & chat          │  │
+│  │  toggleterm.nvim  ──► Quick terminal access          │  │
+│  │  git-worktree.nvim ─► Worktree management            │  │
+│  │  wezterm.nvim ──────► Tab orchestration              │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    WezTerm Tabs                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │  Main    │  │Feature A │  │Feature B │  │ Bugfix   │  │
+│  │  <C-t>   │  │Worktree 1│  │Worktree 2│  │Worktree 3│  │
+│  │  Claude  │  │  Claude  │  │  Claude  │  │  Claude  │  │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
+### Key Benefits
 
-### Required Tools
+- **Instant Claude Access**: `<C-c>` for sidebar, `<C-t>` for terminal
+- **True Isolation**: Each worktree has independent file state
+- **Tab Organization**: Each task gets a dedicated WezTerm tab
+- **Context Persistence**: CLAUDE.md files maintain task context
+- **Zero Conflicts**: Parallel development without merge issues
 
-```bash
-# Git with worktree support (2.5+)
-git --version
+## Plugin Stack
 
-# Claude Code CLI
-claude --version
+### Current Plugins (Already Configured)
 
-# Neovim (0.9+)
-nvim --version
+#### 1. claude-code.nvim
+- **Purpose**: Claude Code integration in Neovim
+- **Key binding**: `<C-c>` toggles Claude sidebar
+- **Features**: File refresh, git root awareness, 40% split width
 
-# Node.js for MCP servers (optional but recommended)
-node --version
-```
+#### 2. toggleterm.nvim 
+- **Purpose**: Quick terminal access for Claude commands
+- **Key binding**: `<C-t>` toggles terminal
+- **Direction**: Vertical split (80 columns)
+- **Shell**: Fish (configured)
 
-### Claude Code Installation
+### New Plugins to Add
 
-```bash
-# Install Claude Code globally
-npm install -g @anthropic/claude-code
+#### 3. git-worktree.nvim
+- **Purpose**: Create and manage git worktrees from Neovim
+- **Integration**: Telescope for fuzzy finding
+- **Auto-setup**: Creates CLAUDE.md context files
 
-# Or use directly with npx
-npx @anthropic/claude-code
-
-# Verify installation
-claude --help
-```
+#### 4. wezterm.nvim
+- **Purpose**: Programmatic WezTerm tab management
+- **Features**: Spawn tabs, switch workspaces, set environment
+- **Alternative to**: Manual tab creation
 
 ## Git Worktrees Setup
 
@@ -97,647 +108,291 @@ git worktree remove ../project-feature-auth
 git worktree prune
 ```
 
-### Recommended Directory Structure
+## Commands & Keybindings
 
-```
-~/projects/
-├── myproject/                 # Main repository
-│   └── .git/                  # Git directory
-├── myproject-feature-auth/    # Worktree for authentication
-├── myproject-feature-api/     # Worktree for API development
-├── myproject-bugfix-ui/       # Worktree for UI fixes
-└── myproject-refactor-db/     # Worktree for database refactoring
-```
+### Unified AI Operations (`<leader>h` prefix)
 
-### Worktree Setup Script
+```vim
+" Claude Operations
+<C-c>        Toggle Claude sidebar (any mode)
+<leader>hc   Open Claude in toggleterm
+<leader>hC   Continue Claude conversation
+<leader>hr   Resume Claude (picker)
 
-Create `~/.local/bin/create-worktree`:
+" Worktree Management
+<leader>hw   Switch worktree (Telescope)
+<leader>hW   Create worktree (Telescope)
+<leader>hd   Delete worktree
 
-```bash
-#!/bin/bash
-# Create a new worktree with Claude Code session
+" Tab Orchestration
+<leader>ht   New worktree in WezTerm tab
+<leader>hs   Switch to Claude session
+<leader>hl   List all Claude sessions
 
-PROJECT_NAME=$(basename $(pwd))
-FEATURE_NAME=$1
-WORKTREE_TYPE=${2:-feature}  # feature, bugfix, refactor, experiment
-
-if [ -z "$FEATURE_NAME" ]; then
-    echo "Usage: create-worktree <name> [type]"
-    exit 1
-fi
-
-WORKTREE_PATH="../${PROJECT_NAME}-${WORKTREE_TYPE}-${FEATURE_NAME}"
-BRANCH_NAME="${WORKTREE_TYPE}/${FEATURE_NAME}"
-
-# Create worktree
-git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"
-
-# Start Claude Code in new worktree
-cd "$WORKTREE_PATH"
-echo "Created worktree at: $WORKTREE_PATH"
-echo "Branch: $BRANCH_NAME"
-echo ""
-echo "Start Claude Code with: claude"
+" Terminal Access
+<C-t>        Toggle terminal (vertical)
+<leader>tf   Floating terminal
+<leader>th   Horizontal terminal
 ```
 
-## Claude Code Multi-Agent Architecture
+## Implementation Guide
 
-### Understanding Claude Code Agents
-
-Claude Code provides two primary agents you can switch between using the Tab key:
-
-1. **Build Agent**: Full access to all tools (file operations, git, terminal)
-2. **Plan Agent**: Limited tools for planning and analysis
-
-### Subagents
-
-Subagents are specialized assistants invoked for specific tasks:
-
-- **general-purpose**: Complex searches, multi-step tasks
-- **statusline-setup**: Configure status line settings
-- **output-style-setup**: Create output styles
-
-### Running Multiple Sessions
-
-```bash
-# Terminal 1: Feature development
-cd ../myproject-feature-auth
-claude
-# Focus: "Implement JWT authentication with refresh tokens"
-
-# Terminal 2: Bug fixing
-cd ../myproject-bugfix-ui
-claude
-# Focus: "Fix responsive layout issues in dashboard"
-
-# Terminal 3: Refactoring
-cd ../myproject-refactor-db
-claude
-# Focus: "Optimize database queries and add indexes"
-```
-
-### Session Management Tips
-
-1. **Clear Context**: Start each session with a clear task description
-2. **Use Todo Lists**: Claude Code's TodoWrite tool helps track multi-step tasks
-3. **Leverage Subagents**: Use `@general` for complex searches across the codebase
-4. **Switch Agents**: Use Tab to switch between Build and Plan agents as needed
-
-## Neovim Integration
-
-### Setting Up Claude Code in Neovim
-
-Add to your Neovim configuration:
-
-```lua
--- ~/.config/nvim/lua/neotex/plugins/ai/claude-code.lua
-
-return {
-  "anthropic/claude-code.nvim",  -- Hypothetical plugin
-  cmd = { "ClaudeCode", "ClaudeCodeAsk", "ClaudeCodePlan" },
-  keys = {
-    -- Start Claude Code in current directory
-    { "<leader>cc", "<cmd>terminal claude<cr>", desc = "Start Claude Code" },
-    
-    -- Ask Claude Code with context
-    { "<leader>ca", function()
-      local prompt = vim.fn.input("Ask Claude: ")
-      if prompt ~= "" then
-        vim.cmd("terminal claude ask '" .. prompt .. "'")
-      end
-    end, desc = "Ask Claude Code" },
-    
-    -- Switch to worktree and start Claude
-    { "<leader>cw", function()
-      require("telescope").extensions.git_worktree.git_worktrees()
-    end, desc = "Switch worktree with Claude" },
-  },
-  config = function()
-    -- Custom configuration
-    vim.g.claude_code_split_direction = "vertical"
-    vim.g.claude_code_split_size = 80
-  end,
-}
-```
-
-### Worktree Management in Neovim
+### Step 1: Install git-worktree.nvim
 
 ```lua
 -- ~/.config/nvim/lua/neotex/plugins/git/worktree.lua
-
 return {
   "ThePrimeagen/git-worktree.nvim",
   dependencies = { "nvim-telescope/telescope.nvim" },
   keys = {
-    { "<leader>gw", function()
-      require("telescope").extensions.git_worktree.git_worktrees()
-    end, desc = "Switch git worktree" },
-    
-    { "<leader>gW", function()
-      require("telescope").extensions.git_worktree.create_git_worktree()
-    end, desc = "Create git worktree" },
+    { "<leader>hw", "<cmd>Telescope git_worktree<cr>", desc = "Switch worktree" },
+    { "<leader>hW", "<cmd>Telescope git_worktree create_git_worktree<cr>", desc = "Create worktree" },
   },
   config = function()
     require("git-worktree").setup({
-      change_directory_command = "cd",
+      change_directory_command = "tcd", -- tab-local cd
       update_on_change = true,
-      update_on_change_command = "e .",
       clearjumps_on_change = true,
       autopush = false,
     })
+    require("telescope").load_extension("git_worktree")
     
-    -- Automatically start Claude Code in new worktree
+    -- Auto-create CLAUDE.md on new worktree
     local Worktree = require("git-worktree")
     Worktree.on_tree_change(function(op, metadata)
-      if op == Worktree.Operations.Switch then
-        print("Switched to " .. metadata.path)
-        -- Optional: Start Claude Code automatically
-        -- vim.cmd("terminal claude")
+      if op == Worktree.Operations.Create then
+        local context_file = metadata.path .. "/CLAUDE.md"
+        if vim.fn.filereadable(context_file) == 0 then
+          local content = {
+            "# Task: " .. metadata.branch,
+            "Branch: " .. metadata.branch,
+            "Created: " .. os.date(),
+            "Worktree: " .. metadata.path,
+            "",
+            "## Objective",
+            "[Describe the task here]",
+            "",
+            "## Context",
+            "[Any relevant context]",
+          }
+          vim.fn.writefile(content, context_file)
+        end
       end
     end)
   end,
 }
 ```
 
-### Integrated Workflow Commands
+### Step 2: Install wezterm.nvim
+
+```lua
+-- ~/.config/nvim/lua/neotex/plugins/terminal/wezterm.lua
+return {
+  "willothy/wezterm.nvim",
+  config = function()
+    require("wezterm").setup({
+      create_commands = false, -- We'll use our own commands
+    })
+  end,
+}
+```
+
+### Step 3: Create Orchestration Module
 
 ```lua
 -- ~/.config/nvim/lua/neotex/core/claude-worktree.lua
-
 local M = {}
 
--- Create worktree and start Claude Code
-function M.create_feature_worktree()
-  local feature_name = vim.fn.input("Feature name: ")
-  if feature_name == "" then return end
+-- Create worktree and open in new WezTerm tab
+function M.create_worktree_tab()
+  local feature = vim.fn.input("Feature name: ")
+  if feature == "" then return end
   
-  local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
-  local worktree_path = "../" .. project_name .. "-feature-" .. feature_name
-  local branch_name = "feature/" .. feature_name
+  local branch = "feature/" .. feature
+  local worktree_path = "../" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "-" .. feature
   
   -- Create worktree
-  vim.fn.system("git worktree add " .. worktree_path .. " -b " .. branch_name)
+  vim.fn.system("git worktree add " .. worktree_path .. " -b " .. branch)
   
-  -- Change to new worktree
-  vim.cmd("cd " .. worktree_path)
-  
-  -- Start Claude Code in a terminal
-  vim.cmd("vsplit | terminal claude")
-  
-  print("Created worktree: " .. worktree_path)
-end
-
--- List all active Claude Code sessions
-function M.list_claude_sessions()
-  local sessions = vim.fn.systemlist("ps aux | grep 'claude' | grep -v grep")
-  if #sessions > 0 then
-    print("Active Claude Code sessions:")
-    for _, session in ipairs(sessions) do
-      print("  " .. session)
-    end
-  else
-    print("No active Claude Code sessions")
+  if vim.v.shell_error == 0 then
+    -- Create context file
+    local context_content = string.format(
+      "# Task: %s\nBranch: %s\nCreated: %s\n\n## Objective\n[Describe here]\n",
+      feature, branch, os.date()
+    )
+    vim.fn.writefile(vim.split(context_content, "\n"), worktree_path .. "/CLAUDE.md")
+    
+    -- Spawn new WezTerm tab
+    local wezterm = require("wezterm")
+    wezterm.spawn_tab({
+      cwd = worktree_path,
+      args = { "nvim", "CLAUDE.md" },
+    })
+    
+    vim.notify("Created worktree in new tab: " .. feature)
   end
-end
-
--- Quick switch between worktrees
-function M.switch_worktree_with_claude()
-  local worktrees = vim.fn.systemlist("git worktree list --porcelain | grep '^worktree' | cut -d' ' -f2")
-  
-  vim.ui.select(worktrees, {
-    prompt = "Select worktree:",
-    format_item = function(item)
-      local branch = vim.fn.system("cd " .. item .. " && git branch --show-current"):gsub("\n", "")
-      return item .. " (" .. branch .. ")"
-    end,
-  }, function(choice)
-    if choice then
-      vim.cmd("cd " .. choice)
-      local start_claude = vim.fn.confirm("Start Claude Code?", "&Yes\n&No", 1)
-      if start_claude == 1 then
-        vim.cmd("vsplit | terminal claude")
-      end
-    end
-  end)
-end
-
--- Set up keymaps
-function M.setup()
-  vim.keymap.set("n", "<leader>cwf", M.create_feature_worktree, { desc = "Create feature worktree with Claude" })
-  vim.keymap.set("n", "<leader>cws", M.switch_worktree_with_claude, { desc = "Switch worktree with Claude" })
-  vim.keymap.set("n", "<leader>cwl", M.list_claude_sessions, { desc = "List Claude Code sessions" })
 end
 
 return M
 ```
 
-## Workflow Patterns
+## Use Cases
 
-### Pattern 1: Feature Development with Multiple Components
+### Scenario 1: Quick Fix in Main Branch
 
-```bash
-# Backend API development
-cd ../myproject-feature-api-backend
-claude
-# "Implement REST API endpoints for user management with authentication"
-
-# Frontend UI development
-cd ../myproject-feature-api-frontend
-claude
-# "Create React components for user management dashboard"
-
-# Database migrations
-cd ../myproject-feature-api-db
-claude
-# "Design database schema and migrations for user management"
+```vim
+" 1. Open Neovim in your project
+" 2. Hit <C-t> for terminal
+" 3. Run: claude "fix the login validation"
+" 4. Or hit <C-c> for Claude sidebar
 ```
 
-### Pattern 2: Bug Investigation and Fixing
+### Scenario 2: New Feature Development
 
-```bash
-# Reproduce and investigate
-cd ../myproject-bugfix-investigation
-claude
-# "Help me reproduce and investigate the login timeout issue reported in #123"
+```vim
+" 1. Create worktree
+<leader>hW              " Create worktree dialog
+> feature/user-profile  " Enter branch name
 
-# Implement fix
-cd ../myproject-bugfix-implementation
-claude
-# "Fix the session timeout issue by implementing proper token refresh"
-
-# Add tests
-cd ../myproject-bugfix-tests
-claude
-# "Add comprehensive tests for session management and token refresh"
+" 2. Auto-switches to new worktree
+" 3. CLAUDE.md is created automatically
+" 4. Hit <C-c> to start Claude with context
 ```
 
-### Pattern 3: Refactoring with Safety
+### Scenario 3: Parallel Multi-Agent Work
 
-```bash
-# Analyze current implementation
-cd ../myproject-refactor-analysis
-claude
-# Use Plan agent (Tab to switch): "Analyze the current authentication system for refactoring opportunities"
+```vim
+" Main Neovim session
+<leader>ht              " Create worktree in new tab
+> payment-integration   " Feature 1
 
-# Implement refactoring
-cd ../myproject-refactor-implementation
-claude
-# Use Build agent: "Refactor authentication to use dependency injection pattern"
+<leader>ht              " Another worktree in new tab
+> api-refactor          " Feature 2
 
-# Verify no regressions
-cd ../myproject-refactor-verification
-claude
-# "Run all tests and verify no functionality has been broken"
+<leader>ht              " Third worktree in new tab
+> fix-memory-leak       " Bugfix
+
+" Result: 4 WezTerm tabs, each with isolated Claude session
+" Tab 1: Main project
+" Tab 2: Payment integration (Claude working)
+" Tab 3: API refactor (Claude working)
+" Tab 4: Memory leak fix (Claude working)
 ```
 
-### Pattern 4: Experimental Development
+### Example Workflow: Building a Feature
 
-```bash
-# Try approach A
-cd ../myproject-experiment-redis
-claude
-# "Implement caching using Redis with automatic invalidation"
+```vim
+" 1. Start in main project
+:pwd  " ~/dev/myproject
 
-# Try approach B
-cd ../myproject-experiment-memcached
-claude
-# "Implement caching using Memcached with consistent hashing"
+" 2. Create feature worktree
+<leader>ht
+> user-authentication
 
-# Compare and merge best solution
-cd ../myproject-experiment-final
-claude
-# "Compare both caching implementations and integrate the best approach"
+" 3. WezTerm opens new tab with:
+"    - Directory: ~/dev/myproject-user-authentication
+"    - File: CLAUDE.md (context file)
+"    - Branch: feature/user-authentication
+
+" 4. Edit CLAUDE.md to add context
+i
+## Objective
+Implement JWT-based authentication with:
+- Login/logout endpoints
+- Token refresh mechanism
+- Role-based access control
+<Esc>:w
+
+" 5. Start Claude
+<C-c>  " Opens Claude sidebar
+
+" 6. Give Claude the task
+"Implement the authentication system as described in CLAUDE.md"
+
+" 7. Claude works in isolation
+"    - All changes in feature branch
+"    - No conflicts with other work
+"    - Complete context preservation
 ```
 
 ## Best Practices
 
-### 1. Context Management
+### 1. Worktree Naming Convention
 
-```markdown
-# Good: Clear, specific context
-"Implement user authentication using JWT with the following requirements:
-- Access tokens expire in 15 minutes
-- Refresh tokens expire in 7 days
-- Store refresh tokens in httpOnly cookies
-- Implement token rotation on refresh"
-
-# Bad: Vague context
-"Add authentication"
+```
+project-feature-name    # Features
+project-bugfix-name     # Bug fixes
+project-refactor-name   # Refactoring
+project-experiment-name # Experiments
 ```
 
-### 2. Todo List Usage
+### 2. Context Files (CLAUDE.md)
 
-Always use Claude Code's TodoWrite tool for complex tasks:
+Always update CLAUDE.md with:
+- Clear objective
+- Relevant constraints
+- Expected outcomes
+- Links to related issues/PRs
 
-```markdown
-"Create a todo list for implementing the payment system:
-1. Design payment database schema
-2. Implement Stripe integration
-3. Create payment processing service
-4. Add webhook handlers
-5. Implement refund functionality
-6. Add payment history API
-7. Create payment notification system
-8. Write comprehensive tests"
+### 3. Session Management
+
+```vim
+" List active sessions
+<leader>hl  " Shows all Claude sessions
+
+" Clean up finished work
+git worktree remove ../project-feature-done
+git branch -d feature/done
 ```
 
-### 3. Subagent Utilization
+### 4. Tab Organization
 
-```markdown
-# Use general-purpose subagent for complex searches
-"@general Search for all instances of direct database access that should use the repository pattern"
+- Tab 1: Always keep main project
+- Tab 2-N: Feature worktrees
+- Use consistent naming for easy identification
+- Close tabs when features are complete
 
-# Let Claude Code automatically invoke subagents
-"Find and refactor all hardcoded configuration values to use environment variables"
+### 5. Performance Tips
+  
+
+- Limit concurrent Claude sessions to 3-4 max
+- Use `git worktree prune` regularly to clean up stale references
+- Close unused WezTerm tabs to free resources
+- Use tab-local directory changes (`tcd`) to prevent conflicts
+
+### 6. Troubleshooting
+
+#### Claude context confusion
+```vim
+" Always provide clear context
+"I'm in feature/auth worktree working on JWT implementation"
 ```
 
-### 4. Branch Synchronization
+#### Session not found
+```vim
+" Rebuild session list
+:lua require('neotex.core.claude-worktree').restore_sessions()
+```
 
+#### WezTerm tab creation fails
 ```bash
-# Regular sync script
-#!/bin/bash
-# sync-worktrees.sh
+# Check WezTerm CLI is available
+wezterm cli list
 
-for worktree in ../myproject-*; do
-  if [ -d "$worktree/.git" ]; then
-    echo "Syncing $worktree..."
-    cd "$worktree"
-    git fetch origin
-    git rebase origin/main || git rebase --abort
-    cd - > /dev/null
-  fi
-done
+# Ensure WezTerm is running
+pgrep wezterm
 ```
 
-### 5. Commit Practices
+## Summary
 
-```bash
-# Use Claude Code's git commit feature
-"Create a git commit for the authentication implementation. 
-Make sure to:
-- Include all changed files
-- Write a clear commit message following conventional commits
-- Run tests before committing"
-```
+This streamlined workflow leverages your existing plugins (claude-code.nvim, toggleterm.nvim) plus two strategic additions (git-worktree.nvim, wezterm.nvim) to create a powerful multi-agent development environment. Each worktree gets its own WezTerm tab with isolated Claude session, all orchestrated from your main Neovim instance.
 
-## Troubleshooting
+### Key Advantages
 
-### Common Issues and Solutions
+- **No external scripts** - Everything controlled from Neovim
+- **True isolation** - Each worktree has independent file state
+- **Seamless navigation** - Switch between sessions instantly
+- **Context persistence** - CLAUDE.md files maintain task state
+- **Resource efficient** - Only spawn tabs as needed
 
-#### Issue: Claude Code context confusion between worktrees
-
-**Solution**: Always start with clear context about which worktree/feature you're working on:
-
-```markdown
-"I'm in the feature/auth worktree working on JWT implementation. 
-The current task is to add refresh token rotation."
-```
-
-#### Issue: Merge conflicts when integrating worktrees
-
-**Solution**: Use integration branches:
-
-```bash
-# Create integration branch
-git worktree add ../myproject-integration integration/combined-features
-
-# Merge all feature branches
-cd ../myproject-integration
-git merge feature/auth
-git merge feature/api
-git merge feature/ui
-
-# Resolve conflicts with Claude Code
-claude
-# "Help me resolve merge conflicts, prioritizing the newer implementation"
-```
-
-#### Issue: Claude Code performance with multiple sessions
-
-**Solution**: Limit concurrent sessions and use appropriate models:
-
-```bash
-# Check active sessions
-ps aux | grep claude | wc -l
-
-# Kill unused sessions
-pkill -f "claude.*feature-old"
-
-# Use lighter models for simple tasks
-claude --model claude-3-haiku-20240307
-```
-
-#### Issue: Lost Claude Code conversation context
-
-**Solution**: Save important context to CLAUDE.md:
-
-```markdown
-# In CLAUDE.md or .claude/context.md
-## Current Task Context
-
-Working on feature/auth branch:
-- JWT implementation complete
-- Refresh tokens in progress
-- Next: Add token rotation
-- Tests: 15/20 complete
-```
-
-## Advanced Techniques
-
-### 1. Automated Worktree Creation with Context
-
-```bash
-#!/bin/bash
-# create-contextual-worktree.sh
-
-FEATURE=$1
-CONTEXT=$2
-TYPE=${3:-feature}
-
-WORKTREE="../myproject-$TYPE-$FEATURE"
-BRANCH="$TYPE/$FEATURE"
-
-# Create worktree
-git worktree add "$WORKTREE" -b "$BRANCH"
-
-# Create context file
-cat > "$WORKTREE/.claude-context" << EOF
-# Context for $BRANCH
-$CONTEXT
-
-## Todo List
-- [ ] Initial implementation
-- [ ] Add tests
-- [ ] Documentation
-- [ ] Code review
-
-## Notes
-Created: $(date)
-Type: $TYPE
-Feature: $FEATURE
-EOF
-
-# Start Claude Code with context
-cd "$WORKTREE"
-claude ask "Read .claude-context and help me get started"
-```
-
-### 2. Multi-Agent Coordination
-
-```bash
-# coordinator.sh - Coordinate multiple Claude Code agents
-
-#!/bin/bash
-
-# Start backend agent
-tmux new-session -d -s backend -c ../myproject-backend 'claude'
-tmux send-keys -t backend "Work on implementing the user service API" C-m
-
-# Start frontend agent
-tmux new-session -d -s frontend -c ../myproject-frontend 'claude'
-tmux send-keys -t frontend "Create the user management UI components" C-m
-
-# Start test agent
-tmux new-session -d -s testing -c ../myproject-tests 'claude'
-tmux send-keys -t testing "Write integration tests for user service" C-m
-
-# Monitor all sessions
-tmux new-session -s monitor \; \
-  split-window -h \; \
-  split-window -v \; \
-  send-keys -t 0 'tmux attach -t backend' C-m \; \
-  send-keys -t 1 'tmux attach -t frontend' C-m \; \
-  send-keys -t 2 'tmux attach -t testing' C-m
-```
-
-### 3. Context Sharing Between Agents
-
-```lua
--- ~/.config/nvim/lua/neotex/core/claude-sync.lua
-
-local M = {}
-
--- Share context between Claude Code sessions
-function M.share_context()
-  local context_file = vim.fn.getcwd() .. "/.claude-shared-context.md"
-  
-  -- Get current buffer content
-  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local content = table.concat(lines, "\n")
-  
-  -- Write to shared context
-  local file = io.open(context_file, "w")
-  file:write("# Shared Context\n")
-  file:write("Updated: " .. os.date() .. "\n\n")
-  file:write("## Current File\n")
-  file:write(vim.fn.expand("%:p") .. "\n\n")
-  file:write("## Content\n```\n")
-  file:write(content)
-  file:write("\n```\n")
-  file:close()
-  
-  -- Notify all Claude Code sessions
-  vim.fn.system("tmux list-sessions | grep -E 'claude|backend|frontend' | cut -d: -f1 | xargs -I{} tmux send-keys -t {} 'Read .claude-shared-context.md for updated context' C-m")
-  
-  print("Context shared with all Claude Code sessions")
-end
-
-vim.keymap.set("n", "<leader>cs", M.share_context, { desc = "Share context with Claude Code sessions" })
-
-return M
-```
-
-### 4. Automated Testing Across Worktrees
-
-```yaml
-# .github/workflows/worktree-tests.yml
-name: Test All Worktrees
-
-on:
-  schedule:
-    - cron: '0 */4 * * *'  # Every 4 hours
-  workflow_dispatch:
-
-jobs:
-  test-worktrees:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        worktree: 
-          - { name: 'feature-auth', branch: 'feature/auth' }
-          - { name: 'feature-api', branch: 'feature/api' }
-          - { name: 'bugfix-ui', branch: 'bugfix/ui' }
-    
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      
-      - name: Setup worktree
-        run: |
-          git worktree add ../${{ matrix.worktree.name }} origin/${{ matrix.worktree.branch }}
-          cd ../${{ matrix.worktree.name }}
-      
-      - name: Run tests
-        run: |
-          npm install
-          npm test
-      
-      - name: Report status
-        if: always()
-        run: |
-          echo "Worktree ${{ matrix.worktree.name }} test status: ${{ job.status }}"
-```
-
-### 5. Performance Monitoring
-
-```bash
-#!/bin/bash
-# monitor-claude-sessions.sh
-
-while true; do
-  clear
-  echo "Claude Code Session Monitor - $(date)"
-  echo "================================"
-  
-  # Show active worktrees
-  echo -e "\nActive Worktrees:"
-  git worktree list | column -t
-  
-  # Show Claude Code processes
-  echo -e "\nClaude Code Sessions:"
-  ps aux | grep -E "claude|opencode" | grep -v grep | awk '{print $2, $11, $12}' | column -t
-  
-  # Show memory usage
-  echo -e "\nMemory Usage:"
-  free -h | grep -E "^Mem|^Swap"
-  
-  # Show disk usage for worktrees
-  echo -e "\nWorktree Disk Usage:"
-  du -sh ../myproject-* 2>/dev/null | sort -h
-  
-  sleep 5
-done
-```
-
-## Conclusion
-
-By combining Claude Code's multi-agent capabilities with git worktrees, you can achieve unprecedented development velocity through true parallel processing. Each agent can focus on its specific task without interference, while git worktrees ensure clean separation of changes.
-
-### Key Takeaways
-
-1. **Use worktrees liberally** - They're lightweight and prevent context switching
-2. **Specialize your agents** - Different tasks benefit from different agent configurations
-3. **Maintain clear context** - Always tell Claude Code what worktree and task it's working on
-4. **Automate repetitive tasks** - Scripts and Neovim integration save significant time
-5. **Monitor and optimize** - Keep track of active sessions and system resources
-
-### Next Steps
-
-1. Set up your first multi-worktree workflow
-2. Create custom scripts for your specific needs
-3. Integrate with your Neovim configuration
-4. Experiment with different agent specializations
-5. Share your patterns with your team
-
-This workflow transforms Claude Code from a single assistant into a team of specialized agents, each working in parallel to accelerate your development process.
+For detailed implementation instructions, see [CLAUDE_WORKTREE_IMPLEMENTATION.md](./CLAUDE_WORKTREE_IMPLEMENTATION.md).

@@ -75,14 +75,7 @@ return {
       callback = function()
         -- Make buffer unlisted to prevent it from appearing in tabs/bufferline
         vim.bo.buflisted = false
-
-        -- Keep escape within terminal instead of exiting to normal mode
-        vim.api.nvim_buf_set_keymap(0, "t", "<Esc>", "<Esc>", { noremap = true })
-
-        -- Use double escape or leader+escape to exit terminal mode
-        vim.api.nvim_buf_set_keymap(0, "t", "<Esc><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
-        vim.api.nvim_buf_set_keymap(0, "t", "<leader><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
-
+        
         -- Additional <C-c> mapping in terminal mode for consistency
         vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
       end,

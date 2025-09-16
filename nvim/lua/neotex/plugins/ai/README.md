@@ -9,7 +9,7 @@ ai/
 ├── README.md           # This documentation
 ├── init.lua           # AI plugins loader
 ├── avante.lua         # Avante AI assistant
-├── claude-code.lua    # Claude Code integration
+├── claudecode.lua     # Claude Code integration
 ├── opencode.lua       # OpenCode terminal AI assistant
 ├── lectic.lua         # AI-assisted writing
 ├── mcp-hub.lua        # Model Context Protocol hub
@@ -40,7 +40,7 @@ lua/neotex/plugins/ai/
 ├── README.md              # This file - overview and documentation
 ├── init.lua               # AI plugins loader with event registration
 ├── avante.lua             # Avante AI assistant configuration
-├── claude-code.lua        # Claude Code terminal integration
+├── claudecode.lua         # Claude Code terminal integration
 ├── opencode.lua           # OpenCode terminal AI assistant
 ├── lectic.lua             # Lectic AI writing integration
 ├── mcp-hub.lua            # MCP-Hub plugin configuration

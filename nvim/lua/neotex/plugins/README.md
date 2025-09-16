@@ -31,7 +31,7 @@ plugins/
 │   └── ...           # Other UI plugins
 └── ai/               # AI integration
     ├── avante.lua    # AI assistant
-    ├── claude-code.lua # Claude Code integration
+    ├── claudecode.lua  # Claude Code integration
     └── util/         # AI utilities
 ```
 
@@ -74,7 +74,7 @@ Plugins are organized into the following categories with dedicated directories:
 
 - **ai/**: AI tooling and integration ([detailed documentation](ai/README.md))
   - avante.lua: AI assistants integration with 44+ MCP tools
-  - claude-code.lua: Official Claude Code integration (coder/claudecode.nvim)
+  - claudecode.lua: Official Claude Code integration (greggh/claude-code.nvim)
   - lectic.lua: AI-assisted writing
   - mcp-hub.lua: Model Context Protocol hub for external AI tools
 
