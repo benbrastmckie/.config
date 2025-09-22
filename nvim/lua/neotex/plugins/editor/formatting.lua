@@ -123,19 +123,6 @@ return {
       -- Don't respect gitignore to format all files
       respect_gitignore = false,
     })
-
-    -- Add which-key integration if available
-    local has_which_key, which_key = pcall(require, "which-key")
-    if has_which_key then
-      which_key.register({
-        m = {
-          p = { 
-            function() require("conform").format({ async = true, lsp_fallback = true }) end, 
-            "Format code" 
-          },
-        },
-      }, { prefix = "<leader>" })
-    end
     
     -- Add commands for showing/toggling format-on-save
     vim.api.nvim_create_user_command("FormatToggle", function(args)

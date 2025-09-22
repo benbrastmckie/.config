@@ -27,11 +27,9 @@ return {
     "nvim-lua/plenary.nvim",
   },
   lazy = true,
-  cmd = { "MCPHub", "MCPHubStatus" },
+  cmd = { "MCPHub", "MCPHubStatus", "MCPHubOpen" },
   event = { "User AvantePreLoad" }, -- Only load when Avante needs it
-  keys = {
-    { "<leader>hx", "<cmd>MCPHub<CR>", desc = "Open MCPHub" }
-  },
+  -- Keys removed - defined in which-key.lua as <leader>ah
   build = "bundled_build.lua", -- Use bundled installation
 
   config = function()

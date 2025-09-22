@@ -59,7 +59,11 @@ return {
       sections = {
         lualine_a = { 'mode' },
         lualine_b = { 'branch', 'diff', 'diagnostics' },
-        lualine_c = { 'filename' },
+        lualine_c = { 
+          'filename',
+          -- Claude worktree session status (with dynamic colors)
+          require("neotex.util.claude-status").lualine_colored(),
+        },
         lualine_x = {
           -- { require('mcphub.extensions.lualine') },
           -- 'encoding',
