@@ -11,8 +11,7 @@ This document provides a comprehensive overview of all keybindings configured in
 - **Markdown** (`<leader>m*`): Only available in `.md`, `.markdown` files
 - **Pandoc** (`<leader>p*`): Available in convertible formats (markdown, tex, org, rst, html, docx)
 - **Templates** (`<leader>T*`): Only available in LaTeX files
-- **Python Actions** (`<leader>ap`, `<leader>am`): Only available in `.py` files
-- **Lean Actions** (`<leader>al`): Only available in `.lean` files
+- **Lean Actions**: Only available in `.lean` files
 - **Markdown Actions** (`<leader>ar`): Only available in markdown files
 
 This means you'll only see relevant mappings for your current file type, providing a cleaner and more focused interface.
@@ -101,21 +100,40 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>u` | Open Telescope undo | Show undo history with preview |
 | `<leader>w` | Write all files | Save all open files |
 
-### ACTIONS (`<leader>a`)
+### AI/ASSISTANT (`<leader>a`)
 
-**Note**: Some actions are filetype-specific and only appear for relevant files.
+**Claude Code Integration**
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<C-a>` | Toggle sidebar | Toggle Claude Code sidebar (any mode) |
+| `<leader>ac` | Continue Claude | Continue Claude conversation |
+| `<leader>ar` | Resume session | Open Claude session picker |
 
+**Claude Worktree Sessions**
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>av` | View worktrees | Browse worktrees with Telescope |
+| `<leader>aw` | Create worktree | Create new Claude worktree |
+| `<leader>ak` | Kill stale | Clean up orphaned sessions |
+| `<leader>ao` | Open session | Restore closed worktree session |
+| `<leader>aH` | Health check | Check session health report |
+
+**Avante AI Commands**
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>aa` | Avante ask | Open Avante to ask questions |
+| `<leader>ae` | Avante edit | Edit selected text with AI (visual mode) |
+| `<leader>ap` | Avante provider | Select AI provider (Claude, OpenAI, Gemini) |
+| `<leader>am` | Avante model | Select model for current provider |
+| `<leader>at` | Avante toggle | Show/hide Avante sidebar |
+
+**Other AI Tools**
 | Key | Action | Description | Availability |
 |-----|--------|-------------|--------------|
-| `<leader>af` | Format buffer | Format current buffer via LSP | All files |
-| `<leader>ah` | Toggle local highlight | Highlight current word occurrences | All files |
-| `<leader>al` | Toggle Lean info view | Show/hide Lean information panel | `.lean` files only |
-| `<leader>am` | Run model checker | Execute model checker on file | `.py` files only |
-| `<leader>ap` | Run Python file | Execute current Python file | `.py` files only |
-| `<leader>ar` | Recalculate autolist | Fix numbering in lists | `.md` files only |
-| `<leader>au` | Update CWD | Change to file's directory | All files |
-| `<leader>as` | Edit snippets | Open snippets directory | All files |
-| `<leader>aS` | SSH connect | Connect to MIT server via SSH | All files |
+| `<leader>ax` | MCP Hub | Open MCP Hub interface | All files |
+| `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
+| `<leader>an` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
+| `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
 
 ### FIND (`<leader>f`)
 
@@ -141,36 +159,26 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 | Key | Action | Description |
 |-----|--------|-------------|
-| `<leader>gb` | Checkout branch | Switch to another git branch |
+| `<leader>gb` | Browse branches | Browse and checkout branches |
 | `<leader>gc` | View commits | Show commit history |
-| `<leader>gd` | View diff | Show changes against HEAD |
-| `<leader>gg` | Open lazygit | Launch terminal git interface |
+| `<leader>gd` | Diff HEAD | Show changes against HEAD |
+| `<leader>gg` | LazyGit | Launch LazyGit interface |
+| `<leader>gh` | Previous hunk | Jump to previous change |
 | `<leader>gj` | Next hunk | Jump to next change |
-| `<leader>gk` | Previous hunk | Jump to previous change |
 | `<leader>gl` | Line blame | Show git blame for current line |
 | `<leader>gp` | Preview hunk | Preview current change |
 | `<leader>gs` | Git status | Show files with changes |
 | `<leader>gt` | Toggle blame | Toggle line blame display |
 
-### AI HELP (`<leader>h`)
+### HELP (`<leader>h`)
 
 | Key | Action | Description |
 |-----|--------|-------------|
-| `<leader>ha` | Ask | Ask Avante AI a question |
-| `<leader>hc` | Chat | Start chat with Avante AI |
-| `<leader>ht` | Toggle Avante | Show/hide Avante interface |
-| `<leader>hs` | Selected edit | Edit selected text with AI |
-| `<leader>ho` | Open Claude Code | Toggle Claude Code terminal |
-| `<leader>hb` | Add buffer to Claude | Add current file to Claude context |
-| `<leader>hr` | Add directory to Claude | Add current directory to Claude context |
-| `<leader>hx` | Open MCP Hub | Access MCP Hub interface |
-| `<leader>hd` | Set model & provider | Change AI model with defaults |
-| `<leader>he` | Edit prompts | Open system prompt manager |
-| `<leader>hi` | Interrupt | Stop AI generation |
-| `<leader>hk` | Clear | Clear Avante chat/content |
-| `<leader>hm` | Select model | Choose AI model for current provider |
-| `<leader>hp` | Select prompt | Choose system prompt |
-| `<leader>hf` | Refresh | Reload AI assistant |
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>hh` | Help tags | Search Neovim help documentation |
+| `<leader>hk` | Keymaps | Show all keybindings |
+| `<leader>hm` | Man pages | Search man pages |
 
 ### LSP & LINT (`<leader>i`)
 

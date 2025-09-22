@@ -56,14 +56,8 @@ return {
   },
 
   keys = {
-    -- Main toggle with <C-c> to match old behavior
-    { "<C-c>", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code", mode = { "n", "i", "v", "t" } },
-
-    -- Leader mappings for additional functionality
-    { "<leader>ac", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code" },
-    { "<leader>acc", "<cmd>ClaudeCodeContinue<CR>", desc = "Continue Claude conversation" },
-    { "<leader>acr", "<cmd>ClaudeCodeResume<CR>", desc = "Resume Claude conversation (picker)" },
-    { "<leader>acv", "<cmd>ClaudeCodeVerbose<CR>", desc = "Claude Code with verbose logging" },
+    -- Main toggle with <C-a> for Claude Code (works in all modes)
+    { "<C-a>", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code", mode = { "n", "i", "v", "t" } },
   },
 
   config = function(_, opts)
@@ -75,16 +69,27 @@ return {
       callback = function()
         -- Make buffer unlisted to prevent it from appearing in tabs/bufferline
         vim.bo.buflisted = false
+        -- Set buffer type to prevent it from being considered a normal buffer
+        vim.bo.buftype = "terminal"
+        -- Hide from buffer lists
+        vim.bo.bufhidden = "hide"
+        
+        -- Additional <C-a> mapping in terminal mode for consistency
+        vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
+      end,
+    })
 
-        -- Keep escape within terminal instead of exiting to normal mode
-        vim.api.nvim_buf_set_keymap(0, "t", "<Esc>", "<Esc>", { noremap = true })
-
-        -- Use double escape or leader+escape to exit terminal mode
-        vim.api.nvim_buf_set_keymap(0, "t", "<Esc><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
-        vim.api.nvim_buf_set_keymap(0, "t", "<leader><Esc>", "<C-\\><C-n>", { noremap = true, desc = "Exit terminal mode" })
-
-        -- Additional <C-c> mapping in terminal mode for consistency
-        vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
+    -- Additional autocmd to catch any Claude buffers that might get listed later
+    vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+      pattern = "*",
+      callback = function()
+        local bufname = vim.api.nvim_buf_get_name(0)
+        if bufname:match("claude") or bufname:match("ClaudeCode") or vim.bo.buftype == "terminal" then
+          if bufname:match("claude") then
+            vim.bo.buflisted = false
+            vim.bo.bufhidden = "hide"
+          end
+        end
       end,
     })
   end,

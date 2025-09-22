@@ -249,8 +249,8 @@ Test essential functionality:
 
 3. **AI Integration** (if configured):
    ```vim
-   <leader>ha     " Ask Avante AI
-   <leader>ht     " Toggle AI interface
+   <leader>ai     " Ask Avante AI
+   <leader>at     " Toggle AI interface
    ```
 
 4. **LaTeX Support** (open a .tex file):
@@ -323,7 +323,7 @@ If you encounter issues:
 
 1. **Check Health**: Run `:checkhealth` for diagnostic information
 2. **Review Logs**: Check `~/.local/state/nvim/log/` for error logs
-3. **Ask AI**: Use `<leader>ha` to ask Avante about configuration issues
+3. **Ask AI**: Use `<leader>ai` to ask Avante about configuration issues
 4. **Documentation**: Refer to the comprehensive README files in each directory
 5. **Scripts**: Use diagnostic scripts in the `scripts/` directory
 

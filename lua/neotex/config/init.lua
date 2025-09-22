@@ -42,6 +42,7 @@ function M.setup()
     "neotex.config.notifications",  -- Load notification system early
     "neotex.config.keymaps",
     "neotex.config.autocmds",
+    "neotex.config.claude-init",  -- Claude-worktree integration
   }
   
   local all_success = true
