@@ -22,7 +22,7 @@ TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
 <Esc>                                          | Exit terminal mode to normal mode
 <C-t>                                          | Toggle terminal window
 <C-h>, <C-j>, <C-k>, <C-l>                     | Navigate between windows
-<C-a>                                          | Ask Avante AI a question (non-lazygit only)
+<C-a>                                          | Toggle Claude Code sidebar (non-lazygit only)
 <M-h>, <M-l>, <M-Left>, <M-Right>              | Resize terminal window horizontally
 
 ----------------------------------------------------------------------------------
@@ -120,8 +120,15 @@ function M.setup()
     -- Lock terminal window to prevent buffer switching
     vim.wo.winfixbuf = true
 
+    -- Check if this is a Claude Code terminal
+    local bufname = vim.api.nvim_buf_get_name(0)
+    local is_claude = bufname:match("claude") or bufname:match("ClaudeCode")
+
     -- Terminal navigation
-    buf_map(0, "t", "<esc>", "<C-\\><C-n>", "Exit terminal mode")
+    -- Skip escape mapping for Claude Code to allow its internal normal mode
+    if not is_claude then
+      buf_map(0, "t", "<esc>", "<C-\\><C-n>", "Exit terminal mode")
+    end
     buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
     buf_map(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", "Navigate down")
     buf_map(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", "Navigate up")
@@ -135,9 +142,9 @@ function M.setup()
 
     -- AI integration for terminal (excluding lazygit to prevent conflicts)
     if vim.bo.filetype ~= "lazygit" then
-      buf_map(0, "t", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
-      buf_map(0, "n", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
-      buf_map(0, "v", "<C-a>", "<Cmd>AvanteAsk<CR>", "Ask Avante")
+      buf_map(0, "t", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
+      buf_map(0, "n", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
+      buf_map(0, "v", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
     end
   end
 

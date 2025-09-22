@@ -85,6 +85,36 @@ function M.setup()
     command = "lua set_markdown_keymaps()",
   })
 
+  -- Handle file changes silently - suppress the "File changed on disk" messages
+  api.nvim_create_autocmd("FileChangedShell", {
+    pattern = "*",
+    callback = function(args)
+      local bufname = vim.api.nvim_buf_get_name(args.buf)
+      
+      -- Check if file still exists
+      if vim.fn.filereadable(bufname) == 0 then
+        -- File was deleted - mark as not modified and don't reload
+        vim.bo[args.buf].modified = false
+        -- Tell vim we handled it by setting to "ignore" 
+        vim.v.fcs_choice = ""
+      else
+        -- File was modified - reload silently
+        vim.v.fcs_choice = "reload"
+      end
+    end,
+  })
+
+  -- Auto-reload on focus/cursor events for better responsiveness
+  api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+    pattern = "*",
+    callback = function()
+      if vim.o.autoread and vim.fn.getcmdwintype() == '' then
+        -- Silently check for file changes
+        vim.cmd('silent! checktime')
+      end
+    end,
+  })
+
   return true
 end
 
