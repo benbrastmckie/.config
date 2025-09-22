@@ -429,7 +429,8 @@ function M.restore_sessions()
 end
 
 -- Clean up stale sessions
-function M.cleanup_sessions()
+-- @param silent boolean If true, only show notifications when sessions are cleaned (not when none found)
+function M.cleanup_sessions(silent)
   local cleaned = 0
   local cleaned_names = {}
   
@@ -459,8 +460,8 @@ function M.cleanup_sessions()
         vim.log.levels.INFO
       )
     end
-  else
-    -- User-initiated action should always provide feedback
+  elseif not silent then
+    -- Only show "no sessions" message when explicitly called by user (not silent)
     vim.notify("No stale sessions to clean up", vim.log.levels.INFO)
   end
 end
@@ -595,6 +596,7 @@ function M.telescope_sessions()
             "  Enter (CR)  - Switch to selected session",
             "  Ctrl-d      - Delete selected session",
             "  Ctrl-t      - Open session in new tab",
+            "  Ctrl-o      - Open worktree in new WezTerm tab",
             "  Ctrl-n      - Create new Claude worktree",
             "  Escape      - Close picker",
             "",
@@ -696,6 +698,63 @@ function M.telescope_sessions()
       map("i", "<C-n>", function()
         actions.close(prompt_bufnr)
         M.create_worktree_with_claude()
+      end)
+      
+      -- Open worktree in new WezTerm tab with Ctrl-o
+      map("i", "<C-o>", function()
+        local selection = action_state.get_selected_entry()
+        if selection and not selection.value.is_help then
+          -- Don't allow opening help entry
+          if selection.value.is_help then
+            return
+          end
+          
+          actions.close(prompt_bufnr)
+          
+          -- Get the worktree path
+          local worktree_path = selection.value.worktree
+          local name = selection.value.name
+          
+          -- Check if CLAUDE.md exists to determine what to open
+          local claude_md_path = worktree_path .. "/CLAUDE.md"
+          local open_file = vim.fn.filereadable(claude_md_path) == 1 and "CLAUDE.md" or ""
+          
+          -- Spawn new WezTerm tab with the worktree
+          local cmd
+          if open_file ~= "" then
+            -- Open with nvim and CLAUDE.md
+            cmd = string.format(
+              "wezterm cli spawn --cwd '%s' -- nvim '%s'",
+              worktree_path,
+              open_file
+            )
+          else
+            -- Just open the directory
+            cmd = string.format(
+              "wezterm cli spawn --cwd '%s'",
+              worktree_path
+            )
+          end
+          
+          local result = vim.fn.system(cmd)
+          local pane_id = result:match("(%d+)")
+          
+          if pane_id then
+            -- Set the tab title to the worktree name
+            vim.fn.system(string.format(
+              "wezterm cli set-tab-title --pane-id %s '%s'",
+              pane_id, name
+            ))
+            
+            -- Activate the new tab
+            vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
+            
+            vim.notify(string.format("Opened worktree '%s' in new WezTerm tab", name), 
+              vim.log.levels.INFO)
+          else
+            vim.notify("Failed to create new WezTerm tab", vim.log.levels.ERROR)
+          end
+        end
       end)
       
       return true
@@ -875,6 +934,10 @@ function M._create_commands()
   vim.api.nvim_create_user_command("ClaudeSessions", M.telescope_sessions, {
     desc = "Browse Claude sessions with Telescope"
   })
+
+  vim.api.nvim_create_user_command("ClaudeRestoreSession", M.restore_worktree_session, {
+    desc = "Restore a closed Claude worktree session"
+  })
 end
 
 -- Generate preview for main branch
@@ -932,5 +995,796 @@ function M._create_keymaps()
   -- keymap("n", "<leader>gx", M.quick_bugfix, 
   --   { desc = "Quick bugfix worktree" })
 end
+
+-- ============================================================================
+-- SESSION RESTORATION FEATURES
+-- ============================================================================
+
+-- Check if a worktree session can be restored
+function M.is_restorable(worktree_name)
+  local session = M.sessions[worktree_name]
+  if not session then return false, "No session found" end
+  
+  -- Check worktree exists
+  local worktree_exists = vim.fn.isdirectory(session.worktree_path) == 1
+  if not worktree_exists then
+    return false, "Worktree directory missing"
+  end
+  
+  -- Check CLAUDE.md exists
+  local claude_md = session.worktree_path .. "/CLAUDE.md"
+  local has_context = vim.fn.filereadable(claude_md) == 1
+  
+  return true, has_context and "Ready to restore" or "No CLAUDE.md file"
+end
+
+-- Spawn new WezTerm tab for restoration
+function M._spawn_restoration_tab(worktree_path, name)
+  if not has_wezterm then
+    return nil, nil, "WezTerm not available"
+  end
+  
+  -- Use WezTerm CLI to create new tab with CLAUDE.md open
+  local cmd = string.format(
+    "wezterm cli spawn --cwd '%s' -- nvim CLAUDE.md",
+    worktree_path
+  )
+  
+  local result = vim.fn.system(cmd)
+  local pane_id = result:match("(%d+)")
+  
+  if pane_id then
+    -- Try to get tab ID from the pane
+    local list_cmd = "wezterm cli list --format json"
+    local list_result = vim.fn.system(list_cmd)
+    
+    -- Parse JSON to find tab ID (simplified - you may want to use vim.json)
+    local tab_id = nil
+    pcall(function()
+      local data = vim.json.decode(list_result)
+      for _, pane in ipairs(data) do
+        if tostring(pane.pane_id) == pane_id then
+          tab_id = pane.tab_id
+          break
+        end
+      end
+    end)
+    
+    -- Activate the new pane
+    vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
+    
+    -- Set tab title
+    vim.fn.system(string.format(
+      "wezterm cli set-tab-title --pane-id %s '%s'",
+      pane_id, name
+    ))
+    
+    return tab_id, pane_id, nil
+  end
+  
+  return nil, nil, "Failed to spawn WezTerm tab"
+end
+
+-- Restore Claude session in the new tab
+function M._restore_claude_session(pane_id, session_id)
+  if not pane_id then return end
+  
+  -- Wait for Neovim to load, then send ClaudeCodeResume command
+  vim.defer_fn(function()
+    local resume_cmd = string.format(
+      "wezterm cli send-text --pane-id %s ':ClaudeCodeResume\\n'",
+      pane_id
+    )
+    vim.fn.system(resume_cmd)
+    
+    -- Open Claude sidebar after a delay
+    vim.defer_fn(function()
+      -- Send Ctrl-A to open Claude sidebar
+      local sidebar_cmd = string.format(
+        "wezterm cli send-text --no-paste --pane-id %s '\\x01'",
+        pane_id
+      )
+      vim.fn.system(sidebar_cmd)
+    end, 2000)
+  end, 1500)
+end
+
+-- Perform complete restoration
+function M._perform_restoration(entry)
+  local name = entry.name
+  local session = entry.session
+  local worktree_path = session and session.worktree_path or entry.worktree_path
+  
+  -- Verify worktree exists
+  if vim.fn.isdirectory(worktree_path) == 0 then
+    vim.notify("Worktree no longer exists: " .. worktree_path, vim.log.levels.ERROR)
+    return
+  end
+  
+  -- Try to spawn WezTerm tab
+  local tab_id, pane_id, err = M._spawn_restoration_tab(worktree_path, name)
+  
+  if not tab_id then
+    -- Fallback: open in current Neovim
+    vim.notify("WezTerm restoration failed: " .. (err or "unknown error"), vim.log.levels.WARN)
+    vim.notify("Opening in current window...", vim.log.levels.INFO)
+    
+    vim.cmd("cd " .. vim.fn.fnameescape(worktree_path))
+    vim.cmd("edit CLAUDE.md")
+    
+    -- Try to resume Claude session locally
+    if session and session.session_id then
+      vim.defer_fn(function()
+        vim.cmd("ClaudeCodeResume")
+      end, 100)
+    end
+    return
+  end
+  
+  -- Update session with new tab ID
+  if session then
+    M.sessions[name].tab_id = tab_id
+    M.save_sessions()
+  end
+  
+  -- Restore Claude session
+  if session and session.session_id then
+    M._restore_claude_session(pane_id, session.session_id)
+  end
+  
+  vim.notify(string.format("Restored worktree session: %s", name), vim.log.levels.INFO)
+end
+
+-- Main restoration function with telescope picker
+function M.restore_worktree_session()
+  local pickers = require("telescope.pickers")
+  local finders = require("telescope.finders")
+  local actions = require("telescope.actions")
+  local action_state = require("telescope.actions.state")
+  local conf = require("telescope.config").values
+  local previewers = require("telescope.previewers")
+  
+  local restorable = {}
+  
+  -- Find all restorable sessions
+  for name, session in pairs(M.sessions) do
+    local can_restore, status = M.is_restorable(name)
+    table.insert(restorable, {
+      name = name,
+      session = session,
+      worktree_path = session.worktree_path,
+      branch = session.branch,
+      can_restore = can_restore,
+      status = status,
+      display = string.format(
+        "%-30s %-30s %s",
+        name,
+        session.branch or "unknown",
+        can_restore and "[Restorable]" or "[" .. status .. "]"
+      )
+    })
+  end
+  
+  -- Check for orphaned worktrees without sessions
+  local worktree_output = vim.fn.system("git worktree list")
+  if vim.v.shell_error == 0 then
+    for line in worktree_output:gmatch("[^\n]+") do
+      local path = line:match("^([^%s]+)")
+      local branch = line:match("%[(.+)%]")
+      
+      if path and branch then
+        -- Check if it's a Claude-style worktree
+        local type, name = branch:match("^(%w+)/(.+)$")
+        if type and name and vim.tbl_contains(M.config.types, type) then
+          -- Check if we already have this session
+          if not M.sessions[name] then
+            table.insert(restorable, {
+              name = name,
+              worktree_path = path,
+              branch = branch,
+              orphaned = true,
+              can_restore = true,
+              status = "Orphaned worktree",
+              display = string.format(
+                "%-30s %-30s %s",
+                name,
+                branch,
+                "[Orphaned - No session]"
+              )
+            })
+          end
+        end
+      end
+    end
+  end
+  
+  if #restorable == 0 then
+    vim.notify("No restorable worktree sessions found", vim.log.levels.INFO)
+    return
+  end
+  
+  -- Sort by name
+  table.sort(restorable, function(a, b) return a.name < b.name end)
+  
+  pickers.new({}, {
+    prompt_title = "Restore Worktree Session",
+    finder = finders.new_table {
+      results = restorable,
+      entry_maker = function(entry)
+        return {
+          value = entry,
+          display = entry.display,
+          ordinal = entry.name .. " " .. (entry.branch or "")
+        }
+      end
+    },
+    sorter = conf.generic_sorter({}),
+    previewer = previewers.new_buffer_previewer({
+      title = "Session Info",
+      define_preview = function(self, entry, status)
+        local lines = {}
+        local item = entry.value
+        
+        -- Basic info
+        table.insert(lines, "# Worktree Session Restoration")
+        table.insert(lines, "")
+        table.insert(lines, string.format("**Name**: %s", item.name))
+        table.insert(lines, string.format("**Branch**: %s", item.branch or "unknown"))
+        table.insert(lines, string.format("**Path**: %s", item.worktree_path))
+        table.insert(lines, string.format("**Status**: %s", item.status))
+        table.insert(lines, "")
+        
+        if item.session then
+          table.insert(lines, "## Session Details")
+          table.insert(lines, string.format("**Type**: %s", item.session.type or "unknown"))
+          table.insert(lines, string.format("**Created**: %s", item.session.created or "unknown"))
+          table.insert(lines, string.format("**Session ID**: %s", item.session.session_id or "none"))
+          table.insert(lines, "")
+        elseif item.orphaned then
+          table.insert(lines, "## Orphaned Worktree")
+          table.insert(lines, "No Claude session metadata found.")
+          table.insert(lines, "A new session will be created on restoration.")
+          table.insert(lines, "")
+        end
+        
+        -- Check for CLAUDE.md
+        local claude_file = item.worktree_path .. "/CLAUDE.md"
+        if vim.fn.filereadable(claude_file) == 1 then
+          table.insert(lines, "## CLAUDE.md Preview")
+          table.insert(lines, "")
+          local content = vim.fn.readfile(claude_file)
+          for i, line in ipairs(content) do
+            if i > 30 then
+              table.insert(lines, "...")
+              table.insert(lines, string.format("(+ %d more lines)", #content - 30))
+              break
+            end
+            table.insert(lines, line)
+          end
+        else
+          table.insert(lines, "## No CLAUDE.md File")
+          table.insert(lines, "Context file will need to be created.")
+        end
+        
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+        vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+      end
+    }),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        local selection = action_state.get_selected_entry()
+        if selection and selection.value.can_restore then
+          actions.close(prompt_bufnr)
+          M._perform_restoration(selection.value)
+        elseif selection then
+          vim.notify("Cannot restore: " .. selection.value.status, vim.log.levels.ERROR)
+        end
+      end)
+      
+      -- Add delete mapping
+      map("i", "<C-d>", function()
+        local selection = action_state.get_selected_entry()
+        if selection and selection.value.session then
+          local confirm = vim.fn.confirm(
+            "Remove session metadata for '" .. selection.value.name .. "'?",
+            "&Yes\n&No", 2
+          )
+          if confirm == 1 then
+            M.sessions[selection.value.name] = nil
+            M.save_sessions()
+            vim.notify("Removed session: " .. selection.value.name, vim.log.levels.INFO)
+            actions.close(prompt_bufnr)
+            vim.schedule(function()
+              M.restore_worktree_session()
+            end)
+          end
+        end
+      end)
+      
+      return true
+    end
+  }):find()
+end
+
+-- Claude Code Session Resume Picker
+-- This provides a telescope picker for browsing and resuming Claude Code sessions
+
+-- Helper function to get Claude sessions from the CLI
+function M._get_claude_sessions()
+  -- Run claude --resume to get the session list
+  -- We'll parse the output to extract session information
+  local cmd = "claude --resume --list 2>/dev/null || echo ''"
+  local result = vim.fn.system(cmd)
+  
+  -- If the command doesn't support --list, try interactive mode with a timeout
+  if result == "" or result:match("unknown option") then
+    -- Try to get sessions using expect or similar approach
+    -- For now, we'll try a different approach: look for session history
+    cmd = "claude --resume < /dev/null 2>&1 | head -50"
+    result = vim.fn.system(cmd)
+  end
+  
+  local sessions = {}
+  
+  -- Parse the output to extract session information
+  -- The format typically includes session ID, directory, and timestamp
+  for line in result:gmatch("[^\r\n]+") do
+    -- Look for patterns that indicate session entries
+    -- Format might be like: "abc123def  /home/user/project  2024-01-15 10:30"
+    local session_id, path, rest = line:match("^%s*(%S+)%s+(/[^%s]+)%s*(.*)")
+    if session_id and path then
+      -- Extract additional info from the rest
+      local timestamp = rest:match("(%d%d%d%d%-%d%d%-%d%d%s+%d%d:%d%d)")
+      local title = rest:gsub(timestamp or "", ""):gsub("^%s+", ""):gsub("%s+$", "")
+      
+      table.insert(sessions, {
+        id = session_id,
+        path = path,
+        timestamp = timestamp or "Unknown",
+        title = title ~= "" and title or nil,
+        display = string.format("%s  %s  %s", 
+          session_id:sub(1, 8), 
+          vim.fn.fnamemodify(path, ":~:."),
+          timestamp or "")
+      })
+    end
+  end
+  
+  -- If we couldn't parse sessions from claude --resume, 
+  -- try to find them from the cache directory
+  if #sessions == 0 then
+    local cache_base = vim.fn.expand("~/.cache/claude-cli-nodejs")
+    if vim.fn.isdirectory(cache_base) == 1 then
+      -- Get all project directories
+      local projects = vim.fn.glob(cache_base .. "/*", false, true)
+      
+      for _, project_dir in ipairs(projects) do
+        -- Convert the escaped project path back to normal path
+        local escaped_name = vim.fn.fnamemodify(project_dir, ":t")
+        local real_path = escaped_name:gsub("%-", "/")
+        
+        if real_path:sub(1, 1) ~= "/" then
+          real_path = "/" .. real_path
+        end
+        
+        -- Check if this directory exists
+        if vim.fn.isdirectory(real_path) == 1 then
+          -- Get modification time as a proxy for last session
+          local stat = vim.loop.fs_stat(project_dir)
+          local timestamp = stat and os.date("%Y-%m-%d %H:%M", stat.mtime.sec) or "Unknown"
+          
+          table.insert(sessions, {
+            id = vim.fn.fnamemodify(project_dir, ":t"),
+            path = real_path,
+            timestamp = timestamp,
+            display = string.format("%-30s  %s", 
+              vim.fn.fnamemodify(real_path, ":~:."),
+              timestamp)
+          })
+        end
+      end
+    end
+  end
+  
+  -- Sort sessions by timestamp (most recent first)
+  table.sort(sessions, function(a, b)
+    return (a.timestamp or "") > (b.timestamp or "")
+  end)
+  
+  return sessions
+end
+
+-- Create previewer for Claude sessions
+function M._create_claude_session_previewer()
+  local previewers = require("telescope.previewers")
+  
+  return previewers.new_buffer_previewer({
+    title = "Session Details",
+    get_buffer_by_name = function(_, entry)
+      return entry.value.id
+    end,
+    define_preview = function(self, entry)
+      local session = entry.value
+      local lines = {}
+      
+      -- Add session information
+      table.insert(lines, "Session Information")
+      table.insert(lines, "==================")
+      table.insert(lines, "")
+      table.insert(lines, "Session ID: " .. (session.id or "Unknown"))
+      table.insert(lines, "Directory:  " .. (session.path or "Unknown"))
+      table.insert(lines, "Last Used:  " .. (session.timestamp or "Unknown"))
+      
+      if session.title then
+        table.insert(lines, "Title:      " .. session.title)
+      end
+      
+      table.insert(lines, "")
+      table.insert(lines, "Context Files")
+      table.insert(lines, "=============")
+      
+      -- Check for CLAUDE.md in the directory
+      local claude_md_path = session.path .. "/CLAUDE.md"
+      if vim.fn.filereadable(claude_md_path) == 1 then
+        table.insert(lines, "")
+        table.insert(lines, "CLAUDE.md found:")
+        table.insert(lines, "----------------")
+        
+        -- Read first 30 lines of CLAUDE.md
+        local claude_content = vim.fn.readfile(claude_md_path, "", 30)
+        for _, line in ipairs(claude_content) do
+          table.insert(lines, line)
+        end
+        
+        if #claude_content >= 30 then
+          table.insert(lines, "...")
+          table.insert(lines, "(truncated)")
+        end
+      else
+        table.insert(lines, "No CLAUDE.md file found in directory")
+      end
+      
+      -- Check for .claude directory
+      local claude_dir = session.path .. "/.claude"
+      if vim.fn.isdirectory(claude_dir) == 1 then
+        table.insert(lines, "")
+        table.insert(lines, ".claude directory found")
+      end
+      
+      vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+      vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+    end,
+  })
+end
+
+-- Resume a Claude session
+function M._resume_claude_session(session)
+  -- Check if we're in a terminal buffer with Claude
+  local current_buf = vim.api.nvim_get_current_buf()
+  local is_terminal = vim.api.nvim_buf_get_option(current_buf, "buftype") == "terminal"
+  
+  -- First, change to the session directory
+  vim.cmd("cd " .. vim.fn.fnameescape(session.path))
+  
+  -- Check if claude-code.nvim is available
+  local has_claude_code = pcall(require, "claude-code")
+  
+  if has_claude_code then
+    -- If we have the claude-code plugin, use it to resume
+    -- The plugin will handle the terminal creation and session resumption
+    vim.cmd("ClaudeCodeResume")
+    
+    -- After a short delay, send the session ID to the prompt
+    vim.defer_fn(function()
+      -- Find the Claude terminal buffer
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_valid(buf) and 
+           vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
+          local buf_name = vim.api.nvim_buf_get_name(buf)
+          if buf_name:match("claude") then
+            -- Send the session ID to the terminal
+            vim.api.nvim_chan_send(vim.api.nvim_buf_get_option(buf, "channel"), session.id .. "\n")
+            break
+          end
+        end
+      end
+    end, 500)
+  else
+    -- Fallback: open a new terminal with claude --resume
+    if is_terminal then
+      -- If we're in a terminal, send the command directly
+      vim.api.nvim_feedkeys("claude --resume " .. session.id .. "\n", "n", false)
+    else
+      -- Otherwise, open a new terminal
+      vim.cmd("terminal claude --resume " .. session.id)
+      vim.cmd("startinsert")
+    end
+  end
+  
+  vim.notify(string.format("Resuming Claude session in %s", 
+    vim.fn.fnamemodify(session.path, ":~:.")), vim.log.levels.INFO)
+end
+
+-- Main telescope picker for Claude sessions
+function M.claude_session_picker()
+  local pickers = require("telescope.pickers")
+  local finders = require("telescope.finders")
+  local actions = require("telescope.actions")
+  local action_state = require("telescope.actions.state")
+  local conf = require("telescope.config").values
+  
+  -- Get available Claude sessions
+  local sessions = M._get_claude_sessions()
+  
+  if #sessions == 0 then
+    vim.notify("No Claude sessions found. Start a new session with 'claude' command.", 
+      vim.log.levels.WARN)
+    return
+  end
+  
+  pickers.new({}, {
+    prompt_title = "Claude Code Sessions",
+    finder = finders.new_table({
+      results = sessions,
+      entry_maker = function(session)
+        return {
+          value = session,
+          display = session.display,
+          ordinal = session.path .. " " .. (session.timestamp or ""),
+        }
+      end,
+    }),
+    sorter = conf.generic_sorter({}),
+    previewer = M._create_claude_session_previewer(),
+    attach_mappings = function(prompt_bufnr, map)
+      actions.select_default:replace(function()
+        actions.close(prompt_bufnr)
+        local selection = action_state.get_selected_entry()
+        if selection then
+          M._resume_claude_session(selection.value)
+        end
+      end)
+      
+      -- Add mapping to open in new WezTerm tab
+      map("i", "<C-t>", function()
+        local selection = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        if selection then
+          -- Open in new WezTerm tab
+          local session = selection.value
+          local cmd = string.format(
+            "wezterm cli spawn --cwd '%s' -- bash -c 'claude --resume %s'",
+            session.path,
+            session.id
+          )
+          vim.fn.system(cmd)
+          vim.notify("Opened session in new WezTerm tab", vim.log.levels.INFO)
+        end
+      end)
+      
+      return true
+    end,
+  }):find()
+end
+
+-- Register the Claude session picker command
+vim.api.nvim_create_user_command("ClaudeSessionPicker", M.claude_session_picker, {
+  desc = "Pick and resume a Claude Code session"
+})
+
+-- Session Health Check & Auto-Recovery
+-- Validates sessions, removes stale entries, and discovers untracked worktrees
+
+-- Perform health check on all sessions
+function M.health_check()
+  local issues = {}
+  local fixed = 0
+
+  -- Check each session for validity
+  for name, session in pairs(M.sessions) do
+    if not session.worktree_path or
+       vim.fn.isdirectory(session.worktree_path) == 0 then
+      table.insert(issues, {
+        session = name,
+        issue = "Worktree missing",
+        action = "removed"
+      })
+      M.sessions[name] = nil
+      fixed = fixed + 1
+    end
+  end
+
+  -- Get list of actual git worktrees
+  local worktrees = vim.fn.systemlist("git worktree list --porcelain")
+  
+  -- Track which paths we already have sessions for
+  local tracked_paths = {}
+  for _, session in pairs(M.sessions) do
+    tracked_paths[session.worktree_path] = true
+  end
+
+  -- Discover untracked worktrees
+  local discovered = 0
+  for i = 1, #worktrees, 3 do
+    local path = worktrees[i] and worktrees[i]:match("^worktree (.+)")
+    local branch_line = worktrees[i + 2]
+    local branch = branch_line and branch_line:match("^branch (.+)")
+
+    if path and branch and not tracked_paths[path] then
+      -- Skip the main worktree (main/master branch)
+      if not branch:match("^refs/heads/main$") and
+         not branch:match("^refs/heads/master$") and
+         not branch:match("^refs/heads/main%s") and
+         not branch:match("^refs/heads/master%s") then
+
+        -- Extract feature name from branch
+        local feature = branch:match("/([^/]+)$") or branch:gsub("^refs/heads/", "")
+        local type = branch:match("^refs/heads/(%w+)/") or "feature"
+
+        -- Create session for discovered worktree
+        M.sessions[feature] = {
+          worktree_path = path,
+          branch = branch:gsub("^refs/heads/", ""),
+          type = type,
+          created = os.date("%Y-%m-%d %H:%M"),
+          discovered = true,
+          session_id = feature .. "-" .. os.time()
+        }
+        discovered = discovered + 1
+
+        table.insert(issues, {
+          session = feature,
+          issue = "Untracked worktree",
+          action = "recovered"
+        })
+      end
+    end
+  end
+
+  -- Save if changes were made
+  if fixed > 0 or discovered > 0 then
+    M.save_sessions()
+  end
+
+  -- Report results if issues were found
+  if #issues > 0 then
+    vim.notify(string.format(
+      "Session Health Check:\n" ..
+      "- Fixed: %d stale sessions\n" ..
+      "- Discovered: %d worktrees\n" ..
+      "Run :ClaudeSessionHealth for details",
+      fixed, discovered
+    ), vim.log.levels.INFO)
+  end
+
+  return issues
+end
+
+-- Generate detailed health report
+function M.health_report()
+  local issues = M.health_check()
+
+  if #issues == 0 then
+    vim.notify("All Claude sessions are healthy!", vim.log.levels.INFO)
+    return
+  end
+
+  local lines = {
+    "Claude Session Health Report",
+    string.rep("=", 42),
+    "",
+    string.format("Timestamp: %s", os.date("%Y-%m-%d %H:%M:%S")),
+    "",
+    "Issues Found:",
+    string.rep("-", 42),
+    ""
+  }
+
+  -- Group issues by action
+  local grouped = {
+    removed = {},
+    recovered = {}
+  }
+  
+  for _, issue in ipairs(issues) do
+    if grouped[issue.action] then
+      table.insert(grouped[issue.action], issue)
+    end
+  end
+
+  -- Add removed sessions
+  if #grouped.removed > 0 then
+    table.insert(lines, "Removed Stale Sessions:")
+    for _, issue in ipairs(grouped.removed) do
+      table.insert(lines, string.format("  • %s: %s", issue.session, issue.issue))
+    end
+    table.insert(lines, "")
+  end
+
+  -- Add recovered sessions
+  if #grouped.recovered > 0 then
+    table.insert(lines, "Recovered Worktrees:")
+    for _, issue in ipairs(grouped.recovered) do
+      table.insert(lines, string.format("  • %s: %s", issue.session, issue.issue))
+    end
+    table.insert(lines, "")
+  end
+
+  -- Add summary
+  table.insert(lines, string.rep("-", 42))
+  table.insert(lines, string.format("Total: %d issues processed", #issues))
+  table.insert(lines, "")
+  table.insert(lines, "Press 'q' or <Esc> to close")
+
+  -- Create a floating window with the report
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+  vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+
+  local width = 50
+  local height = math.min(#lines + 2, 25)
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    col = math.floor((vim.o.columns - width) / 2),
+    row = math.floor((vim.o.lines - height) / 2),
+    style = "minimal",
+    border = "rounded",
+    title = " 󰓙 Health Check ",
+    title_pos = "center",
+  })
+
+  -- Add keymaps to close the window
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", ":close<CR>", { silent = true })
+  vim.api.nvim_buf_set_keymap(buf, "n", "<Esc>", ":close<CR>", { silent = true })
+  
+  -- Set window options
+  vim.api.nvim_win_set_option(win, "cursorline", true)
+  vim.api.nvim_win_set_option(win, "wrap", false)
+end
+
+-- Register the health check command
+vim.api.nvim_create_user_command("ClaudeSessionHealth", M.health_report, {
+  desc = "Show Claude session health report"
+})
+
+-- Auto-run health check on startup (after a delay)
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = vim.api.nvim_create_augroup("ClaudeWorktreeHealth", { clear = true }),
+  callback = function()
+    vim.defer_fn(function()
+      -- Only run if we're in a git repository
+      if vim.fn.isdirectory(".git") == 1 then
+        -- Run health check silently (issues will be notified if found)
+        local issues = M.health_check()
+        
+        -- Only show notification if we fixed or discovered something
+        if #issues > 0 then
+          local fixed = 0
+          local discovered = 0
+          for _, issue in ipairs(issues) do
+            if issue.action == "removed" then
+              fixed = fixed + 1
+            elseif issue.action == "recovered" then
+              discovered = discovered + 1
+            end
+          end
+          
+          if fixed > 0 or discovered > 0 then
+            vim.notify(string.format(
+              "Claude Worktree: %s%s",
+              fixed > 0 and string.format("Fixed %d stale session(s)", fixed) or "",
+              discovered > 0 and string.format("%sDiscovered %d worktree(s)", 
+                fixed > 0 and ", " or "", discovered) or ""
+            ), vim.log.levels.INFO)
+          end
+        end
+      end
+    end, 2000)  -- Run after 2 seconds to let Neovim fully initialize
+  end,
+})
 
 return M

@@ -332,9 +332,63 @@ function M.setup()
       map("n", "<TAB>", function() _G.GotoBuffer(1, 1) end, {}, "Next buffer")
       map("n", "<S-TAB>", function() _G.GotoBuffer(1, -1) end, {}, "Previous buffer")
     else
-      -- Standard Vim buffer navigation as last resort
-      map("n", "<TAB>", ":bnext<CR>", {}, "Next buffer")
-      map("n", "<S-TAB>", ":bprevious<CR>", {}, "Previous buffer")
+      -- Safe buffer navigation that excludes terminal and unlisted buffers
+      local function safe_buffer_next()
+        local buffers = vim.fn.getbufinfo({ buflisted = 1 })
+        local normal_buffers = {}
+        
+        for _, buf in ipairs(buffers) do
+          -- Only include normal buffers (not terminals)
+          if vim.api.nvim_buf_is_valid(buf.bufnr) and 
+             vim.api.nvim_buf_get_option(buf.bufnr, 'buftype') == '' then
+            table.insert(normal_buffers, buf)
+          end
+        end
+        
+        if #normal_buffers > 1 then
+          local current = vim.fn.bufnr('%')
+          local current_index = 1
+          for i, buf in ipairs(normal_buffers) do
+            if buf.bufnr == current then
+              current_index = i
+              break
+            end
+          end
+          
+          local next_index = current_index >= #normal_buffers and 1 or current_index + 1
+          vim.cmd('buffer ' .. normal_buffers[next_index].bufnr)
+        end
+      end
+      
+      local function safe_buffer_prev()
+        local buffers = vim.fn.getbufinfo({ buflisted = 1 })
+        local normal_buffers = {}
+        
+        for _, buf in ipairs(buffers) do
+          -- Only include normal buffers (not terminals)
+          if vim.api.nvim_buf_is_valid(buf.bufnr) and 
+             vim.api.nvim_buf_get_option(buf.bufnr, 'buftype') == '' then
+            table.insert(normal_buffers, buf)
+          end
+        end
+        
+        if #normal_buffers > 1 then
+          local current = vim.fn.bufnr('%')
+          local current_index = 1
+          for i, buf in ipairs(normal_buffers) do
+            if buf.bufnr == current then
+              current_index = i
+              break
+            end
+          end
+          
+          local prev_index = current_index <= 1 and #normal_buffers or current_index - 1
+          vim.cmd('buffer ' .. normal_buffers[prev_index].bufnr)
+        end
+      end
+      
+      map("n", "<TAB>", safe_buffer_next, {}, "Next buffer")
+      map("n", "<S-TAB>", safe_buffer_prev, {}, "Previous buffer")
     end
   end
 

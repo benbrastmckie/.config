@@ -154,16 +154,15 @@ Avante provides AI-powered code assistance directly within Neovim, offering inte
 
 > [Info] The `leader` key is set to `space`.
 
-- **Access the AI**: Press `<leader>ha` to ask a question or `<leader>ht` to toggle the AI interface
-- **Chat Mode**: Use `<leader>hc` to start a chat session with the AI
-- **Quick Access**: In terminal mode, use `<C-a>` to ask a question
+- **Access the AI**: Press `<leader>aa` to ask a question or `<leader>at` to toggle the AI interface
+- **Edit with AI**: Select text in visual mode and press `<leader>ae` to edit with AI assistance
+- **Claude Code**: Use `<C-a>` to toggle Claude Code sidebar (works in any mode)
 
 ### Managing AI Settings
 
-- **Switch Models**: Press `<leader>hm` to select a model for the current provider
-- **Change Provider**: Use `<leader>hd` to set a different AI provider (Claude, OpenAI, Gemini)
-- **System Prompts**: Manage system prompts with `<leader>hp` (select) or `<leader>he` (edit)
-- **Stop Generation**: If the AI is taking too long, press `<leader>hi` to interrupt the generation
+- **Switch Models**: Press `<leader>am` to select a model for the current provider
+- **Change Provider**: Press `<leader>ap` to select AI provider (Claude, OpenAI, Gemini)
+- **Resume Sessions**: Use `<leader>ar` to open Claude session picker
 
 More details are provided in [Making Configuration Changes](#making-configuration-changes) below.
 
@@ -275,7 +274,7 @@ Provides the which-key system for:
 - **Leader key**: `<space>` - Access to all major functionality through organized menus
 - **Help system**: Press `<leader>` and wait to see available commands
 - **Complete reference**: See [docs/MAPPINGS.md](docs/MAPPINGS.md) for full details
-- **Avante AI integration**: Ask Avante about specific keybindings with `<leader>ha`
+- **Avante AI integration**: Ask Avante about specific keybindings with `<leader>ai`
 
 ## Further Features
 

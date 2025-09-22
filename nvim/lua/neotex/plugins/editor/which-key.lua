@@ -85,13 +85,13 @@ return {
     -- ============================================================================
     -- GLOBAL FUNCTIONS
     -- ============================================================================
-    
+
     -- RunModelChecker: Find and run dev_cli.py for model checking
     _G.RunModelChecker = function()
       -- Try to find dev_cli.py in the current project or its parent
       local current_dir = vim.fn.getcwd()
       local dev_cli_path = nil
-      
+
       -- Check current directory
       if vim.fn.filereadable(current_dir .. "/Code/dev_cli.py") == 1 then
         dev_cli_path = current_dir .. "/Code/dev_cli.py"
@@ -105,7 +105,7 @@ return {
       elseif vim.fn.filereadable("/home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/dev_cli.py") == 1 then
         dev_cli_path = "/home/benjamin/Documents/Philosophy/Projects/ModelChecker/Code/dev_cli.py"
       end
-      
+
       if dev_cli_path then
         local file = vim.fn.expand("%:p:r") .. ".py"
         vim.cmd(string.format("TermExec cmd='%s %s'", dev_cli_path, file))
@@ -184,16 +184,22 @@ return {
       { "<leader>a", group = "ai", icon = "󰚩" },
 
       -- Claude Code mappings (always available)
-      { "<leader>ac", "<cmd>ClaudeCodeContinue<CR>", desc = "continue", icon = "󰊢" },
-      { "<leader>ae", ":<C-u>ClaudeCodeSendVisual<CR>", desc = "edit selection", icon = "󰊠", mode = { "v" } },
-      { "<leader>ar", "<cmd>ClaudeCodeResume<CR>", desc = "resume", icon = "󰑐" },
-      { "<leader>av", "<cmd>ClaudeCodeVerbose<CR>", desc = "verbose", icon = "󰗮" },
-      { "<leader>aa", "<cmd>ClaudeSessions<CR>", desc = "all worktrees", icon = "󰔡" },
-      { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "worktree", icon = "󰘬" },
-      -- { "<leader>af", function() require('neotex.core.claude-worktree').quick_feature() end, desc = "quick feature worktree", icon = "󰊕" },
-      -- { "<leader>ax", function() require('neotex.core.claude-worktree').quick_bugfix() end, desc = "quick bugfix worktree", icon = "󰁨" },
+      { "<leader>ac", "<cmd>ClaudeCodeContinue<CR>", desc = "claude continue", icon = "󰊢" },
+      { "<leader>ar", "<cmd>ClaudeSessionPicker<CR>", desc = "claude resume", icon = "󰑐" },
+      { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
+      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
+      { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
       { "<leader>ak", "<cmd>ClaudeSessionCleanup<CR>", desc = "kill stale sessions", icon = "󰃢" },
-      { "<leader>ah", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
+      { "<leader>ao", "<cmd>ClaudeRestoreSession<CR>", desc = "open session", icon = "󰑐" },
+      { "<leader>ah", "<cmd>ClaudeSessionHealth<CR>", desc = "session health", icon = "󰓙" },
+
+      -- Avante AI commands
+      { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
+      { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
+      { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
+      { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
+      { "<leader>at", "<cmd>AvanteToggle<CR>", desc = "avante toggle", icon = "󰨈" },
+      { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
 
       -- Lectic actions (only for .lec and .md files)
       { "<leader>al", "<cmd>Lectic<CR>", desc = "lectic run", icon = "󰊠", cond = is_lectic },

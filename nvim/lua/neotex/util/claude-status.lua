@@ -37,6 +37,10 @@ function M.lualine_component()
       return ok and claude.current_session ~= nil
     end,
     color = { fg = "#61afef", gui = "bold" },
+    on_click = function()
+      -- Open the session browser on click
+      vim.cmd("ClaudeSessions")
+    end,
   }
 end
 
@@ -78,6 +82,45 @@ function M.get_session_info()
     branch = session.branch,
     worktree = session.worktree_path,
     created = session.created
+  }
+end
+
+-- Get color based on session type
+function M.get_type_color(type)
+  local colors = {
+    feature = "#61afef",   -- Blue
+    bugfix = "#e06c75",    -- Red
+    refactor = "#d19a66",  -- Orange
+    experiment = "#c678dd", -- Purple
+    hotfix = "#e5c07b",    -- Yellow
+  }
+  return colors[type] or "#98c379"  -- Default green
+end
+
+-- Lualine component with dynamic color based on type
+function M.lualine_colored()
+  return {
+    M.get_session_status,
+    cond = function()
+      local ok, claude = pcall(require, "neotex.core.claude-worktree")
+      return ok and claude.current_session ~= nil
+    end,
+    color = function()
+      local ok, claude = pcall(require, "neotex.core.claude-worktree")
+      if not ok or not claude.current_session then
+        return { fg = "#98c379", gui = "bold" }
+      end
+      
+      local session = claude.sessions[claude.current_session]
+      if not session then
+        return { fg = "#98c379", gui = "bold" }
+      end
+      
+      return { fg = M.get_type_color(session.type), gui = "bold" }
+    end,
+    on_click = function()
+      vim.cmd("ClaudeSessions")
+    end,
   }
 end
 
