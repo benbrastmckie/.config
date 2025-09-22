@@ -1,30 +1,23 @@
-if status is-interactive
-    # Commands to run in interactive sessions can go here
+set -U fish_greeting
+# Disable welcome message
+set -U fish_greeting
+
+# OMF Path (auto-generated)
+# Already handled by OMF
+
+# Add Homebrew's bin directory to PATH (for all installed packages)
+set -gx PATH /usr/local/bin $PATH
+
+# Add NVM node bin to PATH
+if test -d "$HOME/.nvm/versions/node"
+    set -gx PATH $HOME/.nvm/versions/node/v22.19.0/bin $PATH
 end
 
-# removes the mapping <C-t> which is being used to close the terminal in NeoVim
-bind --erase --all \ct
+# Alias pip to pip3
+alias pip='pip3'
 
-# fish is aware of the paths set by brew:
-# to ensure that brew paths are recognized inside fish, run:
-#    /opt/brew/bin/brew shellenv >> ~/.config/fish/config.fish 
+# Add Python user bin to PATH for pip-installed tools
+set -gx PATH $HOME/Library/Python/3.13/bin $PATH
 
-fish_config prompt choose scales
-
-# set -x TERM tmux-256color
-set -x EDITOR nvim
-
-# # modify the prompt
-# function fish_prompt
-#     string join '' -- $PWD '>'
-# end
-
-# runs zoxide if installed
-if type -q zoxide
-zoxide init fish --cmd cd | source
-end
-
-# runs neofetch if installed
-if type -q neofetch
-neofetch
-end
+# Fix ls to use /bin/ls directly
+alias ls='/bin/ls'

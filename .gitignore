@@ -1,5 +1,4 @@
 jesseduffield/
-omf/
 nvim/session/
 tmux/
 nvim/autoload/plugged
@@ -41,7 +40,6 @@ evince
 temp
 fish/fish_variables
 alacritty/alacritty.toml
-Code
 configstore/
 nixpkgs/
 plots/
