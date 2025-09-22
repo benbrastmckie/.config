@@ -101,21 +101,31 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>u` | Open Telescope undo | Show undo history with preview |
 | `<leader>w` | Write all files | Save all open files |
 
-### ACTIONS (`<leader>a`)
+### AI/ASSISTANT (`<leader>a`)
 
-**Note**: Some actions are filetype-specific and only appear for relevant files.
+**Claude Code Integration**
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<C-a>` | Toggle sidebar | Toggle Claude Code sidebar (any mode) |
+| `<leader>ac` | Continue Claude | Continue Claude conversation |
+| `<leader>ae` | Edit selection | Send selection to Claude (visual mode) |
+| `<leader>ar` | Resume Claude | Resume Claude from picker |
+| `<leader>av` | Verbose mode | Toggle Claude verbose mode |
 
+**Claude Worktree Sessions**
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>aa` | All worktrees | Browse worktrees with Telescope |
+| `<leader>aw` | New worktree | Create new Claude worktree |
+| `<leader>ak` | Kill stale | Clean up orphaned sessions |
+
+**Other AI Tools**
 | Key | Action | Description | Availability |
 |-----|--------|-------------|--------------|
-| `<leader>af` | Format buffer | Format current buffer via LSP | All files |
-| `<leader>ah` | Toggle local highlight | Highlight current word occurrences | All files |
-| `<leader>al` | Toggle Lean info view | Show/hide Lean information panel | `.lean` files only |
-| `<leader>am` | Run model checker | Execute model checker on file | `.py` files only |
-| `<leader>ap` | Run Python file | Execute current Python file | `.py` files only |
-| `<leader>ar` | Recalculate autolist | Fix numbering in lists | `.md` files only |
-| `<leader>au` | Update CWD | Change to file's directory | All files |
-| `<leader>as` | Edit snippets | Open snippets directory | All files |
-| `<leader>aS` | SSH connect | Connect to MIT server via SSH | All files |
+| `<leader>ah` | MCP Hub | Open MCP Hub interface | All files |
+| `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
+| `<leader>aL` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
+| `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
 
 ### FIND (`<leader>f`)
 
@@ -141,12 +151,12 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 | Key | Action | Description |
 |-----|--------|-------------|
-| `<leader>gb` | Checkout branch | Switch to another git branch |
+| `<leader>gb` | Browse branches | Browse and checkout branches |
 | `<leader>gc` | View commits | Show commit history |
-| `<leader>gd` | View diff | Show changes against HEAD |
-| `<leader>gg` | Open lazygit | Launch terminal git interface |
+| `<leader>gd` | Diff HEAD | Show changes against HEAD |
+| `<leader>gg` | LazyGit | Launch LazyGit interface |
+| `<leader>gh` | Previous hunk | Jump to previous change |
 | `<leader>gj` | Next hunk | Jump to next change |
-| `<leader>gk` | Previous hunk | Jump to previous change |
 | `<leader>gl` | Line blame | Show git blame for current line |
 | `<leader>gp` | Preview hunk | Preview current change |
 | `<leader>gs` | Git status | Show files with changes |

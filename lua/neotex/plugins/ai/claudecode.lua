@@ -56,18 +56,77 @@ return {
   },
 
   keys = {
-    -- Main toggle with <C-c> to match old behavior
-    { "<C-c>", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code", mode = { "n", "i", "v", "t" } },
-
-    -- Leader mappings for additional functionality
-    { "<leader>ac", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code" },
-    { "<leader>acc", "<cmd>ClaudeCodeContinue<CR>", desc = "Continue Claude conversation" },
-    { "<leader>acr", "<cmd>ClaudeCodeResume<CR>", desc = "Resume Claude conversation (picker)" },
-    { "<leader>acv", "<cmd>ClaudeCodeVerbose<CR>", desc = "Claude Code with verbose logging" },
+    -- Main toggle with <C-a> for Claude Code (works in all modes)
+    { "<C-a>", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code", mode = { "n", "i", "v", "t" } },
   },
 
   config = function(_, opts)
     require("claude-code").setup(opts)
+
+    -- Helper function to get visual selection
+    local function get_visual_selection()
+      -- Get the visual selection marks
+      local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(0, '<'))
+      local end_line, end_col = unpack(vim.api.nvim_buf_get_mark(0, '>'))
+      
+      -- Get the lines
+      local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+      
+      -- Handle single line selection
+      if #lines == 1 then
+        lines[1] = string.sub(lines[1], start_col + 1, end_col + 1)
+      else
+        -- Handle multi-line selection
+        if #lines > 0 then
+          lines[1] = string.sub(lines[1], start_col + 1)
+          if #lines > 1 then
+            lines[#lines] = string.sub(lines[#lines], 1, end_col + 1)
+          end
+        end
+      end
+      
+      return table.concat(lines, '\n')
+    end
+
+    -- Function to send visual selection to Claude Code
+    local function send_visual_to_claude()
+      local selection = get_visual_selection()
+      
+      -- First ensure Claude Code terminal is open
+      vim.cmd('ClaudeCode')
+      
+      -- Wait a bit for terminal to be ready
+      vim.defer_fn(function()
+        -- Find the Claude terminal buffer
+        local claude_bufnr = nil
+        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+          local bufname = vim.api.nvim_buf_get_name(bufnr)
+          if bufname:match("claude") and vim.bo[bufnr].buftype == "terminal" then
+            claude_bufnr = bufnr
+            break
+          end
+        end
+        
+        if claude_bufnr then
+          -- Get the terminal job id
+          local chan = vim.bo[claude_bufnr].channel
+          if chan and chan > 0 then
+            -- Send the selection to the terminal
+            vim.api.nvim_chan_send(chan, selection)
+            -- Optionally add a newline to submit
+            -- vim.api.nvim_chan_send(chan, '\n')
+          end
+        else
+          vim.notify("Claude Code terminal not found", vim.log.levels.WARN)
+        end
+      end, 200)
+    end
+
+    -- Create commands for visual selection
+    vim.api.nvim_create_user_command('ClaudeCodeSendVisual', send_visual_to_claude, { 
+      range = true,
+      desc = 'Send visual selection to Claude Code' 
+    })
 
     -- Configure terminal behavior to match old setup
     vim.api.nvim_create_autocmd("TermOpen", {
@@ -76,8 +135,8 @@ return {
         -- Make buffer unlisted to prevent it from appearing in tabs/bufferline
         vim.bo.buflisted = false
         
-        -- Additional <C-c> mapping in terminal mode for consistency
-        vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
+        -- Additional <C-a> mapping in terminal mode for consistency
+        vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
       end,
     })
   end,

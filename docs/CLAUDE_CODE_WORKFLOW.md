@@ -1,30 +1,22 @@
-# Claude Code Multi-Agent Workflow: Streamlined Neovim Integration
+# Claude Code Worktree Workflow: User Guide
 
-A production-ready workflow for managing multiple Claude Code agents across git worktrees using a focused 4-plugin architecture.
+This guide explains how to use the Claude Code worktree workflow for managing multiple parallel development tasks in Neovim.
 
-## Quick Start
+## Prerequisites
 
-```bash
-# Prerequisites
-clause --version              # Claude Code CLI installed
-git worktree list             # Git 2.5+ with worktree support
-wezterm --version             # WezTerm terminal emulator
-nvim --version                # Neovim 0.9+
-```
+Ensure you have the following installed:
+- Claude Code CLI (`claude --version`)
+- Git 2.5+ with worktree support (`git worktree list`)
+- WezTerm terminal emulator (`wezterm --version`)
+- Neovim 0.9+ (`nvim --version`)
 
-## Table of Contents
+## Overview
 
-1. [Architecture Overview](#architecture-overview)
-2. [Plugin Stack](#plugin-stack)
-3. [Workflow Phases](#workflow-phases)
-4. [Commands & Keybindings](#commands--keybindings)
-5. [Implementation Guide](#implementation-guide)
-6. [Use Cases](#use-cases)
-7. [Best Practices](#best-practices)
-
-## Architecture Overview
-
-This workflow enables parallel Claude Code sessions across isolated git worktrees, orchestrated through Neovim with seamless tab management in WezTerm.
+The Claude worktree workflow enables you to:
+- Work on multiple features simultaneously without branch switching
+- Maintain isolated Claude sessions per task
+- Keep context files (CLAUDE.md) for each worktree
+- Seamlessly navigate between parallel development efforts
 
 ### System Architecture
 
@@ -32,7 +24,7 @@ This workflow enables parallel Claude Code sessions across isolated git worktree
 ┌─────────────────────────────────────────────────────────────┐
 │                         Neovim                              │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │                  Plugin Stack                         │  │
+│  │              Integrated Plugin Stack                  │  │
 │  │                                                       │  │
 │  │  claude-code.nvim ──► Claude sidebar & chat          │  │
 │  │  toggleterm.nvim  ──► Quick terminal access          │  │
@@ -43,356 +35,477 @@ This workflow enables parallel Claude Code sessions across isolated git worktree
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    WezTerm Tabs                             │
+│                     WezTerm Tabs                            │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
 │  │  Main    │  │Feature A │  │Feature B │  │ Bugfix   │  │
-│  │  <C-t>   │  │Worktree 1│  │Worktree 2│  │Worktree 3│  │
+│  │  Branch  │  │Worktree 1│  │Worktree 2│  │Worktree 3│  │
 │  │  Claude  │  │  Claude  │  │  Claude  │  │  Claude  │  │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Key Benefits
-
-- **Instant Claude Access**: `<C-c>` for sidebar, `<C-t>` for terminal
-- **True Isolation**: Each worktree has independent file state
-- **Tab Organization**: Each task gets a dedicated WezTerm tab
-- **Context Persistence**: CLAUDE.md files maintain task context
-- **Zero Conflicts**: Parallel development without merge issues
-
-## Plugin Stack
-
-### Current Plugins (Already Configured)
-
-#### 1. claude-code.nvim
-- **Purpose**: Claude Code integration in Neovim
-- **Key binding**: `<C-c>` toggles Claude sidebar
-- **Features**: File refresh, git root awareness, 40% split width
-
-#### 2. toggleterm.nvim 
-- **Purpose**: Quick terminal access for Claude commands
-- **Key binding**: `<C-t>` toggles terminal
-- **Direction**: Vertical split (80 columns)
-- **Shell**: Fish (configured)
-
-### New Plugins to Add
-
-#### 3. git-worktree.nvim
-- **Purpose**: Create and manage git worktrees from Neovim
-- **Integration**: Telescope for fuzzy finding
-- **Auto-setup**: Creates CLAUDE.md context files
-
-#### 4. wezterm.nvim
-- **Purpose**: Programmatic WezTerm tab management
-- **Features**: Spawn tabs, switch workspaces, set environment
-- **Alternative to**: Manual tab creation
-
-## Git Worktrees Setup
-
-### Basic Worktree Commands
-
-```bash
-# List all worktrees
-git worktree list
-
-# Add a new worktree with new branch
-git worktree add ../project-feature-auth -b feature/auth
-
-# Add worktree from existing branch
-git worktree add ../project-bugfix bugfix/login-issue
-
-# Remove a worktree
-git worktree remove ../project-feature-auth
-
-# Prune stale worktree references
-git worktree prune
-```
-
 ## Commands & Keybindings
 
-### Unified AI Operations (`<leader>h` prefix)
+### Claude and AI Operations (`<leader>a` prefix)
 
 ```vim
-" Claude Operations
-<C-c>        Toggle Claude sidebar (any mode)
-<leader>hc   Open Claude in toggleterm
-<leader>hC   Continue Claude conversation
-<leader>hr   Resume Claude (picker)
+" Claude Code Operations
+<C-a>        Toggle Claude Code sidebar (any mode, incl. terminal)
+<leader>ac   Continue Claude conversation
+<leader>ar   Resume Claude (picker)
+<leader>av   Toggle verbose mode
+<leader>ae   Edit selection (visual mode)
 
-" Worktree Management
-<leader>hw   Switch worktree (Telescope)
-<leader>hW   Create worktree (Telescope)
-<leader>hd   Delete worktree
+" Claude Worktree Sessions
+<leader>aa   All worktrees (Telescope with preview)
+<leader>aw   Create new worktree session
+<leader>ak   Kill/clean up stale sessions
 
-" Tab Orchestration
-<leader>ht   New worktree in WezTerm tab
-<leader>hs   Switch to Claude session
-<leader>hl   List all Claude sessions
+" Other AI Tools
+<leader>ah   Open MCP Hub
+<leader>al   Run Lectic (markdown/lec files only)
+<leader>aL   Create new Lectic file (markdown/lec files only)
+<leader>aP   Select Lectic provider (markdown/lec files only)
+```
 
+### Git and Worktree Operations (`<leader>g` prefix)
+
+```vim
+" Git Operations (no worktree management - use <leader>a instead)
+
+" Git Operations
+<leader>gb   Browse branches
+<leader>gc   Browse commits
+<leader>gd   Diff HEAD
+<leader>gg   LazyGit interface
+<leader>gs   Git status
+<leader>gl   Line blame
+<leader>gt   Toggle line blame
+<leader>gh   Previous hunk
+<leader>gj   Next hunk
+<leader>gp   Preview hunk
+```
+
+### Terminal Operations
+
+```vim
 " Terminal Access
-<C-t>        Toggle terminal (vertical)
-<leader>tf   Floating terminal
-<leader>th   Horizontal terminal
+<C-t>        Toggle terminal (from any mode)
+<Esc>        Exit terminal mode to normal (non-Claude terminals)
+<C-h/j/k/l>  Navigate between windows from terminal
+<M-h/l>      Resize terminal window
 ```
 
-## Implementation Guide
-
-### Step 1: Install git-worktree.nvim
-
-```lua
--- ~/.config/nvim/lua/neotex/plugins/git/worktree.lua
-return {
-  "ThePrimeagen/git-worktree.nvim",
-  dependencies = { "nvim-telescope/telescope.nvim" },
-  keys = {
-    { "<leader>hw", "<cmd>Telescope git_worktree<cr>", desc = "Switch worktree" },
-    { "<leader>hW", "<cmd>Telescope git_worktree create_git_worktree<cr>", desc = "Create worktree" },
-  },
-  config = function()
-    require("git-worktree").setup({
-      change_directory_command = "tcd", -- tab-local cd
-      update_on_change = true,
-      clearjumps_on_change = true,
-      autopush = false,
-    })
-    require("telescope").load_extension("git_worktree")
-    
-    -- Auto-create CLAUDE.md on new worktree
-    local Worktree = require("git-worktree")
-    Worktree.on_tree_change(function(op, metadata)
-      if op == Worktree.Operations.Create then
-        local context_file = metadata.path .. "/CLAUDE.md"
-        if vim.fn.filereadable(context_file) == 0 then
-          local content = {
-            "# Task: " .. metadata.branch,
-            "Branch: " .. metadata.branch,
-            "Created: " .. os.date(),
-            "Worktree: " .. metadata.path,
-            "",
-            "## Objective",
-            "[Describe the task here]",
-            "",
-            "## Context",
-            "[Any relevant context]",
-          }
-          vim.fn.writefile(content, context_file)
-        end
-      end
-    end)
-  end,
-}
-```
-
-### Step 2: Install wezterm.nvim
-
-```lua
--- ~/.config/nvim/lua/neotex/plugins/terminal/wezterm.lua
-return {
-  "willothy/wezterm.nvim",
-  config = function()
-    require("wezterm").setup({
-      create_commands = false, -- We'll use our own commands
-    })
-  end,
-}
-```
-
-### Step 3: Create Orchestration Module
-
-```lua
--- ~/.config/nvim/lua/neotex/core/claude-worktree.lua
-local M = {}
-
--- Create worktree and open in new WezTerm tab
-function M.create_worktree_tab()
-  local feature = vim.fn.input("Feature name: ")
-  if feature == "" then return end
-  
-  local branch = "feature/" .. feature
-  local worktree_path = "../" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "-" .. feature
-  
-  -- Create worktree
-  vim.fn.system("git worktree add " .. worktree_path .. " -b " .. branch)
-  
-  if vim.v.shell_error == 0 then
-    -- Create context file
-    local context_content = string.format(
-      "# Task: %s\nBranch: %s\nCreated: %s\n\n## Objective\n[Describe here]\n",
-      feature, branch, os.date()
-    )
-    vim.fn.writefile(vim.split(context_content, "\n"), worktree_path .. "/CLAUDE.md")
-    
-    -- Spawn new WezTerm tab
-    local wezterm = require("wezterm")
-    wezterm.spawn_tab({
-      cwd = worktree_path,
-      args = { "nvim", "CLAUDE.md" },
-    })
-    
-    vim.notify("Created worktree in new tab: " .. feature)
-  end
-end
-
-return M
-```
-
-## Use Cases
-
-### Scenario 1: Quick Fix in Main Branch
+### WezTerm Tab Navigation
 
 ```vim
-" 1. Open Neovim in your project
-" 2. Hit <C-t> for terminal
-" 3. Run: claude "fix the login validation"
-" 4. Or hit <C-c> for Claude sidebar
+" WezTerm-specific (when in WezTerm)
+<leader>hN   Previous WezTerm tab
+<leader>hP   Next WezTerm tab
+2<leader>hT  Switch to WezTerm tab 2 (use count)
 ```
 
-### Scenario 2: New Feature Development
+## Common Workflows
+
+### Starting a New Feature
 
 ```vim
-" 1. Create worktree
-<leader>hW              " Create worktree dialog
-> feature/user-profile  " Enter branch name
-
-" 2. Auto-switches to new worktree
-" 3. CLAUDE.md is created automatically
-" 4. Hit <C-c> to start Claude with context
+" Create Claude session with worktree
+<leader>aw
+> authentication    " Enter feature name
+> feature          " Select type (feature/bugfix/refactor/experiment)
+" Creates worktree with Claude session and CLAUDE.md file
 ```
 
-### Scenario 3: Parallel Multi-Agent Work
+### Working with Claude in a Worktree
 
 ```vim
-" Main Neovim session
-<leader>ht              " Create worktree in new tab
-> payment-integration   " Feature 1
+" 1. Switch to or create a worktree
+<leader>aa          " Browse all worktrees (Telescope)
+" OR
+<leader>aw          " Create new worktree session
 
-<leader>ht              " Another worktree in new tab
-> api-refactor          " Feature 2
+" 2. Edit the context file
+:e CLAUDE.md
+" Add your task description and requirements
 
-<leader>ht              " Third worktree in new tab
-> fix-memory-leak       " Bugfix
+" 3. Start Claude
+<C-a>              " Opens Claude sidebar
+" Claude will have access to your CLAUDE.md context
 
-" Result: 4 WezTerm tabs, each with isolated Claude session
-" Tab 1: Main project
-" Tab 2: Payment integration (Claude working)
-" Tab 3: API refactor (Claude working)
-" Tab 4: Memory leak fix (Claude working)
+" 4. Continue working
+<leader>ac         " Continue conversation
+<leader>ar         " Resume from picker
+<leader>av         " Toggle verbose mode
 ```
 
-### Example Workflow: Building a Feature
+### Managing Multiple Parallel Tasks
+
+```vim
+" Create multiple worktree sessions
+<leader>aw         " Feature: payment-integration
+<leader>aw         " Feature: user-profiles  
+<leader>aw         " Bugfix: memory-leak
+
+" Browse and switch between sessions
+<leader>aa         " Telescope browser with preview
+" Shows worktree info, CLAUDE.md content, and recent commits
+" Keys in picker:
+"   Enter  - Switch to selected worktree
+"   Ctrl-d - Delete selected worktree
+"   Ctrl-n - Create new worktree
+
+" Clean up stale sessions
+<leader>ak         " Clean up all orphaned sessions
+```
+
+### Using the Telescope Session Browser
+
+The telescope browser (`<leader>aa`) provides:
+- Preview of CLAUDE.md content for each session
+- Git status or branch comparison for main branch
+- Session metadata and recent commits
+- Interactive actions:
+  - `Enter` - Switch to worktree
+  - `Ctrl-d` - Delete selected worktree
+  - `Ctrl-n` - Create new worktree
+- Quick navigation with fuzzy search
+
+## Example: Complete Feature Development
 
 ```vim
 " 1. Start in main project
 :pwd  " ~/dev/myproject
 
-" 2. Create feature worktree
-<leader>ht
-> user-authentication
+" 2. Create feature worktree with Claude session
+<leader>aw
+> user-auth        " Feature name
+> feature          " Type
 
-" 3. WezTerm opens new tab with:
-"    - Directory: ~/dev/myproject-user-authentication
-"    - File: CLAUDE.md (context file)
-"    - Branch: feature/user-authentication
+" 3. Automatically switches to new worktree:
+"    - Directory: ~/dev/myproject-feature-user-auth
+"    - Branch: feature/user-auth
+"    - CLAUDE.md created with template
 
-" 4. Edit CLAUDE.md to add context
-i
-## Objective
-Implement JWT-based authentication with:
+" 4. Add context to CLAUDE.md
+:e CLAUDE.md
+i## Objective
+Implement JWT authentication with:
 - Login/logout endpoints
 - Token refresh mechanism
 - Role-based access control
+
+## Acceptance Criteria
+- [ ] Users can register and login
+- [ ] Tokens expire after 1 hour
+- [ ] Refresh tokens last 7 days
 <Esc>:w
 
 " 5. Start Claude
-<C-c>  " Opens Claude sidebar
+<C-a>
+" Give Claude the task:
+" 'Implement the JWT authentication system as described in CLAUDE.md'
 
-" 6. Give Claude the task
-"Implement the authentication system as described in CLAUDE.md"
-
-" 7. Claude works in isolation
+" 6. Claude works in isolation
 "    - All changes in feature branch
-"    - No conflicts with other work
-"    - Complete context preservation
+"    - No conflicts with main branch
+"    - Context preserved in CLAUDE.md
+
+" 7. When done, clean up
+<leader>aa         " Open picker
+Ctrl-d             " Delete selected worktree
+" Then merge your branch via git or GitHub PR
 ```
 
 ## Best Practices
 
-### 1. Worktree Naming Convention
+### Context Files (CLAUDE.md)
 
-```
-project-feature-name    # Features
-project-bugfix-name     # Bug fixes
-project-refactor-name   # Refactoring
-project-experiment-name # Experiments
-```
+Every worktree gets a CLAUDE.md file. Keep it updated with:
+- **Objective**: Clear description of what you're building
+- **Requirements**: Specific technical requirements
+- **Constraints**: Any limitations or guidelines
+- **Acceptance Criteria**: Checklist of completion items
+- **Notes**: Any discoveries or decisions made
 
-### 2. Context Files (CLAUDE.md)
+### Session Organization
 
-Always update CLAUDE.md with:
-- Clear objective
-- Relevant constraints
-- Expected outcomes
-- Links to related issues/PRs
+- Use descriptive names for your worktrees
+- Follow naming conventions:
+  - Features: `feature-name` → `feature/feature-name`
+  - Bugfixes: `issue-123` → `bugfix/issue-123`
+  - Refactors: `cleanup-auth` → `refactor/cleanup-auth`
+- Limit concurrent sessions to 3-4 for best performance
+- Clean up completed sessions promptly with `Ctrl-d` in the `<leader>aa` picker
 
-### 3. Session Management
+### Statusline Integration (Optional)
+
+If configured, your statusline will show the current Claude session:
+- Icon indicates session type (󰊕 feature, 󰁨 bugfix, etc.)
+- Shows abbreviated type and session name
+- Only visible when in a Claude worktree session
+
+## Git Worktree Deletion Workflows
+
+### Understanding the Problem
+
+The error "not a git repository" occurs when trying to delete a worktree from within itself because:
+1. Git worktrees have a `.git` file (not directory) that points to the main repo
+2. Some git operations fail when the current directory is being removed
+3. The worktree plugin may lose context when deleting its own directory
+
+### Workflow Option 1: Delete from Main Branch (Recommended)
+
+**Philosophy**: Treat main branch as the "control center" for worktree management.
 
 ```vim
-" List active sessions
-<leader>hl  " Shows all Claude sessions
+" 1. Merge your changes first (from within worktree)
+:!git add -A
+:!git commit -m "Complete feature implementation"
+:!git push origin feature/my-feature
 
-" Clean up finished work
-git worktree remove ../project-feature-done
-git branch -d feature/done
+" 2. Switch back to main
+<leader>gw         " Pick main/master from list
+" OR manually
+:cd ~/dev/myproject
+
+" 3. Delete the worktree
+<leader>gw         " Open worktree picker
+<C-d>              " Delete selected worktree
+
+" 4. Clean up merged branch (optional)
+:!git branch -d feature/my-feature
 ```
 
-### 4. Tab Organization
+**Pros**:
+- Clean separation of concerns
+- No directory conflicts
+- Natural workflow after merging
 
-- Tab 1: Always keep main project
-- Tab 2-N: Feature worktrees
-- Use consistent naming for easy identification
-- Close tabs when features are complete
+**Cons**:
+- Extra step to switch directories
+- Breaks flow if you want quick cleanup
 
-### 5. Performance Tips
+### Workflow Option 2: Self-Deletion with Directory Switch
+
+**Philosophy**: Allow worktrees to "self-destruct" gracefully by switching out first.
+
+```vim
+" Enhanced delete function for worktree.lua
+" Detects if we're in the worktree being deleted and switches first
+
+function delete_current_worktree()
+  local current_dir = vim.fn.getcwd()
+  local worktree_info = get_current_worktree_info()
   
+  if worktree_info then
+    -- Switch to parent/main first
+    local main_dir = get_main_worktree_path()
+    vim.cmd("cd " .. main_dir)
+    
+    -- Now safe to delete
+    delete_worktree(worktree_info.path, worktree_info.branch)
+  end
+end
 
-- Limit concurrent Claude sessions to 3-4 max
-- Use `git worktree prune` regularly to clean up stale references
-- Close unused WezTerm tabs to free resources
-- Use tab-local directory changes (`tcd`) to prevent conflicts
-
-### 6. Troubleshooting
-
-#### Claude context confusion
-```vim
-" Always provide clear context
-"I'm in feature/auth worktree working on JWT implementation"
+" Keybinding
+<leader>gD         " Delete current worktree (capital D for "dangerous")
 ```
 
-#### Session not found
+**Pros**:
+- Single command workflow
+- Can delete from anywhere
+- Intuitive when done with work
+
+**Cons**:
+- Potentially confusing directory switch
+- May lose unsaved buffers
+
+### Workflow Option 3: Pre-Merge Validation
+
+**Philosophy**: Ensure work is integrated before allowing deletion.
+
 ```vim
-" Rebuild session list
+" Smart delete that checks merge status
+function smart_delete_worktree()
+  -- Check for uncommitted changes
+  local status = vim.fn.system("git status --porcelain")
+  if status ~= "" then
+    notify("Uncommitted changes - commit or stash first")
+    return
+  end
+  
+  -- Check if branch is merged
+  local branch = get_current_branch()
+  local merged = vim.fn.system("git branch --merged main | grep " .. branch)
+  
+  if merged == "" then
+    -- Not merged, offer options
+    vim.ui.select({"Push and create PR", "Force delete", "Cancel"}, ...)
+  else
+    -- Safe to delete
+    proceed_with_deletion()
+  end
+end
+
+" Keybindings
+<leader>gm         " Merge-aware delete (safe)
+<leader>gM         " Force delete (uppercase = force)
+```
+
+**Pros**:
+- Prevents accidental work loss
+- Encourages proper git workflow
+- Clear safety checks
+
+**Cons**:
+- More complex implementation
+- May be too restrictive
+
+### Workflow Option 4: Terminal-Based Cleanup
+
+**Philosophy**: Use terminal commands for explicit control.
+
+```vim
+" Quick terminal commands for worktree management
+" Add to which-key or as commands
+
+:command! WTDelete !cd .. && git worktree remove %:p:h
+:command! WTDeleteForce !cd .. && git worktree remove --force %:p:h
+:command! WTStatus !git status && git log --oneline -5
+
+" Keybindings
+<leader>g!d        " Terminal delete
+<leader>g!f        " Terminal force delete
+<leader>g!s        " Terminal status check
+```
+
+**Pros**:
+- Transparent operations
+- Full control
+- Works from anywhere
+
+**Cons**:
+- Less integrated feel
+- Requires terminal comfort
+
+### Recommended Keybinding Strategy
+
+Based on safety and workflow patterns:
+
+```vim
+" Safe operations (lowercase)
+<leader>gw         " Browse/switch worktrees
+<leader>gn         " New worktree
+<leader>gs         " Status check
+
+" Destructive operations (uppercase or symbols)
+<leader>gD         " Delete current worktree (with validation)
+<leader>g!         " Force operations submenu
+  └─ d            " Force delete current
+  └─ D            " Force delete any (picker)
+  └─ p            " Prune all worktrees
+
+" Context-aware delete in picker
+<leader>gw         " In picker:
+  <C-d>           " Safe delete (checks merge status)
+  <C-f>           " Force delete (skips checks)
+```
+
+## Troubleshooting
+
+### Session Issues
+
+```vim
+" Session not found or corrupted
 :lua require('neotex.core.claude-worktree').restore_sessions()
+
+" View session details
+<leader>aS         " Use telescope browser to inspect
+
+" Force cleanup of stale sessions
+<leader>ak         " Removes orphaned sessions
 ```
 
-#### WezTerm tab creation fails
+### Worktree Issues
+
 ```bash
-# Check WezTerm CLI is available
-wezterm cli list
+# List all worktrees
+git worktree list
 
-# Ensure WezTerm is running
-pgrep wezterm
+# Remove stuck worktree
+git worktree remove ../project-feature-name --force
+
+# Clean up references
+git worktree prune
 ```
 
-## Summary
+### Worktree Deletion Issues
 
-This streamlined workflow leverages your existing plugins (claude-code.nvim, toggleterm.nvim) plus two strategic additions (git-worktree.nvim, wezterm.nvim) to create a powerful multi-agent development environment. Each worktree gets its own WezTerm tab with isolated Claude session, all orchestrated from your main Neovim instance.
+```vim
+" Error: "not a git repository"
+" Solution: Switch to parent directory first
+:cd ..
+:!git worktree remove project-feature-name
 
-### Key Advantages
+" Error: "contains modified or untracked files"
+" Solution 1: Commit or stash changes
+:!git add -A && git commit -m "WIP"
+" Solution 2: Force delete
+:!git worktree remove --force project-feature-name
 
-- **No external scripts** - Everything controlled from Neovim
-- **True isolation** - Each worktree has independent file state
-- **Seamless navigation** - Switch between sessions instantly
-- **Context persistence** - CLAUDE.md files maintain task state
-- **Resource efficient** - Only spawn tabs as needed
+" Error: "is a main working tree"
+" Solution: Cannot delete main, only feature worktrees
+```
 
-For detailed implementation instructions, see [CLAUDE_WORKTREE_IMPLEMENTATION.md](./CLAUDE_WORKTREE_IMPLEMENTATION.md).
+### Claude Context Issues
+
+```vim
+" Verify CLAUDE.md exists
+:!ls CLAUDE.md
+
+" Check current directory
+:pwd
+" Should be in worktree directory
+
+" Manually set context
+:tcd %:h           " Set tab-local directory
+```
+
+## Quick Reference Card
+
+| Action | Keybinding | Description |
+|--------|------------|-------------|
+| **Create** | `<leader>aw` | New worktree session |
+| **Navigate** | `<leader>aa` | Browse worktrees (Telescope) |
+| **Claude** | `<C-a>` | Toggle sidebar |
+| | `<leader>ac` | Continue chat |
+| | `<leader>ar` | Resume picker |
+| | `<leader>av` | Verbose mode |
+| **Manage** | `Ctrl-d` in picker | Delete session |
+| | `<leader>ak` | Cleanup stale |
+| **Terminal** | `<C-t>` | Toggle terminal |
+
+## Tips for Effective Use
+
+1. **Start with context**: Always update CLAUDE.md before starting Claude
+2. **One task per worktree**: Keep worktrees focused on single objectives
+3. **Regular cleanup**: Delete completed worktrees to keep workspace clean
+4. **Use session browser**: `<leader>aa` gives the best overview with previews
+5. **Commit frequently**: Each worktree is a separate branch - commit often
+6. **Leverage isolation**: Run tests in one worktree while developing in another
+
+## Verification Checklist
+
+After setup, verify everything works:
+
+- [ ] `<leader>aw` creates worktree with CLAUDE.md
+- [ ] `<leader>aa` switches between sessions
+- [ ] `<leader>aS` shows telescope browser with previews
+- [ ] `<C-a>` opens Claude with worktree awareness
+- [ ] Sessions persist after Neovim restart
+- [ ] `Ctrl-d` in picker removes worktree and session
+- [ ] Statusline shows current session (if configured)
+- [ ] WezTerm opens new tabs for worktrees (if using WezTerm)
+
+Your Claude worktree workflow is now ready for parallel development!

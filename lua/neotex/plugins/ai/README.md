@@ -10,7 +10,6 @@ ai/
 ├── init.lua           # AI plugins loader
 ├── avante.lua         # Avante AI assistant
 ├── claudecode.lua     # Claude Code integration
-├── opencode.lua       # OpenCode terminal AI assistant
 ├── lectic.lua         # AI-assisted writing
 ├── mcp-hub.lua        # Model Context Protocol hub
 └── util/              # AI utility modules
@@ -28,7 +27,6 @@ ai/
 
 - **Avante Integration**: Connect with the Avante plugin for AI-assisted coding and chat
 - **Claude Code Integration**: Seamless terminal integration with Claude Code CLI
-- **OpenCode Integration**: Terminal-based AI assistant with context-aware editing and MCP support
 - **Lectic Integration**: Add AI-assisted writing with structured prompts
 - **MCP-Hub Integration**: Access multiple AI services through a unified hub
 - **System Prompts**: Manage and customize AI behavior with templates
@@ -41,7 +39,6 @@ lua/neotex/plugins/ai/
 ├── init.lua               # AI plugins loader with event registration
 ├── avante.lua             # Avante AI assistant configuration
 ├── claudecode.lua         # Claude Code terminal integration
-├── opencode.lua           # OpenCode terminal AI assistant
 ├── lectic.lua             # Lectic AI writing integration
 ├── mcp-hub.lua            # MCP-Hub plugin configuration
 └── util/                  # Utility modules for AI integration
@@ -102,57 +99,75 @@ Avante provides a chat interface for AI-assisted coding and explanations.
 
 ### Claude Code Terminal Integration
 
-Claude Code provides a seamless terminal integration using the official `coder/claudecode.nvim` plugin for accessing Claude Code CLI directly within NeoVim.
+Claude Code provides a seamless terminal integration using the official `greggh/claude-code.nvim` plugin for accessing Claude Code CLI directly within NeoVim.
 
 **Key Features:**
-- Official Claude Code integration with WebSocket-based protocol
-- Right side terminal split with native or Snacks terminal provider
-- Context management - add files and directories to Claude Code context
-- Visual selection sending to Claude Code
-- Tree explorer integration support
-- Auto-start functionality with configurable ports
-- Pure Lua implementation for better performance
+- Official Claude Code integration with terminal-based interface
+- Vertical split sidebar (40% width by default)
+- Automatic file refresh detection when files are modified externally
+- Git-aware working directory (sets to git root)
+- Auto-enter insert mode for immediate interaction
+- Escape key handling preserved for Claude Code's internal normal mode
+- Clean terminal appearance with hidden line numbers and signcolumn
 
 **Commands:**
 - `ClaudeCode`: Toggle Claude Code terminal
-- `ClaudeCodeSend`: Send visual selection to Claude Code
-- `ClaudeCodeAdd <file-path>`: Add files/directories to Claude context
-- `ClaudeCodeAddBuffer`: Add current buffer to Claude context
-- `ClaudeCodeAddDir`: Add current directory to Claude context
-- `ClaudeCodeToggle`: Alternative command to toggle Claude Code terminal
+- `ClaudeCodeContinue`: Continue previous Claude conversation
+- `ClaudeCodeResume`: Resume Claude conversation with picker
+- `ClaudeCodeVerbose`: Launch Claude Code with verbose logging
 
 **Keymaps:**
-- `<leader>ho`: Toggle Claude Code terminal
-- `<leader>hb`: Add current buffer to Claude context
-- `<leader>hr`: Add current directory to Claude context
-- `<leader>cc`: Toggle Claude Code (alternative)
-- `<leader>cs`: Send visual selection to Claude Code
-- `<leader>ca`: Add current file to Claude context
+- `<C-c>`: Toggle Claude Code (works in all modes: normal, insert, visual, terminal)
+- `<leader>ac`: Toggle Claude Code
+- `<leader>acc`: Continue Claude conversation
+- `<leader>acr`: Resume Claude conversation (picker)
+- `<leader>acv`: Claude Code with verbose logging
+- `<Esc>`: Works normally within Claude Code sidebar (switches to Claude's normal mode)
 
 **Configuration Options:**
-The plugin uses a right side split with WebSocket communication:
+The plugin uses a vertical split sidebar configuration:
 
 ```lua
 opts = {
-  -- Port range for WebSocket connection
-  port_range = { min = 10000, max = 65535 },
-  auto_start = true,     -- Automatically start Claude Code
-  log_level = "info",    -- Logging level
+  -- Window configuration
+  window = {
+    split_ratio = 0.40,        -- 40% width sidebar
+    position = "vertical",     -- Vertical split (sidebar)
+    enter_insert = true,       -- Auto-enter insert mode
+    hide_numbers = true,       -- Clean terminal appearance
+    hide_signcolumn = true,
+  },
   
-  -- Terminal configuration
-  terminal = {
-    split_side = "right",  -- Open terminal on right side
-    provider = "native",   -- Use native terminal (or "snacks")
-    auto_close = true,     -- Auto-close terminal when Claude Code exits
+  -- File refresh detection
+  refresh = {
+    enable = true,             -- Enable file change detection
+    updatetime = 100,
+    timer_interval = 1000,
+    show_notifications = true, -- Show when files are refreshed
+  },
+  
+  -- Git configuration
+  git = {
+    use_git_root = true,       -- Set working directory to git root
+  },
+  
+  -- Base command
+  command = "claude",
+  
+  -- Command variants
+  command_variants = {
+    continue = "--continue",
+    resume = "--resume",
+    verbose = "--verbose",
   },
 }
 ```
 
-**Context Management Benefits:**
-- Easily add current file or entire directories to Claude Code context
-- Visual selection sending for focused assistance
-- Tree explorer integration for file management
-- WebSocket protocol for reliable communication
+**Terminal Mode Behavior:**
+- The global `<Esc>` mapping to exit terminal mode is automatically disabled for Claude Code
+- This allows Claude Code's internal vim-like normal mode to work properly
+- Use `<Esc>` within Claude Code to switch between its insert and normal modes
+- Use `<C-c>` to toggle the Claude Code sidebar open/closed
 
 **Requirements:**
 - Claude Code CLI installed and accessible in PATH
@@ -160,95 +175,12 @@ opts = {
 - NeoVim 0.8.0+
 
 **Usage Workflow:**
-1. Press `<leader>ho` to toggle Claude Code terminal on the right
-2. Add current file to context with `<leader>hb`
-3. Add entire directory to context with `<leader>hr`
-4. Select text and use `<leader>cs` to send selection to Claude
-5. Use Claude Code CLI commands as normal in the terminal
-6. Toggle the terminal off with `<leader>ho` again when done
-
-### OpenCode Terminal AI Assistant
-
-OpenCode provides a powerful terminal-based AI assistant with native MCP (Model Context Protocol) support and context-aware editing capabilities.
-
-**Key Features:**
-- Terminal UI built by Neovim users for optimal integration
-- Native MCP server support (local and remote)
-- Context-aware buffer editing with auto-reload
-- Provider-agnostic (supports Anthropic, OpenAI, Google, local models)
-- Smart prompt library with custom definitions
-- Real-time buffer synchronization when OpenCode edits files
-- Client/server architecture for flexible deployment
-
-**NixOS Dependencies:**
-For full functionality on NixOS, ensure these packages are in your environment:
-```nix
-environment.systemPackages = with pkgs; [
-  nodejs_20  # Required for npx commands (MCP servers)
-  uv         # Required for uvx commands (Python-based MCP servers)
-  bun        # Optional: OpenCode development requirement
-];
-```
-
-**OpenCode Configuration:**
-OpenCode uses `~/.config/opencode/opencode.json` for configuration, including MCP servers:
-```json
-{
-  "mcp": {
-    "filesystem": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
-      "args": ["${HOME}"],
-      "enabled": true
-    },
-    "neovim": {
-      "type": "local",
-      "command": ["npx", "-y", "mcp-neovim-server"],
-      "environment": {
-        "NVIM_SOCKET_PATH": "/tmp/nvim"
-      }
-    }
-  }
-}
-```
-
-**Commands:**
-- `OpenCodeToggle`: Toggle OpenCode terminal
-- `OpenCodeAsk [question]`: Ask OpenCode a question
-- `OpenCodeAddBuffer`: Add current buffer to context
-- `OpenCodeAddDir`: Add current directory to context
-
-**Keymaps:**
-- `<leader>ot`: Toggle OpenCode terminal
-- `<leader>oA`: General OpenCode prompt
-- `<leader>oa`: Ask about code at cursor/selection
-- `<leader>ob`: Add buffer to OpenCode context
-- `<leader>od`: Add directory to context
-- `<leader>op`: Open prompt library
-- `<leader>oe`: Explain code at cursor
-- `<leader>or`: Refactor code at cursor
-- `<leader>of`: Fix code at cursor
-
-**MCP Integration:**
-OpenCode's native MCP support allows direct configuration of MCP servers without requiring MCPHub:
-- Supports both stdio and SSE (Server-Sent Events) server types
-- Per-agent configuration for selective server enabling
-- Automatic tool availability alongside built-in tools
-- Works independently from MCPHub for terminal-based workflows
-
-**Neovim Socket Integration:**
-For OpenCode to control Neovim through MCP, start Neovim with:
-```bash
-nvim --listen /tmp/nvim
-```
-
-**Usage Workflow:**
-1. Ensure OpenCode is installed (via your NixOS config or npm)
-2. Press `<leader>ot` to toggle OpenCode terminal
-3. Add files/directories to context with `<leader>ob` and `<leader>od`
-4. Ask questions with `<leader>oa` or use the prompt library `<leader>op`
-5. OpenCode can edit files directly, which auto-reload in Neovim
-6. Use OpenCode's native MCP servers for enhanced capabilities
+1. Press `<C-c>` or `<leader>ac` to toggle Claude Code sidebar
+2. Claude Code automatically enters insert mode for immediate interaction
+3. Use `<Esc>` within Claude Code to switch to its normal mode (for navigation, copying, etc.)
+4. Press `i` to return to Claude Code's insert mode
+5. Continue conversations with `<leader>acc` or resume previous ones with `<leader>acr`
+6. Toggle the sidebar closed with `<C-c>` when done
 
 ### Lectic AI-Assisted Writing
 
