@@ -27,9 +27,15 @@ function M.setup()
     default_type = "feature",
   })
   
-  -- Optional: Clean up stale sessions on startup
+  -- Load visual selection support for Claude
+  local visual_ok = pcall(require, "neotex.core.claude-visual")
+  if not visual_ok then
+    vim.notify("Failed to load Claude Visual module", vim.log.levels.WARN)
+  end
+  
+  -- Clean up stale sessions on startup (silently - only notify if cleaning occurs)
   vim.defer_fn(function()
-    claude_worktree.cleanup_sessions()
+    claude_worktree.cleanup_sessions(true)  -- true = silent mode
   end, 1000)
 end
 
