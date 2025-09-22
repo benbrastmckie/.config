@@ -175,6 +175,19 @@ return {
       { "<leader>u", "<cmd>Telescope undo<CR>", desc = "undo", icon = "󰕌" },
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
+    
+    -- Global Claude Code toggle with smart session restoration
+    wk.add({
+      { 
+        "<C-a>", 
+        function() 
+          require("neotex.core.claude-session").smart_toggle() 
+        end, 
+        desc = "Toggle Claude Code", 
+        icon = "󰚩",
+        mode = { "n", "i", "v", "t" } 
+      },
+    })
 
     -- ============================================================================
     -- <leader>a - AI/ASSISTANT GROUP
@@ -184,8 +197,8 @@ return {
       { "<leader>a", group = "ai", icon = "󰚩" },
 
       -- Claude Code mappings (always available)
-      { "<leader>ac", "<cmd>ClaudeCodeContinue<CR>", desc = "claude continue", icon = "󰊢" },
-      { "<leader>ar", "<cmd>ClaudeSessionPicker<CR>", desc = "claude resume", icon = "󰑐" },
+      { "<leader>ac", function() require("neotex.core.claude-session").continue_session() end, desc = "claude continue last", icon = "󰊢" },
+      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "claude resume (picker)", icon = "󰑐" },
       { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
       { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
