@@ -336,35 +336,39 @@ end
 
 #### Implementation Strategy:
 
-**Subagent Orchestration** (adapted from Magenta.nvim):
-```lua
--- Simplified version of Magenta's pattern
-local M = {}
+**Subagent Orchestration** (builds on existing claude-worktree.lua):
 
--- Fork/adapt from Magenta.nvim
+> **Note**: For detailed orchestrator-subagent implementation with worktrees and WezTerm integration, 
+> see [ORCHESTRATOR_SUBAGENT_DESIGN.md](./ORCHESTRATOR_SUBAGENT_DESIGN.md)
+
+```lua
+-- Extends existing claude-worktree.lua with orchestration
+local M = require("neotex.core.claude-worktree")
+
+-- Spawn specialized subagent (see full design doc)
 function M.spawn_subagent(config)
-  -- Instead of Magenta's complex context isolation:
-  -- 1. Create/switch to worktree
-  -- 2. Open new Claude session
-  -- 3. Pass specific context
+  -- 1. Create agent-specific worktree
+  -- 2. Generate specialized CLAUDE.md context
+  -- 3. Spawn new WezTerm tab with Claude
+  -- 4. Track in orchestrator state
   
-  local worktree = require("git-worktree")
-  worktree.create_worktree(config.branch)
-  
-  -- Open Claude in new tab/terminal
-  vim.cmd("tabnew")
-  vim.cmd("ClaudeCode")
-  
-  -- Inject agent-specific prompt
-  M.inject_agent_context(config)
+  -- Full implementation in ORCHESTRATOR_SUBAGENT_DESIGN.md
 end
 
--- Simplified coordination (no complex message passing)
+-- Monitor and coordinate agents via task file
 function M.coordinate_agents(agents)
-  -- Use task file as coordination point
+  -- Use AGENT_TASKS.md as coordination point
   -- Each agent updates their section
+  -- Orchestrator monitors progress
 end
 ```
+
+Key features from the detailed design:
+- Centralized orchestrator in main branch
+- Each subagent gets dedicated worktree + WezTerm tab
+- Communication via sectioned AGENT_TASKS.md
+- Git commit-based progress tracking
+- Hierarchical coordination for complex projects
 
 **Prompt Components** (inspired by prompt-tower.nvim + ChatGPT.nvim):
 ```lua
