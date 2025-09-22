@@ -55,9 +55,15 @@ Tell Claude: "I'm working on %s in the %s worktree. The goal is to..."
 -- Session state tracking
 M.sessions = {}  -- { feature_name = { tab_id, worktree_path, branch, created } }
 M.current_session = nil
+M._initialized = false  -- Guard to prevent multiple initializations
 
 -- Initialize module
 function M.setup(opts)
+  -- Prevent multiple initializations
+  if M._initialized then
+    return
+  end
+  M._initialized = true
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
   
   -- Check dependencies
@@ -419,10 +425,14 @@ function M.restore_sessions()
       local ok, sessions = pcall(vim.fn.json_decode, data[1])
       if ok then
         M.sessions = sessions
-        vim.notify(
-          string.format("Restored %d Claude session(s)", vim.tbl_count(sessions)),
-          vim.log.levels.INFO
-        )
+        -- Only notify if there are actually sessions to restore
+        local session_count = vim.tbl_count(sessions)
+        if session_count > 0 then
+          vim.notify(
+            string.format("Restored %d Claude worktree session(s)", session_count),
+            vim.log.levels.INFO
+          )
+        end
       end
     end
   end

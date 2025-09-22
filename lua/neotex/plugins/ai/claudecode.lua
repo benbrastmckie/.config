@@ -55,13 +55,14 @@ return {
     },
   },
 
-  keys = {
-    -- Main toggle with <C-a> for Claude Code (works in all modes)
-    { "<C-a>", "<cmd>ClaudeCode<CR>", desc = "Toggle Claude Code", mode = { "n", "i", "v", "t" } },
-  },
+  -- Keys are defined in which-key.lua for centralized management
+  keys = {},
 
   config = function(_, opts)
     require("claude-code").setup(opts)
+    
+    -- Setup session management
+    require("neotex.core.claude-session").setup()
 
     -- Configure terminal behavior to match old setup
     vim.api.nvim_create_autocmd("TermOpen", {
@@ -75,7 +76,13 @@ return {
         vim.bo.bufhidden = "hide"
         
         -- Additional <C-a> mapping in terminal mode for consistency
-        vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "<cmd>ClaudeCode<CR>", { noremap = true, desc = "Toggle Claude Code" })
+        vim.api.nvim_buf_set_keymap(0, "t", "<C-a>", "", {
+          noremap = true,
+          desc = "Toggle Claude Code",
+          callback = function()
+            require("neotex.core.claude-session").smart_toggle()
+          end
+        })
       end,
     })
 
