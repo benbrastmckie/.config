@@ -1,11 +1,11 @@
-# Task: mappings_cleanup
+# Task: task_delegation
 
 ## Metadata
-- **Type**: refactor
-- **Branch**: refactor/mappings_cleanup
-- **Created**: 2025-09-23 08:43
-- **Worktree**: ../.config-refactor-mappings_cleanup
-- **Session ID**: mappings_cleanup-1758642232
+- **Type**: feature
+- **Branch**: feature/task_delegation
+- **Created**: 2025-09-23 11:32
+- **Worktree**: ../.config-feature-task_delegation
+- **Session ID**: task_delegation-1758652373
 
 ## Objective
 [Describe the main goal]
@@ -18,7 +18,7 @@
 - [ ] Review
 
 ## Claude Context
-Tell Claude: "I'm working on mappings_cleanup in the refactor/mappings_cleanup worktree. The goal is to..."
+Tell Claude: "I'm working on task_delegation in the feature/task_delegation worktree. The goal is to..."
 
 ## Notes
 [Add any relevant context, links, or decisions]
