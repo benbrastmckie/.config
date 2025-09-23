@@ -55,7 +55,11 @@ function M.setup(opts)
   M._create_commands()
   M._create_keymaps()
 
-  vim.notify("Claude Task Delegation system loaded", vim.log.levels.INFO)
+  -- Only notify in debug mode
+  local notify = require('neotex.util.notifications')
+  if notify.config.debug_mode then
+    vim.notify("Claude Task Delegation system loaded", vim.log.levels.INFO)
+  end
 end
 
 -- Core function to spawn a child task
@@ -688,15 +692,66 @@ function M._cleanup_child_worktree(delegation_info)
 
   if confirm == 1 then
     local current_path = vim.fn.getcwd()
-    local worktree_remove_cmd = string.format("git worktree remove %s --force", current_path)
-    local result = vim.fn.system(worktree_remove_cmd)
 
-    if vim.v.shell_error == 0 then
-      vim.notify("Worktree cleaned up successfully", vim.log.levels.INFO)
-      -- Return to parent or close tab
-      M._return_to_parent_session(delegation_info)
+    -- IMPORTANT: Navigate to parent directory FIRST before removing worktree
+    -- This prevents errors from gitsigns and other plugins trying to access deleted directory
+    if delegation_info and delegation_info.parent_path then
+      -- Change to parent directory
+      vim.cmd("cd " .. delegation_info.parent_path)
+
+      -- Close all buffers from the child worktree
+      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local bufname = vim.api.nvim_buf_get_name(buf)
+        if bufname:match(vim.pesc(current_path)) then
+          vim.api.nvim_buf_delete(buf, { force = true })
+        end
+      end
     else
-      vim.notify("Failed to clean up worktree: " .. result, vim.log.levels.ERROR)
+      -- Fallback: go to home directory if parent path not found
+      vim.cmd("cd ~")
+    end
+
+    -- Small delay to ensure directory change is complete
+    vim.defer_fn(function()
+      local worktree_remove_cmd = string.format("git worktree remove %s --force", current_path)
+      local result = vim.fn.system(worktree_remove_cmd)
+
+      if vim.v.shell_error == 0 then
+        vim.notify("Worktree cleaned up successfully", vim.log.levels.INFO)
+
+        -- Try to switch to parent WezTerm tab or close current tab
+        if delegation_info then
+          M._switch_to_parent_or_close_tab(delegation_info)
+        end
+      else
+        vim.notify("Failed to clean up worktree: " .. result, vim.log.levels.ERROR)
+      end
+    end, 100)
+  end
+end
+
+-- Switch to parent tab or close current tab
+function M._switch_to_parent_or_close_tab(delegation_info)
+  -- Try to find and switch to parent WezTerm tab
+  local parent_tabs = M._find_wezterm_tabs_by_path(delegation_info.parent_path)
+
+  if #parent_tabs > 0 then
+    -- Activate parent tab
+    local activate_cmd = string.format(
+      "wezterm cli activate-tab --tab-id %s",
+      parent_tabs[1]
+    )
+    vim.fn.system(activate_cmd)
+  else
+    -- If parent tab not found, try to close current tab
+    -- Get current pane ID
+    local current_pane = vim.fn.system("wezterm cli list-clients --format json 2>/dev/null")
+    if current_pane ~= "" then
+      local ok, panes = pcall(vim.fn.json_decode, current_pane)
+      if ok and panes[1] then
+        -- Kill current pane (which will close tab if it's the only pane)
+        vim.fn.system(string.format("wezterm cli kill-pane --pane-id %s", panes[1].pane_id))
+      end
     end
   end
 end
@@ -1095,6 +1150,21 @@ end
 
 -- Clean up task worktree after merge
 function M._cleanup_task_worktree(task)
+  -- Check if we're currently in the task worktree
+  local current_path = vim.fn.getcwd()
+  if current_path == task.path then
+    -- Navigate away from the worktree first
+    vim.cmd("cd ~")
+
+    -- Close all buffers from the task worktree
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      local bufname = vim.api.nvim_buf_get_name(buf)
+      if bufname:match(vim.pesc(task.path)) then
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end
+    end
+  end
+
   local result = vim.fn.system("git worktree remove " .. task.path .. " --force")
 
   if vim.v.shell_error == 0 then

@@ -71,7 +71,11 @@ return {
       }
     })
 
-    vim.notify("Claude Task Delegation system ready", vim.log.levels.INFO)
+    -- Only notify in debug mode
+    local notify = require('neotex.util.notifications')
+    if notify.config.debug_mode then
+      vim.notify("Claude Task Delegation system ready", vim.log.levels.INFO)
+    end
   end,
   keys = {
     { "<leader>ast", "<cmd>TaskDelegate<cr>", desc = "Spawn child task" },
