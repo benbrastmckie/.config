@@ -685,7 +685,7 @@ end
 -- Clean up child worktree
 function M._cleanup_child_worktree(delegation_info)
   local confirm = vim.fn.confirm(
-    "This will delete the current worktree. Are you sure?",
+    "This will delete the current worktree and close this tab. Are you sure?",
     "&Yes\n&No",
     2
   )
@@ -719,10 +719,22 @@ function M._cleanup_child_worktree(delegation_info)
       if vim.v.shell_error == 0 then
         vim.notify("Worktree cleaned up successfully", vim.log.levels.INFO)
 
-        -- Try to switch to parent WezTerm tab or close current tab
-        if delegation_info then
-          M._switch_to_parent_or_close_tab(delegation_info)
+        -- Try to switch to parent tab if available
+        local parent_tabs = M._find_wezterm_tabs_by_path(delegation_info.parent_path)
+        if #parent_tabs > 0 then
+          -- Switch to parent tab
+          local activate_cmd = string.format(
+            "wezterm cli activate-tab --tab-id %s",
+            parent_tabs[1]
+          )
+          vim.fn.system(activate_cmd)
         end
+
+        -- After switching (or if no parent found), exit Neovim
+        -- This will close the tab cleanly
+        vim.defer_fn(function()
+          vim.cmd("qa!")
+        end, 200)
       else
         vim.notify("Failed to clean up worktree: " .. result, vim.log.levels.ERROR)
       end
@@ -730,31 +742,6 @@ function M._cleanup_child_worktree(delegation_info)
   end
 end
 
--- Switch to parent tab or close current tab
-function M._switch_to_parent_or_close_tab(delegation_info)
-  -- Try to find and switch to parent WezTerm tab
-  local parent_tabs = M._find_wezterm_tabs_by_path(delegation_info.parent_path)
-
-  if #parent_tabs > 0 then
-    -- Activate parent tab
-    local activate_cmd = string.format(
-      "wezterm cli activate-tab --tab-id %s",
-      parent_tabs[1]
-    )
-    vim.fn.system(activate_cmd)
-  else
-    -- If parent tab not found, try to close current tab
-    -- Get current pane ID
-    local current_pane = vim.fn.system("wezterm cli list-clients --format json 2>/dev/null")
-    if current_pane ~= "" then
-      local ok, panes = pcall(vim.fn.json_decode, current_pane)
-      if ok and panes[1] then
-        -- Kill current pane (which will close tab if it's the only pane)
-        vim.fn.system(string.format("wezterm cli kill-pane --pane-id %s", panes[1].pane_id))
-      end
-    end
-  end
-end
 
 -- Mark task as complete (placeholder for future task tracking)
 function M._mark_task_complete(delegation_info)
