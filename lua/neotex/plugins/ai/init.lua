@@ -4,7 +4,6 @@
 -- This module loads AI-related plugins:
 -- - avante.lua: Avante AI integration with MCP Hub support
 -- - claudecode.lua: Claude Code terminal integration for seamless AI workflow
--- - claude-task-delegation.lua: Claude task delegation system with hierarchical worktrees
 -- - mcp-hub.lua: MCP Hub integration
 -- - lectic.lua: Lectic AI integration for interactive markdown files (with util/lectic_extras.lua)
 -- - util/avante-highlights.lua: Enhanced visual indicators for Avante
