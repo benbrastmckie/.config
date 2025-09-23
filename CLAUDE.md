@@ -1,28 +1,25 @@
-# NeoVim Configuration Guidelines
+# Task: task_delegation
 
-## Build/Test/Lint Commands
-- **Lint**: `vim.keymap.set("n", "<leader>l", function() lint.try_lint() end)`
-- **Format**: `vim.keymap.set({"n", "v"}, "<leader>mp", function() conform.format() end)`
-- **Test**: `:TestNearest` (current test), `:TestFile` (all tests in file), `:TestSuite` (all tests), `:TestLast` (repeat)
-- **Single test**: Position cursor on test function and run `:TestNearest`
+## Metadata
+- **Type**: feature
+- **Branch**: feature/task_delegation
+- **Created**: 2025-09-23 11:32
+- **Worktree**: ../.config-feature-task_delegation
+- **Session ID**: task_delegation-1758652373
 
-## Code Style Guidelines
-- **Indentation**: 2 spaces (no tabs)
-- **Line length**: ~100 characters
-- **Imports**: Top of file, ordered by dependency
-- **Naming**: Lowercase with underscores for variables/functions
-- **Functions**: Prefer local functions
-- **Error handling**: Use pcall for operations that might fail
-- **Comments**: Document keymaps and complex logic
+## Objective
+[Describe the main goal]
 
-## Directory Structure
-- Core functionality in `lua/neotex/core/`
-- Plugin configurations in `lua/neotex/plugins/`
-- LSP settings in `lua/neotex/plugins/lsp/`
-- Filetype-specific settings in `after/ftplugin/`
+## Current Status
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+- [ ] Review
 
-## Language-Specific Formatters
-- **JavaScript/TypeScript**: prettier
-- **Python**: isort + black (88 char line limit)
-- **Lua**: stylua (double quotes, 2-space indent)
-- **Markdown/CSS/HTML/YAML/JSON**: prettier
+## Claude Context
+Tell Claude: "I'm working on task_delegation in the feature/task_delegation worktree. The goal is to..."
+
+## Notes
+[Add any relevant context, links, or decisions]
+
