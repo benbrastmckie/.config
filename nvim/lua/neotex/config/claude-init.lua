@@ -28,9 +28,12 @@ function M.setup()
   })
   
   -- Load visual selection support for Claude
-  local visual_ok = pcall(require, "neotex.core.claude-visual")
+  local visual_ok, claude_visual = pcall(require, "neotex.core.claude-visual")
   if not visual_ok then
     vim.notify("Failed to load Claude Visual module", vim.log.levels.WARN)
+  else
+    -- Initialize the visual selection handling
+    claude_visual.setup()
   end
   
   -- Clean up stale sessions on startup (silently - only notify if cleaning occurs)
