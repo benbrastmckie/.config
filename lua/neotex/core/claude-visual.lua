@@ -61,6 +61,17 @@ local function get_visual_selection()
   local end_line = end_pos[2]
   local end_col = end_pos[3]
 
+  -- Check if we have valid marks (they exist and are different from default)
+  if start_line == 0 or end_line == 0 or start_line > end_line then
+    return ""
+  end
+
+  -- Additional check: ensure we're not getting stale marks
+  -- If start and end are the same position, likely no selection
+  if start_line == end_line and start_col == end_col then
+    return ""
+  end
+
   -- Get the lines
   local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 
@@ -70,6 +81,10 @@ local function get_visual_selection()
 
   -- Handle single line selection
   if #lines == 1 then
+    -- For single line, ensure end_col is greater than start_col
+    if end_col < start_col then
+      return ""
+    end
     lines[1] = string.sub(lines[1], start_col, end_col)
   else
     -- Handle multi-line selection
@@ -79,7 +94,14 @@ local function get_visual_selection()
     end
   end
 
-  return table.concat(lines, '\n')
+  local result = table.concat(lines, '\n')
+
+  -- Trim empty result or whitespace-only result
+  if result == "" or result:match("^%s*$") then
+    return ""
+  end
+
+  return result
 end
 
 -- Function to find Claude terminal buffer
@@ -87,7 +109,9 @@ local function find_claude_terminal()
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_valid(buf) then
       local bufname = vim.api.nvim_buf_get_name(buf)
-      if bufname:match("claude") and vim.bo[buf].buftype == "terminal" then
+      local buftype = vim.bo[buf].buftype
+      -- Look for claude in the buffer name and ensure it's a terminal
+      if buftype == "terminal" and (bufname:match("claude") or bufname:match("ClaudeCode")) then
         return buf
       end
     end
@@ -228,8 +252,9 @@ end
 -- Submit message to Claude terminal
 function M.submit_message(claude_buf, text, prompt)
   -- Get the terminal job ID (standard approach)
-  local job_id = vim.bo[claude_buf].terminal_job_id
-  if not job_id then
+  -- Access via buffer variable, not buffer option
+  local ok, job_id = pcall(vim.api.nvim_buf_get_var, claude_buf, 'terminal_job_id')
+  if not ok or not job_id then
     M.handle_error(ErrorType.CHANNEL_NOT_READY, {buf = claude_buf})
     return false
   end
@@ -360,6 +385,11 @@ end
 function M.send_visual_to_claude(prompt)
   local selection = get_visual_selection()
 
+  -- Debug: log selection details
+  if M.config.show_progress then
+    vim.notify(string.format("Selection length: %d chars", #selection), vim.log.levels.DEBUG)
+  end
+
   if selection == "" then
     vim.notify("No text selected", vim.log.levels.WARN)
     return
@@ -375,6 +405,11 @@ end
 -- Interactive function with prompt input
 function M.send_visual_with_prompt()
   local selection = get_visual_selection()
+
+  -- Debug: log selection details
+  if M.config.show_progress then
+    vim.notify(string.format("Prompt function - Selection length: %d chars", #selection), vim.log.levels.DEBUG)
+  end
 
   if selection == "" then
     vim.notify("No text selected", vim.log.levels.WARN)
