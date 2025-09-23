@@ -33,7 +33,7 @@ return {
   },
   config = function()
     -- Load the task delegation system
-    local ok, claude_agents = pcall(require, "neotex.plugins.ai.claude-agents.init")
+    local ok, claude_agents = pcall(require, "neotex.core.claude-agents.init")
 
     if not ok then
       vim.notify("Failed to load Claude task delegation: " .. tostring(claude_agents), vim.log.levels.ERROR)
