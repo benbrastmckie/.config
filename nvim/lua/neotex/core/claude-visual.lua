@@ -192,17 +192,25 @@ function M.wait_for_ready(callback, timeout)
     end
 
     -- Check if terminal is ready by looking for prompt
-    local lines = vim.api.nvim_buf_get_lines(claude_buf, -5, -1, false)
+    local lines = vim.api.nvim_buf_get_lines(claude_buf, -10, -1, false)
     local is_ready = false
 
+    -- Look for the characteristic Claude Code prompt pattern
     for _, line in ipairs(lines) do
-      -- Look for Claude's input prompt indicators
-      if line:match("^>") or           -- Main prompt
-         line:match("──────") or        -- Separator line
-         line:match("INSERT") then      -- Insert mode indicator
+      -- Look for Claude's main prompt or welcome message completion
+      if line:match("^>") or                           -- Main prompt
+         line:match("────────") or                      -- Separator line (longer pattern)
+         line:match("Welcome to Claude Code!") or      -- Welcome completed
+         line:match("? for shortcuts") then            -- Ready for input
         is_ready = true
         break
       end
+    end
+
+    -- Also check if we see the combination that indicates readiness
+    local text = table.concat(lines, "\n")
+    if text:match("Try.*%s*────.*%s*%?.*shortcuts") then
+      is_ready = true
     end
 
     if is_ready then
@@ -219,8 +227,9 @@ end
 
 -- Submit message to Claude terminal
 function M.submit_message(claude_buf, text, prompt)
-  local chan = vim.bo[claude_buf].channel
-  if not chan or chan <= 0 then
+  -- Get the terminal job ID (standard approach)
+  local job_id = vim.bo[claude_buf].terminal_job_id
+  if not job_id then
     M.handle_error(ErrorType.CHANNEL_NOT_READY, {buf = claude_buf})
     return false
   end
@@ -228,23 +237,14 @@ function M.submit_message(claude_buf, text, prompt)
   -- Build formatted message
   local message = M.format_message(text, prompt)
 
-  -- Clear any partial input first
-  if M.config.clear_before_send then
-    vim.api.nvim_chan_send(chan, "\x15")  -- Ctrl-U to clear line
-  end
-
-  -- Send message with proper newline for submission
-  vim.api.nvim_chan_send(chan, message .. "\n")
-
-  -- Focus and enter insert mode
+  -- Focus Claude window first
   if M.config.auto_focus then
     focus_claude_window(claude_buf)
-    if M.config.auto_insert then
-      vim.defer_fn(function()
-        vim.cmd('startinsert')
-      end, 50)
-    end
   end
+
+  -- Use the standard chansend approach to send input to terminal
+  -- This is the recommended method in Neovim documentation
+  vim.fn.chansend(job_id, message .. "\n")
 
   -- Clear pending message
   pending_message = nil
