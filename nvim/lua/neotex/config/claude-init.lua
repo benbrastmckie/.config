@@ -39,15 +39,4 @@ function M.setup()
   end, 1000)
 end
 
--- Auto-initialize if in a git repository
-vim.api.nvim_create_autocmd("VimEnter", {
-  callback = function()
-    vim.defer_fn(function()
-      if vim.fn.isdirectory(".git") == 1 then
-        M.setup()
-      end
-    end, 100)
-  end,
-})
-
 return M
