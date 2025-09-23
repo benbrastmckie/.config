@@ -79,7 +79,6 @@ vim.api.nvim_create_autocmd("User", {
 -- Load the AI plugin modules
 local avante_plugin = safe_require("neotex.plugins.ai.avante")
 local claude_code_plugin = safe_require("neotex.plugins.ai.claudecode")
-local claude_task_delegation_plugin = safe_require("neotex.plugins.ai.claude-task-delegation")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
 local mcphub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 
@@ -88,7 +87,6 @@ return {
   -- Core plugins
   avante_plugin,
   claude_code_plugin,
-  claude_task_delegation_plugin,
   lectic_plugin,
 
   -- MCPHub plugin (completely isolated)
