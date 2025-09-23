@@ -52,7 +52,45 @@ local ErrorType = {
 
 -- Helper function to get visual selection text
 local function get_visual_selection()
-  -- Get the visual selection marks
+  -- First try to get the current visual selection if we're in visual mode
+  if vim.fn.mode():match("^[vV\22]") then
+    -- We're in visual mode, get the current selection
+    local start_pos = vim.fn.getpos("v")
+    local end_pos = vim.fn.getpos(".")
+
+    -- Ensure start comes before end
+    if start_pos[2] > end_pos[2] or (start_pos[2] == end_pos[2] and start_pos[3] > end_pos[3]) then
+      start_pos, end_pos = end_pos, start_pos
+    end
+
+    local start_line = start_pos[2]
+    local start_col = start_pos[3]
+    local end_line = end_pos[2]
+    local end_col = end_pos[3]
+
+    -- Get the lines and extract selection
+    local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+
+    if #lines == 0 then
+      return ""
+    end
+
+    if #lines == 1 then
+      lines[1] = string.sub(lines[1], start_col, end_col)
+    else
+      lines[1] = string.sub(lines[1], start_col)
+      if #lines > 1 then
+        lines[#lines] = string.sub(lines[#lines], 1, end_col)
+      end
+    end
+
+    local result = table.concat(lines, '\n')
+    if result ~= "" and not result:match("^%s*$") then
+      return result
+    end
+  end
+
+  -- Fall back to previous visual selection marks
   local start_pos = vim.fn.getpos("'<")
   local end_pos = vim.fn.getpos("'>")
 
@@ -134,35 +172,31 @@ end
 function M.format_message(text, prompt)
   local parts = {}
 
-  -- Add prompt if provided
+  -- Add user prompt if provided (don't add default prompt)
   if prompt and prompt ~= "" then
     table.insert(parts, prompt)
-  else
-    table.insert(parts, M.config.default_prompt)
+    table.insert(parts, "")  -- Add spacing after user prompt
   end
 
-  -- Add file context
+  -- Add file context prominently at the top
   local filename = vim.fn.expand("%:p")
   local filetype = vim.bo.filetype
 
   if filename ~= "" then
-    -- Use relative path from git root if possible
+    -- Use relative path from git root if possible, otherwise show full path
     local git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
     if git_root ~= "" and vim.v.shell_error == 0 then
       -- Get relative path from git root
       local relative = vim.fn.fnamemodify(filename, ":s?" .. git_root .. "/??")
       filename = relative
-    else
-      -- Fall back to just the filename
-      filename = vim.fn.fnamemodify(filename, ":t")
     end
 
+    -- Make file path prominent
+    table.insert(parts, "**File:** `" .. filename .. "`")
     table.insert(parts, "")
-    table.insert(parts, "From file: " .. filename)
   end
 
   -- Add code block with syntax highlighting
-  table.insert(parts, "")
   if filetype ~= "" then
     table.insert(parts, "```" .. filetype)
   else
