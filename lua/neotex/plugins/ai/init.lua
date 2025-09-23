@@ -4,6 +4,7 @@
 -- This module loads AI-related plugins:
 -- - avante.lua: Avante AI integration with MCP Hub support
 -- - claudecode.lua: Claude Code terminal integration for seamless AI workflow
+-- - claude-task-delegation.lua: Claude task delegation system with hierarchical worktrees
 -- - mcp-hub.lua: MCP Hub integration
 -- - lectic.lua: Lectic AI integration for interactive markdown files (with util/lectic_extras.lua)
 -- - util/avante-highlights.lua: Enhanced visual indicators for Avante
@@ -78,6 +79,7 @@ vim.api.nvim_create_autocmd("User", {
 -- Load the AI plugin modules
 local avante_plugin = safe_require("neotex.plugins.ai.avante")
 local claude_code_plugin = safe_require("neotex.plugins.ai.claudecode")
+local claude_task_delegation_plugin = safe_require("neotex.plugins.ai.claude-task-delegation")
 local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
 local mcphub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
 
@@ -86,6 +88,7 @@ return {
   -- Core plugins
   avante_plugin,
   claude_code_plugin,
+  claude_task_delegation_plugin,
   lectic_plugin,
 
   -- MCPHub plugin (completely isolated)
