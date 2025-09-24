@@ -8,15 +8,15 @@
 local M = {}
 
 function M.setup()
-  -- Load claude-worktree module
-  local ok, claude_worktree = pcall(require, "neotex.core.claude-worktree")
+  -- Load claude AI module
+  local ok, claude_ai = pcall(require, "neotex.ai-claude")
   
   if not ok then
-    vim.notify("Failed to load claude-worktree module", vim.log.levels.ERROR)
+    vim.notify("Failed to load claude AI module", vim.log.levels.ERROR)
     return
   end
-  
-  claude_worktree.setup({
+
+  claude_ai.setup({
     -- Customize options
     max_sessions = 4,
     auto_switch_tab = true,
@@ -27,18 +27,15 @@ function M.setup()
     default_type = "feature",
   })
   
-  -- Load visual selection support for Claude
-  local visual_ok, claude_visual = pcall(require, "neotex.core.claude-visual")
-  if not visual_ok then
-    vim.notify("Failed to load Claude Visual module", vim.log.levels.WARN)
-  else
-    -- Initialize the visual selection handling
-    claude_visual.setup()
-  end
+  -- Visual selection support is now loaded through the main module
+  -- No need to load it separately
+  -- Visual setup is handled in the main module
   
   -- Clean up stale sessions on startup (silently - only notify if cleaning occurs)
   vim.defer_fn(function()
-    claude_worktree.cleanup_sessions(true)  -- true = silent mode
+    if claude_ai.cleanup_sessions then
+      claude_ai.cleanup_sessions(true)  -- true = silent mode
+    end
   end, 1000)
 end
 

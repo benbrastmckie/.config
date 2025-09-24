@@ -2,7 +2,7 @@
 local M = {}
 
 function M.get_session_status()
-  local ok, claude = pcall(require, "neotex.core.claude-worktree")
+  local ok, claude = pcall(require, "neotex.ai-claude")
   if not ok or not claude.current_session then
     return ""
   end
@@ -33,7 +33,7 @@ function M.lualine_component()
   return {
     M.get_session_status,
     cond = function()
-      local ok, claude = pcall(require, "neotex.core.claude-worktree")
+      local ok, claude = pcall(require, "neotex.ai-claude")
       return ok and claude.current_session ~= nil
     end,
     color = { fg = "#61afef", gui = "bold" },
@@ -55,7 +55,7 @@ end
 
 -- Get session type for conditional formatting
 function M.get_session_type()
-  local ok, claude = pcall(require, "neotex.core.claude-worktree")
+  local ok, claude = pcall(require, "neotex.ai-claude")
   if not ok or not claude.current_session then
     return nil
   end
@@ -66,7 +66,7 @@ end
 
 -- Get full session info for detailed display
 function M.get_session_info()
-  local ok, claude = pcall(require, "neotex.core.claude-worktree")
+  local ok, claude = pcall(require, "neotex.ai-claude")
   if not ok or not claude.current_session then
     return nil
   end
@@ -102,11 +102,11 @@ function M.lualine_colored()
   return {
     M.get_session_status,
     cond = function()
-      local ok, claude = pcall(require, "neotex.core.claude-worktree")
+      local ok, claude = pcall(require, "neotex.ai-claude")
       return ok and claude.current_session ~= nil
     end,
     color = function()
-      local ok, claude = pcall(require, "neotex.core.claude-worktree")
+      local ok, claude = pcall(require, "neotex.ai-claude")
       if not ok or not claude.current_session then
         return { fg = "#98c379", gui = "bold" }
       end

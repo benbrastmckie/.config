@@ -186,7 +186,7 @@ return {
       { "<leader>a", group = "ai", icon = "󰚩" },
 
       -- Claude AI commands
-      { "<leader>as", function() require("neotex.core.claude-session").resume_session() end, desc = "claude sessions", icon = "󰑐" },
+      { "<leader>as", function() require("neotex.ai-claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
       { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
       { "<leader>ar", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
