@@ -416,27 +416,6 @@ function M.setup()
     end,
   })
   
-  -- Optional: Auto-prompt on startup if there's a recent session
-  vim.api.nvim_create_autocmd("VimEnter", {
-    group = group,
-    once = true,
-    callback = function()
-      -- Only auto-prompt if we're in a git repo and not opening specific files
-      if vim.fn.argc() == 0 then
-        vim.defer_fn(function()
-          local in_git = vim.fn.system("git rev-parse --git-dir 2>/dev/null"):match("%.git")
-          if in_git and M.check_for_recent_session() then
-            -- Show a non-blocking notification instead of prompt
-            vim.notify(
-              "Claude session available. Press <C-q> to open session picker",
-              vim.log.levels.INFO,
-              { title = "Claude Code" }
-            )
-          end
-        end, 100)
-      end
-    end,
-  })
 end
 
 return M

@@ -558,10 +558,9 @@ end
 -- Initialize the module
 function M.setup()
   M.setup_terminal_monitor()
-  -- Debug: confirm setup is called
-  if M.config.show_progress then
-    vim.notify("Claude Visual initialized", vim.log.levels.DEBUG)
-  end
+  -- Use unified notification system with proper BACKGROUND category (debug only)
+  local notify = require("neotex.util.notifications")
+  notify.ai("Claude Visual initialized", notify.categories.BACKGROUND)
 end
 
 -- Create user commands

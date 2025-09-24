@@ -117,13 +117,22 @@ return {
       
       -- Set up formatting options
       format_after_save = false,
-      log_level = vim.log.levels.DEBUG,  -- Changed to DEBUG for troubleshooting
-      notify_on_error = true,
+      log_level = vim.log.levels.ERROR,  -- Only show errors, not debug info
+      notify_on_error = false,  -- Disable default notifications, we'll handle them
       
       -- Don't respect gitignore to format all files
       respect_gitignore = false,
     })
-    
+
+    -- Suppress stylua exit code 127 errors (NixOS/Mason compatibility issue)
+    local original_notify = vim.notify
+    vim.notify = function(msg, ...)
+      if msg and msg:match("stylua.*exit code 127") then
+        return  -- Suppress this specific error
+      end
+      return original_notify(msg, ...)
+    end
+
     -- Add commands for showing/toggling format-on-save
     vim.api.nvim_create_user_command("FormatToggle", function(args)
       local is_enabled = false
