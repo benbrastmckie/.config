@@ -75,8 +75,8 @@ return {
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
         
-        -- Additional <C-c> mapping in terminal mode for consistency
-        vim.api.nvim_buf_set_keymap(0, "t", "<C-c>", "", {
+        -- Additional <C-q> mapping in terminal mode for consistency
+        vim.api.nvim_buf_set_keymap(0, "t", "<C-q>", "", {
           noremap = true,
           desc = "Toggle Claude Code",
           callback = function()
