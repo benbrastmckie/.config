@@ -62,7 +62,7 @@ return {
     require("claude-code").setup(opts)
     
     -- Setup session management
-    require("neotex.core.claude-session").setup()
+    require("neotex.ai-claude").setup()
 
     -- Configure terminal behavior to match old setup
     vim.api.nvim_create_autocmd("TermOpen", {
