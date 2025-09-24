@@ -269,23 +269,23 @@ function M.show_session_picker()
   end
   
   local options = {
-    { 
-      display = "Continue last session" .. (age_text ~= "" and " (" .. age_text .. ")" or ""),
+    {
+      display = "Restore previous session" .. (age_text ~= "" and " (" .. age_text .. ")" or ""),
       value = "continue",
       icon = "󰊢",
       desc = "Resume your most recent Claude conversation"
     },
-    { 
-      display = "Show all sessions",
-      value = "resume",
-      icon = "󰑐",
-      desc = "Browse all sessions (use arrows + Enter, <C-c> to cancel)"
-    },
-    { 
-      display = "Start new session",
+    {
+      display = "Create new session",
       value = "new",
       icon = "󰈔",
       desc = "Begin a fresh Claude conversation"
+    },
+    {
+      display = "Browse all sessions",
+      value = "browse",
+      icon = "󰑐",
+      desc = "Open the full session browser"
     },
   }
   
@@ -334,10 +334,10 @@ function M.show_session_picker()
             vim.defer_fn(function()
               vim.cmd("startinsert")
             end, 100)
-          elseif choice == "resume" then
+          elseif choice == "browse" then
             -- Use our native session picker with actual session IDs
             require("neotex.core.claude-native-sessions").show_session_picker()
-          else
+          elseif choice == "new" then
             vim.cmd("ClaudeCode")
             M.save_session_state()
             -- Auto-enter insert mode
@@ -379,7 +379,7 @@ function M.smart_toggle()
       break
     end
   end
-  
+
   if claude_buf_exists then
     -- Just toggle the existing session
     vim.cmd("ClaudeCode")
@@ -387,6 +387,7 @@ function M.smart_toggle()
     -- No active session, check for recent one and show picker
     local has_session = M.check_for_recent_session()
     if has_session then
+      -- Always show the simplified picker when there's a previous session
       M.show_session_picker()
     else
       -- No recent session, just start new
@@ -437,7 +438,7 @@ function M.setup()
           if in_git and M.check_for_recent_session() then
             -- Show a non-blocking notification instead of prompt
             vim.notify(
-              "Claude session available. Press <C-c> to restore or <leader>ar for session picker",
+              "Claude session available. Press <C-c> to open session picker",
               vim.log.levels.INFO,
               { title = "Claude Code" }
             )
