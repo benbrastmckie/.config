@@ -198,8 +198,8 @@ return {
 
       -- Claude Session mappings (conversation sessions)
       -- { "<leader>ac", function() require("neotex.core.claude-session").continue_session() end, desc = "continue last session", icon = "󰊢" },
-      { "<leader>ai", function() require("neotex.core.claude-session").show_session_picker() end, desc = "session picker", icon = "󰚩" },
-      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "browse sessions", icon = "󰑐" },
+      -- { "<leader>ai", function() require("neotex.core.claude-session").show_session_picker() end, desc = "session picker", icon = "󰚩" },
+      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "browse all sessions", icon = "󰑐" },
       -- { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
 
       -- Claude Worktree mappings (git worktree-based sessions)
