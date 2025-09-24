@@ -1,6 +1,6 @@
 -- neotex.config.keymaps
--- Global and filetype-specific keybinding configuration
--- This module sets up all keybindings with buffer-specific handling for terminal, markdown, and AI buffers
+-- Centralized non-leader keybinding configuration
+-- This module contains ALL non-leader keybindings for consistent management
 
 --[[ KEYBINDINGS - COMPLETE REFERENCE
 -----------------------------------------------------------
@@ -8,13 +8,20 @@
 COMPLETE DOCUMENTATION: See docs/MAPPINGS.md for comprehensive keybinding reference
 Please maintain consistency between this file and docs/MAPPINGS.md when making changes.
 
-This file defines global keybindings, with special handling for terminal, markdown,
-and Avante AI buffers. The file organizes keymaps by functionality and uses helper
-functions for consistent definitions.
+This file is the SINGLE SOURCE OF TRUTH for all non-leader keybindings in the configuration.
+Leader-key mappings are defined in plugins/editor/which-key.lua for which-key integration.
 
-Global keymaps use the `map()` function with descriptions, while buffer-specific maps
-use the `buf_map()` function via special setup functions like `set_terminal_keymaps()`,
-which are called by autocmds when specific filetypes are detected.
+Organization:
+- Global keymaps use the `map()` function with descriptions
+- Buffer-specific maps use `buf_map()` in setup functions (e.g., `set_terminal_keymaps()`)
+- Plugin files should have empty `keys = {}` tables to prevent conflicting mappings
+- AI assistant toggles (Claude Code, Avante) are defined globally in this file
+
+----------------------------------------------------------------------------------
+AI/ASSISTANT GLOBAL KEYBINDINGS                | DESCRIPTION
+----------------------------------------------------------------------------------
+<C-c>                                          | Toggle Claude Code sidebar (all modes)
+<C-g>                                          | Toggle Avante interface (all modes)
 
 ----------------------------------------------------------------------------------
 TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
@@ -22,7 +29,6 @@ TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
 <Esc>                                          | Exit terminal mode to normal mode
 <C-t>                                          | Toggle terminal window
 <C-h>, <C-j>, <C-k>, <C-l>                     | Navigate between windows
-<C-c>                                          | Toggle Claude Code sidebar (non-lazygit only)
 <M-h>, <M-l>, <M-Left>, <M-Right>              | Resize terminal window horizontally
 
 ----------------------------------------------------------------------------------
@@ -140,12 +146,7 @@ function M.setup()
     buf_map(0, "t", "<M-l>", "<Cmd>vertical resize -2<CR>", "Resize right")
     buf_map(0, "t", "<M-h>", "<Cmd>vertical resize +2<CR>", "Resize left")
 
-    -- AI integration for terminal (excluding lazygit to prevent conflicts)
-    if vim.bo.filetype ~= "lazygit" then
-      buf_map(0, "t", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
-      buf_map(0, "n", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
-      buf_map(0, "v", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
-    end
+    -- Note: AI keybindings (C-c for Claude Code, C-g for Avante) are defined globally in this file
   end
 
   -- Markdown-specific keybindings (called by markdown filetype autocmd)
@@ -286,6 +287,33 @@ function M.setup()
   -- Documentation and help access
   map("n", "<S-m>", '<cmd>Telescope help_tags cword=true<cr>', {}, "Help for word under cursor")
   map("n", "<C-m>", '<cmd>Telescope man_pages<cr>', {}, "Search man pages")
+
+  --------------------------------
+  -- AI/ASSISTANT GLOBAL KEYS --
+  --------------------------------
+
+  -- Claude Code toggle (smart session management)
+  map("n", "<C-c>", function()
+    require("neotex.core.claude-session").smart_toggle()
+  end, {}, "Toggle Claude Code")
+
+  map("i", "<C-c>", function()
+    require("neotex.core.claude-session").smart_toggle()
+  end, {}, "Toggle Claude Code")
+
+  map("v", "<C-c>", function()
+    require("neotex.core.claude-session").smart_toggle()
+  end, {}, "Toggle Claude Code")
+
+  map("t", "<C-c>", function()
+    require("neotex.core.claude-session").smart_toggle()
+  end, {}, "Toggle Claude Code")
+
+  -- Avante toggle
+  map("n", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
+  map("i", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
+  map("v", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
+  map("t", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
 
   ------------------------
   -- TEXT EDITING KEYS --

@@ -175,26 +175,8 @@ return {
       { "<leader>u", "<cmd>Telescope undo<CR>", desc = "undo", icon = "󰕌" },
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
-    
-    -- Global AI toggles
-    wk.add({
-      {
-        "<C-q>",
-        function()
-          require("neotex.core.claude-session").smart_toggle()
-        end,
-        desc = "Toggle Claude Code",
-        icon = "󰚩",
-        mode = { "n", "i", "v", "t" }
-      },
-      {
-        "<C-g>",
-        "<cmd>AvanteToggle<CR>",
-        desc = "Toggle Avante",
-        icon = "󱇧",
-        mode = { "n", "i", "v", "t" }
-      },
-    })
+
+    -- Global AI toggles are now in keymaps.lua for centralized management
 
     -- ============================================================================
     -- <leader>a - AI/ASSISTANT GROUP
