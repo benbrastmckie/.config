@@ -55,7 +55,7 @@ return {
     },
   },
 
-  -- Keys are defined in which-key.lua for centralized management
+  -- Keys are defined in keymaps.lua for centralized management
   keys = {},
 
   config = function(_, opts)
@@ -74,15 +74,8 @@ return {
         vim.bo.buftype = "terminal"
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
-        
-        -- Additional <C-q> mapping in terminal mode for consistency
-        vim.api.nvim_buf_set_keymap(0, "t", "<C-q>", "", {
-          noremap = true,
-          desc = "Toggle Claude Code",
-          callback = function()
-            require("neotex.core.claude-session").smart_toggle()
-          end
-        })
+
+        -- Note: <C-c> mapping for Claude Code toggle is defined in keymaps.lua
       end,
     })
 
