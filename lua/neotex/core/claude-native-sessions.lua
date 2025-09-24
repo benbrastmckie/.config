@@ -6,18 +6,32 @@ local M = {}
 -- Get the project folder for the current directory
 function M.get_project_folder()
   local cwd = vim.fn.getcwd()
-  
+
   -- First check if we're in a git repo and use its root
   local git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
   local project_path = cwd
-  
+
   if git_root ~= "" and not git_root:match("^fatal:") then
-    -- Use git root as the project path
     project_path = git_root
+
+    -- Check if this is a git worktree, and if so, use the main repository path
+    local worktree_list = vim.fn.system("git worktree list 2>/dev/null")
+    if not worktree_list:match("^fatal:") then
+      -- Parse worktree list to find the main repository
+      for line in worktree_list:gmatch("[^\r\n]+") do
+        local path, branch = line:match("^([^%s]+)%s+[^%s]+%s+%[([^%]]+)%]")
+        if branch == "master" or branch == "main" then
+          project_path = path
+          break
+        end
+      end
+    end
   end
-  
+
   -- Replace slashes with dashes and dots with double dashes
-  local folder_name = project_path:gsub("/", "-"):gsub("%.", "--")
+  -- Handle the specific pattern where /. becomes --
+  local step1 = project_path:gsub("/", "-")
+  local folder_name = step1:gsub("-%.", "--")
   return vim.fn.expand("~/.claude/projects/" .. folder_name)
 end
 
@@ -108,8 +122,9 @@ function M.get_sessions()
   end
   
   -- Sort by updated timestamp (most recent first)
+  -- ISO 8601 timestamps sort correctly lexicographically
   table.sort(sessions, function(a, b)
-    return (a.updated or 0) > (b.updated or 0)
+    return (a.updated or "") > (b.updated or "")
   end)
   
   return sessions
@@ -213,8 +228,8 @@ function M.show_session_picker()
     return
   end
   
-  -- Debug: Show which folder we're reading from
-  vim.notify("Loading sessions from: " .. project_folder, vim.log.levels.INFO)
+  -- Debug: Show which folder we're reading from (only in debug mode)
+  -- vim.notify("Loading sessions from: " .. project_folder, vim.log.levels.INFO)
   
   local telescope = require("telescope")
   local actions = require("telescope.actions")
@@ -292,28 +307,35 @@ function M.show_session_picker()
           
           -- Resume with specific session ID
           vim.notify("Resuming session: " .. session.session_id:sub(1, 8) .. "...", vim.log.levels.INFO)
-          
-          -- We need to run the raw command with the session ID
-          -- since the plugin doesn't support passing session IDs directly
-          local claude_code = require("claude-code")
-          local terminal = require("claude-code.terminal")
-          local git = require("claude-code.git")
-          
-          -- Temporarily modify the command
-          local original_command = claude_code.config.command
-          claude_code.config.command = original_command .. ' --resume ' .. session.session_id
-          
-          -- Toggle with the modified command
-          terminal.toggle(claude_code, claude_code.config, git)
-          
-          -- Restore original command
-          claude_code.config.command = original_command
-          
-          -- Save state and enter insert mode
-          require("neotex.core.claude-session").save_session_state()
+
+          -- Store the session ID so we can use it
+          vim.g.claude_resume_session_id = session.session_id
+
+          -- Use ClaudeCodeResume which should handle resuming
+          vim.cmd("ClaudeCodeResume")
+
+          -- After a short delay, send the session ID to the terminal
           vim.defer_fn(function()
+            -- Find the Claude terminal buffer
+            for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+              if vim.api.nvim_buf_is_valid(buf) then
+                local bufname = vim.api.nvim_buf_get_name(buf)
+                if bufname:match("claude") or bufname:match("ClaudeCode") then
+                  -- Get the terminal channel
+                  local chan = vim.api.nvim_buf_get_option(buf, "channel")
+                  if chan and chan > 0 then
+                    -- Send the session ID
+                    vim.api.nvim_chan_send(chan, session.session_id .. "\n")
+                    break
+                  end
+                end
+              end
+            end
+
+            -- Save state and enter insert mode
+            require("neotex.core.claude-session").save_session_state()
             vim.cmd("startinsert")
-          end, 100)
+          end, 500)
         end
       end)
       return true
