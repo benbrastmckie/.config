@@ -608,6 +608,8 @@ function M.telescope_sessions()
             "  Ctrl-t      - Open session in new tab",
             "  Ctrl-o      - Open worktree in new WezTerm tab",
             "  Ctrl-n      - Create new Claude worktree",
+            "  Ctrl-k      - Cleanup stale worktrees",
+            "  Ctrl-h      - Show worktree health report",
             "  Escape      - Close picker",
             "",
             "Navigation:",
@@ -766,7 +768,27 @@ function M.telescope_sessions()
           end
         end
       end)
-      
+
+      -- Cleanup sessions with Ctrl-k
+      map("i", "<C-k>", function()
+        actions.close(prompt_bufnr)
+        vim.schedule(function()
+          M.cleanup_sessions()
+          -- Reopen picker after cleanup
+          vim.defer_fn(function()
+            M.telescope_sessions()
+          end, 500)
+        end)
+      end)
+
+      -- Show health report with Ctrl-h
+      map("i", "<C-h>", function()
+        actions.close(prompt_bufnr)
+        vim.schedule(function()
+          M.health_report()
+        end)
+      end)
+
       return true
     end,
   }):find()
@@ -945,7 +967,7 @@ function M._create_commands()
     desc = "Browse Claude sessions with Telescope"
   })
 
-  vim.api.nvim_create_user_command("ClaudeRestoreSession", M.restore_worktree_session, {
+  vim.api.nvim_create_user_command("ClaudeRestoreWorktree", M.restore_worktree_session, {
     desc = "Restore a closed Claude worktree session"
   })
 end
