@@ -39,7 +39,7 @@ This document provides a comprehensive overview of all AI-related functionality 
 ## Key Mappings (<leader>a)
 
 ### Claude Code Mappings
-- `<C-a>` - Smart toggle Claude Code with session restoration
+- `<C-c>` - Smart toggle Claude Code with session restoration
 - `<leader>ac` - Continue last Claude session
 - `<leader>ar` - Resume Claude session (native Telescope picker)
 - `<leader>as` - Send visual selection to Claude
@@ -79,7 +79,7 @@ This document provides a comprehensive overview of all AI-related functionality 
 - Saves git branch and timestamp metadata
 
 **Functions**:
-- `M.smart_toggle()` - Main entry point for `<C-a>`
+- `M.smart_toggle()` - Main entry point for `<C-c>`
 - `M.save_session_state()` - Persists current session info
 - `M.check_for_recent_session()` - Validates if restoration is appropriate
 - `M.show_session_picker()` - Displays Telescope UI with previews

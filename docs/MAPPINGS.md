@@ -105,7 +105,7 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 **Claude Code Integration**
 | Key | Action | Description |
 |-----|--------|-------------|
-| `<C-a>` | Toggle sidebar | Toggle Claude Code sidebar (any mode) |
+| `<C-c>` | Toggle sidebar | Toggle Claude Code sidebar (any mode) |
 | `<leader>ac` | Continue Claude | Continue Claude conversation |
 | `<leader>ar` | Resume session | Open Claude session picker |
 

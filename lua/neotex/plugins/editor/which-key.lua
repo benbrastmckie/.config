@@ -179,7 +179,7 @@ return {
     -- Global Claude Code toggle with smart session restoration
     wk.add({
       { 
-        "<C-a>", 
+        "<C-c>",
         function() 
           require("neotex.core.claude-session").smart_toggle() 
         end, 
@@ -196,15 +196,18 @@ return {
     wk.add({
       { "<leader>a", group = "ai", icon = "󰚩" },
 
-      -- Claude Code mappings (always available)
-      { "<leader>ac", function() require("neotex.core.claude-session").continue_session() end, desc = "claude continue last", icon = "󰊢" },
-      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "claude resume (picker)", icon = "󰑐" },
-      { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
-      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
+      -- Claude Session mappings (conversation sessions)
+      -- { "<leader>ac", function() require("neotex.core.claude-session").continue_session() end, desc = "continue last session", icon = "󰊢" },
+      { "<leader>ai", function() require("neotex.core.claude-session").show_session_picker() end, desc = "session picker", icon = "󰚩" },
+      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "browse sessions", icon = "󰑐" },
+      -- { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
+
+      -- Claude Worktree mappings (git worktree-based sessions)
+      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees (C-k: cleanup, C-h: health)", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
-      { "<leader>ak", "<cmd>ClaudeSessionCleanup<CR>", desc = "kill stale sessions", icon = "󰃢" },
-      { "<leader>ao", "<cmd>ClaudeRestoreSession<CR>", desc = "open session", icon = "󰑐" },
-      { "<leader>ah", "<cmd>ClaudeSessionHealth<CR>", desc = "session health", icon = "󰓙" },
+      -- { "<leader>ak", "<cmd>ClaudeSessionCleanup<CR>", desc = "cleanup worktrees", icon = "󰃢" },
+      { "<leader>ao", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
+      -- { "<leader>ah", "<cmd>ClaudeSessionHealth<CR>", desc = "worktree health", icon = "󰓙" },
 
       -- Avante AI commands
       { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },

@@ -279,7 +279,7 @@ function M.show_session_picker()
       display = "Show all sessions",
       value = "resume",
       icon = "󰑐",
-      desc = "Browse all sessions (use arrows + Enter, <C-a> to cancel)"
+      desc = "Browse all sessions (use arrows + Enter, <C-c> to cancel)"
     },
     { 
       display = "Start new session",
@@ -437,7 +437,7 @@ function M.setup()
           if in_git and M.check_for_recent_session() then
             -- Show a non-blocking notification instead of prompt
             vim.notify(
-              "Claude session available. Press <C-a> to restore or <leader>ar for session picker",
+              "Claude session available. Press <C-c> to restore or <leader>ar for session picker",
               vim.log.levels.INFO,
               { title = "Claude Code" }
             )

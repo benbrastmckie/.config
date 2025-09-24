@@ -22,7 +22,7 @@ TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
 <Esc>                                          | Exit terminal mode to normal mode
 <C-t>                                          | Toggle terminal window
 <C-h>, <C-j>, <C-k>, <C-l>                     | Navigate between windows
-<C-a>                                          | Toggle Claude Code sidebar (non-lazygit only)
+<C-c>                                          | Toggle Claude Code sidebar (non-lazygit only)
 <M-h>, <M-l>, <M-Left>, <M-Right>              | Resize terminal window horizontally
 
 ----------------------------------------------------------------------------------
@@ -142,9 +142,9 @@ function M.setup()
 
     -- AI integration for terminal (excluding lazygit to prevent conflicts)
     if vim.bo.filetype ~= "lazygit" then
-      buf_map(0, "t", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
-      buf_map(0, "n", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
-      buf_map(0, "v", "<C-a>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
+      buf_map(0, "t", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
+      buf_map(0, "n", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
+      buf_map(0, "v", "<C-c>", "<Cmd>ClaudeCode<CR>", "Toggle Claude Code")
     end
   end
 
