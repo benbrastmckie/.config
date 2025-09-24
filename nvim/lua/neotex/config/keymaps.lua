@@ -222,10 +222,10 @@ function M.setup()
       buf_map(0, mode, key, cmd, description)
     end
 
-    -- Toggle Avante interface
-    avante_map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-    avante_map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-    avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+    -- Close Avante with q
+    -- avante_map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+    -- avante_map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
+    avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Close Avante")
 
     -- Chat history management
     avante_map("n", "<C-c>", "<cmd>AvanteClear history<CR>", "Clear chat history")

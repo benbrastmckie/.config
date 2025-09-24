@@ -244,30 +244,178 @@ function M.show_session_picker()
     title = "Session Details",
     define_preview = function(self, entry, status)
       local session = entry.value
-      local lines = {
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        " SESSION DETAILS",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "",
-        "Session ID: " .. (session.session_id or "unknown"),
-        "Branch: " .. (session.branch or "none"),
-        "Messages: " .. tostring(session.message_count),
-        "Created: " .. M.format_time_ago(session.created),
-        "Updated: " .. M.format_time_ago(session.updated),
-        "",
-        "Last Message:",
-        "────────────────────────────────────",
-        session.last_message or "(empty)",
-        "",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-        "",
-        "Press <Enter> to resume this session",
-      }
-      
+      local lines = {}
+
+      -- Get preview window width for text wrapping
+      local preview_width = vim.api.nvim_win_get_width(self.state.winid) or 80
+
+      -- Helper function to wrap text
+      local function wrap_text(text, width)
+        if not text or text == "" then return {} end
+        if #text <= width then return { text } end
+
+        local wrapped = {}
+        local current_line = ""
+        for word in text:gmatch("%S+") do
+          if #current_line + #word + 1 > width then
+            if #current_line > 0 then
+              table.insert(wrapped, current_line)
+            end
+            current_line = word
+          else
+            current_line = current_line .. (current_line == "" and "" or " ") .. word
+          end
+        end
+        if #current_line > 0 then
+          table.insert(wrapped, current_line)
+        end
+        return wrapped
+      end
+
+      -- Compact header
+      table.insert(lines, " SESSION DETAILS")
+      table.insert(lines, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+      table.insert(lines, "")
+      table.insert(lines, string.format("Session ID: %s", session.session_id and session.session_id:sub(1, 36) or "unknown"))
+      table.insert(lines, string.format("Branch: %s", session.branch or "master"))
+      table.insert(lines, string.format("Messages: %d", session.message_count or 0))
+      table.insert(lines, string.format("Created: %s", M.format_time_ago(session.created)))
+      table.insert(lines, string.format("Updated: %s", M.format_time_ago(session.updated)))
+      table.insert(lines, "")
+      table.insert(lines, "Last Message:")
+      table.insert(lines, "────────────────────────────────────")
+
+      -- Show the full last message with proper wrapping
+      if session.last_message and session.last_message ~= "" then
+        -- The last_message is already truncated in parse_session_file, let's get the full one
+        -- Check if session_id exists before trying to build path
+        if session.session_id then
+          local session_file = project_folder .. "/" .. session.session_id .. ".jsonl"
+          if vim.fn.filereadable(session_file) == 1 then
+          -- Read the actual conversation file for full content
+          local conversation_lines = vim.fn.readfile(session_file)
+          if #conversation_lines > 0 then
+            -- Get the last several messages for context
+            local messages = {}
+            local start_idx = math.max(1, #conversation_lines - 20)
+
+            for i = start_idx, #conversation_lines do
+              local line = conversation_lines[i]
+              if line and line ~= "" then
+                -- Try proper JSON decode
+                local ok, decoded = pcall(vim.fn.json_decode, line)
+                if ok and decoded then
+                  local content = ""
+                  local role = decoded.role or "unknown"
+
+                  -- Extract content from various message formats
+                  if decoded.message then
+                    if type(decoded.message) == "string" then
+                      content = decoded.message
+                    elseif type(decoded.message) == "table" then
+                      if decoded.message.content then
+                        if type(decoded.message.content) == "string" then
+                          content = decoded.message.content
+                        elseif type(decoded.message.content) == "table" then
+                          -- Handle content blocks
+                          for _, block in ipairs(decoded.message.content) do
+                            if block.text then
+                              content = content .. (content ~= "" and "\n" or "") .. block.text
+                            elseif block.content then
+                              content = content .. (content ~= "" and "\n" or "") .. tostring(block.content)
+                            end
+                          end
+                        end
+                      end
+                    end
+                  elseif decoded.content then
+                    -- Direct content field
+                    if type(decoded.content) == "string" then
+                      content = decoded.content
+                    elseif type(decoded.content) == "table" then
+                      content = vim.inspect(decoded.content)
+                    end
+                  end
+
+                  if content ~= "" then
+                    table.insert(messages, { role = role, content = content })
+                  end
+                end
+              end
+            end
+
+            -- Display messages with full width wrapping
+            for _, msg in ipairs(messages) do
+              if msg.role == "user" or msg.role == "human" then
+                table.insert(lines, "")
+                table.insert(lines, "👤 USER:")
+              elseif msg.role == "assistant" or msg.role == "claude" then
+                table.insert(lines, "")
+                table.insert(lines, "🤖 CLAUDE:")
+              else
+                table.insert(lines, "")
+                table.insert(lines, msg.role .. ":")
+              end
+
+              -- Handle newlines and wrap each line to full width
+              local content_lines = vim.split(msg.content, "\n", { plain = true })
+              for _, content_line in ipairs(content_lines) do
+                if #content_line > preview_width then
+                  -- Wrap long lines to full preview width
+                  local wrapped = wrap_text(content_line, preview_width)
+                  for _, wrapped_line in ipairs(wrapped) do
+                    table.insert(lines, wrapped_line)
+                  end
+                else
+                  table.insert(lines, content_line)
+                end
+              end
+            end
+          end
+          else
+            -- Session file not readable, fallback to truncated message
+            local message_lines = vim.split(session.last_message, "\n", { plain = true })
+            for _, msg_line in ipairs(message_lines) do
+              if #msg_line > preview_width then
+                local wrapped = wrap_text(msg_line, preview_width)
+                for _, wrapped_line in ipairs(wrapped) do
+                  table.insert(lines, wrapped_line)
+                end
+              else
+                table.insert(lines, msg_line)
+              end
+            end
+          end
+        else
+          -- No session_id, just show the truncated last_message
+          local message_lines = vim.split(session.last_message, "\n", { plain = true })
+          for _, msg_line in ipairs(message_lines) do
+            if #msg_line > preview_width then
+              local wrapped = wrap_text(msg_line, preview_width)
+              for _, wrapped_line in ipairs(wrapped) do
+                table.insert(lines, wrapped_line)
+              end
+            else
+              table.insert(lines, msg_line)
+            end
+          end
+        end
+      else
+        table.insert(lines, "(no message)")
+      end
+
+      table.insert(lines, "")
+      table.insert(lines, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+      table.insert(lines, "")
+      table.insert(lines, "Press <Enter> to resume this session")
+
       vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
       vim.api.nvim_buf_call(self.state.bufnr, function()
-        vim.cmd("setlocal filetype=markdown")
-        vim.cmd("setlocal wrap")
+        vim.opt_local.filetype = "markdown"
+        vim.opt_local.wrap = true
+        vim.opt_local.linebreak = true
+        vim.opt_local.breakindent = false  -- No indent for full width
+        vim.opt_local.conceallevel = 0
       end)
     end,
   })

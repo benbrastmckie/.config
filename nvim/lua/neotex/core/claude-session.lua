@@ -248,16 +248,13 @@ end
 
 -- Show Telescope picker for session restoration
 function M.show_session_picker()
-  local telescope = require("telescope")
   local actions = require("telescope.actions")
   local action_state = require("telescope.actions.state")
   local pickers = require("telescope.pickers")
   local finders = require("telescope.finders")
   local conf = require("telescope.config").values
-  local previewers = require("telescope.previewers")
-  
+
   local has_session, age_hours = M.check_for_recent_session()
-  local state_data = M.load_session_state()
   
   local age_text = ""
   if has_session then
@@ -289,26 +286,16 @@ function M.show_session_picker()
     },
   }
   
-  -- Create custom previewer
-  local previewer = previewers.new_buffer_previewer({
-    title = "Session Details",
-    define_preview = function(self, entry, status)
-      -- Get the actual width of the preview window
-      local preview_width = vim.api.nvim_win_get_width(self.state.winid)
-      local preview_lines = M.create_preview_content(entry.value.value, state_data, preview_width)
-      vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines)
-      
-      -- Add syntax highlighting
-      vim.api.nvim_buf_call(self.state.bufnr, function()
-        vim.cmd("setlocal filetype=markdown")
-        vim.cmd("setlocal conceallevel=2")
-        vim.cmd("setlocal wrap")
-      end)
-    end,
-  })
-  
-  pickers.new({}, {
-    prompt_title = "Claude Code Session",
+  pickers.new(require("telescope.themes").get_dropdown({
+    winblend = 10,
+    width = 0.5,
+    previewer = false,
+    layout_config = {
+      width = 60,
+      height = 10,
+    },
+  }), {
+    prompt_title = "Claude Session",
     finder = finders.new_table({
       results = options,
       entry_maker = function(entry)
@@ -320,7 +307,6 @@ function M.show_session_picker()
       end,
     }),
     sorter = conf.generic_sorter({}),
-    previewer = previewer,
     attach_mappings = function(prompt_bufnr, map)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
@@ -438,7 +424,7 @@ function M.setup()
           if in_git and M.check_for_recent_session() then
             -- Show a non-blocking notification instead of prompt
             vim.notify(
-              "Claude session available. Press <C-c> to open session picker",
+              "Claude session available. Press <C-q> to open session picker",
               vim.log.levels.INFO,
               { title = "Claude Code" }
             )

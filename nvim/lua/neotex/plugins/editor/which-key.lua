@@ -176,16 +176,23 @@ return {
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
     
-    -- Global Claude Code toggle with smart session restoration
+    -- Global AI toggles
     wk.add({
-      { 
-        "<C-c>",
-        function() 
-          require("neotex.core.claude-session").smart_toggle() 
-        end, 
-        desc = "Toggle Claude Code", 
+      {
+        "<C-q>",
+        function()
+          require("neotex.core.claude-session").smart_toggle()
+        end,
+        desc = "Toggle Claude Code",
         icon = "󰚩",
-        mode = { "n", "i", "v", "t" } 
+        mode = { "n", "i", "v", "t" }
+      },
+      {
+        "<C-g>",
+        "<cmd>AvanteToggle<CR>",
+        desc = "Toggle Avante",
+        icon = "󱇧",
+        mode = { "n", "i", "v", "t" }
       },
     })
 
@@ -196,25 +203,17 @@ return {
     wk.add({
       { "<leader>a", group = "ai", icon = "󰚩" },
 
-      -- Claude Session mappings (conversation sessions)
-      -- { "<leader>ac", function() require("neotex.core.claude-session").continue_session() end, desc = "continue last session", icon = "󰊢" },
-      -- { "<leader>ai", function() require("neotex.core.claude-session").show_session_picker() end, desc = "session picker", icon = "󰚩" },
-      { "<leader>ar", function() require("neotex.core.claude-session").resume_session() end, desc = "browse all sessions", icon = "󰑐" },
-      -- { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
-
-      -- Claude Worktree mappings (git worktree-based sessions)
-      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees (C-k: cleanup, C-h: health)", icon = "󰔡" },
+      -- Claude AI commands
+      { "<leader>as", function() require("neotex.core.claude-session").resume_session() end, desc = "claude sessions", icon = "󰑐" },
+      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
-      -- { "<leader>ak", "<cmd>ClaudeSessionCleanup<CR>", desc = "cleanup worktrees", icon = "󰃢" },
-      { "<leader>ao", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
-      -- { "<leader>ah", "<cmd>ClaudeSessionHealth<CR>", desc = "worktree health", icon = "󰓙" },
+      { "<leader>ar", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
 
       -- Avante AI commands
       { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
       { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
       { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
       { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
-      { "<leader>at", "<cmd>AvanteToggle<CR>", desc = "avante toggle", icon = "󰨈" },
       { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
 
       -- Lectic actions (only for .lec and .md files)
