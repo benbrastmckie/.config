@@ -39,7 +39,7 @@ return {
     config = function() 
       require("mason-tool-installer").setup({
         ensure_installed = {
-          "stylua",  -- lua formatter
+          -- "stylua",  -- lua formatter (using system version instead)
           "isort",   -- python formatter
           "black",   -- python formatter
           "pylint",  -- python linter

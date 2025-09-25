@@ -55,9 +55,15 @@ Tell Claude: "I'm working on %s in the %s worktree. The goal is to..."
 -- Session state tracking
 M.sessions = {}  -- { feature_name = { tab_id, worktree_path, branch, created } }
 M.current_session = nil
+M._initialized = false  -- Guard to prevent multiple initializations
 
 -- Initialize module
 function M.setup(opts)
+  -- Prevent multiple initializations
+  if M._initialized then
+    return
+  end
+  M._initialized = true
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
   
   -- Check dependencies
@@ -419,10 +425,14 @@ function M.restore_sessions()
       local ok, sessions = pcall(vim.fn.json_decode, data[1])
       if ok then
         M.sessions = sessions
-        vim.notify(
-          string.format("Restored %d Claude session(s)", vim.tbl_count(sessions)),
-          vim.log.levels.INFO
-        )
+        -- Only notify if there are actually sessions to restore
+        local session_count = vim.tbl_count(sessions)
+        if session_count > 0 then
+          vim.notify(
+            string.format("Restored %d Claude worktree session(s)", session_count),
+            vim.log.levels.INFO
+          )
+        end
       end
     end
   end
@@ -598,6 +608,8 @@ function M.telescope_sessions()
             "  Ctrl-t      - Open session in new tab",
             "  Ctrl-o      - Open worktree in new WezTerm tab",
             "  Ctrl-n      - Create new Claude worktree",
+            "  Ctrl-k      - Cleanup stale worktrees",
+            "  Ctrl-h      - Show worktree health report",
             "  Escape      - Close picker",
             "",
             "Navigation:",
@@ -756,7 +768,27 @@ function M.telescope_sessions()
           end
         end
       end)
-      
+
+      -- Cleanup sessions with Ctrl-k
+      map("i", "<C-k>", function()
+        actions.close(prompt_bufnr)
+        vim.schedule(function()
+          M.cleanup_sessions()
+          -- Reopen picker after cleanup
+          vim.defer_fn(function()
+            M.telescope_sessions()
+          end, 500)
+        end)
+      end)
+
+      -- Show health report with Ctrl-h
+      map("i", "<C-h>", function()
+        actions.close(prompt_bufnr)
+        vim.schedule(function()
+          M.health_report()
+        end)
+      end)
+
       return true
     end,
   }):find()
@@ -935,7 +967,7 @@ function M._create_commands()
     desc = "Browse Claude sessions with Telescope"
   })
 
-  vim.api.nvim_create_user_command("ClaudeRestoreSession", M.restore_worktree_session, {
+  vim.api.nvim_create_user_command("ClaudeRestoreWorktree", M.restore_worktree_session, {
     desc = "Restore a closed Claude worktree session"
   })
 end
@@ -1224,50 +1256,185 @@ function M.restore_worktree_session()
       define_preview = function(self, entry, status)
         local lines = {}
         local item = entry.value
-        
-        -- Basic info
-        table.insert(lines, "# Worktree Session Restoration")
-        table.insert(lines, "")
-        table.insert(lines, string.format("**Name**: %s", item.name))
-        table.insert(lines, string.format("**Branch**: %s", item.branch or "unknown"))
-        table.insert(lines, string.format("**Path**: %s", item.worktree_path))
-        table.insert(lines, string.format("**Status**: %s", item.status))
-        table.insert(lines, "")
-        
-        if item.session then
-          table.insert(lines, "## Session Details")
-          table.insert(lines, string.format("**Type**: %s", item.session.type or "unknown"))
-          table.insert(lines, string.format("**Created**: %s", item.session.created or "unknown"))
-          table.insert(lines, string.format("**Session ID**: %s", item.session.session_id or "none"))
-          table.insert(lines, "")
-        elseif item.orphaned then
-          table.insert(lines, "## Orphaned Worktree")
-          table.insert(lines, "No Claude session metadata found.")
-          table.insert(lines, "A new session will be created on restoration.")
-          table.insert(lines, "")
+
+        -- Get preview window width for text wrapping
+        local preview_width = vim.api.nvim_win_get_width(self.state.winid) or 80
+
+        -- Helper function to wrap text
+        local function wrap_text(text, width)
+          if #text <= width then
+            return { text }
+          end
+
+          local wrapped = {}
+          local current_line = ""
+          for word in text:gmatch("%S+") do
+            if #current_line + #word + 1 > width then
+              if #current_line > 0 then
+                table.insert(wrapped, current_line)
+              end
+              current_line = word
+            else
+              current_line = current_line .. (current_line == "" and "" or " ") .. word
+            end
+          end
+          if #current_line > 0 then
+            table.insert(wrapped, current_line)
+          end
+          return wrapped
         end
-        
-        -- Check for CLAUDE.md
+
+        -- Basic info header
+        table.insert(lines, string.format("━━━ %s ━━━", item.name))
+        table.insert(lines, string.format("Branch: %s | Status: %s", item.branch or "unknown", item.status))
+        table.insert(lines, "")
+
+        -- Try to show recent conversation if session exists
+        if item.session and item.session.session_id then
+          -- Try to find conversation file
+          local project_path = vim.fn.expand("~/.claude/projects/" .. item.worktree_path:gsub("/", "-"))
+          local session_file = project_path .. "/" .. item.session.session_id .. ".jsonl"
+
+          if vim.fn.filereadable(session_file) == 1 then
+            table.insert(lines, "═══ Recent Conversation ═══")
+            table.insert(lines, "")
+
+            local conversation_lines = vim.fn.readfile(session_file)
+            local messages = {}
+
+            -- Parse JSONL to extract messages (last 20 entries for more context)
+            local start_idx = math.max(1, #conversation_lines - 20)
+            for i = start_idx, #conversation_lines do
+              local line = conversation_lines[i]
+              if line and line ~= "" then
+                -- Try to decode JSON properly
+                local ok, decoded = pcall(vim.fn.json_decode, line)
+                if ok and decoded then
+                  local role = decoded.role or "unknown"
+                  local content = decoded.content or ""
+
+                  -- Handle content that might be a table (for complex messages)
+                  if type(content) == "table" then
+                    content = vim.inspect(content)
+                  end
+
+                  -- Clean up the content
+                  content = tostring(content):gsub("\\n", "\n"):gsub("\\t", "  ")
+
+                  if content and content ~= "" then
+                    table.insert(messages, { role = role, content = content })
+                  end
+                else
+                  -- Fallback: try to extract content between quotes more carefully
+                  local role = line:match('"role"%s*:%s*"([^"]+)"')
+                  -- Match content more carefully - find the content field and extract everything between quotes
+                  local content_start = line:find('"content"%s*:%s*"')
+                  if content_start then
+                    local content = ""
+                    local in_string = false
+                    local escaped = false
+                    local start_found = false
+
+                    for j = content_start + 10, #line do
+                      local char = line:sub(j, j)
+
+                      if not start_found and char == '"' then
+                        start_found = true
+                        in_string = true
+                      elseif start_found then
+                        if escaped then
+                          content = content .. char
+                          escaped = false
+                        elseif char == "\\" then
+                          escaped = true
+                        elseif char == '"' and in_string then
+                          break
+                        else
+                          content = content .. char
+                        end
+                      end
+                    end
+
+                    if content ~= "" then
+                      -- Unescape basic sequences
+                      content = content:gsub("\\n", "\n"):gsub("\\t", "  "):gsub('\\"', '"'):gsub("\\\\", "\\")
+                      table.insert(messages, { role = role or "unknown", content = content })
+                    end
+                  end
+                end
+              end
+            end
+
+            -- Display messages with wrapping
+            for _, msg in ipairs(messages) do
+              if msg.role == "user" or msg.role == "human" then
+                table.insert(lines, "👤 USER:")
+              else
+                table.insert(lines, "🤖 CLAUDE:")
+              end
+
+              -- Split content by newlines first, then wrap each line
+              local content_lines = vim.split(msg.content, "\n", { plain = true })
+              for _, content_line in ipairs(content_lines) do
+                if #content_line > preview_width - 4 then
+                  -- Wrap long lines
+                  local wrapped = wrap_text(content_line, preview_width - 4)
+                  for _, wrapped_line in ipairs(wrapped) do
+                    table.insert(lines, "  " .. wrapped_line)
+                  end
+                else
+                  -- Short lines just get indented
+                  table.insert(lines, "  " .. content_line)
+                end
+              end
+              table.insert(lines, "")
+            end
+
+            if #messages == 0 then
+              table.insert(lines, "(No messages found in session)")
+            end
+          else
+            table.insert(lines, "═══ Session Details ═══")
+            table.insert(lines, string.format("Type: %s", item.session.type or "unknown"))
+            table.insert(lines, string.format("Created: %s", item.session.created or "unknown"))
+            table.insert(lines, string.format("Session ID: %s", item.session.session_id or "none"))
+            table.insert(lines, "")
+            table.insert(lines, "(Conversation file not found)")
+          end
+        end
+
+        -- Only show brief CLAUDE.md info to leave more space for conversation
         local claude_file = item.worktree_path .. "/CLAUDE.md"
         if vim.fn.filereadable(claude_file) == 1 then
-          table.insert(lines, "## CLAUDE.md Preview")
-          table.insert(lines, "")
           local content = vim.fn.readfile(claude_file)
-          for i, line in ipairs(content) do
-            if i > 30 then
-              table.insert(lines, "...")
-              table.insert(lines, string.format("(+ %d more lines)", #content - 30))
-              break
+          table.insert(lines, "")
+          table.insert(lines, string.format("═══ CLAUDE.md (%d lines) ═══", #content))
+
+          -- Just show first few lines as context
+          for i = 1, math.min(5, #content) do
+            if #content[i] > preview_width then
+              local truncated = content[i]:sub(1, preview_width - 3) .. "..."
+              table.insert(lines, truncated)
+            else
+              table.insert(lines, content[i])
             end
-            table.insert(lines, line)
           end
-        else
-          table.insert(lines, "## No CLAUDE.md File")
-          table.insert(lines, "Context file will need to be created.")
+
+          if #content > 5 then
+            table.insert(lines, string.format("... (+%d more lines)", #content - 5))
+          end
         end
-        
+
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-        vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+
+        -- Enable proper text display in preview
+        vim.api.nvim_buf_call(self.state.bufnr, function()
+          vim.opt_local.filetype = "markdown"
+          vim.opt_local.wrap = true
+          vim.opt_local.linebreak = true
+          vim.opt_local.breakindent = true
+          vim.opt_local.conceallevel = 2
+        end)
       end
     }),
     attach_mappings = function(prompt_bufnr, map)
