@@ -156,7 +156,7 @@ Avante provides AI-powered code assistance directly within Neovim, offering inte
 
 - **Access the AI**: Press `<leader>aa` to ask a question or `<leader>at` to toggle the AI interface
 - **Edit with AI**: Select text in visual mode and press `<leader>ae` to edit with AI assistance
-- **Claude Code**: Use `<C-a>` to toggle Claude Code sidebar (works in any mode)
+- **Claude Code**: Use `<C-c>` to toggle Claude Code sidebar (works in any mode)
 
 ### Managing AI Settings
 

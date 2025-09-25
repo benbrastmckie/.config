@@ -113,10 +113,10 @@ Claude Code provides a seamless terminal integration using the official `greggh/
 - `ClaudeCodeContinue`: Continue previous Claude conversation
 - `ClaudeCodeResume`: Resume Claude conversation with picker
 
-**Keymaps:**
-- `<C-a>`: Toggle Claude Code sidebar (works in all modes including terminal)
-- `<leader>ac`: Continue Claude conversation
-- `<leader>ar`: Resume Claude session (opens session picker)
+**Keymaps (Claude Sessions):**
+- `<C-c>`: Toggle Claude Code sidebar (works in all modes including terminal)
+- `<leader>ai`: Open interactive session picker (continue/browse/new)
+- `<leader>ar`: Browse all Claude sessions (native picker)
 - `<Esc>`: Works normally within Claude Code sidebar (switches to Claude's normal mode)
 
 **Configuration Options:**
@@ -162,7 +162,7 @@ opts = {
 - The global `<Esc>` mapping to exit terminal mode is automatically disabled for Claude Code
 - This allows Claude Code's internal vim-like normal mode to work properly
 - Use `<Esc>` within Claude Code to switch between its insert and normal modes
-- Use `<C-a>` to toggle the Claude Code sidebar open/closed
+- Use `<C-c>` to toggle the Claude Code sidebar open/closed
 
 **Requirements:**
 - Claude Code CLI installed and accessible in PATH
@@ -170,12 +170,34 @@ opts = {
 - NeoVim 0.8.0+
 
 **Usage Workflow:**
-1. Press `<C-a>` to toggle Claude Code sidebar
+1. Press `<C-c>` to toggle Claude Code sidebar
 2. Claude Code automatically enters insert mode for immediate interaction
 3. Use `<Esc>` within Claude Code to switch to its normal mode (for navigation, copying, etc.)
 4. Press `i` to return to Claude Code's insert mode
 5. Continue conversations with `<leader>acc` or resume previous ones with `<leader>acr`
 6. Toggle the sidebar closed with `<C-c>` when done
+
+### Claude Worktree Integration
+
+Claude Worktree provides git worktree-based session management for organizing different tasks/features in separate worktrees.
+
+**Key Features:**
+- Create separate git worktrees for different Claude sessions
+- Automatically track and manage worktree-based tasks
+- Health monitoring for worktree sessions
+- Cleanup tools for orphaned worktrees
+
+**Commands:**
+- `ClaudeWorktree`: Create a new worktree for a Claude session
+- `ClaudeSessions`: Browse existing worktree sessions with Telescope
+- `ClaudeSessionCleanup`: Clean up stale/orphaned worktree sessions
+- `ClaudeRestoreWorktree`: Restore a closed worktree session
+- `ClaudeSessionHealth`: Display worktree health report
+
+**Keymaps (Claude Worktrees):**
+- `<leader>av`: View existing worktrees (C-k: cleanup, C-h: health)
+- `<leader>aw`: Create new worktree
+- `<leader>ao`: Restore closed worktree
 
 ### Lectic AI-Assisted Writing
 

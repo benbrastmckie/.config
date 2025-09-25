@@ -5,8 +5,22 @@ return {
     { "antosha417/nvim-lsp-file-operations", event = "VeryLazy" }, -- Load file operations later
   },
   config = function()
+    -- Suppress the deprecation warning from nvim-lspconfig
+    -- This warning is about the plugin transitioning to vim.lsp.config in the future
+    -- We'll continue using nvim-lspconfig until the new API is stable and feature-complete
+    local original_notify = vim.notify
+    vim.notify = function(msg, ...)
+      if msg:match("framework.*deprecated") or msg:match("vim.lsp.config") then
+        return  -- Suppress this specific deprecation warning
+      end
+      return original_notify(msg, ...)
+    end
+
     -- Import lspconfig plugin (only loaded when the event triggers)
     local lspconfig = require("lspconfig")
+
+    -- Restore original notify function
+    vim.notify = original_notify
 
     -- Define diagnostics configuration before anything else
     local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }

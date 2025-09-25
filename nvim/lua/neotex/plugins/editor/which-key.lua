@@ -176,6 +176,8 @@ return {
       { "<leader>w", "<cmd>wa!<CR>", desc = "write", icon = "󰆓" },
     })
 
+    -- Global AI toggles are now in keymaps.lua for centralized management
+
     -- ============================================================================
     -- <leader>a - AI/ASSISTANT GROUP
     -- ============================================================================
@@ -183,22 +185,17 @@ return {
     wk.add({
       { "<leader>a", group = "ai", icon = "󰚩" },
 
-      -- Claude Code mappings (always available)
-      { "<leader>ac", "<cmd>ClaudeCodeContinue<CR>", desc = "claude continue", icon = "󰊢" },
-      { "<leader>ar", "<cmd>ClaudeSessionPicker<CR>", desc = "claude resume", icon = "󰑐" },
-      { "<leader>as", "<cmd>ClaudeSendVisualPrompt<CR>", desc = "send selection", icon = "󰊠", mode = { "v" } },
+      -- Claude AI commands
+      { "<leader>as", function() require("neotex.ai-claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
       { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
-      { "<leader>ak", "<cmd>ClaudeSessionCleanup<CR>", desc = "kill stale sessions", icon = "󰃢" },
-      { "<leader>ao", "<cmd>ClaudeRestoreSession<CR>", desc = "open session", icon = "󰑐" },
-      { "<leader>ah", "<cmd>ClaudeSessionHealth<CR>", desc = "session health", icon = "󰓙" },
+      { "<leader>ar", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
 
       -- Avante AI commands
       { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
       { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
       { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
       { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
-      { "<leader>at", "<cmd>AvanteToggle<CR>", desc = "avante toggle", icon = "󰨈" },
       { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
 
       -- Lectic actions (only for .lec and .md files)
