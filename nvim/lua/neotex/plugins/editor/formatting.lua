@@ -124,11 +124,11 @@ return {
       respect_gitignore = false,
     })
 
-    -- Suppress stylua exit code 127 errors (NixOS/Mason compatibility issue)
+    -- Suppress stylua errors (NixOS/Mason compatibility and LSP misconfigurations)
     local original_notify = vim.notify
     vim.notify = function(msg, ...)
-      if msg and msg:match("stylua.*exit code 127") then
-        return  -- Suppress this specific error
+      if msg and (msg:match("stylua.*exit code") or msg:match("Client stylua quit")) then
+        return  -- Suppress stylua LSP/execution errors
       end
       return original_notify(msg, ...)
     end
