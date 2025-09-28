@@ -21,6 +21,27 @@ vim.g.loaded_matchparen = 1
 -- Set notification level to show only important messages
 vim.notify_level = vim.log.levels.INFO
 
+-- Suppress specific error messages that are known and harmless
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+  -- Suppress stylua LSP errors (NixOS compatibility issue)
+  if msg and type(msg) == "string" and
+     (msg:match("Client stylua quit with exit code") or
+      msg:match("stylua.*stderr") or
+      msg:match("Could not start dynamically linked executable: stylua")) then
+    return
+  end
+
+  -- Suppress lspconfig deprecation warning (we're handling the migration)
+  if msg and type(msg) == "string" and
+     (msg:match("framework.*deprecated") or
+      msg:match("vim.lsp.config")) then
+    return
+  end
+
+  return original_notify(msg, level, opts)
+end
+
 -- Set leader key BEFORE loading lazy or any other plugins
 -- This is critical and must happen first
 vim.g.mapleader = " " -- Space as leader key

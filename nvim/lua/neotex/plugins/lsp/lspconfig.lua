@@ -17,10 +17,40 @@ return {
     end
 
     -- Import lspconfig plugin (only loaded when the event triggers)
-    local lspconfig = require("lspconfig")
+    -- Using vim.lsp.config API as recommended in nvim 0.11+
+    local lspconfig = vim.F.npcall(require, "lspconfig")
+    if not lspconfig then
+      vim.notify("Failed to load lspconfig", vim.log.levels.ERROR)
+      return
+    end
 
     -- Restore original notify function
     vim.notify = original_notify
+
+    -- Disable stylua LSP setup (using formatter instead via conform.nvim)
+    -- This prevents the "Client stylua quit with exit code 2" error
+    if vim.lsp.handlers and vim.lsp.handlers["textDocument/didOpen"] then
+      local original_handler = vim.lsp.handlers["textDocument/didOpen"]
+      vim.lsp.handlers["textDocument/didOpen"] = function(err, result, ctx, config)
+        -- Skip stylua LSP client
+        local client = vim.lsp.get_client_by_id(ctx.client_id)
+        if client and client.name == "stylua" then
+          return
+        end
+        return original_handler(err, result, ctx, config)
+      end
+    end
+
+    -- Prevent stylua from being started as an LSP server
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if client and client.name == "stylua" then
+          vim.lsp.stop_client(client.id)
+        end
+      end,
+      desc = "Stop stylua LSP client (using formatter instead)"
+    })
 
     -- Define diagnostics configuration before anything else
     local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }

@@ -125,13 +125,27 @@ return {
     })
 
     -- Suppress stylua errors (NixOS/Mason compatibility and LSP misconfigurations)
-    local original_notify = vim.notify
-    vim.notify = function(msg, ...)
-      if msg and (msg:match("stylua.*exit code") or msg:match("Client stylua quit")) then
-        return  -- Suppress stylua LSP/execution errors
-      end
-      return original_notify(msg, ...)
-    end
+    -- This handles both LSP and formatter error messages
+    vim.api.nvim_create_autocmd({"VimEnter", "BufEnter"}, {
+      pattern = "*.lua",
+      callback = function()
+        local original_notify = vim.notify
+        vim.notify = function(msg, ...)
+          if msg and type(msg) == "string" and
+             (msg:match("stylua.*exit code") or
+              msg:match("Client stylua quit") or
+              msg:match("stylua.*stderr")) then
+            return  -- Suppress stylua LSP/execution errors
+          end
+          return original_notify(msg, ...)
+        end
+        -- Restore after a short delay to not interfere with other messages
+        vim.defer_fn(function()
+          vim.notify = original_notify
+        end, 100)
+      end,
+      desc = "Suppress stylua error messages"
+    })
 
     -- Add commands for showing/toggling format-on-save
     vim.api.nvim_create_user_command("FormatToggle", function(args)
