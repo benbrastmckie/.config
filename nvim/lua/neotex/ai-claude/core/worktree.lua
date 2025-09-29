@@ -3,13 +3,12 @@
 --
 -- Orchestrates git worktrees with Claude Code sessions,
 -- managing parallel development across isolated branches
--- with WezTerm tab integration
+-- with terminal tab integration (Kitty/WezTerm)
 -----------------------------------------------------------
 
 local M = {}
 
 -- Dependencies
-local has_wezterm, wezterm = pcall(require, "wezterm")
 local has_worktree, worktree = pcall(require, "git-worktree")
 
 -- Configuration
@@ -65,10 +64,17 @@ function M.setup(opts)
   end
   M._initialized = true
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-  
-  -- Check dependencies
-  if not has_wezterm then
-    vim.notify("wezterm.nvim not found. Tab management disabled.", vim.log.levels.WARN)
+
+  -- Check terminal support (lazy-loaded)
+  local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+  if not terminal_detect.supports_tabs() then
+    vim.notify(
+      string.format(
+        "Terminal '%s' does not support tab management. Please use Kitty or WezTerm.",
+        terminal_detect.get_display_name()
+      ),
+      vim.log.levels.WARN
+    )
   end
   if not has_worktree then
     vim.notify("git-worktree.nvim not found. Worktree features disabled.", vim.log.levels.ERROR)
@@ -187,10 +193,11 @@ function M.create_worktree_with_claude()
       created = os.date("%Y-%m-%d %H:%M"),
       tab_id = nil,  -- Will be set by _spawn_wezterm_tab
     }
-    
-    -- Create WezTerm tab if available
-    if has_wezterm then
-      M._spawn_wezterm_tab(worktree_path, feature, session_id, context_file)
+
+    -- Create terminal tab if available
+    local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+    if terminal_detect.supports_tabs() then
+      M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
     else
       -- Fallback: switch to worktree in current Neovim
       vim.cmd("tcd " .. worktree_path)
@@ -205,49 +212,116 @@ function M.create_worktree_with_claude()
   end)
 end
 
--- WezTerm: Spawn new tab for worktree
-function M._spawn_wezterm_tab(worktree_path, feature, session_id, context_file)
-  if not has_wezterm then
+-- Terminal: Spawn new tab for worktree (supports Kitty and WezTerm)
+function M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
+  -- Lazy-load dependencies for performance
+  local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+  local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
+  local notify = require('neotex.util.notifications')
+
+  -- Check terminal support
+  if not terminal_detect.supports_tabs() then
+    local terminal_name = terminal_detect.get_display_name()
+
+    -- ERROR notification per NOTIFICATIONS.md standards
+    notify.editor(
+      string.format(
+        "Terminal '%s' does not support tab management. Please use Kitty or WezTerm.",
+        terminal_name
+      ),
+      notify.categories.ERROR,
+      {
+        terminal = terminal_name,
+        required = "kitty or wezterm",
+        fallback = "opening in current window"
+      }
+    )
+
+    -- Fallback to current window (pragmatic compromise)
+    vim.cmd("tcd " .. vim.fn.fnameescape(worktree_path))
+    if context_file then
+      vim.cmd("edit " .. vim.fn.fnameescape(context_file))
+    end
+
+    -- USER_ACTION notification for fallback action
+    notify.editor(
+      string.format("Opened worktree '%s' in current window", feature),
+      notify.categories.USER_ACTION,
+      { worktree = feature, path = worktree_path }
+    )
     return
   end
-  
-  -- Use WezTerm CLI to spawn tab
-  local cmd = string.format(
-    "wezterm cli spawn --cwd '%s' -- nvim %s",
+
+  -- Generate terminal-specific command
+  local cmd = terminal_cmds.spawn_tab(
     worktree_path,
-    context_file and "CLAUDE.md" or ""
+    context_file and "nvim CLAUDE.md" or nil
   )
-  
+
+  if not cmd then
+    notify.editor(
+      "Failed to generate terminal command",
+      notify.categories.ERROR,
+      { worktree = feature }
+    )
+    return
+  end
+
+  -- Execute spawn command
   local result = vim.fn.system(cmd)
-  
-  -- Extract tab ID from output (WezTerm CLI typically outputs the pane id)
-  local pane_id = result:match("(%d+)")
-  
-  if pane_id then
-    -- Get tab ID from pane
-    local tab_info = vim.fn.system("wezterm cli list --format json")
-    local ok, tabs = pcall(vim.fn.json_decode, tab_info)
-    
-    if ok and tabs then
-      for _, tab in ipairs(tabs) do
-        if tostring(tab.pane_id) == pane_id then
-          M.sessions[feature].tab_id = tab.tab_id
-          break
-        end
+
+  -- Check for command execution errors
+  if vim.v.shell_error ~= 0 then
+    notify.editor(
+      string.format("Failed to spawn terminal tab: %s", vim.trim(result)),
+      notify.categories.ERROR,
+      { worktree = feature, error = result }
+    )
+    return
+  end
+
+  -- Parse result to get tab/pane ID
+  local tab_id = terminal_cmds.parse_spawn_result(result)
+
+  if tab_id then
+    -- Store tab ID in session
+    M.sessions[feature].tab_id = tab_id
+
+    -- Auto-activate if configured
+    if M.config.auto_switch_tab then
+      local activate_cmd = terminal_cmds.activate_tab(tab_id)
+      if activate_cmd then
+        vim.fn.system(activate_cmd)
       end
     end
-    
-    if M.config.auto_switch_tab and pane_id then
-      -- Activate the new pane
-      vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
+
+    -- Set tab title if supported
+    local title_cmd = terminal_cmds.set_tab_title(tab_id, feature)
+    if title_cmd then
+      vim.fn.system(title_cmd)
     end
-    
-    vim.notify(
-      string.format("Created Claude session '%s' in new WezTerm tab", feature),
-      vim.log.levels.INFO
+
+    -- Success notification (USER_ACTION category)
+    notify.editor(
+      string.format(
+        "Created Claude session '%s' in new %s tab",
+        feature,
+        terminal_detect.get_display_name()
+      ),
+      notify.categories.USER_ACTION,
+      {
+        session = feature,
+        terminal = terminal_detect.detect(),
+        tab_id = tab_id
+      }
     )
   else
-    vim.notify("Created worktree but couldn't spawn WezTerm tab", vim.log.levels.WARN)
+    -- WARNING for partial success
+    notify.editor(
+      "Created worktree but couldn't track tab ID",
+      notify.categories.WARNING,
+      { worktree = feature }
+    )
   end
 end
 
@@ -292,12 +366,17 @@ function M.switch_session()
         vim.cmd("edit " .. context_file)
       end
       
-      -- Switch WezTerm tab if available
-      if has_wezterm and choice.session.tab_id then
+      -- Switch terminal tab if available
+      local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+      local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
+      if terminal_detect.supports_tabs() and choice.session.tab_id then
         -- Try to activate tab
-        local result = vim.fn.system("wezterm cli activate-tab --tab-id " .. choice.session.tab_id)
-        if vim.v.shell_error ~= 0 then
-          vim.notify("Could not switch WezTerm tab", vim.log.levels.WARN)
+        local activate_cmd = terminal_cmds.activate_tab(choice.session.tab_id)
+        if activate_cmd then
+          local result = vim.fn.system(activate_cmd)
+          if vim.v.shell_error ~= 0 then
+            vim.notify("Could not switch terminal tab", vim.log.levels.WARN)
+          end
         end
       end
       
@@ -334,12 +413,13 @@ function M.list_sessions()
   print(string.rep("-", 80))
   print(string.format("Total: %d session(s)", vim.tbl_count(M.sessions)))
   
-  if has_wezterm then
+  local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+  if terminal_detect.supports_tabs() then
     local tab_count = 0
     for _, session in pairs(M.sessions) do
       if session.tab_id then tab_count = tab_count + 1 end
     end
-    print(string.format("WezTerm tabs: %d", tab_count))
+    print(string.format("%s tabs: %d", terminal_detect.get_display_name(), tab_count))
   end
 end
 
@@ -375,9 +455,14 @@ function M.delete_session()
         local result = vim.fn.system("git worktree remove " .. choice.session.worktree_path .. " --force")
         
         if vim.v.shell_error == 0 then
-          -- Close WezTerm tab if exists
-          if has_wezterm and choice.session.tab_id then
-            vim.fn.system("wezterm cli kill-pane --tab-id " .. choice.session.tab_id)
+          -- Close terminal tab if exists
+          local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+          if terminal_detect.supports_tabs() and choice.session.tab_id then
+            -- Note: Tab closing is terminal-specific and may not be supported
+            if terminal_detect.detect() == 'wezterm' then
+              vim.fn.system("wezterm cli kill-pane --tab-id " .. choice.session.tab_id)
+            end
+            -- Kitty doesn't support remote tab closing
           end
           
           -- Remove from sessions
@@ -606,7 +691,7 @@ function M.telescope_sessions()
             "  Enter (CR)  - Switch to selected session",
             "  Ctrl-d      - Delete selected session",
             "  Ctrl-t      - Open session in new tab",
-            "  Ctrl-o      - Open worktree in new WezTerm tab",
+            "  Ctrl-o      - Open worktree in new terminal tab",
             "  Ctrl-n      - Create new Claude worktree",
             "  Ctrl-k      - Cleanup stale worktrees",
             "  Ctrl-h      - Show worktree health report",
@@ -712,7 +797,7 @@ function M.telescope_sessions()
         M.create_worktree_with_claude()
       end)
       
-      -- Open worktree in new WezTerm tab with Ctrl-o
+      -- Open worktree in new terminal tab with Ctrl-o
       map("i", "<C-o>", function()
         local selection = action_state.get_selected_entry()
         if selection and not selection.value.is_help then
@@ -720,51 +805,79 @@ function M.telescope_sessions()
           if selection.value.is_help then
             return
           end
-          
+
           actions.close(prompt_bufnr)
-          
+
           -- Get the worktree path
           local worktree_path = selection.value.worktree
           local name = selection.value.name
-          
+
           -- Check if CLAUDE.md exists to determine what to open
           local claude_md_path = worktree_path .. "/CLAUDE.md"
           local open_file = vim.fn.filereadable(claude_md_path) == 1 and "CLAUDE.md" or ""
-          
-          -- Spawn new WezTerm tab with the worktree
+
+          -- Use terminal abstraction for spawning
+          local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+          local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
+
+          if not terminal_detect.supports_tabs() then
+            vim.notify(
+              string.format(
+                "Terminal '%s' does not support tab management",
+                terminal_detect.get_display_name()
+              ),
+              vim.log.levels.ERROR
+            )
+            return
+          end
+
+          -- Spawn new terminal tab with the worktree
           local cmd
           if open_file ~= "" then
             -- Open with nvim and CLAUDE.md
-            cmd = string.format(
-              "wezterm cli spawn --cwd '%s' -- nvim '%s'",
-              worktree_path,
-              open_file
-            )
+            cmd = terminal_cmds.spawn_tab(worktree_path, "nvim CLAUDE.md")
           else
             -- Just open the directory
-            cmd = string.format(
-              "wezterm cli spawn --cwd '%s'",
-              worktree_path
-            )
+            cmd = terminal_cmds.spawn_tab(worktree_path)
           end
-          
+
+          if not cmd then
+            vim.notify("Failed to generate terminal command", vim.log.levels.ERROR)
+            return
+          end
+
           local result = vim.fn.system(cmd)
-          local pane_id = result:match("(%d+)")
-          
+
+          if vim.v.shell_error ~= 0 then
+            vim.notify("Failed to create new terminal tab: " .. vim.trim(result), vim.log.levels.ERROR)
+            return
+          end
+
+          local pane_id = terminal_cmds.parse_spawn_result(result)
+
           if pane_id then
-            -- Set the tab title to the worktree name
-            vim.fn.system(string.format(
-              "wezterm cli set-tab-title --pane-id %s '%s'",
-              pane_id, name
-            ))
-            
+            -- Set the tab title if supported
+            local title_cmd = terminal_cmds.set_tab_title(pane_id, name)
+            if title_cmd then
+              vim.fn.system(title_cmd)
+            end
+
             -- Activate the new tab
-            vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
-            
-            vim.notify(string.format("Opened worktree '%s' in new WezTerm tab", name), 
-              vim.log.levels.INFO)
+            local activate_cmd = terminal_cmds.activate_tab(pane_id)
+            if activate_cmd then
+              vim.fn.system(activate_cmd)
+            end
+
+            vim.notify(
+              string.format(
+                "Opened worktree '%s' in new %s tab",
+                name,
+                terminal_detect.get_display_name()
+              ),
+              vim.log.levels.INFO
+            )
           else
-            vim.notify("Failed to create new WezTerm tab", vim.log.levels.ERROR)
+            vim.notify("Failed to parse terminal tab ID", vim.log.levels.ERROR)
           end
         end
       end)
@@ -925,10 +1038,11 @@ function M._quick_create(name, type)
       created = os.date("%Y-%m-%d %H:%M"),
       tab_id = nil,  -- Will be set by _spawn_wezterm_tab
     }
-    
+
     -- Spawn tab (needs session to exist)
-    if has_wezterm then
-      M._spawn_wezterm_tab(worktree_path, name, name .. "-" .. os.time(), 
+    local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+    if terminal_detect.supports_tabs() then
+      M._spawn_terminal_tab(worktree_path, name, name .. "-" .. os.time(), 
         worktree_path .. "/CLAUDE.md")
     end
     
@@ -1050,75 +1164,85 @@ function M.is_restorable(worktree_name)
   return true, has_context and "Ready to restore" or "No CLAUDE.md file"
 end
 
--- Spawn new WezTerm tab for restoration
+-- Spawn new terminal tab for restoration
 function M._spawn_restoration_tab(worktree_path, name)
-  if not has_wezterm then
-    return nil, nil, "WezTerm not available"
+  local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+  local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
+
+  if not terminal_detect.supports_tabs() then
+    return nil, nil, terminal_detect.get_display_name() .. " does not support tab management"
   end
-  
-  -- Use WezTerm CLI to create new tab with CLAUDE.md open
-  local cmd = string.format(
-    "wezterm cli spawn --cwd '%s' -- nvim CLAUDE.md",
-    worktree_path
-  )
-  
+
+  -- Use terminal abstraction to create new tab with CLAUDE.md open
+  local cmd = terminal_cmds.spawn_tab(worktree_path, "nvim CLAUDE.md")
+
+  if not cmd then
+    return nil, nil, "Failed to generate terminal command"
+  end
+
   local result = vim.fn.system(cmd)
-  local pane_id = result:match("(%d+)")
-  
-  if pane_id then
-    -- Try to get tab ID from the pane
-    local list_cmd = "wezterm cli list --format json"
-    local list_result = vim.fn.system(list_cmd)
-    
-    -- Parse JSON to find tab ID (simplified - you may want to use vim.json)
-    local tab_id = nil
-    pcall(function()
-      local data = vim.json.decode(list_result)
-      for _, pane in ipairs(data) do
-        if tostring(pane.pane_id) == pane_id then
-          tab_id = pane.tab_id
-          break
-        end
-      end
-    end)
-    
-    -- Activate the new pane
-    vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
-    
-    -- Set tab title
-    vim.fn.system(string.format(
-      "wezterm cli set-tab-title --pane-id %s '%s'",
-      pane_id, name
-    ))
-    
-    return tab_id, pane_id, nil
+
+  if vim.v.shell_error ~= 0 then
+    return nil, nil, "Failed to spawn terminal tab: " .. vim.trim(result)
   end
-  
-  return nil, nil, "Failed to spawn WezTerm tab"
+
+  local pane_id = terminal_cmds.parse_spawn_result(result)
+
+  if pane_id then
+    -- Activate the new tab
+    local activate_cmd = terminal_cmds.activate_tab(pane_id)
+    if activate_cmd then
+      vim.fn.system(activate_cmd)
+    end
+
+    -- Set tab title if supported
+    local title_cmd = terminal_cmds.set_tab_title(pane_id, name)
+    if title_cmd then
+      vim.fn.system(title_cmd)
+    end
+
+    -- For compatibility, return both tab_id and pane_id as the same value
+    return pane_id, pane_id, nil
+  end
+
+  return nil, nil, "Failed to spawn terminal tab"
 end
 
 -- Restore Claude session in the new tab
 function M._restore_claude_session(pane_id, session_id)
   if not pane_id then return end
-  
-  -- Wait for Neovim to load, then send ClaudeCodeResume command
-  vim.defer_fn(function()
-    local resume_cmd = string.format(
-      "wezterm cli send-text --pane-id %s ':ClaudeCodeResume\\n'",
-      pane_id
-    )
-    vim.fn.system(resume_cmd)
-    
-    -- Open Claude sidebar after a delay
+
+  local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+  local terminal = terminal_detect.detect()
+
+  -- Terminal-specific text sending (not all terminals support this)
+  if terminal == 'wezterm' then
+    -- Wait for Neovim to load, then send ClaudeCodeResume command
     vim.defer_fn(function()
-      -- Send Ctrl-A to open Claude sidebar
-      local sidebar_cmd = string.format(
-        "wezterm cli send-text --no-paste --pane-id %s '\\x01'",
+      local resume_cmd = string.format(
+        "wezterm cli send-text --pane-id %s ':ClaudeCodeResume\\n'",
         pane_id
       )
-      vim.fn.system(sidebar_cmd)
-    end, 2000)
-  end, 1500)
+      vim.fn.system(resume_cmd)
+
+      -- Open Claude sidebar after a delay
+      vim.defer_fn(function()
+        -- Send Ctrl-A to open Claude sidebar
+        local sidebar_cmd = string.format(
+          "wezterm cli send-text --no-paste --pane-id %s '\\x01'",
+          pane_id
+        )
+        vim.fn.system(sidebar_cmd)
+      end, 2000)
+    end, 1500)
+  elseif terminal == 'kitty' then
+    -- Kitty has different remote control commands
+    -- Note: Kitty remote control requires --allow-remote-control flag
+    vim.notify(
+      "Claude session restoration in Kitty tabs requires manual :ClaudeCodeResume",
+      vim.log.levels.INFO
+    )
+  end
 end
 
 -- Perform complete restoration
@@ -1133,12 +1257,12 @@ function M._perform_restoration(entry)
     return
   end
   
-  -- Try to spawn WezTerm tab
+  -- Try to spawn terminal tab
   local tab_id, pane_id, err = M._spawn_restoration_tab(worktree_path, name)
-  
+
   if not tab_id then
     -- Fallback: open in current Neovim
-    vim.notify("WezTerm restoration failed: " .. (err or "unknown error"), vim.log.levels.WARN)
+    vim.notify("Terminal tab restoration failed: " .. (err or "unknown error"), vim.log.levels.WARN)
     vim.notify("Opening in current window...", vim.log.levels.INFO)
     
     vim.cmd("cd " .. vim.fn.fnameescape(worktree_path))
@@ -1712,20 +1836,44 @@ function M.claude_session_picker()
         end
       end)
       
-      -- Add mapping to open in new WezTerm tab
+      -- Add mapping to open in new terminal tab
       map("i", "<C-t>", function()
         local selection = action_state.get_selected_entry()
         actions.close(prompt_bufnr)
         if selection then
-          -- Open in new WezTerm tab
+          local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
+          local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
+
+          if not terminal_detect.supports_tabs() then
+            vim.notify(
+              string.format(
+                "Terminal '%s' does not support tab management",
+                terminal_detect.get_display_name()
+              ),
+              vim.log.levels.ERROR
+            )
+            return
+          end
+
+          -- Open in new terminal tab
           local session = selection.value
-          local cmd = string.format(
-            "wezterm cli spawn --cwd '%s' -- bash -c 'claude --resume %s'",
+          local cmd = terminal_cmds.spawn_tab(
             session.path,
-            session.id
+            string.format("bash -c 'claude --resume %s'", session.id)
           )
-          vim.fn.system(cmd)
-          vim.notify("Opened session in new WezTerm tab", vim.log.levels.INFO)
+
+          if cmd then
+            vim.fn.system(cmd)
+            vim.notify(
+              string.format(
+                "Opened session in new %s tab",
+                terminal_detect.get_display_name()
+              ),
+              vim.log.levels.INFO
+            )
+          else
+            vim.notify("Failed to generate terminal command", vim.log.levels.ERROR)
+          end
         end
       end)
       
