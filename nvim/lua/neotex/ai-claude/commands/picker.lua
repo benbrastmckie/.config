@@ -230,9 +230,62 @@ local function send_command_to_terminal(command)
         { command = command_text, action = "opening_claude" }
       )
 
+      -- Store the command to be inserted after Claude Code opens
+      vim.g.claude_pending_command = command_text
+
+      -- Set up an autocmd to insert the command when terminal is ready
+      -- This triggers after the terminal buffer is fully loaded
+      local autocmd_id = vim.api.nvim_create_autocmd({"TermOpen", "BufEnter", "BufWinEnter"}, {
+        pattern = "*",
+        callback = function(ev)
+          local pending_cmd = vim.g.claude_pending_command
+          if not pending_cmd then
+            return false  -- Remove autocmd if no pending command
+          end
+
+          local buf = ev.buf
+          -- Check if this is the Claude Code terminal
+          if vim.api.nvim_buf_is_valid(buf) and
+             vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
+            local buf_name = vim.api.nvim_buf_get_name(buf)
+            if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
+              -- Clear the pending command
+              vim.g.claude_pending_command = nil
+
+              -- Small delay to ensure prompt is displayed
+              vim.defer_fn(function()
+                local channel = vim.api.nvim_buf_get_option(buf, "channel")
+                if channel then
+                  -- Send the command
+                  vim.api.nvim_chan_send(channel, pending_cmd)
+
+                  -- Focus and position cursor
+                  local wins = vim.fn.win_findbuf(buf)
+                  if #wins > 0 then
+                    vim.api.nvim_set_current_win(wins[1])
+                    vim.cmd('normal! G$')
+                    vim.cmd('startinsert!')
+                  end
+
+                  notify.editor(
+                    string.format("Inserted '%s' into Claude Code terminal", pending_cmd),
+                    notify.categories.USER_ACTION,
+                    { command = pending_cmd }
+                  )
+                end
+              end, 250)  -- Small delay just for prompt to appear
+
+              return true  -- Remove autocmd after successful insertion
+            end
+          end
+        end
+      })
+
       -- Try to open Claude Code
       local success = pcall(claude_code.toggle)
       if not success then
+        vim.g.claude_pending_command = nil
+        vim.api.nvim_del_autocmd(autocmd_id)
         notify.editor(
           "Failed to open Claude Code terminal",
           notify.categories.ERROR,
@@ -241,46 +294,18 @@ local function send_command_to_terminal(command)
         return
       end
 
-      -- Wait for terminal to be ready before sending command
+      -- Fallback: Clear pending command after timeout
       vim.defer_fn(function()
-        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_valid(buf) and
-             vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-            local buf_name = vim.api.nvim_buf_get_name(buf)
-            if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-              local channel = vim.api.nvim_buf_get_option(buf, "channel")
-              if channel then
-                -- Additional delay to ensure terminal is fully initialized
-                vim.defer_fn(function()
-                  vim.api.nvim_chan_send(channel, command_text)
-
-                  -- Focus the Claude terminal
-                  local claude_wins = vim.fn.win_findbuf(buf)
-                  if #claude_wins > 0 then
-                    vim.api.nvim_set_current_win(claude_wins[1])
-                    -- Enter insert mode at the end
-                    vim.cmd('normal! G$')
-                    vim.cmd('startinsert!')
-                  end
-
-                  notify.editor(
-                    string.format("Inserted '%s' into Claude Code terminal", command_text),
-                    notify.categories.USER_ACTION,
-                    { command = command_text }
-                  )
-                end, 300)  -- Additional 300ms delay for terminal initialization
-                return
-              end
-            end
-          end
+        if vim.g.claude_pending_command then
+          vim.g.claude_pending_command = nil
+          vim.api.nvim_del_autocmd(autocmd_id)
+          notify.editor(
+            "Timeout waiting for Claude Code terminal",
+            notify.categories.WARNING,
+            { command = command_text }
+          )
         end
-
-        notify.editor(
-          "Could not access Claude Code terminal after opening",
-          notify.categories.ERROR,
-          { command = command_text }
-        )
-      end, 800)
+      end, 3000)  -- 3 second timeout
       return
     end
 
