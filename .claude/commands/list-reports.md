@@ -2,6 +2,8 @@
 allowed-tools: Bash, Glob, Read
 argument-hint: [search-pattern]
 description: List all existing research reports in the codebase
+command-type: dependent
+parent-commands: plan, report
 ---
 
 # List Research Reports

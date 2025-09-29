@@ -2,6 +2,8 @@
 allowed-tools: Bash, Glob, Read
 argument-hint: [search-pattern]
 description: List all implementation summaries showing plans executed and reports used
+command-type: dependent
+parent-commands: implement
 ---
 
 # List Implementation Summaries
