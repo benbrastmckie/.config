@@ -2,6 +2,8 @@
 allowed-tools: Read, Edit, MultiEdit, Bash, Grep, Glob, WebSearch
 argument-hint: <report-path> [specific-sections]
 description: Update an existing research report with new findings
+command-type: dependent
+parent-commands: report, implement
 ---
 
 # Update Research Report
