@@ -27,7 +27,14 @@ M.smart_toggle = function()
 end
 
 M.resume_session = function(id)
-  return claude_session.resume_session(id)
+  -- Use session manager for validated resumption if id provided
+  if id then
+    local session_manager = require("neotex.ai-claude.core.session-manager")
+    return session_manager.resume_session(id)
+  else
+    -- Otherwise use the interactive session picker
+    return claude_session.resume_session()
+  end
 end
 
 M.save_session_state = function()
