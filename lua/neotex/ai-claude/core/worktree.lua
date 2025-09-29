@@ -232,20 +232,54 @@ function M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
   -- Check terminal support
   if not terminal_detect.supports_tabs() then
     local terminal_name = terminal_detect.get_display_name()
+    local terminal_type = terminal_detect.detect()
 
-    -- ERROR notification per NOTIFICATIONS.md standards
-    notify.editor(
-      string.format(
-        "Terminal '%s' does not support tab management. Please use Kitty or WezTerm.",
-        terminal_name
-      ),
-      notify.categories.ERROR,
-      {
+    -- Provide specific guidance for Kitty remote control
+    if terminal_type == 'kitty' then
+      local config_path = terminal_detect.get_kitty_config_path()
+      local config_status = terminal_detect.check_kitty_config()
+
+      local message
+      local solution_data = {
         terminal = terminal_name,
-        required = "kitty or wezterm",
+        config_file = config_path,
+        required_setting = "allow_remote_control yes",
         fallback = "opening in current window"
       }
-    )
+
+      if config_status == false then
+        message = string.format(
+          "Kitty remote control is disabled. Add 'allow_remote_control yes' to %s and restart Kitty.",
+          config_path
+        )
+      elseif config_status == nil then
+        message = string.format(
+          "Kitty config not found. Create %s with 'allow_remote_control yes' and restart Kitty.",
+          config_path
+        )
+      else
+        message = string.format(
+          "Kitty remote control configuration issue. Ensure 'allow_remote_control yes' is in %s and restart Kitty.",
+          config_path
+        )
+      end
+
+      notify.editor(message, notify.categories.ERROR, solution_data)
+    else
+      -- Generic error for non-Kitty terminals
+      notify.editor(
+        string.format(
+          "Terminal '%s' does not support tab management. Please use Kitty (with remote control enabled) or WezTerm.",
+          terminal_name
+        ),
+        notify.categories.ERROR,
+        {
+          terminal = terminal_name,
+          required = "kitty or wezterm",
+          fallback = "opening in current window"
+        }
+      )
+    end
 
     -- Fallback to current window (pragmatic compromise)
     vim.cmd("tcd " .. vim.fn.fnameescape(worktree_path))
