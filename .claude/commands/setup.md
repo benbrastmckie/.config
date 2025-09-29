@@ -1,183 +1,157 @@
 ---
 allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
 argument-hint: [project-directory]
-description: Setup or improve CLAUDE.md with links to standards and specs directory protocols
+description: Setup or improve CLAUDE.md with smart extraction of sections into linked auxiliary files
 command-type: primary
 dependent-commands: validate-setup
 ---
 
 # Setup Project Standards
 
-I'll create or improve the CLAUDE.md file to properly document project standards and establish protocols for specs directories.
+I'll create or improve the CLAUDE.md file by intelligently organizing content - keeping it concise by extracting detailed sections into auxiliary files when appropriate.
 
 ## Target Directory
 $1 (or current directory)
 
 ## Process
 
-### 1. Analyze Project Structure
-I'll examine the project to find:
-- Existing CLAUDE.md file
-- Standards documentation (GUIDELINES.md, STANDARDS.md, etc.)
-- Testing configuration files and documentation
-- Documentation standards or templates
-- Existing specs/ directories
+### 1. Analyze Existing CLAUDE.md
+I'll examine any existing CLAUDE.md to identify:
+- Sections that are overly detailed (>30 lines)
+- Inline standards that could be extracted
+- Testing configurations embedded directly
+- Long code examples or templates
+- Content better suited for auxiliary files
 
-### 2. Discover Standards Files
-I'll search for common standards patterns:
+### 2. Smart Section Extraction
 
-#### Code Standards
-- `GUIDELINES.md`, `STANDARDS.md`, `STYLE.md`
-- `docs/standards/`, `docs/guidelines/`
-- `.editorconfig`, `.prettierrc`, `.eslintrc`
-- Language-specific style guides
+For sections that would benefit from extraction, I'll offer to move them to dedicated files:
 
-#### Testing Standards
-- `TESTING.md`, `docs/testing/`
-- Test configuration files
-- CI/CD test configurations
-- Test directory structures
+| Section Type | Suggested File | Extraction Trigger |
+|-------------|---------------|-------------------|
+| Testing Standards | `docs/TESTING.md` | >20 lines of test details |
+| Code Style Guide | `docs/CODE_STYLE.md` | Detailed formatting rules |
+| Documentation Guide | `docs/DOCUMENTATION.md` | Template examples |
+| Command Reference | `docs/COMMANDS.md` | >10 commands |
+| Architecture | `docs/ARCHITECTURE.md` | Complex diagrams |
 
-#### Documentation Standards
-- `CONTRIBUTING.md`, `docs/documentation/`
-- README templates
-- API documentation patterns
-- Comment style guides
+### 3. Interactive Extraction Process
 
-### 3. Create/Update CLAUDE.md
-The CLAUDE.md file will be concise with links to detailed standards:
+For each extractable section, I'll ask:
 
+```
+Found: Testing Standards (45 lines) in CLAUDE.md
+
+Would you like to:
+[E]xtract to docs/TESTING.md and link it
+[K]eep in CLAUDE.md as-is
+[S]implify in place without extraction
+```
+
+If you choose extraction, I'll:
+1. Create the auxiliary file with the content
+2. Replace the section in CLAUDE.md with a concise summary and link
+3. Add navigation links between files
+
+### 4. Optimal CLAUDE.md Structure
+
+#### Goal: Concise Index File (<100 lines)
 ```markdown
-# Project Standards and Protocols
+# Project Configuration Index
 
-## Quick Reference
-- **Code Standards**: [Link to standards file]
-- **Testing Protocols**: [Link to testing docs]
-- **Documentation Guidelines**: [Link to docs standards]
+This CLAUDE.md serves as the central configuration and standards index.
 
-## Commands
-[Project-specific commands for common tasks]
+## Project Standards and Guidelines
+
+### Core Documentation
+- [Testing Standards](docs/TESTING.md) - Test configuration and commands
+- [Code Style Guide](docs/CODE_STYLE.md) - Formatting and conventions
+- [Documentation Guidelines](docs/DOCUMENTATION.md) - Writing standards
+
+### Quick Reference
+- **Run Tests**: `npm test`
+- **Format Code**: `npm run format`
+- **Lint**: `npm run lint`
 
 ## Specs Directory Protocol
-
-### Structure
-Create `specs/` directories at the deepest relevant level containing:
-- `plans/` - Implementation plans (NNN_*.md format)
-- `reports/` - Research reports (NNN_*.md format)
-- `summaries/` - Implementation summaries (NNN_*.md format)
-
-### Numbering Convention
-All specs files use `NNN_descriptive_name.md` format:
-- Three-digit numbers with leading zeros (001, 002, etc.)
-- Increment from highest existing number
-- Lowercase with underscores for names
-
-### Location Guidelines
-Place specs/ in the most specific directory that encompasses all relevant files:
-- Feature-specific: In the feature's root directory
-- Module-wide: In the module's directory
-- Project-wide: In the project root
-
-## Project-Specific Configuration
-[Any project-specific settings or overrides]
+[Keep inline - essential for Claude workflow]
 ```
 
-### 4. Interactive Standards Creation
-If standards files don't exist, I'll:
-1. Prompt for code style preferences
-2. Ask about testing framework and commands
-3. Request documentation format preferences
-4. Create appropriate standards files
-5. Link them in CLAUDE.md
+### 5. Decision Criteria
 
-### 5. Create Missing Standards Files
-Based on project type and user input:
+I'll recommend extraction when:
+- Section is >30 lines of detailed content
+- Content is reference material (not daily use)
+- Multiple examples or templates present
+- Complex configuration rarely changed
 
-#### Code Standards Template
-```markdown
-# Code Standards
+I'll keep inline when:
+- Quick reference commands (<10 lines)
+- Critical navigation/index information
+- Specs protocol (core to Claude)
+- Daily-use information
 
-## Style Guide
-[Language-specific style rules]
+### 6. File Organization
 
-## File Organization
-[Project structure guidelines]
-
-## Naming Conventions
-[Variable, function, file naming rules]
-
-## Best Practices
-[Project-specific patterns]
+```
+project/
+├── CLAUDE.md              # Concise index
+├── docs/
+│   ├── TESTING.md        # Extracted test details
+│   ├── CODE_STYLE.md     # Extracted style guide
+│   └── ...               # Other extracted sections
+└── specs/
+    ├── plans/
+    ├── reports/
+    └── summaries/
 ```
 
-#### Testing Standards Template
-```markdown
-# Testing Standards
+### 7. Benefits
 
-## Test Organization
-[Test file structure and naming]
+**Concise CLAUDE.md:**
+- Quick to scan and navigate
+- Focuses on essential info
+- Easy to maintain
+- Clear hierarchy
 
-## Test Commands
-- Unit tests: [command]
-- Integration tests: [command]
-- Full suite: [command]
+**Auxiliary Files:**
+- Detailed documentation without length constraints
+- Topic-focused organization
+- Better version control (smaller diffs)
+- Can be referenced from multiple places
 
-## Coverage Requirements
-[Minimum coverage expectations]
+## Interactive Setup
 
-## CI/CD Integration
-[How tests run in CI]
+I'll ask about your preferences:
+
+1. **Extraction threshold**:
+   - Aggressive (>20 lines)
+   - Balanced (>30 lines)
+   - Conservative (>50 lines)
+
+2. **Directory structure**:
+   - Use `docs/` for standards?
+   - Preferred file naming?
+
+3. **Content to prioritize for extraction**:
+   - Testing details?
+   - Code style rules?
+   - Architecture diagrams?
+   - Command references?
+
+## Example Session
+
+```
+Analyzing CLAUDE.md... Found 248 lines.
+
+Extraction opportunities:
+1. Testing Standards (52 lines) → docs/TESTING.md
+2. Code Style (38 lines) → docs/CODE_STYLE.md
+3. Architecture Diagram (44 lines) → docs/ARCHITECTURE.md
+
+After extraction: CLAUDE.md would be 95 lines (62% reduction)
+
+Proceed with extractions? [Y/n/customize]
 ```
 
-#### Documentation Standards Template
-```markdown
-# Documentation Standards
-
-## Code Comments
-[Comment style and requirements]
-
-## README Structure
-[Template for README files]
-
-## API Documentation
-[How to document APIs]
-
-## Specs Documentation
-[How to write plans, reports, summaries]
-```
-
-### 6. Validate Setup
-After creation/update, I'll:
-- Verify all linked files exist
-- Check that paths are correct
-- Ensure specs protocol is clear
-- Test that commands work
-
-## Interactive Prompts
-
-If standards don't exist, I'll ask:
-
-1. **Code Style**
-   - Indentation (spaces/tabs, size)
-   - Line length limits
-   - Naming conventions preference
-
-2. **Testing**
-   - Test framework/runner
-   - Test file patterns
-   - Coverage tools
-
-3. **Documentation**
-   - Comment style preference
-   - README requirements
-   - API doc format
-
-## Output
-
-I'll create/update:
-1. `CLAUDE.md` - Main configuration file
-2. Standards files (if needed)
-3. Directory structure documentation
-4. Command reference
-
-Let me analyze your project and set up proper standards documentation.
+Let me analyze your project and help organize your CLAUDE.md efficiently.
