@@ -222,62 +222,9 @@ local function send_command_to_terminal(command)
         { command = command_text, action = "opening_claude" }
       )
 
-      -- Store the command to be inserted after Claude Code opens
-      vim.g.claude_pending_command = command_text
-
-      -- Set up an autocmd to insert the command when terminal is ready
-      -- This triggers after the terminal buffer is fully loaded
-      local autocmd_id = vim.api.nvim_create_autocmd({"TermOpen", "BufEnter", "BufWinEnter"}, {
-        pattern = "*",
-        callback = function(ev)
-          local pending_cmd = vim.g.claude_pending_command
-          if not pending_cmd then
-            return false  -- Remove autocmd if no pending command
-          end
-
-          local buf = ev.buf
-          -- Check if this is the Claude Code terminal
-          if vim.api.nvim_buf_is_valid(buf) and
-             vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-            local buf_name = vim.api.nvim_buf_get_name(buf)
-            if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-              -- Clear the pending command
-              vim.g.claude_pending_command = nil
-
-              -- Small delay to ensure prompt is displayed
-              vim.defer_fn(function()
-                local channel = vim.api.nvim_buf_get_option(buf, "channel")
-                if channel then
-                  -- Send the command
-                  vim.api.nvim_chan_send(channel, pending_cmd)
-
-                  -- Focus and position cursor
-                  local wins = vim.fn.win_findbuf(buf)
-                  if #wins > 0 then
-                    vim.api.nvim_set_current_win(wins[1])
-                    vim.cmd('normal! G$')
-                    vim.cmd('startinsert!')
-                  end
-
-                  notify.editor(
-                    string.format("Inserted '%s' into Claude Code terminal", pending_cmd),
-                    notify.categories.USER_ACTION,
-                    { command = pending_cmd }
-                  )
-                end
-              end, 250)  -- Small delay just for prompt to appear
-
-              return true  -- Remove autocmd after successful insertion
-            end
-          end
-        end
-      })
-
       -- Try to open Claude Code
       local success = pcall(claude_code.toggle)
       if not success then
-        vim.g.claude_pending_command = nil
-        vim.api.nvim_del_autocmd(autocmd_id)
         notify.editor(
           "Failed to open Claude Code terminal",
           notify.categories.ERROR,
@@ -286,18 +233,47 @@ local function send_command_to_terminal(command)
         return
       end
 
-      -- Fallback: Clear pending command after timeout
+      -- Wait for terminal to be ready, then use feedkeys to type the command
       vim.defer_fn(function()
-        if vim.g.claude_pending_command then
-          vim.g.claude_pending_command = nil
-          vim.api.nvim_del_autocmd(autocmd_id)
-          notify.editor(
-            "Timeout waiting for Claude Code terminal",
-            notify.categories.WARNING,
-            { command = command_text }
-          )
+        -- Find the Claude Code terminal buffer
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_valid(buf) and
+             vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
+            local buf_name = vim.api.nvim_buf_get_name(buf)
+            if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
+              -- Focus the Claude terminal window
+              local claude_wins = vim.fn.win_findbuf(buf)
+              if #claude_wins > 0 then
+                vim.api.nvim_set_current_win(claude_wins[1])
+
+                -- Move to the end and enter insert mode
+                vim.cmd('normal! G$')
+
+                -- Use feedkeys to type the command after a small delay
+                -- This simulates actual typing and works more reliably
+                vim.defer_fn(function()
+                  -- Enter insert mode and type the command
+                  vim.api.nvim_feedkeys('i' .. command_text, 'n', false)
+
+                  notify.editor(
+                    string.format("Inserted '%s' into Claude Code terminal", command_text),
+                    notify.categories.USER_ACTION,
+                    { command = command_text }
+                  )
+                end, 500)  -- Wait for welcome message to appear
+
+                return
+              end
+            end
+          end
         end
-      end, 3000)  -- 3 second timeout
+
+        notify.editor(
+          "Could not find Claude Code terminal after opening",
+          notify.categories.WARNING,
+          { command = command_text }
+        )
+      end, 1000)  -- Initial wait for terminal to open
       return
     end
 
@@ -353,13 +329,54 @@ local function edit_command_file(command)
     return
   end
 
+  -- Determine if we need to copy from global to local
+  local project_dir = vim.fn.getcwd()
+  local global_dir = vim.fn.expand("~/.config")
+  local local_commands_dir = project_dir .. "/.claude/commands"
+  local global_commands_dir = global_dir .. "/.claude/commands"
+
+  local file_to_edit = command.filepath
+
+  -- If command is not local and we're not in .config directory, copy it locally
+  if not command.is_local and project_dir ~= global_dir then
+    -- Create local .claude/commands directory if it doesn't exist
+    vim.fn.system("mkdir -p " .. vim.fn.shellescape(local_commands_dir))
+
+    -- Construct the local file path
+    local filename = vim.fn.fnamemodify(command.filepath, ":t")
+    local local_filepath = local_commands_dir .. "/" .. filename
+
+    -- Copy the global command file to local
+    local copy_cmd = string.format("cp %s %s",
+      vim.fn.shellescape(command.filepath),
+      vim.fn.shellescape(local_filepath)
+    )
+
+    local result = vim.fn.system(copy_cmd)
+    if vim.v.shell_error == 0 then
+      notify.editor(
+        string.format("Copied global command '%s' to local project", command.name),
+        notify.categories.STATUS,
+        { command = command.name, from = command.filepath, to = local_filepath }
+      )
+      file_to_edit = local_filepath
+    else
+      notify.editor(
+        string.format("Failed to copy command file: %s", result),
+        notify.categories.ERROR,
+        { command = command.name, error = result }
+      )
+      return
+    end
+  end
+
   -- Open file in current window
-  vim.cmd.edit(command.filepath)
+  vim.cmd.edit(file_to_edit)
 
   notify.editor(
     string.format("Opened command file: %s", command.name),
     notify.categories.USER_ACTION,
-    { command = command.name, filepath = command.filepath }
+    { command = command.name, filepath = file_to_edit }
   )
 end
 
