@@ -1,0 +1,85 @@
+---
+allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite
+argument-hint: [plan-file] [starting-phase]
+description: Execute implementation plan with automated testing and commits
+---
+
+# Execute Implementation Plan
+
+I'll help you systematically implement the plan file with automated testing and commits at each phase.
+
+## Plan Information
+- **Plan file**: $1 (or I'll search for plans in lua/neotex/ai-claude/specs/plans/)
+- **Starting phase**: $2 (default: 1)
+
+## Process
+
+Let me first locate and read the implementation plan, then guide you through each phase:
+
+1. **Parse the plan** to identify phases and tasks
+2. **For each phase**:
+   - Display the phase name and tasks
+   - Implement the required changes
+   - Run tests to verify the implementation
+   - Update the plan file with completion markers
+   - Create a git commit with a structured message
+   - Move to the next phase
+
+## Phase Execution Protocol
+
+For each phase, I will:
+
+### 1. Display Phase Information
+Show the current phase number, name, and all tasks that need to be completed.
+
+### 2. Implementation
+Create or modify the necessary files according to the plan specifications.
+
+### 3. Testing
+Run tests by:
+- Looking for test commands in the phase tasks
+- Checking for common test patterns (npm test, pytest, make test)
+- Running language-specific test commands based on project type
+
+### 4. Plan Update
+- Mark completed tasks with `[x]` instead of `[ ]`
+- Add `[COMPLETED]` marker to the phase heading
+- Save the updated plan file
+
+### 5. Git Commit
+Create a structured commit:
+```
+feat: implement Phase N - Phase Name
+
+Automated implementation of phase N from implementation plan
+All tests passed successfully
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+## Test Detection Patterns
+
+I'll look for and run:
+- Commands containing `:lua.*test`
+- Commands with `:Test`
+- Standard test commands: `npm test`, `pytest`, `make test`
+- Project-specific test commands based on configuration files
+
+## Resuming Implementation
+
+If we need to stop and resume later, you can use:
+```
+/implement <plan-file> <phase-number>
+```
+
+This will start from the specified phase number.
+
+## Error Handling
+
+If tests fail or issues arise:
+1. I'll show the error details
+2. We'll fix the issues together
+3. Re-run tests before proceeding
+4. Only move forward when tests pass
+
+Let me start by finding and reading your implementation plan.
