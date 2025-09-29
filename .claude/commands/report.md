@@ -25,7 +25,15 @@ I'll find the deepest directory that encompasses all relevant files by:
 - Identifying common parent directories
 - Selecting the most specific directory that includes all relevant content
 
-### 3. Research Phase
+### 3. Report Numbering
+I'll determine the report number by:
+- Checking for existing reports in the target `specs/reports/` directory
+- Finding the highest numbered report (e.g., `002_*.md`)
+- Incrementing to the next number (e.g., `003`)
+- Using `001` if no numbered reports exist
+- Ensuring consistent three-digit format with leading zeros
+
+### 4. Research Phase
 I'll conduct thorough research by:
 - **Code Analysis**: Examining relevant source files
 - **Documentation Review**: Reading existing docs and comments
@@ -33,7 +41,7 @@ I'll conduct thorough research by:
 - **Dependency Mapping**: Understanding relationships between components
 - **Web Research** (if needed): Gathering external context and best practices
 
-### 4. Report Structure
+### 5. Report Structure
 The report will include:
 - **Executive Summary**: Brief overview of findings
 - **Background**: Context and problem space
@@ -43,14 +51,24 @@ The report will include:
 - **Recommendations**: Suggested improvements or next steps
 - **References**: Links to relevant files and resources
 
-### 5. Report Creation
-I'll create the report as a markdown file:
-- Located in `[relevant-dir]/specs/reports/[topic-name]-[date].md`
+### 6. Report Creation
+I'll create the report as a markdown file with automatic numbering:
+
+#### Numbering System
+- Format: `NNN_topic_name.md` where NNN is a three-digit number
+- I'll find the highest numbered report in the target directory
+- The new report will use the next sequential number (e.g., 001, 002, 003...)
+- If no reports exist, start with 001
+- Example: `003_terminal_compatibility_analysis.md`
+
+#### File Creation
+- Located in `[relevant-dir]/specs/reports/NNN_[topic-name].md`
+- Topic name will be converted to lowercase with underscores
 - Following professional documentation standards
 - Including diagrams and code examples where helpful
 - Cross-referencing relevant files with precise locations
 
-### 6. Report Metadata
+### 7. Report Metadata
 Each report will include:
 - Creation date and time
 - Research scope and boundaries
