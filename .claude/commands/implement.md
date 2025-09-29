@@ -97,7 +97,7 @@ If tests fail or issues arise:
 After completing all phases, I'll:
 
 ### 1. Create Summary Directory
-- Location: Same directory as the plan, in `specs/summary/`
+- Location: Same directory as the plan, in `specs/summaries/`
 - Create if it doesn't exist
 
 ### 2. Generate Summary File
