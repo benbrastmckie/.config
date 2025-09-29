@@ -865,13 +865,43 @@ function M.telescope_sessions()
           local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
 
           if not terminal_detect.supports_tabs() then
-            vim.notify(
-              string.format(
-                "Terminal '%s' does not support tab management",
-                terminal_detect.get_display_name()
-              ),
-              vim.log.levels.ERROR
-            )
+            local terminal_name = terminal_detect.get_display_name()
+            local terminal_type = terminal_detect.detect()
+
+            -- Provide specific guidance for Kitty remote control
+            if terminal_type == 'kitty' then
+              local config_path = terminal_detect.get_kitty_config_path()
+              local config_status = terminal_detect.check_kitty_config()
+
+              local message
+              if config_status == false then
+                message = string.format(
+                  "Kitty remote control is disabled. Add 'allow_remote_control yes' to %s and restart Kitty.",
+                  config_path
+                )
+              elseif config_status == nil then
+                message = string.format(
+                  "Kitty config not found. Create %s with 'allow_remote_control yes' and restart Kitty.",
+                  config_path
+                )
+              else
+                message = string.format(
+                  "Kitty remote control configuration issue. Ensure 'allow_remote_control yes' is in %s and restart Kitty.",
+                  config_path
+                )
+              end
+
+              vim.notify(message, vim.log.levels.ERROR)
+            else
+              -- Generic error for non-Kitty terminals
+              vim.notify(
+                string.format(
+                  "Terminal '%s' does not support tab management. Please use Kitty (with remote control enabled) or WezTerm.",
+                  terminal_name
+                ),
+                vim.log.levels.ERROR
+              )
+            end
             return
           end
 
@@ -1889,13 +1919,43 @@ function M.claude_session_picker()
           local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
 
           if not terminal_detect.supports_tabs() then
-            vim.notify(
-              string.format(
-                "Terminal '%s' does not support tab management",
-                terminal_detect.get_display_name()
-              ),
-              vim.log.levels.ERROR
-            )
+            local terminal_name = terminal_detect.get_display_name()
+            local terminal_type = terminal_detect.detect()
+
+            -- Provide specific guidance for Kitty remote control
+            if terminal_type == 'kitty' then
+              local config_path = terminal_detect.get_kitty_config_path()
+              local config_status = terminal_detect.check_kitty_config()
+
+              local message
+              if config_status == false then
+                message = string.format(
+                  "Kitty remote control is disabled. Add 'allow_remote_control yes' to %s and restart Kitty.",
+                  config_path
+                )
+              elseif config_status == nil then
+                message = string.format(
+                  "Kitty config not found. Create %s with 'allow_remote_control yes' and restart Kitty.",
+                  config_path
+                )
+              else
+                message = string.format(
+                  "Kitty remote control configuration issue. Ensure 'allow_remote_control yes' is in %s and restart Kitty.",
+                  config_path
+                )
+              end
+
+              vim.notify(message, vim.log.levels.ERROR)
+            else
+              -- Generic error for non-Kitty terminals
+              vim.notify(
+                string.format(
+                  "Terminal '%s' does not support tab management. Please use Kitty (with remote control enabled) or WezTerm.",
+                  terminal_name
+                ),
+                vim.log.levels.ERROR
+              )
+            end
             return
           end
 
