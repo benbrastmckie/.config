@@ -13,6 +13,7 @@ local claude_worktree = require("neotex.ai-claude.core.worktree")
 local claude_visual = require("neotex.ai-claude.core.visual")
 local claude_native = require("neotex.ai-claude.ui.native-sessions")
 local claude_picker = require("neotex.ai-claude.ui.pickers")
+local commands_picker = require("neotex.ai-claude.commands.picker")
 
 -- Session state tracking (forward from worktree module)
 M.sessions = {}  -- Will be populated from claude_worktree
@@ -93,6 +94,11 @@ M.show_session_picker = function(sessions, on_select)
   return claude_picker.show_session_picker(sessions, on_select)
 end
 
+-- Commands picker
+M.show_commands_picker = function(opts)
+  return commands_picker.show_commands_picker(opts)
+end
+
 -- Helper to sync session state from worktree module
 local function sync_session_state()
   M.sessions = claude_worktree.sessions or {}
@@ -128,6 +134,12 @@ M.setup = function(opts)
 
   -- Sync initial state
   sync_session_state()
+
+  -- Register user commands
+  vim.api.nvim_create_user_command("ClaudeCommands", M.show_commands_picker, {
+    desc = "Browse Claude commands in hierarchical picker",
+    nargs = 0,
+  })
 
   -- Set up a timer to periodically sync state
   vim.defer_fn(function()

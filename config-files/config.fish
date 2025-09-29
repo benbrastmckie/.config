@@ -1,7 +1,1 @@
-if status is-interactive
-    # Commands to run in interactive sessions can go here
-end
-
-bind --erase \ct
-# bind \ct true
-zoxide init fish --cmd cd | source
+/nix/store/rn9v75d8ycz250la6r08ks9mpfjbn801-home-manager-files/.config/config-files/config.fish

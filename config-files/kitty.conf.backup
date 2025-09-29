@@ -45,8 +45,6 @@ selection_foreground  #202020
 shell fish
 editor nvim
 copy_on_select yes
-allow_remote_control yes
-listen_on unix:/tmp/kitty-$USER
 
 # MAPPINGS
   # map key combine : action1 : action2 : action3 ...

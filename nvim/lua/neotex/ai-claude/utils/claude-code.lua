@@ -1,8 +1,7 @@
 -- Utility functions for interacting with claude-code.nvim plugin
 local M = {}
 
---- Open Claude Code with a specific command, without modifying global config
---- This creates a cleaner interface for opening Claude with custom commands
+--- Open Claude Code with a specific command using the proper claude-code.nvim API
 --- @param command string The full command to run (e.g., "claude --resume <id>")
 --- @return boolean success Whether the command was executed successfully
 function M.open_with_command(command)
@@ -62,13 +61,51 @@ function M.resume_session(session_id)
     { module = "ai-claude", action = "resume_session" }
   )
 
+  -- Get the claude-code plugin module
+  local ok, claude_code = pcall(require, "claude-code")
+  if not ok then
+    notify.notify(
+      "claude-code plugin not found",
+      notify.categories.ERROR,
+      {
+        module = "ai-claude",
+        details = "The claude-code.nvim plugin could not be loaded"
+      }
+    )
+    return false
+  end
+
+  -- Use the full command approach since there might not be a resume variant
   return M.open_with_command("claude --resume " .. session_id)
 end
 
 --- Open Claude Code with continue mode
 --- @return boolean success Whether Claude was opened in continue mode
 function M.continue()
-  return M.open_with_command("claude --continue")
+  local notify = require("neotex.util.notifications")
+
+  -- Get the claude-code plugin module
+  local ok, claude_code = pcall(require, "claude-code")
+  if not ok then
+    notify.notify(
+      "claude-code plugin not found",
+      notify.categories.ERROR,
+      {
+        module = "ai-claude",
+        details = "The claude-code.nvim plugin could not be loaded"
+      }
+    )
+    return false
+  end
+
+  -- Try to use the variant system if continue variant exists
+  if claude_code.config and claude_code.config.command_variants and claude_code.config.command_variants.continue then
+    local success = pcall(claude_code.toggle_with_variant, "continue")
+    return success
+  else
+    -- Fall back to full command approach
+    return M.open_with_command("claude --continue")
+  end
 end
 
 --- Open Claude Code normally

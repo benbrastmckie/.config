@@ -15,7 +15,7 @@ local remote_control_capability = nil  -- Cache remote control capability
 --- @return string|nil Terminal type ('kitty', 'wezterm') or nil if unsupported
 function M.detect()
   -- Return cached result if available
-  if detected_terminal ~= false then
+  if detected_terminal ~= nil then
     return detected_terminal
   end
 
