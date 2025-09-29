@@ -341,12 +341,86 @@ function M.set_debug(enabled)
   log_debug("Debug logging %s", enabled and "enabled" or "disabled")
 end
 
+--- Save session state with validation
+--- @param state table State data to save
+--- @return boolean success Whether state was saved successfully
+function M.save_state(state)
+  ensure_state_dir()
+
+  -- Add metadata to state
+  state.timestamp = state.timestamp or os.time()
+  state.version = 1  -- State file version for future migration
+
+  -- Validate state before saving
+  if not state.cwd then
+    state.cwd = vim.fn.getcwd()
+  end
+
+  -- Add git information if available
+  state.git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
+  state.branch = vim.fn.system("git branch --show-current 2>/dev/null"):gsub("\n", "")
+
+  local success, err = M.capture_errors(function()
+    local file = io.open(state_file, "w")
+    if file then
+      file:write(vim.fn.json_encode(state))
+      file:close()
+      return true
+    end
+    error("Could not write state file")
+  end, "save_state")
+
+  if success then
+    log_debug("State saved successfully")
+  end
+
+  return success
+end
+
+--- Synchronize state with actual Claude processes
+--- @return boolean synced Whether synchronization was successful
+function M.sync_state_with_processes()
+  -- Get current Claude buffers
+  local claude_buffers = M.detect_claude_buffers()
+
+  if #claude_buffers == 0 then
+    -- No Claude processes, clean up state if exists
+    local valid, state = M.validate_state_file()
+    if valid and state then
+      -- Check if state is recent (within last hour)
+      local age_hours = (os.time() - state.timestamp) / 3600
+      if age_hours > 1 then
+        log_debug("Cleaning up stale state (%.1f hours old)", age_hours)
+        M.cleanup_state_file()
+      end
+    end
+    return true
+  end
+
+  -- Claude processes exist, ensure state is current
+  local state = {
+    active_buffers = claude_buffers,
+    timestamp = os.time(),
+    cwd = vim.fn.getcwd()
+  }
+
+  return M.save_state(state)
+end
+
 --- Initialize the session manager
 function M.setup()
   ensure_state_dir()
 
   -- Validate and clean up state file on startup
   M.validate_state_file()
+
+  -- Set up periodic state synchronization
+  vim.defer_fn(function()
+    local timer = vim.loop.new_timer()
+    timer:start(5000, 5000, vim.schedule_wrap(function()
+      M.sync_state_with_processes()
+    end))
+  end, 1000)
 
   log_debug("Session manager initialized")
 end

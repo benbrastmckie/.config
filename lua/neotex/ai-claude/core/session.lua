@@ -19,22 +19,18 @@ end
 
 -- Save current working directory and timestamp
 function M.save_session_state()
-  ensure_state_dir()
-  local cwd = vim.fn.getcwd()
-  local timestamp = os.time()
-  
+  -- Use session manager for robust state saving
+  local session_manager = require("neotex.ai-claude.core.session-manager")
+
   local state = {
-    cwd = cwd,
-    timestamp = timestamp,
+    cwd = vim.fn.getcwd(),
+    timestamp = os.time(),
     git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", ""),
     branch = vim.fn.system("git branch --show-current 2>/dev/null"):gsub("\n", ""),
   }
-  
-  local file = io.open(state_file, "w")
-  if file then
-    file:write(vim.fn.json_encode(state))
-    file:close()
-  end
+
+  -- Use the session manager's save_state method with validation
+  return session_manager.save_state(state)
 end
 
 -- Load last session state
@@ -74,19 +70,67 @@ end
 
 -- Check if there's a recent session to restore
 function M.check_for_recent_session()
-  local state = M.load_session_state()
-  if not state then
-    return false
-  end
-  
-  -- Check if session is from the same directory
-  local current_cwd = vim.fn.getcwd()
-  if state.cwd ~= current_cwd then
-    -- Also check if we're in the same git repo
-    local current_git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
-    if state.git_root == "" or current_git_root == "" or state.git_root ~= current_git_root then
+  -- First validate the state file
+  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local valid, state = session_manager.validate_state_file()
+
+  if not valid or not state then
+    state = M.load_session_state()
+    if not state then
       return false
     end
+  end
+
+  -- Enhanced directory and git repo validation for worktrees
+  local current_cwd = vim.fn.getcwd()
+  local current_git_root = vim.fn.system("git rev-parse --show-toplevel 2>/dev/null"):gsub("\n", "")
+
+  -- Check if we're in a worktree
+  local is_worktree = false
+  local main_repo_path = current_git_root
+
+  if current_git_root ~= "" then
+    local worktree_list = vim.fn.system("git worktree list --porcelain 2>/dev/null")
+    if not worktree_list:match("^fatal:") then
+      -- Parse to find the main worktree
+      for line in worktree_list:gmatch("[^\r\n]+") do
+        if line:match("^worktree ") then
+          local path = line:match("^worktree (.+)$")
+          if path and path ~= current_cwd then
+            is_worktree = true
+          end
+        elseif line:match("^bare$") then
+          -- This is a bare repository, find the actual main worktree
+          is_worktree = true
+        end
+      end
+    end
+  end
+
+  -- More flexible directory matching for worktrees
+  local dir_match = false
+  if state.cwd == current_cwd then
+    dir_match = true
+  elseif state.git_root ~= "" and current_git_root ~= "" then
+    -- If both are in git repos, check if they're the same or related (worktrees)
+    if state.git_root == current_git_root then
+      dir_match = true
+    elseif is_worktree then
+      -- For worktrees, check if they share the same base repository
+      local state_is_worktree = state.cwd:match("%-feature%-") or state.cwd:match("%-bugfix%-") or state.cwd:match("%-refactor%-")
+      if state_is_worktree then
+        -- Extract base repo name from both paths
+        local current_base = current_cwd:match(".*/([^/]+)%-[^/]+%-[^/]+$") or current_cwd:match(".*/([^/]+)$")
+        local state_base = state.cwd:match(".*/([^/]+)%-[^/]+%-[^/]+$") or state.cwd:match(".*/([^/]+)$")
+        if current_base and state_base and current_base == state_base then
+          dir_match = true
+        end
+      end
+    end
+  end
+
+  if not dir_match then
+    return false
   end
   
   -- Check if session is recent (within last 24 hours)
@@ -360,15 +404,10 @@ end
 
 -- Toggle Claude Code with smart session handling
 function M.smart_toggle()
-  -- Check if Claude buffer already exists
-  local claude_buf_exists = false
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    local name = vim.api.nvim_buf_get_name(buf)
-    if name:match("claude") or name:match("ClaudeCode") then
-      claude_buf_exists = true
-      break
-    end
-  end
+  -- Use session manager for precise buffer detection
+  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local claude_buffers = session_manager.detect_claude_buffers()
+  local claude_buf_exists = #claude_buffers > 0
 
   if claude_buf_exists then
     -- Just toggle the existing session
