@@ -21,13 +21,20 @@ local function parse_frontmatter(content)
   -- Simple YAML parser for our specific fields
   local metadata = {}
 
+  -- Fields that should be treated as arrays (comma-separated)
+  local array_fields = {
+    allowed_tools = true,
+    dependent_commands = true,
+    parent_commands = true,
+  }
+
   for line in frontmatter_text:gmatch("[^\n]+") do
     local key, value = line:match("^([%w%-_]+):%s*(.+)")
     if key and value then
       local normalized_key = key:gsub("%-", "_")
 
-      -- Handle array values (comma-separated)
-      if value:find(",") then
+      -- Handle array values (comma-separated) only for specific fields
+      if array_fields[normalized_key] and value:find(",") then
         local array = {}
         for item in value:gmatch("([^,]+)") do
           table.insert(array, vim.trim(item))
@@ -221,11 +228,58 @@ function M.sort_hierarchy(hierarchy)
   return hierarchy
 end
 
+--- Parse commands from both local and global directories with local priority
+--- @param project_dir string|nil Path to project-specific commands directory
+--- @param global_dir string Path to global commands directory (.config/.claude/commands)
+--- @return table Merged commands with is_local flag
+function M.parse_with_fallback(project_dir, global_dir)
+  local merged_commands = {}
+  local local_command_names = {}
+
+  -- Parse local project commands first (if directory exists and is different from global)
+  if project_dir and project_dir ~= global_dir then
+    local project_exists = vim.fn.isdirectory(project_dir) == 1
+    if project_exists then
+      local local_commands = M.parse_all_commands(project_dir)
+      for name, command in pairs(local_commands) do
+        command.is_local = true  -- Mark as local command
+        merged_commands[name] = command
+        local_command_names[name] = true
+      end
+    end
+  end
+
+  -- Parse global commands from .config
+  if vim.fn.isdirectory(global_dir) == 1 then
+    local global_commands = M.parse_all_commands(global_dir)
+    for name, command in pairs(global_commands) do
+      -- Only add global command if no local version exists
+      if not local_command_names[name] then
+        command.is_local = false  -- Mark as global command
+        merged_commands[name] = command
+      end
+    end
+  end
+
+  return merged_commands
+end
+
 --- Main function to get organized command structure
 --- @param commands_dir string Path to commands directory (optional)
 --- @return table Organized, sorted command hierarchy
 function M.get_command_structure(commands_dir)
-  local commands = M.parse_all_commands(commands_dir)
+  -- For backward compatibility, if a specific dir is passed, use it
+  if commands_dir then
+    local commands = M.parse_all_commands(commands_dir)
+    local hierarchy = M.build_hierarchy(commands)
+    return M.sort_hierarchy(hierarchy)
+  end
+
+  -- New behavior: check both project and global directories
+  local project_dir = vim.fn.getcwd() .. "/.claude/commands"
+  local global_dir = vim.fn.expand("~/.config/.claude/commands")
+
+  local commands = M.parse_with_fallback(project_dir, global_dir)
   local hierarchy = M.build_hierarchy(commands)
   return M.sort_hierarchy(hierarchy)
 end

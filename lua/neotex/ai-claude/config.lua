@@ -29,6 +29,13 @@ M.defaults = {
     include_filename = true,       -- Include filename when sending visual selection
     include_line_numbers = true,   -- Include line numbers in selection
   },
+
+  -- Commands picker
+  commands = {
+    show_dependencies = true,      -- Show dependent commands in hierarchy
+    show_help_entry = true,        -- Show keyboard shortcuts help entry
+    cache_timeout = 300,           -- Cache parsed commands for 5 minutes (seconds)
+  },
 }
 
 M.options = {}

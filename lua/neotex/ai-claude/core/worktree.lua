@@ -78,13 +78,43 @@ function M.setup(opts)
   -- Check terminal support (lazy-loaded)
   local terminal_detect = require('neotex.ai-claude.utils.terminal-detection')
   if not terminal_detect.supports_tabs() then
-    vim.notify(
-      string.format(
-        "Terminal '%s' does not support tab management. Please use Kitty or WezTerm.",
-        terminal_detect.get_display_name()
-      ),
-      vim.log.levels.WARN
-    )
+    local terminal_name = terminal_detect.get_display_name()
+    local terminal_type = terminal_detect.detect()
+
+    -- Provide specific guidance for Kitty remote control
+    if terminal_type == 'kitty' then
+      local config_path = terminal_detect.get_kitty_config_path()
+      local config_status = terminal_detect.check_kitty_config()
+
+      local message
+      if config_status == false then
+        message = string.format(
+          "Kitty remote control is disabled. Add 'allow_remote_control yes' to %s and restart Kitty.",
+          config_path
+        )
+      elseif config_status == nil then
+        message = string.format(
+          "Kitty config not found. Create %s with 'allow_remote_control yes' and restart Kitty.",
+          config_path
+        )
+      else
+        message = string.format(
+          "Kitty remote control configuration issue. Ensure 'allow_remote_control yes' is in %s and restart Kitty.",
+          config_path
+        )
+      end
+
+      vim.notify(message, vim.log.levels.WARN)
+    else
+      -- Generic error for non-Kitty terminals
+      vim.notify(
+        string.format(
+          "Terminal '%s' does not support tab management. Please use Kitty (with remote control enabled) or WezTerm.",
+          terminal_name
+        ),
+        vim.log.levels.WARN
+      )
+    end
   end
   if not has_worktree then
     vim.notify("git-worktree.nvim not found. Worktree features disabled.", vim.log.levels.ERROR)
@@ -297,8 +327,10 @@ function M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
   end
 
   -- Generate terminal-specific command
+  -- Convert relative path to absolute path for terminal commands
+  local abs_worktree_path = vim.fn.fnamemodify(worktree_path, ":p")
   local cmd = terminal_cmds.spawn_tab(
-    worktree_path,
+    abs_worktree_path,
     context_file and "nvim CLAUDE.md" or nil
   )
 
@@ -737,7 +769,7 @@ function M.telescope_sessions()
             "  Ctrl-t      - Open session in new tab",
             "  Ctrl-o      - Open worktree in new terminal tab",
             "  Ctrl-n      - Create new Claude worktree",
-            "  Ctrl-k      - Cleanup stale worktrees",
+            "  Ctrl-x      - Cleanup stale worktrees",
             "  Ctrl-h      - Show worktree health report",
             "  Escape      - Close picker",
             "",
@@ -956,8 +988,8 @@ function M.telescope_sessions()
         end
       end)
 
-      -- Cleanup sessions with Ctrl-k
-      map("i", "<C-k>", function()
+      -- Cleanup sessions with Ctrl-x
+      map("i", "<C-x>", function()
         actions.close(prompt_bufnr)
         vim.schedule(function()
           M.cleanup_sessions()
@@ -1244,11 +1276,46 @@ function M._spawn_restoration_tab(worktree_path, name)
   local terminal_cmds = require('neotex.ai-claude.utils.terminal-commands')
 
   if not terminal_detect.supports_tabs() then
-    return nil, nil, terminal_detect.get_display_name() .. " does not support tab management"
+    local terminal_name = terminal_detect.get_display_name()
+    local terminal_type = terminal_detect.detect()
+
+    -- Provide specific guidance for Kitty remote control
+    if terminal_type == 'kitty' then
+      local config_path = terminal_detect.get_kitty_config_path()
+      local config_status = terminal_detect.check_kitty_config()
+
+      local message
+      if config_status == false then
+        message = string.format(
+          "Kitty remote control is disabled. Add 'allow_remote_control yes' to %s and restart Kitty.",
+          config_path
+        )
+      elseif config_status == nil then
+        message = string.format(
+          "Kitty config not found. Create %s with 'allow_remote_control yes' and restart Kitty.",
+          config_path
+        )
+      else
+        message = string.format(
+          "Kitty remote control configuration issue. Ensure 'allow_remote_control yes' is in %s and restart Kitty.",
+          config_path
+        )
+      end
+
+      return nil, nil, message
+    else
+      -- Generic error for non-Kitty terminals
+      return nil, nil, string.format(
+        "Terminal '%s' does not support tab management. Please use Kitty (with remote control enabled) or WezTerm.",
+        terminal_name
+      )
+    end
   end
 
   -- Use terminal abstraction to create new tab with CLAUDE.md open
-  local cmd = terminal_cmds.spawn_tab(worktree_path, "nvim CLAUDE.md")
+  -- Convert relative path to absolute path for terminal commands
+  local abs_worktree_path = vim.fn.fnamemodify(worktree_path, ":p")
+  local cmd = terminal_cmds.spawn_tab(abs_worktree_path, "nvim CLAUDE.md")
 
   if not cmd then
     return nil, nil, "Failed to generate terminal command"
