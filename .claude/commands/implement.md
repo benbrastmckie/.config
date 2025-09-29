@@ -3,7 +3,7 @@ allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite
 argument-hint: [plan-file] [starting-phase]
 description: Execute implementation plan with automated testing and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
-dependent-commands: list-plans, update-plan, list-summaries
+dependent-commands: list-plans, update-plan, list-summaries, revise, debug, document
 ---
 
 # Execute Implementation Plan
