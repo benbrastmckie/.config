@@ -303,10 +303,13 @@ end
 --- @return boolean success Whether the session was resumed successfully
 --- @return string? error_message Error message if failed
 function M.resume_session(session_id)
+  log_debug("Attempting to resume session: %s", session_id)
+
   -- Validate session before attempting resume
   local valid, errors = M.validate_session(session_id)
   if not valid then
     local error_msg = "Session validation failed:\n" .. table.concat(errors or {}, "\n")
+    log_debug("Validation failed: %s", error_msg)
     notify.notify(
       error_msg,
       notify.categories.ERROR,
@@ -315,22 +318,54 @@ function M.resume_session(session_id)
     return false, error_msg
   end
 
-  -- Attempt to resume using claude-code utility
-  local claude_util = require("neotex.ai-claude.utils.claude-code")
+  log_debug("Session validation passed, executing resume command")
+  notify.notify(
+    string.format("Resuming session: %s...", session_id:sub(1, 8)),
+    notify.categories.USER_ACTION,
+    { module = "ai-claude", action = "resume_session" }
+  )
 
-  local success, result = M.capture_errors(function()
-    return claude_util.resume_session(session_id)
-  end, "resume_session")
+  -- Direct command execution with fallback
+  local command = "claude --resume " .. session_id
+  local success = false
 
-  if success and result then
+  -- First try using open_with_command from claude-code utils
+  local claude_util_ok, claude_util = pcall(require, "neotex.ai-claude.utils.claude-code")
+  if claude_util_ok and claude_util.open_with_command then
+    success = claude_util.open_with_command(command)
+  end
+
+  -- Fallback: try direct plugin API if available
+  if not success then
+    log_debug("Primary method failed, trying fallback")
+    local claude_code_ok, claude_code = pcall(require, "claude-code")
+    if claude_code_ok and claude_code.config then
+      local original_cmd = claude_code.config.command
+      claude_code.config.command = command
+      local toggle_ok = pcall(claude_code.toggle)
+      claude_code.config.command = original_cmd
+      success = toggle_ok
+    end
+  end
+
+  if success then
+    log_debug("Session resume successful")
     notify.notify(
       string.format("Successfully resumed session: %s", session_id:sub(1, 8)),
       notify.categories.USER_ACTION,
       { module = "ai-claude", action = "resume_session" }
     )
+
+    -- Save state after successful resume
+    M.save_state({
+      last_resumed_session = session_id,
+      timestamp = os.time()
+    })
+
     return true
   else
-    return false, "Failed to resume session"
+    log_debug("Session resume failed")
+    return false, "Failed to resume session - command execution failed"
   end
 end
 
