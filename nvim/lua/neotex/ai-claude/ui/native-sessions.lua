@@ -91,8 +91,15 @@ function M.parse_session_file(filepath)
     end
   end
   
+  -- Try to get session ID from the JSON data first, then fallback to filename
+  local session_id = first.sessionId
+  if not session_id then
+    -- Extract from filename (filepath is like /path/to/session-id.jsonl)
+    session_id = vim.fn.fnamemodify(filepath, ":t:r")
+  end
+
   return {
-    session_id = first.sessionId,
+    session_id = session_id,
     created = first.timestamp,
     updated = last.timestamp,
     branch = last.gitBranch or first.gitBranch,
@@ -106,17 +113,22 @@ end
 -- Get all sessions for current project
 function M.get_sessions()
   local project_folder = M.get_project_folder()
-  
+
   if vim.fn.isdirectory(project_folder) == 0 then
     return {}
   end
-  
+
   local sessions = {}
   local files = vim.fn.glob(project_folder .. "/*.jsonl", false, true)
-  
+
   for _, filepath in ipairs(files) do
     local session = M.parse_session_file(filepath)
     if session then
+      -- Extract session ID from filename if not present in the data
+      if not session.session_id then
+        local filename = vim.fn.fnamemodify(filepath, ":t:r") -- Get filename without extension
+        session.session_id = filename
+      end
       table.insert(sessions, session)
     end
   end
