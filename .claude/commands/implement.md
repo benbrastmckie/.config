@@ -16,14 +16,24 @@ I'll help you systematically implement the plan file with automated testing and 
 
 Let me first locate and read the implementation plan, then guide you through each phase:
 
-1. **Parse the plan** to identify phases and tasks
-2. **For each phase**:
+1. **Parse the plan** to identify:
+   - Phases and tasks
+   - Referenced research reports (if any)
+   - Standards file path
+2. **Check for research reports**:
+   - Extract report paths from plan metadata
+   - Note reports for summary generation
+3. **For each phase**:
    - Display the phase name and tasks
    - Implement the required changes
    - Run tests to verify the implementation
    - Update the plan file with completion markers
    - Create a git commit with a structured message
    - Move to the next phase
+4. **After all phases complete**:
+   - Generate implementation summary
+   - Update referenced reports if needed
+   - Link plan and reports in summary
 
 ## Phase Execution Protocol
 
@@ -81,5 +91,57 @@ If tests fail or issues arise:
 2. We'll fix the issues together
 3. Re-run tests before proceeding
 4. Only move forward when tests pass
+
+## Summary Generation
+
+After completing all phases, I'll:
+
+### 1. Create Summary Directory
+- Location: Same directory as the plan, in `specs/summary/`
+- Create if it doesn't exist
+
+### 2. Generate Summary File
+- Format: `NNN_implementation_summary.md`
+- Number matches the plan number
+- Contains:
+  - Implementation overview
+  - Plan executed with link
+  - Reports referenced (if any)
+  - Key changes made
+  - Test results
+  - Lessons learned
+
+### 3. Update Reports (if referenced)
+If the plan referenced research reports:
+- Add implementation notes to each report
+- Cross-reference the summary
+- Note which recommendations were implemented
+
+### Summary Format
+```markdown
+# Implementation Summary: [Feature Name]
+
+## Metadata
+- **Date Completed**: [YYYY-MM-DD]
+- **Plan**: [Link to plan file]
+- **Research Reports**: [Links to reports used]
+- **Phases Completed**: [N/N]
+
+## Implementation Overview
+[Brief description of what was implemented]
+
+## Key Changes
+- [Major change 1]
+- [Major change 2]
+
+## Test Results
+[Summary of test outcomes]
+
+## Report Integration
+[How research informed implementation]
+
+## Lessons Learned
+[Insights from implementation]
+```
 
 Let me start by finding and reading your implementation plan.

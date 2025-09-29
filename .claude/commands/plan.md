@@ -1,32 +1,44 @@
 ---
 allowed-tools: Read, Write, Bash, Grep, Glob, WebSearch
-argument-hint: <feature or task description>
-description: Create a detailed implementation plan following project standards
+argument-hint: <feature description> [report-path1] [report-path2] ...
+description: Create a detailed implementation plan following project standards, optionally guided by research reports
 ---
 
 # Create Implementation Plan
 
-I'll create a comprehensive implementation plan for the specified feature or task, following project-specific coding standards.
+I'll create a comprehensive implementation plan for the specified feature or task, following project-specific coding standards and incorporating insights from any provided research reports.
 
-## Feature/Task
-$ARGUMENTS
+## Feature/Task and Reports
+- **Feature**: First argument before any .md paths
+- **Research Reports**: Any paths to specs/reports/*.md files in arguments
+
+I'll parse the arguments to separate the feature description from any report paths.
 
 ## Process
 
-### 1. Requirements Analysis
+### 1. Report Integration (if provided)
+If research reports are provided, I'll:
+- Read and analyze each report
+- Extract key findings and recommendations
+- Identify technical constraints and patterns
+- Use insights to inform the plan structure
+- Reference reports in the plan metadata
+
+### 2. Requirements Analysis
 I'll analyze the feature requirements to determine:
 - Core functionality needed
 - Technical scope and boundaries
 - Affected components and modules
 - Dependencies and prerequisites
+- Alignment with report recommendations (if applicable)
 
-### 2. Location Determination
+### 3. Location Determination
 I'll find the deepest directory that encompasses all relevant files by:
 - Identifying components that will be modified or created
 - Finding common parent directories
 - Selecting the most specific directory for the plan
 
-### 3. Plan Numbering
+### 4. Plan Numbering
 I'll assign the plan number by:
 - Checking existing plans in the target `specs/plans/` directory
 - Finding the highest numbered plan (e.g., `002_*.md`)
@@ -34,14 +46,14 @@ I'll assign the plan number by:
 - Starting with `001` if no numbered plans exist
 - Format: `NNN_feature_name.md` with three-digit numbering
 
-### 4. Standards Discovery
+### 5. Standards Discovery
 I'll identify project-specific standards by:
 - Looking for `CLAUDE.md` in the project directory
 - Checking for `GUIDELINES.md` or similar documentation
 - Analyzing existing code patterns and conventions
 - Identifying testing approaches and requirements
 
-### 5. Plan Structure
+### 6. Plan Structure
 The implementation plan will include:
 
 #### Overview
@@ -79,7 +91,7 @@ Testing:
 - Expected outcomes
 ```
 
-### 6. Standards Integration
+### 7. Standards Integration
 Based on discovered standards, I'll ensure:
 - Code style matches project conventions
 - File organization follows existing patterns
@@ -87,7 +99,7 @@ Based on discovered standards, I'll ensure:
 - Documentation format is consistent
 - Git commit message format is specified
 
-### 7. Plan Creation
+### 8. Plan Creation
 The plan will be saved as:
 - Path: `[relevant-dir]/specs/plans/NNN_feature_name.md`
 - Feature name converted to lowercase with underscores
@@ -105,6 +117,7 @@ The plan will be saved as:
 - **Scope**: [Brief scope description]
 - **Estimated Phases**: [Number]
 - **Standards File**: [Path to CLAUDE.md if found]
+- **Research Reports**: [List of report paths used, if any]
 
 ## Overview
 [Feature description and goals]
