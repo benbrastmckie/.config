@@ -16,12 +16,22 @@ M.config = {
   -- Worktree naming patterns
   types = { "feature", "bugfix", "refactor", "experiment", "hotfix" },
   default_type = "feature",
-  
+
   -- Session management
   max_sessions = 4,
   auto_switch_tab = true,
   create_context_file = true,
-  
+
+  -- Terminal preferences (optional, with sensible defaults)
+  terminal = {
+    -- No "prefer" option - use detected terminal
+    -- Simpler is better: always fallback to current window
+    fallback_mode = 'current_window',
+
+    -- Debug mode only - follows NOTIFICATIONS.md patterns
+    show_terminal_info = false
+  },
+
   -- Context file template
   context_template = [[
 # Task: %s
