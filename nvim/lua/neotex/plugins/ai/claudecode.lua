@@ -60,9 +60,16 @@ return {
 
   config = function(_, opts)
     require("claude-code").setup(opts)
-    
-    -- Setup session management
-    require("neotex.ai-claude").setup()
+
+    -- Setup session management with proper initialization order
+    vim.defer_fn(function()
+      -- Initialize session manager first
+      local session_manager = require("neotex.ai-claude.core.session-manager")
+      session_manager.setup()
+
+      -- Then setup the main AI claude module
+      require("neotex.ai-claude").setup()
+    end, 100)
 
     -- Configure terminal behavior to match old setup
     vim.api.nvim_create_autocmd("TermOpen", {

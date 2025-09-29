@@ -485,14 +485,19 @@ function M.show_session_picker(override_sessions, on_select_callback)
               return
             end
 
-            -- Use our cleaner utility function to resume the session
-            local claude_util = require("neotex.ai-claude.utils.claude-code")
-            local success = claude_util.resume_session(session.session_id)
+            -- Use session manager for validated resumption
+            local session_manager = require("neotex.ai-claude.core.session-manager")
+            local success, error_msg = session_manager.resume_session(session.session_id)
 
-            if success then
-              -- Save state and enter insert mode after a short delay
+            if not success and error_msg then
+              notify.notify(
+                "Failed to resume session: " .. error_msg,
+                notify.categories.ERROR,
+                { module = "ai-claude" }
+              )
+            elseif success then
+              -- Enter insert mode after a short delay
               vim.defer_fn(function()
-                require("neotex.ai-claude.core.session").save_session_state()
                 vim.cmd("startinsert")
               end, 100)
             end
