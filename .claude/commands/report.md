@@ -2,6 +2,8 @@
 allowed-tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, Task
 argument-hint: <topic or question>
 description: Research a topic and create a comprehensive report in the appropriate specs/reports/ directory
+command-type: primary
+dependent-commands: update-report, list-reports
 ---
 
 # Generate Research Report

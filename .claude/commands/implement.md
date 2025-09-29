@@ -1,7 +1,9 @@
 ---
 allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite
 argument-hint: [plan-file] [starting-phase]
-description: Execute implementation plan with automated testing and commits
+description: Execute implementation plan with automated testing and commits (auto-resumes most recent incomplete plan if no args)
+command-type: primary
+dependent-commands: list-plans, update-plan, list-summaries
 ---
 
 # Execute Implementation Plan
@@ -9,12 +11,19 @@ description: Execute implementation plan with automated testing and commits
 I'll help you systematically implement the plan file with automated testing and commits at each phase.
 
 ## Plan Information
-- **Plan file**: $1 (or I'll search for plans in lua/neotex/ai-claude/specs/plans/)
-- **Starting phase**: $2 (default: 1)
+- **Plan file**: $1 (or I'll find the most recent incomplete plan)
+- **Starting phase**: $2 (default: resume from last incomplete phase or 1)
+
+## Auto-Resume Feature
+If no plan file is provided, I will:
+1. Search for the most recently modified implementation plan
+2. Check if it has incomplete phases or tasks
+3. Resume from the first incomplete phase
+4. If all recent plans are complete, show a list to choose from
 
 ## Process
 
-Let me first locate and read the implementation plan, then guide you through each phase:
+Let me first locate the implementation plan:
 
 1. **Parse the plan** to identify:
    - Phases and tasks
@@ -144,4 +153,41 @@ If the plan referenced research reports:
 [Insights from implementation]
 ```
 
-Let me start by finding and reading your implementation plan.
+## Finding the Implementation Plan
+
+### Auto-Detection Logic (when no arguments provided):
+```bash
+# 1. Find all plan files, sorted by modification time
+find . -path "*/specs/plans/*.md" -type f -exec ls -t {} + 2>/dev/null
+
+# 2. For each plan, check for incomplete markers:
+# - Look for unchecked tasks: "- [ ]"
+# - Look for phases without [COMPLETED] marker
+# - Skip plans marked with "IMPLEMENTATION COMPLETE"
+
+# 3. Select the first incomplete plan
+```
+
+### If no plan file provided:
+I'll search for the most recent incomplete implementation plan by:
+1. Looking in all `specs/plans/` directories
+2. Sorting by modification time (most recent first)
+3. Checking each plan for:
+   - Unchecked tasks `- [ ]`
+   - Phases without `[COMPLETED]` marker
+   - Absence of `IMPLEMENTATION COMPLETE` header
+4. Selecting the first incomplete plan found
+5. Determining the first incomplete phase to resume from
+
+### If a plan file is provided:
+I'll use the specified plan file directly and:
+1. Check its completion status
+2. Find the first incomplete phase (if any)
+3. Resume from that phase or start from phase 1
+
+### Plan Status Detection Patterns:
+- **Complete Plan**: Contains `## ✅ IMPLEMENTATION COMPLETE` or all phases marked `[COMPLETED]`
+- **Incomplete Phase**: Phase heading without `[COMPLETED]` marker
+- **Incomplete Task**: Checklist item with `- [ ]` instead of `- [x]`
+
+Let me start by finding your implementation plan.

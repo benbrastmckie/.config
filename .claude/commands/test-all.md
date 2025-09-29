@@ -2,6 +2,8 @@
 allowed-tools: Bash, Read, Grep
 argument-hint: [coverage]
 description: Run the complete test suite for the project
+command-type: dependent
+parent-commands: test, implement
 ---
 
 # Run Complete Test Suite

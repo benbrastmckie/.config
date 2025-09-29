@@ -2,6 +2,8 @@
 allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
 argument-hint: [project-directory]
 description: Setup or improve CLAUDE.md with links to standards and specs directory protocols
+command-type: primary
+dependent-commands: validate-setup
 ---
 
 # Setup Project Standards

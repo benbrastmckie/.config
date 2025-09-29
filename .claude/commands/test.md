@@ -2,6 +2,7 @@
 allowed-tools: Bash, Read, Grep, Glob
 argument-hint: <feature/module/file> [test-type]
 description: Run project-specific tests based on CLAUDE.md testing protocols
+command-type: primary
 ---
 
 # Run Project Tests

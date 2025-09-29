@@ -2,6 +2,8 @@
 allowed-tools: Bash, Glob, Read
 argument-hint: [search-pattern]
 description: List all implementation plans in the codebase
+command-type: dependent
+parent-commands: implement
 ---
 
 # List Implementation Plans
