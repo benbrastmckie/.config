@@ -186,16 +186,8 @@ local function send_command_to_terminal(command)
   local notify = require('neotex.util.notifications')
 
   -- Get base command string
+  -- Just the command name, no placeholders
   local command_text = "/" .. command.name
-
-  -- Add argument placeholders if available
-  if command.argument_hint and command.argument_hint ~= "" then
-    -- Simple placeholder replacement - user can fill in the arguments
-    local hint = command.argument_hint
-    -- Convert <required> to placeholder, [optional] remains as is
-    hint = hint:gsub("<([^>]+)>", "<%1>")  -- Keep required args as-is for user input
-    command_text = command_text .. " " .. hint
-  end
 
   -- Try to use ai-claude utilities first
   local claude_code_utils = require('neotex.ai-claude.utils.claude-code')
