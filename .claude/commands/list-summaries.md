@@ -13,7 +13,7 @@ $1 (optional filter)
 
 ## Process
 
-I'll search for all summaries in `specs/summary/` directories and provide:
+I'll search for all summaries in `specs/summaries/` directories and provide:
 
 ### 1. Summary Inventory
 - Location of each summary
