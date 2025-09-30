@@ -183,16 +183,16 @@ return {
     -- ============================================================================
 
     wk.add({
-      { "<leader>a", group = "ai", icon = "󰚩" },
+      { "<leader>a", group = "ai", icon = "󰚩", mode = { "n", "v" } },
 
       -- Claude AI commands
+      { "<leader>ac", "<cmd>ClaudeCommands<CR>", desc = "claude commands", icon = "󰘳" },
       { "<leader>ac",
         function() require("neotex.plugins.ai.claude.core.visual").send_visual_to_claude_with_prompt() end,
         desc = "send selection to claude with prompt",
         mode = { "v" },
         icon = "󰘳"
       },
-      { "<leader>aC", "<cmd>ClaudeCommands<CR>", desc = "claude commands", icon = "󰘳" },
       { "<leader>as", function() require("neotex.plugins.ai.claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
       { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
