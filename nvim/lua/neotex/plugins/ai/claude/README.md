@@ -115,6 +115,7 @@ This internal system is initialized by the external plugin configuration:
 - **`../claudecode.lua`** (107 lines) - External `claude-code.nvim` plugin wrapper
 - **Purpose**: Bridges external plugin with this internal system
 - **Responsibilities**: Plugin management, terminal behavior, deferred initialization
+- **Integration**: Sets up session manager and coordinates with internal modules
 
 ## Usage
 
@@ -139,11 +140,12 @@ require("neotex.plugins.ai.claude").setup({
 
 ### Keybindings
 
-Default keybindings (configured in `neotex.config.keymaps`):
+Default keybindings (configured in `which-key.lua`):
 
 - `<C-c>` - Smart toggle Claude Code (all modes)
-- `<leader>ac` - Send visual selection to Claude with prompt (visual mode only)
-- `<leader>aC` - Browse Claude commands
+- `<leader>ac` - Context-sensitive Claude commands:
+  - **Normal mode**: Browse Claude commands
+  - **Visual mode**: Send selection to Claude with prompt
 - `<leader>as` - Browse Claude sessions
 - `<leader>av` - View worktrees
 - `<leader>aw` - Create new worktree with Claude session
@@ -188,8 +190,8 @@ ai.telescope_sessions()               -- Show sessions in Telescope
 ai.telescope_worktrees()              -- Show worktrees in Telescope
 
 -- Visual Selection
-ai.send_visual_to_claude()      -- Send visual selection to Claude
-ai.send_visual_to_claude_with_prompt() -- Send with interactive prompt (visual mode)
+ai.send_visual_to_claude()                  -- Send visual selection to Claude
+ai.send_visual_to_claude_with_prompt()      -- Send with interactive prompt
 
 -- Setup
 ai.setup(opts)                  -- Initialize with configuration
@@ -301,7 +303,7 @@ The worktree feature creates isolated development environments:
 
 #### Visual Selection with Prompt
 1. **Select text** in visual mode (`v`, `V`, or `Ctrl-v`)
-2. **Press `<leader>ac`** to trigger the prompt
+2. **Press `<leader>ac`** to trigger the interactive prompt
 3. **Enter your question** (e.g., "Please explain this function")
 4. **Claude opens** with your selection and custom prompt
 
@@ -309,10 +311,15 @@ Example workflow:
 ```vim
 " Select a function in visual mode
 v}
-" Press <leader>ac
+" Press <leader>ac (same key as normal mode, but context-aware)
 " Enter prompt: "What does this function do and how can I optimize it?"
 " Claude receives the selection with your question
 ```
+
+#### Claude Commands Browser
+1. **In normal mode**, press `<leader>ac` to browse available Claude commands
+2. **Navigate** through the hierarchical command picker
+3. **Select** a command to execute
 
 #### Command Usage
 ```vim
@@ -403,10 +410,11 @@ All functionality is preserved with improved organization.
 - Test filename and line number inclusion
 
 **`<leader>ac` mapping issues:**
-- Ensure you're in visual mode when pressing `<leader>ac`
-- Check that text is actually selected before triggering
-- Verify which-key is loaded: `:lua print(require('which-key'))`
-- Test with `:ClaudeSendVisualPrompt` command as alternative
+- **Visual mode**: Ensure text is selected before pressing `<leader>ac`
+- **Normal mode**: `<leader>ac` should open Claude commands browser
+- **Mode detection**: Function validates visual mode automatically
+- **Alternative**: Use `:ClaudeSendVisualPrompt` command if mapping fails
+- **Which-key**: Verify with `:lua print(require('which-key'))`
 
 **Prompt input problems:**
 - If prompt dialog doesn't appear, check `vim.ui.input()` availability
