@@ -34,7 +34,7 @@ return {
     vim.opt.laststatus = 3
 
     -- Set up theme-aware highlighting for Avante
-    local ok, highlights = pcall(require, "neotex.plugins.ai.util.avante-highlights")
+    local ok, highlights = pcall(require, "neotex.plugins.ai.claude.util.avante-highlights")
     if ok and highlights.setup then
       -- Initialize the streamlined highlighting system
       -- This provides essential diff and suggestion highlighting with theme integration
@@ -48,7 +48,7 @@ return {
         vim.api.nvim_exec_autocmds("User", { pattern = "AvantePreLoad" })
 
         -- Use our helper function to ensure MCPHub is loaded and run Avante
-        local avante_mcp = require("neotex.plugins.ai.util.avante_mcp")
+        local avante_mcp = require("neotex.plugins.ai.claude.util.avante_mcp")
         avante_mcp.with_mcp(command .. " " .. (opts.args or ""))
       end, { nargs = "*" })
     end
@@ -112,7 +112,7 @@ return {
     })
 
     -- Load avante support module first to get provider models
-    local avante_support = require("neotex.plugins.ai.util.avante-support")
+    local avante_support = require("neotex.plugins.ai.claude.util.avante-support")
 
     -- Get provider models and update global state
     -- This makes models available throughout the configuration
@@ -252,7 +252,7 @@ return {
   end,
   opts = function()
     -- Load saved settings first to determine defaults
-    local avante_support = require("neotex.plugins.ai.util.avante-support")
+    local avante_support = require("neotex.plugins.ai.claude.util.avante-support")
     local saved_settings = avante_support.load_settings()
     
     -- Use saved settings for defaults
@@ -348,7 +348,7 @@ return {
         local current_persona = "expert"
         
         -- Try to get current persona from system prompts manager
-        local ok, prompts = pcall(require, "neotex.plugins.ai.util.system-prompts")
+        local ok, prompts = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
         if ok then
           local _, current_name = prompts.get_default()
           if current_name then
@@ -357,7 +357,7 @@ return {
         end
         
         -- Generate enhanced prompt using tool registry
-        local ok_registry, avante_mcp = pcall(require, "neotex.plugins.ai.util.avante_mcp")
+        local ok_registry, avante_mcp = pcall(require, "neotex.plugins.ai.claude.util.avante_mcp")
         if ok_registry then
           -- Get a sample context that would trigger framework detection
           -- This ensures Context7 tools are always included for documentation requests
@@ -602,7 +602,7 @@ return {
 
     -- Override with saved settings if they exist
     -- Note: Using new variable names to avoid confusion with the init function scope
-    local opts_support = require("neotex.plugins.ai.util.avante-support")
+    local opts_support = require("neotex.plugins.ai.claude.util.avante-support")
     local opts_settings = opts_support.init()
 
     -- Apply settings to config

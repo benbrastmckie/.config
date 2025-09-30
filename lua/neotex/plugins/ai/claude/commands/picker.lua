@@ -1,4 +1,4 @@
--- neotex.ai-claude.commands.picker
+-- neotex.plugins.ai.claude.commands.picker
 -- Telescope picker for Claude commands with hierarchical display
 
 local M = {}
@@ -12,7 +12,7 @@ local conf = require("telescope.config").values
 local previewers = require("telescope.previewers")
 
 -- Local modules
-local parser = require("neotex.ai-claude.commands.parser")
+local parser = require("neotex.plugins.ai.claude.commands.parser")
 
 --- Create flattened entries for telescope display
 --- @param structure table Command hierarchy from parser.get_command_structure()
@@ -155,7 +155,7 @@ local function create_command_previewer()
         local count_to_load = 0
         local commands_to_load = {}
 
-        local parser = require('neotex.ai-claude.commands.parser')
+        local parser = require('neotex.plugins.ai.claude.commands.parser')
         local structure = parser.get_command_structure()
 
         for name, data in pairs(structure.primary_commands) do
@@ -282,7 +282,7 @@ local function send_command_to_terminal(command)
   local command_text = "/" .. command.name
 
   -- Try to use ai-claude utilities first
-  local claude_code_utils = require('neotex.ai-claude.utils.claude-code')
+  local claude_code_utils = require('neotex.plugins.ai.claude.utils.claude-code')
 
   -- Check if Claude Code is available through the plugin
   local has_claude_code, claude_code = pcall(require, "claude-code")
@@ -325,47 +325,63 @@ local function send_command_to_terminal(command)
         return
       end
 
-      -- Wait for terminal to be ready, then use feedkeys to type the command
-      vim.defer_fn(function()
-        -- Find the Claude Code terminal buffer
-        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_valid(buf) and
-             vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-            local buf_name = vim.api.nvim_buf_get_name(buf)
-            if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-              -- Focus the Claude terminal window
-              local claude_wins = vim.fn.win_findbuf(buf)
-              if #claude_wins > 0 then
-                vim.api.nvim_set_current_win(claude_wins[1])
+      -- Wait for terminal to be ready with smart retry logic
+      local function wait_for_claude_and_send_command(attempt)
+        attempt = attempt or 1
+        local max_attempts = 10
+        local base_delay = 500
 
-                -- Move to the end and enter insert mode
-                vim.cmd('normal! G$')
+        vim.defer_fn(function()
+          -- Find the Claude Code terminal buffer
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_valid(buf) and
+               vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
+              local buf_name = vim.api.nvim_buf_get_name(buf)
+              if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
+                -- Focus the Claude terminal window
+                local claude_wins = vim.fn.win_findbuf(buf)
+                if #claude_wins > 0 then
+                  vim.api.nvim_set_current_win(claude_wins[1])
 
-                -- Use feedkeys to type the command after a small delay
-                -- This simulates actual typing and works more reliably
-                vim.defer_fn(function()
-                  -- Enter insert mode and type the command
-                  vim.api.nvim_feedkeys('i' .. command_text, 'n', false)
+                  -- Move to the end and enter insert mode
+                  vim.cmd('normal! G$')
 
-                  notify.editor(
-                    string.format("Inserted '%s' into Claude Code terminal", command_text),
-                    notify.categories.USER_ACTION,
-                    { command = command_text }
-                  )
-                end, 500)  -- Wait for welcome message to appear
+                  -- Use feedkeys to type the command with proper timing
+                  vim.defer_fn(function()
+                    -- Clear any existing input and enter insert mode
+                    vim.api.nvim_feedkeys('cc', 'n', false)
+                    vim.defer_fn(function()
+                      -- Type the command
+                      vim.api.nvim_feedkeys(command_text, 'n', false)
 
-                return
+                      notify.editor(
+                        string.format("Sent command '%s' to Claude Code", command_text),
+                        notify.categories.USER_ACTION,
+                        { command = command_text }
+                      )
+                    end, 200)
+                  end, 300)
+
+                  return
+                end
               end
             end
           end
-        end
 
-        notify.editor(
-          "Could not find Claude Code terminal after opening",
-          notify.categories.WARNING,
-          { command = command_text }
-        )
-      end, 1000)  -- Initial wait for terminal to open
+          -- If we haven't found the terminal yet and haven't exceeded max attempts, try again
+          if attempt < max_attempts then
+            wait_for_claude_and_send_command(attempt + 1)
+          else
+            notify.editor(
+              "Could not find Claude Code terminal after opening",
+              notify.categories.WARNING,
+              { command = command_text, attempts = attempt }
+            )
+          end
+        end, base_delay * attempt)  -- Exponential backoff: 500ms, 1000ms, 1500ms, etc.
+      end
+
+      wait_for_claude_and_send_command()
       return
     end
 
@@ -490,7 +506,7 @@ local function load_command_locally(command, silent)
       dep_name = vim.trim(dep_name)
 
       -- Find the dependency command in the global structure
-      local parser = require('neotex.ai-claude.commands.parser')
+      local parser = require('neotex.plugins.ai.claude.commands.parser')
       local global_commands_dir = vim.fn.expand("~/.config/.claude/commands")
       local dep_filepath = global_commands_dir .. "/" .. dep_name .. ".md"
 
@@ -520,7 +536,7 @@ end
 --- @return number count Number of commands loaded
 local function load_all_commands_locally()
   local notify = require('neotex.util.notifications')
-  local parser = require('neotex.ai-claude.commands.parser')
+  local parser = require('neotex.plugins.ai.claude.commands.parser')
 
   local project_dir = vim.fn.getcwd()
   local global_dir = vim.fn.expand("~/.config")
@@ -1009,7 +1025,7 @@ function M.show_commands_picker(opts)
         )
 
         -- Try to use ai-claude utilities first
-        local claude_code_utils = require('neotex.ai-claude.utils.claude-code')
+        local claude_code_utils = require('neotex.plugins.ai.claude.utils.claude-code')
 
         -- Check if Claude Code is available through the plugin
         local has_claude_code, claude_code = pcall(require, "claude-code")

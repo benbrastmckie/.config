@@ -39,7 +39,12 @@ M.config = {
   auto_focus = true,
 
   -- Enter insert mode after sending
-  auto_insert = true
+  auto_insert = true,
+
+  -- Interactive prompt configuration
+  prompt_placeholder = "Ask Claude about this code...",
+  prompt_title = "Claude Prompt",
+  allow_empty_prompt = false,
 }
 
 -- Error types for consistent handling
@@ -585,5 +590,72 @@ end, {
   nargs = '?',
   desc = 'Send entire buffer to Claude Code'
 })
+
+-- Interactive function to send visual selection with user-provided prompt
+-- This function is called by the <leader>ac keymap in visual mode
+function M.send_visual_to_claude_with_prompt()
+  -- Validate we're in visual mode
+  local mode = vim.fn.mode()
+  if not mode:match("^[vV\22]") then
+    vim.notify("This function only works in visual mode. Please select text first.", vim.log.levels.WARN)
+    return
+  end
+
+  -- Get the visual selection first
+  local selection = get_visual_selection()
+  if selection == "" or selection:match("^%s*$") then
+    vim.notify("No text selected. Please select some text and try again.", vim.log.levels.WARN)
+    return
+  end
+
+  -- Show progress notification
+  if M.config.show_progress then
+    vim.notify(string.format("Selected %d characters. Opening prompt...", #selection), vim.log.levels.INFO)
+  end
+
+  -- Collect user prompt with vim.ui.input
+  vim.ui.input({
+    prompt = M.config.prompt_title .. ": ",
+    default = "",
+    completion = nil,
+  }, function(user_prompt)
+    -- Handle cancellation (nil input)
+    if user_prompt == nil then
+      if M.config.show_progress then
+        vim.notify("Claude prompt cancelled.", vim.log.levels.INFO)
+      end
+      return
+    end
+
+    -- Handle empty prompt
+    if user_prompt == "" or user_prompt:match("^%s*$") then
+      if not M.config.allow_empty_prompt then
+        vim.notify("Empty prompt not allowed. Please provide a question or request.", vim.log.levels.WARN)
+        return
+      else
+        -- Use default prompt if empty is allowed
+        user_prompt = M.config.default_prompt
+      end
+    end
+
+    -- Validate prompt length (reasonable limit)
+    if #user_prompt > 1000 then
+      vim.notify("Prompt too long (max 1000 characters). Please shorten your request.", vim.log.levels.WARN)
+      return
+    end
+
+    -- Show progress
+    if M.config.show_progress then
+      vim.notify("Sending selection to Claude with your prompt...", vim.log.levels.INFO)
+    end
+
+    -- Send to Claude using existing infrastructure
+    if M.config.auto_retry then
+      M.send_with_retry(selection, user_prompt)
+    else
+      M.send_to_claude(selection, user_prompt)
+    end
+  end)
+end
 
 return M

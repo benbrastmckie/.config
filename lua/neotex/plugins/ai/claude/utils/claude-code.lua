@@ -7,7 +7,7 @@ local M = {}
 --- @return string? error_details Error details if failed
 function M.open_with_command(command)
   local notify = require("neotex.util.notifications")
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
 
   -- Get the claude-code plugin module
   local ok, claude_code = pcall(require, "claude-code")
@@ -79,7 +79,7 @@ end
 --- @return boolean success Whether the session was resumed successfully
 function M.resume_session(session_id)
   local notify = require("neotex.util.notifications")
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
 
   -- Use session manager's resume function with full validation
   return session_manager.resume_session(session_id)
@@ -89,7 +89,7 @@ end
 --- @return boolean success Whether Claude was opened in continue mode
 function M.continue()
   local notify = require("neotex.util.notifications")
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
 
   -- Get the claude-code plugin module
   local ok, claude_code = pcall(require, "claude-code")

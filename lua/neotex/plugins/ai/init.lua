@@ -1,94 +1,60 @@
 -----------------------------------------------------------
--- AI Tooling Plugins
+-- AI Plugin Category
 --
--- This module loads AI-related plugins:
--- - avante.lua: Avante AI integration with MCP Hub support
--- - claudecode.lua: Claude Code terminal integration for seamless AI workflow
--- - mcp-hub.lua: MCP Hub integration
--- - lectic.lua: Lectic AI integration for interactive markdown files (with util/lectic_extras.lua)
--- - util/avante-highlights.lua: Enhanced visual indicators for Avante
--- - util/system-prompts.lua: System prompts manager for Avante
--- - util/avante-support.lua: Support functions for Avante configuration
---
--- The module uses a consistent error handling approach to ensure
--- NeoVim starts properly even if some plugin specifications fail.
+-- This module returns AI-related plugin specifications.
+-- It includes all AI tools and integrations like Claude, Avante, etc.
 -----------------------------------------------------------
 
 -- Helper function to require a module with error handling
 local function safe_require(module)
   local ok, result = pcall(require, module)
   if not ok then
-    require('neotex.util.notifications').ai('Failed to load plugin module', require('neotex.util.notifications').categories.WARNING, { module = module })
-    return {}
+    vim.notify("Failed to load plugin module: " .. module, vim.log.levels.WARN)
+    return nil
   end
-  return result
+
+  -- Validate that the result is actually a valid plugin spec
+  -- Most plugin specs are tables with a string at index 1 (the repo)
+  if type(result) == "table" then
+    -- It's already a valid spec if it has a string in position 1
+    if type(result[1]) == "string" then
+      return result
+    end
+
+    -- It's already a valid spec if it's an import directive
+    if result.import then
+      return result
+    end
+
+    -- For function-only modules (which would cause the "invalid plugin spec" error)
+    -- Return nil instead of the function-containing table
+    if result.setup and type(result.setup) == "function" and not result[1] then
+      vim.notify("Skipping non-plugin module: " .. module, vim.log.levels.DEBUG)
+      return nil
+    end
+
+    return result
+  end
+
+  return nil
 end
 
--- Load the Avante+MCP integration during setup
-local function setup_integrations()
-  local avante_mcp = require("neotex.plugins.ai.util.avante_mcp")
-  avante_mcp.setup()
-end
+local plugins = {}
 
--- Initialize once plugins are loaded
-vim.api.nvim_create_autocmd("User", {
-  pattern = "LazyDone",
-  callback = function()
-    -- Set up integrations with a slight delay to ensure other plugins are loaded
-    vim.defer_fn(setup_integrations, 100)
-
-    -- Register a global MCPHubOpen command that will be available at startup
-    pcall(vim.api.nvim_del_user_command, "MCPHubOpen")
-    vim.api.nvim_create_user_command("MCPHubOpen", function()
-      -- Try to load MCPHub through Lazy
-      pcall(function()
-        require("lazy").load({ plugins = { "mcphub.nvim" } })
-      end)
-
-      -- Give a moment for the plugin to load
-      vim.defer_fn(function()
-        -- Ensure the open_mcphub function is called safely
-        pcall(function()
-          require("neotex.plugins.ai.util.avante_mcp").open_mcphub()
-        end)
-      end, 100)
-    end, { desc = "Open MCPHub interface with auto-load and start" })
-
-    -- Register a handler for our custom event
-    vim.api.nvim_create_autocmd("User", {
-      pattern = "AvantePreLoad",
-      callback = function()
-        -- Try to load MCPHub through Lazy instead of packadd
-        pcall(function()
-          require("lazy").load({ plugins = { "mcphub.nvim" } })
-        end)
-
-        -- Verify that we can now require MCPHub
-        vim.defer_fn(function()
-          pcall(function()
-            require("mcphub")
-          end)
-        end, 50)
-      end,
-      once = true
-    })
-  end
-})
-
--- Load the AI plugin modules
-local avante_plugin = safe_require("neotex.plugins.ai.avante")
-local claude_code_plugin = safe_require("neotex.plugins.ai.claudecode")
-local lectic_plugin = safe_require("neotex.plugins.ai.lectic")
-local mcphub_plugin = safe_require("neotex.plugins.ai.mcp-hub")
-
--- Return plugin specs
-return {
-  -- Core plugins
-  avante_plugin,
-  claude_code_plugin,
-  lectic_plugin,
-
-  -- MCPHub plugin (completely isolated)
-  mcphub_plugin,
+-- Load AI plugin specifications
+local ai_plugins = {
+  "avante",
+  "claudecode",
+  "lectic",
+  "mcp-hub",
 }
 
+-- Load each AI plugin spec
+for _, plugin_name in ipairs(ai_plugins) do
+  local plugin_spec = safe_require("neotex.plugins.ai." .. plugin_name)
+  if plugin_spec then
+    table.insert(plugins, plugin_spec)
+  end
+end
+
+return plugins

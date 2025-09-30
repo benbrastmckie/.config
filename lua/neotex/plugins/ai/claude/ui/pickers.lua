@@ -1,4 +1,4 @@
--- neotex.ai-claude.ui.pickers
+-- neotex.plugins.ai.claude.ui.pickers
 -- Telescope pickers for Claude sessions
 
 local M = {}
@@ -158,7 +158,7 @@ function M.show_picker()
           end, 200)
           
           -- Save session state
-          require("neotex.ai-claude.core.session").save_session_state()
+          require("neotex.plugins.ai.claude.core.session").save_session_state()
         end
       end)
       return true
@@ -168,13 +168,13 @@ end
 
 -- Simple session picker (shows limited options)
 function M.simple_session_picker(on_select)
-  local native_sessions = require("neotex.ai-claude.ui.native-sessions")
+  local native_sessions = require("neotex.plugins.ai.claude.ui.native-sessions")
   local sessions = native_sessions.get_sessions()
 
   if #sessions == 0 then
     -- No sessions, just start a new one
     vim.cmd("ClaudeCode")
-    require("neotex.ai-claude.core.session").save_session_state()
+    require("neotex.plugins.ai.claude.core.session").save_session_state()
     return
   end
 
@@ -235,13 +235,13 @@ function M.simple_session_picker(on_select)
           end
 
           -- Use our cleaner utility function to resume the session
-          local claude_util = require("neotex.ai-claude.utils.claude-code")
+          local claude_util = require("neotex.plugins.ai.claude.utils.claude-code")
           local success = claude_util.resume_session(selected.session_id)
 
           if success then
             -- Save state and enter insert mode after a short delay
             vim.defer_fn(function()
-              require("neotex.ai-claude.core.session").save_session_state()
+              require("neotex.plugins.ai.claude.core.session").save_session_state()
               vim.cmd("startinsert")
             end, 100)
           end
@@ -266,7 +266,7 @@ end
 
 -- Full session picker (shows all sessions)
 function M.full_session_picker(on_select)
-  local native_sessions = require("neotex.ai-claude.ui.native-sessions")
+  local native_sessions = require("neotex.plugins.ai.claude.ui.native-sessions")
   native_sessions.show_session_picker(nil, on_select)
 end
 

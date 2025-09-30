@@ -26,7 +26,7 @@ vim.defer_fn(function()
     local ok_avante, avante = pcall(require, "avante")
     if ok_avante then
       -- Get fresh configuration
-      local config_ok, config_fn = pcall(require, "neotex.plugins.ai.avante")
+      local config_ok, config_fn = pcall(require, "neotex.plugins.ai.claude.avante")
       if config_ok and config_fn.opts then
         local fresh_config = config_fn.opts()
         

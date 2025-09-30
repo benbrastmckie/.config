@@ -110,6 +110,54 @@ function M.parse_session_file(filepath)
   }
 end
 
+-- Get all sessions from any project (global sessions)
+function M.get_all_sessions()
+  local claude_projects_dir = vim.fn.expand("~/.claude/projects")
+  local all_sessions = {}
+
+  if vim.fn.isdirectory(claude_projects_dir) == 0 then
+    return {}
+  end
+
+  -- Get all project directories
+  local project_dirs = vim.fn.glob(claude_projects_dir .. "/*", false, true)
+
+  for _, project_dir in ipairs(project_dirs) do
+    if vim.fn.isdirectory(project_dir) == 1 then
+      local session_files = vim.fn.glob(project_dir .. "/*.jsonl", false, true)
+
+      for _, session_file in ipairs(session_files) do
+        local session_data = M.parse_session_file(session_file)
+        if session_data then
+          -- Add project info to help distinguish sessions
+          session_data.project_dir = vim.fn.fnamemodify(project_dir, ":t")
+          table.insert(all_sessions, session_data)
+        end
+      end
+    end
+  end
+
+  -- Sort by most recent first
+  -- For mixed string/number timestamps, convert numbers to strings for consistent comparison
+  table.sort(all_sessions, function(a, b)
+    local a_time = a.updated or ""
+    local b_time = b.updated or ""
+
+    -- Convert numbers to ISO-like strings for consistent sorting
+    if type(a_time) == "number" then
+      a_time = os.date("!%Y-%m-%dT%H:%M:%SZ", a_time)
+    end
+    if type(b_time) == "number" then
+      b_time = os.date("!%Y-%m-%dT%H:%M:%SZ", b_time)
+    end
+
+    -- ISO 8601 timestamps sort correctly lexicographically
+    return a_time > b_time
+  end)
+
+  return all_sessions
+end
+
 -- Get all sessions for current project
 function M.get_sessions()
   local project_folder = M.get_project_folder()
@@ -232,12 +280,22 @@ end
 function M.show_session_picker(override_sessions, on_select_callback)
   local project_folder = M.get_project_folder()
   local sessions = override_sessions or M.get_sessions()
-  
+  local is_fallback = false
+
   if #sessions == 0 then
-    -- Debug info
-    local cwd = vim.fn.getcwd()
-    vim.notify(string.format("No sessions found in: %s\nCWD: %s", project_folder, cwd), vim.log.levels.INFO)
-    return
+    -- No local sessions found, try to get global sessions
+    sessions = M.get_all_sessions()
+    is_fallback = true
+
+    if #sessions == 0 then
+      -- No sessions found anywhere
+      local cwd = vim.fn.getcwd()
+      vim.notify(string.format("No Claude sessions found anywhere.\nCurrent directory: %s\nTry starting a new Claude session first.", cwd), vim.log.levels.INFO)
+      return
+    else
+      -- Show message that we're showing global sessions
+      vim.notify(string.format("No sessions in current project. Showing all %d sessions from other projects.", #sessions), vim.log.levels.INFO)
+    end
   end
   
   -- Debug: Show which folder we're reading from (only in debug mode)
@@ -432,27 +490,44 @@ function M.show_session_picker(override_sessions, on_select_callback)
     end,
   })
   
+  local title = is_fallback and "Claude Sessions (All Projects)" or "Claude Sessions (Current Project)"
+
   pickers.new({}, {
-    prompt_title = "Claude Sessions (Native)",
+    prompt_title = title,
     finder = finders.new_table({
       results = sessions,
       entry_maker = function(session)
         local msg_preview = "(no message)"
         if session.last_message and session.last_message ~= "" then
-          msg_preview = session.last_message:sub(1, 50)
+          msg_preview = session.last_message:sub(1, 40)
         end
-        
-        local display = string.format(
-          "%-15s │ %3d msgs │ %-10s │ %s",
-          M.format_time_ago(session.updated),
-          session.message_count,
-          session.branch or "no-branch",
-          msg_preview
-        )
+
+        local display
+        if is_fallback and session.project_dir then
+          -- Show project directory when showing global sessions
+          display = string.format(
+            "%-15s │ %3d msgs │ %-12s │ %-15s │ %s",
+            M.format_time_ago(session.updated),
+            session.message_count,
+            session.branch or "no-branch",
+            session.project_dir:sub(-15), -- Show last 15 chars of project dir
+            msg_preview
+          )
+        else
+          -- Normal display for local sessions
+          display = string.format(
+            "%-15s │ %3d msgs │ %-10s │ %s",
+            M.format_time_ago(session.updated),
+            session.message_count,
+            session.branch or "no-branch",
+            msg_preview
+          )
+        end
+
         return {
           value = session,
           display = display,
-          ordinal = (session.last_message or "") .. " " .. (session.branch or ""),
+          ordinal = (session.last_message or "") .. " " .. (session.branch or "") .. " " .. (session.project_dir or ""),
         }
       end,
     }),
@@ -498,7 +573,7 @@ function M.show_session_picker(override_sessions, on_select_callback)
             end
 
             -- Use session manager for validated resumption
-            local session_manager = require("neotex.ai-claude.core.session-manager")
+            local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
             local success, error_msg = session_manager.resume_session(session.session_id)
 
             if not success and error_msg then

@@ -83,6 +83,12 @@ local function setup_lazy()
       if tools_ok and type(tools_plugins) == "table" then
         vim.list_extend(plugins, tools_plugins)
       end
+
+      -- Load ai plugins explicitly to avoid auto-discovery issues
+      local ai_ok, ai_plugins = pcall(require, "neotex.plugins.ai")
+      if ai_ok and type(ai_plugins) == "table" then
+        vim.list_extend(plugins, ai_plugins)
+      end
     end
     
     -- If the new plugin system fails, fall back to the old import-based method
@@ -135,7 +141,7 @@ local function setup_lazy()
         { import = "neotex.plugins.ui" },      -- UI enhancement plugins
         
         -- Phase 4 imports
-        { import = "neotex.plugins.ai" },      -- AI tooling plugins
+        -- { import = "neotex.plugins.ai" },      -- AI tooling plugins (loaded explicitly above)
       }, {
         install = {
           colorscheme = { "gruvbox" },
