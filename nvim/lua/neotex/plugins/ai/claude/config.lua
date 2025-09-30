@@ -45,7 +45,7 @@ M.setup = function(opts)
   M.options = vim.tbl_deep_extend("force", M.defaults, opts or {})
 
   -- Update sub-module configs
-  local pickers = require("neotex.ai-claude.ui.pickers")
+  local pickers = require("neotex.plugins.ai.claude.ui.pickers")
   if pickers.config then
     pickers.config.simple_picker_max = M.options.simple_picker_max
   end

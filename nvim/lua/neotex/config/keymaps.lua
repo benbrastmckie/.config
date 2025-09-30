@@ -294,19 +294,19 @@ function M.setup()
 
   -- Claude Code toggle (smart session management)
   map("n", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("i", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("v", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("t", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   -- Avante toggle

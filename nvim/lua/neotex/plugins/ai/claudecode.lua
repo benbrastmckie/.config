@@ -64,11 +64,14 @@ return {
     -- Setup session management with proper initialization order
     vim.defer_fn(function()
       -- Initialize session manager first
-      local session_manager = require("neotex.ai-claude.core.session-manager")
+      local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
       session_manager.setup()
 
       -- Then setup the main AI claude module
-      require("neotex.ai-claude").setup()
+      local ok, claude_module = pcall(require, "neotex.plugins.ai.claude")
+      if ok and claude_module and claude_module.setup then
+        claude_module.setup()
+      end
     end, 100)
 
     -- Configure terminal behavior to match old setup

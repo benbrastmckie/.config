@@ -8,12 +8,12 @@ local M = {}
 M._initialized = false
 
 -- Load internal modules
-local claude_session = require("neotex.ai-claude.core.session")
-local claude_worktree = require("neotex.ai-claude.core.worktree")
-local claude_visual = require("neotex.ai-claude.core.visual")
-local claude_native = require("neotex.ai-claude.ui.native-sessions")
-local claude_picker = require("neotex.ai-claude.ui.pickers")
-local commands_picker = require("neotex.ai-claude.commands.picker")
+local claude_session = require("neotex.plugins.ai.claude.core.session")
+local claude_worktree = require("neotex.plugins.ai.claude.core.worktree")
+local claude_visual = require("neotex.plugins.ai.claude.core.visual")
+local claude_native = require("neotex.plugins.ai.claude.ui.native-sessions")
+local claude_picker = require("neotex.plugins.ai.claude.ui.pickers")
+local commands_picker = require("neotex.plugins.ai.claude.commands.picker")
 
 -- Session state tracking (forward from worktree module)
 M.sessions = {}  -- Will be populated from claude_worktree
@@ -29,7 +29,7 @@ end
 M.resume_session = function(id)
   -- Use session manager for validated resumption if id provided
   if id then
-    local session_manager = require("neotex.ai-claude.core.session-manager")
+    local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
     return session_manager.resume_session(id)
   else
     -- Otherwise use the interactive session picker
@@ -121,7 +121,7 @@ M.setup = function(opts)
   M._initialized = true
 
   -- Setup configuration
-  local config = require("neotex.ai-claude.config")
+  local config = require("neotex.plugins.ai.claude.config")
   M.config = config.setup(opts)
 
   -- Initialize session management

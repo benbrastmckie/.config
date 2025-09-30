@@ -20,7 +20,7 @@ end
 -- Save current working directory and timestamp
 function M.save_session_state()
   -- Use session manager for robust state saving
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
 
   local state = {
     cwd = vim.fn.getcwd(),
@@ -71,7 +71,7 @@ end
 -- Check if there's a recent session to restore
 function M.check_for_recent_session()
   -- First validate the state file
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
   local valid, state = session_manager.validate_state_file()
 
   if not valid or not state then
@@ -358,7 +358,7 @@ function M.show_session_picker()
         if selection then
           local choice = selection.value.value
           if choice == "continue" then
-            local claude_util = require("neotex.ai-claude.utils.claude-code")
+            local claude_util = require("neotex.plugins.ai.claude.utils.claude-code")
             if claude_util.continue() then
               M.save_session_state()
               -- Auto-enter insert mode
@@ -368,16 +368,14 @@ function M.show_session_picker()
             end
           elseif choice == "browse" then
             -- Show all sessions directly using native picker
-            require("neotex.ai-claude.ui.native-sessions").show_session_picker()
+            require("neotex.plugins.ai.claude.ui.native-sessions").show_session_picker()
           elseif choice == "new" then
-            local claude_util = require("neotex.ai-claude.utils.claude-code")
-            if claude_util.open() then
-              M.save_session_state()
-              -- Auto-enter insert mode
-              vim.defer_fn(function()
-                vim.cmd("startinsert")
-              end, 100)
-            end
+            vim.cmd("ClaudeCode")
+            M.save_session_state()
+            -- Auto-enter insert mode
+            vim.defer_fn(function()
+              vim.cmd("startinsert")
+            end, 100)
           end
         end
       end)
@@ -399,13 +397,13 @@ end
 -- Quick resume with picker
 function M.resume_session()
   -- Use our native session picker with actual session IDs
-  require("neotex.ai-claude.ui.native-sessions").show_session_picker()
+  require("neotex.plugins.ai.claude.ui.native-sessions").show_session_picker()
 end
 
 -- Toggle Claude Code with smart session handling
 function M.smart_toggle()
   -- Use session manager for precise buffer detection
-  local session_manager = require("neotex.ai-claude.core.session-manager")
+  local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
   local claude_buffers = session_manager.detect_claude_buffers()
   local claude_buf_exists = #claude_buffers > 0
 
@@ -413,13 +411,17 @@ function M.smart_toggle()
     -- Just toggle the existing session
     vim.cmd("ClaudeCode")
   else
-    -- No active session, check for recent one and show picker
-    local has_session = M.check_for_recent_session()
-    if has_session then
-      -- Show the 3-option menu when there's a previous session
+    -- No active session, check if there are ANY sessions available
+    local has_recent_session = M.check_for_recent_session()
+    local native_sessions = require("neotex.plugins.ai.claude.ui.native-sessions")
+    local all_sessions = native_sessions.get_all_sessions()
+    local has_any_sessions = all_sessions and #all_sessions > 0
+
+    if has_recent_session or has_any_sessions then
+      -- Show the 3-option menu when there are sessions available (recent or not)
       M.show_session_picker()
     else
-      -- No recent session, just start new
+      -- No sessions at all, just start new
       vim.cmd("ClaudeCode")
       M.save_session_state()
     end

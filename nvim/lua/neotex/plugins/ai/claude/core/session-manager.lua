@@ -61,7 +61,7 @@ end
 --- @return string? error_message Error message if not found
 function M.validate_session_file(session_id)
   -- Get project folder for session files
-  local native_sessions = require("neotex.ai-claude.ui.native-sessions")
+  local native_sessions = require("neotex.plugins.ai.claude.ui.native-sessions")
   local project_folder = native_sessions.get_project_folder()
 
   if not project_folder then
@@ -329,8 +329,22 @@ function M.resume_session(session_id)
   local command = "claude --resume " .. session_id
   local success = false
 
+  -- Check if Claude Code is already open and close it first to ensure clean session switch
+  local claude_buffers = M.detect_claude_buffers()
+  if #claude_buffers > 0 then
+    log_debug("Closing existing Claude buffers before session switch")
+    -- Close all Claude buffers
+    for _, bufnr in ipairs(claude_buffers) do
+      if vim.api.nvim_buf_is_valid(bufnr) then
+        vim.api.nvim_buf_delete(bufnr, { force = true })
+      end
+    end
+    -- Wait a moment for buffers to close
+    vim.wait(100)
+  end
+
   -- First try using open_with_command from claude-code utils
-  local claude_util_ok, claude_util = pcall(require, "neotex.ai-claude.utils.claude-code")
+  local claude_util_ok, claude_util = pcall(require, "neotex.plugins.ai.claude.utils.claude-code")
   if claude_util_ok and claude_util.open_with_command then
     success = claude_util.open_with_command(command)
   end

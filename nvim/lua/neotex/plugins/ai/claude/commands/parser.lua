@@ -1,4 +1,4 @@
--- neotex.ai-claude.commands.parser
+-- neotex.plugins.ai.claude.commands.parser
 -- Parse Claude commands from .claude/commands/ directory
 -- Extracts metadata and builds hierarchical structure
 
@@ -236,7 +236,20 @@ function M.parse_with_fallback(project_dir, global_dir)
   local merged_commands = {}
   local local_command_names = {}
 
-  -- Parse local project commands first (if directory exists and is different from global)
+  -- Special case: when in .config/, project_dir equals global_dir
+  -- In this case, all commands should be marked as local since we're in that directory
+  if project_dir and project_dir == global_dir then
+    if vim.fn.isdirectory(project_dir) == 1 then
+      local commands = M.parse_all_commands(project_dir)
+      for name, command in pairs(commands) do
+        command.is_local = true  -- Mark as local since we're in this directory
+        merged_commands[name] = command
+      end
+    end
+    return merged_commands
+  end
+
+  -- Normal case: Parse local project commands first (if directory exists and is different from global)
   if project_dir and project_dir ~= global_dir then
     local project_exists = vim.fn.isdirectory(project_dir) == 1
     if project_exists then

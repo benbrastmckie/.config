@@ -12,4 +12,4 @@ require("neotex.core.keymaps")
 require("neotex.core.options")
 
 -- Load Avante support module
-require("neotex.plugins.ai.avante-support")
+require("neotex.plugins.ai.claude.avante-support")
