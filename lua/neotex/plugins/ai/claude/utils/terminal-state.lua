@@ -288,12 +288,20 @@ function M.on_claude_ready()
 
   if claude_buf and #pending_commands > 0 then
     vim.notify(
-      "[DEBUG] on_claude_ready: Calling focus_terminal and flush_queue",
+      "[DEBUG] on_claude_ready: Scheduling focus_terminal and flush_queue with delay",
       vim.log.levels.INFO,
       { title = "Claude Debug" }
     )
-    M.focus_terminal(claude_buf)
-    M.flush_queue(claude_buf)
+    -- Small delay to let Claude fully initialize before sending commands
+    vim.defer_fn(function()
+      vim.notify(
+        "[DEBUG] on_claude_ready: Executing deferred focus_terminal and flush_queue",
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
+      M.focus_terminal(claude_buf)
+      M.flush_queue(claude_buf)
+    end, 100)
   end
 end
 
@@ -390,7 +398,7 @@ function M.focus_terminal(claude_buf)
     )
     vim.api.nvim_set_current_win(wins[1])
 
-    -- Enter insert mode if currently in normal mode
+    -- Enter insert mode if currently in normal mode (including terminal normal mode)
     local mode_after_focus = vim.api.nvim_get_mode().mode
     vim.notify(
       string.format("[DEBUG] focus_terminal: Mode after focus: %s", mode_after_focus),
@@ -398,9 +406,10 @@ function M.focus_terminal(claude_buf)
       { title = "Claude Debug" }
     )
 
-    if mode_after_focus == 'n' then
+    -- Check for both 'n' (normal) and 'nt' (terminal normal mode)
+    if mode_after_focus == 'n' or mode_after_focus == 'nt' then
       vim.notify(
-        "[DEBUG] focus_terminal: Entering insert mode",
+        string.format("[DEBUG] focus_terminal: Entering insert mode (from mode=%s)", mode_after_focus),
         vim.log.levels.INFO,
         { title = "Claude Debug" }
       )
@@ -441,9 +450,10 @@ function M.focus_terminal(claude_buf)
           { title = "Claude Debug" }
         )
 
-        if deferred_mode == 'n' then
+        -- Check for both 'n' (normal) and 'nt' (terminal normal mode)
+        if deferred_mode == 'n' or deferred_mode == 'nt' then
           vim.notify(
-            "[DEBUG] focus_terminal: Deferred entering insert mode",
+            string.format("[DEBUG] focus_terminal: Deferred entering insert mode (from mode=%s)", deferred_mode),
             vim.log.levels.INFO,
             { title = "Claude Debug" }
           )
