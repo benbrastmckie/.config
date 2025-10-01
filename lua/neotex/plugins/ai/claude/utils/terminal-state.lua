@@ -111,6 +111,7 @@ end
 --- @param opts table|nil Options table with optional fields:
 ---   - auto_focus: boolean - Focus terminal after sending
 ---   - notification: function - Callback to execute after successful send
+---   - ensure_open: boolean - Open Claude Code if terminal doesn't exist
 function M.queue_command(command_text, opts)
   opts = opts or {}
 
@@ -124,7 +125,12 @@ function M.queue_command(command_text, opts)
   local claude_buf = M.find_claude_terminal()
 
   if not claude_buf then
-    -- No terminal exists - queue will be flushed when TermOpen fires
+    -- No terminal exists
+    if opts.ensure_open then
+      -- Open Claude Code and wait for TermOpen to trigger
+      vim.cmd('ClaudeCode')
+    end
+    -- Queue will be flushed when TermOpen fires + TextChanged detects readiness
     return
   end
 
@@ -214,6 +220,7 @@ function M.send_to_terminal(claude_buf, command_text, opts)
 end
 
 --- Focus Claude terminal window and optionally enter insert mode
+--- If window is closed but buffer exists, reopens the window
 --- @param claude_buf number Terminal buffer handle
 function M.focus_terminal(claude_buf)
   if not vim.api.nvim_buf_is_valid(claude_buf) then
@@ -222,12 +229,29 @@ function M.focus_terminal(claude_buf)
 
   local wins = vim.fn.win_findbuf(claude_buf)
   if #wins > 0 then
+    -- Window exists, focus it
     vim.api.nvim_set_current_win(wins[1])
     -- Enter insert mode if currently in normal mode
     if vim.api.nvim_get_mode().mode == 'n' then
       vim.cmd('startinsert!')
     end
+  elseif state ~= M.State.OPENING then
+    -- Window doesn't exist but buffer does - reopen Claude Code sidebar
+    -- Only do this if we're not currently in the middle of opening
+    vim.cmd('ClaudeCode')
+
+    -- Wait for window to appear, then focus
+    vim.defer_fn(function()
+      local new_wins = vim.fn.win_findbuf(claude_buf)
+      if #new_wins > 0 then
+        vim.api.nvim_set_current_win(new_wins[1])
+        if vim.api.nvim_get_mode().mode == 'n' then
+          vim.cmd('startinsert!')
+        end
+      end
+    end, 50)
   end
+  -- If state == OPENING and no window, just wait - it's being created
 end
 
 --------------------------------------------------------------------------------
@@ -266,6 +290,35 @@ function M.setup()
           end
         end
       })
+
+      -- If there are pending commands, focus and poll for readiness
+      -- This handles the case where TextChanged might not fire
+      if #pending_commands > 0 then
+        -- Poll for readiness with focus attempts
+        local poll_count = 0
+        local poll_timer = vim.loop.new_timer()
+        poll_timer:start(300, 300, vim.schedule_wrap(function()
+          poll_count = poll_count + 1
+
+          -- Try to focus the terminal to ensure TextChanged can fire
+          M.focus_terminal(args.buf)
+
+          if M.is_terminal_ready(args.buf) then
+            state = M.State.READY
+            M.flush_queue(args.buf)
+            poll_timer:stop()
+            poll_timer:close()
+            -- Clean up TextChanged autocommand too
+            pcall(vim.api.nvim_del_augroup_by_id, ready_check_group)
+          elseif poll_count >= 10 then  -- Stop after 3 seconds (10 * 300ms)
+            poll_timer:stop()
+            poll_timer:close()
+            -- Try flushing anyway
+            M.flush_queue(args.buf)
+            pcall(vim.api.nvim_del_augroup_by_id, ready_check_group)
+          end
+        end))
+      end
     end
   })
 
