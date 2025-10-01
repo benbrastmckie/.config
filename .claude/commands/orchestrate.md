@@ -3,6 +3,7 @@ allowed-tools: Task, TodoWrite, Read, Write, Bash, Grep, Glob
 argument-hint: <workflow-description> [--parallel] [--sequential]
 description: Coordinate subagents through end-to-end development workflows
 command-type: primary
+dependent-commands: report, plan, implement, debug, test, document
 ---
 
 # Multi-Agent Workflow Orchestration
