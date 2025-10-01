@@ -1,21 +1,13 @@
 --------------------------------------------------------------------------------
 -- Claude Visual Selection Integration
 --------------------------------------------------------------------------------
--- Improved implementation with proper state management and terminal lifecycle
--- Fixes timing issues and provides robust message delivery
+-- Event-driven implementation using shared terminal-state module
+-- Eliminates race conditions with autocommand-based readiness detection
 
 local M = {}
 
--- State tracking
-local ClaudeTerminalState = {
-  CLOSED = 0,
-  OPENING = 1,
-  READY = 2,
-  BUSY = 3
-}
-
-local terminal_state = ClaudeTerminalState.CLOSED
-local pending_message = nil
+-- Use shared terminal state module (event-driven, no timers)
+local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
 
 -- Configuration
 M.config = {
@@ -45,14 +37,6 @@ M.config = {
   prompt_placeholder = "Ask Claude about this code...",
   prompt_title = "Claude Prompt",
   allow_empty_prompt = false,
-}
-
--- Error types for consistent handling
-local ErrorType = {
-  TERMINAL_NOT_FOUND = "Terminal not found",
-  CHANNEL_NOT_READY = "Channel not ready",
-  TIMEOUT = "Operation timed out",
-  SEND_FAILED = "Failed to send message"
 }
 
 -- Helper function to get visual selection text
@@ -147,32 +131,6 @@ local function get_visual_selection()
   return result
 end
 
--- Function to find Claude terminal buffer
-local function find_claude_terminal()
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) then
-      local bufname = vim.api.nvim_buf_get_name(buf)
-      local buftype = vim.bo[buf].buftype
-      -- Look for claude in the buffer name and ensure it's a terminal
-      if buftype == "terminal" and (bufname:match("claude") or bufname:match("ClaudeCode")) then
-        return buf
-      end
-    end
-  end
-  return nil
-end
-
--- Function to focus Claude window
-local function focus_claude_window(claude_buf)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == claude_buf then
-      vim.api.nvim_set_current_win(win)
-      return true
-    end
-  end
-  return false
-end
-
 -- Enhanced message formatting
 function M.format_message(text, prompt)
   local parts = {}
@@ -220,204 +178,28 @@ function M.format_message(text, prompt)
   return table.concat(parts, "\n")
 end
 
--- Ensure Claude is open (not toggle)
-function M.ensure_claude_open()
-  local claude_buf = find_claude_terminal()
-
-  if claude_buf then
-    -- Already open, just ensure it's visible
-    focus_claude_window(claude_buf)
-    return claude_buf, true  -- buf, was_already_open
-  else
-    -- Need to open
-    terminal_state = ClaudeTerminalState.OPENING
-    vim.cmd('ClaudeCode')
-    return nil, false
-  end
-end
-
--- Wait for Claude to be ready for input
-function M.wait_for_ready(callback, timeout)
-  timeout = timeout or M.config.ready_timeout
-  local start_time = vim.loop.now()
-
-  local timer = vim.loop.new_timer()
-  timer:start(100, 100, vim.schedule_wrap(function()
-    local claude_buf = find_claude_terminal()
-
-    if not claude_buf then
-      if vim.loop.now() - start_time > timeout then
-        timer:stop()
-        M.handle_error(ErrorType.TERMINAL_NOT_FOUND, {timeout = true})
-        return
-      end
-      return
-    end
-
-    -- Check if terminal is ready by looking for prompt
-    local lines = vim.api.nvim_buf_get_lines(claude_buf, -10, -1, false)
-    local is_ready = false
-
-    -- Look for the characteristic Claude Code prompt pattern
-    for _, line in ipairs(lines) do
-      -- Look for Claude's main prompt or welcome message completion
-      if line:match("^>") or                           -- Main prompt
-         line:match("────────") or                      -- Separator line (longer pattern)
-         line:match("Welcome to Claude Code!") or      -- Welcome completed
-         line:match("? for shortcuts") then            -- Ready for input
-        is_ready = true
-        break
-      end
-    end
-
-    -- Also check if we see the combination that indicates readiness
-    local text = table.concat(lines, "\n")
-    if text:match("Try.*%s*────.*%s*%?.*shortcuts") then
-      is_ready = true
-    end
-
-    if is_ready then
-      timer:stop()
-      terminal_state = ClaudeTerminalState.READY
-      callback(claude_buf)
-    elseif vim.loop.now() - start_time > timeout then
-      timer:stop()
-      M.handle_error(ErrorType.TIMEOUT, {buf = claude_buf})
-      callback(claude_buf)  -- Try anyway
-    end
-  end))
-end
-
--- Submit message to Claude terminal
-function M.submit_message(claude_buf, text, prompt)
-  -- Get the terminal job ID (standard approach)
-  -- Access via buffer variable, not buffer option
-  local ok, job_id = pcall(vim.api.nvim_buf_get_var, claude_buf, 'terminal_job_id')
-  if not ok or not job_id then
-    M.handle_error(ErrorType.CHANNEL_NOT_READY, {buf = claude_buf})
-    return false
-  end
-
+-- Main function to send text to Claude (event-driven, no timers)
+function M.send_to_claude(text, prompt)
   -- Build formatted message
-  local message = M.format_message(text, prompt)
+  local message = M.format_message(text, prompt) .. "\n"
 
-  -- Focus Claude window first
-  if M.config.auto_focus then
-    focus_claude_window(claude_buf)
+  -- Check if terminal exists, if not open it
+  local claude_buf = terminal_state.find_claude_terminal()
+  if not claude_buf then
+    vim.cmd('ClaudeCode')  -- Opens terminal, triggers TermOpen autocommand
   end
 
-  -- Use the standard chansend approach to send input to terminal
-  -- This is the recommended method in Neovim documentation
-  vim.fn.chansend(job_id, message .. "\n")
-
-  -- Clear pending message
-  pending_message = nil
-  terminal_state = ClaudeTerminalState.BUSY
-
-  if M.config.show_progress then
-    vim.notify("Selection sent to Claude", vim.log.levels.INFO)
-  end
+  -- Queue command - will auto-send when ready via autocommand
+  terminal_state.queue_command(message, {
+    auto_focus = M.config.auto_focus,
+    notification = function()
+      if M.config.show_progress then
+        vim.notify("Selection sent to Claude", vim.log.levels.INFO)
+      end
+    end
+  })
 
   return true
-end
-
--- Main function to send text to Claude
-function M.send_to_claude(text, prompt)
-  -- Store message in case we need to retry
-  pending_message = {
-    text = text,
-    prompt = prompt,
-    timestamp = os.time()
-  }
-
-  -- Ensure Claude is open
-  local claude_buf, was_open = M.ensure_claude_open()
-
-  if was_open and claude_buf then
-    -- Already open and ready
-    return M.submit_message(claude_buf, text, prompt)
-  else
-    -- Wait for ready state
-    M.wait_for_ready(function(buf)
-      if buf then
-        M.submit_message(buf, text, prompt)
-      end
-    end)
-    return true  -- Async operation started
-  end
-end
-
--- Error handling
-function M.handle_error(error_type, context)
-  context = context or {}
-
-  local handlers = {
-    [ErrorType.TERMINAL_NOT_FOUND] = function()
-      -- Try to reopen Claude
-      if M.config.auto_retry then
-        vim.notify("Claude not found, reopening...", vim.log.levels.WARN)
-        vim.cmd('ClaudeCode')
-      else
-        vim.notify("Claude Code terminal not found", vim.log.levels.ERROR)
-      end
-    end,
-
-    [ErrorType.TIMEOUT] = function()
-      -- Offer to retry
-      vim.notify("Claude is not responding. Press <leader>as to retry.", vim.log.levels.WARN)
-    end,
-
-    [ErrorType.SEND_FAILED] = function()
-      -- Store for later retry
-      M.store_failed_message(context)
-      vim.notify("Message saved. Will retry when Claude is ready.", vim.log.levels.INFO)
-    end,
-
-    [ErrorType.CHANNEL_NOT_READY] = function()
-      vim.notify("Claude terminal channel not ready", vim.log.levels.ERROR)
-    end
-  }
-
-  local handler = handlers[error_type]
-  if handler then
-    handler()
-  else
-    vim.notify("Unknown error: " .. tostring(error_type), vim.log.levels.ERROR)
-  end
-end
-
--- Store failed message for retry
-function M.store_failed_message(context)
-  if pending_message then
-    -- Could store in a persistent location for recovery
-    vim.g.claude_failed_message = pending_message
-  end
-end
-
--- Send visual selection with retry
-function M.send_with_retry(text, prompt, attempts)
-  attempts = attempts or M.config.max_retries
-  local attempt = 1
-
-  local function try_send()
-    local success = M.send_to_claude(text, prompt)
-
-    if not success and attempt < attempts then
-      attempt = attempt + 1
-      if M.config.show_progress then
-        vim.notify(
-          string.format("Retrying... (attempt %d/%d)", attempt, attempts),
-          vim.log.levels.WARN
-        )
-      end
-      vim.defer_fn(try_send, 1000)  -- Retry after 1 second
-    elseif not success then
-      vim.notify("Failed to send to Claude after " .. attempts .. " attempts",
-                 vim.log.levels.ERROR)
-    end
-  end
-
-  try_send()
 end
 
 -- Function to send visual selection to Claude
@@ -434,11 +216,7 @@ function M.send_visual_to_claude(prompt)
     return
   end
 
-  if M.config.auto_retry then
-    M.send_with_retry(selection, prompt)
-  else
-    M.send_to_claude(selection, prompt)
-  end
+  M.send_to_claude(selection, prompt)
 end
 
 -- Interactive function with prompt input
@@ -480,11 +258,7 @@ function M.send_visual_with_prompt()
     end
 
     -- Send the selection
-    if M.config.auto_retry then
-      M.send_with_retry(selection, prompt)
-    else
-      M.send_to_claude(selection, prompt)
-    end
+    M.send_to_claude(selection, prompt)
 
     -- Update progress
     if progress_handle then
@@ -506,63 +280,14 @@ function M.send_buffer_to_claude(prompt)
     return
   end
 
-  if M.config.auto_retry then
-    M.send_with_retry(content, prompt or "Please review this code:")
-  else
-    M.send_to_claude(content, prompt or "Please review this code:")
-  end
-end
-
--- Setup terminal monitoring
-function M.setup_terminal_monitor()
-  -- Monitor Claude terminal for state changes
-  vim.api.nvim_create_autocmd("TermOpen", {
-    pattern = "*claude*",
-    callback = function(args)
-      local buf = args.buf
-      terminal_state = ClaudeTerminalState.OPENING
-
-      -- Monitor for ready state
-      vim.api.nvim_create_autocmd("TextChanged", {
-        buffer = buf,
-        callback = function()
-          if terminal_state == ClaudeTerminalState.OPENING then
-            local lines = vim.api.nvim_buf_get_lines(buf, -3, -1, false)
-            for _, line in ipairs(lines) do
-              if line:match("Welcome to Claude Code") or
-                 line:match("^>") or
-                 line:match("──────") then
-                terminal_state = ClaudeTerminalState.READY
-
-                -- If we have a pending message, send it now
-                if pending_message and
-                   (os.time() - pending_message.timestamp < 30) then
-                  vim.defer_fn(function()
-                    M.submit_message(buf, pending_message.text, pending_message.prompt)
-                  end, 500)  -- Small delay to ensure terminal is settled
-                end
-                break
-              end
-            end
-          end
-        end
-      })
-    end
-  })
-
-  -- Monitor for terminal close
-  vim.api.nvim_create_autocmd("TermClose", {
-    pattern = "*claude*",
-    callback = function()
-      terminal_state = ClaudeTerminalState.CLOSED
-      pending_message = nil
-    end
-  })
+  M.send_to_claude(content, prompt or "Please review this code:")
 end
 
 -- Initialize the module
 function M.setup()
-  M.setup_terminal_monitor()
+  -- Setup event-driven terminal state monitoring
+  terminal_state.setup()
+
   -- Use unified notification system with proper BACKGROUND category (debug only)
   local notify = require("neotex.util.notifications")
   notify.ai("Claude Visual initialized", notify.categories.BACKGROUND)
@@ -650,11 +375,7 @@ function M.send_visual_to_claude_with_prompt()
     end
 
     -- Send to Claude using existing infrastructure
-    if M.config.auto_retry then
-      M.send_with_retry(selection, user_prompt)
-    else
-      M.send_to_claude(selection, user_prompt)
-    end
+    M.send_to_claude(selection, user_prompt)
   end)
 end
 
