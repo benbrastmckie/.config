@@ -139,6 +139,8 @@ local function create_command_previewer()
           "  Ctrl-l - Copies global command to local (preserves local if exists)",
           "  Ctrl-u - Updates/overwrites local with global version",
           "  Ctrl-s - Saves local command to global (requires local command)",
+          "  [Load All Commands] - Batch copies new and replaces existing commands",
+          "                        (preserves local-only commands)",
           "  The picker refreshes after changes to show updated status",
           "",
           "Note: Commands are loaded from both project and .config directories"
