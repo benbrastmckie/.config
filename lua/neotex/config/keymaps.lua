@@ -196,9 +196,7 @@ function M.setup()
       vim.keymap.set("n", "<", "<<cmd>AutolistRecalculate<cr>",
         { buffer = true, desc = "Unindent bullet" })
 
-      -- List recalculation (using leader key to avoid conflicts)
-      vim.keymap.set("n", "<leader>cr", "<cmd>AutolistRecalculate<cr>",
-        { buffer = true, desc = "Recalculate list" })
+      -- List recalculation is handled by <leader>rr in which-key
 
       -- Smart deletion that maintains list consistency
       vim.keymap.set("n", "dd", "dd<cmd>AutolistRecalculate<cr>",
