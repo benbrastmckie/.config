@@ -297,55 +297,429 @@ Next Phase: planning
 
 ### Planning Phase (Sequential Execution)
 
-1. **Generate Planning Prompt**:
-   ```markdown
-   Use the /plan command to create a structured implementation plan.
+#### Step 1: Prepare Planning Context
 
-   Context to provide:
-   - Research findings summary (if research phase completed)
-   - User's original workflow description
-   - Project standards from CLAUDE.md
+Extract necessary context from previous phases:
 
-   The planning agent will:
-   - Synthesize research into actionable plan
-   - Define implementation phases and tasks
-   - Establish testing strategy
-   - Output: specs/plans/NNN_feature_name.md
-   ```
+**From Research Phase** (if completed):
+```yaml
+research_context:
+  summary: "[200 word research summary]"
+  key_insights: "[3-5 actionable insights]"
+  recommended_approach: "[Synthesized recommendation]"
+```
 
-2. **Invoke Planning Agent**:
-   - Use Task tool with general-purpose subagent
-   - Wrap /plan command with research context
-   - Extract plan file path from output
+**From User Request**:
+```yaml
+user_context:
+  workflow_description: "[Original request]"
+  feature_name: "[Extracted feature/task name]"
+  workflow_type: "feature|refactor|debug|investigation"
+```
 
-3. **Save Checkpoint**: plan_ready
-   - Store plan path only (not full plan content)
-   - Mark planning phase complete
+**Context Injection Strategy**:
+- Provide research summary if available
+- Include user's original request for context
+- Reference CLAUDE.md for project standards
+- NO orchestration details or phase routing logic
+
+#### Step 2: Generate Planning Agent Prompt
+
+```markdown
+# Planning Task: Create Implementation Plan for [Feature Name]
+
+## Context
+
+### User Request
+[Original workflow description]
+
+### Research Findings
+[If research phase completed, include 200-word summary]
+[If no research, state: "Direct implementation - no prior research"]
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Create a comprehensive, phased implementation plan for [feature/task] that:
+- Synthesizes research findings into actionable steps
+- Defines clear implementation phases with tasks
+- Establishes testing strategy for each phase
+- Follows project coding standards and conventions
+
+## Requirements
+
+### Plan Structure
+Use the /plan command to generate a structured implementation plan:
+
+```bash
+/plan [feature description] [research-report-path-if-exists]
+```
+
+The plan should include:
+- Metadata (date, feature, scope, standards file, research reports)
+- Overview and success criteria
+- Technical design decisions
+- Implementation phases with specific tasks
+- Testing strategy
+- Documentation requirements
+- Risk assessment
+
+### Task Specificity
+Each task should:
+- Reference specific files to create/modify
+- Include line number ranges where applicable
+- Specify testing requirements
+- Define validation criteria
+
+### Context from Research
+[If research completed]
+Incorporate these key findings:
+- [Insight 1]
+- [Insight 2]
+- [Insight 3]
+
+Recommended approach: [From research synthesis]
+
+## Expected Output
+
+**Primary Output**: Path to generated implementation plan
+- Format: `specs/plans/NNN_feature_name.md`
+- Location: Most appropriate directory in project structure
+
+**Secondary Output**: Brief summary of plan
+- Number of phases
+- Estimated complexity
+- Key technical decisions
+
+## Success Criteria
+- Plan follows project standards (CLAUDE.md)
+- Phases are well-defined and testable
+- Tasks are specific and actionable
+- Testing strategy is comprehensive
+- Plan integrates research recommendations
+
+## Error Handling
+- If /plan command fails: Report error and provide manual planning guidance
+- If standards unclear: Make reasonable assumptions following best practices
+- If research conflicts: Document trade-offs and chosen approach
+```
+
+#### Step 3: Invoke Planning Agent
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Create implementation plan for [feature]"
+prompt: "[Generated planning prompt from Step 2]"
+```
+
+**Execution Details**:
+- Single agent (sequential execution)
+- Full access to project files for analysis
+- Can invoke /plan slash command
+- Returns plan file path and summary
+
+#### Step 4: Extract Plan Path and Validation
+
+**Path Extraction**:
+```markdown
+From planning agent output, extract:
+- Plan file path: specs/plans/NNN_*.md
+- Plan number: NNN
+- Phase count: N phases
+- Complexity estimate: Low|Medium|High
+```
+
+**Validation Checks**:
+- [ ] Plan file exists and is readable
+- [ ] Plan follows standard format (metadata, phases, tasks)
+- [ ] Plan references research reports (if applicable)
+- [ ] Plan includes testing strategy
+- [ ] Tasks are specific with file references
+
+**If validation fails**:
+- Retry planning with clarifications
+- If retry fails: Escalate to user with error details
+
+#### Step 5: Save Planning Checkpoint
+
+**Checkpoint Data**:
+```yaml
+checkpoint_plan_ready:
+  phase_name: "planning"
+  completion_time: [timestamp]
+  outputs:
+    plan_path: "specs/plans/NNN_feature_name.md"
+    plan_number: NNN
+    phase_count: N
+    complexity: "Low|Medium|High"
+    status: "success"
+  next_phase: "implementation"
+  performance:
+    planning_time: "[duration in seconds]"
+```
+
+**Context Update**:
+- Store ONLY plan path, not plan content
+- Mark planning phase as completed
+- Prepare for implementation phase
+
+#### Step 6: Planning Phase Completion
+
+**Output to User** (brief status):
+```markdown
+✓ Planning Phase Complete
+
+Plan created: specs/plans/NNN_feature_name.md
+Phases: N
+Complexity: Medium
+Incorporating research from: [report paths if any]
+
+Next: Implementation Phase
+```
 
 ### Implementation Phase (Adaptive Execution)
 
-1. **Generate Implementation Prompt**:
-   ```markdown
-   Use the /implement command to execute the implementation plan.
+#### Step 1: Prepare Implementation Context
 
-   The implementation will:
-   - Execute plan phase by phase
-   - Run tests after each phase
-   - Create git commits with structured messages
-   - Handle errors with automatic retry
-   ```
+**From Planning Phase**:
+```yaml
+implementation_context:
+  plan_path: "specs/plans/NNN_feature_name.md"
+  plan_number: NNN
+  phase_count: N
+  complexity: "Low|Medium|High"
+```
 
-2. **Invoke Implementation Agent**:
-   - Use Task tool with general-purpose subagent
-   - Provide plan file path
-   - Monitor for test failures
+**Execution Strategy**:
+```yaml
+strategy_selection:
+  if complexity == "Low":
+    approach: "direct_implementation"
+    parallelization: false
+  elif complexity == "Medium":
+    approach: "phased_implementation"
+    parallelization: "within_phases"
+  else:  # High complexity
+    approach: "incremental_phased"
+    parallelization: "aggressive"
+```
 
-3. **Extract Implementation Status**:
-   - Tests passing: true/false
-   - Modified files: list of changed files
-   - Error messages if tests failed
+#### Step 2: Generate Implementation Agent Prompt
 
-4. **Save Checkpoint**: implementation_complete
+```markdown
+# Implementation Task: Execute Implementation Plan
+
+## Context
+
+### Implementation Plan
+Plan file: [plan_path]
+
+Read the complete plan to understand:
+- All implementation phases
+- Specific tasks for each phase
+- Testing requirements
+- Success criteria
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Execute the implementation plan phase by phase, ensuring:
+- All tasks completed as specified
+- Tests pass after each phase
+- Code follows project standards
+- Git commits created per phase
+
+## Requirements
+
+### Execution Approach
+Use the /implement command to execute the plan:
+
+```bash
+/implement [plan-file-path]
+```
+
+The implementation will:
+- Parse plan and identify all phases
+- Execute Phase 1 tasks
+- Run tests specified in Phase 1
+- Create git commit for Phase 1
+- Repeat for all subsequent phases
+- Handle errors with automatic retry
+
+### Phase-by-Phase Execution
+For each phase:
+1. Display phase name and tasks
+2. Implement all tasks in phase
+3. Run phase-specific tests
+4. Validate all tests pass
+5. Create structured git commit
+6. Save checkpoint before next phase
+
+### Testing Requirements
+- Run tests after EACH phase (not just at end)
+- Tests must pass before proceeding to next phase
+- If tests fail: Stop and report for debugging
+- Test commands specified in plan or project standards
+
+### Error Handling
+- Automatic retry for transient errors (max 3 attempts)
+- If tests fail: Do not proceed to next phase
+- Report test failures with detailed error messages
+- Preserve all completed work even if later phase fails
+
+## Expected Output
+
+**Primary Output**: Implementation results
+- Tests passing: true|false
+- Phases completed: N/M
+- Files modified: [list of changed files]
+- Git commits: [list of commit hashes]
+
+**If Tests Fail**:
+- Phase where failure occurred
+- Test failure details
+- Error messages
+- Modified files up to failure point
+
+## Success Criteria
+- All plan phases executed successfully
+- All tests passing
+- Code follows project standards
+- Git commits created for each phase
+- No merge conflicts or build errors
+
+## Error Handling
+- Timeout errors: Retry with extended timeout
+- Test failures: Stop and report (do not skip)
+- Tool access errors: Retry with available tools
+- If persistent errors: Escalate to debugging loop
+```
+
+#### Step 3: Invoke Implementation Agent
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Execute implementation plan [plan_number]"
+prompt: "[Generated implementation prompt from Step 2]"
+timeout: 600000  # 10 minutes for complex implementations
+```
+
+**Monitoring**:
+- Track implementation progress via agent updates
+- Watch for test failure signals
+- Monitor for error patterns
+
+#### Step 4: Extract Implementation Status
+
+**Status Extraction**:
+```markdown
+From implementation agent output, extract:
+
+Success Case:
+- tests_passing: true
+- phases_completed: "N/N"
+- files_modified: [file1.ext, file2.ext, ...]
+- git_commits: [hash1, hash2, ...]
+- implementation_status: "success"
+
+Failure Case:
+- tests_passing: false
+- phases_completed: "M/N" (M < N)
+- failed_phase: N
+- error_message: "[Test failure details]"
+- files_modified: [files changed before failure]
+- implementation_status: "failed"
+```
+
+**Validation**:
+- [ ] Implementation completed all phases OR reported specific failure
+- [ ] Test status clearly indicated
+- [ ] Modified files list available
+- [ ] Error details provided if failed
+
+#### Step 5: Conditional Branch - Test Status Check
+
+```yaml
+if tests_passing == true:
+  next_phase: "documentation"
+  save_checkpoint: "implementation_complete"
+else:
+  next_phase: "debugging"
+  save_checkpoint: "implementation_incomplete"
+  prepare_debug_context:
+    - failed_phase: N
+    - error_message: "[details]"
+    - modified_files: [list]
+    - plan_path: "[path]"
+```
+
+#### Step 6: Save Implementation Checkpoint
+
+**Success Checkpoint**:
+```yaml
+checkpoint_implementation_complete:
+  phase_name: "implementation"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: true
+    phases_completed: "N/N"
+    files_modified: [list]
+    git_commits: [list]
+    status: "success"
+  next_phase: "documentation"
+  performance:
+    implementation_time: "[duration]"
+```
+
+**Failure Checkpoint** (for debugging):
+```yaml
+checkpoint_implementation_incomplete:
+  phase_name: "implementation"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: false
+    phases_completed: "M/N"
+    failed_phase: N
+    error_message: "[details]"
+    files_modified: [list]
+    status: "failed"
+  next_phase: "debugging"
+  debug_context:
+    failure_details: "[error messages]"
+    affected_files: [list]
+    plan_reference: "[plan_path]"
+```
+
+#### Step 7: Implementation Phase Completion
+
+**Success Output**:
+```markdown
+✓ Implementation Phase Complete
+
+All phases executed: N/N
+Tests passing: ✓
+Files modified: M files
+Git commits: N commits
+
+Next: Documentation Phase
+```
+
+**Failure Output** (triggers debugging):
+```markdown
+⚠ Implementation Phase Incomplete
+
+Phases completed: M/N
+Failed at: Phase N
+Tests passing: ✗
+
+Error: [Test failure details]
+
+Next: Debugging Loop
+```
 
 ### Debugging Loop (Conditional - Only if Tests Fail)
 
