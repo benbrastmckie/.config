@@ -818,6 +818,163 @@ The command parses the completed analysis report for:
 2. **Reconciliation Choices**: User selections for handling discrepancies
 3. **Standard Values**: Explicit values for indentation, naming, etc.
 
+#### Report Parsing Algorithm
+
+**Step 1: Locate Gap Fill Sections**
+```
+Pattern: ### [FILL IN: <field_name>]
+Extract:
+  - Field name (e.g., "Indentation Standard", "Error Handling")
+  - Context provided (detected values, recommendations)
+  - User's decision (text after "Your Decision:")
+  - User's rationale (text after "Rationale:")
+```
+
+**Step 2: Parse User Decisions**
+```
+For each [FILL IN: ...] section:
+  1. Extract field name → map to CLAUDE.md section and field
+     Examples:
+       "Indentation Standard" → Code Standards section, Indentation field
+       "Error Handling" → Code Standards section, Error Handling field
+       "Testing Protocols" → New section to create
+
+  2. Extract user decision:
+     - If "Your Decision: 4 spaces" → value = "4 spaces"
+     - If "Your Decision: _______________" (blank) → skip this gap
+     - If "Your Decision: [Accept]" → use recommended value from context
+
+  3. Extract rationale (for logging/documentation purposes)
+```
+
+**Step 3: Validate Parsed Decisions**
+```
+Check:
+  - Critical gaps are filled (Type 1 discrepancies must be resolved)
+  - Values are reasonable (not empty, match expected format)
+  - Section references are valid
+
+Warn if:
+  - Some gaps unfilled (will skip those)
+  - Values don't match detected patterns (user override, but flag it)
+```
+
+#### CLAUDE.md Update Strategy
+
+**Backup Creation**
+```
+timestamp = current time in format: YYYYMMDD_HHMMSS
+backup_path = "CLAUDE.md.backup.{timestamp}"
+copy CLAUDE.md to backup_path
+log: "Backup created: {backup_path}"
+```
+
+**Update Algorithm**
+
+For each parsed decision:
+
+**Case 1: Update Existing Field**
+```
+If field exists in CLAUDE.md:
+  1. Locate field line (e.g., "- **Indentation**: 2 spaces")
+  2. Extract old value
+  3. Replace with new value from user decision
+  4. Log: "Updated {section} - {field}: {old_value} → {new_value}"
+
+Example:
+  Old: "- **Indentation**: 2 spaces"
+  Decision: "4 spaces"
+  New: "- **Indentation**: 4 spaces"
+```
+
+**Case 2: Add Missing Field to Existing Section**
+```
+If section exists but field missing:
+  1. Locate section end (next ## heading or EOF)
+  2. Insert new field before section end
+  3. Format: "- **{Field Name}**: {value}"
+  4. Log: "Added {section} - {field}: {value}"
+
+Example:
+  Section: ## Code Standards
+  Decision: Error Handling = "Use pcall for operations that might fail"
+  Insert: "- **Error Handling**: Use pcall for operations that might fail"
+```
+
+**Case 3: Create New Section**
+```
+If section doesn't exist:
+  1. Determine section position (follow standard order)
+  2. Create section with proper heading
+  3. Add [Used by: ...] metadata
+  4. Add all fields for that section
+  5. Log: "Created section: {section_name}"
+
+Example:
+  Decision: Add Testing Protocols
+  Create:
+    ## Testing Protocols
+    [Used by: /test, /test-all, /implement]
+
+    ### Test Discovery
+    - **Test Pattern**: *_spec.lua
+    - **Test Commands**: :TestNearest, :TestFile, :TestSuite
+```
+
+**Metadata Preservation**
+```
+For each section:
+  - Preserve existing [Used by: ...] metadata
+  - Add metadata if missing (based on standard schema)
+  - Verify format: "[Used by: /command1, /command2]"
+```
+
+**Section Ordering**
+```
+Standard order (maintain when creating new sections):
+1. Project Configuration Index (header)
+2. Code Standards
+3. Testing Protocols
+4. Documentation Policy
+5. Standards Discovery
+6. Specs Directory Protocol
+7. Project-specific sections
+```
+
+**Preserve Unaffected Content**
+```
+For sections not mentioned in report:
+  - Keep exactly as-is
+  - Don't reformat or modify
+  - Preserve comments, extra content, custom sections
+```
+
+#### Validation Before Write
+
+Before writing updated CLAUDE.md:
+
+```
+1. Parse generated CLAUDE.md to verify structure:
+   - All required sections present
+   - All sections have [Used by: ...] metadata
+   - Field format is correct: "- **Field**: value"
+
+2. Check that changes match user decisions:
+   - Each filled gap resulted in update
+   - No unexpected changes
+
+3. Verify parseability:
+   - Other commands can parse the structure
+   - Sections are properly delimited
+   - Markdown syntax is valid
+
+If validation fails:
+  - Don't write file
+  - Report specific errors
+  - Suggest manual review
+  - Backup remains available
+```
+
 #### Application Process
 
 ```
@@ -878,6 +1035,115 @@ User runs: /setup --apply-report specs/reports/NNN_report.md
 # Validation: Passed
 #
 # Suggested next step: /validate-setup
+```
+
+#### Edge Cases and Error Handling
+
+**Case: No CLAUDE.md Exists**
+```
+Scenario: User runs --apply-report but no CLAUDE.md exists
+Action:
+  1. Create new CLAUDE.md from scratch
+  2. Use report decisions to populate all sections
+  3. Add all required sections with [Used by: ...] metadata
+  4. No backup needed (nothing to back up)
+  5. Log: "Created new CLAUDE.md from report"
+```
+
+**Case: Partially Filled Report**
+```
+Scenario: User filled in some gaps but not all
+Action:
+  1. Parse all [FILL IN: ...] sections
+  2. Apply only filled sections
+  3. Skip unfilled sections (leave CLAUDE.md unchanged for those)
+  4. Log: "Applied 5 of 8 gaps (3 skipped - not filled in report)"
+  5. List which gaps were skipped
+```
+
+**Case: Invalid User Decision**
+```
+Scenario: User entered invalid value (e.g., "Your Decision: ???")
+Action:
+  1. Detect invalid/unclear decision
+  2. Skip that gap
+  3. Warn: "Skipped {field}: decision unclear ('???')"
+  4. Continue with other gaps
+```
+
+**Case: Conflicting Decisions**
+```
+Scenario: Report has contradictory decisions
+Action:
+  1. Detect conflict (e.g., two gaps both setting indentation differently)
+  2. Use first encountered value
+  3. Warn: "Conflict: {field} set twice. Using first value: {value}"
+```
+
+**Case: Report Not Found**
+```
+Scenario: User provides invalid report path
+Action:
+  1. Check if file exists
+  2. If not: error "Report not found: {path}"
+  3. Suggest: Check path or run /setup --analyze first
+```
+
+**Case: Report Format Invalid**
+```
+Scenario: Report doesn't have expected structure
+Action:
+  1. Attempt to parse
+  2. If no [FILL IN: ...] sections found: error
+  3. Suggest: Ensure report is from /setup --analyze
+```
+
+**Case: Backup Conflict**
+```
+Scenario: Backup file already exists (same timestamp)
+Action:
+  1. Append counter: CLAUDE.md.backup.{timestamp}.2
+  2. Ensure no overwrite of existing backups
+```
+
+**Case: Validation Failure**
+```
+Scenario: Generated CLAUDE.md fails validation
+Action:
+  1. Don't write file
+  2. Report specific validation errors
+  3. Explain what's wrong (e.g., "Missing [Used by: ...] in Code Standards")
+  4. Suggest: Review report or manual fix
+  5. Keep backup available
+```
+
+**Case: Permission Error**
+```
+Scenario: Cannot write to CLAUDE.md (permissions)
+Action:
+  1. Error: "Cannot write to CLAUDE.md: permission denied"
+  2. Suggest: Check file permissions
+  3. Backup not affected
+```
+
+#### Rollback Procedure
+
+If user wants to undo --apply-report:
+
+```bash
+# Find the backup
+ls -lt CLAUDE.md.backup.*
+
+# Restore from backup
+cp CLAUDE.md.backup.20251001_143022 CLAUDE.md
+
+# Verify restoration
+/validate-setup
+```
+
+Or provide a rollback command:
+```bash
+/setup --rollback CLAUDE.md.backup.20251001_143022
 ```
 
 ### Complete Standards Lifecycle
