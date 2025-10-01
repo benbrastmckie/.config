@@ -420,11 +420,12 @@ local function load_command_locally(command, silent)
   return true
 end
 
---- Load all global commands locally
---- @return number count Number of commands loaded
+--- Load all global commands locally and update existing ones
+--- Scans global directory, copies new commands, and replaces existing local commands
+--- with global versions. Preserves local-only commands without global equivalents.
+--- @return number count Number of commands loaded or updated
 local function load_all_commands_locally()
   local notify = require('neotex.util.notifications')
-  local parser = require('neotex.plugins.ai.claude.commands.parser')
 
   local project_dir = vim.fn.getcwd()
   local global_dir = vim.fn.expand("~/.config")
@@ -438,47 +439,133 @@ local function load_all_commands_locally()
     return 0
   end
 
-  -- Get current command structure
-  local structure = parser.get_command_structure()
-  local loaded_count = 0
-  local commands_loaded = {}
+  -- Scan global commands directory
+  local global_commands_dir = global_dir .. "/.claude/commands"
+  local global_files = vim.fn.glob(global_commands_dir .. "/*.md", false, true)
 
-  -- Load all primary commands and their dependencies
-  for name, data in pairs(structure.primary_commands) do
-    if not data.command.is_local and data.command.filepath then
-      local success = load_command_locally(data.command, true)  -- Silent mode for batch
-      if success then
-        loaded_count = loaded_count + 1
-        table.insert(commands_loaded, name)
-      end
-    end
+  -- Check if global directory exists and has commands
+  if type(global_files) ~= "table" or #global_files == 0 then
+    notify.editor(
+      "No global commands found in ~/.config/.claude/commands/",
+      notify.categories.WARNING
+    )
+    return 0
+  end
 
-    -- Load dependent commands
-    for _, dep in ipairs(data.dependents or {}) do
-      if not dep.is_local and dep.filepath then
-        local success = load_command_locally(dep, true)  -- Silent mode for batch
-        if success then
-          loaded_count = loaded_count + 1
-          table.insert(commands_loaded, dep.name)
-        end
-      end
+  -- Categorize commands into new and existing
+  local commands_to_load = {}    -- New commands (not yet local)
+  local commands_to_update = {}  -- Existing local commands with global versions
+  local local_commands_dir = project_dir .. "/.claude/commands"
+
+  for _, global_path in ipairs(global_files) do
+    local command_name = vim.fn.fnamemodify(global_path, ":t:r")  -- filename without .md
+    local local_path = local_commands_dir .. "/" .. command_name .. ".md"
+
+    if vim.fn.filereadable(local_path) == 1 then
+      -- Local version exists - will be replaced
+      table.insert(commands_to_update, {
+        name = command_name,
+        global_path = global_path,
+        local_path = local_path
+      })
+    else
+      -- No local version - will be copied
+      table.insert(commands_to_load, {
+        name = command_name,
+        global_path = global_path,
+        local_path = local_path
+      })
     end
   end
 
-  if loaded_count > 0 then
+  -- Calculate total operations
+  local total_operations = #commands_to_load + #commands_to_update
+
+  -- Skip if no operations needed
+  if total_operations == 0 then
     notify.editor(
-      string.format("Loaded %d commands locally", loaded_count),
-      notify.categories.SUCCESS,
-      { commands = table.concat(commands_loaded, ", ") }
-    )
-  else
-    notify.editor(
-      "All global commands are already loaded locally",
+      "All commands already in sync",
       notify.categories.STATUS
     )
+    return 0
   end
 
-  return loaded_count
+  -- Show confirmation dialog
+  local message = string.format(
+    "Load all commands from global directory?\n\n" ..
+    "This will:\n" ..
+    "  - Copy %d new commands\n" ..
+    "  - Replace %d existing local commands\n\n" ..
+    "Local-only commands will not be affected.",
+    #commands_to_load,
+    #commands_to_update
+  )
+
+  local choice = vim.fn.confirm(message, "&Yes\n&No", 2)  -- Default to No
+  if choice ~= 1 then
+    notify.editor(
+      "Load all commands cancelled",
+      notify.categories.STATUS
+    )
+    return 0
+  end
+
+  -- Create local commands directory if needed
+  vim.fn.mkdir(local_commands_dir, "p")
+
+  -- Copy new commands
+  local loaded_count = 0
+  for _, cmd in ipairs(commands_to_load) do
+    local success, content = pcall(vim.fn.readfile, cmd.global_path)
+    if success then
+      local write_success = pcall(vim.fn.writefile, content, cmd.local_path)
+      if write_success then
+        loaded_count = loaded_count + 1
+      else
+        notify.editor(
+          string.format("Failed to write command: %s", cmd.name),
+          notify.categories.ERROR
+        )
+      end
+    else
+      notify.editor(
+        string.format("Failed to read global command: %s", cmd.name),
+        notify.categories.ERROR
+      )
+    end
+  end
+
+  -- Replace existing commands
+  local updated_count = 0
+  for _, cmd in ipairs(commands_to_update) do
+    local success, content = pcall(vim.fn.readfile, cmd.global_path)
+    if success then
+      local write_success = pcall(vim.fn.writefile, content, cmd.local_path)
+      if write_success then
+        updated_count = updated_count + 1
+      else
+        notify.editor(
+          string.format("Failed to update command: %s", cmd.name),
+          notify.categories.ERROR
+        )
+      end
+    else
+      notify.editor(
+        string.format("Failed to read global command: %s", cmd.name),
+        notify.categories.ERROR
+      )
+    end
+  end
+
+  -- Report results
+  if loaded_count > 0 or updated_count > 0 then
+    notify.editor(
+      string.format("Loaded %d new, replaced %d existing commands", loaded_count, updated_count),
+      notify.categories.SUCCESS
+    )
+  end
+
+  return loaded_count + updated_count
 end
 
 --- Update local command from global version
