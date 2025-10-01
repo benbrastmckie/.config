@@ -502,6 +502,50 @@ Comprehensive documentation is maintained in `specs/`:
 - [Utilities](utils/README.md) - Utility functions documentation
 - [Specifications](specs/README.md) - Implementation plans and reports
 
+## Agent Registry System
+
+### agent_registry.lua
+
+Central registry for managing custom Claude Code agents defined in `.claude/agents/*.md` files.
+
+**Purpose**: Provides clean API for loading, validating, and invoking custom agents without duplicating agent definitions across command files.
+
+**Why Needed**: Claude Code's Task tool only accepts built-in subagent types (`general-purpose`, `statusline-setup`, `output-style-setup`). Custom agent names are NOT recognized. The registry loads custom agent definitions and formats them for use with `general-purpose`.
+
+**Key Functions**:
+- `get_agent(name)` - Load complete agent definition by name
+- `list_agents()` - Get all available agent names (sorted)
+- `validate_agent(name)` - Check if agent exists
+- `get_agent_prompt(name)` - Extract system prompt only
+- `get_agent_tools(name)` - Get allowed tools list
+- `get_agent_info(name)` - Get metadata without full prompt
+- `format_task_prompt(agent_name, task, context)` - Combine agent + task
+- `create_task_config(agent_name, task, context)` - Generate Task tool config
+- `reload_registry()` - Clear cache and rescan agent files
+
+**Usage Example**:
+```lua
+local agent_registry = require('neotex.plugins.ai.claude.agent_registry')
+
+-- Create task configuration for code-writer agent
+local task_config = agent_registry.create_task_config(
+  'code-writer',
+  'Implement feature X',
+  'Files: foo.lua\nRequirements: Follow standards'
+)
+
+-- task_config = {
+--   subagent_type = "general-purpose",  -- Valid for Task tool
+--   description = "Implement feature X",
+--   prompt = "[agent system prompt + task + context]"
+-- }
+```
+
+**See Also**:
+- `.claude/commands/example-with-agent.md` - Complete usage examples
+- `specs/reports/035_custom_agent_invocation_in_claude_code.md` - Research on custom agents
+- `specs/plans/025_agent_registry_with_dynamic_loading.md` - Implementation plan
+
 ---
 
 **Architecture Summary**: This comprehensive internal system (9,626 lines) works with the external plugin configuration (`../claudecode.lua`, 107 lines) to provide advanced Claude AI integration. The clear separation between external plugin management and internal system implementation follows clean architecture principles and enables maintainable, extensible code organization.
