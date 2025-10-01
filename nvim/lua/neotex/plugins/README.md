@@ -67,7 +67,7 @@ Plugins are organized into the following categories with dedicated directories:
 - **ui/**: User interface components ([detailed documentation](ui/README.md))
   - neo-tree.lua: Modern file explorer with custom delete confirmation
   - lualine.lua: Configurable status line with sections and themes
-  - bufferline.lua: Tab-like buffer navigation with visual indicators
+  - bufferline.lua: Tab-like buffer navigation with enhanced visibility management
   - colorscheme.lua: Theme configuration and color scheme management
   - nvim-web-devicons.lua: File type icons for better visual distinction
   - sessions.lua: Session management for workspace persistence

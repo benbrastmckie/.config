@@ -62,6 +62,32 @@ ui/
 - Tab-like interface for open buffers
 - Visual indicators for modified files
 - Mouse support for buffer switching
+- **Enhanced visibility management**: Tabs remain visible when switching to terminals/sidebars
+- Smart context awareness: Hides on alpha dashboard, shows with multiple buffers
+- Event-driven visibility updates for seamless navigation
+
+#### Bufferline Visibility Behavior
+The bufferline implements intelligent tab visibility management:
+
+**When tabs are visible:**
+- Multiple buffers open (2 or more)
+- Switching to Claude Code terminal (`<C-c>`)
+- Opening Neo-tree sidebar
+- Navigating between windows with unlisted buffers
+- Git-ignored files in buffers
+
+**When tabs are hidden:**
+- Single buffer in session (minimal startup aesthetic)
+- Alpha dashboard is active
+- No listed buffers exist
+
+**Technical Implementation:**
+- Event-driven updates via BufEnter, WinEnter, TermLeave, and BufDelete autocmds
+- Centralized visibility logic in `ensure_tabline_visible()` function
+- 10ms deferred updates on terminal/buffer events for smooth transitions
+- No performance impact from event handlers
+
+See [bufferline.lua:127-172](bufferline.lua) for implementation details.
 
 ### Session Management
 - Automatic workspace persistence
