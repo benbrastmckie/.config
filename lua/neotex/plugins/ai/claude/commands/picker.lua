@@ -151,23 +151,27 @@ local function create_command_previewer()
         local project_dir = vim.fn.getcwd()
         local global_dir = vim.fn.expand("~/.config")
 
-        -- Count global commands not already local
+        -- Scan global commands directory (same logic as load_all_commands_locally)
+        local global_commands_dir = global_dir .. "/.claude/commands"
+        local global_files = vim.fn.glob(global_commands_dir .. "/*.md", false, true)
+
         local count_to_load = 0
-        local commands_to_load = {}
+        local count_to_update = 0
+        local local_commands_dir = project_dir .. "/.claude/commands"
 
-        local parser = require('neotex.plugins.ai.claude.commands.parser')
-        local structure = parser.get_command_structure()
+        -- Check if global commands exist
+        if type(global_files) == "table" and #global_files > 0 then
+          -- Categorize commands into new and existing
+          for _, global_path in ipairs(global_files) do
+            local command_name = vim.fn.fnamemodify(global_path, ":t:r")
+            local local_path = local_commands_dir .. "/" .. command_name .. ".md"
 
-        for name, data in pairs(structure.primary_commands) do
-          if not data.command.is_local then
-            count_to_load = count_to_load + 1
-            table.insert(commands_to_load, name)
-          end
-          -- Also count dependent commands
-          for _, dep in ipairs(data.dependents or {}) do
-            if not dep.is_local then
+            if vim.fn.filereadable(local_path) == 1 then
+              -- Local version exists - will be replaced
+              count_to_update = count_to_update + 1
+            else
+              -- No local version - will be copied
               count_to_load = count_to_load + 1
-              table.insert(commands_to_load, dep.name)
             end
           end
         end
@@ -175,33 +179,27 @@ local function create_command_previewer()
         local lines = {
           "Load All Commands",
           "",
-          "This action will copy all global commands that are not already",
-          "present in your local project to the .claude/commands/ directory.",
+          "This action will copy all commands from ~/.config/.claude/commands/",
+          "to your local project's .claude/commands/ directory.",
           "",
-          "**Current Status:**",
-          string.format("  Project directory: %s", project_dir),
-          string.format("  Global commands directory: ~/.config/.claude/commands/"),
-          "",
-          string.format("  Commands to load: %d", count_to_load),
-          ""
         }
 
-        if #commands_to_load > 0 then
-          table.insert(lines, "**Commands that will be loaded:**")
-          for i, name in ipairs(commands_to_load) do
-            if i <= 15 then  -- Show first 15
-              table.insert(lines, "  - " .. name)
-            elseif i == 16 then
-              table.insert(lines, string.format("  ... and %d more", #commands_to_load - 15))
-              break
-            end
-          end
+        if count_to_load > 0 or count_to_update > 0 then
+          table.insert(lines, "**Operations:**")
+          table.insert(lines, string.format("  - Copy %d new commands", count_to_load))
+          table.insert(lines, string.format("  - Replace %d existing local commands", count_to_update))
+          table.insert(lines, "")
+          table.insert(lines, "**Note:** Local commands without global equivalents will not be affected.")
         else
-          table.insert(lines, "**All global commands are already loaded locally!**")
+          table.insert(lines, "**All commands already in sync!**")
         end
 
         table.insert(lines, "")
-        table.insert(lines, "Press Enter to load all commands, or Escape to cancel.")
+        table.insert(lines, "**Current Status:**")
+        table.insert(lines, string.format("  Project directory: %s", project_dir))
+        table.insert(lines, string.format("  Global commands directory: ~/.config/.claude/commands/"))
+        table.insert(lines, "")
+        table.insert(lines, "Press Enter to proceed with confirmation, or Escape to cancel.")
 
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
         return
