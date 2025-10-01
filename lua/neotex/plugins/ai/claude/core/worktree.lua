@@ -153,6 +153,27 @@ function M._generate_branch_name(feature, type)
   return string.format("%s/%s", type, feature)
 end
 
+-- Helper: Locate main worktree's CLAUDE.md file
+-- @return string|nil Absolute path to main CLAUDE.md, or nil if not found
+function M._get_main_claudemd_path()
+  -- Get git repository root (main worktree)
+  local git_root_list = vim.fn.systemlist("git rev-parse --show-toplevel")
+
+  if vim.v.shell_error ~= 0 or #git_root_list == 0 then
+    return nil
+  end
+
+  local git_root = git_root_list[1]
+  local main_claude = git_root .. "/CLAUDE.md"
+
+  -- Check if file exists and is readable
+  if vim.fn.filereadable(main_claude) == 1 then
+    return main_claude
+  end
+
+  return nil
+end
+
 -- Helper: Create context file
 function M._create_context_file(worktree_path, feature, type, branch, session_id)
   if not M.config.create_context_file then
