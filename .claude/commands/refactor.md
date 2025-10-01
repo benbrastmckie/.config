@@ -165,4 +165,106 @@ The report will provide:
 - Priorities align with project goals and user concerns
 - Report enables immediate action via `/plan` or `/implement`
 
+## Agent Usage
+
+This command delegates code analysis to the `code-reviewer` agent:
+
+### code-reviewer Agent
+- **Purpose**: Standards compliance review and quality analysis
+- **Tools**: Read, Grep, Glob, Bash
+- **Invocation**: Single agent for each refactoring analysis
+- **Read-Only**: Never modifies code, only reviews and reports
+
+### Invocation Pattern
+```yaml
+Task {
+  subagent_type: "code-reviewer"
+  description: "Analyze [scope] for refactoring opportunities"
+  prompt: "
+    Code Review Task: Analyze for refactoring
+
+    Context:
+    - Scope: [file/directory/module from user]
+    - Concerns: [specific concerns if provided]
+    - Project Standards: CLAUDE.md
+
+    Analysis Required:
+    1. Standards Compliance Check
+       - Indentation (2 spaces, no tabs)
+       - Naming conventions (snake_case)
+       - Line length (<100 chars)
+       - Error handling (pcall usage)
+       - No emojis in code
+
+    2. Code Quality Assessment
+       - Code duplication
+       - Overly complex functions
+       - Unused variables/imports
+       - Potential bugs
+       - Organization issues
+
+    3. Refactoring Opportunities
+       - Extract repeated code
+       - Simplify complex logic
+       - Improve naming
+       - Better error handling
+       - Module structure improvements
+
+    Output Format:
+    Structured review with severity levels:
+    - Blocking: Must fix (tabs, emojis, critical issues)
+    - Warning: Should fix (length, naming, duplication)
+    - Suggestion: Consider improving (comments, optimization)
+
+    Report includes:
+    - Specific file:line references
+    - Explanation of each issue
+    - Recommended fix
+    - Priority ranking
+  "
+}
+```
+
+### Agent Benefits
+- **Systematic Analysis**: Consistent review process across all code
+- **Standards Enforcement**: Automatic checking against CLAUDE.md
+- **Severity Classification**: Clear prioritization of issues
+- **Actionable Feedback**: Specific fixes, not just problems
+- **Non-Destructive**: Analysis only, no unintended modifications
+
+### Workflow Integration
+1. User invokes `/refactor` with scope and optional concerns
+2. Command delegates to `code-reviewer` agent
+3. Agent analyzes code against standards and quality criteria
+4. Agent generates structured report with findings
+5. Command returns report for review
+6. User can use findings to create `/plan` for fixes
+
+### Review Output Format
+```markdown
+Code Review: [Module/File]
+
+Blocking Issues (0):
+[None found or list with file:line references]
+
+Warnings (N):
+  1. file.lua:42 - Line length exceeds 100 characters (actual: 120)
+     Suggestion: Break into multiple lines
+
+  2. file.lua:67 - Variable 'someVar' uses camelCase, should be snake_case
+     Suggestion: Rename to 'some_var'
+
+Suggestions (M):
+  1. file.lua:15 - Missing function documentation
+     Suggestion: Add docstring explaining purpose
+
+Standards Compliance Summary:
+  ✓ Indentation: Compliant
+  ✓ Error handling: Adequate
+  ⚠ Line length: 3 violations
+  ⚠ Naming: 2 inconsistencies
+
+Overall: PASS with warnings
+```
+
 Let me begin analyzing the specified scope for refactoring opportunities.
