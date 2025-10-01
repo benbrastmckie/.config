@@ -105,7 +105,8 @@ end
 
 --- Queue command to be sent when terminal is ready
 --- If terminal is already ready, sends immediately
---- If terminal is opening, queues for auto-flush on ready
+--- If terminal exists but not ready, focuses terminal to trigger TextChanged
+--- If terminal doesn't exist, queues for TermOpen event
 --- @param command_text string Command text to send
 --- @param opts table|nil Options table with optional fields:
 ---   - auto_focus: boolean - Focus terminal after sending
@@ -120,14 +121,34 @@ function M.queue_command(command_text, opts)
     opts = opts
   })
 
-  -- Try to send immediately if terminal is ready
   local claude_buf = M.find_claude_terminal()
-  if claude_buf and M.is_terminal_ready(claude_buf) then
+
+  if not claude_buf then
+    -- No terminal exists - queue will be flushed when TermOpen fires
+    return
+  end
+
+  if M.is_terminal_ready(claude_buf) then
+    -- Already ready, send immediately
     state = M.State.READY
     M.flush_queue(claude_buf)
+  else
+    -- Terminal exists but not ready
+    -- Focus terminal to trigger TextChanged autocommand
+    M.focus_terminal(claude_buf)
+
+    -- Wait for terminal to render, then check and send
+    vim.defer_fn(function()
+      if M.is_terminal_ready(claude_buf) then
+        state = M.State.READY
+        M.flush_queue(claude_buf)
+      else
+        -- Still not ready after 500ms - try sending anyway
+        -- (TextChanged might fire later and clean up)
+        M.flush_queue(claude_buf)
+      end
+    end, 500)
   end
-  -- Otherwise, queue will be flushed automatically when terminal becomes ready
-  -- via the TextChanged autocommand callback
 end
 
 --- Send all queued commands to terminal
