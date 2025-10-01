@@ -74,55 +74,226 @@ performance_metrics:
 
 ### Research Phase (Parallel Execution)
 
-If research is needed, I'll:
+#### Step 1: Identify Research Topics
 
-1. **Identify Research Topics**:
-   - Analyze workflow description for key areas to investigate
-   - Typically 2-4 focused research topics
-   - Examples: existing patterns, best practices, alternative approaches, technical constraints
+I'll analyze the workflow description to extract 2-4 focused research topics:
 
-2. **Launch Parallel Research Agents**:
-   ```markdown
-   Task Tool Invocations (Parallel):
-   - Agent 1: Investigate existing patterns in codebase
-   - Agent 2: Research industry best practices
-   - Agent 3: Analyze alternative approaches
-   ```
+**Topic Extraction Logic**:
+- **Existing Patterns**: "How is [feature/component] currently implemented?"
+- **Best Practices**: "What are industry standards for [technology/approach]?"
+- **Alternatives**: "What alternative approaches exist for [problem]?"
+- **Technical Constraints**: "What limitations or requirements should we consider?"
 
-3. **Synthesize Research** (Minimal Context):
-   - Aggregate findings from all research agents
-   - Create concise summary (max 200 words)
-   - Store only summary, not full research outputs
-   - Save checkpoint: research_complete
+**Complexity-Based Research Strategy**:
+```yaml
+Simple Workflows (skip research):
+  - Keywords: "fix", "update", "small change"
+  - Action: Skip directly to planning phase
 
-4. **Research Agent Prompt Template**:
-   ```markdown
-   # Research Task: [Specific Topic]
+Medium Workflows (focused research):
+  - Keywords: "add", "improve", "refactor"
+  - Topics: 2-3 focused areas
+  - Example: existing patterns + best practices
 
-   ## Context
-   - **Workflow**: [Brief description]
-   - **Research Focus**: [Specific area to investigate]
-   - **Project Standards**: /home/benjamin/.config/CLAUDE.md
+Complex Workflows (comprehensive research):
+  - Keywords: "implement", "redesign", "architecture"
+  - Topics: 3-4 comprehensive areas
+  - Example: patterns + practices + alternatives + constraints
+```
 
-   ## Objective
-   Investigate [topic] to inform planning and implementation phases.
+#### Step 2: Launch Parallel Research Agents
 
-   ## Requirements
-   - Search codebase for existing patterns
-   - Research best practices (web search if needed)
-   - Identify potential approaches
+For each identified research topic, I'll create a focused research task and invoke agents in parallel:
 
-   ## Expected Output
-   Concise findings summary (max 150 words) covering:
-   - Existing patterns found
-   - Recommended approaches
-   - Potential challenges
+**Parallel Execution Pattern**:
+```markdown
+Use Task tool to invoke multiple general-purpose subagents simultaneously:
 
-   ## Success Criteria
-   - Findings are actionable for planning
-   - Recommendations are specific
-   - Challenges are identified
-   ```
+Agent 1 - Codebase Patterns:
+  Prompt: "Search the codebase for existing implementations of [feature/concept].
+          Analyze patterns, architectures, and conventions currently in use.
+          Summarize findings in max 150 words."
+  Tools: Read, Grep, Glob, Bash
+
+Agent 2 - Best Practices Research:
+  Prompt: "Research industry best practices for [technology/approach].
+          Use web search to find current standards (2025).
+          Summarize key recommendations in max 150 words."
+  Tools: WebSearch, WebFetch, Read
+
+Agent 3 - Alternative Approaches:
+  Prompt: "Investigate alternative approaches to [problem/feature].
+          Compare trade-offs, complexity, and fit with project.
+          Summarize options in max 150 words."
+  Tools: WebSearch, WebFetch, Read, Grep
+```
+
+**Critical Context Preservation Rule**:
+- Each research agent receives ONLY its specific research focus
+- NO orchestration routing logic in agent prompts
+- NO information about other parallel agents
+- Complete task description with success criteria
+- Reference to CLAUDE.md for project standards
+
+#### Step 3: Research Agent Prompt Template
+
+```markdown
+# Research Task: [Specific Topic]
+
+## Context
+- **Workflow**: [User's original request - brief 1 line summary]
+- **Research Focus**: [This agent's specific investigation area]
+- **Project Standards**: Reference CLAUDE.md at /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Investigate [specific topic] to inform the planning and implementation phases of this workflow.
+
+## Requirements
+
+### Investigation Scope
+- [Specific requirement 1]
+- [Specific requirement 2]
+- [Specific requirement 3]
+
+### Research Methods
+- **Codebase Search**: Use Grep/Glob to find existing patterns
+- **Documentation Review**: Read relevant files and docs
+- **Web Research**: Use WebSearch for industry standards (if applicable)
+- **Analysis**: Evaluate findings for relevance and applicability
+
+## Expected Output
+
+Provide a concise summary (max 150 words) structured as:
+
+**Findings Summary**
+- Existing patterns found (if any)
+- Recommended approaches
+- Potential challenges or constraints
+- Key insights for planning
+
+## Success Criteria
+- Findings are actionable and specific
+- Recommendations align with project standards
+- Challenges are clearly identified
+- Summary is concise and focused
+
+## Error Handling
+- If search yields no results: State "No existing patterns found" and recommend research-based approach
+- If access errors occur: Work with available tools and note limitations
+- If topic is unclear: Make reasonable assumptions and document them
+```
+
+#### Step 4: Aggregate and Synthesize Research (Minimal Context)
+
+After all parallel research agents complete:
+
+**Aggregation Process**:
+1. **Collect Results**: Gather summaries from all research agents (each ≤150 words)
+2. **Synthesize Findings**: Create unified summary combining key insights
+3. **Minimize Context**: Reduce to max 200 words total
+4. **Extract Actionables**: Identify specific recommendations for planning
+
+**Synthesis Template**:
+```markdown
+Research Summary (max 200 words):
+
+Existing Patterns:
+- [Key pattern 1 from codebase research]
+- [Key pattern 2 from codebase research]
+
+Best Practices:
+- [Key recommendation 1 from best practices research]
+- [Key recommendation 2 from best practices research]
+
+Recommended Approach:
+- [Synthesized recommendation based on all research]
+- [Alternative if primary approach has constraints]
+
+Key Constraints:
+- [Important limitation 1]
+- [Important limitation 2]
+
+Actionable Insights:
+- [Specific insight 1 for planning]
+- [Specific insight 2 for planning]
+```
+
+**Context Minimization Strategy**:
+- Store ONLY the synthesized summary, not individual research outputs
+- Focus on actionable insights, not exhaustive details
+- Reference specific files/patterns by path, not content
+- Keep orchestrator context <30% of normal usage
+
+#### Step 5: Save Research Checkpoint
+
+**Checkpoint Data Structure**:
+```yaml
+checkpoint_research_complete:
+  phase_name: "research"
+  completion_time: [timestamp]
+  outputs:
+    research_summary: "[200 word synthesis]"
+    topics_investigated: ["topic1", "topic2", "topic3"]
+    parallel_agents_used: 3
+    status: "success"
+  next_phase: "planning"
+  performance:
+    research_time: "[duration in seconds]"
+    parallel_effectiveness: "[time saved vs sequential]"
+```
+
+**Checkpoint Storage**:
+- Save checkpoint to workflow state (in orchestrator memory)
+- Mark research phase as completed
+- Enable recovery if workflow interrupts before planning
+
+#### Step 6: Context Preservation Validation
+
+Before proceeding to planning:
+
+**Validation Checks**:
+- [ ] Research summary ≤200 words
+- [ ] No full research outputs stored in orchestrator context
+- [ ] Only file paths referenced, not file contents
+- [ ] Actionable insights clearly identified
+- [ ] Checkpoint saved successfully
+
+**If validation fails**: Compress summary further or escalate to user
+
+#### Research Phase Execution Example
+
+```markdown
+User Request: "Add user authentication with email and password"
+
+Identified Research Topics:
+1. Existing auth patterns in codebase
+2. Security best practices for auth (2025)
+3. Framework-specific auth implementations
+
+Parallel Agent Invocations:
+[Agent 1 - Codebase] → Finds: "No existing auth, uses session management in user.lua"
+[Agent 2 - Security] → Finds: "Bcrypt for passwords, JWT for sessions, 2FA recommended"
+[Agent 3 - Framework] → Finds: "Lua has lua-resty-jwt, examples in nginx configs"
+
+Synthesized Summary (180 words):
+"Codebase currently has session management in nvim/lua/neotex/user.lua but no
+authentication system. Industry best practices (2025) recommend bcrypt for password
+hashing, JWT tokens for session management, and optional 2FA for enhanced security.
+
+Lua ecosystem provides lua-resty-jwt for token handling. Recommended approach:
+Implement authentication module following existing session management patterns,
+use bcrypt for password storage, JWT for auth tokens.
+
+Key constraints: Neovim environment may limit some libraries; focus on pure Lua
+solutions. Alternative: Delegate auth to external service if complexity warrants.
+
+Actionable insights: Build on user.lua patterns, create auth/ subdirectory, implement
+login/logout/verify functions, integrate with existing session system, add migration
+for user credentials table, implement password reset flow, consider rate limiting."
+
+Checkpoint Saved: research_complete
+Next Phase: planning
+```
 
 ### Planning Phase (Sequential Execution)
 
