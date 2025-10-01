@@ -112,11 +112,17 @@ When pressing `<C-s>` to save a command globally:
 
 #### Batch Loading (`[Load All Commands]`)
 When selecting the `[Load All Commands]` entry:
-- **Scans**: All global commands not already present locally
-- **Copies**: Each command with all its dependencies
-- **Preserves**: Existing local commands (no overwrites)
-- **Refreshes**: Picker shows all commands with local `*` markers
-- **Reports**: Number of commands loaded
+- **Scans**: All global commands in ~/.config/.claude/commands/
+- **Copies**: Global commands not present locally (new commands)
+- **Replaces**: Local commands that have matching global versions
+- **Preserves**: Local commands without global equivalents (local-only commands)
+- **Confirmation**: Shows yes/no dialog with operation counts before proceeding
+- **Refreshes**: Picker automatically refreshes to show updated status
+- **Reports**: Number of commands loaded and replaced
+
+**Important**: This operation will overwrite existing local commands with global
+versions (same behavior as `<C-u>` for individual commands). Local-only commands
+are never touched.
 
 #### Editing Commands (`<C-e>`)
 When pressing `<C-e>` to edit a command:
