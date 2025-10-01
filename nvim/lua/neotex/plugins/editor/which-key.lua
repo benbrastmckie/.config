@@ -437,7 +437,7 @@ return {
     -- ============================================================================
 
     wk.add({
-      { "<leader>r", group = "refactor/run", icon = "󰌵" },
+      { "<leader>r", group = "run", icon = "󰌵" },
       { "<leader>rc", "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", desc = "clear plugin cache", icon = "󰃢" },
       { "<leader>rd", function()
           local notify = require('neotex.util.notifications')
