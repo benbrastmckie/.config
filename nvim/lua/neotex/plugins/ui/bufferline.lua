@@ -123,6 +123,18 @@ return {
           vim.opt.showtabline = 2
         end,
       })
+
+      -- Enhanced tabline visibility management
+      -- Ensures bufferline stays visible when switching between normal buffers,
+      -- terminals, and sidebars while maintaining "hide on single buffer" behavior
+      local function ensure_tabline_visible()
+        local buffers = vim.fn.getbufinfo({buflisted = 1})
+        if #buffers > 1 then
+          vim.opt.showtabline = 2
+        elseif #buffers <= 1 then
+          vim.opt.showtabline = 0
+        end
+      end
     end, 200)
   end,
 }
