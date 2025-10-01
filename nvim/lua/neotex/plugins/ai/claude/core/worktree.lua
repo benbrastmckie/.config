@@ -34,9 +34,9 @@ M.config = {
 
   -- Context file template
   context_template = [[
-# Task: %s
+# Worktree Task: %s
 
-## Metadata
+## Task Metadata
 - **Type**: %s
 - **Branch**: %s
 - **Created**: %s
@@ -44,7 +44,7 @@ M.config = {
 - **Session ID**: %s
 
 ## Objective
-[Describe the main goal]
+[Describe the main goal for this worktree]
 
 ## Current Status
 - [ ] Planning
@@ -56,8 +56,8 @@ M.config = {
 ## Claude Context
 Tell Claude: "I'm working on %s in the %s worktree. The goal is to..."
 
-## Notes
-[Add any relevant context, links, or decisions]
+## Task Notes
+[Add worktree-specific context, links, or decisions]
 ]],
 }
 
