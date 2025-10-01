@@ -259,6 +259,73 @@ Automatically enforces:
 - Suggests corrections
 - Maintains backup of originals
 
+## Agent Usage
+
+This command delegates documentation work to the `doc-writer` agent:
+
+### doc-writer Agent
+- **Purpose**: Maintain documentation consistency and completeness
+- **Tools**: Read, Write, Edit, Grep, Glob
+- **Invocation**: Single agent for each documentation update
+- **Standards-Aware**: Automatically follows CLAUDE.md documentation policy
+
+### Invocation Pattern
+```yaml
+Task {
+  subagent_type: "doc-writer"
+  description: "Update documentation for [changes]"
+  prompt: "
+    Documentation Task: Update docs for [description]
+
+    Context:
+    - Change description: [user input or detected changes]
+    - Files modified: [list if known]
+    - Project standards: CLAUDE.md Documentation Policy
+
+    Requirements:
+    - Update all affected README.md files
+    - Maintain Unicode box-drawing for diagrams
+    - No emojis in content (UTF-8 encoding)
+    - Cross-reference specs properly
+    - Follow CommonMark specification
+
+    Updates needed:
+    1. Identify affected documentation files
+    2. Update module listings and descriptions
+    3. Update usage examples if API changed
+    4. Fix cross-references and navigation links
+    5. Ensure every directory has README.md
+
+    Output:
+    - List of updated documentation files
+    - Summary of changes made
+    - Compliance verification
+  "
+}
+```
+
+### Agent Benefits
+- **Consistent Format**: All documentation follows same structure and style
+- **Standards Compliance**: Automatic adherence to documentation policy
+- **Cross-Referencing**: Proper linking between docs, specs, plans, reports
+- **Completeness**: Ensures all required documentation exists
+- **Quality**: Professional, clear, concise documentation
+
+### Workflow Integration
+1. User invokes `/document` with change description (optional)
+2. Command detects changes if no description provided
+3. Command delegates to `doc-writer` agent with context
+4. Agent updates all affected documentation files
+5. Command returns summary of updates and compliance status
+
+### Documentation Standards Enforced
+- **README Requirements**: Every subdirectory must have README.md
+- **Unicode Box-Drawing**: For diagrams (not ASCII art)
+- **No Emojis**: UTF-8 encoding compliance
+- **CommonMark**: Markdown specification compliance
+- **Cross-References**: Proper links to specs, plans, reports
+- **Navigation**: Parent and child directory links
+
 ## Notes
 
 - **Automatic detection**: Analyzes code changes to determine documentation needs
@@ -267,3 +334,4 @@ Automatically enforces:
 - **Comprehensive**: Updates all related documentation in one pass
 - **Traceable**: Creates clear summary of all documentation changes
 - **Idempotent**: Safe to run multiple times
+- **Agent-Powered**: `doc-writer` ensures consistent, high-quality documentation

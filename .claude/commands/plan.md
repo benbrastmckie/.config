@@ -162,4 +162,79 @@ Testing:
 [Additional considerations or decisions]
 ```
 
+## Agent Usage
+
+This command can leverage specialized agents for research and planning:
+
+### research-specialist Agent (Optional)
+- **Purpose**: Analyze codebase and research best practices before planning
+- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
+- **When Used**: For complex features requiring codebase analysis
+- **Invocation**: One or more parallel agents for different research topics
+
+### plan-architect Agent
+- **Purpose**: Generate structured, phased implementation plans
+- **Tools**: Read, Write, Grep, Glob, WebSearch
+- **Invocation**: Single agent after research (if any) completes
+- **Output**: Complete implementation plan in specs/plans/
+
+### Two-Stage Planning Process
+
+#### Stage 1: Research (for complex features)
+```yaml
+# Optional: If feature requires codebase analysis or best practices research
+Task {
+  subagent_type: "research-specialist"
+  description: "Research [aspect] for [feature]"
+  prompt: "
+    Analyze existing [component] implementations in codebase.
+    Research industry best practices for [technology].
+    Summarize findings in max 150 words.
+  "
+}
+```
+
+#### Stage 2: Plan Generation
+```yaml
+Task {
+  subagent_type: "plan-architect"
+  description: "Create implementation plan for [feature]"
+  prompt: "
+    Plan Task: Create plan for [feature]
+
+    Context:
+    - Feature description: [user input]
+    - Research findings: [if stage 1 completed]
+    - Project standards: CLAUDE.md
+    - Report paths: [if provided]
+
+    Requirements:
+    - Multi-phase structure with specific tasks
+    - Testing strategy for each phase
+    - /implement compatibility (checkbox format)
+    - Standards integration from CLAUDE.md
+
+    Output:
+    - Plan file at specs/plans/NNN_[feature].md
+    - Plan summary with phase count and complexity
+  "
+}
+```
+
+### Agent Benefits
+- **Informed Planning**: Research findings incorporated into plan design
+- **Structured Output**: Consistent plan format across all features
+- **Standards Compliance**: Automatic reference to project conventions
+- **Phased Approach**: Natural breakdown into testable, committable phases
+- **Reusable Plans**: Plans serve as documentation and implementation guides
+
+### Workflow Integration
+1. User invokes `/plan` with feature description and optional reports
+2. If complex: Command delegates research to `research-specialist` agent(s)
+3. Command delegates planning to `plan-architect` agent with research findings
+4. Agent generates plan following project standards
+5. Command returns plan path for use with `/implement`
+
+For simple plans, the command can execute directly without agents. For complex features (especially in `/orchestrate` workflows), agents provide systematic research and planning.
+
 Let me analyze your feature requirements and create a comprehensive implementation plan.

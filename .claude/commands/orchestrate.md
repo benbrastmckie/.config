@@ -107,25 +107,25 @@ For each identified research topic, I'll create a focused research task and invo
 
 **Parallel Execution Pattern**:
 ```markdown
-Use Task tool to invoke multiple general-purpose subagents simultaneously:
+Use Task tool to invoke multiple research-specialist subagents simultaneously:
 
 Agent 1 - Codebase Patterns:
+  subagent_type: research-specialist
   Prompt: "Search the codebase for existing implementations of [feature/concept].
           Analyze patterns, architectures, and conventions currently in use.
           Summarize findings in max 150 words."
-  Tools: Read, Grep, Glob, Bash
 
 Agent 2 - Best Practices Research:
+  subagent_type: research-specialist
   Prompt: "Research industry best practices for [technology/approach].
           Use web search to find current standards (2025).
           Summarize key recommendations in max 150 words."
-  Tools: WebSearch, WebFetch, Read
 
 Agent 3 - Alternative Approaches:
+  subagent_type: research-specialist
   Prompt: "Investigate alternative approaches to [problem/feature].
           Compare trade-offs, complexity, and fit with project.
           Summarize options in max 150 words."
-  Tools: WebSearch, WebFetch, Read, Grep
 ```
 
 **Critical Context Preservation Rule**:
@@ -409,7 +409,7 @@ Recommended approach: [From research synthesis]
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
+subagent_type: plan-architect
 description: "Create implementation plan for [feature]"
 prompt: "[Generated planning prompt from Step 2]"
 ```
@@ -602,7 +602,7 @@ For each phase:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
+subagent_type: code-writer
 description: "Execute implementation plan [plan_number]"
 prompt: "[Generated implementation prompt from Step 2]"
 timeout: 600000  # 10 minutes for complex implementations
@@ -830,7 +830,7 @@ Use the /debug command to perform root cause analysis:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
+subagent_type: debug-specialist
 description: "Debug test failures from Phase [N]"
 prompt: "[Generated debug prompt from Step 2]"
 ```
@@ -929,7 +929,7 @@ After applying ALL fixes:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
+subagent_type: code-writer
 description: "Apply fixes for test failures"
 prompt: "[Generated fix prompt]"
 ```
@@ -1201,7 +1201,7 @@ Ensure proper cross-references between:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
+subagent_type: doc-writer
 description: "Update documentation for workflow"
 prompt: "[Generated documentation prompt from Step 2]"
 ```
@@ -2001,5 +2001,49 @@ The /orchestrate command provides comprehensive multi-agent workflow coordinatio
 - Performance metrics tracking
 
 Ready to orchestrate end-to-end development workflows!
+
+## Agent Usage
+
+This command uses specialized agents for each workflow phase:
+
+### Research Phase
+- **Agent**: `research-specialist` (multiple instances in parallel)
+- **Purpose**: Codebase analysis, best practices research, alternative approaches
+- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
+- **Invocation**: 2-4 parallel agents depending on workflow complexity
+
+### Planning Phase
+- **Agent**: `plan-architect`
+- **Purpose**: Generate structured implementation plans from research findings
+- **Tools**: Read, Write, Grep, Glob, WebSearch
+- **Invocation**: Single agent, sequential execution
+
+### Implementation Phase
+- **Agent**: `code-writer`
+- **Purpose**: Execute implementation plans phase by phase with testing
+- **Tools**: Read, Write, Edit, Bash, TodoWrite
+- **Invocation**: Single agent with extended timeout for complex implementations
+
+### Debugging Loop (Conditional)
+- **Investigation**: `debug-specialist`
+  - Purpose: Root cause analysis and diagnostic reporting
+  - Tools: Read, Bash, Grep, Glob, WebSearch
+- **Fix Application**: `code-writer`
+  - Purpose: Apply proposed fixes from debug reports
+  - Tools: Read, Write, Edit, Bash, TodoWrite
+- **Invocation**: Up to 3 debugging iterations before escalation
+
+### Documentation Phase
+- **Agent**: `doc-writer`
+- **Purpose**: Update documentation and generate workflow summaries
+- **Tools**: Read, Write, Edit, Grep, Glob
+- **Invocation**: Single agent, sequential execution
+
+### Agent Integration Benefits
+- **Specialized Expertise**: Each agent optimized for its specific task
+- **Tool Restrictions**: Security through limited tool access per agent
+- **Parallel Execution**: Research-specialist agents run concurrently
+- **Context Isolation**: Agents receive only relevant context for their phase
+- **Clear Responsibilities**: No ambiguity about which agent handles what
 
 Let me begin orchestrating your workflow based on the description provided.
