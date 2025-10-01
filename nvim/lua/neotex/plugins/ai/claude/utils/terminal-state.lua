@@ -132,20 +132,25 @@ function M.queue_command(command_text, opts)
     return
   end
 
-  -- Terminal exists - ensure visible and flush immediately
+  -- Terminal exists - check window state BEFORE focusing
+  local wins = vim.fn.win_findbuf(claude_buf)
+  local needs_reopen = (#wins == 0)
+
+  -- Focus terminal (might trigger async window open)
   M.focus_terminal(claude_buf)
 
-  -- If window had to be reopened, wait briefly before flushing
-  -- Otherwise flush immediately
-  local wins = vim.fn.win_findbuf(claude_buf)
-  if #wins > 0 then
-    -- Window already visible, flush now
-    M.flush_queue(claude_buf)
-  else
-    -- Window needs reopening, wait for it
+  -- Smart delay based on pre-check state
+  if needs_reopen then
+    -- Window was closed, needs time to reopen and settle
     vim.defer_fn(function()
       M.flush_queue(claude_buf)
-    end, 100)
+    end, 150)  -- Increased from 100ms for reliability
+  else
+    -- Window already visible, flush after current event loop completes
+    -- This ensures mode changes from focus_terminal() complete
+    vim.schedule(function()
+      M.flush_queue(claude_buf)
+    end)
   end
 end
 
