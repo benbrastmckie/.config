@@ -536,6 +536,278 @@ User runs: /setup --analyze
    - Makes decisions on discrepancies
 ```
 
+#### Report Generation Details
+
+When generating the analysis report, I'll create a comprehensive document following this structure:
+
+**1. Metadata Section**
+```markdown
+## Metadata
+- **Analysis Date**: YYYY-MM-DD HH:MM:SS
+- **Project Directory**: /path/to/project
+- **CLAUDE.md Found**: Yes/No (path if found)
+- **Files Analyzed**: N source files, M config files
+- **Languages Detected**: Lua, Python, JavaScript, etc.
+```
+
+**2. Executive Summary**
+```markdown
+## Executive Summary
+
+Analysis of project standards reveals:
+- **Discrepancies**: X found (Y critical, Z high priority)
+- **Missing Sections**: N required sections not present
+- **Incomplete Fields**: M fields need completion
+- **Overall Status**: [CRITICAL/NEEDS_ATTENTION/GOOD]
+
+Key findings:
+- Most critical: [Description of highest priority issue]
+- Quick wins: [Easy fixes with high impact]
+```
+
+**3. Current State Section**
+
+I'll generate three parallel comparisons:
+
+```markdown
+## Current State
+
+### Documented Standards (CLAUDE.md)
+
+**Code Standards**:
+- Indentation: 2 spaces
+- Naming: Not documented
+- Line Length: ~100 characters
+- Error Handling: Not documented
+
+**Testing Protocols**:
+- Section not found
+
+### Actual Standards (Codebase)
+
+**Code Patterns** (analyzed 47 files):
+- Indentation: 4 spaces (85% confidence, 40/47 files)
+- Naming: snake_case (78% confidence)
+- Line Length: Average 87 chars, max observed 120
+- Error Handling: pcall() used in 92% of error-prone operations
+
+**Test Patterns** (analyzed 12 test files):
+- Pattern: *_spec.lua (100%)
+- Test commands: Detected vim-test usage
+
+### Configuration Files
+
+**.editorconfig**:
+- indent_size = 4
+- max_line_length = 100
+- charset = utf-8
+
+**stylua.toml**:
+- indent_type = "Spaces"
+- indent_width = 4
+```
+
+**4. Discrepancy Analysis**
+
+For each discrepancy type, I'll list findings with priority:
+
+```markdown
+## Discrepancy Analysis
+
+### Type 1: Documented but Not Followed [CRITICAL]
+
+**Indentation Mismatch**
+- **Documented**: 2 spaces (CLAUDE.md line 42)
+- **Actual**: 4 spaces (85% confidence, 40/47 files)
+- **Impact**: Code doesn't match documentation
+- **Recommendation**: Update CLAUDE.md to match reality
+
+### Type 2: Followed but Not Documented [HIGH]
+
+**Error Handling Pattern**
+- **Pattern**: pcall() usage (92% of error-prone operations)
+- **Files**: nvim/lua/config/init.lua:25, nvim/lua/plugins/lazy.lua:18, [+12 more]
+- **Not Documented**: Error Handling field missing in Code Standards
+- **Recommendation**: Add "Error Handling: Use pcall for operations that might fail"
+
+### Type 3: Configuration Mismatches [HIGH]
+
+**Indentation: CLAUDE.md vs .editorconfig**
+- **CLAUDE.md**: 2 spaces
+- **.editorconfig**: 4 spaces
+- **Actual codebase**: 4 spaces (matches config, not docs)
+- **Recommendation**: Update CLAUDE.md to match .editorconfig
+
+### Type 4: Missing Sections [MEDIUM]
+
+**Testing Protocols**
+- **Required**: Yes (used by /test, /test-all, /implement)
+- **Present**: No
+- **Recommendation**: Add Testing Protocols section with detected patterns
+
+### Type 5: Incomplete Sections [MEDIUM]
+
+**Code Standards - Missing Fields**
+- **Section exists**: Yes (line 38-42)
+- **Fields present**: Indentation, Line Length
+- **Fields missing**: Naming conventions, Error Handling
+- **Recommendation**: Complete section with detected patterns
+```
+
+**5. Gap Analysis**
+
+Structured summary of what's missing:
+
+```markdown
+## Gap Analysis
+
+### Critical Gaps (Require Immediate Attention)
+1. Indentation discrepancy (documented ≠ actual)
+2. Testing Protocols section completely missing
+
+### High Priority Gaps (Should Address Soon)
+1. Error handling pattern undocumented
+2. Configuration file mismatch
+
+### Medium Priority Gaps (Complete When Possible)
+1. Naming conventions not documented
+2. Documentation Policy section incomplete
+```
+
+**6. Interactive Gap Filling**
+
+For each gap, I'll create a fill-in section with context:
+
+```markdown
+## Interactive Gap Filling
+
+This section allows you to make decisions about how to reconcile discrepancies and fill gaps.
+
+### [FILL IN: Indentation Standard]
+
+**Context**:
+- **CLAUDE.md currently says**: 2 spaces
+- **Codebase actually uses**: 4 spaces (85% confidence, 40/47 files)
+- **.editorconfig specifies**: indent_size = 4
+- **Recommendation**: Update to 4 spaces (matches config and reality)
+
+**Your Decision**: _______________
+(Options: "4 spaces", "2 spaces", "keep mixed")
+
+**Rationale**: _______________
+(Why did you choose this? E.g., "Match existing codebase and config")
+
+---
+
+### [FILL IN: Error Handling]
+
+**Context**:
+- **Currently documented**: Not documented
+- **Detected pattern**: pcall() used in 92% of error-prone operations
+- **Example files**:
+  - nvim/lua/config/init.lua:25: `local ok, err = pcall(require, 'config')`
+  - nvim/lua/plugins/lazy.lua:18: `pcall(vim.cmd, 'colorscheme')`
+- **Recommendation**: "Error Handling: Use pcall for operations that might fail"
+
+**Your Decision**: _______________
+(Suggested text or your own standard)
+
+**Rationale**: _______________
+
+---
+
+### [FILL IN: Testing Protocols]
+
+**Context**:
+- **Currently documented**: Section not found
+- **Detected patterns**:
+  - Test files: *_spec.lua (12 files found)
+  - Test framework: plenary.nvim (detected in test files)
+  - Test runner: vim-test (detected in config)
+- **Recommendation**: Add section with:
+  ```
+  ## Testing Protocols
+  [Used by: /test, /test-all, /implement]
+
+  ### Test Discovery
+  - **Test Pattern**: *_spec.lua files
+  - **Test Framework**: plenary.nvim
+  - **Test Commands**: :TestNearest, :TestFile, :TestSuite
+  ```
+
+**Your Decision**: [Accept] / [Modify] / [Skip]
+
+**If Modify, provide text**: _______________
+
+**Rationale**: _______________
+```
+
+**7. Recommendations Section**
+
+Prioritized action items:
+
+```markdown
+## Recommendations
+
+### Immediate Actions (Critical Priority)
+1. **Fix indentation documentation**: Update CLAUDE.md to specify 4 spaces (current: 2 spaces)
+   - File: CLAUDE.md line 42
+   - Change: "Indentation: 2 spaces" → "Indentation: 4 spaces"
+
+### Short-term Actions (High Priority)
+2. **Document error handling**: Add Error Handling field to Code Standards
+   - Value: "Error Handling: Use pcall for operations that might fail"
+3. **Resolve config mismatch**: Ensure CLAUDE.md and .editorconfig agree
+
+### Medium-term Actions (Medium Priority)
+4. **Add Testing Protocols section**: Use detected patterns from analysis
+5. **Document naming conventions**: Add "Naming: snake_case" based on detection
+```
+
+**8. Implementation Plan**
+
+Step-by-step guide:
+
+```markdown
+## Implementation Plan
+
+### Option 1: Manual Update
+1. Review this report and fill in all [FILL IN: ...] sections
+2. Manually edit CLAUDE.md based on your decisions
+3. Run /validate-setup to verify structure
+4. Commit changes
+
+### Option 2: Automated Update (Recommended)
+1. Review this report
+2. Fill in all [FILL IN: ...] sections with your decisions
+3. Save this report
+4. Run: `/setup --apply-report specs/reports/NNN_standards_analysis_report.md`
+5. Review the backup and updated CLAUDE.md
+6. Run /validate-setup to verify
+7. Commit changes
+
+### Verification Steps
+- [ ] All critical discrepancies resolved
+- [ ] Required sections present in CLAUDE.md
+- [ ] Configuration files and CLAUDE.md agree
+- [ ] /validate-setup passes
+- [ ] Other commands can parse CLAUDE.md (/implement, /test, etc.)
+```
+
+**File Naming and Location**
+
+Reports are saved with incremental numbering:
+
+```
+Discover existing reports: specs/reports/NNN_*.md
+Find highest number: e.g., 034
+New report number: 035
+Filename: 035_standards_analysis_report.md
+Full path: specs/reports/035_standards_analysis_report.md
+```
+
+If specs/reports/ doesn't exist, I'll create it automatically.
+
 ### Report Application Mode (--apply-report)
 
 #### What Gets Applied
