@@ -278,8 +278,8 @@ local function send_command_to_terminal(command)
   local notify = require('neotex.util.notifications')
   local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
 
-  -- Get base command string
-  local command_text = "/" .. command.name
+  -- Get base command string with trailing space for arguments
+  local command_text = "/" .. command.name .. " "
 
   -- Check if Claude Code plugin is available
   local has_claude_code = pcall(require, "claude-code")
@@ -292,19 +292,10 @@ local function send_command_to_terminal(command)
     return
   end
 
-  -- Find or open Claude terminal
-  local claude_buf = terminal_state.find_claude_terminal()
-  if not claude_buf then
-    notify.editor(
-      "Opening Claude Code...",
-      notify.categories.WARNING,
-      { command = command_text, action = "opening_claude" }
-    )
-    vim.cmd('ClaudeCode')  -- Triggers TermOpen autocommand
-  end
-
-  -- Queue command - autocommand will send when ready
+  -- Queue command - terminal_state.queue_command handles all timing logic
   terminal_state.queue_command(command_text, {
+    -- Pass flag to ensure Claude Code opens if needed
+    ensure_open = true,
     auto_focus = true,
     notification = function()
       notify.editor(
