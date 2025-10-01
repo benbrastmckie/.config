@@ -2,8 +2,9 @@
 # Claude Code SessionStart hook - signals Neovim when ready
 
 if [ -n "$NVIM" ]; then
-  # Escape terminal mode first (<C-\><C-n>), then execute Lua command
-  # This prevents the command from appearing as text in Claude's terminal
-  nvim --server "$NVIM" --remote-send \
-    '<C-\\><C-n>:lua require("neotex.plugins.ai.claude.utils.terminal-state").on_claude_ready()<CR>'
+  # Use --remote-expr to execute Lua directly in Neovim context
+  # This avoids sending keystrokes to the terminal window
+  nvim --server "$NVIM" --remote-expr \
+    'luaeval("require(\"neotex.plugins.ai.claude.utils.terminal-state\").on_claude_ready()")' \
+    >/dev/null 2>&1
 fi

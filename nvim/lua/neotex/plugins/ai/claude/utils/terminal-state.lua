@@ -134,7 +134,19 @@ function M.queue_command(command_text, opts)
 
   -- Terminal exists - ensure visible and flush immediately
   M.focus_terminal(claude_buf)
-  M.flush_queue(claude_buf)
+
+  -- If window had to be reopened, wait briefly before flushing
+  -- Otherwise flush immediately
+  local wins = vim.fn.win_findbuf(claude_buf)
+  if #wins > 0 then
+    -- Window already visible, flush now
+    M.flush_queue(claude_buf)
+  else
+    -- Window needs reopening, wait for it
+    vim.defer_fn(function()
+      M.flush_queue(claude_buf)
+    end, 100)
+  end
 end
 
 --- Send all queued commands to terminal
