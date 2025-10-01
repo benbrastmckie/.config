@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Claude Code SessionStart hook - signals Neovim when ready
 
 if [ -n "$NVIM" ]; then
