@@ -293,6 +293,316 @@ function M.parse_with_fallback(project_dir, global_dir)
   return merged_commands
 end
 
+--- Scan .claude/agents/ directory for agent files
+--- @param agents_dir string Path to agents directory
+--- @return table Array of agent metadata
+function M.scan_agents_directory(agents_dir)
+  local agents_path = plenary_path:new(agents_dir)
+
+  if not agents_path:exists() then
+    return {}
+  end
+
+  local agent_files = {}
+
+  local scandir_ok, scan_result = pcall(vim.fn.readdir, agents_dir)
+  if not scandir_ok then
+    return {}
+  end
+
+  for _, filename in ipairs(scan_result) do
+    if filename:match("%.md$") then
+      local filepath = agents_dir .. "/" .. filename
+      local path = plenary_path:new(filepath)
+
+      if path:exists() then
+        local content = path:read()
+        if content then
+          local metadata = parse_frontmatter(content)
+          if metadata then
+            local agent_name = filename:gsub("%.md$", "")
+            table.insert(agent_files, {
+              name = agent_name,
+              description = metadata.description or "",
+              allowed_tools = metadata.allowed_tools or {},
+              filepath = filepath,
+              is_local = false,  -- Will be set by caller
+              parent_commands = {}  -- Will be populated by build_agent_dependencies
+            })
+          end
+        end
+      end
+    end
+  end
+
+  return agent_files
+end
+
+--- Scan .claude/hooks/ directory for hook scripts
+--- @param hooks_dir string Path to hooks directory
+--- @return table Array of hook metadata
+function M.scan_hooks_directory(hooks_dir)
+  local hooks_path = plenary_path:new(hooks_dir)
+
+  if not hooks_path:exists() then
+    return {}
+  end
+
+  local hook_files = {}
+
+  local scandir_ok, scan_result = pcall(vim.fn.readdir, hooks_dir)
+  if not scandir_ok then
+    return {}
+  end
+
+  for _, filename in ipairs(scan_result) do
+    if filename:match("%.sh$") then
+      local filepath = hooks_dir .. "/" .. filename
+      local path = plenary_path:new(filepath)
+
+      if path:exists() then
+        -- Parse header comments for description
+        local content = path:read()
+        local description = ""
+
+        if content then
+          -- Look for "# Purpose:" line in header
+          for line in content:gmatch("[^\n]+") do
+            local purpose = line:match("^#%s*Purpose:%s*(.+)")
+            if purpose then
+              description = vim.trim(purpose)
+              break
+            end
+          end
+        end
+
+        table.insert(hook_files, {
+          name = filename,
+          description = description,
+          filepath = filepath,
+          is_local = false,  -- Will be set by caller
+          events = {}  -- Will be populated by build_hook_dependencies
+        })
+      end
+    end
+  end
+
+  return hook_files
+end
+
+--- Build command → agents dependency map
+--- @param commands table Parsed commands
+--- @param agents table Agent data
+--- @return table Map of command name → agents used
+function M.build_agent_dependencies(commands, agents)
+  local agent_deps = {}
+
+  -- For each command, find which agents it uses
+  for cmd_name, command in pairs(commands) do
+    local cmd_filepath = command.filepath
+
+    if cmd_filepath and vim.fn.filereadable(cmd_filepath) == 1 then
+      local content = vim.fn.readfile(cmd_filepath)
+      local agents_used = {}
+
+      -- Search for subagent_type: references
+      for _, line in ipairs(content) do
+        local agent_type = line:match("subagent_type:%s*[\"']?([a-z%-]+)[\"']?")
+        if agent_type then
+          agents_used[agent_type] = true
+        end
+      end
+
+      -- Convert to array and store
+      local agents_list = {}
+      for agent_name, _ in pairs(agents_used) do
+        table.insert(agents_list, agent_name)
+      end
+
+      if #agents_list > 0 then
+        agent_deps[cmd_name] = agents_list
+      end
+    end
+  end
+
+  -- Build reverse mapping: agent → commands that use it
+  for _, agent in ipairs(agents) do
+    agent.parent_commands = {}
+    for cmd_name, agents_list in pairs(agent_deps) do
+      for _, agent_name in ipairs(agents_list) do
+        if agent_name == agent.name then
+          table.insert(agent.parent_commands, cmd_name)
+        end
+      end
+    end
+  end
+
+  return agent_deps
+end
+
+--- Build hook event → hooks dependency map
+--- @param hooks table Hook data
+--- @param settings_path string Path to settings.local.json
+--- @return table Map of event name → hooks triggered
+function M.build_hook_dependencies(hooks, settings_path)
+  local hook_events = {}
+
+  -- Try to read settings.local.json
+  if vim.fn.filereadable(settings_path) ~= 1 then
+    return hook_events
+  end
+
+  local settings_content = table.concat(vim.fn.readfile(settings_path), "\n")
+  local ok, settings = pcall(vim.fn.json_decode, settings_content)
+
+  if not ok or not settings or not settings.hooks then
+    return hook_events
+  end
+
+  -- Parse hooks section
+  for event_name, event_configs in pairs(settings.hooks) do
+    hook_events[event_name] = {}
+
+    for _, config in ipairs(event_configs) do
+      if config.hooks then
+        for _, hook_config in ipairs(config.hooks) do
+          if hook_config.command then
+            -- Extract hook script name from command
+            local hook_name = hook_config.command:match("([^/]+%.sh)$")
+            if hook_name then
+              table.insert(hook_events[event_name], hook_name)
+            end
+          end
+        end
+      end
+    end
+  end
+
+  -- Update hooks with their events
+  for _, hook in ipairs(hooks) do
+    hook.events = {}
+    for event_name, hook_names in pairs(hook_events) do
+      for _, hook_name in ipairs(hook_names) do
+        if hook_name == hook.name then
+          table.insert(hook.events, event_name)
+        end
+      end
+    end
+  end
+
+  return hook_events
+end
+
+--- Parse agents from both local and global directories with local priority
+--- @param project_agents_dir string Path to project-specific agents directory
+--- @param global_agents_dir string Path to global agents directory
+--- @return table Merged agents with is_local flag
+local function parse_agents_with_fallback(project_agents_dir, global_agents_dir)
+  local merged_agents = {}
+  local local_agent_names = {}
+
+  -- Parse local agents first
+  if vim.fn.isdirectory(project_agents_dir) == 1 then
+    local local_agents = M.scan_agents_directory(project_agents_dir)
+    for _, agent in ipairs(local_agents) do
+      agent.is_local = true
+      table.insert(merged_agents, agent)
+      local_agent_names[agent.name] = true
+    end
+  end
+
+  -- Parse global agents
+  if vim.fn.isdirectory(global_agents_dir) == 1 then
+    local global_agents = M.scan_agents_directory(global_agents_dir)
+    for _, agent in ipairs(global_agents) do
+      if not local_agent_names[agent.name] then
+        agent.is_local = false
+        table.insert(merged_agents, agent)
+      end
+    end
+  end
+
+  return merged_agents
+end
+
+--- Parse hooks from both local and global directories with local priority
+--- @param project_hooks_dir string Path to project-specific hooks directory
+--- @param global_hooks_dir string Path to global hooks directory
+--- @return table Merged hooks with is_local flag
+local function parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
+  local merged_hooks = {}
+  local local_hook_names = {}
+
+  -- Parse local hooks first
+  if vim.fn.isdirectory(project_hooks_dir) == 1 then
+    local local_hooks = M.scan_hooks_directory(project_hooks_dir)
+    for _, hook in ipairs(local_hooks) do
+      hook.is_local = true
+      table.insert(merged_hooks, hook)
+      local_hook_names[hook.name] = true
+    end
+  end
+
+  -- Parse global hooks
+  if vim.fn.isdirectory(global_hooks_dir) == 1 then
+    local global_hooks = M.scan_hooks_directory(global_hooks_dir)
+    for _, hook in ipairs(global_hooks) do
+      if not local_hook_names[hook.name] then
+        hook.is_local = false
+        table.insert(merged_hooks, hook)
+      end
+    end
+  end
+
+  return merged_hooks
+end
+
+--- Get extended structure with commands, agents, and hooks
+--- @return table Structure with commands, agents, hooks, and dependencies
+function M.get_extended_structure()
+  local project_dir = vim.fn.getcwd()
+  local global_dir = vim.fn.expand("~/.config")
+
+  -- Get command structure (existing functionality)
+  local project_commands_dir = project_dir .. "/.claude/commands"
+  local global_commands_dir = global_dir .. "/.claude/commands"
+  local commands = M.parse_with_fallback(project_commands_dir, global_commands_dir)
+  local hierarchy = M.build_hierarchy(commands)
+  local sorted_hierarchy = M.sort_hierarchy(hierarchy)
+
+  -- Get agents
+  local project_agents_dir = project_dir .. "/.claude/agents"
+  local global_agents_dir = global_dir .. "/.claude/agents"
+  local agents = parse_agents_with_fallback(project_agents_dir, global_agents_dir)
+
+  -- Get hooks
+  local project_hooks_dir = project_dir .. "/.claude/hooks"
+  local global_hooks_dir = global_dir .. "/.claude/hooks"
+  local hooks = parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
+
+  -- Build dependencies
+  local agent_deps = M.build_agent_dependencies(commands, agents)
+
+  local settings_path = project_dir .. "/.claude/settings.local.json"
+  if vim.fn.filereadable(settings_path) ~= 1 then
+    settings_path = global_dir .. "/.claude/settings.local.json"
+  end
+  local hook_events = M.build_hook_dependencies(hooks, settings_path)
+
+  -- Return extended structure
+  return {
+    -- Existing command hierarchy
+    primary_commands = sorted_hierarchy.primary_commands,
+    dependent_commands = sorted_hierarchy.dependent_commands,
+
+    -- New: agents and hooks
+    agents = agents,
+    hooks = hooks,
+    agent_dependencies = agent_deps,
+    hook_events = hook_events
+  }
+end
+
 --- Main function to get organized command structure
 --- @param commands_dir string Path to commands directory (optional)
 --- @return table Organized, sorted command hierarchy
