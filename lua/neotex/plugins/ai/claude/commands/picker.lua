@@ -153,9 +153,11 @@ local function create_picker_entries(structure)
     local total_items = #dependents + #command_agents
 
     -- Add dependent commands first
+    -- With descending sort: first inserted = last displayed
     for i, dependent in ipairs(dependents) do
-      local is_last = (i == #dependents and #command_agents == 0)
-      local indent_char = is_last and "└─" or "├─"
+      -- First dependent (i=1) appears LAST visually, so it gets └─ only if no agents follow
+      local is_first = (i == 1)
+      local indent_char = (is_first and #command_agents == 0) and "└─" or "├─"
 
       table.insert(entries, {
         name = dependent.name,
@@ -174,9 +176,11 @@ local function create_picker_entries(structure)
     end
 
     -- Add agents for this command
+    -- With descending sort: first inserted = last displayed
     for i, agent in ipairs(command_agents) do
-      local is_last = (i == #command_agents)
-      local indent_char = is_last and "└─" or "├─"
+      -- First agent (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
 
       table.insert(entries, {
         name = agent.name,
@@ -229,9 +233,11 @@ local function create_picker_entries(structure)
     end
 
     -- Add individual hooks first
+    -- With descending sort: first inserted = last displayed
     for i, hook in ipairs(event_hooks) do
-      local is_last = (i == #event_hooks)
-      local indent_char = is_last and "└─" or "├─"
+      -- First hook (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
 
       table.insert(entries, {
         name = hook.name,
