@@ -104,9 +104,8 @@ end
 --------------------------------------------------------------------------------
 
 --- Queue command to be sent when terminal is ready
---- If terminal is already ready, sends immediately
---- If terminal exists but not ready, focuses terminal to trigger TextChanged
---- If terminal doesn't exist, queues for TermOpen event
+--- Primary readiness signal: SessionStart hook -> on_claude_ready()
+--- Fallback: TextChanged autocommand
 --- @param command_text string Command text to send
 --- @param opts table|nil Options table with optional fields:
 ---   - auto_focus: boolean - Focus terminal after sending
@@ -127,34 +126,19 @@ function M.queue_command(command_text, opts)
   if not claude_buf then
     -- No terminal exists
     if opts.ensure_open then
-      -- Open Claude Code and wait for TermOpen to trigger
-      vim.cmd('ClaudeCode')
+      vim.cmd('ClaudeCode')  -- SessionStart hook will call on_claude_ready()
     end
-    -- Queue will be flushed when TermOpen fires + TextChanged detects readiness
+    -- Queue will be flushed by hook or TextChanged fallback
     return
   end
 
+  -- Terminal exists - check if ready
   if M.is_terminal_ready(claude_buf) then
-    -- Already ready, send immediately
     state = M.State.READY
-    M.flush_queue(claude_buf)
-  else
-    -- Terminal exists but not ready
-    -- Focus terminal to trigger TextChanged autocommand
     M.focus_terminal(claude_buf)
-
-    -- Wait for terminal to render, then check and send
-    vim.defer_fn(function()
-      if M.is_terminal_ready(claude_buf) then
-        state = M.State.READY
-        M.flush_queue(claude_buf)
-      else
-        -- Still not ready after 500ms - try sending anyway
-        -- (TextChanged might fire later and clean up)
-        M.flush_queue(claude_buf)
-      end
-    end, 500)
+    M.flush_queue(claude_buf)
   end
+  -- If not ready, SessionStart hook or TextChanged will handle it
 end
 
 --- Send all queued commands to terminal
@@ -184,6 +168,20 @@ function M.flush_queue(claude_buf)
         { title = "Claude Terminal" }
       )
     end
+  end
+end
+
+--- Called by SessionStart hook when Claude is ready
+--- This is the primary readiness detection mechanism
+--- Hook script: ~/.config/nvim/scripts/claude-ready-signal.sh
+--- @see ~/.claude/settings.json for hook configuration
+function M.on_claude_ready()
+  state = M.State.READY
+
+  local claude_buf = M.find_claude_terminal()
+  if claude_buf and #pending_commands > 0 then
+    M.focus_terminal(claude_buf)
+    M.flush_queue(claude_buf)
   end
 end
 
@@ -268,57 +266,28 @@ function M.setup()
     callback = function(args)
       state = M.State.OPENING
 
-      -- Create per-buffer augroup for cleanup
+      -- TextChanged autocommand as FALLBACK ONLY
+      -- Primary readiness signal is SessionStart hook -> on_claude_ready()
       local ready_check_group = vim.api.nvim_create_augroup(
         "ClaudeReadyCheck_" .. args.buf,
         { clear = true }
       )
 
-      -- Monitor terminal content changes for readiness
       vim.api.nvim_create_autocmd("TextChanged", {
         group = ready_check_group,
         buffer = args.buf,
         callback = function()
           if M.is_terminal_ready(args.buf) then
             state = M.State.READY
-
-            -- Flush any pending commands
+            M.focus_terminal(args.buf)
             M.flush_queue(args.buf)
-
-            -- Clean up this autocommand (no longer needed)
             vim.api.nvim_del_augroup_by_id(ready_check_group)
           end
         end
       })
 
-      -- If there are pending commands, focus and poll for readiness
-      -- This handles the case where TextChanged might not fire
-      if #pending_commands > 0 then
-        -- Poll for readiness with focus attempts
-        local poll_count = 0
-        local poll_timer = vim.loop.new_timer()
-        poll_timer:start(300, 300, vim.schedule_wrap(function()
-          poll_count = poll_count + 1
-
-          -- Try to focus the terminal to ensure TextChanged can fire
-          M.focus_terminal(args.buf)
-
-          if M.is_terminal_ready(args.buf) then
-            state = M.State.READY
-            M.flush_queue(args.buf)
-            poll_timer:stop()
-            poll_timer:close()
-            -- Clean up TextChanged autocommand too
-            pcall(vim.api.nvim_del_augroup_by_id, ready_check_group)
-          elseif poll_count >= 10 then  -- Stop after 3 seconds (10 * 300ms)
-            poll_timer:stop()
-            poll_timer:close()
-            -- Try flushing anyway
-            M.flush_queue(args.buf)
-            pcall(vim.api.nvim_del_augroup_by_id, ready_check_group)
-          end
-        end))
-      end
+      -- NOTE: SessionStart hook will call on_claude_ready() when ready
+      -- TextChanged only fires if hook is not configured or fails
     end
   })
 
