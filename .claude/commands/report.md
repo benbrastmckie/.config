@@ -104,4 +104,61 @@ The report will be formatted as:
 [Links to relevant files and resources]
 ```
 
+## Agent Usage
+
+This command can optionally delegate research to the `research-specialist` agent:
+
+### research-specialist Agent (Optional)
+- **Purpose**: Focused codebase analysis and best practices research
+- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
+- **When Used**: For complex topics requiring systematic investigation
+- **Output**: Concise research summaries (max 200 words)
+
+### Current Implementation
+The `/report` command typically executes research directly for optimal context management and report generation. Agent delegation is beneficial for `/orchestrate` workflows where multiple research topics are investigated in parallel.
+
+### Potential Agent Integration Pattern
+For complex, multi-faceted topics:
+```yaml
+Task {
+  subagent_type: "research-specialist"
+  description: "Research [specific aspect] of [topic]"
+  prompt: "
+    Research Task: [Aspect] investigation
+
+    Context:
+    - Topic: [User's topic]
+    - Focus Area: [Specific aspect to research]
+    - Project Standards: CLAUDE.md
+
+    Investigation:
+    1. Codebase Analysis
+       - Search for existing implementations
+       - Identify patterns and conventions
+       - Note relevant file locations
+
+    2. Best Practices Research
+       - Industry standards (2025)
+       - Framework-specific recommendations
+       - Trade-offs and considerations
+
+    Output: Max 150-word summary with:
+    - Key findings
+    - Existing patterns
+    - Recommendations
+    - File references
+  "
+}
+```
+
+### When to Use Agents
+- **Use Agent**: When `/orchestrate` invokes `/report` as part of larger workflow
+- **Direct Execution**: When user directly invokes `/report` for single-topic investigation
+
+### Benefits of Direct Execution
+- **Comprehensive Reports**: Full context for detailed analysis
+- **Integrated Writing**: Seamless report generation
+- **Flexible Structure**: Adapt report format to topic needs
+- **Complete Control**: Fine-grained control over research depth
+
 Let me begin researching your topic and determining the best location for the report.

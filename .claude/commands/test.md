@@ -127,4 +127,75 @@ If tests fail, I'll:
 4. Offer to run tests in debug mode
 5. Check if the issue is environment-specific
 
+## Agent Usage
+
+This command can delegate test execution to the `test-specialist` agent:
+
+### test-specialist Agent
+- **Purpose**: Execute tests and analyze failures
+- **Tools**: Bash, Read, Grep
+- **Invocation**: Single agent for each test run
+- **Capabilities**: Multi-framework support, error categorization, structured reporting
+
+### Invocation Pattern
+```yaml
+Task {
+  subagent_type: "test-specialist"
+  description: "Run tests for [target]"
+  prompt: "
+    Test Task: Execute tests for [target]
+
+    Context:
+    - Target: [feature/module/file from user]
+    - Test Commands: [from CLAUDE.md or detected]
+    - Project Standards: CLAUDE.md Testing Protocols
+
+    Execution:
+    1. Determine appropriate test command
+       - Check CLAUDE.md for test commands
+       - Detect test framework from project
+       - Run appropriate tests for target
+
+    2. Execute tests and capture output
+       - Run test command via Bash
+       - Capture stdout and stderr
+       - Note execution time
+
+    3. Analyze results
+       - Count passed/failed/skipped
+       - Extract error messages for failures
+       - Categorize errors (compilation, runtime, assertion)
+       - Calculate coverage if available
+
+    Output Format:
+    - Summary: X passed, Y failed, Z skipped
+    - Failure details with file:line references
+    - Error categorization
+    - Suggested next steps if failures found
+  "
+}
+```
+
+### Agent Benefits
+- **Framework Expertise**: Understands multiple test frameworks
+- **Error Analysis**: Categorizes failures for easier debugging
+- **Structured Output**: Consistent test result format
+- **Coverage Tracking**: Reports coverage metrics when available
+- **Actionable Suggestions**: Provides next steps for failures
+
+### Workflow Integration
+1. User invokes `/test` with target (feature/module/file)
+2. Command detects test configuration from CLAUDE.md or project
+3. Command delegates to `test-specialist` agent
+4. Agent executes tests and analyzes results
+5. Command returns formatted test report
+6. If failures: User can use `/debug` for investigation
+
+### Direct Execution Mode
+For simple, quick tests, the command can execute directly without agent delegation to minimize overhead. Agent delegation is beneficial for:
+- Complex test suites requiring analysis
+- Multi-framework test execution
+- Detailed failure diagnostics
+- Coverage report generation
+
 Let me analyze your project and run the appropriate tests.

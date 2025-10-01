@@ -1,0 +1,389 @@
+# Agent Integration Guide
+
+Comprehensive guide for integrating and using specialized agents in the Claude Code workflow system.
+
+## Overview
+
+This project uses 8 specialized agents to handle specific workflow tasks. Each agent has restricted tool access and focused responsibilities, following the supervisor pattern for multi-agent coordination.
+
+## Agent Directory
+
+### Core Agents (Phase 1)
+
+#### 1. research-specialist
+- **Purpose**: Read-only research and codebase analysis
+- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
+- **Use Cases**: Codebase pattern discovery, best practices research, alternative approaches
+- **Output**: Concise summaries (max 150-200 words)
+- **Invoked By**: /orchestrate (research phase), /plan (optional), /report (optional)
+
+#### 2. code-writer
+- **Purpose**: Code generation and modification following project standards
+- **Tools**: Read, Write, Edit, Bash, TodoWrite
+- **Use Cases**: Implementation, applying fixes, code generation
+- **Standards**: Discovers and applies CLAUDE.md standards automatically
+- **Invoked By**: /orchestrate (implementation phase), /orchestrate (fix application)
+
+#### 3. test-specialist
+- **Purpose**: Test execution and failure analysis
+- **Tools**: Bash, Read, Grep
+- **Use Cases**: Running tests, analyzing failures, coverage reporting
+- **Frameworks**: Multi-framework support (Jest, pytest, Neovim tests, etc.)
+- **Invoked By**: /test (optional), /test-all (optional), /orchestrate (validation)
+
+#### 4. plan-architect
+- **Purpose**: Phased implementation plan generation
+- **Tools**: Read, Write, Grep, Glob, WebSearch
+- **Use Cases**: Creating structured plans from research, /implement compatibility
+- **Output**: specs/plans/NNN_*.md files
+- **Invoked By**: /plan, /orchestrate (planning phase)
+
+### Specialized Agents (Phase 2)
+
+#### 5. doc-writer
+- **Purpose**: Documentation creation and maintenance
+- **Tools**: Read, Write, Edit, Grep, Glob
+- **Use Cases**: README updates, documentation sync, cross-referencing
+- **Standards**: Unicode box-drawing, no emojis, CommonMark compliance
+- **Invoked By**: /document, /orchestrate (documentation phase)
+
+#### 6. code-reviewer
+- **Purpose**: Standards compliance and quality review
+- **Tools**: Read, Grep, Glob, Bash
+- **Use Cases**: Refactoring analysis, standards enforcement, code quality
+- **Output**: Structured reports with severity levels (Blocking/Warning/Suggestion)
+- **Invoked By**: /refactor, /orchestrate (optional pre-commit checks)
+
+#### 7. debug-specialist
+- **Purpose**: Root cause analysis and diagnostic investigations
+- **Tools**: Read, Bash, Grep, Glob, WebSearch
+- **Use Cases**: Issue investigation, evidence gathering, solution proposals
+- **Output**: Debug reports with multiple solution options
+- **Invoked By**: /debug, /orchestrate (debugging loop)
+
+#### 8. metrics-specialist
+- **Purpose**: Performance analysis and optimization recommendations
+- **Tools**: Read, Bash, Grep
+- **Use Cases**: Analyzing metrics from .claude/metrics/, identifying bottlenecks
+- **Output**: Statistical analysis with optimization suggestions
+- **Dependencies**: Requires metrics infrastructure (hooks)
+- **Invoked By**: Custom performance analysis commands (future)
+
+## Integration Patterns
+
+### Pattern 1: Single Agent Delegation
+
+Simple command delegates single task to specialized agent:
+
+```yaml
+Task {
+  subagent_type: "debug-specialist"
+  description: "Investigate [issue]"
+  prompt: "
+    Debug Task: [Detailed investigation instructions]
+
+    Context:
+    - Issue description: [from user]
+    - Project standards: CLAUDE.md
+
+    Requirements:
+    - Gather evidence
+    - Identify root cause
+    - Propose solutions
+
+    Output: Debug report with findings
+  "
+}
+```
+
+**Used By**: /debug, /document, /refactor
+
+### Pattern 2: Parallel Multi-Agent
+
+Multiple agents of same type work on different topics simultaneously:
+
+```yaml
+# Research Phase in /orchestrate
+Task { subagent_type: "research-specialist", ... }  # Topic 1
+Task { subagent_type: "research-specialist", ... }  # Topic 2
+Task { subagent_type: "research-specialist", ... }  # Topic 3
+# All invoked in single message for parallel execution
+```
+
+**Benefits**: Significant time savings (2-3x faster than sequential)
+
+**Used By**: /orchestrate (research phase)
+
+### Pattern 3: Sequential Pipeline
+
+Output of one agent feeds into next agent in sequence:
+
+```yaml
+# Planning Pipeline
+1. research-specialist → generates research summary
+2. plan-architect → uses summary to create plan
+```
+
+**Used By**: /orchestrate (research → planning), /plan (optional research then planning)
+
+### Pattern 4: Conditional Agent Loop
+
+Agent invoked repeatedly until condition met or max iterations:
+
+```yaml
+# Debugging Loop (max 3 iterations)
+while tests_failing and iteration < 3:
+  1. debug-specialist → identifies issues
+  2. code-writer → applies fixes
+  3. test-specialist → validates fixes
+  if tests_pass:
+    break
+```
+
+**Used By**: /orchestrate (debugging loop)
+
+### Pattern 5: Optional Agent Enhancement
+
+Command works independently but can delegate to agent for better results:
+
+```yaml
+# Direct execution for simple cases
+if simple_task:
+  execute_directly()
+else:
+  # Delegate to agent for complex cases
+  Task { subagent_type: "test-specialist", ... }
+```
+
+**Used By**: /test, /test-all, /implement (potential)
+
+## Agent Invocation Best Practices
+
+### 1. Prompt Construction
+
+**DO**:
+- Provide complete task description with objective
+- Include necessary context from prior phases (summaries only)
+- Reference CLAUDE.md for project standards
+- Specify explicit success criteria
+- Define expected output format
+
+**DON'T**:
+- Include orchestration routing logic
+- Pass information about other parallel agents
+- Provide excessive context (keep summaries <200 words)
+- Use vague instructions without specifics
+
+### 2. Context Management
+
+**Supervisor (Command) Context**: Minimal
+- Current workflow state
+- High-level summaries only
+- File paths (not contents)
+- Checkpoint data
+
+**Agent Context**: Comprehensive for their task
+- Complete task description
+- Relevant prior phase summaries
+- Project standards reference
+- Explicit requirements
+
+### 3. Error Handling
+
+All agent invocations should handle:
+- **Timeout**: Retry with extended timeout or split task
+- **Tool Access Errors**: Retry with fallback tools
+- **Validation Failures**: Clarify prompt and retry
+- **Max Retries**: Escalate to user with context
+
+### 4. Agent Selection
+
+Choose agent based on primary task:
+- **Research/Analysis**: research-specialist
+- **Code Generation**: code-writer
+- **Testing**: test-specialist
+- **Planning**: plan-architect
+- **Documentation**: doc-writer
+- **Code Review**: code-reviewer
+- **Debugging**: debug-specialist
+- **Performance**: metrics-specialist
+
+## Command-Agent Matrix
+
+| Command | Primary Agent | Secondary Agents | Pattern |
+|---------|---------------|------------------|---------|
+| /orchestrate | Varies by phase | All 6+ agents | Pipeline + Parallel |
+| /implement | None (direct) | Potential: code-writer, test-specialist | Direct execution |
+| /debug | debug-specialist | None | Single delegation |
+| /plan | plan-architect | Optional: research-specialist | Sequential pipeline |
+| /document | doc-writer | None | Single delegation |
+| /refactor | code-reviewer | None | Single delegation |
+| /test | test-specialist (optional) | None | Optional enhancement |
+| /test-all | test-specialist (optional) | None | Optional enhancement |
+| /report | research-specialist (optional) | None | Optional enhancement |
+
+## Creating New Agents
+
+To add a new specialized agent:
+
+### 1. Define Agent Specification
+
+Create `.claude/agents/new-agent.md` with frontmatter:
+
+```markdown
+---
+allowed-tools: Read, Bash, Grep
+description: One-line description of agent purpose
+---
+
+# New Agent Name
+
+Purpose and responsibilities description.
+
+## Core Capabilities
+[What the agent can do]
+
+## Standards Compliance
+[How it follows project standards]
+
+## Behavioral Guidelines
+[How it should operate]
+
+## Example Usage
+[Example Task invocations]
+```
+
+### 2. Specify Tool Access
+
+Only grant tools actually needed:
+- **Read-only research**: Read, Grep, Glob, WebSearch, WebFetch
+- **Code modification**: Read, Write, Edit, Bash
+- **Testing**: Bash, Read, Grep
+- **Documentation**: Read, Write, Edit, Grep, Glob
+
+**Never grant unnecessary tools** (security through restriction)
+
+### 3. Document Integration
+
+Add to relevant commands' "Agent Usage" sections:
+- When agent is invoked
+- What prompts are used
+- How output is processed
+- Benefits of using agent
+
+### 4. Test Agent
+
+Verify:
+- Frontmatter is valid YAML
+- allowed-tools list is correct
+- Agent can be invoked via Task tool
+- Agent produces expected output
+- Agent respects tool restrictions
+
+## Troubleshooting
+
+### Agent Not Found
+
+**Symptom**: Task tool reports "unknown subagent type"
+
+**Solutions**:
+1. Verify agent file exists in `.claude/agents/`
+2. Check frontmatter has `description:` field
+3. Ensure filename matches `subagent_type` value
+
+### Agent Access Denied
+
+**Symptom**: Agent reports tool permission errors
+
+**Solutions**:
+1. Check `allowed-tools:` in agent frontmatter
+2. Verify tool name spelling matches exactly
+3. Ensure tool is available in Claude Code v2.0.1
+
+### Agent Timeout
+
+**Symptom**: Agent execution exceeds time limits
+
+**Solutions**:
+1. Increase timeout parameter in Task invocation
+2. Split task into smaller subtasks
+3. Reduce agent workload (less context, focused scope)
+
+### Poor Agent Output
+
+**Symptom**: Agent returns low-quality or incorrect results
+
+**Solutions**:
+1. Improve prompt clarity and specificity
+2. Provide better context (but keep concise)
+3. Add explicit success criteria
+4. Show example of expected output format
+
+## Metrics Integration
+
+Agents work with hooks for metrics collection:
+
+**post-command-metrics.sh**: Collects agent invocation data
+- Operation: agent name
+- Duration: execution time
+- Status: success/failure
+
+**Metrics Location**: `.claude/metrics/YYYY-MM.jsonl`
+
+**Analysis**: Use metrics-specialist to analyze agent performance
+
+## Future Enhancements
+
+Potential agent system improvements:
+
+1. **Agent Composition**: Agents that invoke other agents
+2. **Specialized Variants**: Language-specific agents (lua-specialist, etc.)
+3. **Learning Agents**: Agents that improve from past executions
+4. **Validation Agents**: Pre-commit quality gates
+5. **Migration Agents**: Automated refactoring specialists
+
+## References
+
+- [Claude Code Documentation](https://docs.claude.com/en/docs/claude-code/)
+- [Task Tool Reference](https://docs.claude.com/en/docs/claude-code/task-tool)
+- [Agent System Design](../specs/reports/015_agents_and_hooks_extension_opportunities.md)
+- [Implementation Plan](../specs/plans/014_agents_and_necessary_hooks_implementation.md)
+
+## Quick Reference
+
+### Agent Tool Access Summary
+
+| Agent | Read | Write | Edit | Bash | Grep | Glob | TodoWrite | WebSearch | WebFetch |
+|-------|------|-------|------|------|------|------|-----------|-----------|----------|
+| research-specialist | ✓ | | | | ✓ | ✓ | | ✓ | ✓ |
+| code-writer | ✓ | ✓ | ✓ | ✓ | | | ✓ | | |
+| test-specialist | ✓ | | | ✓ | ✓ | | | | |
+| plan-architect | ✓ | ✓ | | | ✓ | ✓ | | ✓ | |
+| doc-writer | ✓ | ✓ | ✓ | | ✓ | ✓ | | | |
+| code-reviewer | ✓ | | | ✓ | ✓ | ✓ | | | |
+| debug-specialist | ✓ | | | ✓ | ✓ | ✓ | | ✓ | |
+| metrics-specialist | ✓ | | | ✓ | ✓ | | | | |
+
+### Common Invocation Template
+
+```yaml
+Task {
+  subagent_type: "[agent-name]"
+  description: "[concise task description]"
+  prompt: "
+    [Task Type]: [Specific task]
+
+    Context:
+    - [Key context 1]
+    - [Key context 2]
+    - Project Standards: CLAUDE.md
+
+    Requirements:
+    - [Requirement 1]
+    - [Requirement 2]
+
+    Output:
+    - [Expected output description]
+  "
+}
+```
