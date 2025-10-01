@@ -30,7 +30,7 @@
 # ============================================================================
 
 # Get context prefix with directory and branch information
-# Returns: "Directory [name]. Branch [branch]."
+# Returns: "[directory], [branch]" (comma provides pause)
 get_context_prefix() {
   local dir_name="unknown"
   local branch_name="no-branch"
@@ -49,7 +49,7 @@ get_context_prefix() {
     fi
   fi
 
-  echo "Directory $dir_name. Branch $branch_name."
+  echo "$dir_name, $branch_name"
 }
 
 # ============================================================================
@@ -89,62 +89,12 @@ get_state_field() {
 
 # Generate completion notification message
 # Triggered: Stop hook when command completes
-# Format: "Directory [name]. Branch [branch]. [Summary]. [Next steps or Ready for input]."
+# Format: "[directory], [branch]"
 generate_completion_message() {
   local context
   context=$(get_context_prefix)
 
-  local command="${CLAUDE_COMMAND:-command}"
-  local status="${CLAUDE_STATUS:-complete}"
-
-  # Try to get detailed summary from state file
-  local summary
-  summary=$(get_state_field "summary")
-
-  local next_steps
-  next_steps=$(get_state_field "next_steps")
-
-  # Generate message based on available information
-  local message="$context"
-
-  if [[ -n "$summary" ]]; then
-    message="$message $summary."
-  elif [[ "$status" == "success" ]]; then
-    case "$command" in
-      *implement*)
-        message="$message Implementation complete."
-        ;;
-      *test*)
-        message="$message Tests passed."
-        ;;
-      *debug*)
-        message="$message Debug investigation complete."
-        ;;
-      *orchestrate*)
-        message="$message Workflow complete."
-        ;;
-      *plan*)
-        message="$message Plan created."
-        ;;
-      *report*)
-        message="$message Report generated."
-        ;;
-      *)
-        message="$message Task complete."
-        ;;
-    esac
-  else
-    message="$message Command finished."
-  fi
-
-  # Add next steps or default ready message
-  if [[ -n "$next_steps" ]]; then
-    message="$message $next_steps."
-  else
-    message="$message Ready for input."
-  fi
-
-  echo "$message"
+  echo "$context"
 }
 
 # Generate permission request message
