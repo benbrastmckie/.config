@@ -193,12 +193,13 @@ local function create_picker_entries(structure)
       })
     end
 
-    -- Add agents for this command
-    -- With descending sort: first inserted = last displayed
+    -- Add agents for this command (sorted alphabetically ascending)
+    -- With descending display: first inserted (i=1) appears at BOTTOM
     for i, agent in ipairs(command_agents) do
-      -- First agent (i=1) appears LAST visually, so it gets └─
-      local is_first = (i == 1)
-      local indent_char = is_first and "└─" or "├─"
+      -- Last in array (i==#agents, alphabetically last) appears at TOP → gets ├─
+      -- First in array (i==1, alphabetically first) appears at BOTTOM → gets └─
+      local is_last = (i == #command_agents)
+      local indent_char = is_last and "├─" or "└─"
 
       table.insert(entries, {
         name = agent.name,
@@ -277,15 +278,9 @@ local function create_picker_entries(structure)
     })
   end
 
-  -- TTS files section
+  -- TTS files section (no header, just add files directly)
   local tts_files = structure.tts_files or {}
   if #tts_files > 0 then
-    entries[#entries + 1] = {
-      display = "─── TTS System Files ───",
-      entry_type = "tts_section",
-      ordinal = "zzzz_tts_header"
-    }
-
     -- Sort TTS files by role (config, dispatcher, library) then name
     table.sort(tts_files, function(a, b)
       if a.role ~= b.role then
@@ -323,6 +318,74 @@ local function get_file_permissions(filepath)
   local perms = vim.fn.getfperm(filepath)
   if perms == "" then return nil end
   return perms  -- Returns: rwxr-xr-x format
+end
+
+--- Scan directory for files to sync
+--- @param global_dir string Global base directory
+--- @param local_dir string Local base directory
+--- @param subdir string Subdirectory to scan (e.g., "commands", "hooks")
+--- @param extension string File extension pattern (e.g., "*.md", "*.sh")
+--- @return table files List of file sync info {name, global_path, local_path, action}
+local function scan_directory_for_sync(global_dir, local_dir, subdir, extension)
+  local global_path = global_dir .. "/.claude/" .. subdir
+  local local_path = local_dir .. "/.claude/" .. subdir
+  local global_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
+
+  local files = {}
+  for _, global_file in ipairs(global_files) do
+    local filename = vim.fn.fnamemodify(global_file, ":t")
+    local local_file = local_path .. "/" .. filename
+
+    local action = vim.fn.filereadable(local_file) == 1 and "replace" or "copy"
+    table.insert(files, {
+      name = filename,
+      global_path = global_file,
+      local_path = local_file,
+      action = action
+    })
+  end
+
+  return files
+end
+
+--- Sync files from global to local directory
+--- @param files table List of file sync info
+--- @param preserve_perms boolean Preserve execute permissions for shell scripts
+--- @return number success_count Number of successfully synced files
+local function sync_files(files, preserve_perms)
+  local success_count = 0
+  local notify = require('neotex.util.notifications')
+
+  for _, file in ipairs(files) do
+    -- Read global file
+    local success, content = pcall(vim.fn.readfile, file.global_path)
+    if success then
+      -- Write to local
+      local write_success = pcall(vim.fn.writefile, content, file.local_path)
+      if write_success then
+        -- Preserve permissions for shell scripts
+        if preserve_perms and file.name:match("%.sh$") then
+          local perms = vim.fn.getfperm(file.global_path)
+          if perms ~= "" then
+            vim.fn.setfperm(file.local_path, perms)
+          end
+        end
+        success_count = success_count + 1
+      else
+        notify.editor(
+          string.format("Failed to write file: %s", file.name),
+          notify.categories.ERROR
+        )
+      end
+    else
+      notify.editor(
+        string.format("Failed to read global file: %s", file.name),
+        notify.categories.ERROR
+      )
+    end
+  end
+
+  return success_count
 end
 
 --- Create custom previewer for command documentation
@@ -775,74 +838,6 @@ local function load_command_locally(command, silent)
   end
 
   return true
-end
-
---- Scan directory for files to sync
---- @param global_dir string Global base directory
---- @param local_dir string Local base directory
---- @param subdir string Subdirectory to scan (e.g., "commands", "hooks")
---- @param extension string File extension pattern (e.g., "*.md", "*.sh")
---- @return table files List of file sync info {name, global_path, local_path, action}
-local function scan_directory_for_sync(global_dir, local_dir, subdir, extension)
-  local global_path = global_dir .. "/.claude/" .. subdir
-  local local_path = local_dir .. "/.claude/" .. subdir
-  local global_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
-
-  local files = {}
-  for _, global_file in ipairs(global_files) do
-    local filename = vim.fn.fnamemodify(global_file, ":t")
-    local local_file = local_path .. "/" .. filename
-
-    local action = vim.fn.filereadable(local_file) == 1 and "replace" or "copy"
-    table.insert(files, {
-      name = filename,
-      global_path = global_file,
-      local_path = local_file,
-      action = action
-    })
-  end
-
-  return files
-end
-
---- Sync files from global to local directory
---- @param files table List of file sync info
---- @param preserve_perms boolean Preserve execute permissions for shell scripts
---- @return number success_count Number of successfully synced files
-local function sync_files(files, preserve_perms)
-  local success_count = 0
-  local notify = require('neotex.util.notifications')
-
-  for _, file in ipairs(files) do
-    -- Read global file
-    local success, content = pcall(vim.fn.readfile, file.global_path)
-    if success then
-      -- Write to local
-      local write_success = pcall(vim.fn.writefile, content, file.local_path)
-      if write_success then
-        -- Preserve permissions for shell scripts
-        if preserve_perms and file.name:match("%.sh$") then
-          local perms = vim.fn.getfperm(file.global_path)
-          if perms ~= "" then
-            vim.fn.setfperm(file.local_path, perms)
-          end
-        end
-        success_count = success_count + 1
-      else
-        notify.editor(
-          string.format("Failed to write file: %s", file.name),
-          notify.categories.ERROR
-        )
-      end
-    else
-      notify.editor(
-        string.format("Failed to read global file: %s", file.name),
-        notify.categories.ERROR
-      )
-    end
-  end
-
-  return success_count
 end
 
 --- Load all global artifacts (commands, agents, hooks, TTS files) locally
