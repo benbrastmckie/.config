@@ -97,6 +97,24 @@ local function format_hook_event(event_name)
   )
 end
 
+--- Format TTS file for display
+--- @param file table TTS file data
+--- @return string Formatted display string
+local function format_tts_file(file)
+  local prefix = file.is_local and "*" or " "
+  local role_label = "[" .. file.role .. "]"
+  local location = file.directory  -- hooks|tts
+
+  return string.format(
+    "%s %-12s %-25s (%s) %dL",
+    prefix,
+    role_label,
+    file.name,
+    location,
+    file.line_count or 0
+  )
+end
+
 --- Create flattened entries for telescope display
 --- @param structure table Extended structure from parser.get_extended_structure()
 --- @return table Array of entries for telescope
@@ -109,8 +127,8 @@ local function create_picker_entries(structure)
     name = "~~~load_all",
     display = string.format(
       "  %-40s %s",
-      "[Load All Commands]",
-      "Copy all commands, agents, and hooks"
+      "[Load All Artifacts]",
+      "Sync commands, agents, hooks, TTS files"
     ),
     command = nil,
     entry_type = "special"
@@ -259,6 +277,42 @@ local function create_picker_entries(structure)
     })
   end
 
+  -- TTS files section
+  local tts_files = structure.tts_files or {}
+  if #tts_files > 0 then
+    entries[#entries + 1] = {
+      display = "─── TTS System Files ───",
+      entry_type = "tts_section",
+      ordinal = "zzzz_tts_header"
+    }
+
+    -- Sort TTS files by role (config, dispatcher, library) then name
+    table.sort(tts_files, function(a, b)
+      if a.role ~= b.role then
+        -- Order: config, dispatcher, library
+        local role_order = { config = 1, dispatcher = 2, library = 3 }
+        return (role_order[a.role] or 99) < (role_order[b.role] or 99)
+      end
+      return a.name < b.name
+    end)
+
+    for _, file in ipairs(tts_files) do
+      entries[#entries + 1] = {
+        display = format_tts_file(file),
+        entry_type = "tts_file",
+        name = file.name,
+        description = file.description,
+        filepath = file.filepath,
+        is_local = file.is_local,
+        role = file.role,
+        directory = file.directory,
+        variables = file.variables,
+        line_count = file.line_count,
+        ordinal = "zzzz_tts_" .. file.name
+      }
+    end
+  end
+
   return entries
 end
 
@@ -330,58 +384,76 @@ local function create_command_previewer()
         return
       end
 
-      -- Show info for load all commands entry
+      -- Show info for load all artifacts entry
       if entry.value.is_load_all then
         local project_dir = vim.fn.getcwd()
         local global_dir = vim.fn.expand("~/.config")
 
-        -- Scan global commands directory (same logic as load_all_commands_locally)
-        local global_commands_dir = global_dir .. "/.claude/commands"
-        local global_files = vim.fn.glob(global_commands_dir .. "/*.md", false, true)
+        -- Scan all artifact types (same logic as load_all_globally)
+        local commands = scan_directory_for_sync(global_dir, project_dir, "commands", "*.md")
+        local agents = scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
+        local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
+        local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
+        local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
 
-        local count_to_load = 0
-        local count_to_update = 0
-        local local_commands_dir = project_dir .. "/.claude/commands"
-
-        -- Check if global commands exist
-        if type(global_files) == "table" and #global_files > 0 then
-          -- Categorize commands into new and existing
-          for _, global_path in ipairs(global_files) do
-            local command_name = vim.fn.fnamemodify(global_path, ":t:r")
-            local local_path = local_commands_dir .. "/" .. command_name .. ".md"
-
-            if vim.fn.filereadable(local_path) == 1 then
-              -- Local version exists - will be replaced
-              count_to_update = count_to_update + 1
-            else
-              -- No local version - will be copied
-              count_to_load = count_to_load + 1
-            end
-          end
+        -- Merge TTS files
+        local all_tts = {}
+        for _, file in ipairs(tts_hooks) do
+          table.insert(all_tts, file)
+        end
+        for _, file in ipairs(tts_files) do
+          table.insert(all_tts, file)
         end
 
+        -- Count operations by action type
+        local function count_actions(files)
+          local copy_count = 0
+          local replace_count = 0
+          for _, file in ipairs(files) do
+            if file.action == "copy" then
+              copy_count = copy_count + 1
+            else
+              replace_count = replace_count + 1
+            end
+          end
+          return copy_count, replace_count
+        end
+
+        local cmd_copy, cmd_replace = count_actions(commands)
+        local agt_copy, agt_replace = count_actions(agents)
+        local hook_copy, hook_replace = count_actions(hooks)
+        local tts_copy, tts_replace = count_actions(all_tts)
+
+        local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy
+        local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace
+
         local lines = {
-          "Load All Commands",
+          "Load All Artifacts",
           "",
-          "This action will copy all commands from ~/.config/.claude/commands/",
-          "to your local project's .claude/commands/ directory.",
+          "This action will sync all artifacts from ~/.config/.claude/ to your",
+          "local project's .claude/ directory (commands, agents, hooks, TTS files).",
           "",
         }
 
-        if count_to_load > 0 or count_to_update > 0 then
-          table.insert(lines, "**Operations:**")
-          table.insert(lines, string.format("  - Copy %d new commands", count_to_load))
-          table.insert(lines, string.format("  - Replace %d existing local commands", count_to_update))
+        if total_copy + total_replace > 0 then
+          table.insert(lines, "**Operations by Type:**")
+          table.insert(lines, string.format("  Commands:  %d new, %d replace", cmd_copy, cmd_replace))
+          table.insert(lines, string.format("  Agents:    %d new, %d replace", agt_copy, agt_replace))
+          table.insert(lines, string.format("  Hooks:     %d new, %d replace", hook_copy, hook_replace))
+          table.insert(lines, string.format("  TTS Files: %d new, %d replace", tts_copy, tts_replace))
           table.insert(lines, "")
-          table.insert(lines, "**Note:** Local commands without global equivalents will not be affected.")
+          table.insert(lines, string.format("**Total:** %d new, %d replace", total_copy, total_replace))
+          table.insert(lines, "")
+          table.insert(lines, "**Note:** Local-only artifacts will not be affected.")
+          table.insert(lines, "          Execute permissions preserved for .sh files.")
         else
-          table.insert(lines, "**All commands already in sync!**")
+          table.insert(lines, "**All artifacts already in sync!**")
         end
 
         table.insert(lines, "")
         table.insert(lines, "**Current Status:**")
         table.insert(lines, string.format("  Project directory: %s", project_dir))
-        table.insert(lines, string.format("  Global commands directory: ~/.config/.claude/commands/"))
+        table.insert(lines, string.format("  Global directory:  ~/.config/.claude/"))
         table.insert(lines, "")
         table.insert(lines, "Press Enter to proceed with confirmation, or Escape to cancel.")
 
@@ -705,11 +777,79 @@ local function load_command_locally(command, silent)
   return true
 end
 
---- Load all global commands locally and update existing ones
---- Scans global directory, copies new commands, and replaces existing local commands
---- with global versions. Preserves local-only commands without global equivalents.
---- @return number count Number of commands loaded or updated
-local function load_all_commands_locally()
+--- Scan directory for files to sync
+--- @param global_dir string Global base directory
+--- @param local_dir string Local base directory
+--- @param subdir string Subdirectory to scan (e.g., "commands", "hooks")
+--- @param extension string File extension pattern (e.g., "*.md", "*.sh")
+--- @return table files List of file sync info {name, global_path, local_path, action}
+local function scan_directory_for_sync(global_dir, local_dir, subdir, extension)
+  local global_path = global_dir .. "/.claude/" .. subdir
+  local local_path = local_dir .. "/.claude/" .. subdir
+  local global_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
+
+  local files = {}
+  for _, global_file in ipairs(global_files) do
+    local filename = vim.fn.fnamemodify(global_file, ":t")
+    local local_file = local_path .. "/" .. filename
+
+    local action = vim.fn.filereadable(local_file) == 1 and "replace" or "copy"
+    table.insert(files, {
+      name = filename,
+      global_path = global_file,
+      local_path = local_file,
+      action = action
+    })
+  end
+
+  return files
+end
+
+--- Sync files from global to local directory
+--- @param files table List of file sync info
+--- @param preserve_perms boolean Preserve execute permissions for shell scripts
+--- @return number success_count Number of successfully synced files
+local function sync_files(files, preserve_perms)
+  local success_count = 0
+  local notify = require('neotex.util.notifications')
+
+  for _, file in ipairs(files) do
+    -- Read global file
+    local success, content = pcall(vim.fn.readfile, file.global_path)
+    if success then
+      -- Write to local
+      local write_success = pcall(vim.fn.writefile, content, file.local_path)
+      if write_success then
+        -- Preserve permissions for shell scripts
+        if preserve_perms and file.name:match("%.sh$") then
+          local perms = vim.fn.getfperm(file.global_path)
+          if perms ~= "" then
+            vim.fn.setfperm(file.local_path, perms)
+          end
+        end
+        success_count = success_count + 1
+      else
+        notify.editor(
+          string.format("Failed to write file: %s", file.name),
+          notify.categories.ERROR
+        )
+      end
+    else
+      notify.editor(
+        string.format("Failed to read global file: %s", file.name),
+        notify.categories.ERROR
+      )
+    end
+  end
+
+  return success_count
+end
+
+--- Load all global artifacts (commands, agents, hooks, TTS files) locally
+--- Scans global directory, copies new artifacts, and replaces existing local artifacts
+--- with global versions. Preserves local-only artifacts without global equivalents.
+--- @return number count Total number of artifacts loaded or updated
+local function load_all_globally()
   local notify = require('neotex.util.notifications')
 
   local project_dir = vim.fn.getcwd()
@@ -718,139 +858,122 @@ local function load_all_commands_locally()
   -- Don't load if we're in the global directory
   if project_dir == global_dir then
     notify.editor(
-      "Already in the global commands directory",
+      "Already in the global directory",
       notify.categories.STATUS
     )
     return 0
   end
 
-  -- Scan global commands directory
-  local global_commands_dir = global_dir .. "/.claude/commands"
-  local global_files = vim.fn.glob(global_commands_dir .. "/*.md", false, true)
+  -- Scan all artifact types
+  local commands = scan_directory_for_sync(global_dir, project_dir, "commands", "*.md")
+  local agents = scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
+  local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
 
-  -- Check if global directory exists and has commands
-  if type(global_files) ~= "table" or #global_files == 0 then
+  -- Scan TTS files from 2 directories
+  local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
+  local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
+
+  -- Merge TTS files
+  local all_tts = {}
+  for _, file in ipairs(tts_hooks) do
+    table.insert(all_tts, file)
+  end
+  for _, file in ipairs(tts_files) do
+    table.insert(all_tts, file)
+  end
+
+  -- Check if any artifacts found
+  local total_files = #commands + #agents + #hooks + #all_tts
+  if total_files == 0 then
     notify.editor(
-      "No global commands found in ~/.config/.claude/commands/",
+      "No global artifacts found in ~/.config/.claude/",
       notify.categories.WARNING
     )
     return 0
   end
 
-  -- Categorize commands into new and existing
-  local commands_to_load = {}    -- New commands (not yet local)
-  local commands_to_update = {}  -- Existing local commands with global versions
-  local local_commands_dir = project_dir .. "/.claude/commands"
-
-  for _, global_path in ipairs(global_files) do
-    local command_name = vim.fn.fnamemodify(global_path, ":t:r")  -- filename without .md
-    local local_path = local_commands_dir .. "/" .. command_name .. ".md"
-
-    if vim.fn.filereadable(local_path) == 1 then
-      -- Local version exists - will be replaced
-      table.insert(commands_to_update, {
-        name = command_name,
-        global_path = global_path,
-        local_path = local_path
-      })
-    else
-      -- No local version - will be copied
-      table.insert(commands_to_load, {
-        name = command_name,
-        global_path = global_path,
-        local_path = local_path
-      })
+  -- Count operations by action type
+  local function count_actions(files)
+    local copy_count = 0
+    local replace_count = 0
+    for _, file in ipairs(files) do
+      if file.action == "copy" then
+        copy_count = copy_count + 1
+      else
+        replace_count = replace_count + 1
+      end
     end
+    return copy_count, replace_count
   end
 
-  -- Calculate total operations
-  local total_operations = #commands_to_load + #commands_to_update
+  local cmd_copy, cmd_replace = count_actions(commands)
+  local agt_copy, agt_replace = count_actions(agents)
+  local hook_copy, hook_replace = count_actions(hooks)
+  local tts_copy, tts_replace = count_actions(all_tts)
+
+  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy
+  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace
 
   -- Skip if no operations needed
-  if total_operations == 0 then
+  if total_copy + total_replace == 0 then
     notify.editor(
-      "All commands already in sync",
+      "All artifacts already in sync",
       notify.categories.STATUS
     )
     return 0
   end
 
-  -- Show confirmation dialog
+  -- Show confirmation dialog with detailed breakdown
   local message = string.format(
-    "Load all commands from global directory?\n\n" ..
-    "This will:\n" ..
-    "  - Copy %d new commands\n" ..
-    "  - Replace %d existing local commands\n\n" ..
-    "Local-only commands will not be affected.",
-    #commands_to_load,
-    #commands_to_update
+    "Load all artifacts from global directory?\n\n" ..
+    "Commands: %d new, %d replace\n" ..
+    "Agents: %d new, %d replace\n" ..
+    "Hooks: %d new, %d replace\n" ..
+    "TTS Files: %d new, %d replace\n\n" ..
+    "Total: %d new, %d replace\n\n" ..
+    "Local-only artifacts will not be affected.",
+    cmd_copy, cmd_replace,
+    agt_copy, agt_replace,
+    hook_copy, hook_replace,
+    tts_copy, tts_replace,
+    total_copy, total_replace
   )
 
   local choice = vim.fn.confirm(message, "&Yes\n&No", 2)  -- Default to No
   if choice ~= 1 then
     notify.editor(
-      "Load all commands cancelled",
+      "Load all artifacts cancelled",
       notify.categories.STATUS
     )
     return 0
   end
 
-  -- Create local commands directory if needed
-  vim.fn.mkdir(local_commands_dir, "p")
+  -- Create local directories if needed
+  vim.fn.mkdir(project_dir .. "/.claude/commands", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/hooks", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/tts", "p")
 
-  -- Copy new commands
-  local loaded_count = 0
-  for _, cmd in ipairs(commands_to_load) do
-    local success, content = pcall(vim.fn.readfile, cmd.global_path)
-    if success then
-      local write_success = pcall(vim.fn.writefile, content, cmd.local_path)
-      if write_success then
-        loaded_count = loaded_count + 1
-      else
-        notify.editor(
-          string.format("Failed to write command: %s", cmd.name),
-          notify.categories.ERROR
-        )
-      end
-    else
-      notify.editor(
-        string.format("Failed to read global command: %s", cmd.name),
-        notify.categories.ERROR
-      )
-    end
-  end
+  -- Sync all artifact types
+  local cmd_count = sync_files(commands, false)
+  local agt_count = sync_files(agents, false)
+  local hook_count = sync_files(hooks, true)  -- Preserve permissions for shell scripts
+  local tts_count = sync_files(all_tts, true)  -- Preserve permissions for TTS scripts
 
-  -- Replace existing commands
-  local updated_count = 0
-  for _, cmd in ipairs(commands_to_update) do
-    local success, content = pcall(vim.fn.readfile, cmd.global_path)
-    if success then
-      local write_success = pcall(vim.fn.writefile, content, cmd.local_path)
-      if write_success then
-        updated_count = updated_count + 1
-      else
-        notify.editor(
-          string.format("Failed to update command: %s", cmd.name),
-          notify.categories.ERROR
-        )
-      end
-    else
-      notify.editor(
-        string.format("Failed to read global command: %s", cmd.name),
-        notify.categories.ERROR
-      )
-    end
-  end
+  local total_synced = cmd_count + agt_count + hook_count + tts_count
 
   -- Report results
-  if loaded_count > 0 or updated_count > 0 then
+  if total_synced > 0 then
     notify.editor(
-      string.format("Loaded %d new, replaced %d existing commands", loaded_count, updated_count),
+      string.format(
+        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS files",
+        total_synced, cmd_count, agt_count, hook_count, tts_count
+      ),
       notify.categories.SUCCESS
     )
   end
 
-  return loaded_count + updated_count
+  return total_synced
 end
 
 --- Update local command from global version
@@ -1685,7 +1808,7 @@ function M.show_commands_picker(opts)
         if selection then
           -- Handle Load All Commands action
           if selection.value.is_load_all then
-            local loaded = load_all_commands_locally()
+            local loaded = load_all_globally()
             if loaded > 0 then
               -- Refresh the picker to show updated local status
               actions.close(prompt_bufnr)

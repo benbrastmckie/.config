@@ -390,6 +390,92 @@ function M.scan_hooks_directory(hooks_dir)
   return hook_files
 end
 
+--- Scan for TTS files across multiple .claude/ subdirectories
+--- @param base_dir string Base directory path (project or global)
+--- @return table Array of tts_file metadata
+function M.scan_tts_files(base_dir)
+  local base_path = plenary_path:new(base_dir) / ".claude"
+
+  if not base_path:exists() then
+    return {}
+  end
+
+  -- TTS directories and their roles (consolidated to 2 directories)
+  local tts_directories = {
+    { subdir = "hooks", role = "dispatcher" },
+    { subdir = "tts", role = nil }  -- Role determined by filename
+  }
+
+  local tts_files = {}
+
+  for _, dir_spec in ipairs(tts_directories) do
+    local dir_path = base_path / dir_spec.subdir
+
+    if dir_path:exists() then
+      local scandir_ok, files = pcall(vim.fn.readdir, dir_path:absolute())
+      if scandir_ok then
+        for _, filename in ipairs(files) do
+          -- Match tts-*.sh only (exclude test-tts.sh as it's in bin/)
+          if filename:match("^tts%-.*%.sh$") then
+            local filepath = dir_path:absolute() .. "/" .. filename
+            local path = plenary_path:new(filepath)
+
+            if path:exists() then
+              local content = path:read()
+              local description = ""
+              local variables = {}
+
+              if content then
+                -- Extract description from header comment
+                for line in content:gmatch("[^\n]+") do
+                  local desc = line:match("^#%s*(.+)")
+                  if desc and not desc:match("^!/") then  -- Skip shebang
+                    description = vim.trim(desc)
+                    break  -- Use first comment as description
+                  end
+
+                  -- Extract TTS_* variables for config files
+                  if filename:match("config") then
+                    local var = line:match("^([A-Z_]+)=")
+                    if var and var:match("^TTS_") then
+                      table.insert(variables, var)
+                    end
+                  end
+                end
+
+                -- Determine role based on directory and filename
+                local role = dir_spec.role  -- "dispatcher" for hooks/
+                if not role then  -- tts/ directory
+                  if filename:match("config") then
+                    role = "config"
+                  elseif filename:match("messages") then
+                    role = "library"
+                  else
+                    role = "library"  -- Default for tts/
+                  end
+                end
+
+                table.insert(tts_files, {
+                  name = filename,
+                  description = description ~= "" and description or "TTS system file",
+                  filepath = filepath,
+                  is_local = false,  -- Set by caller
+                  role = role,  -- config|dispatcher|library
+                  directory = dir_spec.subdir,  -- hooks|tts
+                  variables = variables,  -- For config files
+                  line_count = select(2, content:gsub("\n", "\n")) + 1
+                })
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  return tts_files
+end
+
 --- Build command → agents dependency map
 --- @param commands table Parsed commands
 --- @param agents table Agent data
@@ -557,8 +643,39 @@ local function parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
   return merged_hooks
 end
 
---- Get extended structure with commands, agents, and hooks
---- @return table Structure with commands, agents, hooks, and dependencies
+--- Parse TTS files from both local and global directories with local priority
+--- @param project_dir string Path to project directory
+--- @param global_dir string Path to global directory
+--- @return table Merged TTS files with is_local flag
+local function parse_tts_files_with_fallback(project_dir, global_dir)
+  local local_files = M.scan_tts_files(project_dir)
+  local global_files = M.scan_tts_files(global_dir)
+
+  -- Mark local files
+  for _, file in ipairs(local_files) do
+    file.is_local = true
+  end
+
+  -- Merge: local overrides global by name
+  local merged = {}
+  local seen = {}
+
+  for _, file in ipairs(local_files) do
+    merged[#merged + 1] = file
+    seen[file.name] = true
+  end
+
+  for _, file in ipairs(global_files) do
+    if not seen[file.name] then
+      merged[#merged + 1] = file
+    end
+  end
+
+  return merged
+end
+
+--- Get extended structure with commands, agents, hooks, and TTS files
+--- @return table Structure with commands, agents, hooks, TTS files, and dependencies
 function M.get_extended_structure()
   local project_dir = vim.fn.getcwd()
   local global_dir = vim.fn.expand("~/.config")
@@ -580,6 +697,9 @@ function M.get_extended_structure()
   local global_hooks_dir = global_dir .. "/.claude/hooks"
   local hooks = parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
 
+  -- Get TTS files from multiple directories
+  local tts_files = parse_tts_files_with_fallback(project_dir, global_dir)
+
   -- Build dependencies
   local agent_deps = M.build_agent_dependencies(commands, agents)
 
@@ -595,9 +715,10 @@ function M.get_extended_structure()
     primary_commands = sorted_hierarchy.primary_commands,
     dependent_commands = sorted_hierarchy.dependent_commands,
 
-    -- New: agents and hooks
+    -- Agents, hooks, and TTS files
     agents = agents,
     hooks = hooks,
+    tts_files = tts_files,
     agent_dependencies = agent_deps,
     hook_events = hook_events
   }
