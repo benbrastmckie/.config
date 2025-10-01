@@ -272,145 +272,48 @@ local function create_command_previewer()
   })
 end
 
---- Send command to Claude Code terminal
+--- Send command to Claude Code terminal (event-driven, no timers)
 --- @param command table Command data
 local function send_command_to_terminal(command)
   local notify = require('neotex.util.notifications')
+  local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
 
   -- Get base command string
-  -- Just the command name, no placeholders
   local command_text = "/" .. command.name
 
-  -- Try to use ai-claude utilities first
-  local claude_code_utils = require('neotex.plugins.ai.claude.utils.claude-code')
-
-  -- Check if Claude Code is available through the plugin
-  local has_claude_code, claude_code = pcall(require, "claude-code")
-
-  if has_claude_code then
-    -- Use claude-code plugin if available
-    -- Try to get the current Claude buffer/terminal through the plugin
-    local claude_buf = nil
-    local claude_channel = nil
-
-    -- Look for Claude Code terminal buffers
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_valid(buf) and
-         vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-        local buf_name = vim.api.nvim_buf_get_name(buf)
-        -- More specific matching for Claude Code terminals
-        if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-          claude_buf = buf
-          claude_channel = vim.api.nvim_buf_get_option(buf, "channel")
-          break
-        end
-      end
-    end
-
-    if not claude_buf or not claude_channel then
-      notify.editor(
-        "Claude Code terminal not found. Opening Claude Code...",
-        notify.categories.WARNING,
-        { command = command_text, action = "opening_claude" }
-      )
-
-      -- Try to open Claude Code
-      local success = pcall(claude_code.toggle)
-      if not success then
-        notify.editor(
-          "Failed to open Claude Code terminal",
-          notify.categories.ERROR,
-          { command = command_text }
-        )
-        return
-      end
-
-      -- Wait for terminal to be ready with smart retry logic
-      local function wait_for_claude_and_send_command(attempt)
-        attempt = attempt or 1
-        local max_attempts = 10
-        local base_delay = 500
-
-        vim.defer_fn(function()
-          -- Find the Claude Code terminal buffer
-          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.api.nvim_buf_is_valid(buf) and
-               vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-              local buf_name = vim.api.nvim_buf_get_name(buf)
-              if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-                -- Focus the Claude terminal window
-                local claude_wins = vim.fn.win_findbuf(buf)
-                if #claude_wins > 0 then
-                  vim.api.nvim_set_current_win(claude_wins[1])
-
-                  -- Move to the end and enter insert mode
-                  vim.cmd('normal! G$')
-
-                  -- Use feedkeys to type the command with proper timing
-                  vim.defer_fn(function()
-                    -- Clear any existing input and enter insert mode
-                    vim.api.nvim_feedkeys('cc', 'n', false)
-                    vim.defer_fn(function()
-                      -- Type the command
-                      vim.api.nvim_feedkeys(command_text, 'n', false)
-
-                      notify.editor(
-                        string.format("Sent command '%s' to Claude Code", command_text),
-                        notify.categories.USER_ACTION,
-                        { command = command_text }
-                      )
-                    end, 200)
-                  end, 300)
-
-                  return
-                end
-              end
-            end
-          end
-
-          -- If we haven't found the terminal yet and haven't exceeded max attempts, try again
-          if attempt < max_attempts then
-            wait_for_claude_and_send_command(attempt + 1)
-          else
-            notify.editor(
-              "Could not find Claude Code terminal after opening",
-              notify.categories.WARNING,
-              { command = command_text, attempts = attempt }
-            )
-          end
-        end, base_delay * attempt)  -- Exponential backoff: 500ms, 1000ms, 1500ms, etc.
-      end
-
-      wait_for_claude_and_send_command()
-      return
-    end
-
-    -- Send command to terminal (without executing)
-    vim.api.nvim_chan_send(claude_channel, command_text)
-
-    -- Focus the Claude terminal
-    local claude_wins = vim.fn.win_findbuf(claude_buf)
-    if #claude_wins > 0 then
-      vim.api.nvim_set_current_win(claude_wins[1])
-      -- Enter insert mode if in normal mode
-      if vim.api.nvim_get_mode().mode == 'n' then
-        vim.cmd('startinsert!')
-      end
-    end
-
-    notify.editor(
-      string.format("Inserted '%s' into Claude Code terminal", command_text),
-      notify.categories.USER_ACTION,
-      { command = command_text, hint = command.argument_hint or "none" }
-    )
-  else
-    -- Fallback: Claude Code plugin not available
+  -- Check if Claude Code plugin is available
+  local has_claude_code = pcall(require, "claude-code")
+  if not has_claude_code then
     notify.editor(
       "Claude Code plugin not found. Please install claude-code.nvim",
       notify.categories.ERROR,
       { command = command_text, required_plugin = "claude-code.nvim" }
     )
+    return
   end
+
+  -- Find or open Claude terminal
+  local claude_buf = terminal_state.find_claude_terminal()
+  if not claude_buf then
+    notify.editor(
+      "Opening Claude Code...",
+      notify.categories.WARNING,
+      { command = command_text, action = "opening_claude" }
+    )
+    vim.cmd('ClaudeCode')  -- Triggers TermOpen autocommand
+  end
+
+  -- Queue command - autocommand will send when ready
+  terminal_state.queue_command(command_text, {
+    auto_focus = true,
+    notification = function()
+      notify.editor(
+        string.format("Inserted '%s' into Claude Code", command_text),
+        notify.categories.USER_ACTION,
+        { command = command_text, hint = command.argument_hint or "none" }
+      )
+    end
+  })
 end
 
 --- Load command and its dependencies locally
@@ -1010,9 +913,10 @@ function M.show_commands_picker(opts)
         end
       end)
 
-      -- Create new command with Ctrl-n
+      -- Create new command with Ctrl-n (event-driven, no timers)
       map("i", "<C-n>", function()
         local notify = require('neotex.util.notifications')
+        local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
         local project_dir = vim.fn.getcwd()
 
         -- Close the picker
@@ -1024,87 +928,36 @@ function M.show_commands_picker(opts)
           project_dir
         )
 
-        -- Try to use ai-claude utilities first
-        local claude_code_utils = require('neotex.plugins.ai.claude.utils.claude-code')
+        -- Check if Claude Code is available
+        local has_claude_code = pcall(require, "claude-code")
+        if not has_claude_code then
+          notify.editor(
+            "Claude Code plugin not found. Please install claude-code.nvim",
+            notify.categories.ERROR
+          )
+          return
+        end
 
-        -- Check if Claude Code is available through the plugin
-        local has_claude_code, claude_code = pcall(require, "claude-code")
+        -- Find or open Claude terminal
+        local claude_buf = terminal_state.find_claude_terminal()
+        if not claude_buf then
+          notify.editor(
+            "Opening Claude Code to create new command...",
+            notify.categories.STATUS
+          )
+          vim.cmd("ClaudeCode")  -- Triggers TermOpen autocommand
+        end
 
-        if has_claude_code then
-          -- Look for Claude Code terminal buffers
-          local claude_buf = nil
-          local claude_channel = nil
-
-          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.api.nvim_buf_is_valid(buf) and
-               vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-              local buf_name = vim.api.nvim_buf_get_name(buf)
-              if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-                claude_buf = buf
-                claude_channel = vim.api.nvim_buf_get_option(buf, "channel")
-                break
-              end
-            end
-          end
-
-          if not claude_buf or not claude_channel then
-            -- Open Claude Code first
-            notify.editor(
-              "Opening Claude Code to create new command...",
-              notify.categories.STATUS
-            )
-
-            -- Open Claude Code using available command
-            vim.cmd("ClaudeCode")
-
-            -- Wait for Claude Code to open and then insert the prompt
-            vim.defer_fn(function()
-              -- Look again for Claude Code terminal
-              for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-                if vim.api.nvim_buf_is_valid(buf) and
-                   vim.api.nvim_buf_get_option(buf, "buftype") == "terminal" then
-                  local buf_name = vim.api.nvim_buf_get_name(buf)
-                  if buf_name:lower():match("claude") or buf_name:match("ClaudeCode") then
-                    claude_channel = vim.api.nvim_buf_get_option(buf, "channel")
-
-                    -- Use feedkeys to insert the prompt text
-                    vim.defer_fn(function()
-                      vim.api.nvim_feedkeys(
-                        vim.api.nvim_replace_termcodes("i" .. prompt_text, true, false, true),
-                        'n',
-                        false
-                      )
-                    end, 300)
-                    return
-                  end
-                end
-              end
-            end, 1000)
-          else
-            -- Claude Code is already open, send the prompt
-            vim.api.nvim_chan_send(claude_channel, prompt_text)
-
-            -- Focus the Claude terminal
-            local claude_wins = vim.fn.win_findbuf(claude_buf)
-            if #claude_wins > 0 then
-              vim.api.nvim_set_current_win(claude_wins[1])
-              -- Enter insert mode if in normal mode
-              if vim.api.nvim_get_mode().mode == 'n' then
-                vim.cmd('startinsert!')
-              end
-            end
-
+        -- Queue prompt - autocommand will send when ready
+        terminal_state.queue_command(prompt_text, {
+          auto_focus = true,
+          notification = function()
             notify.editor(
               "Creating new command - complete the description in Claude Code",
               notify.categories.USER_ACTION
             )
           end
-        else
-          notify.editor(
-            "Claude Code plugin not found. Please install claude-code.nvim",
-            notify.categories.ERROR
-          )
-        end
+        })
       end)
 
       return true
