@@ -723,30 +723,357 @@ Next: Debugging Loop
 
 ### Debugging Loop (Conditional - Only if Tests Fail)
 
-If implementation reports test failures:
+This phase engages ONLY when implementation reports test failures. Maximum 3 debugging iterations before escalating to user.
 
-1. **Analyze Failures**:
-   ```markdown
-   Use the /debug command to investigate test failures.
+#### Step 1: Prepare Debug Context
 
-   Context provided:
-   - Test failure details
-   - Modified files from implementation
-   - Implementation plan reference
-   ```
+**From Implementation Failure**:
+```yaml
+debug_context:
+  failed_phase: N
+  error_message: "[Test failure details]"
+  files_modified: [list of changed files]
+  plan_path: "specs/plans/NNN_*.md"
+  tests_attempted: "[Test command that failed]"
+```
 
-2. **Generate and Apply Fixes**:
-   - Debug agent identifies root causes
-   - Proposes fix strategies
-   - Implementation agent applies fixes
-   - Re-test
+**Iteration Tracking**:
+```yaml
+debug_iteration:
+  current: 1|2|3
+  max_iterations: 3
+  previous_attempts: []  # Track what was tried
+```
 
-3. **Retry Loop** (max 3 iterations):
-   - Iteration 1: Debug → Fix → Test
-   - Iteration 2: Refined debug → Fix → Test
-   - Iteration 3: Final attempt or escalate to user
+#### Step 2: Generate Debug Agent Prompt
 
-4. **Save Checkpoint**: tests_passing
+```markdown
+# Debug Task: Investigate Test Failures
+
+## Context
+
+### Test Failure Information
+Failed Phase: Phase [N]
+Error Message:
+```
+[Full error output from tests]
+```
+
+### Modified Files
+Files changed during implementation:
+- [file1.ext]
+- [file2.ext]
+- ...
+
+### Implementation Plan
+Plan reference: [plan_path]
+Review the plan to understand intended behavior.
+
+### Debug Iteration
+Attempt: [1|2|3] of 3
+Previous attempts: [If iteration > 1, list what was already tried]
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Investigate the test failures and create a diagnostic report with fix proposals.
+
+**Critical**: This is investigation ONLY. Do NOT modify code in this task.
+
+## Requirements
+
+### Investigation Approach
+Use the /debug command to perform root cause analysis:
+
+```bash
+/debug "[Brief description of failure]" [plan-path]
+```
+
+### Analysis Steps
+1. **Reproduce the Issue**: Understand how to trigger the failure
+2. **Identify Root Cause**: Determine why tests are failing
+3. **Evaluate Impact**: Assess scope of the problem
+4. **Propose Fixes**: Suggest specific code changes
+
+### Focus Areas
+- Logic errors in implementation
+- Missing edge case handling
+- Integration issues between components
+- Test configuration problems
+- Dependency issues
+
+## Expected Output
+
+**Primary Output**: Debug report path
+- Format: specs/reports/NNN_debug_[issue].md
+- Contains: Root cause analysis and fix proposals
+
+**Secondary Output**: Fix summary
+- Concise description of proposed fixes (max 100 words)
+- Specific files to modify
+- Confidence level: High|Medium|Low
+
+## Success Criteria
+- Root cause clearly identified
+- Fix proposals are specific and actionable
+- Proposals address the actual test failures
+- Risk assessment included for each fix
+
+## Error Handling
+- If issue is unclear: Document assumptions and request clarification
+- If multiple potential causes: Prioritize by likelihood
+- If fix requires major refactoring: Note this and suggest iterative approach
+```
+
+#### Step 3: Invoke Debug Agent
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Debug test failures from Phase [N]"
+prompt: "[Generated debug prompt from Step 2]"
+```
+
+**Monitoring**:
+- Track debug progress
+- Watch for root cause identification
+- Monitor for escalation signals
+
+#### Step 4: Extract Debug Report and Fix Proposals
+
+**Report Extraction**:
+```markdown
+From debug agent output, extract:
+- debug_report_path: "specs/reports/NNN_debug_*.md"
+- root_cause: "[Brief description]"
+- fix_proposals: [
+    {
+      file: "path/to/file.ext",
+      change: "[Specific modification]",
+      confidence: "High|Medium|Low"
+    },
+    ...
+  ]
+- estimated_complexity: "Simple|Moderate|Complex"
+```
+
+**Validation**:
+- [ ] Debug report created and accessible
+- [ ] Root cause identified
+- [ ] At least one fix proposal provided
+- [ ] Fix proposals are specific and actionable
+
+#### Step 5: Apply Fixes
+
+**Fix Application Prompt**:
+```markdown
+# Fix Task: Apply Debug Recommendations
+
+## Context
+
+### Debug Report
+Report: [debug_report_path]
+
+### Root Cause
+[Brief root cause description]
+
+### Proposed Fixes
+[List of specific fixes from debug report]
+
+### Files to Modify
+[List of files needing changes]
+
+## Objective
+Apply the proposed fixes to resolve test failures.
+
+## Requirements
+
+### Fix Application
+For each proposed fix:
+1. Read the affected file
+2. Apply the specific change recommended
+3. Ensure change follows project standards
+4. Preserve existing functionality
+
+### Testing
+After applying ALL fixes:
+- Run the same tests that previously failed
+- Verify tests now pass
+- Check for any new test failures
+
+### Caution
+- Apply ONLY the fixes from debug report
+- Do NOT make additional "improvements"
+- Preserve code style and conventions
+- Test after ALL fixes applied (not incrementally)
+
+## Expected Output
+
+**Primary Output**: Fix results
+- tests_passing: true|false
+- fixes_applied: N
+- files_modified: [list]
+- test_output: "[Test results]"
+
+**If Tests Still Fail**:
+- Remaining errors: "[Error details]"
+- Additional investigation needed: Yes|No
+
+## Success Criteria
+- All proposed fixes applied correctly
+- Tests now passing
+- No new test failures introduced
+- Code follows project standards
+```
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Apply fixes for test failures"
+prompt: "[Generated fix prompt]"
+```
+
+#### Step 6: Evaluate Fix Results
+
+**Status Check**:
+```yaml
+fix_result:
+  tests_passing: true|false
+  fixes_applied: N
+  files_modified: [list]
+```
+
+**Decision Logic**:
+```yaml
+if tests_passing == true:
+  action: "proceed_to_documentation"
+  save_checkpoint: "tests_passing"
+  update_error_history:
+    issue: "[Root cause]"
+    resolution: "Fixed via debugging loop iteration [N]"
+
+elif debug_iteration < 3:
+  action: "retry_debugging"
+  increment_iteration: true
+  update_previous_attempts:
+    - iteration: [N]
+    - root_cause: "[What was found]"
+    - fix_attempted: "[What was tried]"
+    - result: "Tests still failing"
+
+else:  # iteration == 3
+  action: "escalate_to_user"
+  reason: "Max debugging iterations reached"
+  context:
+    debug_reports: [list of all debug report paths]
+    fixes_attempted: [summary of all attempts]
+    current_error: "[Latest error message]"
+```
+
+#### Step 7: Iteration or Escalation
+
+**If Retrying** (iteration < 3):
+```markdown
+⟳ Debugging Loop - Iteration [N+1]
+
+Previous attempt unsuccessful.
+Root cause identified: [previous root cause]
+Fix applied: [previous fix]
+Result: Tests still failing
+
+New error: [current error message]
+
+Refining analysis with additional context...
+```
+
+Return to Step 2 with updated context including previous attempts.
+
+**If Escalating** (iteration == 3):
+```markdown
+⚠ Manual Intervention Required
+
+Unable to resolve test failures after 3 debugging attempts.
+
+Debug Reports Generated:
+- [report 1 path]
+- [report 2 path]
+- [report 3 path]
+
+Fixes Attempted:
+1. [Attempt 1 summary]
+2. [Attempt 2 summary]
+3. [Attempt 3 summary]
+
+Current Error:
+```
+[Latest test failure output]
+```
+
+**Options**:
+1. Review debug reports and continue manually
+2. Modify approach and resume debugging
+3. Rollback to last successful checkpoint
+
+Workflow paused. Please provide guidance.
+```
+
+#### Step 8: Save Debug Checkpoint
+
+**Success Checkpoint** (tests now passing):
+```yaml
+checkpoint_tests_passing:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: true
+    debug_iterations: N
+    debug_reports: [list of report paths]
+    fixes_applied: [summary]
+    status: "success"
+  next_phase: "documentation"
+  performance:
+    debug_time: "[total debugging duration]"
+    iterations_needed: N
+```
+
+**Escalation Checkpoint** (manual intervention needed):
+```yaml
+checkpoint_escalation:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: false
+    debug_iterations: 3
+    debug_reports: [all report paths]
+    fixes_attempted: [all attempts]
+    current_error: "[latest error]"
+    status: "escalated"
+  next_phase: "manual_intervention"
+  user_action_required: true
+```
+
+#### Debugging Loop Example
+
+```markdown
+Iteration 1:
+- Debug: Found "undefined variable 'config' in auth.lua:42"
+- Fix: Added config parameter to function signature
+- Test: Still failing - "config.secret is nil"
+
+Iteration 2:
+- Debug: config.secret not initialized in test environment
+- Fix: Added config initialization in test setup
+- Test: Still failing - "JWT decode error"
+
+Iteration 3:
+- Debug: JWT library not available in test context
+- Fix: Added jwt library mock for tests
+- Test: ✓ All tests passing
+
+Checkpoint Saved: tests_passing
+Next Phase: documentation
+```
 
 ### Documentation Phase (Sequential Execution)
 
@@ -818,52 +1145,332 @@ For each subagent invocation:
 
 ## Error Recovery Mechanism
 
-### Automatic Recovery (3 max retries)
+### Error Classification
 
-**Timeout Errors**:
-- Retry 1: Extend timeout by 50%
-- Retry 2: Split task into smaller components
-- Retry 3: Reassign to different agent configuration
-- Escalate: Manual intervention
+**Error Types**:
+1. **Timeout Errors**: Agent execution exceeds time limits
+2. **Tool Access Errors**: Permission or availability issues
+3. **Validation Failures**: Output doesn't meet criteria
+4. **Test Failures**: Code tests fail (handled by Debugging Loop)
+5. **Integration Errors**: Command invocation failures
+6. **Context Overflow**: Orchestrator context approaches limits
 
-**Tool Access Errors**:
-- Verify tool permissions
-- Retry with reduced toolset
-- Fallback to sequential execution
-- Escalate after 2 failures
+### Automatic Recovery Strategies
 
-**Validation Failures**:
-- Show detailed failure context
-- Provide correction guidance
-- Re-execute with fixes
-- Track common patterns for learning
+#### Timeout Errors
 
-### Checkpoint Recovery
+**Detection**:
+- Agent doesn't return within expected timeframe
+- Task tool reports timeout
+- Progress indicators stall
 
-After each successful phase:
+**Recovery Sequence** (max 3 attempts):
+
+**Retry 1: Extend Timeout**
 ```yaml
-Save Checkpoint:
-  phase_name: "research|planning|implementation|debugging|documentation"
-  completion_time: timestamp
-  outputs:
-    primary_output: "path or summary"
-    status: "success|partial|failed"
-  next_phase: "planning|implementation|documentation|complete"
+action: retry_with_extended_timeout
+changes:
+  - timeout: original_timeout * 1.5
+  - same_agent: true
+  - same_prompt: true
+reasoning: "Transient slowness or complex task needs more time"
 ```
 
-On workflow interruption or failure:
-- Restore from last successful checkpoint
-- Preserve all completed work
-- Resume from interruption point
-- Maintain error history for learning
+**Retry 2: Split Task**
+```yaml
+action: decompose_and_retry
+changes:
+  - split_into: smaller_components
+  - execute: sequentially
+  - timeout: original_timeout per component
+reasoning: "Task too large for single execution"
+```
+
+**Retry 3: Alternative Agent**
+```yaml
+action: reassign_to_different_agent
+changes:
+  - agent_type: alternative_configuration
+  - timeout: original_timeout * 2
+  - simplified_prompt: true
+reasoning: "Agent configuration may be issue"
+```
+
+**Escalation**: Manual intervention required
+
+#### Tool Access Errors
+
+**Detection**:
+- "Tool not available" errors
+- Permission denied messages
+- File access failures
+
+**Recovery Sequence** (max 2 attempts):
+
+**Retry 1: Verify and Retry**
+```yaml
+action: verify_permissions_and_retry
+checks:
+  - file_permissions: check_and_report
+  - tool_availability: verify_in_scope
+  - retry_with: same_configuration
+```
+
+**Retry 2: Reduced Toolset**
+```yaml
+action: retry_with_fallback_tools
+changes:
+  - remove_failing_tool: true
+  - use_alternatives: true
+  - example: "WebSearch fails → use only local search"
+```
+
+**Escalation**: Report tool availability issues to user
+
+#### Validation Failures
+
+**Detection**:
+- Output doesn't match expected format
+- Required fields missing
+- Invalid data in response
+
+**Recovery Sequence** (max 3 attempts):
+
+**Retry 1: Clarified Prompt**
+```yaml
+action: retry_with_clarification
+changes:
+  - add_explicit_format_spec: true
+  - add_example_output: true
+  - emphasize_requirements: true
+```
+
+**Retry 2: Simplified Requirements**
+```yaml
+action: retry_with_reduced_requirements
+changes:
+  - reduce_complexity: true
+  - focus_on_essentials: true
+  - accept_partial_success: true
+```
+
+**Retry 3: Manual Extraction**
+```yaml
+action: extract_manually
+approach:
+  - parse_unstructured_output: true
+  - infer_missing_fields: true
+  - validate_best_effort: true
+```
+
+**Escalation**: Accept partial results or report failure
+
+#### Integration Errors
+
+**Detection**:
+- /command invocation fails
+- SlashCommand tool errors
+- Unexpected command output
+
+**Recovery Sequence** (max 2 attempts):
+
+**Retry 1: Direct Retry**
+```yaml
+action: immediate_retry
+delay: 2_seconds
+same_parameters: true
+reasoning: "Transient command failure"
+```
+
+**Retry 2: Alternative Approach**
+```yaml
+action: workaround_execution
+changes:
+  - if_slash_command_fails: use_direct_implementation
+  - example: "/plan fails → manually create plan"
+```
+
+**Escalation**: Report command ecosystem issue
+
+#### Context Overflow Prevention
+
+**Detection**:
+- Orchestrator context approaching 30% threshold
+- Large summaries or excessive state
+
+**Recovery Actions**:
+
+**Action 1: Context Compaction**
+```yaml
+action: compress_context
+targets:
+  - research_summary: reduce_to_key_points
+  - error_history: keep_recent_only
+  - file_lists: store_counts_not_names
+```
+
+**Action 2: Aggressive Summarization**
+```yaml
+action: extreme_summarization
+approach:
+  - research_summary: 100_words_max
+  - keep_only: absolute_essentials
+  - offload_to_files: detailed_data
+```
+
+**Action 3: Graceful Degradation**
+```yaml
+action: reduce_workflow_scope
+changes:
+  - skip_optional_phases: true
+  - simplified_documentation: true
+  - focus_on_core: true
+```
+
+### Checkpoint Recovery System
+
+#### Checkpoint Creation
+
+**After Each Successful Phase**:
+```yaml
+checkpoint:
+  phase_name: "[current phase]"
+  completion_time: "[ISO 8601 timestamp]"
+  outputs:
+    primary_output: "[path or concise summary]"
+    secondary_outputs: [list]
+    status: "success|partial|failed"
+  next_phase: "[next phase name or 'complete']"
+  context_snapshot:
+    research_summary: "[if available]"
+    plan_path: "[if available]"
+    implementation_status: "[if available]"
+  performance:
+    phase_duration: "[seconds]"
+    retry_count: N
+```
+
+**Checkpoint Storage**:
+- Stored in orchestrator memory (minimal)
+- Not persisted to disk (workflow is ephemeral)
+- Used for in-session recovery only
+
+#### Checkpoint Restoration
+
+**On Workflow Interruption**:
+```yaml
+restoration_process:
+  1_identify_last_checkpoint:
+    - scan_completed_phases: true
+    - find_highest_successful: true
+
+  2_restore_context:
+    - load_checkpoint_data: true
+    - restore_workflow_state: true
+    - preserve_error_history: true
+
+  3_resume_execution:
+    - start_from_next_phase: true
+    - skip_completed_phases: true
+    - maintain_continuity: true
+```
+
+**On Error Recovery**:
+```yaml
+rollback_process:
+  if_phase_fails:
+    - rollback_to: previous_successful_checkpoint
+    - preserve_partial_work: true
+    - log_failure: error_history
+
+  resume_options:
+    - retry_failed_phase: with_adjusted_parameters
+    - skip_to_next: if_user_approves
+    - manual_intervention: if_retry_exhausted
+```
+
+### Error History Tracking
+
+**Purpose**: Learn from errors to improve future workflows
+
+**Structure**:
+```yaml
+error_history:
+  - timestamp: "[ISO 8601]"
+    phase: "research|planning|implementation|debugging|documentation"
+    error_type: "timeout|tool_access|validation|test_failure|integration"
+    error_message: "[Brief description]"
+    recovery_action: "[What was attempted]"
+    recovery_result: "success|failed|escalated"
+    lessons: "[Insights for future workflows]"
+```
+
+**Usage**:
+- Track common error patterns
+- Inform retry strategies
+- Provide context for escalations
+- Improve future orchestration
 
 ### Manual Intervention Points
 
-Escalate to user when:
-- Critical integration failures occur
-- Tests fail after 3 debugging iterations
-- Major architectural decisions needed
-- User override of automatic recovery desired
+#### When to Escalate
+
+**Automatic Escalation Triggers**:
+1. **Max retries exceeded** (3 attempts for most error types)
+2. **Critical failures** (data loss, security issues)
+3. **Debugging loop limit** (3 debugging iterations)
+4. **Context overflow** (cannot compress further)
+5. **Architectural decisions** (user input required)
+
+#### Escalation Format
+
+```markdown
+⚠ Manual Intervention Required
+
+**Issue**: [Brief description of problem]
+
+**Phase**: [Current workflow phase]
+
+**Attempts**: [Number of retry attempts made]
+
+**Error History**:
+[Chronological list of what was tried and results]
+
+**Current State**:
+- Completed phases: [list]
+- Last successful checkpoint: [phase name]
+- Partial work preserved: [yes/no]
+
+**Options**:
+1. Review detailed error logs and continue manually
+2. Modify approach and resume from checkpoint
+3. Rollback to last successful state
+4. Terminate workflow
+
+**Context Available**:
+- [List of available checkpoints]
+- [List of generated artifacts]
+- [Error reports if available]
+
+Please provide guidance on how to proceed.
+```
+
+#### User Response Handling
+
+After escalation, workflow pauses awaiting user input:
+
+**User Options**:
+- `continue`: Resume with manual fixes
+- `retry [phase]`: Retry specific phase
+- `rollback [phase]`: Return to checkpoint
+- `terminate`: End workflow gracefully
+- `debug`: Enter manual debugging mode
+
+**Workflow State Preservation**:
+- All checkpoints maintained
+- Error history available
+- Partial work preserved
+- Context accessible for review
 
 ## Performance Monitoring
 
