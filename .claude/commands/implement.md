@@ -320,4 +320,35 @@ User runs: /implement auth_plan.md
 Generated code follows standards automatically
 ```
 
+## Agent Usage
+
+This command does not directly invoke specialized agents. Instead, it executes implementation directly using its own tools (Read, Edit, Write, Bash, TodoWrite).
+
+### Potential Agent Integration (Future Enhancement)
+While `/implement` currently works autonomously, it could potentially delegate to specialized agents:
+
+- **code-writer**: For complex code generation tasks
+  - Would receive plan context and phase requirements
+  - Could apply standards more intelligently
+  - Would use TodoWrite for task tracking
+
+- **test-specialist**: For test execution and analysis
+  - Could provide more detailed test failure diagnostics
+  - Would categorize errors more effectively
+  - Could suggest fixes for common test failures
+
+- **code-reviewer**: For standards compliance checking
+  - Optional pre-commit validation
+  - Could run after each phase before marking complete
+  - Would provide structured feedback on standards violations
+
+### Current Design Rationale
+`/implement` executes directly without agent delegation because:
+1. **Performance**: Avoids agent invocation overhead for simple implementations
+2. **Context**: Maintains full implementation context across all phases
+3. **Control**: Direct execution provides more predictable behavior
+4. **Simplicity**: Easier to debug and reason about
+
+For complex, multi-phase implementations requiring specialized expertise, use `/orchestrate` instead, which fully leverages the agent system.
+
 Let me start by finding your implementation plan.
