@@ -184,9 +184,11 @@ function M._create_context_file(worktree_path, feature, type, branch, session_id
   if not M.config.create_context_file then
     return nil
   end
-  
+
   local context_file = worktree_path .. "/CLAUDE.md"
-  local content = string.format(
+
+  -- Build task metadata section
+  local task_section = string.format(
     M.config.context_template,
     feature,
     type,
@@ -197,8 +199,48 @@ function M._create_context_file(worktree_path, feature, type, branch, session_id
     feature,
     branch
   )
-  
+
+  local content
+  local preserved = false
+
+  -- Try to preserve main CLAUDE.md if enabled
+  if M.config.preserve_main_claudemd then
+    local main_claude_path = M._get_main_claudemd_path()
+
+    if main_claude_path then
+      -- Read main CLAUDE.md content
+      local ok, main_lines = pcall(vim.fn.readfile, main_claude_path)
+
+      if ok and #main_lines > 0 then
+        local main_content = table.concat(main_lines, "\n")
+
+        -- Combine: task metadata + separator + inherited content
+        content = task_section .. "\n\n" ..
+          M.config.claudemd_separator .. "\n\n" ..
+          M.config.claudemd_inherited_heading .. "\n\n" ..
+          main_content
+
+        preserved = true
+      end
+    end
+  end
+
+  -- Fallback: use template-only
+  if not preserved then
+    content = task_section
+  end
+
+  -- Write to worktree
   vim.fn.writefile(vim.split(content, "\n"), context_file)
+
+  -- Notify user
+  if preserved then
+    vim.notify(
+      "Created worktree CLAUDE.md (preserved main configuration)",
+      vim.log.levels.INFO
+    )
+  end
+
   return context_file
 end
 
