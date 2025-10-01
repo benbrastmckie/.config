@@ -1077,36 +1077,421 @@ Next Phase: documentation
 
 ### Documentation Phase (Sequential Execution)
 
-1. **Generate Documentation Prompt**:
-   ```markdown
-   Use the /document command to update all relevant documentation.
+This phase updates all relevant documentation and generates a comprehensive workflow summary.
 
-   Context provided:
-   - All files modified during workflow
-   - Implementation plan reference
-   - Research reports (if any)
-   ```
+#### Step 1: Prepare Documentation Context
 
-2. **Invoke Documentation Agent**:
-   - Update affected documentation files
-   - Cross-reference specs documents
-   - Generate workflow summary
+**Gather All Workflow Artifacts**:
+```yaml
+documentation_context:
+  files_modified: [list from implementation]
+  plan_path: "specs/plans/NNN_*.md"
+  research_reports: [list if research phase completed]
+  debug_reports: [list if debugging occurred]
+  test_results: "passing|fixed_after_debugging"
+  workflow_description: "[Original user request]"
+```
 
-3. **Create Workflow Summary**:
-   ```markdown
-   Location: specs/summaries/NNN_workflow_summary.md
+**Calculate Performance Metrics**:
+```yaml
+performance_summary:
+  total_workflow_time: "[duration in minutes]"
+  phase_breakdown:
+    research: "[duration or 'skipped']"
+    planning: "[duration]"
+    implementation: "[duration]"
+    debugging: "[duration or 'not_needed']"
+    documentation: "[current phase]"
 
-   Contents:
-   - Workflow overview
-   - Research reports used (with links)
-   - Implementation plan executed (with link)
-   - Key changes made
-   - Test results
-   - Performance metrics
-   - Lessons learned
-   ```
+  parallelization_metrics:
+    parallel_research_agents: N
+    time_saved_estimate: "[% saved vs sequential]"
 
-4. **Save Checkpoint**: workflow_complete
+  error_recovery:
+    total_errors: N
+    auto_recovered: N
+    manual_interventions: N
+    recovery_success_rate: "N%"
+```
+
+#### Step 2: Generate Documentation Agent Prompt
+
+```markdown
+# Documentation Task: Update Documentation and Generate Workflow Summary
+
+## Context
+
+### Workflow Overview
+Original request: [User's workflow description]
+Workflow type: [feature|refactor|debug|investigation]
+
+### Artifacts Generated
+**Research Reports** (if any):
+- [report_1_path]
+- [report_2_path]
+
+**Implementation Plan**:
+- Path: [plan_path]
+- Phases: N
+- Complexity: [Low|Medium|High]
+
+**Files Modified**:
+[List of all files changed during workflow]
+
+**Test Results**:
+- Final status: [Passing|Fixed after debugging]
+- Debug iterations: [N or "None"]
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Update all relevant documentation to reflect the changes made during this workflow
+and generate a comprehensive workflow summary.
+
+## Requirements
+
+### Documentation Updates
+Use the /document command to update affected documentation:
+
+```bash
+/document [brief description of changes]
+```
+
+The documentation agent will:
+- Identify affected documentation files (READMEs, guides, specs)
+- Update documentation to reflect new/changed functionality
+- Ensure consistency across all documentation
+- Follow project documentation standards
+
+### Cross-Referencing
+Ensure proper cross-references between:
+- Research reports → Implementation plan
+- Implementation plan → Workflow summary
+- Modified code → Documentation updates
+- All specs documents (reports, plans, summaries)
+
+### Documentation Standards
+- Follow CommonMark markdown specification
+- Use Unicode box-drawing for diagrams (no ASCII art)
+- No emojis in file content
+- Maintain existing documentation structure
+- Update modification dates
+
+## Expected Output
+
+**Primary Output**: Documentation paths
+- Updated documentation files: [list]
+- README updates: [list if any]
+- Spec updates: [list if any]
+
+**Secondary Output**: Summary preparation
+- Key changes documented: Yes|No
+- Cross-references verified: Yes|No
+- Ready for workflow summary: Yes|No
+
+## Success Criteria
+- All affected documentation updated
+- Cross-references accurate and complete
+- Documentation follows project standards
+- Changes are clear and comprehensive
+```
+
+#### Step 3: Invoke Documentation Agent
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Update documentation for workflow"
+prompt: "[Generated documentation prompt from Step 2]"
+```
+
+**Monitoring**:
+- Track documentation updates
+- Verify cross-referencing
+- Watch for completion signal
+
+#### Step 4: Extract Documentation Results
+
+**Results Extraction**:
+```markdown
+From documentation agent output, extract:
+- updated_files: [list of documentation files modified]
+- readme_updates: [list of README files updated]
+- spec_updates: [list of spec files updated]
+- cross_references_added: N
+- documentation_complete: true|false
+```
+
+**Validation**:
+- [ ] At least one documentation file updated
+- [ ] Cross-references include all workflow artifacts
+- [ ] Documentation follows project standards
+- [ ] No broken links or invalid references
+
+#### Step 5: Generate Workflow Summary
+
+**Summary File Creation**:
+
+**Location Determination**:
+```yaml
+summary_location:
+  directory: "same as plan (specs/summaries/)"
+  filename: "NNN_workflow_summary.md"
+  number: "matches plan number"
+```
+
+**Summary Template**:
+```markdown
+# Workflow Summary: [Feature/Task Name]
+
+## Metadata
+- **Date Completed**: [YYYY-MM-DD]
+- **Workflow Type**: [feature|refactor|debug|investigation]
+- **Original Request**: [User's workflow description]
+- **Total Duration**: [HH:MM:SS]
+
+## Workflow Execution
+
+### Phases Completed
+- [x] Research (parallel) - [duration or "Skipped"]
+- [x] Planning (sequential) - [duration]
+- [x] Implementation (adaptive) - [duration]
+- [x] Debugging (conditional) - [duration or "Not needed"]
+- [x] Documentation (sequential) - [duration]
+
+### Artifacts Generated
+
+**Research Reports**:
+[If research phase completed]
+- [Report 1: path - brief description]
+- [Report 2: path - brief description]
+
+**Implementation Plan**:
+- Path: [plan_path]
+- Phases: N
+- Complexity: [Low|Medium|High]
+- Link: [relative link to plan file]
+
+**Debug Reports**:
+[If debugging occurred]
+- [Debug report 1: path - issue addressed]
+
+## Implementation Overview
+
+### Key Changes
+**Files Created**:
+- [new_file_1.ext] - [brief purpose]
+- [new_file_2.ext] - [brief purpose]
+
+**Files Modified**:
+- [modified_file_1.ext] - [changes made]
+- [modified_file_2.ext] - [changes made]
+
+**Files Deleted**:
+- [deleted_file.ext] - [reason for deletion]
+
+### Technical Decisions
+[Key architectural or technical decisions made during workflow]
+- Decision 1: [what and why]
+- Decision 2: [what and why]
+
+## Test Results
+
+**Final Status**: ✓ All tests passing
+
+[If debugging occurred]
+**Debugging Summary**:
+- Iterations required: N
+- Issues resolved:
+  1. [Issue 1 and fix]
+  2. [Issue 2 and fix]
+
+## Performance Metrics
+
+### Workflow Efficiency
+- Total workflow time: [HH:MM:SS]
+- Estimated manual time: [HH:MM:SS]
+- Time saved: [N%]
+
+### Phase Breakdown
+| Phase | Duration | Status |
+|-------|----------|--------|
+| Research | [time] | [Completed/Skipped] |
+| Planning | [time] | Completed |
+| Implementation | [time] | Completed |
+| Debugging | [time] | [Completed/Not needed] |
+| Documentation | [time] | Completed |
+
+### Parallelization Effectiveness
+- Research agents used: N
+- Parallel vs sequential time: [N% faster]
+
+### Error Recovery
+- Total errors encountered: N
+- Automatically recovered: N
+- Manual interventions: N
+- Recovery success rate: [N%]
+
+## Cross-References
+
+### Research Phase
+[If applicable]
+This workflow incorporated findings from:
+- [Report 1 path and title]
+- [Report 2 path and title]
+
+### Planning Phase
+Implementation followed the plan at:
+- [Plan path and title]
+
+### Related Documentation
+Documentation updated includes:
+- [Doc 1 path]
+- [Doc 2 path]
+
+## Lessons Learned
+
+### What Worked Well
+- [Success 1]
+- [Success 2]
+
+### Challenges Encountered
+- [Challenge 1 and how it was resolved]
+- [Challenge 2 and how it was resolved]
+
+### Recommendations for Future
+- [Recommendation 1]
+- [Recommendation 2]
+
+## Notes
+
+[Any additional context, caveats, or important information about this workflow]
+
+---
+
+*Workflow orchestrated using /orchestrate command*
+*For questions or issues, refer to the implementation plan and research reports linked above.*
+```
+
+#### Step 6: Create Summary File
+
+**File Creation**:
+```yaml
+action: create_summary_file
+location: "[plan_directory]/specs/summaries/NNN_workflow_summary.md"
+content: "[Generated from template above]"
+cross_references:
+  - update_plan: add_summary_reference
+  - update_reports: add_summary_reference
+```
+
+**Cross-Reference Updates**:
+```markdown
+Update related files to link back to summary:
+
+In Implementation Plan (specs/plans/NNN_*.md):
+Add at bottom:
+## Implementation Summary
+This plan was executed on [date]. See workflow summary:
+- [Summary path and link]
+
+In Research Reports (if any):
+Add in relevant section:
+### Implementation Reference
+Findings from this report were incorporated into:
+- [Plan path] - Implementation plan
+- [Summary path] - Workflow execution summary
+```
+
+#### Step 7: Save Final Checkpoint
+
+**Workflow Complete Checkpoint**:
+```yaml
+checkpoint_workflow_complete:
+  phase_name: "documentation"
+  completion_time: [timestamp]
+  outputs:
+    documentation_updated: [list of files]
+    summary_created: "specs/summaries/NNN_*.md"
+    cross_references: [count]
+    status: "success"
+  next_phase: "complete"
+
+  final_metrics:
+    total_workflow_time: "[duration]"
+    phases_completed: [list]
+    artifacts_generated: [count]
+    files_modified: [count]
+    error_recovery_success: "[%]"
+
+  workflow_summary:
+    research_reports: [list]
+    implementation_plan: "[path]"
+    workflow_summary: "[path]"
+    tests_passing: true
+```
+
+#### Step 8: Workflow Completion Message
+
+**Final Output to User**:
+```markdown
+✅ Workflow Complete
+
+**Duration**: [HH:MM:SS]
+
+**Artifacts Generated**:
+[If research]
+- Research reports: N ([paths])
+- Implementation plan: [path]
+- Workflow summary: [path]
+- Documentation updates: N files
+
+**Implementation Results**:
+- Files modified: N
+- Tests: ✓ All passing
+[If debugging occurred]
+- Issues resolved: N (after M debug iterations)
+
+**Performance**:
+- Time saved via parallelization: [N%]
+- Error recovery: [N/M errors auto-recovered]
+
+**Summary**: [summary_path]
+
+Review the workflow summary for complete details, cross-references, and lessons learned.
+```
+
+#### Documentation Phase Example
+
+```markdown
+User Request: "Add user authentication with email and password"
+
+Workflow Phases Completed:
+✓ Research (3 parallel agents, 5min)
+✓ Planning (created specs/plans/013_auth_implementation.md, 3min)
+✓ Implementation (4 phases, all tests passing, 25min)
+✓ Documentation (updated 3 files, created summary, 4min)
+
+Total Duration: 37 minutes
+
+Documentation Updated:
+- nvim/README.md (added auth section)
+- nvim/docs/ARCHITECTURE.md (added auth module diagram)
+- nvim/lua/neotex/auth/README.md (created)
+
+Workflow Summary Created:
+- specs/summaries/013_auth_workflow_summary.md
+- Cross-referenced: 2 research reports, 1 plan, 3 updated docs
+
+Performance Metrics:
+- Parallel research saved ~8 minutes (estimated)
+- Zero errors, no debugging needed
+- All cross-references verified
+
+Checkpoint Saved: workflow_complete
+Status: ✅ Success
+```
 
 ## Context Management Strategy
 
@@ -1598,13 +1983,23 @@ Expected flow:
 
 ### Implementation Status
 
-This is an incremental implementation. Current phase completion:
-- [x] Phase 1: Foundation and Command Structure
-- [ ] Phase 2: Research Phase Coordination
-- [ ] Phase 3: Planning and Implementation Phase Integration
-- [ ] Phase 4: Error Recovery and Debugging Loop
-- [ ] Phase 5: Documentation Phase and Workflow Completion
+**Full implementation complete!** All phases have been implemented:
 
-The command provides basic workflow coordination structure. Full functionality will be completed in subsequent phases.
+- [x] Phase 1: Foundation and Command Structure
+- [x] Phase 2: Research Phase Coordination
+- [x] Phase 3: Planning and Implementation Phase Integration
+- [x] Phase 4: Error Recovery and Debugging Loop
+- [x] Phase 5: Documentation Phase and Workflow Completion
+
+The /orchestrate command provides comprehensive multi-agent workflow coordination with:
+- Parallel research execution with context minimization
+- Seamless integration with /plan, /implement, /debug, /document commands
+- Robust error recovery with automatic retry strategies
+- Intelligent debugging loop with 3-iteration limit
+- Complete documentation generation with cross-referencing
+- Checkpoint-based recovery system
+- Performance metrics tracking
+
+Ready to orchestrate end-to-end development workflows!
 
 Let me begin orchestrating your workflow based on the description provided.
