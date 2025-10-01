@@ -296,7 +296,7 @@ local function send_command_to_terminal(command)
   terminal_state.queue_command(command_text, {
     -- Pass flag to ensure Claude Code opens if needed
     ensure_open = true,
-    auto_focus = true,
+    -- Removed auto_focus - queue_command() already calls focus_terminal()
     notification = function()
       notify.editor(
         string.format("Inserted '%s' into Claude Code", command_text),
