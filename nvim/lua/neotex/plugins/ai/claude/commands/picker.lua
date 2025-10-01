@@ -262,6 +262,15 @@ local function create_picker_entries(structure)
   return entries
 end
 
+--- Get file permissions in rwx format
+--- @param filepath string Path to file
+--- @return string|nil Permissions string or nil if file doesn't exist
+local function get_file_permissions(filepath)
+  local perms = vim.fn.getfperm(filepath)
+  if perms == "" then return nil end
+  return perms  -- Returns: rwxr-xr-x format
+end
+
 --- Create custom previewer for command documentation
 --- @return table Telescope previewer
 local function create_command_previewer()
@@ -273,38 +282,50 @@ local function create_command_previewer()
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
           "Keyboard Shortcuts:",
           "",
+          "Commands:",
           "  Enter (CR)  - Insert command into Claude Code terminal",
           "  Ctrl-n      - Create new command (opens Claude Code with prompt)",
-          "  Ctrl-l      - Load command locally (copies with dependencies)",
-          "  Ctrl-u      - Update command from global version (overwrites local)",
-          "  Ctrl-s      - Save local command to global (share across projects)",
-          "  Ctrl-e      - Edit command (loads locally first if needed)",
-          "  Escape      - Close picker",
+          "  Ctrl-l      - Load artifact locally (copies with dependencies)",
+          "  Ctrl-u      - Update artifact from global version (overwrites local)",
+          "  Ctrl-s      - Save local artifact to global (share across projects)",
+          "  Ctrl-e      - Edit artifact file (loads locally first if needed)",
           "",
           "Navigation:",
           "  Ctrl-j/k    - Move selection down/up",
           "  Ctrl-d      - Scroll preview down",
+          "  Escape      - Close picker",
           "",
-          "Command Structure:",
-          "  Primary commands - Main workflow commands",
-          "  ├─ dependent   - Supporting commands called by primary",
-          "  └─ dependent   - Commands may appear under multiple primaries",
+          "Artifact Types:",
+          "  Commands    - Claude Code slash commands",
+          "    Primary   - Main workflow commands",
+          "    ├─ dependent - Supporting commands called by primary",
+          "    └─ [agent]   - Agents used by this command",
+          "",
+          "  Agents      - Custom AI agent definitions",
+          "    Shown under commands that use them",
+          "",
+          "  Hook Events - Event triggers for hooks",
+          "    ├─ hook.sh - Shell scripts registered for this event",
+          "",
+          "  TTS Files   - Text-to-speech system files",
+          "    [config]    - Configuration",
+          "    [dispatcher] - Event router",
+          "    [library]   - Message generator",
           "",
           "Indicators:",
-          "  *  - Command defined locally in project (.claude/commands/)",
-          "       Local commands override global ones from .config/",
-          "  (no *) - Global command from ~/.config/.claude/commands/",
+          "  *  - Artifact defined locally in project (.claude/)",
+          "       Local artifacts override global ones from .config/",
+          "  (no *) - Global artifact from ~/.config/.claude/",
           "",
-          "Command Management:",
-          "  Ctrl-n - Create new command with Claude Code assistance",
-          "  Ctrl-l - Copies global command to local (preserves local if exists)",
-          "  Ctrl-u - Updates/overwrites local with global version",
-          "  Ctrl-s - Saves local command to global (requires local command)",
-          "  [Load All Commands] - Batch copies new and replaces existing commands",
-          "                        (preserves local-only commands)",
-          "  The picker refreshes after changes to show updated status",
+          "File Operations (Ctrl-l/u/s/e):",
+          "  Work for: Commands, Agents, Hooks, TTS Files",
+          "  Preserves executable permissions for .sh files",
           "",
-          "Note: Commands are loaded from both project and .config directories"
+          "  [Load All] - Batch synchronizes all artifact types",
+          "               Commands, agents, hooks, and TTS files",
+          "               (preserves local-only artifacts)",
+          "",
+          "Note: All artifacts loaded from both project and .config directories"
         })
         return
       end
@@ -365,6 +386,109 @@ local function create_command_previewer()
         table.insert(lines, "Press Enter to proceed with confirmation, or Escape to cancel.")
 
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+        return
+      end
+
+      -- Show agent preview
+      if entry.value.entry_type == "agent" then
+        local agent = entry.value.agent
+        if agent then
+          local lines = {
+            "# Agent: " .. agent.name,
+            "",
+            "**Description**: " .. (agent.description or "N/A"),
+            "",
+            "**Allowed Tools**: " .. (agent.allowed_tools and #agent.allowed_tools > 0
+              and table.concat(agent.allowed_tools, ", ") or "N/A"),
+            "",
+            "**Used By Commands**: " .. (entry.value.parent or "N/A"),
+            "",
+            "**File**: " .. agent.filepath,
+            "",
+            agent.is_local and "[Local] Local override" or "[Global] Global definition"
+          }
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+        end
+        return
+      end
+
+      -- Show hook preview
+      if entry.value.entry_type == "hook" then
+        local hook = entry.value.hook
+        if hook then
+          local lines = {
+            "# Hook: " .. hook.name,
+            "",
+            "**Description**: " .. (hook.description or "N/A"),
+            "",
+            "**Triggered By Events**: " .. (entry.value.parent or "N/A"),
+            "",
+            "**Script**: " .. hook.filepath,
+            "",
+            "**Permissions**: " .. (get_file_permissions(hook.filepath) or "N/A"),
+            "",
+            hook.is_local and "[Local] Local override" or "[Global] Global definition"
+          }
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+        end
+        return
+      end
+
+      -- Show hook event preview
+      if entry.value.entry_type == "hook_event" then
+        local event_descriptions = {
+          Stop = "Triggered after command completion",
+          SessionStart = "When Claude Code session begins",
+          SessionEnd = "When Claude Code session ends",
+          SubagentStop = "After subagent completes",
+          Notification = "Permission or idle notification events",
+          PreToolUse = "Before tool execution",
+          PostToolUse = "After tool execution",
+          UserPromptSubmit = "When user prompt submitted",
+          PreCompact = "Before context compaction",
+        }
+        local lines = {
+          "# Hook Event: " .. entry.value.name,
+          "",
+          "**Description**: " .. (event_descriptions[entry.value.name] or "Unknown event"),
+          "",
+          "**Registered Hooks**: " .. #entry.value.hooks .. " hook(s)",
+          "",
+          "Hooks:",
+        }
+        for _, hook in ipairs(entry.value.hooks) do
+          table.insert(lines, "- " .. hook.name)
+        end
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+        vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+        return
+      end
+
+      -- Show TTS config preview
+      if entry.value.entry_type == "tts_file" then
+        local tts = entry.value
+        if tts then
+          local lines = {
+            "# TTS File: " .. tts.name,
+            "",
+            "**Description**: " .. (tts.description or "N/A"),
+            "",
+            "**Role**: " .. (tts.role or "N/A"),
+            "",
+            "**Directory**: " .. (tts.directory or "N/A"),
+            "",
+            "**Variables**: " .. (tts.variables and #tts.variables > 0
+              and table.concat(tts.variables, ", ") or "None"),
+            "",
+            "**File**: " .. tts.filepath,
+            "",
+            tts.is_local and "[Local] Local override" or "[Global] Global configuration"
+          }
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+        end
         return
       end
 
@@ -939,6 +1063,528 @@ local function save_command_to_global(command, silent)
   return true
 end
 
+--- Load agent locally from global
+--- @param agent table Agent data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function load_agent_locally(agent, silent)
+  local notify = require('neotex.util.notifications')
+
+  if agent.is_local then
+    if not silent then
+      notify.editor(
+        "Agent already local: " .. agent.name,
+        notify.categories.STATUS
+      )
+    end
+    return false
+  end
+
+  local dest = vim.fn.getcwd() .. "/.claude/agents/" .. agent.name .. ".md"
+  local src = agent.filepath
+
+  -- Create directory if needed
+  vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/agents", "p")
+
+  -- Copy file
+  local success, content = pcall(vim.fn.readfile, src)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read agent file: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, dest)
+  if write_success then
+    if not silent then
+      notify.editor(
+        "Loaded agent locally: " .. agent.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to load agent: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Load hook locally from global (preserves permissions)
+--- @param hook table Hook data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function load_hook_locally(hook, silent)
+  local notify = require('neotex.util.notifications')
+
+  if hook.is_local then
+    if not silent then
+      notify.editor(
+        "Hook already local: " .. hook.name,
+        notify.categories.STATUS
+      )
+    end
+    return false
+  end
+
+  local dest = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
+  local src = hook.filepath
+
+  -- Create directory
+  vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/hooks", "p")
+
+  -- Get source permissions BEFORE copying
+  local perms = vim.fn.getfperm(src)
+
+  -- Copy file
+  local success, content = pcall(vim.fn.readfile, src)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read hook file: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, dest)
+  if write_success then
+    -- Restore permissions (critical for hooks!)
+    vim.fn.setfperm(dest, perms)
+
+    if not silent then
+      notify.editor(
+        "Loaded hook locally: " .. hook.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to load hook: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Load TTS file locally from global (preserves permissions)
+--- @param tts_file table TTS file data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function load_tts_file_locally(tts_file, silent)
+  local notify = require('neotex.util.notifications')
+
+  if tts_file.is_local then
+    if not silent then
+      notify.editor(
+        "TTS file already local: " .. tts_file.name,
+        notify.categories.STATUS
+      )
+    end
+    return false
+  end
+
+  local dest = vim.fn.getcwd() .. "/.claude/" .. tts_file.directory .. "/" .. tts_file.name
+  local src = tts_file.filepath
+
+  -- Create directory
+  vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/" .. tts_file.directory, "p")
+
+  -- Get source permissions BEFORE copying
+  local perms = vim.fn.getfperm(src)
+
+  -- Copy file
+  local success, content = pcall(vim.fn.readfile, src)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, dest)
+  if write_success then
+    -- Restore permissions (critical for shell scripts!)
+    vim.fn.setfperm(dest, perms)
+
+    if not silent then
+      notify.editor(
+        "Loaded TTS file locally: " .. tts_file.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to load TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Update agent from global version
+--- @param agent table Agent data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function update_agent_from_global(agent, silent)
+  local notify = require('neotex.util.notifications')
+
+  local local_path = vim.fn.getcwd() .. "/.claude/agents/" .. agent.name .. ".md"
+  local global_path = vim.fn.expand("~/.config/.claude/agents/" .. agent.name .. ".md")
+
+  if vim.fn.filereadable(global_path) ~= 1 then
+    if not silent then
+      notify.editor(
+        "No global version of agent: " .. agent.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  -- Overwrite local with global
+  local success, content = pcall(vim.fn.readfile, global_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read global agent: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, local_path)
+  if write_success then
+    if not silent then
+      notify.editor(
+        "Updated agent from global: " .. agent.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to update agent: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Update hook from global version (preserves permissions)
+--- @param hook table Hook data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function update_hook_from_global(hook, silent)
+  local notify = require('neotex.util.notifications')
+
+  local local_path = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
+  local global_path = vim.fn.expand("~/.config/.claude/hooks/" .. hook.name)
+
+  if vim.fn.filereadable(global_path) ~= 1 then
+    if not silent then
+      notify.editor(
+        "No global version of hook: " .. hook.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  -- Get source permissions
+  local perms = vim.fn.getfperm(global_path)
+
+  -- Overwrite local with global
+  local success, content = pcall(vim.fn.readfile, global_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read global hook: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, local_path)
+  if write_success then
+    -- Restore permissions
+    vim.fn.setfperm(local_path, perms)
+
+    if not silent then
+      notify.editor(
+        "Updated hook from global: " .. hook.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to update hook: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Update TTS file from global version (preserves permissions)
+--- @param tts_file table TTS file data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function update_tts_file_from_global(tts_file, silent)
+  local notify = require('neotex.util.notifications')
+
+  local local_path = vim.fn.getcwd() .. "/.claude/" .. tts_file.directory .. "/" .. tts_file.name
+  local global_path = vim.fn.expand("~/.config/.claude/" .. tts_file.directory .. "/" .. tts_file.name)
+
+  if vim.fn.filereadable(global_path) ~= 1 then
+    if not silent then
+      notify.editor(
+        "No global version of TTS file: " .. tts_file.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  -- Get source permissions
+  local perms = vim.fn.getfperm(global_path)
+
+  -- Overwrite local with global
+  local success, content = pcall(vim.fn.readfile, global_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read global TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, local_path)
+  if write_success then
+    -- Restore permissions
+    vim.fn.setfperm(local_path, perms)
+
+    if not silent then
+      notify.editor(
+        "Updated TTS file from global: " .. tts_file.name,
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to update TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Save agent to global directory
+--- @param agent table Agent data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function save_agent_to_global(agent, silent)
+  local notify = require('neotex.util.notifications')
+
+  if not agent.is_local then
+    if not silent then
+      notify.editor(
+        "Agent is not local: " .. agent.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  local local_path = vim.fn.getcwd() .. "/.claude/agents/" .. agent.name .. ".md"
+  local global_path = vim.fn.expand("~/.config/.claude/agents/" .. agent.name .. ".md")
+
+  -- Create global directory if needed
+  vim.fn.mkdir(vim.fn.expand("~/.config/.claude/agents"), "p")
+
+  -- Copy local to global
+  local success, content = pcall(vim.fn.readfile, local_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read local agent: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, global_path)
+  if write_success then
+    if not silent then
+      notify.editor(
+        "Saved agent to global: " .. agent.name,
+        notify.categories.USER_ACTION
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to save agent: " .. agent.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Save hook to global directory (preserves permissions)
+--- @param hook table Hook data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function save_hook_to_global(hook, silent)
+  local notify = require('neotex.util.notifications')
+
+  if not hook.is_local then
+    if not silent then
+      notify.editor(
+        "Hook is not local: " .. hook.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  local local_path = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
+  local global_path = vim.fn.expand("~/.config/.claude/hooks/" .. hook.name)
+
+  -- Get local permissions
+  local perms = vim.fn.getfperm(local_path)
+
+  -- Create global directory if needed
+  vim.fn.mkdir(vim.fn.expand("~/.config/.claude/hooks"), "p")
+
+  -- Copy local to global
+  local success, content = pcall(vim.fn.readfile, local_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read local hook: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, global_path)
+  if write_success then
+    -- Preserve permissions
+    vim.fn.setfperm(global_path, perms)
+
+    if not silent then
+      notify.editor(
+        "Saved hook to global: " .. hook.name,
+        notify.categories.USER_ACTION
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to save hook: " .. hook.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Save TTS file to global directory (preserves permissions)
+--- @param tts_file table TTS file data
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function save_tts_file_to_global(tts_file, silent)
+  local notify = require('neotex.util.notifications')
+
+  if not tts_file.is_local then
+    if not silent then
+      notify.editor(
+        "TTS file is not local: " .. tts_file.name,
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  local local_path = vim.fn.getcwd() .. "/.claude/" .. tts_file.directory .. "/" .. tts_file.name
+  local global_path = vim.fn.expand("~/.config/.claude/" .. tts_file.directory .. "/" .. tts_file.name)
+
+  -- Get local permissions
+  local perms = vim.fn.getfperm(local_path)
+
+  -- Create global directory if needed
+  vim.fn.mkdir(vim.fn.expand("~/.config/.claude/" .. tts_file.directory), "p")
+
+  -- Copy local to global
+  local success, content = pcall(vim.fn.readfile, local_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        "Failed to read local TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, global_path)
+  if write_success then
+    -- Preserve permissions
+    vim.fn.setfperm(global_path, perms)
+
+    if not silent then
+      notify.editor(
+        "Saved TTS file to global: " .. tts_file.name,
+        notify.categories.USER_ACTION
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        "Failed to save TTS file: " .. tts_file.name,
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
 --- Edit command file in buffer
 --- @param command table Command data
 local function edit_command_file(command)
@@ -1055,23 +1701,31 @@ function M.show_commands_picker(opts)
         end
       end)
 
-      -- Load command locally with Ctrl-l (keeps picker open and refreshes)
+      -- Load artifact locally with Ctrl-l (keeps picker open and refreshes)
       map("i", "<C-l>", function()
         local selection = action_state.get_selected_entry()
-        if selection and selection.value.command and not selection.value.is_help then
-          local command = selection.value.command
+        if not selection or selection.value.is_help or selection.value.is_load_all then
+          return
+        end
 
-          -- Load the command locally
-          load_command_locally(command, false)
+        local success = false
+        if selection.value.command then
+          success = load_command_locally(selection.value.command, false)
+        elseif selection.value.agent then
+          success = load_agent_locally(selection.value.agent, false)
+        elseif selection.value.hook then
+          success = load_hook_locally(selection.value.hook, false)
+        elseif selection.value.entry_type == "tts_file" then
+          success = load_tts_file_locally(selection.value, false)
+        end
 
-          -- Refresh the picker to show updated local status
+        -- Refresh the picker to show updated local status
+        if success then
           local current_prompt = action_state.get_current_line()
           actions.close(prompt_bufnr)
 
-          -- Re-open the picker with refreshed data
           vim.defer_fn(function()
             M.show_commands_picker(opts)
-            -- Restore the search prompt if there was one
             if current_prompt and current_prompt ~= "" then
               vim.defer_fn(function()
                 vim.api.nvim_feedkeys(current_prompt, 'n', false)
@@ -1090,59 +1744,69 @@ function M.show_commands_picker(opts)
         end
       end)
 
-      -- Update command from global version with Ctrl-u (keeps picker open and refreshes)
+      -- Update artifact from global version with Ctrl-u (keeps picker open and refreshes)
       map("i", "<C-u>", function()
         local selection = action_state.get_selected_entry()
-        if selection and selection.value.command and not selection.value.is_help and not selection.value.is_load_all then
-          local command = selection.value.command
+        if not selection or selection.value.is_help or selection.value.is_load_all then
+          return
+        end
 
-          -- Update the command from global
-          local success = update_command_from_global(command, false)
+        local success = false
+        if selection.value.command then
+          success = update_command_from_global(selection.value.command, false)
+        elseif selection.value.agent then
+          success = update_agent_from_global(selection.value.agent, false)
+        elseif selection.value.hook then
+          success = update_hook_from_global(selection.value.hook, false)
+        elseif selection.value.entry_type == "tts_file" then
+          success = update_tts_file_from_global(selection.value, false)
+        end
 
-          if success then
-            -- Refresh the picker to show updated status
-            local current_prompt = action_state.get_current_line()
-            actions.close(prompt_bufnr)
+        if success then
+          local current_prompt = action_state.get_current_line()
+          actions.close(prompt_bufnr)
 
-            -- Re-open the picker with refreshed data
-            vim.defer_fn(function()
-              M.show_commands_picker(opts)
-              -- Restore the search prompt if there was one
-              if current_prompt and current_prompt ~= "" then
-                vim.defer_fn(function()
-                  vim.api.nvim_feedkeys(current_prompt, 'n', false)
-                end, 50)
-              end
-            end, 100)
-          end
+          vim.defer_fn(function()
+            M.show_commands_picker(opts)
+            if current_prompt and current_prompt ~= "" then
+              vim.defer_fn(function()
+                vim.api.nvim_feedkeys(current_prompt, 'n', false)
+              end, 50)
+            end
+          end, 100)
         end
       end)
 
-      -- Save local command to global with Ctrl-s (keeps picker open and refreshes)
+      -- Save local artifact to global with Ctrl-s (keeps picker open and refreshes)
       map("i", "<C-s>", function()
         local selection = action_state.get_selected_entry()
-        if selection and selection.value.command and not selection.value.is_help and not selection.value.is_load_all then
-          local command = selection.value.command
+        if not selection or selection.value.is_help or selection.value.is_load_all then
+          return
+        end
 
-          -- Save the command to global
-          local success = save_command_to_global(command, false)
+        local success = false
+        if selection.value.command then
+          success = save_command_to_global(selection.value.command, false)
+        elseif selection.value.agent then
+          success = save_agent_to_global(selection.value.agent, false)
+        elseif selection.value.hook then
+          success = save_hook_to_global(selection.value.hook, false)
+        elseif selection.value.entry_type == "tts_file" then
+          success = save_tts_file_to_global(selection.value, false)
+        end
 
-          if success then
-            -- Refresh the picker to show updated status
-            local current_prompt = action_state.get_current_line()
-            actions.close(prompt_bufnr)
+        if success then
+          local current_prompt = action_state.get_current_line()
+          actions.close(prompt_bufnr)
 
-            -- Re-open the picker with refreshed data
-            vim.defer_fn(function()
-              M.show_commands_picker(opts)
-              -- Restore the search prompt if there was one
-              if current_prompt and current_prompt ~= "" then
-                vim.defer_fn(function()
-                  vim.api.nvim_feedkeys(current_prompt, 'n', false)
-                end, 50)
-              end
-            end, 100)
-          end
+          vim.defer_fn(function()
+            M.show_commands_picker(opts)
+            if current_prompt and current_prompt ~= "" then
+              vim.defer_fn(function()
+                vim.api.nvim_feedkeys(current_prompt, 'n', false)
+              end, 50)
+            end
+          end, 100)
         end
       end)
 
