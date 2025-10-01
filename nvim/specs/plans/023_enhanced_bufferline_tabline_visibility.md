@@ -195,18 +195,18 @@ Expected outcome:
 Files modified:
 - /home/benjamin/.config/nvim/lua/neotex/plugins/ui/bufferline.lua
 
-### Phase 2: Add Enhanced Event Handlers
+### Phase 2: Add Enhanced Event Handlers [COMPLETED]
 **Objective**: Implement autocmds for buffer/window navigation events
 **Complexity**: Medium
 
 Tasks:
-- [ ] Add BufEnter autocmd that calls ensure_tabline_visible()
-- [ ] Add WinEnter autocmd that calls ensure_tabline_visible()
-- [ ] Add alpha dashboard check (early return if filetype == "alpha")
-- [ ] Add TermLeave autocmd with deferred visibility check
-- [ ] Add BufDelete autocmd to handle buffer cleanup
-- [ ] Add descriptive `desc` fields to all autocmds
-- [ ] Ensure autocmds created in vim.defer_fn context (after line 126)
+- [x] Add BufEnter autocmd that calls ensure_tabline_visible()
+- [x] Add WinEnter autocmd that calls ensure_tabline_visible()
+- [x] Add alpha dashboard check (early return if filetype == "alpha")
+- [x] Add TermLeave autocmd with deferred visibility check
+- [x] Add BufDelete autocmd to handle buffer cleanup
+- [x] Add descriptive `desc` fields to all autocmds
+- [x] Ensure autocmds created in vim.defer_fn context (after line 126)
 
 Implementation location:
 - Insert after line 126 in bufferline.lua

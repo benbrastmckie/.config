@@ -135,6 +135,41 @@ return {
           vim.opt.showtabline = 0
         end
       end
+
+      -- Enhanced event handlers to preserve bufferline visibility
+      -- Handles window/buffer switches to terminals, sidebars, and back
+      vim.api.nvim_create_autocmd({"BufEnter", "WinEnter"}, {
+        callback = function()
+          local filetype = vim.bo.filetype
+
+          -- Don't show tabline on alpha dashboard
+          if filetype == "alpha" then
+            vim.opt.showtabline = 0
+            return
+          end
+
+          -- Update tabline visibility based on buffer count
+          ensure_tabline_visible()
+        end,
+        desc = "Preserve bufferline visibility across window switches"
+      })
+
+      -- Restore tabline visibility when leaving terminal
+      vim.api.nvim_create_autocmd("TermLeave", {
+        pattern = "*",
+        callback = function()
+          vim.defer_fn(ensure_tabline_visible, 10)
+        end,
+        desc = "Restore bufferline when leaving terminal"
+      })
+
+      -- Update tabline visibility when buffers are deleted
+      vim.api.nvim_create_autocmd("BufDelete", {
+        callback = function()
+          vim.defer_fn(ensure_tabline_visible, 10)
+        end,
+        desc = "Update bufferline visibility on buffer deletion"
+      })
     end, 200)
   end,
 }
