@@ -1790,10 +1790,14 @@ function M.show_commands_picker(opts)
     finder = finders.new_table {
       results = entries,
       entry_maker = function(entry)
+        -- Handle entries that may not have a name field (like section headers)
+        local name = entry.name or entry.ordinal or ""
+        local description = entry.command and entry.command.description or entry.description or ""
+
         return {
           value = entry,
           display = entry.display,
-          ordinal = entry.name .. " " .. (entry.command and entry.command.description or ""),
+          ordinal = name .. " " .. description,
         }
       end,
     },
