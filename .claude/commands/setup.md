@@ -1,9 +1,9 @@
 ---
 allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
-argument-hint: [project-directory] [--analyze] [--apply-report <report-path>]
-description: Setup or improve CLAUDE.md with smart extraction, standards analysis, and report-driven updates
+argument-hint: [project-directory] [--cleanup] [--analyze] [--apply-report <report-path>]
+description: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, standards analysis, and report-driven updates
 command-type: primary
-dependent-commands: validate-setup
+dependent-commands: validate-setup, cleanup
 ---
 
 # Setup Project Standards
@@ -17,7 +17,26 @@ Generate or update CLAUDE.md with smart section extraction.
 
 **Usage**: `/setup [project-directory]`
 
-### 2. Analysis Mode
+### 2. Cleanup Mode
+Optimize CLAUDE.md by extracting detailed sections to auxiliary files, keeping the main file concise and focused.
+
+**Usage**: `/setup --cleanup [project-directory]`
+
+**Features**:
+- Analyzes CLAUDE.md for bloat (>30 line sections)
+- Identifies extraction candidates (testing details, style guides, architecture diagrams)
+- Interactive selection of what to extract
+- Creates organized auxiliary files in docs/ directory
+- Updates CLAUDE.md with clear links to extracted content
+- Preserves all information while improving navigability
+
+**When to Use**:
+- CLAUDE.md is >200 lines and hard to navigate
+- Detailed reference material buries quick-reference info
+- You want to keep CLAUDE.md focused on essentials
+- Equivalent to standalone `/cleanup` command
+
+### 3. Analysis Mode
 Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, generating a comprehensive analysis report.
 
 **Usage**: `/setup --analyze [project-directory]`
@@ -29,7 +48,7 @@ Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, gene
 - Generates interactive gap-filling report in specs/reports/
 - Never modifies files (safe exploration)
 
-### 3. Report Application Mode
+### 4. Report Application Mode
 Parse a completed analysis report and update CLAUDE.md with reconciled standards.
 
 **Usage**: `/setup --apply-report <report-path> [project-directory]`
@@ -52,6 +71,11 @@ I'll detect the mode based on arguments:
 - No flags: `/setup` or `/setup /path/to/project`
 - Behavior: Generate or update CLAUDE.md with extraction workflow
 
+### Cleanup Mode
+- `--cleanup` flag present: `/setup --cleanup` or `/setup --cleanup /path/to/project`
+- Arguments can be in any order: `/setup --cleanup` or `/setup /path --cleanup`
+- Behavior: Run extraction optimization, focus on reducing CLAUDE.md bloat
+
 ### Analysis Mode
 - `--analyze` flag present: `/setup --analyze` or `/setup --analyze /path/to/project`
 - Arguments can be in any order: `/setup --analyze` or `/setup /path --analyze`
@@ -65,10 +89,15 @@ I'll detect the mode based on arguments:
 
 ### Implementation Logic
 ```
+Priority: --apply-report > --cleanup > --analyze > standard
+
 if "--apply-report" in arguments:
     report_path = argument after "--apply-report"
     project_dir = remaining non-flag argument or current directory
     run report_application_mode(report_path, project_dir)
+elif "--cleanup" in arguments:
+    project_dir = remaining non-flag argument or current directory
+    run cleanup_mode(project_dir)
 elif "--analyze" in arguments:
     project_dir = remaining non-flag argument or current directory
     run analysis_mode(project_dir)
@@ -148,6 +177,9 @@ I'll examine any existing CLAUDE.md to identify:
 - Content better suited for auxiliary files
 
 ### 2. Smart Section Extraction
+[Used by: Standard Mode (optional), Cleanup Mode (always)]
+
+This extraction process optimizes CLAUDE.md by moving detailed content to auxiliary files while keeping essential information inline.
 
 For sections that would benefit from extraction, I'll offer to move them to dedicated files:
 
@@ -296,6 +328,74 @@ Extraction opportunities:
 After extraction: CLAUDE.md would be 95 lines (62% reduction)
 
 Proceed with extractions? [Y/n/customize]
+```
+
+## Cleanup Mode Workflow
+
+### When to Use Each Mode
+
+```
+Choose your mode based on your goal:
+
+Standard Mode (/setup)
+├─ Goal: Set up or update CLAUDE.md with standards
+├─ When: New project or updating standards
+└─ Extraction: Optional, if CLAUDE.md becomes bloated
+
+Cleanup Mode (/setup --cleanup)
+├─ Goal: Optimize existing CLAUDE.md
+├─ When: CLAUDE.md is >200 lines or hard to navigate
+└─ Extraction: Primary focus, always runs
+
+Equivalent: /cleanup → /setup --cleanup
+```
+
+### Cleanup vs Standard Mode
+
+| Aspect | Standard Mode | Cleanup Mode |
+|--------|--------------|--------------|
+| **Primary Goal** | Generate/update standards | Optimize CLAUDE.md size |
+| **Extraction** | Optional (if bloated) | Always runs |
+| **Standards Generation** | Yes | No |
+| **Standards Analysis** | Available (--analyze) | Not available |
+| **Best For** | Initial setup, updates | Ongoing maintenance |
+
+### Cleanup Workflow
+
+```
+User runs: /setup --cleanup
+     ↓
+1. Analyze CLAUDE.md
+   - Measure total lines
+   - Identify sections >30 lines
+   - Find extraction candidates
+     ↓
+2. Show Extraction Opportunities
+   - List each candidate with line count
+   - Show impact (% reduction)
+   - Suggest target files
+     ↓
+3. Interactive Selection
+   - User chooses [E]xtract / [K]eep / [S]implify
+   - Customize extraction threshold
+   - Select specific sections
+     ↓
+4. Extract Sections
+   - Create auxiliary files in docs/
+   - Move content preserving structure
+   - Add navigation breadcrumbs
+     ↓
+5. Update CLAUDE.md
+   - Replace extracted sections with links
+   - Add quick reference if applicable
+   - Preserve unextracted content
+     ↓
+6. Validation
+   - Verify all links work
+   - Check no information lost
+   - Report final line count
+     ↓
+Done: Optimized CLAUDE.md
 ```
 
 ## Standards Analysis Workflow
