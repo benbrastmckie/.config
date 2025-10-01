@@ -197,6 +197,22 @@ function M.build_hierarchy(commands)
     end
   end
 
+  -- Third pass: link primary commands that are listed as dependents of other primary commands
+  -- This allows primary commands to show other primary commands as their dependents in the picker
+  for primary_name, primary_data in pairs(hierarchy.primary_commands) do
+    local dependent_list = primary_data.command.dependent_commands or {}
+
+    for _, dep_name in ipairs(dependent_list) do
+      -- Check if this dependent is actually a primary command
+      if hierarchy.primary_commands[dep_name] then
+        -- Add a reference to the primary command as a dependent
+        -- Clone the command data to avoid modifying the original
+        local primary_as_dependent = vim.deepcopy(hierarchy.primary_commands[dep_name].command)
+        table.insert(primary_data.dependents, primary_as_dependent)
+      end
+    end
+  end
+
   return hierarchy
 end
 
