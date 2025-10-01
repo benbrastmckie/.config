@@ -41,7 +41,7 @@ get_context_prefix() {
   fi
 
   # Get git branch if available
-  if [[ -n "$CLAUDE_PROJECT_DIR" ]] && command -v git &>/dev/null; then
+  if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]] && command -v git &>/dev/null; then
     local git_branch
     git_branch=$(git -C "$CLAUDE_PROJECT_DIR" branch --show-current 2>/dev/null)
     if [[ -n "$git_branch" ]]; then
@@ -59,9 +59,9 @@ get_context_prefix() {
 # Read state file for detailed command summaries
 # Returns: JSON content if file exists, empty string otherwise
 read_state_file() {
-  local state_file="${CLAUDE_PROJECT_DIR}/.claude/state/last-completion.json"
+  local state_file="${CLAUDE_PROJECT_DIR:-}/.claude/state/last-completion.json"
 
-  if [[ -f "$state_file" ]]; then
+  if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]] && [[ -f "$state_file" ]]; then
     cat "$state_file" 2>/dev/null
   else
     echo ""
