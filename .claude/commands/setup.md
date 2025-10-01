@@ -13,6 +13,66 @@ I'll create or improve the CLAUDE.md file by intelligently organizing content - 
 ## Target Directory
 $1 (or current directory)
 
+## Standards for Commands
+
+When creating or updating CLAUDE.md, I'll ensure it's optimized for discovery and use by other slash commands:
+
+### Command Integration Requirements
+
+#### Required Sections with Metadata
+All generated CLAUDE.md files will include:
+
+1. **Code Standards** section
+   - `[Used by: /implement, /refactor, /plan]` metadata
+   - Indentation, line length, naming conventions
+   - Error handling patterns
+   - Language-specific standards
+
+2. **Testing Protocols** section
+   - `[Used by: /test, /test-all, /implement]` metadata
+   - Test commands and patterns
+   - Coverage requirements
+   - Test discovery rules
+
+3. **Documentation Policy** section
+   - `[Used by: /document, /plan]` metadata
+   - README requirements
+   - Documentation format guidelines
+   - Character encoding rules
+
+4. **Standards Discovery** section
+   - `[Used by: all commands]` metadata
+   - Discovery method explanation
+   - Subdirectory inheritance rules
+   - Fallback behavior
+
+#### Section Format
+Each section must follow the parseable schema:
+
+```markdown
+## Section Name
+[Used by: /command1, /command2]
+
+### Subsection
+- **Field Name**: value
+- **Another Field**: value
+```
+
+### Project Type Detection
+I'll detect project type and generate appropriate standards:
+
+- **Lua/Neovim**: 2-space indent, snake_case, pcall error handling, `:TestSuite`
+- **JavaScript/Node**: 2-space indent, camelCase, try-catch, `npm test`
+- **Python**: 4-space indent, snake_case, try-except, `pytest`
+- **Shell**: 2-space indent, snake_case, `set -e`, shellcheck
+
+### Validation
+After generation, I'll validate that:
+- All required sections exist
+- Each section has `[Used by: ...]` metadata
+- Field format is consistent (`**Field**: value`)
+- Commands can parse the structure
+
 ## Process
 
 ### 1. Analyze Existing CLAUDE.md
@@ -55,26 +115,46 @@ If you choose extraction, I'll:
 
 ### 4. Optimal CLAUDE.md Structure
 
-#### Goal: Concise Index File (<100 lines)
+#### Goal: Command-Parseable Standards File
 ```markdown
 # Project Configuration Index
 
 This CLAUDE.md serves as the central configuration and standards index.
 
-## Project Standards and Guidelines
+## Code Standards
+[Used by: /implement, /refactor, /plan]
 
-### Core Documentation
-- [Testing Standards](docs/TESTING.md) - Test configuration and commands
-- [Code Style Guide](docs/CODE_STYLE.md) - Formatting and conventions
-- [Documentation Guidelines](docs/DOCUMENTATION.md) - Writing standards
+### General Principles
+- **Indentation**: [detected or user-specified]
+- **Line Length**: [detected or default]
+- **Naming**: [language-appropriate conventions]
+- **Error Handling**: [language-specific patterns]
 
-### Quick Reference
-- **Run Tests**: `npm test`
-- **Format Code**: `npm run format`
-- **Lint**: `npm run lint`
+## Testing Protocols
+[Used by: /test, /test-all, /implement]
+
+### Test Discovery
+[How commands should find tests]
+
+### [Project Type] Testing
+- **Test Commands**: [detected test commands]
+- **Test Pattern**: [detected test file patterns]
+- **Coverage Requirements**: [suggested thresholds]
+
+## Documentation Policy
+[Used by: /document, /plan]
+
+### README Requirements
+[Standard requirements for documentation]
+
+## Standards Discovery
+[Used by: all commands]
+
+### Discovery Method
+[Standard discovery explanation]
 
 ## Specs Directory Protocol
-[Keep inline - essential for Claude workflow]
+[Kept inline - essential for spec workflow]
 ```
 
 ### 5. Decision Criteria
@@ -153,5 +233,85 @@ After extraction: CLAUDE.md would be 95 lines (62% reduction)
 
 Proceed with extractions? [Y/n/customize]
 ```
+
+## Integration with Other Commands
+
+### How /setup Supports Other Commands
+
+This command creates the foundation that other commands rely on:
+
+#### For /implement
+- Generates **Code Standards** section with indentation, naming, error handling
+- Creates **Testing Protocols** section with test commands
+- Ensures standards are parseable for automatic application
+
+#### For /test
+- Generates **Testing Protocols** section with test commands and patterns
+- Detects project test framework and configuration
+- Documents test discovery rules
+
+#### For /document
+- Generates **Documentation Policy** section with README requirements
+- Sets format guidelines and character encoding rules
+- Defines navigation link patterns
+
+#### For /plan
+- Creates all standard sections for plan generation
+- Documents project conventions for accurate planning
+- Ensures plans can capture standards properly
+
+#### For /refactor
+- Generates comprehensive standards for validation
+- Documents code quality thresholds
+- Provides clear validation criteria
+
+### Standards Generation Workflow
+
+```
+User runs: /setup
+     ↓
+/setup analyzes project:
+  - Detects language (Lua, JS, Python, etc.)
+  - Finds test framework
+  - Identifies existing conventions
+     ↓
+Generates CLAUDE.md with:
+  - Code Standards (with [Used by: ...] metadata)
+  - Testing Protocols (with test commands)
+  - Documentation Policy (with requirements)
+  - Standards Discovery (with discovery rules)
+     ↓
+Validates parseability:
+  - Checks all sections have metadata
+  - Verifies field format consistency
+  - Tests that commands can parse structure
+     ↓
+Result: CLAUDE.md optimized for command integration
+```
+
+### Example: Generated Standards
+
+For a Lua/Neovim project, /setup would generate:
+
+```markdown
+## Code Standards
+[Used by: /implement, /refactor, /plan]
+
+### General Principles
+- **Indentation**: 2 spaces, expandtab
+- **Line Length**: ~100 characters (soft limit)
+- **Naming**: snake_case for variables/functions, PascalCase for modules
+- **Error Handling**: Use pcall for operations that might fail
+
+## Testing Protocols
+[Used by: /test, /test-all, /implement]
+
+### Neovim Testing
+- **Test Commands**: `:TestNearest`, `:TestFile`, `:TestSuite`, `:TestLast`
+- **Test Pattern**: `*_spec.lua`, `test_*.lua`
+- **Test Framework**: plenary.nvim, busted
+```
+
+These sections are immediately usable by /implement, /test, and other commands.
 
 Let me analyze your project and help organize your CLAUDE.md efficiently.
