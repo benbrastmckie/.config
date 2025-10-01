@@ -132,13 +132,9 @@ function M.queue_command(command_text, opts)
     return
   end
 
-  -- Terminal exists - check if ready
-  if M.is_terminal_ready(claude_buf) then
-    state = M.State.READY
-    M.focus_terminal(claude_buf)
-    M.flush_queue(claude_buf)
-  end
-  -- If not ready, SessionStart hook or TextChanged will handle it
+  -- Terminal exists - ensure visible and flush immediately
+  M.focus_terminal(claude_buf)
+  M.flush_queue(claude_buf)
 end
 
 --- Send all queued commands to terminal
