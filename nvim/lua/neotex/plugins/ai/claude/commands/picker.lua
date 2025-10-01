@@ -14,8 +14,91 @@ local previewers = require("telescope.previewers")
 -- Local modules
 local parser = require("neotex.plugins.ai.claude.commands.parser")
 
+--- Helper function to get agents for a specific command
+--- @param command_name string Name of the command
+--- @param agent_deps table Agent dependencies map
+--- @param agents table All agents
+--- @return table Array of agents used by this command
+local function get_agents_for_command(command_name, agent_deps, agents)
+  local command_agents = {}
+  local agent_names = agent_deps[command_name] or {}
+
+  for _, agent_name in ipairs(agent_names) do
+    for _, agent in ipairs(agents) do
+      if agent.name == agent_name then
+        table.insert(command_agents, agent)
+        break
+      end
+    end
+  end
+
+  -- Sort agents alphabetically
+  table.sort(command_agents, function(a, b)
+    return a.name < b.name
+  end)
+
+  return command_agents
+end
+
+--- Format agent entry for display
+--- @param agent table Agent data
+--- @param indent_char string Tree character (├─ or └─)
+--- @return string Formatted display string
+local function format_agent(agent, indent_char)
+  local prefix = agent.is_local and "*" or " "
+  local display_name = "[agent] " .. agent.name
+
+  return string.format(
+    "%s %s %-38s %s",
+    prefix,
+    indent_char,
+    display_name,
+    agent.description or ""
+  )
+end
+
+--- Format hook entry for display
+--- @param hook table Hook data
+--- @param indent_char string Tree character (├─ or └─)
+--- @return string Formatted display string
+local function format_hook(hook, indent_char)
+  local prefix = hook.is_local and "*" or " "
+
+  return string.format(
+    "%s %s %-38s %s",
+    prefix,
+    indent_char,
+    hook.name,
+    hook.description or ""
+  )
+end
+
+--- Format hook event header for display
+--- @param event_name string Hook event name
+--- @return string Formatted display string
+local function format_hook_event(event_name)
+  local display_name = "[Hook Event] " .. event_name
+  local descriptions = {
+    Stop = "After command completion",
+    SessionStart = "When session begins",
+    SessionEnd = "When session ends",
+    SubagentStop = "After subagent completes",
+    Notification = "Permission/idle events",
+    PreToolUse = "Before tool execution",
+    PostToolUse = "After tool execution",
+    UserPromptSubmit = "When prompt submitted",
+    PreCompact = "Before context compaction",
+  }
+
+  return string.format(
+    "%-42s %s",
+    display_name,
+    descriptions[event_name] or ""
+  )
+end
+
 --- Create flattened entries for telescope display
---- @param structure table Command hierarchy from parser.get_command_structure()
+--- @param structure table Extended structure from parser.get_extended_structure()
 --- @return table Array of entries for telescope
 local function create_picker_entries(structure)
   local entries = {}
@@ -23,25 +106,27 @@ local function create_picker_entries(structure)
   -- Add load all commands entry (added first, appears second from bottom)
   table.insert(entries, {
     is_load_all = true,
-    name = "~~~load_all",  -- Ensures it sorts after everything with descending strategy
+    name = "~~~load_all",
     display = string.format(
       "  %-40s %s",
       "[Load All Commands]",
-      "Copy all global commands locally"
+      "Copy all commands, agents, and hooks"
     ),
-    command = nil
+    command = nil,
+    entry_type = "special"
   })
 
   -- Add keyboard shortcuts help entry (added last, appears at bottom)
   table.insert(entries, {
     is_help = true,
-    name = "~~~help",  -- Ensures it sorts after everything with descending strategy
+    name = "~~~help",
     display = string.format(
       "  %-40s %s",
       "[Keyboard Shortcuts]",
       "Help"
     ),
-    command = nil
+    command = nil,
+    entry_type = "special"
   })
 
   -- Collect and sort primary command names alphabetically
@@ -51,23 +136,27 @@ local function create_picker_entries(structure)
   end
   table.sort(sorted_primary_names)
 
-  -- Add primary commands and their dependents in alphabetical order
-  -- With descending sort, we add dependents first so they appear below primaries visually
+  -- Add primary commands with their dependents AND agents
   for _, primary_name in ipairs(sorted_primary_names) do
     local primary_data = structure.primary_commands[primary_name]
     local primary_command = primary_data.command
 
-    -- Add dependent commands first (with indentation)
-    local dependents = primary_data.dependents
-    for i, dependent in ipairs(dependents) do
-      -- With descending sort, display order is reversed:
-      -- - First item (i=1) appears LAST visually → should get └─
-      -- - Last item (i=#dependents) appears FIRST visually → should get ├─
-      local is_first = (i == 1)
-      local indent_char = is_first and "└─" or "├─"
+    -- Get agents for this command
+    local command_agents = get_agents_for_command(
+      primary_name,
+      structure.agent_dependencies or {},
+      structure.agents or {}
+    )
 
-      -- Add '*' prefix for local dependent commands
-      local dependent_display = dependent.is_local and ("* " .. dependent.name) or ("  " .. dependent.name)
+    -- Calculate total items (dependents + agents)
+    local dependents = primary_data.dependents
+    local total_items = #dependents + #command_agents
+
+    -- Add dependent commands first
+    for i, dependent in ipairs(dependents) do
+      local is_last = (i == #dependents and #command_agents == 0)
+      local indent_char = is_last and "└─" or "├─"
+
       table.insert(entries, {
         name = dependent.name,
         display = string.format(
@@ -79,12 +168,27 @@ local function create_picker_entries(structure)
         ),
         command = dependent,
         is_primary = false,
-        parent = primary_name
+        parent = primary_name,
+        entry_type = "command"
       })
     end
 
-    -- Add primary command after dependents (no indentation)
-    -- Add '*' prefix for local commands
+    -- Add agents for this command
+    for i, agent in ipairs(command_agents) do
+      local is_last = (i == #command_agents)
+      local indent_char = is_last and "└─" or "├─"
+
+      table.insert(entries, {
+        name = agent.name,
+        display = format_agent(agent, indent_char),
+        agent = agent,
+        is_primary = false,
+        parent = primary_name,
+        entry_type = "agent"
+      })
+    end
+
+    -- Add primary command after dependents and agents
     local display_name = primary_command.is_local and ("* " .. primary_name) or ("  " .. primary_name)
     table.insert(entries, {
       name = primary_name,
@@ -94,7 +198,58 @@ local function create_picker_entries(structure)
         primary_command.description or ""
       ),
       command = primary_command,
-      is_primary = true
+      is_primary = true,
+      entry_type = "command"
+    })
+  end
+
+  -- Add hook events and their hooks
+  local hook_events = structure.hook_events or {}
+  local hooks = structure.hooks or {}
+
+  -- Sort hook event names
+  local sorted_event_names = {}
+  for event_name, _ in pairs(hook_events) do
+    table.insert(sorted_event_names, event_name)
+  end
+  table.sort(sorted_event_names)
+
+  for _, event_name in ipairs(sorted_event_names) do
+    local event_hook_names = hook_events[event_name]
+
+    -- Get full hook data for this event
+    local event_hooks = {}
+    for _, hook_name in ipairs(event_hook_names) do
+      for _, hook in ipairs(hooks) do
+        if hook.name == hook_name then
+          table.insert(event_hooks, hook)
+          break
+        end
+      end
+    end
+
+    -- Add individual hooks first
+    for i, hook in ipairs(event_hooks) do
+      local is_last = (i == #event_hooks)
+      local indent_char = is_last and "└─" or "├─"
+
+      table.insert(entries, {
+        name = hook.name,
+        display = format_hook(hook, indent_char),
+        hook = hook,
+        is_primary = false,
+        parent = event_name,
+        entry_type = "hook"
+      })
+    end
+
+    -- Add hook event header
+    table.insert(entries, {
+      name = event_name,
+      display = format_hook_event(event_name),
+      is_primary = true,
+      entry_type = "hook_event",
+      hooks = event_hooks
     })
   end
 
@@ -836,8 +991,8 @@ function M.show_commands_picker(opts)
   opts = opts or {}
   local notify = require('neotex.util.notifications')
 
-  -- Get command structure
-  local structure = parser.get_command_structure()
+  -- Get extended structure (commands + agents + hooks)
+  local structure = parser.get_extended_structure()
 
   if vim.tbl_count(structure.primary_commands) == 0 then
     notify.editor(
