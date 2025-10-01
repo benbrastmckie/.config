@@ -21,6 +21,83 @@ If no plan file is provided, I will:
 3. Resume from the first incomplete phase
 4. If all recent plans are complete, show a list to choose from
 
+## Standards Discovery and Application
+
+Before implementing, I'll discover and apply project standards from CLAUDE.md:
+
+### Discovery Process
+1. **Locate CLAUDE.md**: Search upward from working directory and target directories
+2. **Check Subdirectory Standards**: Look for directory-specific CLAUDE.md files
+3. **Parse Relevant Sections**: Extract Code Standards, Testing Protocols
+4. **Handle Missing Standards**: Fall back to language-specific defaults
+
+### Standards Sections Used
+- **Code Standards**: Indentation, line length, naming conventions, error handling
+- **Testing Protocols**: Test commands, patterns, coverage requirements
+- **Documentation Policy**: Documentation requirements for new code
+- **Standards Discovery**: Discovery method, inheritance rules, fallback behavior
+
+### Application During Implementation
+Standards influence implementation as follows:
+
+#### Code Generation
+- **Indentation**: Generated code matches CLAUDE.md indentation spec (e.g., 2 spaces)
+- **Line Length**: Keep lines within specified limit (e.g., ~100 characters)
+- **Naming**: Follow naming conventions (e.g., snake_case vs camelCase)
+- **Error Handling**: Use specified error handling patterns (e.g., pcall for Lua)
+- **Module Organization**: Follow project structure patterns
+
+#### Testing
+- **Test Commands**: Use test commands from Testing Protocols (e.g., `:TestSuite`)
+- **Test Patterns**: Create test files matching patterns (e.g., `*_spec.lua`)
+- **Coverage**: Aim for coverage requirements from standards
+
+#### Documentation
+- **Inline Comments**: Document complex logic
+- **Module Headers**: Add purpose and API documentation
+- **README Updates**: Follow Documentation Policy requirements
+
+### Compliance Verification
+Before marking each phase complete and committing:
+- [ ] Code style matches CLAUDE.md specifications (indentation, line length)
+- [ ] Naming follows project conventions
+- [ ] Error handling matches project patterns
+- [ ] Tests follow testing standards and pass
+- [ ] Documentation meets policy requirements (if new modules created)
+
+### Fallback Behavior
+When CLAUDE.md not found or incomplete:
+1. **Use Language Defaults**: Apply sensible language-specific conventions
+2. **Suggest Creation**: Recommend running `/setup` to create CLAUDE.md
+3. **Graceful Degradation**: Continue with reduced standards enforcement
+4. **Document Limitations**: Note in commit message which standards were uncertain
+
+### Example: Standards Application
+
+```lua
+-- From CLAUDE.md Code Standards:
+-- Indentation: 2 spaces, expandtab
+-- Naming: snake_case for variables/functions
+-- Error Handling: Use pcall for operations that might fail
+
+local function process_user_data(user_id)  -- snake_case naming
+  local status, result = pcall(function()  -- pcall error handling
+    local data = database.query({          -- 2-space indentation
+      id = user_id,
+      fields = {"name", "email"}
+    })
+    return data
+  end)
+
+  if not status then                       -- error handling pattern
+    print("Error: " .. result)
+    return nil
+  end
+
+  return result
+end
+```
+
 ## Process
 
 Let me first locate the implementation plan:
@@ -28,18 +105,23 @@ Let me first locate the implementation plan:
 1. **Parse the plan** to identify:
    - Phases and tasks
    - Referenced research reports (if any)
-   - Standards file path
-2. **Check for research reports**:
+   - Standards file path (if captured in plan metadata)
+2. **Discover and load standards**:
+   - Find CLAUDE.md files (working directory and subdirectories)
+   - Extract Code Standards, Testing Protocols, Documentation Policy
+   - Note standards for application during implementation
+3. **Check for research reports**:
    - Extract report paths from plan metadata
    - Note reports for summary generation
-3. **For each phase**:
+4. **For each phase**:
    - Display the phase name and tasks
-   - Implement the required changes
-   - Run tests to verify the implementation
+   - Implement changes following discovered standards
+   - Run tests using standards-defined test commands
+   - Verify compliance with standards before completing
    - Update the plan file with completion markers
    - Create a git commit with a structured message
    - Move to the next phase
-4. **After all phases complete**:
+5. **After all phases complete**:
    - Generate implementation summary
    - Update referenced reports if needed
    - Link plan and reports in summary
@@ -189,5 +271,53 @@ I'll use the specified plan file directly and:
 - **Complete Plan**: Contains `## ✅ IMPLEMENTATION COMPLETE` or all phases marked `[COMPLETED]`
 - **Incomplete Phase**: Phase heading without `[COMPLETED]` marker
 - **Incomplete Task**: Checklist item with `- [ ]` instead of `- [x]`
+
+## Integration with Other Commands
+
+### Standards Flow
+This command is part of the standards enforcement pipeline:
+
+1. `/report` - Researches topic (no standards needed)
+2. `/plan` - Discovers and captures standards in plan metadata
+3. `/implement` - **Applies standards during code generation** (← YOU ARE HERE)
+4. `/test` - Verifies implementation using standards-defined test commands
+5. `/document` - Creates documentation following standards format
+6. `/refactor` - Validates code against standards
+
+### How /implement Uses Standards
+
+#### From /plan
+- Reads captured standards file path from plan metadata
+- Uses plan's documented test commands and coding style
+
+#### Applied During Implementation
+- **Code generation**: Follows Code Standards (indentation, naming, error handling)
+- **Test execution**: Uses Testing Protocols (test commands, patterns)
+- **Documentation**: Creates docs per Documentation Policy
+
+#### Verified Before Commit
+- Standards compliance checked before marking phase complete
+- Commit message notes which standards were applied
+
+### Example Flow
+```
+User runs: /plan "Add authentication"
+  ↓
+/plan discovers CLAUDE.md:
+  - Code Standards: snake_case, 2 spaces, pcall
+  - Testing: :TestSuite
+  ↓
+Plan metadata captures: Standards File: CLAUDE.md
+  ↓
+User runs: /implement auth_plan.md
+  ↓
+/implement discovers CLAUDE.md + reads plan:
+  - Confirms standards
+  - Applies during generation
+  - Tests with :TestSuite
+  - Verifies compliance
+  ↓
+Generated code follows standards automatically
+```
 
 Let me start by finding your implementation plan.
