@@ -215,4 +215,86 @@ function M.reload_registry()
   agent_cache = build_agent_registry()
 end
 
+---Get agent tools list
+---@param name string Agent name
+---@return string[]|nil List of allowed tools or nil if agent not found
+function M.get_agent_tools(name)
+  local agent = M.get_agent(name)
+  if not agent then
+    return nil
+  end
+  return agent.allowed_tools
+end
+
+---Get agent metadata without full prompt
+---@param name string Agent name
+---@return table|nil Agent info (name, description, allowed_tools, filepath) or nil
+function M.get_agent_info(name)
+  local agent = M.get_agent(name)
+  if not agent then
+    return nil
+  end
+
+  return {
+    name = agent.name,
+    description = agent.description,
+    allowed_tools = agent.allowed_tools,
+    filepath = agent.filepath,
+  }
+end
+
+---Format a task prompt by combining agent system prompt with task description and context
+---@param agent_name string Name of the agent to use
+---@param task_description string Brief description of the task
+---@param context string|nil Optional additional context for the task
+---@return string|nil Formatted prompt or nil if agent not found
+function M.format_task_prompt(agent_name, task_description, context)
+  local agent = M.get_agent(agent_name)
+  if not agent then
+    return nil
+  end
+
+  local prompt_parts = {
+    agent.system_prompt,
+    "",
+    "Task: " .. task_description,
+  }
+
+  if context and context ~= "" then
+    table.insert(prompt_parts, "")
+    table.insert(prompt_parts, "Context:")
+    table.insert(prompt_parts, context)
+  end
+
+  return table.concat(prompt_parts, "\n")
+end
+
+---Create a complete task configuration for use with Task tool
+---@param agent_name string Name of the agent to use
+---@param task_description string Brief description of the task (will be used for description field)
+---@param context string|nil Optional additional context for the task
+---@return table|nil Task config {subagent_type, description, prompt} or nil if agent not found
+function M.create_task_config(agent_name, task_description, context)
+  local prompt = M.format_task_prompt(agent_name, task_description, context)
+  if not prompt then
+    return nil
+  end
+
+  -- Generate 3-5 word description from task_description
+  local words = {}
+  for word in task_description:gmatch("%S+") do
+    table.insert(words, word)
+    if #words >= 5 then
+      break
+    end
+  end
+  local short_description = table.concat(words, " ")
+
+  return {
+    subagent_type = "general-purpose",
+    description = short_description,
+    prompt = prompt,
+  }
+end
+
 return M
