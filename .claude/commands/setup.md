@@ -402,6 +402,113 @@ Rationale: _______________
 [Steps to reconcile standards]
 ```
 
+#### Discrepancy Detection Algorithms
+
+For each detected discrepancy, I'll apply these algorithms:
+
+**Type 1: Documented but Not Followed**
+```
+Algorithm:
+1. Parse CLAUDE.md for standard values (e.g., "Indentation: 2 spaces")
+2. Analyze codebase and detect actual patterns
+3. Compare: If documented ≠ actual AND confidence > 50%
+   → Report Type 1 discrepancy with priority = CRITICAL
+
+Example:
+  CLAUDE.md: "Indentation: 2 spaces"
+  Detected: 4 spaces (85% confidence in 47/50 files)
+  Result: Type 1 discrepancy (CRITICAL)
+```
+
+**Type 2: Followed but Not Documented**
+```
+Algorithm:
+1. Detect consistent patterns in codebase (confidence > 70%)
+2. Check if pattern is documented in CLAUDE.md
+3. If pattern exists AND not documented
+   → Report Type 2 discrepancy with priority = HIGH
+
+Example:
+  Detected: pcall() error handling (92% of error-prone operations)
+  CLAUDE.md: No error handling field
+  Result: Type 2 discrepancy (HIGH)
+```
+
+**Type 3: Configuration Mismatches**
+```
+Algorithm:
+1. Parse configuration files for standards values
+2. Parse CLAUDE.md for same standards
+3. If config_value ≠ claude_md_value
+   → Report Type 3 discrepancy with priority = HIGH
+
+Example:
+  .editorconfig: indent_size = 4
+  CLAUDE.md: "Indentation: 2 spaces"
+  Result: Type 3 discrepancy (HIGH)
+```
+
+**Type 4: Missing Sections**
+```
+Algorithm:
+1. Define required sections: [Code Standards, Testing Protocols, Documentation Policy, Standards Discovery]
+2. Parse CLAUDE.md to check which sections exist
+3. For each missing required section
+   → Report Type 4 gap with priority = MEDIUM
+
+Example:
+  Required: "Testing Protocols" section
+  CLAUDE.md: Section not found
+  Result: Type 4 gap (MEDIUM)
+```
+
+**Type 5: Incomplete Sections**
+```
+Algorithm:
+1. Define required fields for each section:
+   - Code Standards: Indentation, Line Length, Naming, Error Handling
+   - Testing Protocols: Test Commands, Test Pattern, Coverage Requirements
+2. Parse existing sections in CLAUDE.md
+3. For each section, check if all required fields present
+4. If field missing
+   → Report Type 5 gap with priority = MEDIUM
+
+Example:
+  Section exists: "Code Standards"
+  Fields present: Indentation, Naming
+  Fields missing: Error Handling, Line Length
+  Result: Type 5 gaps (MEDIUM) x2
+```
+
+#### Gap Identification and Mapping
+
+For each identified gap, I'll suggest fill values from detected patterns:
+
+```
+Gap: Error Handling field missing in Code Standards
+     ↓
+Search codebase for error handling patterns
+     ↓
+Detected: pcall() in 45/48 Lua files (94% confidence)
+     ↓
+Suggested fill: "Error Handling: Use pcall for operations that might fail"
+     ↓
+Add to report with [FILL IN: Error Handling] marker
+```
+
+#### Prioritization Logic
+
+Discrepancies and gaps are prioritized:
+
+| Priority | Conditions | Example |
+|----------|-----------|---------|
+| CRITICAL | Type 1 AND confidence > 80% | Doc says 2 spaces, 90% of files use 4 |
+| HIGH | Type 2 OR Type 3 | Undocumented pcall pattern OR config mismatch |
+| MEDIUM | Type 4 OR Type 5 | Missing Testing Protocols section |
+| LOW | Type 1 AND confidence < 50% | Weak pattern, manual review needed |
+
+Report sections are ordered by priority (CRITICAL first).
+
 #### Analysis Workflow
 
 ```
