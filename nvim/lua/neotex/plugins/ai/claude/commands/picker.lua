@@ -297,13 +297,7 @@ local function send_command_to_terminal(command)
     -- Pass flag to ensure Claude Code opens if needed
     ensure_open = true,
     -- Removed auto_focus - queue_command() already calls focus_terminal()
-    notification = function()
-      notify.editor(
-        string.format("Inserted '%s' into Claude Code", command_text),
-        notify.categories.USER_ACTION,
-        { command = command_text, hint = command.argument_hint or "none" }
-      )
-    end
+    -- Removed notification - user doesn't need confirmation for picker selections
   })
 end
 
