@@ -1,7 +1,7 @@
 ---
 allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
-argument-hint: [project-directory]
-description: Setup or improve CLAUDE.md with smart extraction of sections into linked auxiliary files
+argument-hint: [project-directory] [--analyze] [--apply-report <report-path>]
+description: Setup or improve CLAUDE.md with smart extraction, standards analysis, and report-driven updates
 command-type: primary
 dependent-commands: validate-setup
 ---
@@ -10,8 +10,72 @@ dependent-commands: validate-setup
 
 I'll create or improve the CLAUDE.md file by intelligently organizing content - keeping it concise by extracting detailed sections into auxiliary files when appropriate.
 
+## Command Modes
+
+### 1. Standard Mode (default)
+Generate or update CLAUDE.md with smart section extraction.
+
+**Usage**: `/setup [project-directory]`
+
+### 2. Analysis Mode
+Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, generating a comprehensive analysis report.
+
+**Usage**: `/setup --analyze [project-directory]`
+
+**Features**:
+- Discovers standards from three sources: CLAUDE.md, codebase patterns, configuration files
+- Detects 5 types of discrepancies
+- Identifies missing or incomplete sections
+- Generates interactive gap-filling report in specs/reports/
+- Never modifies files (safe exploration)
+
+### 3. Report Application Mode
+Parse a completed analysis report and update CLAUDE.md with reconciled standards.
+
+**Usage**: `/setup --apply-report <report-path> [project-directory]`
+
+**Features**:
+- Parses completed `[FILL IN: ...]` sections from analysis reports
+- Creates backup before modifying CLAUDE.md
+- Updates standards based on user decisions
+- Validates generated CLAUDE.md structure
+- Suggests running /validate-setup
+
 ## Target Directory
 $1 (or current directory)
+
+## Argument Parsing
+
+I'll detect the mode based on arguments:
+
+### Standard Mode
+- No flags: `/setup` or `/setup /path/to/project`
+- Behavior: Generate or update CLAUDE.md with extraction workflow
+
+### Analysis Mode
+- `--analyze` flag present: `/setup --analyze` or `/setup --analyze /path/to/project`
+- Arguments can be in any order: `/setup --analyze` or `/setup /path --analyze`
+- Behavior: Run standards analysis, generate report, never modify CLAUDE.md
+
+### Report Application Mode
+- `--apply-report <path>` flag present: `/setup --apply-report specs/reports/NNN_report.md`
+- Can include directory: `/setup --apply-report report.md /path/to/project`
+- Arguments can be in any order
+- Behavior: Parse report, backup CLAUDE.md, update with reconciled standards
+
+### Implementation Logic
+```
+if "--apply-report" in arguments:
+    report_path = argument after "--apply-report"
+    project_dir = remaining non-flag argument or current directory
+    run report_application_mode(report_path, project_dir)
+elif "--analyze" in arguments:
+    project_dir = remaining non-flag argument or current directory
+    run analysis_mode(project_dir)
+else:
+    project_dir = $1 or current directory
+    run standard_mode(project_dir)
+```
 
 ## Standards for Commands
 
@@ -232,6 +296,228 @@ Extraction opportunities:
 After extraction: CLAUDE.md would be 95 lines (62% reduction)
 
 Proceed with extractions? [Y/n/customize]
+```
+
+## Standards Analysis Workflow
+
+### Analysis Mode (--analyze)
+
+#### What Gets Analyzed
+
+**Three Sources of Truth**:
+1. **CLAUDE.md** (documented standards)
+   - Parse all sections with `[Used by: ...]` metadata
+   - Extract field values (indentation, naming, test commands, etc.)
+
+2. **Codebase** (actual patterns)
+   - **Indentation**: Detect spaces vs tabs, count spaces
+   - **Naming**: Analyze variable/function naming conventions
+   - **Line Length**: Measure common line lengths
+   - **Test Patterns**: Find test file naming patterns
+   - **Error Handling**: Detect pcall, try-catch, error handling patterns
+
+3. **Configuration Files**
+   - `.editorconfig`: Indentation, line length, charset
+   - `package.json`: Scripts, lint config, test commands
+   - `pyproject.toml`: Tool configuration
+   - `stylua.toml`, `.prettierrc`, `.eslintrc`: Formatting rules
+   - `Makefile`: Build and test targets
+
+#### Discrepancy Types Detected
+
+| Type | Description | Example | Priority |
+|------|-------------|---------|----------|
+| Type 1 | Documented but not followed | CLAUDE.md: 2 spaces, Code: 4 spaces | Critical |
+| Type 2 | Followed but not documented | Code uses pcall, not in CLAUDE.md | High |
+| Type 3 | Configuration mismatch | .editorconfig ≠ CLAUDE.md | High |
+| Type 4 | Missing section | No Testing Protocols section | Medium |
+| Type 5 | Incomplete section | Code Standards missing Error Handling | Medium |
+
+#### Confidence Scoring
+
+Pattern detection includes confidence scores:
+- **High (>80%)**: Consistent across 80%+ of sampled files
+- **Medium (50-80%)**: Majority pattern but some variation
+- **Low (<50%)**: No clear consensus, manual review needed
+
+#### Generated Report Structure
+
+```markdown
+# Standards Analysis Report
+
+## Metadata
+- Analysis Date, Scope, Files Analyzed
+
+## Executive Summary
+- X discrepancies found
+- Y gaps identified
+- Z recommendations
+
+## Current State
+### Documented Standards (CLAUDE.md)
+[Parsed values]
+
+### Actual Standards (Codebase)
+[Detected patterns with confidence scores]
+
+### Configuration Files
+[Parsed config values]
+
+## Discrepancy Analysis
+### Type 1: Documented but Not Followed
+[List of violations]
+
+### Type 2: Followed but Not Documented
+[Undocumented patterns]
+
+### Type 3: Configuration Mismatches
+[Config conflicts]
+
+### Type 4: Missing Sections
+[Required sections not present]
+
+### Type 5: Incomplete Sections
+[Sections with missing fields]
+
+## Interactive Gap Filling
+[FILL IN: Indentation]
+Detected: 4 spaces (85% confidence)
+CLAUDE.md: 2 spaces
+.editorconfig: 4 spaces
+
+Decision: _______________
+Rationale: _______________
+
+[FILL IN: Error Handling]
+Detected: pcall usage in 92% of files
+CLAUDE.md: Not documented
+
+Decision: _______________
+Rationale: _______________
+
+## Recommendations
+[Prioritized action items]
+
+## Implementation Plan
+[Steps to reconcile standards]
+```
+
+#### Analysis Workflow
+
+```
+User runs: /setup --analyze
+     ↓
+1. Discover Standards
+   - Parse CLAUDE.md
+   - Analyze codebase patterns (sample representative files)
+   - Parse configuration files
+     ↓
+2. Detect Discrepancies
+   - Compare documented vs actual
+   - Compare actual vs config
+   - Identify missing/incomplete sections
+     ↓
+3. Generate Report
+   - Format findings
+   - Add [FILL IN: ...] markers for gaps
+   - Include detected patterns to help decision
+   - Save to specs/reports/NNN_standards_analysis_report.md
+     ↓
+4. User Reviews Report
+   - Reads analysis
+   - Fills in [FILL IN: ...] sections
+   - Makes decisions on discrepancies
+```
+
+### Report Application Mode (--apply-report)
+
+#### What Gets Applied
+
+The command parses the completed analysis report for:
+
+1. **Filled Gap Markers**: `[FILL IN: ...]` sections with user decisions
+2. **Reconciliation Choices**: User selections for handling discrepancies
+3. **Standard Values**: Explicit values for indentation, naming, etc.
+
+#### Application Process
+
+```
+User runs: /setup --apply-report specs/reports/NNN_report.md
+     ↓
+1. Parse Report
+   - Extract all [FILL IN: ...] sections
+   - Validate that critical gaps are filled
+   - Parse user decisions
+     ↓
+2. Backup Existing CLAUDE.md
+   - Create CLAUDE.md.backup.TIMESTAMP
+   - Preserve original for rollback
+     ↓
+3. Generate/Update CLAUDE.md
+   - Merge detected patterns with user decisions
+   - Ensure all sections have [Used by: ...] metadata
+   - Follow established schema
+   - Preserve unaffected sections
+     ↓
+4. Validate Structure
+   - Check parseability
+   - Verify required sections present
+   - Confirm metadata format
+     ↓
+5. Report Results
+   - Summary of changes made
+   - Backup location
+   - Suggest: /validate-setup
+```
+
+#### Safety Features
+
+- **Always Creates Backup**: Original CLAUDE.md preserved
+- **Validation Before Write**: Checks structure before overwriting
+- **Partial Application**: Skips unfilled gaps, applies only completed ones
+- **Rollback Available**: Backup can be restored if needed
+
+#### Example Application
+
+```bash
+# Generate analysis
+/setup --analyze
+
+# Edit the generated report
+# Fill in [FILL IN: ...] sections
+
+# Apply the completed report
+/setup --apply-report specs/reports/034_standards_analysis_report.md
+
+# Output:
+# Backup created: CLAUDE.md.backup.20251001_143022
+# Updated sections:
+#   - Code Standards: Updated indentation (2 → 4 spaces)
+#   - Code Standards: Added error handling (pcall)
+#   - Testing Protocols: Updated test command
+#
+# Validation: Passed
+#
+# Suggested next step: /validate-setup
+```
+
+### Complete Standards Lifecycle
+
+```
+1. /setup --analyze
+   → Generates analysis report with gaps
+
+2. User edits report
+   → Fills [FILL IN: ...] sections
+
+3. /setup --apply-report <report>
+   → Updates CLAUDE.md from report
+
+4. /validate-setup
+   → Confirms standards are parseable
+
+5. Other commands use updated standards
+   → /implement, /test, /refactor, etc.
 ```
 
 ## Integration with Other Commands
