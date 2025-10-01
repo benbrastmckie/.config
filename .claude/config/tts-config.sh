@@ -48,6 +48,10 @@ TTS_DEFAULT_SPEED=160
 # Triggered when Claude completes a response and is ready for input
 TTS_COMPLETION_ENABLED=true
 
+# Commands that don't require TTS notifications (space-separated list)
+# These are typically informational commands that don't leave Claude waiting for input
+TTS_SILENT_COMMANDS="/clear /help /version /status /list /list-plans /list-reports /list-summaries"
+
 # Permission Requests (Notification hook - tool permission)
 # Triggered when Claude needs permission to use a tool
 TTS_PERMISSION_ENABLED=true

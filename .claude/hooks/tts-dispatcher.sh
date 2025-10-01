@@ -267,6 +267,40 @@ speak_message() {
 }
 
 # ============================================================================
+# Silent Command Check
+# ============================================================================
+
+# Check if current command should be silent (no TTS)
+# Returns: 0 if should be silent, 1 otherwise
+is_silent_command() {
+  local command="${CLAUDE_COMMAND:-}"
+
+  # If no command set, don't silence
+  if [[ -z "$command" ]]; then
+    return 1
+  fi
+
+  # Check if command is in silent list
+  local silent_commands="${TTS_SILENT_COMMANDS:-}"
+  if [[ -z "$silent_commands" ]]; then
+    return 1
+  fi
+
+  # Normalize command (strip leading /)
+  local normalized_command="${command#/}"
+
+  # Check each silent command
+  for silent_cmd in $silent_commands; do
+    local normalized_silent="${silent_cmd#/}"
+    if [[ "$normalized_command" == "$normalized_silent" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# ============================================================================
 # Main Dispatcher Logic
 # ============================================================================
 
@@ -274,6 +308,11 @@ main() {
   # Detect notification category
   local category
   category=$(detect_category)
+
+  # For completion category, check if command should be silent
+  if [[ "$category" == "completion" ]] && is_silent_command; then
+    exit 0  # Silent command, no TTS
+  fi
 
   # Check if category is enabled
   if ! is_category_enabled "$category"; then
