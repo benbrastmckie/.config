@@ -13,9 +13,18 @@ I'll create or improve the CLAUDE.md file by intelligently organizing content - 
 ## Command Modes
 
 ### 1. Standard Mode (default)
-Generate or update CLAUDE.md with smart section extraction.
+Generate or update CLAUDE.md with smart section extraction. Automatically detects bloated CLAUDE.md and offers cleanup.
 
 **Usage**: `/setup [project-directory]`
+
+**Auto-Detection**:
+- Analyzes existing CLAUDE.md size and structure
+- If CLAUDE.md >200 lines OR has sections >30 lines:
+  - Prompts: "CLAUDE.md is 248 lines. Optimize first? [Y/n/c]"
+  - [Y]es: Run cleanup extraction before setup
+  - [N]o: Skip cleanup, continue with standard setup
+  - [C]ustomize: Choose specific sections to extract
+- Seamlessly integrates cleanup into setup workflow
 
 ### 2. Cleanup Mode
 Optimize CLAUDE.md by extracting detailed sections to auxiliary files, keeping the main file concise and focused.
@@ -396,6 +405,154 @@ User runs: /setup --cleanup
    - Report final line count
      ↓
 Done: Optimized CLAUDE.md
+```
+
+## Bloat Detection Algorithm
+
+### When Detection Runs
+
+Auto-detection runs in **Standard Mode** when:
+- User runs `/setup` (no flags)
+- CLAUDE.md file exists in project directory
+
+### Detection Thresholds
+
+**Threshold 1: Total Line Count**
+```
+if CLAUDE.md total_lines > 200:
+    bloat_detected = True
+    reason = f"File is {total_lines} lines (threshold: 200)"
+```
+
+**Threshold 2: Oversized Sections**
+```
+for section in CLAUDE.md.sections:
+    if section.line_count > 30:
+        bloat_detected = True
+        oversized_sections.append(section)
+        reason = f"Section '{section.name}' is {section.line_count} lines (threshold: 30)"
+```
+
+**Combined Logic**:
+```
+bloat_detected = (total_lines > 200) OR (any section > 30 lines)
+```
+
+### Interactive Prompt
+
+When bloat is detected:
+
+```
+┌─────────────────────────────────────────────────────┐
+│ CLAUDE.md Optimization Opportunity                  │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  CLAUDE.md is 248 lines (threshold: 200 lines)     │
+│                                                     │
+│  Oversized sections detected:                       │
+│  • Testing Standards (52 lines)                     │
+│  • Code Style Guide (38 lines)                      │
+│  • Architecture Diagram (44 lines)                  │
+│                                                     │
+│  Optimize before continuing with setup?             │
+│                                                     │
+│  [Y]es - Extract sections now (recommended)         │
+│  [N]o  - Skip optimization, continue setup          │
+│  [C]ustomize - Choose specific sections             │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+Your choice:
+```
+
+### User Response Handling
+
+**[Y]es - Run Optimization**:
+```
+1. Run cleanup extraction (same as /setup --cleanup)
+2. User selects what to extract interactively
+3. Create auxiliary files
+4. Update CLAUDE.md with links
+5. Report: "Optimized CLAUDE.md: 248 → 156 lines (37% reduction)"
+6. Continue with standard setup
+```
+
+**[N]o - Skip Optimization**:
+```
+1. Log: "Skipping CLAUDE.md optimization (user declined)"
+2. Continue with standard setup
+3. (User can run /setup --cleanup later if needed)
+```
+
+**[C]ustomize - Custom Selection**:
+```
+1. Show all oversized sections
+2. User checks/unchecks each section
+3. Extract only selected sections
+4. Continue with standard setup
+```
+
+### Opt-Out Mechanisms
+
+**Environment Variable**:
+```bash
+# Disable auto-detection globally
+export SKIP_CLEANUP_PROMPT=1
+/setup
+```
+
+**Command Flag**:
+```bash
+# Disable for single invocation
+/setup --no-cleanup-prompt
+```
+
+**Configuration File** (future enhancement):
+```yaml
+# .claude/config.yml
+cleanup:
+  auto_detect: false
+  threshold_lines: 250
+  threshold_section: 40
+```
+
+### State Preservation
+
+After cleanup (if accepted):
+- Original setup goal continues
+- Extraction changes are committed
+- Logging shows: "Phase 1: Cleanup → Phase 2: Setup"
+- User sees both cleanup and setup results
+
+### Example Flow
+
+```
+User runs: /setup
+     ↓
+Analyze CLAUDE.md:
+  - 248 lines total ✗ (>200)
+  - Testing Standards: 52 lines ✗ (>30)
+  - Code Style: 38 lines ✗ (>30)
+     ↓
+Bloat detected: True
+     ↓
+Prompt user: "Optimize first? [Y/n/c]"
+     ↓
+User chooses [Y]es
+     ↓
+Run cleanup extraction:
+  - Extract Testing Standards → docs/TESTING.md
+  - Extract Code Style → docs/CODE_STYLE.md
+  - Update CLAUDE.md with links
+     ↓
+Report: "Optimized CLAUDE.md: 248 → 156 lines"
+     ↓
+Continue standard setup:
+  - Generate standards
+  - Validate structure
+  - Complete setup
+     ↓
+Done: Setup complete (with cleanup)
 ```
 
 ## Standards Analysis Workflow
