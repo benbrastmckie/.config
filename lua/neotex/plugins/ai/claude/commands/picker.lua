@@ -171,11 +171,13 @@ local function create_picker_entries(structure)
     local total_items = #dependents + #command_agents
 
     -- Add dependent commands first
-    -- With descending sort: first inserted = last displayed
+    -- With descending display: first inserted = last displayed (bottom)
     for i, dependent in ipairs(dependents) do
-      -- First dependent (i=1) appears LAST visually, so it gets └─ only if no agents follow
+      -- Dependents are inserted FIRST, so they appear at BOTTOM of tree
+      -- First dependent (i=1) appears at absolute BOTTOM → always gets └─
+      -- Later dependents (i>1) appear above first → get ├─
       local is_first = (i == 1)
-      local indent_char = (is_first and #command_agents == 0) and "└─" or "├─"
+      local indent_char = is_first and "└─" or "├─"
 
       table.insert(entries, {
         name = dependent.name,
@@ -196,10 +198,14 @@ local function create_picker_entries(structure)
     -- Add agents for this command (sorted alphabetically ascending)
     -- With descending display: first inserted (i=1) appears at BOTTOM
     for i, agent in ipairs(command_agents) do
-      -- Last in array (i==#agents, alphabetically last) appears at TOP → gets ├─
-      -- First in array (i==1, alphabetically first) appears at BOTTOM → gets └─
-      local is_last = (i == #command_agents)
-      local indent_char = is_last and "├─" or "└─"
+      -- First agent (i==1) appears at BOTTOM
+      -- If there are dependents, first agent is NOT the last item overall
+      -- First agent (i=1) + no dependents → gets └─
+      -- First agent (i=1) + has dependents → gets ├─ (dependents appear below)
+      -- Later agents (i>1) → get ├─ (more items below)
+      local is_first = (i == 1)
+      local is_last_item = (is_first and #dependents == 0)
+      local indent_char = is_last_item and "└─" or "├─"
 
       table.insert(entries, {
         name = agent.name,
