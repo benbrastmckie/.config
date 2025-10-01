@@ -121,11 +121,27 @@ function M.queue_command(command_text, opts)
     opts = opts
   })
 
+  vim.notify(
+    string.format("[DEBUG] queue_command: Added '%s' to queue (total: %d)", command_text, #pending_commands),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   local claude_buf = M.find_claude_terminal()
 
   if not claude_buf then
     -- No terminal exists
+    vim.notify(
+      "[DEBUG] queue_command: No terminal exists",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     if opts.ensure_open then
+      vim.notify(
+        "[DEBUG] queue_command: Opening ClaudeCode",
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
       vim.cmd('ClaudeCode')  -- SessionStart hook will call on_claude_ready()
     end
     -- Queue will be flushed by hook or TextChanged fallback
@@ -136,19 +152,46 @@ function M.queue_command(command_text, opts)
   local wins = vim.fn.win_findbuf(claude_buf)
   local needs_reopen = (#wins == 0)
 
+  vim.notify(
+    string.format("[DEBUG] queue_command: Terminal exists (buf=%d, wins=%d, needs_reopen=%s)",
+      claude_buf, #wins, needs_reopen),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   -- Focus terminal (might trigger async window open)
   M.focus_terminal(claude_buf)
 
   -- Smart delay based on pre-check state
   if needs_reopen then
     -- Window was closed, needs time to reopen and settle
+    vim.notify(
+      "[DEBUG] queue_command: Scheduling flush in 150ms (window needs reopen)",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     vim.defer_fn(function()
+      vim.notify(
+        "[DEBUG] queue_command: Executing deferred flush (150ms elapsed)",
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
       M.flush_queue(claude_buf)
     end, 150)  -- Increased from 100ms for reliability
   else
     -- Window already visible, flush after current event loop completes
     -- This ensures mode changes from focus_terminal() complete
+    vim.notify(
+      "[DEBUG] queue_command: Scheduling flush via vim.schedule (window visible)",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     vim.schedule(function()
+      vim.notify(
+        "[DEBUG] queue_command: Executing scheduled flush",
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
       M.flush_queue(claude_buf)
     end)
   end
@@ -159,15 +202,45 @@ end
 --- @param claude_buf number Terminal buffer handle
 function M.flush_queue(claude_buf)
   if not vim.api.nvim_buf_is_valid(claude_buf) then
+    vim.notify(
+      "[DEBUG] flush_queue: Buffer invalid",
+      vim.log.levels.WARN,
+      { title = "Claude Debug" }
+    )
     return
   end
+
+  vim.notify(
+    string.format("[DEBUG] flush_queue: Starting flush, queue size=%d", #pending_commands),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
+  local current_mode = vim.api.nvim_get_mode().mode
+  vim.notify(
+    string.format("[DEBUG] flush_queue: Current mode before flushing: %s", current_mode),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
 
   while #pending_commands > 0 do
     local cmd = table.remove(pending_commands, 1)
 
+    vim.notify(
+      string.format("[DEBUG] flush_queue: Processing command '%s'", cmd.text),
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
+
     -- Check if command is still fresh (< 30 seconds old)
     if os.time() - cmd.timestamp < 30 then
       local success, err = M.send_to_terminal(claude_buf, cmd.text, cmd.opts)
+
+      vim.notify(
+        string.format("[DEBUG] flush_queue: send_to_terminal result: success=%s, err=%s", success, err or "nil"),
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
 
       -- Execute notification callback if provided
       if success and cmd.opts.notification then
@@ -182,6 +255,14 @@ function M.flush_queue(claude_buf)
       )
     end
   end
+
+  local mode_after_flush = vim.api.nvim_get_mode().mode
+  vim.notify(
+    string.format("[DEBUG] flush_queue: Flush complete, mode=%s, queue size=%d",
+      mode_after_flush, #pending_commands),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
 end
 
 --- Called by SessionStart hook when Claude is ready
@@ -189,10 +270,28 @@ end
 --- Hook script: ~/.config/nvim/scripts/claude-ready-signal.sh
 --- @see ~/.claude/settings.json for hook configuration
 function M.on_claude_ready()
+  vim.notify(
+    string.format("[DEBUG] on_claude_ready: Called, queue size=%d", #pending_commands),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   state = M.State.READY
 
   local claude_buf = M.find_claude_terminal()
+  vim.notify(
+    string.format("[DEBUG] on_claude_ready: claude_buf=%s, queue size=%d",
+      claude_buf or "nil", #pending_commands),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   if claude_buf and #pending_commands > 0 then
+    vim.notify(
+      "[DEBUG] on_claude_ready: Calling focus_terminal and flush_queue",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     M.focus_terminal(claude_buf)
     M.flush_queue(claude_buf)
   end
@@ -213,17 +312,46 @@ end
 function M.send_to_terminal(claude_buf, command_text, opts)
   opts = opts or {}
 
+  vim.notify(
+    string.format("[DEBUG] send_to_terminal: Sending '%s', auto_focus=%s",
+      command_text, opts.auto_focus or false),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   -- Get terminal job ID
   local ok, job_id = pcall(vim.api.nvim_buf_get_var, claude_buf, 'terminal_job_id')
   if not ok or not job_id then
+    vim.notify(
+      "[DEBUG] send_to_terminal: Failed to get job_id",
+      vim.log.levels.ERROR,
+      { title = "Claude Debug" }
+    )
     return false, "no_job_id"
   end
+
+  vim.notify(
+    string.format("[DEBUG] send_to_terminal: Got job_id=%s, sending via chansend", job_id),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
 
   -- Send command via chansend (without newline unless in text)
   vim.fn.chansend(job_id, command_text)
 
+  vim.notify(
+    "[DEBUG] send_to_terminal: chansend complete",
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   -- Optionally focus terminal and enter insert mode
   if opts.auto_focus then
+    vim.notify(
+      "[DEBUG] send_to_terminal: auto_focus=true, calling focus_terminal",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     M.focus_terminal(claude_buf)
   end
 
@@ -235,34 +363,101 @@ end
 --- @param claude_buf number Terminal buffer handle
 function M.focus_terminal(claude_buf)
   if not vim.api.nvim_buf_is_valid(claude_buf) then
+    vim.notify(
+      "[DEBUG] focus_terminal: Buffer invalid",
+      vim.log.levels.WARN,
+      { title = "Claude Debug" }
+    )
     return
   end
 
   local wins = vim.fn.win_findbuf(claude_buf)
+  local current_mode = vim.api.nvim_get_mode().mode
+
+  vim.notify(
+    string.format("[DEBUG] focus_terminal: buf=%d, wins=%d, mode=%s, state=%s",
+      claude_buf, #wins, current_mode, state),
+    vim.log.levels.INFO,
+    { title = "Claude Debug" }
+  )
+
   if #wins > 0 then
     -- Window exists, focus it
+    vim.notify(
+      string.format("[DEBUG] focus_terminal: Focusing window %d", wins[1]),
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     vim.api.nvim_set_current_win(wins[1])
+
     -- Enter insert mode if currently in normal mode
-    if vim.api.nvim_get_mode().mode == 'n' then
+    local mode_after_focus = vim.api.nvim_get_mode().mode
+    vim.notify(
+      string.format("[DEBUG] focus_terminal: Mode after focus: %s", mode_after_focus),
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
+
+    if mode_after_focus == 'n' then
+      vim.notify(
+        "[DEBUG] focus_terminal: Entering insert mode",
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
       vim.cmd('startinsert!')
+
+      local mode_after_insert = vim.api.nvim_get_mode().mode
+      vim.notify(
+        string.format("[DEBUG] focus_terminal: Mode after startinsert: %s", mode_after_insert),
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
     end
   elseif state ~= M.State.OPENING then
     -- Window doesn't exist but buffer does - reopen Claude Code sidebar
-    -- Only do this if we're not currently in the middle of opening
+    vim.notify(
+      "[DEBUG] focus_terminal: No window, calling ClaudeCode to toggle",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
     vim.cmd('ClaudeCode')
 
     -- Wait for window to appear, then focus
     vim.defer_fn(function()
       local new_wins = vim.fn.win_findbuf(claude_buf)
+      vim.notify(
+        string.format("[DEBUG] focus_terminal: After 50ms, new_wins=%d", #new_wins),
+        vim.log.levels.INFO,
+        { title = "Claude Debug" }
+      )
+
       if #new_wins > 0 then
         vim.api.nvim_set_current_win(new_wins[1])
-        if vim.api.nvim_get_mode().mode == 'n' then
+        local deferred_mode = vim.api.nvim_get_mode().mode
+
+        vim.notify(
+          string.format("[DEBUG] focus_terminal: Deferred focus, mode=%s", deferred_mode),
+          vim.log.levels.INFO,
+          { title = "Claude Debug" }
+        )
+
+        if deferred_mode == 'n' then
+          vim.notify(
+            "[DEBUG] focus_terminal: Deferred entering insert mode",
+            vim.log.levels.INFO,
+            { title = "Claude Debug" }
+          )
           vim.cmd('startinsert!')
         end
       end
     end, 50)
+  else
+    vim.notify(
+      "[DEBUG] focus_terminal: State is OPENING, waiting for window creation",
+      vim.log.levels.INFO,
+      { title = "Claude Debug" }
+    )
   end
-  -- If state == OPENING and no window, just wait - it's being created
 end
 
 --------------------------------------------------------------------------------
