@@ -71,6 +71,16 @@ detect_category() {
   local event="${HOOK_EVENT:-unknown}"
   local status="${CLAUDE_STATUS:-success}"
 
+  # If HOOK_EVENT not set, try to infer from script name or other context
+  if [[ "$event" == "unknown" ]]; then
+    # Check if we're being called from a specific hook by looking at caller
+    local script_name
+    script_name=$(basename "${BASH_SOURCE[1]:-}" 2>/dev/null || echo "")
+
+    # Default to completion for Stop-like behavior
+    event="Stop"
+  fi
+
   case "$event" in
     Stop)
       # Completion or error based on status
@@ -105,7 +115,8 @@ detect_category() {
       echo "compact"
       ;;
     *)
-      echo "unknown"
+      # Default to completion
+      echo "completion"
       ;;
   esac
 }

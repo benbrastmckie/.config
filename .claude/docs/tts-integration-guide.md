@@ -69,11 +69,14 @@ The TTS integration provides voice feedback for all significant Claude Code work
 
 **Voice**: Normal pitch (50), moderate speed (160 wpm)
 
-**Message Pattern**: `"Directory [name]. Branch [branch]. [Summary]. Ready for input."`
+**Message Pattern**: `"[directory], [branch]"`
 
 **Examples**:
-- "Directory config. Branch master. Implementation complete. Ready for input."
-- "Directory api-server. Branch feature-auth. Tests passed. Ready for input."
+- "config, master"
+- "neovim, feature-refactor"
+- "api-server, develop"
+
+**Purpose**: Minimal, non-verbose announcement to identify which session is ready for input. The comma provides a natural pause between directory and branch name.
 
 **Configuration**:
 ```bash

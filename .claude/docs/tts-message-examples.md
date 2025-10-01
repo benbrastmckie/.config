@@ -4,69 +4,48 @@ Complete reference of TTS message templates for all categories.
 
 ## Message Format
 
-All messages follow this general pattern:
+**Simplified format for completion notifications:**
 ```
-[Context Prefix] [Event-Specific Message] [Next Steps/Action]
+[directory], [branch]
 ```
 
-Context prefix (when applicable):
+The comma provides a natural pause between directory and branch name.
+
+**Examples:**
 ```
-"Directory [name]. Branch [branch]."
+"config, master"
+"neovim, feature-refactor"
+"api-server, develop"
+"dotfiles, main"
 ```
 
 ## Completion Messages
 
-### Standard Commands
+### All Commands
 
-**Pattern**: `"Directory [name]. Branch [branch]. [Summary]. Ready for input."`
+**Pattern**: `"[directory], [branch]"`
 
-#### /implement
-```
-"Directory config. Branch master. Implementation complete. Ready for input."
-"Directory api-server. Branch feature-auth. Phase 3 complete. Ready for input."
-```
+Completion messages are now minimal - just announcing the directory and branch to help identify which session is ready for input.
 
-#### /test
+#### Examples
 ```
-"Directory neovim. Branch main. Tests passed. Ready for input."
-"Directory utils. Branch bugfix. All tests passed. Ready for input."
+"config, master"           # Working in .config directory on master branch
+"neovim, feature-vim"      # Working in neovim directory on feature-vim branch
+"backend, develop"         # Working in backend directory on develop branch
+"ModelChecker, main"       # Working in ModelChecker directory on main branch
 ```
 
-#### /debug
-```
-"Directory backend. Branch develop. Debug investigation complete. Ready for input."
-```
+### Purpose
 
-#### /orchestrate
-```
-"Directory project. Branch feature. Workflow complete. Ready for input."
-```
+The simplified message format:
+- **Identifies the session**: Know which Claude Code window is ready
+- **Minimal interruption**: Quick, non-verbose announcement
+- **Branch awareness**: Instantly know which branch you're on
+- **Directory context**: Root directory name (not full path)
 
-#### /plan
-```
-"Directory docs. Branch planning. Plan created. Ready for input."
-```
+### State File Support (Currently Unused)
 
-#### /report
-```
-"Directory research. Branch analysis. Report generated. Ready for input."
-```
-
-### With State File
-
-When `.claude/state/last-completion.json` exists:
-
-```json
-{
-  "summary": "Implemented Phase 3 hooks",
-  "next_steps": "Ready for Phase 4"
-}
-```
-
-Message becomes:
-```
-"Directory config. Branch master. Implemented Phase 3 hooks. Ready for Phase 4."
-```
+State file support (`.claude/state/last-completion.json`) is still available for detailed summaries but not used in the default completion messages. If you want more detailed messages, you can customize `generate_completion_message()` in `.claude/lib/tts-messages.sh`.
 
 ## Permission Messages
 
