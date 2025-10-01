@@ -32,6 +32,11 @@ M.config = {
     show_terminal_info = false
   },
 
+  -- CLAUDE.md preservation settings
+  preserve_main_claudemd = true,  -- Copy main CLAUDE.md to new worktrees
+  claudemd_separator = "---",     -- Markdown separator between sections
+  claudemd_inherited_heading = "# Project Configuration (Inherited from Main Worktree)",
+
   -- Context file template
   context_template = [[
 # Worktree Task: %s
