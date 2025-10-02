@@ -441,10 +441,11 @@ Commands trigger hooks on completion:
 - `Stop`: Metrics collection, TTS notification
 - Custom hooks for command-specific actions
 
-### With State
-Commands can read/write state files:
-- `.claude/state/last-completion.json`: Command summaries
-- `.claude/state/workflow-state.json`: Workflow progress
+### With Logging
+Commands can log to `.claude/logs/`:
+- `.claude/logs/hook-debug.log`: Hook execution trace
+- `.claude/logs/tts.log`: TTS notification history
+- `.claude/metrics/*.jsonl`: Command execution metrics
 
 ## Best Practices
 
