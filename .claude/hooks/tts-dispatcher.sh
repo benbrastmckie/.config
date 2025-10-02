@@ -76,9 +76,18 @@ fi
 # Source configuration
 source "$CONFIG_FILE"
 
-# Debug: Log that hook was called with parsed data
-mkdir -p "$CLAUDE_DIR/logs"
-echo "[$(date -Iseconds)] Hook called: EVENT=${HOOK_EVENT} CMD=${CLAUDE_COMMAND} STATUS=${CLAUDE_STATUS}" >> "$CLAUDE_DIR/logs/hook-debug.log"
+# Setup logging with fallback to temp directory
+LOG_DIR="$CLAUDE_DIR/logs"
+if [[ ! -d "$LOG_DIR" ]]; then
+  mkdir -p "$LOG_DIR" 2>/dev/null || {
+    # Fallback to temp if .claude/logs fails
+    LOG_DIR="/tmp/claude-tts-logs-$$"
+    mkdir -p "$LOG_DIR"
+  }
+fi
+
+# Always log to verify hooks are firing
+echo "[$(date -Iseconds)] Hook: EVENT=${HOOK_EVENT} CMD=${CLAUDE_COMMAND} STATUS=${CLAUDE_STATUS} DIR=${CLAUDE_PROJECT_DIR}" >> "$LOG_DIR/hook-debug.log" 2>&1
 
 # Check if TTS globally enabled
 if [[ "${TTS_ENABLED:-false}" != "true" ]]; then
@@ -287,10 +296,8 @@ speak_message() {
   fi
 
   # Debug logging if enabled
-  if [[ "${TTS_DEBUG:-false}" == "true" ]]; then
-    local log_dir="$CLAUDE_DIR/logs"
-    mkdir -p "$log_dir"
-    echo "[$(date -Iseconds)] [$HOOK_EVENT] $message (pitch:$pitch speed:$speed)" >> "$log_dir/tts.log"
+  if [[ "${TTS_DEBUG:-false}" == "true" ]] && [[ -d "$LOG_DIR" ]]; then
+    echo "[$(date -Iseconds)] [$HOOK_EVENT] $message (pitch:$pitch speed:$speed)" >> "$LOG_DIR/tts.log" 2>&1
   fi
 
   # Speak asynchronously, redirect errors to avoid blocking

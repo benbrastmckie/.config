@@ -99,18 +99,9 @@ generate_completion_message() {
 
 # Generate permission request message
 # Triggered: Notification hook for tool permissions
-# Format: "Permission needed. [Tool name]. [Brief context]."
+# Format: "directory, branch" (same as completion)
 generate_permission_message() {
-  local tool="${TOOL_NAME:-Tool}"
-  local context="${PERMISSION_CONTEXT:-}"
-
-  local message="Permission needed. $tool."
-
-  if [[ -n "$context" ]]; then
-    message="$message $context."
-  fi
-
-  echo "$message"
+  get_context_prefix
 }
 
 # Generate progress update message
