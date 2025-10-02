@@ -464,6 +464,7 @@ local function create_command_previewer()
         local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
         local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
         local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
+        local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json")
 
         -- Merge TTS files
         local all_tts = {}
@@ -492,15 +493,16 @@ local function create_command_previewer()
         local agt_copy, agt_replace = count_actions(agents)
         local hook_copy, hook_replace = count_actions(hooks)
         local tts_copy, tts_replace = count_actions(all_tts)
+        local set_copy, set_replace = count_actions(settings)
 
-        local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy
-        local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace
+        local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + set_copy
+        local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + set_replace
 
         local lines = {
           "Load All Artifacts",
           "",
           "This action will sync all artifacts from ~/.config/.claude/ to your",
-          "local project's .claude/ directory (commands, agents, hooks, TTS files).",
+          "local project's .claude/ directory.",
           "",
         }
 
@@ -510,6 +512,7 @@ local function create_command_previewer()
           table.insert(lines, string.format("  Agents:    %d new, %d replace", agt_copy, agt_replace))
           table.insert(lines, string.format("  Hooks:     %d new, %d replace", hook_copy, hook_replace))
           table.insert(lines, string.format("  TTS Files: %d new, %d replace", tts_copy, tts_replace))
+          table.insert(lines, string.format("  Settings:  %d new, %d replace", set_copy, set_replace))
           table.insert(lines, "")
           table.insert(lines, string.format("**Total:** %d new, %d replace", total_copy, total_replace))
           table.insert(lines, "")
@@ -874,6 +877,9 @@ local function load_all_globally()
   local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
   local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
 
+  -- Scan settings file
+  local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json")
+
   -- Merge TTS files
   local all_tts = {}
   for _, file in ipairs(tts_hooks) do
@@ -884,7 +890,7 @@ local function load_all_globally()
   end
 
   -- Check if any artifacts found
-  local total_files = #commands + #agents + #hooks + #all_tts
+  local total_files = #commands + #agents + #hooks + #all_tts + #settings
   if total_files == 0 then
     notify.editor(
       "No global artifacts found in ~/.config/.claude/",
@@ -911,9 +917,10 @@ local function load_all_globally()
   local agt_copy, agt_replace = count_actions(agents)
   local hook_copy, hook_replace = count_actions(hooks)
   local tts_copy, tts_replace = count_actions(all_tts)
+  local set_copy, set_replace = count_actions(settings)
 
-  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy
-  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace
+  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + set_copy
+  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + set_replace
 
   -- Skip if no operations needed
   if total_copy + total_replace == 0 then
@@ -930,13 +937,15 @@ local function load_all_globally()
     "Commands: %d new, %d replace\n" ..
     "Agents: %d new, %d replace\n" ..
     "Hooks: %d new, %d replace\n" ..
-    "TTS Files: %d new, %d replace\n\n" ..
+    "TTS Files: %d new, %d replace\n" ..
+    "Settings: %d new, %d replace\n\n" ..
     "Total: %d new, %d replace\n\n" ..
     "Local-only artifacts will not be affected.",
     cmd_copy, cmd_replace,
     agt_copy, agt_replace,
     hook_copy, hook_replace,
     tts_copy, tts_replace,
+    set_copy, set_replace,
     total_copy, total_replace
   )
 
@@ -954,21 +963,23 @@ local function load_all_globally()
   vim.fn.mkdir(project_dir .. "/.claude/agents", "p")
   vim.fn.mkdir(project_dir .. "/.claude/hooks", "p")
   vim.fn.mkdir(project_dir .. "/.claude/tts", "p")
+  vim.fn.mkdir(project_dir .. "/.claude", "p")  -- For settings.local.json
 
   -- Sync all artifact types
   local cmd_count = sync_files(commands, false)
   local agt_count = sync_files(agents, false)
   local hook_count = sync_files(hooks, true)  -- Preserve permissions for shell scripts
   local tts_count = sync_files(all_tts, true)  -- Preserve permissions for TTS scripts
+  local set_count = sync_files(settings, false)
 
-  local total_synced = cmd_count + agt_count + hook_count + tts_count
+  local total_synced = cmd_count + agt_count + hook_count + tts_count + set_count
 
   -- Report results
   if total_synced > 0 then
     notify.editor(
       string.format(
-        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS files",
-        total_synced, cmd_count, agt_count, hook_count, tts_count
+        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS, %d settings",
+        total_synced, cmd_count, agt_count, hook_count, tts_count, set_count
       ),
       notify.categories.SUCCESS
     )
