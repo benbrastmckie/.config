@@ -59,7 +59,7 @@ Event-driven scripts that execute automatically during Claude Code lifecycle eve
 See [hooks/README.md](hooks/README.md) for details.
 
 ### TTS System
-Text-to-speech notification system providing voice feedback for workflow events. Categorized notifications with customizable voice characteristics.
+Text-to-speech notification system providing voice feedback for completion and permission events. Uses uniform "directory, branch" messages with single voice configuration.
 
 **Location**: `tts/`
 **Configuration**: `tts/tts-config.sh`
@@ -151,11 +151,8 @@ Each hook can register multiple scripts that execute on event trigger.
 3. Register in `settings.local.json` under appropriate event
 4. Test hook execution with relevant event
 
-### Adding TTS Categories
-1. Add category configuration in `tts/tts-config.sh`
-2. Implement message generator in `tts/tts-messages.sh`
-3. Update dispatcher routing in `hooks/tts-dispatcher.sh`
-4. Test with relevant event trigger
+### Customizing TTS Messages
+Edit `.claude/tts/tts-messages.sh` to modify the `get_context_prefix()` function or adjust voice parameters in `.claude/tts/tts-config.sh` (TTS_VOICE_PARAMS).
 
 ## Best Practices
 
