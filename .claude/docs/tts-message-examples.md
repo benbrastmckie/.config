@@ -1,10 +1,10 @@
 # TTS Message Examples
 
-Complete reference of TTS message templates for all categories.
+Complete reference of TTS message templates for the simplified 2-category system.
 
-## Message Format
+## Uniform Message Format
 
-**Simplified format for completion notifications:**
+**All TTS notifications use the same format:**
 ```
 [directory], [branch]
 ```
@@ -15,179 +15,71 @@ The comma provides a natural pause between directory and branch name.
 ```
 "config, master"
 "neovim, feature-refactor"
-"api-server, develop"
-"dotfiles, main"
+"nice_connectives, main"
+"dotfiles, master"
 ```
+
+This uniform format applies to **both** completion and permission notifications.
 
 ## Completion Messages
 
-### All Commands
+**Trigger**: Stop hook when Claude completes a task
 
-**Pattern**: `"[directory], [branch]"`
+**Format**: `"directory, branch"`
 
-Completion messages are now minimal - just announcing the directory and branch to help identify which session is ready for input.
-
-#### Examples
+**Examples**:
 ```
-"config, master"           # Working in .config directory on master branch
-"neovim, feature-vim"      # Working in neovim directory on feature-vim branch
-"backend, develop"         # Working in backend directory on develop branch
-"ModelChecker, main"       # Working in ModelChecker directory on main branch
+"config, master"           # .config directory on master branch
+"neovim, feature-vim"      # neovim directory on feature-vim branch
+"backend, develop"         # backend directory on develop branch
+"nice_connectives, main"   # nice_connectives directory on main branch
 ```
 
-### Purpose
-
-The simplified message format:
-- **Identifies the session**: Know which Claude Code window is ready
-- **Minimal interruption**: Quick, non-verbose announcement
-- **Branch awareness**: Instantly know which branch you're on
-- **Directory context**: Root directory name (not full path)
-
-### State File Support (Currently Unused)
-
-State file support (`.claude/state/last-completion.json`) is still available for detailed summaries but not used in the default completion messages. If you want more detailed messages, you can customize `generate_completion_message()` in `.claude/lib/tts-messages.sh`.
+**Purpose**:
+- Identifies which session is ready for input
+- Minimal, non-verbose announcement
+- Instant branch awareness
+- Uses root directory name (not full path)
 
 ## Permission Messages
 
-**Pattern**: `"Permission needed. [Tool]. [Context]."`
+**Trigger**: Notification hook when tool permission needed
 
-### Common Tools
+**Format**: `"directory, branch"` (identical to completion)
 
+**Examples**:
 ```
-"Permission needed. Bash. Git commit for Phase 2."
-"Permission needed. Web search. Research authentication patterns."
-"Permission needed. Edit. Update configuration file."
-"Permission needed. Task. Launch research agent."
-```
-
-## Progress Messages
-
-**Pattern**: `"Progress update. [Agent] complete. [Result]."`
-
-### Subagent Types
-
-```
-"Progress update. Research specialist complete. Found 3 patterns."
-"Progress update. Plan architect complete. Generated 5 phase plan."
-"Progress update. Code writer complete. Implemented authentication."
-"Progress update. Test specialist complete. 15 tests passed, 2 failed."
-"Progress update. Debug specialist complete. Root cause identified."
-"Progress update. Doc writer complete. Updated 3 documentation files."
+"config, master"           # Permission needed in .config on master
+"neovim, feature-vim"      # Permission needed in neovim on feature-vim
+"backend, develop"         # Permission needed in backend on develop
+"nice_connectives, main"   # Permission needed in nice_connectives on main
 ```
 
-## Error Messages
+**Purpose**:
+- Same minimal format as completion messages
+- Know which directory/branch needs attention
+- No verbose "Permission needed. Tool." messages
+- Consistent, predictable notifications
 
-**Pattern**: `"Error in [command]. [Error type]. Review output."`
+## Removed Categories
 
-### Error Types
+The following message categories were removed in the simplified TTS system:
 
-```
-"Error in implement. Tests failed in Phase 2. Review output."
-"Error in test. Linting errors found. Review output."
-"Error in orchestrate. Planning phase timeout. Review output."
-"Error in debug. Investigation incomplete. Review output."
-"Error in build. Compilation failed. Review output."
-```
+- **Progress Updates** - No longer supported
+- **Error Notifications** - No longer supported
+- **Idle Reminders** - No longer supported
+- **Session Messages** - No longer supported
+- **Tool Execution** - No longer supported
+- **Prompt Acknowledgment** - No longer supported
+- **Compact Operations** - No longer supported
 
-## Idle Messages
-
-**Pattern**: `"Still waiting for input. Last action: [command]. [Duration]."`
-
-### Duration Formatting
-
-```
-"Still waiting for input. Last action: implement. Waiting 1 minute."
-"Still waiting for input. Last action: test. Waiting 2 minutes."
-"Still waiting for input. Last action: debug. Waiting 5 minutes."
-```
-
-## Session Messages
-
-### Session Start
-
-**Pattern**: `"Session started. Directory [name]. Branch [branch]."`
-
-```
-"Session started. Directory config. Branch master."
-"Session started. Directory api-server. Branch feature-auth."
-```
-
-### Session End
-
-**Pattern**: `"Session ended. [Reason]. [Pending info]."`
-
-```
-"Session ended. Logged out. No pending workflows."
-"Session ended. Session cleared. 1 workflow in progress saved."
-"Session ended. Timeout. All work saved."
-```
-
-## Tool Messages
-
-### Pre-Tool Use
-
-**Pattern**: `"[Tool] starting. [Context]."`
-
-```
-"Bash starting. Running test suite."
-"Task starting. Research specialist."
-"Web search starting. Authentication patterns."
-```
-
-### Post-Tool Use
-
-**Pattern**: `"[Tool] complete."`
-
-```
-"Bash complete."
-"Task complete."
-"Web search complete."
-```
-
-## Prompt Acknowledgment Messages
-
-**Pattern**: `"Prompt received. [Brief]."`
-
-```
-"Prompt received. Implement command."
-"Prompt received. Debug investigation."
-"Prompt received. Test execution."
-```
-
-## Compact Messages
-
-**Pattern**: `"Compacting context. [Trigger]. Workflow may pause."`
-
-```
-"Compacting context. Manual compact. Workflow may pause."
-"Compacting context. Auto compact. Workflow may pause."
-```
+Only Stop (completion) and Notification (permission) events generate TTS messages.
 
 ## Customizing Messages
 
-### Method 1: State Files
+### Method: Edit Message Generator
 
-Write detailed state to `.claude/state/last-completion.json`:
-
-```json
-{
-  "command": "/implement",
-  "phase": "Phase 3",
-  "summary": "Implemented hooks infrastructure",
-  "status": "success",
-  "next_steps": "Ready for Phase 4",
-  "duration_ms": 45000
-}
-```
-
-Result:
-```
-"Directory config. Branch master. Implemented hooks infrastructure. Ready for Phase 4."
-```
-
-### Method 2: Edit Message Generator
-
-Edit `.claude/lib/tts-messages.sh` to customize templates:
+Edit `.claude/tts/tts-messages.sh` to customize templates:
 
 ```bash
 # Find the generate_completion_message function
@@ -218,16 +110,18 @@ Different categories have distinct voices to help identify notification type wit
 
 ## Testing Messages
 
-Use the test utility to hear all message types:
+Test messages by sending JSON to the dispatcher:
 
 ```bash
-# Test all categories
-./.claude/bin/test-tts.sh
+# Test completion notification
+echo '{"hook_event_name":"Stop","status":"success","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
 
-# Test specific category
-./.claude/bin/test-tts.sh completion
-./.claude/bin/test-tts.sh error
+# Test permission request
+echo '{"hook_event_name":"Notification","message":"Permission needed"}' | bash .claude/hooks/tts-dispatcher.sh
 
-# Test without audio (see messages only)
-./.claude/bin/test-tts.sh --silent
+# Test error notification
+echo '{"hook_event_name":"Stop","status":"error","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
+
+# Test session start
+echo '{"hook_event_name":"SessionStart","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
 ```

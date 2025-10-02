@@ -106,13 +106,13 @@ Central configuration file for hook registrations and permissions.
 ```
 
 **Hook Events**:
-- `Stop`: Command completion
-- `SessionStart`: Session initialization
-- `SessionEnd`: Session termination
-- `SubagentStop`: Subagent task completion
-- `Notification`: Permission requests and idle alerts
+- `Stop`: Command completion (hooks: metrics, TTS)
+- `Notification`: Permission requests (hooks: TTS)
+- `SessionStart`: Session initialization (no hooks configured)
+- `SessionEnd`: Session termination (no hooks configured)
+- `SubagentStop`: Subagent task completion (no hooks configured)
 
-Each hook can register multiple scripts that execute on event trigger.
+**Active Hooks**: Only Stop and Notification events have registered hooks.
 
 ## Workflow Lifecycle
 
