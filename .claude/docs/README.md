@@ -24,15 +24,7 @@ docs/
 ├── standards-integration-examples.md     Standards usage examples
 ├── standards-integration-pattern.md Standards application pattern
 ├── tts-integration-guide.md         TTS system guide
-├── tts-message-examples.md          TTS message examples
-└── command-modules/                 Command module documentation
-    ├── orchestration/               Orchestration modules
-    │   ├── monitoring/             Monitoring components
-    │   └── workflow-coordination/  Workflow coordination
-    └── utilities/                   Utility modules
-        ├── performance/             Performance utilities
-        ├── status-reporting/        Status reporting
-        └── validation/              Validation utilities
+└── tts-message-examples.md          TTS message examples
 ```
 
 ## Key Documents
@@ -199,44 +191,6 @@ docs/
 
 ---
 
-## Command Modules Directory
-
-### Purpose
-Documentation for modular command components that can be reused across commands.
-
-### Structure
-
-#### orchestration/
-Documentation for orchestration-related modules:
-
-**monitoring/**:
-- Progress tracking
-- Status monitoring
-- Health checks
-
-**workflow-coordination/**:
-- Task sequencing
-- Agent coordination
-- State management
-
-#### utilities/
-Documentation for utility modules:
-
-**performance/**:
-- Timing utilities
-- Profiling helpers
-- Optimization tools
-
-**status-reporting/**:
-- Status formatters
-- Progress indicators
-- Completion summaries
-
-**validation/**:
-- Input validation
-- State verification
-- Dependency checking
-
 ## Using the Documentation
 
 ### For New Users
@@ -312,10 +266,6 @@ Before committing:
 - [command-standards-flow.md](command-standards-flow.md) - Discovery flow
 - [standards-integration-examples.md](standards-integration-examples.md) - Examples
 - [standards-integration-pattern.md](standards-integration-pattern.md) - Pattern
-
-### Command Modules
-- [command-modules/orchestration/](command-modules/orchestration/) - Orchestration modules
-- [command-modules/utilities/](command-modules/utilities/) - Utility modules
 
 ### Related
 - [← Parent Directory](../README.md)

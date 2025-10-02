@@ -1,23 +1,23 @@
 # TTS Directory
 
-Text-to-speech notification system for Claude Code workflows. Provides voice feedback for events like command completion, permission requests, progress updates, and errors with customizable voice characteristics.
+Text-to-speech notification system for Claude Code workflows. Provides voice feedback for command completion and permission requests with uniform "directory, branch" messages.
 
 ## Purpose
 
 The TTS system enables:
 
-- **Voice notifications** for workflow events
-- **Categorized messages** with distinct voice characteristics
-- **Context-aware feedback** including directory and branch
+- **Voice notifications** for completion and permission events
+- **Uniform messages** - all notifications say "directory, branch" (e.g., "config, master")
+- **Single voice configuration** - consistent voice across all notifications
 - **Non-intrusive operation** that never blocks workflow
-- **Customizable configuration** per category
+- **Simple, predictable notifications** without verbose messages
 
 ## TTS Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Claude Code Event                                           │
-│ (Stop, SessionStart, Notification, etc.)                    │
+│ (Stop or Notification only)                                 │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -25,10 +25,10 @@ The TTS system enables:
 │ TTS Dispatcher Hook                                         │
 │ (.claude/hooks/tts-dispatcher.sh)                          │
 ├─────────────────────────────────────────────────────────────┤
-│ • Parses event JSON                                         │
-│ • Detects notification category                             │
+│ • Parses event JSON from stdin                              │
+│ • Detects category (completion or permission)               │
 │ • Checks if category enabled                                │
-│ • Gets voice parameters                                     │
+│ • Uses single unified voice parameters                      │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -37,8 +37,7 @@ The TTS system enables:
 │ (.claude/tts/tts-messages.sh)                              │
 ├─────────────────────────────────────────────────────────────┤
 │ • Extracts context (directory, branch)                      │
-│ • Generates category-specific message                       │
-│ • Returns formatted message                                 │
+│ • Returns uniform "directory, branch" message               │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -46,7 +45,7 @@ The TTS system enables:
 │ TTS Engine (espeak-ng)                                      │
 ├─────────────────────────────────────────────────────────────┤
 │ • Speaks message asynchronously                             │
-│ • Uses category voice parameters                            │
+│ • Uses unified voice parameters (pitch:50 speed:160)        │
 │ • Non-blocking execution                                    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -57,36 +56,23 @@ The TTS system enables:
 **Purpose**: Configuration for all TTS settings
 
 **Sections**:
-- Global Settings (enabled, engine, voice, speed)
-- Category Enablement (9 categories)
-- Voice Characteristics (pitch:speed per category)
-- Message Verbosity (context options)
-- Advanced Options (min duration, state files, debug)
+- Global Settings (enabled, engine, voice)
+- Category Enablement (2 categories: completion and permission)
+- Voice Configuration (single unified voice parameters)
+- Advanced Options (silent commands, debug)
 
 **Key Variables**:
 ```bash
-TTS_ENABLED=false                    # Master enable/disable
+TTS_ENABLED=true                     # Master enable/disable
 TTS_ENGINE="espeak-ng"               # TTS engine to use
 TTS_VOICE="en-us+f3"                 # Default voice
-TTS_DEFAULT_SPEED=160                # Words per minute
 
-# Category enable/disable
-TTS_COMPLETION_ENABLED=true
-TTS_PERMISSION_ENABLED=true
-TTS_PROGRESS_ENABLED=true
-TTS_ERROR_ENABLED=true
-TTS_IDLE_ENABLED=false
-TTS_SESSION_ENABLED=false
-TTS_TOOL_ENABLED=false
-TTS_PROMPT_ACK_ENABLED=false
-TTS_COMPACT_ENABLED=false
+# Category enable/disable (simplified to 2 categories)
+TTS_COMPLETION_ENABLED=true          # Stop hook notifications
+TTS_PERMISSION_ENABLED=true          # Notification hook (permission requests)
 
-# Voice characteristics (pitch:speed)
-TTS_COMPLETION_VOICE="50:160"        # Normal
-TTS_PERMISSION_VOICE="60:180"        # Higher, faster (urgent)
-TTS_PROGRESS_VOICE="40:180"          # Lower, faster (background)
-TTS_ERROR_VOICE="35:140"             # Low, slow (alert)
-TTS_IDLE_VOICE="50:140"              # Normal, slow (gentle)
+# Voice configuration (unified for all notifications)
+TTS_VOICE_PARAMS="50:160"            # pitch:speed for all categories
 
 # Silent commands (no TTS)
 TTS_SILENT_COMMANDS="/clear /help /version /status /list /list-plans /list-reports /list-summaries"
@@ -124,180 +110,73 @@ generate_completion_message()
 # Example: "config, master"
 
 generate_permission_message()
-# Format: "Permission needed. [Tool name]. [Context]."
-# Example: "Permission needed. Bash. Git commit required."
-
-generate_progress_message()
-# Format: "Progress update. [Agent name] complete. [Result]."
-# Example: "Progress update. code writer complete. Feature implemented."
-
-generate_error_message()
-# Format: "Error in [command]. [Error type]. Review output."
-# Example: "Error in implement. Test failures. Review output."
-
-generate_idle_message()
-# Format: "Still waiting for input. Last action: [command]. [Duration]."
-# Example: "Still waiting for input. Last action: plan. Waiting 2 minutes."
-
-generate_session_message()
-# Format: "Session started. [directory], [branch]" (or SessionEnd variant)
-# Example: "Session started. config, master"
-
-generate_tool_message()
-# Format: "[Tool name] starting/complete."
-# Example: "Grep starting. Searching codebase."
-
-generate_prompt_ack_message()
-# Format: "Prompt received."
-# Example: "Prompt received."
-
-generate_compact_message()
-# Format: "Compacting context. [trigger]. Workflow may pause."
-# Example: "Compacting context. manual compact. Workflow may pause."
+# Format: "[directory], [branch]" (identical to completion)
+# Example: "config, master"
 ```
+
+**Note**: All other message generators were removed in the simplified TTS system. Only completion and permission messages are supported.
 
 #### Message Routing
 ```bash
 generate_message() {
   local category="$1"
-  # Routes to appropriate generator based on category
+  case "$category" in
+    completion) generate_completion_message ;;
+    permission) generate_permission_message ;;
+    *) echo "Notification." ;;
+  esac
 }
 ```
 
 **Environment Variables Used**:
-- `CLAUDE_PROJECT_DIR`: Project directory
-- `CLAUDE_COMMAND`: Command being executed
-- `CLAUDE_STATUS`: Command status
-- `HOOK_EVENT`: Hook event type
-- `NOTIFICATION_MESSAGE`: Additional context
-- Category-specific variables (SUBAGENT_TYPE, ERROR_TYPE, etc.)
+- `CLAUDE_PROJECT_DIR`: Project directory (from hook JSON)
+- `HOOK_EVENT`: Hook event type (Stop or Notification)
+- `CLAUDE_COMMAND`: Command being executed (optional)
+- `CLAUDE_STATUS`: Command status (optional)
 
 ## Notification Categories
 
-### 1. Completion
-**Triggered By**: Stop hook when command completes successfully
+The simplified TTS system supports only 2 categories:
 
-**Message**: Directory and branch context
+### 1. Completion
+**Triggered By**: Stop hook when command completes
+
+**Message**: `"directory, branch"` (e.g., "config, master")
 
 **Voice**: Normal pitch and speed (50:160)
 
 **Use Case**: Know when Claude is ready for next input
 
-**Example**: "config, master"
+**Configuration**: `TTS_COMPLETION_ENABLED=true`
 
 ---
 
 ### 2. Permission
-**Triggered By**: Notification hook for tool permissions
+**Triggered By**: Notification hook when tool permission needed
 
-**Message**: Tool name and context
+**Message**: `"directory, branch"` (identical to completion)
 
-**Voice**: Higher pitch, faster (60:180) for urgency
+**Voice**: Same as completion (50:160)
 
-**Use Case**: Immediate notification when approval needed
+**Use Case**: Know when tool permission needed without verbose messages
 
-**Example**: "Permission needed. Bash. Git operations."
-
----
-
-### 3. Progress
-**Triggered By**: SubagentStop hook
-
-**Message**: Agent name and result
-
-**Voice**: Lower pitch, faster (40:180) for background info
-
-**Use Case**: Track subagent completion in long workflows
-
-**Example**: "Progress update. test specialist complete. All tests passed."
+**Configuration**: `TTS_PERMISSION_ENABLED=true`
 
 ---
 
-### 4. Error
-**Triggered By**: Stop hook with error status
+## Removed Categories
 
-**Message**: Command and error type
+The following categories were removed in the simplified TTS system:
 
-**Voice**: Low pitch, slow (35:140) for alert
+- **Progress** (SubagentStop) - No longer supported
+- **Error** - No longer supported (all Stop events use same message)
+- **Idle** - No longer supported
+- **Session** - No longer supported
+- **Tool** - No longer supported
+- **Prompt Acknowledgment** - No longer supported
+- **Compact** - No longer supported
 
-**Use Case**: Immediate attention to failures
-
-**Example**: "Error in implement. Test failures. Review output."
-
----
-
-### 5. Idle
-**Triggered By**: Notification hook after 60+ seconds idle
-
-**Message**: Last command and wait duration
-
-**Voice**: Normal pitch, slow (50:140) for gentle reminder
-
-**Use Case**: Reminder if you stepped away
-
-**Example**: "Still waiting for input. Last action: plan. Waiting 2 minutes."
-
-**Note**: Disabled by default (can be verbose)
-
----
-
-### 6. Session
-**Triggered By**: SessionStart or SessionEnd hooks
-
-**Message**: Session state and context
-
-**Voice**: Normal pitch and speed (50:160)
-
-**Use Case**: Session lifecycle awareness
-
-**Example**: "Session started. config, master"
-
-**Note**: Disabled by default
-
----
-
-### 7. Tool
-**Triggered By**: PreToolUse or PostToolUse hooks (optional)
-
-**Message**: Tool name and phase
-
-**Voice**: Very low, very fast (30:200) for minimal intrusion
-
-**Use Case**: Tool execution awareness
-
-**Example**: "Grep starting. Searching codebase."
-
-**Note**: Disabled by default (very verbose)
-
----
-
-### 8. Prompt Acknowledgment
-**Triggered By**: UserPromptSubmit hook (optional)
-
-**Message**: Quick confirmation
-
-**Voice**: High pitch, very fast (70:220)
-
-**Use Case**: Immediate feedback that input received
-
-**Example**: "Prompt received."
-
-**Note**: Disabled by default
-
----
-
-### 9. Compact
-**Triggered By**: PreCompact hook (optional)
-
-**Message**: Compaction warning
-
-**Voice**: Normal pitch and speed (50:160)
-
-**Use Case**: Warning before workflow pause
-
-**Example**: "Compacting context. auto compact. Workflow may pause."
-
-**Note**: Disabled by default
+All events that aren't Stop or Notification are ignored by the TTS dispatcher.
 
 ## Configuration Guide
 
@@ -309,22 +188,23 @@ nvim .claude/tts/tts-config.sh
 # Set master enable
 TTS_ENABLED=true
 
-# Enable desired categories
+# Enable categories (both default to true)
 TTS_COMPLETION_ENABLED=true
 TTS_PERMISSION_ENABLED=true
-TTS_ERROR_ENABLED=true
 ```
 
-### Customize Voice Characteristics
+### Customize Voice
 ```bash
-# Make errors more alerting
-TTS_ERROR_VOICE="20:120"  # Very low pitch, slow speed
+# Unified voice configuration (applies to all notifications)
+TTS_VOICE_PARAMS="50:160"  # pitch:speed
 
-# Make completion less intrusive
-TTS_COMPLETION_VOICE="45:180"  # Slightly lower, faster
+# Examples:
+TTS_VOICE_PARAMS="35:140"  # Lower, slower (calmer)
+TTS_VOICE_PARAMS="60:180"  # Higher, faster (more urgent)
 
-# Change default voice
+# Change voice gender
 TTS_VOICE="en-us+m3"  # Male voice
+TTS_VOICE="en-us+f3"  # Female voice (default)
 ```
 
 ### Add Silent Commands
@@ -336,7 +216,7 @@ TTS_SILENT_COMMANDS="/clear /help /version /status /list"
 ### Enable Debug Logging
 ```bash
 TTS_DEBUG=true
-# Logs to .claude/logs/tts.log
+# Logs to .claude/logs/tts.log and .claude/logs/hook-debug.log
 ```
 
 ## Testing TTS
@@ -389,90 +269,51 @@ tail -f .claude/logs/hook-debug.log
 
 ## Extending TTS
 
-### Add New Category
+The simplified TTS system uses a uniform approach. To add custom behavior:
 
-#### Step 1: Add Configuration
-Edit `tts-config.sh`:
+### Customize Messages
+
+Edit `.claude/tts/tts-messages.sh` to modify the `get_context_prefix()` function:
+
 ```bash
-# Enable/disable
-TTS_MYCATEGORY_ENABLED=true
+get_context_prefix() {
+  local dir_name=$(basename "${CLAUDE_PROJECT_DIR:-$(pwd)}")
+  local branch=$(git -C "${CLAUDE_PROJECT_DIR:-$(pwd)}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no-branch")
 
-# Voice characteristics
-TTS_MYCATEGORY_VOICE="55:170"
-```
-
-#### Step 2: Add Message Generator
-Edit `tts-messages.sh`:
-```bash
-generate_mycategory_message() {
-  local context=$(get_context_prefix)
-  echo "$context. Custom message."
-}
-
-# Add to message routing
-generate_message() {
-  case "$category" in
-    # ... existing cases ...
-    mycategory)
-      generate_mycategory_message
-      ;;
-  esac
+  # Add custom logic here
+  echo "$dir_name, $branch"
 }
 ```
 
-#### Step 3: Update Dispatcher
-Edit `hooks/tts-dispatcher.sh`:
-```bash
-# Add category detection
-detect_category() {
-  case "$event" in
-    # ... existing cases ...
-    MyEvent)
-      echo "mycategory"
-      ;;
-  esac
-}
+### Add New Hook Event
 
-# Add enablement check
-is_category_enabled() {
-  case "$category" in
-    # ... existing cases ...
-    mycategory)
-      var_name="TTS_MYCATEGORY_ENABLED"
-      ;;
-  esac
-}
+If you want to support additional hook events (beyond Stop and Notification):
 
-# Add voice parameters
-get_voice_params() {
-  case "$category" in
-    # ... existing cases ...
-    mycategory)
-      var_name="TTS_MYCATEGORY_VOICE"
-      ;;
-  esac
-}
-```
+1. **Update dispatcher** - Edit `.claude/hooks/tts-dispatcher.sh`:
+   ```bash
+   detect_category() {
+     case "$event" in
+       Stop) echo "completion" ;;
+       Notification) echo "permission" ;;
+       MyEvent) echo "completion" ;;  # Use existing category
+       *) return 1 ;;
+     esac
+   }
+   ```
 
-#### Step 4: Register Hook
-Edit `settings.local.json`:
-```json
-{
-  "hooks": {
-    "MyEvent": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/tts-dispatcher.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+2. **Register hook** - Edit `.claude/settings.local.json`:
+   ```json
+   {
+     "hooks": {
+       "MyEvent": [{
+         "matcher": ".*",
+         "hooks": [{"type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/tts-dispatcher.sh"}]
+       }]
+     }
+   }
+   ```
+
+**Note**: The simplified system uses the same message and voice for all events. If you need different messages or voices, consider using the original multi-category system.
 
 ## Troubleshooting
 
@@ -579,14 +420,13 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 # Enable TTS
 TTS_ENABLED=true
 
-# Essential categories
+# Categories (simplified to 2)
 TTS_COMPLETION_ENABLED=true
 TTS_PERMISSION_ENABLED=true
-TTS_ERROR_ENABLED=true
 
-# Voice customization
+# Voice customization (unified)
 TTS_VOICE="en-us+f3"
-TTS_ERROR_VOICE="35:140"  # Low and slow for alerts
+TTS_VOICE_PARAMS="50:160"
 ```
 
 ### Debug Commands
@@ -603,26 +443,26 @@ source .claude/tts/tts-messages.sh && generate_completion_message
 
 ### Common Configurations
 
-**Minimal (Only Errors)**:
-```bash
-TTS_ENABLED=true
-TTS_COMPLETION_ENABLED=false
-TTS_PERMISSION_ENABLED=false
-TTS_PROGRESS_ENABLED=false
-TTS_ERROR_ENABLED=true
-```
-
-**Standard (Common Events)**:
+**Both Categories (Default)**:
 ```bash
 TTS_ENABLED=true
 TTS_COMPLETION_ENABLED=true
 TTS_PERMISSION_ENABLED=true
-TTS_PROGRESS_ENABLED=true
-TTS_ERROR_ENABLED=true
+TTS_VOICE_PARAMS="50:160"
 ```
 
-**Verbose (All Events)**:
+**Only Completion**:
 ```bash
 TTS_ENABLED=true
-# All categories enabled=true
+TTS_COMPLETION_ENABLED=true
+TTS_PERMISSION_ENABLED=false
+TTS_VOICE_PARAMS="50:160"
+```
+
+**Only Permission Requests**:
+```bash
+TTS_ENABLED=true
+TTS_COMPLETION_ENABLED=false
+TTS_PERMISSION_ENABLED=true
+TTS_VOICE_PARAMS="50:160"
 ```
