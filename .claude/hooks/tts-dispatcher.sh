@@ -38,8 +38,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Source configuration and message library
-CONFIG_FILE="$CLAUDE_DIR/config/tts-config.sh"
-MESSAGES_LIB="$CLAUDE_DIR/lib/tts-messages.sh"
+CONFIG_FILE="$CLAUDE_DIR/tts/tts-config.sh"
+MESSAGES_LIB="$CLAUDE_DIR/tts/tts-messages.sh"
 
 # Check if configuration exists
 if [[ ! -f "$CONFIG_FILE" ]]; then
