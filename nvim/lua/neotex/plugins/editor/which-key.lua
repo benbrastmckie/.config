@@ -210,6 +210,31 @@ return {
       { "<leader>al", "<cmd>LecticSubmitSelection<CR>", desc = "lectic selection", icon = "󰚟", mode = { "v" }, cond = is_lectic },
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
+
+      -- TTS toggle
+      { "<leader>at", function()
+        local config_path = vim.fn.expand("~/.config/.claude/tts/tts-config.sh")
+        local lines = vim.fn.readfile(config_path)
+        local modified = false
+
+        for i, line in ipairs(lines) do
+          if line:match("^TTS_ENABLED=") then
+            if line:match("=true") then
+              lines[i] = "TTS_ENABLED=false"
+              vim.notify("TTS disabled", vim.log.levels.INFO)
+            else
+              lines[i] = "TTS_ENABLED=true"
+              vim.notify("TTS enabled", vim.log.levels.INFO)
+            end
+            modified = true
+            break
+          end
+        end
+
+        if modified then
+          vim.fn.writefile(lines, config_path)
+        end
+      end, desc = "toggle tts", icon = "󰔊" },
     })
 
     -- ============================================================================

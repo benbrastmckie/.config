@@ -125,7 +125,6 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>ae` | Avante edit | Edit selected text with AI (visual mode) |
 | `<leader>ap` | Avante provider | Select AI provider (Claude, OpenAI, Gemini) |
 | `<leader>am` | Avante model | Select model for current provider |
-| `<leader>at` | Avante toggle | Show/hide Avante sidebar |
 
 **Other AI Tools**
 | Key | Action | Description | Availability |
@@ -134,6 +133,7 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
 | `<leader>an` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
 | `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
+| `<leader>at` | Toggle TTS | Enable/disable Claude Code TTS notifications | All files |
 
 ### FIND (`<leader>f`)
 
