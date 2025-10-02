@@ -228,7 +228,7 @@ generate_compact_message() {
 # ============================================================================
 
 # Main message generator - routes to appropriate function based on category
-# Args: $1 - category (completion, permission, progress, error, idle, session)
+# Args: $1 - category (completion, permission)
 # Returns: Generated message
 generate_message() {
   local category="$1"
@@ -240,29 +240,8 @@ generate_message() {
     permission)
       generate_permission_message
       ;;
-    progress)
-      generate_progress_message
-      ;;
-    error)
-      generate_error_message
-      ;;
-    idle)
-      generate_idle_message
-      ;;
-    session)
-      generate_session_message
-      ;;
-    tool)
-      generate_tool_message
-      ;;
-    prompt_ack)
-      generate_prompt_ack_message
-      ;;
-    compact)
-      generate_compact_message
-      ;;
     *)
-      echo "Notification."
+      echo "Notification."  # Fallback
       ;;
   esac
 }

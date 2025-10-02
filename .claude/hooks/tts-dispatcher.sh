@@ -105,58 +105,23 @@ source "$MESSAGES_LIB"
 # Event Type Detection
 # ============================================================================
 
-# Determine notification category from hook event and context
-# Returns: category name (completion, permission, progress, error, etc.)
+# Determine notification category from hook event
+# Returns: category name (completion, permission) or exits with error for unsupported events
 detect_category() {
   local event="${HOOK_EVENT:-unknown}"
-  local status="${CLAUDE_STATUS:-success}"
-
-  # If HOOK_EVENT not set, try to infer from script name or other context
-  if [[ "$event" == "unknown" ]]; then
-    # Check if we're being called from a specific hook by looking at caller
-    local script_name
-    script_name=$(basename "${BASH_SOURCE[1]:-}" 2>/dev/null || echo "")
-
-    # Default to completion for Stop-like behavior
-    event="Stop"
-  fi
 
   case "$event" in
     Stop)
-      # Completion or error based on status
-      if [[ "$status" == "error" ]] || [[ "$status" == "failed" ]]; then
-        echo "error"
-      else
-        echo "completion"
-      fi
-      ;;
-    SessionStart | SessionEnd)
-      echo "session"
-      ;;
-    SubagentStop)
-      echo "progress"
+      # All Stop events are completion
+      echo "completion"
       ;;
     Notification)
-      # Permission request or idle reminder
-      local notification_type="${NOTIFICATION_TYPE:-permission}"
-      if [[ "$notification_type" == "idle" ]]; then
-        echo "idle"
-      else
-        echo "permission"
-      fi
-      ;;
-    PreToolUse | PostToolUse)
-      echo "tool"
-      ;;
-    UserPromptSubmit)
-      echo "prompt_ack"
-      ;;
-    PreCompact)
-      echo "compact"
+      # All Notification events are permission
+      echo "permission"
       ;;
     *)
-      # Default to completion
-      echo "completion"
+      # Unsupported event type
+      return 1
       ;;
   esac
 }
@@ -170,48 +135,18 @@ detect_category() {
 # Returns: 0 if enabled, 1 if disabled
 is_category_enabled() {
   local category="$1"
-  local var_name
 
   case "$category" in
     completion)
-      var_name="TTS_COMPLETION_ENABLED"
+      [[ "${TTS_COMPLETION_ENABLED:-false}" == "true" ]]
       ;;
     permission)
-      var_name="TTS_PERMISSION_ENABLED"
-      ;;
-    progress)
-      var_name="TTS_PROGRESS_ENABLED"
-      ;;
-    error)
-      var_name="TTS_ERROR_ENABLED"
-      ;;
-    idle)
-      var_name="TTS_IDLE_ENABLED"
-      ;;
-    session)
-      var_name="TTS_SESSION_ENABLED"
-      ;;
-    tool)
-      var_name="TTS_TOOL_ENABLED"
-      ;;
-    prompt_ack)
-      var_name="TTS_PROMPT_ACK_ENABLED"
-      ;;
-    compact)
-      var_name="TTS_COMPACT_ENABLED"
+      [[ "${TTS_PERMISSION_ENABLED:-false}" == "true" ]]
       ;;
     *)
-      return 1  # Unknown category disabled by default
+      return 1  # Unknown categories disabled
       ;;
   esac
-
-  # Check if variable is set to true
-  local enabled="${!var_name:-false}"
-  if [[ "$enabled" == "true" ]]; then
-    return 0
-  else
-    return 1
-  fi
 }
 
 # ============================================================================
@@ -307,7 +242,7 @@ is_silent_command() {
 main() {
   # Detect notification category
   local category
-  category=$(detect_category)
+  category=$(detect_category) || exit 0  # Exit if unsupported event
 
   # For completion category, check if command should be silent
   if [[ "$category" == "completion" ]] && is_silent_command; then
