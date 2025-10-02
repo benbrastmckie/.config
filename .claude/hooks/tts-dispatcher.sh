@@ -30,6 +30,33 @@
 set -eo pipefail
 
 # ============================================================================
+# Hook Input Parsing
+# ============================================================================
+
+# Read JSON input from stdin (Claude Code passes hook data as JSON)
+HOOK_INPUT=$(cat)
+
+# Parse hook event name and other fields from JSON
+# Uses jq if available, otherwise falls back to grep/sed
+if command -v jq &>/dev/null; then
+  HOOK_EVENT=$(echo "$HOOK_INPUT" | jq -r '.hook_event_name // "unknown"')
+  CLAUDE_COMMAND=$(echo "$HOOK_INPUT" | jq -r '.command // ""')
+  CLAUDE_STATUS=$(echo "$HOOK_INPUT" | jq -r '.status // "success"')
+  CLAUDE_PROJECT_DIR=$(echo "$HOOK_INPUT" | jq -r '.cwd // ""')
+  NOTIFICATION_MESSAGE=$(echo "$HOOK_INPUT" | jq -r '.message // ""')
+else
+  # Fallback parsing without jq
+  HOOK_EVENT=$(echo "$HOOK_INPUT" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)".*/\1/' || echo "unknown")
+  CLAUDE_COMMAND=$(echo "$HOOK_INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)".*/\1/' || echo "")
+  CLAUDE_STATUS=$(echo "$HOOK_INPUT" | grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)".*/\1/' || echo "success")
+  CLAUDE_PROJECT_DIR=$(echo "$HOOK_INPUT" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)".*/\1/' || echo "")
+  NOTIFICATION_MESSAGE=$(echo "$HOOK_INPUT" | grep -o '"message"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)".*/\1/' || echo "")
+fi
+
+# Export for use by message generation functions
+export HOOK_EVENT CLAUDE_COMMAND CLAUDE_STATUS CLAUDE_PROJECT_DIR NOTIFICATION_MESSAGE
+
+# ============================================================================
 # Configuration and Setup
 # ============================================================================
 
@@ -49,9 +76,9 @@ fi
 # Source configuration
 source "$CONFIG_FILE"
 
-# Debug: Log that hook was called
+# Debug: Log that hook was called with parsed data
 mkdir -p "$CLAUDE_DIR/logs"
-echo "[$(date -Iseconds)] Hook called: HOOK_EVENT=${HOOK_EVENT:-unset} CLAUDE_COMMAND=${CLAUDE_COMMAND:-unset}" >> "$CLAUDE_DIR/logs/hook-debug.log"
+echo "[$(date -Iseconds)] Hook called: EVENT=${HOOK_EVENT} CMD=${CLAUDE_COMMAND} STATUS=${CLAUDE_STATUS}" >> "$CLAUDE_DIR/logs/hook-debug.log"
 
 # Check if TTS globally enabled
 if [[ "${TTS_ENABLED:-false}" != "true" ]]; then
