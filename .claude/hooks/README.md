@@ -188,31 +188,6 @@ Triggered before context compaction.
 
 ---
 
-### session-start-restore.sh
-**Purpose**: Check for interrupted workflows and notify user on session start
-
-**Triggered By**: SessionStart event
-
-**Input** (via JSON stdin):
-- `hook_event_name`: "SessionStart"
-- `cwd`: Working directory
-
-**Actions**:
-- Check for state files in `.claude/state/`
-- Display helpful message if state found
-- List state files with modification times
-- Provide resumption guidance
-
-**Output**: Terminal display with box-drawing characters
-
-**Features**:
-- Non-intrusive notification
-- Helpful resumption instructions
-- State file inventory
-- Graceful handling of missing state
-
----
-
 ### tts-dispatcher.sh
 **Purpose**: Central dispatcher for all TTS notifications
 
@@ -406,19 +381,6 @@ mkdir -p "$LOG_DIR"
 echo "[$(date -Iseconds)] Hook executed: $HOOK_EVENT" >> "$LOG_DIR/hook.log"
 ```
 
-### State Management
-```bash
-# Read state files safely
-STATE_FILE="$CLAUDE_PROJECT_DIR/.claude/state/workflow.json"
-if [[ -f "$STATE_FILE" ]]; then
-  STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "{}")
-fi
-
-# Write state atomically
-echo "$STATE" > "$STATE_FILE.tmp"
-mv "$STATE_FILE.tmp" "$STATE_FILE"
-```
-
 ## Debugging Hooks
 
 ### Enable Debug Logging
@@ -462,7 +424,7 @@ cat .claude/settings.local.json | jq -r '.hooks | to_entries[] | "\(.key): \(.va
 ### Path Validation
 ```bash
 # Always use $CLAUDE_PROJECT_DIR for paths
-SAFE_PATH="$CLAUDE_PROJECT_DIR/.claude/state/data.json"
+SAFE_PATH="$CLAUDE_PROJECT_DIR/.claude/logs/data.log"
 
 # Validate before using
 if [[ ! "$SAFE_PATH" =~ ^"$CLAUDE_PROJECT_DIR" ]]; then
@@ -551,8 +513,8 @@ COMMAND=$(echo "$HOOK_INPUT" | jq -r '.command')
 
 # Only act on /implement
 if [[ "$COMMAND" == "/implement" ]]; then
-  # Save implementation state
-  echo "$HOOK_INPUT" > "$CLAUDE_PROJECT_DIR/.claude/state/last-implement.json"
+  # Log implementation event
+  echo "[$(date -Iseconds)] Implement command executed" >> "$CLAUDE_PROJECT_DIR/.claude/logs/commands.log"
 fi
 
 exit 0
