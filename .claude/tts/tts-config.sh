@@ -66,11 +66,11 @@ TTS_ERROR_ENABLED=true
 
 # Idle Reminders (Notification hook - idle >60s)
 # Triggered when Claude waits for input for more than 60 seconds
-TTS_IDLE_ENABLED=true
+TTS_IDLE_ENABLED=false
 
 # Session Lifecycle (SessionStart, SessionEnd hooks)
 # Triggered when sessions begin or end
-TTS_SESSION_ENABLED=true
+TTS_SESSION_ENABLED=false
 
 # Tool Execution (PreToolUse, PostToolUse hooks)
 # Triggered before/after significant tool use
