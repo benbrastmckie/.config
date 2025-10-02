@@ -151,7 +151,7 @@ TTS_MIN_DURATION_MS=1000
 TTS_STATE_FILE_ENABLED=false
 
 # Debug mode: Log TTS invocations to .claude/logs/tts.log
-TTS_DEBUG=false
+TTS_DEBUG=true
 
 # ============================================================================
 # Extension Points

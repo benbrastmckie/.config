@@ -49,6 +49,10 @@ fi
 # Source configuration
 source "$CONFIG_FILE"
 
+# Debug: Log that hook was called
+mkdir -p "$CLAUDE_DIR/logs"
+echo "[$(date -Iseconds)] Hook called: HOOK_EVENT=${HOOK_EVENT:-unset} CLAUDE_COMMAND=${CLAUDE_COMMAND:-unset}" >> "$CLAUDE_DIR/logs/hook-debug.log"
+
 # Check if TTS globally enabled
 if [[ "${TTS_ENABLED:-false}" != "true" ]]; then
   exit 0  # TTS disabled, exit silently
