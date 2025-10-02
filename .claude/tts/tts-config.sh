@@ -88,41 +88,20 @@ TTS_PROMPT_ACK_ENABLED=false
 TTS_COMPACT_ENABLED=false
 
 # ============================================================================
-# Voice Characteristics per Category
+# Voice Characteristics
 # ============================================================================
 # Format: "pitch:speed"
 #   pitch: 0-99 (0=lowest, 50=normal, 99=highest)
 #   speed: words per minute (typical range: 120-220)
 #
-# Different voice characteristics help distinguish notification types
-# without needing to listen to the full message.
+# All notifications use the same voice for consistency and simplicity.
 
-# Completion: Normal voice for task completion
-TTS_COMPLETION_VOICE="50:160"
+# Unified voice parameters for all TTS notifications
+TTS_VOICE_PARAMS="50:160"
 
-# Permission: Higher pitch, faster for urgency
-TTS_PERMISSION_VOICE="60:180"
-
-# Progress: Lower pitch, faster for background info
-TTS_PROGRESS_VOICE="40:180"
-
-# Error: Low pitch, slower for alert/attention
-TTS_ERROR_VOICE="35:140"
-
-# Idle: Normal pitch, slower for gentle reminder
-TTS_IDLE_VOICE="50:140"
-
-# Session: Normal voice for lifecycle events
-TTS_SESSION_VOICE="50:160"
-
-# Tool: Very low, very fast for minimal intrusion
-TTS_TOOL_VOICE="30:200"
-
-# Prompt Ack: High pitch, very fast for quick confirmation
-TTS_PROMPT_ACK_VOICE="70:220"
-
-# Compact: Normal voice
-TTS_COMPACT_VOICE="50:160"
+# To customize voice characteristics:
+#   TTS_VOICE_PARAMS="35:140"  # Lower, slower voice
+#   TTS_VOICE_PARAMS="60:180"  # Higher, faster voice
 
 # ============================================================================
 # Message Verbosity
