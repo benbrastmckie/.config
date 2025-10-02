@@ -219,47 +219,9 @@ is_category_enabled() {
 # ============================================================================
 
 # Get voice parameters for category
-# Args: $1 - category name
-# Returns: "pitch:speed" string
+# Returns: "pitch:speed" string (unified for all categories)
 get_voice_params() {
-  local category="$1"
-  local var_name
-
-  case "$category" in
-    completion)
-      var_name="TTS_COMPLETION_VOICE"
-      ;;
-    permission)
-      var_name="TTS_PERMISSION_VOICE"
-      ;;
-    progress)
-      var_name="TTS_PROGRESS_VOICE"
-      ;;
-    error)
-      var_name="TTS_ERROR_VOICE"
-      ;;
-    idle)
-      var_name="TTS_IDLE_VOICE"
-      ;;
-    session)
-      var_name="TTS_SESSION_VOICE"
-      ;;
-    tool)
-      var_name="TTS_TOOL_VOICE"
-      ;;
-    prompt_ack)
-      var_name="TTS_PROMPT_ACK_VOICE"
-      ;;
-    compact)
-      var_name="TTS_COMPACT_VOICE"
-      ;;
-    *)
-      echo "50:160"  # Default voice params
-      return
-      ;;
-  esac
-
-  echo "${!var_name:-50:160}"
+  echo "${TTS_VOICE_PARAMS:-50:160}"
 }
 
 # Parse pitch and speed from voice params string
