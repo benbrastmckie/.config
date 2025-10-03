@@ -89,16 +89,16 @@ return {
       end,
     })
 
-    -- Additional autocmd to catch any Claude buffers that might get listed later
+    -- Additional autocmd to catch any Claude Code terminal buffers that might get listed later
+    -- IMPORTANT: Check buftype == "terminal" FIRST to avoid catching .claude/ directory files
     vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
       pattern = "*",
       callback = function()
         local bufname = vim.api.nvim_buf_get_name(0)
-        if bufname:match("claude") or bufname:match("ClaudeCode") or vim.bo.buftype == "terminal" then
-          if bufname:match("claude") then
-            vim.bo.buflisted = false
-            vim.bo.bufhidden = "hide"
-          end
+        -- Only unlist Claude Code terminal buffers, not .claude/ directory files
+        if vim.bo.buftype == "terminal" and (bufname:match("claude") or bufname:match("ClaudeCode")) then
+          vim.bo.buflisted = false
+          vim.bo.bufhidden = "hide"
         end
       end,
     })
