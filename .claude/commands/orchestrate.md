@@ -160,8 +160,16 @@ Investigate [specific topic] to inform the planning and implementation phases of
 - **Documentation Review**: Read relevant files and docs
 - **Web Research**: Use WebSearch for industry standards (if applicable)
 - **Analysis**: Evaluate findings for relevance and applicability
+- **Specs Location**: Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed
 
 ## Expected Output
+
+**Note**: When creating research reports, follow the SPECS.md registration process:
+1. Detect relevant project directory
+2. Check `.claude/SPECS.md` for registered specs directory
+3. Use registered location or auto-detect (project-dir/specs/)
+4. Register in SPECS.md if new
+5. Include "Specs Directory" in report metadata
 
 Provide a concise summary (max 150 words) structured as:
 
@@ -386,6 +394,10 @@ Recommended approach: [From research synthesis]
 **Primary Output**: Path to generated implementation plan
 - Format: `specs/plans/NNN_feature_name.md`
 - Location: Most appropriate directory in project structure
+- **Note**: The /plan command will automatically:
+  - Read specs directory from research reports (if provided)
+  - Check/register in `.claude/SPECS.md`
+  - Include "Specs Directory" in plan metadata
 
 **Secondary Output**: Brief summary of plan
 - Number of phases
@@ -1151,6 +1163,12 @@ and generate a comprehensive workflow summary.
 
 ## Requirements
 
+### Specs Directory Location
+- Read the implementation plan at [plan_path]
+- Extract "Specs Directory" from plan metadata
+- Create workflow summary in: [specs-dir]/summaries/NNN_workflow_summary.md
+- Update `.claude/SPECS.md` registry: increment Summaries count
+
 ### Documentation Updates
 Use the /document command to update affected documentation:
 
@@ -1170,6 +1188,7 @@ Ensure proper cross-references between:
 - Implementation plan → Workflow summary
 - Modified code → Documentation updates
 - All specs documents (reports, plans, summaries)
+- **Note**: Use same specs directory for all related artifacts (from plan metadata)
 
 ### Documentation Standards
 - Follow CommonMark markdown specification
@@ -1247,6 +1266,8 @@ summary_location:
 
 ## Metadata
 - **Date Completed**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/] (from plan metadata)
+- **Summary Number**: [NNN] (matches plan number)
 - **Workflow Type**: [feature|refactor|debug|investigation]
 - **Original Request**: [User's workflow description]
 - **Total Duration**: [HH:MM:SS]
