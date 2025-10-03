@@ -21,7 +21,7 @@ Each project section follows this format:
 - **Specs Directory**: .claude/specs/
 - **Last Updated**: 2025-10-03
 - **Reports**: 23
-- **Plans**: 21
+- **Plans**: 22
 - **Summaries**: 15
 
 ---
