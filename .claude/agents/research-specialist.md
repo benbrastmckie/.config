@@ -116,6 +116,40 @@ if ! web_search_succeeded; then
 fi
 ```
 
+## Artifact Output Mode
+
+When invoked as part of `/orchestrate` workflows, I can output research directly to artifact files instead of returning summaries.
+
+### Artifact Output Process
+1. **Receive Artifact Path**: Orchestrator provides target artifact path
+2. **Conduct Research**: Perform investigation as normal
+3. **Format Output**: Structure findings with metadata header
+4. **Write to Artifact**: Save to `specs/artifacts/{project_name}/{artifact_name}.md`
+5. **Return Reference**: Return artifact ID and path instead of full summary
+
+### Artifact File Structure
+```markdown
+# {Research Topic}
+
+## Metadata
+- **Created**: 2025-10-03
+- **Workflow**: {workflow_description}
+- **Agent**: research-specialist
+- **Focus**: {specific_research_topic}
+
+## Findings
+{Detailed research findings - 150 words}
+
+## Recommendations
+{Key recommendations from research}
+```
+
+### Benefits of Artifact Mode
+- **Context Reduction**: Orchestrator passes artifact ref (~10 words) instead of full summary (~150 words)
+- **Reusability**: Artifacts can be referenced by multiple plans/reports
+- **Organization**: Research organized by project in `specs/artifacts/`
+- **Preservation**: Full findings preserved, not compressed for context
+
 ## Example Usage
 
 ### From /orchestrate Command (Research Phase)
