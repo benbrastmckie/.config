@@ -142,6 +142,36 @@ Run tests by:
 - Checking for common test patterns (npm test, pytest, make test)
 - Running language-specific test commands based on project type
 
+### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
+**Check if this phase was previously debugged:**
+
+**Step 1: Check for Debugging Notes**
+- Read current phase section in plan
+- Look for "#### Debugging Notes" subsection
+- Check if it contains "Resolution: Pending"
+
+**Step 2: Update Resolution**
+- If debugging notes exist and tests now pass:
+  - Use Edit tool to update: `Resolution: Pending` → `Resolution: Applied`
+  - Add git commit hash line (will be added after commit)
+  - This marks that the debugging led to a successful fix
+
+**Step 3: Add Fix Commit Hash (after git commit)**
+- After git commit succeeds
+- If resolution was updated: Add commit hash to debugging notes
+- Format: `Fix Applied In: [commit-hash]`
+
+**Example:**
+```markdown
+#### Debugging Notes
+- **Date**: 2025-10-03
+- **Issue**: Phase failed with null pointer
+- **Debug Report**: [../reports/026_debug.md](../reports/026_debug.md)
+- **Root Cause**: Missing null check
+- **Resolution**: Applied
+- **Fix Applied In**: abc1234
+```
+
 ### 4. Git Commit
 Create a structured commit:
 ```
