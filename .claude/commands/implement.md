@@ -585,4 +585,90 @@ While `/implement` currently works autonomously, it could potentially delegate t
 
 For complex, multi-phase implementations requiring specialized expertise, use `/orchestrate` instead, which fully leverages the agent system.
 
+## Checkpoint Detection and Resume
+
+Before starting implementation, I'll check for existing checkpoints that might indicate an interrupted implementation.
+
+### Step 1: Check for Existing Checkpoint
+
+```bash
+# Load most recent implement checkpoint
+CHECKPOINT=$(.claude/utils/load-checkpoint.sh implement 2>/dev/null || echo "")
+```
+
+### Step 2: Interactive Resume Prompt (if checkpoint found)
+
+If a checkpoint exists for this plan, I'll present interactive options:
+
+```
+Found existing checkpoint for implementation
+Plan: [plan_path]
+Created: [created_at] ([age] ago)
+Progress: Phase [current_phase] of [total_phases] completed
+Last test status: [tests_passing]
+
+Options:
+  (r)esume - Continue from Phase [current_phase + 1]
+  (s)tart fresh - Delete checkpoint and restart from beginning
+  (v)iew details - Show checkpoint contents
+  (d)elete - Remove checkpoint without starting
+
+Choice [r/s/v/d]:
+```
+
+### Step 3: Resume Implementation State (if user chooses resume)
+
+If user selects resume:
+1. Load plan_path from checkpoint
+2. Restore current_phase, completed_phases
+3. Skip to next incomplete phase
+4. Continue implementation from that point
+
+### Step 4: Save Checkpoints After Each Phase
+
+After each phase completes successfully (after git commit):
+
+```bash
+# Build checkpoint state
+STATE_JSON=$(cat <<EOF
+{
+  "workflow_description": "Implement [plan-name]",
+  "plan_path": "$PLAN_PATH",
+  "current_phase": $CURRENT_PHASE,
+  "total_phases": $TOTAL_PHASES,
+  "completed_phases": [$COMPLETED_PHASES_ARRAY],
+  "status": "in_progress",
+  "tests_passing": true
+}
+EOF
+)
+
+# Save checkpoint
+PROJECT_NAME=$(basename "$PLAN_PATH" .md | sed 's/^[0-9]*_//')
+.claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
+```
+
+### Step 5: Cleanup on Completion
+
+On successful implementation completion:
+```bash
+# Delete checkpoint file
+rm .claude/checkpoints/implement_${PROJECT_NAME}_*.json
+```
+
+On implementation failure:
+```bash
+# Update checkpoint with error info, archive to failed/
+STATE_JSON=$(cat <<EOF
+{
+  "status": "failed",
+  "last_error": "$ERROR_MESSAGE",
+  "failed_phase": $CURRENT_PHASE
+}
+EOF
+)
+.claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
+mv .claude/checkpoints/implement_${PROJECT_NAME}_*.json .claude/checkpoints/failed/
+```
+
 Let me start by finding your implementation plan.

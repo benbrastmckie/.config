@@ -2227,4 +2227,75 @@ This command uses specialized agents for each workflow phase:
 - **Context Isolation**: Agents receive only relevant context for their phase
 - **Clear Responsibilities**: No ambiguity about which agent handles what
 
+## Checkpoint Detection and Resume
+
+Before starting the workflow, I'll check for existing checkpoints that might indicate an interrupted workflow.
+
+### Step 1: Check for Existing Checkpoint
+
+```bash
+# Load most recent orchestrate checkpoint
+CHECKPOINT=$(.claude/utils/load-checkpoint.sh orchestrate 2>/dev/null || echo "")
+```
+
+### Step 2: Interactive Resume Prompt (if checkpoint found)
+
+If a checkpoint exists, I'll present interactive options:
+
+```
+Found existing checkpoint for orchestrate workflow
+Project: [project_name]
+Created: [created_at] ([age] ago)
+Progress: Phase [current_phase] of [total_phases] completed
+Status: [status]
+
+Options:
+  (r)esume - Continue from Phase [current_phase + 1]
+  (s)tart fresh - Delete checkpoint and restart workflow
+  (v)iew details - Show checkpoint contents
+  (d)elete - Remove checkpoint without starting
+
+Choice [r/s/v/d]:
+```
+
+### Step 3: Resume Workflow State (if user chooses resume)
+
+If user selects resume:
+1. Load `workflow_state` from checkpoint
+2. Restore `project_name`, `artifact_registry`, `completed_phases`
+3. Skip to next incomplete phase
+4. Continue workflow from that point
+
+### Step 4: Save Checkpoints at Key Milestones
+
+Throughout workflow execution, save checkpoints after each major phase:
+
+```bash
+# After research phase
+.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$WORKFLOW_STATE_JSON"
+
+# After planning phase
+.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+
+# After implementation phase
+.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+
+# After debugging (if needed)
+.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+```
+
+### Step 5: Cleanup on Completion
+
+On successful workflow completion:
+```bash
+# Delete checkpoint file
+rm .claude/checkpoints/orchestrate_${PROJECT_NAME}_*.json
+```
+
+On workflow failure:
+```bash
+# Archive checkpoint to failed/ directory
+mv .claude/checkpoints/orchestrate_${PROJECT_NAME}_*.json .claude/checkpoints/failed/
+```
+
 Let me begin orchestrating your workflow based on the description provided.
