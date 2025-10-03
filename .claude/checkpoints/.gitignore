@@ -1,0 +1,6 @@
+# Ignore all checkpoint files
+*.json
+
+# Keep README and directory structure
+!README.md
+!.gitignore
