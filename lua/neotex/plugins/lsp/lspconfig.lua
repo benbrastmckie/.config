@@ -2,7 +2,7 @@ return {
   "neovim/nvim-lspconfig",
   event = { "BufReadPre", "BufNewFile" }, -- Only load when a file is opened
   dependencies = {
-    { "antosha417/nvim-lsp-file-operations", event = "VeryLazy" }, -- Load file operations later
+    { "antosha417/nvim-lsp-file-operations", event = "BufReadPost" }, -- Load when reading files
   },
   config = function()
     -- Suppress the deprecation warning from nvim-lspconfig

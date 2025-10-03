@@ -22,7 +22,7 @@
 return {
   "kylechui/nvim-surround", 
   version = "*",  -- Use the latest stable release 
-  event = "VeryLazy",
+  event = "BufReadPost",  -- Load when reading files (ready for text manipulation)
   config = function()
     require("nvim-surround").setup({
       -- Configuration here (leave default for now)
