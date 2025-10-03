@@ -26,6 +26,28 @@ If research reports are provided, I'll:
 - Use insights to inform the plan structure
 - Reference reports in the plan metadata
 
+### 1.5. Update Report Implementation Status
+**After creating the plan, update referenced reports:**
+
+**For each research report provided:**
+- Use Edit tool to update "## Implementation Status" section
+- Change: `Status: Research Complete` → `Status: Planning In Progress`
+- Update: `Plan: None yet` → `Plan: [link to specs/plans/NNN.md]`
+- Update date field
+
+**Example update:**
+```markdown
+## Implementation Status
+- **Status**: Planning In Progress
+- **Plan**: [../plans/018_spec_file_updates.md](../plans/018_spec_file_updates.md)
+- **Implementation**: Not started
+- **Date**: 2025-10-03
+```
+
+**Edge Cases:**
+- If report lacks "Implementation Status" section: Use Edit tool to append section before updating
+- If report already has a plan link: Update existing (report can inform multiple plans)
+
 ### 2. Requirements Analysis
 I'll analyze the feature requirements to determine:
 - Core functionality needed
