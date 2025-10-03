@@ -19,7 +19,9 @@ Investigates issues and creates a comprehensive diagnostic report without making
 ### Arguments
 
 - `<issue-description>` (required): Description of the bad behavior or issue to investigate
-- `[report-path1] [report-path2] ...` (optional): Related reports that might provide context
+- `[report-path1] [report-path2] ...` (optional): Related reports or plan paths that might provide context
+  - Can be report paths: `specs/reports/001_*.md`
+  - Can be plan paths: `specs/plans/002_*.md` (will annotate plan with debug notes)
 
 ## Examples
 
@@ -174,6 +176,72 @@ Where NNN is the next sequential number.
 - Use `/plan` to create implementation plan from findings
 - Use `/implement` to execute the solution
 - Consider `/test` to verify the fix
+
+## Plan Annotation
+
+**When a plan path is provided as an argument:**
+
+After creating the debug report, automatically annotate the plan with debugging history.
+
+### Step 1: Identify Plan and Failed Phase
+- Check if any argument is a plan path (`specs/plans/*.md`)
+- If yes: Determine which phase failed (from issue description or plan analysis)
+- Extract phase number from user's description or by analyzing plan
+
+### Step 2: Extract Root Cause
+- From the debug report just created
+- Summarize root cause in one line
+- Extract debug report path
+
+### Step 3: Annotate Plan with Debugging Notes
+- Use Edit tool to add "#### Debugging Notes" subsection after the failed phase
+- Format:
+  ```markdown
+  #### Debugging Notes
+  - **Date**: [YYYY-MM-DD]
+  - **Issue**: [Brief description from issue-description argument]
+  - **Debug Report**: [link to specs/reports/NNN_debug_*.md]
+  - **Root Cause**: [One-line summary from debug report]
+  - **Resolution**: Pending
+  ```
+
+### Step 4: Handle Multiple Debugging Iterations
+- Before adding notes: Check if phase already has "#### Debugging Notes"
+- If exists: Append new iteration using Edit tool
+  ```markdown
+  **Iteration 2** (2025-10-03)
+  - **Issue**: [New issue description]
+  - **Debug Report**: [link to new debug report]
+  - **Root Cause**: [New root cause]
+  - **Resolution**: Pending
+  ```
+- If 3+ iterations: Add note `**Status**: Escalated to manual intervention`
+
+### Step 5: Update Resolution When Fixed
+**Note for `/implement` command:**
+- After a phase with debugging notes passes tests
+- Check for "Resolution: Pending" in debugging notes
+- Update to "Resolution: Applied"
+- Add git commit hash: `Fix Applied In: [commit-hash]`
+
+### Example Annotation
+
+```markdown
+### Phase 3: Core Implementation
+
+Tasks:
+- [x] Implement main feature
+- [x] Add error handling
+- [x] Write tests
+
+#### Debugging Notes
+- **Date**: 2025-10-03
+- **Issue**: Phase 3 tests failing with null pointer exception
+- **Debug Report**: [../reports/026_debug_phase3.md](../reports/026_debug_phase3.md)
+- **Root Cause**: Missing null check in error handler
+- **Resolution**: Applied
+- **Fix Applied In**: abc1234
+```
 
 ## Common Investigation Areas
 
