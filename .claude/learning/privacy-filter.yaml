@@ -1,0 +1,104 @@
+---
+# Privacy Filter Configuration for Adaptive Learning System
+# Sensitive data patterns are filtered before storage
+
+# File path anonymization
+file_paths:
+  - pattern: "/home/[^/]+/"
+    replacement: "/home/user/"
+    description: "Anonymize home directory usernames"
+
+  - pattern: "/Users/[^/]+/"
+    replacement: "/Users/user/"
+    description: "Anonymize macOS home directories"
+
+  - pattern: "/root/"
+    replacement: "/home/user/"
+    description: "Anonymize root paths"
+
+  - pattern: "[A-Z]:\\\\Users\\\\[^\\\\]+"
+    replacement: "C:\\Users\\user"
+    description: "Anonymize Windows user directories"
+
+# Sensitive keywords (never stored)
+sensitive_keywords:
+  - password
+  - passwd
+  - secret
+  - api_key
+  - api-key
+  - apikey
+  - token
+  - auth_token
+  - access_token
+  - refresh_token
+  - credential
+  - credentials
+  - private_key
+  - ssh_key
+  - certificate
+  - cert
+
+# Error message sanitization
+error_patterns:
+  - pattern: "in file .*/([^/]+\\.(lua|md|sh|py|js|yaml))"
+    replacement: "in file $1"
+    description: "Remove full paths from error messages"
+
+  - pattern: "at .*/([^/]+):(\\d+)"
+    replacement: "at $1:$2"
+    description: "Keep only filename and line number"
+
+  - pattern: "user '[^']+'"
+    replacement: "user 'username'"
+    description: "Anonymize usernames in errors"
+
+  - pattern: "host '[^']+'"
+    replacement: "host 'hostname'"
+    description: "Anonymize hostnames"
+
+# Variable name sanitization
+variable_patterns:
+  - pattern: "\\b(password|secret|token|key)_[a-z_]+"
+    replacement: "[REDACTED]"
+    description: "Redact variable names containing sensitive words"
+
+# URL sanitization
+url_patterns:
+  - pattern: "https?://[^/]+@"
+    replacement: "https://"
+    description: "Remove credentials from URLs"
+
+  - pattern: "\\?.*token=[^&]+"
+    replacement: "?token=[REDACTED]"
+    description: "Redact tokens in query strings"
+
+  - pattern: "\\?.*key=[^&]+"
+    replacement: "?key=[REDACTED]"
+    description: "Redact API keys in query strings"
+
+# Email addresses
+email_pattern:
+  pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+  replacement: "user@example.com"
+  description: "Anonymize email addresses"
+
+# IP addresses
+ip_pattern:
+  pattern: "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b"
+  replacement: "0.0.0.0"
+  description: "Anonymize IP addresses"
+
+# Configuration
+settings:
+  # Strictly enforce filters (fail if pattern match fails)
+  strict_mode: true
+
+  # Log all filter applications for audit
+  log_filtered: true
+
+  # Log file location
+  filter_log: ".claude/learning/filter-audit.log"
+
+  # Additional safety: truncate any field > 500 chars
+  max_field_length: 500
