@@ -27,6 +27,9 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 [Additional documentation continues as before...]
 ]]
 
+-- Import notification module for TTS toggle functionality
+local notify = require('neotex.util.notifications')
+
 return {
   "folke/which-key.nvim",
   event = "VeryLazy",
