@@ -200,7 +200,7 @@ Expected outcome:
 - No timing gap during session restoration
 - Bufferline setup still deferred for smooth initialization
 
-### Phase 3: Simplify Defensive Autocmd
+### Phase 3: Simplify Defensive Autocmd [COMPLETED]
 **Objective**: Simplify defensive autocmd in sessions.lua from 4 events to 2 events
 **Complexity**: Low
 
@@ -216,11 +216,11 @@ Expected outcome:
 - **Keep**: BufEnter, BufWinEnter (protection during transitions and async operations)
 
 Tasks:
-- [ ] Simplify sessions.lua:72 autocmd events from 4 to 2
-- [ ] Change events from `{"BufAdd", "SessionLoadPost", "BufEnter", "BufWinEnter"}` to `{"BufEnter", "BufWinEnter"}`
-- [ ] Update comment to explain that BufAdd/SessionLoadPost are no longer needed due to root cause fixes
-- [ ] Update comment to explain that BufEnter/BufWinEnter provide protection against unknown async operations
-- [ ] Update autocmd description to reflect simplified purpose
+- [x] Simplify sessions.lua:72 autocmd events from 4 to 2
+- [x] Change events from `{"BufAdd", "SessionLoadPost", "BufEnter", "BufWinEnter"}` to `{"BufEnter", "BufWinEnter"}`
+- [x] Update comment to explain that BufAdd/SessionLoadPost are no longer needed due to root cause fixes
+- [x] Update comment to explain that BufEnter/BufWinEnter provide protection against unknown async operations
+- [x] Update autocmd description to reflect simplified purpose
 
 Testing:
 ```bash
