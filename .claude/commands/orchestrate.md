@@ -258,6 +258,13 @@ Examples:
 
 Store in workflow_state.project_name for artifact path generation.
 
+**Research Agent Monitoring**:
+- **Progress Streaming**: Research agents emit `PROGRESS: <message>` markers during execution
+  - Examples: `PROGRESS: Searching codebase for auth patterns...`, `PROGRESS: Found 15 files, analyzing...`
+  - Display progress updates to user in real-time
+- Monitor parallel agent execution
+- Collect artifact IDs as agents complete
+
 #### Step 4: Store Research as Artifacts and Create References
 
 After each research agent completes:
@@ -560,6 +567,13 @@ prompt: "[Generated planning prompt from Step 2]"
 - Can invoke /plan slash command
 - Returns plan file path and summary
 
+**Monitoring**:
+- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
+  - Examples: `PROGRESS: Analyzing requirements...`, `PROGRESS: Designing 4 phases...`
+  - Display progress updates to user in real-time
+- Track planning progress
+- Watch for plan file creation
+
 #### Step 4: Extract Plan Path and Validation
 
 **Path Extraction**:
@@ -749,6 +763,9 @@ timeout: 600000  # 10 minutes for complex implementations
 ```
 
 **Monitoring**:
+- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
+  - Display progress updates to user in real-time
+  - Examples: `PROGRESS: Implementing login function...`, `PROGRESS: Running tests...`
 - Track implementation progress via agent updates
 - Watch for test failure signals
 - Monitor for error patterns
@@ -976,6 +993,9 @@ prompt: "[Generated debug prompt from Step 2]"
 ```
 
 **Monitoring**:
+- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
+  - Display progress updates to user in real-time
+  - Examples: `PROGRESS: Analyzing error logs...`, `PROGRESS: Identifying root cause...`
 - Track debug progress
 - Watch for root cause identification
 - Monitor for escalation signals
@@ -1386,6 +1406,9 @@ prompt: "[Generated documentation prompt from Step 2]"
 ```
 
 **Monitoring**:
+- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
+  - Display progress updates to user in real-time
+  - Examples: `PROGRESS: Updating README.md...`, `PROGRESS: Adding cross-references...`
 - Track documentation updates
 - Verify cross-referencing
 - Watch for completion signal

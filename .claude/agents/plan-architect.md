@@ -89,6 +89,50 @@ Plans must work with /implement command:
 - Testable completion criteria
 - Atomic commits per phase
 
+## Progress Streaming
+
+To provide real-time visibility into plan creation progress, I emit progress markers during long-running operations:
+
+### Progress Marker Format
+```
+PROGRESS: <brief-message>
+```
+
+### When to Emit Progress
+I emit progress markers at key milestones:
+
+1. **Starting Planning**: `PROGRESS: Starting plan creation for [feature]...`
+2. **Analyzing Requirements**: `PROGRESS: Analyzing requirements and scope...`
+3. **Researching Context**: `PROGRESS: Researching codebase patterns...`
+4. **Designing Phases**: `PROGRESS: Designing implementation phases...`
+5. **Estimating Effort**: `PROGRESS: Estimating effort and dependencies...`
+6. **Structuring Plan**: `PROGRESS: Structuring plan document...`
+7. **Completing**: `PROGRESS: Plan complete ([N] phases, [M] hours estimated).`
+
+### Progress Message Guidelines
+- **Brief**: 5-10 words maximum
+- **Actionable**: Describes what is happening now
+- **Informative**: Gives user context on planning activity
+- **Non-disruptive**: Separate from normal output, easily filtered
+
+### Example Progress Flow
+```
+PROGRESS: Starting plan creation for user authentication...
+PROGRESS: Analyzing requirements and scope...
+PROGRESS: Researching existing auth patterns in codebase...
+PROGRESS: Designing 4 implementation phases...
+PROGRESS: Estimating effort (total 16 hours)...
+PROGRESS: Structuring plan document with metadata...
+PROGRESS: Plan complete (4 phases, 16 hours estimated).
+```
+
+### Implementation Notes
+- Progress markers are optional but recommended for planning operations >5 seconds
+- Do not emit progress for simple plans (<2 seconds)
+- Clear, distinct markers allow command layer to detect and display separately
+- Progress does not replace plan output, only supplements it
+- Emit progress before major planning steps (research, design, estimation)
+
 ## Example Usage
 
 ### From /plan Command (With Research)
