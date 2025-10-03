@@ -48,7 +48,7 @@ The tools module is organized into individual plugin configurations and speciali
 | **gitsigns** | `gitsigns.lua` | Git integration with inline diff and blame |
 | **firenvim** | `firenvim.lua` | Browser textarea integration |
 | **mini** | `mini.lua` | Collection of mini.nvim modules (comment, ai, cursorword) |
-| **surround** | `surround.lua` | Text surrounding and manipulation |
+| **surround** | `surround.lua` | Text surrounding with filetype-aware buffer configurations |
 | **yanky** | `yanky.lua` | Enhanced yank/paste with history |
 | **todo-comments** | `todo-comments.lua` | TODO comment highlighting and navigation |
 | **luasnip** | `luasnip.lua` | Snippet engine configuration |
@@ -75,6 +75,7 @@ The tools module is organized into individual plugin configurations and speciali
 - **surround**: Text object manipulation
   - Add, delete, change surrounding characters
   - Works with quotes, brackets, XML tags, and custom delimiters
+  - Filetype-specific configurations loaded via ftplugin files
 
 - **yanky**: Advanced clipboard management
   - Yank history with telescope integration
@@ -187,6 +188,64 @@ def func : «input» → «output» := sorry
 <leader>gs  -- Git status
 <leader>gl  -- Line blame
 ```
+
+### Surround Operations
+nvim-surround provides filetype-aware text manipulation:
+
+```lua
+-- Keymaps (global for all filetypes)
+ys{motion}{char}  -- Add surround around motion
+ds{char}          -- Delete surround character
+cs{old}{new}      -- Change surround from old to new
+S{char}           -- Surround selected text (visual mode)
+
+-- Examples
+ysiw"             -- Surround word with quotes
+ds{               -- Delete surrounding braces
+cs"'              -- Change double quotes to single
+```
+
+Filetype-specific surrounds are configured in ftplugin files:
+
+#### Markdown Surrounds (markdown.lua)
+Available in .md files only:
+
+| Key | Surround | Example |
+|-----|----------|---------|
+| `b` | Bold | `**text**` |
+| `i` | Italic | `*text*` |
+| `` ` `` | Inline code | `` `text` `` |
+| `c` | Code block | `` ```language\ntext\n``` `` (prompts for language) |
+| `l` | Link | `[text](url)` (prompts for URL) |
+| `~` | Strikethrough | `~~text~~` |
+
+#### LaTeX Surrounds (tex.lua)
+Available in .tex files only:
+
+| Key | Surround | Example |
+|-----|----------|---------|
+| `e` | Environment | `\begin{env}...\end{env}` (prompts for environment) |
+| `b` | Bold | `\textbf{text}` |
+| `i` | Italic | `\textit{text}` |
+| `t` | Typewriter | `\texttt{text}` |
+| `q` | Single quotes | `` `text' `` |
+| `Q` | Double quotes | `` ``text'' `` |
+| `$` | Math mode | `$text$` |
+
+**Usage Example:**
+```
+-- In a markdown file:
+ysiw + b  ->  **word**    (bold)
+ysiw + i  ->  *word*      (italic)
+ysiw + `  ->  `word`      (code)
+
+-- In a LaTeX file:
+ysiw + b  ->  \textbf{word}    (bold)
+ysiw + i  ->  \textit{word}    (italic)
+ysiw + $  ->  $word$           (math)
+```
+
+This filetype isolation ensures that the same keys produce appropriate output for each file type, preventing cross-filetype pollution.
 
 ### List Management
 ```markdown

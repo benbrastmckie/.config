@@ -41,8 +41,8 @@ nvim/
 
 This Neovim configuration includes specialized support for:
 
-- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
-- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
+- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, LaTeX-specific text surrounds, and more
+- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, markdown-specific text surrounds, and live preview
 - **AI Assistance**: AI integration for code completion and editing suggestions with Avante, MCP-Hub tools, and knowledge assistance with Lectic
 - **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats
 - **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
@@ -293,6 +293,58 @@ Lectic provides AI-assisted writing for markdown files with these features:
    - Lectic will then process the entire file
 
 Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
+
+### Text Surround System
+
+This configuration uses nvim-surround with filetype-aware buffer configurations to provide context-appropriate text manipulation. The same keybindings produce different outputs depending on the file type.
+
+#### Basic Keybindings (All Filetypes)
+
+- `ys{motion}{char}` - Add surround around motion
+- `ds{char}` - Delete surrounding character
+- `cs{old}{new}` - Change surround from old to new
+- `S{char}` - Surround visual selection (visual mode)
+
+Examples:
+- `ysiw"` - Surround word with double quotes
+- `ds{` - Delete surrounding curly braces
+- `cs"'` - Change double quotes to single quotes
+
+#### Filetype-Specific Surrounds
+
+**Markdown Files (.md)**
+Special surrounds available only in markdown:
+
+| Key | Result | Description |
+|-----|--------|-------------|
+| `b` | `**text**` | Bold (strong emphasis) |
+| `i` | `*text*` | Italic (emphasis) |
+| `` ` `` | `` `text` `` | Inline code |
+| `c` | `` ```lang\ntext\n``` `` | Fenced code block (prompts for language) |
+| `l` | `[text](url)` | Link (prompts for URL) |
+| `~` | `~~text~~` | Strikethrough (GFM) |
+
+**LaTeX Files (.tex)**
+Special surrounds available only in LaTeX:
+
+| Key | Result | Description |
+|-----|--------|-------------|
+| `e` | `\begin{env}...\end{env}` | Environment (prompts for name) |
+| `b` | `\textbf{text}` | Bold text |
+| `i` | `\textit{text}` | Italic text |
+| `t` | `\texttt{text}` | Typewriter (monospace) |
+| `q` | `` `text' `` | LaTeX single quotes |
+| `Q` | `` ``text'' `` | LaTeX double quotes |
+| `$` | `$text$` | Math mode |
+
+**Filetype Isolation**
+This design prevents cross-filetype pollution - pressing `ysiw + b` on "word" produces:
+- `**word**` in markdown files (markdown bold)
+- `\textbf{word}` in LaTeX files (LaTeX bold)
+
+For complete surround documentation, see:
+- [Tools Plugin README](lua/neotex/plugins/tools/README.md#surround-operations)
+- [File Type Plugin README](after/ftplugin/README.md)
 
 ### Folding System
 
