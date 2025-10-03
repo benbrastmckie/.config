@@ -126,12 +126,82 @@ Let me first locate the implementation plan:
    - Update referenced reports if needed
    - Link plan and reports in summary
 
+## Parallel Execution with Dependencies
+
+Before executing phases, I will analyze phase dependencies to enable parallel execution:
+
+### Dependency Analysis
+
+**Step 1: Parse Dependencies**
+```bash
+# Use dependency parser to generate execution waves
+WAVES=$(.claude/utils/parse-phase-dependencies.sh "$PLAN_FILE")
+```
+
+**Step 2: Group Phases into Waves**
+- Parse wave output: `WAVE_1:1`, `WAVE_2:2 3`, `WAVE_3:4`
+- Each wave contains phases that can execute in parallel
+- Waves execute sequentially (wait for wave completion before next)
+
+**Step 3: Execute Waves**
+
+For each wave:
+1. **Single Phase**: Execute normally (sequential)
+2. **Multiple Phases**: Execute in parallel
+   - Invoke multiple agents simultaneously using multiple Task tool calls in one message
+   - Each phase gets its own agent based on complexity analysis
+   - Wait for all phases in wave to complete
+   - Collect results from all parallel executions
+
+**Step 4: Error Handling**
+- If any phase in a wave fails, stop execution
+- Preserve checkpoint with partial completion
+- Report which phases succeeded and which failed
+- User can resume from failed wave
+
+### Parallel Execution Safety
+
+- **Max Parallelism**: Limit to 3 concurrent phases per wave
+- **Fail-Fast**: Stop wave execution if any phase fails
+- **Checkpoint Preservation**: Save state after each wave
+- **Result Collection**: Aggregate test results and file changes from parallel phases
+
+### Dependency Format
+
+Phases declare dependencies in their header:
+```markdown
+### Phase N: Phase Name
+dependencies: [1, 2]  # Depends on phases 1 and 2
+```
+
+- Empty array `[]` or omitted = no dependencies (can run in wave 1)
+- Multiple dependencies = wait for all to complete
+- Circular dependencies are detected and rejected
+
 ## Phase Execution Protocol
 
-For each phase, I will:
+### Execution Flow
+
+**Sequential Execution** (no dependencies or dependencies: [] omitted):
+- Execute phases one by one in order (Phase 1, 2, 3, ...)
+- Traditional workflow, fully backward compatible
+
+**Parallel Execution** (with dependency declarations):
+- Parse dependencies into execution waves
+- Execute each wave sequentially
+- Within each wave, execute phases in parallel if wave contains >1 phase
+- Wait for wave completion before next wave
+
+For each wave, I will:
+
+### 0. Wave Initialization
+- Identify phases in current wave from dependency analysis
+- Log: "Executing Wave N with M phase(s): [phase numbers]"
+
+For each phase in the wave, I will prepare:
 
 ### 1. Display Phase Information
-Show the current phase number, name, and all tasks that need to be completed.
+Show the phase number, name, and all tasks that need to be completed.
 
 ### 1.5. Phase Complexity Analysis and Agent Selection
 
@@ -232,6 +302,59 @@ If `SELECTED_AGENT == "direct"`, I will:
 - Skip agent delegation
 - Implement the phase tasks directly following standards
 - Proceed immediately to implementation step
+
+### 1.6. Parallel Wave Execution
+
+After all phases in the wave are prepared (Steps 1-1.5 complete for each), execute the wave:
+
+**Single Phase Wave** (most common):
+- Execute the phase normally (agent delegation or direct)
+- Wait for completion
+- Proceed to testing and commit
+
+**Multi-Phase Wave** (parallel execution):
+1. **Invoke all phases in parallel**:
+   - Create multiple Task tool calls in a single message
+   - Each phase gets its own agent invocation
+   - Example for Wave 2 with phases 2 and 3:
+   ```
+   Executing Wave 2 with 2 phases in parallel: Phases 2 and 3
+
+   [Multiple Task tool calls in this single message:]
+
+   Task { (Phase 2)
+     subagent_type: "code-writer"
+     description: "Implement Phase 2"
+     prompt: "[Phase 2 tasks and context]"
+   }
+
+   Task { (Phase 3)
+     subagent_type: "code-writer"
+     description: "Implement Phase 3"
+     prompt: "[Phase 3 tasks and context]"
+   }
+   ```
+
+2. **Wait for wave completion**:
+   - All phases in wave must complete before proceeding
+   - Collect results from each phase execution
+   - Aggregate any progress markers from parallel agents
+
+3. **Check for failures**:
+   - If any phase failed, stop execution
+   - Report which phases succeeded and which failed
+   - Save checkpoint with partial completion
+   - User can fix issues and resume
+
+4. **Proceed to wave testing and commit**:
+   - Run tests for all phases in wave
+   - Commit all changes from wave together
+   - Move to next wave
+
+**Parallelism Limits**:
+- Maximum 3 concurrent phases per wave
+- If wave has >3 phases, split into sub-waves of 3
+- Ensures system stability and manageable error handling
 
 ### 2. Implementation
 Create or modify the necessary files according to the plan specifications.
