@@ -118,14 +118,68 @@ Duration: [Xs]
 [Suggestions for failures if any]
 ```
 
-## Error Recovery
+## Error Recovery and Enhanced Analysis
 
-If tests fail, I'll:
-1. Show detailed error messages
-2. Identify the failing test cases
-3. Suggest potential fixes
-4. Offer to run tests in debug mode
-5. Check if the issue is environment-specific
+If tests fail, I'll provide enhanced error analysis with actionable suggestions:
+
+### 1. Capture Error Output
+- Capture complete test output including error messages
+- Identify failing test cases and error locations
+- Preserve context around failures
+
+### 2. Run Enhanced Error Analysis
+```bash
+# Analyze error output with enhanced error tool
+.claude/utils/analyze-error.sh "$TEST_OUTPUT"
+```
+
+### 3. Enhanced Error Report
+The analysis provides:
+- **Error Type Classification**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission
+- **Error Location**: File and line number with 3 lines of context before/after
+- **Specific Suggestions**: 2-3 actionable fixes tailored to the error type
+- **Debug Commands**: Next steps for investigation
+
+### 4. Graceful Degradation
+For partial test failures:
+- Document which tests passed vs. failed
+- Identify patterns in failures (e.g., all timeout errors)
+- Suggest manual investigation steps:
+  - `/debug "<specific test failure description>"`
+  - Review recent changes: `git diff`
+  - Run individual tests: `:TestNearest`
+
+### 5. Example Enhanced Test Error Output
+
+```
+===============================================
+Enhanced Error Analysis
+===============================================
+
+Error Type: test_failure
+Location: tests/auth_spec.lua:42
+
+Context (around line 42):
+   39  setup(function()
+   40    session = mock_session_factory()
+   41  end)
+   42  it("should login with valid credentials", function()
+   43    local result = auth.login(session, "user", "pass")
+   44    assert.is_not_nil(result)
+   45  end)
+
+Suggestions:
+1. Check test setup - verify mocks and fixtures are initialized correctly
+2. Review test data - ensure test inputs match expected types and values
+3. Check for race conditions - add delays or synchronization if timing-sensitive
+4. Run test in isolation: :TestNearest to isolate the failure
+
+Debug Commands:
+- Investigate further: /debug "auth login test failing with nil result"
+- View file: nvim tests/auth_spec.lua
+- Run tests: :TestNearest or :TestFile
+===============================================
+```
 
 ## Agent Usage
 

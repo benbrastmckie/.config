@@ -142,6 +142,68 @@ Run tests by:
 - Checking for common test patterns (npm test, pytest, make test)
 - Running language-specific test commands based on project type
 
+### 3.3. Enhanced Error Analysis (if tests fail)
+
+If tests fail, provide enhanced error messages with fix suggestions:
+
+**Step 1: Capture Error Output**
+- Capture full test output including error messages
+- Identify failed tests and error locations
+
+**Step 2: Run Error Analysis**
+```bash
+# Analyze error output with enhanced error tool
+.claude/utils/analyze-error.sh "$ERROR_OUTPUT"
+```
+
+**Step 3: Display Enhanced Error Message**
+The enhanced analysis includes:
+- **Error Type**: Categorized (syntax, test_failure, file_not_found, import_error, null_error, timeout, permission)
+- **Location**: File and line number where error occurred
+- **Context**: 3 lines before and after error location
+- **Suggestions**: 2-3 specific, actionable fix suggestions
+- **Debug Commands**: Commands to investigate further
+
+**Step 4: Graceful Degradation**
+If tests fail:
+- Document what succeeded vs. what failed
+- Preserve partial progress
+- Suggest next steps:
+  - `/debug "<error description>"` for investigation
+  - Manual fixes based on suggestions
+  - Review recent changes with git diff
+
+**Example Enhanced Error Output:**
+```
+===============================================
+Enhanced Error Analysis
+===============================================
+
+Error Type: test_failure
+Location: tests/auth_spec.lua:42
+
+Context (around line 42):
+   39  setup(function()
+   40    session = mock_session_factory()
+   41  end)
+   42  it("should login with valid credentials", function()
+   43    local result = auth.login(session, "user", "pass")
+   44    assert.is_not_nil(result)
+   45  end)
+
+Suggestions:
+1. Check test setup - verify mocks and fixtures are initialized correctly
+2. Review test data - ensure test inputs match expected types and values
+3. Check for race conditions - add delays or synchronization if timing-sensitive
+4. Run test in isolation: :TestNearest to isolate the failure
+
+Debug Commands:
+- Investigate further: /debug "auth login test failing with nil result"
+- View file: nvim tests/auth_spec.lua
+- Run tests: :TestNearest or :TestFile
+===============================================
+```
+
 ### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
 **Check if this phase was previously debugged:**
 
