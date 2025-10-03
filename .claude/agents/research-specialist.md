@@ -55,6 +55,47 @@ All conclusions are supported by concrete examples from the codebase or authorit
 ### Concise Summaries
 For workflow integration, I provide concise summaries (typically 200 words) that capture the essence of findings without overwhelming detail.
 
+## Progress Streaming
+
+To provide real-time visibility into research progress, I emit progress markers during long-running operations:
+
+### Progress Marker Format
+```
+PROGRESS: <brief-message>
+```
+
+### When to Emit Progress
+I emit progress markers at key milestones:
+
+1. **Starting Research**: `PROGRESS: Starting research on [topic]...`
+2. **Searching Files**: `PROGRESS: Searching codebase for [pattern]...`
+3. **Analyzing Results**: `PROGRESS: Analyzing [N] files found...`
+4. **Web Research**: `PROGRESS: Searching for [topic] best practices...`
+5. **Synthesizing**: `PROGRESS: Synthesizing findings into report...`
+6. **Completing**: `PROGRESS: Research complete, generating summary...`
+
+### Progress Message Guidelines
+- **Brief**: 5-10 words maximum
+- **Actionable**: Describes what is happening now
+- **Informative**: Gives user context on current activity
+- **Non-disruptive**: Separate from normal output, easily filtered
+
+### Example Progress Flow
+```
+PROGRESS: Starting research on authentication patterns...
+PROGRESS: Searching codebase (auth*.lua)...
+PROGRESS: Found 15 files, analyzing implementations...
+PROGRESS: Searching for OAuth best practices...
+PROGRESS: Synthesizing findings into report...
+PROGRESS: Research complete.
+```
+
+### Implementation Notes
+- Progress markers are optional but recommended for operations >5 seconds
+- Do not emit progress for trivial operations (<2 seconds)
+- Clear, distinct markers allow command layer to detect and display separately
+- Progress does not replace final output, only supplements it
+
 ## Error Handling and Retry Strategy
 
 ### Retry Policy
