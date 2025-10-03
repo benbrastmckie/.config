@@ -1,6 +1,6 @@
 return {
   "Shatur/neovim-session-manager",
-  event = "VimEnter",
+  event = "VeryLazy",
   dependencies = {
     "nvim-lua/plenary.nvim",
     -- "stevearc/dressing.nvim",  -- Removed: will be loaded globally
