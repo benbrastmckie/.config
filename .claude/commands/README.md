@@ -78,6 +78,23 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
+#### /plan-wizard
+**Purpose**: Interactive wizard for guided plan creation with research integration
+
+**Usage**: `/plan-wizard`
+
+**Features**:
+- Step-by-step interactive prompts
+- Component and scope analysis
+- Automatic research topic identification
+- Complexity assessment
+- Optional research execution
+- Integration with /plan command
+
+**Output**: `specs/plans/NNN_plan_name.md`
+
+---
+
 #### /report
 **Purpose**: Research topics and create comprehensive reports
 
@@ -505,6 +522,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 - [list-summaries.md](list-summaries.md) - Summary listing
 - [orchestrate.md](orchestrate.md) - Multi-agent coordination
 - [plan.md](plan.md) - Implementation planning
+- [plan-wizard.md](plan-wizard.md) - Interactive plan creation
 - [refactor.md](refactor.md) - Code analysis
 - [report.md](report.md) - Research reports
 - [resume-implement.md](resume-implement.md) - Resume implementation
