@@ -121,6 +121,54 @@ return {
     -- HELPER FUNCTIONS FOR FILETYPE DETECTION
     -- ============================================================================
 
+    -- Toggle TTS_ENABLED in the specified config file
+    -- @param config_path string Absolute path to tts-config.sh
+    -- @param is_project_specific boolean True if project-local, false if global
+    -- @return success boolean True if toggle succeeded
+    -- @return message string Success message ("TTS enabled" or "TTS disabled")
+    -- @return error string Error message if success is false
+    local function toggle_tts_config(config_path, is_project_specific)
+      -- Validate file exists (redundant check, but safe)
+      if vim.fn.filereadable(config_path) ~= 1 then
+        return false, nil, "Config file not readable: " .. config_path
+      end
+
+      -- Read file with error handling
+      local ok, lines = pcall(vim.fn.readfile, config_path)
+      if not ok then
+        return false, nil, "Failed to read config: " .. tostring(lines)
+      end
+
+      -- Find and toggle TTS_ENABLED
+      local modified = false
+      local message
+      for i, line in ipairs(lines) do
+        if line:match("^TTS_ENABLED=") then
+          if line:match("=true$") then
+            lines[i] = "TTS_ENABLED=false"
+            message = "TTS disabled"
+          else
+            lines[i] = "TTS_ENABLED=true"
+            message = "TTS enabled"
+          end
+          modified = true
+          break
+        end
+      end
+
+      if not modified then
+        return false, nil, "TTS_ENABLED not found in config file"
+      end
+
+      -- Write file with error handling
+      local write_ok, write_err = pcall(vim.fn.writefile, lines, config_path)
+      if not write_ok then
+        return false, nil, "Failed to write config: " .. tostring(write_err)
+      end
+
+      return true, message, nil
+    end
+
     local function is_latex()
       return vim.tbl_contains({ "tex", "latex", "bib", "cls", "sty" }, vim.bo.filetype)
     end
@@ -214,7 +262,7 @@ return {
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
-      -- TTS toggle
+      -- TTS toggle - uses helper function for cleaner code
       { "<leader>at", function()
         -- Construct absolute path explicitly to work from any directory
         local home = vim.fn.expand('$HOME')
@@ -226,44 +274,14 @@ return {
           return
         end
 
-        -- Read file with error handling
-        local ok, lines = pcall(vim.fn.readfile, config_path)
-        if not ok then
-          vim.notify("Failed to read TTS config: " .. tostring(lines), vim.log.levels.ERROR)
-          return
-        end
+        -- Toggle using helper function
+        local success, message, error = toggle_tts_config(config_path, false)
 
-        -- Find and toggle TTS_ENABLED
-        local modified = false
-        for i, line in ipairs(lines) do
-          if line:match("^TTS_ENABLED=") then
-            local message
-            if line:match("=true$") then
-              lines[i] = "TTS_ENABLED=false"
-              message = "TTS disabled"
-            else
-              lines[i] = "TTS_ENABLED=true"
-              message = "TTS enabled"
-            end
-            modified = message
-            break
-          end
+        if success then
+          vim.notify(message, vim.log.levels.INFO)
+        else
+          vim.notify("Failed to toggle TTS: " .. error, vim.log.levels.ERROR)
         end
-
-        if not modified then
-          vim.notify("TTS_ENABLED not found in config file", vim.log.levels.WARN)
-          return
-        end
-
-        -- Write file with error handling
-        local write_ok, write_err = pcall(vim.fn.writefile, lines, config_path)
-        if not write_ok then
-          vim.notify("Failed to write TTS config: " .. tostring(write_err), vim.log.levels.ERROR)
-          return
-        end
-
-        -- Success notification
-        vim.notify(modified, vim.log.levels.INFO)
       end, desc = "toggle tts", icon = "󰔊" },
     })
 
