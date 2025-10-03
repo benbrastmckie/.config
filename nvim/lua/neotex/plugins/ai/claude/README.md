@@ -147,7 +147,7 @@ Default keybindings (configured in `which-key.lua`):
   - **Normal mode**: Browse Claude commands
   - **Visual mode**: Send selection to Claude with prompt
 - `<leader>as` - Browse Claude sessions
-- `<leader>at` - Toggle TTS notifications (enable/disable text-to-speech for Claude Code events)
+- `<leader>at` - Toggle TTS notifications (project-specific `.claude/tts/tts-config.sh` or global fallback)
 - `<leader>av` - View worktrees
 - `<leader>aw` - Create new worktree with Claude session
 - `<leader>ar` - Restore closed worktree session

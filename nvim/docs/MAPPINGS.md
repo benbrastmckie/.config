@@ -133,7 +133,7 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
 | `<leader>an` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
 | `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
-| `<leader>at` | Toggle TTS | Enable/disable Claude Code TTS notifications | All files |
+| `<leader>at` | Toggle TTS | Enable/disable Claude Code TTS (project-specific or global fallback) | All files |
 
 ### FIND (`<leader>f`)
 
