@@ -34,11 +34,32 @@ I'll analyze the feature requirements to determine:
 - Dependencies and prerequisites
 - Alignment with report recommendations (if applicable)
 
-### 3. Location Determination
-I'll find the deepest directory that encompasses all relevant files by:
-- Identifying components that will be modified or created
-- Finding common parent directories
-- Selecting the most specific directory for the plan
+### 3. Location Determination and Registration
+I'll determine the specs directory location using this process:
+
+**Step 1: Check Report Metadata (if reports provided)**
+- If research reports are provided as arguments:
+  - Read the first report file
+  - Extract "Specs Directory" from metadata section
+  - Use this same specs directory for the plan
+
+**Step 2: Detect Project Directory (if no reports)**
+- Analyze the feature and identify components to be modified
+- Find the deepest directory that encompasses all relevant content
+- This becomes the "project directory" for this plan
+
+**Step 3: Check SPECS.md Registry**
+- Read `.claude/SPECS.md` to see if this project is already registered
+- Look for a section matching the project directory path
+
+**Step 4: Use Registered or Auto-Detect**
+- If found in SPECS.md: Use the registered specs directory
+- If not found: Auto-detect best location (project-dir/specs/) and register it
+
+**Step 5: Register/Update in SPECS.md**
+- If new project: Create new section in SPECS.md
+- Update "Last Updated" date and increment "Plans" count
+- Use Edit tool to update SPECS.md
 
 ### 4. Plan Numbering
 I'll assign the plan number by:
@@ -115,6 +136,8 @@ The plan will be saved as:
 
 ## Metadata
 - **Date**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/]
+- **Plan Number**: [NNN]
 - **Feature**: [Feature name]
 - **Scope**: [Brief scope description]
 - **Estimated Phases**: [Number]

@@ -187,13 +187,19 @@ If tests fail or issues arise:
 
 After completing all phases, I'll:
 
-### 1. Create Summary Directory
-- Location: Same directory as the plan, in `specs/summaries/`
+### 1. Extract Specs Directory from Plan
+- Read the plan file
+- Extract "Specs Directory" from plan metadata
+- This is where the summary will be created (same directory as plan)
+
+### 2. Create Summary Directory
+- Location: `[specs-dir]/summaries/` (from plan metadata)
 - Create if it doesn't exist
 
-### 2. Generate Summary File
+### 3. Generate Summary File
 - Format: `NNN_implementation_summary.md`
 - Number matches the plan number
+- Location: `[specs-dir]/summaries/NNN_implementation_summary.md`
 - Contains:
   - Implementation overview
   - Plan executed with link
@@ -201,6 +207,11 @@ After completing all phases, I'll:
   - Key changes made
   - Test results
   - Lessons learned
+
+### 4. Update SPECS.md Registry
+- Increment "Summaries" count for this project
+- Update "Last Updated" date
+- Use Edit tool to update SPECS.md
 
 ### 3. Update Reports (if referenced)
 If the plan referenced research reports:
@@ -214,6 +225,8 @@ If the plan referenced research reports:
 
 ## Metadata
 - **Date Completed**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/]
+- **Summary Number**: [NNN]
 - **Plan**: [Link to plan file]
 - **Research Reports**: [Links to reports used]
 - **Phases Completed**: [N/N]

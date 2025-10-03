@@ -22,7 +22,28 @@ I'll identify what to analyze:
 - If no arguments: Analyze entire project structure
 - Parse any specific concerns or new feature descriptions provided
 
-### 2. Standards Review
+### 2. Location Determination and Registration
+I'll determine the specs directory location using this process:
+
+**Step 1: Detect Project Directory**
+- Identify the scope of refactoring (file, directory, module, or entire project)
+- Find the deepest directory that encompasses the refactoring scope
+- This becomes the "project directory" for this refactoring report
+
+**Step 2: Check SPECS.md Registry**
+- Read `.claude/SPECS.md` to see if this project is already registered
+- Look for a section matching the project directory path
+
+**Step 3: Use Registered or Auto-Detect**
+- If found in SPECS.md: Use the registered specs directory
+- If not found: Auto-detect best location (project-dir/specs/) and register it
+
+**Step 4: Register in SPECS.md**
+- If new project: Create new section in SPECS.md with project path and specs directory
+- Update "Last Updated" date and increment "Reports" count
+- Use Edit tool to update SPECS.md
+
+### 3. Standards Review
 I'll load and apply standards from:
 - **CLAUDE.md**: Project conventions and standards
 - **Nix Development Standards**: Code style, organization, testing
@@ -104,6 +125,8 @@ I'll create a comprehensive refactoring report in `specs/reports/`:
 
 ## Metadata
 - **Date**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/]
+- **Report Number**: [NNN]
 - **Scope**: [Files/directories analyzed]
 - **Standards Applied**: CLAUDE.md, [other relevant docs]
 - **Specific Concerns**: [User-provided concerns if any]

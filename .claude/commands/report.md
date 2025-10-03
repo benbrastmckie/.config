@@ -21,11 +21,26 @@ First, I'll analyze the topic to determine:
 - Relevant files and directories in the codebase
 - Most appropriate location for the specs/reports/ directory
 
-### 2. Location Determination
-I'll find the deepest directory that encompasses all relevant files by:
-- Searching for files related to the topic
-- Identifying common parent directories
-- Selecting the most specific directory that includes all relevant content
+### 2. Location Determination and Registration
+I'll determine the specs directory location using this process:
+
+**Step 1: Detect Project Directory**
+- Analyze the topic and search for relevant files
+- Identify the deepest directory that encompasses all relevant content
+- This becomes the "project directory" for this report
+
+**Step 2: Check SPECS.md Registry**
+- Read `.claude/SPECS.md` to see if this project is already registered
+- Look for a section matching the project directory path
+
+**Step 3: Use Registered or Auto-Detect**
+- If found in SPECS.md: Use the registered specs directory
+- If not found: Auto-detect best location (project-dir/specs/) and register it
+
+**Step 4: Register in SPECS.md**
+- If new project: Create new section in SPECS.md with project path and specs directory
+- Update "Last Updated" date and increment "Reports" count
+- Use Edit tool to update SPECS.md
 
 ### 3. Report Numbering
 I'll determine the report number by:
@@ -72,6 +87,8 @@ I'll create the report as a markdown file with automatic numbering:
 
 ### 7. Report Metadata
 Each report will include:
+- **Specs Directory**: Path to the specs/ directory (for consistency with related plans/summaries)
+- **Report Number**: Three-digit number within this specs directory
 - Creation date and time
 - Research scope and boundaries
 - Files analyzed
@@ -87,6 +104,8 @@ The report will be formatted as:
 
 ## Metadata
 - **Date**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/]
+- **Report Number**: [NNN]
 - **Scope**: [Description of research scope]
 - **Primary Directory**: [Location of report]
 - **Files Analyzed**: [Count and key files]
