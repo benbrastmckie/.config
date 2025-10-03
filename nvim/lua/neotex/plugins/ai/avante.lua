@@ -682,7 +682,7 @@ return {
     "stevearc/dressing.nvim",
     "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
-    "hrsh7th/nvim-cmp",
+    -- "hrsh7th/nvim-cmp", -- Removed - project uses blink.cmp
     "nvim-tree/nvim-web-devicons",
     -- MCPHub is loaded on-demand, not as a direct dependency
     -- "ravitemer/mcphub.nvim",
