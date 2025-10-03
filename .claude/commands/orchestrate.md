@@ -1182,13 +1182,45 @@ The documentation agent will:
 - Ensure consistency across all documentation
 - Follow project documentation standards
 
-### Cross-Referencing
-Ensure proper cross-references between:
-- Research reports → Implementation plan
-- Implementation plan → Workflow summary
-- Modified code → Documentation updates
-- All specs documents (reports, plans, summaries)
-- **Note**: Use same specs directory for all related artifacts (from plan metadata)
+### Cross-Referencing and Bidirectional Linking
+Ensure proper bidirectional cross-references between all workflow artifacts:
+
+**Step 1: After Creating Workflow Summary**
+- Summary already links to plan and reports (forward references)
+- Now add backward references from plan and reports to summary
+
+**Step 2: Update Implementation Plan**
+- Use Edit tool to append "## Implementation Summary" section to plan file:
+  ```markdown
+  ## Implementation Summary
+  - **Status**: Complete
+  - **Date**: [YYYY-MM-DD]
+  - **Summary**: [link to specs/summaries/NNN_workflow_summary.md]
+  ```
+- Place at end of plan file
+
+**Step 3: Update Research Reports (if any)**
+- For each research report referenced in the plan:
+- Use Edit tool to append "## Implementation Status" section:
+  ```markdown
+  ## Implementation Status
+  - **Status**: Implemented
+  - **Date**: [YYYY-MM-DD]
+  - **Plan**: [link to specs/plans/NNN.md]
+  - **Summary**: [link to specs/summaries/NNN_workflow_summary.md]
+  ```
+- Place at end of report file
+
+**Step 4: Verify Bidirectional Links**
+- Use Read tool to verify each file was updated
+- Check that plan has "Implementation Summary" section
+- Check that each report has "Implementation Status" section
+- If verification fails: Log warning but continue
+
+**Edge Cases:**
+- If plan/report file not writable: Log warning, continue
+- If file already has implementation section: Update existing section using Edit tool, don't duplicate
+- If multiple summaries reference same plan: Append to list in plan file
 
 ### Documentation Standards
 - Follow CommonMark markdown specification
