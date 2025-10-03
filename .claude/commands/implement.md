@@ -133,8 +133,90 @@ For each phase, I will:
 ### 1. Display Phase Information
 Show the current phase number, name, and all tasks that need to be completed.
 
+### 1.5. Phase Complexity Analysis and Agent Selection
+
+Before implementing, analyze phase complexity to determine optimal execution approach:
+
+**Step 1: Analyze Phase Complexity**
+```bash
+# Extract phase name and tasks
+PHASE_NAME="Phase N: <name>"
+TASK_LIST="<all tasks from phase>"
+
+# Analyze complexity
+ANALYSIS=$(.claude/utils/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
+
+# Parse results
+COMPLEXITY_SCORE=$(echo "$ANALYSIS" | grep "COMPLEXITY_SCORE=" | cut -d= -f2)
+SELECTED_AGENT=$(echo "$ANALYSIS" | grep "SELECTED_AGENT=" | cut -d= -f2)
+THINKING_MODE=$(echo "$ANALYSIS" | grep "THINKING_MODE=" | cut -d= -f2)
+```
+
+**Step 2: Agent Selection Decision**
+
+Based on complexity score and special cases:
+
+- **Score 0-2** (Simple): Direct execution, no agent delegation
+- **Score 3-5** (Medium): Delegate to `code-writer` agent
+- **Score 6-7** (Medium-High): Delegate to `code-writer` with `think` mode
+- **Score 8-9** (High): Delegate to `code-writer` with `think hard` mode
+- **Score 10+** (Critical): Delegate to `code-writer` with `think harder` mode
+
+**Special Cases** (override score-based selection):
+- Documentation/README tasks → `doc-writer` agent
+- Test tasks → `test-specialist` agent
+- Debug/investigation tasks → `debug-specialist` agent
+
+**Step 3: Agent Delegation (if selected_agent != "direct")**
+
+If agent delegation chosen, invoke agent with phase context:
+
+```markdown
+I'm delegating this phase to the {agent-name} agent for optimal execution.
+
+Agent: {selected-agent}
+Thinking Mode: {thinking-mode}
+Phase: {phase-name}
+Complexity Score: {score}/10
+
+The agent will execute the phase tasks and report back.
+```
+
+Invoke agent with structured prompt:
+```
+Task {
+  subagent_type: "{selected-agent}"
+  description: "Implement {phase-name}"
+  prompt: "
+    {thinking-mode-if-set}
+
+    Phase: {phase-name}
+
+    Tasks:
+    {task-list}
+
+    Standards: Apply project standards from CLAUDE.md
+    Testing: Run tests after implementation
+    Output: Implemented code following all tasks
+  "
+}
+```
+
+**Step 4: Capture Agent Output**
+- Receive agent's implementation
+- Verify all tasks completed
+- Preserve for testing and commit steps
+
+**If Direct Execution** (score 0-2):
+- Skip agent delegation
+- Proceed directly to implementation step
+- Execute tasks manually
+
 ### 2. Implementation
 Create or modify the necessary files according to the plan specifications.
+
+**If Agent Delegated**: Use agent's output
+**If Direct Execution**: Implement manually following standards
 
 ### 3. Testing
 Run tests by:
