@@ -42,6 +42,19 @@ These keybindings are available in all contexts and override default Vim behavio
 | `J`, `K` | n,v | Display line navigation | Navigate display lines (respects wrapping) |
 | `<A-Left>`, `<A-Right>`, `<A-h>`, `<A-l>` | n | Window resizing | Resize window horizontally |
 
+### Quickfix and Location List Navigation
+
+| Key(s) | Mode | Action | Description |
+|--------|------|--------|-------------|
+| `]q` | n | Next quickfix | Jump to next quickfix item (centered) |
+| `[q` | n | Previous quickfix | Jump to previous quickfix item (centered) |
+| `]Q` | n | Last quickfix | Jump to last quickfix item (centered) |
+| `[Q` | n | First quickfix | Jump to first quickfix item (centered) |
+| `]l` | n | Next location | Jump to next location list item (centered) |
+| `[l` | n | Previous location | Jump to previous location list item (centered) |
+| `]L` | n | Last location | Jump to last location list item (centered) |
+| `[L` | n | First location | Jump to first location list item (centered) |
+
 ### Text Manipulation
 
 | Key(s) | Mode | Action | Description |

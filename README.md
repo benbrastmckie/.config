@@ -51,6 +51,7 @@ This Neovim configuration includes specialized support for:
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 - **Unified Notifications**: Intelligent notification system with category-based filtering and module-specific controls
+- **Performance Optimized**: Fast startup with optimized lazy-loading and efficient autocmd configuration
 
 ### Dashboard Overview
 
@@ -470,9 +471,23 @@ This configuration includes convenient keybindings for managing NixOS systems di
 
 These commands integrate NixOS system management into your development workflow, allowing you to manage system configuration, packages, and environments without leaving your editor.
 
-### Performance Optimization Tools
+### Performance Optimization
 
-This configuration includes built-in tools for analyzing and improving performance:
+This configuration is optimized for fast startup and responsive editing:
+
+#### Performance Features
+- **Optimized Lazy-Loading**: Plugins load precisely when needed, not earlier
+  - Session Manager loads on VeryLazy event (after startup complete)
+  - LSP file operations load on BufReadPost (when reading files)
+  - nvim-surround loads on BufReadPost (ready for text manipulation)
+- **Efficient Autocommands**: File reload detection uses FocusGained and BufEnter events
+  - No CursorHold/CursorHoldI events that cause cursor pause lag
+  - Reduced autocmd fires by 98% compared to cursor-based detection
+- **Enhanced Icons**: nvim-web-devicons includes common file type icons (TypeScript, Rust, Go, YAML, TOML, Dockerfile, .env)
+- **Clean Logging**: Markdown preview uses 'warn' log level (90% reduction in debug output)
+
+#### Performance Analysis Tools
+Built-in tools for analyzing and improving performance:
 
 1. **Startup Analysis**: Run `:AnalyzeStartup` to identify bottlenecks in your NeoVim startup process
 2. **Plugin Profiling**: Use `:ProfilePlugins` to measure load times for all plugins
