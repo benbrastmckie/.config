@@ -48,6 +48,7 @@ workflow_state:
   workflow_type: "feature|refactor|debug|investigation"
   current_phase: "research|planning|implementation|debugging|documentation"
   completed_phases: []
+  project_name: ""  # Auto-generated from workflow description
 
 checkpoints:
   research_complete: null
@@ -57,12 +58,19 @@ checkpoints:
   workflow_complete: null
 
 context_preservation:
-  research_summary: ""  # Max 200 words
+  research_summary: ""  # Max 200 words (deprecated in favor of artifact_registry)
   plan_path: ""
   implementation_status:
     tests_passing: false
     files_modified: []
   documentation_paths: []
+
+artifact_registry:
+  # Maps artifact IDs to file paths
+  # Example:
+  # research_001: "specs/artifacts/auth_system/existing_patterns.md"
+  # research_002: "specs/artifacts/auth_system/best_practices.md"
+  # research_003: "specs/artifacts/auth_system/alternatives.md"
 
 error_history: []
 performance_metrics:
@@ -230,15 +238,77 @@ Provide a concise summary (max 150 words) structured as:
 - If topic is unclear: Make reasonable assumptions and document them
 ```
 
-#### Step 4: Aggregate and Synthesize Research (Minimal Context)
+#### Step 3.5: Generate Project Name for Artifacts
+
+Before launching research agents, generate a project name for artifact organization:
+
+**Project Name Generation**:
+```
+1. Extract key terms from workflow description
+2. Remove common words (the, a, implement, add, etc.)
+3. Join remaining words with underscores
+4. Convert to lowercase
+5. Limit to 3-4 words max
+
+Examples:
+- "Implement user authentication system" → "user_authentication"
+- "Add payment processing flow" → "payment_processing"
+- "Refactor session management" → "session_management"
+```
+
+Store in workflow_state.project_name for artifact path generation.
+
+#### Step 4: Store Research as Artifacts and Create References
+
+After each research agent completes:
+
+**Artifact Storage Process**:
+1. **Generate Artifact Path**:
+   ```
+   artifact_path = f"specs/artifacts/{project_name}/{artifact_name}.md"
+   # Example: "specs/artifacts/user_auth/existing_patterns.md"
+   ```
+
+2. **Save Research Output**:
+   - Create project directory if needed: `specs/artifacts/{project_name}/`
+   - Write research findings to artifact file
+   - Include metadata header (date, agent, workflow, focus)
+
+3. **Register Artifact**:
+   - Add to artifact_registry with descriptive ID
+   - Map ID to file path
+   - Example: `research_001: "specs/artifacts/user_auth/existing_patterns.md"`
+
+4. **Return Artifact Reference**:
+   - Instead of full 150-word summary
+   - Return: "Artifact ID: research_001, Path: {path}, Topic: {topic}"
+
+**Artifact File Format**:
+```markdown
+# {Research Topic}
+
+## Metadata
+- **Created**: 2025-10-03
+- **Workflow**: {workflow_description}
+- **Agent**: research-specialist
+- **Focus**: {specific_research_topic}
+
+## Findings
+{Research findings - full 150 words}
+
+## Recommendations
+{Key recommendations}
+```
+
+#### Step 5: Aggregate Artifact References (Lightweight Context)
 
 After all parallel research agents complete:
 
 **Aggregation Process**:
-1. **Collect Results**: Gather summaries from all research agents (each ≤150 words)
-2. **Synthesize Findings**: Create unified summary combining key insights
-3. **Minimize Context**: Reduce to max 200 words total
-4. **Extract Actionables**: Identify specific recommendations for planning
+1. **Collect Artifact References**: Gather artifact IDs and paths (not full content)
+2. **Build Reference List**: Create list of available artifacts for next phase
+3. **Minimal Context**: ~50 words of artifact metadata vs 200+ words of full summaries
+4. **Extract Actionables**: Note which artifacts contain key recommendations
 
 **Synthesis Template**:
 ```markdown
