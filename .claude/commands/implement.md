@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite
+allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task
 argument-hint: [plan-file] [starting-phase]
 description: Execute implementation plan with automated testing and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
@@ -135,82 +135,94 @@ Show the current phase number, name, and all tasks that need to be completed.
 
 ### 1.5. Phase Complexity Analysis and Agent Selection
 
-Before implementing, analyze phase complexity to determine optimal execution approach:
+Before implementing each phase, I will analyze its complexity to determine whether to delegate to a specialized agent or execute directly.
 
-**Step 1: Analyze Phase Complexity**
-```bash
-# Extract phase name and tasks
-PHASE_NAME="Phase N: <name>"
-TASK_LIST="<all tasks from phase>"
+**Complexity Analysis Process:**
 
-# Analyze complexity
-ANALYSIS=$(.claude/utils/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
+1. **Extract phase information** from the current phase:
+   - Phase name (e.g., "Phase 2: Refactor Architecture")
+   - All tasks in markdown checkbox format
 
-# Parse results
-COMPLEXITY_SCORE=$(echo "$ANALYSIS" | grep "COMPLEXITY_SCORE=" | cut -d= -f2)
-SELECTED_AGENT=$(echo "$ANALYSIS" | grep "SELECTED_AGENT=" | cut -d= -f2)
-THINKING_MODE=$(echo "$ANALYSIS" | grep "THINKING_MODE=" | cut -d= -f2)
-```
+2. **Run complexity analyzer**:
+   ```bash
+   .claude/utils/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
+   ```
 
-**Step 2: Agent Selection Decision**
+3. **Parse analyzer output** to get:
+   - `COMPLEXITY_SCORE`: 0-10 scale
+   - `SELECTED_AGENT`: Agent name or "direct"
+   - `THINKING_MODE`: Thinking directive (if applicable)
+   - `SPECIAL_CASE`: Special case category (if detected)
 
-Based on complexity score and special cases:
+**Agent Selection Logic:**
 
-- **Score 0-2** (Simple): Direct execution, no agent delegation
-- **Score 3-5** (Medium): Delegate to `code-writer` agent
-- **Score 6-7** (Medium-High): Delegate to `code-writer` with `think` mode
-- **Score 8-9** (High): Delegate to `code-writer` with `think hard` mode
-- **Score 10+** (Critical): Delegate to `code-writer` with `think harder` mode
+The analyzer automatically selects the optimal approach:
 
-**Special Cases** (override score-based selection):
-- Documentation/README tasks → `doc-writer` agent
-- Test tasks → `test-specialist` agent
-- Debug/investigation tasks → `debug-specialist` agent
+- **Direct execution** (score 0-2): Simple phases, I implement directly
+- **code-writer** (score 3-5): Medium complexity, basic delegation
+- **code-writer + think** (score 6-7): Medium-high complexity
+- **code-writer + think hard** (score 8-9): High complexity
+- **code-writer + think harder** (score 10+): Critical complexity
 
-**Step 3: Agent Delegation (if selected_agent != "direct")**
+**Special Case Overrides:**
+- **doc-writer**: Documentation/README phases (detected by keywords)
+- **test-specialist**: Testing phases (detected by keywords)
+- **debug-specialist**: Debug/investigation phases (detected by keywords)
 
-If agent delegation chosen, invoke agent with phase context:
+**Delegation Execution:**
 
-```markdown
-I'm delegating this phase to the {agent-name} agent for optimal execution.
+If `SELECTED_AGENT != "direct"`, I will:
 
-Agent: {selected-agent}
-Thinking Mode: {thinking-mode}
-Phase: {phase-name}
-Complexity Score: {score}/10
+1. **Announce delegation** with complexity context:
+   ```
+   Delegating to {agent-name} agent (complexity score: {score}/10)
+   Phase: {phase-name}
+   Thinking mode: {mode}
+   ```
 
-The agent will execute the phase tasks and report back.
-```
+2. **Invoke agent** using Task tool:
+   ```yaml
+   Task {
+     subagent_type: "{selected-agent}"
+     description: "Implement {short-phase-description}"
+     prompt: "
+       {thinking-mode-directive}
 
-Invoke agent with structured prompt:
-```
-Task {
-  subagent_type: "{selected-agent}"
-  description: "Implement {phase-name}"
-  prompt: "
-    {thinking-mode-if-set}
+       Implementation Phase: {phase-name}
 
-    Phase: {phase-name}
+       Tasks to complete:
+       {task-list}
 
-    Tasks:
-    {task-list}
+       Standards Compliance:
+       - Apply project standards from CLAUDE.md
+       - Follow language-specific style guides
+       - Maintain documentation requirements
 
-    Standards: Apply project standards from CLAUDE.md
-    Testing: Run tests after implementation
-    Output: Implemented code following all tasks
-  "
-}
-```
+       Testing Requirements:
+       - Run tests after implementation (if tests exist)
+       - Verify all tasks completed
+       - Report any failures
 
-**Step 4: Capture Agent Output**
-- Receive agent's implementation
-- Verify all tasks completed
-- Preserve for testing and commit steps
+       Expected Output:
+       - All phase tasks completed
+       - Code following standards
+       - Tests passing (if applicable)
+       - Summary of changes made
+     "
+   }
+   ```
 
-**If Direct Execution** (score 0-2):
+3. **Process agent results**:
+   - Verify all tasks were completed
+   - Note any test failures or issues
+   - Use agent's output for subsequent testing and commit steps
+
+**Direct Execution:**
+
+If `SELECTED_AGENT == "direct"`, I will:
 - Skip agent delegation
-- Proceed directly to implementation step
-- Execute tasks manually
+- Implement the phase tasks directly following standards
+- Proceed immediately to implementation step
 
 ### 2. Implementation
 Create or modify the necessary files according to the plan specifications.
