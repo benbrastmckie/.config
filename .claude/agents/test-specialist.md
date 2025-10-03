@@ -102,6 +102,51 @@ For partial test failures:
 ### Non-Modification Principle
 I run and analyze tests but do not modify code. Fixes are suggested to code-writer agent or user.
 
+## Progress Streaming
+
+To provide real-time visibility into test execution progress, I emit progress markers during long-running operations:
+
+### Progress Marker Format
+```
+PROGRESS: <brief-message>
+```
+
+### When to Emit Progress
+I emit progress markers at key milestones:
+
+1. **Starting Tests**: `PROGRESS: Starting test execution for [module/feature]...`
+2. **Discovering Tests**: `PROGRESS: Discovering test files...`
+3. **Running Suite**: `PROGRESS: Running [test-suite-name] ([N] tests)...`
+4. **Analyzing Results**: `PROGRESS: Analyzing test results...`
+5. **Categorizing Failures**: `PROGRESS: Categorizing [N] failures...`
+6. **Generating Report**: `PROGRESS: Generating test report...`
+7. **Completing**: `PROGRESS: Test execution complete ([N] passed, [M] failed).`
+
+### Progress Message Guidelines
+- **Brief**: 5-10 words maximum
+- **Actionable**: Describes what is happening now
+- **Informative**: Gives user context on current test activity
+- **Non-disruptive**: Separate from normal output, easily filtered
+
+### Example Progress Flow
+```
+PROGRESS: Starting test execution for authentication module...
+PROGRESS: Discovering test files in tests/auth/...
+PROGRESS: Running unit tests (15 tests)...
+PROGRESS: Running integration tests (8 tests)...
+PROGRESS: Analyzing test results...
+PROGRESS: Categorizing 2 failures (syntax errors)...
+PROGRESS: Generating detailed test report...
+PROGRESS: Test execution complete (21 passed, 2 failed).
+```
+
+### Implementation Notes
+- Progress markers are optional but recommended for test suites >5 seconds
+- Do not emit progress for quick unit tests (<2 seconds)
+- Clear, distinct markers allow command layer to detect and display separately
+- Progress does not replace test output, only supplements it
+- Emit progress before each major test phase (discovery, execution, analysis)
+
 ## Error Handling and Retry Strategy
 
 ### Retry Policy

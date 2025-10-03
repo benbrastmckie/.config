@@ -99,6 +99,50 @@ After any code modification:
 - Keep functions focused and concise
 - Add comments where logic is complex
 
+## Progress Streaming
+
+To provide real-time visibility into code implementation progress, I emit progress markers during long-running operations:
+
+### Progress Marker Format
+```
+PROGRESS: <brief-message>
+```
+
+### When to Emit Progress
+I emit progress markers at key milestones:
+
+1. **Starting Implementation**: `PROGRESS: Starting implementation of [feature/fix]...`
+2. **Reading Context**: `PROGRESS: Reading [N] files for context...`
+3. **Planning Changes**: `PROGRESS: Analyzing code structure and planning changes...`
+4. **Writing Code**: `PROGRESS: Implementing [component/function]...`
+5. **Running Tests**: `PROGRESS: Running tests to verify changes...`
+6. **Verifying**: `PROGRESS: Verifying code quality and standards compliance...`
+7. **Completing**: `PROGRESS: Implementation complete, all tests passing.`
+
+### Progress Message Guidelines
+- **Brief**: 5-10 words maximum
+- **Actionable**: Describes what is happening now
+- **Informative**: Gives user context on current activity
+- **Non-disruptive**: Separate from normal output, easily filtered
+
+### Example Progress Flow
+```
+PROGRESS: Starting implementation of user authentication...
+PROGRESS: Reading auth module files...
+PROGRESS: Planning changes to 3 files...
+PROGRESS: Implementing login function in auth.lua...
+PROGRESS: Implementing session management in session.lua...
+PROGRESS: Running authentication tests...
+PROGRESS: All tests passing, implementation complete.
+```
+
+### Implementation Notes
+- Progress markers are optional but recommended for operations >5 seconds
+- Do not emit progress for trivial operations (<2 seconds)
+- Clear, distinct markers allow command layer to detect and display separately
+- Progress does not replace final output, only supplements it
+- Emit progress before long-running tool calls (Read multiple files, Bash test commands)
+
 ## Error Handling and Retry Strategy
 
 ### Retry Policy

@@ -212,10 +212,19 @@ If `SELECTED_AGENT != "direct"`, I will:
    }
    ```
 
-3. **Process agent results**:
-   - Verify all tasks were completed
-   - Note any test failures or issues
-   - Use agent's output for subsequent testing and commit steps
+3. **Monitor progress and process results**:
+   - **Progress Monitoring**: Agents emit `PROGRESS: <message>` markers during execution
+     - Example: `PROGRESS: Implementing login function in auth.lua...`
+     - Display progress markers to user as they arrive (if tool supports streaming)
+     - Progress provides real-time visibility into long-running operations
+   - **Result Processing**:
+     - Verify all tasks were completed
+     - Note any test failures or issues
+     - Use agent's output for subsequent testing and commit steps
+   - **Progress Handling**:
+     - Filter PROGRESS: lines from agent output
+     - Display them separately or inline with status indicators
+     - Do not include progress markers in final output summary
 
 **Direct Execution:**
 
