@@ -63,13 +63,36 @@ Check CLAUDE.md Testing Protocols section for:
 - Include both unit and integration tests where applicable
 - Report overall test suite status, not just failures
 
-### Clear Error Reporting
-For each failure:
+### Clear Error Reporting and Enhanced Analysis
+
+For each failure, provide comprehensive analysis:
+
+**Basic Information**:
 - **Location**: File, line number, test name
 - **Error Type**: Assertion, exception, timeout, etc.
 - **Error Message**: Full error text
 - **Context**: Code snippet if available
-- **Suggestion**: Potential fix or investigation direction
+
+**Enhanced Error Analysis**:
+When tests fail, use the error analysis tool for deeper insights:
+
+```bash
+# Analyze error output for enhanced suggestions
+.claude/utils/analyze-error.sh "$ERROR_OUTPUT"
+```
+
+This provides:
+- **Error Type Classification**: Categorized as syntax, test_failure, file_not_found, import_error, null_error, timeout, or permission
+- **Contextual Code Display**: 3 lines before and after error location
+- **Specific Fix Suggestions**: 2-3 actionable recommendations tailored to error type
+- **Debug Commands**: Commands to investigate further (e.g., `/debug`, `:TestNearest`)
+
+**Graceful Degradation**:
+For partial test failures:
+- Document which tests passed vs. failed
+- Identify patterns (e.g., all timeout errors in integration tests)
+- Suggest next steps for manual investigation
+- Preserve partial results
 
 ### Performance Awareness
 - Note slow tests (>1s for unit tests)
