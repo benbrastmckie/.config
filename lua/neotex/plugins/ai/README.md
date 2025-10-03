@@ -17,6 +17,8 @@ Configuration for the Avante AI assistant plugin (`yetone/avante.nvim`). Provide
 ### claudecode.lua
 External plugin configuration wrapper for `greggh/claude-code.nvim`. Manages window settings, file refresh detection, git integration, shell configuration, and terminal behavior. Bridges the external plugin with the internal Claude system.
 
+**Buffer Management**: Uses precise terminal-specific pattern matching to unlist only Claude Code terminal buffers while preserving normal file buffers (including .claude/ directory files). The autocmd checks `buftype == "terminal"` before pattern matching to avoid false positives. See [specs/reports/038_buffer_persistence_root_cause.md](../../../specs/reports/038_buffer_persistence_root_cause.md) for details.
+
 ### mcp-hub.lua
 MCP-Hub integration plugin configuration (`mcp-hub`) with cross-platform compatibility. Provides automatic installation method detection, clean Avante integration with lazy loading, and fallback to bundled installation when needed.
 
