@@ -142,12 +142,7 @@ Run tests by:
 - Checking for common test patterns (npm test, pytest, make test)
 - Running language-specific test commands based on project type
 
-### 4. Plan Update
-- Mark completed tasks with `[x]` instead of `[ ]`
-- Add `[COMPLETED]` marker to the phase heading
-- Save the updated plan file
-
-### 5. Git Commit
+### 4. Git Commit
 Create a structured commit:
 ```
 feat: implement Phase N - Phase Name
@@ -157,6 +152,118 @@ All tests passed successfully
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+### 5. Plan Update (After Git Commit Succeeds)
+**Incremental plan updates after each phase:**
+
+**Step 1: Mark Phase Tasks Complete**
+- Use Edit tool to change all phase tasks: `- [ ]` → `- [x]`
+- Find each unchecked task in the phase section
+- Replace with checked version
+
+**Step 2: Add Phase Completion Marker**
+- Use Edit tool to add `[COMPLETED]` to phase heading
+- Change: `### Phase N: Phase Name` → `### Phase N: Phase Name [COMPLETED]`
+
+**Step 3: Verify Plan Updated**
+- Use Read tool to read back the plan file
+- Check that phase heading has `[COMPLETED]`
+- Check that all phase tasks are `[x]`
+- If verification fails: Log warning but continue (don't block workflow)
+
+**Step 4: Add/Update Implementation Progress Section**
+- Use Edit tool to add or update "## Implementation Progress" section
+- Place after metadata, before overview
+- Include:
+  - Last completed phase number and name
+  - Completion date
+  - Git commit hash
+  - Resume instructions: `/implement <plan-file> <next-phase-number>`
+
+**Example Implementation Progress Section:**
+```markdown
+## Implementation Progress
+
+- **Last Completed Phase**: Phase 2: Core Implementation
+- **Date**: 2025-10-03
+- **Commit**: abc1234
+- **Status**: In Progress (2/5 phases complete)
+- **Resume**: `/implement specs/plans/018.md 3`
+```
+
+### 6. Incremental Summary Generation
+**Create or update partial summary after each phase:**
+
+**Step 1: Determine Summary Path**
+- Extract specs directory from plan metadata
+- Summary path: `[specs-dir]/summaries/NNN_partial.md`
+- Number matches plan number
+
+**Step 2: Create or Update Partial Summary**
+- If first phase: Use Write tool to create new partial summary
+- If subsequent phase: Use Edit tool to update existing partial summary
+- Include:
+  - Status: "in_progress"
+  - Phases completed: "M/N"
+  - Last completed phase name and date
+  - Last git commit hash
+  - Resume instructions
+
+**Partial Summary Template:**
+```markdown
+# Implementation Summary: [Feature Name] (PARTIAL)
+
+## Metadata
+- **Date Started**: [YYYY-MM-DD]
+- **Specs Directory**: [path/to/specs/]
+- **Summary Number**: [NNN]
+- **Plan**: [Link to plan file]
+- **Status**: in_progress
+- **Phases Completed**: M/N
+
+## Progress
+
+### Last Completed Phase
+- **Phase**: Phase M: [Phase Name]
+- **Completed**: [YYYY-MM-DD]
+- **Commit**: [hash]
+
+### Phases Summary
+- [x] Phase 1: [Name] - Completed [date]
+- [x] Phase 2: [Name] - Completed [date]
+- [ ] Phase 3: [Name] - Pending
+- [ ] Phase 4: [Name] - Pending
+
+## Resume Instructions
+To continue this implementation:
+```
+/implement [plan-path] M+1
+```
+
+Or use auto-resume:
+```
+/resume-implement
+```
+
+## Implementation Notes
+[Brief notes about progress, challenges, or decisions made]
+```
+
+### 7. Before Starting Next Phase
+**Defensive check before proceeding:**
+
+**Step 1: Read Current Plan State**
+- Use Read tool to read plan file
+- Find previous phase heading
+
+**Step 2: Verify Previous Phase Complete**
+- Check that previous phase has `[COMPLETED]` marker
+- Check that previous phase tasks are `[x]`
+
+**Step 3: Mark Complete if Missing (Defensive)**
+- If previous phase not marked but commit exists: Mark it now
+- Log warning about inconsistency
+- This ensures plan stays consistent even if previous update failed
 
 ## Test Detection Patterns
 
@@ -175,13 +282,48 @@ If we need to stop and resume later, you can use:
 
 This will start from the specified phase number.
 
-## Error Handling
+## Error Handling and Rollback
 
+### Test Failures
 If tests fail or issues arise:
 1. I'll show the error details
 2. We'll fix the issues together
 3. Re-run tests before proceeding
 4. Only move forward when tests pass
+
+### Phase Failure Handling
+**What happens when a phase fails:**
+
+**Don't Mark Phase Complete:**
+- If phase tests fail: Do NOT mark tasks as `[x]`
+- Do NOT add `[COMPLETED]` marker to phase heading
+- Do NOT update partial summary with this phase
+- Do NOT create git commit
+
+**Preserve Partial Work:**
+- Keep code changes in working directory
+- Previous phases remain marked complete
+- Partial summary reflects only successful phases
+- User can debug, fix, and retry the phase
+
+**Retry Failed Phase:**
+```
+# After fixing issues
+/implement <plan-file> <failed-phase-number>
+```
+
+**Partial Summary Always Accurate:**
+- Partial summary only includes successfully completed phases
+- "Phases Completed: M/N" reflects actual progress
+- Resume instructions point to first incomplete phase
+- Status remains "in_progress" until all phases complete
+
+### Git Commit Failure Handling
+If git commit fails after marking phase complete:
+- Log error with details
+- Preserve partial work (don't rollback code changes)
+- Partial summary already reflects completed phase
+- Manual intervention required to resolve git issues
 
 ## Summary Generation
 
@@ -196,7 +338,25 @@ After completing all phases, I'll:
 - Location: `[specs-dir]/summaries/` (from plan metadata)
 - Create if it doesn't exist
 
-### 3. Generate Summary File
+### 3. Finalize Summary File
+**Convert partial summary to final summary:**
+
+**Step 1: Check for Partial Summary**
+- Look for `[specs-dir]/summaries/NNN_partial.md`
+- If exists: This is a resumed or interrupted implementation
+
+**Step 2: Finalize Partial Summary**
+- Use Bash tool to rename: `NNN_partial.md` → `NNN_implementation_summary.md`
+- Use Edit tool to update the summary:
+  - Change title: Remove "(PARTIAL)"
+  - Update status: `in_progress` → `complete`
+  - Update "Phases Completed": `M/N` → `N/N`
+  - Add completion date
+  - Remove "Resume Instructions" section
+  - Add final "Lessons Learned" section
+
+**Step 3: Or Create New Summary (if no partial)**
+- If no partial summary exists: Use Write tool to create new summary
 - Format: `NNN_implementation_summary.md`
 - Number matches the plan number
 - Location: `[specs-dir]/summaries/NNN_implementation_summary.md`
@@ -213,7 +373,7 @@ After completing all phases, I'll:
 - Update "Last Updated" date
 - Use Edit tool to update SPECS.md
 
-### 3. Update Reports (if referenced)
+### 5. Update Reports (if referenced)
 If the plan referenced research reports:
 - Add implementation notes to each report
 - Cross-reference the summary

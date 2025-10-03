@@ -58,16 +58,37 @@ grep -L "IMPLEMENTATION COMPLETE" <file>  # Not marked complete
 
 When resuming, I will:
 1. **Show plan status**:
-   - Display completed phases
+   - Display completed phases (marked with `[COMPLETED]`)
    - Show current phase to resume
    - List remaining tasks
+   - Check for partial summary for additional context
 2. **Continue from breakpoint**:
    - Skip completed phases/tasks
-   - Start with first incomplete item
+   - Start with first incomplete phase
+   - Resume at exact point where implementation stopped
 3. **Maintain continuity**:
    - Reference previous commits
-   - Continue numbering sequence
-   - Update summary if exists
+   - Continue updating same partial summary
+   - Pick up Implementation Progress tracking
+   - Continue phase numbering sequence
+
+## Partial Summary Support
+
+**Check for Partial Summary:**
+- Look for `[specs-dir]/summaries/NNN_partial.md`
+- If exists: Shows previous progress and resume point
+- Partial summary includes:
+  - Which phases were completed
+  - Last commit hash
+  - Resume instructions
+  - Implementation notes
+
+**Resume Workflow:**
+1. Read plan file to find last `[COMPLETED]` phase
+2. Check partial summary for additional context
+3. Resume from first incomplete phase
+4. Continue updating same partial summary after each phase
+5. Finalize summary when all phases complete
 
 ## Example Usage
 
