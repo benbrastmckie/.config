@@ -61,15 +61,13 @@ return {
       max_path_length = 80,
     })
 
-    -- TODO: Remove this workaround once the root cause is identified
-    -- Issue: Some plugin/autocmd is setting buflisted=false for normal file buffers
-    --        (especially git-ignored files and .claude/ directory files), causing them
-    --        to disappear from bufferline after switching to terminal and back. This
-    --        defensive autocmd ensures all normal file buffers remain listed so they
-    --        appear in bufferline and get saved in sessions.
-    --        Enhanced with BufEnter and BufWinEnter for continuous protection during
-    --        buffer/window switches. See: specs/reports/037_debug_gitignored_buffer_disappearance.md
-    vim.api.nvim_create_autocmd({"BufAdd", "SessionLoadPost", "BufEnter", "BufWinEnter"}, {
+    -- Defensive autocmd to ensure normal file buffers remain listed
+    -- Root causes fixed in plan 030: claudecode.lua pattern matching + bufferline.lua timing
+    -- This simplified version protects against unknown third-party async operations
+    -- Simplified from 4 events to 2 events (BufAdd/SessionLoadPost no longer needed)
+    -- See: specs/plans/030_fix_buffer_persistence_root_cause.md
+    --      specs/reports/037_debug_gitignored_buffer_disappearance.md
+    vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
       callback = function(args)
         local buf = args.buf or vim.api.nvim_get_current_buf()
         local buftype = vim.bo[buf].buftype
@@ -80,7 +78,7 @@ return {
           vim.bo[buf].buflisted = true
         end
       end,
-      desc = "Workaround: Keep normal file buffers listed (enhanced coverage)"
+      desc = "Ensure normal file buffers remain listed during transitions"
     })
   end,
 }
