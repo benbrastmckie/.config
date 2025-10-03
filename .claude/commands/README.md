@@ -229,6 +229,19 @@ Commands provide structured, repeatable workflows for:
 
 ### Utility Commands
 
+#### /analyze-agents
+**Purpose**: Analyze agent performance metrics and generate insights report
+
+**Usage**: `/analyze-agents`
+
+**Features**:
+- Agent performance rankings
+- Efficiency scoring
+- Success rate analysis
+- Actionable recommendations
+
+---
+
 #### /cleanup
 **Purpose**: Optimize CLAUDE.md by extracting sections to auxiliary files
 
@@ -482,6 +495,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 ## Navigation
 
 ### Command Definitions
+- [analyze-agents.md](analyze-agents.md) - Agent performance analysis
 - [cleanup.md](cleanup.md) - CLAUDE.md optimization
 - [debug.md](debug.md) - Issue investigation
 - [document.md](document.md) - Documentation updates
