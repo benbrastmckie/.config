@@ -310,36 +310,33 @@ After all parallel research agents complete:
 3. **Minimal Context**: ~50 words of artifact metadata vs 200+ words of full summaries
 4. **Extract Actionables**: Note which artifacts contain key recommendations
 
-**Synthesis Template**:
+**Artifact Reference Template** (replaces full summary):
 ```markdown
-Research Summary (max 200 words):
+Research Artifacts Available:
 
-Existing Patterns:
-- [Key pattern 1 from codebase research]
-- [Key pattern 2 from codebase research]
+1. **research_001** - Existing Patterns
+   - Path: specs/artifacts/{project_name}/existing_patterns.md
+   - Focus: Codebase analysis of current implementations
+   - Key Finding: [One-sentence summary]
 
-Best Practices:
-- [Key recommendation 1 from best practices research]
-- [Key recommendation 2 from best practices research]
+2. **research_002** - Best Practices
+   - Path: specs/artifacts/{project_name}/best_practices.md
+   - Focus: Industry standards and recommendations (2025)
+   - Key Finding: [One-sentence summary]
 
-Recommended Approach:
-- [Synthesized recommendation based on all research]
-- [Alternative if primary approach has constraints]
+3. **research_003** - Alternative Approaches
+   - Path: specs/artifacts/{project_name}/alternatives.md
+   - Focus: Trade-offs and implementation options
+   - Key Finding: [One-sentence summary]
 
-Key Constraints:
-- [Important limitation 1]
-- [Important limitation 2]
-
-Actionable Insights:
-- [Specific insight 1 for planning]
-- [Specific insight 2 for planning]
+Total Context: ~50 words (vs 200+ for full summaries)
 ```
 
-**Context Minimization Strategy**:
-- Store ONLY the synthesized summary, not individual research outputs
-- Focus on actionable insights, not exhaustive details
-- Reference specific files/patterns by path, not content
-- Keep orchestrator context <30% of normal usage
+**Context Reduction Achieved**:
+- **Before**: 200+ words of full research summaries passed to plan-architect
+- **After**: ~50 words of artifact references + selective reading by agent
+- **Reduction**: 60-80% context savings
+- **Benefits**: Full research preserved in artifacts, agent reads only what's needed
 
 #### Step 5: Save Research Checkpoint
 
@@ -364,18 +361,18 @@ checkpoint_research_complete:
 - Mark research phase as completed
 - Enable recovery if workflow interrupts before planning
 
-#### Step 6: Context Preservation Validation
+#### Step 6: Artifact Registry Validation
 
 Before proceeding to planning:
 
 **Validation Checks**:
-- [ ] Research summary ≤200 words
-- [ ] No full research outputs stored in orchestrator context
-- [ ] Only file paths referenced, not file contents
-- [ ] Actionable insights clearly identified
+- [ ] All research artifacts saved to `specs/artifacts/{project_name}/`
+- [ ] Artifact registry contains all artifact IDs and paths
+- [ ] Artifact reference list ≤60 words (not full content)
+- [ ] Each artifact has metadata header
 - [ ] Checkpoint saved successfully
 
-**If validation fails**: Compress summary further or escalate to user
+**If validation fails**: Retry artifact save or escalate to user
 
 #### Research Phase Execution Example
 
@@ -421,9 +418,11 @@ Extract necessary context from previous phases:
 **From Research Phase** (if completed):
 ```yaml
 research_context:
-  summary: "[200 word research summary]"
-  key_insights: "[3-5 actionable insights]"
-  recommended_approach: "[Synthesized recommendation]"
+  artifacts:
+    research_001: "specs/artifacts/{project_name}/existing_patterns.md"
+    research_002: "specs/artifacts/{project_name}/best_practices.md"
+    research_003: "specs/artifacts/{project_name}/alternatives.md"
+  artifact_summary: "[50-word reference list with key findings]"
 ```
 
 **From User Request**:
@@ -435,9 +434,10 @@ user_context:
 ```
 
 **Context Injection Strategy**:
-- Provide research summary if available
+- Provide artifact reference list (not full summaries)
 - Include user's original request for context
 - Reference CLAUDE.md for project standards
+- Agent uses Read tool to selectively access artifacts
 - NO orchestration details or phase routing logic
 
 #### Step 2: Generate Planning Agent Prompt
@@ -450,9 +450,28 @@ user_context:
 ### User Request
 [Original workflow description]
 
-### Research Findings
-[If research phase completed, include 200-word summary]
-[If no research, state: "Direct implementation - no prior research"]
+### Research Artifacts
+[If research phase completed, provide artifact references:]
+
+Available Research Artifacts:
+1. **research_001** - Existing Patterns
+   - Path: specs/artifacts/{project_name}/existing_patterns.md
+   - Focus: Current implementation analysis
+   - Use Read tool to access full findings
+
+2. **research_002** - Best Practices
+   - Path: specs/artifacts/{project_name}/best_practices.md
+   - Focus: Industry standards (2025)
+   - Use Read tool to access recommendations
+
+3. **research_003** - Alternative Approaches
+   - Path: specs/artifacts/{project_name}/alternatives.md
+   - Focus: Implementation options and trade-offs
+   - Use Read tool to access detailed comparisons
+
+**Instructions**: Read relevant artifacts selectively based on planning needs. Not all artifacts may be needed for the plan.
+
+[If no research: "Direct implementation - no prior research artifacts"]
 
 ### Project Standards
 Reference standards at: /home/benjamin/.config/CLAUDE.md

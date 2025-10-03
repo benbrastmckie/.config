@@ -203,6 +203,14 @@ Testing:
 ## Dependencies
 [External dependencies or prerequisites]
 
+## Related Artifacts
+[If plan created from /orchestrate workflow with research artifacts:]
+- [Existing Patterns](../artifacts/{project_name}/existing_patterns.md)
+- [Best Practices](../artifacts/{project_name}/best_practices.md)
+- [Alternative Approaches](../artifacts/{project_name}/alternatives.md)
+
+[Otherwise: "No artifacts - direct implementation plan"]
+
 ## Notes
 [Additional considerations or decisions]
 ```
