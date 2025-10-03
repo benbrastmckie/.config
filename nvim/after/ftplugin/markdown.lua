@@ -31,11 +31,56 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter", "ColorScheme"}, {
   callback = function()
     -- Define muted color for comments (Gruvbox gray)
     local muted_color = "#928374"
-    
+
     -- Ensure HTML comment highlights are set
     vim.api.nvim_set_hl(0, "htmlComment", { fg = muted_color, italic = true })
     vim.api.nvim_set_hl(0, "htmlCommentPart", { fg = muted_color, italic = true })
     vim.api.nvim_set_hl(0, "RenderMarkdownHtmlComment", { fg = muted_color, italic = true })
   end
+})
+
+-- Markdown-specific nvim-surround configuration
+-- These surrounds are only available in markdown files
+require("nvim-surround").buffer_setup({
+  surrounds = {
+    -- Bold: **text** (double asterisk for strong emphasis)
+    ["b"] = {
+      add = { "**", "**" },
+      find = "%*%*.-%*%*",
+      delete = "^(%*%*)().-(%*%*)()$",
+    },
+    -- Italic: *text* (single asterisk for emphasis)
+    ["i"] = {
+      add = { "*", "*" },
+      find = "%*.-%*",
+      delete = "^(%*)().-(%)()$",
+    },
+    -- Inline code: `text` (backtick for code)
+    ["`"] = {
+      add = { "`", "`" },
+      find = "`.-`",
+      delete = "^(`)().-(`)()$",
+    },
+    -- Code block: ```language\ntext\n``` (fenced code block with language prompt)
+    ["c"] = {
+      add = function()
+        local lang = vim.fn.input("Language: ")
+        return { { "```" .. lang, "" }, { "", "```" } }
+      end,
+    },
+    -- Link: [text](url) (markdown link with URL prompt)
+    ["l"] = {
+      add = function()
+        local url = vim.fn.input("URL: ")
+        return { { "[", "](" .. url .. ")" } }
+      end,
+    },
+    -- Strikethrough: ~~text~~ (GFM strikethrough)
+    ["~"] = {
+      add = { "~~", "~~" },
+      find = "~~.-~~",
+      delete = "^(~~)().-(~~)()$",
+    },
+  },
 })
 
