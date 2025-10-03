@@ -433,6 +433,18 @@ function M.setup()
   map("n", "<c-u>", "<c-u>zz", {}, "Scroll up with centering")
   map("n", "<c-d>", "<c-d>zz", {}, "Scroll down with centering")
 
+  -- Quickfix list navigation (centered cursor for visibility)
+  map("n", "]q", "<cmd>cnext<cr>zz", {}, "Next quickfix item")
+  map("n", "[q", "<cmd>cprev<cr>zz", {}, "Previous quickfix item")
+  map("n", "]Q", "<cmd>clast<cr>zz", {}, "Last quickfix item")
+  map("n", "[Q", "<cmd>cfirst<cr>zz", {}, "First quickfix item")
+
+  -- Location list navigation (buffer-local quickfix)
+  map("n", "]l", "<cmd>lnext<cr>zz", {}, "Next location list item")
+  map("n", "[l", "<cmd>lprev<cr>zz", {}, "Previous location list item")
+  map("n", "]L", "<cmd>llast<cr>zz", {}, "Last location list item")
+  map("n", "[L", "<cmd>lfirst<cr>zz", {}, "First location list item")
+
   -- Display line navigation (respects word wrapping)
   map("v", "<S-h>", "g^", {}, "Go to start of display line")
   map("v", "<S-l>", "g$", {}, "Go to end of display line")
