@@ -262,25 +262,48 @@ return {
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
-      -- TTS toggle - uses helper function for cleaner code
+      -- TTS toggle - supports project-specific and global configs
       { "<leader>at", function()
-        -- Construct absolute path explicitly to work from any directory
-        local home = vim.fn.expand('$HOME')
-        local config_path = home .. "/.config/.claude/tts/tts-config.sh"
+        -- Project root detection: use cwd for consistency with other modules
+        local project_root = vim.fn.getcwd()
 
-        -- Validate file exists
-        if vim.fn.filereadable(config_path) ~= 1 then
-          vim.notify("TTS config not found: " .. config_path, vim.log.levels.ERROR)
+        -- Path priority: project-specific config takes precedence over global
+        local project_config = project_root .. "/.claude/tts/tts-config.sh"
+        local global_config = vim.fn.expand('$HOME') .. "/.config/.claude/tts/tts-config.sh"
+
+        -- Resolve config path with priority
+        local config_path, is_project_specific
+        if vim.fn.filereadable(project_config) == 1 then
+          config_path = project_config
+          is_project_specific = true
+        elseif vim.fn.filereadable(global_config) == 1 then
+          config_path = global_config
+          is_project_specific = false
+        else
+          notify.editor(
+            "No TTS config found. Use <leader>ac to create project-specific config.",
+            notify.categories.ERROR,
+            { project_root = project_root }
+          )
           return
         end
 
-        -- Toggle using helper function
-        local success, message, error = toggle_tts_config(config_path, false)
+        -- Toggle config using helper
+        local success, message, error = toggle_tts_config(config_path, is_project_specific)
 
         if success then
-          vim.notify(message, vim.log.levels.INFO)
+          local scope = is_project_specific and "(project)" or "(global)"
+          notify.editor(
+            message .. " " .. scope,
+            notify.categories.USER_ACTION,
+            { config_path = config_path }
+          )
         else
-          vim.notify("Failed to toggle TTS: " .. error, vim.log.levels.ERROR)
+          notify.editor(
+            "Failed to toggle TTS: " .. error,
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
         end
       end, desc = "toggle tts", icon = "󰔊" },
     })
