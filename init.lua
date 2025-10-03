@@ -39,6 +39,13 @@ vim.notify = function(msg, level, opts)
     return
   end
 
+  -- Suppress firenvim and wezterm-integration plugin load errors (intentionally removed/deprecated)
+  if msg and type(msg) == "string" and
+     (msg:match("Failed to load plugin module:.*firenvim") or
+      msg:match("Failed to load plugin module:.*wezterm%-integration")) then
+    return
+  end
+
   return original_notify(msg, level, opts)
 end
 
