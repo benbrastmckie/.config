@@ -45,7 +45,7 @@ return {
         'nofile',       -- Non-file buffers
       },
       -- All buffers of these buffer types will be closed before the session is saved
-      autosave_ignore_buftypes = { 
+      autosave_ignore_buftypes = {
         'terminal',
         'quickfix',    -- Quickfix lists
         'nofile',      -- General non-file buffers
@@ -59,6 +59,26 @@ return {
       autosave_only_in_session = true,
       -- Shorten the display path if length exceeds this threshold. Use 0 if don't want to shorten the path at all
       max_path_length = 80,
+    })
+
+    -- TODO: Remove this workaround once the root cause is identified
+    -- Issue: Some plugin/autocmd is setting buflisted=false for normal file buffers
+    --        (especially git-ignored files), causing them to disappear from bufferline
+    --        after switching to terminal and back. This defensive autocmd ensures all
+    --        normal file buffers remain listed so they appear in bufferline and get
+    --        saved in sessions. See: specs/reports/037_debug_gitignored_buffer_disappearance.md
+    vim.api.nvim_create_autocmd({"BufAdd", "SessionLoadPost"}, {
+      callback = function(args)
+        local buf = args.buf or vim.api.nvim_get_current_buf()
+        local buftype = vim.bo[buf].buftype
+        local bufname = vim.api.nvim_buf_get_name(buf)
+
+        -- Ensure normal file buffers stay listed
+        if buftype == "" and bufname ~= "" and not bufname:match("^term://") then
+          vim.bo[buf].buflisted = true
+        end
+      end,
+      desc = "Workaround: Keep normal file buffers listed (git-ignored file fix)"
     })
   end,
 }

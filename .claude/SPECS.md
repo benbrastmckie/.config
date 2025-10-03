@@ -20,8 +20,8 @@ Each project section follows this format:
 ### /home/benjamin/.config/.claude
 - **Specs Directory**: .claude/specs/
 - **Last Updated**: 2025-10-03
-- **Reports**: 22
-- **Plans**: 18
+- **Reports**: 23
+- **Plans**: 19
 - **Summaries**: 15
 
 ---
