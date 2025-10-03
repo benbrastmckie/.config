@@ -247,6 +247,8 @@ Task {
 ## Implementation Phases
 
 ### Phase 1: Foundation
+dependencies: []
+
 **Objective**: [Goal]
 **Complexity**: Low
 
@@ -261,7 +263,21 @@ Testing:
 ```
 
 ### Phase 2: [Next Phase]
-[Continue pattern...]
+dependencies: [1]
+
+**Objective**: [Goal]
+**Complexity**: Medium
+
+Tasks:
+- [ ] Task 1
+- [ ] Task 2
+
+**Note**: Phase dependencies enable parallel execution when using `/implement`.
+- Empty `[]` or omitted = no dependencies (runs in first wave)
+- `[1]` = depends on Phase 1 (runs after Phase 1 completes)
+- `[1, 2]` = depends on Phases 1 and 2 (runs after both complete)
+- Phases with same dependencies can run in parallel
+- See [docs/parallel-execution-example.md](../docs/parallel-execution-example.md) for examples
 
 ## Testing Strategy
 [Overall approach]
