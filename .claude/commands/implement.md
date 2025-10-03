@@ -373,11 +373,42 @@ After completing all phases, I'll:
 - Update "Last Updated" date
 - Use Edit tool to update SPECS.md
 
-### 5. Update Reports (if referenced)
-If the plan referenced research reports:
-- Add implementation notes to each report
-- Cross-reference the summary
-- Note which recommendations were implemented
+### 5. Create Bidirectional Cross-References
+**Add backward links from plan and reports to summary:**
+
+**Step 1: Update Implementation Plan**
+- Use Edit tool to append "## Implementation Summary" section to plan file:
+  ```markdown
+  ## Implementation Summary
+  - **Status**: Complete
+  - **Date**: [YYYY-MM-DD]
+  - **Summary**: [link to specs/summaries/NNN_implementation_summary.md]
+  ```
+- Place at end of plan file
+
+**Step 2: Update Research Reports (if any)**
+- Extract research report paths from plan metadata
+- For each report:
+  - Use Edit tool to append "## Implementation Status" section:
+    ```markdown
+    ## Implementation Status
+    - **Status**: Implemented
+    - **Date**: [YYYY-MM-DD]
+    - **Plan**: [link to specs/plans/NNN.md]
+    - **Summary**: [link to specs/summaries/NNN_implementation_summary.md]
+    ```
+  - Place at end of report file
+
+**Step 3: Verify Bidirectional Links**
+- Use Read tool to verify each file was updated
+- Check that plan has "Implementation Summary" section
+- Check that each report (if any) has "Implementation Status" section
+- If verification fails: Log warning but continue (don't block)
+
+**Edge Cases:**
+- If plan/report file not writable: Log warning, continue
+- If file already has implementation section: Update existing with Edit tool, don't duplicate
+- If no research reports: Skip Step 2
 
 ### Summary Format
 ```markdown
