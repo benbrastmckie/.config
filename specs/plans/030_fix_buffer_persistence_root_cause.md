@@ -171,16 +171,16 @@ Expected outcome:
 - Claude Code terminal buffers become unlisted
 - Pattern matching is precise and explicit
 
-### Phase 2: Fix bufferline.lua Timing Race Condition
+### Phase 2: Fix bufferline.lua Timing Race Condition [COMPLETED]
 **Objective**: Register critical autocmds before defer_fn to eliminate session restore timing gap
 **Complexity**: Medium
 
 Tasks:
-- [ ] Move `ensure_tabline_visible` function definition before defer_fn (line ~130)
-- [ ] Register BufEnter/WinEnter/SessionLoadPost autocmds BEFORE defer_fn
-- [ ] Keep bufferline.setup() call inside defer_fn
-- [ ] Remove duplicate autocmd registration from inside defer_fn
-- [ ] Verify autocmds register in correct order with `:autocmd BufEnter`
+- [x] Move `ensure_tabline_visible` function definition before defer_fn (line ~130)
+- [x] Register BufEnter/WinEnter/SessionLoadPost autocmds BEFORE defer_fn
+- [x] Keep bufferline.setup() call inside defer_fn
+- [x] Remove duplicate autocmd registration from inside defer_fn
+- [x] Verify autocmds register in correct order with `:autocmd BufEnter`
 
 Testing:
 ```bash
