@@ -89,17 +89,53 @@ I'll analyze the workflow description to extract 2-4 focused research topics:
 Simple Workflows (skip research):
   - Keywords: "fix", "update", "small change"
   - Action: Skip directly to planning phase
+  - Thinking Mode: None (standard processing)
 
 Medium Workflows (focused research):
   - Keywords: "add", "improve", "refactor"
   - Topics: 2-3 focused areas
   - Example: existing patterns + best practices
+  - Thinking Mode: "think" (moderate complexity)
 
 Complex Workflows (comprehensive research):
   - Keywords: "implement", "redesign", "architecture"
   - Topics: 3-4 comprehensive areas
   - Example: patterns + practices + alternatives + constraints
+  - Thinking Mode: "think hard" (high complexity)
+
+Critical Workflows (system-wide impact):
+  - Keywords: "security", "breaking change", "core refactor"
+  - Topics: 4+ comprehensive areas
+  - Thinking Mode: "think harder" (critical decisions)
 ```
+
+#### Step 1.5: Determine Thinking Mode
+
+Analyze workflow complexity to set appropriate thinking mode for agents:
+
+**Complexity Indicators**:
+- **Simple** (score 0-3): Direct implementation, well-known patterns, single file changes
+- **Medium** (score 4-6): Multiple components, some design decisions, moderate scope
+- **Complex** (score 7-9): Architecture changes, novel solutions, large scope
+- **Critical** (score 10+): System-wide impact, security concerns, breaking changes
+
+**Scoring Algorithm**:
+```
+score = 0
+score += count_keywords(["implement", "architecture", "redesign"]) * 3
+score += count_keywords(["add", "improve", "refactor"]) * 2
+score += count_keywords(["security", "breaking", "core"]) * 4
+score += estimated_file_count / 5
+score += (research_topics_needed - 1) * 2
+```
+
+**Thinking Mode Assignment**:
+- score 0-3: No special thinking mode
+- score 4-6: "think"
+- score 7-9: "think hard"
+- score 10+: "think harder"
+
+This thinking mode will be applied to all agent prompts in this workflow.
 
 #### Step 2: Launch Parallel Research Agents
 
@@ -138,12 +174,15 @@ Agent 3 - Alternative Approaches:
 #### Step 3: Research Agent Prompt Template
 
 ```markdown
+**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity)
+
 # Research Task: [Specific Topic]
 
 ## Context
 - **Workflow**: [User's original request - brief 1 line summary]
 - **Research Focus**: [This agent's specific investigation area]
 - **Project Standards**: Reference CLAUDE.md at /home/benjamin/.config/CLAUDE.md
+- **Complexity Level**: [Simple|Medium|Complex|Critical]
 
 ## Objective
 Investigate [specific topic] to inform the planning and implementation phases of this workflow.

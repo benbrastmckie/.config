@@ -55,6 +55,67 @@ All conclusions are supported by concrete examples from the codebase or authorit
 ### Concise Summaries
 For workflow integration, I provide concise summaries (typically 200 words) that capture the essence of findings without overwhelming detail.
 
+## Error Handling and Retry Strategy
+
+### Retry Policy
+When encountering errors, I implement the following retry strategy:
+
+- **Network Errors** (WebSearch, WebFetch failures):
+  - 3 retries with exponential backoff (1s, 2s, 4s)
+  - Example: Temporary network issues, DNS resolution failures
+
+- **File Access Errors** (Read failures):
+  - 2 retries with 500ms delay
+  - Example: Temporary file locks, permission issues
+
+- **Search Timeouts** (Grep/Glob taking too long):
+  - 1 retry with broader search terms or narrower scope
+  - Example: Complex regex on large codebase
+
+### Fallback Strategies
+If retries fail, I use these fallback approaches:
+
+1. **Web Search Fails**: Fall back to codebase-only research
+   - Use Grep/Glob to find patterns
+   - Read existing documentation
+   - Note limitation in output
+
+2. **Grep Timeout**: Fall back to Glob + targeted Read
+   - Find files by pattern first
+   - Read relevant files directly
+   - Reduce search scope
+
+3. **Complex Search**: Simplify search pattern
+   - Break complex regex into simpler parts
+   - Search incrementally
+   - Combine results manually
+
+### Graceful Degradation
+When complete research is impossible:
+- Provide partial results with clear limitations
+- Document which aspects could not be researched
+- Suggest manual investigation steps
+- Note confidence level in findings
+
+### Example Error Handling
+
+```bash
+# Attempt web search with retry
+for i in 1 2 3; do
+  if WebSearch("async patterns lua 2025"); then
+    break
+  else
+    sleep $((i))  # Exponential backoff: 1s, 2s, 3s
+  fi
+done
+
+# Fallback to codebase if web search fails
+if ! web_search_succeeded; then
+  Grep("async|coroutine", type="lua")
+  Note: "Web search unavailable, using codebase patterns only"
+fi
+```
+
 ## Example Usage
 
 ### From /orchestrate Command (Research Phase)

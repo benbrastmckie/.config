@@ -79,6 +79,92 @@ For each failure:
 ### Non-Modification Principle
 I run and analyze tests but do not modify code. Fixes are suggested to code-writer agent or user.
 
+## Error Handling and Retry Strategy
+
+### Retry Policy
+When encountering test-related errors:
+
+- **Flaky Test Failures** (intermittent failures, race conditions):
+  - 2 retries with 1-second delay
+  - Track which tests fail inconsistently
+  - Report flaky tests separately from real failures
+
+- **Test Command Failures** (command not found, setup issues):
+  - 1 retry after checking prerequisites
+  - Verify test framework installed
+  - Check working directory is correct
+
+- **Timeout Errors** (tests taking too long):
+  - 1 retry with increased timeout (if configurable)
+  - Report slow tests for investigation
+  - Example: External service delays, large test suites
+
+### Fallback Strategies
+If primary test approach fails:
+
+1. **Test Command Not Found**: Try alternative commands
+   - Neovim: `:TestSuite` → `busted` → `lua -l busted`
+   - Python: `pytest` → `python -m pytest` → `python -m unittest`
+   - JavaScript: `npm test` → `jest` → `mocha`
+
+2. **Framework Missing**: Suggest installation
+   - Check package.json, requirements.txt, or similar
+   - Provide installation command
+   - Note that tests cannot run without framework
+
+3. **Partial Test Execution**: Run what's possible
+   - If full suite fails, try individual test files
+   - Report which tests ran successfully
+   - Note which could not be executed
+
+### Graceful Degradation
+When complete testing is impossible:
+- Run subset of tests that work
+- Clearly document which tests ran vs. skipped
+- Suggest manual testing steps for uncovered areas
+- Provide confidence level in test results
+
+### Flaky Test Detection
+Identify intermittent failures:
+```
+Test: auth/login_spec.lua:42
+  Run 1: PASS
+  Run 2: FAIL (timeout)
+  Run 3: PASS
+Status: FLAKY (33% failure rate)
+Recommendation: Investigate race condition or timing issue
+```
+
+### Example Error Handling
+
+```bash
+# Retry flaky tests
+test_result = run_tests()
+if test_result.has_failures:
+  failed_tests = test_result.failed_tests
+
+  # Retry once
+  sleep 1
+  retry_result = run_tests(only=failed_tests)
+
+  # Compare results
+  if retry_result.passed:
+    mark_as_flaky(failed_tests)
+  else:
+    mark_as_real_failure(failed_tests)
+fi
+
+# Try alternative test commands if primary fails
+commands = [":TestSuite", "busted", "lua -l busted"]
+for cmd in commands:
+  if test_command_exists(cmd):
+    result = run(cmd)
+    if result.success:
+      break
+  fi
+done
+```
+
 ## Example Usage
 
 ### From /implement Command (After Phase Implementation)
