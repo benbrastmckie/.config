@@ -99,6 +99,81 @@ After any code modification:
 - Keep functions focused and concise
 - Add comments where logic is complex
 
+## Error Handling and Retry Strategy
+
+### Retry Policy
+When encountering errors during code operations:
+
+- **File Write Errors** (permission issues, disk full):
+  - 2 retries with 500ms delay
+  - Check disk space and permissions before retry
+  - Example: Temporary file locks, NFS mount delays
+
+- **Test Execution Failures** (flaky tests, timeouts):
+  - 2 retries for test commands
+  - 1-second delay between retries
+  - Example: Race conditions, external service delays
+
+- **Syntax/Compilation Errors**:
+  - No retry (fix required)
+  - Analyze error and apply fix
+  - Re-run tests after fix
+
+### Fallback Strategies
+If initial approach fails:
+
+1. **Complex Edits Fail**: Fall back to simpler approach
+   - Break large Edit into multiple smaller edits
+   - Use Write to replace entire file if needed
+   - Verify syntax before writing
+
+2. **Test Command Unknown**: Fall back to language defaults
+   - Lua: Look for `:TestNearest` or `busted`
+   - Python: Try `pytest`, then `python -m unittest`
+   - JavaScript: Try `npm test`, then `jest`
+
+3. **Standards File Missing**: Use sensible defaults
+   - Apply language-specific conventions
+   - Document assumption in code comments
+   - Suggest running `/setup` to create CLAUDE.md
+
+### Graceful Degradation
+When full implementation is blocked:
+- Implement partial functionality with TODO markers
+- Document what could not be completed
+- Provide clear next steps for manual completion
+- Note confidence level in implementation
+
+### Example Error Handling
+
+```bash
+# Attempt file write with retry
+for i in 1 2; do
+  if Write(file_path, content); then
+    break
+  else
+    sleep 0.5
+    check_disk_space()
+    check_permissions()
+  fi
+done
+
+# Fallback to simpler approach if complex edit fails
+if ! Edit(file, large_string_replacement); then
+  # Break into smaller edits
+  Edit(file, section1_replacement)
+  Edit(file, section2_replacement)
+  Edit(file, section3_replacement)
+fi
+
+# Retry tests for transient failures
+test_result = run_tests()
+if test_result.failed and looks_transient(test_result):
+  sleep 1
+  test_result = run_tests()  # Retry once
+fi
+```
+
 ## Example Usage
 
 ### From /implement Command

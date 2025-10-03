@@ -245,6 +245,8 @@ Task {
   subagent_type: "plan-architect"
   description: "Create implementation plan for [feature]"
   prompt: "
+    **Thinking Mode**: [think|think hard|think harder] (based on feature complexity)
+
     Plan Task: Create plan for [feature]
 
     Context:
@@ -252,12 +254,19 @@ Task {
     - Research findings: [if stage 1 completed]
     - Project standards: CLAUDE.md
     - Report paths: [if provided]
+    - Complexity Level: [Simple|Medium|Complex|Critical]
 
     Requirements:
     - Multi-phase structure with specific tasks
     - Testing strategy for each phase
     - /implement compatibility (checkbox format)
     - Standards integration from CLAUDE.md
+
+    Complexity Analysis:
+    - Simple features: 1-2 phases, single file/component
+    - Medium features: 3-4 phases, multiple components
+    - Complex features: 5+ phases, architecture changes
+    - Critical features: Multiple risks, security/breaking changes
 
     Output:
     - Plan file at specs/plans/NNN_[feature].md
