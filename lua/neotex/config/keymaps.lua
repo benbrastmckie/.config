@@ -20,7 +20,7 @@ Organization:
 ----------------------------------------------------------------------------------
 AI/ASSISTANT GLOBAL KEYBINDINGS                | DESCRIPTION
 ----------------------------------------------------------------------------------
-<C-c>                                          | Toggle Claude Code sidebar (all modes)
+<C-c>                                          | Toggle Claude Code (overridden in Avante/Telescope)
 <C-g>                                          | Toggle Avante interface (all modes)
 
 ----------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ O                                              | Create new bullet point above
 dd                                             | Delete line and recalculate list numbers
 d (visual mode)                                | Delete selection and recalculate numbers
 <C-n>                                          | Toggle checkbox status ([ ] ↔ [x])
-<C-c>                                          | Recalculate list numbering
+<C-c>                                          | Toggle Claude Code (global binding, not autolist)
 
 ----------------------------------------------------------------------------------
 AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
@@ -291,6 +291,9 @@ function M.setup()
   --------------------------------
 
   -- Claude Code toggle (smart session management)
+  -- Note: This global mapping is overridden by buffer-local mappings in:
+  --   - Avante buffers (<C-c> clears chat history)
+  --   - Telescope pickers (<C-c> closes picker)
   map("n", "<C-c>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
