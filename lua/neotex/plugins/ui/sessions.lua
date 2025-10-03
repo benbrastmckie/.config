@@ -63,23 +63,25 @@ return {
 
     -- Defensive autocmd to ensure normal file buffers remain listed
     -- Root causes fixed in plan 030: claudecode.lua pattern matching + bufferline.lua timing
-    -- This simplified version protects against unknown third-party async operations
-    -- Simplified from 4 events to 2 events (BufAdd/SessionLoadPost no longer needed)
+    -- COMMENTED OUT: Testing if root cause fixes alone are sufficient
+    -- If you experience buffer disappearance issues, uncomment the autocmd below
     -- See: specs/plans/030_fix_buffer_persistence_root_cause.md
+    --      specs/reports/038_buffer_persistence_root_cause.md
     --      specs/reports/037_debug_gitignored_buffer_disappearance.md
-    vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
-      callback = function(args)
-        local buf = args.buf or vim.api.nvim_get_current_buf()
-        local buftype = vim.bo[buf].buftype
-        local bufname = vim.api.nvim_buf_get_name(buf)
 
-        -- Ensure normal file buffers stay listed
-        if buftype == "" and bufname ~= "" and not bufname:match("^term://") then
-          vim.bo[buf].buflisted = true
-        end
-      end,
-      desc = "Ensure normal file buffers remain listed during transitions"
-    })
+    -- vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+    --   callback = function(args)
+    --     local buf = args.buf or vim.api.nvim_get_current_buf()
+    --     local buftype = vim.bo[buf].buftype
+    --     local bufname = vim.api.nvim_buf_get_name(buf)
+    --
+    --     -- Ensure normal file buffers stay listed
+    --     if buftype == "" and bufname ~= "" and not bufname:match("^term://") then
+    --       vim.bo[buf].buflisted = true
+    --     end
+    --   end,
+    --   desc = "Ensure normal file buffers remain listed during transitions"
+    -- })
   end,
 }
 
