@@ -121,13 +121,12 @@ return {
     -- HELPER FUNCTIONS FOR FILETYPE DETECTION
     -- ============================================================================
 
-    -- Toggle TTS_ENABLED in the specified config file
-    -- @param config_path string Absolute path to tts-config.sh
-    -- @param is_project_specific boolean True if project-local, false if global
+    -- Toggle TTS_ENABLED in the project-specific config file
+    -- @param config_path string Path to the tts-config.sh file
     -- @return success boolean True if toggle succeeded
     -- @return message string Success message ("TTS enabled" or "TTS disabled")
     -- @return error string Error message if success is false
-    local function toggle_tts_config(config_path, is_project_specific)
+    local function toggle_tts_config(config_path)
       -- Validate file exists (redundant check, but safe)
       if vim.fn.filereadable(config_path) ~= 1 then
         return false, nil, "Config file not readable: " .. config_path
@@ -262,39 +261,24 @@ return {
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
-      -- TTS toggle - supports project-specific and global configs
+      -- TTS toggle - project-specific only
       { "<leader>at", function()
-        -- Project root detection: use cwd for consistency with other modules
-        local project_root = vim.fn.getcwd()
+        local config_path = vim.fn.getcwd() .. "/.claude/tts/tts-config.sh"
 
-        -- Path priority: project-specific config takes precedence over global
-        local project_config = project_root .. "/.claude/tts/tts-config.sh"
-        local global_config = vim.fn.expand('$HOME') .. "/.config/.claude/tts/tts-config.sh"
-
-        -- Resolve config path with priority
-        local config_path, is_project_specific
-        if vim.fn.filereadable(project_config) == 1 then
-          config_path = project_config
-          is_project_specific = true
-        elseif vim.fn.filereadable(global_config) == 1 then
-          config_path = global_config
-          is_project_specific = false
-        else
+        if vim.fn.filereadable(config_path) ~= 1 then
           notify.editor(
             "No TTS config found. Use <leader>ac to create project-specific config.",
             notify.categories.ERROR,
-            { project_root = project_root }
+            { project_root = vim.fn.getcwd() }
           )
           return
         end
 
-        -- Toggle config using helper
-        local success, message, error = toggle_tts_config(config_path, is_project_specific)
+        local success, message, error = toggle_tts_config(config_path)
 
         if success then
-          local scope = is_project_specific and "(project)" or "(global)"
           notify.editor(
-            message .. " " .. scope,
+            message,
             notify.categories.USER_ACTION,
             { config_path = config_path }
           )

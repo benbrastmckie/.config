@@ -198,14 +198,6 @@ Example:
 - Check all required fields present
 - Verify phase dependencies reference valid phases
 
-## Future Enhancements
-
-Planned improvements:
-- Template versioning and updates
-- Template inheritance (extend base templates)
-- Template marketplace (share community templates)
-- Visual template editor
-- Template validation tests
 
 ## References
 
