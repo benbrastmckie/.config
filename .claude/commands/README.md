@@ -190,6 +190,43 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
+#### /plan-from-template
+**Purpose**: Generate implementation plans from reusable templates
+
+**Usage**: `/plan-from-template <template-name>`
+
+**Features**:
+- Variable substitution ({{variable}})
+- Pre-built templates (CRUD, API, refactoring)
+- Custom template support
+- 60-80% faster plan creation
+
+**Templates**:
+- crud-feature: CRUD operations for entities
+- api-endpoint: REST API implementation
+- refactoring: Structured code refactoring
+
+**Output**: `specs/plans/NNN_plan_name.md`
+
+---
+
+#### /analyze-patterns
+**Purpose**: Analyze learning data for workflow insights and optimization opportunities
+
+**Usage**: `/analyze-patterns [search-pattern]`
+
+**Features**:
+- Success rate analysis by workflow type
+- Common research topics identification
+- Implementation time statistics
+- Failure pattern detection
+- Optimization recommendations
+- Visual charts and reports
+
+**Output**: Console analysis + `specs/reports/NNN_pattern_analysis.md`
+
+---
+
 ### Workflow Commands
 
 #### /resume-implement
