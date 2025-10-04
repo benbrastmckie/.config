@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Task, TodoWrite
 
 # /document Command
 
-Updates all relevant documentation based on recent code changes, ensuring compliance with project documentation standards defined in CLAUDE.md.
+Updates all relevant documentation to accurately reflect the current codebase state, ensuring compliance with project documentation standards defined in CLAUDE.md.
 
 ## Usage
 
@@ -18,32 +18,32 @@ Updates all relevant documentation based on recent code changes, ensuring compli
 
 ### Arguments
 
-- `[change-description]` (optional): Brief description of recent changes to document
-- `[scope]` (optional): Specific directory or module to focus on (defaults to all affected areas)
+- `[scope-description]` (optional): Brief description of area to document
+- `[scope]` (optional): Specific directory or module to focus on (defaults to entire codebase)
 
 ## Examples
 
-### Auto-detect Changes
+### Auto-detect Scope
 ```
 /document
 ```
-Analyzes recent git commits and updates all affected documentation
+Analyzes the codebase and updates all relevant documentation
 
-### With Change Description
+### With Scope Description
 ```
-/document "Added Kitty terminal support and command picker improvements"
+/document "Kitty terminal support and command picker" nvim/lua/neotex
 ```
 
 ### Scoped Documentation
 ```
-/document "Refactored authentication system" nvim/lua/neotex/auth
+/document "Authentication system" nvim/lua/neotex/auth
 ```
 
 ## Process
 
-### 1. **Change Detection**
-- Analyzes recent git commits (uncommitted and recent commits)
-- Identifies modified files and their types
+### 1. **Scope Detection**
+- Analyzes affected areas of the codebase
+- Identifies files and their types
 - Determines which documentation needs updating
 - Reviews implementation summaries if available
 
@@ -60,10 +60,9 @@ Analyzes recent git commits and updates all affected documentation
 Automatically identifies and updates:
 - **README.md files** in affected directories
 - **API documentation** for modified functions/modules
-- **Configuration documentation** for setting changes
-- **Command documentation** for CLI changes
-- **Architecture docs** if structure changed
-- **Migration guides** for breaking changes
+- **Configuration documentation** for settings
+- **Command documentation** for CLI functionality
+- **Architecture docs** for system structure
 - **CHANGELOG.md** if present
 
 ### 4. **Documentation Updates**
@@ -96,9 +95,9 @@ Description of what this module does and its key functions.
 
 #### Configuration Documentation
 - Updates available options
-- Documents new settings
+- Documents current settings
 - Updates default values
-- Adds deprecation notices
+- Documents option behaviors
 
 ### 5. **Compliance Checks**
 
@@ -112,7 +111,7 @@ Description of what this module does and its key functions.
 - All directories have README.md
 - All public functions documented
 - Configuration options explained
-- Breaking changes highlighted
+- System capabilities accurately described
 
 #### Formatting Standards
 - UTF-8 encoding (no emojis in files)
@@ -129,22 +128,19 @@ Description of what this module does and its key functions.
 ## Documentation Priorities
 
 ### High Priority
-1. **Breaking Changes** - Must be documented immediately
-2. **New APIs** - Public interfaces need documentation
-3. **Configuration Changes** - User-facing settings
-4. **Removed Features** - Deprecation and migration paths
+1. **Public APIs** - External interfaces and their usage
+2. **Configuration Options** - Available settings and their effects
+3. **Core Functionality** - Primary features and capabilities
 
 ### Medium Priority
-1. **Internal Changes** - Architecture modifications
-2. **Performance Improvements** - Optimization notes
-3. **Bug Fixes** - Notable fixes worth documenting
-4. **Refactoring** - Structure changes
+1. **Internal Architecture** - System structure and organization
+2. **Code Comments** - Inline documentation and explanations
+3. **Module Organization** - Component relationships
 
 ### Low Priority
-1. **Code Comments** - Inline documentation
-2. **TODO Updates** - Task tracking
-3. **Style Changes** - Formatting updates
-4. **Test Documentation** - Test case descriptions
+1. **Performance Characteristics** - Current performance metrics and behavior
+2. **Implementation Details** - Technical specifics and internals
+3. **Test Documentation** - Test case descriptions and coverage
 
 ## Output
 
@@ -191,11 +187,11 @@ Automatically enforces:
 ## Best Practices
 
 ### DO
-- **Run after significant changes**: Keep docs in sync with code
+- **Keep docs current**: Ensure documentation reflects actual codebase state
 - **Review before committing**: Verify documentation accuracy
-- **Include examples**: Add usage examples for new features
+- **Include examples**: Add usage examples for features
 - **Maintain consistency**: Follow established patterns
-- **Document rationale**: Explain why, not just what
+- **Document behavior**: Explain what the system does and how it works
 
 ### DON'T
 - **Over-document**: Avoid redundant documentation
@@ -218,29 +214,23 @@ Automatically enforces:
 
 ## Special Cases
 
-### New Features
+### Feature Documentation
 - Creates comprehensive documentation
 - Adds usage examples
 - Updates feature lists
-- Creates migration guides if needed
+- Documents capabilities and limitations
 
-### Refactoring
+### Architecture Documentation
 - Updates architectural documentation
 - Modifies module descriptions
 - Updates code examples
-- Preserves historical context
+- Documents system organization
 
-### Bug Fixes
-- Documents in CHANGELOG if present
-- Updates known issues sections
-- Adds resolution notes
+### Troubleshooting Documentation
 - Updates troubleshooting guides
-
-### Breaking Changes
-- Creates migration guides
-- Documents removal timelines
-- Updates all affected examples
-- Highlights in CHANGELOG
+- Documents resolution approaches
+- Adds diagnostic procedures
+- Documents common issues and solutions
 
 ## Error Handling
 
