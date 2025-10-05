@@ -55,30 +55,68 @@ Revises the most recently discussed implementation plan according to user-provid
 
 To implement the revised plan after revision, use `/implement [plan-file]`
 
+## Adaptive Plan Support
+
+This command revises all three plan structure tiers:
+- **Tier 1**: Revise single `.md` file
+- **Tier 2**: Revise overview and/or specific phase files
+- **Tier 3**: Revise overview, phase overviews, and/or stage files
+
+The command determines which file(s) to revise based on the scope of changes.
+
 ## Process
 
-1. **Plan Discovery**
-   - Identifies the most recent plan mentioned in the current conversation
-   - Searches conversation history for plan file references (e.g., `001_plan_feature.md`)
-   - Falls back to the most recently modified plan if none mentioned
-   - Looks in `specs/plans/` directory
-   - Identifies plans by `*_plan_*.md` or `*_*_plan.md` patterns
+1. **Plan Discovery (Tier-Aware)**
+   - Identifies the most recent plan mentioned in conversation
+   - Searches for both `.md` files (T1) and directories (T2/T3)
+   - Falls back to most recently modified plan if none mentioned
+   - Detects tier using `parse-adaptive-plan.sh detect_tier`
+   - Gets appropriate overview file for the tier
 
-2. **Report Integration** (if provided)
+2. **Revision Scope Analysis**
+   - **High-level changes** (metadata, overview, problem statement):
+     - **T1**: Revise single file
+     - **T2/T3**: Revise overview file only
+   - **Phase-specific changes** (tasks, testing, phase objectives):
+     - **T1**: Revise relevant phase section in single file
+     - **T2**: Revise specific `phase_N_name.md` file
+     - **T3**: Revise specific stage files or phase overview
+   - **Cross-cutting changes** (affects multiple phases):
+     - Revise multiple files as needed
+     - Maintain cross-reference integrity
+
+3. **Report Integration** (if provided)
    - Reads specified research reports
    - Extracts relevant recommendations and findings
    - Incorporates insights into revision strategy
 
-3. **Revision Application**
-   - Preserves plan metadata and structure
-   - Updates phases based on revision details
-   - Maintains completion status where appropriate
-   - Adds revision notes with timestamp
+4. **Tier-Aware Revision Application**
 
-4. **Documentation**
-   - Adds revision history section if not present
+   **Tier 1 (Single File)**:
+   - Use Edit tool on single `.md` file
+   - Update relevant sections inline
+   - Preserve completion markers
+   - Add revision history
+
+   **Tier 2 (Phase Directory)**:
+   - Determine target file(s) based on scope
+   - Update overview for high-level changes
+   - Update specific phase files for phase changes
+   - Update cross-references if structure changes
+   - Add revision history to overview
+
+   **Tier 3 (Hierarchical Tree)**:
+   - Navigate to appropriate level (overview/phase/stage)
+   - Update relevant file(s)
+   - Propagate changes through hierarchy if needed
+   - Update all affected cross-references
+   - Add revision history to main overview
+
+5. **Documentation**
+   - Adds revision history to plan overview (all tiers)
    - Documents what changed and why
    - References any reports used for guidance
+   - Notes which files were modified (T2/T3)
 
 ## Plan Structure Preservation
 
