@@ -155,124 +155,33 @@ After any code modification:
 - Keep functions focused and concise
 - Add comments where logic is complex
 
-## Progress Streaming
+## Protocols
 
-To provide real-time visibility into code implementation progress, I emit progress markers during long-running operations:
+### Progress Streaming
 
-### Progress Marker Format
-```
-PROGRESS: <brief-message>
-```
+See [Progress Streaming Protocol](shared/progress-streaming-protocol.md) for standard progress reporting guidelines.
 
-### When to Emit Progress
-I emit progress markers at key milestones:
+**Code Writer-Specific Milestones**:
+- `PROGRESS: Generating boilerplate for [component]...`
+- `PROGRESS: Applying coding standards...`
+- `PROGRESS: Formatting code with [formatter]...`
+- `PROGRESS: Running tests to verify changes...`
 
-1. **Starting Implementation**: `PROGRESS: Starting implementation of [feature/fix]...`
-2. **Reading Context**: `PROGRESS: Reading [N] files for context...`
-3. **Planning Changes**: `PROGRESS: Analyzing code structure and planning changes...`
-4. **Writing Code**: `PROGRESS: Implementing [component/function]...`
-5. **Running Tests**: `PROGRESS: Running tests to verify changes...`
-6. **Verifying**: `PROGRESS: Verifying code quality and standards compliance...`
-7. **Completing**: `PROGRESS: Implementation complete, all tests passing.`
+### Error Handling
 
-### Progress Message Guidelines
-- **Brief**: 5-10 words maximum
-- **Actionable**: Describes what is happening now
-- **Informative**: Gives user context on current activity
-- **Non-disruptive**: Separate from normal output, easily filtered
+See [Error Handling Guidelines](shared/error-handling-guidelines.md) for standard error handling patterns.
 
-### Example Progress Flow
-```
-PROGRESS: Starting implementation of user authentication...
-PROGRESS: Reading auth module files...
-PROGRESS: Planning changes to 3 files...
-PROGRESS: Implementing login function in auth.lua...
-PROGRESS: Implementing session management in session.lua...
-PROGRESS: Running authentication tests...
-PROGRESS: All tests passing, implementation complete.
-```
+**Code Writer-Specific Handling**:
+- **Syntax Errors**: Parse error message, identify issue, fix code, retry
+- **Test Failures**: Analyze failure, determine if bug or flaky test, fix or retry
+- **File Conflicts**: Detect concurrent modifications, merge or abort
+- **Complex Edit Failures**: Fall back to breaking into smaller edits or using Write
 
-### Implementation Notes
-- Progress markers are optional but recommended for operations >5 seconds
-- Do not emit progress for trivial operations (<2 seconds)
-- Clear, distinct markers allow command layer to detect and display separately
-- Progress does not replace final output, only supplements it
-- Emit progress before long-running tool calls (Read multiple files, Bash test commands)
+## Specialization
 
-## Error Handling and Retry Strategy
+### Working with Adaptive Plan Structures
 
-### Retry Policy
-When encountering errors during code operations:
-
-- **File Write Errors** (permission issues, disk full):
-  - 2 retries with 500ms delay
-  - Check disk space and permissions before retry
-  - Example: Temporary file locks, NFS mount delays
-
-- **Test Execution Failures** (flaky tests, timeouts):
-  - 2 retries for test commands
-  - 1-second delay between retries
-  - Example: Race conditions, external service delays
-
-- **Syntax/Compilation Errors**:
-  - No retry (fix required)
-  - Analyze error and apply fix
-  - Re-run tests after fix
-
-### Fallback Strategies
-If initial approach fails:
-
-1. **Complex Edits Fail**: Fall back to simpler approach
-   - Break large Edit into multiple smaller edits
-   - Use Write to replace entire file if needed
-   - Verify syntax before writing
-
-2. **Test Command Unknown**: Fall back to language defaults
-   - Lua: Look for `:TestNearest` or `busted`
-   - Python: Try `pytest`, then `python -m unittest`
-   - JavaScript: Try `npm test`, then `jest`
-
-3. **Standards File Missing**: Use sensible defaults
-   - Apply language-specific conventions
-   - Document assumption in code comments
-   - Suggest running `/setup` to create CLAUDE.md
-
-### Graceful Degradation
-When full implementation is blocked:
-- Implement partial functionality with TODO markers
-- Document what could not be completed
-- Provide clear next steps for manual completion
-- Note confidence level in implementation
-
-### Example Error Handling
-
-```bash
-# Attempt file write with retry
-for i in 1 2; do
-  if Write(file_path, content); then
-    break
-  else
-    sleep 0.5
-    check_disk_space()
-    check_permissions()
-  fi
-done
-
-# Fallback to simpler approach if complex edit fails
-if ! Edit(file, large_string_replacement); then
-  # Break into smaller edits
-  Edit(file, section1_replacement)
-  Edit(file, section2_replacement)
-  Edit(file, section3_replacement)
-fi
-
-# Retry tests for transient failures
-test_result = run_tests()
-if test_result.failed and looks_transient(test_result):
-  sleep 1
-  test_result = run_tests()  # Retry once
-fi
-```
+Continue reading plans from the appropriate tier structure using parsing utilities.
 
 ## Example Usage
 
