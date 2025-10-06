@@ -12,6 +12,54 @@ Extracting common functionality to shared libraries:
 
 ## Available Utilities
 
+### adaptive-planning-logger.sh
+
+Structured logging for adaptive planning trigger evaluations and replanning events.
+
+**Key Functions:**
+- `log_trigger_evaluation()` - Log a trigger evaluation with result
+- `log_complexity_check()` - Log complexity score and threshold comparison
+- `log_test_failure_pattern()` - Log test failure pattern detection
+- `log_scope_drift()` - Log scope drift detection
+- `log_replan_invocation()` - Log a replanning invocation and result
+- `log_loop_prevention()` - Log loop prevention enforcement
+- `query_adaptive_log()` - Query log for recent events
+- `get_adaptive_stats()` - Get statistics about adaptive planning activity
+
+**Usage Example:**
+```bash
+# Source the utility library
+source .claude/lib/adaptive-planning-logger.sh
+
+# Log a complexity trigger evaluation
+log_complexity_check 3 9.2 8 12
+
+# Log a replan invocation
+log_replan_invocation "expand_phase" "success" "/path/to/updated_plan.md" '{"phase": 3}'
+
+# Query recent events
+query_adaptive_log "trigger_eval" 5
+
+# Get statistics
+get_adaptive_stats
+```
+
+**Log Format:**
+```
+[2025-10-06T12:30:45Z] INFO trigger_eval: Trigger evaluation: complexity -> triggered | data={"phase": 3, "score": 9.2, "threshold": 8, "tasks": 12}
+[2025-10-06T12:31:15Z] INFO replan: Replanning invoked: expand_phase -> success | data={"revision_type": "expand_phase", "result": "/path/to/plan.md"}
+[2025-10-06T12:31:20Z] WARN loop_prevention: Loop prevention: phase 3 replan count 2 -> blocked | data={"phase": 3, "replan_count": 2, "max_allowed": 2}
+```
+
+**Log Rotation:**
+- Max file size: 10MB
+- Max rotated files: 5
+- Rotation format: adaptive-planning.log → adaptive-planning.log.1 → adaptive-planning.log.2...
+
+**Used By:** `/implement` (adaptive planning feature)
+
+---
+
 ### checkpoint-utils.sh
 
 Checkpoint management for workflow resume capability.
