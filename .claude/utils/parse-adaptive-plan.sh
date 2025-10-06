@@ -777,6 +777,276 @@ update_plan_expanded_stages() {
   fi
 }
 
+# Merge phase file content back into main plan
+# Usage: merge_phase_into_plan <plan_file> <phase_file> <phase_num>
+merge_phase_into_plan() {
+  local plan_file="$1"
+  local phase_file="$2"
+  local phase_num="$3"
+
+  # Create temporary files
+  local phase_content_file=$(mktemp)
+  local temp_file=$(mktemp)
+
+  # Extract phase content (skip metadata and update reminder sections)
+  awk '
+    /^## Update Reminder/ { exit }
+    /^## Metadata/ { in_metadata = 1; next }
+    in_metadata && /^$/ { in_metadata = 0; next }
+    in_metadata && /^- \*\*/ { next }
+    { print }
+  ' "$phase_file" > "$phase_content_file"
+
+  # Replace summary in main plan with full content
+  awk -v phase="$phase_num" -v content_file="$phase_content_file" '
+    BEGIN { in_phase = 0 }
+    /^### Phase / {
+      phase_match = ($3 ~ "^" phase ":")
+      if (phase_match && !in_phase) {
+        in_phase = 1
+        # Insert full phase content from file
+        while ((getline line < content_file) > 0) {
+          print line
+        }
+        close(content_file)
+        next
+      } else if (in_phase && !phase_match) {
+        # Different phase found, stop skipping
+        in_phase = 0
+        print
+        next
+      }
+    }
+    # Skip lines while in the phase being replaced
+    in_phase { next }
+    # Print all other lines
+    { print }
+  ' "$plan_file" > "$temp_file"
+
+  mv "$temp_file" "$plan_file"
+  rm -f "$phase_content_file"
+}
+
+# Merge stage file content back into phase file
+# Usage: merge_stage_into_phase <phase_file> <stage_file> <stage_num>
+merge_stage_into_phase() {
+  local phase_file="$1"
+  local stage_file="$2"
+  local stage_num="$3"
+
+  # Create temporary files
+  local stage_content_file=$(mktemp)
+  local temp_file=$(mktemp)
+
+  # Extract stage content (skip metadata and update reminder sections)
+  awk '
+    /^## Update Reminder/ { exit }
+    /^## Metadata/ { in_metadata = 1; next }
+    in_metadata && /^$/ { in_metadata = 0; next }
+    in_metadata && /^- \*\*/ { next }
+    { print }
+  ' "$stage_file" > "$stage_content_file"
+
+  # Replace summary in phase file with full content
+  awk -v stage="$stage_num" -v content_file="$stage_content_file" '
+    BEGIN { in_stage = 0 }
+    /^#### Stage / {
+      stage_match = ($3 ~ "^" stage ":")
+      if (stage_match && !in_stage) {
+        in_stage = 1
+        # Insert full stage content from file
+        while ((getline line < content_file) > 0) {
+          print line
+        }
+        close(content_file)
+        next
+      } else if (in_stage && !stage_match) {
+        # Different stage found, stop skipping
+        in_stage = 0
+        print
+        next
+      }
+    }
+    /^### / && in_stage {
+      # New phase section, stop skipping
+      in_stage = 0
+      print
+      next
+    }
+    # Skip lines while in the stage being replaced
+    in_stage { next }
+    # Print all other lines
+    { print }
+  ' "$phase_file" > "$temp_file"
+
+  mv "$temp_file" "$phase_file"
+  rm -f "$stage_content_file"
+}
+
+# Remove phase from Expanded Phases metadata
+# Usage: remove_expanded_phase <plan_file> <phase_num>
+remove_expanded_phase() {
+  local plan_file="$1"
+  local phase_num="$2"
+
+  # Get current expanded phases
+  local current=$(grep "^- \*\*Expanded Phases\*\*:" "$plan_file" 2>/dev/null | sed 's/^- \*\*Expanded Phases\*\*: \[\(.*\)\]/\1/')
+
+  if [[ -z "$current" ]]; then
+    return 0
+  fi
+
+  # Remove phase number from list
+  local new_list=$(echo "$current" | sed "s/\b$phase_num\b//g" | sed 's/, ,/,/g' | sed 's/^, //g' | sed 's/, $//g')
+
+  if [[ -z "$new_list" ]]; then
+    # No more expanded phases, remove the line
+    sed -i "/^- \*\*Expanded Phases\*\*:/d" "$plan_file"
+  else
+    # Update with new list
+    sed -i "s/^- \*\*Expanded Phases\*\*:.*/- **Expanded Phases**: [$new_list]/" "$plan_file"
+  fi
+}
+
+# Remove stage from Expanded Stages metadata in phase file
+# Usage: remove_phase_expanded_stage <phase_file> <stage_num>
+remove_phase_expanded_stage() {
+  local phase_file="$1"
+  local stage_num="$2"
+
+  # Get current expanded stages
+  local current=$(grep "^- \*\*Expanded Stages\*\*:" "$phase_file" 2>/dev/null | sed 's/^- \*\*Expanded Stages\*\*: \[\(.*\)\]/\1/')
+
+  if [[ -z "$current" ]]; then
+    return 0
+  fi
+
+  # Remove stage number from list
+  local new_list=$(echo "$current" | sed "s/\b$stage_num\b//g" | sed 's/, ,/,/g' | sed 's/^, //g' | sed 's/, $//g')
+
+  if [[ -z "$new_list" ]]; then
+    # No more expanded stages, remove the line
+    sed -i "/^- \*\*Expanded Stages\*\*:/d" "$phase_file"
+  else
+    # Update with new list
+    sed -i "s/^- \*\*Expanded Stages\*\*:.*/- **Expanded Stages**: [$new_list]/" "$phase_file"
+  fi
+}
+
+# Remove stage from Expanded Stages metadata in main plan
+# Usage: remove_plan_expanded_stage <plan_file> <phase_num> <stage_num>
+remove_plan_expanded_stage() {
+  local plan_file="$1"
+  local phase_num="$2"
+  local stage_num="$3"
+
+  # Get current expanded stages (dict format)
+  local current=$(grep "^- \*\*Expanded Stages\*\*:" "$plan_file" 2>/dev/null | sed 's/^- \*\*Expanded Stages\*\*: //')
+
+  if [[ -z "$current" ]]; then
+    return 0
+  fi
+
+  # Extract stage list for this phase
+  local phase_stages=$(echo "$current" | sed -n "s/.*$phase_num: \[\([^]]*\)\].*/\1/p")
+
+  if [[ -z "$phase_stages" ]]; then
+    return 0
+  fi
+
+  # Remove stage from list
+  local new_stages=$(echo "$phase_stages" | sed "s/\b$stage_num\b//g" | sed 's/, ,/,/g' | sed 's/^, //g' | sed 's/, $//g')
+
+  if [[ -z "$new_stages" ]]; then
+    # No more stages for this phase, remove phase entry
+    local new_dict=$(echo "$current" | sed "s/, *$phase_num: \[[^]]*\]//g" | sed "s/$phase_num: \[[^]]*\], *//g")
+    if [[ "$new_dict" == "{}" ]] || [[ -z "$new_dict" ]]; then
+      # No more expanded stages at all, remove line
+      sed -i "/^- \*\*Expanded Stages\*\*:/d" "$plan_file"
+    else
+      sed -i "s#^- \*\*Expanded Stages\*\*:.*#- **Expanded Stages**: $new_dict#" "$plan_file"
+    fi
+  else
+    # Update stage list for phase
+    local new_dict=$(echo "$current" | sed "s/$phase_num: \[$phase_stages\]/$phase_num: [$new_stages]/")
+    sed -i "s#^- \*\*Expanded Stages\*\*:.*#- **Expanded Stages**: $new_dict#" "$plan_file"
+  fi
+}
+
+# Check if directory has any remaining phase files/directories
+# Usage: has_remaining_phases <plan_dir>
+# Returns: "true" or "false"
+has_remaining_phases() {
+  local plan_dir="$1"
+
+  # Check for phase files (not the main plan)
+  local plan_name=$(basename "$plan_dir")
+  if find "$plan_dir" -maxdepth 1 -type f -name "phase_*.md" | grep -q .; then
+    echo "true"
+    return 0
+  fi
+
+  # Check for phase directories
+  if find "$plan_dir" -maxdepth 1 -type d -name "phase_*" | grep -q .; then
+    echo "true"
+    return 0
+  fi
+
+  echo "false"
+  return 0
+}
+
+# Check if phase directory has any remaining stage files
+# Usage: has_remaining_stages <phase_dir>
+# Returns: "true" or "false"
+has_remaining_stages() {
+  local phase_dir="$1"
+
+  if find "$phase_dir" -maxdepth 1 -type f -name "stage_*.md" | grep -q .; then
+    echo "true"
+    return 0
+  fi
+
+  echo "false"
+  return 0
+}
+
+# Move plan file back to parent and delete directory (Level 1 → 0)
+# Usage: cleanup_plan_directory <plan_dir>
+cleanup_plan_directory() {
+  local plan_dir="$1"
+  local plan_name=$(basename "$plan_dir")
+  local plan_file="$plan_dir/$plan_name.md"
+  local parent_dir=$(dirname "$plan_dir")
+  local target_file="$parent_dir/$plan_name.md"
+
+  # Move plan file to parent
+  mv "$plan_file" "$target_file"
+
+  # Delete empty directory
+  rmdir "$plan_dir"
+
+  echo "$target_file"
+}
+
+# Move phase file back to parent and delete directory (Level 2 → 1)
+# Usage: cleanup_phase_directory <phase_dir>
+cleanup_phase_directory() {
+  local phase_dir="$1"
+  local phase_name=$(basename "$phase_dir")
+  local phase_file="$phase_dir/$phase_name.md"
+  local parent_dir=$(dirname "$phase_dir")
+  local target_file="$parent_dir/$phase_name.md"
+
+  # Move phase file to parent
+  mv "$phase_file" "$target_file"
+
+  # Delete empty directory
+  rmdir "$phase_dir"
+
+  echo "$target_file"
+}
+
 # === END PROGRESSIVE STRUCTURE DETECTION FUNCTIONS ===
 
 # Get path to plan overview file
@@ -1135,6 +1405,34 @@ Functions (Progressive Expansion Utilities):
   update_plan_expanded_stages <plan_file> <phase_num> <stage_num>
     Updates Expanded Stages dict in main plan
 
+Functions (Progressive Collapse Utilities):
+  merge_phase_into_plan <plan_file> <phase_file> <phase_num>
+    Merges phase file content back into main plan
+
+  merge_stage_into_phase <phase_file> <stage_file> <stage_num>
+    Merges stage file content back into phase file
+
+  remove_expanded_phase <plan_file> <phase_num>
+    Removes phase from Expanded Phases list
+
+  remove_phase_expanded_stage <phase_file> <stage_num>
+    Removes stage from Expanded Stages list in phase file
+
+  remove_plan_expanded_stage <plan_file> <phase_num> <stage_num>
+    Removes stage from Expanded Stages dict in main plan
+
+  has_remaining_phases <plan_dir>
+    Checks if directory has remaining phase files/directories
+
+  has_remaining_stages <phase_dir>
+    Checks if phase directory has remaining stage files
+
+  cleanup_plan_directory <plan_dir>
+    Moves plan back to parent and deletes directory (Level 1 → 0)
+
+  cleanup_phase_directory <phase_dir>
+    Moves phase back to parent and deletes directory (Level 2 → 1)
+
 Examples:
   $0 detect_tier specs/plans/024_feature/
   $0 detect_structure_level specs/plans/025_feature.md
@@ -1235,6 +1533,34 @@ EOF
       ;;
     update_plan_expanded_stages)
       update_plan_expanded_stages "$@"
+      ;;
+    # Progressive collapse utility functions
+    merge_phase_into_plan)
+      merge_phase_into_plan "$@"
+      ;;
+    merge_stage_into_phase)
+      merge_stage_into_phase "$@"
+      ;;
+    remove_expanded_phase)
+      remove_expanded_phase "$@"
+      ;;
+    remove_phase_expanded_stage)
+      remove_phase_expanded_stage "$@"
+      ;;
+    remove_plan_expanded_stage)
+      remove_plan_expanded_stage "$@"
+      ;;
+    has_remaining_phases)
+      has_remaining_phases "$@"
+      ;;
+    has_remaining_stages)
+      has_remaining_stages "$@"
+      ;;
+    cleanup_plan_directory)
+      cleanup_plan_directory "$@"
+      ;;
+    cleanup_phase_directory)
+      cleanup_phase_directory "$@"
       ;;
     *)
       error "Unknown function: $function"
