@@ -356,6 +356,427 @@ list_expanded_stages() {
   echo "$stages" | tr ' ' '\n' | grep -v '^$' | sort -n | tr '\n' ' ' | sed 's/ $//'
 }
 
+# Extract phase name from phase heading
+# Usage: extract_phase_name <plan_file> <phase_num>
+extract_phase_name() {
+  local plan_file="$1"
+  local phase_num="$2"
+
+  # Extract phase heading like "### Phase 2: Implementation"
+  local heading=$(grep "^### Phase ${phase_num}:" "$plan_file" | head -1)
+  if [[ -z "$heading" ]]; then
+    error "Phase $phase_num not found in plan"
+  fi
+
+  # Extract name after colon, convert to lowercase, replace spaces with underscores
+  local name=$(echo "$heading" | sed "s/^### Phase ${phase_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+  echo "$name"
+}
+
+# Extract full phase content from plan file
+# Usage: extract_phase_content <plan_file> <phase_num>
+extract_phase_content() {
+  local plan_file="$1"
+  local phase_num="$2"
+
+  # Extract everything from the phase heading to the next phase heading or end of phases section
+  awk -v phase="$phase_num" '
+    /^### Phase / {
+      phase_match = ($3 ~ "^" phase ":")
+      if (phase_match) {
+        in_phase = 1
+        print
+        next
+      } else if (in_phase) {
+        exit
+      }
+    }
+    /^## / && in_phase {
+      # New major section, end extraction
+      exit
+    }
+    in_phase { print }
+  ' "$plan_file"
+}
+
+# Revise main plan to replace phase content with summary and link
+# Usage: revise_main_plan_for_phase <plan_file> <phase_num> <phase_filename>
+revise_main_plan_for_phase() {
+  local plan_file="$1"
+  local phase_num="$2"
+  local phase_filename="$3"
+
+  # Extract objective from phase
+  local objective=$(grep "^\*\*Objective\*\*:" "$plan_file" | awk -v phase="$phase_num" '
+    NR == phase { sub(/^\*\*Objective\*\*: /, ""); print; exit }
+  ')
+
+  if [[ -z "$objective" ]]; then
+    objective="See phase file for details"
+  fi
+
+  # Create temporary file
+  local temp_file=$(mktemp)
+
+  # Replace phase content with summary
+  awk -v phase="$phase_num" -v obj="$objective" -v link="$phase_filename" '
+    /^### Phase / {
+      phase_match = ($3 ~ "^" phase ":")
+      if (phase_match) {
+        in_phase = 1
+        # Print heading
+        print
+        # Print summary
+        print "**Objective**: " obj
+        print "**Status**: [PENDING]"
+        print ""
+        print "For detailed tasks and implementation, see [Phase " phase " Details](" link ")"
+        print ""
+        next
+      } else if (in_phase) {
+        in_phase = 0
+      }
+    }
+    /^## / && in_phase {
+      # New major section, end skipping
+      in_phase = 0
+    }
+    !in_phase { print }
+  ' "$plan_file" > "$temp_file"
+
+  mv "$temp_file" "$plan_file"
+}
+
+# Add phase metadata to phase file
+# Usage: add_phase_metadata <phase_file> <phase_num> <parent_plan_name>
+add_phase_metadata() {
+  local phase_file="$1"
+  local phase_num="$2"
+  local parent_plan="$3"
+
+  # Create temporary file
+  local temp_file=$(mktemp)
+
+  # Add metadata after phase heading
+  awk -v num="$phase_num" -v parent="$parent_plan" '
+    /^### Phase / && !metadata_added {
+      print
+      print ""
+      print "## Metadata"
+      print "- **Phase Number**: " num
+      print "- **Parent Plan**: " parent
+      print ""
+      metadata_added = 1
+      next
+    }
+    { print }
+  ' "$phase_file" > "$temp_file"
+
+  mv "$temp_file" "$phase_file"
+}
+
+# Add update reminder to phase file
+# Usage: add_update_reminder <phase_file> <phase_description> <parent_plan_name>
+add_update_reminder() {
+  local phase_file="$1"
+  local phase_desc="$2"
+  local parent_plan="$3"
+
+  # Append to end of file
+  cat >> "$phase_file" <<EOF
+
+## Update Reminder
+When phase complete, mark $phase_desc as [COMPLETED] in main plan: \`$parent_plan\`
+EOF
+}
+
+# Update Structure Level metadata in plan file
+# Usage: update_structure_level <plan_file> <level>
+update_structure_level() {
+  local plan_file="$1"
+  local level="$2"
+
+  # Check if metadata exists
+  if grep -q "^- \*\*Structure Level\*\*:" "$plan_file"; then
+    # Update existing
+    sed -i "s/^- \*\*Structure Level\*\*:.*/- **Structure Level**: $level/" "$plan_file"
+  else
+    # Add after other metadata (after Structure Tier if exists, or after Plan Number)
+    local temp_file=$(mktemp)
+    awk -v lvl="$level" '
+      /^- \*\*Structure Tier\*\*:/ {
+        print
+        print "- **Structure Level**: " lvl
+        next
+      }
+      /^- \*\*Plan Number\*\*:/ {
+        print
+        if (!added) {
+          print "- **Structure Level**: " lvl
+          added = 1
+        }
+        next
+      }
+      { print }
+    ' "$plan_file" > "$temp_file"
+    mv "$temp_file" "$plan_file"
+  fi
+}
+
+# Update Expanded Phases metadata
+# Usage: update_expanded_phases <plan_file> <phase_num>
+update_expanded_phases() {
+  local plan_file="$1"
+  local phase_num="$2"
+
+  # Get current expanded phases
+  local current=$(grep "^- \*\*Expanded Phases\*\*:" "$plan_file" 2>/dev/null | sed 's/^- \*\*Expanded Phases\*\*: \[\(.*\)\]/\1/')
+
+  # Add new phase number if not already present
+  if [[ -z "$current" ]]; then
+    new_list="[$phase_num]"
+  elif [[ ! "$current" =~ (^|, )$phase_num(,|$) ]]; then
+    new_list="[$current, $phase_num]"
+  else
+    # Already in list
+    return 0
+  fi
+
+  # Update or add metadata
+  if grep -q "^- \*\*Expanded Phases\*\*:" "$plan_file"; then
+    sed -i "s/^- \*\*Expanded Phases\*\*:.*/- **Expanded Phases**: $new_list/" "$plan_file"
+  else
+    # Add after Structure Level
+    local temp_file=$(mktemp)
+    awk -v list="$new_list" '
+      /^- \*\*Structure Level\*\*:/ {
+        print
+        print "- **Expanded Phases**: " list
+        next
+      }
+      { print }
+    ' "$plan_file" > "$temp_file"
+    mv "$temp_file" "$plan_file"
+  fi
+}
+
+# Extract stage name from stage heading
+# Usage: extract_stage_name <phase_file> <stage_num>
+extract_stage_name() {
+  local phase_file="$1"
+  local stage_num="$2"
+
+  # Extract stage heading like "#### Stage 1: Backend Setup"
+  local heading=$(grep "^#### Stage ${stage_num}:" "$phase_file" | head -1)
+  if [[ -z "$heading" ]]; then
+    error "Stage $stage_num not found in phase"
+  fi
+
+  # Extract name after colon, convert to lowercase, replace spaces with underscores
+  local name=$(echo "$heading" | sed "s/^#### Stage ${stage_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+  echo "$name"
+}
+
+# Extract full stage content from phase file
+# Usage: extract_stage_content <phase_file> <stage_num>
+extract_stage_content() {
+  local phase_file="$1"
+  local stage_num="$2"
+
+  # Extract everything from the stage heading to the next stage heading or end of section
+  awk -v stage="$stage_num" '
+    /^#### Stage / {
+      stage_match = ($3 ~ "^" stage ":")
+      if (stage_match) {
+        in_stage = 1
+        print
+        next
+      } else if (in_stage) {
+        exit
+      }
+    }
+    /^### / && in_stage {
+      # New phase section, end extraction
+      exit
+    }
+    /^## / && in_stage {
+      # New major section, end extraction
+      exit
+    }
+    in_stage { print }
+  ' "$phase_file"
+}
+
+# Revise phase file to replace stage content with summary and link
+# Usage: revise_phase_file_for_stage <phase_file> <stage_num> <stage_filename>
+revise_phase_file_for_stage() {
+  local phase_file="$1"
+  local stage_num="$2"
+  local stage_filename="$3"
+
+  # Extract objective from stage
+  local objective=$(grep "^\*\*Objective\*\*:" "$phase_file" | awk -v stage="$stage_num" '
+    NR == stage { sub(/^\*\*Objective\*\*: /, ""); print; exit }
+  ')
+
+  if [[ -z "$objective" ]]; then
+    objective="See stage file for details"
+  fi
+
+  # Create temporary file
+  local temp_file=$(mktemp)
+
+  # Replace stage content with summary
+  awk -v stage="$stage_num" -v obj="$objective" -v link="$stage_filename" '
+    /^#### Stage / {
+      stage_match = ($3 ~ "^" stage ":")
+      if (stage_match) {
+        in_stage = 1
+        # Print heading
+        print
+        # Print summary
+        print "**Objective**: " obj
+        print ""
+        print "For detailed tasks, see [Stage " stage " Details](" link ")"
+        print ""
+        next
+      } else if (in_stage) {
+        in_stage = 0
+      }
+    }
+    /^### / && in_stage {
+      # New phase section, end skipping
+      in_stage = 0
+    }
+    /^## / && in_stage {
+      # New major section, end skipping
+      in_stage = 0
+    }
+    !in_stage { print }
+  ' "$phase_file" > "$temp_file"
+
+  mv "$temp_file" "$phase_file"
+}
+
+# Add stage metadata to stage file
+# Usage: add_stage_metadata <stage_file> <stage_num> <parent_phase_name>
+add_stage_metadata() {
+  local stage_file="$1"
+  local stage_num="$2"
+  local parent_phase="$3"
+
+  # Create temporary file
+  local temp_file=$(mktemp)
+
+  # Add metadata after stage heading
+  awk -v num="$stage_num" -v parent="$parent_phase" '
+    /^#### Stage / && !metadata_added {
+      print
+      print ""
+      print "## Metadata"
+      print "- **Stage Number**: " num
+      print "- **Parent Phase**: " parent
+      print ""
+      metadata_added = 1
+      next
+    }
+    { print }
+  ' "$stage_file" > "$temp_file"
+
+  mv "$temp_file" "$stage_file"
+}
+
+# Update Expanded Stages metadata in phase file
+# Usage: update_phase_expanded_stages <phase_file> <stage_num>
+update_phase_expanded_stages() {
+  local phase_file="$1"
+  local stage_num="$2"
+
+  # Get current expanded stages
+  local current=$(grep "^- \*\*Expanded Stages\*\*:" "$phase_file" 2>/dev/null | sed 's/^- \*\*Expanded Stages\*\*: \[\(.*\)\]/\1/')
+
+  # Add new stage number if not already present
+  if [[ -z "$current" ]]; then
+    new_list="[$stage_num]"
+  elif [[ ! "$current" =~ (^|, )$stage_num(,|$) ]]; then
+    new_list="[$current, $stage_num]"
+  else
+    # Already in list
+    return 0
+  fi
+
+  # Update or add metadata
+  if grep -q "^- \*\*Expanded Stages\*\*:" "$phase_file"; then
+    sed -i "s/^- \*\*Expanded Stages\*\*:.*/- **Expanded Stages**: $new_list/" "$phase_file"
+  else
+    # Add after Phase Number
+    local temp_file=$(mktemp)
+    awk -v list="$new_list" '
+      /^- \*\*Parent Plan\*\*:/ {
+        print
+        print "- **Expanded Stages**: " list
+        next
+      }
+      { print }
+    ' "$phase_file" > "$temp_file"
+    mv "$temp_file" "$phase_file"
+  fi
+}
+
+# Update Expanded Stages metadata in main plan (dict format: {phase: [stages]})
+# Usage: update_plan_expanded_stages <plan_file> <phase_num> <stage_num>
+update_plan_expanded_stages() {
+  local plan_file="$1"
+  local phase_num="$2"
+  local stage_num="$3"
+
+  # Get current expanded stages (dict format)
+  local current=$(grep "^- \*\*Expanded Stages\*\*:" "$plan_file" 2>/dev/null | sed 's/^- \*\*Expanded Stages\*\*: //')
+
+  # If no existing expanded stages, create new dict
+  if [[ -z "$current" ]]; then
+    new_dict="{$phase_num: [$stage_num]}"
+  else
+    # Parse existing dict and update
+    # This is a simplified version - assumes well-formed input
+    if echo "$current" | grep -q "$phase_num:"; then
+      # Phase already has stages, add to list
+      # Extract current stage list for this phase
+      local phase_stages=$(echo "$current" | sed -n "s/.*$phase_num: \[\([^]]*\)\].*/\1/p")
+      if [[ ! "$phase_stages" =~ (^|, )$stage_num(,|$) ]]; then
+        # Add stage to list
+        new_dict=$(echo "$current" | sed "s/$phase_num: \[$phase_stages\]/$phase_num: [$phase_stages, $stage_num]/")
+      else
+        # Already in list
+        return 0
+      fi
+    else
+      # Phase not in dict, add new entry
+      # Remove closing brace, add new entry, add closing brace
+      new_dict=$(echo "$current" | sed "s/}$/, $phase_num: [$stage_num]}/")
+    fi
+  fi
+
+  # Update or add metadata
+  if grep -q "^- \*\*Expanded Stages\*\*:" "$plan_file"; then
+    # Escape special characters for sed
+    local escaped_dict=$(echo "$new_dict" | sed 's/[&/\]/\\&/g')
+    sed -i "s/^- \*\*Expanded Stages\*\*:.*/- **Expanded Stages**: $escaped_dict/" "$plan_file"
+  else
+    # Add after Expanded Phases
+    local temp_file=$(mktemp)
+    awk -v dict="$new_dict" '
+      /^- \*\*Expanded Phases\*\*:/ {
+        print
+        print "- **Expanded Stages**: " dict
+        next
+      }
+      { print }
+    ' "$plan_file" > "$temp_file"
+    mv "$temp_file" "$plan_file"
+  fi
+}
+
 # === END PROGRESSIVE STRUCTURE DETECTION FUNCTIONS ===
 
 # Get path to plan overview file
@@ -674,6 +1095,46 @@ Functions (Progressive Structure):
   list_expanded_stages <plan_path> <phase_num>
     Returns: Space-separated list of expanded stage numbers
 
+Functions (Progressive Expansion Utilities):
+  extract_phase_name <plan_file> <phase_num>
+    Returns: Phase name for file naming (e.g., "implementation")
+
+  extract_phase_content <plan_file> <phase_num>
+    Returns: Full phase content from plan file
+
+  revise_main_plan_for_phase <plan_file> <phase_num> <phase_filename>
+    Replaces phase content with summary and link
+
+  add_phase_metadata <phase_file> <phase_num> <parent_plan_name>
+    Adds metadata section to phase file
+
+  add_update_reminder <phase_file> <phase_description> <parent_plan_name>
+    Adds update reminder to end of phase file
+
+  update_structure_level <plan_file> <level>
+    Updates Structure Level metadata
+
+  update_expanded_phases <plan_file> <phase_num>
+    Adds phase to Expanded Phases list
+
+  extract_stage_name <phase_file> <stage_num>
+    Returns: Stage name for file naming (e.g., "backend")
+
+  extract_stage_content <phase_file> <stage_num>
+    Returns: Full stage content from phase file
+
+  revise_phase_file_for_stage <phase_file> <stage_num> <stage_filename>
+    Replaces stage content with summary and link
+
+  add_stage_metadata <stage_file> <stage_num> <parent_phase_name>
+    Adds metadata section to stage file
+
+  update_phase_expanded_stages <phase_file> <stage_num>
+    Adds stage to Expanded Stages list in phase file
+
+  update_plan_expanded_stages <plan_file> <phase_num> <stage_num>
+    Updates Expanded Stages dict in main plan
+
 Examples:
   $0 detect_tier specs/plans/024_feature/
   $0 detect_structure_level specs/plans/025_feature.md
@@ -681,6 +1142,8 @@ Examples:
   $0 get_plan_directory specs/plans/025_feature.md
   $0 is_phase_expanded specs/plans/025_feature/ 2
   $0 list_expanded_phases specs/plans/025_feature/
+  $0 extract_phase_name specs/plans/025_feature.md 2
+  $0 extract_phase_content specs/plans/025_feature.md 2
 EOF
     exit 1
   fi
@@ -732,6 +1195,46 @@ EOF
       ;;
     list_expanded_stages)
       list_expanded_stages "$@"
+      ;;
+    # Progressive expansion utility functions
+    extract_phase_name)
+      extract_phase_name "$@"
+      ;;
+    extract_phase_content)
+      extract_phase_content "$@"
+      ;;
+    revise_main_plan_for_phase)
+      revise_main_plan_for_phase "$@"
+      ;;
+    add_phase_metadata)
+      add_phase_metadata "$@"
+      ;;
+    add_update_reminder)
+      add_update_reminder "$@"
+      ;;
+    update_structure_level)
+      update_structure_level "$@"
+      ;;
+    update_expanded_phases)
+      update_expanded_phases "$@"
+      ;;
+    extract_stage_name)
+      extract_stage_name "$@"
+      ;;
+    extract_stage_content)
+      extract_stage_content "$@"
+      ;;
+    revise_phase_file_for_stage)
+      revise_phase_file_for_stage "$@"
+      ;;
+    add_stage_metadata)
+      add_stage_metadata "$@"
+      ;;
+    update_phase_expanded_stages)
+      update_phase_expanded_stages "$@"
+      ;;
+    update_plan_expanded_stages)
+      update_plan_expanded_stages "$@"
       ;;
     *)
       error "Unknown function: $function"
