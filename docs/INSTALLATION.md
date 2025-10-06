@@ -250,7 +250,7 @@ Test essential functionality:
 3. **AI Integration** (if configured):
    ```vim
    <leader>ai     " Ask Avante AI
-   <leader>at     " Toggle AI interface
+   <leader>at     " Toggle project-specific TTS
    ```
 
 4. **LaTeX Support** (open a .tex file):

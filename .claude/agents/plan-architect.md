@@ -79,20 +79,20 @@ Plans use three organizational tiers based on complexity:
 score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0)
 ```
 
-**Tier Selection Process**:
+**Progressive Planning Process**:
 1. Estimate tasks, phases, hours, and dependencies from requirements
-2. Calculate complexity score using formula
-3. Select tier based on score thresholds (Tier 1: <50, Tier 2: 50-200, Tier 3: ≥200)
-4. Create appropriate file structure
-5. Add metadata field: `- **Structure Tier**: N`
-6. Add metadata field: `- **Complexity Score**: X.X`
+2. Calculate complexity score using formula (informational only)
+3. Always create Level 0 (single file) structure
+4. Add metadata field: `- **Structure Level**: 0`
+5. Add metadata field: `- **Complexity Score**: X.X`
+6. If score ≥50: Add hint about using `/expand-phase` during implementation
 
 **When Creating Plans**:
-- Always calculate complexity score first
-- Present tier recommendation to /plan command
-- Create structure matching selected tier
-- Include tier metadata in all plan files
-- Follow tier-specific cross-referencing conventions
+- Always calculate complexity score for informational purposes
+- Always create Level 0 (single file) structure
+- Include level metadata and complexity score in plan
+- Add expansion hint if complexity score is high
+- Let structure grow organically during implementation
 
 ### Required Plan Sections
 1. **Metadata**: Date, feature, scope, standards file, research reports

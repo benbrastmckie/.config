@@ -100,36 +100,37 @@ end
 
 ## Process
 
-### Adaptive Plan Support
+### Progressive Plan Support
 
-This command supports all three plan structure tiers:
+This command supports all three progressive structure levels:
 
-**Step 0: Detect Plan Tier**
+**Step 0: Detect Plan Structure Level**
 ```bash
 # Use adaptive plan parser to detect structure
-TIER=$(.claude/utils/parse-adaptive-plan.sh detect_tier "$PLAN_PATH")
-# Returns: 1 (single-file), 2 (phase-directory), or 3 (hierarchical tree)
+LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+# Returns: 0 (single-file), 1 (phase-expanded), or 2 (stage-expanded)
 ```
 
-**Tier-Aware Processing**:
-- **Tier 1**: Traditional single-file processing (existing behavior)
-- **Tier 2**: Process overview and phase files, update completion in both
-- **Tier 3**: Navigate hierarchy (overview → phase overviews → stage files)
+**Level-Aware Processing**:
+- **Level 0**: Single-file processing (all phases inline)
+- **Level 1**: Process main plan and expanded phase files
+- **Level 2**: Navigate hierarchy (main plan → phase directories → stage files)
 
 **Unified Interface**:
-All tier-specific differences are abstracted by `parse-adaptive-plan.sh`:
-- `list_phases`: Get all phases regardless of structure
-- `get_tasks`: Extract tasks from appropriate file(s)
-- `mark_complete`: Update checkboxes in correct location(s)
-- `get_status`: Determine phase completion state
+All level-specific differences are abstracted by progressive utilities:
+- `is_plan_expanded`: Check if plan has directory structure
+- `is_phase_expanded`: Check if specific phase is in separate file
+- `is_stage_expanded`: Check if specific stage is in separate file
+- `list_expanded_phases`: Get numbers of expanded phases
+- `list_expanded_stages`: Get numbers of expanded stages
 
 ### Implementation Flow
 
 Let me first locate the implementation plan:
 
 1. **Detect and parse the plan** to identify:
-   - Plan tier (1, 2, or 3) using parse-adaptive-plan.sh
-   - Phases and tasks (via parsing utility for all tiers)
+   - Plan structure level (0, 1, or 2) using parse-adaptive-plan.sh
+   - Expanded phases and stages (via progressive parsing utilities)
    - Referenced research reports (if any)
    - Standards file path (if captured in plan metadata)
 2. **Discover and load standards**:
@@ -498,59 +499,33 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ### 5. Plan Update (After Git Commit Succeeds)
-**Incremental plan updates after each phase (Tier-Aware):**
+**Incremental plan updates after each phase:**
 
 **Step 1: Mark Phase Tasks Complete**
 
-**Tier 1 (Single File)**:
-- Use Edit tool to change all phase tasks: `- [ ]` → `- [x]`
-- Find each unchecked task in the phase section
-- Replace with checked version
+Use the Edit tool to mark tasks as complete in the appropriate file:
+- **Level 0**: Update tasks in main plan file
+- **Level 1**: If phase is expanded, update tasks in phase file; otherwise update in main plan
+- **Level 2**: If stage is expanded, update tasks in stage file; otherwise in phase file
 
-**Tier 2 (Phase Directory)**:
-- Update tasks in appropriate phase file: `specs/plans/NNN_feature/phase_N_name.md`
-- Use Edit tool to mark tasks complete in phase file
-- Also update overview file if it lists task counts
-
-**Tier 3 (Hierarchical Tree)**:
-- Navigate to appropriate stage file(s) in phase directory
-- Update tasks in each stage file: `phase_N_name/stage_M_name.md`
-- Update phase overview with stage completion status
-- Update main overview if it tracks progress
-
-**Unified Approach Using Parsing Utility**:
-```bash
-# Mark tasks complete using adaptive parser (works for all tiers)
-for task_num in 1 2 3 ...; do
-  .claude/utils/parse-adaptive-plan.sh mark_complete "$PLAN_PATH" "$PHASE_NUM" "$task_num"
-done
-```
+**Approach**:
+- Use Edit tool to change completed tasks: `- [ ]` → `- [x]`
+- Check if phase/stage is expanded using progressive utilities
+- Update in appropriate location based on expansion status
 
 **Step 2: Add Phase Completion Marker**
 
-**Tier 1**:
-- Use Edit tool to add `[COMPLETED]` to phase heading
-- Change: `### Phase N: Phase Name` → `### Phase N: Phase Name [COMPLETED]`
+Add completion marker to phase heading:
+- **Level 0**: Add `[COMPLETED]` to phase heading in main plan
+- **Level 1**: If phase is expanded, add marker to phase file; otherwise to main plan
+- **Level 2**: Mark appropriate stage files and phase overview as complete
 
-**Tier 2**:
-- Add `## [COMPLETED]` or `[COMPLETED]` to phase file heading
-- Update overview's phase summary to show completion
-
-**Tier 3**:
-- Mark all stage files as complete
-- Mark phase overview as complete
-- Update main overview's phase summary
+Use Edit tool to change:
+`### Phase N: Phase Name` → `### Phase N: Phase Name [COMPLETED]`
 
 **Step 3: Verify Plan Updated**
-```bash
-# Check phase status using adaptive parser
-STATUS=$(.claude/utils/parse-adaptive-plan.sh get_status "$PLAN_PATH" "$PHASE_NUM")
-# Should return: "complete"
-```
 
-- If status is "complete": Phase successfully marked
-- If status is "incomplete": Warning, but continue (don't block workflow)
-- Verification works consistently across all tiers
+Check that tasks are properly marked by reading the updated file and verifying all phase tasks show `[x]`.
 
 **Step 4: Add/Update Implementation Progress Section**
 - Use Edit tool to add or update "## Implementation Progress" section
@@ -820,19 +795,18 @@ After completing all phases, I'll:
 [Insights from implementation]
 ```
 
-## Finding the Implementation Plan (Tier-Aware)
+## Finding the Implementation Plan
 
 ### Auto-Detection Logic (when no arguments provided):
 ```bash
 # 1. Find all plans (both files and directories), sorted by modification time
-# - Single-file plans: specs/plans/NNN_*.md
-# - Directory plans: specs/plans/NNN_*/NNN_*.md (Tier 2/3)
+# - Level 0 plans: specs/plans/NNN_*.md
+# - Level 1/2 plans: specs/plans/NNN_*/NNN_*.md
 find . -path "*/specs/plans/*.md" -type f -exec ls -t {} + 2>/dev/null
 find . -path "*/specs/plans/*/*.md" -type f -name "*_*.md" -exec ls -t {} + 2>/dev/null
 
-# 2. For each plan, use adaptive parser to check status:
-TIER=$(.claude/utils/parse-adaptive-plan.sh detect_tier "$PLAN_PATH")
-STATUS=$(.claude/utils/parse-adaptive-plan.sh get_status "$PLAN_PATH" "$PHASE_NUM")
+# 2. For each plan, use progressive parser to check status:
+LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 # 3. Select the first incomplete plan
 ```
@@ -841,30 +815,27 @@ STATUS=$(.claude/utils/parse-adaptive-plan.sh get_status "$PLAN_PATH" "$PHASE_NU
 I'll search for the most recent incomplete implementation plan by:
 1. Looking in all `specs/plans/` directories for both files and directories
 2. Sorting by modification time (most recent first)
-3. Detecting tier using `parse-adaptive-plan.sh detect_tier`
-4. Checking plan status using parsing utility:
-   - Get phase list for the plan (works across all tiers)
-   - Check each phase status until finding incomplete phase
-   - Skip plans where all phases are complete
+3. Detecting structure level using `parse-adaptive-plan.sh detect_structure_level`
+4. Checking plan status by reading phase completion markers
 5. Selecting the first incomplete plan found
 6. Determining the first incomplete phase to resume from
 
 ### If a plan file or directory is provided:
 I'll use the specified plan directly and:
-1. Detect tier (1, 2, or 3) using parsing utility
-2. Get plan overview path appropriate for tier
-3. Check completion status using parsing utility
+1. Detect structure level (0, 1, or 2) using parsing utility
+2. Read appropriate plan file based on expansion status
+3. Check completion status using `[COMPLETED]` markers
 4. Find first incomplete phase (if any)
 5. Resume from that phase or start from phase 1
 
-### Plan Status Detection (Tier-Aware):
-Using `parse-adaptive-plan.sh get_status` for consistent detection:
+### Plan Status Detection:
+Check for completion markers in appropriate files:
 
-- **Complete Plan**: All phases return status "complete"
-- **Incomplete Phase**: Phase returns status "incomplete" or "not_started"
-- **Tier 1**: Check `[COMPLETED]` marker and task checkboxes in single file
-- **Tier 2**: Check completion markers in phase files and overview
-- **Tier 3**: Check completion across stage files, phase overviews, and main overview
+- **Complete Plan**: All phases have `[COMPLETED]` marker
+- **Incomplete Phase**: Phase lacks `[COMPLETED]` marker or has unchecked tasks
+- **Level 0**: Check phase headings and task checkboxes in main plan file
+- **Level 1**: Check completion markers in expanded phase files and main plan
+- **Level 2**: Check completion across stage files, phase files, and main plan
 
 ## Integration with Other Commands
 
