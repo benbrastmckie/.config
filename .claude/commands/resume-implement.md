@@ -10,14 +10,14 @@ dependent-commands: implement, list-plans, update-plan
 
 I'll help you resume an incomplete implementation plan from where you left off.
 
-## Adaptive Plan Support
+## Progressive Plan Support
 
-This command supports all three plan structure tiers:
-- **Tier 1**: Single-file plans (`NNN_name.md`)
-- **Tier 2**: Phase-directory plans (`NNN_name/` with phase files)
-- **Tier 3**: Hierarchical tree plans (phase directories with stage files)
+This command supports all three progressive structure levels:
+- **Level 0**: Single-file plans (`NNN_name.md`)
+- **Level 1**: Phase-expanded plans (`NNN_name/` with some phase files)
+- **Level 2**: Stage-expanded plans (phase directories with stage files)
 
-Resume detection works consistently across all tiers using `parse-adaptive-plan.sh`.
+Resume detection works consistently across all levels using progressive parsing utilities.
 
 ## How It Works
 
@@ -26,76 +26,56 @@ When you run `/resume-implement` with no arguments, I will:
 1. **Find the most recent incomplete plan** by:
    - Searching all `specs/plans/` directories for both files and directories
    - Sorting by modification time (newest first)
-   - Detecting tier using `parse-adaptive-plan.sh detect_tier`
-   - Checking for incomplete markers (works across all tiers)
+   - Detecting structure level using `parse-adaptive-plan.sh detect_structure_level`
+   - Checking for incomplete phase markers
 2. **Identify the resume point**:
-   - Use parsing utility to get phase list
-   - Check status of each phase using `get_status`
-   - Find first phase with status "incomplete" or "not_started"
+   - Read phase completion markers in appropriate files
+   - Find first phase lacking `[COMPLETED]` marker or with unchecked tasks
 3. **Continue implementation** from that point
 
 ### With Plan File or Directory:
 `/resume-implement <plan-path>`
-- Accepts both `.md` files (Tier 1) and directories (Tier 2/3)
-- Auto-detects tier and finds first incomplete phase
+- Accepts both `.md` files (Level 0) and directories (Level 1/2)
+- Auto-detects structure level and finds first incomplete phase
 - Resume the plan from its first incomplete phase
 
 ### With Plan and Phase:
 `/resume-implement <plan-path> <phase-number>`
 - Resume the specified plan from the specified phase
-- Works with all tier structures
+- Works with all progressive structure levels
 
-## Detection Patterns (Tier-Aware)
+## Detection Patterns
 
-### Incomplete Plan Detection Using Parsing Utility:
+### Incomplete Plan Detection:
 
-**Tier 1 (Single File)**:
-- Use `get_status` to check each phase
-- Returns: "incomplete" if has unchecked tasks `- [ ]`
-- Returns: "not_started" if phase has no task progress
-- Phase heading lacks `[COMPLETED]` marker
-
-**Tier 2 (Phase Directory)**:
-- Check status of each phase file
-- Phase file has unchecked tasks or missing completion marker
-- Overview shows phase not complete
-
-**Tier 3 (Hierarchical Tree)**:
-- Check status across stage files
-- Any stage file with unchecked tasks indicates incomplete
-- Phase overview or main overview not marked complete
+Check for incomplete phases by reading appropriate files:
+- **Level 0**: Check phase headings in main plan file for `[COMPLETED]` markers
+- **Level 1**: If phase is expanded, check phase file; otherwise check main plan
+- **Level 2**: Check stage files and phase overview files for completion
 
 ### Complete Plan Markers:
-- All phases return status "complete" from `get_status`
-- **Tier 1**: All tasks `[x]`, all phases have `[COMPLETED]`
-- **Tier 2**: All phase files complete, overview shows completion
-- **Tier 3**: All stages complete, all phase overviews complete, main overview complete
+- All phases have `[COMPLETED]` marker in heading
+- **Level 0**: All tasks `[x]`, all phases marked `[COMPLETED]` in main plan
+- **Level 1**: All expanded phase files show completion, main plan shows completion
+- **Level 2**: All stages complete, all phase files complete, main plan complete
 
-## Auto-Discovery Process (Tier-Aware)
+## Auto-Discovery Process
 
 ```bash
 # Find most recent plans (both files and directories)
-# Tier 1 plans
+# Level 0 plans
 find . -path "*/specs/plans/*.md" -type f -exec ls -t {} + 2>/dev/null | head -10
 
-# Tier 2/3 plans (directories with overview files)
+# Level 1/2 plans (directories with main plan files)
 find . -path "*/specs/plans/*/*.md" -type f -name "*_*.md" -exec ls -t {} + 2>/dev/null | head -10
 
-# For each plan, detect tier and check status
+# For each plan, detect structure level and check status
 for plan in $plans; do
-  TIER=$(.claude/utils/parse-adaptive-plan.sh detect_tier "$plan")
+  LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$plan")
 
-  # Get all phases
-  PHASES=$(.claude/utils/parse-adaptive-plan.sh list_phases "$plan")
-
-  # Check each phase status
-  for phase_num in $PHASES; do
-    STATUS=$(.claude/utils/parse-adaptive-plan.sh get_status "$plan" "$phase_num")
-    if [[ "$STATUS" != "complete" ]]; then
-      echo "Resume from: $plan, Phase: $phase_num"
-      break
-    fi
-  done
+  # Read phases and check completion markers
+  # Look for first phase without [COMPLETED] marker or with unchecked tasks
+  # Resume from that phase
 done
 ```
 
@@ -140,16 +120,16 @@ When resuming, I will:
 ## Example Usage
 
 ```bash
-# Resume most recent incomplete plan (any tier)
+# Resume most recent incomplete plan (any level)
 /resume-implement
 
-# Resume specific Tier 1 plan from where it left off
+# Resume specific Level 0 plan from where it left off
 /resume-implement specs/plans/025_feature_name.md
 
-# Resume specific Tier 2/3 plan from where it left off
+# Resume specific Level 1/2 plan from where it left off
 /resume-implement specs/plans/026_complex_feature/
 
-# Resume from specific phase (works with any tier)
+# Resume from specific phase (works with any level)
 /resume-implement specs/plans/025_feature_name.md 3
 /resume-implement specs/plans/026_complex_feature/ 2
 ```

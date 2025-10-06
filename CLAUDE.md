@@ -12,10 +12,10 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 ### Directory Protocols
 
 #### Specifications Structure (`specs/`)
-[Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries, /migrate-plan]
+[Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries]
 
 The specifications directory follows this structure:
-- `plans/` - Implementation plans (adaptive three-tier structure)
+- `plans/` - Implementation plans (progressive structure levels)
 - `reports/` - Research reports (format: `NNN_report_name.md`)
 - `summaries/` - Implementation summaries linking plans to executed code
 
@@ -23,37 +23,34 @@ All specification documents use incremental three-digit numbering (001, 002, 003
 
 **Location**: specs/ directories can exist at project root or in subdirectories for scoped specifications.
 
-##### Plan Structure Tiers
+##### Plan Structure Levels
 
-Plans use adaptive organization based on complexity:
+Plans use progressive organization that grows based on actual complexity discovered during implementation:
 
-**Tier 1: Single File** (Complexity: <50)
+**Level 0: Single File** (All plans start here)
 - Format: `NNN_plan_name.md`
-- Use: Simple features (<10 tasks, <4 phases)
+- All phases and tasks inline in single file
+- Use: All features start here, regardless of anticipated complexity
 
-**Tier 2: Phase Directory** (Complexity: 50-200)
-- Format: `NNN_plan_name/` directory with overview + phase files
-- Use: Medium features (10-50 tasks, 4-10 phases)
+**Level 1: Phase Expansion** (Created on-demand via `/expand-phase`)
+- Format: `NNN_plan_name/` directory with some phases in separate files
+- Created when a phase proves too complex during implementation
 - Structure:
-  - `NNN_plan_name.md` (overview)
-  - `phase_1_name.md` (phase details)
-  - `phase_2_name.md` (phase details)
+  - `NNN_plan_name.md` (main plan with summaries)
+  - `phase_N_name.md` (expanded phase details)
 
-**Tier 3: Hierarchical Tree** (Complexity: ≥200)
-- Format: `NNN_plan_name/` with nested phase directories
-- Use: Complex features (>50 tasks, >10 phases)
+**Level 2: Stage Expansion** (Created on-demand via `/expand-stage`)
+- Format: Phase directories with stage subdirectories
+- Created when phases have complex multi-stage workflows
 - Structure:
-  - `NNN_plan_name.md` (overview)
-  - `phase_1_name/` (phase directory)
-    - `phase_1_overview.md`
-    - `stage_1_name.md`
-    - `stage_2_name.md`
+  - `NNN_plan_name/` (plan directory)
+    - `phase_N_name/` (phase directory)
+      - `phase_N_overview.md`
+      - `stage_M_name.md` (stage details)
 
-**Tier Selection**: Automatic based on complexity score. Use `/migrate-plan` to convert between tiers.
+**Progressive Expansion**: Use `/expand-phase <plan> <phase-num>` to extract complex phases. Use `/expand-stage <phase> <stage-num>` to extract complex stages. Structure grows organically based on implementation needs.
 
-**Complexity Formula**: `score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0)`
-
-See [Adaptive Plan Structures Guide](.claude/docs/adaptive-plan-structures.md) for complete documentation.
+**Collapse Operations**: Use `/collapse-phase` and `/collapse-stage` to merge content back and simplify structure.
 
 ## Testing Protocols
 [Used by: /test, /test-all, /implement]

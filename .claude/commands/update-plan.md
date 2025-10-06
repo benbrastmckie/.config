@@ -14,35 +14,32 @@ I'll update an existing implementation plan with new requirements or modificatio
 - **Path**: $1
 - **Reason**: $2
 
-## Adaptive Plan Support
+## Progressive Plan Support
 
-This command updates all three plan structure tiers:
-- **Tier 1**: Update single `.md` file
-- **Tier 2**: Update overview and/or phase files
-- **Tier 3**: Update overview, phase overviews, and/or stage files
+This command updates all three progressive structure levels:
+- **Level 0**: Update single `.md` file
+- **Level 1**: Update main plan and/or expanded phase files
+- **Level 2**: Update main plan, phase files, and/or stage files
 
-Tier detection uses `parse-adaptive-plan.sh detect_tier`.
+Structure detection uses `parse-adaptive-plan.sh detect_structure_level`.
 
 ## Update Process
 
-### 1. Plan Analysis (Tier-Aware)
+### 1. Plan Analysis
 ```bash
-# Detect plan tier
-TIER=$(.claude/utils/parse-adaptive-plan.sh detect_tier "$PLAN_PATH")
+# Detect plan structure level
+LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
-# Get plan overview (works for all tiers)
-OVERVIEW=$(.claude/utils/parse-adaptive-plan.sh get_overview "$PLAN_PATH")
-
-# Read plan structure
-PHASES=$(.claude/utils/parse-adaptive-plan.sh list_phases "$PLAN_PATH")
+# Check for expanded phases
+EXPANDED_PHASES=$(.claude/utils/parse-adaptive-plan.sh list_expanded_phases "$PLAN_PATH")
 ```
 
 I'll analyze the existing plan to understand:
-- **Plan tier**: T1, T2, or T3
+- **Plan structure level**: L0, L1, or L2
 - **Current structure**: Files/directories involved
-- **Phases and tasks**: Using parsing utility
+- **Expanded phases/stages**: Which are in separate files
 - **Completion status**: Per-phase status check
-- **Technical design**: From overview file
+- **Technical design**: From appropriate file(s)
 - **Original scope**: From metadata
 
 ### 2. Update Assessment
@@ -51,48 +48,45 @@ I'll determine what needs updating:
 - Scope adjustments needed
 - Technical approach changes
 - Additional phases or tasks
-- **Tier migration needed**: If complexity increases significantly
+- **Expansion needed**: If phase complexity increases significantly
 - Testing strategy modifications
 
 ### 3. Standards Compliance
 I'll ensure updates follow:
 - Project coding standards (CLAUDE.md)
-- Tier-appropriate plan structure
+- Progressive structure conventions
 - Phase numbering conventions
 - Task checkbox format
-- Cross-reference integrity (Tier 2/3)
+- Cross-reference integrity
 
-### 4. Plan Updates (Tier-Specific)
+### 4. Plan Updates (Level-Aware)
 
-**Tier 1 (Single File)**:
+**Level 0 (Single File)**:
 - Update single `.md` file with Edit tool
 - Add new phases/tasks inline
 - Update metadata if complexity changes
-- Consider tier migration if plan grows too large
+- Consider using `/expand-phase` if a phase grows too large
 
-**Tier 2 (Phase Directory)**:
-- Update overview file for structural changes
-- Add/modify phase files as needed
-- Create new `phase_N_name.md` for new phases
-- Update cross-references in overview
-- Maintain links between overview and phase files
+**Level 1 (Phase-Expanded)**:
+- If phase is expanded: Update phase file
+- If phase is inline: Update main plan
+- Add new phases to main plan initially
+- Use `/expand-phase` for complex additions
+- Maintain links between main plan and phase files
 
-**Tier 3 (Hierarchical Tree)**:
-- Update main overview for high-level changes
-- Add/modify phase directories as needed
-- Create new stage files within phases
-- Update phase overviews with stage links
+**Level 2 (Stage-Expanded)**:
+- Update appropriate stage files or phase overview
+- Add new stages to phase overview initially
+- Use `/expand-stage` for complex stage additions
 - Maintain complete cross-reference hierarchy
 
-### 5. Tier Migration Support
-If complexity increases beyond current tier threshold:
-- **T1 → T2**: Convert to phase-directory structure
-- **T2 → T3**: Add phase subdirectories with stage files
-- Preserve all content and completion status
-- Update all cross-references
-- Note migration in update history
+### 5. Expansion Recommendations
+If complexity increases during update:
+- Recommend `/expand-phase <plan> <phase-num>` for complex phases
+- Recommend `/expand-stage <phase> <stage-num>` for complex stages
+- Note in update history which phases might benefit from expansion
 
-### 5. Version Tracking
+### 6. Version Tracking
 Each update will include:
 ```markdown
 ## Update History

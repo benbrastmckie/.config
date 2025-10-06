@@ -55,32 +55,32 @@ Revises the most recently discussed implementation plan according to user-provid
 
 To implement the revised plan after revision, use `/implement [plan-file]`
 
-## Adaptive Plan Support
+## Progressive Plan Support
 
-This command revises all three plan structure tiers:
-- **Tier 1**: Revise single `.md` file
-- **Tier 2**: Revise overview and/or specific phase files
-- **Tier 3**: Revise overview, phase overviews, and/or stage files
+This command revises all three progressive structure levels:
+- **Level 0**: Revise single `.md` file
+- **Level 1**: Revise main plan and/or expanded phase files
+- **Level 2**: Revise main plan, phase files, and/or stage files
 
-The command determines which file(s) to revise based on the scope of changes.
+The command determines which file(s) to revise based on the scope of changes and expansion status.
 
 ## Process
 
-1. **Plan Discovery (Tier-Aware)**
+1. **Plan Discovery**
    - Identifies the most recent plan mentioned in conversation
-   - Searches for both `.md` files (T1) and directories (T2/T3)
+   - Searches for both `.md` files (L0) and directories (L1/L2)
    - Falls back to most recently modified plan if none mentioned
-   - Detects tier using `parse-adaptive-plan.sh detect_tier`
-   - Gets appropriate overview file for the tier
+   - Detects structure level using `parse-adaptive-plan.sh detect_structure_level`
+   - Checks which phases/stages are expanded
 
 2. **Revision Scope Analysis**
    - **High-level changes** (metadata, overview, problem statement):
-     - **T1**: Revise single file
-     - **T2/T3**: Revise overview file only
+     - **L0**: Revise single file
+     - **L1/L2**: Revise main plan file only
    - **Phase-specific changes** (tasks, testing, phase objectives):
-     - **T1**: Revise relevant phase section in single file
-     - **T2**: Revise specific `phase_N_name.md` file
-     - **T3**: Revise specific stage files or phase overview
+     - **L0**: Revise relevant phase section in main plan
+     - **L1**: If phase is expanded, revise `phase_N_name.md`; otherwise revise main plan
+     - **L2**: Revise stage files, phase overview, or main plan as appropriate
    - **Cross-cutting changes** (affects multiple phases):
      - Revise multiple files as needed
      - Maintain cross-reference integrity
@@ -90,33 +90,34 @@ The command determines which file(s) to revise based on the scope of changes.
    - Extracts relevant recommendations and findings
    - Incorporates insights into revision strategy
 
-4. **Tier-Aware Revision Application**
+4. **Level-Aware Revision Application**
 
-   **Tier 1 (Single File)**:
+   **Level 0 (Single File)**:
    - Use Edit tool on single `.md` file
    - Update relevant sections inline
    - Preserve completion markers
    - Add revision history
 
-   **Tier 2 (Phase Directory)**:
-   - Determine target file(s) based on scope
-   - Update overview for high-level changes
-   - Update specific phase files for phase changes
+   **Level 1 (Phase-Expanded)**:
+   - Determine target file(s) based on scope and expansion
+   - Update main plan for high-level changes
+   - Update expanded phase files for phase-specific changes
+   - Update inline phases in main plan if not expanded
    - Update cross-references if structure changes
-   - Add revision history to overview
+   - Add revision history to main plan
 
-   **Tier 3 (Hierarchical Tree)**:
-   - Navigate to appropriate level (overview/phase/stage)
+   **Level 2 (Stage-Expanded)**:
+   - Navigate to appropriate level (main/phase/stage)
    - Update relevant file(s)
    - Propagate changes through hierarchy if needed
    - Update all affected cross-references
-   - Add revision history to main overview
+   - Add revision history to main plan
 
 5. **Documentation**
-   - Adds revision history to plan overview (all tiers)
+   - Adds revision history to main plan
    - Documents what changed and why
    - References any reports used for guidance
-   - Notes which files were modified (T2/T3)
+   - Notes which files were modified (L1/L2)
 
 ## Plan Structure Preservation
 

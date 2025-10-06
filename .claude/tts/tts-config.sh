@@ -26,7 +26,7 @@
 # ============================================================================
 
 # Master enable/disable switch for all TTS notifications
-TTS_ENABLED=false
+TTS_ENABLED=true
 
 # TTS engine to use (espeak-ng is default, alternatives: festival, pico-tts)
 TTS_ENGINE="espeak-ng"
