@@ -49,7 +49,11 @@ if command -v jq &> /dev/null; then
       total_phases: ($state.total_phases // 0),
       completed_phases: ($state.completed_phases // []),
       workflow_state: $state,
-      last_error: ($state.last_error // null)
+      last_error: ($state.last_error // null),
+      replanning_count: ($state.replanning_count // 0),
+      last_replan_reason: ($state.last_replan_reason // null),
+      replan_phase_counts: ($state.replan_phase_counts // {}),
+      replan_history: ($state.replan_history // [])
     }')
 else
   # Fallback: Basic JSON construction without jq
@@ -67,7 +71,11 @@ else
   "total_phases": 0,
   "completed_phases": [],
   "workflow_state": $STATE_JSON,
-  "last_error": null
+  "last_error": null,
+  "replanning_count": 0,
+  "last_replan_reason": null,
+  "replan_phase_counts": {},
+  "replan_history": []
 }
 EOF
 )

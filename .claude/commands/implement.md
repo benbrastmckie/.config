@@ -1,9 +1,9 @@
 ---
-allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task
-argument-hint: [plan-file] [starting-phase]
-description: Execute implementation plan with automated testing and commits (auto-resumes most recent incomplete plan if no args)
+allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task, SlashCommand
+argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan]
+description: Execute implementation plan with automated testing, adaptive replanning, and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
-dependent-commands: list-plans, update-plan, list-summaries, revise, debug, document
+dependent-commands: list-plans, update-plan, list-summaries, revise, debug, document, expand-phase
 ---
 
 # Execute Implementation Plan
@@ -13,6 +13,39 @@ I'll help you systematically implement the plan file with automated testing and 
 ## Plan Information
 - **Plan file**: $1 (or I'll find the most recent incomplete plan)
 - **Starting phase**: $2 (default: resume from last incomplete phase or 1)
+
+## Adaptive Planning Features
+
+This command includes intelligent plan revision capabilities that detect when replanning is needed during implementation:
+
+**Automatic Triggers:**
+1. **Complexity Detection**: Phases with complexity score >8 or >10 tasks trigger phase expansion
+2. **Test Failure Patterns**: 2+ consecutive test failures in same phase suggests missing prerequisites
+3. **Scope Drift**: Manual flag `--report-scope-drift "description"` for discovered out-of-scope work
+
+**Behavior:**
+- Automatically invokes `/revise --auto-mode` when triggers detected
+- Updates plan structure (expands phases, adds phases, or updates tasks)
+- Continues implementation with revised plan
+- Maximum 2 replans per phase prevents infinite loops
+
+**Safety:**
+- Loop prevention with replan counters tracked in checkpoints
+- Replan history logged for audit trail
+- User escalation when limits exceeded
+- Manual override via `--force-replan` flag
+
+**Example Usage:**
+```bash
+# Normal implementation (automatic detection enabled)
+/implement specs/plans/025_plan.md
+
+# Manual scope drift reporting
+/implement specs/plans/025_plan.md 3 --report-scope-drift "Database migration needed before schema changes"
+
+# Force replan despite limit (requires manual approval)
+/implement specs/plans/025_plan.md 4 --force-replan
+```
 
 ## Auto-Resume Feature
 If no plan file is provided, I will:
@@ -455,6 +488,214 @@ Debug Commands:
 - View file: nvim tests/auth_spec.lua
 - Run tests: :TestNearest or :TestFile
 ===============================================
+```
+
+### 3.4. Adaptive Planning Detection
+
+After each phase implementation (successful or with errors), check if plan revision is needed.
+
+**Step 1: Load Checkpoint and Check Replan Limits**
+
+```bash
+# Load current checkpoint
+CHECKPOINT=$(.claude/utils/load-checkpoint.sh implement "$PROJECT_NAME")
+REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r '.replanning_count // 0')
+PHASE_REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r ".replan_phase_counts.phase_${CURRENT_PHASE} // 0")
+```
+
+**Replan Limit Check:**
+- If `PHASE_REPLAN_COUNT >= 2`: Skip detection, log warning, escalate to user
+- Otherwise: Proceed with trigger detection
+
+**Step 2: Detect Triggers**
+
+Three trigger types are checked in order:
+
+**Trigger 1: Complexity Threshold Exceeded**
+
+Detection after successful phase completion:
+```bash
+# Calculate phase complexity score
+COMPLEXITY_RESULT=$(.claude/utils/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
+COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.complexity_score')
+
+# Check threshold
+if [ "$COMPLEXITY_SCORE" -gt 8 ] || [ "$TASK_COUNT" -gt 10 ]; then
+  TRIGGER_TYPE="expand_phase"
+  TRIGGER_REASON="Phase complexity score $COMPLEXITY_SCORE exceeds threshold 8 ($TASK_COUNT tasks)"
+fi
+```
+
+**Trigger 2: Test Failure Pattern**
+
+Detection after test failures (2+ consecutive failures in same phase):
+```bash
+# Track failure count in checkpoint
+if [ "$TEST_RESULT" = "failed" ]; then
+  PHASE_FAILURE_COUNT=$((PHASE_FAILURE_COUNT + 1))
+
+  if [ "$PHASE_FAILURE_COUNT" -ge 2 ]; then
+    TRIGGER_TYPE="add_phase"
+    TRIGGER_REASON="Two consecutive test failures in phase $CURRENT_PHASE"
+    # Analyze failure logs for missing dependencies
+    FAILURE_ANALYSIS=$(.claude/utils/analyze-error.sh "$ERROR_OUTPUT")
+  fi
+fi
+```
+
+**Trigger 3: Scope Drift Detection**
+
+Detection via manual flag or "out of scope" annotations:
+```bash
+# Manual trigger via flag
+if [ "$REPORT_SCOPE_DRIFT" = "true" ]; then
+  TRIGGER_TYPE="update_tasks"
+  TRIGGER_REASON="$SCOPE_DRIFT_DESCRIPTION"
+fi
+```
+
+**Step 3: Invoke /revise --auto-mode**
+
+If trigger detected and replan limit not exceeded:
+
+```bash
+# Build revision context JSON
+REVISION_CONTEXT=$(jq -n \
+  --arg type "$TRIGGER_TYPE" \
+  --argjson phase "$CURRENT_PHASE" \
+  --arg reason "$TRIGGER_REASON" \
+  --arg action "$SUGGESTED_ACTION" \
+  --argjson metrics "$TRIGGER_METRICS" \
+  '{
+    revision_type: $type,
+    current_phase: $phase,
+    reason: $reason,
+    suggested_action: $action,
+    complexity_metrics: $metrics,
+    test_failure_log: $failure_log,
+    insert_position: $insert_pos,
+    new_phase_name: $new_name
+  }')
+
+# Invoke /revise with auto-mode
+REVISE_RESULT=$(invoke_slash_command "/revise $PLAN_PATH --auto-mode --context '$REVISION_CONTEXT'")
+```
+
+**Step 4: Parse Revision Response**
+
+```bash
+# Check revision status
+REVISION_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
+
+if [ "$REVISION_STATUS" = "success" ]; then
+  # Update checkpoint with replan metadata
+  UPDATED_PLAN=$(echo "$REVISE_RESULT" | jq -r '.plan_file')
+  ACTION_TAKEN=$(echo "$REVISE_RESULT" | jq -r '.action_taken')
+
+  # Increment replan counters
+  REPLAN_COUNT=$((REPLAN_COUNT + 1))
+  PHASE_REPLAN_COUNT=$((PHASE_REPLAN_COUNT + 1))
+
+  # Add to replan history
+  REPLAN_EVENT=$(jq -n \
+    --argjson phase "$CURRENT_PHASE" \
+    --arg type "$TRIGGER_TYPE" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg reason "$TRIGGER_REASON" \
+    '{
+      phase: $phase,
+      type: $type,
+      timestamp: $timestamp,
+      reason: $reason,
+      action: $action_taken
+    }')
+
+  # Update checkpoint
+  .claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" \
+    --replan-count "$REPLAN_COUNT" \
+    --phase-replan-count "phase_${CURRENT_PHASE}=$PHASE_REPLAN_COUNT" \
+    --last-replan-reason "$TRIGGER_REASON" \
+    --add-replan-history "$REPLAN_EVENT"
+
+  # Log and continue with updated plan
+  echo "Plan revised: $ACTION_TAKEN"
+  echo "Updated plan: $UPDATED_PLAN"
+
+  # Reload plan and continue implementation
+  PLAN_PATH="$UPDATED_PLAN"
+else
+  # Revision failed, log error and ask user
+  echo "Warning: Adaptive planning revision failed"
+  echo "Error: $(echo "$REVISE_RESULT" | jq -r '.error_message')"
+  echo "Continuing with original plan"
+fi
+```
+
+**Step 5: Loop Prevention Safeguards**
+
+Maximum 2 replans per phase enforced:
+```bash
+if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
+  echo "=========================================="
+  echo "Warning: Replanning Limit Reached"
+  echo "=========================================="
+  echo "Phase: $CURRENT_PHASE"
+  echo "Replans: $PHASE_REPLAN_COUNT (max 2)"
+  echo ""
+  echo "Replan History for Phase $CURRENT_PHASE:"
+  echo "$CHECKPOINT" | jq -r ".replan_history[] | select(.phase == $CURRENT_PHASE) | \
+    \"  - [\(.timestamp)] \(.type): \(.reason)\""
+  echo ""
+  echo "Recommendation: Manual review required"
+  echo "Consider using /revise interactively to adjust plan structure"
+  echo "=========================================="
+
+  # Skip further replanning for this phase
+  SKIP_REPLAN=true
+fi
+```
+
+**Trigger Details:**
+
+**Complexity Trigger Context:**
+```json
+{
+  "revision_type": "expand_phase",
+  "current_phase": 3,
+  "reason": "Phase complexity score 9.2 exceeds threshold 8 (12 tasks)",
+  "suggested_action": "Expand phase 3 into separate file",
+  "complexity_metrics": {
+    "tasks": 12,
+    "score": 9.2,
+    "estimated_duration": "4-5 sessions"
+  }
+}
+```
+
+**Test Failure Trigger Context:**
+```json
+{
+  "revision_type": "add_phase",
+  "current_phase": 2,
+  "reason": "Two consecutive test failures in authentication module",
+  "suggested_action": "Add prerequisite phase for dependency setup",
+  "test_failure_log": "Error: Module not found: crypto-utils...",
+  "insert_position": "before",
+  "new_phase_name": "Setup Dependencies"
+}
+```
+
+**Scope Drift Trigger Context:**
+```json
+{
+  "revision_type": "update_tasks",
+  "current_phase": 3,
+  "reason": "Migration script required before data model changes",
+  "suggested_action": "Add migration task before schema changes",
+  "task_operations": [
+    {"action": "insert", "position": 2, "task": "Create database migration script"}
+  ]
+}
 ```
 
 ### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
