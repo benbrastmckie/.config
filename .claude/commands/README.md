@@ -248,10 +248,27 @@ Commands provide structured, repeatable workflows for:
 **Usage**: `/revise <revision-details> [report-path1] [report-path2] ...`
 
 **Features**:
-- Plan modification
+- Tier-aware plan modification
+- Revision scope analysis (high-level vs phase-specific)
 - Research integration
 - Phase adjustment
 - No implementation (planning only)
+
+---
+
+#### /migrate-plan
+**Purpose**: Convert implementation plan between tier structures
+
+**Usage**: `/migrate-plan <plan-path> [--to-tier=N]`
+
+**Features**:
+- Automatic tier recommendation
+- Manual tier selection (1, 2, or 3)
+- Incremental migration (T1→T2→T3 or reverse)
+- Automatic backups before migration
+- Content preservation (tasks, phases, metadata)
+- Cross-reference updates
+- Rollback support
 
 ---
 
@@ -261,9 +278,11 @@ Commands provide structured, repeatable workflows for:
 **Usage**: `/update-plan <plan-path> [reason-for-update]`
 
 **Features**:
-- Plan modification
-- Phase updates
+- Tier-aware plan modification
+- Phase updates (add/remove/reorder)
 - Requirement changes
+- Tier migration support (T1↔T2↔T3)
+- Cross-reference integrity maintenance
 - Version control
 
 ---
@@ -317,10 +336,13 @@ Commands provide structured, repeatable workflows for:
 **Usage**: `/list-plans [search-pattern]`
 
 **Features**:
-- Plan discovery
+- Plan discovery (all tiers)
+- Tier indicators: [T1], [T2], [T3]
 - Status indication
+- Phase count and completion
 - Search filtering
 - Recent first ordering
+- Complexity statistics by tier
 
 ---
 
@@ -431,6 +453,81 @@ Commands for managing execution state:
 ### Utility Commands
 Management and maintenance commands:
 - `/cleanup`, `/list-*`, `/setup`, `/validate-setup`
+
+## Adaptive Plan Structures
+
+Commands support three-tier plan organization based on project complexity:
+
+### Tier System
+
+**Tier 1: Single File** (Complexity: <50)
+- Single `.md` file with all content
+- Best for simple features (<10 tasks, <4 phases)
+- Example: `specs/plans/001_button_fix.md`
+
+**Tier 2: Phase Directory** (Complexity: 50-200)
+- Directory with overview + phase files
+- Best for medium features (10-50 tasks, 4-10 phases)
+- Example: `specs/plans/015_dashboard/`
+  - `015_dashboard.md` (overview)
+  - `phase_1_setup.md`
+  - `phase_2_components.md`
+
+**Tier 3: Hierarchical Tree** (Complexity: ≥200)
+- Nested hierarchy with phase directories and stage files
+- Best for complex features (>50 tasks, >10 phases)
+- Example: `specs/plans/020_refactor/`
+  - `020_refactor.md` (overview)
+  - `phase_1_analysis/`
+    - `phase_1_overview.md`
+    - `stage_1_codebase_scan.md`
+    - `stage_2_metrics.md`
+
+### Tier-Aware Command Behavior
+
+All plan commands automatically detect and work with any tier:
+
+- `/plan`: Evaluates complexity and creates appropriate tier structure
+- `/implement`: Navigates tier structure to find and execute phases
+- `/resume-implement`: Detects tier and resumes from correct location
+- `/list-plans`: Shows tier indicators [T1], [T2], [T3]
+- `/update-plan`: Modifies correct files based on tier and scope
+- `/revise`: Analyzes revision scope to target appropriate file(s)
+- `/migrate-plan`: Converts between tiers while preserving content
+
+### Parsing Utility
+
+Advanced users can use the parsing utility directly:
+
+```bash
+# Detect plan tier
+.claude/utils/parse-adaptive-plan.sh detect_tier <plan-path>
+
+# Get plan overview file
+.claude/utils/parse-adaptive-plan.sh get_overview <plan-path>
+
+# List all phases
+.claude/utils/parse-adaptive-plan.sh list_phases <plan-path>
+
+# Get tasks for a phase
+.claude/utils/parse-adaptive-plan.sh get_tasks <plan-path> <phase-num>
+
+# Mark task complete
+.claude/utils/parse-adaptive-plan.sh mark_complete <plan-path> <phase-num> <task-num>
+
+# Get plan status
+.claude/utils/parse-adaptive-plan.sh get_status <plan-path>
+```
+
+### Complexity Calculation
+
+```bash
+# Calculate complexity score and recommend tier
+.claude/utils/calculate-plan-complexity.sh <tasks> <phases> <hours> <dependencies>
+
+# Estimate metrics from description
+.claude/utils/analyze-plan-requirements.sh "<feature description>"
+```
 
 ## Standards Discovery
 
@@ -557,6 +654,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 - [list-plans.md](list-plans.md) - Plan listing
 - [list-reports.md](list-reports.md) - Report listing
 - [list-summaries.md](list-summaries.md) - Summary listing
+- [migrate-plan.md](migrate-plan.md) - Plan tier migration
 - [orchestrate.md](orchestrate.md) - Multi-agent coordination
 - [plan.md](plan.md) - Implementation planning
 - [plan-wizard.md](plan-wizard.md) - Interactive plan creation
@@ -581,11 +679,14 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 
 ### Running Implementation
 ```bash
-# Create plan first
+# Create plan first (automatically selects tier)
 /plan "Add dark mode toggle to settings"
 
-# Implement the plan
+# Implement Tier 1 plan (single file)
 /implement specs/plans/007_dark_mode_implementation.md
+
+# Implement Tier 2 plan (directory)
+/implement specs/plans/015_dashboard/
 
 # Or just auto-resume latest incomplete plan
 /implement
@@ -598,6 +699,24 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 
 # Create plan using research
 /plan "Integrate TTS notifications" specs/reports/020_tts_engines.md
+```
+
+### Adaptive Plan Management
+```bash
+# List all plans with tier indicators
+/list-plans
+# Output: [T1] 007_dark_mode (3/3 phases)
+#         [T2] 015_dashboard (5/8 phases)
+#         [T3] 020_refactor (15/25 phases)
+
+# Migrate plan to higher tier as complexity grows
+/migrate-plan specs/plans/007_dark_mode.md --to-tier=2
+
+# Update Tier 2 plan (adds new phase file)
+/update-plan specs/plans/015_dashboard/ "Add Phase 9: Performance testing"
+
+# Revise specific phase in Tier 2 plan
+/revise "Update Phase 3 complexity to High" specs/plans/015_dashboard/
 ```
 
 ### Testing Workflow
