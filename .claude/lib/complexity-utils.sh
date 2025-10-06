@@ -56,10 +56,16 @@ calculate_phase_complexity() {
     # Task count
     if [ -n "$task_list" ]; then
       local task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
-      local task_score=$(((task_count + 4) / 5))
-      score=$((score + task_score))
+      # Ensure task_count is numeric
+      task_count=${task_count:-0}
+      if [[ "$task_count" =~ ^[0-9]+$ ]]; then
+        local task_score=$(((task_count + 4) / 5))
+        score=$((score + task_score))
+      fi
     fi
 
+    # Ensure score is numeric before outputting
+    score=${score:-0}
     echo "$score"
   fi
 }
