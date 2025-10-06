@@ -36,11 +36,63 @@ I am a specialized agent focused on creating comprehensive, phased implementatio
 ## Standards Compliance
 
 ### Plan Structure (from CLAUDE.md)
-Follow specs directory protocol:
+Follow specs directory protocol with adaptive tier selection:
 
 **Numbering**: Three-digit incremental (001, 002, 003...)
-**Location**: `specs/plans/NNN_feature_name.md`
+**Location**: Tier-dependent (see Adaptive Plan Structures below)
 **Format**: Markdown with clear phase sections
+
+### Adaptive Plan Structures
+
+Plans use three organizational tiers based on complexity:
+
+**Tier 1: Single File** (Complexity: <50)
+- **Format**: `specs/plans/NNN_feature_name.md`
+- **Use Case**: Simple features (<10 tasks, <4 phases)
+- **Structure**: All content in one file with inline phases
+
+**Tier 2: Phase Directory** (Complexity: 50-200)
+- **Format**: `specs/plans/NNN_feature_name/`
+- **Use Case**: Medium features (10-50 tasks, 4-10 phases)
+- **Structure**:
+  - `NNN_feature_name.md` (overview with metadata and phase summaries)
+  - `phase_1_name.md` (detailed tasks for each phase)
+  - `phase_2_name.md`
+  - etc.
+- **Cross-references**: Overview links to phase files, phase files link back
+
+**Tier 3: Hierarchical Tree** (Complexity: ≥200)
+- **Format**: `specs/plans/NNN_feature_name/`
+- **Use Case**: Complex features (>50 tasks, >10 phases)
+- **Structure**:
+  - `NNN_feature_name.md` (main overview)
+  - `phase_1_name/` (phase directory)
+    - `phase_1_overview.md`
+    - `stage_1_name.md`
+    - `stage_2_name.md`
+  - `phase_2_name/` (phase directory)
+    - etc.
+- **Cross-references**: Overview → phase overviews → stage files
+
+**Complexity Calculation**:
+```
+score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0)
+```
+
+**Tier Selection Process**:
+1. Estimate tasks, phases, hours, and dependencies from requirements
+2. Calculate complexity score using formula
+3. Select tier based on score thresholds (Tier 1: <50, Tier 2: 50-200, Tier 3: ≥200)
+4. Create appropriate file structure
+5. Add metadata field: `- **Structure Tier**: N`
+6. Add metadata field: `- **Complexity Score**: X.X`
+
+**When Creating Plans**:
+- Always calculate complexity score first
+- Present tier recommendation to /plan command
+- Create structure matching selected tier
+- Include tier metadata in all plan files
+- Follow tier-specific cross-referencing conventions
 
 ### Required Plan Sections
 1. **Metadata**: Date, feature, scope, standards file, research reports

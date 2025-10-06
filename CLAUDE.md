@@ -12,16 +12,48 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 ### Directory Protocols
 
 #### Specifications Structure (`specs/`)
-[Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries]
+[Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries, /migrate-plan]
 
 The specifications directory follows this structure:
-- `plans/` - Implementation plans (format: `NNN_plan_name.md`)
+- `plans/` - Implementation plans (adaptive three-tier structure)
 - `reports/` - Research reports (format: `NNN_report_name.md`)
 - `summaries/` - Implementation summaries linking plans to executed code
 
 All specification documents use incremental three-digit numbering (001, 002, 003...).
 
 **Location**: specs/ directories can exist at project root or in subdirectories for scoped specifications.
+
+##### Plan Structure Tiers
+
+Plans use adaptive organization based on complexity:
+
+**Tier 1: Single File** (Complexity: <50)
+- Format: `NNN_plan_name.md`
+- Use: Simple features (<10 tasks, <4 phases)
+
+**Tier 2: Phase Directory** (Complexity: 50-200)
+- Format: `NNN_plan_name/` directory with overview + phase files
+- Use: Medium features (10-50 tasks, 4-10 phases)
+- Structure:
+  - `NNN_plan_name.md` (overview)
+  - `phase_1_name.md` (phase details)
+  - `phase_2_name.md` (phase details)
+
+**Tier 3: Hierarchical Tree** (Complexity: ≥200)
+- Format: `NNN_plan_name/` with nested phase directories
+- Use: Complex features (>50 tasks, >10 phases)
+- Structure:
+  - `NNN_plan_name.md` (overview)
+  - `phase_1_name/` (phase directory)
+    - `phase_1_overview.md`
+    - `stage_1_name.md`
+    - `stage_2_name.md`
+
+**Tier Selection**: Automatic based on complexity score. Use `/migrate-plan` to convert between tiers.
+
+**Complexity Formula**: `score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0)`
+
+See [Adaptive Plan Structures Guide](.claude/docs/adaptive-plan-structures.md) for complete documentation.
 
 ## Testing Protocols
 [Used by: /test, /test-all, /implement]

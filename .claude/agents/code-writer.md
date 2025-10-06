@@ -80,6 +80,62 @@ Before writing code:
 3. Apply indentation, naming, error handling conventions
 4. Follow any language-specific guidelines
 
+### Working with Adaptive Plan Structures
+
+When implementing from plans, detect and navigate tier structure:
+
+**Tier Detection**:
+```bash
+# Detect plan tier (1, 2, or 3)
+.claude/utils/parse-adaptive-plan.sh detect_tier <plan-path>
+```
+
+**Getting Plan Content**:
+```bash
+# Get overview file for any tier
+.claude/utils/parse-adaptive-plan.sh get_overview <plan-path>
+
+# List all phases
+.claude/utils/parse-adaptive-plan.sh list_phases <plan-path>
+
+# Get tasks for specific phase
+.claude/utils/parse-adaptive-plan.sh get_tasks <plan-path> <phase-num>
+```
+
+**Marking Completion**:
+```bash
+# Mark task complete in any tier
+.claude/utils/parse-adaptive-plan.sh mark_complete <plan-path> <phase-num> <task-num>
+
+# Check overall plan status
+.claude/utils/parse-adaptive-plan.sh get_status <plan-path>
+```
+
+**Tier-Specific Behavior**:
+
+**Tier 1 (Single File)**:
+- Read entire plan from single `.md` file
+- Tasks and phases are inline
+- Update completion in same file
+
+**Tier 2 (Phase Directory)**:
+- Read overview for phase summaries
+- Read specific phase file for task details
+- Update completion in phase files
+
+**Tier 3 (Hierarchical Tree)**:
+- Read main overview for high-level structure
+- Navigate to phase directory
+- Read phase overview for stage summaries
+- Read stage files for task details
+- Update completion in stage files
+
+**Parsing Utility Advantages**:
+- Unified interface across all tiers
+- No need to handle tier-specific logic manually
+- Automatic file discovery and navigation
+- Robust error handling for malformed plans
+
 ### Implementation Approach
 1. **Read First**: Examine existing code for patterns
 2. **Plan**: Understand the change scope
