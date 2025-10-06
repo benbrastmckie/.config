@@ -32,7 +32,7 @@ classify_error() {
   fi
 
   # Fatal error keywords
-  if echo "$error_message" | grep -qiE "out of space|disk full|permission denied|no such file|corrupted"; then
+  if echo "$error_message" | grep -qiE "out of.*space|disk.*full|permission.*denied|no such file|corrupted"; then
     echo "$ERROR_TYPE_FATAL"
     return
   fi

@@ -77,19 +77,19 @@ analyze_task_structure() {
   fi
 
   # Count tasks
-  local total_tasks=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
+  local total_tasks=$(echo "$task_list" | grep -c "^- \[ \]" | tr -d ' \n' || echo "0")
 
   # Count nested tasks (indented)
-  local nested_tasks=$(echo "$task_list" | grep -c "^  - \[ \]" || echo "0")
+  local nested_tasks=$(echo "$task_list" | grep -c "^  - \[ \]" | tr -d ' \n' || echo "0")
 
   # Estimate max depth (simple heuristic)
   local max_depth=1
-  if [ "$nested_tasks" -gt 0 ]; then
+  if [ "${nested_tasks:-0}" -gt 0 ]; then
     max_depth=2
   fi
 
   # Count file mentions
-  local file_count=$(echo "$task_list" | grep -oE '\.(lua|js|py|sh|md|json|yaml|toml)' 2>/dev/null | wc -l || echo "0")
+  local file_count=$(echo "$task_list" | grep -oE '\.(lua|js|py|sh|md|json|yaml|toml)' 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 
   # Build JSON response
   if command -v jq &> /dev/null; then
@@ -140,7 +140,9 @@ generate_complexity_report() {
 
   local complexity_score=$(calculate_phase_complexity "$phase_name" "$task_list")
   local task_structure=$(analyze_task_structure "$task_list")
-  local total_tasks=$(echo "$task_structure" | jq -r '.total_tasks // 0' 2>/dev/null || echo "0")
+  local total_tasks=$(echo "$task_structure" | jq -r '.total_tasks // 0' 2>/dev/null | head -1 || echo "0")
+  # Remove any whitespace/newlines
+  total_tasks=$(echo "$total_tasks" | tr -d '\n\r' | tr -d ' ')
   local trigger=$(detect_complexity_triggers "$complexity_score" "$total_tasks")
 
   # Determine recommended action
