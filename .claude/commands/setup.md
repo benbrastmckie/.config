@@ -1,9 +1,9 @@
 ---
 allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
-argument-hint: [project-directory] [--cleanup [--dry-run]] [--analyze] [--apply-report <report-path>]
-description: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, standards analysis, and report-driven updates
+argument-hint: [project-directory] [--cleanup [--dry-run]] [--validate] [--analyze] [--apply-report <report-path>]
+description: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, validation, standards analysis, and report-driven updates
 command-type: primary
-dependent-commands: validate-setup, cleanup
+dependent-commands: none
 ---
 
 # Setup Project Standards
@@ -56,7 +56,22 @@ Optimize CLAUDE.md by extracting detailed sections to auxiliary files, keeping t
 - Use `--dry-run` to preview changes before applying
 - Equivalent to standalone `/cleanup` command
 
-### 3. Analysis Mode
+### 3. Validation Mode
+Validate that CLAUDE.md and all linked standards files are properly configured.
+
+**Usage**: `/setup --validate [project-directory]`
+
+**Features**:
+- Validates CLAUDE.md exists and has required sections
+- Checks all linked standards files are readable
+- Verifies specs directory structure
+- Tests documented commands are executable
+- Identifies missing or incomplete sections
+- Generates validation report with fix suggestions
+
+**Equivalent to**: `/validate-setup [project-directory]`
+
+### 4. Analysis Mode
 Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, generating a comprehensive analysis report.
 
 **Usage**: `/setup --analyze [project-directory]`
@@ -68,7 +83,7 @@ Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, gene
 - Generates interactive gap-filling report in specs/reports/
 - Never modifies files (safe exploration)
 
-### 4. Report Application Mode
+### 5. Report Application Mode
 Parse a completed analysis report and update CLAUDE.md with reconciled standards.
 
 **Usage**: `/setup --apply-report <report-path> [project-directory]`
@@ -78,7 +93,7 @@ Parse a completed analysis report and update CLAUDE.md with reconciled standards
 - Creates backup before modifying CLAUDE.md
 - Updates standards based on user decisions
 - Validates generated CLAUDE.md structure
-- Suggests running /validate-setup
+- Suggests running `/setup --validate`
 
 ## Target Directory
 $1 (or current directory)
@@ -109,7 +124,7 @@ I'll detect the mode based on arguments:
 
 ### Implementation Logic
 ```
-Priority: --apply-report > --cleanup > --analyze > standard
+Priority: --apply-report > --cleanup > --validate > --analyze > standard
 
 if "--apply-report" in arguments:
     report_path = argument after "--apply-report"
@@ -118,6 +133,9 @@ if "--apply-report" in arguments:
 elif "--cleanup" in arguments:
     project_dir = remaining non-flag argument or current directory
     run cleanup_mode(project_dir)
+elif "--validate" in arguments:
+    project_dir = remaining non-flag argument or current directory
+    run validation_mode(project_dir)
 elif "--analyze" in arguments:
     project_dir = remaining non-flag argument or current directory
     run analysis_mode(project_dir)
