@@ -1,394 +1,292 @@
-# Expand Phase Command
+---
+allowed-tools: Read, Write, Edit, Bash, Glob
+argument-hint: <plan-path> <phase-num>
+description: Expand a phase into a detailed implementation plan with concrete specifications
+command-type: workflow
+---
 
-Expand a phase from inline content in the main plan to a separate file, creating directory structure as needed.
+# Expand Phase to Detailed Implementation Plan
 
-## Usage
-
-```bash
-/expand-phase <plan-path> <phase-num>
-```
+I'll expand a phase from a Level 0 plan into a comprehensive, detailed Level 1 implementation plan with specific implementation specifications (target: 300-500+ lines).
 
 ## Arguments
 
-- `plan-path`: Path to the plan file or directory (e.g., `specs/plans/025_feature.md` or `specs/plans/025_feature/`)
-- `phase-num`: The phase number to expand (e.g., `2`)
+- `$1` (required): Path to plan file or directory (e.g., `specs/plans/025_feature.md`)
+- `$2` (required): Phase number to expand (e.g., `3`)
 
-## Description
+## Objective
 
-This command implements the progressive expansion workflow by:
+Transform a brief 30-50 line phase outline into a detailed 300-500+ line implementation specification with:
+- **Concrete implementation details**, not generic guidance
+- **Specific code examples and patterns** for the actual tasks
+- **Detailed testing specifications** with actual test cases
+- **Architecture and design decisions** specific to this phase
+- **Error handling patterns** for the specific scenarios
+- **Performance considerations** relevant to the work
 
-1. **Detecting Structure Level**: Determines if this is the first phase expansion (Level 0 → 1)
-2. **Creating Directory Structure**: If first expansion, creates plan directory and moves main plan into it
-3. **Extracting Phase Content**: Parses the phase section from the main plan
-4. **Creating Phase File**: Writes extracted content to `phase_N_name.md`
-5. **Revising Main Plan**: Replaces phase content with summary and link to phase file
-6. **Updating Metadata**: Updates Structure Level and Expanded Phases metadata
-7. **Adding Update Reminder**: Adds reminder to phase file about marking completion in main plan
+## Process
 
-## Progressive Expansion Workflow
+### 1. Analyze Current Structure
 
-### Level 0 → Level 1 (First Phase Expansion)
+First, determine the plan's current structure level:
 
-**Before:**
-```
-specs/plans/025_feature.md          # Single file with all phases inline
-```
-
-**After:**
-```
-specs/plans/025_feature/            # Directory created
-├── 025_feature.md                  # Main plan moved here, phase content replaced with summary
-└── phase_2_implementation.md       # Extracted phase with full content
-```
-
-### Level 1 → Level 1 (Subsequent Phase Expansion)
-
-**Before:**
-```
-specs/plans/025_feature/
-├── 025_feature.md                  # Main plan
-└── phase_2_implementation.md       # Already expanded
+```bash
+# Check if plan is a file or directory
+if [[ -d "$plan_path" ]]; then
+  # Level 1 - already expanded
+  plan_file="$plan_path/$(basename "$plan_path").md"
+  structure_level=1
+elif [[ -f "$plan_path" ]]; then
+  # Level 0 - single file
+  plan_file="$plan_path"
+  structure_level=0
+fi
 ```
 
-**After:**
+### 2. Extract Phase Content
+
+Read the specified phase from the main plan:
+
+```bash
+# Use parse-adaptive-plan.sh utilities
+source utils/parse-adaptive-plan.sh
+phase_content=$(extract_phase_content "$plan_file" "$phase_num")
 ```
-specs/plans/025_feature/
-├── 025_feature.md                  # Main plan, another phase replaced with summary
-├── phase_2_implementation.md       # Unchanged
-└── phase_5_deployment.md           # Newly extracted phase
+
+Extract all components:
+- Phase heading and title
+- Objective
+- Complexity
+- Scope
+- Expected Impact
+- All task checkboxes
+- Any existing implementation notes
+
+### 3. Create Detailed Implementation Specification
+
+**IMPORTANT**: Do NOT use generic templates. Instead:
+
+1. **Read and understand** the phase objective and tasks
+2. **Analyze** what the phase is actually trying to accomplish
+3. **Research** the codebase context (read relevant files if needed)
+4. **Write** a detailed, specific implementation plan
+
+The expanded phase should include:
+
+#### Section 1: Phase Overview (50-100 lines)
+- Expanded objective with full context
+- Detailed scope breakdown
+- Success criteria (specific, measurable)
+- Dependencies on previous phases
+- Impact on downstream work
+- Risk analysis
+
+#### Section 2: Task-by-Task Implementation (150-250 lines)
+
+For EACH task, provide:
+
+**Task N: [Task Description]**
+
+**Implementation Approach**:
+- Specific files to create/modify (actual paths)
+- Exact functions/commands to implement
+- Data structures and interfaces
+- Concrete code patterns (not generic examples)
+
+**Detailed Steps**:
+1. Step with specific action (e.g., "Create `.claude/lib/metadata-utils.sh` with function `get_plan_metadata()`")
+2. Code example showing actual implementation pattern
+3. Verification step with actual command
+
+**Testing Requirements**:
+- Specific test file path
+- Actual test cases to write
+- Expected inputs and outputs
+- Edge cases specific to this functionality
+
+**Success Criteria**:
+- Measurable outcomes
+- Verification commands
+- Performance targets
+
+#### Section 3: Architecture and Design (50-75 lines)
+- Component structure diagram
+- Data flow specific to this phase
+- Integration points with existing code
+- API contracts and interfaces
+- Design decisions and rationale
+
+#### Section 4: Comprehensive Testing Strategy (50-75 lines)
+- Unit test specifications with actual test cases
+- Integration test scenarios
+- Edge case tests (specific scenarios)
+- Performance/benchmark tests
+- Test data requirements
+
+#### Section 5: Error Handling (30-50 lines)
+- Specific error scenarios for these tasks
+- Error handling patterns with code examples
+- Validation logic
+- Recovery strategies
+
+#### Section 6: Implementation Checklist (20-30 lines)
+- Pre-implementation setup
+- Step-by-step execution checklist
+- Verification steps
+- Completion criteria
+
+### 4. Handle File Structure
+
+**If Level 0 → Level 1 (first expansion)**:
+```bash
+# Create directory
+plan_name=$(basename "$plan_file" .md)
+plan_dir=$(dirname "$plan_file")/$plan_name
+mkdir -p "$plan_dir"
+
+# Move main plan
+mv "$plan_file" "$plan_dir/$(basename "$plan_file")"
+plan_file="$plan_dir/$(basename "$plan_file")"
 ```
 
-## Phase Content Enhancement
+**Create phase file**:
+```bash
+# Generate phase filename
+phase_name=$(echo "$phase_title" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -d '/:*?"<>|&')
+phase_file="$(dirname "$plan_file")/phase_${phase_num}_${phase_name}.md"
+```
 
-The command doesn't just extract - it **enhances** phase content from 30-50 lines to 80-150 lines:
+### 5. Write Enhanced Phase Content
 
-### Content Extraction
+Write the detailed implementation specification to the phase file with:
 
-First, extracts the following from the main plan:
-
-1. **Phase heading**: `### Phase N: Name`
-2. **Objective**: The objective/description
-3. **Complexity**: If present
-4. **Tasks**: All task checkboxes
-5. **Testing**: Test commands and expectations
-6. **Expected Outcomes**: Outcome descriptions
-7. **Dependencies**: If listed
-8. **Status markers**: [PENDING], [IN_PROGRESS], [COMPLETED]
-
-### Content Enhancement
-
-Then, adds comprehensive implementation guidance:
-
-1. **Expanded Objective** (3-5 paragraphs)
-   - Context and background
-   - Success criteria
-   - Critical path analysis
-
-2. **Implementation Guidance**
-   - Detailed step-by-step instructions for each task
-   - Approach patterns (audit, create, test, refactor)
-   - Verification steps
-
-3. **Complexity Analysis**
-   - Calculated complexity score
-   - Recommendations based on score
-   - Stage expansion suggestion
-
-4. **Edge Cases** (4-6 scenarios)
-   - Input validation
-   - Error conditions
-   - Boundary conditions
-   - Performance considerations (if complex)
-
-5. **Cross-References**
-   - Links to related phases
-   - Parent plan reference
-
-### Example Enhancement
-
-**Before (30 lines)**:
 ```markdown
-### Phase 3: Database Setup
-**Objective**: Set up database schema
-**Complexity**: Medium
-
-#### Tasks
-- [ ] Create schema
-- [ ] Set up connections
-- [ ] Add migrations
-```
-
-**After (120 lines)**:
-```markdown
-### Phase 3: Database Setup
+### Phase N: [Title]
 
 ## Metadata
-- **Phase Number**: 3
-- **Parent Plan**: project.md
+- **Phase Number**: N
+- **Parent Plan**: [plan-name].md
+- **Estimated Complexity**: [score]/10
+- **Estimated Time**: [estimate]
 
-**Objective**: Set up database schema
-**Complexity**: Medium
-
-[...original tasks...]
+[Original phase objective, tasks, etc.]
 
 ---
 
-## Implementation Guidance
+## Detailed Implementation Specification
 
-**Context**: This phase involves 3 major tasks focusing on implementation.
-Success criteria: All tasks completed, tests passing, code meets standards.
+### Overview
+[Comprehensive overview with full context]
 
-### Detailed Steps
+### Task Breakdown
+[Detailed implementation for each task]
 
-#### Step 1: Create schema
-**Approach**:
-1. Design component structure
-2. Implement core functionality
-3. Add error handling
+### Architecture and Design
+[Specific design for this phase]
 
-**Verification**:
-- Verify changes work as expected
-- Run relevant tests
+### Testing Strategy
+[Comprehensive test specifications]
 
-[...more steps...]
+### Error Handling
+[Specific error scenarios]
 
-## Edge Cases and Error Handling
-[4-6 scenarios with examples]
+### Implementation Checklist
+[Step-by-step checklist]
 
-## Cross-References
-[Links to related phases]
+### Cross-References
+- Previous Phase: Phase N-1
+- Next Phase: Phase N+1
+- Related Files: [specific files]
+
+---
 
 ## Stage Expansion Recommendation
-**Recommendation**: No
-**Reason**: Manageable complexity (score: 6.9)
+
+**Recommendation**: [Yes/No]
+**Reason**: [Specific rationale based on complexity]
 ```
 
-## Main Plan Revision
+### 6. Update Main Plan
 
-After extraction, the phase section in the main plan is replaced with:
+Replace the full phase section in main plan with summary:
 
 ```markdown
-### Phase N: Name
+### Phase N: [Title]
 **Objective**: [Brief objective]
 **Status**: [PENDING]
 
-For detailed tasks and implementation, see [Phase N Details](phase_N_name.md)
+For detailed implementation specification, see [Phase N Details](phase_N_name.md)
 ```
 
-## Metadata Updates
+### 7. Update Metadata
 
-### Main Plan Metadata
-
+In main plan metadata section:
 ```markdown
 ## Metadata
 - **Structure Level**: 1
-- **Expanded Phases**: [2, 5]
-- **Stage Expansion Candidates**: [3]  # Added if phase complexity >8 or tasks >10
+- **Expanded Phases**: [list of expanded phase numbers]
+- **Stage Expansion Candidates**: [phases with recommendation: Yes]
 ```
 
-### Phase File Metadata
+## Key Principles
 
-```markdown
-## Metadata
-- **Phase Number**: 2
-- **Parent Plan**: 025_feature.md
+1. **Specificity Over Generality**: Write concrete details for THIS phase, not generic templates
+2. **Context-Aware**: Read relevant codebase files to understand the actual implementation context
+3. **Actionable**: Every instruction should be specific enough to execute immediately
+4. **Complete**: Should be 300-500+ lines with comprehensive coverage
+5. **Realistic**: Base estimates and complexity on actual task analysis
 
-## Stage Expansion Recommendation
-**Recommendation**: Yes|No
-**Reason**: High complexity (score: 9.2, tasks: 12)
+## Validation
+
+Before completing, verify:
+- [ ] Phase file is 300-500+ lines (or more if warranted)
+- [ ] All tasks have detailed implementation sections
+- [ ] Code examples are specific to the actual work
+- [ ] Test cases are concrete and actionable
+- [ ] Architecture section addresses actual integration
+- [ ] Main plan updated with summary
+- [ ] Metadata updated correctly
+
+## Example Output
+
+```
+Analyzing plan structure...
+  Current level: 0 (single file)
+  Plan: specs/plans/028_complete_system_optimization.md
+
+Reading Phase 3: Utils Consolidation...
+  Objective: Complete utils/lib architectural cleanup
+  Tasks: 6
+  Complexity: Medium-High
+
+Researching codebase context...
+  Reading: utils/README.md
+  Reading: lib/README.md
+  Analyzing: 15 util scripts
+
+Creating detailed implementation specification...
+  Writing comprehensive overview
+  Detailing 6 tasks with specific steps
+  Adding architecture analysis
+  Specifying test requirements
+  Including error handling patterns
+
+Creating directory structure (Level 0 → 1)...
+  Created: specs/plans/028_complete_system_optimization/
+  Moved: 028_complete_system_optimization.md → directory
+
+Writing phase file (540 lines)...
+  File: phase_3_utils_consolidation.md
+
+Updating main plan...
+  Replaced Phase 3 with summary and link
+
+✓ Phase 3 expanded successfully
+  Main plan: specs/plans/028_complete_system_optimization/028_complete_system_optimization.md
+  Phase file: specs/plans/028_complete_system_optimization/phase_3_utils_consolidation.md
+  Lines: 540
 ```
 
-## Update Reminder
+## Process Implementation
 
-Each phase file receives:
-
-```markdown
-## Update Reminder
-When phase complete, mark Phase 2 as [COMPLETED] in main plan: `025_feature.md`
-```
-
-## Validation Checks
-
-Before expansion, the command verifies:
-- Plan file exists
-- Phase number is valid
-- Phase is not already expanded
-- Phase content can be parsed
-
-After expansion, the command verifies:
-- Directory structure created correctly
-- Phase file written successfully
-- Main plan updated correctly
-- Metadata is consistent
-
-## Error Handling
-
-- **Plan not found**: Error with path guidance
-- **Invalid phase number**: Error listing valid phases
-- **Already expanded**: Warning, no action taken
-- **Parse failure**: Error with content that failed to parse
-- **Write failure**: Error with file system issue
-
-## Examples
-
-### Expand Phase 2 from Single File Plan
-
-```bash
-/expand-phase specs/plans/025_feature.md 2
-```
-
-**Output:**
-```
-Expanding Phase 2 from plan: 025_feature.md
-  - This is the FIRST expansion (Level 0 → 1)
-  - Creating directory: specs/plans/025_feature/
-  - Moving main plan to directory
-  - Extracting Phase 2: Implementation
-  - Creating phase file: phase_2_implementation.md
-  - Revising main plan to summary
-  - Updating metadata: Structure Level = 1, Expanded Phases = [2]
-  - Adding update reminder to phase file
-
-✓ Phase 2 expanded successfully
-  Main plan: specs/plans/025_feature/025_feature.md
-  Phase file: specs/plans/025_feature/phase_2_implementation.md
-```
-
-### Expand Phase 5 from Directory Plan
-
-```bash
-/expand-phase specs/plans/025_feature/ 5
-```
-
-**Output:**
-```
-Expanding Phase 5 from plan: 025_feature/
-  - Current level: 1
-  - Extracting Phase 5: Deployment
-  - Creating phase file: phase_5_deployment.md
-  - Revising main plan to summary
-  - Updating metadata: Expanded Phases = [2, 5]
-  - Adding update reminder to phase file
-
-✓ Phase 5 expanded successfully
-  Phase file: specs/plans/025_feature/phase_5_deployment.md
-```
-
-## Implementation
-
-I'll use the parsing utilities and implement the expansion logic following the progressive planning design:
-
-```bash
-#!/usr/bin/env bash
-
-set -e
-
-# Source parsing utilities
-source "$(dirname "$0")/../utils/parse-adaptive-plan.sh"
-
-# Parse arguments
-plan_path="$1"
-phase_num="$2"
-
-if [[ -z "$plan_path" || -z "$phase_num" ]]; then
-  echo "Usage: /expand-phase <plan-path> <phase-num>"
-  exit 1
-fi
-
-# Normalize plan path
-if [[ -d "$plan_path" ]]; then
-  plan_file="$plan_path/$(basename "$plan_path").md"
-else
-  plan_file="$plan_path"
-fi
-
-# Validate plan exists
-if [[ ! -f "$plan_file" ]]; then
-  echo "Error: Plan file not found: $plan_file"
-  exit 1
-fi
-
-# Detect structure level
-current_level=$(detect_structure_level "$plan_file")
-
-# Check if phase already expanded
-if is_phase_expanded "$plan_path" "$phase_num"; then
-  echo "Warning: Phase $phase_num is already expanded"
-  exit 0
-fi
-
-# Extract phase content
-phase_content=$(extract_phase_content "$plan_file" "$phase_num")
-if [[ -z "$phase_content" ]]; then
-  echo "Error: Could not extract Phase $phase_num from plan"
-  exit 1
-fi
-
-# Determine if this is FIRST expansion (Level 0 → 1)
-if [[ $current_level -eq 0 ]]; then
-  echo "First expansion detected (Level 0 → 1)"
-
-  # Create directory
-  plan_dir="${plan_file%.md}"
-  mkdir -p "$plan_dir"
-
-  # Move main plan to directory
-  mv "$plan_file" "$plan_dir/$(basename "$plan_file")"
-  plan_file="$plan_dir/$(basename "$plan_file")"
-fi
-
-# Create phase file
-phase_name=$(extract_phase_name "$plan_file" "$phase_num")
-phase_file="$(dirname "$plan_file")/phase_${phase_num}_${phase_name}.md"
-
-echo "$phase_content" > "$phase_file"
-
-# Add metadata to phase file
-add_phase_metadata "$phase_file" "$phase_num" "$(basename "$plan_file")"
-
-# Add update reminder
-add_update_reminder "$phase_file" "Phase $phase_num" "$(basename "$plan_file")"
-
-# Revise main plan
-revise_main_plan_for_phase "$plan_file" "$phase_num" "$(basename "$phase_file")"
-
-# Update metadata
-if [[ $current_level -eq 0 ]]; then
-  update_structure_level "$plan_file" 1
-fi
-update_expanded_phases "$plan_file" "$phase_num"
-
-echo "✓ Phase $phase_num expanded successfully"
-echo "  Phase file: $phase_file"
-```
-
-## Integration with Other Commands
-
-### Used By
-- `/implement`: Suggests expansion when phase proves complex during implementation
-- User: Manual expansion when planning reveals high complexity
-
-### Uses
-- `parse-adaptive-plan.sh`: Structure detection and content extraction
-- Progressive planning utilities: Metadata management
-
-### Complementary Commands
-- `/expand-stage`: Further expand a phase into stages
-- `/collapse-phase`: Reverse the expansion
-- `/list-plans`: Show expansion status
-
-## Standards Applied
-
-Following CLAUDE.md Code Standards:
-- **Indentation**: 2 spaces in generated markdown
-- **Line length**: ~100 characters
-- **Error Handling**: Validation checks before operations
-- **Documentation**: Clear comments in implementation script
-
-## Notes
-
-- Phase files are named `phase_N_name.md` where name is derived from phase heading
-- Original task completion status is preserved during extraction
-- Main plan becomes a summary/index after first phase expansion
-- Expansion is reversible via `/collapse-phase`
-- Multiple phases can be expanded independently
+Now I'll execute this process for the specified plan and phase.
