@@ -235,20 +235,23 @@ See `.claude/templates/custom/example-feature.yaml` for template structure.
 
 ---
 
-#### /analyze-patterns
-**Purpose**: Analyze learning data for workflow insights and optimization opportunities
+#### /analyze
+**Purpose**: Analyze system performance metrics and patterns
 
-**Usage**: `/analyze-patterns [search-pattern]`
+**Usage**: `/analyze [type] [search-pattern]`
+
+**Types**:
+- `agents` - Agent performance metrics and efficiency
+- `patterns` - (Not implemented) Reserved for future pattern analysis
+- `all` - Currently equivalent to `agents`
 
 **Features**:
-- Success rate analysis by workflow type
-- Common research topics identification
-- Implementation time statistics
-- Failure pattern detection
-- Optimization recommendations
-- Visual charts and reports
+- Agent performance rankings
+- Efficiency scoring
+- Success rate analysis
+- Actionable recommendations
 
-**Output**: Console analysis + `specs/reports/NNN_pattern_analysis.md`
+**Output**: Console analysis report
 
 ---
 

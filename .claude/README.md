@@ -6,14 +6,13 @@ State-of-the-art agentic workflow system for Claude Code. All 5 phases of advanc
 
 This directory implements a complete agentic workflow ecosystem:
 
-- **Commands** - 25+ slash commands for development workflows
+- **Commands** - 26 slash commands for development workflows
 - **Agents** - Specialized AI assistants with focused capabilities
 - **Templates** - Reusable workflow patterns with variable substitution
-- **Learning** - Adaptive pattern recognition and recommendations
 - **Hooks** - Event-driven automation for metrics and notifications
 - **Checkpoints** - Workflow state persistence and resume capability
 - **TTS** - Voice notifications with uniform messaging
-- **Metrics** - Comprehensive performance tracking and analysis
+- **Metrics** - Command execution tracking and performance analysis
 - **Artifacts** - Lightweight context management system
 - **Utilities** - Supporting scripts for all subsystems
 
@@ -23,32 +22,33 @@ This directory implements a complete agentic workflow ecosystem:
 .claude/
 ├── agents/              Specialized AI assistant definitions
 ├── checkpoints/         Workflow state for interruption recovery
-├── commands/            25+ slash commands for workflows
+├── commands/            26 slash commands for workflows
+├── data/                Runtime data (gitignored)
+│   ├── logs/           Debug and hook execution logs
+│   └── metrics/        Command performance tracking (JSONL)
 ├── docs/                Integration guides and standards
 ├── hooks/               Event-driven automation scripts
-├── learning/            Adaptive pattern data and recommendations
-├── logs/                Runtime logs and debug output
-├── metrics/             Performance tracking (JSONL)
-├── specs/               Plans, reports, summaries, artifacts
-│   ├── artifacts/      Lightweight research outputs
+├── lib/                 Utility libraries and shared functions
+├── specs/               Plans, reports, summaries (gitignored)
 │   ├── plans/          Implementation plans
 │   ├── reports/        Research and investigations
-│   ├── standards/      Project standards and protocols
 │   └── summaries/      Implementation summaries
 ├── templates/           Reusable workflow templates
+│   └── custom/         User-defined custom templates
+├── tests/               Test suites for system validation
 ├── tts/                 Voice notification system
-├── utils/               Supporting utilities and scripts
 └── settings.local.json  Hook and permission configuration
 ```
 
 ## Core Capabilities
 
-### Commands (25+ Workflows)
+### Commands (26 Workflows)
 Comprehensive slash command system for all development workflows:
 - **Primary**: `/implement`, `/plan`, `/plan-wizard`, `/report`, `/test`, `/orchestrate`
 - **Templates**: `/plan-from-template` (60-80% faster plan creation)
-- **Analysis**: `/analyze-agents`, `/analyze-patterns`, `/refactor`, `/debug`
-- **Utilities**: `/list-*`, `/update-*`, `/resume-implement`, `/validate-setup`
+- **Analysis**: `/analyze`, `/refactor`, `/debug`
+- **Structure**: `/expand`, `/collapse` (progressive plan organization)
+- **Utilities**: `/list`, `/update`, `/document`, `/setup`
 
 **Location**: `commands/` | See [commands/README.md](commands/README.md)
 
@@ -71,14 +71,14 @@ Reusable plan templates with variable substitution:
 
 **Location**: `templates/` | See [templates/README.md](templates/README.md) | [Template Guide](docs/template-system-guide.md)
 
-### Learning (Adaptive Intelligence)
-Pattern recognition and workflow recommendations:
-- Similarity matching for past successful workflows
-- Research topic suggestions based on history
-- Optimization recommendations
-- Privacy-filtered data collection
+### Metrics (Performance Tracking)
+Command execution metrics for performance analysis:
+- Monthly JSONL logs of command duration and status
+- Post-command hook integration
+- Manual analysis via JSONL processing tools
+- Foundation for future analytics dashboard
 
-**Location**: `learning/` | See [learning/README.md](learning/README.md)
+**Location**: `data/metrics/` | See [hooks/post-command-metrics.sh](hooks/post-command-metrics.sh)
 
 ### Checkpoints (Resilience)
 Workflow state persistence for interruption recovery:
@@ -124,12 +124,13 @@ Lightweight reference system for 60-80% context reduction:
 
 ### Utilities (Supporting Scripts)
 Core utilities for all subsystems:
-- Checkpoint management, learning data collection
-- Template parsing, variable substitution
-- Pattern matching, recommendation generation
-- Error analysis, complexity assessment
+- Checkpoint management and state persistence
+- Template parsing and variable substitution
+- Adaptive planning triggers and logging
+- Error analysis and complexity assessment
+- Progressive plan structure parsing
 
-**Location**: `utils/` | See [utils/README.md](utils/README.md)
+**Location**: `lib/` | See [lib/UTILS_README.md](lib/UTILS_README.md)
 
 ## Configuration
 
@@ -222,10 +223,10 @@ Central configuration file for hook registrations and permissions.
 **Phase 5**: Advanced Capabilities
 - ✅ Workflow templates (60-80% faster)
 - ✅ Agent collaboration protocol
-- ✅ Adaptive learning system
-- ✅ `/analyze-patterns` command
+- ✅ Adaptive replanning system
+- ✅ `/analyze` command
 
-**Result**: 5/5 stars - State-of-the-art agentic workflow system
+**Result**: Complete agentic workflow system with template acceleration
 
 ## Usage Examples
 
@@ -244,16 +245,18 @@ Central configuration file for hook registrations and permissions.
 # System will auto-detect incomplete plan and resume, or start fresh
 
 # 4. Analyze results
-/analyze-agents  # Check agent performance
+/analyze agents  # Check agent performance
 ```
 
-### Workflow with Learning
+### Interactive Planning
 ```bash
-# System automatically checks for similar past workflows
-/plan-wizard "Add dark mode feature"
-# → Shows recommendations based on past "theme" or "UI" workflows
-# → Suggests research topics that helped before
-# → Estimates time based on similar implementations
+# Use plan wizard for guided plan creation
+/plan-wizard
+# → Interactive prompts for feature description
+# → Component and scope analysis
+# → Optional research topic identification
+# → Complexity assessment
+# → Integration with /plan command
 ```
 
 ### Using Templates
@@ -274,17 +277,18 @@ ls .claude/templates/*.yaml
 /implement               # Execute plan (auto-resumes)
 /plan <description>      # Create implementation plan
 /plan-wizard            # Interactive guided planning
+/plan-from-template     # Create plan from template
 /report <topic>         # Research and document
 /test <target>          # Run project tests
 /orchestrate <workflow> # Multi-agent coordination
-/analyze-patterns       # View learning insights
+/analyze agents         # View agent performance
 ```
 
 ### Configuration Files
 ```bash
 .claude/settings.local.json      # Hook registration, permissions
 .claude/tts/tts-config.sh        # TTS voice settings
-.claude/learning/privacy-filter.yaml  # Learning data filters
+CLAUDE.md                        # Project standards and protocols
 ```
 
 ### Monitoring & Analysis
@@ -331,10 +335,10 @@ espeak-ng "Test"                                     # Test engine
 tail -f .claude/data/logs/tts.log                         # Monitor activity
 ```
 
-**Learning recommendations not appearing**:
+**Agent performance analysis**:
 ```bash
-ls .claude/learning/*.jsonl                          # Check data exists
-/analyze-patterns                                    # View current patterns
+/analyze agents                                      # View agent metrics
+cat .claude/agents/agent-registry.json | jq         # Check registry
 ```
 
 **Checkpoint not resuming**:
@@ -348,16 +352,15 @@ cat .claude/data/checkpoints/latest.json | jq             # Inspect state
 ### Core Subsystems
 - [agents/](agents/README.md) - 8 specialized AI assistants
 - [checkpoints/](checkpoints/README.md) - Workflow state persistence
-- [commands/](commands/README.md) - 25+ slash commands
+- [commands/](commands/README.md) - 26 slash commands
+- [data/](data/README.md) - Runtime logs and metrics (gitignored)
 - [docs/](docs/README.md) - Integration guides and standards
 - [hooks/](hooks/README.md) - Event automation scripts
-- [learning/](learning/README.md) - Adaptive pattern recognition
-- [logs/](logs/README.md) - Runtime logs and debug output
-- [metrics/](metrics/README.md) - Performance tracking
-- [specs/](specs/README.md) - Plans, reports, artifacts, summaries
+- [lib/](lib/UTILS_README.md) - Supporting utilities
+- [specs/](specs/README.md) - Plans, reports, summaries (gitignored)
 - [templates/](templates/README.md) - Reusable workflow patterns
+- [tests/](tests/README.md) - System test suites
 - [tts/](tts/README.md) - Voice notification system
-- [utils/](utils/README.md) - Supporting utilities
 
 ### Configuration
 - [settings.local.json](settings.local.json) - Hook and permission config

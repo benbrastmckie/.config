@@ -1,18 +1,17 @@
 # Utilities Directory
 
-Core utility scripts supporting all .claude/ subsystems. These scripts provide essential functionality for checkpointing, learning, templates, error analysis, and workflow coordination.
+Core utility scripts supporting all .claude/ subsystems. These scripts provide essential functionality for checkpointing, templates, error analysis, and workflow coordination.
 
 ## Purpose
 
 Utilities provide:
 
 - **Checkpoint management** - Save, load, list, cleanup workflow state
-- **Learning data collection** - Pattern capture with privacy filtering
-- **Recommendation generation** - Similarity matching and suggestions
 - **Template processing** - Variable substitution and validation
 - **Error enhancement** - Detailed diagnostics with fix suggestions
 - **Complexity analysis** - Phase difficulty assessment
-- **Collaboration handling** - Agent coordination protocols
+- **Adaptive planning** - Replan triggers and logging
+- **Progressive structures** - Plan expansion and parsing
 
 ## Utility Scripts
 
@@ -67,62 +66,6 @@ Utilities provide:
 - Archives failed checkpoints
 - Preserves active workflows
 - Reports cleanup summary
-
----
-
-### Learning System
-
-#### collect-learning-data.sh
-**Purpose**: Capture workflow patterns with privacy filtering
-
-**Usage**: `./collect-learning-data.sh <workflow-json>`
-
-**Functionality**:
-- Applies privacy filters (paths, keywords)
-- Extracts relevant metadata
-- Appends to patterns.jsonl or antipatterns.jsonl
-- Non-blocking, always succeeds
-
-**Privacy**:
-- Anonymizes file paths
-- Filters sensitive keywords
-- Sanitizes error messages
-- Respects opt-out flag
-
----
-
-#### match-similar-workflows.sh
-**Purpose**: Find similar past workflows using similarity scoring
-
-**Usage**: `./match-similar-workflows.sh <current-workflow-json>`
-
-**Functionality**:
-- Jaccard similarity on keywords
-- Workflow type exact match
-- Phase count tolerance (±2)
-- Combined scoring (70% threshold)
-- Returns top 3 matches
-
-**Algorithm**:
-```
-score = (keyword_similarity × 0.6) + (type_match × 0.3) + (phase_match × 0.1)
-```
-
----
-
-#### generate-recommendations.sh
-**Purpose**: Create actionable recommendations from similar workflows
-
-**Usage**: `./generate-recommendations.sh <match-results-json>`
-
-**Functionality**:
-- Analyzes successful patterns
-- Suggests research topics
-- Estimates time/complexity
-- Recommends agent selection
-- Identifies parallelization opportunities
-
-**Output**: Structured recommendation JSON
 
 ---
 
@@ -262,12 +205,11 @@ score = (keyword_similarity × 0.6) + (type_match × 0.3) + (phase_match × 0.1)
 
 ### Commands Using Utilities
 
-- `/implement` → checkpointing, complexity, dependencies
-- `/orchestrate` → collaboration, dependencies
-- `/plan` → learning recommendations
+- `/implement` → checkpointing, complexity, adaptive planning
+- `/orchestrate` → collaboration (handle-collaboration.sh)
 - `/plan-from-template` → template parsing, substitution
-- `/analyze-patterns` → similarity matching
-- `/resume-implement` → checkpoint loading
+- `/expand` `/collapse` → progressive plan parsing
+- `/analyze` → agent registry parsing
 
 ### Hooks Using Utilities
 
@@ -277,7 +219,7 @@ score = (keyword_similarity × 0.6) + (type_match × 0.3) + (phase_match × 0.1)
 ### Agents Using Utilities
 
 - `plan-architect` → complexity analysis
-- `research-specialist` → learning data (via commands)
+- All agents → collaboration protocol (handle-collaboration.sh)
 
 ## Utility Development
 
@@ -324,11 +266,11 @@ echo '{"state":"test"}' | ./save-checkpoint.sh implement -
 # Test template substitution
 echo '{"entity":"User"}' | ./substitute-variables.sh template.yaml -
 
-# Test similarity matching
-cat workflow.json | ./match-similar-workflows.sh -
-
 # Test error enhancement
 ./analyze-error.sh "SyntaxError: line 42" '{"file":"test.lua"}'
+
+# Test collaboration
+./handle-collaboration.sh '{"action":"REQUEST_AGENT","agent_type":"code-writer"}'
 ```
 
 ## Documentation Standards
@@ -345,52 +287,50 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 
 ## Navigation
 
-### Utility Scripts
-- [analyze-error.sh](analyze-error.sh) - Error enhancement
-- [analyze-phase-complexity.sh](analyze-phase-complexity.sh) - Complexity scoring
-- [cleanup-checkpoints.sh](cleanup-checkpoints.sh) - Checkpoint cleanup
-- [collect-learning-data.sh](collect-learning-data.sh) - Pattern capture
-- [generate-recommendations.sh](generate-recommendations.sh) - Recommendations
-- [handle-collaboration.sh](handle-collaboration.sh) - Agent collaboration
-- [list-checkpoints.sh](list-checkpoints.sh) - Checkpoint listing
-- [load-checkpoint.sh](load-checkpoint.sh) - State loading
-- [match-similar-workflows.sh](match-similar-workflows.sh) - Similarity matching
-- [parse-phase-dependencies.sh](parse-phase-dependencies.sh) - Dependency graph
-- [parse-template.sh](parse-template.sh) - Template parsing
-- [save-checkpoint.sh](save-checkpoint.sh) - State saving
-- [substitute-variables.sh](substitute-variables.sh) - Variable substitution
+### Utility Scripts (Active)
+- [adaptive-planning-logger.sh](adaptive-planning-logger.sh) - Adaptive planning event logging
+- [analyze-error.sh](analyze-error.sh) - Error enhancement with fix suggestions
+- [checkpoint-utils.sh](checkpoint-utils.sh) - Checkpoint management functions
+- [complexity-utils.sh](complexity-utils.sh) - Phase complexity scoring
+- [error-utils.sh](error-utils.sh) - Error classification and recovery
+- [handle-collaboration.sh](handle-collaboration.sh) - Agent collaboration protocol
+- [parse-adaptive-plan.sh](parse-adaptive-plan.sh) - Progressive plan structure parsing
+- [parse-template.sh](parse-template.sh) - Template validation and parsing
+- [substitute-variables.sh](substitute-variables.sh) - Variable substitution engine
 
 ### Related
 - [← Parent Directory](../README.md)
 - [checkpoints/](../checkpoints/README.md) - Uses checkpoint utilities
-- [learning/](../learning/README.md) - Uses learning utilities
 - [templates/](../templates/README.md) - Uses template utilities
 - [commands/](../commands/README.md) - Commands using utilities
+- [tests/](../tests/README.md) - Test suites for utilities
 
 ## Quick Reference
 
 ### Common Operations
 
 ```bash
-# Checkpoint management
-./save-checkpoint.sh implement '{"phase":3,"state":{...}}'
-./load-checkpoint.sh implement my-project
-./list-checkpoints.sh
-./cleanup-checkpoints.sh 7
-
-# Learning system
-./collect-learning-data.sh '{"workflow":"feature","keywords":[...]}'
-./match-similar-workflows.sh '{"keywords":["auth","user"]}'
-./generate-recommendations.sh matches.json
-
 # Template system
-./parse-template.sh crud-feature.yaml
-./substitute-variables.sh template.yaml '{"entity":"User"}'
+./parse-template.sh .claude/templates/crud-feature.yaml validate
+./substitute-variables.sh template.yaml '{"entity":"User","fields":["name","email"]}'
 
-# Error analysis
-./analyze-error.sh "Error message" '{"file":"test.lua","line":42}'
+# Progressive plan parsing
+./parse-adaptive-plan.sh detect_structure_level specs/plans/015_feature.md
+./parse-adaptive-plan.sh is_plan_expanded specs/plans/015_feature/
+./parse-adaptive-plan.sh list_expanded_phases specs/plans/015_feature/
 
-# Complexity & dependencies
-./analyze-phase-complexity.sh '{"tasks":["..."]}'
-./parse-phase-dependencies.sh plan.md
+# Checkpoint utilities
+source ./checkpoint-utils.sh
+save_checkpoint "implement" '{"phase":3,"progress":"50%"}'
+load_checkpoint "implement" "feature-123"
+
+# Complexity analysis
+source ./complexity-utils.sh
+calculate_phase_complexity '{"tasks":5,"dependencies":["phase_1"],"estimated_hours":"8"}'
+
+# Error enhancement
+./analyze-error.sh "SyntaxError: unexpected token" '{"file":"init.lua","line":42}'
+
+# Collaboration
+./handle-collaboration.sh '{"action":"REQUEST_AGENT","agent_type":"code-writer"}'
 ```

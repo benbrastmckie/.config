@@ -17,8 +17,8 @@ I'll analyze system performance metrics based on the specified type.
 
 **Types**:
 - `agents` - Analyze agent performance metrics and efficiency
-- `patterns` - Analyze workflow patterns and learning data
-- `all` - Analyze both agents and patterns (default)
+- `patterns` - (Not implemented) Reserved for future workflow pattern analysis
+- `all` - Currently equivalent to `agents` only
 
 **Search Pattern** (optional): Filter results by keyword
 
@@ -102,84 +102,33 @@ Recommendations:
 
 ### Pattern Analysis (`/analyze patterns`)
 
-Analyzes learning data to provide insights on workflow patterns, success rates, and optimization opportunities.
+**Status**: Not Implemented
 
-**Process**:
+This feature was planned for analyzing workflow patterns from historical learning data, but the learning system was removed (see Plan 034) due to:
+- Limited value in single-user environment
+- High maintenance complexity
+- Cold start problem (requires months of data)
+- Better alternatives (templates provide reliable patterns upfront)
 
-1. **Load Learning Data**
-   - Patterns: `.claude/learning/patterns.jsonl`
-   - Antipatterns: `.claude/learning/antipatterns.jsonl`
-   - Optimizations: `.claude/learning/optimizations.jsonl`
+**Alternative Approaches**:
+- Use `/plan-from-template` for proven workflow patterns
+- Review project metrics in `.claude/data/metrics/*.jsonl` manually
+- Consult implementation summaries in `specs/summaries/` for successful workflows
 
-2. **Filter by Search Pattern** (if provided)
-   - Match workflow names, descriptions, or context
-   - Show only relevant patterns
-
-3. **Aggregate Statistics**
-   - Success rate by workflow type
-   - Common failure modes
-   - Average execution time
-   - Most frequent patterns
-
-4. **Identify Trends**
-   - Improving patterns (success rate increasing)
-   - Degrading patterns (success rate decreasing)
-   - Emerging patterns (new workflows)
-
-5. **Generate Insights**
-   - Most reliable workflows
-   - Common antipatterns to avoid
-   - Suggested optimizations
-   - Workflow improvement opportunities
-
-**Output Example**:
-```
-=== Workflow Pattern Analysis ===
-
-Learning Data Summary:
-- Success patterns: 45
-- Failure patterns: 12
-- Optimizations: 8
-
-Top Patterns:
-1. Feature Implementation (32 occurrences, 94% success)
-   Avg Duration: 18.5 minutes
-   Best Practice: Use /plan before /implement
-
-2. Bug Fix Workflow (28 occurrences, 89% success)
-   Avg Duration: 12.3 minutes
-   Best Practice: Use /debug to analyze before fixing
-
-Common Antipatterns:
-- Skipping tests before commit (15 failures)
-- Large uncommitted changes (8 failures)
-
-Recommendations:
-- Always run /test before commits
-- Break large changes into smaller phases
-```
+**Reserved for Future**:
+If workflow pattern analysis is needed in the future, consider:
+- External analytics tools (process metrics JSONL files)
+- Metrics visualization dashboard
+- Multi-user collaborative learning (team-wide patterns)
 
 ### Combined Analysis (`/analyze all`)
 
-Runs both agent and pattern analysis, providing a comprehensive view of system performance.
+**Current Behavior**: Equivalent to `/analyze agents`
+
+Currently runs only agent performance analysis. Pattern analysis is not implemented (see Pattern Analysis section above).
 
 **Output**:
-```
-=== Comprehensive System Analysis ===
-
-[Agent Performance section]
-[Pattern Analysis section]
-
-=== Overall System Health ===
-- Agent Efficiency: 85% average
-- Workflow Success Rate: 91%
-- System Status: Healthy
-
-Top Recommendations:
-1. [Highest priority recommendation across both analyses]
-2. [Second priority]
-3. [Third priority]
-```
+Same as `/analyze agents` output.
 
 ## Integration with Other Commands
 
@@ -187,20 +136,19 @@ This command helps optimize the agential system by:
 
 **For Users**:
 - Understand which agents perform best
-- Learn which workflows are most reliable
-- Identify areas for improvement
+- Identify agents needing optimization
+- Guide workflow improvements
 
 **For System**:
 - Guide agent improvements
 - Inform adaptive planning decisions
-- Support continuous learning
 
 ## Notes
 
-- Analysis requires historical data (agent invocations, workflow completions)
-- First run may show limited data
-- Recommendations improve as more data is collected
-- Use findings to refine workflows and agent usage
+- Analysis requires historical data from agent registry
+- First run may show limited data if agents haven't been used
+- Recommendations improve as more agents are invoked
+- Use findings to refine agent usage and workflows
 
 ## Migration Note
 
