@@ -57,12 +57,12 @@ I'll analyze the feature requirements to determine:
 - Alignment with report recommendations (if applicable)
 
 **Complexity Evaluation** (Progressive Planning):
-- Use `.claude/utils/analyze-plan-requirements.sh` to estimate:
+- Use `.claude/lib/analyze-plan-requirements.sh` to estimate:
   - Task count
   - Phase count
   - Estimated hours
   - Dependency complexity
-- Use `.claude/utils/calculate-plan-complexity.sh` for informational scoring only
+- Use `.claude/lib/calculate-plan-complexity.sh` for informational scoring only
 - **All plans start as single files (Level 0)** regardless of complexity
 - If complexity score ≥50: Show hint about using `/expand-phase` during implementation
 - Complexity score stored in metadata for future reference
@@ -409,8 +409,8 @@ Task {
           - Next plan number: [NNN]
 
           STEP 1: Evaluate Complexity (Informational Only)
-          - Run: .claude/utils/analyze-plan-requirements.sh \"[feature description]\"
-          - Run: .claude/utils/calculate-plan-complexity.sh [tasks] [phases] [hours] [deps]
+          - Run: .claude/lib/analyze-plan-requirements.sh \"[feature description]\"
+          - Run: .claude/lib/calculate-plan-complexity.sh [tasks] [phases] [hours] [deps]
           - Calculate complexity score for metadata
           - Note: Score is informational; all plans start as Level 0
 

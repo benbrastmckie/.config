@@ -148,7 +148,7 @@ This command supports all three progressive structure levels:
 **Step 0: Detect Plan Structure Level**
 ```bash
 # Use adaptive plan parser to detect structure
-LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 # Returns: 0 (single-file), 1 (phase-expanded), or 2 (stage-expanded)
 ```
 
@@ -203,7 +203,7 @@ Before executing phases, I will analyze phase dependencies to enable parallel ex
 **Step 1: Parse Dependencies**
 ```bash
 # Use dependency parser to generate execution waves
-WAVES=$(.claude/utils/parse-phase-dependencies.sh "$PLAN_FILE")
+WAVES=$(.claude/lib/parse-phase-dependencies.sh "$PLAN_FILE")
 ```
 
 **Step 2: Group Phases into Waves**
@@ -283,7 +283,7 @@ Before implementing each phase, I will analyze its complexity to determine wheth
 
 2. **Run complexity analyzer**:
    ```bash
-   .claude/utils/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
+   .claude/lib/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
    ```
 
 3. **Parse analyzer output** to get:
@@ -382,10 +382,10 @@ Before implementing the phase, check if it's already expanded and display curren
 
 ```bash
 # Detect plan structure level
-LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 # Check if current phase is expanded
-IS_PHASE_EXPANDED=$(.claude/utils/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
+IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
 ```
 
 **Display Structure Information:**
@@ -559,7 +559,7 @@ If tests fail, provide enhanced error messages with fix suggestions:
 **Step 2: Run Error Analysis**
 ```bash
 # Analyze error output with enhanced error tool
-.claude/utils/analyze-error.sh "$ERROR_OUTPUT"
+.claude/lib/analyze-error.sh "$ERROR_OUTPUT"
 ```
 
 **Step 3: Display Enhanced Error Message**
@@ -618,7 +618,7 @@ After each phase implementation (successful or with errors), check if plan revis
 
 ```bash
 # Load current checkpoint
-CHECKPOINT=$(.claude/utils/load-checkpoint.sh implement "$PROJECT_NAME")
+CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement "$PROJECT_NAME")
 REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r '.replanning_count // 0')
 PHASE_REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r ".replan_phase_counts.phase_${CURRENT_PHASE} // 0")
 ```
@@ -636,7 +636,7 @@ Three trigger types are checked in order:
 Detection after successful phase completion:
 ```bash
 # Calculate phase complexity score
-COMPLEXITY_RESULT=$(.claude/utils/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
+COMPLEXITY_RESULT=$(.claude/lib/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
 COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.complexity_score')
 
 # Check threshold
@@ -658,7 +658,7 @@ if [ "$TEST_RESULT" = "failed" ]; then
     TRIGGER_TYPE="add_phase"
     TRIGGER_REASON="Two consecutive test failures in phase $CURRENT_PHASE"
     # Analyze failure logs for missing dependencies
-    FAILURE_ANALYSIS=$(.claude/utils/analyze-error.sh "$ERROR_OUTPUT")
+    FAILURE_ANALYSIS=$(.claude/lib/analyze-error.sh "$ERROR_OUTPUT")
   fi
 fi
 ```
@@ -731,7 +731,7 @@ if [ "$REVISION_STATUS" = "success" ]; then
     }')
 
   # Update checkpoint
-  .claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" \
+  .claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" \
     --replan-count "$REPLAN_COUNT" \
     --phase-replan-count "phase_${CURRENT_PHASE}=$PHASE_REPLAN_COUNT" \
     --last-replan-reason "$TRIGGER_REASON" \
@@ -922,7 +922,7 @@ Only check phases that meet BOTH criteria:
 
 ```bash
 # Check if phase is expanded and completed
-IS_PHASE_EXPANDED=$(.claude/utils/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
+IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
 IS_PHASE_COMPLETED=$(grep -q "\[COMPLETED\]" "$PHASE_FILE" && echo "true" || echo "false")
 
 if [ "$IS_PHASE_EXPANDED" = "true" ] && [ "$IS_PHASE_COMPLETED" = "true" ]; then
@@ -1271,7 +1271,7 @@ find . -path "*/specs/plans/*.md" -type f -exec ls -t {} + 2>/dev/null
 find . -path "*/specs/plans/*/*.md" -type f -name "*_*.md" -exec ls -t {} + 2>/dev/null
 
 # 2. For each plan, use progressive parser to check status:
-LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 # 3. Select the first incomplete plan
 ```
@@ -1389,7 +1389,7 @@ Before starting implementation, I'll check for existing checkpoints that might i
 
 ```bash
 # Load most recent implement checkpoint
-CHECKPOINT=$(.claude/utils/load-checkpoint.sh implement 2>/dev/null || echo "")
+CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement 2>/dev/null || echo "")
 ```
 
 ### Step 2: Interactive Resume Prompt (if checkpoint found)
@@ -1441,7 +1441,7 @@ EOF
 
 # Save checkpoint
 PROJECT_NAME=$(basename "$PLAN_PATH" .md | sed 's/^[0-9]*_//')
-.claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
+.claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
 ```
 
 ### Step 5: Cleanup on Completion
@@ -1463,7 +1463,7 @@ STATE_JSON=$(cat <<EOF
 }
 EOF
 )
-.claude/utils/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
+.claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
 mv .claude/checkpoints/implement_${PROJECT_NAME}_*.json .claude/checkpoints/failed/
 ```
 

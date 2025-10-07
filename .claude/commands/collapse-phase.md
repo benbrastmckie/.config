@@ -52,7 +52,7 @@ else
 fi
 
 # Detect structure level
-source .claude/utils/parse-adaptive-plan.sh
+source .claude/lib/parse-adaptive-plan.sh
 structure_level=$(detect_structure_level "$plan_path")
 
 if [[ "$structure_level" != "1" ]]; then

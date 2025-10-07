@@ -71,7 +71,7 @@ find . -path "*/specs/plans/*/*.md" -type f -name "*_*.md" -exec ls -t {} + 2>/d
 
 # For each plan, detect structure level and check status
 for plan in $plans; do
-  LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$plan")
+  LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$plan")
 
   # Read phases and check completion markers
   # Look for first phase without [COMPLETED] marker or with unchecked tasks
