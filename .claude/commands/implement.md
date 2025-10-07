@@ -29,6 +29,14 @@ This command includes intelligent plan revision capabilities that detect when re
 - Continues implementation with revised plan
 - Maximum 2 replans per phase prevents infinite loops
 
+**Shared Utilities Integration:**
+- **Checkpoint Management**: Uses `.claude/lib/checkpoint-utils.sh` for workflow state persistence
+- **Complexity Analysis**: Uses `.claude/lib/complexity-utils.sh` for phase complexity scoring
+- **Adaptive Logging**: Uses `.claude/lib/adaptive-planning-logger.sh` for trigger evaluation logging
+- **Error Handling**: Uses `.claude/lib/error-utils.sh` for error classification and recovery
+
+These shared utilities provide consistent, tested implementations across all commands.
+
 **Safety:**
 - Loop prevention with replan counters tracked in checkpoints
 - Replan history logged for audit trail
