@@ -61,6 +61,20 @@ Commands should check CLAUDE.md in priority order:
 2. Subdirectory-specific CLAUDE.md files
 3. Language-specific test patterns
 
+### Claude Code Testing
+- **Test Location**: `.claude/tests/`
+- **Test Runner**: `./run_all_tests.sh`
+- **Test Pattern**: `test_*.sh` (Bash test scripts)
+- **Coverage Target**: ≥80% for modified code, ≥60% baseline
+- **Test Categories**:
+  - `test_parsing_utilities.sh` - Plan parsing functions
+  - `test_command_integration.sh` - Command workflows
+  - `test_progressive_*.sh` - Expansion/collapse operations
+  - `test_state_management.sh` - Checkpoint operations
+  - `test_shared_utilities.sh` - Utility library functions
+  - `test_adaptive_planning.sh` - Adaptive planning integration (16 tests)
+  - `test_revise_automode.sh` - /revise auto-mode integration (18 tests)
+
 ### Neovim Testing
 - **Test Commands**: `:TestNearest`, `:TestFile`, `:TestSuite`, `:TestLast`
 - **Test Pattern**: `*_spec.lua`, `test_*.lua` files in `tests/` or adjacent to source
@@ -72,6 +86,7 @@ Commands should check CLAUDE.md in priority order:
 - Aim for >80% coverage on new code
 - All public APIs must have tests
 - Critical paths require integration tests
+- Regression tests for all bug fixes
 
 ## Code Standards
 [Used by: /implement, /refactor, /plan]
@@ -89,6 +104,40 @@ Commands should check CLAUDE.md in priority order:
 - **Markdown**: Use Unicode box-drawing for diagrams, follow CommonMark spec
 - **Shell Scripts**: Follow ShellCheck recommendations, use bash -e for error handling
 
+## Adaptive Planning
+[Used by: /implement]
+
+### Overview
+`/implement` includes intelligent plan revision capabilities that automatically detect when replanning is needed during execution.
+
+### Automatic Triggers
+1. **Complexity Detection**: Phase complexity score >8 or >10 tasks triggers phase expansion
+2. **Test Failure Patterns**: 2+ consecutive test failures in same phase suggests missing prerequisites
+3. **Scope Drift**: Manual flag `--report-scope-drift "description"` for discovered out-of-scope work
+
+### Behavior
+- Automatically invokes `/revise --auto-mode` when triggers detected
+- Updates plan structure (expands phases, adds phases, or updates tasks)
+- Continues implementation with revised plan
+- Maximum 2 replans per phase prevents infinite loops
+
+### Logging
+- **Log File**: `.claude/logs/adaptive-planning.log`
+- **Log Rotation**: 10MB max, 5 files retained
+- **Query Logs**: Use functions from `.claude/lib/adaptive-planning-logger.sh`
+
+### Loop Prevention
+- Replan counters tracked in checkpoints
+- Max 2 replans per phase enforced
+- Replan history logged for audit trail
+- User escalation when limit exceeded
+
+### Utilities
+- **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh`
+- **Complexity Analysis**: `.claude/lib/complexity-utils.sh`
+- **Adaptive Logging**: `.claude/lib/adaptive-planning-logger.sh`
+- **Error Handling**: `.claude/lib/error-utils.sh`
+
 ## Development Workflow
 
 ### Planning and Implementation
@@ -96,6 +145,7 @@ Commands should check CLAUDE.md in priority order:
 2. Generate implementation plans in `specs/plans/` based on research
 3. Execute plans phase-by-phase with testing and commits
 4. Generate summaries in `specs/summaries/` linking plans to code
+5. Adaptive planning automatically adjusts plans during implementation
 
 ### Git Workflow
 - Feature branches for new development

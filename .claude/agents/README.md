@@ -2,6 +2,27 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
+**Current Agent Count**: 8 specialized agents
+
+## Recent Changes
+
+### Shared Protocols (2025-10-06)
+Agents now reference shared protocol documentation in `.claude/agents/shared/`:
+- `progress-streaming-protocol.md` - Standard progress reporting format
+- `error-handling-guidelines.md` - Consistent error handling patterns
+
+**Benefits**:
+- ~200 LOC reduction through duplication removal
+- Standardized behavior across all agents
+- Easier agent creation with documented patterns
+
+### Agent Standardization (2025-10-06)
+All agents now follow consistent structure:
+1. **Core Responsibility** - Single clear purpose
+2. **Capabilities** - What the agent can do
+3. **Protocols** - References to shared documentation
+4. **Specialization** - Unique agent-specific logic
+
 ## Purpose
 
 Agents enable modular, focused assistance by providing:
