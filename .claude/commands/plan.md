@@ -64,7 +64,7 @@ I'll analyze the feature requirements to determine:
   - Dependency complexity
 - Use `.claude/lib/calculate-plan-complexity.sh` for informational scoring only
 - **All plans start as single files (Level 0)** regardless of complexity
-- If complexity score ≥50: Show hint about using `/expand-phase` during implementation
+- If complexity score ≥50: Show hint about using `/expand phase` during implementation
 - Complexity score stored in metadata for future reference
 
 ### 3. Location Determination and Registration
@@ -166,8 +166,8 @@ Based on discovered standards, I'll ensure:
 - Metadata includes Structure Level: 0 and Complexity Score
 
 **Expansion happens during implementation**:
-- Use `/expand-phase <plan> <phase-num>` to extract complex phases to separate files (Level 0 → 1)
-- Use `/expand-stage <phase> <stage-num>` to extract complex stages to separate files (Level 1 → 2)
+- Use `/expand phase <plan> <phase-num>` to extract complex phases to separate files (Level 0 → 1)
+- Use `/expand stage <phase> <stage-num>` to extract complex stages to separate files (Level 1 → 2)
 - Structure grows organically based on actual implementation needs, not predictions
 
 ### 8.5. Agent-Based Plan Phase Analysis
@@ -213,14 +213,14 @@ The following phases may benefit from expansion:
 
 Phase [N]: [Phase Name]
 Rationale: [Agent's reasoning based on understanding the phase]
-Command: /expand-phase <plan-path> [N]
+Command: /expand phase <plan-path> [N]
 
 Phase [M]: [Phase Name]
 Rationale: [Agent's reasoning based on understanding the phase]
-Command: /expand-phase <plan-path> [M]
+Command: /expand phase <plan-path> [M]
 
 Note: Expansion is optional. You can expand now before starting
-implementation, or expand during implementation using /expand-phase
+implementation, or expand during implementation using /expand phase
 if phases prove too complex.
 
 Overall Complexity Score: [X] (stored in plan metadata)
@@ -242,7 +242,7 @@ tasks that work well together in the single-file format."]
 Overall Complexity Score: [X] (stored in plan metadata)
 
 Note: Phases can be expanded during implementation if needed using
-/expand-phase <plan-path> <phase-num>.
+/expand phase <plan-path> <phase-num>.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -271,7 +271,7 @@ The agent-based analysis from Step 8.5 is presented immediately after plan creat
 - Gives user opportunity to expand phases immediately if desired
 
 **User Options After Analysis:**
-1. **Expand now**: Use recommended `/expand-phase` commands before starting implementation
+1. **Expand now**: Use recommended `/expand phase` commands before starting implementation
 2. **Expand during implementation**: Wait and expand if phases prove complex
 3. **Keep inline**: Continue with Level 0 structure throughout implementation
 4. **Selective expansion**: Expand some recommended phases but not others
@@ -418,7 +418,7 @@ Task {
           - Create: specs/plans/NNN_feature_name.md
           - Include all phases and tasks inline
           - Add Structure Level: 0 and Complexity Score to metadata
-          - Add hint if complexity ≥50: \"Consider /expand-phase during implementation\"
+          - Add hint if complexity ≥50: \"Consider /expand phase during implementation\"
 
           STEP 3: Requirements
           - Use /implement-compatible checkbox format: - [ ]
