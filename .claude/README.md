@@ -66,8 +66,10 @@ Reusable plan templates with variable substitution:
 - CRUD features, API endpoints, refactoring patterns
 - Custom templates in `templates/custom/`
 - 60-80% faster than manual planning
+- Simple variables, conditionals, and array iteration
+- Use `/plan-from-template` command
 
-**Location**: `templates/` | See [templates/README.md](templates/README.md)
+**Location**: `templates/` | See [templates/README.md](templates/README.md) | [Template Guide](docs/template-system-guide.md)
 
 ### Learning (Adaptive Intelligence)
 Pattern recognition and workflow recommendations:
