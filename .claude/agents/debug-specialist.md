@@ -79,29 +79,36 @@ Present 2-3 solutions when possible:
 
 ```
 Task {
-  subagent_type = "debug-specialist",
-  description = "Investigate authentication failure",
-  prompt = "Debug authentication failing for certain users:
+  subagent_type: "general-purpose"
+  description: "Investigate authentication failure using debug-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-  Error message: 'Session validation failed: nil token'
+    You are acting as a Debug Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Investigation scope:
-  - Review auth middleware code
-  - Check session management logic
-  - Examine error logs for patterns
-  - Identify conditions triggering failure
+    Debug authentication failing for certain users:
 
-  Evidence to gather:
-  - Error logs from .claude/errors/
-  - Auth middleware code (lua/auth/)
-  - Session configuration
-  - Recent changes to auth system
+    Error message: 'Session validation failed: nil token'
 
-  Provide:
-  - Root cause analysis
-  - Reproduction steps
-  - 2-3 potential solutions with tradeoffs
-  - Recommended fix with rationale"
+    Investigation scope:
+    - Review auth middleware code
+    - Check session management logic
+    - Examine error logs for patterns
+    - Identify conditions triggering failure
+
+    Evidence to gather:
+    - Error logs from .claude/errors/
+    - Auth middleware code (lua/auth/)
+    - Session configuration
+    - Recent changes to auth system
+
+    Provide:
+    - Root cause analysis
+    - Reproduction steps
+    - 2-3 potential solutions with tradeoffs
+    - Recommended fix with rationale
 }
 ```
 
@@ -109,28 +116,35 @@ Task {
 
 ```
 Task {
-  subagent_type = "debug-specialist",
-  description = "Analyze test failures after refactoring",
-  prompt = "Investigate why 5 tests are failing after config refactor:
+  subagent_type: "general-purpose"
+  description: "Analyze test failures after refactoring using debug-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-  Failing tests:
-  - test_load_config_from_file
-  - test_validate_required_fields
-  - test_merge_defaults
-  - test_handle_missing_file
-  - test_parse_nested_tables
+    You are acting as a Debug Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Analysis needed:
-  - Review test output and error messages
-  - Compare old vs new config implementation
-  - Identify breaking changes in API
-  - Determine if tests or code need fixing
+    Investigate why 5 tests are failing after config refactor:
 
-  Output:
-  - Categorize failures by type
-  - Identify root cause for each category
-  - Recommend fixes (update tests vs fix code)
-  - Priority order for addressing failures"
+    Failing tests:
+    - test_load_config_from_file
+    - test_validate_required_fields
+    - test_merge_defaults
+    - test_handle_missing_file
+    - test_parse_nested_tables
+
+    Analysis needed:
+    - Review test output and error messages
+    - Compare old vs new config implementation
+    - Identify breaking changes in API
+    - Determine if tests or code need fixing
+
+    Output:
+    - Categorize failures by type
+    - Identify root cause for each category
+    - Recommend fixes (update tests vs fix code)
+    - Priority order for addressing failures
 }
 ```
 
@@ -138,30 +152,37 @@ Task {
 
 ```
 Task {
-  subagent_type = "debug-specialist",
-  description = "Debug integration test timeout",
-  prompt = "Integration test timing out after 30 seconds:
+  subagent_type: "general-purpose"
+  description: "Debug integration test timeout using debug-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-  Test: test_full_workflow_with_async_operations
-  Symptom: Hangs during async promise resolution
+    You are acting as a Debug Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Diagnostic steps:
-  1. Review async/promise implementation
-  2. Check for deadlock or race conditions
-  3. Examine coroutine state management
-  4. Look for missing callbacks or error handlers
+    Integration test timing out after 30 seconds:
 
-  Gather evidence:
-  - Async module code
-  - Test code and setup
-  - Any partial output before timeout
-  - Similar working tests for comparison
+    Test: test_full_workflow_with_async_operations
+    Symptom: Hangs during async promise resolution
 
-  Provide:
-  - Likely cause of hang
-  - Reproduction in isolated test
-  - Recommended fix
-  - Prevention strategy for future"
+    Diagnostic steps:
+    1. Review async/promise implementation
+    2. Check for deadlock or race conditions
+    3. Examine coroutine state management
+    4. Look for missing callbacks or error handlers
+
+    Gather evidence:
+    - Async module code
+    - Test code and setup
+    - Any partial output before timeout
+    - Similar working tests for comparison
+
+    Provide:
+    - Likely cause of hang
+    - Reproduction in isolated test
+    - Recommended fix
+    - Prevention strategy for future
 }
 ```
 

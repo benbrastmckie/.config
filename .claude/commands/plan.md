@@ -267,12 +267,17 @@ This command can leverage specialized agents for research and planning:
 ```yaml
 # Optional: If feature requires codebase analysis or best practices research
 Task {
-  subagent_type: "research-specialist"
-  description: "Research [aspect] for [feature]"
-  prompt: "
-    Analyze existing [component] implementations in codebase.
-    Research industry best practices for [technology].
-    Summarize findings in max 150 words.
+  subagent_type: "general-purpose"
+  description: "Research [aspect] for [feature] using research-specialist protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/research-specialist.md
+
+          You are acting as a Research Specialist with the tools and constraints
+          defined in that file.
+
+          Analyze existing [component] implementations in codebase.
+          Research industry best practices for [technology].
+          Summarize findings in max 150 words.
   "
 }
 ```
@@ -280,46 +285,51 @@ Task {
 #### Stage 2: Plan Generation (Progressive)
 ```yaml
 Task {
-  subagent_type: "plan-architect"
-  description: "Create progressive implementation plan for [feature]"
-  prompt: "
-    **Thinking Mode**: [think|think hard|think harder] (based on feature complexity)
+  subagent_type: "general-purpose"
+  description: "Create progressive implementation plan for [feature] using plan-architect protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/plan-architect.md
 
-    Plan Task: Create progressive plan for [feature]
+          You are acting as a Plan Architect with the tools and constraints
+          defined in that file.
 
-    Context:
-    - Feature description: [user input]
-    - Research findings: [if stage 1 completed]
-    - Project standards: CLAUDE.md at [path]
-    - Report paths: [if provided]
-    - Specs directory: [path/to/specs/]
-    - Next plan number: [NNN]
+          **Thinking Mode**: [think|think hard|think harder] (based on feature complexity)
 
-    STEP 1: Evaluate Complexity (Informational Only)
-    - Run: .claude/utils/analyze-plan-requirements.sh \"[feature description]\"
-    - Run: .claude/utils/calculate-plan-complexity.sh [tasks] [phases] [hours] [deps]
-    - Calculate complexity score for metadata
-    - Note: Score is informational; all plans start as Level 0
+          Plan Task: Create progressive plan for [feature]
 
-    STEP 2: Create Single-File Plan (Structure Level 0)
-    - Create: specs/plans/NNN_feature_name.md
-    - Include all phases and tasks inline
-    - Add Structure Level: 0 and Complexity Score to metadata
-    - Add hint if complexity ≥50: \"Consider /expand-phase during implementation\"
+          Context:
+          - Feature description: [user input]
+          - Research findings: [if stage 1 completed]
+          - Project standards: CLAUDE.md at [path]
+          - Report paths: [if provided]
+          - Specs directory: [path/to/specs/]
+          - Next plan number: [NNN]
 
-    STEP 3: Requirements
-    - Use /implement-compatible checkbox format: - [ ]
-    - Include testing strategy for each phase
-    - Follow CLAUDE.md coding standards
-    - Add estimated complexity for each phase
-    - Include clear success criteria
-    - Add clear phase boundaries for future expansion if needed
+          STEP 1: Evaluate Complexity (Informational Only)
+          - Run: .claude/utils/analyze-plan-requirements.sh \"[feature description]\"
+          - Run: .claude/utils/calculate-plan-complexity.sh [tasks] [phases] [hours] [deps]
+          - Calculate complexity score for metadata
+          - Note: Score is informational; all plans start as Level 0
 
-    STEP 4: Output Summary
-    - Report complexity score (informational)
-    - List phase count and task count
-    - Provide path to plan file
-    - If complexity ≥50: Mention expansion option
+          STEP 2: Create Single-File Plan (Structure Level 0)
+          - Create: specs/plans/NNN_feature_name.md
+          - Include all phases and tasks inline
+          - Add Structure Level: 0 and Complexity Score to metadata
+          - Add hint if complexity ≥50: \"Consider /expand-phase during implementation\"
+
+          STEP 3: Requirements
+          - Use /implement-compatible checkbox format: - [ ]
+          - Include testing strategy for each phase
+          - Follow CLAUDE.md coding standards
+          - Add estimated complexity for each phase
+          - Include clear success criteria
+          - Add clear phase boundaries for future expansion if needed
+
+          STEP 4: Output Summary
+          - Report complexity score (informational)
+          - List phase count and task count
+          - Provide path to plan file
+          - If complexity ≥50: Mention expansion option
   "
 }
 ```

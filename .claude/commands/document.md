@@ -262,34 +262,39 @@ This command delegates documentation work to the `doc-writer` agent:
 ### Invocation Pattern
 ```yaml
 Task {
-  subagent_type: "doc-writer"
-  description: "Update documentation for [changes]"
-  prompt: "
-    Documentation Task: Update docs for [description]
+  subagent_type: "general-purpose"
+  description: "Update documentation for [changes] using doc-writer protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/doc-writer.md
 
-    Context:
-    - Change description: [user input or detected changes]
-    - Files modified: [list if known]
-    - Project standards: CLAUDE.md Documentation Policy
+          You are acting as a Doc Writer with the tools and constraints
+          defined in that file.
 
-    Requirements:
-    - Update all affected README.md files
-    - Maintain Unicode box-drawing for diagrams
-    - No emojis in content (UTF-8 encoding)
-    - Cross-reference specs properly
-    - Follow CommonMark specification
+          Documentation Task: Update docs for [description]
 
-    Updates needed:
-    1. Identify affected documentation files
-    2. Update module listings and descriptions
-    3. Update usage examples if API changed
-    4. Fix cross-references and navigation links
-    5. Ensure every directory has README.md
+          Context:
+          - Change description: [user input or detected changes]
+          - Files modified: [list if known]
+          - Project standards: CLAUDE.md Documentation Policy
 
-    Output:
-    - List of updated documentation files
-    - Summary of changes made
-    - Compliance verification
+          Requirements:
+          - Update all affected README.md files
+          - Maintain Unicode box-drawing for diagrams
+          - No emojis in content (UTF-8 encoding)
+          - Cross-reference specs properly
+          - Follow CommonMark specification
+
+          Updates needed:
+          1. Identify affected documentation files
+          2. Update module listings and descriptions
+          3. Update usage examples if API changed
+          4. Fix cross-references and navigation links
+          5. Ensure every directory has README.md
+
+          Output:
+          - List of updated documentation files
+          - Summary of changes made
+          - Compliance verification
   "
 }
 ```

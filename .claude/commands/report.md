@@ -148,32 +148,37 @@ The `/report` command typically executes research directly for optimal context m
 For complex, multi-faceted topics:
 ```yaml
 Task {
-  subagent_type: "research-specialist"
-  description: "Research [specific aspect] of [topic]"
-  prompt: "
-    Research Task: [Aspect] investigation
+  subagent_type: "general-purpose"
+  description: "Research [specific aspect] of [topic] using research-specialist protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/research-specialist.md
 
-    Context:
-    - Topic: [User's topic]
-    - Focus Area: [Specific aspect to research]
-    - Project Standards: CLAUDE.md
+          You are acting as a Research Specialist with the tools and constraints
+          defined in that file.
 
-    Investigation:
-    1. Codebase Analysis
-       - Search for existing implementations
-       - Identify patterns and conventions
-       - Note relevant file locations
+          Research Task: [Aspect] investigation
 
-    2. Best Practices Research
-       - Industry standards (2025)
-       - Framework-specific recommendations
-       - Trade-offs and considerations
+          Context:
+          - Topic: [User's topic]
+          - Focus Area: [Specific aspect to research]
+          - Project Standards: CLAUDE.md
 
-    Output: Max 150-word summary with:
-    - Key findings
-    - Existing patterns
-    - Recommendations
-    - File references
+          Investigation:
+          1. Codebase Analysis
+             - Search for existing implementations
+             - Identify patterns and conventions
+             - Note relevant file locations
+
+          2. Best Practices Research
+             - Industry standards (2025)
+             - Framework-specific recommendations
+             - Trade-offs and considerations
+
+          Output: Max 150-word summary with:
+          - Key findings
+          - Existing patterns
+          - Recommendations
+          - File references
   "
 }
 ```

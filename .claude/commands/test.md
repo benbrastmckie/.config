@@ -194,38 +194,43 @@ This command can delegate test execution to the `test-specialist` agent:
 ### Invocation Pattern
 ```yaml
 Task {
-  subagent_type: "test-specialist"
-  description: "Run tests for [target]"
-  prompt: "
-    Test Task: Execute tests for [target]
+  subagent_type: "general-purpose"
+  description: "Run tests for [target] using test-specialist protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/test-specialist.md
 
-    Context:
-    - Target: [feature/module/file from user]
-    - Test Commands: [from CLAUDE.md or detected]
-    - Project Standards: CLAUDE.md Testing Protocols
+          You are acting as a Test Specialist with the tools and constraints
+          defined in that file.
 
-    Execution:
-    1. Determine appropriate test command
-       - Check CLAUDE.md for test commands
-       - Detect test framework from project
-       - Run appropriate tests for target
+          Test Task: Execute tests for [target]
 
-    2. Execute tests and capture output
-       - Run test command via Bash
-       - Capture stdout and stderr
-       - Note execution time
+          Context:
+          - Target: [feature/module/file from user]
+          - Test Commands: [from CLAUDE.md or detected]
+          - Project Standards: CLAUDE.md Testing Protocols
 
-    3. Analyze results
-       - Count passed/failed/skipped
-       - Extract error messages for failures
-       - Categorize errors (compilation, runtime, assertion)
-       - Calculate coverage if available
+          Execution:
+          1. Determine appropriate test command
+             - Check CLAUDE.md for test commands
+             - Detect test framework from project
+             - Run appropriate tests for target
 
-    Output Format:
-    - Summary: X passed, Y failed, Z skipped
-    - Failure details with file:line references
-    - Error categorization
-    - Suggested next steps if failures found
+          2. Execute tests and capture output
+             - Run test command via Bash
+             - Capture stdout and stderr
+             - Note execution time
+
+          3. Analyze results
+             - Count passed/failed/skipped
+             - Extract error messages for failures
+             - Categorize errors (compilation, runtime, assertion)
+             - Calculate coverage if available
+
+          Output Format:
+          - Summary: X passed, Y failed, Z skipped
+          - Failure details with file:line references
+          - Error categorization
+          - Suggested next steps if failures found
   "
 }
 ```

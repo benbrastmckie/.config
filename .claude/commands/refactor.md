@@ -209,49 +209,54 @@ This command delegates code analysis to the `code-reviewer` agent:
 ### Invocation Pattern
 ```yaml
 Task {
-  subagent_type: "code-reviewer"
-  description: "Analyze [scope] for refactoring opportunities"
-  prompt: "
-    Code Review Task: Analyze for refactoring
+  subagent_type: "general-purpose"
+  description: "Analyze [scope] for refactoring opportunities using code-reviewer protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/code-reviewer.md
 
-    Context:
-    - Scope: [file/directory/module from user]
-    - Concerns: [specific concerns if provided]
-    - Project Standards: CLAUDE.md
+          You are acting as a Code Reviewer with the tools and constraints
+          defined in that file.
 
-    Analysis Required:
-    1. Standards Compliance Check
-       - Indentation (2 spaces, no tabs)
-       - Naming conventions (snake_case)
-       - Line length (<100 chars)
-       - Error handling (pcall usage)
-       - No emojis in code
+          Code Review Task: Analyze for refactoring
 
-    2. Code Quality Assessment
-       - Code duplication
-       - Overly complex functions
-       - Unused variables/imports
-       - Potential bugs
-       - Organization issues
+          Context:
+          - Scope: [file/directory/module from user]
+          - Concerns: [specific concerns if provided]
+          - Project Standards: CLAUDE.md
 
-    3. Refactoring Opportunities
-       - Extract repeated code
-       - Simplify complex logic
-       - Improve naming
-       - Better error handling
-       - Module structure improvements
+          Analysis Required:
+          1. Standards Compliance Check
+             - Indentation (2 spaces, no tabs)
+             - Naming conventions (snake_case)
+             - Line length (<100 chars)
+             - Error handling (pcall usage)
+             - No emojis in code
 
-    Output Format:
-    Structured review with severity levels:
-    - Blocking: Must fix (tabs, emojis, critical issues)
-    - Warning: Should fix (length, naming, duplication)
-    - Suggestion: Consider improving (comments, optimization)
+          2. Code Quality Assessment
+             - Code duplication
+             - Overly complex functions
+             - Unused variables/imports
+             - Potential bugs
+             - Organization issues
 
-    Report includes:
-    - Specific file:line references
-    - Explanation of each issue
-    - Recommended fix
-    - Priority ranking
+          3. Refactoring Opportunities
+             - Extract repeated code
+             - Simplify complex logic
+             - Improve naming
+             - Better error handling
+             - Module structure improvements
+
+          Output Format:
+          Structured review with severity levels:
+          - Blocking: Must fix (tabs, emojis, critical issues)
+          - Warning: Should fix (length, naming, duplication)
+          - Suggestion: Consider improving (comments, optimization)
+
+          Report includes:
+          - Specific file:line references
+          - Explanation of each issue
+          - Recommended fix
+          - Priority ranking
   "
 }
 ```

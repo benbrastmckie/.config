@@ -125,45 +125,50 @@ This command can delegate test suite execution to the `test-specialist` agent:
 ### Invocation Pattern
 ```yaml
 Task {
-  subagent_type: "test-specialist"
-  description: "Run complete test suite"
-  prompt: "
-    Test Suite Task: Execute all project tests
+  subagent_type: "general-purpose"
+  description: "Run complete test suite using test-specialist protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/test-specialist.md
 
-    Context:
-    - Coverage requested: [yes/no from --coverage flag]
-    - Test Commands: [from CLAUDE.md Testing Protocols]
-    - Project Standards: CLAUDE.md
+          You are acting as a Test Specialist with the tools and constraints
+          defined in that file.
 
-    Execution:
-    1. Detect test suite command
-       - Check CLAUDE.md for :TestSuite or suite command
-       - Detect framework-specific commands
-       - Handle coverage flag if requested
+          Test Suite Task: Execute all project tests
 
-    2. Execute full test suite
-       - Run complete test suite via Bash
-       - Capture all output (stdout/stderr)
-       - Track execution time
+          Context:
+          - Coverage requested: [yes/no from --coverage flag]
+          - Test Commands: [from CLAUDE.md Testing Protocols]
+          - Project Standards: CLAUDE.md
 
-    3. Analyze comprehensive results
-       - Total count: passed/failed/skipped
-       - Group failures by type
-       - Extract coverage data if available
-       - Identify coverage gaps
-       - Calculate overall health metrics
+          Execution:
+          1. Detect test suite command
+             - Check CLAUDE.md for :TestSuite or suite command
+             - Detect framework-specific commands
+             - Handle coverage flag if requested
 
-    4. Generate detailed report
-       - Test suite summary
-       - Failure breakdown with diagnostics
-       - Coverage report (if --coverage)
-       - Recommendations for improvements
+          2. Execute full test suite
+             - Run complete test suite via Bash
+             - Capture all output (stdout/stderr)
+             - Track execution time
 
-    Output Format:
-    - Executive summary (pass/fail/skip counts)
-    - Detailed failure analysis
-    - Coverage metrics (if requested)
-    - Recommendations for test improvements
+          3. Analyze comprehensive results
+             - Total count: passed/failed/skipped
+             - Group failures by type
+             - Extract coverage data if available
+             - Identify coverage gaps
+             - Calculate overall health metrics
+
+          4. Generate detailed report
+             - Test suite summary
+             - Failure breakdown with diagnostics
+             - Coverage report (if --coverage)
+             - Recommendations for improvements
+
+          Output Format:
+          - Executive summary (pass/fail/skip counts)
+          - Detailed failure analysis
+          - Coverage metrics (if requested)
+          - Recommendations for test improvements
   "
 }
 ```

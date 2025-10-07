@@ -4,7 +4,41 @@ Comprehensive guide for integrating and using specialized agents in the Claude C
 
 ## Overview
 
-This project uses 8 specialized agents to handle specific workflow tasks. Each agent has restricted tool access and focused responsibilities, following the supervisor pattern for multi-agent coordination.
+This project uses specialized agent behaviors to handle specific workflow tasks. Agent behaviors are defined in `.claude/agents/` and are invoked using the `general-purpose` agent type with behavioral injection, following the supervisor pattern for multi-agent coordination.
+
+## Critical: Agent Invocation Pattern
+
+**Available Agent Types** (via Task tool):
+- `general-purpose` - General-purpose agent for all specialized behaviors
+- `statusline-setup` - Configure statusline settings
+- `output-style-setup` - Create output styles
+
+**Specialized Agent Behaviors** (via behavioral injection):
+- `research-specialist`, `code-writer`, `test-specialist`, `plan-architect`, `doc-writer`, `code-reviewer`, `debug-specialist`, `metrics-specialist`
+
+**Correct Invocation Pattern**:
+```yaml
+Task {
+  subagent_type: "general-purpose"  # Always use general-purpose
+  description: "Create plan using plan-architect protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
+
+    You are acting as a Plan Architect with the constraints and capabilities
+    defined in that file.
+
+    [Your actual task description here]
+}
+```
+
+**Incorrect Pattern** (will cause errors):
+```yaml
+Task {
+  subagent_type: "plan-architect"  # ERROR: Not a valid agent type
+  ...
+}
+```
 
 ## Agent Directory
 
@@ -73,13 +107,19 @@ This project uses 8 specialized agents to handle specific workflow tasks. Each a
 
 ### Pattern 1: Single Agent Delegation
 
-Simple command delegates single task to specialized agent:
+Simple command delegates single task to specialized agent using behavioral injection:
 
 ```yaml
 Task {
-  subagent_type: "debug-specialist"
-  description: "Investigate [issue]"
+  subagent_type: "general-purpose"
+  description: "Investigate [issue] using debug-specialist protocol"
   prompt: "
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
+
+    You are acting as a Debug Specialist with the tools and constraints
+    defined in that file.
+
     Debug Task: [Detailed investigation instructions]
 
     Context:
@@ -100,14 +140,34 @@ Task {
 
 ### Pattern 2: Parallel Multi-Agent
 
-Multiple agents of same type work on different topics simultaneously:
+Multiple agents of same type work on different topics simultaneously using behavioral injection:
 
 ```yaml
-# Research Phase in /orchestrate
-Task { subagent_type: "research-specialist", ... }  # Topic 1
-Task { subagent_type: "research-specialist", ... }  # Topic 2
-Task { subagent_type: "research-specialist", ... }  # Topic 3
-# All invoked in single message for parallel execution
+# Research Phase in /orchestrate - all in single message for parallel execution
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 1 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 1 research task]
+}
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 2 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 2 research task]
+}
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 3 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 3 research task]
+}
 ```
 
 **Benefits**: Significant time savings (2-3x faster than sequential)
@@ -116,26 +176,64 @@ Task { subagent_type: "research-specialist", ... }  # Topic 3
 
 ### Pattern 3: Sequential Pipeline
 
-Output of one agent feeds into next agent in sequence:
+Output of one agent feeds into next agent in sequence using behavioral injection:
 
 ```yaml
 # Planning Pipeline
-1. research-specialist → generates research summary
-2. plan-architect → uses summary to create plan
+# Step 1: Research using research-specialist behavior
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    [Research task that generates summary]
+}
+# Extract research summary from output
+
+# Step 2: Planning using plan-architect behavior
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/plan-architect.md
+    You are acting as a Plan Architect.
+
+    Research findings: [summary from step 1]
+    [Planning task]
+}
 ```
 
 **Used By**: /orchestrate (research → planning), /plan (optional research then planning)
 
 ### Pattern 4: Conditional Agent Loop
 
-Agent invoked repeatedly until condition met or max iterations:
+Agent invoked repeatedly until condition met or max iterations using behavioral injection:
 
 ```yaml
 # Debugging Loop (max 3 iterations)
 while tests_failing and iteration < 3:
-  1. debug-specialist → identifies issues
-  2. code-writer → applies fixes
-  3. test-specialist → validates fixes
+  # 1. Debug using debug-specialist behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/debug-specialist.md
+      [Debug task]
+  }
+
+  # 2. Fix using code-writer behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/code-writer.md
+      [Apply fixes]
+  }
+
+  # 3. Test using test-specialist behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/test-specialist.md
+      [Validate fixes]
+  }
+
   if tests_pass:
     break
 ```
@@ -144,7 +242,7 @@ while tests_failing and iteration < 3:
 
 ### Pattern 5: Optional Agent Enhancement
 
-Command works independently but can delegate to agent for better results:
+Command works independently but can delegate to agent for better results using behavioral injection:
 
 ```yaml
 # Direct execution for simple cases
@@ -152,7 +250,12 @@ if simple_task:
   execute_directly()
 else:
   # Delegate to agent for complex cases
-  Task { subagent_type: "test-specialist", ... }
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/test-specialist.md
+      [Test execution task]
+  }
 ```
 
 **Used By**: /test, /test-all, /implement (potential)
@@ -457,9 +560,15 @@ Potential agent system improvements:
 
 ```yaml
 Task {
-  subagent_type: "[agent-name]"
-  description: "[concise task description]"
+  subagent_type: "general-purpose"
+  description: "[concise task description] using [agent-name] protocol"
   prompt: "
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/[agent-name].md
+
+    You are acting as a [Agent Name] with the tools and constraints
+    defined in that file.
+
     [Task Type]: [Specific task]
 
     Context:

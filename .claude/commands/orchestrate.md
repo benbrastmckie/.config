@@ -160,23 +160,41 @@ For each identified research topic, I'll create a focused research task and invo
 
 **Parallel Execution Pattern**:
 ```markdown
-Use Task tool to invoke multiple research-specialist subagents simultaneously:
+Use Task tool to invoke multiple general-purpose agents with research-specialist behavior simultaneously:
 
 Agent 1 - Codebase Patterns:
-  subagent_type: research-specialist
-  Prompt: "Search the codebase for existing implementations of [feature/concept].
+  subagent_type: general-purpose
+  Prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/research-specialist.md
+
+          You are acting as a Research Specialist with the tools and constraints
+          defined in that file.
+
+          Search the codebase for existing implementations of [feature/concept].
           Analyze patterns, architectures, and conventions currently in use.
           Summarize findings in max 150 words."
 
 Agent 2 - Best Practices Research:
-  subagent_type: research-specialist
-  Prompt: "Research industry best practices for [technology/approach].
+  subagent_type: general-purpose
+  Prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/research-specialist.md
+
+          You are acting as a Research Specialist with the tools and constraints
+          defined in that file.
+
+          Research industry best practices for [technology/approach].
           Use web search to find current standards (2025).
           Summarize key recommendations in max 150 words."
 
 Agent 3 - Alternative Approaches:
-  subagent_type: research-specialist
-  Prompt: "Investigate alternative approaches to [problem/feature].
+  subagent_type: general-purpose
+  Prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/research-specialist.md
+
+          You are acting as a Research Specialist with the tools and constraints
+          defined in that file.
+
+          Investigate alternative approaches to [problem/feature].
           Compare trade-offs, complexity, and fit with project.
           Summarize options in max 150 words."
 ```
@@ -565,9 +583,15 @@ Recommended approach: [From research synthesis]
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: plan-architect
-description: "Create implementation plan for [feature]"
-prompt: "[Generated planning prompt from Step 2]"
+subagent_type: general-purpose
+description: "Create implementation plan for [feature] using plan-architect protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/plan-architect.md
+
+         You are acting as a Plan Architect with the tools and constraints
+         defined in that file.
+
+         [Generated planning prompt from Step 2]"
 ```
 
 **Execution Details**:
@@ -765,9 +789,15 @@ For each phase:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: code-writer
-description: "Execute implementation plan [plan_number]"
-prompt: "[Generated implementation prompt from Step 2]"
+subagent_type: general-purpose
+description: "Execute implementation plan [plan_number] using code-writer protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/code-writer.md
+
+         You are acting as a Code Writer with the tools and constraints
+         defined in that file.
+
+         [Generated implementation prompt from Step 2]"
 timeout: 600000  # 10 minutes for complex implementations
 ```
 
@@ -996,9 +1026,15 @@ Use the /debug command to perform root cause analysis:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: debug-specialist
-description: "Debug test failures from Phase [N]"
-prompt: "[Generated debug prompt from Step 2]"
+subagent_type: general-purpose
+description: "Debug test failures from Phase [N] using debug-specialist protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/debug-specialist.md
+
+         You are acting as a Debug Specialist with the tools and constraints
+         defined in that file.
+
+         [Generated debug prompt from Step 2]"
 ```
 
 **Monitoring**:
@@ -1098,9 +1134,15 @@ After applying ALL fixes:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: code-writer
-description: "Apply fixes for test failures"
-prompt: "[Generated fix prompt]"
+subagent_type: general-purpose
+description: "Apply fixes for test failures using code-writer protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/code-writer.md
+
+         You are acting as a Code Writer with the tools and constraints
+         defined in that file.
+
+         [Generated fix prompt]"
 ```
 
 #### Step 6: Evaluate Fix Results
@@ -1409,9 +1451,15 @@ Ensure proper bidirectional cross-references between all workflow artifacts:
 
 **Task Tool Invocation**:
 ```yaml
-subagent_type: doc-writer
-description: "Update documentation for workflow"
-prompt: "[Generated documentation prompt from Step 2]"
+subagent_type: general-purpose
+description: "Update documentation for workflow using doc-writer protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/doc-writer.md
+
+         You are acting as a Doc Writer with the tools and constraints
+         defined in that file.
+
+         [Generated documentation prompt from Step 2]"
 ```
 
 **Monitoring**:

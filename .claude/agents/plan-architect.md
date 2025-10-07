@@ -191,26 +191,33 @@ PROGRESS: Plan complete (4 phases, 16 hours estimated).
 
 ```
 Task {
-  subagent_type = "plan-architect",
-  description = "Create implementation plan for auth feature",
-  prompt = "Generate detailed implementation plan for authentication feature.
+  subagent_type: "general-purpose"
+  description: "Create implementation plan for auth feature using plan-architect protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
 
-  Based on research findings (see research summary):
-  - Use session-based auth pattern (found in research)
-  - Integrate with existing middleware architecture
-  - Follow security best practices identified
+    You are acting as a Plan Architect Agent with the tools and constraints
+    defined in that file.
 
-  Plan requirements:
-  - 4-6 phases covering setup, implementation, testing, docs
-  - Each phase with <10 tasks
-  - Testing strategy per phase
-  - Integration with existing auth modules
+    Generate detailed implementation plan for authentication feature.
 
-  Reference:
-  - Research report: specs/reports/015_auth_patterns.md
-  - Standards: CLAUDE.md (2-space indent, snake_case, pcall)
+    Based on research findings (see research summary):
+    - Use session-based auth pattern (found in research)
+    - Integrate with existing middleware architecture
+    - Follow security best practices identified
 
-  Output: Complete plan in specs/plans/ format"
+    Plan requirements:
+    - 4-6 phases covering setup, implementation, testing, docs
+    - Each phase with <10 tasks
+    - Testing strategy per phase
+    - Integration with existing auth modules
+
+    Reference:
+    - Research report: specs/reports/015_auth_patterns.md
+    - Standards: CLAUDE.md (2-space indent, snake_case, pcall)
+
+    Output: Complete plan in specs/plans/ format
 }
 ```
 
@@ -218,31 +225,38 @@ Task {
 
 ```
 Task {
-  subagent_type = "plan-architect",
-  description = "Generate structured implementation plan",
-  prompt = "Create implementation plan based on research phase findings:
+  subagent_type: "general-purpose"
+  description: "Generate structured implementation plan using plan-architect protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
 
-  Research Summary:
-  - Current async patterns use coroutines
-  - Popular pattern: promise-like structure
-  - Existing modules: lua/async/ (needs extension)
+    You are acting as a Plan Architect Agent with the tools and constraints
+    defined in that file.
 
-  Plan Structure:
-  Phase 1: Core async primitives
-  Phase 2: Promise implementation
-  Phase 3: Error handling
-  Phase 4: Integration tests
-  Phase 5: Documentation
+    Create implementation plan based on research phase findings:
 
-  Each phase:
-  - Clear objectives
-  - Specific tasks with file references
-  - Test commands
-  - Success criteria
+    Research Summary:
+    - Current async patterns use coroutines
+    - Popular pattern: promise-like structure
+    - Existing modules: lua/async/ (needs extension)
 
-  Testing: Use :TestFile and :TestSuite from CLAUDE.md
+    Plan Structure:
+    Phase 1: Core async primitives
+    Phase 2: Promise implementation
+    Phase 3: Error handling
+    Phase 4: Integration tests
+    Phase 5: Documentation
 
-  Output: Save to specs/plans/NNN_async_promises.md"
+    Each phase:
+    - Clear objectives
+    - Specific tasks with file references
+    - Test commands
+    - Success criteria
+
+    Testing: Use :TestFile and :TestSuite from CLAUDE.md
+
+    Output: Save to specs/plans/NNN_async_promises.md
 }
 ```
 
@@ -250,24 +264,31 @@ Task {
 
 ```
 Task {
-  subagent_type = "plan-architect",
-  description = "Revise plan based on user feedback",
-  prompt = "Update existing plan with user-provided changes:
+  subagent_type: "general-purpose"
+  description: "Revise plan based on user feedback using plan-architect protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
 
-  Original plan: specs/plans/003_config_refactor.md
+    You are acting as a Plan Architect Agent with the tools and constraints
+    defined in that file.
 
-  User changes:
-  - Split Phase 2 into two phases (too complex)
-  - Add migration strategy for existing configs
-  - Include rollback procedure
+    Update existing plan with user-provided changes:
 
-  Revise plan:
-  - Preserve completed phases (mark [COMPLETED])
-  - Adjust subsequent phase numbers
-  - Add new tasks based on user feedback
-  - Update metadata and estimates
+    Original plan: specs/plans/003_config_refactor.md
 
-  Maintain /implement compatibility throughout"
+    User changes:
+    - Split Phase 2 into two phases (too complex)
+    - Add migration strategy for existing configs
+    - Include rollback procedure
+
+    Revise plan:
+    - Preserve completed phases (mark [COMPLETED])
+    - Adjust subsequent phase numbers
+    - Add new tasks based on user feedback
+    - Update metadata and estimates
+
+    Maintain /implement compatibility throughout
 }
 ```
 
