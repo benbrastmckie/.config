@@ -418,12 +418,444 @@ If agent returns <100 words or missing sections:
 
 #### 4b. Write Detailed Implementation Specification
 
+**Context Integration**:
+
+- **If agent research available**: Synthesize findings into specification (see "Synthesizing Agent Research" below)
+- **If direct expansion**: Read relevant files and write specification
+
 **IMPORTANT**: Do NOT use generic templates. Instead:
 
 1. **Read and understand** the phase objective and tasks
 2. **Analyze** what the phase is actually trying to accomplish
-3. **Research** the codebase context (read relevant files if needed)
-4. **Write** a detailed, specific implementation plan
+3. **Research** the codebase context (from agent or direct file reads)
+4. **Synthesize** research into concrete implementation details
+5. **Write** a detailed, specific implementation plan
+
+### Synthesizing Agent Research into Specifications
+
+When agent research is available, follow this synthesis process to transform 200-250 word findings into 300-500+ line detailed specifications.
+
+#### Synthesis Strategy
+
+**Input**: Agent research with 4 sections (Current State, Patterns Found, Recommendations, Challenges)
+
+**Output**: 300-500+ line phase specification with concrete implementation details
+
+**Process**:
+
+1. **Extract Key Findings** (5-10 minutes)
+   - List all file:line references from "Current State"
+   - Note all patterns from "Patterns Found"
+   - Capture all recommendations
+   - Identify all challenges
+
+2. **Map Findings to Tasks** (10-15 minutes)
+   - For each task in phase, identify relevant findings
+   - Link specific files/patterns to each task
+   - Note which recommendations apply to which tasks
+   - Flag tasks affected by challenges
+
+3. **Generate Concrete Examples** (15-20 minutes)
+   - Use patterns found as basis for code examples
+   - Base examples on actual file structures discovered
+   - Show before/after for refactoring tasks
+   - Include specific function signatures from research
+
+4. **Create Testing Strategy** (10-15 minutes)
+   - Base test cases on current state found
+   - Test transitions from current → target state
+   - Cover edge cases from challenges identified
+   - Use actual file paths in test specifications
+
+5. **Write Implementation Steps** (20-30 minutes)
+   - Use actual file paths from research
+   - Reference specific line numbers where relevant
+   - Order steps based on dependency findings
+   - Address challenges with mitigation steps
+
+#### Synthesis Example
+
+**Input**: 250-word research on utils consolidation
+
+```markdown
+## Current State
+- Found 23 scripts in utils/, 15 in lib/
+- utils/error-utils.sh:25 implements log_error()
+- lib/logging.sh:18 implements log_error() (duplicate)
+- utils/path-utils.sh:12 implements normalize_path()
+- 12 scripts depend on utils/error-utils.sh
+
+## Patterns Found
+- Common pattern: Source utils/error-utils.sh for error handling
+- Dependency graph: commands → utils → lib
+- Naming: Functions use snake_case, exported variables use UPPER_CASE
+- Error handling: All utils use `set -e` and log_error for failures
+
+## Recommendations
+- Consolidate to lib/ for reusable utilities (accessed by utils/ and commands/)
+- Merge error-utils.sh and logging.sh → lib/logging.sh
+- Create lib/path-utils.sh, deprecate utils/path-utils.sh
+- Update all 12 dependent scripts with new paths
+
+## Challenges
+- Breaking change: 12 scripts use old paths
+- Migration requires testing all dependent scripts
+- Risk: Commands might source utils/ in .bashrc or external scripts
+```
+
+**Synthesis Process**:
+
+**Step 1: Extract Key Findings**
+
+```
+File References:
+- utils/error-utils.sh:25 (log_error function)
+- lib/logging.sh:18 (duplicate log_error)
+- utils/path-utils.sh:12 (normalize_path)
+
+Patterns:
+- Source pattern: utils/error-utils.sh sourced 12 times
+- Naming: snake_case functions, UPPER_CASE exported vars
+- Error handling: set -e + log_error
+
+Recommendations:
+- Consolidate to lib/
+- Merge error-utils.sh + logging.sh
+- Migrate path-utils.sh
+
+Challenges:
+- 12 dependent scripts
+- External sourcing risk
+```
+
+**Step 2: Map to Tasks**
+
+```
+Task 1: Audit utils
+→ Findings: 23 utils/ scripts, 15 lib/ scripts
+→ Action: List all with purposes, check for duplicates
+
+Task 2: Identify duplicates
+→ Findings: log_error in error-utils.sh:25 and logging.sh:18
+→ Action: Compare implementations, choose canonical version
+
+Task 3: Map dependencies
+→ Findings: 12 scripts depend on error-utils.sh
+→ Action: Use grep to find all source statements
+
+Task 4: Consolidation strategy
+→ Recommendations: Consolidate to lib/, merge duplicates
+→ Action: Design lib/ structure, migration plan
+
+Task 5: Migration plan
+→ Challenges: Breaking changes, external sourcing
+→ Action: Incremental migration with deprecation warnings
+
+Task 6: Update documentation
+→ All findings: Document new lib/ structure, update READMEs
+→ Action: Write migration guide for maintainers
+```
+
+**Step 3: Generate Concrete Examples**
+
+```lua
+-- From research: error-utils.sh:25 implements log_error()
+-- Synthesized example showing actual function
+
+### Before (utils/error-utils.sh:25)
+```bash
+log_error() {
+  local msg="$1"
+  echo "[ERROR] $msg" >&2
+}
+```
+
+### After (lib/logging.sh - merged version)
+```bash
+# Merged from utils/error-utils.sh:25 and lib/logging.sh:18
+log_error() {
+  local msg="$1"
+  local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[$timestamp ERROR] $msg" >&2
+}
+
+# Deprecated alias for backwards compatibility
+error_log() {
+  log_error "$@"
+}
+```
+
+### Migration Example (utils/some-script.sh)
+```bash
+# Before
+source "$(dirname "$0")/error-utils.sh"
+
+# After
+source "$(dirname "$0")/../lib/logging.sh"
+```
+```
+
+**Step 4: Testing Strategy**
+
+```markdown
+### Unit Tests
+
+Test file: `.claude/tests/test_lib_logging.sh`
+
+**Test 1: log_error function exists**
+```bash
+test_log_error_exists() {
+  source lib/logging.sh
+  type -t log_error >/dev/null || fail "log_error not defined"
+}
+```
+
+**Test 2: log_error outputs to stderr**
+```bash
+test_log_error_stderr() {
+  source lib/logging.sh
+  output=$(log_error "test" 2>&1 1>/dev/null)
+  [[ "$output" == *"test"* ]] || fail "log_error didn't write to stderr"
+}
+```
+
+**Test 3: Backwards compatibility alias**
+```bash
+test_error_log_alias() {
+  source lib/logging.sh
+  type -t error_log >/dev/null || fail "error_log alias missing"
+}
+```
+
+### Integration Tests
+
+**Test 4: Dependent scripts still work**
+```bash
+# Test each of the 12 dependent scripts identified
+for script in utils/script1.sh utils/script2.sh ...; do
+  bash "$script" --test || fail "$script broken after migration"
+done
+```
+
+### Edge Case Tests
+
+**Test 5: External sourcing**
+```bash
+# Verify utils/error-utils.sh still exists as symlink or stub
+test -f utils/error-utils.sh || fail "Backwards compat broken"
+```
+```
+
+**Step 5: Implementation Steps**
+
+```markdown
+### Task 1: Audit all util scripts
+
+**Implementation Steps**:
+
+1. List all scripts with purposes
+   ```bash
+   for f in utils/*.sh lib/*.sh; do
+     echo "$f: $(head -3 "$f" | grep "^#" | sed 's/^# //')"
+   done > audit.txt
+   ```
+
+2. Identify duplicate functions
+   ```bash
+   # Find all function definitions
+   grep -n "^function\|^[a-z_]*() {" utils/*.sh lib/*.sh > functions.txt
+
+   # Check for duplicates
+   awk '{print $NF}' functions.txt | sort | uniq -d > duplicates.txt
+   ```
+
+3. Verify findings match research
+   - Expect: log_error in utils/error-utils.sh:25 and lib/logging.sh:18
+   - Expect: normalize_path in utils/path-utils.sh:12
+   - Report any additional duplicates found
+
+**Success Criteria**:
+- Complete inventory of 38 scripts (23 utils + 15 lib)
+- Duplicates list matches research findings
+- No unexpected duplicates discovered
+
+---
+
+### Task 2: Identify duplicate functionality
+
+**Implementation Steps**:
+
+1. Read and compare log_error implementations
+   ```bash
+   # utils/error-utils.sh:25
+   sed -n '25,30p' utils/error-utils.sh
+
+   # lib/logging.sh:18
+   sed -n '18,23p' lib/logging.sh
+   ```
+
+2. Determine canonical version
+   - Compare implementations for features
+   - Choose lib/logging.sh as base (research recommendation)
+   - Plan to merge best features from both
+
+3. Document differences
+   ```markdown
+   **utils/error-utils.sh:25**:
+   - Simple implementation
+   - No timestamp
+   - Used by 12 scripts
+
+   **lib/logging.sh:18**:
+   - More features (timestamps, colors)
+   - Newer implementation
+   - Used by 3 scripts
+
+   **Decision**: Merge into lib/logging.sh, keep utils/error-utils.sh:25 simplicity for backwards compat
+   ```
+
+**Success Criteria**:
+- Documented comparison of both implementations
+- Clear decision on canonical version
+- Migration plan preserves backwards compatibility
+```
+
+**Output**: 500+ line specification with:
+- Concrete file paths from research
+- Specific line numbers where relevant
+- Code examples based on actual patterns
+- Test cases covering actual state transitions
+- Implementation steps using discovered structure
+
+#### Quality Checklist for Synthesized Specs
+
+Before completing synthesis, verify:
+
+- [ ] All file:line references from research are incorporated
+- [ ] Code examples use actual patterns found (not generic)
+- [ ] File paths are specific (e.g., `lib/logging.sh:25`, not `some-file.sh`)
+- [ ] Testing strategy covers current → target state transition
+- [ ] Challenges from research are addressed with mitigation
+- [ ] Implementation steps reference actual files discovered
+- [ ] Specification length: 300-500+ lines with substance
+- [ ] No generic placeholders like `[file]`, `[function]`, `[directory]`
+
+#### Section Templates for Synthesis
+
+Use these templates when synthesizing research:
+
+**Task Implementation Template**:
+```markdown
+### Task N: [Task Name from Phase]
+
+**Context from Research**:
+- Current state: [File references from agent research]
+- Relevant patterns: [Patterns that apply to this task]
+- Recommendations: [Agent recommendations for this task]
+
+**Implementation Approach**:
+[Specific approach based on research findings]
+
+**Detailed Steps**:
+1. [Step using actual file from research]
+   - File: `[actual file path from research]`
+   - Command: `[actual command with real paths]`
+   - Expected: [based on current state from research]
+
+2. [Step addressing challenge from research]
+   - Mitigation: [how to handle challenge]
+   - Verification: `[actual verification command]`
+
+**Code Example** (based on research pattern):
+```[language]
+[Actual code pattern found in research, adapted for this task]
+```
+
+**Testing** (based on current state):
+- Test case: [Transition from current state to target]
+- Expected behavior: [Based on patterns found]
+- Edge case: [From challenges in research]
+
+**Success Criteria**:
+- [Measurable outcome based on research]
+- [Verification using actual files]
+```
+
+**Architecture Section Template**:
+```markdown
+### Architecture and Design
+
+**Current Architecture** (from research):
+```
+[Diagram showing structure found in research]
+
+Files:
+- [actual file 1 from research]: [purpose]
+- [actual file 2 from research]: [purpose]
+
+Dependencies (from research):
+- [actual dependency 1]
+- [actual dependency 2]
+```
+
+**Target Architecture**:
+```
+[Diagram showing target based on recommendations]
+
+Changes:
+- Move [actual file] to [new location]
+- Merge [actual file 1] + [actual file 2]
+- Update [N] dependents (specific count from research)
+```
+
+**Design Decisions**:
+1. [Decision based on research recommendation]
+   - Rationale: [From patterns or challenges in research]
+   - Trade-off: [Based on findings]
+
+2. [Decision addressing challenge]
+   - Rationale: [Mitigation strategy]
+   - Risk: [From challenges section]
+```
+
+**Testing Strategy Template**:
+```markdown
+### Comprehensive Testing Strategy
+
+**Test Baseline** (from current state research):
+- Current behavior: [Specific behavior from research]
+- Affected files: [Actual count and list from research]
+- Integration points: [From dependency findings]
+
+**Unit Tests**:
+1. Test [specific function from research]
+   - Input: [Based on actual usage found]
+   - Expected: [Based on pattern found]
+   - File: `.claude/tests/test_[specific].sh`
+
+2. Test [challenge scenario from research]
+   - Edge case: [Actual challenge described]
+   - Expected: [Mitigation behavior]
+
+**Integration Tests**:
+1. Test [N dependent scripts] (from research findings)
+   - Scripts: [Actual list from research]
+   - Verification: [Each script still works]
+
+2. Test [pattern found in research]
+   - Scenario: [Actual pattern usage]
+   - Expected: [Pattern still works after changes]
+
+**Regression Tests**:
+1. Test backwards compatibility
+   - Old import: `[actual old path from research]`
+   - Should: [Still work via symlink/stub]
+
+**Performance Benchmarks**:
+- Baseline: [Current performance if researched]
+- Target: [Expected improvement]
+- Metric: [Specific measurement]
+```
 
 The expanded phase should include:
 
