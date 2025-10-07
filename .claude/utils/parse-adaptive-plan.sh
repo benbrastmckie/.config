@@ -319,7 +319,8 @@ extract_phase_name() {
   fi
 
   # Extract name after colon, convert to lowercase, replace spaces with underscores
-  local name=$(echo "$heading" | sed "s/^### Phase ${phase_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+  # Also remove special characters that are invalid in filenames
+  local name=$(echo "$heading" | sed "s/^### Phase ${phase_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -d '/:*?"<>|')
   echo "$name"
 }
 
@@ -579,7 +580,8 @@ extract_stage_name() {
   fi
 
   # Extract name after colon, convert to lowercase, replace spaces with underscores
-  local name=$(echo "$heading" | sed "s/^#### Stage ${stage_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+  # Also remove special characters that are invalid in filenames
+  local name=$(echo "$heading" | sed "s/^#### Stage ${stage_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -d '/:*?"<>|')
   echo "$name"
 }
 
