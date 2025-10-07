@@ -198,7 +198,223 @@ When complexity detected (`is_complex=true`), invoke agent for codebase research
 
 **Skip to step 4b if simple phase.**
 
-See "Agent Invocation Infrastructure" section below for detailed agent usage.
+**Agent Invocation Pattern**:
+
+Use the Task tool with `general-purpose` agent type + behavioral injection:
+
+```markdown
+Task tool invocation:
+  subagent_type: general-purpose
+  description: "Research phase context using [agent-behavior] protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/[agent-behavior].md
+
+    You are acting as a [Agent Role] with these constraints:
+    - Read-only operations (tools: Read, Glob, Grep only)
+    - Concise summaries (200-250 words max)
+    - Specific file references with line numbers
+    - Evidence-based findings only
+
+    Research Task: [Phase Objective]
+
+    Phase Tasks:
+    [List all tasks from phase]
+
+    Requirements:
+    1. Search codebase for files mentioned in tasks
+    2. Identify existing patterns and implementations
+    3. Find dependencies and integration points
+    4. Assess current state vs target state
+    5. Note any potential conflicts or challenges
+
+    Output Format:
+    ## Current State
+    - [What exists now with file:line references]
+
+    ## Patterns Found
+    - [Relevant patterns with concrete examples]
+
+    ## Recommendations
+    - [Specific approach based on findings]
+
+    ## Challenges
+    - [Potential issues or constraints]
+
+    Word limit: 250 words maximum
+```
+
+**Example 1: research-specialist Behavior**
+
+For general codebase analysis (default for complex phases):
+
+```markdown
+Task: Research utils consolidation phase
+
+Prompt:
+  Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+
+  You are acting as a Research Specialist with constraints:
+  - Read-only: Use Read, Glob, Grep tools only
+  - Concise: 200-250 word summary
+  - Specific: Include file:line references
+  - Evidence-based: Only report what you find
+
+  Research Task: Analyze utils/ directory for consolidation opportunities
+
+  Phase Tasks:
+  - Audit all util scripts in utils/ and lib/
+  - Identify duplicate functionality
+  - Map dependencies between utils
+  - Recommend consolidation strategy
+  - Create migration plan
+  - Update documentation
+
+  Requirements:
+  1. List all util scripts with their purposes
+  2. Find duplicated functions (same name or behavior)
+  3. Map which scripts depend on which utils
+  4. Identify utils that could be merged
+  5. Note any breaking change risks
+
+  Output Format:
+  ## Current State
+  - Found N scripts in utils/, M in lib/
+  - utils/foo.sh:15 implements function X
+  - lib/bar.sh:23 duplicates function X
+
+  ## Patterns Found
+  - Common pattern: error handling via error-utils.sh
+  - Dependency graph: [describe]
+
+  ## Recommendations
+  - Merge utils/foo.sh and lib/bar.sh
+  - Standardize on lib/ for reusable utilities
+
+  ## Challenges
+  - 12 scripts depend on utils/foo.sh
+  - Breaking change requires careful migration
+
+  Word limit: 250 words
+```
+
+**Example 2: code-reviewer Behavior**
+
+For refactoring/consolidation phases:
+
+```markdown
+Task: Review code for refactoring opportunities
+
+Prompt:
+  Read and follow: /home/benjamin/.config/.claude/agents/code-reviewer.md
+
+  You are acting as a Code Reviewer with constraints:
+  - Read-only: Use Read, Grep tools only
+  - Concise: 200-250 word analysis
+  - Standards-focused: Check against CLAUDE.md
+  - Specific: File:line references for issues
+
+  Research Task: Analyze codebase section for refactoring needs
+
+  Phase Tasks:
+  - Review code quality in [directory]
+  - Identify style violations
+  - Find improvement opportunities
+  - Check standards compliance
+  - Recommend refactoring approach
+
+  Requirements:
+  1. Check indentation, line length (CLAUDE.md standards)
+  2. Find code duplication or complexity
+  3. Identify naming convention issues
+  4. Note missing error handling
+  5. Assess test coverage gaps
+
+  Output Format:
+  ## Current State
+  - [Files reviewed with issue counts]
+  - [Specific violations with file:line]
+
+  ## Patterns Found
+  - [Common issues or anti-patterns]
+
+  ## Recommendations
+  - [Specific refactoring steps]
+
+  ## Challenges
+  - [Risks or blockers]
+
+  Word limit: 250 words
+```
+
+**Example 3: plan-architect Behavior**
+
+For very complex phases needing sub-structure:
+
+```markdown
+Task: Analyze phase for potential sub-phase breakdown
+
+Prompt:
+  Read and follow: /home/benjamin/.config/.claude/agents/plan-architect.md
+
+  You are acting as a Plan Architect with constraints:
+  - Read-only: Use Read tool only
+  - Concise: 200-250 word structure analysis
+  - Specific: Justify recommendations with task analysis
+
+  Research Task: Determine if phase needs sub-phase breakdown
+
+  Phase Tasks:
+  [List all tasks - if >10 tasks]
+
+  Requirements:
+  1. Analyze task dependencies
+  2. Identify natural groupings
+  3. Assess complexity per task group
+  4. Recommend phase structure
+  5. Estimate effort per group
+
+  Output Format:
+  ## Current State
+  - Phase has N tasks across M areas
+  - Identified K natural groupings
+
+  ## Patterns Found
+  - Task group 1: [theme] (complexity: X/10)
+  - Task group 2: [theme] (complexity: Y/10)
+
+  ## Recommendations
+  - Yes/No on sub-phase breakdown
+  - If Yes: Suggested structure with rationale
+
+  ## Challenges
+  - [Risks of over/under-structuring]
+
+  Word limit: 250 words
+```
+
+**Error Handling**:
+
+If agent invocation fails or times out:
+
+1. **Fallback to direct expansion**: Proceed to step 4b without research
+2. **Log the error**: Note in phase file that agent research was skipped
+3. **Increase file reads**: Read more context files directly
+4. **Notify user**: Mention research limitation in output
+
+**Timeout Handling**:
+
+- Set Task tool timeout: 5 minutes for research
+- If exceeded: Cancel agent, use fallback
+- Document in phase file: "Note: Agent research timed out, expanded with direct file reads"
+
+**Incomplete Research**:
+
+If agent returns <100 words or missing sections:
+
+1. **Request clarification**: Ask agent to elaborate on specific section
+2. **Supplement with direct reads**: Fill gaps by reading files directly
+3. **Document limitation**: Note which aspects lack research coverage
 
 #### 4b. Write Detailed Implementation Specification
 
@@ -365,6 +581,40 @@ In main plan metadata section:
 - **Expanded Phases**: [list of expanded phase numbers]
 - **Stage Expansion Candidates**: [phases with recommendation: Yes]
 ```
+
+## Available Agent Types and Behaviors
+
+**IMPORTANT**: Claude Code only supports 3 agent types:
+
+1. **general-purpose** - Multi-purpose agent for research, search, and multi-step tasks
+2. **statusline-setup** - Specialized for configuring status lines
+3. **output-style-setup** - Specialized for output style configuration
+
+For `/expand-phase`, we use **general-purpose** agents with behavioral injection.
+
+### Agent Behavior Files
+
+Located in `.claude/agents/`, these files define specialized behaviors:
+
+| Behavior File | Use Case | Tools | Output |
+|--------------|----------|-------|--------|
+| `research-specialist.md` | Codebase analysis, pattern discovery | Read, Glob, Grep | 200-250 word research summary |
+| `code-reviewer.md` | Standards compliance, refactoring analysis | Read, Grep | Code quality assessment |
+| `plan-architect.md` | Phase structure analysis | Read | Structure recommendations |
+| `debug-specialist.md` | Issue investigation | Read, Grep | Diagnostic findings |
+| `test-specialist.md` | Test strategy analysis | Read, Grep | Testing recommendations |
+
+**Usage Pattern**:
+```markdown
+Task tool:
+  subagent_type: general-purpose  # Only valid agent type
+  prompt: |
+    Read and follow: /path/to/.claude/agents/[behavior].md
+
+    You are acting as a [Role] with [constraints]...
+```
+
+This pattern simulates specialized agents by injecting behavioral guidelines into general-purpose agents.
 
 ## Key Principles
 
