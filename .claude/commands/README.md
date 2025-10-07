@@ -530,22 +530,22 @@ Advanced users can use the progressive parsing utility directly:
 
 ```bash
 # Detect plan structure level
-.claude/utils/parse-adaptive-plan.sh detect_structure_level <plan-path>
+.claude/lib/parse-adaptive-plan.sh detect_structure_level <plan-path>
 
 # Check if plan is expanded
-.claude/utils/parse-adaptive-plan.sh is_plan_expanded <plan-path>
+.claude/lib/parse-adaptive-plan.sh is_plan_expanded <plan-path>
 
 # Check if specific phase is expanded
-.claude/utils/parse-adaptive-plan.sh is_phase_expanded <plan-path> <phase-num>
+.claude/lib/parse-adaptive-plan.sh is_phase_expanded <plan-path> <phase-num>
 
 # List expanded phases
-.claude/utils/parse-adaptive-plan.sh list_expanded_phases <plan-path>
+.claude/lib/parse-adaptive-plan.sh list_expanded_phases <plan-path>
 
 # List expanded stages for a phase
-.claude/utils/parse-adaptive-plan.sh list_expanded_stages <plan-path> <phase-num>
+.claude/lib/parse-adaptive-plan.sh list_expanded_stages <plan-path> <phase-num>
 
 # Get plan status
-.claude/utils/parse-adaptive-plan.sh get_status <plan-path>
+.claude/lib/parse-adaptive-plan.sh get_status <plan-path>
 ```
 
 ### Progressive Expansion
@@ -557,7 +557,7 @@ Plans grow organically during implementation:
 - Use `/collapse-phase` or `/collapse-stage` to simplify structure
 
 # Estimate metrics from description
-.claude/utils/analyze-plan-requirements.sh "<feature description>"
+.claude/lib/analyze-plan-requirements.sh "<feature description>"
 ```
 
 ## Standards Discovery

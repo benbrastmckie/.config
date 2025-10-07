@@ -2315,7 +2315,7 @@ Before starting the workflow, I'll check for existing checkpoints that might ind
 
 ```bash
 # Load most recent orchestrate checkpoint
-CHECKPOINT=$(.claude/utils/load-checkpoint.sh orchestrate 2>/dev/null || echo "")
+CHECKPOINT=$(.claude/lib/load-checkpoint.sh orchestrate 2>/dev/null || echo "")
 ```
 
 ### Step 2: Interactive Resume Prompt (if checkpoint found)
@@ -2352,16 +2352,16 @@ Throughout workflow execution, save checkpoints after each major phase:
 
 ```bash
 # After research phase
-.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$WORKFLOW_STATE_JSON"
+.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$WORKFLOW_STATE_JSON"
 
 # After planning phase
-.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
 
 # After implementation phase
-.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
 
 # After debugging (if needed)
-.claude/utils/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
+.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$UPDATED_STATE_JSON"
 ```
 
 ### Step 5: Cleanup on Completion

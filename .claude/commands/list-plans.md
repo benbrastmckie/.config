@@ -56,7 +56,7 @@ date=$(echo "$metadata" | jq -r '.date // "N/A"')
 phases=$(echo "$metadata" | jq -r '.phases // 0')
 
 # Detect structure level (full read only for level detection)
-LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 ```
 
 ### 2. Plan Inventory (Enhanced)

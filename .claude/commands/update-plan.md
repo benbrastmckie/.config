@@ -28,10 +28,10 @@ Structure detection uses `parse-adaptive-plan.sh detect_structure_level`.
 ### 1. Plan Analysis
 ```bash
 # Detect plan structure level
-LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 # Check for expanded phases
-EXPANDED_PHASES=$(.claude/utils/parse-adaptive-plan.sh list_expanded_phases "$PLAN_PATH")
+EXPANDED_PHASES=$(.claude/lib/parse-adaptive-plan.sh list_expanded_phases "$PLAN_PATH")
 ```
 
 I'll analyze the existing plan to understand:

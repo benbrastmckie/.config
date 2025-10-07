@@ -7,8 +7,8 @@ set -e
 
 # Source parse-adaptive-plan.sh for structure detection functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/../utils/parse-adaptive-plan.sh" ]]; then
-  source "$SCRIPT_DIR/../utils/parse-adaptive-plan.sh"
+if [[ -f "$SCRIPT_DIR/../lib/parse-adaptive-plan.sh" ]]; then
+  source "$SCRIPT_DIR/../lib/parse-adaptive-plan.sh"
 fi
 
 # Error handling

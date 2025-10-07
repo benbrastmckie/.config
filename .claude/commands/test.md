@@ -130,7 +130,7 @@ If tests fail, I'll provide enhanced error analysis with actionable suggestions:
 ### 2. Run Enhanced Error Analysis
 ```bash
 # Analyze error output with enhanced error tool
-.claude/utils/analyze-error.sh "$TEST_OUTPUT"
+.claude/lib/analyze-error.sh "$TEST_OUTPUT"
 ```
 
 ### 3. Enhanced Error Report

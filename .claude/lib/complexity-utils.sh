@@ -35,8 +35,8 @@ calculate_phase_complexity() {
   fi
 
   # Use existing analyzer script
-  if [ -f "${CLAUDE_PROJECT_DIR}/.claude/utils/analyze-phase-complexity.sh" ]; then
-    local result=$("${CLAUDE_PROJECT_DIR}/.claude/utils/analyze-phase-complexity.sh" "$phase_name" "$task_list")
+  if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/analyze-phase-complexity.sh" ]; then
+    local result=$("${CLAUDE_PROJECT_DIR}/.claude/lib/analyze-phase-complexity.sh" "$phase_name" "$task_list")
     local score=$(echo "$result" | grep "^COMPLEXITY_SCORE=" | cut -d'=' -f2)
     echo "${score:-0}"
   else

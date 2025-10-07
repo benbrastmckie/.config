@@ -44,7 +44,7 @@ fi
 **Template Validation**:
 ```bash
 # Validate template structure
-.claude/utils/parse-template.sh "$TEMPLATE_FILE" validate
+.claude/lib/parse-template.sh "$TEMPLATE_FILE" validate
 
 if [[ $? -ne 0 ]]; then
   echo "ERROR: Invalid template structure"
@@ -57,7 +57,7 @@ fi
 **Get Template Information**:
 ```bash
 # Extract metadata
-METADATA=$(.claude/utils/parse-template.sh "$TEMPLATE_FILE" extract-metadata)
+METADATA=$(.claude/lib/parse-template.sh "$TEMPLATE_FILE" extract-metadata)
 TEMPLATE_NAME=$(echo "$METADATA" | grep -o '"name":"[^"]*"' | sed 's/"name":"\(.*\)"/\1/')
 TEMPLATE_DESC=$(echo "$METADATA" | grep -o '"description":"[^"]*"' | sed 's/"description":"\(.*\)"/\1/')
 
@@ -69,7 +69,7 @@ echo ""
 **Extract Variable Definitions**:
 ```bash
 # Get variable list
-VARIABLES=$(.claude/utils/parse-template.sh "$TEMPLATE_FILE" extract-variables)
+VARIABLES=$(.claude/lib/parse-template.sh "$TEMPLATE_FILE" extract-variables)
 
 # Example VARIABLES format:
 # [
@@ -167,7 +167,7 @@ VARIABLES_JSON+="}"
 **Generate Plan Content**:
 ```bash
 # Apply variable substitution to template
-PLAN_CONTENT=$(.claude/utils/substitute-variables.sh "$TEMPLATE_FILE" "$VARIABLES_JSON")
+PLAN_CONTENT=$(.claude/lib/substitute-variables.sh "$TEMPLATE_FILE" "$VARIABLES_JSON")
 
 if [[ $? -ne 0 ]]; then
   echo "ERROR: Variable substitution failed"
