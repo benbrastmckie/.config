@@ -134,6 +134,12 @@ revise_main_plan_for_phase "$plan_file" "$phase_num" "$(basename "$phase_file")"
 # Update expanded phases metadata
 update_expanded_phases "$plan_file" "$phase_num"
 
+# Check for stage expansion recommendation and update metadata
+stage_rec=$(grep "^\*\*Recommendation\*\*:" "$phase_file" 2>/dev/null | head -1 | sed 's/^\*\*Recommendation\*\*: //')
+if [[ -n "$stage_rec" ]]; then
+  update_stage_candidates "$plan_file" "$phase_num" "$stage_rec"
+fi
+
 # Success message
 echo ""
 echo "✓ Phase $phase_num expanded successfully"

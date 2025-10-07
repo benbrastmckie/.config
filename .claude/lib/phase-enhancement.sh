@@ -262,8 +262,14 @@ recommend_stage_expansion() {
   local task_count="$1"
   local complexity_score="$2"
 
+  # Add machine-readable recommendation
   if [[ $task_count -gt 10 ]] || (( $(echo "$complexity_score > 8" | bc -l 2>/dev/null || echo 0) )); then
     cat <<EOF
+
+## Stage Expansion Recommendation
+
+**Recommendation**: Yes
+**Reason**: High complexity (score: $complexity_score, tasks: $task_count)
 
 ---
 
@@ -272,6 +278,14 @@ recommend_stage_expansion() {
 This phase has high complexity (score: $complexity_score, tasks: $task_count).
 Consider using \`/expand-stage\` to break this into multiple stages if implementation
 proves more complex than anticipated.
+EOF
+  else
+    cat <<EOF
+
+## Stage Expansion Recommendation
+
+**Recommendation**: No
+**Reason**: Manageable complexity (score: $complexity_score, tasks: $task_count)
 EOF
   fi
 }

@@ -514,6 +514,50 @@ update_expanded_phases() {
       /^- \*\*Structure Level\*\*:/ {
         print
         print "- **Expanded Phases**: " list
+        added = 1
+        next
+      }
+      { print }
+    ' "$plan_file" > "$temp_file"
+    mv "$temp_file" "$plan_file"
+  fi
+}
+
+# Update Stage Expansion Candidates metadata
+# Usage: update_stage_candidates <plan_file> <phase_num> <is_candidate>
+update_stage_candidates() {
+  local plan_file="$1"
+  local phase_num="$2"
+  local is_candidate="$3"  # "Yes" or "No"
+
+  # Only add if candidate is "Yes"
+  if [[ "$is_candidate" != "Yes" ]]; then
+    return 0
+  fi
+
+  # Get current candidates
+  local current=$(grep "^- \*\*Stage Expansion Candidates\*\*:" "$plan_file" 2>/dev/null | sed 's/^- \*\*Stage Expansion Candidates\*\*: \[\(.*\)\]/\1/')
+
+  # Add phase number if not already present
+  if [[ -z "$current" ]]; then
+    new_list="[$phase_num]"
+  elif [[ ! "$current" =~ (^|, )$phase_num(,|$) ]]; then
+    new_list="[$current, $phase_num]"
+  else
+    # Already in list
+    return 0
+  fi
+
+  # Update or add metadata
+  if grep -q "^- \*\*Stage Expansion Candidates\*\*:" "$plan_file"; then
+    sed -i "s/^- \*\*Stage Expansion Candidates\*\*:.*/- **Stage Expansion Candidates**: $new_list/" "$plan_file"
+  else
+    # Add after Expanded Phases
+    local temp_file=$(mktemp)
+    awk -v list="$new_list" '
+      /^- \*\*Expanded Phases\*\*:/ {
+        print
+        print "- **Stage Expansion Candidates**: " list
         next
       }
       { print }
