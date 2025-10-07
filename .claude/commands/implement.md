@@ -908,6 +908,110 @@ Check that tasks are properly marked by reading the updated file and verifying a
 - **Resume**: `/implement specs/plans/018.md 3`
 ```
 
+### 5.5. Collapse Opportunity Detection
+
+After completing a phase and committing changes, evaluate if an expanded phase can be collapsed back to the main plan file using agent-based judgment.
+
+**Trigger Conditions:**
+
+Only check phases that meet BOTH criteria:
+1. **Phase is expanded** (in a separate file, not inline)
+2. **Phase is completed** (all tasks marked [x])
+
+**Detection Logic:**
+
+```bash
+# Check if phase is expanded and completed
+IS_PHASE_EXPANDED=$(.claude/utils/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
+IS_PHASE_COMPLETED=$(grep -q "\[COMPLETED\]" "$PHASE_FILE" && echo "true" || echo "false")
+
+if [ "$IS_PHASE_EXPANDED" = "true" ] && [ "$IS_PHASE_COMPLETED" = "true" ]; then
+  # Evaluate collapse opportunity
+fi
+```
+
+**Evaluation Approach:**
+
+The primary agent (executing `/implement`) has the completed phase in context. I'll make an informed judgment about whether this phase is simple enough to collapse back to the main plan file.
+
+**Evaluation Criteria:**
+
+I'll consider:
+- **Completion status**: All tasks are done (verified)
+- **Simplicity**: Number of tasks and their individual complexity
+- **Dependencies**: Whether tasks have minimal interdependencies
+- **Value vs simplicity**: Does the separate file provide organizational value, or is it unnecessary fragmentation
+- **Conceptual importance**: Is there a reason to keep it separate even if simple (e.g., represents distinct implementation stage)
+
+**Evaluation Process:**
+
+```
+Read /home/benjamin/.config/.claude/prompts/evaluate-phase-collapse.md
+
+Phase [N]: [Phase Name] [COMPLETED]
+
+This phase is expanded (in separate file) and all tasks are complete.
+
+Tasks completed:
+[task list with [x] markers]
+
+Follow the evaluation criteria and provide recommendation.
+```
+
+**If Collapse Recommended:**
+
+Display formatted recommendation:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COLLAPSE OPPORTUNITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase [N]: [Phase Name] [COMPLETED]
+
+Rationale:
+  [Agent's 2-3 sentence rationale based on understanding completed work]
+
+Recommendation:
+  This simple phase can be collapsed back into the main plan file.
+
+Command:
+  /collapse-phase <plan-path> [N]
+
+Note: Collapsing is optional and non-destructive. The phase can be
+re-expanded later if needed. Consider collapsing after all phases are
+complete for best assessment of overall plan structure.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If No Collapse Recommended:**
+
+Continue silently. No message needed for phases that should remain expanded.
+
+**Not Eligible for Collapse:**
+
+If phase is not expanded OR not completed, skip evaluation silently. No message needed.
+
+**Non-Blocking:**
+
+This check is purely informative. The user can choose to:
+- Collapse now using the recommended command
+- Wait until all phases are complete for better overall assessment
+- Keep the phase expanded for organizational clarity
+- Ignore the recommendation entirely
+
+**Timing Considerations:**
+
+- **After each phase**: Provides early feedback on simple phases
+- **After plan completion**: Better for holistic assessment of structure
+- **User preference**: Some users prefer to collapse incrementally, others prefer to wait
+
+**Nuanced Decisions:**
+
+The agent can make judgment calls that simple heuristics cannot:
+- Keep a simple phase expanded if it's conceptually important
+- Recommend collapse despite moderate complexity if work was straightforward
+- Consider the phase in context of overall plan structure
+- Balance simplicity vs documentation clarity
+
 ### 6. Incremental Summary Generation
 **Create or update partial summary after each phase:**
 
