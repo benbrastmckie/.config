@@ -319,6 +319,95 @@ Verify:
 3. Add explicit success criteria
 4. Show example of expected output format
 
+## Command-Specific Agent Patterns
+
+### /expand-phase Agent Integration
+
+**Purpose**: Use agents to research complex phases before generating detailed 300-500+ line specifications.
+
+**Agent Selection Logic**:
+```bash
+# Complexity indicators
+if [[ $task_count > 5 ]] || [[ $file_count >= 10 ]] || [[ $unique_dirs > 2 ]]; then
+  is_complex=true
+  # Select appropriate agent behavior
+fi
+```
+
+**Invocation Pattern**:
+
+`/expand-phase` uses **general-purpose agents** with **behavioral injection**:
+
+```markdown
+Task tool:
+  subagent_type: general-purpose  # Only valid agent type
+  description: "Research phase context using research-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /path/to/.claude/agents/research-specialist.md
+
+    You are acting as a Research Specialist with constraints:
+    - Read-only operations (tools: Read, Glob, Grep only)
+    - Concise summaries (200-250 words max)
+    - Specific file references with line numbers
+    - Evidence-based findings only
+
+    Research Task: [Phase objective]
+
+    Phase Tasks:
+    [List all tasks from phase]
+
+    Requirements:
+    1. Search codebase for files mentioned in tasks
+    2. Identify existing patterns and implementations
+    3. Find dependencies and integration points
+    4. Assess current state vs target state
+
+    Output Format:
+    ## Current State
+    - [File:line references]
+
+    ## Patterns Found
+    - [Concrete patterns]
+
+    ## Recommendations
+    - [Specific approaches]
+
+    ## Challenges
+    - [Potential issues]
+
+    Word limit: 250 words
+```
+
+**Behavior Selection**:
+
+- **research-specialist**: Default for codebase analysis (most complex phases)
+- **code-reviewer**: For refactor/consolidate phases (standards compliance)
+- **plan-architect**: For very complex phases (structure recommendations)
+
+**Synthesis Process**:
+
+After agent returns 200-250 word research:
+
+1. Extract key findings (file:line refs, patterns, recommendations, challenges)
+2. Map findings to each task in phase
+3. Generate code examples based on patterns found
+4. Create testing strategy covering current → target transition
+5. Write implementation steps using actual file paths discovered
+
+**Output**: 300-500+ line detailed specification with concrete details
+
+**Performance**:
+- Simple phases (direct expansion): <2 minutes
+- Complex phases (agent-assisted): 3-5 minutes (acceptable for quality gain)
+
+**Benefits**:
+- Agent discovers actual file locations and patterns
+- Specifications use concrete file:line references
+- Testing strategy based on current codebase state
+- Implementation steps reference real structures
+- Reduces generic placeholder content
+
 ## Metrics Integration
 
 Agents work with hooks for metrics collection:
