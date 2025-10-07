@@ -330,8 +330,18 @@ extract_phase_content() {
   local phase_num="$2"
 
   # Extract everything from the phase heading to the next phase heading or end of phases section
+  # IMPORTANT: Skip code blocks when detecting phase boundaries to avoid treating
+  # code examples (like "### Not a phase") as actual phase headers
   awk -v phase="$phase_num" '
-    /^### Phase / {
+    # Track code block state (fenced with ```)
+    /^```/ {
+      in_code_block = !in_code_block
+      if (in_phase) print
+      next
+    }
+
+    # Only detect phase boundaries outside code blocks
+    /^### Phase / && !in_code_block {
       phase_match = ($3 ~ "^" phase ":")
       if (phase_match) {
         in_phase = 1
@@ -341,10 +351,12 @@ extract_phase_content() {
         exit
       }
     }
-    /^## / && in_phase {
-      # New major section, end extraction
+
+    # Only end on major sections outside code blocks
+    /^## / && in_phase && !in_code_block {
       exit
     }
+
     in_phase { print }
   ' "$plan_file"
 }
@@ -534,8 +546,17 @@ extract_stage_content() {
   local stage_num="$2"
 
   # Extract everything from the stage heading to the next stage heading or end of section
+  # IMPORTANT: Skip code blocks when detecting stage boundaries
   awk -v stage="$stage_num" '
-    /^#### Stage / {
+    # Track code block state (fenced with ```)
+    /^```/ {
+      in_code_block = !in_code_block
+      if (in_stage) print
+      next
+    }
+
+    # Only detect stage boundaries outside code blocks
+    /^#### Stage / && !in_code_block {
       stage_match = ($3 ~ "^" stage ":")
       if (stage_match) {
         in_stage = 1
@@ -545,14 +566,17 @@ extract_stage_content() {
         exit
       }
     }
-    /^### / && in_stage {
+
+    # Only end on section boundaries outside code blocks
+    /^### / && in_stage && !in_code_block {
       # New phase section, end extraction
       exit
     }
-    /^## / && in_stage {
+    /^## / && in_stage && !in_code_block {
       # New major section, end extraction
       exit
     }
+
     in_stage { print }
   ' "$phase_file"
 }
