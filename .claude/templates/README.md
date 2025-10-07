@@ -73,6 +73,8 @@ Place custom templates in the `custom/` subdirectory:
 - `custom/my-template.yaml`
 - Use same format as standard templates
 - Reference as `custom/my-template` in commands
+- See `custom/example-feature.yaml` for template structure reference
+- Full guide: [Template System Guide](../docs/template-system-guide.md)
 
 ## Using Templates
 
