@@ -10,7 +10,7 @@ I am a specialized agent focused on analyzing performance metrics, identifying b
 ## Core Capabilities
 
 ### Metrics Analysis
-- Parse JSONL metrics files from `.claude/metrics/`
+- Parse JSONL metrics files from `.claude/data/metrics/`
 - Calculate statistical measures (avg, median, p95, p99)
 - Identify performance trends over time
 - Compare performance across operations
@@ -36,7 +36,7 @@ I am a specialized agent focused on analyzing performance metrics, identifying b
 ## Standards Compliance
 
 ### Metrics Format (from CLAUDE.md)
-Expected JSONL format in `.claude/metrics/`:
+Expected JSONL format in `.claude/data/metrics/`:
 ```json
 {"timestamp":"2025-01-15T10:30:45Z","operation":"implement","duration_ms":12450,"phase":"Phase 2","status":"success"}
 {"timestamp":"2025-01-15T10:45:12Z","operation":"test","duration_ms":3200,"target":"lua/config/","status":"success"}
@@ -92,7 +92,7 @@ Task {
 
     Analyze metrics for recent /implement execution:
 
-    Metrics file: .claude/metrics/2025-01-15.jsonl
+    Metrics file: .claude/data/metrics/2025-01-15.jsonl
 
     Analysis needed:
     - Total duration and breakdown by phase
@@ -130,7 +130,7 @@ Task {
     - Compare with similar modules
     - Calculate potential improvement impact
 
-    Metrics location: .claude/metrics/*.jsonl
+    Metrics location: .claude/data/metrics/*.jsonl
 
     Provide:
     - Current performance baseline
@@ -183,7 +183,7 @@ My tools support metrics analysis:
 ### Metrics File Structure
 Expected directory layout:
 ```
-.claude/metrics/
+.claude/data/metrics/
 ├── 2025-01-15.jsonl  # Daily metrics
 ├── 2025-01-14.jsonl
 └── summary.json       # Aggregated statistics (optional)
@@ -199,7 +199,7 @@ Typical collaboration:
 
 ### Dependencies
 **Note**: Full metrics infrastructure requires plan 013 implementation:
-- `.claude/metrics/` directory
+- `.claude/data/metrics/` directory
 - Post-command metrics collection hook
 - JSONL metrics format standardization
 
@@ -230,16 +230,16 @@ Basic analysis works with any JSONL files present.
 ### JSONL Parsing
 ```bash
 # Extract all durations for an operation
-grep '"operation":"implement"' .claude/metrics/*.jsonl | \
+grep '"operation":"implement"' .claude/data/metrics/*.jsonl | \
   grep -o '"duration_ms":[0-9]*' | \
   cut -d: -f2
 
 # Count operations by type
-grep -o '"operation":"[^"]*"' .claude/metrics/*.jsonl | \
+grep -o '"operation":"[^"]*"' .claude/data/metrics/*.jsonl | \
   sort | uniq -c
 
 # Find slow operations (>5s)
-grep '"duration_ms":[0-9]*' .claude/metrics/*.jsonl | \
+grep '"duration_ms":[0-9]*' .claude/data/metrics/*.jsonl | \
   awk -F: '$NF > 5000'
 ```
 
@@ -270,7 +270,7 @@ grep '"duration_ms":[0-9]*' file.jsonl | \
 ### Time Series Analysis
 ```bash
 # Group by date
-for file in .claude/metrics/*.jsonl; do
+for file in .claude/data/metrics/*.jsonl; do
   date=$(basename "$file" .jsonl)
   avg=$(grep '"duration_ms":[0-9]*' "$file" | \
         cut -d: -f2 | \
@@ -285,7 +285,7 @@ done
 ### Bottleneck Identification
 ```bash
 # Find slowest operations
-grep '"operation":"[^"]*".*"duration_ms":[0-9]*' .claude/metrics/*.jsonl | \
+grep '"operation":"[^"]*".*"duration_ms":[0-9]*' .claude/data/metrics/*.jsonl | \
   awk -F'"' '{
     op=$4
     match($0, /"duration_ms":([0-9]*)/, arr)

@@ -112,25 +112,25 @@ Metrics files rotate automatically by month:
 ### View Current Month
 ```bash
 # Show all metrics for current month
-cat .claude/metrics/$(date +%Y-%m).jsonl
+cat .claude/data/metrics/$(date +%Y-%m).jsonl
 
 # Pretty print with jq
-cat .claude/metrics/$(date +%Y-%m).jsonl | jq
+cat .claude/data/metrics/$(date +%Y-%m).jsonl | jq
 ```
 
 ### Count Commands
 ```bash
 # Total commands this month
-wc -l .claude/metrics/$(date +%Y-%m).jsonl
+wc -l .claude/data/metrics/$(date +%Y-%m).jsonl
 
 # Commands by operation
-cat .claude/metrics/$(date +%Y-%m).jsonl | jq -r '.operation' | sort | uniq -c | sort -rn
+cat .claude/data/metrics/$(date +%Y-%m).jsonl | jq -r '.operation' | sort | uniq -c | sort -rn
 ```
 
 ### Average Duration
 ```bash
 # Average duration per operation
-cat .claude/metrics/*.jsonl | jq -s '
+cat .claude/data/metrics/*.jsonl | jq -s '
   group_by(.operation) |
   map({
     operation: .[0].operation,
@@ -145,7 +145,7 @@ cat .claude/metrics/*.jsonl | jq -s '
 ### Success Rate
 ```bash
 # Success rate by operation
-cat .claude/metrics/*.jsonl | jq -s '
+cat .claude/data/metrics/*.jsonl | jq -s '
   group_by(.operation) |
   map({
     operation: .[0].operation,
@@ -160,22 +160,22 @@ cat .claude/metrics/*.jsonl | jq -s '
 ### Slow Commands
 ```bash
 # Find slowest command executions
-cat .claude/metrics/*.jsonl | jq -s 'sort_by(-.duration_ms) | .[0:10]'
+cat .claude/data/metrics/*.jsonl | jq -s 'sort_by(-.duration_ms) | .[0:10]'
 ```
 
 ### Usage Over Time
 ```bash
 # Commands per day
-cat .claude/metrics/*.jsonl | jq -r '.timestamp' | cut -d'T' -f1 | sort | uniq -c
+cat .claude/data/metrics/*.jsonl | jq -r '.timestamp' | cut -d'T' -f1 | sort | uniq -c
 ```
 
 ### Error Analysis
 ```bash
 # Show all errors
-cat .claude/metrics/*.jsonl | jq 'select(.status == "error")'
+cat .claude/data/metrics/*.jsonl | jq 'select(.status == "error")'
 
 # Errors by operation
-cat .claude/metrics/*.jsonl | jq -r 'select(.status == "error") | .operation' | sort | uniq -c
+cat .claude/data/metrics/*.jsonl | jq -r 'select(.status == "error") | .operation' | sort | uniq -c
 ```
 
 ## Metrics Reports
@@ -186,7 +186,7 @@ cat .claude/metrics/*.jsonl | jq -r 'select(.status == "error") | .operation' | 
 # Generate monthly metrics summary
 
 MONTH=$(date +%Y-%m)
-METRICS_FILE=".claude/metrics/$MONTH.jsonl"
+METRICS_FILE=".claude/data/metrics/$MONTH.jsonl"
 
 echo "Metrics Summary for $MONTH"
 echo "=============================="
@@ -214,7 +214,7 @@ echo "$SUCCESS / $TOTAL ($(($SUCCESS * 100 / $TOTAL))%)"
 #!/usr/bin/env bash
 # Show performance trends over time
 
-for file in .claude/metrics/*.jsonl; do
+for file in .claude/data/metrics/*.jsonl; do
   month=$(basename "$file" .jsonl)
   avg=$(cat "$file" | jq -s 'map(.duration_ms) | add / length | floor')
   echo "$month: ${avg}ms average"
@@ -228,7 +228,7 @@ Use metrics to find commands that take too long:
 
 ```bash
 # Commands averaging over 10 seconds
-cat .claude/metrics/*.jsonl | jq -s '
+cat .claude/data/metrics/*.jsonl | jq -s '
   group_by(.operation) |
   map({
     operation: .[0].operation,
@@ -243,7 +243,7 @@ Identify commands with high error rates:
 
 ```bash
 # Commands with >10% error rate
-cat .claude/metrics/*.jsonl | jq -s '
+cat .claude/data/metrics/*.jsonl | jq -s '
   group_by(.operation) |
   map({
     operation: .[0].operation,
@@ -258,7 +258,7 @@ Understand which commands are used most:
 
 ```bash
 # Top 5 most used commands
-cat .claude/metrics/*.jsonl | jq -r '.operation' | sort | uniq -c | sort -rn | head -5
+cat .claude/data/metrics/*.jsonl | jq -r '.operation' | sort | uniq -c | sort -rn | head -5
 ```
 
 ## Maintenance
@@ -272,14 +272,14 @@ find .claude/metrics -name "*.jsonl" -mtime +180 -delete
 ### Archive Metrics
 ```bash
 # Archive old metrics
-mkdir -p .claude/metrics/archive
-mv .claude/metrics/2024-*.jsonl .claude/metrics/archive/
+mkdir -p .claude/data/metrics/archive
+mv .claude/data/metrics/2024-*.jsonl .claude/data/metrics/archive/
 ```
 
 ### Export Metrics
 ```bash
 # Export to CSV
-cat .claude/metrics/*.jsonl | jq -r '[.timestamp, .operation, .duration_ms, .status] | @csv' > metrics.csv
+cat .claude/data/metrics/*.jsonl | jq -r '[.timestamp, .operation, .duration_ms, .status] | @csv' > metrics.csv
 ```
 
 ## Integration with Tools
@@ -292,7 +292,7 @@ Create custom analysis tools in `.claude/bin/`:
 # .claude/bin/analyze-metrics.sh
 
 # Your custom metrics analysis
-cat .claude/metrics/*.jsonl | jq -s 'your-analysis-here'
+cat .claude/data/metrics/*.jsonl | jq -s 'your-analysis-here'
 ```
 
 ### Metrics Specialist Agent
@@ -323,13 +323,13 @@ Metrics do NOT contain:
 - Error messages
 
 ### Local Storage
-- Metrics are stored locally in `.claude/metrics/`
+- Metrics are stored locally in `.claude/data/metrics/`
 - Never transmitted externally
 - Not included in git by default (should be in .gitignore)
 
 ### Sensitive Operations
 If you have sensitive command names, consider:
-- Adding `.claude/metrics/` to `.gitignore`
+- Adding `.claude/data/metrics/` to `.gitignore`
 - Periodically cleaning old metrics
 - Using generic operation names
 
@@ -351,7 +351,7 @@ ls -l .claude/hooks/post-command-metrics.sh
 
 **Check 3: Metrics Directory**
 ```bash
-ls -la .claude/metrics/
+ls -la .claude/data/metrics/
 # Should exist and be writable
 ```
 
@@ -361,7 +361,7 @@ echo '{"hook_event_name":"Stop","command":"/test","duration_ms":1000,"status":"s
   .claude/hooks/post-command-metrics.sh
 
 # Check if entry added
-tail -1 .claude/metrics/$(date +%Y-%m).jsonl
+tail -1 .claude/data/metrics/$(date +%Y-%m).jsonl
 ```
 
 ### Metrics File Corruption
@@ -371,14 +371,14 @@ tail -1 .claude/metrics/$(date +%Y-%m).jsonl
 # Validate each line is valid JSON
 while IFS= read -r line; do
   echo "$line" | jq empty || echo "Invalid: $line"
-done < .claude/metrics/$(date +%Y-%m).jsonl
+done < .claude/data/metrics/$(date +%Y-%m).jsonl
 ```
 
 **Repair Corrupted File**
 ```bash
 # Extract valid JSON lines
-grep '^{.*}$' .claude/metrics/2025-10.jsonl > .claude/metrics/2025-10.jsonl.tmp
-mv .claude/metrics/2025-10.jsonl.tmp .claude/metrics/2025-10.jsonl
+grep '^{.*}$' .claude/data/metrics/2025-10.jsonl > .claude/data/metrics/2025-10.jsonl.tmp
+mv .claude/data/metrics/2025-10.jsonl.tmp .claude/data/metrics/2025-10.jsonl
 ```
 
 ## Documentation Standards
@@ -407,32 +407,32 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 ### Common Commands
 ```bash
 # View current month
-cat .claude/metrics/$(date +%Y-%m).jsonl | jq
+cat .claude/data/metrics/$(date +%Y-%m).jsonl | jq
 
 # Count by operation
-cat .claude/metrics/*.jsonl | jq -r '.operation' | sort | uniq -c
+cat .claude/data/metrics/*.jsonl | jq -r '.operation' | sort | uniq -c
 
 # Average duration
-cat .claude/metrics/*.jsonl | jq -s 'map(.duration_ms) | add / length'
+cat .claude/data/metrics/*.jsonl | jq -s 'map(.duration_ms) | add / length'
 
 # Success rate
-cat .claude/metrics/*.jsonl | jq -s 'map(select(.status == "success")) | length'
+cat .claude/data/metrics/*.jsonl | jq -s 'map(select(.status == "success")) | length'
 
 # Slowest commands
-cat .claude/metrics/*.jsonl | jq -s 'sort_by(-.duration_ms) | .[0:10]'
+cat .claude/data/metrics/*.jsonl | jq -s 'sort_by(-.duration_ms) | .[0:10]'
 
 # Errors only
-cat .claude/metrics/*.jsonl | jq 'select(.status == "error")'
+cat .claude/data/metrics/*.jsonl | jq 'select(.status == "error")'
 ```
 
 ### Analysis Examples
 ```bash
 # Which command is slowest on average?
-cat .claude/metrics/*.jsonl | jq -s 'group_by(.operation) | map({op: .[0].operation, avg: (map(.duration_ms) | add / length)}) | sort_by(-.avg) | .[0]'
+cat .claude/data/metrics/*.jsonl | jq -s 'group_by(.operation) | map({op: .[0].operation, avg: (map(.duration_ms) | add / length)}) | sort_by(-.avg) | .[0]'
 
 # Which day had most activity?
-cat .claude/metrics/*.jsonl | jq -r '.timestamp' | cut -d'T' -f1 | sort | uniq -c | sort -rn | head -1
+cat .claude/data/metrics/*.jsonl | jq -r '.timestamp' | cut -d'T' -f1 | sort | uniq -c | sort -rn | head -1
 
 # Error rate per command
-cat .claude/metrics/*.jsonl | jq -s 'group_by(.operation) | map({op: .[0].operation, errors: map(select(.status == "error")) | length, total: length}) | map({op: .op, rate: (.errors / .total * 100)})'
+cat .claude/data/metrics/*.jsonl | jq -s 'group_by(.operation) | map({op: .[0].operation, errors: map(select(.status == "error")) | length, total: length}) | map({op: .op, rate: (.errors / .total * 100)})'
 ```

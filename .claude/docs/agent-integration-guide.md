@@ -98,7 +98,7 @@ Task {
 #### 8. metrics-specialist
 - **Purpose**: Performance analysis and optimization recommendations
 - **Tools**: Read, Bash, Grep
-- **Use Cases**: Analyzing metrics from .claude/metrics/, identifying bottlenecks
+- **Use Cases**: Analyzing metrics from .claude/data/metrics/, identifying bottlenecks
 - **Output**: Statistical analysis with optimization suggestions
 - **Dependencies**: Requires metrics infrastructure (hooks)
 - **Invoked By**: Custom performance analysis commands (future)
@@ -520,7 +520,7 @@ Agents work with hooks for metrics collection:
 - Duration: execution time
 - Status: success/failure
 
-**Metrics Location**: `.claude/metrics/YYYY-MM.jsonl`
+**Metrics Location**: `.claude/data/metrics/YYYY-MM.jsonl`
 
 **Analysis**: Use metrics-specialist to analyze agent performance
 

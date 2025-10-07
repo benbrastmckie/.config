@@ -190,7 +190,7 @@ I'll consider for each phase:
 **Evaluation Process:**
 
 ```
-Read /home/benjamin/.config/.claude/prompts/evaluate-plan-phases.md
+Read /home/benjamin/.config/.claude/agents/prompts/evaluate-plan-phases.md
 
 You just created this implementation plan with [N] phases.
 

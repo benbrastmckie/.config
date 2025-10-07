@@ -90,16 +90,16 @@ Checkpoints are moved to `failed/` when:
 ### Manual Cleanup
 ```bash
 # List all checkpoints
-ls -la .claude/checkpoints/*.json
+ls -la .claude/data/checkpoints/*.json
 
 # Delete specific checkpoint
-rm .claude/checkpoints/orchestrate_old_project_*.json
+rm .claude/data/checkpoints/orchestrate_old_project_*.json
 
 # Clean all checkpoints (use with caution)
-rm .claude/checkpoints/*.json
+rm .claude/data/checkpoints/*.json
 
 # Archive checkpoint manually
-mv .claude/checkpoints/checkpoint.json .claude/checkpoints/failed/
+mv .claude/data/checkpoints/checkpoint.json .claude/data/checkpoints/failed/
 ```
 
 ## Resume Workflow

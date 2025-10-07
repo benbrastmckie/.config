@@ -415,7 +415,7 @@ I'll consider:
 **Evaluation Process:**
 
 ```
-Read /home/benjamin/.config/.claude/prompts/evaluate-phase-expansion.md
+Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-expansion.md
 
 Current Phase [N]: [Phase Name]
 
@@ -946,7 +946,7 @@ I'll consider:
 **Evaluation Process:**
 
 ```
-Read /home/benjamin/.config/.claude/prompts/evaluate-phase-collapse.md
+Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-collapse.md
 
 Phase [N]: [Phase Name] [COMPLETED]
 
@@ -1446,7 +1446,7 @@ PROJECT_NAME=$(basename "$PLAN_PATH" .md | sed 's/^[0-9]*_//')
 On successful implementation completion:
 ```bash
 # Delete checkpoint file
-rm .claude/checkpoints/implement_${PROJECT_NAME}_*.json
+rm .claude/data/checkpoints/implement_${PROJECT_NAME}_*.json
 ```
 
 On implementation failure:
@@ -1461,7 +1461,7 @@ STATE_JSON=$(cat <<EOF
 EOF
 )
 .claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
-mv .claude/checkpoints/implement_${PROJECT_NAME}_*.json .claude/checkpoints/failed/
+mv .claude/data/checkpoints/implement_${PROJECT_NAME}_*.json .claude/data/checkpoints/failed/
 ```
 
 Let me start by finding your implementation plan.

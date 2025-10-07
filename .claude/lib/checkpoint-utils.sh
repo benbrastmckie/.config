@@ -171,7 +171,7 @@ restore_checkpoint() {
 # validate_checkpoint: Validate checkpoint structure and schema
 # Usage: validate_checkpoint <checkpoint-file>
 # Returns: 0 if valid, 1 if invalid
-# Example: validate_checkpoint ".claude/checkpoints/implement_auth_*.json"
+# Example: validate_checkpoint ".claude/data/checkpoints/implement_auth_*.json"
 validate_checkpoint() {
   local checkpoint_file="${1:-}"
 
@@ -219,7 +219,7 @@ validate_checkpoint() {
 # migrate_checkpoint_format: Migrate checkpoint to current schema version
 # Usage: migrate_checkpoint_format <checkpoint-file>
 # Returns: 0 if migrated or already current, 1 on error
-# Example: migrate_checkpoint_format ".claude/checkpoints/implement_auth_*.json"
+# Example: migrate_checkpoint_format ".claude/data/checkpoints/implement_auth_*.json"
 migrate_checkpoint_format() {
   local checkpoint_file="${1:-}"
 

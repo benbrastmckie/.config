@@ -288,10 +288,10 @@ ls .claude/templates/*.yaml
 ### Monitoring & Analysis
 ```bash
 # View metrics
-cat .claude/metrics/$(date +%Y-%m).jsonl | jq
+cat .claude/data/metrics/$(date +%Y-%m).jsonl | jq
 
 # Check TTS activity
-tail -f .claude/logs/tts.log
+tail -f .claude/data/logs/tts.log
 
 # Analyze agent performance
 /analyze-agents
@@ -326,7 +326,7 @@ cat .claude/settings.local.json | jq '.hooks.Stop'  # Verify hook registered
 ```bash
 grep "TTS_ENABLED=true" .claude/tts/tts-config.sh   # Check enabled
 espeak-ng "Test"                                     # Test engine
-tail -f .claude/logs/tts.log                         # Monitor activity
+tail -f .claude/data/logs/tts.log                         # Monitor activity
 ```
 
 **Learning recommendations not appearing**:
@@ -337,8 +337,8 @@ ls .claude/learning/*.jsonl                          # Check data exists
 
 **Checkpoint not resuming**:
 ```bash
-ls .claude/checkpoints/*.json                        # List checkpoints
-cat .claude/checkpoints/latest.json | jq             # Inspect state
+ls .claude/data/checkpoints/*.json                        # List checkpoints
+cat .claude/data/checkpoints/latest.json | jq             # Inspect state
 ```
 
 ## Navigation

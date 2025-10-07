@@ -24,7 +24,7 @@ Add comprehensive logging for adaptive planning detection in `/implement`.
 - Log complexity scores and thresholds
 - Log test failure patterns detected
 - Log all replan invocations and outcomes
-- Create `.claude/logs/adaptive-planning.log` with structured entries
+- Create `.claude/data/logs/adaptive-planning.log` with structured entries
 
 **Why Deferred**:
 - Adaptive planning is documented but not yet used in practice

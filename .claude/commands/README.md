@@ -611,10 +611,10 @@ Commands trigger hooks on completion:
 - Custom hooks for command-specific actions
 
 ### With Logging
-Commands can log to `.claude/logs/`:
-- `.claude/logs/hook-debug.log`: Hook execution trace
-- `.claude/logs/tts.log`: TTS notification history
-- `.claude/metrics/*.jsonl`: Command execution metrics
+Commands can log to `.claude/data/logs/`:
+- `.claude/data/logs/hook-debug.log`: Hook execution trace
+- `.claude/data/logs/tts.log`: TTS notification history
+- `.claude/data/metrics/*.jsonl`: Command execution metrics
 
 ## Best Practices
 

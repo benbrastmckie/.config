@@ -100,7 +100,7 @@ This prompt is used by `/implement` when evaluating completed expanded phases:
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  prompt: "Read /home/benjamin/.config/.claude/prompts/evaluate-phase-collapse.md
+  prompt: "Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-collapse.md
 
           Phase [N]: [Phase Name] [COMPLETED]
 
