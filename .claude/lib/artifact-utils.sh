@@ -241,6 +241,237 @@ validate_artifact_references() {
 }
 
 # ==============================================================================
+# Metadata Extraction Functions (Context Optimization)
+# ==============================================================================
+
+# get_plan_metadata: Extract plan metadata without reading full file
+# Usage: get_plan_metadata <plan-file-path>
+# Returns: JSON with title, date, phases, standards_file, path
+# Example: get_plan_metadata "specs/plans/026_agential_system_refinement.md"
+get_plan_metadata() {
+  local plan_path="${1:-}"
+
+  if [ -z "$plan_path" ]; then
+    echo "Usage: get_plan_metadata <plan-path>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$plan_path" ]; then
+    echo "{\"error\":\"File not found: $plan_path\"}" >&2
+    return 1
+  fi
+
+  # Read only first 50 lines (metadata section)
+  local metadata_lines=$(head -50 "$plan_path")
+
+  # Extract title (first # heading)
+  local title=$(echo "$metadata_lines" | grep -m1 '^# ' | sed 's/^# //')
+
+  # Extract date from metadata (- **Date**: ...)
+  local date=$(echo "$metadata_lines" | grep -m1 '^\s*-\s*\*\*Date\*\*:' | sed 's/.*Date\*\*:\s*//')
+
+  # Extract standards file reference
+  local standards_file=$(echo "$metadata_lines" | grep -m1 '^\s*-\s*\*\*Standards File\*\*:' | sed 's/.*Standards File\*\*:\s*//')
+
+  # Count phases in full file (### Phase N: or ## Phase N: pattern)
+  local phases=$(grep -E '^##+ Phase [0-9]' "$plan_path" 2>/dev/null | wc -l)
+  phases=${phases// /}  # Remove whitespace
+
+  # Build JSON (handle jq availability)
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --arg title "${title:-Unknown Plan}" \
+      --arg date "${date:-Unknown}" \
+      --arg phases "$phases" \
+      --arg standards "${standards_file:-None}" \
+      --arg path "$plan_path" \
+      '{
+        title: $title,
+        date: $date,
+        phases: ($phases | tonumber),
+        standards_file: $standards,
+        path: $path
+      }'
+  else
+    cat <<EOF
+{
+  "title": "${title:-Unknown Plan}",
+  "date": "${date:-Unknown}",
+  "phases": $phases,
+  "standards_file": "${standards_file:-None}",
+  "path": "$plan_path"
+}
+EOF
+  fi
+}
+
+# get_report_metadata: Extract report metadata without reading full file
+# Usage: get_report_metadata <report-file-path>
+# Returns: JSON with title, date, research_questions, path
+# Example: get_report_metadata "specs/reports/024_system_optimization.md"
+get_report_metadata() {
+  local report_path="${1:-}"
+
+  if [ -z "$report_path" ]; then
+    echo "Usage: get_report_metadata <report-path>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$report_path" ]; then
+    echo "{\"error\":\"File not found: $report_path\"}" >&2
+    return 1
+  fi
+
+  # Read only first 100 lines (metadata + exec summary section)
+  local metadata_lines=$(head -100 "$report_path")
+
+  # Extract title (first # heading)
+  local title=$(echo "$metadata_lines" | grep -m1 '^# ' | sed 's/^# //')
+
+  # Extract date from metadata
+  local date=$(echo "$metadata_lines" | grep -m1 '^\s*-\s*\*\*Date\*\*:' | sed 's/.*Date\*\*:\s*//')
+
+  # Extract research question count
+  local question_count=$(echo "$metadata_lines" | grep -c '^\s*[0-9]\+\.\s' || echo "0")
+
+  # Build JSON
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --arg title "${title:-Unknown Report}" \
+      --arg date "${date:-Unknown}" \
+      --arg questions "$question_count" \
+      --arg path "$report_path" \
+      '{
+        title: $title,
+        date: $date,
+        research_questions: ($questions | tonumber),
+        path: $path
+      }'
+  else
+    cat <<EOF
+{
+  "title": "${title:-Unknown Report}",
+  "date": "${date:-Unknown}",
+  "research_questions": $question_count,
+  "path": "$report_path"
+}
+EOF
+  fi
+}
+
+# get_plan_phase: Extract single phase content on-demand
+# Usage: get_plan_phase <plan-file-path> <phase-number>
+# Returns: Phase content as text
+# Example: get_plan_phase "specs/plans/026_foo.md" 3
+get_plan_phase() {
+  local plan_path="${1:-}"
+  local phase_num="${2:-}"
+
+  if [ -z "$plan_path" ] || [ -z "$phase_num" ]; then
+    echo "Usage: get_plan_phase <plan-path> <phase-number>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$plan_path" ]; then
+    echo "Error: File not found: $plan_path" >&2
+    return 1
+  fi
+
+  # Find line number of phase heading (supports both ## and ### levels)
+  local start_line=$(grep -nE "^##+ Phase $phase_num:" "$plan_path" | cut -d: -f1 | head -1)
+
+  if [ -z "$start_line" ]; then
+    echo "Error: Phase $phase_num not found in $plan_path" >&2
+    return 1
+  fi
+
+  # Find line number of next phase or end of file
+  local next_phase=$((phase_num + 1))
+  local end_line=$(grep -nE "^##+ Phase $next_phase:" "$plan_path" | cut -d: -f1 | head -1)
+
+  # Extract phase content
+  if [ -n "$end_line" ]; then
+    sed -n "${start_line},$((end_line - 1))p" "$plan_path"
+  else
+    sed -n "${start_line},\$p" "$plan_path"
+  fi
+}
+
+# get_plan_section: Generic section extraction by heading pattern
+# Usage: get_plan_section <plan-file-path> <section-heading-pattern>
+# Returns: Section content as text
+# Example: get_plan_section "specs/plans/026_foo.md" "Technical Design"
+get_plan_section() {
+  local plan_path="${1:-}"
+  local section_pattern="${2:-}"
+
+  if [ -z "$plan_path" ] || [ -z "$section_pattern" ]; then
+    echo "Usage: get_plan_section <plan-path> <section-heading>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$plan_path" ]; then
+    echo "Error: File not found: $plan_path" >&2
+    return 1
+  fi
+
+  # Find line number of section heading (## pattern)
+  local start_line=$(grep -n "^## .*$section_pattern" "$plan_path" | cut -d: -f1 | head -1)
+
+  if [ -z "$start_line" ]; then
+    echo "Error: Section '$section_pattern' not found in $plan_path" >&2
+    return 1
+  fi
+
+  # Find line number of next ## heading or end of file
+  local end_line=$(awk "NR>$start_line && /^## / {print NR; exit}" "$plan_path")
+
+  # Extract section content
+  if [ -n "$end_line" ]; then
+    sed -n "${start_line},$((end_line - 1))p" "$plan_path"
+  else
+    sed -n "${start_line},\$p" "$plan_path"
+  fi
+}
+
+# get_report_section: Extract report section by heading
+# Usage: get_report_section <report-file-path> <section-heading-pattern>
+# Returns: Section content as text
+# Example: get_report_section "specs/reports/024_foo.md" "Executive Summary"
+get_report_section() {
+  local report_path="${1:-}"
+  local section_pattern="${2:-}"
+
+  if [ -z "$report_path" ] || [ -z "$section_pattern" ]; then
+    echo "Usage: get_report_section <report-path> <section-heading>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$report_path" ]; then
+    echo "Error: File not found: $report_path" >&2
+    return 1
+  fi
+
+  # Find line number of section heading (## pattern)
+  local start_line=$(grep -n "^## .*$section_pattern" "$report_path" | cut -d: -f1 | head -1)
+
+  if [ -z "$start_line" ]; then
+    echo "Error: Section '$section_pattern' not found in $report_path" >&2
+    return 1
+  fi
+
+  # Find line number of next ## heading or end of file
+  local end_line=$(awk "NR>$start_line && /^## / {print NR; exit}" "$report_path")
+
+  # Extract section content
+  if [ -n "$end_line" ]; then
+    sed -n "${start_line},$((end_line - 1))p" "$report_path"
+  else
+    sed -n "${start_line},\$p" "$report_path"
+  fi
+}
+
+# ==============================================================================
 # Convenience Functions
 # ==============================================================================
 
@@ -295,6 +526,7 @@ get_artifact_path() {
 # ==============================================================================
 
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+  # Registry functions
   export -f register_artifact
   export -f query_artifacts
   export -f update_artifact_status
@@ -302,4 +534,11 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f validate_artifact_references
   export -f list_artifacts
   export -f get_artifact_path
+
+  # Metadata extraction functions (context optimization)
+  export -f get_plan_metadata
+  export -f get_report_metadata
+  export -f get_plan_phase
+  export -f get_plan_section
+  export -f get_report_section
 fi
