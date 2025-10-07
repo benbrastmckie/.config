@@ -284,6 +284,8 @@ When referencing specs:
 
 Format: `See [Feature Implementation Plan](specs/plans/003_feature_name.md) for details.`
 
+**Important**: specs/ directories are gitignored. Never attempt to commit spec files (plans, reports, summaries) to git - they are local working artifacts only.
+
 ### Breaking Changes
 Document prominently:
 ```markdown

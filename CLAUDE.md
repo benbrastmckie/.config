@@ -23,6 +23,8 @@ All specification documents use incremental three-digit numbering (001, 002, 003
 
 **Location**: specs/ directories can exist at project root or in subdirectories for scoped specifications.
 
+**Important**: specs/ directories are gitignored. Never attempt to commit plans, reports, or summaries to git. These are local working artifacts only.
+
 ##### Plan Structure Levels
 
 Plans use progressive organization that grows based on actual complexity discovered during implementation:
