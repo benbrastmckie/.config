@@ -170,10 +170,113 @@ Based on discovered standards, I'll ensure:
 - Use `/expand-stage <phase> <stage-num>` to extract complex stages to separate files (Level 1 → 2)
 - Structure grows organically based on actual implementation needs, not predictions
 
-**Complexity Hints**:
-- If complexity score ≥50: Display hint after plan creation
-- Hint: "This plan has moderate/high complexity (score: X). Consider using `/expand-phase` during implementation if phases prove complex."
-- Expansion is optional and user-driven based on actual needs
+### 8.5. Agent-Based Plan Phase Analysis
+
+After creating the plan, I'll analyze the entire plan holistically to identify which phases (if any) would benefit from expansion to separate files.
+
+**Analysis Approach:**
+
+The primary agent (executing `/plan`) has just created the plan and has all phases in context. Rather than using a generic complexity threshold, I'll review the entire plan and make informed recommendations about which specific phases might benefit from expansion.
+
+**Evaluation Criteria:**
+
+I'll consider for each phase:
+- **Task count and complexity**: Not just numbers, but actual complexity of work
+- **Scope and breadth**: Files, modules, subsystems touched
+- **Interrelationships**: Dependencies and connections between phases
+- **Phase relationships**: How phases build on each other
+- **Natural breakpoints**: Where expansion creates better conceptual boundaries
+
+**Evaluation Process:**
+
+```
+Read /home/benjamin/.config/.claude/prompts/evaluate-plan-phases.md
+
+You just created this implementation plan with [N] phases.
+
+[Full plan content]
+
+Follow the holistic analysis approach and identify which phases (if any)
+would benefit from expansion to separate files.
+
+Provide your recommendation in the structured format.
+```
+
+**If Expansion Recommended:**
+
+Display formatted analysis:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE COMPLEXITY ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The following phases may benefit from expansion:
+
+Phase [N]: [Phase Name]
+Rationale: [Agent's reasoning based on understanding the phase]
+Command: /expand-phase <plan-path> [N]
+
+Phase [M]: [Phase Name]
+Rationale: [Agent's reasoning based on understanding the phase]
+Command: /expand-phase <plan-path> [M]
+
+Note: Expansion is optional. You can expand now before starting
+implementation, or expand during implementation using /expand-phase
+if phases prove too complex.
+
+Overall Complexity Score: [X] (stored in plan metadata)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If No Expansion Recommended:**
+
+Display brief note:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE COMPLEXITY ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Plan structure: All phases are appropriately scoped for inline format.
+
+[Agent's brief rationale - e.g., "All phases have 3-5 straightforward
+tasks that work well together in the single-file format."]
+
+Overall Complexity Score: [X] (stored in plan metadata)
+
+Note: Phases can be expanded during implementation if needed using
+/expand-phase <plan-path> <phase-num>.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Analysis Benefits:**
+
+- **Specific recommendations**: Not just "plan is complex," but "Phase 3 and Phase 5 need expansion"
+- **Clear rationale**: Agent explains why each phase would benefit
+- **Holistic view**: Agent sees how phases relate, not just individual metrics
+- **Better judgment**: Understands actual complexity, not just task counts
+- **Informed decisions**: User knows which phases to consider expanding
+
+**Relationship to /implement Proactive Check:**
+
+- **At plan creation**: Agent reviews entire plan holistically for structural recommendations
+- **At implementation**: Agent re-evaluates specific phase before starting work
+- **Different contexts**: Full plan view vs focused phase view
+- **User flexibility**: Can expand at plan time, implementation time, or not at all
+
+### 8.6. Present Recommendations
+
+The agent-based analysis from Step 8.5 is presented immediately after plan creation, before final output. This helps users make informed decisions about plan structure before beginning implementation.
+
+**Presentation Timing:**
+- After plan file is written
+- Before final "Plan created successfully" message
+- Gives user opportunity to expand phases immediately if desired
+
+**User Options After Analysis:**
+1. **Expand now**: Use recommended `/expand-phase` commands before starting implementation
+2. **Expand during implementation**: Wait and expand if phases prove complex
+3. **Keep inline**: Continue with Level 0 structure throughout implementation
+4. **Selective expansion**: Expand some recommended phases but not others
+
+This analysis replaces the generic complexity hint (≥50 threshold) with specific, informed recommendations based on actual plan content.
 
 ## Output Format
 
