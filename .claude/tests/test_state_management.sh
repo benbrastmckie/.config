@@ -53,7 +53,7 @@ info() {
 test_checkpoint_save() {
   info "Testing checkpoint save with all fields"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/test_save.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/test_save.json"
 
   # Create checkpoint with all required fields
   cat > "$checkpoint_file" <<'EOF'
@@ -99,7 +99,7 @@ EOF
 test_checkpoint_restore() {
   info "Testing checkpoint restore and validation"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/test_restore.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/test_restore.json"
 
   # Create valid checkpoint
   cat > "$checkpoint_file" <<'EOF'
@@ -134,7 +134,7 @@ EOF
 test_checkpoint_migration() {
   info "Testing checkpoint migration from v1 to v2"
 
-  local old_checkpoint="$TEST_DIR/.claude/checkpoints/v1_checkpoint.json"
+  local old_checkpoint="$TEST_DIR/.claude/data/checkpoints/v1_checkpoint.json"
 
   # Create v1 format checkpoint (missing new fields)
   cat > "$old_checkpoint" <<'EOF'
@@ -156,7 +156,7 @@ EOF
   fi
 
   # Simulate migration - add new fields
-  local migrated="$TEST_DIR/.claude/checkpoints/v2_checkpoint.json"
+  local migrated="$TEST_DIR/.claude/data/checkpoints/v2_checkpoint.json"
   {
     echo "{"
     grep -v "^}$" "$old_checkpoint" | grep -v "version"
@@ -245,7 +245,7 @@ test_lock_file_management() {
 test_checkpoint_field_operations() {
   info "Testing checkpoint field get/set operations"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/fields.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/fields.json"
 
   # Create checkpoint
   cat > "$checkpoint_file" <<'EOF'
@@ -281,7 +281,7 @@ test_checkpoint_validation() {
   info "Testing checkpoint validation"
 
   # Valid checkpoint
-  local valid_file="$TEST_DIR/.claude/checkpoints/valid.json"
+  local valid_file="$TEST_DIR/.claude/data/checkpoints/valid.json"
   cat > "$valid_file" <<'EOF'
 {
   "version": "2.0",
@@ -300,7 +300,7 @@ EOF
   fi
 
   # Invalid checkpoint (missing required field)
-  local invalid_file="$TEST_DIR/.claude/checkpoints/invalid.json"
+  local invalid_file="$TEST_DIR/.claude/data/checkpoints/invalid.json"
   cat > "$invalid_file" <<'EOF'
 {
   "version": "2.0",
@@ -319,7 +319,7 @@ EOF
 test_replanning_fields() {
   info "Testing replanning-specific checkpoint fields"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/replan.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/replan.json"
 
   cat > "$checkpoint_file" <<'EOF'
 {
@@ -367,7 +367,7 @@ test_checkpoint_schema_evolution() {
   info "Testing checkpoint schema evolution"
 
   # Create checkpoint with future fields (forward compatibility)
-  local future_file="$TEST_DIR/.claude/checkpoints/future.json"
+  local future_file="$TEST_DIR/.claude/data/checkpoints/future.json"
   cat > "$future_file" <<'EOF'
 {
   "version": "3.0",
@@ -391,7 +391,7 @@ EOF
 test_atomic_checkpoint_updates() {
   info "Testing atomic checkpoint updates"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/atomic.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/atomic.json"
   local temp_file="${checkpoint_file}.tmp"
 
   # Create original checkpoint

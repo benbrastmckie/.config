@@ -91,7 +91,7 @@ This prompt is used by commands like `/implement` and `/plan` when evaluating ph
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  prompt: "Read /home/benjamin/.config/.claude/prompts/evaluate-phase-expansion.md
+  prompt: "Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-expansion.md
 
           Phase [N]: [Phase Name]
 

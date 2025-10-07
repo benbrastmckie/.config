@@ -173,7 +173,7 @@ TTS_VOICE="en-us+m3"
 # Commands that don't require TTS (space-separated list)
 TTS_SILENT_COMMANDS="/clear /help /version /status /list /list-plans /list-reports /list-summaries"
 
-# Debug mode: log to .claude/logs/tts.log
+# Debug mode: log to .claude/data/logs/tts.log
 TTS_DEBUG=true
 ```
 
@@ -441,7 +441,7 @@ rm .claude/hooks/tts-dispatcher.sh
 - **Configuration**: `.claude/tts/tts-config.sh`
 - **Message Generator**: `.claude/tts/tts-messages.sh`
 - **Dispatcher Hook**: `.claude/hooks/tts-dispatcher.sh`
-- **Debug Logs**: `.claude/logs/tts.log` and `.claude/logs/hook-debug.log`
+- **Debug Logs**: `.claude/data/logs/tts.log` and `.claude/data/logs/hook-debug.log`
 
 ### Hook Input Format
 

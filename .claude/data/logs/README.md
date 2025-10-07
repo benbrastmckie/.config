@@ -41,16 +41,16 @@ The logs directory provides:
 **Viewing**:
 ```bash
 # Show recent hook calls
-tail .claude/logs/hook-debug.log
+tail .claude/data/logs/hook-debug.log
 
 # Follow in real-time
-tail -f .claude/logs/hook-debug.log
+tail -f .claude/data/logs/hook-debug.log
 
 # Filter by event type
-grep "EVENT=Stop" .claude/logs/hook-debug.log
+grep "EVENT=Stop" .claude/data/logs/hook-debug.log
 
 # Count events by type
-grep -o "EVENT=[^ ]*" .claude/logs/hook-debug.log | sort | uniq -c
+grep -o "EVENT=[^ ]*" .claude/data/logs/hook-debug.log | sort | uniq -c
 ```
 
 ---
@@ -85,26 +85,26 @@ grep -o "EVENT=[^ ]*" .claude/logs/hook-debug.log | sort | uniq -c
 **Viewing**:
 ```bash
 # Show recent TTS messages
-tail .claude/logs/tts.log
+tail .claude/data/logs/tts.log
 
 # Follow in real-time
-tail -f .claude/logs/tts.log
+tail -f .claude/data/logs/tts.log
 
 # Filter by event
-grep "\[Stop\]" .claude/logs/tts.log
+grep "\[Stop\]" .claude/data/logs/tts.log
 
 # See only error notifications
-grep "\[Stop\].*Error" .claude/logs/tts.log
+grep "\[Stop\].*Error" .claude/data/logs/tts.log
 
 # Count notifications by type
-grep -o "\[[^]]*\]" .claude/logs/tts.log | sort | uniq -c
+grep -o "\[[^]]*\]" .claude/data/logs/tts.log | sort | uniq -c
 ```
 
 ## Log Management
 
 ### Automatic Creation
 Logs are created automatically when needed:
-- Hooks create `.claude/logs/` directory if missing
+- Hooks create `.claude/data/logs/` directory if missing
 - Log files are created on first write
 - No manual initialization required
 
@@ -113,9 +113,9 @@ Logs do NOT auto-rotate. Manual cleanup recommended:
 
 ```bash
 # Archive old logs monthly
-mkdir -p .claude/logs/archive
-mv .claude/logs/hook-debug.log .claude/logs/archive/hook-debug-$(date +%Y-%m).log
-mv .claude/logs/tts.log .claude/logs/archive/tts-$(date +%Y-%m).log
+mkdir -p .claude/data/logs/archive
+mv .claude/data/logs/hook-debug.log .claude/data/logs/archive/hook-debug-$(date +%Y-%m).log
+mv .claude/data/logs/tts.log .claude/data/logs/archive/tts-$(date +%Y-%m).log
 
 # Recreate fresh logs (hooks will create on next write)
 ```
@@ -123,15 +123,15 @@ mv .claude/logs/tts.log .claude/logs/archive/tts-$(date +%Y-%m).log
 ### Log Cleanup
 ```bash
 # Clear logs (keeps files)
-> .claude/logs/hook-debug.log
-> .claude/logs/tts.log
+> .claude/data/logs/hook-debug.log
+> .claude/data/logs/tts.log
 
 # Remove old archived logs
-find .claude/logs/archive -name "*.log" -mtime +180 -delete
+find .claude/data/logs/archive -name "*.log" -mtime +180 -delete
 
 # Keep only last 1000 lines
-tail -1000 .claude/logs/hook-debug.log > .claude/logs/hook-debug.log.tmp
-mv .claude/logs/hook-debug.log.tmp .claude/logs/hook-debug.log
+tail -1000 .claude/data/logs/hook-debug.log > .claude/data/logs/hook-debug.log.tmp
+mv .claude/data/logs/hook-debug.log.tmp .claude/data/logs/hook-debug.log
 ```
 
 ## Debugging Workflows
@@ -185,12 +185,12 @@ mv .claude/logs/hook-debug.log.tmp .claude/logs/hook-debug.log
 
 4. Check hook-debug.log for event:
    ```bash
-   grep "EVENT=Stop" .claude/logs/hook-debug.log
+   grep "EVENT=Stop" .claude/data/logs/hook-debug.log
    ```
 
 5. Check tts.log for invocation:
    ```bash
-   tail .claude/logs/tts.log
+   tail .claude/data/logs/tts.log
    ```
 
 6. Test espeak-ng:
@@ -206,7 +206,7 @@ mv .claude/logs/hook-debug.log.tmp .claude/logs/hook-debug.log
 **Steps**:
 1. Check tts.log for actual message:
    ```bash
-   tail .claude/logs/tts.log
+   tail .claude/data/logs/tts.log
    ```
 
 2. Test message generation:
@@ -220,7 +220,7 @@ mv .claude/logs/hook-debug.log.tmp .claude/logs/hook-debug.log
 3. Check environment variables in hook:
    ```bash
    # Add debug to tts-dispatcher.sh
-   echo "HOOK_EVENT=$HOOK_EVENT CMD=$CLAUDE_COMMAND" >> .claude/logs/debug.log
+   echo "HOOK_EVENT=$HOOK_EVENT CMD=$CLAUDE_COMMAND" >> .claude/data/logs/debug.log
    ```
 
 ---
@@ -300,27 +300,27 @@ debug_log "Parsed input: $HOOK_INPUT"
 ### Event Frequency
 ```bash
 # Events per hour
-cat .claude/logs/hook-debug.log | cut -d']' -f1 | cut -d'T' -f2 | cut -d':' -f1 | sort | uniq -c
+cat .claude/data/logs/hook-debug.log | cut -d']' -f1 | cut -d'T' -f2 | cut -d':' -f1 | sort | uniq -c
 
 # Events per day
-cat .claude/logs/hook-debug.log | cut -d'T' -f1 | tr -d '[' | sort | uniq -c
+cat .claude/data/logs/hook-debug.log | cut -d'T' -f1 | tr -d '[' | sort | uniq -c
 ```
 
 ### TTS Statistics
 ```bash
 # Notifications per category
-grep -o "\[[^]]*\]" .claude/logs/tts.log | sort | uniq -c
+grep -o "\[[^]]*\]" .claude/data/logs/tts.log | sort | uniq -c
 
 # Average messages per day
-DAYS=$(( ($(date +%s) - $(stat -c %Y .claude/logs/tts.log)) / 86400 + 1 ))
-TOTAL=$(wc -l < .claude/logs/tts.log)
+DAYS=$(( ($(date +%s) - $(stat -c %Y .claude/data/logs/tts.log)) / 86400 + 1 ))
+TOTAL=$(wc -l < .claude/data/logs/tts.log)
 echo "Average: $(( $TOTAL / $DAYS )) messages/day"
 ```
 
 ### Error Detection
 ```bash
 # Find error patterns
-grep -i "error\|fail\|exception" .claude/logs/*.log
+grep -i "error\|fail\|exception" .claude/data/logs/*.log
 
 # Hook failures (non-zero exit)
 # (Note: Hooks should always exit 0, but check implementation)
@@ -354,11 +354,11 @@ Avoid logging sensitive information:
 Monitor log file sizes:
 ```bash
 # Check log sizes
-du -h .claude/logs/*.log
+du -h .claude/data/logs/*.log
 
 # Alert if too large
 MAX_SIZE_MB=10
-SIZE_MB=$(du -m .claude/logs/hook-debug.log | cut -f1)
+SIZE_MB=$(du -m .claude/data/logs/hook-debug.log | cut -f1)
 if [[ $SIZE_MB -gt $MAX_SIZE_MB ]]; then
   echo "Log file too large: ${SIZE_MB}MB"
 fi
@@ -387,37 +387,37 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 ### Viewing Logs
 ```bash
 # Recent hook events
-tail .claude/logs/hook-debug.log
+tail .claude/data/logs/hook-debug.log
 
 # Recent TTS messages
-tail .claude/logs/tts.log
+tail .claude/data/logs/tts.log
 
 # Follow logs live
-tail -f .claude/logs/hook-debug.log
+tail -f .claude/data/logs/hook-debug.log
 
 # Search logs
-grep "ERROR" .claude/logs/*.log
+grep "ERROR" .claude/data/logs/*.log
 ```
 
 ### Log Cleanup
 ```bash
 # Clear all logs
-> .claude/logs/hook-debug.log
-> .claude/logs/tts.log
+> .claude/data/logs/hook-debug.log
+> .claude/data/logs/tts.log
 
 # Archive logs
-mkdir -p .claude/logs/archive
-mv .claude/logs/*.log .claude/logs/archive/
+mkdir -p .claude/data/logs/archive
+mv .claude/data/logs/*.log .claude/data/logs/archive/
 ```
 
 ### Analysis
 ```bash
 # Event counts
-grep -o "EVENT=[^ ]*" .claude/logs/hook-debug.log | sort | uniq -c
+grep -o "EVENT=[^ ]*" .claude/data/logs/hook-debug.log | sort | uniq -c
 
 # TTS category counts
-grep -o "\[[^]]*\]" .claude/logs/tts.log | sort | uniq -c
+grep -o "\[[^]]*\]" .claude/data/logs/tts.log | sort | uniq -c
 
 # Errors
-grep -i error .claude/logs/*.log
+grep -i error .claude/data/logs/*.log
 ```

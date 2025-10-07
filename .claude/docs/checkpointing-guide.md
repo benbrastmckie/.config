@@ -25,7 +25,7 @@ Checkpoints are automatically created during workflow execution:
 
 ### Checkpoint Storage
 
-Checkpoints are stored in `.claude/checkpoints/`:
+Checkpoints are stored in `.claude/data/checkpoints/`:
 
 ```
 checkpoints/
@@ -178,13 +178,13 @@ Checkpoint: orchestrate_auth_system_20251003_184530.json
 
 ```bash
 # Delete specific checkpoint
-rm .claude/checkpoints/orchestrate_auth_system_*.json
+rm .claude/data/checkpoints/orchestrate_auth_system_*.json
 
 # Delete all checkpoints (use with caution!)
-rm .claude/checkpoints/*.json
+rm .claude/data/checkpoints/*.json
 
 # Archive checkpoint to failed/ directory
-mv .claude/checkpoints/checkpoint.json .claude/checkpoints/failed/
+mv .claude/data/checkpoints/checkpoint.json .claude/data/checkpoints/failed/
 ```
 
 ### Automatic Cleanup
@@ -220,10 +220,10 @@ export CLAUDE_AUTO_RESUME=1
 
 ```bash
 # Pretty-print checkpoint JSON
-cat .claude/checkpoints/orchestrate_*.json | jq
+cat .claude/data/checkpoints/orchestrate_*.json | jq
 
 # Check specific field
-cat .claude/checkpoints/orchestrate_*.json | jq '.current_phase'
+cat .claude/data/checkpoints/orchestrate_*.json | jq '.current_phase'
 ```
 
 ### Manual Checkpoint Creation
@@ -241,7 +241,7 @@ cat .claude/checkpoints/orchestrate_*.json | jq '.current_phase'
 
 ```bash
 # Validate checkpoint JSON
-cat .claude/checkpoints/orchestrate_*.json | jq empty
+cat .claude/data/checkpoints/orchestrate_*.json | jq empty
 # No output = valid JSON
 # Error = corrupted checkpoint
 ```
@@ -253,9 +253,9 @@ cat .claude/checkpoints/orchestrate_*.json | jq empty
 **Problem**: Restarted workflow but no resume prompt appeared
 
 **Solutions**:
-1. Check checkpoint exists: `ls .claude/checkpoints/*.json`
+1. Check checkpoint exists: `ls .claude/data/checkpoints/*.json`
 2. Verify filename format matches `{type}_{project}_{timestamp}.json`
-3. Check file permissions: `ls -la .claude/checkpoints/`
+3. Check file permissions: `ls -la .claude/data/checkpoints/`
 4. Ensure workflow description matches (for orchestrate)
 
 ### Corrupted Checkpoint
@@ -265,10 +265,10 @@ cat .claude/checkpoints/orchestrate_*.json | jq empty
 **Solutions**:
 ```bash
 # Validate checkpoint
-cat .claude/checkpoints/checkpoint.json | jq empty
+cat .claude/data/checkpoints/checkpoint.json | jq empty
 
 # If corrupted, delete and restart
-rm .claude/checkpoints/checkpoint.json
+rm .claude/data/checkpoints/checkpoint.json
 /orchestrate "Description"  # Start fresh
 ```
 
@@ -282,8 +282,8 @@ rm .claude/checkpoints/checkpoint.json
 .claude/utils/list-checkpoints.sh
 
 # Delete old ones manually
-ls -lt .claude/checkpoints/orchestrate_project_*.json
-rm .claude/checkpoints/orchestrate_project_20251001_*.json  # Delete old
+ls -lt .claude/data/checkpoints/orchestrate_project_*.json
+rm .claude/data/checkpoints/orchestrate_project_20251001_*.json  # Delete old
 ```
 
 ### Resume Fails with State Error
@@ -309,7 +309,7 @@ rm .claude/checkpoints/orchestrate_project_20251001_*.json  # Delete old
 cat .claude/utils/cleanup-checkpoints.sh | grep MAX_AGE_DAYS
 
 # Force delete all
-rm .claude/checkpoints/*.json
+rm .claude/data/checkpoints/*.json
 ```
 
 ## Best Practices

@@ -216,7 +216,7 @@ TTS_SILENT_COMMANDS="/clear /help /version /status /list"
 ### Enable Debug Logging
 ```bash
 TTS_DEBUG=true
-# Logs to .claude/logs/tts.log and .claude/logs/hook-debug.log
+# Logs to .claude/data/logs/tts.log and .claude/data/logs/hook-debug.log
 ```
 
 ## Testing TTS
@@ -255,16 +255,16 @@ echo '{"hook_event_name":"Stop","command":"/test","status":"success","cwd":"'$(p
   .claude/hooks/tts-dispatcher.sh
 
 # Check TTS log
-tail .claude/logs/tts.log
+tail .claude/data/logs/tts.log
 ```
 
 ### Monitor TTS Activity
 ```bash
 # Watch TTS log in real-time
-tail -f .claude/logs/tts.log
+tail -f .claude/data/logs/tts.log
 
 # Watch hook debug log
-tail -f .claude/logs/hook-debug.log
+tail -f .claude/data/logs/hook-debug.log
 ```
 
 ## Extending TTS
@@ -346,7 +346,7 @@ cat .claude/settings.local.json | jq '.hooks.Stop'
 
 **Check Event Parsing**
 ```bash
-tail .claude/logs/hook-debug.log
+tail .claude/data/logs/hook-debug.log
 # Look for: EVENT=Stop CMD=/implement STATUS=success
 ```
 
@@ -435,7 +435,7 @@ TTS_VOICE_PARAMS="50:160"
 espeak-ng "Test message"
 
 # Check TTS log
-tail -f .claude/logs/tts.log
+tail -f .claude/data/logs/tts.log
 
 # Manual message test
 source .claude/tts/tts-messages.sh && generate_completion_message

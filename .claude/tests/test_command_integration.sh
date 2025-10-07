@@ -126,7 +126,7 @@ test_plan_argument_parsing() {
 test_checkpoint_operations() {
   info "Testing checkpoint save/restore"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/test_checkpoint.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/test_checkpoint.json"
 
   # Create a simple checkpoint
   cat > "$checkpoint_file" <<'EOF'
@@ -159,7 +159,7 @@ EOF
 test_checkpoint_field_parsing() {
   info "Testing checkpoint field extraction"
 
-  local checkpoint_file="$TEST_DIR/.claude/checkpoints/fields_test.json"
+  local checkpoint_file="$TEST_DIR/.claude/data/checkpoints/fields_test.json"
   cat > "$checkpoint_file" <<'EOF'
 {
   "plan_file": "/test/plan.md",

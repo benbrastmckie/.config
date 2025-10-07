@@ -119,7 +119,7 @@ The `/analyze` command now accepts a type parameter for unified analysis:
 - Maximum 2 replans per phase (loop prevention)
 
 **New Logging**:
-- Logs: `.claude/logs/adaptive-planning.log`
+- Logs: `.claude/data/logs/adaptive-planning.log`
 - Log rotation: 10MB max, 5 files retained
 - Query logs: Use new utility functions in `lib/adaptive-planning-logger.sh`
 
@@ -220,7 +220,7 @@ save_checkpoint "implement" "my_project" "$state_json"
 
 ```bash
 # View adaptive planning logs
-tail -f .claude/logs/adaptive-planning.log
+tail -f .claude/data/logs/adaptive-planning.log
 
 # Query specific events
 source .claude/lib/adaptive-planning-logger.sh

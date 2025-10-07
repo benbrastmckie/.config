@@ -2369,13 +2369,13 @@ Throughout workflow execution, save checkpoints after each major phase:
 On successful workflow completion:
 ```bash
 # Delete checkpoint file
-rm .claude/checkpoints/orchestrate_${PROJECT_NAME}_*.json
+rm .claude/data/checkpoints/orchestrate_${PROJECT_NAME}_*.json
 ```
 
 On workflow failure:
 ```bash
 # Archive checkpoint to failed/ directory
-mv .claude/checkpoints/orchestrate_${PROJECT_NAME}_*.json .claude/checkpoints/failed/
+mv .claude/data/checkpoints/orchestrate_${PROJECT_NAME}_*.json .claude/data/checkpoints/failed/
 ```
 
 Let me begin orchestrating your workflow based on the description provided.

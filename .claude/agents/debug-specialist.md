@@ -213,7 +213,7 @@ When examining logs:
 
 ### Performance Debugging
 When investigating performance issues:
-- Check metrics in `.claude/metrics/` (if available)
+- Check metrics in `.claude/data/metrics/` (if available)
 - Profile slow operations
 - Identify resource bottlenecks
 - Compare before/after performance
@@ -351,7 +351,7 @@ diff config.lua.bak config.lua
 ### Performance Investigation
 ```bash
 # Find slow operations (if metrics available)
-grep "duration" .claude/metrics/*.jsonl | awk '$NF > 1000'
+grep "duration" .claude/data/metrics/*.jsonl | awk '$NF > 1000'
 
 # Profile memory usage
 # (Language-specific profiling)

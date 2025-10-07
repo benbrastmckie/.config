@@ -173,7 +173,7 @@ Triggered before context compaction.
 - `status`: "success" or "error"
 - `cwd`: Working directory
 
-**Output**: Appends JSONL entry to `.claude/metrics/YYYY-MM.jsonl`
+**Output**: Appends JSONL entry to `.claude/data/metrics/YYYY-MM.jsonl`
 
 **Format**:
 ```json
@@ -347,7 +347,7 @@ chmod +x .claude/hooks/your-hook.sh
 ### Step 4: Test
 Trigger the event and check hook execution:
 ```bash
-tail -f .claude/logs/your-hook.log
+tail -f .claude/data/logs/your-hook.log
 ```
 
 ## Best Practices
@@ -404,10 +404,10 @@ echo '{"hook_event_name":"Stop","command":"/test","status":"success"}' | \
 ### Monitor Execution
 ```bash
 # Watch hook debug log
-tail -f .claude/logs/hook-debug.log
+tail -f .claude/data/logs/hook-debug.log
 
 # Check TTS log
-tail -f .claude/logs/tts.log
+tail -f .claude/data/logs/tts.log
 ```
 
 ### Verify Registration
@@ -424,7 +424,7 @@ cat .claude/settings.local.json | jq -r '.hooks | to_entries[] | "\(.key): \(.va
 ### Path Validation
 ```bash
 # Always use $CLAUDE_PROJECT_DIR for paths
-SAFE_PATH="$CLAUDE_PROJECT_DIR/.claude/logs/data.log"
+SAFE_PATH="$CLAUDE_PROJECT_DIR/.claude/data/logs/data.log"
 
 # Validate before using
 if [[ ! "$SAFE_PATH" =~ ^"$CLAUDE_PROJECT_DIR" ]]; then
@@ -497,7 +497,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 HOOK_INPUT=$(cat)
 HOOK_EVENT=$(echo "$HOOK_INPUT" | jq -r '.hook_event_name')
 
-LOG_FILE="$CLAUDE_PROJECT_DIR/.claude/logs/events.log"
+LOG_FILE="$CLAUDE_PROJECT_DIR/.claude/data/logs/events.log"
 echo "[$(date -Iseconds)] $HOOK_EVENT" >> "$LOG_FILE"
 
 exit 0
@@ -514,7 +514,7 @@ COMMAND=$(echo "$HOOK_INPUT" | jq -r '.command')
 # Only act on /implement
 if [[ "$COMMAND" == "/implement" ]]; then
   # Log implementation event
-  echo "[$(date -Iseconds)] Implement command executed" >> "$CLAUDE_PROJECT_DIR/.claude/logs/commands.log"
+  echo "[$(date -Iseconds)] Implement command executed" >> "$CLAUDE_PROJECT_DIR/.claude/data/logs/commands.log"
 fi
 
 exit 0
