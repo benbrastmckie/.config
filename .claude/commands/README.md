@@ -218,20 +218,21 @@ Commands provide structured, repeatable workflows for:
 **Features**:
 - Variable substitution ({{variable}})
 - Pre-built templates (CRUD, API, refactoring)
-- Custom template support (`.claude/templates/custom/`)
+- Custom template support (add to `.claude/templates/`)
 - 60-80% faster plan creation
 
 **Templates**:
 - crud-feature: CRUD operations for entities
 - api-endpoint: REST API implementation
 - refactoring: Structured code refactoring
-- Custom templates in `.claude/templates/custom/` directory
+- example-feature: Example showing template structure
+- Custom templates: Add `.yaml` files to `.claude/templates/` directory
 
 **Output**: `specs/plans/NNN_plan_name.md`
 
 **Custom Templates**:
-Custom templates can be added to `.claude/templates/custom/` following the YAML format.
-See `.claude/templates/custom/example-feature.yaml` for template structure.
+Add custom templates directly to `.claude/templates/` directory as `.yaml` files.
+See `.claude/templates/example-feature.yaml` for template structure.
 
 ---
 
