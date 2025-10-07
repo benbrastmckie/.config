@@ -104,6 +104,36 @@ Commands should check CLAUDE.md in priority order:
 - **Markdown**: Use Unicode box-drawing for diagrams, follow CommonMark spec
 - **Shell Scripts**: Follow ShellCheck recommendations, use bash -e for error handling
 
+## Development Philosophy
+[Used by: /refactor, /implement, /plan, /document]
+
+### Clean-Break Refactors
+- **Prioritize coherence over compatibility**: Clean, well-designed refactors are preferred over maintaining backward compatibility
+- **System integration**: What matters is that existing commands and agents work well together in the current implementation
+- **No legacy burden**: Don't compromise current design to support old formats or deprecated patterns
+- **Migration is acceptable**: Breaking changes are acceptable when they improve system quality
+
+### Documentation Standards
+- **Present-focused**: Document the current implementation accurately and clearly
+- **No historical reporting**: Don't document changes, updates, or migration paths in main documentation
+- **What, not when**: Focus on what the system does now, not how it evolved
+- **Clean narrative**: Documentation should read as if the current implementation always existed
+
+### Rationale
+This project values:
+1. **Clarity**: Clean, consistent documentation that accurately reflects current state
+2. **Quality**: Well-designed systems over backward-compatible compromises
+3. **Coherence**: Commands, agents, and utilities that work seamlessly together
+4. **Maintainability**: Code that is easy to understand and modify today
+
+When refactoring, prefer to:
+- Create clean, consistent interfaces
+- Remove deprecated patterns entirely
+- Update documentation to reflect only current implementation
+- Ensure all components work together harmoniously
+
+Backward compatibility is secondary to these goals.
+
 ## Adaptive Planning
 [Used by: /implement]
 
