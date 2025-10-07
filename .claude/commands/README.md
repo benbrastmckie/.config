@@ -2,6 +2,26 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
+**Current Command Count**: 26 commands (reduced from 29 through consolidation)
+
+## Recent Changes
+
+### Command Consolidation (2025-10-06)
+Consolidated redundant commands for a cleaner interface:
+- `/cleanup` → **Removed** (use `/setup --cleanup` instead)
+- `/validate-setup` → **Removed** (use `/setup --validate` instead)
+- `/analyze-agents` + `/analyze-patterns` → **Removed** (use `/analyze [type]` instead)
+
+**Migration**: See `.claude/docs/MIGRATION_GUIDE.md` for command replacements
+
+### Shared Utilities Integration (2025-10-06)
+Commands now reference shared utility libraries in `.claude/lib/`:
+- `checkpoint-utils.sh` - Workflow state persistence
+- `complexity-utils.sh` - Phase complexity analysis
+- `artifact-utils.sh` - Artifact tracking and registry
+- `error-utils.sh` - Error classification and recovery
+- `adaptive-planning-logger.sh` - Adaptive planning logging
+
 ## Purpose
 
 Commands provide structured, repeatable workflows for:
