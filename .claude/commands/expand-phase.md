@@ -62,7 +62,145 @@ Extract all components:
 - All task checkboxes
 - Any existing implementation notes
 
-### 3. Create Detailed Implementation Specification
+### 3. Complexity Detection and Agent Selection
+
+**Objective**: Determine whether the phase requires agent-assisted research or can be expanded directly.
+
+#### Complexity Analysis
+
+Analyze the phase content to determine complexity level:
+
+```bash
+# Count tasks
+task_count=$(echo "$phase_content" | grep -c "^- \[ \]")
+
+# Extract file references (*.md, *.sh, *.lua, etc.)
+file_refs=$(echo "$phase_content" | grep -oE "[a-zA-Z0-9_/.-]+\.(md|sh|lua|js|py|ts)" | sort -u)
+file_count=$(echo "$file_refs" | wc -l)
+
+# Count unique directories
+unique_dirs=$(echo "$file_refs" | xargs dirname | sort -u | wc -l)
+
+# Check for complexity keywords
+has_consolidate=$(echo "$phase_content" | grep -ic "consolidate")
+has_refactor=$(echo "$phase_content" | grep -ic "refactor")
+has_migrate=$(echo "$phase_content" | grep -ic "migrate")
+```
+
+#### Complexity Thresholds
+
+A phase is considered **complex** if any of these conditions are met:
+
+| Indicator | Simple Phase | Complex Phase |
+|-----------|--------------|---------------|
+| Task count | ≤5 tasks | >5 tasks |
+| File references | <10 files | ≥10 files |
+| Directories | 1-2 dirs | >2 dirs |
+| Keywords | None | "consolidate", "refactor", "migrate" |
+
+**Decision Logic**:
+```bash
+is_complex=false
+
+if [[ $task_count -gt 5 ]] || \
+   [[ $file_count -ge 10 ]] || \
+   [[ $unique_dirs -gt 2 ]] || \
+   [[ $has_consolidate -gt 0 ]] || \
+   [[ $has_refactor -gt 0 ]] || \
+   [[ $has_migrate -gt 0 ]]; then
+  is_complex=true
+fi
+```
+
+#### Agent Selection
+
+When complexity is detected, select appropriate agent behavior based on phase type:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│              Complexity Detection Flow                    │
+└────────┬─────────────────────────────────────────────────┘
+         │
+         ▼
+    ┌─────────┐
+    │ Analyze │ Count tasks, files, dirs, keywords
+    │  Phase  │
+    └────┬────┘
+         │
+         ▼
+    ┌─────────────┐
+    │  Complexity │
+    │   Check     │
+    └─┬─────────┬─┘
+      │         │
+Simple│         │Complex
+      │         │
+      ▼         ▼
+  ┌───────┐  ┌──────────────────────────────┐
+  │Direct │  │  Select Agent Behavior       │
+  │Expand │  │                              │
+  └───────┘  │  ┌────────────────────────┐  │
+             │  │ Codebase Analysis?     │  │
+             │  │ → research-specialist  │  │
+             │  └────────────────────────┘  │
+             │  ┌────────────────────────┐  │
+             │  │ Refactor/Consolidate?  │  │
+             │  │ → code-reviewer        │  │
+             │  └────────────────────────┘  │
+             │  ┌────────────────────────┐  │
+             │  │ Phase breakdown needed?│  │
+             │  │ → plan-architect       │  │
+             │  └────────────────────────┘  │
+             └──────────────────────────────┘
+```
+
+**Agent Behavior Selection**:
+
+1. **research-specialist** (Default for complex phases)
+   - Use when: Phase involves many files or directories
+   - Purpose: Analyze current codebase state, find patterns
+   - Tools: Read, Glob, Grep (read-only)
+   - Output: 200-250 word research summary
+
+2. **code-reviewer** (For refactoring phases)
+   - Use when: Phase contains "refactor", "consolidate", "cleanup"
+   - Purpose: Analyze code quality, find improvement opportunities
+   - Tools: Read, Grep (read-only)
+   - Output: Standards compliance analysis
+
+3. **plan-architect** (For very complex phases)
+   - Use when: Phase might need sub-phase breakdown
+   - Purpose: Suggest optimal phase structure
+   - Tools: Read (read-only)
+   - Output: Structural recommendations
+
+**Default Selection Logic**:
+```bash
+if [[ $has_refactor -gt 0 ]] || [[ $has_consolidate -gt 0 ]]; then
+  agent_behavior="code-reviewer"
+elif [[ $task_count -gt 10 ]] && [[ $unique_dirs -gt 3 ]]; then
+  agent_behavior="plan-architect"
+else
+  agent_behavior="research-specialist"  # Default
+fi
+```
+
+### 4. Create Detailed Implementation Specification
+
+**Path Selection**: Based on complexity analysis from step 3:
+
+- **Simple phases** → Direct to specification writing (this step)
+- **Complex phases** → Agent-assisted research (step 4a), then specification writing (step 4b)
+
+#### 4a. Agent-Assisted Research (Complex Phases Only)
+
+When complexity detected (`is_complex=true`), invoke agent for codebase research.
+
+**Skip to step 4b if simple phase.**
+
+See "Agent Invocation Infrastructure" section below for detailed agent usage.
+
+#### 4b. Write Detailed Implementation Specification
 
 **IMPORTANT**: Do NOT use generic templates. Instead:
 
@@ -135,7 +273,7 @@ For EACH task, provide:
 - Verification steps
 - Completion criteria
 
-### 4. Handle File Structure
+### 5. Handle File Structure
 
 **If Level 0 → Level 1 (first expansion)**:
 ```bash
@@ -156,7 +294,7 @@ phase_name=$(echo "$phase_title" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr 
 phase_file="$(dirname "$plan_file")/phase_${phase_num}_${phase_name}.md"
 ```
 
-### 5. Write Enhanced Phase Content
+### 6. Write Enhanced Phase Content
 
 Write the detailed implementation specification to the phase file with:
 
@@ -206,7 +344,7 @@ Write the detailed implementation specification to the phase file with:
 **Reason**: [Specific rationale based on complexity]
 ```
 
-### 6. Update Main Plan
+### 7. Update Main Plan
 
 Replace the full phase section in main plan with summary:
 
@@ -218,7 +356,7 @@ Replace the full phase section in main plan with summary:
 For detailed implementation specification, see [Phase N Details](phase_N_name.md)
 ```
 
-### 7. Update Metadata
+### 8. Update Metadata
 
 In main plan metadata section:
 ```markdown
