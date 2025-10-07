@@ -134,24 +134,31 @@ Overall: PASS with warnings
 
 ```
 Task {
-  subagent_type = "code-reviewer",
-  description = "Review code for standards compliance",
-  prompt = "Analyze lua/utils/parser.lua for standards compliance:
+  subagent_type: "general-purpose"
+  description: "Review code for standards compliance using code-reviewer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-reviewer.md
 
-  Check against CLAUDE.md standards:
-  - Indentation: 2 spaces, no tabs
-  - Line length: <100 chars
-  - Naming: snake_case for functions/vars
-  - Error handling: pcall usage
-  - Comments: Public function documentation
+    You are acting as a Code Reviewer Agent with the tools and constraints
+    defined in that file.
 
-  Provide structured review:
-  - Categorize findings (blocking, warning, suggestion)
-  - Include file:line references
-  - Suggest specific fixes
-  - Overall compliance summary
+    Analyze lua/utils/parser.lua for standards compliance:
 
-  Output: Structured review report"
+    Check against CLAUDE.md standards:
+    - Indentation: 2 spaces, no tabs
+    - Line length: <100 chars
+    - Naming: snake_case for functions/vars
+    - Error handling: pcall usage
+    - Comments: Public function documentation
+
+    Provide structured review:
+    - Categorize findings (blocking, warning, suggestion)
+    - Include file:line references
+    - Suggest specific fixes
+    - Overall compliance summary
+
+    Output: Structured review report
 }
 ```
 
@@ -159,29 +166,36 @@ Task {
 
 ```
 Task {
-  subagent_type = "code-reviewer",
-  description = "Review newly implemented authentication module",
-  prompt = "Review authentication implementation for quality and standards:
+  subagent_type: "general-purpose"
+  description: "Review newly implemented authentication module using code-reviewer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-reviewer.md
 
-  Files to review:
-  - lua/auth/middleware.lua
-  - lua/auth/session.lua
-  - lua/auth/init.lua
+    You are acting as a Code Reviewer Agent with the tools and constraints
+    defined in that file.
 
-  Review criteria:
-  1. Standards compliance (CLAUDE.md)
-  2. Error handling adequacy
-  3. Code organization and clarity
-  4. Security considerations
-  5. Documentation completeness
+    Review authentication implementation for quality and standards:
 
-  Focus areas:
-  - Session management security
-  - Input validation
-  - Error handling in auth flow
-  - Module structure
+    Files to review:
+    - lua/auth/middleware.lua
+    - lua/auth/session.lua
+    - lua/auth/init.lua
 
-  Output: Comprehensive review with severity-categorized findings"
+    Review criteria:
+    1. Standards compliance (CLAUDE.md)
+    2. Error handling adequacy
+    3. Code organization and clarity
+    4. Security considerations
+    5. Documentation completeness
+
+    Focus areas:
+    - Session management security
+    - Input validation
+    - Error handling in auth flow
+    - Module structure
+
+    Output: Comprehensive review with severity-categorized findings
 }
 ```
 
@@ -189,23 +203,30 @@ Task {
 
 ```
 Task {
-  subagent_type = "code-reviewer",
-  description = "Validate phase implementation before completion",
-  prompt = "Review Phase 3 implementation before marking complete:
+  subagent_type: "general-purpose"
+  description: "Validate phase implementation before completion using code-reviewer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-reviewer.md
 
-  Files changed:
-  - lua/config/loader.lua (new)
-  - lua/config/validator.lua (new)
-  - lua/config/init.lua (modified)
+    You are acting as a Code Reviewer Agent with the tools and constraints
+    defined in that file.
 
-  Quick standards check:
-  - Indentation: 2 spaces?
-  - Naming: snake_case?
-  - Error handling: pcall used?
-  - Line length: <100 chars?
-  - Tabs: None found?
+    Review Phase 3 implementation before marking complete:
 
-  Output: Quick pass/fail with any blocking issues listed"
+    Files changed:
+    - lua/config/loader.lua (new)
+    - lua/config/validator.lua (new)
+    - lua/config/init.lua (modified)
+
+    Quick standards check:
+    - Indentation: 2 spaces?
+    - Naming: snake_case?
+    - Error handling: pcall used?
+    - Line length: <100 chars?
+    - Tabs: None found?
+
+    Output: Quick pass/fail with any blocking issues listed
 }
 ```
 

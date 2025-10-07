@@ -81,22 +81,29 @@ Based on operation type:
 
 ```
 Task {
-  subagent_type = "metrics-specialist",
-  description = "Analyze command performance",
-  prompt = "Analyze metrics for recent /implement execution:
+  subagent_type: "general-purpose"
+  description: "Analyze command performance using metrics-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/metrics-specialist.md
 
-  Metrics file: .claude/metrics/2025-01-15.jsonl
+    You are acting as a Metrics Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Analysis needed:
-  - Total duration and breakdown by phase
-  - Identify slowest operations
-  - Compare to historical averages
-  - Flag any performance regressions
+    Analyze metrics for recent /implement execution:
 
-  Output format:
-  - Summary statistics
-  - Bottleneck identification
-  - Recommendations (if issues found)"
+    Metrics file: .claude/metrics/2025-01-15.jsonl
+
+    Analysis needed:
+    - Total duration and breakdown by phase
+    - Identify slowest operations
+    - Compare to historical averages
+    - Flag any performance regressions
+
+    Output format:
+    - Summary statistics
+    - Bottleneck identification
+    - Recommendations (if issues found)
 }
 ```
 
@@ -104,25 +111,32 @@ Task {
 
 ```
 Task {
-  subagent_type = "metrics-specialist",
-  description = "Performance analysis for optimization",
-  prompt = "Analyze performance metrics to guide refactoring:
+  subagent_type: "general-purpose"
+  description: "Performance analysis for optimization using metrics-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/metrics-specialist.md
 
-  Target: lua/parser module
+    You are acting as a Metrics Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Analysis scope:
-  - Review parser operation metrics
-  - Identify expensive operations
-  - Compare with similar modules
-  - Calculate potential improvement impact
+    Analyze performance metrics to guide refactoring:
 
-  Metrics location: .claude/metrics/*.jsonl
+    Target: lua/parser module
 
-  Provide:
-  - Current performance baseline
-  - Specific bottlenecks with measurements
-  - Optimization opportunities ranked by impact
-  - Expected improvements for each suggestion"
+    Analysis scope:
+    - Review parser operation metrics
+    - Identify expensive operations
+    - Compare with similar modules
+    - Calculate potential improvement impact
+
+    Metrics location: .claude/metrics/*.jsonl
+
+    Provide:
+    - Current performance baseline
+    - Specific bottlenecks with measurements
+    - Optimization opportunities ranked by impact
+    - Expected improvements for each suggestion
 }
 ```
 
@@ -130,24 +144,31 @@ Task {
 
 ```
 Task {
-  subagent_type = "metrics-specialist",
-  description = "Detect performance regression",
-  prompt = "Check for performance regression after recent changes:
+  subagent_type: "general-purpose"
+  description: "Detect performance regression using metrics-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/metrics-specialist.md
 
-  Comparison:
-  - Before: 2025-01-10 to 2025-01-12 (baseline)
-  - After: 2025-01-13 to 2025-01-15 (current)
+    You are acting as a Metrics Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Focus on:
-  - Test execution time
-  - Command response time
-  - File operation performance
+    Check for performance regression after recent changes:
 
-  Report:
-  - Any operations >20% slower
-  - Statistical significance
-  - Suspected cause (recent commits)
-  - Severity assessment"
+    Comparison:
+    - Before: 2025-01-10 to 2025-01-12 (baseline)
+    - After: 2025-01-13 to 2025-01-15 (current)
+
+    Focus on:
+    - Test execution time
+    - Command response time
+    - File operation performance
+
+    Report:
+    - Any operations >20% slower
+    - Statistical significance
+    - Suspected cause (recent commits)
+    - Severity assessment
 }
 ```
 

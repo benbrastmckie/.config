@@ -131,28 +131,35 @@ Description of what this module does.
 
 ```
 Task {
-  subagent_type = "doc-writer",
-  description = "Update documentation after auth implementation",
-  prompt = "Update affected documentation for new authentication feature:
+  subagent_type: "general-purpose"
+  description: "Update documentation after auth implementation using doc-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/doc-writer.md
 
-  Code changes:
-  - New module: lua/auth/middleware.lua
-  - Modified: lua/server/init.lua (added auth middleware)
-  - New tests: tests/auth/middleware_spec.lua
+    You are acting as a Documentation Writer Agent with the tools and constraints
+    defined in that file.
 
-  Documentation tasks:
-  - Create lua/auth/README.md documenting auth module
-  - Update lua/server/README.md with auth integration notes
-  - Update main README.md with auth feature in features list
-  - Add usage examples for auth middleware
+    Update affected documentation for new authentication feature:
 
-  Standards (from CLAUDE.md):
-  - Unicode box-drawing for architecture diagrams
-  - No emojis in content
-  - Clear, concise language
-  - Working code examples with syntax highlighting
+    Code changes:
+    - New module: lua/auth/middleware.lua
+    - Modified: lua/server/init.lua (added auth middleware)
+    - New tests: tests/auth/middleware_spec.lua
 
-  Include cross-references to related docs."
+    Documentation tasks:
+    - Create lua/auth/README.md documenting auth module
+    - Update lua/server/README.md with auth integration notes
+    - Update main README.md with auth feature in features list
+    - Add usage examples for auth middleware
+
+    Standards (from CLAUDE.md):
+    - Unicode box-drawing for architecture diagrams
+    - No emojis in content
+    - Clear, concise language
+    - Working code examples with syntax highlighting
+
+    Include cross-references to related docs.
 }
 ```
 
@@ -160,36 +167,43 @@ Task {
 
 ```
 Task {
-  subagent_type: "doc-writer",
-  description = "Generate documentation for completed feature",
-  prompt = "Create comprehensive documentation for async promises feature:
+  subagent_type: "general-purpose"
+  description: "Generate documentation for completed feature using doc-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/doc-writer.md
 
-  Implemented components:
-  - lua/async/promise.lua (core promise implementation)
-  - lua/async/init.lua (module entry point)
-  - tests/async/promise_spec.lua (test suite)
+    You are acting as a Documentation Writer Agent with the tools and constraints
+    defined in that file.
 
-  Documentation needed:
-  1. Create lua/async/README.md:
-     - Purpose and capabilities
-     - API documentation
-     - Usage examples
-     - Integration guide
+    Create comprehensive documentation for async promises feature:
 
-  2. Update main README.md:
-     - Add async promises to features list
-     - Link to async module docs
+    Implemented components:
+    - lua/async/promise.lua (core promise implementation)
+    - lua/async/init.lua (module entry point)
+    - tests/async/promise_spec.lua (test suite)
 
-  3. Create docs/async-promises-guide.md (if complex):
-     - Detailed usage patterns
-     - Best practices
-     - Common pitfalls
+    Documentation needed:
+    1. Create lua/async/README.md:
+       - Purpose and capabilities
+       - API documentation
+       - Usage examples
+       - Integration guide
 
-  Follow CLAUDE.md standards:
-  - Unicode box-drawing for diagrams
-  - Code examples with lua syntax highlighting
-  - Cross-reference specs/plans/NNN_async_promises.md
-  - No emojis"
+    2. Update main README.md:
+       - Add async promises to features list
+       - Link to async module docs
+
+    3. Create docs/async-promises-guide.md (if complex):
+       - Detailed usage patterns
+       - Best practices
+       - Common pitfalls
+
+    Follow CLAUDE.md standards:
+    - Unicode box-drawing for diagrams
+    - Code examples with lua syntax highlighting
+    - Cross-reference specs/plans/NNN_async_promises.md
+    - No emojis
 }
 ```
 
@@ -197,23 +211,30 @@ Task {
 
 ```
 Task {
-  subagent_type = "doc-writer",
-  description = "Update README after refactoring",
-  prompt = "Update lua/config/README.md after refactoring:
+  subagent_type: "general-purpose"
+  description: "Update README after refactoring using doc-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/doc-writer.md
 
-  Changes made:
-  - Split config.lua into config/init.lua and config/loader.lua
-  - Renamed load_config() to Config.load()
-  - Added Config.validate() function
+    You are acting as a Documentation Writer Agent with the tools and constraints
+    defined in that file.
 
-  Update tasks:
-  - Update module listing (now two files)
-  - Update API documentation (new function names)
-  - Update usage examples (new API)
-  - Note breaking changes prominently
-  - Update cross-references
+    Update lua/config/README.md after refactoring:
 
-  Maintain existing style and format."
+    Changes made:
+    - Split config.lua into config/init.lua and config/loader.lua
+    - Renamed load_config() to Config.load()
+    - Added Config.validate() function
+
+    Update tasks:
+    - Update module listing (now two files)
+    - Update API documentation (new function names)
+    - Update usage examples (new API)
+    - Note breaking changes prominently
+    - Update cross-references
+
+    Maintain existing style and format.
 }
 ```
 

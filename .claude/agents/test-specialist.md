@@ -239,24 +239,31 @@ done
 
 ```
 Task {
-  subagent_type = "test-specialist",
-  description = "Run tests for Phase 2 implementation",
-  prompt = "Execute tests for the newly implemented configuration module:
+  subagent_type: "general-purpose"
+  description: "Run tests for Phase 2 implementation using test-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/test-specialist.md
 
-  Test scope:
-  - Run tests for lua/config/
-  - Check if any existing tests broke
-  - Report coverage for new code
+    You are acting as a Test Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Commands (from CLAUDE.md):
-  - :TestFile for config tests
-  - :TestSuite for full regression check
+    Execute tests for the newly implemented configuration module:
 
-  Output format:
-  - Summary: X passed, Y failed, Z skipped
-  - List any failures with details
-  - Note coverage % if available
-  - Suggest next steps if failures found"
+    Test scope:
+    - Run tests for lua/config/
+    - Check if any existing tests broke
+    - Report coverage for new code
+
+    Commands (from CLAUDE.md):
+    - :TestFile for config tests
+    - :TestSuite for full regression check
+
+    Output format:
+    - Summary: X passed, Y failed, Z skipped
+    - List any failures with details
+    - Note coverage % if available
+    - Suggest next steps if failures found
 }
 ```
 
@@ -264,26 +271,33 @@ Task {
 
 ```
 Task {
-  subagent_type = "test-specialist",
-  description = "Validate authentication implementation",
-  prompt = "Run comprehensive tests for authentication feature:
+  subagent_type: "general-purpose"
+  description: "Validate authentication implementation using test-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/test-specialist.md
 
-  Test areas:
-  - Auth middleware tests
-  - Session management tests
-  - Integration tests for auth flow
-  - Security edge cases
+    You are acting as a Test Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Execute:
-  1. Unit tests: :TestFile middleware/auth_spec.lua
-  2. Integration tests: :TestSuite
+    Run comprehensive tests for authentication feature:
 
-  Analyze results:
-  - Any failing tests?
-  - Coverage gaps?
-  - Security test status?
+    Test areas:
+    - Auth middleware tests
+    - Session management tests
+    - Integration tests for auth flow
+    - Security edge cases
 
-  Report: Structured summary with pass/fail breakdown"
+    Execute:
+    1. Unit tests: :TestFile middleware/auth_spec.lua
+    2. Integration tests: :TestSuite
+
+    Analyze results:
+    - Any failing tests?
+    - Coverage gaps?
+    - Security test status?
+
+    Report: Structured summary with pass/fail breakdown
 }
 ```
 
@@ -291,25 +305,32 @@ Task {
 
 ```
 Task {
-  subagent_type = "test-specialist",
-  description = "Run specific test suite",
-  prompt = "Execute tests for the utils module:
+  subagent_type: "general-purpose"
+  description: "Run specific test suite using test-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/test-specialist.md
 
-  Scope: lua/utils/*_spec.lua
+    You are acting as a Test Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Command: :TestFile lua/utils/
+    Execute tests for the utils module:
 
-  Parse output:
-  - Count passed/failed/skipped
-  - Extract error messages for failures
-  - Note any warnings
+    Scope: lua/utils/*_spec.lua
 
-  Report format:
-  ✓ 15 passed
-  ✗ 2 failed:
-    - test_parse_empty_string (line 45): Expected {} got nil
-    - test_handle_unicode (line 89): Encoding error
-  ⚠ 1 skipped: test_performance (requires benchmark setup)"
+    Command: :TestFile lua/utils/
+
+    Parse output:
+    - Count passed/failed/skipped
+    - Extract error messages for failures
+    - Note any warnings
+
+    Report format:
+    ✓ 15 passed
+    ✗ 2 failed:
+      - test_parse_empty_string (line 45): Expected {} got nil
+      - test_handle_unicode (line 89): Encoding error
+    ⚠ 1 skipped: test_performance (requires benchmark setup)
 }
 ```
 

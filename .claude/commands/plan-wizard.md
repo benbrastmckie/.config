@@ -265,7 +265,8 @@ Output format:
 Save findings to artifact for plan generation."
 
   # Invoke research-specialist agent
-  # (In actual execution, use Task tool with subagent_type: research-specialist)
+  # (In actual execution, use Task tool with subagent_type: general-purpose
+  #  and behavioral injection from /home/benjamin/.config/.claude/agents/research-specialist.md)
 done
 
 # Wait for all agents to complete
@@ -338,15 +339,22 @@ Ensure the plan includes:
 "
 
 # Invoke plan-architect agent with this prompt
-# (Use Task tool with subagent_type: plan-architect)
+# (Use Task tool with subagent_type: general-purpose
+#  and behavioral injection from /home/benjamin/.config/.claude/agents/plan-architect.md)
 ```
 
 **Agent Invocation**:
 ```markdown
 Use Task tool:
-- subagent_type: plan-architect
-- description: "Create implementation plan from wizard input"
-- prompt: $PLAN_PROMPT
+- subagent_type: general-purpose
+- description: "Create implementation plan from wizard input using plan-architect protocol"
+- prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/plan-architect.md
+
+          You are acting as a Plan Architect with the tools and constraints
+          defined in that file.
+
+          $PLAN_PROMPT"
 ```
 
 ### Step 8: Display Results

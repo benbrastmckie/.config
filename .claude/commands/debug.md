@@ -282,25 +282,30 @@ This command delegates investigation work to the `debug-specialist` agent:
 ### Invocation Pattern
 ```yaml
 Task {
-  subagent_type: "debug-specialist"
-  description: "Investigate [issue description]"
-  prompt: "
-    Debug Task: Investigate [issue]
+  subagent_type: "general-purpose"
+  description: "Investigate [issue description] using debug-specialist protocol"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-    Context:
-    - Issue: [user's description]
-    - Related Reports: [paths if provided]
-    - Project Standards: CLAUDE.md
+          You are acting as a Debug Specialist with the tools and constraints
+          defined in that file.
 
-    Investigation:
-    1. Gather evidence (logs, code, configs)
-    2. Identify root cause
-    3. Analyze contributing factors
-    4. Propose multiple solutions with tradeoffs
+          Debug Task: Investigate [issue]
 
-    Output:
-    - Debug report at specs/reports/NNN_debug_[issue].md
-    - Summary with root cause and recommended fix
+          Context:
+          - Issue: [user's description]
+          - Related Reports: [paths if provided]
+          - Project Standards: CLAUDE.md
+
+          Investigation:
+          1. Gather evidence (logs, code, configs)
+          2. Identify root cause
+          3. Analyze contributing factors
+          4. Propose multiple solutions with tradeoffs
+
+          Output:
+          - Debug report at specs/reports/NNN_debug_[issue].md
+          - Summary with root cause and recommended fix
   "
 }
 ```

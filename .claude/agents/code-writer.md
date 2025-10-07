@@ -189,25 +189,32 @@ Continue reading plans from the appropriate tier structure using parsing utiliti
 
 ```
 Task {
-  subagent_type = "code-writer",
-  description = "Implement Phase 2: Add configuration module",
-  prompt = "Implement the configuration module as specified in the plan:
+  subagent_type: "general-purpose"
+  description: "Implement Phase 2: Add configuration module using code-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-writer.md
 
-  Tasks:
-  - Create lua/config/init.lua with module structure
-  - Implement load_config() function to read YAML
-  - Add default configuration fallback
-  - Include error handling with pcall
+    You are acting as a Code Writer Agent with the tools and constraints
+    defined in that file.
 
-  Follow CLAUDE.md standards:
-  - 2-space indentation
-  - snake_case naming
-  - pcall for file operations
-  - Add module documentation comments
+    Implement the configuration module as specified in the plan:
 
-  After implementation, run tests: :TestFile
+    Tasks:
+    - Create lua/config/init.lua with module structure
+    - Implement load_config() function to read YAML
+    - Add default configuration fallback
+    - Include error handling with pcall
 
-  Mark tasks complete in TodoWrite as you go."
+    Follow CLAUDE.md standards:
+    - 2-space indentation
+    - snake_case naming
+    - pcall for file operations
+    - Add module documentation comments
+
+    After implementation, run tests: :TestFile
+
+    Mark tasks complete in TodoWrite as you go.
 }
 ```
 
@@ -215,26 +222,33 @@ Task {
 
 ```
 Task {
-  subagent_type = "code-writer",
-  description = "Implement authentication middleware",
-  prompt = "Implement the authentication middleware module:
+  subagent_type: "general-purpose"
+  description: "Implement authentication middleware using code-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-writer.md
 
-  Based on research findings (see research summary):
-  - Use session-based auth pattern found in auth/sessions.lua
-  - Follow existing middleware structure in middleware/
+    You are acting as a Code Writer Agent with the tools and constraints
+    defined in that file.
 
-  Implementation:
-  - Create middleware/auth.lua
-  - Implement check_auth() function
-  - Add session validation
-  - Include error responses for unauthorized requests
+    Implement the authentication middleware module:
 
-  Standards (from CLAUDE.md):
-  - 2 spaces, snake_case, pcall for file I/O
-  - Line length <100 chars
-  - Add documentation comments
+    Based on research findings (see research summary):
+    - Use session-based auth pattern found in auth/sessions.lua
+    - Follow existing middleware structure in middleware/
 
-  Test: Run test suite after implementation"
+    Implementation:
+    - Create middleware/auth.lua
+    - Implement check_auth() function
+    - Add session validation
+    - Include error responses for unauthorized requests
+
+    Standards (from CLAUDE.md):
+    - 2 spaces, snake_case, pcall for file I/O
+    - Line length <100 chars
+    - Add documentation comments
+
+    Test: Run test suite after implementation
 }
 ```
 
@@ -242,18 +256,25 @@ Task {
 
 ```
 Task {
-  subagent_type = "code-writer",
-  description = "Fix bug in string parsing function",
-  prompt = "Fix the bug in lua/utils/string_parser.lua:45
+  subagent_type: "general-purpose"
+  description: "Fix bug in string parsing function using code-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-writer.md
 
-  Issue: Function doesn't handle empty strings
+    You are acting as a Code Writer Agent with the tools and constraints
+    defined in that file.
 
-  Fix:
-  - Add empty string check at beginning of parse_string()
-  - Return empty table for empty input
-  - Add test case for empty string scenario
+    Fix the bug in lua/utils/string_parser.lua:45
 
-  Verify fix by running: :TestNearest"
+    Issue: Function doesn't handle empty strings
+
+    Fix:
+    - Add empty string check at beginning of parse_string()
+    - Return empty table for empty input
+    - Add test case for empty string scenario
+
+    Verify fix by running: :TestNearest
 }
 ```
 

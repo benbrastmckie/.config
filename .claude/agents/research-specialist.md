@@ -256,18 +256,25 @@ Recommendation: Follow this pattern for new session-based features.
 
 ```
 Task {
-  subagent_type = "research-specialist",
-  description = "Research authentication patterns in codebase",
-  prompt = "Analyze the codebase for existing authentication patterns. Focus on:
-  - Current auth module organization and structure
-  - Common authentication flows used
-  - Security patterns and best practices applied
-  - Session management approaches
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns in codebase using research-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
 
-  Provide a concise summary (200 words max) highlighting:
-  - Key patterns found
-  - File locations of main components
-  - Recommendations for new implementation"
+    You are acting as a Research Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Analyze the codebase for existing authentication patterns. Focus on:
+    - Current auth module organization and structure
+    - Common authentication flows used
+    - Security patterns and best practices applied
+    - Session management approaches
+
+    Provide a concise summary (200 words max) highlighting:
+    - Key patterns found
+    - File locations of main components
+    - Recommendations for new implementation
 }
 ```
 
@@ -275,15 +282,22 @@ Task {
 
 ```
 Task {
-  subagent_type = "research-specialist",
-  description = "Research async/await patterns in Lua ecosystem",
-  prompt = "Research how async/await patterns are implemented in the Lua ecosystem:
-  - Look for existing implementations in our codebase
-  - Search for Lua coroutine usage patterns
-  - Investigate popular Lua async libraries (via web search)
-  - Identify best practices for async error handling
+  subagent_type: "general-purpose"
+  description: "Research async/await patterns in Lua ecosystem using research-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
 
-  Compile findings into a structured report section."
+    You are acting as a Research Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Research how async/await patterns are implemented in the Lua ecosystem:
+    - Look for existing implementations in our codebase
+    - Search for Lua coroutine usage patterns
+    - Investigate popular Lua async libraries (via web search)
+    - Identify best practices for async error handling
+
+    Compile findings into a structured report section.
 }
 ```
 
@@ -291,15 +305,22 @@ Task {
 
 ```
 Task {
-  subagent_type = "research-specialist",
-  description = "Analyze existing test infrastructure",
-  prompt = "Analyze our current testing infrastructure to inform implementation plan:
-  - Identify test frameworks in use
-  - Find test file patterns and locations
-  - Examine test helper utilities
-  - Note coverage gaps or missing test types
+  subagent_type: "general-purpose"
+  description: "Analyze existing test infrastructure using research-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
 
-  Summary should inform phased testing strategy for new feature."
+    You are acting as a Research Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Analyze our current testing infrastructure to inform implementation plan:
+    - Identify test frameworks in use
+    - Find test file patterns and locations
+    - Examine test helper utilities
+    - Note coverage gaps or missing test types
+
+    Summary should inform phased testing strategy for new feature.
 }
 ```
 

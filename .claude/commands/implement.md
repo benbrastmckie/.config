@@ -321,31 +321,36 @@ If `SELECTED_AGENT != "direct"`, I will:
 2. **Invoke agent** using Task tool:
    ```yaml
    Task {
-     subagent_type: "{selected-agent}"
-     description: "Implement {short-phase-description}"
-     prompt: "
-       {thinking-mode-directive}
+     subagent_type: "general-purpose"
+     description: "Implement {short-phase-description} using {selected-agent} protocol"
+     prompt: "Read and follow the behavioral guidelines from:
+             /home/benjamin/.config/.claude/agents/{selected-agent}.md
 
-       Implementation Phase: {phase-name}
+             You are acting as a {Selected Agent Name} with the tools and constraints
+             defined in that file.
 
-       Tasks to complete:
-       {task-list}
+             {thinking-mode-directive}
 
-       Standards Compliance:
-       - Apply project standards from CLAUDE.md
-       - Follow language-specific style guides
-       - Maintain documentation requirements
+             Implementation Phase: {phase-name}
 
-       Testing Requirements:
-       - Run tests after implementation (if tests exist)
-       - Verify all tasks completed
-       - Report any failures
+             Tasks to complete:
+             {task-list}
 
-       Expected Output:
-       - All phase tasks completed
-       - Code following standards
-       - Tests passing (if applicable)
-       - Summary of changes made
+             Standards Compliance:
+             - Apply project standards from CLAUDE.md
+             - Follow language-specific style guides
+             - Maintain documentation requirements
+
+             Testing Requirements:
+             - Run tests after implementation (if tests exist)
+             - Verify all tasks completed
+             - Report any failures
+
+             Expected Output:
+             - All phase tasks completed
+             - Code following standards
+             - Tests passing (if applicable)
+             - Summary of changes made
      "
    }
    ```
@@ -391,15 +396,27 @@ After all phases in the wave are prepared (Steps 1-1.5 complete for each), execu
    [Multiple Task tool calls in this single message:]
 
    Task { (Phase 2)
-     subagent_type: "code-writer"
-     description: "Implement Phase 2"
-     prompt: "[Phase 2 tasks and context]"
+     subagent_type: "general-purpose"
+     description: "Implement Phase 2 using code-writer protocol"
+     prompt: "Read and follow the behavioral guidelines from:
+             /home/benjamin/.config/.claude/agents/code-writer.md
+
+             You are acting as a Code Writer with the tools and constraints
+             defined in that file.
+
+             [Phase 2 tasks and context]"
    }
 
    Task { (Phase 3)
-     subagent_type: "code-writer"
-     description: "Implement Phase 3"
-     prompt: "[Phase 3 tasks and context]"
+     subagent_type: "general-purpose"
+     description: "Implement Phase 3 using code-writer protocol"
+     prompt: "Read and follow the behavioral guidelines from:
+             /home/benjamin/.config/.claude/agents/code-writer.md
+
+             You are acting as a Code Writer with the tools and constraints
+             defined in that file.
+
+             [Phase 3 tasks and context]"
    }
    ```
 
