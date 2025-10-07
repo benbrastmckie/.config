@@ -3,7 +3,7 @@ allowed-tools: Read, Write, Bash, Grep, Glob, WebSearch
 argument-hint: <feature description> [report-path1] [report-path2] ...
 description: Create a detailed implementation plan following project standards, optionally guided by research reports
 command-type: primary
-dependent-commands: list-reports, update-plan, revise
+dependent-commands: list, update, revise
 ---
 
 # Create Implementation Plan

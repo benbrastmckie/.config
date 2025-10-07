@@ -3,7 +3,7 @@ allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task, 
 argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan]
 description: Execute implementation plan with automated testing, adaptive replanning, and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
-dependent-commands: list-plans, update-plan, list-summaries, revise, debug, document, expand-phase
+dependent-commands: list, update, revise, debug, document, expand-phase
 ---
 
 # Execute Implementation Plan

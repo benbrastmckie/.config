@@ -392,7 +392,7 @@ Check template syntax and variable values
 # → specs/reports/030_crud_best_practices.md
 
 # 3. (Optional) Update plan with research
-/update-plan specs/plans/025_product_crud.md "Add report findings"
+/update plan specs/plans/025_product_crud.md "Add report findings"
 
 # 4. Implement the plan
 /implement specs/plans/025_product_crud.md

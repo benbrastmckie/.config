@@ -78,7 +78,7 @@ Commands provide structured, repeatable workflows for:
 - Git commits with descriptive messages
 - Standards discovery and application
 
-**Dependencies**: list-plans, update-plan, list-summaries, revise, debug, document
+**Dependencies**: list, update, revise, debug, document
 
 ---
 
@@ -286,31 +286,18 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
-#### /update-plan
-**Purpose**: Update existing implementation plan
+#### /update
+**Purpose**: Update plan or report with new information
 
-**Usage**: `/update-plan <plan-path> [reason-for-update]`
+**Usage**:
+- `/update plan <plan-path> [reason-for-update]`
+- `/update report <report-path> [specific-sections]`
 
 **Features**:
-- Progressive structure-aware plan modification
-- Phase updates (add/remove/reorder)
-- Requirement changes
-- Works with all structure levels
+- **Plans**: Progressive structure-aware modification, phase updates, works with all levels (L0/L1/L2)
+- **Reports**: Section updates, new information integration, version tracking
+- Unified interface for both artifact types
 - Cross-reference integrity maintenance
-- Version control
-
----
-
-#### /update-report
-**Purpose**: Update existing research report with new findings
-
-**Usage**: `/update-report <report-path> [specific-sections]`
-
-**Features**:
-- Section updates
-- New information integration
-- Consistency maintenance
-- Version tracking
 
 ---
 
@@ -462,7 +449,7 @@ Helper commands for specific tasks:
 
 ### Workflow Commands
 Commands for managing execution state:
-- `/revise`, `/update-plan`, `/update-report`
+- `/revise`, `/update`
 
 ### Utility Commands
 Management and maintenance commands:
@@ -503,8 +490,8 @@ All plan commands work with progressive structure levels:
 
 - `/plan`: Creates Level 0 plan (single file), provides expansion hints if complex
 - `/implement`: Navigates structure level to find and execute phases
-- `/list-plans`: Shows level indicators [L0], [L1], [L2]
-- `/update-plan`: Modifies correct files based on expansion status
+- `/list plans`: Shows level indicators [L0], [L1], [L2]
+- `/update plan`: Modifies correct files based on expansion status
 - `/revise`: Analyzes revision scope to target appropriate file(s)
 - `/expand-phase`: Extracts phase to separate file (Level 0 → 1)
 - `/expand-stage`: Extracts stage to separate file (Level 1 → 2)
@@ -685,8 +672,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 - [setup.md](setup.md) - CLAUDE.md setup
 - [test.md](test.md) - Test execution
 - [test-all.md](test-all.md) - Full test suite
-- [update-plan.md](update-plan.md) - Plan updates
-- [update-report.md](update-report.md) - Report updates
+- [update.md](update.md) - Plan and report updates
 - [validate-setup.md](validate-setup.md) - Setup validation
 
 ### Related
@@ -736,7 +722,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 /expand-phase specs/plans/007_dark_mode.md 2
 
 # Update Level 1 plan (modifies appropriate files)
-/update-plan specs/plans/015_dashboard/ "Add Phase 9: Performance testing"
+/update plan specs/plans/015_dashboard/ "Add Phase 9: Performance testing"
 
 # Revise specific phase
 /revise "Update Phase 3 complexity to High" specs/plans/015_dashboard/
