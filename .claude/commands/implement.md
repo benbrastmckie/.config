@@ -1061,10 +1061,7 @@ To continue this implementation:
 /implement [plan-path] M+1
 ```
 
-Or use auto-resume:
-```
-/resume-implement
-```
+Auto-resume is enabled by default when calling /implement without arguments.
 
 ## Implementation Notes
 [Brief notes about progress, challenges, or decisions made]
