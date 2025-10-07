@@ -62,7 +62,6 @@ Triggered when a Claude session begins (startup or resume).
 - Welcome notifications
 
 **Example Hooks**:
-- `session-start-restore.sh`
 - `tts-dispatcher.sh`
 
 ---
@@ -279,12 +278,7 @@ Hooks are registered in `.claude/settings.local.json`:
     "SessionStart": [
       {
         "matcher": "startup|resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh"
-          }
-        ]
+        "hooks": []
       }
     ]
   }
@@ -474,7 +468,6 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 
 ### Hook Scripts
 - [post-command-metrics.sh](post-command-metrics.sh) - Metrics collection
-- [session-start-restore.sh](session-start-restore.sh) - State restoration
 - [tts-dispatcher.sh](tts-dispatcher.sh) - TTS notifications
 
 ### Related
