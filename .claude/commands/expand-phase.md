@@ -58,9 +58,13 @@ specs/plans/025_feature/
 └── phase_5_deployment.md           # Newly extracted phase
 ```
 
-## Phase Content Extraction
+## Phase Content Enhancement
 
-The command extracts the following from the main plan:
+The command doesn't just extract - it **enhances** phase content from 30-50 lines to 80-150 lines:
+
+### Content Extraction
+
+First, extracts the following from the main plan:
 
 1. **Phase heading**: `### Phase N: Name`
 2. **Objective**: The objective/description
@@ -70,6 +74,94 @@ The command extracts the following from the main plan:
 6. **Expected Outcomes**: Outcome descriptions
 7. **Dependencies**: If listed
 8. **Status markers**: [PENDING], [IN_PROGRESS], [COMPLETED]
+
+### Content Enhancement
+
+Then, adds comprehensive implementation guidance:
+
+1. **Expanded Objective** (3-5 paragraphs)
+   - Context and background
+   - Success criteria
+   - Critical path analysis
+
+2. **Implementation Guidance**
+   - Detailed step-by-step instructions for each task
+   - Approach patterns (audit, create, test, refactor)
+   - Verification steps
+
+3. **Complexity Analysis**
+   - Calculated complexity score
+   - Recommendations based on score
+   - Stage expansion suggestion
+
+4. **Edge Cases** (4-6 scenarios)
+   - Input validation
+   - Error conditions
+   - Boundary conditions
+   - Performance considerations (if complex)
+
+5. **Cross-References**
+   - Links to related phases
+   - Parent plan reference
+
+### Example Enhancement
+
+**Before (30 lines)**:
+```markdown
+### Phase 3: Database Setup
+**Objective**: Set up database schema
+**Complexity**: Medium
+
+#### Tasks
+- [ ] Create schema
+- [ ] Set up connections
+- [ ] Add migrations
+```
+
+**After (120 lines)**:
+```markdown
+### Phase 3: Database Setup
+
+## Metadata
+- **Phase Number**: 3
+- **Parent Plan**: project.md
+
+**Objective**: Set up database schema
+**Complexity**: Medium
+
+[...original tasks...]
+
+---
+
+## Implementation Guidance
+
+**Context**: This phase involves 3 major tasks focusing on implementation.
+Success criteria: All tasks completed, tests passing, code meets standards.
+
+### Detailed Steps
+
+#### Step 1: Create schema
+**Approach**:
+1. Design component structure
+2. Implement core functionality
+3. Add error handling
+
+**Verification**:
+- Verify changes work as expected
+- Run relevant tests
+
+[...more steps...]
+
+## Edge Cases and Error Handling
+[4-6 scenarios with examples]
+
+## Cross-References
+[Links to related phases]
+
+## Stage Expansion Recommendation
+**Recommendation**: No
+**Reason**: Manageable complexity (score: 6.9)
+```
 
 ## Main Plan Revision
 
@@ -91,6 +183,7 @@ For detailed tasks and implementation, see [Phase N Details](phase_N_name.md)
 ## Metadata
 - **Structure Level**: 1
 - **Expanded Phases**: [2, 5]
+- **Stage Expansion Candidates**: [3]  # Added if phase complexity >8 or tasks >10
 ```
 
 ### Phase File Metadata
@@ -99,6 +192,10 @@ For detailed tasks and implementation, see [Phase N Details](phase_N_name.md)
 ## Metadata
 - **Phase Number**: 2
 - **Parent Plan**: 025_feature.md
+
+## Stage Expansion Recommendation
+**Recommendation**: Yes|No
+**Reason**: High complexity (score: 9.2, tasks: 12)
 ```
 
 ## Update Reminder
