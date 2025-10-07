@@ -358,6 +358,8 @@ Automatic plan numbering:
 3. Use next number (e.g., 013)
 4. Format: `013_feature_name.md`
 
+**Important**: specs/ directories are gitignored. Never attempt to commit plan files to git - they are local working artifacts only.
+
 ### Research Report Integration
 When reports are provided:
 - Read report findings
