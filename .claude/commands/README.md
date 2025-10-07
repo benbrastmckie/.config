@@ -249,18 +249,6 @@ Commands provide structured, repeatable workflows for:
 
 ### Workflow Commands
 
-#### /resume-implement
-**Purpose**: Resume implementation from incomplete plan or specific phase
-
-**Usage**: `/resume-implement [plan-file] [phase-number]`
-
-**Features**:
-- Auto-detect incomplete plans
-- Phase resumption
-- State recovery
-- Context restoration
-
----
 
 #### /revise
 **Purpose**: Revise existing implementation plan with new requirements
@@ -474,7 +462,7 @@ Helper commands for specific tasks:
 
 ### Workflow Commands
 Commands for managing execution state:
-- `/resume-implement`, `/revise`, `/update-plan`, `/update-report`
+- `/revise`, `/update-plan`, `/update-report`
 
 ### Utility Commands
 Management and maintenance commands:
@@ -515,7 +503,6 @@ All plan commands work with progressive structure levels:
 
 - `/plan`: Creates Level 0 plan (single file), provides expansion hints if complex
 - `/implement`: Navigates structure level to find and execute phases
-- `/resume-implement`: Detects level and resumes from correct location
 - `/list-plans`: Shows level indicators [L0], [L1], [L2]
 - `/update-plan`: Modifies correct files based on expansion status
 - `/revise`: Analyzes revision scope to target appropriate file(s)
@@ -694,7 +681,6 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 - [plan-wizard.md](plan-wizard.md) - Interactive plan creation
 - [refactor.md](refactor.md) - Code analysis
 - [report.md](report.md) - Research reports
-- [resume-implement.md](resume-implement.md) - Resume implementation
 - [revise.md](revise.md) - Plan revision
 - [setup.md](setup.md) - CLAUDE.md setup
 - [test.md](test.md) - Test execution
