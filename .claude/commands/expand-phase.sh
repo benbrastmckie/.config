@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 source "$SCRIPT_DIR/../utils/parse-adaptive-plan.sh"
 source "$SCRIPT_DIR/../lib/error-utils.sh"
+source "$SCRIPT_DIR/../lib/phase-enhancement.sh"
 
 # Error handling
 trap 'echo "Error on line $LINENO" >&2' ERR
@@ -113,8 +114,12 @@ phase_name=$(extract_phase_name "$plan_file" "$phase_num")
 phase_file="$(dirname "$plan_file")/phase_${phase_num}_${phase_name}.md"
 echo "Creating phase file: $phase_file"
 
-# Write phase content (basic extraction - will be enhanced in Phase 3)
-echo "$phase_content" > "$phase_file"
+# Enhance phase content (expands from 30-50 lines to 80-150 lines)
+echo "Enhancing phase content..."
+enhanced_content=$(enhance_phase_content "$phase_content" "$phase_num" "$(basename "$plan_file")")
+
+# Write enhanced phase content
+echo "$enhanced_content" > "$phase_file"
 
 # Add metadata to phase file
 add_phase_metadata "$phase_file" "$phase_num" "$(basename "$plan_file")"
