@@ -359,7 +359,48 @@ Commands orchestrate agents to accomplish complex workflows:
 /debug
   ├── debug-specialist → Investigate issue
   └── code-writer → Apply fixes (if requested)
+
+/expand-phase (agent-assisted for complex phases)
+  └── general-purpose + research-specialist behavior → Research phase context
 ```
+
+### /expand-phase Integration
+
+**Agent Usage Pattern**: Behavioral Injection
+
+`/expand-phase` uses a unique pattern: **general-purpose agents** with **behavioral guidelines** from agent definition files.
+
+**Why**: Claude Code only supports 3 agent types (general-purpose, statusline-setup, output-style-setup). We simulate specialized agents by having general-purpose agents read and follow behavior definitions.
+
+**Invocation**:
+```markdown
+Task tool:
+  subagent_type: general-purpose  # Only valid type
+  prompt: |
+    Read and follow: .claude/agents/research-specialist.md
+
+    [Agent-specific instructions]
+```
+
+**Agent Behaviors Used**:
+- **research-specialist**: Default for codebase analysis (complex phases)
+- **code-reviewer**: For refactor/consolidation phases
+- **plan-architect**: For very complex phase structure analysis
+
+**Complexity Detection**:
+- Simple phases (≤5 tasks, <10 files): Direct expansion, no agent
+- Complex phases (>5 tasks, ≥10 files, or keywords): Agent-assisted research
+
+**Synthesis**:
+Agent provides 200-250 word research → Claude synthesizes into 300-500+ line detailed specification
+
+**Benefits**:
+- Real file:line references from research
+- Concrete code examples based on patterns found
+- Testing strategy based on current codebase state
+- Implementation steps use actual structures
+
+See `.claude/commands/expand-phase.md` for detailed agent usage patterns.
 
 ## Standards Compliance
 
