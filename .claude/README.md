@@ -33,8 +33,7 @@ This directory implements a complete agentic workflow ecosystem:
 │   ├── plans/          Implementation plans
 │   ├── reports/        Research and investigations
 │   └── summaries/      Implementation summaries
-├── templates/           Reusable workflow templates
-│   └── custom/         User-defined custom templates
+├── templates/           Reusable workflow templates (YAML)
 ├── tests/               Test suites for system validation
 ├── tts/                 Voice notification system
 └── settings.local.json  Hook and permission configuration
@@ -64,7 +63,7 @@ Focused AI assistants with restricted tool access and clear responsibilities:
 ### Templates (Workflow Acceleration)
 Reusable plan templates with variable substitution:
 - CRUD features, API endpoints, refactoring patterns
-- Custom templates in `templates/custom/`
+- Add custom templates directly to `templates/` directory
 - 60-80% faster than manual planning
 - Simple variables, conditionals, and array iteration
 - Use `/plan-from-template` command

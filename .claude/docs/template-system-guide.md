@@ -282,14 +282,11 @@ Within `{{#each}}` blocks:
 
 ### Step 1: Choose Template Location
 
-Custom templates go in `.claude/templates/custom/`:
+Custom templates go directly in `.claude/templates/`:
 
 ```bash
-# Create custom directory if it doesn't exist
-mkdir -p .claude/templates/custom
-
 # Create your template
-nvim .claude/templates/custom/my-feature.yaml
+nvim .claude/templates/my-feature.yaml
 ```
 
 ### Step 2: Define Template Structure
@@ -386,21 +383,21 @@ Test template validation:
 
 ```bash
 # Validate syntax
-.claude/lib/parse-template.sh .claude/templates/custom/my-feature.yaml validate
+.claude/lib/parse-template.sh .claude/templates/my-feature.yaml validate
 
 # Extract metadata
-.claude/lib/parse-template.sh .claude/templates/custom/my-feature.yaml extract-metadata
+.claude/lib/parse-template.sh .claude/templates/my-feature.yaml extract-metadata
 
 # Test substitution
 echo '{"feature_name":"Test","complexity":"High"}' | \
-  .claude/lib/substitute-variables.sh .claude/templates/custom/my-feature.yaml -
+  .claude/lib/substitute-variables.sh .claude/templates/my-feature.yaml -
 ```
 
 ### Step 5: Use Your Template
 
 ```bash
 # In Claude Code
-/plan-from-template custom/my-feature
+/plan-from-template my-feature
 ```
 
 ## Using Templates
@@ -412,8 +409,8 @@ echo '{"feature_name":"Test","complexity":"High"}' | \
 ```
 
 Template names:
-- Standard templates: `crud-feature`, `api-endpoint`, `refactoring`
-- Custom templates: `custom/my-template`
+- Standard templates: `crud-feature`, `api-endpoint`, `refactoring`, `example-feature`
+- Custom templates: `my-template` (any `.yaml` file in templates/ directory)
 
 ### Interactive Flow
 
