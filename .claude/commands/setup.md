@@ -10,6 +10,13 @@ dependent-commands: none
 
 I'll create or improve the CLAUDE.md file by intelligently organizing content - keeping it concise by extracting detailed sections into auxiliary files when appropriate.
 
+## Shared Utilities Integration
+
+This command uses shared utility libraries for robust operation:
+- **Error Handling**: Uses `.claude/lib/error-utils.sh` for validation error handling and recovery
+- File existence checks, permission validation, and graceful error reporting
+- Ensures setup operations can be safely retried after failures
+
 ## Command Modes
 
 ### 1. Standard Mode (default)

@@ -14,6 +14,15 @@ I'll coordinate multiple specialized subagents through a complete development wo
 
 Let me first analyze your workflow description to identify the natural phases and requirements.
 
+## Shared Utilities Integration
+
+This command uses shared utility libraries for consistent workflow management:
+- **Checkpoint Management**: Uses `.claude/lib/checkpoint-utils.sh` for saving/restoring workflow state
+- **Artifact Registry**: Uses `.claude/lib/artifact-utils.sh` for tracking generated artifacts (reports, plans, summaries)
+- **Error Handling**: Uses `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
+
+These utilities ensure workflow state is preserved across interruptions and agent failures are handled gracefully.
+
 ### Step 1: Parse Workflow Description
 
 I'll extract:
