@@ -376,6 +376,101 @@ If `SELECTED_AGENT == "direct"`, I will:
 - Implement the phase tasks directly following standards
 - Proceed immediately to implementation step
 
+### 1.4. Check Expansion Status
+
+Before implementing the phase, check if it's already expanded and display current structure:
+
+```bash
+# Detect plan structure level
+LEVEL=$(.claude/utils/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+
+# Check if current phase is expanded
+IS_PHASE_EXPANDED=$(.claude/utils/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
+```
+
+**Display Structure Information:**
+- **Level 0**: "Plan Structure: Level 0 (all phases inline)"
+- **Level 1**: "Plan Structure: Level 1 (Phase X expanded, other phases inline)"
+- **Level 2**: "Plan Structure: Level 2 (Phase X with stage expansion)"
+
+This is informational only and helps understand the current plan organization.
+
+### 1.55. Proactive Expansion Check
+
+Before implementation begins, evaluate if the phase should be expanded using agent-based judgment:
+
+**Evaluation Approach:**
+
+The primary agent (executing `/implement`) has the current phase in context. Rather than using shell script heuristics, I'll make an informed judgment about whether this phase would benefit from expansion to a separate file.
+
+**Evaluation Criteria:**
+
+I'll consider:
+- **Task complexity**: Not just count, but actual complexity of each task
+- **Scope breadth**: How many files, modules, or subsystems are touched
+- **Interrelationships**: Dependencies and connections between tasks
+- **Potential for parallel work**: Could tasks be better organized for parallel execution
+- **Clarity vs detail tradeoff**: Would expansion help or create unnecessary fragmentation
+
+**Evaluation Process:**
+
+```
+Read /home/benjamin/.config/.claude/prompts/evaluate-phase-expansion.md
+
+Current Phase [N]: [Phase Name]
+
+Tasks:
+[task list from phase]
+
+Follow the evaluation criteria and provide recommendation.
+```
+
+**If Expansion Recommended:**
+
+Display formatted recommendation:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXPANSION RECOMMENDATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase [N]: [Phase Name]
+
+Rationale:
+  [Agent's 2-3 sentence rationale based on understanding the phase]
+
+Recommendation:
+  Consider expanding this phase to a separate file for better organization.
+
+Command:
+  /expand-phase <plan-path> [N]
+
+Note: This is a recommendation only. You can expand now or continue
+with implementation. The phase can be expanded later if needed.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If No Expansion Needed:**
+
+Continue silently to implementation. No message needed for phases that are appropriately scoped.
+
+**Already Expanded:**
+
+If Step 1.4 detected the phase is already expanded, note that in the evaluation and skip recommendation.
+
+**Non-Blocking:**
+
+This check is purely informative. The user can choose to:
+- Expand now using the recommended command
+- Continue with implementation as-is
+- Expand later if phase proves complex during implementation
+
+**Relationship to Step 3.4 (Reactive Expansion):**
+
+- **Step 1.55 (Proactive)**: Evaluates BEFORE implementation based on plan content
+- **Step 3.4 (Reactive)**: Evaluates AFTER implementation based on actual complexity encountered
+- **Different contexts**: Proactive = plan preview, Reactive = implementation experience
+- **Different actions**: Proactive = recommendation only, Reactive = auto-revision via `/revise --auto-mode`
+- **Complementary**: Both serve different purposes in the workflow
+
 ### 1.6. Parallel Wave Execution
 
 After all phases in the wave are prepared (Steps 1-1.5 complete for each), execute the wave:
