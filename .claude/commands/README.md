@@ -264,20 +264,20 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
-#### /expand-phase
+#### /expand phase
 **Purpose**: Extract phase to separate file (Level 0 → 1 transition)
 
-**Usage**: `/expand-phase <plan-path> <phase-num>`
+**Usage**: `/expand phase <plan-path> <phase-num>`
 
 **Features**:
 - On-demand phase extraction
 - Automatic directory creation
 - Metadata tracking
 
-#### /collapse-phase
+#### /collapse phase
 **Purpose**: Merge phase file back into main plan (Level 1 → 0 transition)
 
-**Usage**: `/collapse-phase <plan-path> <phase-num>`
+**Usage**: `/collapse phase <plan-path> <phase-num>`
 
 **Features**:
 - Content merging
@@ -469,7 +469,7 @@ Commands support progressive plan organization that grows based on actual comple
 **Level 1: Phase Expansion** (Created on-demand)
 - Directory with some phases in separate files
 - Created when phases prove too complex during implementation
-- Use `/expand-phase <plan> <phase-num>` to extract
+- Use `/expand phase <plan> <phase-num>` to extract
 - Example: `specs/plans/015_dashboard/`
   - `015_dashboard.md` (main plan with summaries)
   - `phase_2_components.md` (expanded phase)
@@ -477,7 +477,7 @@ Commands support progressive plan organization that grows based on actual comple
 **Level 2: Stage Expansion** (Created on-demand)
 - Phase directories with stage subdirectories
 - Created when phases have complex multi-stage workflows
-- Use `/expand-stage <phase> <stage-num>` to extract
+- Use `/expand stage <phase> <stage-num>` to extract
 - Example: `specs/plans/020_refactor/`
   - `020_refactor.md` (main plan)
   - `phase_1_analysis/`
@@ -493,10 +493,10 @@ All plan commands work with progressive structure levels:
 - `/list plans`: Shows level indicators [L0], [L1], [L2]
 - `/update plan`: Modifies correct files based on expansion status
 - `/revise`: Analyzes revision scope to target appropriate file(s)
-- `/expand-phase`: Extracts phase to separate file (Level 0 → 1)
-- `/expand-stage`: Extracts stage to separate file (Level 1 → 2)
-- `/collapse-phase`: Merges phase back into main plan (Level 1 → 0)
-- `/collapse-stage`: Merges stage back into phase (Level 2 → 1)
+- `/expand phase`: Extracts phase to separate file (Level 0 → 1)
+- `/expand stage`: Extracts stage to separate file (Level 1 → 2)
+- `/collapse phase`: Merges phase back into main plan (Level 1 → 0)
+- `/collapse stage`: Merges stage back into phase (Level 2 → 1)
 
 ### Parsing Utility
 
@@ -526,9 +526,9 @@ Advanced users can use the progressive parsing utility directly:
 
 Plans grow organically during implementation:
 - All plans start as Level 0 (single file)
-- Use `/expand-phase` when a phase becomes too complex
-- Use `/expand-stage` when phases need multi-stage breakdown
-- Use `/collapse-phase` or `/collapse-stage` to simplify structure
+- Use `/expand phase` when a phase becomes too complex
+- Use `/expand stage` when phases need multi-stage breakdown
+- Use `/collapse phase` or `/collapse stage` to simplify structure
 
 # Estimate metrics from description
 .claude/lib/analyze-plan-requirements.sh "<feature description>"
@@ -692,7 +692,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 /implement specs/plans/007_dark_mode_implementation.md
 
 # Expand complex phase during implementation
-/expand-phase specs/plans/007_dark_mode.md 2
+/expand phase specs/plans/007_dark_mode.md 2
 
 # Implement Level 1 plan (with expanded phase)
 /implement specs/plans/007_dark_mode/
@@ -719,7 +719,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 #         [L2] 020_refactor (15/25 phases, P:3[S:1,2])
 
 # Expand phase as complexity grows
-/expand-phase specs/plans/007_dark_mode.md 2
+/expand phase specs/plans/007_dark_mode.md 2
 
 # Update Level 1 plan (modifies appropriate files)
 /update plan specs/plans/015_dashboard/ "Add Phase 9: Performance testing"
@@ -728,7 +728,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 /revise "Update Phase 3 complexity to High" specs/plans/015_dashboard/
 
 # Collapse phase to simplify
-/collapse-phase specs/plans/015_dashboard/ 5
+/collapse phase specs/plans/015_dashboard/ 5
 ```
 
 ### Testing Workflow

@@ -1,6 +1,6 @@
 ---
 command-type: primary
-dependent-commands: list-plans, list-reports, expand-phase
+dependent-commands: list, expand
 description: Revise the most recently discussed plan with user-provided changes (supports interactive and automated modes)
 argument-hint: <revision-details> [--auto-mode] [--context <json>] [report-path1] [report-path2] ...
 allowed-tools: Read, Write, Edit, Glob, Grep, Task, MultiEdit, TodoWrite, SlashCommand
@@ -183,7 +183,7 @@ When invoked with `--auto-mode`, the command expects a `--context` parameter wit
 ```
 
 **Automated Actions**:
-1. Invoke `/expand-phase <plan> <phase-number>`
+1. Invoke `/expand phase <plan> <phase-number>`
 2. Update plan structure level metadata (0 → 1)
 3. Add revision history entry
 4. Return updated plan path
@@ -330,7 +330,7 @@ Validate required fields
   └─ Valid → Continue
      ↓
 Switch on revision_type:
-  ├─ "expand_phase" → Invoke /expand-phase
+  ├─ "expand_phase" → Invoke /expand phase
   ├─ "add_phase" → Insert new phase
   ├─ "split_phase" → Split existing phase
   ├─ "update_tasks" → Modify task list
@@ -429,7 +429,7 @@ Parse JSON response
 3. **Invalid phase number**: Return error, check plan structure
 4. **Missing required fields**: Return error listing missing fields
 5. **File operation failure**: Restore backup, return error
-6. **Expansion command fails**: Return error with /expand-phase output
+6. **Expansion command fails**: Return error with /expand phase output
 
 ### Safety Mechanisms
 

@@ -3,7 +3,7 @@ allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task, 
 argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan]
 description: Execute implementation plan with automated testing, adaptive replanning, and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
-dependent-commands: list, update, revise, debug, document, expand-phase
+dependent-commands: list, update, revise, debug, document, expand
 ---
 
 # Execute Implementation Plan
@@ -441,7 +441,7 @@ Recommendation:
   Consider expanding this phase to a separate file for better organization.
 
 Command:
-  /expand-phase <plan-path> [N]
+  /expand phase <plan-path> [N]
 
 Note: This is a recommendation only. You can expand now or continue
 with implementation. The phase can be expanded later if needed.
@@ -974,7 +974,7 @@ Recommendation:
   This simple phase can be collapsed back into the main plan file.
 
 Command:
-  /collapse-phase <plan-path> [N]
+  /collapse phase <plan-path> [N]
 
 Note: Collapsing is optional and non-destructive. The phase can be
 re-expanded later if needed. Consider collapsing after all phases are

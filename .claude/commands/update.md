@@ -80,25 +80,25 @@ Ensure updates follow:
 - Update single `.md` file with Edit tool
 - Add new phases/tasks inline
 - Update metadata if complexity changes
-- Consider using `/expand-phase` if a phase grows too large
+- Consider using `/expand phase` if a phase grows too large
 
 **Level 1 (Phase-Expanded)**:
 - If phase is expanded: Update phase file
 - If phase is inline: Update main plan
 - Add new phases to main plan initially
-- Use `/expand-phase` for complex additions
+- Use `/expand phase` for complex additions
 - Maintain links between main plan and phase files
 
 **Level 2 (Stage-Expanded)**:
 - Update appropriate stage files or phase overview
 - Add new stages to phase overview initially
-- Use `/expand-stage` for complex stage additions
+- Use `/expand stage` for complex stage additions
 - Maintain complete cross-reference hierarchy
 
 #### 5. Expansion Recommendations
 If complexity increases during update:
-- Recommend `/expand-phase <plan> <phase-num>` for complex phases
-- Recommend `/expand-stage <phase> <stage-num>` for complex stages
+- Recommend `/expand phase <plan> <phase-num>` for complex phases
+- Recommend `/expand stage <phase> <stage-num>` for complex stages
 - Note in update history which phases might benefit from expansion
 
 #### 6. Version Tracking (Plans)
