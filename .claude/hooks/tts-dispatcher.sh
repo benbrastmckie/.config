@@ -77,7 +77,7 @@ fi
 source "$CONFIG_FILE"
 
 # Setup logging with fallback to temp directory
-LOG_DIR="$CLAUDE_DIR/logs"
+LOG_DIR="$CLAUDE_DIR/data/logs"
 if [[ ! -d "$LOG_DIR" ]]; then
   mkdir -p "$LOG_DIR" 2>/dev/null || {
     # Fallback to temp if .claude/logs fails

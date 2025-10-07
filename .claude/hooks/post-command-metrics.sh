@@ -17,7 +17,7 @@ if [ -z "$CLAUDE_PROJECT_DIR" ]; then
 fi
 
 # Create metrics directory if it doesn't exist
-METRICS_DIR="$CLAUDE_PROJECT_DIR/.claude/metrics"
+METRICS_DIR="$CLAUDE_PROJECT_DIR/.claude/data/metrics"
 mkdir -p "$METRICS_DIR"
 
 # Generate metrics file path (monthly rotation: YYYY-MM.jsonl)
