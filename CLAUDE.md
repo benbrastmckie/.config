@@ -192,6 +192,7 @@ Located in `.claude/commands/`:
 - `/implement [plan-file]` - Execute implementation plans
 - `/report <topic>` - Generate research documentation
 - `/plan <feature>` - Create implementation plans
+- `/plan-from-template <template-name>` - Generate plans from reusable templates
 - `/test <target>` - Run project-specific tests
 - `/setup` - Configure or update this CLAUDE.md file
 
