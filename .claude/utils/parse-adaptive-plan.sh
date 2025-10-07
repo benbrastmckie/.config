@@ -312,15 +312,16 @@ extract_phase_name() {
   local plan_file="$1"
   local phase_num="$2"
 
-  # Extract phase heading like "### Phase 2: Implementation"
-  local heading=$(grep "^### Phase ${phase_num}:" "$plan_file" | head -1)
+  # Extract phase heading - handles both "### Phase 2: Implementation" and "### Phase 2 Implementation"
+  local heading=$(grep "^### Phase ${phase_num}" "$plan_file" | grep -v '```' | head -1)
   if [[ -z "$heading" ]]; then
     error "Phase $phase_num not found in plan"
   fi
 
-  # Extract name after colon, convert to lowercase, replace spaces with underscores
+  # Extract name after phase number (with or without colon)
+  # Remove optional colon, status tags, convert to lowercase, replace spaces with underscores
   # Also remove special characters that are invalid in filenames
-  local name=$(echo "$heading" | sed "s/^### Phase ${phase_num}: //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -d '/:*?"<>|')
+  local name=$(echo "$heading" | sed "s/^### Phase ${phase_num}:* //" | sed 's/ \[.*\]$//' | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -d '/:*?"<>|&')
   echo "$name"
 }
 
@@ -343,7 +344,11 @@ extract_phase_content() {
 
     # Only detect phase boundaries outside code blocks
     /^### Phase / && !in_code_block {
-      phase_match = ($3 ~ "^" phase ":")
+      # Match phase number in field 3 (handles both "Phase 3:" and "Phase 3 Name")
+      # Field 1 = "###", Field 2 = "Phase", Field 3 = number (possibly with colon)
+      phase_field = $3
+      gsub(/:/, "", phase_field)  # Remove colon if present
+      phase_match = (phase_field == phase)
       if (phase_match) {
         in_phase = 1
         print
@@ -384,7 +389,11 @@ revise_main_plan_for_phase() {
   # Replace phase content with summary
   awk -v phase="$phase_num" -v obj="$objective" -v link="$phase_filename" '
     /^### Phase / {
-      phase_match = ($3 ~ "^" phase ":")
+      # Match phase number in field 3 (handles both "Phase 3:" and "Phase 3 Name")
+      # Field 1 = "###", Field 2 = "Phase", Field 3 = number (possibly with colon)
+      phase_field = $3
+      gsub(/:/, "", phase_field)  # Remove colon if present
+      phase_match = (phase_field == phase)
       if (phase_match) {
         in_phase = 1
         # Print heading
