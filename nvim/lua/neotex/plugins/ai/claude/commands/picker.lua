@@ -928,18 +928,7 @@ local function create_command_previewer()
           PreCompact = "Before context compaction",
         }
 
-        -- Show script content if there's exactly one hook
-        if #entry.value.hooks == 1 then
-          local hook = entry.value.hooks[1]
-          if hook.filepath and vim.fn.filereadable(hook.filepath) == 1 then
-            local lines = vim.fn.readfile(hook.filepath)
-            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-            vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "sh")
-            return
-          end
-        end
-
-        -- Otherwise show metadata (multiple hooks or no file)
+        -- Show metadata for all hook events (consistent UX)
         local lines = {
           "# Hook Event: " .. entry.value.name,
           "",
