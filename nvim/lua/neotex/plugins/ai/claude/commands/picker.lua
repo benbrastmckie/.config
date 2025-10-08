@@ -119,6 +119,9 @@ local function parse_template_description(filepath)
   for _, line in ipairs(lines) do
     local desc = line:match("^description:%s*(.+)$")
     if desc then
+      -- Strip surrounding quotes (double or single)
+      desc = desc:gsub('^"(.-)"$', '%1')
+      desc = desc:gsub("^'(.-)'$", '%1')
       return desc:sub(1, 40) -- Limit to 40 chars
     end
   end
