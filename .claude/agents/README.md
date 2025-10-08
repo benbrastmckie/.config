@@ -402,6 +402,85 @@ Agent provides 200-250 word research → Claude synthesizes into 300-500+ line d
 
 See `.claude/commands/expand-phase.md` for detailed agent usage patterns.
 
+## Neovim Integration
+
+Agents in this directory are integrated with the Neovim artifact picker, appearing in two contexts:
+
+### Picker Display Modes
+
+1. **Nested Under Commands** - Agents appear indented under commands that use them
+   ```
+   * plan                        Create implementation plans
+     ├─ [agent] plan-architect  AI planning specialist
+     └─ list-reports            List available research reports
+   ```
+
+2. **Standalone Agents Section** - Agents not associated with any command appear in a dedicated [Agents] category
+
+### Accessing Agents via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Agents] section (for standalone) or nested under commands
+
+### Picker Features for Agents
+
+**Visual Display**:
+- Agent names prefixed with `[agent]` tag
+- Local agents marked with `*` prefix
+- Nested under parent commands with tree characters
+- Cross-references showing which commands use each agent
+
+**Preview Features**:
+- Agent description and capabilities
+- Allowed tools list
+- "Commands that use this agent" section with tree-formatted list
+- File location and local/global status
+
+**Quick Actions**:
+- `<CR>` - Open agent file for editing
+- `<C-l>` - Load agent locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local agent to global
+- `<C-e>` - Edit agent file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to plan-architect agent
+" Preview shows: "Commands that use this agent: ├─ plan, └─ revise"
+" Press <C-e> to edit agent definition
+```
+
+### Agent Cross-References
+
+The picker automatically displays which commands use each agent in the preview pane:
+
+```
+Agent: plan-architect
+
+Description: AI planning specialist
+
+Allowed Tools: ReadFile, WriteFile, SlashCommand
+
+Commands that use this agent:
+   ├─ plan
+   └─ revise
+
+File: /home/user/.claude/agents/plan-architect.md
+```
+
+This helps discover agent usage patterns and identify agents suitable for reuse in new commands.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## Standards Compliance
 
 All agents follow documentation standards:

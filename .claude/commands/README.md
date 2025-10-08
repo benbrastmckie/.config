@@ -657,6 +657,62 @@ All commands follow documentation standards:
 
 See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.md) for complete standards.
 
+## Neovim Integration
+
+Commands in this directory are integrated with the Neovim artifact picker for visual browsing and quick access.
+
+### Accessing Commands via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Commands] section in picker
+
+### Picker Features for Commands
+
+**Visual Display**:
+- Commands organized hierarchically (primary → dependents)
+- Local commands marked with `*` prefix
+- Dependent commands nested under their parents
+- Agent cross-references shown in preview
+
+**Quick Actions**:
+- `<CR>` - Insert command into Claude Code terminal
+- `<C-l>` - Load command locally (with dependencies)
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local command to global
+- `<C-e>` - Edit command file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to /plan command
+" Press Return to insert "/plan" in Claude Code
+" Or press <C-e> to edit plan.md file
+```
+
+### Command File Structure
+
+Commands appear in the picker based on their metadata:
+
+```yaml
+---
+command-type: primary         # Appears at root level
+dependent-commands: report    # Shows 'report' nested below
+description: Brief description shown in picker
+---
+```
+
+**Primary commands** (e.g., `/plan`, `/implement`) appear at the root level with their dependent commands nested below. **Dependent commands** can appear under multiple parents if referenced by multiple primary commands.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## Navigation
 
 ### Command Definitions

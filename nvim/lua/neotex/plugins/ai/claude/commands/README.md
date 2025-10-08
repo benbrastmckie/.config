@@ -36,19 +36,18 @@ Categories appear in logical order with headings at the top: [Commands], [Agents
   - Other artifacts (TTS/Templates/Lib/Docs): 1-space indentation
   - Preview cross-references: 3-space indentation
 - Smart command insertion (opens Claude Code if needed, uses feedkeys for reliable input)
-- Load artifacts locally with dependencies (`<C-l>` keybinding) - supports templates, lib, docs
-- Update artifacts from global versions (`<C-g>` keybinding) - supports templates, lib, docs
-- Save local artifacts to global (`<C-s>` keybinding) - supports templates, lib, docs
+- Load artifacts locally with dependencies (`<C-l>` keybinding)
+- Update artifacts from global versions (`<C-g>` keybinding)
+- Save local artifacts to global (`<C-s>` keybinding)
 - Universal file editing (`<C-e>` keybinding) - supports all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
 - Direct action execution with Enter key
   - Commands: Insert into Claude Code terminal
   - All other artifacts: Open file for editing
-  - No two-stage workflow - actions execute immediately
-- Native preview scrolling
-  - Ctrl-u/Ctrl-d: Scroll preview by half page
-  - Ctrl-f/Ctrl-b: Scroll preview by full page
-  - No need to focus preview - scrolling works from picker
-  - 100% reliable with no buffer validation errors
+- Native preview scrolling with Telescope actions
+  - `<C-u>`/`<C-d>`: Scroll preview by half page
+  - `<C-f>`/`<C-b>`: Scroll preview by full page
+  - Works from picker without focus switching
+  - 100% reliable with no buffer errors
 - Picker refresh after operations to show updated status
 - Comprehensive artifact coverage (11 categories: commands, agents, hooks, TTS, templates, libraries, docs, agent protocols, standards, data docs, settings)
 
@@ -180,7 +179,7 @@ When pressing `<C-e>` to edit a command:
 
 ### Keybindings (in picker)
 - `<CR>` - Execute action for selected item
-  - **Commands**: Insert command into Claude Code terminal (command only, no placeholders)
+  - **Commands**: Insert command into Claude Code terminal
     - Opens Claude Code if not already running
     - Uses feedkeys for reliable command insertion
   - **All other artifacts**: Open file for editing
@@ -190,12 +189,12 @@ When pressing `<C-e>` to edit a command:
     - `[Keyboard Shortcuts]`: No action (help entry)
 - `<C-u>` / `<C-d>` - Scroll preview up/down (half page)
   - Native Telescope preview scrolling
-  - Works from picker without focusing preview
-  - No buffer validation errors
+  - Works from picker without focus switching
+  - No buffer errors
 - `<C-f>` / `<C-b>` - Scroll preview down/up (full page)
-  - Alternative scrolling commands
-  - Same reliable behavior as <C-u>/<C-d>
-- `<Esc>` - Close picker
+  - Alternative scrolling for full-page navigation
+  - Same reliable behavior as `<C-u>`/`<C-d>`
+- `<Esc>` - Close picker immediately (single press)
 - `<C-n>` - Create new command with Claude Code
   - Opens Claude Code (if not already open)
   - Inserts prompt: "Create a new claude-code command in the {project}/.claude/commands/ directory called "
@@ -207,27 +206,23 @@ When pressing `<C-e>` to edit a command:
   - Preserves existing local version if present
   - Refreshes picker to show new local status with `*` markers
   - Keeps picker open for continued browsing
-  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
 - `<C-g>` - Update artifact from global version
   - Overwrites local version with global version from `~/.config/.claude/`
   - Also updates dependent artifacts if they exist globally
   - Refreshes picker to show updated content
   - Keeps picker open for continued browsing
-  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
 - `<C-s>` - Save local artifact to global
   - Copies local artifact to `~/.config/.claude/` for use across projects
   - Also saves dependent artifacts if they exist locally
   - Requires artifact to be local (shows error for global artifacts)
   - Refreshes picker after saving
   - Keeps picker open for continued browsing
-  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
 - `<C-e>` - Edit artifact file in buffer (universal file editing)
   - **Commands**: Automatically loads locally first, then opens for editing
   - **All other types** (Agents/Templates/Lib/Docs/Hooks/TTS): Opens file directly
   - Proper file path escaping for paths with spaces
   - Preserves executable permissions for .sh files
   - Closes picker after opening file
-  - Supports: Commands, Agents, Templates, Lib, Docs, Hooks, TTS
 
 ### Configuration
 Available in `ai-claude.config.commands`:
@@ -257,46 +252,48 @@ Simple one-step workflow for quick actions:
 
 1. **Navigate to desired artifact** using j/k or fuzzy search
 2. **Press Return**: Execute action immediately
-   - Commands → Insert into Claude Code
-   - All others → Open file for editing
+   - Commands: Insert into Claude Code
+   - All others: Open file for editing
 
 **Example: Inserting a Command**
 ```
-1. Type "plan" to filter → highlights /plan command
-2. Press Return → Command "/plan" inserted into Claude Code terminal
+1. Type "plan" to filter and highlight /plan command
+2. Press Return
+3. Command "/plan" inserted into Claude Code terminal
 ```
 
 **Example: Editing an Agent**
 ```
 1. Navigate to [agent] metrics-specialist
-2. Press Return → Agent file opens for editing
+2. Press Return
+3. Agent file opens for editing in buffer
 ```
 
 #### Preview Scrolling with Native Telescope Actions
 
-Use Ctrl-u/Ctrl-d to scroll preview while staying in picker:
+Use `<C-u>`/`<C-d>` to scroll preview while staying in picker:
 
 **Example: Reading Long Agent Description**
 ```
 1. Navigate to agent with lengthy description
-2. Press Ctrl-d → Preview scrolls down half page
-3. Press Ctrl-d again → Continue scrolling
-4. Press Ctrl-u → Scroll back up
-5. Press Return → Open agent file if desired
+2. Press <C-d> to scroll preview down half page
+3. Press <C-d> again to continue scrolling
+4. Press <C-u> to scroll back up
+5. Press Return to open agent file if desired
 ```
 
 **Example: Reviewing Category README**
 ```
 1. Navigate to [Commands] heading
 2. Preview shows full README.md from .claude/commands/
-3. Press Ctrl-d/Ctrl-u → Scroll through documentation
-4. Press j/k → Navigate to specific command
-5. Press Return → Insert command or edit file
+3. Press <C-d>/<C-u> to scroll through documentation
+4. Press j/k to navigate to specific command
+5. Press Return to insert command or edit file
 ```
 
 **Benefits of Native Scrolling**:
 - No focus switching required
-- 100% reliable (no buffer errors)
+- 100% reliable with no buffer errors
 - Standard Telescope behavior
 - Works across all preview types
 

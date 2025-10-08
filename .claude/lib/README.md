@@ -419,6 +419,83 @@ Optional dependencies noted in each utility's documentation.
 - Utilities were inline in individual commands
 - No shared library structure
 
+## Neovim Integration
+
+Utility library files are integrated with the Neovim artifact picker for easy browsing and editing.
+
+### Accessing Library Files via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Lib] section in picker
+
+### Picker Features for Library Files
+
+**Visual Display**:
+- Library utilities listed with descriptions from script headers
+- Local utilities marked with `*` prefix
+- Descriptions automatically extracted from file comments
+
+**Display Format**:
+```
+[Lib]                         Utility libraries
+
+* ├─ checkpoint-utils.sh       State persistence utilities
+  └─ template-parser.sh        Template variable substitution
+```
+
+**Quick Actions**:
+- `<CR>` - Open utility script for editing
+- `<C-l>` - Load utility locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local utility to global
+- `<C-e>` - Edit utility file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to [Lib] category
+" Select checkpoint-utils.sh
+" Press <C-e> to view or modify utility functions
+```
+
+### Library Script Structure
+
+Utilities appear in the picker with descriptions extracted from their header comments:
+
+```bash
+#!/usr/bin/env bash
+# Purpose: State persistence utilities  # Shown in picker
+# Functions for checkpoint management
+
+# Rest of script...
+```
+
+The picker automatically parses the `Purpose:` or first comment line to display utility function.
+
+### Using Shared Utilities
+
+Library utilities are meant to be sourced by commands and other scripts:
+
+```bash
+# In command script
+source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+
+# Use utility function
+save_checkpoint "implement" "my_project" "$STATE_JSON"
+```
+
+Use the picker to browse available utilities and their functions before using them in your scripts.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## See Also
 
 - [Agent Shared Protocols](../agents/shared/) - Shared agent documentation

@@ -386,6 +386,82 @@ TTS_VOICE="en-us+m3"  # Try male voice
 - **Category selection**: Disable verbose categories
 - **Message length**: Keep messages concise
 
+## Neovim Integration
+
+TTS system files are integrated with the Neovim artifact picker for easy access and editing.
+
+### Accessing TTS Files via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [TTS Files] section in picker
+
+### Picker Features for TTS Files
+
+**Visual Display**:
+- TTS configuration and scripts organized by role
+- Local files marked with `*` prefix
+- File descriptions from script headers
+- Role indicators ([config], [dispatcher], etc.)
+
+**Display Format**:
+```
+[TTS Files]                   Text-to-speech system files
+
+* ├─ [config] tts-config.sh    (tts) 15L
+  └─ [dispatcher] tts-dispatcher.sh (hooks) 42L
+```
+
+**Quick Actions**:
+- `<CR>` - Open TTS file for editing
+- `<C-l>` - Load TTS file locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local file to global
+- `<C-e>` - Edit file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to [TTS Files] category
+" Select tts-config.sh
+" Press <C-e> to edit configuration
+" Modify TTS_ENABLED or voice settings
+```
+
+### TTS File Organization
+
+The picker displays TTS files from two locations:
+
+1. **`tts/` directory**: Core TTS configuration
+   - `tts-config.sh` - Master configuration
+   - `tts-messages.sh` - Message generators
+
+2. **`hooks/` directory**: TTS integration scripts
+   - `tts-dispatcher.sh` - Hook dispatcher
+
+All TTS-related files appear together in the [TTS Files] category for convenient access.
+
+### Quick Configuration Toggle
+
+For quick TTS toggling in Neovim:
+
+```vim
+" Toggle TTS (project-specific)
+<leader>at
+
+" This edits .claude/tts/tts-config.sh
+" Use picker for detailed configuration
+```
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## Documentation Standards
 
 All TTS documentation follows standards:

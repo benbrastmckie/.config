@@ -201,6 +201,82 @@ Example:
 - Verify phase dependencies reference valid phases
 
 
+## Neovim Integration
+
+Template files are integrated with the Neovim artifact picker for easy browsing and editing.
+
+### Accessing Templates via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Templates] section in picker
+
+### Picker Features for Templates
+
+**Visual Display**:
+- Templates listed with descriptions from YAML files
+- Local templates marked with `*` prefix
+- Descriptions automatically extracted from template metadata
+
+**Display Format**:
+```
+[Templates]                   Workflow templates
+
+* ├─ crud-feature.yaml         CRUD feature implementation
+  └─ api-endpoint.yaml         API endpoint scaffold
+```
+
+**Quick Actions**:
+- `<CR>` - Open template file for editing
+- `<C-l>` - Load template locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local template to global
+- `<C-e>` - Edit template file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to [Templates] category
+" Select crud-feature.yaml
+" Press <C-e> to edit template
+" Customize phases and variables
+```
+
+### Template File Structure
+
+Templates appear in the picker with descriptions extracted from their YAML metadata:
+
+```yaml
+name: "CRUD Feature"
+description: "CRUD feature implementation"  # Shown in picker
+variables:
+  - name: entity_name
+    type: string
+phases:
+  - name: "Phase 1"
+    tasks: [...]
+```
+
+The picker automatically parses the `description` field to display template purpose.
+
+### Creating Custom Templates
+
+1. **Add template file** to `.claude/templates/` directory
+2. **Name with `.yaml` extension** (e.g., `my-workflow.yaml`)
+3. **Include description field** for picker display
+4. **Use picker to edit** after creation
+
+The picker will automatically detect new templates on next open.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## References
 
 - [Creating Custom Templates Guide](../docs/template-system-guide.md)
