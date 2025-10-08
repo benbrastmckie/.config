@@ -111,7 +111,7 @@ local function create_picker_entries(structure)
     is_help = true,
     name = "~~~help",
     display = string.format(
-      "  %-40s %s",
+      "%-40s %s",
       "[Keyboard Shortcuts]",
       "Help"
     ),
@@ -124,7 +124,7 @@ local function create_picker_entries(structure)
     is_load_all = true,
     name = "~~~load_all",
     display = string.format(
-      "  %-40s %s",
+      "%-40s %s",
       "[Load All Artifacts]",
       "Sync commands, agents, hooks, TTS files"
     ),
