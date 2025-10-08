@@ -47,12 +47,16 @@ end
 local function format_agent(agent, indent_char)
   local prefix = agent.is_local and "*" or " "
 
+  -- Strip redundant "Specialized in " prefix if present
+  local description = agent.description or ""
+  description = description:gsub("^Specialized in ", "")
+
   return string.format(
     "%s %s %-38s %s",
     prefix,
     indent_char,
     agent.name,
-    agent.description or ""
+    description
   )
 end
 
@@ -96,6 +100,105 @@ local function format_tts_file(file, indent_char)
     role_label,
     file.description or ""
   )
+end
+
+--- Parse description from YAML template file
+--- @param filepath string Path to YAML file
+--- @return string Description (empty if not found)
+local function parse_template_description(filepath)
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    return ""
+  end
+
+  local success, lines = pcall(vim.fn.readfile, filepath, "", 50) -- Read first 50 lines
+  if not success or not lines then
+    return ""
+  end
+
+  -- Look for description: field in YAML
+  for _, line in ipairs(lines) do
+    local desc = line:match("^description:%s*(.+)$")
+    if desc then
+      return desc:sub(1, 40) -- Limit to 40 chars
+    end
+  end
+
+  return ""
+end
+
+--- Parse description from shell script header comments
+--- @param filepath string Path to .sh file
+--- @return string Description (empty if not found)
+local function parse_script_description(filepath)
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    return ""
+  end
+
+  local success, lines = pcall(vim.fn.readfile, filepath, "", 20) -- Read first 20 lines
+  if not success or not lines then
+    return ""
+  end
+
+  -- Look for "# Purpose:" or "# Description:" or first non-shebang comment
+  local first_comment = nil
+  for _, line in ipairs(lines) do
+    if line:match("^#%s*Purpose:%s*(.+)$") then
+      local desc = line:match("^#%s*Purpose:%s*(.+)$")
+      return desc:sub(1, 40)
+    elseif line:match("^#%s*Description:%s*(.+)$") then
+      local desc = line:match("^#%s*Description:%s*(.+)$")
+      return desc:sub(1, 40)
+    elseif line:match("^#[^!]") and not first_comment then
+      -- First comment that's not shebang
+      first_comment = line:match("^#%s*(.+)$")
+    end
+  end
+
+  return first_comment and first_comment:sub(1, 40) or ""
+end
+
+--- Parse description from markdown document
+--- @param filepath string Path to .md file
+--- @return string Description (empty if not found)
+local function parse_doc_description(filepath)
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    return ""
+  end
+
+  local success, lines = pcall(vim.fn.readfile, filepath, "", 30) -- Read first 30 lines
+  if not success or not lines then
+    return ""
+  end
+
+  local in_frontmatter = false
+  local after_title = false
+
+  for _, line in ipairs(lines) do
+    -- Check for YAML frontmatter
+    if line == "---" then
+      if not in_frontmatter then
+        in_frontmatter = true
+      else
+        in_frontmatter = false
+      end
+    elseif in_frontmatter then
+      local desc = line:match("^description:%s*(.+)$")
+      if desc then
+        return desc:sub(1, 40)
+      end
+    elseif line:match("^#%s+") then
+      -- Found a heading
+      if not after_title then
+        after_title = true  -- Skip the title
+      else
+        -- Second heading is likely a description
+        local heading = line:match("^#%s+(.+)$")
+        return heading:sub(1, 40)
+      end
+    end
+  end
+
+  return ""
 end
 
 --- Create flattened entries for telescope display
@@ -181,13 +284,16 @@ local function create_picker_entries(structure)
       local is_first = (i == 1)
       local indent_char = is_first and "└─" or "├─"
 
+      -- Parse description from doc file
+      local description = parse_doc_description(doc.filepath)
+
       table.insert(entries, {
         display = string.format(
           "%s%s %-38s %s",
           doc.is_local and "*" or " ",
           indent_char,
           doc.name,
-          "Documentation"
+          description
         ),
         entry_type = "doc",
         name = doc.name,
@@ -237,13 +343,16 @@ local function create_picker_entries(structure)
       local is_first = (i == 1)
       local indent_char = is_first and "└─" or "├─"
 
+      -- Parse description from lib script
+      local description = parse_script_description(lib.filepath)
+
       table.insert(entries, {
         display = string.format(
           "%s%s %-38s %s",
           lib.is_local and "*" or " ",
           indent_char,
           lib.name,
-          "Utility library"
+          description
         ),
         entry_type = "lib",
         name = lib.name,
@@ -293,13 +402,16 @@ local function create_picker_entries(structure)
       local is_first = (i == 1)
       local indent_char = is_first and "└─" or "├─"
 
+      -- Parse description from template file
+      local description = parse_template_description(tmpl.filepath)
+
       table.insert(entries, {
         display = string.format(
           "%s%s %-38s %s",
           tmpl.is_local and "*" or " ",
           indent_char,
           tmpl.name,
-          "Workflow template"
+          description
         ),
         entry_type = "template",
         name = tmpl.name,
