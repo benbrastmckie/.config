@@ -1084,6 +1084,49 @@ local function create_command_previewer()
         return
       end
 
+      -- Show lib preview (full shell script)
+      if entry.value.entry_type == "lib" then
+        local filepath = entry.value.filepath
+        if filepath and vim.fn.filereadable(filepath) == 1 then
+          local lines = vim.fn.readfile(filepath)
+
+          -- Add metadata footer
+          table.insert(lines, "")
+          table.insert(lines, "# " .. string.rep("=", 60))
+          table.insert(lines, "")
+          table.insert(lines, "# File: " .. entry.value.name)
+
+          -- Get permissions
+          local perms = vim.fn.getfperm(filepath)
+          table.insert(lines, "# Permissions: " .. (perms or "N/A"))
+
+          table.insert(lines, "# Status: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "sh")
+          return
+        end
+      end
+
+      -- Show template preview (full YAML)
+      if entry.value.entry_type == "template" then
+        local filepath = entry.value.filepath
+        if filepath and vim.fn.filereadable(filepath) == 1 then
+          local lines = vim.fn.readfile(filepath)
+
+          -- Add metadata footer
+          table.insert(lines, "")
+          table.insert(lines, "# " .. string.rep("=", 60))
+          table.insert(lines, "")
+          table.insert(lines, "# File: " .. entry.value.name)
+          table.insert(lines, "# Status: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "yaml")
+          return
+        end
+      end
+
       -- Show doc preview (full markdown document)
       if entry.value.entry_type == "doc" then
         local filepath = entry.value.filepath
