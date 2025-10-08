@@ -1,9 +1,9 @@
 ---
 allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task, SlashCommand
-argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan]
+argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan] [--create-pr]
 description: Execute implementation plan with automated testing, adaptive replanning, and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
-dependent-commands: list, update, revise, debug, document, expand
+dependent-commands: list, update, revise, debug, document, expand, github-specialist
 ---
 
 # Execute Implementation Plan
@@ -1255,6 +1255,92 @@ After completing all phases, I'll:
 
 ## Lessons Learned
 [Insights from implementation]
+```
+
+### 6. Create Pull Request (Optional)
+
+**When to Create PR:**
+- If `--create-pr` flag is provided, OR
+- If project CLAUDE.md has GitHub Integration configured with auto-PR for branch pattern
+
+**Prerequisites Check:**
+Before invoking github-specialist agent:
+```bash
+# Check if gh CLI is available and authenticated
+if ! command -v gh &>/dev/null; then
+  echo "Note: gh CLI not installed. Skipping PR creation."
+  echo "Install: brew install gh (or equivalent)"
+  exit 0
+fi
+
+if ! gh auth status &>/dev/null; then
+  echo "Note: gh CLI not authenticated. Skipping PR creation."
+  echo "Run: gh auth login"
+  exit 0
+fi
+```
+
+**Invoke github-specialist Agent:**
+
+Use Task tool with behavioral injection:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create PR for completed implementation using github-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/github-specialist.md
+
+    You are acting as a GitHub Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Create Pull Request Task:
+    - Plan: [absolute path to plan file]
+    - Branch: [current branch name from git]
+    - Base: main (or master, detect from repo)
+    - Summary: [absolute path to implementation summary]
+
+    PR Description Should Include:
+    - Implementation overview from summary file
+    - All N phases completed with links to plan
+    - Test results: All passing
+    - Research reports referenced (if any from plan metadata)
+    - File changes summary from git diff --stat
+
+    Follow PR template structure from github-specialist agent.
+
+    Output: PR URL and number for user
+}
+```
+
+**Capture PR URL:**
+After agent completes:
+- Extract PR URL from agent output
+- Update implementation summary with PR link
+- Update plan file Implementation Summary section with PR link
+
+**Example Update to Summary:**
+```markdown
+## Pull Request
+- **PR**: https://github.com/user/repo/pull/123
+- **Created**: [YYYY-MM-DD]
+- **Status**: Open
+```
+
+**Graceful Degradation:**
+If PR creation fails:
+- Log the error from agent
+- Provide manual gh pr create command
+- Continue without blocking (implementation is complete)
+- Summary file still valid without PR link
+
+**Example Manual Command:**
+```bash
+gh pr create \
+  --title "feat: [feature name from plan]" \
+  --body "$(cat pr_description.txt)" \
+  --base main
 ```
 
 ## Finding the Implementation Plan
