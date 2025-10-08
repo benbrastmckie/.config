@@ -147,6 +147,19 @@ local function create_picker_entries(structure)
     entry_type = "special"
   })
 
+  -- Add categorical heading for Commands (appears above commands)
+  table.insert(entries, {
+    is_heading = true,
+    name = "~~~commands_heading",
+    display = string.format(
+      "  %-40s %s",
+      "[Commands]",
+      "Claude Code slash commands"
+    ),
+    entry_type = "heading",
+    ordinal = "commands"
+  })
+
   -- Collect and sort primary command names alphabetically
   local sorted_primary_names = {}
   for primary_name, _ in pairs(structure.primary_commands) do
@@ -236,6 +249,21 @@ local function create_picker_entries(structure)
   local hook_events = structure.hook_events or {}
   local hooks = structure.hooks or {}
 
+  -- Add categorical heading for Hooks (if there are any hooks)
+  if vim.tbl_count(hook_events) > 0 then
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~hooks_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Hook Events]",
+        "Event-triggered scripts"
+      ),
+      entry_type = "heading",
+      ordinal = "hooks"
+    })
+  end
+
   -- Sort hook event names
   local sorted_event_names = {}
   for event_name, _ in pairs(hook_events) do
@@ -284,9 +312,22 @@ local function create_picker_entries(structure)
     })
   end
 
-  -- TTS files section (no header, just add files directly)
+  -- TTS files section
   local tts_files = structure.tts_files or {}
   if #tts_files > 0 then
+    -- Add categorical heading for TTS Files
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~tts_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[TTS Files]",
+        "Text-to-speech system files"
+      ),
+      entry_type = "heading",
+      ordinal = "tts"
+    })
+
     -- Sort TTS files by role (config, dispatcher, library) then name
     table.sort(tts_files, function(a, b)
       if a.role ~= b.role then
@@ -400,6 +441,19 @@ local function create_command_previewer()
   return previewers.new_buffer_previewer({
     title = "Command Details",
     define_preview = function(self, entry, status)
+      -- Show info for heading entries
+      if entry.value.is_heading then
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
+          "Category: " .. (entry.value.ordinal or "Unknown"),
+          "",
+          entry.value.display or "",
+          "",
+          "This is a category heading to organize artifacts in the picker.",
+          "Navigate past this entry to view items in this category."
+        })
+        return
+      end
+
       -- Show help for keyboard shortcuts entry
       if entry.value.is_help then
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
@@ -1952,6 +2006,11 @@ function M.show_commands_picker(opts)
       actions.select_default:replace(function()
         local selection = action_state.get_selected_entry()
         if selection then
+          -- Skip heading entries
+          if selection.value.is_heading then
+            return
+          end
+
           -- Handle Load All Commands action
           if selection.value.is_load_all then
             local loaded = load_all_globally()
@@ -1973,7 +2032,7 @@ function M.show_commands_picker(opts)
       -- Load artifact locally with Ctrl-l (keeps picker open and refreshes)
       map("i", "<C-l>", function()
         local selection = action_state.get_selected_entry()
-        if not selection or selection.value.is_help or selection.value.is_load_all then
+        if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
           return
         end
 
@@ -2007,7 +2066,7 @@ function M.show_commands_picker(opts)
       -- Edit command file with Ctrl-e
       map("i", "<C-e>", function()
         local selection = action_state.get_selected_entry()
-        if selection and selection.value.command and not selection.value.is_help then
+        if selection and selection.value.command and not selection.value.is_help and not selection.value.is_heading then
           actions.close(prompt_bufnr)
           edit_command_file(selection.value.command)
         end
@@ -2016,7 +2075,7 @@ function M.show_commands_picker(opts)
       -- Update artifact from global version with Ctrl-u (keeps picker open and refreshes)
       map("i", "<C-u>", function()
         local selection = action_state.get_selected_entry()
-        if not selection or selection.value.is_help or selection.value.is_load_all then
+        if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
           return
         end
 
@@ -2049,7 +2108,7 @@ function M.show_commands_picker(opts)
       -- Save local artifact to global with Ctrl-s (keeps picker open and refreshes)
       map("i", "<C-s>", function()
         local selection = action_state.get_selected_entry()
-        if not selection or selection.value.is_help or selection.value.is_load_all then
+        if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
           return
         end
 
