@@ -193,11 +193,16 @@ local function create_picker_entries(structure)
     table.sort(all_docs, function(a, b) return a.name < b.name end)
 
     -- Insert doc items FIRST
-    for _, doc in ipairs(all_docs) do
+    for i, doc in ipairs(all_docs) do
+      -- First doc (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
+
       table.insert(entries, {
         display = string.format(
-          "%s %-40s %s",
+          "%s%s %-38s %s",
           doc.is_local and "*" or " ",
+          indent_char,
           doc.name,
           "Documentation"
         ),
@@ -244,11 +249,16 @@ local function create_picker_entries(structure)
     table.sort(all_lib, function(a, b) return a.name < b.name end)
 
     -- Insert lib items FIRST
-    for _, lib in ipairs(all_lib) do
+    for i, lib in ipairs(all_lib) do
+      -- First lib (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
+
       table.insert(entries, {
         display = string.format(
-          "%s %-40s %s",
+          "%s%s %-38s %s",
           lib.is_local and "*" or " ",
+          indent_char,
           lib.name,
           "Utility library"
         ),
@@ -295,11 +305,16 @@ local function create_picker_entries(structure)
     table.sort(all_templates, function(a, b) return a.name < b.name end)
 
     -- Insert template items FIRST
-    for _, tmpl in ipairs(all_templates) do
+    for i, tmpl in ipairs(all_templates) do
+      -- First template (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
+
       table.insert(entries, {
         display = string.format(
-          "%s %-40s %s",
+          "%s%s %-38s %s",
           tmpl.is_local and "*" or " ",
+          indent_char,
           tmpl.name,
           "Workflow template"
         ),
@@ -399,10 +414,14 @@ local function create_picker_entries(structure)
   -- Add standalone agents section if any exist
   if #standalone_agents > 0 then
     -- Insert agent items FIRST
-    for _, agent in ipairs(standalone_agents) do
+    for i, agent in ipairs(standalone_agents) do
+      -- First agent (i=1) appears LAST visually, so it gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
+
       table.insert(entries, {
         name = agent.name,
-        display = format_agent(agent, "  "),  -- No tree char for standalone agents
+        display = format_agent(agent, indent_char),
         agent = agent,
         is_primary = true,
         entry_type = "agent",
