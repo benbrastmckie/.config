@@ -50,6 +50,18 @@ This module represents the **internal system** for Claude AI integration, while 
 - **Custom command execution** framework
 - **Extensible command framework** for future expansion
 - **Command picker UI** with 1,114 lines of interface code
+- **Category README preview** in picker for contextual documentation
+- **Agent cross-reference display** showing parent commands in preview pane
+- **Universal file editing** supporting all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
+- **Two-stage Return key workflow** with deliberate review-before-action
+  - First Return: Focus preview pane with action hint
+  - Second Return: Execute action (insert commands, edit all other artifacts)
+  - State resets automatically on selection change
+- **Preview focus navigation** with Tab key
+  - Switch focus to preview for scrolling long content
+  - Esc returns from preview to picker
+  - Context-aware Esc behavior (return vs close)
+- **Breaking change**: Agents now open for editing (no longer insert @agent_name references)
 
 ### 7. Project Integration
 - **Project-aware session scoping** based on git repositories
@@ -101,7 +113,7 @@ ai/claude/
 │
 ├── commands/                    # 1,400+ lines - Command system
 │   ├── parser.lua               # Command parsing (299 lines)
-│   └── picker.lua               # Command picker UI (1,114 lines)
+│   └── picker.lua               # Command picker UI with cross-referencing and universal editing (1,114 lines)
 │
 └── specs/                       # Documentation and planning
     ├── plans/                   # Implementation plans (5 plans)
@@ -144,7 +156,7 @@ Default keybindings (configured in `which-key.lua`):
 
 - `<C-c>` - Smart toggle Claude Code (all modes)
 - `<leader>ac` - Context-sensitive Claude commands:
-  - **Normal mode**: Browse Claude commands
+  - **Normal mode**: Browse Claude commands (with agent cross-references, universal editing, context-aware actions)
   - **Visual mode**: Send selection to Claude with prompt
 - `<leader>as` - Browse Claude sessions
 - `<leader>at` - Toggle TTS notifications (project-specific `.claude/tts/tts-config.sh` only)
@@ -319,8 +331,13 @@ v}
 
 #### Claude Commands Browser
 1. **In normal mode**, press `<leader>ac` to browse available Claude commands
-2. **Navigate** through the hierarchical command picker
-3. **Select** a command to execute
+2. **Navigate** through the hierarchical command picker using j/k or fuzzy search
+3. **View agent cross-references** to see which commands use each agent
+4. **Two-stage selection**:
+   - **First Enter**: Focus preview pane with action hint message
+   - **Second Enter**: Execute action (insert commands, edit all other artifacts)
+   - **Tab**: Focus preview for scrolling long content (Esc to return)
+5. **Quick editing**: Press Ctrl-e to edit any artifact directly (skips preview focus)
 
 #### Command Usage
 ```vim
@@ -443,9 +460,17 @@ All functionality is preserved with improved organization.
 - Advanced integrations (Avante, MCP, tool registry)
 
 **Command System** (`commands/`): 1,400+ lines
-- Hierarchical command organization
+- Hierarchical command organization with categorical display
+- Categories in logical order: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
+- Standalone agents section for agents not nested under commands
+- Agent cross-reference display showing parent commands
 - Extensible parsing and execution framework
-- Rich command picker interface
+- Rich command picker interface with README previews
+- Universal file editing for all artifact types
+- Two-stage Return key workflow for deliberate review-before-action
+- Preview focus navigation with Tab key for scrolling long content
+- Context-aware Esc behavior (return from preview vs close picker)
+- Breaking change: Agents now edit files (no longer insert @name references)
 
 ### External Dependencies
 
@@ -507,7 +532,9 @@ Comprehensive documentation is maintained in `specs/`:
 
 Custom Claude Code agents are managed through the command picker system (`:ClaudeCommands` or `<leader>ac`).
 
-**Agent Discovery**: The parser (`commands/parser.lua`) scans `.claude/agents/*.md` files and displays them hierarchically under the commands that use them.
+**Agent Discovery**: The parser (`commands/parser.lua`) scans `.claude/agents/*.md` files and displays them in two contexts:
+1. Nested under commands that use them (e.g., plan-architect under /plan)
+2. In a standalone [Agents] section for agents not associated with any command
 
 **Agent Invocation in Commands**: Use natural language explicit invocation (Workaround 1):
 ```markdown

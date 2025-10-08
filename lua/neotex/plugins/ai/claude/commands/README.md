@@ -1,28 +1,56 @@
 # AI Claude Commands
 
-Command discovery and management for Claude Code integration. This module provides a hierarchical Telescope picker for browsing and executing Claude commands from both project-local and global command directories.
+Artifact discovery and management for Claude Code integration. This module provides a comprehensive hierarchical Telescope picker for browsing and managing all Claude Code artifacts including commands, agents, hooks, TTS files, templates, libraries, documentation, and configuration. Supports both project-local and global artifact directories with visual categorical organization.
+
+The picker displays categories in logical order with headings at the top: [Commands], [Agents], [Hook Events], [TTS], [Templates], [Lib], [Docs], followed by special entries at the bottom. Each category groups related artifacts hierarchically for easy navigation and discovery.
 
 ## Modules
 
 ### picker.lua
-Main Telescope picker implementation for Claude commands. Creates a hierarchical display with primary commands at the top level and dependent commands indented below. Supports command editing and terminal insertion.
+Main Telescope picker implementation for Claude commands, agents, hooks, and TTS files. Creates a hierarchical display with categorical organization for easy navigation. Supports comprehensive artifact management including commands, agents, hooks, TTS files, templates, libraries, documentation, and configuration.
+
+Categories appear in logical order with headings at the top: [Commands], [Agents], [Hook Events], [TTS], [Templates], [Lib], [Docs], followed by special entries at the bottom. This reversed insertion order ensures categories display in descending sort with headings first.
 
 **Key Functions:**
-- `show_commands_picker(opts)` - Main function to display the Claude commands picker
-- `create_picker_entries(structure)` - Converts command hierarchy to Telescope entries
-- `create_command_previewer()` - Custom previewer showing command documentation
+- `show_commands_picker(opts)` - Main function to display the Claude artifacts picker
+- `create_picker_entries(structure)` - Converts artifact hierarchy to Telescope entries with categorical headings (reversed insertion for top-down display)
+- `create_command_previewer()` - Custom previewer showing artifact documentation and README content for category headings
 - `send_command_to_terminal(command)` - Inserts command into Claude Code terminal (command only, no placeholders)
 - `edit_command_file(command)` - Opens command markdown file in buffer (copies global commands to local first)
+- `load_all_globally()` - Batch syncs all artifact types from global to local directory
 
 **Features:**
-- Two-level hierarchy (primary → dependent commands)
+- Categorical organization with visual headings at top ([Commands], [Agents], [Hook Events], [TTS], [Templates], [Lib], [Docs])
+- Standalone agents section for agents not nested under commands
+- Agent cross-reference display showing parent commands in preview pane
+- Category headings preview README content from associated .claude/ directories
+- Two-level hierarchy (primary → dependent commands, events → hooks, commands → agents)
 - Commands with multiple parents appear under each parent
-- Custom previewer with markdown rendering and command metadata
-- Local vs global command indicators (`*` prefix for local commands)
+- Custom previewer with markdown rendering and artifact metadata
+- Local vs global artifact indicators (`*` prefix for local artifacts)
+  - Hook events show `*` when ANY associated hook is local
+  - Individual artifacts show `*` based on their own location
+- Standardized tree character indentation for visual hierarchy
+  - Commands/Agents: 1-space indentation
+  - Hook Events: 2-space indentation
+  - Other artifacts (TTS/Templates/Lib/Docs): 1-space indentation
+  - Preview cross-references: 3-space indentation
 - Smart command insertion (opens Claude Code if needed, uses feedkeys for reliable input)
-- Load command locally with dependencies (`<C-l>` keybinding)
-- Automatic copying of global commands when editing (`<C-e>` keybinding)
-- Picker refresh after loading to show updated status
+- Load artifacts locally with dependencies (`<C-l>` keybinding) - supports templates, lib, docs
+- Update artifacts from global versions (`<C-u>` keybinding) - supports templates, lib, docs
+- Save local artifacts to global (`<C-s>` keybinding) - supports templates, lib, docs
+- Universal file editing (`<C-e>` keybinding) - supports all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
+- Two-stage Return key workflow with deliberate review-before-action
+  - First Return: Focus preview pane with action hint
+  - Second Return: Execute action (insert commands, edit all other artifacts)
+  - State resets automatically on selection change
+- Preview focus navigation with Tab key
+  - Switch focus to preview pane for scrolling long previews
+  - Esc returns from preview to picker
+  - Useful for reading agent descriptions, command help, README content
+- Context-aware Esc behavior (return from preview vs close picker)
+- Picker refresh after operations to show updated status
+- Comprehensive artifact coverage (11 categories: commands, agents, hooks, TTS, templates, libraries, docs, agent protocols, standards, data docs, settings)
 
 ### parser.lua
 Command file discovery and metadata parsing. Scans both project-local and global `.claude/commands/` directories for markdown files and extracts standardized frontmatter metadata to build command hierarchy.
@@ -110,19 +138,32 @@ When pressing `<C-s>` to save a command globally:
 - **Picker refresh**: Automatically refreshes after saving
 - **Picker state**: Remains open for continued browsing
 
-#### Batch Loading (`[Load All Commands]`)
-When selecting the `[Load All Commands]` entry:
-- **Scans**: All global commands in ~/.config/.claude/commands/
-- **Copies**: Global commands not present locally (new commands)
-- **Replaces**: Local commands that have matching global versions
-- **Preserves**: Local commands without global equivalents (local-only commands)
-- **Confirmation**: Shows yes/no dialog with operation counts before proceeding
+#### Batch Loading (`[Load All Artifacts]`)
+When selecting the `[Load All Artifacts]` entry:
+- **Scans**: All global artifacts in ~/.config/.claude/ (11 categories)
+- **Artifact Categories**:
+  - Commands (*.md)
+  - Agents (*.md)
+  - Hooks (*.sh)
+  - TTS Files (*.sh from hooks/ and tts/)
+  - Templates (*.yaml)
+  - Library Utilities (*.sh from lib/)
+  - Documentation (*.md from docs/)
+  - Agent Protocols (*.md from agents/prompts/, agents/shared/)
+  - Standards (*.md from specs/standards/)
+  - Data Documentation (README.md from data subdirs)
+  - Settings (settings.local.json)
+- **README Coverage**: Syncs README.md files from all .claude/ directories
+- **Copies**: Global artifacts not present locally (new artifacts)
+- **Replaces**: Local artifacts that have matching global versions
+- **Preserves**: Local artifacts without global equivalents (local-only artifacts)
+- **Confirmation**: Shows yes/no dialog with detailed breakdown by category before proceeding
 - **Refreshes**: Picker automatically refreshes to show updated status
-- **Reports**: Number of commands loaded and replaced
+- **Reports**: Number of artifacts loaded and replaced per category
 
-**Important**: This operation will overwrite existing local commands with global
-versions (same behavior as `<C-u>` for individual commands). Local-only commands
-are never touched.
+**Important**: This operation will overwrite existing local artifacts with global
+versions (same behavior as `<C-u>` for individual artifacts). Local-only artifacts
+are never touched. Execute permissions are preserved for .sh files.
 
 #### Editing Commands (`<C-e>`)
 When pressing `<C-e>` to edit a command:
@@ -132,43 +173,94 @@ When pressing `<C-e>` to edit a command:
 - **Global commands in other projects**: Copies to local project first, then opens the copy
 - **Picker state**: Closes after opening file for editing
 
+## Breaking Changes
+
+### Agent Return Key Behavior (Latest Version)
+
+**IMPORTANT BEHAVIORAL CHANGE**: The Return key behavior for agents has been updated to match other file-based artifacts:
+
+**Previous Behavior (Deprecated)**:
+- Pressing Return on an agent would insert `@agent_name` into Claude Code terminal
+- Users could quickly reference agents with a simple keystroke
+
+**Current Behavior**:
+- **First Return**: Focus preview pane with action hint "Press Return to edit file"
+- **Second Return**: Open agent file for editing (same as Templates, Lib, Docs, Hooks, TTS)
+- Agents are now treated as file artifacts, not insertable references
+
+**Rationale**:
+- Consistent behavior across all non-command artifacts
+- Agents are primarily edited rather than inserted as references
+- Only commands insert into Claude Code terminal
+- Users who need `@agent_name` references can type them manually
+
+**Migration**:
+- If you relied on inserting `@agent_name` via picker, you must now type the reference manually in Claude Code
+- The agent file is still easily accessible via the two-stage Return workflow
+- Use Ctrl-e for direct file editing if you prefer to skip the preview focus step
+
 ## Integration
 
 ### User Commands
 - `:ClaudeCommands` - Opens the Claude commands picker
 
 ### Keybindings (in picker)
-- `<CR>` - Insert command into Claude Code terminal (command only, no argument placeholders)
-  - Opens Claude Code if not already running
-  - Uses feedkeys for reliable command insertion
-  - Special action for `[Load All Commands]`: Copies all global commands to local directory
+- `<CR>` - Two-stage selection with deliberate review workflow
+  - **First Return**: Focus preview pane with action hint message
+    - Shows message: "Preview focused - Press Return to [insert command|edit file]"
+    - Allows reviewing artifact details before execution
+    - Press Esc to return to picker without executing
+  - **Second Return**: Execute action based on artifact type
+    - **Commands**: Insert command into Claude Code terminal (command only, no placeholders)
+      - Opens Claude Code if not already running
+      - Uses feedkeys for reliable command insertion
+    - **Agents**: Open file for editing (BREAKING CHANGE - see notes below)
+    - **File artifacts** (Docs/Lib/Templates/Hooks/TTS): Open file for editing
+      - Provides intuitive "select to edit" workflow for non-insertable artifacts
+  - **Special entries**: Execute immediately (no two-stage)
+    - `[Load All Commands]`: Copies all global commands to local directory
+    - `[Keyboard Shortcuts]`: Non-selectable help entry
+  - **State management**: Two-stage state resets when selection changes (j/k/Ctrl-j/Ctrl-k)
+- `<Tab>` - Focus preview pane for scrolling
+  - Switches focus to preview window for navigation
+  - Useful for reading long previews (agent descriptions, command help, README content)
+  - Press Esc to return to picker
+  - Shows message: "Preview focused - Press Esc to return to picker"
+- `<Esc>` - Context-aware escape behavior
+  - **From preview pane**: Return focus to picker
+  - **From picker**: Close picker entirely
 - `<C-n>` - Create new command with Claude Code
   - Opens Claude Code (if not already open)
   - Inserts prompt: "Create a new claude-code command in the {project}/.claude/commands/ directory called "
   - User provides the command name and description
   - Closes picker to focus on Claude Code
-- `<C-l>` - Load command locally (with dependencies)
-  - Copies global command to project's `.claude/commands/`
-  - Recursively copies all dependent commands
+- `<C-l>` - Load artifact locally (with dependencies)
+  - Copies global artifact to project's `.claude/` directory
+  - Recursively copies all dependent artifacts
   - Preserves existing local version if present
   - Refreshes picker to show new local status with `*` markers
   - Keeps picker open for continued browsing
-- `<C-u>` - Update command from global version
-  - Overwrites local version with global version from `~/.config/.claude/commands/`
-  - Also updates dependent commands if they exist globally
+  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
+- `<C-u>` - Update artifact from global version
+  - Overwrites local version with global version from `~/.config/.claude/`
+  - Also updates dependent artifacts if they exist globally
   - Refreshes picker to show updated content
   - Keeps picker open for continued browsing
-- `<C-s>` - Save local command to global
-  - Copies local command to `~/.config/.claude/commands/` for use across projects
-  - Also saves dependent commands if they exist locally
-  - Requires command to be local (shows error for global commands)
+  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
+- `<C-s>` - Save local artifact to global
+  - Copies local artifact to `~/.config/.claude/` for use across projects
+  - Also saves dependent artifacts if they exist locally
+  - Requires artifact to be local (shows error for global artifacts)
   - Refreshes picker after saving
   - Keeps picker open for continued browsing
-- `<C-e>` - Edit command markdown file in buffer
-  - Automatically loads command locally first (same as `<C-l>`)
-  - Opens the local copy for editing
+  - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
+- `<C-e>` - Edit artifact file in buffer (universal file editing)
+  - **Commands**: Automatically loads locally first, then opens for editing
+  - **All other types** (Agents/Templates/Lib/Docs/Hooks/TTS): Opens file directly
+  - Proper file path escaping for paths with spaces
+  - Preserves executable permissions for .sh files
   - Closes picker after opening file
-- `<Escape>` - Close picker
+  - Supports: Commands, Agents, Templates, Lib, Docs, Hooks, TTS
 
 ### Configuration
 Available in `ai-claude.config.commands`:
@@ -191,6 +283,62 @@ require('neotex.ai-claude').show_commands_picker()
 :ClaudeCommands
 ```
 
+### Navigation Workflow Examples
+
+#### Two-Stage Selection Workflow
+The deliberate two-stage Return workflow prevents accidental actions:
+
+1. **Navigate to desired artifact** using j/k or fuzzy search
+2. **First Return**: Focus preview pane
+   - Review artifact details (description, metadata, file content)
+   - Message shown: "Preview focused - Press Return to [insert command|edit file]"
+3. **Options from preview**:
+   - **Second Return**: Execute the action (insert or edit)
+   - **Esc**: Cancel and return to picker without executing
+   - **j/k**: Navigate within preview if needed
+
+**Example: Selecting a Command**
+```
+1. Type "plan" to filter → highlights /plan command
+2. Press Return → Preview focused with message "Press Return to insert command"
+3. Review command details in preview
+4. Press Return → Command "/plan" inserted into Claude Code terminal
+```
+
+**Example: Reviewing Before Editing an Agent**
+```
+1. Navigate to [agent] metrics-specialist
+2. Press Return → Preview focused with message "Press Return to edit file"
+3. Read agent description and capabilities
+4. Press Return → Agent file opens for editing
+   OR Press Esc → Return to picker without opening
+```
+
+#### Preview Focus Navigation with Tab
+
+Use Tab to focus the preview pane for scrolling long content:
+
+**Example: Reading Long Agent Description**
+```
+1. Navigate to agent with lengthy description
+2. Press Tab → Focus switches to preview pane
+   Message shown: "Preview focused - Press Esc to return to picker"
+3. Use j/k, Ctrl-d/u, or mouse to scroll through content
+4. Press Esc → Return to picker, selection preserved
+```
+
+**Example: Reviewing Category README**
+```
+1. Navigate to [Commands] heading
+2. Preview shows full README.md from .claude/commands/
+3. Press Tab → Focus preview for scrolling
+4. Read through README documentation
+5. Press Esc → Return to picker
+6. Press j/k to navigate to specific command
+```
+
+**State Reset Behavior**: Moving selection (j/k/Ctrl-j/Ctrl-k) automatically resets the two-stage state to "first", requiring two Return presses again for new selection.
+
 ### Integration with ai-claude Module
 ```lua
 local ai_claude = require('neotex.ai-claude')
@@ -210,37 +358,209 @@ ai_claude.show_commands_picker()
 - plenary.nvim - File system utilities (telescope dependency)
 - claude-code.nvim - For terminal integration (optional, graceful fallback)
 
-## Command Structure
+## Artifact Structure
 
-The picker displays a two-level hierarchy with local/global indicators:
+The picker displays a categorized hierarchy with local/global indicators. Categories appear in logical order with headings at the top:
 
 ```
-[Keyboard Shortcuts]          Help                             [Special]
-[Load All Commands]           Copy all global commands locally [Special]
+[Commands]                    Claude Code slash commands       [Category]
 
 * plan                        Create implementation plans      [Local]
-  ├─ list-reports            List available research reports
-  └─ update-plan             Update existing implementation plan
+  ├─ [agent] plan-architect  AI planning specialist
+  └─ list-reports            List available research reports
 
   implement                   Execute implementation plans     [Global]
-  ├─ list-plans              List implementation plans
-  ├─ list-summaries          List implementation summaries
-  └─ update-plan             Update existing implementation plan
+  ├─ [agent] code-writer     AI implementation specialist
+  └─ list-plans              List implementation plans
 
-* report                      Create research reports         [Local]
-  ├─ list-reports            List available research reports
-  └─ update-report           Update existing research report
+[Agents]                      Standalone AI agents             [Category]
+
+  [agent] metrics-specialist  Performance analysis specialist
+
+[Hook Events]                 Event-triggered scripts          [Category]
+
+* [Hook Event] Stop            After command completion
+  ├─ post-command-metrics.sh   Collect command metrics
+  └─ tts-notification.sh       Voice notification
+
+[TTS Files]                   Text-to-speech system files     [Category]
+
+* ├─ [config] tts-config.sh    (tts) 15L
+  └─ [dispatcher] tts-dispatcher.sh (hooks) 42L
+
+[Templates]                   Workflow templates               [Category]
+
+* ├─ crud-feature.yaml         CRUD feature implementation
+  └─ api-endpoint.yaml         API endpoint scaffold
+
+[Lib]                         Utility libraries                [Category]
+
+* ├─ checkpoint-utils.sh       State persistence utilities
+  └─ template-parser.sh        Template variable substitution
+
+[Docs]                        Integration guides               [Category]
+
+* ├─ template-system-guide.md  Template system documentation
+  └─ api-integration-guide.md  API integration patterns
+
+[Load All Artifacts]          Sync all global artifacts        [Special]
+[Keyboard Shortcuts]          Help                             [Special]
 ```
 
-### Special Entries
-- **`[Keyboard Shortcuts]`**: Shows help for picker keybindings
-- **`[Load All Commands]`**: Batch copies all global commands to local directory
+### Category Order (Top to Bottom)
 
-### Command Indicators
-- **`*` prefix**: Indicates a local command (defined in project's `.claude/commands/`)
-- **No prefix**: Indicates a global command (from `~/.config/.claude/commands/`)
+The picker displays categories in the following order:
+
+1. **[Commands]** - Claude Code slash commands (.md files)
+2. **[Agents]** - Standalone AI agents not nested under commands (.md files)
+3. **[Hook Events]** - Event-triggered automation scripts (.sh files)
+4. **[TTS Files]** - Text-to-speech system configuration and scripts (.sh files)
+5. **[Templates]** - Workflow templates (.yaml files) - if exist
+6. **[Lib]** - Utility libraries (.sh files) - if exist
+7. **[Docs]** - Integration guides (.md files) - if exist
+8. **[Load All Artifacts]** - Special entry for batch synchronization
+9. **[Keyboard Shortcuts]** - Special entry for help
+
+Categories only appear when artifacts of that type exist. Special entries always appear at the bottom.
+
+### Agent Cross-Reference Display
+
+When navigating to an agent in the picker, the preview pane displays which commands use that agent:
+
+**Data Source**: The parser (`parser.lua`) populates the `agent.parent_commands` array during command scanning by detecting agent references in command metadata.
+
+**Preview Format**:
+```
+Agent: plan-architect
+
+Description: AI planning specialist
+
+Allowed Tools: ReadFile, WriteFile, SlashCommand
+
+Commands that use this agent:
+├─ plan
+└─ revise
+
+File: /home/user/.claude/agents/plan-architect.md
+
+[Local] Local override
+```
+
+**Tree Character Formatting**:
+- `├─` for intermediate commands
+- `└─` for the last command in the list
+- Consistent with the hierarchical display style used throughout the picker
+
+**Benefits**:
+- Discover which workflows utilize an agent
+- Understand agent dependencies without opening files
+- Navigate between related commands and agents efficiently
+- Identify agents suitable for reuse in new commands
+
+### Special Entries
+- **`[Load All Artifacts]`**: Batch syncs all artifact types from global directory
+- **`[Keyboard Shortcuts]`**: Shows help for picker keybindings
+
+### Category Headings
+- **`[Commands]`**: Claude Code slash commands with nested agents and dependents
+- **`[Agents]`**: Standalone agents not associated with any command
+- **`[Hook Events]`**: Event-triggered automation scripts
+- **`[TTS Files]`**: Text-to-speech system configuration and scripts
+- **`[Templates]`**: Workflow templates for faster plan creation
+- **`[Lib]`**: Utility libraries and shared functions
+- **`[Docs]`**: Integration guides and documentation
+- **Non-selectable**: Category headings organize artifacts but cannot be selected
+- **README Preview**: When navigating to a category heading, the preview pane displays the associated README.md file
+
+#### Category README Preview
+
+Category headings display comprehensive README content in the preview pane:
+
+**Directory Mapping**:
+- `[Commands]` → `.claude/commands/README.md`
+- `[Agents]` → `.claude/agents/README.md`
+- `[Hook Events]` → `.claude/hooks/README.md`
+- `[TTS Files]` → `.claude/tts/README.md`
+- `[Templates]` → `.claude/templates/README.md`
+- `[Lib]` → `.claude/lib/README.md`
+- `[Docs]` → `.claude/docs/README.md`
+
+**Path Resolution**:
+1. Checks project-local `.claude/{category}/README.md` first
+2. Falls back to global `~/.config/.claude/{category}/README.md`
+3. Uses first readable file found
+
+**Preview Features**:
+- Markdown syntax highlighting for README content
+- 150-line preview limit to prevent buffer overflow
+- Truncation indicator when README exceeds limit: `[Preview truncated - showing first 150 of N lines]`
+- Graceful fallback to generic text if README not found
+- Scrollable preview for navigation through content
+
+**Benefits**:
+- Immediate access to category documentation while browsing
+- Context-aware help for each artifact type
+- No need to leave picker to view documentation
+- Professional markdown rendering with syntax highlighting
+
+### Artifact Indicators
+
+#### Local vs Global Indicators
+- **`*` prefix**: Indicates a local artifact (defined in project's `.claude/`)
+- **No prefix**: Indicates a global artifact (from `~/.config/.claude/`)
+
+**Hook Event Local Indicators**:
+- Hook events show `*` prefix when ANY hook associated with that event is local
+- Individual hooks may be global while the event shows `*` if at least one hook is local
+- This indicates the event has local customization even if not all hooks are local
+
+**Example**:
+```
+* [Hook Event] Stop            After command completion
+  ├─ post-command-metrics.sh   Collect command metrics (local)
+  └─ tts-notification.sh       Voice notification (global)
+```
+
+The event shows `*` because `post-command-metrics.sh` is local, even though `tts-notification.sh` is global.
+
+#### Display Hierarchy
 - Primary commands appear at the root level, with their dependent commands indented below
+- Hooks appear indented under their event triggers
+- Agents appear indented under their parent commands
 - Commands that serve multiple parents (like `update-plan`) appear under each parent for easy discovery
+
+#### Tree Character Indentation
+
+The picker uses standardized indentation patterns for visual hierarchy:
+
+**Commands and Agents** (1-space indentation):
+```
+* plan                        Create implementation plans
+  ├─ [agent] plan-architect  AI planning specialist
+  └─ list-reports            List available research reports
+```
+
+**Hook Events** (2-space indentation):
+```
+* [Hook Event] Stop            After command completion
+  ├─ post-command-metrics.sh   Collect command metrics
+  └─ tts-notification.sh       Voice notification
+```
+
+**Other Artifacts** (1-space indentation):
+- TTS Files: `* ├─ [config] tts-config.sh`
+- Templates: `* ├─ crud-feature.yaml`
+- Lib: `* ├─ checkpoint-utils.sh`
+- Docs: `* ├─ template-system-guide.md`
+
+**Preview Cross-References** (3-space indentation):
+```
+Commands that use this agent:
+   ├─ plan
+   └─ revise
+```
+
+The indentation creates consistent visual hierarchy while distinguishing different artifact categories.
 
 ## Error Handling
 - Graceful fallback when neither local nor global `.claude/commands/` directories exist
