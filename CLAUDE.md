@@ -1,3 +1,33 @@
+# Worktree Task: github_agent
+
+## Task Metadata
+- **Type**: feature
+- **Branch**: feature/github_agent
+- **Created**: 2025-10-08 15:52
+- **Worktree**: ../.config-feature-github_agent
+- **Session ID**: github_agent-1759963953
+
+## Objective
+[Describe the main goal for this worktree]
+
+## Current Status
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+- [ ] Review
+
+## Claude Context
+Tell Claude: "I'm working on github_agent in the feature/github_agent worktree. The goal is to..."
+
+## Task Notes
+[Add worktree-specific context, links, or decisions]
+
+
+---
+
+# Project Configuration (Inherited from Main Worktree)
+
 # Project Configuration Index
 
 This CLAUDE.md serves as the central configuration and standards index for this project.

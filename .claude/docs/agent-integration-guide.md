@@ -103,6 +103,14 @@ Task {
 - **Dependencies**: Requires metrics infrastructure (hooks)
 - **Invoked By**: Custom performance analysis commands (future)
 
+#### 9. github-specialist
+- **Purpose**: GitHub operations including PRs, issues, and CI/CD monitoring
+- **Tools**: Read, Grep, Glob, Bash
+- **Use Cases**: PR creation with metadata, issue management, CI workflow monitoring
+- **Primary Tool**: gh CLI via Bash (MCP server optional supplement)
+- **Output**: PR/issue URLs, CI status reports
+- **Invoked By**: /implement (--create-pr), /orchestrate (workflow PRs)
+
 ## Integration Patterns
 
 ### Pattern 1: Single Agent Delegation
@@ -315,8 +323,8 @@ Choose agent based on primary task:
 
 | Command | Primary Agent | Secondary Agents | Pattern |
 |---------|---------------|------------------|---------|
-| /orchestrate | Varies by phase | All 6+ agents | Pipeline + Parallel |
-| /implement | None (direct) | Potential: code-writer, test-specialist | Direct execution |
+| /orchestrate | Varies by phase | All 9 agents | Pipeline + Parallel |
+| /implement | None (direct) | Potential: code-writer, test-specialist, github-specialist | Direct execution |
 | /debug | debug-specialist | None | Single delegation |
 | /plan | plan-architect | Optional: research-specialist | Sequential pipeline |
 | /document | doc-writer | None | Single delegation |
@@ -555,6 +563,7 @@ Potential agent system improvements:
 | code-reviewer | ✓ | | | ✓ | ✓ | ✓ | | | |
 | debug-specialist | ✓ | | | ✓ | ✓ | ✓ | | ✓ | |
 | metrics-specialist | ✓ | | | ✓ | ✓ | | | | |
+| github-specialist | ✓ | | | ✓ | ✓ | ✓ | | | |
 
 ### Common Invocation Template
 
