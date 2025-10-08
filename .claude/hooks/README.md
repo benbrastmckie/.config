@@ -453,6 +453,76 @@ timeout 5s long_operation || true
 head -n 1000 large_file.log > processed.log
 ```
 
+## Neovim Integration
+
+Hooks in this directory are integrated with the Neovim artifact picker, organized by hook events.
+
+### Accessing Hooks via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Hook Events] section in picker
+
+### Picker Features for Hooks
+
+**Visual Display**:
+- Hooks grouped by event (Stop, SessionStart, Notification, etc.)
+- Event headers show `*` if ANY associated hook is local
+- Individual hooks shown with local/global indicators
+- Event descriptions displayed (e.g., "After command completion")
+
+**Display Format**:
+```
+* [Hook Event] Stop            After command completion
+  ├─ post-command-metrics.sh   Collect command metrics
+  └─ tts-dispatcher.sh         Voice notification
+```
+
+**Quick Actions**:
+- `<CR>` - Open hook script for editing
+- `<C-l>` - Load hook locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local hook to global
+- `<C-e>` - Edit hook file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to [Hook Event] Stop
+" See all hooks registered for Stop event
+" Press j to select post-command-metrics.sh
+" Press <C-e> to edit hook script
+```
+
+### Hook Event Organization
+
+The picker displays hooks organized by event type:
+
+- **Stop** - After command completion
+- **SessionStart** - When session begins
+- **SessionEnd** - When session ends
+- **SubagentStop** - After subagent completes
+- **Notification** - Permission/idle events
+- **PreToolUse** - Before tool execution
+- **PostToolUse** - After tool execution
+- **UserPromptSubmit** - When prompt submitted
+- **PreCompact** - Before context compaction
+
+Events only appear if they have registered hooks in `settings.local.json`.
+
+### Local Indicator Behavior
+
+Hook events show `*` prefix when ANY hook associated with that event is local, indicating the event has local customization even if not all hooks are local.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## Documentation Standards
 
 All hooks follow documentation standards:

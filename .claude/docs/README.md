@@ -217,6 +217,82 @@ Consult:
 2. [Command Standards Flow](command-standards-flow.md) - Standards discovery
 3. [Agent Integration Guide](agent-integration-guide.md) - Agent problems
 
+## Neovim Integration
+
+Documentation files are integrated with the Neovim artifact picker for easy browsing and reference.
+
+### Accessing Documentation via Picker
+
+- **Keybinding**: `<leader>ac` in normal mode
+- **Command**: `:ClaudeCommands`
+- **Category**: [Docs] section in picker
+
+### Picker Features for Documentation
+
+**Visual Display**:
+- Documentation files listed with descriptions from frontmatter
+- Local docs marked with `*` prefix
+- Descriptions automatically extracted from markdown metadata
+
+**Display Format**:
+```
+[Docs]                        Integration guides
+
+* ├─ template-system-guide.md  Template system documentation
+  └─ api-integration-guide.md  API integration patterns
+```
+
+**Quick Actions**:
+- `<CR>` - Open documentation file for editing
+- `<C-l>` - Load documentation locally to project
+- `<C-g>` - Update from global version
+- `<C-s>` - Save local documentation to global
+- `<C-e>` - Edit file in buffer
+- `<C-u>`/`<C-d>` - Scroll preview up/down
+
+**Example Workflow**:
+```vim
+" Open picker
+:ClaudeCommands
+
+" Navigate to [Docs] category
+" Select tts-integration-guide.md
+" Press Return to view/edit documentation
+" Use <C-u>/<C-d> to scroll through guide
+```
+
+### Documentation File Structure
+
+Documentation files appear in the picker with descriptions extracted from their metadata:
+
+```markdown
+# TTS Integration Guide
+
+Brief description of TTS integration.  # Shown in picker
+
+## Contents
+...
+```
+
+The picker automatically parses the first paragraph or description to display document purpose.
+
+### Quick Reference Access
+
+The picker provides immediate access to integration guides while working:
+
+- **Browse documentation** without leaving Neovim
+- **Preview content** before opening files
+- **Jump to guides** when implementing features
+- **Edit documentation** alongside code
+
+This tight integration makes documentation a first-class part of the development workflow.
+
+### Documentation
+
+- [Neovim Claude Integration](../../nvim/lua/neotex/plugins/ai/claude/README.md) - Integration overview
+- [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
+- [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
+
 ## Documentation Standards
 
 All documentation in this directory follows:

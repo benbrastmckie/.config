@@ -53,15 +53,14 @@ This module represents the **internal system** for Claude AI integration, while 
 - **Category README preview** in picker for contextual documentation
 - **Agent cross-reference display** showing parent commands in preview pane
 - **Universal file editing** supporting all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
-- **Two-stage Return key workflow** with deliberate review-before-action
-  - First Return: Focus preview pane with action hint
-  - Second Return: Execute action (insert commands, edit all other artifacts)
-  - State resets automatically on selection change
-- **Preview focus navigation** with Tab key
-  - Switch focus to preview for scrolling long content
-  - Esc returns from preview to picker
-  - Context-aware Esc behavior (return vs close)
-- **Breaking change**: Agents now open for editing (no longer insert @agent_name references)
+- **Direct action execution** with Enter key
+  - Commands: Insert into Claude Code terminal
+  - All other artifacts: Open file for editing
+- **Native Telescope preview scrolling**
+  - `<C-u>`/`<C-d>`: Scroll preview by half page
+  - `<C-f>`/`<C-b>`: Scroll preview by full page
+  - Works from picker without focus switching
+  - 100% reliable with no buffer errors
 
 ### 7. Project Integration
 - **Project-aware session scoping** based on git repositories
@@ -156,7 +155,7 @@ Default keybindings (configured in `which-key.lua`):
 
 - `<C-c>` - Smart toggle Claude Code (all modes)
 - `<leader>ac` - Context-sensitive Claude commands:
-  - **Normal mode**: Browse Claude commands (with agent cross-references, universal editing, context-aware actions)
+  - **Normal mode**: Browse Claude commands (with agent cross-references, universal editing, direct actions)
   - **Visual mode**: Send selection to Claude with prompt
 - `<leader>as` - Browse Claude sessions
 - `<leader>at` - Toggle TTS notifications (project-specific `.claude/tts/tts-config.sh` only)
@@ -333,11 +332,9 @@ v}
 1. **In normal mode**, press `<leader>ac` to browse available Claude commands
 2. **Navigate** through the hierarchical command picker using j/k or fuzzy search
 3. **View agent cross-references** to see which commands use each agent
-4. **Two-stage selection**:
-   - **First Enter**: Focus preview pane with action hint message
-   - **Second Enter**: Execute action (insert commands, edit all other artifacts)
-   - **Tab**: Focus preview for scrolling long content (Esc to return)
-5. **Quick editing**: Press Ctrl-e to edit any artifact directly (skips preview focus)
+4. **Preview scrolling**: Use `<C-u>`/`<C-d>` to scroll preview while browsing
+5. **Execute actions**: Press Return to insert commands or edit artifacts
+6. **Quick editing**: Press `<C-e>` to edit any artifact directly
 
 #### Command Usage
 ```vim
@@ -366,17 +363,6 @@ Run linting and formatting:
 <leader>l     " Run linter
 <leader>mp    " Format code
 ```
-
-## Migration from Old Structure
-
-This module consolidates functionality previously spread across:
-- `neotex.core.claude-session`
-- `neotex.core.claude-worktree`
-- `neotex.core.claude-visual`
-- `neotex.core.claude-native-sessions`
-- `neotex.core.claude-sessions-picker`
-
-All functionality is preserved with improved organization.
 
 ## Troubleshooting
 
@@ -467,10 +453,9 @@ All functionality is preserved with improved organization.
 - Extensible parsing and execution framework
 - Rich command picker interface with README previews
 - Universal file editing for all artifact types
-- Two-stage Return key workflow for deliberate review-before-action
-- Preview focus navigation with Tab key for scrolling long content
-- Context-aware Esc behavior (return from preview vs close picker)
-- Breaking change: Agents now edit files (no longer insert @name references)
+- Direct action execution with Enter key
+- Native Telescope preview scrolling with `<C-u>`/`<C-d>`/`<C-f>`/`<C-b>`
+- Single-press `<Esc>` to close picker
 
 ### External Dependencies
 
