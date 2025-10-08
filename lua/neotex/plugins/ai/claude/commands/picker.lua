@@ -848,50 +848,54 @@ local function create_command_previewer()
           "Keyboard Shortcuts:",
           "",
           "Commands:",
-          "  Enter (CR)  - Insert command into Claude Code terminal",
-          "  Ctrl-n      - Create new command (opens Claude Code with prompt)",
-          "  Ctrl-l      - Load artifact locally (copies with dependencies)",
-          "  Ctrl-u      - Update artifact from global version (overwrites local)",
-          "  Ctrl-s      - Save local artifact to global (share across projects)",
-          "  Ctrl-e      - Edit artifact file (Commands and Hooks only)",
+          "  Enter (CR)     - Insert command/agent OR edit file artifacts",
+          "                   Commands: Insert into Claude Code terminal",
+          "                   Agents: Insert @agent_name reference",
+          "                   Docs/Lib/Templates/Hooks/TTS: Open file for editing",
+          "  Ctrl-n         - Create new command (opens Claude Code with prompt)",
+          "  Ctrl-l         - Load artifact locally (copies with dependencies)",
+          "  Ctrl-u         - Update artifact from global version (overwrites local)",
+          "  Ctrl-s         - Save local artifact to global (share across projects)",
+          "  Ctrl-e         - Edit artifact file (all types)",
           "",
           "Navigation:",
-          "  Ctrl-j/k    - Move selection down/up",
-          "  Escape      - Close picker (single press from insert mode)",
+          "  Ctrl-j/k       - Move selection down/up",
+          "  Escape         - Close picker (single press from insert mode)",
           "",
           "Artifact Types:",
-          "  Commands    - Claude Code slash commands",
-          "    Primary   - Main workflow commands",
-          "    ├─ dependent - Supporting commands called by primary",
-          "    └─ [agent]   - Agents used by this command",
+          "  [Commands]     - Claude Code slash commands",
+          "    Primary        - Main workflow commands",
+          "    ├─ command     - Supporting commands called by primary",
+          "    └─ agent       - Agents used by this command",
           "",
-          "  Agents      - Custom AI agent definitions",
-          "    Standalone agents shown in dedicated section",
+          "  [Agents]       - Custom AI agent definitions",
+          "    Standalone agents",
           "    Also shown under commands that use them",
           "",
-          "  Hook Events - Event triggers for hooks",
+          "  [Hook Events]  - Event triggers for hooks",
           "    Hook files displayed in metadata preview area",
           "",
-          "  TTS Files   - Text-to-speech system files",
-          "    config.json     - Configuration",
-          "    dispatcher.sh   - Event router",
-          "    library.sh      - Message generator",
+          "  [TTS Files]    - Text-to-speech system files",
+          "    config.json    - Configuration",
+          "    dispatcher.sh  - Event router",
+          "    library.sh     - Message generator",
           "",
           "Indicators:",
-          "  *  - Artifact defined locally in project (.claude/)",
-          "       Local artifacts override global ones from .config/",
-          "  (no *) - Global artifact from ~/.config/.claude/",
+          "  *       - Artifact defined locally in project (.claude/)",
+          "            Otherwise a global artifact from ~/.config/.claude/",
           "",
           "File Operations:",
-          "  Ctrl-l/u/s  - Work for: Commands, Agents, Hooks, TTS, Templates, Lib, Docs",
-          "  Ctrl-e      - Edit file (Commands and Hooks only)",
-          "  Preserves executable permissions for .sh files",
+          "  Ctrl-l/u/s  - Commands, Agents, Hooks, TTS, Templates, Lib, Docs",
+          "  Ctrl-e      - Edit file (all artifact types)",
+          "                Preserves executable permissions for .sh files",
           "",
           "  [Load All] - Batch synchronizes all artifact types",
-          "               Commands, agents, hooks, and TTS files",
-          "               (preserves local-only artifacts)",
+          "               including commands, agents, hooks, and TTS files.",
+          "               Replaces local with global artifacts with the same",
+          "               name while preserving local-only artifacts.",
           "",
-          "Note: All artifacts loaded from both project and .config directories"
+          "Notes: All artifacts loaded from both project and .config directories",
+          "       Local artifacts override global ones from .config/"
         })
         return
       end
@@ -1015,12 +1019,30 @@ local function create_command_previewer()
             "**Allowed Tools**: " .. (agent.allowed_tools and #agent.allowed_tools > 0
               and table.concat(agent.allowed_tools, ", ") or "N/A"),
             "",
-            "**Used By Commands**: " .. (entry.value.parent or "N/A"),
-            "",
-            "**File**: " .. agent.filepath,
-            "",
-            agent.is_local and "[Local] Local override" or "[Global] Global definition"
           }
+
+          -- Show commands that use this agent
+          if agent.parent_commands and #agent.parent_commands > 0 then
+            table.insert(lines, "**Commands that use this agent**:")
+            for i, cmd_name in ipairs(agent.parent_commands) do
+              local tree_char = (i == #agent.parent_commands) and "└─" or "├─"
+              table.insert(lines, "  " .. tree_char .. " " .. cmd_name)
+            end
+          else
+            -- Show entry.value.parent if agent is nested under a command
+            if entry.value.parent then
+              table.insert(lines, "**Commands that use this agent**:")
+              table.insert(lines, "  └─ " .. entry.value.parent)
+            else
+              table.insert(lines, "**Commands that use this agent**: None")
+            end
+          end
+
+          table.insert(lines, "")
+          table.insert(lines, "**File**: " .. agent.filepath)
+          table.insert(lines, "")
+          table.insert(lines, agent.is_local and "[Local] Local override" or "[Global] Global definition")
+
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
           vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
         end
@@ -1234,6 +1256,21 @@ local function create_command_previewer()
       vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
     end,
   })
+end
+
+--- Edit artifact file with proper escaping
+--- @param filepath string Path to file to edit
+local function edit_artifact_file(filepath)
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    local notify = require('neotex.util.notifications')
+    notify.editor(
+      "File not found or not readable: " .. (filepath or "nil"),
+      notify.categories.ERROR,
+      { filepath = filepath }
+    )
+    return
+  end
+  vim.cmd("edit " .. vim.fn.fnameescape(filepath))
 end
 
 --- Send command to Claude Code terminal (event-driven, no timers)
@@ -2667,7 +2704,7 @@ function M.show_commands_picker(opts)
     default_selection_index = 2,     -- Start on [Keyboard Shortcuts] (one above bottom)
     previewer = create_command_previewer(),
     attach_mappings = function(prompt_bufnr, map)
-      -- Insert command on Enter (or load all for Load All Commands)
+      -- Context-aware Enter key: insert Commands/Agents, edit file artifacts
       actions.select_default:replace(function()
         local selection = action_state.get_selected_entry()
         if selection then
@@ -2690,6 +2727,33 @@ function M.show_commands_picker(opts)
           elseif selection.value.command and not selection.value.is_help then
             actions.close(prompt_bufnr)
             send_command_to_terminal(selection.value.command)
+          -- Handle agent insertion (@agent_name syntax)
+          elseif selection.value.entry_type == "agent" and selection.value.agent then
+            actions.close(prompt_bufnr)
+            -- Insert agent reference into Claude Code
+            local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
+            local agent_ref = "@" .. selection.value.agent.name .. " "
+            terminal_state.queue_command(agent_ref, { ensure_open = true })
+          -- Handle file artifacts - open for editing
+          elseif selection.value.entry_type == "doc" and selection.value.filepath then
+            actions.close(prompt_bufnr)
+            edit_artifact_file(selection.value.filepath)
+          elseif selection.value.entry_type == "lib" and selection.value.filepath then
+            actions.close(prompt_bufnr)
+            edit_artifact_file(selection.value.filepath)
+          elseif selection.value.entry_type == "template" and selection.value.filepath then
+            actions.close(prompt_bufnr)
+            edit_artifact_file(selection.value.filepath)
+          elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
+            -- Edit the first hook file for this event
+            if #selection.value.hooks > 0 then
+              local hook = selection.value.hooks[1]
+              actions.close(prompt_bufnr)
+              vim.cmd("edit " .. vim.fn.fnameescape(hook.filepath))
+            end
+          elseif selection.value.entry_type == "tts_file" and selection.value.filepath then
+            actions.close(prompt_bufnr)
+            edit_artifact_file(selection.value.filepath)
           end
         end
       end)
@@ -2738,23 +2802,46 @@ function M.show_commands_picker(opts)
         end
       end)
 
-      -- Edit command file with Ctrl-e
+      -- Edit artifact file with Ctrl-e
       map("i", "<C-e>", function()
         local selection = action_state.get_selected_entry()
         if not selection or selection.value.is_help or selection.value.is_heading then
           return
         end
 
+        local entry_type = selection.value.entry_type
+
         if selection.value.command then
+          -- Commands use special edit logic with dependency handling
           actions.close(prompt_bufnr)
           edit_command_file(selection.value.command)
-        elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
+        elseif entry_type == "hook_event" and selection.value.hooks then
           -- Edit the first hook file for this event
           if #selection.value.hooks > 0 then
             local hook = selection.value.hooks[1]
             actions.close(prompt_bufnr)
             vim.cmd("edit " .. vim.fn.fnameescape(hook.filepath))
           end
+        elseif entry_type == "agent" and selection.value.filepath then
+          -- Edit agent file
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif entry_type == "template" and selection.value.filepath then
+          -- Edit template file
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif entry_type == "lib" and selection.value.filepath then
+          -- Edit lib file
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif entry_type == "doc" and selection.value.filepath then
+          -- Edit doc file
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif entry_type == "tts_file" and selection.value.filepath then
+          -- Edit TTS file
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
         end
       end)
 
