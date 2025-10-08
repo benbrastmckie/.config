@@ -1084,6 +1084,49 @@ local function create_command_previewer()
         return
       end
 
+      -- Show doc preview (full markdown document)
+      if entry.value.entry_type == "doc" then
+        local filepath = entry.value.filepath
+        if filepath and vim.fn.filereadable(filepath) == 1 then
+          local MAX_PREVIEW_LINES = 150
+          local success, file = pcall(io.open, filepath, "r")
+          if success and file then
+            local lines = {}
+            local line_count = 0
+            for line in file:lines() do
+              table.insert(lines, line)
+              line_count = line_count + 1
+              if line_count >= MAX_PREVIEW_LINES then
+                break
+              end
+            end
+            file:close()
+
+            -- Check if truncation needed
+            local total_lines = #vim.fn.readfile(filepath)
+            if total_lines > MAX_PREVIEW_LINES then
+              table.insert(lines, "")
+              table.insert(lines, "...")
+              table.insert(lines, string.format(
+                "[Preview truncated - showing first %d of %d lines]",
+                MAX_PREVIEW_LINES, total_lines
+              ))
+            end
+
+            -- Add metadata footer
+            table.insert(lines, "")
+            table.insert(lines, "---")
+            table.insert(lines, "")
+            table.insert(lines, "**File**: " .. entry.value.name)
+            table.insert(lines, "**Status**: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+
+            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+            vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+            return
+          end
+        end
+      end
+
       local command = entry.value.command
       if not command then
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"No command data available"})
