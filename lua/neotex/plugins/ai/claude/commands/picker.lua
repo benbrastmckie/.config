@@ -464,6 +464,12 @@ local function create_command_previewer()
         local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
         local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
         local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
+        local templates = scan_directory_for_sync(global_dir, project_dir, "templates", "*.yaml")
+        local lib_utils = scan_directory_for_sync(global_dir, project_dir, "lib", "*.sh")
+        local docs = scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
+        local agents_prompts = scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md")
+        local agents_shared = scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md")
+        local standards = scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md")
         local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json")
 
         -- Merge TTS files
@@ -473,6 +479,15 @@ local function create_command_previewer()
         end
         for _, file in ipairs(tts_files) do
           table.insert(all_tts, file)
+        end
+
+        -- Merge agent protocols
+        local all_protocols = {}
+        for _, file in ipairs(agents_prompts) do
+          table.insert(all_protocols, file)
+        end
+        for _, file in ipairs(agents_shared) do
+          table.insert(all_protocols, file)
         end
 
         -- Count operations by action type
@@ -493,10 +508,17 @@ local function create_command_previewer()
         local agt_copy, agt_replace = count_actions(agents)
         local hook_copy, hook_replace = count_actions(hooks)
         local tts_copy, tts_replace = count_actions(all_tts)
+        local tmpl_copy, tmpl_replace = count_actions(templates)
+        local lib_copy, lib_replace = count_actions(lib_utils)
+        local doc_copy, doc_replace = count_actions(docs)
+        local proto_copy, proto_replace = count_actions(all_protocols)
+        local std_copy, std_replace = count_actions(standards)
         local set_copy, set_replace = count_actions(settings)
 
-        local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + set_copy
-        local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + set_replace
+        local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + tmpl_copy + lib_copy + doc_copy +
+                           proto_copy + std_copy + set_copy
+        local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + tmpl_replace +
+                              lib_replace + doc_replace + proto_replace + std_replace + set_replace
 
         local lines = {
           "Load All Artifacts",
@@ -508,11 +530,16 @@ local function create_command_previewer()
 
         if total_copy + total_replace > 0 then
           table.insert(lines, "**Operations by Type:**")
-          table.insert(lines, string.format("  Commands:  %d new, %d replace", cmd_copy, cmd_replace))
-          table.insert(lines, string.format("  Agents:    %d new, %d replace", agt_copy, agt_replace))
-          table.insert(lines, string.format("  Hooks:     %d new, %d replace", hook_copy, hook_replace))
-          table.insert(lines, string.format("  TTS Files: %d new, %d replace", tts_copy, tts_replace))
-          table.insert(lines, string.format("  Settings:  %d new, %d replace", set_copy, set_replace))
+          table.insert(lines, string.format("  Commands:        %d new, %d replace", cmd_copy, cmd_replace))
+          table.insert(lines, string.format("  Agents:          %d new, %d replace", agt_copy, agt_replace))
+          table.insert(lines, string.format("  Hooks:           %d new, %d replace", hook_copy, hook_replace))
+          table.insert(lines, string.format("  TTS Files:       %d new, %d replace", tts_copy, tts_replace))
+          table.insert(lines, string.format("  Templates:       %d new, %d replace", tmpl_copy, tmpl_replace))
+          table.insert(lines, string.format("  Lib Utils:       %d new, %d replace", lib_copy, lib_replace))
+          table.insert(lines, string.format("  Docs:            %d new, %d replace", doc_copy, doc_replace))
+          table.insert(lines, string.format("  Agent Protocols: %d new, %d replace", proto_copy, proto_replace))
+          table.insert(lines, string.format("  Standards:       %d new, %d replace", std_copy, std_replace))
+          table.insert(lines, string.format("  Settings:        %d new, %d replace", set_copy, set_replace))
           table.insert(lines, "")
           table.insert(lines, string.format("**Total:** %d new, %d replace", total_copy, total_replace))
           table.insert(lines, "")
@@ -849,7 +876,7 @@ local function load_command_locally(command, silent)
   return true
 end
 
---- Load all global artifacts (commands, agents, hooks, TTS files) locally
+--- Load all global artifacts (commands, agents, hooks, TTS files, templates, lib, docs) locally
 --- Scans global directory, copies new artifacts, and replaces existing local artifacts
 --- with global versions. Preserves local-only artifacts without global equivalents.
 --- @return number count Total number of artifacts loaded or updated
@@ -877,6 +904,29 @@ local function load_all_globally()
   local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
   local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
 
+  -- Scan templates, lib utilities, and docs
+  local templates = scan_directory_for_sync(global_dir, project_dir, "templates", "*.yaml")
+  local lib_utils = scan_directory_for_sync(global_dir, project_dir, "lib", "*.sh")
+  local docs = scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
+
+  -- Scan README files for all directories
+  local hooks_readme = scan_directory_for_sync(global_dir, project_dir, "hooks", "README.md")
+  local tts_readme = scan_directory_for_sync(global_dir, project_dir, "tts", "README.md")
+  local templates_readme = scan_directory_for_sync(global_dir, project_dir, "templates", "README.md")
+  local lib_readme = scan_directory_for_sync(global_dir, project_dir, "lib", "README.md")
+  local agents_prompts_readme = scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "README.md")
+  local agents_shared_readme = scan_directory_for_sync(global_dir, project_dir, "agents/shared", "README.md")
+
+  -- Scan agent protocols and standards
+  local agents_prompts = scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md")
+  local agents_shared = scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md")
+  local standards = scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md")
+
+  -- Scan data runtime documentation
+  local data_commands_readme = scan_directory_for_sync(global_dir, project_dir, "data/commands", "README.md")
+  local data_agents_readme = scan_directory_for_sync(global_dir, project_dir, "data/agents", "README.md")
+  local data_templates_readme = scan_directory_for_sync(global_dir, project_dir, "data/templates", "README.md")
+
   -- Scan settings file
   local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json")
 
@@ -888,9 +938,51 @@ local function load_all_globally()
   for _, file in ipairs(tts_files) do
     table.insert(all_tts, file)
   end
+  for _, file in ipairs(tts_readme) do
+    table.insert(all_tts, file)
+  end
+
+  -- Merge README files into their respective arrays
+  for _, file in ipairs(hooks_readme) do
+    table.insert(hooks, file)
+  end
+  for _, file in ipairs(templates_readme) do
+    table.insert(templates, file)
+  end
+  for _, file in ipairs(lib_readme) do
+    table.insert(lib_utils, file)
+  end
+  for _, file in ipairs(agents_prompts_readme) do
+    table.insert(agents_prompts, file)
+  end
+  for _, file in ipairs(agents_shared_readme) do
+    table.insert(agents_shared, file)
+  end
+
+  -- Merge agent protocols
+  local all_agent_protocols = {}
+  for _, file in ipairs(agents_prompts) do
+    table.insert(all_agent_protocols, file)
+  end
+  for _, file in ipairs(agents_shared) do
+    table.insert(all_agent_protocols, file)
+  end
+
+  -- Merge data READMEs
+  local all_data_docs = {}
+  for _, file in ipairs(data_commands_readme) do
+    table.insert(all_data_docs, file)
+  end
+  for _, file in ipairs(data_agents_readme) do
+    table.insert(all_data_docs, file)
+  end
+  for _, file in ipairs(data_templates_readme) do
+    table.insert(all_data_docs, file)
+  end
 
   -- Check if any artifacts found
-  local total_files = #commands + #agents + #hooks + #all_tts + #settings
+  local total_files = #commands + #agents + #hooks + #all_tts + #templates + #lib_utils + #docs +
+                      #all_agent_protocols + #standards + #all_data_docs + #settings
   if total_files == 0 then
     notify.editor(
       "No global artifacts found in ~/.config/.claude/",
@@ -917,10 +1009,18 @@ local function load_all_globally()
   local agt_copy, agt_replace = count_actions(agents)
   local hook_copy, hook_replace = count_actions(hooks)
   local tts_copy, tts_replace = count_actions(all_tts)
+  local tmpl_copy, tmpl_replace = count_actions(templates)
+  local lib_copy, lib_replace = count_actions(lib_utils)
+  local doc_copy, doc_replace = count_actions(docs)
+  local proto_copy, proto_replace = count_actions(all_agent_protocols)
+  local std_copy, std_replace = count_actions(standards)
+  local data_copy, data_replace = count_actions(all_data_docs)
   local set_copy, set_replace = count_actions(settings)
 
-  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + set_copy
-  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + set_replace
+  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + tmpl_copy + lib_copy + doc_copy +
+                     proto_copy + std_copy + data_copy + set_copy
+  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + tmpl_replace + lib_replace +
+                        doc_replace + proto_replace + std_replace + data_replace + set_replace
 
   -- Skip if no operations needed
   if total_copy + total_replace == 0 then
@@ -938,6 +1038,12 @@ local function load_all_globally()
     "Agents: %d new, %d replace\n" ..
     "Hooks: %d new, %d replace\n" ..
     "TTS Files: %d new, %d replace\n" ..
+    "Templates: %d new, %d replace\n" ..
+    "Lib Utils: %d new, %d replace\n" ..
+    "Docs: %d new, %d replace\n" ..
+    "Agent Protocols: %d new, %d replace\n" ..
+    "Standards: %d new, %d replace\n" ..
+    "Data Docs: %d new, %d replace\n" ..
     "Settings: %d new, %d replace\n\n" ..
     "Total: %d new, %d replace\n\n" ..
     "Local-only artifacts will not be affected.",
@@ -945,6 +1051,12 @@ local function load_all_globally()
     agt_copy, agt_replace,
     hook_copy, hook_replace,
     tts_copy, tts_replace,
+    tmpl_copy, tmpl_replace,
+    lib_copy, lib_replace,
+    doc_copy, doc_replace,
+    proto_copy, proto_replace,
+    std_copy, std_replace,
+    data_copy, data_replace,
     set_copy, set_replace,
     total_copy, total_replace
   )
@@ -961,8 +1073,17 @@ local function load_all_globally()
   -- Create local directories if needed
   vim.fn.mkdir(project_dir .. "/.claude/commands", "p")
   vim.fn.mkdir(project_dir .. "/.claude/agents", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents/prompts", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents/shared", "p")
   vim.fn.mkdir(project_dir .. "/.claude/hooks", "p")
   vim.fn.mkdir(project_dir .. "/.claude/tts", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/templates", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/lib", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/docs", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/specs/standards", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/commands", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/agents", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/templates", "p")
   vim.fn.mkdir(project_dir .. "/.claude", "p")  -- For settings.local.json
 
   -- Sync all artifact types
@@ -970,16 +1091,25 @@ local function load_all_globally()
   local agt_count = sync_files(agents, false)
   local hook_count = sync_files(hooks, true)  -- Preserve permissions for shell scripts
   local tts_count = sync_files(all_tts, true)  -- Preserve permissions for TTS scripts
+  local tmpl_count = sync_files(templates, false)
+  local lib_count = sync_files(lib_utils, true)  -- Preserve permissions for utilities
+  local doc_count = sync_files(docs, false)
+  local proto_count = sync_files(all_agent_protocols, false)
+  local std_count = sync_files(standards, false)
+  local data_count = sync_files(all_data_docs, false)
   local set_count = sync_files(settings, false)
 
-  local total_synced = cmd_count + agt_count + hook_count + tts_count + set_count
+  local total_synced = cmd_count + agt_count + hook_count + tts_count + tmpl_count + lib_count + doc_count +
+                       proto_count + std_count + data_count + set_count
 
   -- Report results
   if total_synced > 0 then
     notify.editor(
       string.format(
-        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS, %d settings",
-        total_synced, cmd_count, agt_count, hook_count, tts_count, set_count
+        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS, %d templates, %d lib, %d docs, " ..
+        "%d protocols, %d standards, %d data, %d settings",
+        total_synced, cmd_count, agt_count, hook_count, tts_count, tmpl_count, lib_count, doc_count,
+        proto_count, std_count, data_count, set_count
       ),
       notify.categories.SUCCESS
     )
