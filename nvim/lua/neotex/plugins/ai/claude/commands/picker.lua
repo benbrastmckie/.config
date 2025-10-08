@@ -858,7 +858,7 @@ local function create_command_previewer()
           "Navigation:",
           "  Ctrl-j/k    - Move selection down/up",
           "  Ctrl-d      - Scroll preview down",
-          "  Escape      - Close picker",
+          "  Escape      - Close picker (single press from insert mode)",
           "",
           "Artifact Types:",
           "  Commands    - Claude Code slash commands",
