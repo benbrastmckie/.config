@@ -116,25 +116,14 @@ local function format_tts_file(file)
 end
 
 --- Create flattened entries for telescope display
+--- Insertion order is REVERSED for descending sort: last inserted appears at TOP
 --- @param structure table Extended structure from parser.get_extended_structure()
 --- @return table Array of entries for telescope
 local function create_picker_entries(structure)
   local entries = {}
 
-  -- Add load all commands entry (added first, appears second from bottom)
-  table.insert(entries, {
-    is_load_all = true,
-    name = "~~~load_all",
-    display = string.format(
-      "  %-40s %s",
-      "[Load All Artifacts]",
-      "Sync commands, agents, hooks, TTS files"
-    ),
-    command = nil,
-    entry_type = "special"
-  })
-
-  -- Add keyboard shortcuts help entry (added last, appears at bottom)
+  -- Special entries: Insert FIRST so they appear at BOTTOM with descending sort
+  -- Add keyboard shortcuts help entry (added first, appears at absolute bottom)
   table.insert(entries, {
     is_help = true,
     name = "~~~help",
@@ -147,19 +136,363 @@ local function create_picker_entries(structure)
     entry_type = "special"
   })
 
-  -- Add categorical heading for Commands (appears above commands)
+  -- Add load all commands entry (added second, appears second from bottom)
   table.insert(entries, {
-    is_heading = true,
-    name = "~~~commands_heading",
+    is_load_all = true,
+    name = "~~~load_all",
     display = string.format(
       "  %-40s %s",
-      "[Commands]",
-      "Claude Code slash commands"
+      "[Load All Artifacts]",
+      "Sync commands, agents, hooks, TTS files"
     ),
-    entry_type = "heading",
-    ordinal = "commands"
+    command = nil,
+    entry_type = "special"
   })
 
+  -- Helper function to scan a directory for files
+  local function scan_directory(dir, pattern)
+    local files = {}
+    local file_paths = vim.fn.glob(dir .. "/" .. pattern, false, true)
+    for _, filepath in ipairs(file_paths) do
+      local filename = vim.fn.fnamemodify(filepath, ":t")
+      local is_readme = filename == "README.md"
+      if not is_readme then
+        local name = vim.fn.fnamemodify(filepath, ":t:r")
+        table.insert(files, {
+          name = name,
+          filepath = filepath,
+          is_local = filepath:match("^" .. vim.fn.getcwd()) ~= nil
+        })
+      end
+    end
+    return files
+  end
+
+  -- Docs section - Insert FIRST to appear LAST (above special entries)
+  local project_dir = vim.fn.getcwd()
+  local global_dir = vim.fn.expand("~/.config")
+
+  -- Scan for docs (*.md files in .claude/docs/)
+  local local_docs = scan_directory(project_dir .. "/.claude/docs", "*.md")
+  local global_docs = scan_directory(global_dir .. "/.claude/docs", "*.md")
+
+  -- Merge docs (local overrides global)
+  local all_docs = {}
+  local doc_map = {}
+  for _, doc in ipairs(global_docs) do
+    all_docs[#all_docs + 1] = doc
+    doc_map[doc.name] = true
+  end
+  for _, doc in ipairs(local_docs) do
+    if not doc_map[doc.name] then
+      all_docs[#all_docs + 1] = doc
+    end
+  end
+
+  if #all_docs > 0 then
+    table.sort(all_docs, function(a, b) return a.name < b.name end)
+
+    -- Insert doc items FIRST
+    for _, doc in ipairs(all_docs) do
+      table.insert(entries, {
+        display = string.format(
+          "%s %-40s %s",
+          doc.is_local and "*" or " ",
+          doc.name,
+          "Documentation"
+        ),
+        entry_type = "doc",
+        name = doc.name,
+        filepath = doc.filepath,
+        is_local = doc.is_local,
+        ordinal = "zzzz_doc_" .. doc.name
+      })
+    end
+
+    -- Insert heading LAST (appears at TOP of section)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~docs_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Docs]",
+        "Integration guides"
+      ),
+      entry_type = "heading",
+      ordinal = "docs"
+    })
+  end
+
+  -- Lib section - Insert BEFORE Docs to appear AFTER Docs
+  local local_lib = scan_directory(project_dir .. "/.claude/lib", "*.sh")
+  local global_lib = scan_directory(global_dir .. "/.claude/lib", "*.sh")
+
+  -- Merge lib utils (local overrides global)
+  local all_lib = {}
+  local lib_map = {}
+  for _, lib in ipairs(global_lib) do
+    all_lib[#all_lib + 1] = lib
+    lib_map[lib.name] = true
+  end
+  for _, lib in ipairs(local_lib) do
+    if not lib_map[lib.name] then
+      all_lib[#all_lib + 1] = lib
+    end
+  end
+
+  if #all_lib > 0 then
+    table.sort(all_lib, function(a, b) return a.name < b.name end)
+
+    -- Insert lib items FIRST
+    for _, lib in ipairs(all_lib) do
+      table.insert(entries, {
+        display = string.format(
+          "%s %-40s %s",
+          lib.is_local and "*" or " ",
+          lib.name,
+          "Utility library"
+        ),
+        entry_type = "lib",
+        name = lib.name,
+        filepath = lib.filepath,
+        is_local = lib.is_local,
+        ordinal = "zzzz_lib_" .. lib.name
+      })
+    end
+
+    -- Insert heading LAST (appears at TOP of section)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~lib_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Lib]",
+        "Utility libraries"
+      ),
+      entry_type = "heading",
+      ordinal = "lib"
+    })
+  end
+
+  -- Templates section - Insert BEFORE Lib to appear AFTER Lib
+  local local_templates = scan_directory(project_dir .. "/.claude/templates", "*.yaml")
+  local global_templates = scan_directory(global_dir .. "/.claude/templates", "*.yaml")
+
+  -- Merge templates (local overrides global)
+  local all_templates = {}
+  local template_map = {}
+  for _, tmpl in ipairs(global_templates) do
+    all_templates[#all_templates + 1] = tmpl
+    template_map[tmpl.name] = true
+  end
+  for _, tmpl in ipairs(local_templates) do
+    if not template_map[tmpl.name] then
+      all_templates[#all_templates + 1] = tmpl
+    end
+  end
+
+  if #all_templates > 0 then
+    table.sort(all_templates, function(a, b) return a.name < b.name end)
+
+    -- Insert template items FIRST
+    for _, tmpl in ipairs(all_templates) do
+      table.insert(entries, {
+        display = string.format(
+          "%s %-40s %s",
+          tmpl.is_local and "*" or " ",
+          tmpl.name,
+          "Workflow template"
+        ),
+        entry_type = "template",
+        name = tmpl.name,
+        filepath = tmpl.filepath,
+        is_local = tmpl.is_local,
+        ordinal = "zzzz_template_" .. tmpl.name
+      })
+    end
+
+    -- Insert heading LAST (appears at TOP of section)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~templates_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Templates]",
+        "Workflow templates"
+      ),
+      entry_type = "heading",
+      ordinal = "templates"
+    })
+  end
+
+  -- TTS files section - Insert BEFORE Templates to appear AFTER Templates
+  local tts_files = structure.tts_files or {}
+  if #tts_files > 0 then
+    -- Sort TTS files by role (config, dispatcher, library) then name
+    table.sort(tts_files, function(a, b)
+      if a.role ~= b.role then
+        -- Order: config, dispatcher, library
+        local role_order = { config = 1, dispatcher = 2, library = 3 }
+        return (role_order[a.role] or 99) < (role_order[b.role] or 99)
+      end
+      return a.name < b.name
+    end)
+
+    -- Insert TTS file items FIRST
+    for _, file in ipairs(tts_files) do
+      entries[#entries + 1] = {
+        display = format_tts_file(file),
+        entry_type = "tts_file",
+        name = file.name,
+        description = file.description,
+        filepath = file.filepath,
+        is_local = file.is_local,
+        role = file.role,
+        directory = file.directory,
+        variables = file.variables,
+        line_count = file.line_count,
+        ordinal = "zzzz_tts_" .. file.name
+      }
+    end
+
+    -- Insert heading LAST (appears at TOP of section with descending sort)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~tts_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[TTS Files]",
+        "Text-to-speech system files"
+      ),
+      entry_type = "heading",
+      ordinal = "tts"
+    })
+  end
+
+  -- Standalone Agents section - Insert BEFORE Hooks to appear AFTER Hooks in display
+  -- Identify agents not associated with any command
+  local used_agents = {}
+  for _, primary_data in pairs(structure.primary_commands) do
+    local command_agents = get_agents_for_command(
+      primary_data.command.name,
+      structure.agent_dependencies or {},
+      structure.agents or {}
+    )
+    for _, agent in ipairs(command_agents) do
+      used_agents[agent.name] = true
+    end
+  end
+
+  -- Find standalone agents (not used by any command)
+  local standalone_agents = {}
+  for _, agent in ipairs(structure.agents or {}) do
+    if not used_agents[agent.name] then
+      table.insert(standalone_agents, agent)
+    end
+  end
+
+  -- Sort standalone agents alphabetically
+  table.sort(standalone_agents, function(a, b)
+    return a.name < b.name
+  end)
+
+  -- Add standalone agents section if any exist
+  if #standalone_agents > 0 then
+    -- Insert agent items FIRST
+    for _, agent in ipairs(standalone_agents) do
+      table.insert(entries, {
+        name = agent.name,
+        display = format_agent(agent, "  "),  -- No tree char for standalone agents
+        agent = agent,
+        is_primary = true,
+        entry_type = "agent",
+        ordinal = "agent_" .. agent.name
+      })
+    end
+
+    -- Insert heading LAST (appears at TOP of section)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~agents_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Agents]",
+        "Standalone AI agents"
+      ),
+      entry_type = "heading",
+      ordinal = "agents"
+    })
+  end
+
+  -- Hooks section - Insert BEFORE Standalone Agents to appear AFTER Agents in display
+  local hook_events = structure.hook_events or {}
+  local hooks = structure.hooks or {}
+
+  if vim.tbl_count(hook_events) > 0 then
+    -- Sort hook event names
+    local sorted_event_names = {}
+    for event_name, _ in pairs(hook_events) do
+      table.insert(sorted_event_names, event_name)
+    end
+    table.sort(sorted_event_names)
+
+    -- Insert hook events and their hooks FIRST
+    for _, event_name in ipairs(sorted_event_names) do
+      local event_hook_names = hook_events[event_name]
+
+      -- Get full hook data for this event
+      local event_hooks = {}
+      for _, hook_name in ipairs(event_hook_names) do
+        for _, hook in ipairs(hooks) do
+          if hook.name == hook_name then
+            table.insert(event_hooks, hook)
+            break
+          end
+        end
+      end
+
+      -- Add individual hooks first
+      -- With descending sort: first inserted = last displayed
+      for i, hook in ipairs(event_hooks) do
+        -- First hook (i=1) appears LAST visually, so it gets └─
+        local is_first = (i == 1)
+        local indent_char = is_first and "└─" or "├─"
+
+        table.insert(entries, {
+          name = hook.name,
+          display = format_hook(hook, indent_char),
+          hook = hook,
+          is_primary = false,
+          parent = event_name,
+          entry_type = "hook"
+        })
+      end
+
+      -- Add hook event header after hooks
+      table.insert(entries, {
+        name = event_name,
+        display = format_hook_event(event_name),
+        is_primary = true,
+        entry_type = "hook_event",
+        hooks = event_hooks
+      })
+    end
+
+    -- Insert [Hook Events] heading LAST (appears at TOP of section with descending sort)
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~hooks_heading",
+      display = string.format(
+        "  %-40s %s",
+        "[Hook Events]",
+        "Event-triggered scripts"
+      ),
+      entry_type = "heading",
+      ordinal = "hooks"
+    })
+  end
+
+  -- Commands section - Insert LAST to appear at TOP with descending sort
   -- Collect and sort primary command names alphabetically
   local sorted_primary_names = {}
   for primary_name, _ in pairs(structure.primary_commands) do
@@ -245,115 +578,18 @@ local function create_picker_entries(structure)
     })
   end
 
-  -- Add hook events and their hooks
-  local hook_events = structure.hook_events or {}
-  local hooks = structure.hooks or {}
-
-  -- Add categorical heading for Hooks (if there are any hooks)
-  if vim.tbl_count(hook_events) > 0 then
-    table.insert(entries, {
-      is_heading = true,
-      name = "~~~hooks_heading",
-      display = string.format(
-        "  %-40s %s",
-        "[Hook Events]",
-        "Event-triggered scripts"
-      ),
-      entry_type = "heading",
-      ordinal = "hooks"
-    })
-  end
-
-  -- Sort hook event names
-  local sorted_event_names = {}
-  for event_name, _ in pairs(hook_events) do
-    table.insert(sorted_event_names, event_name)
-  end
-  table.sort(sorted_event_names)
-
-  for _, event_name in ipairs(sorted_event_names) do
-    local event_hook_names = hook_events[event_name]
-
-    -- Get full hook data for this event
-    local event_hooks = {}
-    for _, hook_name in ipairs(event_hook_names) do
-      for _, hook in ipairs(hooks) do
-        if hook.name == hook_name then
-          table.insert(event_hooks, hook)
-          break
-        end
-      end
-    end
-
-    -- Add individual hooks first
-    -- With descending sort: first inserted = last displayed
-    for i, hook in ipairs(event_hooks) do
-      -- First hook (i=1) appears LAST visually, so it gets └─
-      local is_first = (i == 1)
-      local indent_char = is_first and "└─" or "├─"
-
-      table.insert(entries, {
-        name = hook.name,
-        display = format_hook(hook, indent_char),
-        hook = hook,
-        is_primary = false,
-        parent = event_name,
-        entry_type = "hook"
-      })
-    end
-
-    -- Add hook event header
-    table.insert(entries, {
-      name = event_name,
-      display = format_hook_event(event_name),
-      is_primary = true,
-      entry_type = "hook_event",
-      hooks = event_hooks
-    })
-  end
-
-  -- TTS files section
-  local tts_files = structure.tts_files or {}
-  if #tts_files > 0 then
-    -- Add categorical heading for TTS Files
-    table.insert(entries, {
-      is_heading = true,
-      name = "~~~tts_heading",
-      display = string.format(
-        "  %-40s %s",
-        "[TTS Files]",
-        "Text-to-speech system files"
-      ),
-      entry_type = "heading",
-      ordinal = "tts"
-    })
-
-    -- Sort TTS files by role (config, dispatcher, library) then name
-    table.sort(tts_files, function(a, b)
-      if a.role ~= b.role then
-        -- Order: config, dispatcher, library
-        local role_order = { config = 1, dispatcher = 2, library = 3 }
-        return (role_order[a.role] or 99) < (role_order[b.role] or 99)
-      end
-      return a.name < b.name
-    end)
-
-    for _, file in ipairs(tts_files) do
-      entries[#entries + 1] = {
-        display = format_tts_file(file),
-        entry_type = "tts_file",
-        name = file.name,
-        description = file.description,
-        filepath = file.filepath,
-        is_local = file.is_local,
-        role = file.role,
-        directory = file.directory,
-        variables = file.variables,
-        line_count = file.line_count,
-        ordinal = "zzzz_tts_" .. file.name
-      }
-    end
-  end
+  -- Insert [Commands] heading LAST (appears at very TOP with descending sort)
+  table.insert(entries, {
+    is_heading = true,
+    name = "~~~commands_heading",
+    display = string.format(
+      "  %-40s %s",
+      "[Commands]",
+      "Claude Code slash commands"
+    ),
+    entry_type = "heading",
+    ordinal = "commands"
+  })
 
   return entries
 end
@@ -2004,6 +2240,217 @@ local function edit_command_file(command)
   )
 end
 
+--- Load generic artifact (template, lib, doc) locally
+--- @param entry table Entry data with filepath, name, is_local
+--- @param entry_type string Type of entry (template, lib, doc)
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function load_artifact_locally(entry, entry_type, silent)
+  local notify = require('neotex.util.notifications')
+
+  if entry.is_local then
+    if not silent then
+      notify.editor(
+        string.format("%s already local: %s", entry_type, entry.name),
+        notify.categories.STATUS
+      )
+    end
+    return false
+  end
+
+  -- Determine directory based on type
+  local dir_map = {
+    template = "templates",
+    lib = "lib",
+    doc = "docs"
+  }
+  local subdir = dir_map[entry_type] or entry_type
+
+  local dest = vim.fn.getcwd() .. "/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t")
+  local src = entry.filepath
+
+  -- Create directory if needed
+  vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/" .. subdir, "p")
+
+  -- Get source permissions BEFORE copying (for .sh files)
+  local perms = vim.fn.getfperm(src)
+
+  -- Copy file
+  local success, content = pcall(vim.fn.readfile, src)
+  if not success then
+    if not silent then
+      notify.editor(
+        string.format("Failed to read %s file: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, dest)
+  if write_success then
+    -- Restore permissions for shell scripts
+    if entry_type == "lib" and perms ~= "" then
+      vim.fn.setfperm(dest, perms)
+    end
+
+    if not silent then
+      notify.editor(
+        string.format("Loaded %s locally: %s", entry_type, entry.name),
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        string.format("Failed to load %s: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Update generic artifact from global version
+--- @param entry table Entry data
+--- @param entry_type string Type of entry (template, lib, doc)
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function update_artifact_from_global(entry, entry_type, silent)
+  local notify = require('neotex.util.notifications')
+
+  local dir_map = {
+    template = "templates",
+    lib = "lib",
+    doc = "docs"
+  }
+  local subdir = dir_map[entry_type] or entry_type
+
+  local local_path = vim.fn.getcwd() .. "/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t")
+  local global_path = vim.fn.expand("~/.config/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t"))
+
+  if vim.fn.filereadable(global_path) ~= 1 then
+    if not silent then
+      notify.editor(
+        string.format("No global version of %s: %s", entry_type, entry.name),
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  -- Get source permissions
+  local perms = vim.fn.getfperm(global_path)
+
+  -- Overwrite local with global
+  local success, content = pcall(vim.fn.readfile, global_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        string.format("Failed to read global %s: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, local_path)
+  if write_success then
+    -- Restore permissions for shell scripts
+    if entry_type == "lib" and perms ~= "" then
+      vim.fn.setfperm(local_path, perms)
+    end
+
+    if not silent then
+      notify.editor(
+        string.format("Updated %s from global: %s", entry_type, entry.name),
+        notify.categories.SUCCESS
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        string.format("Failed to update %s: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
+--- Save generic artifact to global directory
+--- @param entry table Entry data
+--- @param entry_type string Type of entry (template, lib, doc)
+--- @param silent boolean Don't show notifications
+--- @return boolean success
+local function save_artifact_to_global(entry, entry_type, silent)
+  local notify = require('neotex.util.notifications')
+
+  if not entry.is_local then
+    if not silent then
+      notify.editor(
+        string.format("%s is not local: %s", entry_type, entry.name),
+        notify.categories.WARNING
+      )
+    end
+    return false
+  end
+
+  local dir_map = {
+    template = "templates",
+    lib = "lib",
+    doc = "docs"
+  }
+  local subdir = dir_map[entry_type] or entry_type
+
+  local local_path = vim.fn.getcwd() .. "/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t")
+  local global_path = vim.fn.expand("~/.config/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t"))
+
+  -- Get local permissions
+  local perms = vim.fn.getfperm(local_path)
+
+  -- Create global directory if needed
+  vim.fn.mkdir(vim.fn.expand("~/.config/.claude/" .. subdir), "p")
+
+  -- Copy local to global
+  local success, content = pcall(vim.fn.readfile, local_path)
+  if not success then
+    if not silent then
+      notify.editor(
+        string.format("Failed to read local %s: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+
+  local write_success = pcall(vim.fn.writefile, content, global_path)
+  if write_success then
+    -- Preserve permissions for shell scripts
+    if entry_type == "lib" and perms ~= "" then
+      vim.fn.setfperm(global_path, perms)
+    end
+
+    if not silent then
+      notify.editor(
+        string.format("Saved %s to global: %s", entry_type, entry.name),
+        notify.categories.USER_ACTION
+      )
+    end
+    return true
+  else
+    if not silent then
+      notify.editor(
+        string.format("Failed to save %s: %s", entry_type, entry.name),
+        notify.categories.ERROR
+      )
+    end
+    return false
+  end
+end
+
 --- Main function to show Claude commands picker
 --- @param opts table Options (optional)
 function M.show_commands_picker(opts)
@@ -2093,6 +2540,12 @@ function M.show_commands_picker(opts)
           success = load_hook_locally(selection.value.hook, false)
         elseif selection.value.entry_type == "tts_file" then
           success = load_tts_file_locally(selection.value, false)
+        elseif selection.value.entry_type == "template" then
+          success = load_artifact_locally(selection.value, "template", false)
+        elseif selection.value.entry_type == "lib" then
+          success = load_artifact_locally(selection.value, "lib", false)
+        elseif selection.value.entry_type == "doc" then
+          success = load_artifact_locally(selection.value, "doc", false)
         end
 
         -- Refresh the picker to show updated local status
@@ -2136,6 +2589,12 @@ function M.show_commands_picker(opts)
           success = update_hook_from_global(selection.value.hook, false)
         elseif selection.value.entry_type == "tts_file" then
           success = update_tts_file_from_global(selection.value, false)
+        elseif selection.value.entry_type == "template" then
+          success = update_artifact_from_global(selection.value, "template", false)
+        elseif selection.value.entry_type == "lib" then
+          success = update_artifact_from_global(selection.value, "lib", false)
+        elseif selection.value.entry_type == "doc" then
+          success = update_artifact_from_global(selection.value, "doc", false)
         end
 
         if success then
@@ -2169,6 +2628,12 @@ function M.show_commands_picker(opts)
           success = save_hook_to_global(selection.value.hook, false)
         elseif selection.value.entry_type == "tts_file" then
           success = save_tts_file_to_global(selection.value, false)
+        elseif selection.value.entry_type == "template" then
+          success = save_artifact_to_global(selection.value, "template", false)
+        elseif selection.value.entry_type == "lib" then
+          success = save_artifact_to_global(selection.value, "lib", false)
+        elseif selection.value.entry_type == "doc" then
+          success = save_artifact_to_global(selection.value, "doc", false)
         end
 
         if success then
