@@ -1,9 +1,9 @@
 ---
 allowed-tools: Task, TodoWrite, Read, Write, Bash, Grep, Glob
-argument-hint: <workflow-description> [--parallel] [--sequential]
+argument-hint: <workflow-description> [--parallel] [--sequential] [--create-pr]
 description: Coordinate subagents through end-to-end development workflows
 command-type: primary
-dependent-commands: report, plan, implement, debug, test, document
+dependent-commands: report, plan, implement, debug, test, document, github-specialist
 ---
 
 # Multi-Agent Workflow Orchestration
@@ -1693,7 +1693,100 @@ checkpoint_workflow_complete:
     tests_passing: true
 ```
 
-#### Step 8: Workflow Completion Message
+#### Step 8: Create Pull Request (Optional)
+
+**When to Create PR:**
+- If `--create-pr` flag is provided, OR
+- If project CLAUDE.md has GitHub Integration configured with auto-PR for branch pattern
+
+**Prerequisites Check:**
+Before invoking github-specialist agent:
+```bash
+# Check if gh CLI is available and authenticated
+if ! command -v gh &>/dev/null; then
+  echo "Note: gh CLI not installed. Skipping PR creation."
+  echo "Install: brew install gh (or equivalent)"
+  exit 0
+fi
+
+if ! gh auth status &>/dev/null; then
+  echo "Note: gh CLI not authenticated. Skipping PR creation."
+  echo "Run: gh auth login"
+  exit 0
+fi
+```
+
+**Invoke github-specialist Agent:**
+
+Use Task tool with behavioral injection:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create PR for completed workflow using github-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/github-specialist.md
+
+    You are acting as a GitHub Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Create Pull Request for Workflow:
+    - Plan: [absolute path to implementation plan]
+    - Branch: [current branch name from git]
+    - Base: main (or master, detect from repo)
+    - Summary: [absolute path to workflow summary]
+
+    PR Description Should Include:
+    - Workflow overview from summary file
+    - Research phase: N reports generated with key findings
+    - Implementation: All N phases completed successfully
+    - Test results: All passing (or fixed after M debug iterations)
+    - Documentation: N files updated
+    - Performance metrics: Time saved via parallelization
+    - File changes summary from git diff --stat
+
+    Follow comprehensive PR template structure from github-specialist agent.
+    This is a workflow PR, so include cross-references to all artifacts:
+    - Research reports (if any)
+    - Implementation plan
+    - Workflow summary
+    - Debug reports (if debugging occurred)
+
+    Output: PR URL and number for user
+}
+```
+
+**Capture PR URL:**
+After agent completes:
+- Extract PR URL from agent output
+- Update workflow summary with PR link
+- Update plan file Implementation Summary section with PR link
+
+**Example Update to Summary:**
+```markdown
+## Pull Request
+- **PR**: https://github.com/user/repo/pull/123
+- **Created**: [YYYY-MM-DD]
+- **Status**: Open
+```
+
+**Graceful Degradation:**
+If PR creation fails:
+- Log the error from agent
+- Provide manual gh pr create command
+- Continue without blocking (workflow is complete)
+- Summary file still valid without PR link
+
+**Example Manual Command:**
+```bash
+gh pr create \
+  --title "feat: [feature name from workflow]" \
+  --body "$(cat pr_description.txt)" \
+  --base main
+```
+
+#### Step 9: Workflow Completion Message
 
 **Final Output to User**:
 ```markdown
@@ -1707,6 +1800,8 @@ checkpoint_workflow_complete:
 - Implementation plan: [path]
 - Workflow summary: [path]
 - Documentation updates: N files
+[If PR created]
+- Pull Request: [PR URL]
 
 **Implementation Results**:
 - Files modified: N
