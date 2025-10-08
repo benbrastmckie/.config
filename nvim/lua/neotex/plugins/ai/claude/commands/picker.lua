@@ -46,13 +46,12 @@ end
 --- @return string Formatted display string
 local function format_agent(agent, indent_char)
   local prefix = agent.is_local and "*" or " "
-  local display_name = "[agent] " .. agent.name
 
   return string.format(
     "%s %s %-38s %s",
     prefix,
     indent_char,
-    display_name,
+    agent.name,
     agent.description or ""
   )
 end
@@ -77,7 +76,7 @@ end
 --- @param event_name string Hook event name
 --- @return string Formatted display string
 local function format_hook_event(event_name)
-  local display_name = "[Hook Event] " .. event_name
+  local display_name = event_name
   local descriptions = {
     Stop = "After command completion",
     SessionStart = "When session begins",
@@ -219,7 +218,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~docs_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[Docs]",
         "Integration guides"
       ),
@@ -275,7 +274,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~lib_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[Lib]",
         "Utility libraries"
       ),
@@ -331,7 +330,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~templates_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[Templates]",
         "Workflow templates"
       ),
@@ -375,7 +374,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~tts_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[TTS Files]",
         "Text-to-speech system files"
       ),
@@ -434,7 +433,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~agents_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[Agents]",
         "Standalone AI agents"
       ),
@@ -502,7 +501,7 @@ local function create_picker_entries(structure)
       is_heading = true,
       name = "~~~hooks_heading",
       display = string.format(
-        "  %-40s %s",
+        "%-40s %s",
         "[Hook Events]",
         "Event-triggered scripts"
       ),
@@ -602,7 +601,7 @@ local function create_picker_entries(structure)
     is_heading = true,
     name = "~~~commands_heading",
     display = string.format(
-      "  %-40s %s",
+      "%-40s %s",
       "[Commands]",
       "Claude Code slash commands"
     ),
