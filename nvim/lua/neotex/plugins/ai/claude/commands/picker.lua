@@ -767,12 +767,19 @@ end
 --- Sync files from global to local directory
 --- @param files table List of file sync info
 --- @param preserve_perms boolean Preserve execute permissions for shell scripts
+--- @param merge_only boolean If true, skip "replace" actions (only copy new files)
 --- @return number success_count Number of successfully synced files
-local function sync_files(files, preserve_perms)
+local function sync_files(files, preserve_perms, merge_only)
   local success_count = 0
   local notify = require('neotex.util.notifications')
+  merge_only = merge_only or false
 
   for _, file in ipairs(files) do
+    -- Skip replace actions if merge_only is true
+    if merge_only and file.action == "replace" then
+      goto continue
+    end
+
     -- Read global file
     local success, content = pcall(vim.fn.readfile, file.global_path)
     if success then
@@ -799,6 +806,8 @@ local function sync_files(files, preserve_perms)
         notify.categories.ERROR
       )
     end
+
+    ::continue::
   end
 
   return success_count
@@ -882,7 +891,6 @@ local function create_command_previewer()
           "                   All others: Open file for editing",
           "  Ctrl-n         - Create new command (opens Claude Code with prompt)",
           "  Ctrl-l         - Load artifact locally (copies with dependencies)",
-          "  Ctrl-g         - Update artifact from global version (overwrites local)",
           "  Ctrl-s         - Save local artifact to global (share across projects)",
           "  Ctrl-e         - Edit artifact file (all types)",
           "",
@@ -1342,7 +1350,35 @@ end
 --- @param command table Command data
 --- @param silent boolean Don't show notifications for dependencies
 --- @return boolean success
-local function load_command_locally(command, silent)
+-- Helper function to check if a local version exists for a command
+local function check_local_exists(command_name, project_dir)
+  local local_commands_dir = project_dir .. "/.claude/commands"
+  local local_filepath = local_commands_dir .. "/" .. command_name .. ".md"
+  return vim.fn.filereadable(local_filepath) == 1
+end
+
+-- Helper function to find dependents with local conflicts
+local function find_dependent_conflicts(command, project_dir)
+  if not command.dependent_commands then
+    return {}
+  end
+
+  local conflicts = {}
+  local deps = type(command.dependent_commands) == "table"
+    and command.dependent_commands
+    or vim.split(command.dependent_commands, ",")
+
+  for _, dep_name in ipairs(deps) do
+    dep_name = vim.trim(dep_name)
+    if check_local_exists(dep_name, project_dir) then
+      table.insert(conflicts, dep_name)
+    end
+  end
+
+  return conflicts
+end
+
+local function load_command_locally(command, silent, skip_dependents, force)
   local notify = require('neotex.util.notifications')
 
   if not command.filepath then
@@ -1374,7 +1410,8 @@ local function load_command_locally(command, silent)
   local local_commands_dir = project_dir .. "/.claude/commands"
 
   -- If command is already local or we're in .config directory, nothing to do
-  if command.is_local or project_dir == global_dir then
+  -- Unless force=true (user confirmed overwrite)
+  if not force and (command.is_local or project_dir == global_dir) then
     if not silent then
       notify.editor(
         string.format("Command '%s' is already local", command.name),
@@ -1392,8 +1429,18 @@ local function load_command_locally(command, silent)
   local filename = vim.fn.fnamemodify(command.filepath, ":t")
   local local_filepath = local_commands_dir .. "/" .. filename
 
+  -- When forcing an overwrite of a local file, we need to get the source from global
+  local source_filepath
+  if force and command.is_local then
+    -- Local file - get from global directory
+    source_filepath = global_dir .. "/.claude/commands/" .. filename
+  else
+    -- Global file - use its filepath
+    source_filepath = command.filepath
+  end
+
   local copy_cmd = string.format("cp %s %s",
-    vim.fn.shellescape(command.filepath),
+    vim.fn.shellescape(source_filepath),
     vim.fn.shellescape(local_filepath)
   )
 
@@ -1417,8 +1464,8 @@ local function load_command_locally(command, silent)
     )
   end
 
-  -- Copy dependencies recursively
-  if command.dependent_commands then
+  -- Copy dependencies recursively (unless explicitly skipped)
+  if command.dependent_commands and not skip_dependents then
     -- Handle both string and table formats
     local deps
     if type(command.dependent_commands) == "table" then
@@ -1439,8 +1486,8 @@ local function load_command_locally(command, silent)
         local dep_command = parser.parse_command_file(dep_filepath)
         if dep_command then
           dep_command.filepath = dep_filepath
-          -- Recursively load dependency (silently to avoid spam)
-          load_command_locally(dep_command, true)
+          -- Recursively load dependency (silently to avoid spam, with same force flag)
+          load_command_locally(dep_command, true, false, force)
         end
       end
     end
@@ -1461,6 +1508,61 @@ end
 --- Scans global directory, copies new artifacts, and replaces existing local artifacts
 --- with global versions. Preserves local-only artifacts without global equivalents.
 --- @return number count Total number of artifacts loaded or updated
+-- Helper function to perform the actual sync with the chosen strategy
+local function load_all_with_strategy(project_dir, commands, agents, hooks, all_tts, templates,
+                                      lib_utils, docs, all_agent_protocols, standards,
+                                      all_data_docs, settings, merge_only)
+  local notify = require('neotex.util.notifications')
+
+  -- Create local directories if needed
+  vim.fn.mkdir(project_dir .. "/.claude/commands", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents/prompts", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/agents/shared", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/hooks", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/tts", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/templates", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/lib", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/docs", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/specs/standards", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/commands", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/agents", "p")
+  vim.fn.mkdir(project_dir .. "/.claude/data/templates", "p")
+  vim.fn.mkdir(project_dir .. "/.claude", "p")  -- For settings.local.json
+
+  -- Sync all artifact types with merge_only flag
+  local cmd_count = sync_files(commands, false, merge_only)
+  local agt_count = sync_files(agents, false, merge_only)
+  local hook_count = sync_files(hooks, true, merge_only)  -- Preserve permissions for shell scripts
+  local tts_count = sync_files(all_tts, true, merge_only)  -- Preserve permissions for TTS scripts
+  local tmpl_count = sync_files(templates, false, merge_only)
+  local lib_count = sync_files(lib_utils, true, merge_only)  -- Preserve permissions for utilities
+  local doc_count = sync_files(docs, false, merge_only)
+  local proto_count = sync_files(all_agent_protocols, false, merge_only)
+  local std_count = sync_files(standards, false, merge_only)
+  local data_count = sync_files(all_data_docs, false, merge_only)
+  local set_count = sync_files(settings, false, merge_only)
+
+  local total_synced = cmd_count + agt_count + hook_count + tts_count + tmpl_count + lib_count + doc_count +
+                       proto_count + std_count + data_count + set_count
+
+  -- Report results
+  if total_synced > 0 then
+    local strategy_msg = merge_only and " (new only, conflicts preserved)" or " (including conflicts)"
+    notify.editor(
+      string.format(
+        "Synced %d artifacts%s: %d commands, %d agents, %d hooks, %d TTS, %d templates, %d lib, %d docs, " ..
+        "%d protocols, %d standards, %d data, %d settings",
+        total_synced, strategy_msg, cmd_count, agt_count, hook_count, tts_count, tmpl_count, lib_count, doc_count,
+        proto_count, std_count, data_count, set_count
+      ),
+      notify.categories.SUCCESS
+    )
+  end
+
+  return total_synced
+end
+
 local function load_all_globally()
   local notify = require('neotex.util.notifications')
 
@@ -1612,21 +1714,20 @@ local function load_all_globally()
     return 0
   end
 
-  -- Show confirmation dialog with detailed breakdown
-  local message = string.format(
-    "Load all artifacts from global directory?\n\n" ..
-    "Commands: %d new, %d replace\n" ..
-    "Agents: %d new, %d replace\n" ..
-    "Hooks: %d new, %d replace\n" ..
-    "TTS Files: %d new, %d replace\n" ..
-    "Templates: %d new, %d replace\n" ..
-    "Lib Utils: %d new, %d replace\n" ..
-    "Docs: %d new, %d replace\n" ..
-    "Agent Protocols: %d new, %d replace\n" ..
-    "Standards: %d new, %d replace\n" ..
-    "Data Docs: %d new, %d replace\n" ..
-    "Settings: %d new, %d replace\n\n" ..
-    "Total: %d new, %d replace\n\n" ..
+  -- Build detailed breakdown message
+  local details = string.format(
+    "Commands: %d new, %d conflicts\n" ..
+    "Agents: %d new, %d conflicts\n" ..
+    "Hooks: %d new, %d conflicts\n" ..
+    "TTS Files: %d new, %d conflicts\n" ..
+    "Templates: %d new, %d conflicts\n" ..
+    "Lib Utils: %d new, %d conflicts\n" ..
+    "Docs: %d new, %d conflicts\n" ..
+    "Agent Protocols: %d new, %d conflicts\n" ..
+    "Standards: %d new, %d conflicts\n" ..
+    "Data Docs: %d new, %d conflicts\n" ..
+    "Settings: %d new, %d conflicts\n\n" ..
+    "Total: %d new, %d conflicts\n\n" ..
     "Local-only artifacts will not be affected.",
     cmd_copy, cmd_replace,
     agt_copy, agt_replace,
@@ -1642,61 +1743,68 @@ local function load_all_globally()
     total_copy, total_replace
   )
 
-  local choice = vim.fn.confirm(message, "&Yes\n&No", 2)  -- Default to No
-  if choice ~= 1 then
-    notify.editor(
-      "Load all artifacts cancelled",
-      notify.categories.STATUS
+  -- Use vim.fn.confirm for blocking dialog that stays on top of picker
+  local message, buttons, default_choice, merge_only
+
+  if total_replace > 0 then
+    -- Has conflicts - offer both strategies
+    message = string.format(
+      "Load all artifacts from global directory?\n\n" ..
+      "New artifacts: %d\n" ..
+      "Conflicts (local versions exist): %d\n\n" ..
+      "Choose sync strategy:",
+      total_copy, total_replace
     )
-    return 0
+    buttons = string.format(
+      "&Replace all + add new (%d total)\n" ..
+      "&Add new only (%d new)\n" ..
+      "&Cancel",
+      total_copy + total_replace, total_copy
+    )
+    default_choice = 3  -- Default to Cancel
+  else
+    -- No conflicts - only new artifacts
+    message = string.format(
+      "Load all artifacts from global directory?\n\n" ..
+      "New artifacts: %d\n" ..
+      "No conflicts found\n\n" ..
+      "All artifacts will be added to local .claude/",
+      total_copy
+    )
+    buttons = string.format(
+      "&Add all (%d new)\n&Cancel",
+      total_copy
+    )
+    default_choice = 2  -- Default to Cancel
   end
 
-  -- Create local directories if needed
-  vim.fn.mkdir(project_dir .. "/.claude/commands", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/agents", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/agents/prompts", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/agents/shared", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/hooks", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/tts", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/templates", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/lib", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/docs", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/specs/standards", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/data/commands", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/data/agents", "p")
-  vim.fn.mkdir(project_dir .. "/.claude/data/templates", "p")
-  vim.fn.mkdir(project_dir .. "/.claude", "p")  -- For settings.local.json
+  local choice = vim.fn.confirm(message, buttons, default_choice)
 
-  -- Sync all artifact types
-  local cmd_count = sync_files(commands, false)
-  local agt_count = sync_files(agents, false)
-  local hook_count = sync_files(hooks, true)  -- Preserve permissions for shell scripts
-  local tts_count = sync_files(all_tts, true)  -- Preserve permissions for TTS scripts
-  local tmpl_count = sync_files(templates, false)
-  local lib_count = sync_files(lib_utils, true)  -- Preserve permissions for utilities
-  local doc_count = sync_files(docs, false)
-  local proto_count = sync_files(all_agent_protocols, false)
-  local std_count = sync_files(standards, false)
-  local data_count = sync_files(all_data_docs, false)
-  local set_count = sync_files(settings, false)
-
-  local total_synced = cmd_count + agt_count + hook_count + tts_count + tmpl_count + lib_count + doc_count +
-                       proto_count + std_count + data_count + set_count
-
-  -- Report results
-  if total_synced > 0 then
-    notify.editor(
-      string.format(
-        "Synced %d artifacts: %d commands, %d agents, %d hooks, %d TTS, %d templates, %d lib, %d docs, " ..
-        "%d protocols, %d standards, %d data, %d settings",
-        total_synced, cmd_count, agt_count, hook_count, tts_count, tmpl_count, lib_count, doc_count,
-        proto_count, std_count, data_count, set_count
-      ),
-      notify.categories.SUCCESS
-    )
+  if total_replace > 0 then
+    -- Options: 1=Replace all, 2=Add new only, 3=Cancel
+    if choice == 1 then
+      merge_only = false
+    elseif choice == 2 then
+      merge_only = true
+    else
+      notify.editor("Load all artifacts cancelled", notify.categories.STATUS)
+      return 0
+    end
+  else
+    -- Options: 1=Add all, 2=Cancel
+    if choice == 1 then
+      merge_only = false
+    else
+      notify.editor("Load all artifacts cancelled", notify.categories.STATUS)
+      return 0
+    end
   end
 
-  return total_synced
+  -- Execute the sync operation
+  return load_all_with_strategy(
+    project_dir, commands, agents, hooks, all_tts, templates, lib_utils, docs,
+    all_agent_protocols, standards, all_data_docs, settings, merge_only
+  )
 end
 
 --- Update local command from global version
@@ -1913,10 +2021,10 @@ end
 --- @param agent table Agent data
 --- @param silent boolean Don't show notifications
 --- @return boolean success
-local function load_agent_locally(agent, silent)
+local function load_agent_locally(agent, silent, force)
   local notify = require('neotex.util.notifications')
 
-  if agent.is_local then
+  if not force and agent.is_local then
     if not silent then
       notify.editor(
         "Agent already local: " .. agent.name,
@@ -1927,7 +2035,16 @@ local function load_agent_locally(agent, silent)
   end
 
   local dest = vim.fn.getcwd() .. "/.claude/agents/" .. agent.name .. ".md"
-  local src = agent.filepath
+
+  -- When forcing an overwrite of a local file, we need to get the source from global
+  local src
+  if force and agent.is_local then
+    -- Local file - get from global directory
+    src = vim.fn.expand("~/.config/.claude/agents/" .. agent.name .. ".md")
+  else
+    -- Global file - use its filepath
+    src = agent.filepath
+  end
 
   -- Create directory if needed
   vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/agents", "p")
@@ -1967,11 +2084,12 @@ end
 --- Load hook locally from global (preserves permissions)
 --- @param hook table Hook data
 --- @param silent boolean Don't show notifications
+--- @param force boolean Force overwrite if already local
 --- @return boolean success
-local function load_hook_locally(hook, silent)
+local function load_hook_locally(hook, silent, force)
   local notify = require('neotex.util.notifications')
 
-  if hook.is_local then
+  if not force and hook.is_local then
     if not silent then
       notify.editor(
         "Hook already local: " .. hook.name,
@@ -1982,7 +2100,16 @@ local function load_hook_locally(hook, silent)
   end
 
   local dest = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
-  local src = hook.filepath
+
+  -- When forcing an overwrite of a local file, we need to get the source from global
+  local src
+  if force and hook.is_local then
+    -- Local file - get from global directory
+    src = vim.fn.expand("~/.config/.claude/hooks/" .. hook.name)
+  else
+    -- Global file - use its filepath
+    src = hook.filepath
+  end
 
   -- Create directory
   vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/hooks", "p")
@@ -2028,11 +2155,12 @@ end
 --- Load TTS file locally from global (preserves permissions)
 --- @param tts_file table TTS file data
 --- @param silent boolean Don't show notifications
+--- @param force boolean Force overwrite if already local
 --- @return boolean success
-local function load_tts_file_locally(tts_file, silent)
+local function load_tts_file_locally(tts_file, silent, force)
   local notify = require('neotex.util.notifications')
 
-  if tts_file.is_local then
+  if not force and tts_file.is_local then
     if not silent then
       notify.editor(
         "TTS file already local: " .. tts_file.name,
@@ -2043,7 +2171,16 @@ local function load_tts_file_locally(tts_file, silent)
   end
 
   local dest = vim.fn.getcwd() .. "/.claude/" .. tts_file.directory .. "/" .. tts_file.name
-  local src = tts_file.filepath
+
+  -- When forcing an overwrite of a local file, we need to get the source from global
+  local src
+  if force and tts_file.is_local then
+    -- Local file - get from global directory
+    src = vim.fn.expand("~/.config/.claude/" .. tts_file.directory .. "/" .. tts_file.name)
+  else
+    -- Global file - use its filepath
+    src = tts_file.filepath
+  end
 
   -- Create directory
   vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/" .. tts_file.directory, "p")
@@ -2487,11 +2624,12 @@ end
 --- @param entry table Entry data with filepath, name, is_local
 --- @param entry_type string Type of entry (template, lib, doc)
 --- @param silent boolean Don't show notifications
+--- @param force boolean Force overwrite if already local
 --- @return boolean success
-local function load_artifact_locally(entry, entry_type, silent)
+local function load_artifact_locally(entry, entry_type, silent, force)
   local notify = require('neotex.util.notifications')
 
-  if entry.is_local then
+  if not force and entry.is_local then
     if not silent then
       notify.editor(
         string.format("%s already local: %s", entry_type, entry.name),
@@ -2510,7 +2648,17 @@ local function load_artifact_locally(entry, entry_type, silent)
   local subdir = dir_map[entry_type] or entry_type
 
   local dest = vim.fn.getcwd() .. "/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t")
-  local src = entry.filepath
+
+  -- When forcing an overwrite of a local file, we need to get the source from global
+  local src
+  if force and entry.is_local then
+    -- Local file - get from global directory
+    local filename = vim.fn.fnamemodify(entry.filepath, ":t")
+    src = vim.fn.expand("~/.config/.claude/" .. subdir .. "/" .. filename)
+  else
+    -- Global file - use its filepath
+    src = entry.filepath
+  end
 
   -- Create directory if needed
   vim.fn.mkdir(vim.fn.getcwd() .. "/.claude/" .. subdir, "p")
@@ -2815,41 +2963,209 @@ function M.show_commands_picker(opts)
           return
         end
 
-        local success = false
-        if selection.value.command then
-          success = load_command_locally(selection.value.command, false)
-        elseif selection.value.agent then
-          success = load_agent_locally(selection.value.agent, false)
-        elseif selection.value.entry_type == "hook_event" then
-          -- Load all hooks for this event
-          for _, hook in ipairs(selection.value.hooks or {}) do
-            local hook_success = load_hook_locally(hook, false)
-            success = success or hook_success
-          end
-        elseif selection.value.entry_type == "tts_file" then
-          success = load_tts_file_locally(selection.value, false)
-        elseif selection.value.entry_type == "template" then
-          success = load_artifact_locally(selection.value, "template", false)
-        elseif selection.value.entry_type == "lib" then
-          success = load_artifact_locally(selection.value, "lib", false)
-        elseif selection.value.entry_type == "doc" then
-          success = load_artifact_locally(selection.value, "doc", false)
-        end
+        -- Helper function to execute the load operation
+        local function do_load(skip_dependents, force)
+          local success = false
+          local loaded_filepath = nil
 
-        -- Refresh the picker to show updated local status
-        if success then
-          local current_prompt = action_state.get_current_line()
-          actions.close(prompt_bufnr)
-
-          vim.defer_fn(function()
-            M.show_commands_picker(opts)
-            if current_prompt and current_prompt ~= "" then
-              vim.defer_fn(function()
-                vim.api.nvim_feedkeys(current_prompt, 'n', false)
-              end, 50)
+          if selection.value.command then
+            success = load_command_locally(selection.value.command, false, skip_dependents, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/commands/" .. selection.value.command.name .. ".md"
             end
-          end, 100)
+          elseif selection.value.agent then
+            success = load_agent_locally(selection.value.agent, false, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/agents/" .. selection.value.agent.name .. ".md"
+            end
+          elseif selection.value.entry_type == "hook_event" then
+            -- Load all hooks for this event
+            for _, hook in ipairs(selection.value.hooks or {}) do
+              local hook_success = load_hook_locally(hook, false, force)
+              success = success or hook_success
+              if hook_success and not loaded_filepath then
+                loaded_filepath = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
+              end
+            end
+          elseif selection.value.entry_type == "tts_file" then
+            success = load_tts_file_locally(selection.value, false, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/" .. selection.value.directory .. "/" .. selection.value.name
+            end
+          elseif selection.value.entry_type == "template" then
+            success = load_artifact_locally(selection.value, "template", false, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/templates/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            end
+          elseif selection.value.entry_type == "lib" then
+            success = load_artifact_locally(selection.value, "lib", false, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/lib/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            end
+          elseif selection.value.entry_type == "doc" then
+            success = load_artifact_locally(selection.value, "doc", false, force)
+            if success then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/docs/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            end
+          end
+
+          -- Reload buffer if the file is currently open and was replaced
+          if success and loaded_filepath and force then
+            -- Find buffer for this file
+            local bufnr = vim.fn.bufnr(loaded_filepath)
+            if bufnr ~= -1 then
+              -- Buffer exists - reload it from disk
+              vim.schedule(function()
+                -- Check if buffer is loaded
+                if vim.api.nvim_buf_is_loaded(bufnr) then
+                  -- Use :checktime to reload buffer from disk
+                  vim.cmd(string.format("checktime %d", bufnr))
+                  -- Also explicitly reload if modified
+                  local modified = vim.api.nvim_buf_get_option(bufnr, 'modified')
+                  if modified then
+                    -- Discard changes and reload
+                    vim.api.nvim_buf_set_option(bufnr, 'modified', false)
+                    vim.cmd(string.format("buffer %d | edit", bufnr))
+                  end
+                end
+              end)
+            end
+          end
+
+          -- Refresh the picker to show updated local status
+          if success then
+            local current_prompt = action_state.get_current_line()
+            actions.close(prompt_bufnr)
+
+            vim.defer_fn(function()
+              M.show_commands_picker(opts)
+              if current_prompt and current_prompt ~= "" then
+                vim.defer_fn(function()
+                  vim.api.nvim_feedkeys(current_prompt, 'n', false)
+                end, 50)
+              end
+            end, 100)
+          end
         end
+
+        -- Check if artifact is local (has been loaded before)
+        local project_dir = vim.fn.getcwd()
+        local global_dir = vim.fn.expand("~/.config")
+
+        -- Determine if this artifact is local
+        local is_local = false
+        local artifact_name = ""
+
+        if selection.value.command then
+          is_local = selection.value.command.is_local
+          artifact_name = selection.value.command.name
+        elseif selection.value.agent then
+          is_local = selection.value.agent.is_local
+          artifact_name = selection.value.agent.name
+        elseif selection.value.entry_type == "hook_event" then
+          -- For hook events, check if any hook is local
+          if selection.value.hooks and #selection.value.hooks > 0 then
+            is_local = selection.value.hooks[1].is_local
+            artifact_name = selection.value.hooks[1].name
+          end
+        elseif selection.value.entry_type == "doc" or selection.value.entry_type == "lib"
+            or selection.value.entry_type == "template" or selection.value.entry_type == "tts_file" then
+          -- For these types, check the filepath to determine if local
+          if selection.value.filepath then
+            is_local = selection.value.filepath:match("^" .. vim.fn.getcwd()) ~= nil
+          end
+          artifact_name = selection.value.name or "artifact"
+        end
+
+        -- Only show confirmation if we're NOT in .config AND artifact is local
+        local should_confirm = is_local and project_dir ~= global_dir
+
+        -- Show confirmation if local version exists
+        if should_confirm then
+          -- For commands, check for dependents
+          local has_dependents = selection.value.command and selection.value.command.dependent_commands ~= nil
+          local dependent_conflicts = has_dependents
+            and find_dependent_conflicts(selection.value.command, project_dir)
+            or {}
+
+          -- Build confirmation message and buttons
+          local message, buttons, default_choice
+
+          if has_dependents and #dependent_conflicts > 0 then
+            -- Has dependents with conflicts
+            local conflict_list = table.concat(dependent_conflicts, ", ")
+            message = string.format(
+              "Local version exists for '%s'\n\n" ..
+              "Replace with global version?\n\n" ..
+              "Dependents with local versions: %s",
+              artifact_name, conflict_list
+            )
+            buttons = string.format(
+              "&Replace '%s' only\n" ..
+              "Replace '%s' + &dependents\n" ..
+              "&Cancel",
+              artifact_name, artifact_name
+            )
+            default_choice = 3  -- Default to Cancel
+          elseif has_dependents then
+            -- Has dependents but no conflicts (all new)
+            local deps = type(selection.value.command.dependent_commands) == "table"
+              and selection.value.command.dependent_commands
+              or vim.split(selection.value.command.dependent_commands, ",")
+            local dep_list = table.concat(vim.tbl_map(vim.trim, deps), ", ")
+            message = string.format(
+              "Local version exists for '%s'\n\n" ..
+              "Replace with global version?\n\n" ..
+              "Dependents (all new): %s",
+              artifact_name, dep_list
+            )
+            buttons = string.format(
+              "&Replace '%s' only\n" ..
+              "Replace '%s' + &dependents\n" ..
+              "&Cancel",
+              artifact_name, artifact_name
+            )
+            default_choice = 3  -- Default to Cancel
+          else
+            -- No dependents
+            message = string.format(
+              "Local version exists for '%s'\n\n" ..
+              "Replace with global version?",
+              artifact_name
+            )
+            buttons = string.format(
+              "&Replace '%s'\n&Cancel",
+              artifact_name
+            )
+            default_choice = 2  -- Default to Cancel
+          end
+
+          local choice = vim.fn.confirm(message, buttons, default_choice)
+
+          -- Handle the choice
+          if choice == 0 then
+            -- User cancelled (ESC or window closed)
+            return
+          elseif has_dependents then
+            -- Has dependents: 1=replace only, 2=replace+deps, 3=cancel
+            if choice == 1 then
+              do_load(true, true)  -- skip_deps=true, force=true
+            elseif choice == 2 then
+              do_load(false, true)  -- skip_deps=false, force=true
+            end
+            -- choice == 3 is cancel, do nothing
+          else
+            -- No dependents: 1=replace, 2=cancel
+            if choice == 1 then
+              do_load(false, true)  -- skip_deps=false, force=true
+            end
+            -- choice == 2 is cancel, do nothing
+          end
+          return
+        end
+
+        -- No local version - proceed normally without confirmation
+        do_load(false, false)  -- skip_deps=false, force=false
       end)
 
       -- Edit artifact file with Ctrl-e
@@ -2892,49 +3208,6 @@ function M.show_commands_picker(opts)
           -- Edit TTS file
           actions.close(prompt_bufnr)
           edit_artifact_file(selection.value.filepath)
-        end
-      end)
-
-      -- Update artifact from global version with Ctrl-g (keeps picker open and refreshes)
-      map("i", "<C-g>", function()
-        local selection = action_state.get_selected_entry()
-        if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
-          return
-        end
-
-        local success = false
-        if selection.value.command then
-          success = update_command_from_global(selection.value.command, false)
-        elseif selection.value.agent then
-          success = update_agent_from_global(selection.value.agent, false)
-        elseif selection.value.entry_type == "hook_event" then
-          -- Update all hooks for this event
-          for _, hook in ipairs(selection.value.hooks or {}) do
-            local hook_success = update_hook_from_global(hook, false)
-            success = success or hook_success
-          end
-        elseif selection.value.entry_type == "tts_file" then
-          success = update_tts_file_from_global(selection.value, false)
-        elseif selection.value.entry_type == "template" then
-          success = update_artifact_from_global(selection.value, "template", false)
-        elseif selection.value.entry_type == "lib" then
-          success = update_artifact_from_global(selection.value, "lib", false)
-        elseif selection.value.entry_type == "doc" then
-          success = update_artifact_from_global(selection.value, "doc", false)
-        end
-
-        if success then
-          local current_prompt = action_state.get_current_line()
-          actions.close(prompt_bufnr)
-
-          vim.defer_fn(function()
-            M.show_commands_picker(opts)
-            if current_prompt and current_prompt ~= "" then
-              vim.defer_fn(function()
-                vim.api.nvim_feedkeys(current_prompt, 'n', false)
-              end, 50)
-            end
-          end, 100)
         end
       end)
 
