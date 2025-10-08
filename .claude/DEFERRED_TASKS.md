@@ -1,16 +1,208 @@
-# Deferred Tasks from Plan 026
+# Deferred Tasks
 
-This document tracks tasks that were deferred during the agential system refinement implementation.
+This document tracks tasks that were deferred during various implementation phases.
 
 ## Summary
 
-**Total Deferred**: 4 tasks
-**Priority**: Low (none are critical for release)
-**Estimated Total Effort**: 8-12 hours
+**Total Deferred**: 9 tasks
+**Priority**: Low-Medium (none are critical for release)
+**Estimated Total Effort**: 10-14 hours
 
 ## Deferred Task List
 
-### 1. Adaptive Planning Logging and Observability
+## From Artifact Picker Review (Report 044)
+
+### 1. Document Buffer Reload in Picker README
+**Deferred From**: Artifact Picker Code Review (2025-10-08)
+**Reason**: Documentation gap, not critical for functionality
+**Priority**: High (user-facing documentation)
+**Estimated Effort**: 5 minutes
+
+**Description**:
+Update README.md to document buffer reload behavior when replacing artifacts with `<C-l>`.
+
+**Tasks**:
+- Add section to "Loading Commands (`<C-l>`)" explaining buffer reload
+- Document that open buffers are automatically reloaded when artifacts replaced
+- Explain that unsaved local modifications are discarded
+- Sets user expectations for "destructive" nature of replacement
+
+**Why Deferred**:
+- Feature works correctly, only documentation missing
+- User can discover behavior through use
+- Quick fix when addressed
+
+**When to Address**:
+- Next documentation update pass
+- When updating picker README for other reasons
+- High value for minimal effort
+
+**File**: `nvim/lua/neotex/plugins/ai/claude/commands/README.md`
+**Location**: "Loading Commands" section around line 110
+
+---
+
+### 2. Add Buffer Reload Notification
+**Deferred From**: Artifact Picker Code Review (2025-10-08)
+**Reason**: UX enhancement, not required for functionality
+**Priority**: Medium
+**Estimated Effort**: 10 minutes
+
+**Description**:
+Add notification when buffer is reloaded after artifact replacement to provide user feedback.
+
+**Implementation**:
+```lua
+-- In buffer reload section (picker.lua line ~3028)
+if modified then
+  vim.api.nvim_buf_set_option(bufnr, 'modified', false)
+  vim.cmd(string.format("buffer %d | edit", bufnr))
+
+  local notify = require('neotex.util.notifications')
+  notify.editor(
+    string.format("Reloaded '%s' from global version", artifact_name),
+    notify.categories.INFO
+  )
+end
+```
+
+**Benefits**:
+- User confirmation that replacement worked
+- Explicit feedback that local changes were discarded
+- Consistent with other operation notifications
+
+**Why Deferred**:
+- Buffer reload works correctly without notification
+- Enhancement, not bug fix
+- Quick implementation when addressed
+
+**When to Address**:
+- Next picker enhancement pass
+- When adding other picker notifications
+- Low priority UX improvement
+
+**File**: `nvim/lua/neotex/plugins/ai/claude/commands/picker.lua`
+**Location**: Lines 3012-3033 (buffer reload section)
+
+---
+
+### 3. Extract Dialog Builder Helper Function
+**Deferred From**: Artifact Picker Code Review (2025-10-08)
+**Reason**: Code readability optimization, not functional issue
+**Priority**: Low
+**Estimated Effort**: 30 minutes
+
+**Description**:
+Refactor `<C-l>` handler to extract confirmation dialog building logic into separate helper function.
+
+**Current Issue**:
+- `<C-l>` handler is 210 lines (lines 2960-3169)
+- Dialog building logic is 50+ lines inline
+- Reduces readability
+
+**Benefits**:
+- Reduces handler from 210 to ~120 lines
+- Dialog logic testable in isolation
+- Clearer separation of concerns
+- Easier to modify dialog behavior
+
+**Why Deferred**:
+- Code works correctly as-is
+- Optimization, not bug fix
+- Can be done during future refactoring pass
+
+**When to Address**:
+- Next major picker refactor
+- When modifying `<C-l>` handler for other reasons
+- Future code cleanup sprint
+
+**File**: `nvim/lua/neotex/plugins/ai/claude/commands/picker.lua`
+**Location**: Lines 2960-3169 (`<C-l>` handler)
+
+---
+
+### 4. Optimize Filepath Construction in do_load()
+**Deferred From**: Artifact Picker Code Review (2025-10-08)
+**Reason**: Negligible performance impact
+**Priority**: Low (micro-optimization)
+**Estimated Effort**: 20 minutes
+
+**Description**:
+Lazy construction of `loaded_filepath` - only build when `force=true`.
+
+**Current Behavior**:
+- Constructs filepath for all loads (first and replacement)
+- Buffer reload only happens when `force=true` (replacement)
+- Wastes ~95% of filepath constructions (first loads)
+
+**Optimization**:
+- Move filepath construction inside `if success and force` block
+- Only construct when actually needed for buffer reload
+
+**Benefits**:
+- Avoids string concatenation on first loads (95% of cases)
+- Marginal performance improvement
+- Slightly cleaner logic flow
+
+**Trade-off**:
+- Slightly more complex control flow
+- Minimal actual performance gain
+
+**Why Deferred**:
+- Performance impact negligible (string concatenation is fast)
+- Code clarity vs performance trade-off
+- Optimization without measurable benefit
+
+**When to Address**:
+- Future optimization sprint (if ever)
+- Very low priority
+- Optional improvement
+
+**File**: `nvim/lua/neotex/plugins/ai/claude/commands/picker.lua`
+**Location**: Lines 2967-3048 (`do_load()` helper)
+
+---
+
+### 5. Add Strategic Code Comments to Picker
+**Deferred From**: Artifact Picker Code Review (2025-10-08)
+**Reason**: Code is self-documenting for experienced developers
+**Priority**: Low (documentation enhancement)
+**Estimated Effort**: 30 minutes
+
+**Description**:
+Add inline comments to document non-obvious design decisions for future maintainers.
+
+**Areas to Document**:
+1. Global filepath resolution (why we check `force and is_local`)
+2. Hook event `is_local` detection (why we check first hook)
+3. Buffer reload timing (why we use `vim.schedule`)
+
+**Benefits**:
+- Easier for new contributors to understand intent
+- Prevents regression bugs from "simplification" refactors
+- Documents non-obvious design decisions
+
+**Why Deferred**:
+- Code works correctly without comments
+- Experienced developers can understand from code
+- Enhancement, not requirement
+
+**When to Address**:
+- When onboarding new contributors
+- Future documentation improvement pass
+- Low priority
+
+**File**: `nvim/lua/neotex/plugins/ai/claude/commands/picker.lua`
+**Locations**:
+- Lines 2616-2624, 2086-2093 (global filepath resolution)
+- Lines 3065-3070 (hook event detection)
+- Lines 3012-3033 (buffer reload)
+
+---
+
+## From Plan 026 (Agential System Refinement)
+
+### 6. Adaptive Planning Logging and Observability
 **Deferred From**: Phase 4
 **Reason**: Not critical for initial release
 **Priority**: Low
@@ -38,7 +230,7 @@ Add comprehensive logging for adaptive planning detection in `/implement`.
 
 ---
 
-### 2. Adaptive Planning Integration Tests
+### 7. Adaptive Planning Integration Tests
 **Deferred From**: Phase 4 (to Phase 7, then deferred)
 **Reason**: Complex integration test requiring full workflow
 **Priority**: Medium
@@ -68,7 +260,7 @@ Create integration test for full adaptive planning workflow.
 
 ---
 
-### 3. /revise Auto-Mode Integration Tests
+### 8. /revise Auto-Mode Integration Tests
 **Deferred From**: Phase 5 (to Phase 7, then deferred)
 **Reason**: Complex programmatic invocation testing
 **Priority**: Medium
@@ -99,7 +291,7 @@ Create integration tests for /revise auto-mode invocation.
 
 ---
 
-### 4. Commands Updated to Use Shared Utilities
+### 9. Commands Updated to Use Shared Utilities
 **Deferred From**: Phase 6
 **Reason**: Optimization, not required for functionality
 **Priority**: Low (future enhancement)
@@ -138,6 +330,10 @@ All deferred tasks have been:
 - ✅ Prioritized (all low-medium priority)
 - ✅ Given clear "when to address" guidance
 - ✅ Verified not critical for release
+
+**Quick Wins** (< 15 minutes):
+- Task 1: Document buffer reload (5 min, high user value)
+- Task 2: Add buffer reload notification (10 min, better UX)
 
 ## Integration Test Coverage Achieved
 
