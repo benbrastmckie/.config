@@ -21,23 +21,32 @@ This directory implements a complete agentic workflow ecosystem:
 ```
 .claude/
 ├── agents/              Specialized AI assistant definitions
+│   ├── prompts/        Agent evaluation templates
+│   └── shared/         Agent protocols (error, invocation, logging)
 ├── checkpoints/         Workflow state for interruption recovery
 ├── commands/            26 slash commands for workflows
 ├── data/                Runtime data (gitignored)
+│   ├── agents/         Agent runtime data and metrics
+│   ├── checkpoints/    Workflow state persistence
+│   ├── commands/       Command execution tracking
 │   ├── logs/           Debug and hook execution logs
-│   └── metrics/        Command performance tracking (JSONL)
+│   ├── metrics/        Command performance tracking (JSONL)
+│   └── templates/      Template usage data
 ├── docs/                Integration guides and standards
 ├── hooks/               Event-driven automation scripts
 ├── lib/                 Utility libraries and shared functions
 ├── specs/               Plans, reports, summaries (gitignored)
 │   ├── plans/          Implementation plans
 │   ├── reports/        Research and investigations
+│   ├── standards/      Command templates and protocols
 │   └── summaries/      Implementation summaries
 ├── templates/           Reusable workflow templates (YAML)
 ├── tests/               Test suites for system validation
 ├── tts/                 Voice notification system
 └── settings.local.json  Hook and permission configuration
 ```
+
+**Artifact Picker Coverage**: All directories above are accessible through the Neovim artifact picker, which provides categorical organization, README synchronization, and batch loading capabilities for comprehensive artifact management.
 
 ## Core Capabilities
 
@@ -118,8 +127,12 @@ Lightweight reference system for 60-80% context reduction:
 - Research outputs stored separately
 - Passed by reference, not content
 - Automatic cleanup and organization
+- Comprehensive artifact picker with 11 categories
+- Load All operation syncs all artifact types
+- README coverage for all .claude/ directories
 
 **Location**: `specs/artifacts/` | See [specs/artifacts/README.md](specs/artifacts/README.md)
+**Picker**: Neovim integration provides visual artifact browser with categorical organization
 
 ### Utilities (Supporting Scripts)
 Core utilities for all subsystems:
