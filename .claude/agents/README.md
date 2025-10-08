@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 8 specialized agents
+**Current Agent Count**: 9 specialized agents
 
 ## Recent Changes
 
@@ -132,6 +132,26 @@ Agents enable modular, focused assistance by providing:
 - Creating missing READMEs
 - Updating documentation after changes
 - Generating API documentation
+
+---
+
+### github-specialist.md
+**Purpose**: Manage GitHub operations including PRs, issues, and CI/CD monitoring
+
+**Capabilities**:
+- Pull request creation with rich metadata
+- Issue management and categorization
+- CI/CD workflow monitoring
+- Repository state verification
+- GitHub CLI integration
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Creating PRs after implementation completion
+- Generating issues from debug reports
+- Monitoring CI workflow status
+- Linking PRs to implementation plans and reports
 
 ---
 
@@ -500,6 +520,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 - [code-writer.md](code-writer.md) - Code implementation
 - [debug-specialist.md](debug-specialist.md) - Issue investigation
 - [doc-writer.md](doc-writer.md) - Documentation creation
+- [github-specialist.md](github-specialist.md) - GitHub operations and PR management
 - [metrics-specialist.md](metrics-specialist.md) - Performance analysis
 - [plan-architect.md](plan-architect.md) - Implementation planning
 - [research-specialist.md](research-specialist.md) - Research and reports
