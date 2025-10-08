@@ -443,8 +443,56 @@ local function create_command_previewer()
     define_preview = function(self, entry, status)
       -- Show info for heading entries
       if entry.value.is_heading then
+        local ordinal = entry.value.ordinal or "Unknown"
+        local readme_path = nil
+
+        -- Try local project first, then global
+        local local_path = vim.fn.getcwd() .. "/.claude/" .. ordinal .. "/README.md"
+        local global_path = vim.fn.expand("~/.config/.claude/" .. ordinal .. "/README.md")
+
+        if vim.fn.filereadable(local_path) == 1 then
+          readme_path = local_path
+        elseif vim.fn.filereadable(global_path) == 1 then
+          readme_path = global_path
+        end
+
+        if readme_path then
+          -- Read README content with line limit
+          local MAX_PREVIEW_LINES = 150
+          local success, file = pcall(io.open, readme_path, "r")
+          if success and file then
+            local lines = {}
+            local line_count = 0
+            for line in file:lines() do
+              table.insert(lines, line)
+              line_count = line_count + 1
+              if line_count >= MAX_PREVIEW_LINES then
+                break
+              end
+            end
+            file:close()
+
+            -- Get total line count to check if truncation needed
+            local total_lines = #vim.fn.readfile(readme_path)
+            if total_lines > MAX_PREVIEW_LINES then
+              table.insert(lines, "")
+              table.insert(lines, "...")
+              table.insert(lines, string.format(
+                "[Preview truncated - showing first %d of %d lines]",
+                MAX_PREVIEW_LINES, total_lines
+              ))
+            end
+
+            -- Display README content with markdown highlighting
+            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+            vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+            return
+          end
+        end
+
+        -- Fallback to current generic text
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
-          "Category: " .. (entry.value.ordinal or "Unknown"),
+          "Category: " .. ordinal,
           "",
           entry.value.display or "",
           "",
