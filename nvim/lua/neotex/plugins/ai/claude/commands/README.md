@@ -37,18 +37,18 @@ Categories appear in logical order with headings at the top: [Commands], [Agents
   - Preview cross-references: 3-space indentation
 - Smart command insertion (opens Claude Code if needed, uses feedkeys for reliable input)
 - Load artifacts locally with dependencies (`<C-l>` keybinding) - supports templates, lib, docs
-- Update artifacts from global versions (`<C-u>` keybinding) - supports templates, lib, docs
+- Update artifacts from global versions (`<C-g>` keybinding) - supports templates, lib, docs
 - Save local artifacts to global (`<C-s>` keybinding) - supports templates, lib, docs
 - Universal file editing (`<C-e>` keybinding) - supports all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
-- Two-stage Return key workflow with deliberate review-before-action
-  - First Return: Focus preview pane with action hint
-  - Second Return: Execute action (insert commands, edit all other artifacts)
-  - State resets automatically on selection change
-- Preview focus navigation with Tab key
-  - Switch focus to preview pane for scrolling long previews
-  - Esc returns from preview to picker
-  - Useful for reading agent descriptions, command help, README content
-- Context-aware Esc behavior (return from preview vs close picker)
+- Direct action execution with Enter key
+  - Commands: Insert into Claude Code terminal
+  - All other artifacts: Open file for editing
+  - No two-stage workflow - actions execute immediately
+- Native preview scrolling
+  - Ctrl-u/Ctrl-d: Scroll preview by half page
+  - Ctrl-f/Ctrl-b: Scroll preview by full page
+  - No need to focus preview - scrolling works from picker
+  - 100% reliable with no buffer validation errors
 - Picker refresh after operations to show updated status
 - Comprehensive artifact coverage (11 categories: commands, agents, hooks, TTS, templates, libraries, docs, agent protocols, standards, data docs, settings)
 
@@ -118,8 +118,8 @@ When pressing `<C-l>` to load a command:
 - **Picker refresh**: Automatically refreshes to show updated `*` markers
 - **Picker state**: Remains open for continued browsing
 
-#### Updating Commands (`<C-u>`)
-When pressing `<C-u>` to update a command:
+#### Updating Commands (`<C-g>`)
+When pressing `<C-g>` to update a command:
 - **Purpose**: Overwrites local version with latest global version
 - **Global source**: Updates from `~/.config/.claude/commands/`
 - **Dependent commands**: Also updates dependencies if they exist globally
@@ -173,62 +173,29 @@ When pressing `<C-e>` to edit a command:
 - **Global commands in other projects**: Copies to local project first, then opens the copy
 - **Picker state**: Closes after opening file for editing
 
-## Breaking Changes
-
-### Agent Return Key Behavior (Latest Version)
-
-**IMPORTANT BEHAVIORAL CHANGE**: The Return key behavior for agents has been updated to match other file-based artifacts:
-
-**Previous Behavior (Deprecated)**:
-- Pressing Return on an agent would insert `@agent_name` into Claude Code terminal
-- Users could quickly reference agents with a simple keystroke
-
-**Current Behavior**:
-- **First Return**: Focus preview pane with action hint "Press Return to edit file"
-- **Second Return**: Open agent file for editing (same as Templates, Lib, Docs, Hooks, TTS)
-- Agents are now treated as file artifacts, not insertable references
-
-**Rationale**:
-- Consistent behavior across all non-command artifacts
-- Agents are primarily edited rather than inserted as references
-- Only commands insert into Claude Code terminal
-- Users who need `@agent_name` references can type them manually
-
-**Migration**:
-- If you relied on inserting `@agent_name` via picker, you must now type the reference manually in Claude Code
-- The agent file is still easily accessible via the two-stage Return workflow
-- Use Ctrl-e for direct file editing if you prefer to skip the preview focus step
-
 ## Integration
 
 ### User Commands
 - `:ClaudeCommands` - Opens the Claude commands picker
 
 ### Keybindings (in picker)
-- `<CR>` - Two-stage selection with deliberate review workflow
-  - **First Return**: Focus preview pane with action hint message
-    - Shows message: "Preview focused - Press Return to [insert command|edit file]"
-    - Allows reviewing artifact details before execution
-    - Press Esc to return to picker without executing
-  - **Second Return**: Execute action based on artifact type
-    - **Commands**: Insert command into Claude Code terminal (command only, no placeholders)
-      - Opens Claude Code if not already running
-      - Uses feedkeys for reliable command insertion
-    - **Agents**: Open file for editing (BREAKING CHANGE - see notes below)
-    - **File artifacts** (Docs/Lib/Templates/Hooks/TTS): Open file for editing
-      - Provides intuitive "select to edit" workflow for non-insertable artifacts
-  - **Special entries**: Execute immediately (no two-stage)
-    - `[Load All Commands]`: Copies all global commands to local directory
-    - `[Keyboard Shortcuts]`: Non-selectable help entry
-  - **State management**: Two-stage state resets when selection changes (j/k/Ctrl-j/Ctrl-k)
-- `<Tab>` - Focus preview pane for scrolling
-  - Switches focus to preview window for navigation
-  - Useful for reading long previews (agent descriptions, command help, README content)
-  - Press Esc to return to picker
-  - Shows message: "Preview focused - Press Esc to return to picker"
-- `<Esc>` - Context-aware escape behavior
-  - **From preview pane**: Return focus to picker
-  - **From picker**: Close picker entirely
+- `<CR>` - Execute action for selected item
+  - **Commands**: Insert command into Claude Code terminal (command only, no placeholders)
+    - Opens Claude Code if not already running
+    - Uses feedkeys for reliable command insertion
+  - **All other artifacts**: Open file for editing
+    - Agents, Docs, Lib, Templates, Hooks, TTS files open directly
+  - **Special entries**:
+    - `[Load All Artifacts]`: Batch syncs all artifact types
+    - `[Keyboard Shortcuts]`: No action (help entry)
+- `<C-u>` / `<C-d>` - Scroll preview up/down (half page)
+  - Native Telescope preview scrolling
+  - Works from picker without focusing preview
+  - No buffer validation errors
+- `<C-f>` / `<C-b>` - Scroll preview down/up (full page)
+  - Alternative scrolling commands
+  - Same reliable behavior as <C-u>/<C-d>
+- `<Esc>` - Close picker
 - `<C-n>` - Create new command with Claude Code
   - Opens Claude Code (if not already open)
   - Inserts prompt: "Create a new claude-code command in the {project}/.claude/commands/ directory called "
@@ -241,7 +208,7 @@ When pressing `<C-e>` to edit a command:
   - Refreshes picker to show new local status with `*` markers
   - Keeps picker open for continued browsing
   - Supports: Commands, Agents, Hooks, TTS, Templates, Lib, Docs
-- `<C-u>` - Update artifact from global version
+- `<C-g>` - Update artifact from global version
   - Overwrites local version with global version from `~/.config/.claude/`
   - Also updates dependent artifacts if they exist globally
   - Refreshes picker to show updated content
@@ -285,59 +252,53 @@ require('neotex.ai-claude').show_commands_picker()
 
 ### Navigation Workflow Examples
 
-#### Two-Stage Selection Workflow
-The deliberate two-stage Return workflow prevents accidental actions:
+#### Direct Action Execution
+Simple one-step workflow for quick actions:
 
 1. **Navigate to desired artifact** using j/k or fuzzy search
-2. **First Return**: Focus preview pane
-   - Review artifact details (description, metadata, file content)
-   - Message shown: "Preview focused - Press Return to [insert command|edit file]"
-3. **Options from preview**:
-   - **Second Return**: Execute the action (insert or edit)
-   - **Esc**: Cancel and return to picker without executing
-   - **j/k**: Navigate within preview if needed
+2. **Press Return**: Execute action immediately
+   - Commands → Insert into Claude Code
+   - All others → Open file for editing
 
-**Example: Selecting a Command**
+**Example: Inserting a Command**
 ```
 1. Type "plan" to filter → highlights /plan command
-2. Press Return → Preview focused with message "Press Return to insert command"
-3. Review command details in preview
-4. Press Return → Command "/plan" inserted into Claude Code terminal
+2. Press Return → Command "/plan" inserted into Claude Code terminal
 ```
 
-**Example: Reviewing Before Editing an Agent**
+**Example: Editing an Agent**
 ```
 1. Navigate to [agent] metrics-specialist
-2. Press Return → Preview focused with message "Press Return to edit file"
-3. Read agent description and capabilities
-4. Press Return → Agent file opens for editing
-   OR Press Esc → Return to picker without opening
+2. Press Return → Agent file opens for editing
 ```
 
-#### Preview Focus Navigation with Tab
+#### Preview Scrolling with Native Telescope Actions
 
-Use Tab to focus the preview pane for scrolling long content:
+Use Ctrl-u/Ctrl-d to scroll preview while staying in picker:
 
 **Example: Reading Long Agent Description**
 ```
 1. Navigate to agent with lengthy description
-2. Press Tab → Focus switches to preview pane
-   Message shown: "Preview focused - Press Esc to return to picker"
-3. Use j/k, Ctrl-d/u, or mouse to scroll through content
-4. Press Esc → Return to picker, selection preserved
+2. Press Ctrl-d → Preview scrolls down half page
+3. Press Ctrl-d again → Continue scrolling
+4. Press Ctrl-u → Scroll back up
+5. Press Return → Open agent file if desired
 ```
 
 **Example: Reviewing Category README**
 ```
 1. Navigate to [Commands] heading
 2. Preview shows full README.md from .claude/commands/
-3. Press Tab → Focus preview for scrolling
-4. Read through README documentation
-5. Press Esc → Return to picker
-6. Press j/k to navigate to specific command
+3. Press Ctrl-d/Ctrl-u → Scroll through documentation
+4. Press j/k → Navigate to specific command
+5. Press Return → Insert command or edit file
 ```
 
-**State Reset Behavior**: Moving selection (j/k/Ctrl-j/Ctrl-k) automatically resets the two-stage state to "first", requiring two Return presses again for new selection.
+**Benefits of Native Scrolling**:
+- No focus switching required
+- 100% reliable (no buffer errors)
+- Standard Telescope behavior
+- Works across all preview types
 
 ### Integration with ai-claude Module
 ```lua

@@ -232,20 +232,7 @@ local function create_picker_entries(structure)
   local entries = {}
 
   -- Special entries: Insert FIRST so they appear at BOTTOM with descending sort
-  -- Add keyboard shortcuts help entry (added first, appears at absolute bottom)
-  table.insert(entries, {
-    is_help = true,
-    name = "~~~help",
-    display = string.format(
-      "%-40s %s",
-      "[Keyboard Shortcuts]",
-      "Help"
-    ),
-    command = nil,
-    entry_type = "special"
-  })
-
-  -- Add load all commands entry (added second, appears second from bottom)
+  -- Add load all artifacts entry (added first, appears at absolute bottom)
   table.insert(entries, {
     is_load_all = true,
     name = "~~~load_all",
@@ -253,6 +240,19 @@ local function create_picker_entries(structure)
       "%-40s %s",
       "[Load All Artifacts]",
       "Sync commands, agents, hooks, TTS files"
+    ),
+    command = nil,
+    entry_type = "special"
+  })
+
+  -- Add keyboard shortcuts help entry (added second, appears second from bottom)
+  table.insert(entries, {
+    is_help = true,
+    name = "~~~help",
+    display = string.format(
+      "%-40s %s",
+      "[Keyboard Shortcuts]",
+      "Help"
     ),
     command = nil,
     entry_type = "special"
@@ -288,11 +288,13 @@ local function create_picker_entries(structure)
   -- Merge docs (local overrides global)
   local all_docs = {}
   local doc_map = {}
-  for _, doc in ipairs(global_docs) do
+  -- Add local docs first
+  for _, doc in ipairs(local_docs) do
     all_docs[#all_docs + 1] = doc
     doc_map[doc.name] = true
   end
-  for _, doc in ipairs(local_docs) do
+  -- Add global docs only if not overridden by local
+  for _, doc in ipairs(global_docs) do
     if not doc_map[doc.name] then
       all_docs[#all_docs + 1] = doc
     end
@@ -347,11 +349,13 @@ local function create_picker_entries(structure)
   -- Merge lib utils (local overrides global)
   local all_lib = {}
   local lib_map = {}
-  for _, lib in ipairs(global_lib) do
+  -- Add local lib first
+  for _, lib in ipairs(local_lib) do
     all_lib[#all_lib + 1] = lib
     lib_map[lib.name] = true
   end
-  for _, lib in ipairs(local_lib) do
+  -- Add global lib only if not overridden by local
+  for _, lib in ipairs(global_lib) do
     if not lib_map[lib.name] then
       all_lib[#all_lib + 1] = lib
     end
@@ -406,11 +410,13 @@ local function create_picker_entries(structure)
   -- Merge templates (local overrides global)
   local all_templates = {}
   local template_map = {}
-  for _, tmpl in ipairs(global_templates) do
+  -- Add local templates first
+  for _, tmpl in ipairs(local_templates) do
     all_templates[#all_templates + 1] = tmpl
     template_map[tmpl.name] = true
   end
-  for _, tmpl in ipairs(local_templates) do
+  -- Add global templates only if not overridden by local
+  for _, tmpl in ipairs(global_templates) do
     if not template_map[tmpl.name] then
       all_templates[#all_templates + 1] = tmpl
     end
@@ -871,21 +877,24 @@ local function create_command_previewer()
           "Keyboard Shortcuts:",
           "",
           "Commands:",
-          "  Enter (CR)     - Two-stage selection:",
-          "                   First press: Focus preview for review",
-          "                   Second press: Execute action",
-          "                     Commands: Insert into Claude Code",
-          "                     All others: Open file for editing",
+          "  Enter (CR)     - Execute action for selected item",
+          "                   Commands: Insert into Claude Code",
+          "                   All others: Open file for editing",
           "  Ctrl-n         - Create new command (opens Claude Code with prompt)",
           "  Ctrl-l         - Load artifact locally (copies with dependencies)",
-          "  Ctrl-u         - Update artifact from global version (overwrites local)",
+          "  Ctrl-g         - Update artifact from global version (overwrites local)",
           "  Ctrl-s         - Save local artifact to global (share across projects)",
           "  Ctrl-e         - Edit artifact file (all types)",
           "",
           "Navigation:",
           "  Ctrl-j/k       - Move selection down/up",
-          "  Tab            - Focus preview pane for scrolling",
-          "  Escape         - Return to picker (from preview) or close picker",
+          "  Escape         - Close picker",
+          "",
+          "Preview Navigation:",
+          "  Ctrl-u         - Scroll preview up (half page)",
+          "  Ctrl-d         - Scroll preview down (half page)",
+          "  Ctrl-b         - Scroll preview up (full page)",
+          "  Ctrl-f         - Scroll preview down (full page)",
           "",
           "Artifact Types:",
           "  [Commands]     - Claude Code slash commands",
@@ -2731,56 +2740,17 @@ function M.show_commands_picker(opts)
     default_selection_index = 2,     -- Start on [Keyboard Shortcuts] (one above bottom)
     previewer = create_command_previewer(),
     attach_mappings = function(prompt_bufnr, map)
-      -- State management for preview focus and two-stage Return
-      local preview_focused = false
-      local return_stage = "first"
+      -- Escape key: close picker immediately (override default two-press behavior)
+      map("i", "<Esc>", actions.close)
+      map("n", "<Esc>", actions.close)
 
-      -- Helper to reset state (called on selection change or actions)
-      local function reset_state()
-        return_stage = "first"
-        preview_focused = false
-      end
+      -- Preview scrolling using Telescope's native actions (no buffer issues)
+      map("i", "<C-u>", actions.preview_scrolling_up)
+      map("i", "<C-d>", actions.preview_scrolling_down)
+      map("i", "<C-f>", actions.preview_scrolling_down)  -- Alternative (full page)
+      map("i", "<C-b>", actions.preview_scrolling_up)    -- Alternative (full page)
 
-      -- Helper to get action description for status message
-      local function get_action_description(entry)
-        if entry.value.command then
-          return "insert command"
-        else
-          return "edit file"
-        end
-      end
-
-      -- Tab handler: Focus preview pane for scrolling
-      map("i", "<Tab>", function()
-        local picker = action_state.get_current_picker(prompt_bufnr)
-        if not picker or not picker.previewer or not picker.previewer.state then
-          return
-        end
-
-        local preview_winid = picker.previewer.state.winid
-        local preview_bufnr = picker.previewer.state.bufnr
-
-        if not preview_winid or not vim.api.nvim_win_is_valid(preview_winid) or
-           not preview_bufnr or not vim.api.nvim_buf_is_valid(preview_bufnr) then
-          return
-        end
-
-        -- Switch focus to preview window
-        preview_focused = true
-        vim.api.nvim_set_current_win(preview_winid)
-
-        -- Set buffer-local Esc mapping to return to picker
-        vim.keymap.set("n", "<Esc>", function()
-          preview_focused = false
-          if vim.api.nvim_win_is_valid(picker.prompt_win) then
-            vim.api.nvim_set_current_win(picker.prompt_win)
-          end
-        end, { buffer = preview_bufnr, nowait = true })
-
-        vim.api.nvim_echo({{" Preview focused - Press Esc to return to picker ", "Normal"}}, false, {})
-      end)
-
-      -- Context-aware Enter key: two-stage selection
+      -- Context-aware Enter key: direct action execution
       actions.select_default:replace(function()
         local selection = action_state.get_selected_entry()
         if not selection then
@@ -2804,79 +2774,37 @@ function M.show_commands_picker(opts)
           return
         end
 
-        -- Help section: allow preview focus on first press, return on second
+        -- Help section: does nothing (no action to execute)
         if selection.value.is_help then
-          if return_stage == "second" then
-            reset_state()
-            return
-          end
-          -- First press: fall through to preview focus logic
+          return
         end
 
-        -- Two-stage selection logic
-        if return_stage == "first" then
-          -- First Return: Focus preview
-          return_stage = "second"
-
-          local picker = action_state.get_current_picker(prompt_bufnr)
-          if picker and picker.previewer and picker.previewer.state then
-            local preview_winid = picker.previewer.state.winid
-            local preview_bufnr = picker.previewer.state.bufnr
-
-            if preview_winid and vim.api.nvim_win_is_valid(preview_winid) and
-               preview_bufnr and vim.api.nvim_buf_is_valid(preview_bufnr) then
-              preview_focused = true
-              vim.api.nvim_set_current_win(preview_winid)
-
-              -- Set Esc mapping to return to picker
-              vim.keymap.set("n", "<Esc>", function()
-                preview_focused = false
-                return_stage = "first"
-                if vim.api.nvim_win_is_valid(picker.prompt_win) then
-                  vim.api.nvim_set_current_win(picker.prompt_win)
-                end
-              end, { buffer = preview_bufnr, nowait = true })
-
-              -- Show action hint (different for help section)
-              if selection.value.is_help then
-                vim.api.nvim_echo({{" Preview focused - Press Esc to return to picker ", "Normal"}}, false, {})
-              else
-                local action_desc = get_action_description(selection)
-                vim.api.nvim_echo({{" Preview focused - Press Return to " .. action_desc .. " ", "Normal"}}, false, {})
-              end
-            end
+        -- Execute action based on artifact type
+        if selection.value.command then
+          -- Commands: Insert into Claude Code terminal
+          actions.close(prompt_bufnr)
+          send_command_to_terminal(selection.value.command)
+        elseif selection.value.entry_type == "agent" and selection.value.agent then
+          -- Agents: Open file for editing
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.agent.filepath)
+        elseif selection.value.entry_type == "doc" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif selection.value.entry_type == "lib" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif selection.value.entry_type == "template" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
+        elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
+          actions.close(prompt_bufnr)
+          if #selection.value.hooks > 0 then
+            edit_artifact_file(selection.value.hooks[1].filepath)
           end
-        else
-          -- Second Return: Execute action based on artifact type
-          reset_state()
-
-          if selection.value.command then
-            -- Commands: Insert into Claude Code terminal
-            actions.close(prompt_bufnr)
-            send_command_to_terminal(selection.value.command)
-          elseif selection.value.entry_type == "agent" and selection.value.filepath then
-            -- Agents: Open file for editing (no longer insert @name)
-            actions.close(prompt_bufnr)
-            edit_artifact_file(selection.value.filepath)
-          elseif selection.value.entry_type == "doc" and selection.value.filepath then
-            actions.close(prompt_bufnr)
-            edit_artifact_file(selection.value.filepath)
-          elseif selection.value.entry_type == "lib" and selection.value.filepath then
-            actions.close(prompt_bufnr)
-            edit_artifact_file(selection.value.filepath)
-          elseif selection.value.entry_type == "template" and selection.value.filepath then
-            actions.close(prompt_bufnr)
-            edit_artifact_file(selection.value.filepath)
-          elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
-            if #selection.value.hooks > 0 then
-              local hook = selection.value.hooks[1]
-              actions.close(prompt_bufnr)
-              vim.cmd("edit " .. vim.fn.fnameescape(hook.filepath))
-            end
-          elseif selection.value.entry_type == "tts_file" and selection.value.filepath then
-            actions.close(prompt_bufnr)
-            edit_artifact_file(selection.value.filepath)
-          end
+        elseif selection.value.entry_type == "tts_file" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit_artifact_file(selection.value.filepath)
         end
       end)
 
@@ -2967,8 +2895,8 @@ function M.show_commands_picker(opts)
         end
       end)
 
-      -- Update artifact from global version with Ctrl-u (keeps picker open and refreshes)
-      map("i", "<C-u>", function()
+      -- Update artifact from global version with Ctrl-g (keeps picker open and refreshes)
+      map("i", "<C-g>", function()
         local selection = action_state.get_selected_entry()
         if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
           return
@@ -3099,31 +3027,6 @@ function M.show_commands_picker(opts)
           end
         })
       end)
-
-      -- Enhance movement actions to reset two-stage state on selection change
-      actions.move_selection_next:enhance({
-        post = function()
-          reset_state()
-        end
-      })
-
-      actions.move_selection_previous:enhance({
-        post = function()
-          reset_state()
-        end
-      })
-
-      actions.move_selection_worse:enhance({
-        post = function()
-          reset_state()
-        end
-      })
-
-      actions.move_selection_better:enhance({
-        post = function()
-          reset_state()
-        end
-      })
 
       return true
     end,
