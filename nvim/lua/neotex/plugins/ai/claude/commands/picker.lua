@@ -83,19 +83,18 @@ end
 
 --- Format TTS file for display
 --- @param file table TTS file data
+--- @param indent_char string Tree character (├─ or └─)
 --- @return string Formatted display string
-local function format_tts_file(file)
+local function format_tts_file(file, indent_char)
   local prefix = file.is_local and "*" or " "
-  local role_label = "[" .. file.role .. "]"
-  local location = file.directory  -- hooks|tts
+  local role_label = file.role  -- Remove brackets
 
   return string.format(
-    "%s %-12s %-25s (%s) %dL",
+    "%s%s %-38s %s",
     prefix,
+    indent_char,
     role_label,
-    file.name,
-    location,
-    file.line_count or 0
+    file.description or ""
   )
 end
 
@@ -337,10 +336,14 @@ local function create_picker_entries(structure)
       return a.name < b.name
     end)
 
-    -- Insert TTS file items FIRST
-    for _, file in ipairs(tts_files) do
+    -- Insert TTS file items FIRST with tree characters
+    for i, file in ipairs(tts_files) do
+      -- First item (i=1) appears LAST visually with descending sort, gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
+
       entries[#entries + 1] = {
-        display = format_tts_file(file),
+        display = format_tts_file(file, indent_char),
         entry_type = "tts_file",
         name = file.name,
         description = file.description,
@@ -970,7 +973,7 @@ local function create_command_previewer()
             "**Variables**: " .. (tts.variables and #tts.variables > 0
               and table.concat(tts.variables, ", ") or "None"),
             "",
-            "**File**: " .. tts.filepath,
+            "**File**: " .. tts.name,
             "",
             tts.is_local and "[Local] Local override" or "[Global] Global configuration"
           }
