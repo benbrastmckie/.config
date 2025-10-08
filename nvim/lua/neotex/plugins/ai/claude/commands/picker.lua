@@ -51,6 +51,8 @@ local function format_agent(agent, indent_char)
   local description = agent.description or ""
   description = description:gsub("^Specialized in ", "")
 
+  -- Format with 1-space indentation between prefix and tree char
+  -- Consistent with commands, templates, lib, docs, and TTS files
   return string.format(
     "%s %s %-38s %s",
     prefix,
@@ -63,9 +65,12 @@ end
 --- Format hook event header for display
 --- @param event_name string Hook event name
 --- @param indent_char string Tree character (├─ or └─)
+--- @param event_hooks table Array of hooks associated with this event
 --- @return string Formatted display string
 local function format_hook_event(event_name, indent_char, event_hooks)
   -- Determine if event has any local hooks
+  -- Hook events show '*' indicator when ANY associated hook is local
+  -- This indicates local customization even if not all hooks are local
   local has_local_hook = false
   if event_hooks then
     for _, hook in ipairs(event_hooks) do
@@ -90,6 +95,8 @@ local function format_hook_event(event_name, indent_char, event_hooks)
     PreCompact = "Before context compaction",
   }
 
+  -- Format with 2-space indentation between prefix and tree char
+  -- This distinguishes hook events from other artifact types (which use 1-space)
   return string.format(
     "%s  %s %-38s %s",
     prefix,
@@ -107,6 +114,8 @@ local function format_tts_file(file, indent_char)
   local prefix = file.is_local and "*" or " "
   local role_label = file.role  -- Remove brackets
 
+  -- Format with 1-space indentation between prefix and tree char
+  -- Consistent with agents, templates, lib, and docs
   return string.format(
     "%s %s %-38s %s",
     prefix,
@@ -1042,12 +1051,14 @@ local function create_command_previewer()
             table.insert(lines, "**Commands that use this agent**:")
             for i, cmd_name in ipairs(agent.parent_commands) do
               local tree_char = (i == #agent.parent_commands) and "└─" or "├─"
+              -- Preview cross-references use 3-space indentation before tree char
               table.insert(lines, "   " .. tree_char .. " " .. cmd_name)
             end
           else
             -- Show entry.value.parent if agent is nested under a command
             if entry.value.parent then
               table.insert(lines, "**Commands that use this agent**:")
+              -- Preview cross-references use 3-space indentation before tree char
               table.insert(lines, "   └─ " .. entry.value.parent)
             else
               table.insert(lines, "**Commands that use this agent**: None")
@@ -2749,7 +2760,8 @@ function M.show_commands_picker(opts)
         local preview_winid = picker.previewer.state.winid
         local preview_bufnr = picker.previewer.state.bufnr
 
-        if not preview_winid or not vim.api.nvim_win_is_valid(preview_winid) then
+        if not preview_winid or not vim.api.nvim_win_is_valid(preview_winid) or
+           not preview_bufnr or not vim.api.nvim_buf_is_valid(preview_bufnr) then
           return
         end
 
@@ -2792,8 +2804,13 @@ function M.show_commands_picker(opts)
           return
         end
 
+        -- Help section: allow preview focus on first press, return on second
         if selection.value.is_help then
-          return
+          if return_stage == "second" then
+            reset_state()
+            return
+          end
+          -- First press: fall through to preview focus logic
         end
 
         -- Two-stage selection logic
@@ -2806,7 +2823,8 @@ function M.show_commands_picker(opts)
             local preview_winid = picker.previewer.state.winid
             local preview_bufnr = picker.previewer.state.bufnr
 
-            if preview_winid and vim.api.nvim_win_is_valid(preview_winid) then
+            if preview_winid and vim.api.nvim_win_is_valid(preview_winid) and
+               preview_bufnr and vim.api.nvim_buf_is_valid(preview_bufnr) then
               preview_focused = true
               vim.api.nvim_set_current_win(preview_winid)
 
@@ -2819,9 +2837,13 @@ function M.show_commands_picker(opts)
                 end
               end, { buffer = preview_bufnr, nowait = true })
 
-              -- Show action hint
-              local action_desc = get_action_description(selection)
-              vim.api.nvim_echo({{" Preview focused - Press Return to " .. action_desc .. " ", "Normal"}}, false, {})
+              -- Show action hint (different for help section)
+              if selection.value.is_help then
+                vim.api.nvim_echo({{" Preview focused - Press Esc to return to picker ", "Normal"}}, false, {})
+              else
+                local action_desc = get_action_description(selection)
+                vim.api.nvim_echo({{" Preview focused - Press Return to " .. action_desc .. " ", "Normal"}}, false, {})
+              end
             end
           end
         else
