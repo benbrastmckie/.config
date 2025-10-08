@@ -848,10 +848,11 @@ local function create_command_previewer()
           "Keyboard Shortcuts:",
           "",
           "Commands:",
-          "  Enter (CR)     - Insert command/agent OR edit file artifacts",
-          "                   Commands: Insert into Claude Code terminal",
-          "                   Agents: Insert @agent_name reference",
-          "                   Docs/Lib/Templates/Hooks/TTS: Open file for editing",
+          "  Enter (CR)     - Two-stage selection:",
+          "                   First press: Focus preview for review",
+          "                   Second press: Execute action",
+          "                     Commands: Insert into Claude Code",
+          "                     All others: Open file for editing",
           "  Ctrl-n         - Create new command (opens Claude Code with prompt)",
           "  Ctrl-l         - Load artifact locally (copies with dependencies)",
           "  Ctrl-u         - Update artifact from global version (overwrites local)",
@@ -860,7 +861,8 @@ local function create_command_previewer()
           "",
           "Navigation:",
           "  Ctrl-j/k       - Move selection down/up",
-          "  Escape         - Close picker (single press from insert mode)",
+          "  Tab            - Focus preview pane for scrolling",
+          "  Escape         - Return to picker (from preview) or close picker",
           "",
           "Artifact Types:",
           "  [Commands]     - Claude Code slash commands",
@@ -2704,37 +2706,122 @@ function M.show_commands_picker(opts)
     default_selection_index = 2,     -- Start on [Keyboard Shortcuts] (one above bottom)
     previewer = create_command_previewer(),
     attach_mappings = function(prompt_bufnr, map)
-      -- Context-aware Enter key: insert Commands/Agents, edit file artifacts
+      -- State management for preview focus and two-stage Return
+      local preview_focused = false
+      local return_stage = "first"
+
+      -- Helper to reset state (called on selection change or actions)
+      local function reset_state()
+        return_stage = "first"
+        preview_focused = false
+      end
+
+      -- Helper to get action description for status message
+      local function get_action_description(entry)
+        if entry.value.command then
+          return "insert command"
+        else
+          return "edit file"
+        end
+      end
+
+      -- Tab handler: Focus preview pane for scrolling
+      map("i", "<Tab>", function()
+        local picker = action_state.get_current_picker(prompt_bufnr)
+        if not picker or not picker.previewer or not picker.previewer.state then
+          return
+        end
+
+        local preview_winid = picker.previewer.state.winid
+        local preview_bufnr = picker.previewer.state.bufnr
+
+        if not preview_winid or not vim.api.nvim_win_is_valid(preview_winid) then
+          return
+        end
+
+        -- Switch focus to preview window
+        preview_focused = true
+        vim.api.nvim_set_current_win(preview_winid)
+
+        -- Set buffer-local Esc mapping to return to picker
+        vim.keymap.set("n", "<Esc>", function()
+          preview_focused = false
+          if vim.api.nvim_win_is_valid(picker.prompt_win) then
+            vim.api.nvim_set_current_win(picker.prompt_win)
+          end
+        end, { buffer = preview_bufnr, nowait = true })
+
+        vim.api.nvim_echo({{" Preview focused - Press Esc to return to picker ", "Normal"}}, false, {})
+      end)
+
+      -- Context-aware Enter key: two-stage selection
       actions.select_default:replace(function()
         local selection = action_state.get_selected_entry()
-        if selection then
-          -- Skip heading entries
-          if selection.value.is_heading then
-            return
-          end
+        if not selection then
+          return
+        end
 
-          -- Handle Load All Commands action
-          if selection.value.is_load_all then
-            local loaded = load_all_globally()
-            if loaded > 0 then
-              -- Refresh the picker to show updated local status
-              actions.close(prompt_bufnr)
-              vim.defer_fn(function()
-                M.show_commands_picker(opts)
-              end, 50)
+        -- Skip heading entries
+        if selection.value.is_heading then
+          return
+        end
+
+        -- Special entries execute immediately (no two-stage)
+        if selection.value.is_load_all then
+          local loaded = load_all_globally()
+          if loaded > 0 then
+            actions.close(prompt_bufnr)
+            vim.defer_fn(function()
+              M.show_commands_picker(opts)
+            end, 50)
+          end
+          return
+        end
+
+        if selection.value.is_help then
+          return
+        end
+
+        -- Two-stage selection logic
+        if return_stage == "first" then
+          -- First Return: Focus preview
+          return_stage = "second"
+
+          local picker = action_state.get_current_picker(prompt_bufnr)
+          if picker and picker.previewer and picker.previewer.state then
+            local preview_winid = picker.previewer.state.winid
+            local preview_bufnr = picker.previewer.state.bufnr
+
+            if preview_winid and vim.api.nvim_win_is_valid(preview_winid) then
+              preview_focused = true
+              vim.api.nvim_set_current_win(preview_winid)
+
+              -- Set Esc mapping to return to picker
+              vim.keymap.set("n", "<Esc>", function()
+                preview_focused = false
+                return_stage = "first"
+                if vim.api.nvim_win_is_valid(picker.prompt_win) then
+                  vim.api.nvim_set_current_win(picker.prompt_win)
+                end
+              end, { buffer = preview_bufnr, nowait = true })
+
+              -- Show action hint
+              local action_desc = get_action_description(selection)
+              vim.api.nvim_echo({{" Preview focused - Press Return to " .. action_desc .. " ", "Normal"}}, false, {})
             end
-          -- Handle regular command insertion
-          elseif selection.value.command and not selection.value.is_help then
+          end
+        else
+          -- Second Return: Execute action based on artifact type
+          reset_state()
+
+          if selection.value.command then
+            -- Commands: Insert into Claude Code terminal
             actions.close(prompt_bufnr)
             send_command_to_terminal(selection.value.command)
-          -- Handle agent insertion (@agent_name syntax)
-          elseif selection.value.entry_type == "agent" and selection.value.agent then
+          elseif selection.value.entry_type == "agent" and selection.value.filepath then
+            -- Agents: Open file for editing (no longer insert @name)
             actions.close(prompt_bufnr)
-            -- Insert agent reference into Claude Code
-            local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
-            local agent_ref = "@" .. selection.value.agent.name .. " "
-            terminal_state.queue_command(agent_ref, { ensure_open = true })
-          -- Handle file artifacts - open for editing
+            edit_artifact_file(selection.value.filepath)
           elseif selection.value.entry_type == "doc" and selection.value.filepath then
             actions.close(prompt_bufnr)
             edit_artifact_file(selection.value.filepath)
@@ -2745,7 +2832,6 @@ function M.show_commands_picker(opts)
             actions.close(prompt_bufnr)
             edit_artifact_file(selection.value.filepath)
           elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
-            -- Edit the first hook file for this event
             if #selection.value.hooks > 0 then
               local hook = selection.value.hooks[1]
               actions.close(prompt_bufnr)
@@ -2977,6 +3063,31 @@ function M.show_commands_picker(opts)
           end
         })
       end)
+
+      -- Enhance movement actions to reset two-stage state on selection change
+      actions.move_selection_next:enhance({
+        post = function()
+          reset_state()
+        end
+      })
+
+      actions.move_selection_previous:enhance({
+        post = function()
+          reset_state()
+        end
+      })
+
+      actions.move_selection_worse:enhance({
+        post = function()
+          reset_state()
+        end
+      })
+
+      actions.move_selection_better:enhance({
+        post = function()
+          reset_state()
+        end
+      })
 
       return true
     end,
