@@ -587,7 +587,20 @@ local function parse_agents_with_fallback(project_agents_dir, global_agents_dir)
   local merged_agents = {}
   local local_agent_names = {}
 
-  -- Parse local agents first
+  -- Special case: when in .config/, project_agents_dir equals global_agents_dir
+  -- In this case, all agents should be marked as local since we're in that directory
+  if project_agents_dir and project_agents_dir == global_agents_dir then
+    if vim.fn.isdirectory(project_agents_dir) == 1 then
+      local agents = M.scan_agents_directory(project_agents_dir)
+      for _, agent in ipairs(agents) do
+        agent.is_local = true  -- Mark as local since we're in this directory
+        table.insert(merged_agents, agent)
+      end
+    end
+    return merged_agents
+  end
+
+  -- Normal case: Parse local agents first
   if vim.fn.isdirectory(project_agents_dir) == 1 then
     local local_agents = M.scan_agents_directory(project_agents_dir)
     for _, agent in ipairs(local_agents) do
@@ -619,7 +632,20 @@ local function parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
   local merged_hooks = {}
   local local_hook_names = {}
 
-  -- Parse local hooks first
+  -- Special case: when in .config/, project_hooks_dir equals global_hooks_dir
+  -- In this case, all hooks should be marked as local since we're in that directory
+  if project_hooks_dir and project_hooks_dir == global_hooks_dir then
+    if vim.fn.isdirectory(project_hooks_dir) == 1 then
+      local hooks = M.scan_hooks_directory(project_hooks_dir)
+      for _, hook in ipairs(hooks) do
+        hook.is_local = true  -- Mark as local since we're in this directory
+        table.insert(merged_hooks, hook)
+      end
+    end
+    return merged_hooks
+  end
+
+  -- Normal case: Parse local hooks first
   if vim.fn.isdirectory(project_hooks_dir) == 1 then
     local local_hooks = M.scan_hooks_directory(project_hooks_dir)
     for _, hook in ipairs(local_hooks) do
@@ -648,6 +674,17 @@ end
 --- @param global_dir string Path to global directory
 --- @return table Merged TTS files with is_local flag
 local function parse_tts_files_with_fallback(project_dir, global_dir)
+  -- Special case: when in .config/, project_dir equals global_dir
+  -- In this case, all TTS files should be marked as local since we're in that directory
+  if project_dir and project_dir == global_dir then
+    local files = M.scan_tts_files(project_dir)
+    for _, file in ipairs(files) do
+      file.is_local = true  -- Mark as local since we're in this directory
+    end
+    return files
+  end
+
+  -- Normal case: Parse local and global TTS files
   local local_files = M.scan_tts_files(project_dir)
   local global_files = M.scan_tts_files(global_dir)
 
