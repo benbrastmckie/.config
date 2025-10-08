@@ -64,7 +64,20 @@ end
 --- @param event_name string Hook event name
 --- @param indent_char string Tree character (├─ or └─)
 --- @return string Formatted display string
-local function format_hook_event(event_name, indent_char)
+local function format_hook_event(event_name, indent_char, event_hooks)
+  -- Determine if event has any local hooks
+  local has_local_hook = false
+  if event_hooks then
+    for _, hook in ipairs(event_hooks) do
+      if hook.is_local then
+        has_local_hook = true
+        break
+      end
+    end
+  end
+
+  local prefix = has_local_hook and "*" or " "
+
   local descriptions = {
     Stop = "After command completion",
     SessionStart = "When session begins",
@@ -78,7 +91,8 @@ local function format_hook_event(event_name, indent_char)
   }
 
   return string.format(
-    " %s %-38s %s",
+    "%s  %s %-38s %s",
+    prefix,
     indent_char,
     event_name,
     descriptions[event_name] or ""
@@ -94,7 +108,7 @@ local function format_tts_file(file, indent_char)
   local role_label = file.role  -- Remove brackets
 
   return string.format(
-    "%s%s %-38s %s",
+    "%s %s %-38s %s",
     prefix,
     indent_char,
     role_label,
@@ -289,7 +303,7 @@ local function create_picker_entries(structure)
 
       table.insert(entries, {
         display = string.format(
-          "%s%s %-38s %s",
+          "%s %s %-38s %s",
           doc.is_local and "*" or " ",
           indent_char,
           doc.name,
@@ -348,7 +362,7 @@ local function create_picker_entries(structure)
 
       table.insert(entries, {
         display = string.format(
-          "%s%s %-38s %s",
+          "%s %s %-38s %s",
           lib.is_local and "*" or " ",
           indent_char,
           lib.name,
@@ -407,7 +421,7 @@ local function create_picker_entries(structure)
 
       table.insert(entries, {
         display = string.format(
-          "%s%s %-38s %s",
+          "%s %s %-38s %s",
           tmpl.is_local and "*" or " ",
           indent_char,
           tmpl.name,
@@ -575,7 +589,7 @@ local function create_picker_entries(structure)
 
       table.insert(entries, {
         name = event_name,
-        display = format_hook_event(event_name, indent_char),
+        display = format_hook_event(event_name, indent_char, event_hooks),
         is_primary = true,
         entry_type = "hook_event",
         hooks = event_hooks
@@ -1028,13 +1042,13 @@ local function create_command_previewer()
             table.insert(lines, "**Commands that use this agent**:")
             for i, cmd_name in ipairs(agent.parent_commands) do
               local tree_char = (i == #agent.parent_commands) and "└─" or "├─"
-              table.insert(lines, "  " .. tree_char .. " " .. cmd_name)
+              table.insert(lines, "   " .. tree_char .. " " .. cmd_name)
             end
           else
             -- Show entry.value.parent if agent is nested under a command
             if entry.value.parent then
               table.insert(lines, "**Commands that use this agent**:")
-              table.insert(lines, "  └─ " .. entry.value.parent)
+              table.insert(lines, "   └─ " .. entry.value.parent)
             else
               table.insert(lines, "**Commands that use this agent**: None")
             end
