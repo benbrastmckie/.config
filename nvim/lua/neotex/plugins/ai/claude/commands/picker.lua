@@ -2769,8 +2769,8 @@ function M.show_commands_picker(opts)
         preview_focused = true
         vim.api.nvim_set_current_win(preview_winid)
 
-        -- Set buffer-local Esc mapping to return to picker
-        vim.keymap.set("n", "<Esc>", function()
+        -- Set buffer-local Esc mapping to return to picker (use pcall for buffer lifecycle safety)
+        pcall(vim.keymap.set, "n", "<Esc>", function()
           preview_focused = false
           if vim.api.nvim_win_is_valid(picker.prompt_win) then
             vim.api.nvim_set_current_win(picker.prompt_win)
@@ -2828,8 +2828,8 @@ function M.show_commands_picker(opts)
               preview_focused = true
               vim.api.nvim_set_current_win(preview_winid)
 
-              -- Set Esc mapping to return to picker
-              vim.keymap.set("n", "<Esc>", function()
+              -- Set Esc mapping to return to picker (use pcall for buffer lifecycle safety)
+              pcall(vim.keymap.set, "n", "<Esc>", function()
                 preview_focused = false
                 return_stage = "first"
                 if vim.api.nvim_win_is_valid(picker.prompt_win) then
