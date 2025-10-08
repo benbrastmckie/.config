@@ -186,15 +186,12 @@ local function parse_doc_description(filepath)
       if desc then
         return desc:sub(1, 40)
       end
-    elseif line:match("^#%s+") then
-      -- Found a heading
-      if not after_title then
-        after_title = true  -- Skip the title
-      else
-        -- Second heading is likely a description
-        local heading = line:match("^#%s+(.+)$")
-        return heading:sub(1, 40)
-      end
+    elseif line:match("^#%s+[^#]") then
+      -- Found a title heading (# Title, not ## Subheading)
+      after_title = true
+    elseif after_title and line ~= "" and not line:match("^#") then
+      -- Plain text after title, before any subheading
+      return line:sub(1, 40)
     end
   end
 
