@@ -37,7 +37,6 @@ Categories appear in logical order with headings at the top: [Commands], [Agents
   - Preview cross-references: 3-space indentation
 - Smart command insertion (opens Claude Code if needed, uses feedkeys for reliable input)
 - Load artifacts locally with dependencies (`<C-l>` keybinding)
-- Update artifacts from global versions (`<C-g>` keybinding)
 - Save local artifacts to global (`<C-s>` keybinding)
 - Universal file editing (`<C-e>` keybinding) - supports all artifact types (Commands, Agents, Templates, Lib, Docs, Hooks, TTS)
 - Direct action execution with Enter key
@@ -110,20 +109,17 @@ When pressing `<C-n>` to create a new command:
 
 #### Loading Commands (`<C-l>`)
 When pressing `<C-l>` to load a command:
-- **Local commands**: No action needed (already local)
-- **Global commands**: Copies to project's `.claude/commands/`
-- **Dependent commands**: Recursively copies all dependencies
-- **Preserves existing**: Does not overwrite if local version exists
+- **First load** (no local version exists):
+  - Silently copies to project's `.claude/commands/`
+  - Recursively copies all dependencies
+  - Shows `*` marker after refresh
+- **Second load** (local version exists):
+  - Always shows confirmation dialog with options:
+    - "Replace 'X' only" - Overwrites just the selected command
+    - "Replace 'X' + N dependent(s): [list]" - Overwrites command and all dependents (if has dependents)
+    - Or just "Replace 'X'" if no dependents
+  - User can cancel with Esc
 - **Picker refresh**: Automatically refreshes to show updated `*` markers
-- **Picker state**: Remains open for continued browsing
-
-#### Updating Commands (`<C-g>`)
-When pressing `<C-g>` to update a command:
-- **Purpose**: Overwrites local version with latest global version
-- **Global source**: Updates from `~/.config/.claude/commands/`
-- **Dependent commands**: Also updates dependencies if they exist globally
-- **Force overwrite**: Replaces local version even if modified
-- **Picker refresh**: Automatically refreshes to show updated content
 - **Picker state**: Remains open for continued browsing
 
 #### Saving to Global (`<C-s>`)
@@ -153,16 +149,22 @@ When selecting the `[Load All Artifacts]` entry:
   - Data Documentation (README.md from data subdirs)
   - Settings (settings.local.json)
 - **README Coverage**: Syncs README.md files from all .claude/ directories
-- **Copies**: Global artifacts not present locally (new artifacts)
-- **Replaces**: Local artifacts that have matching global versions
-- **Preserves**: Local artifacts without global equivalents (local-only artifacts)
-- **Confirmation**: Shows yes/no dialog with detailed breakdown by category before proceeding
+- **Always Shows Sync Strategy Choice**:
+  - Displays detailed breakdown: X new, Y conflicts per category
+  - **If conflicts exist** (local versions present):
+    - Option 1: "Replace all + add new (N total)" - Overwrites all local versions with global
+    - Option 2: "Add new only, preserve local (M new)" - Only adds new artifacts, skips all conflicts
+  - **If no conflicts** (only new artifacts):
+    - Option 1: "Add all new artifacts (N total)" - Adds all new global artifacts
+  - User can cancel with Esc (always available)
+- **One choice for all**: Selected strategy applies to entire batch of artifacts
+- **Preserves**: Local-only artifacts (no global equivalent) - always untouched
 - **Refreshes**: Picker automatically refreshes to show updated status
-- **Reports**: Number of artifacts loaded and replaced per category
+- **Reports**: Number of artifacts loaded with chosen strategy
 
-**Important**: This operation will overwrite existing local artifacts with global
-versions (same behavior as `<C-u>` for individual artifacts). Local-only artifacts
-are never touched. Execute permissions are preserved for .sh files.
+**Sync Strategies Explained**:
+- **Replace all + add new**: Replaces all local versions with global versions + adds new artifacts
+- **Add new only, preserve local**: Safe merge - only adds artifacts not already in local .claude/
 
 #### Editing Commands (`<C-e>`)
 When pressing `<C-e>` to edit a command:
@@ -200,16 +202,11 @@ When pressing `<C-e>` to edit a command:
   - Inserts prompt: "Create a new claude-code command in the {project}/.claude/commands/ directory called "
   - User provides the command name and description
   - Closes picker to focus on Claude Code
-- `<C-l>` - Load artifact locally (with dependencies)
-  - Copies global artifact to project's `.claude/` directory
-  - Recursively copies all dependent artifacts
-  - Preserves existing local version if present
+- `<C-l>` - Load artifact locally (smart confirmation)
+  - **First load**: Silently copies global artifact to project's `.claude/` directory with dependencies
+  - **Subsequent loads**: Always shows confirmation dialog when local version exists
+    - Options: "Replace only", "Replace + dependents", or Cancel
   - Refreshes picker to show new local status with `*` markers
-  - Keeps picker open for continued browsing
-- `<C-g>` - Update artifact from global version
-  - Overwrites local version with global version from `~/.config/.claude/`
-  - Also updates dependent artifacts if they exist globally
-  - Refreshes picker to show updated content
   - Keeps picker open for continued browsing
 - `<C-s>` - Save local artifact to global
   - Copies local artifact to `~/.config/.claude/` for use across projects
