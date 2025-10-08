@@ -56,27 +56,11 @@ local function format_agent(agent, indent_char)
   )
 end
 
---- Format hook entry for display
---- @param hook table Hook data
---- @param indent_char string Tree character (├─ or └─)
---- @return string Formatted display string
-local function format_hook(hook, indent_char)
-  local prefix = hook.is_local and "*" or " "
-
-  return string.format(
-    "%s %s %-38s %s",
-    prefix,
-    indent_char,
-    hook.name,
-    hook.description or ""
-  )
-end
-
 --- Format hook event header for display
 --- @param event_name string Hook event name
+--- @param indent_char string Tree character (├─ or └─)
 --- @return string Formatted display string
-local function format_hook_event(event_name)
-  local display_name = event_name
+local function format_hook_event(event_name, indent_char)
   local descriptions = {
     Stop = "After command completion",
     SessionStart = "When session begins",
@@ -90,8 +74,9 @@ local function format_hook_event(event_name)
   }
 
   return string.format(
-    "%-42s %s",
-    display_name,
+    " %s %-38s %s",
+    indent_char,
+    event_name,
     descriptions[event_name] or ""
   )
 end
@@ -454,8 +439,8 @@ local function create_picker_entries(structure)
     end
     table.sort(sorted_event_names)
 
-    -- Insert hook events and their hooks FIRST
-    for _, event_name in ipairs(sorted_event_names) do
+    -- Insert hook event names with tree characters
+    for i, event_name in ipairs(sorted_event_names) do
       local event_hook_names = hook_events[event_name]
 
       -- Get full hook data for this event
@@ -469,27 +454,13 @@ local function create_picker_entries(structure)
         end
       end
 
-      -- Add individual hooks first
-      -- With descending sort: first inserted = last displayed
-      for i, hook in ipairs(event_hooks) do
-        -- First hook (i=1) appears LAST visually, so it gets └─
-        local is_first = (i == 1)
-        local indent_char = is_first and "└─" or "├─"
+      -- First event (i=1) appears LAST visually with descending sort, gets └─
+      local is_first = (i == 1)
+      local indent_char = is_first and "└─" or "├─"
 
-        table.insert(entries, {
-          name = hook.name,
-          display = format_hook(hook, indent_char),
-          hook = hook,
-          is_primary = false,
-          parent = event_name,
-          entry_type = "hook"
-        })
-      end
-
-      -- Add hook event header after hooks
       table.insert(entries, {
         name = event_name,
-        display = format_hook_event(event_name),
+        display = format_hook_event(event_name, indent_char),
         is_primary = true,
         entry_type = "hook_event",
         hooks = event_hooks
@@ -940,29 +911,6 @@ local function create_command_previewer()
         return
       end
 
-      -- Show hook preview
-      if entry.value.entry_type == "hook" then
-        local hook = entry.value.hook
-        if hook then
-          local lines = {
-            "# Hook: " .. hook.name,
-            "",
-            "**Description**: " .. (hook.description or "N/A"),
-            "",
-            "**Triggered By Events**: " .. (entry.value.parent or "N/A"),
-            "",
-            "**Script**: " .. hook.filepath,
-            "",
-            "**Permissions**: " .. (get_file_permissions(hook.filepath) or "N/A"),
-            "",
-            hook.is_local and "[Local] Local override" or "[Global] Global definition"
-          }
-          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-          vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
-        end
-        return
-      end
-
       -- Show hook event preview
       if entry.value.entry_type == "hook_event" then
         local event_descriptions = {
@@ -976,6 +924,19 @@ local function create_command_previewer()
           UserPromptSubmit = "When user prompt submitted",
           PreCompact = "Before context compaction",
         }
+
+        -- Show script content if there's exactly one hook
+        if #entry.value.hooks == 1 then
+          local hook = entry.value.hooks[1]
+          if hook.filepath and vim.fn.filereadable(hook.filepath) == 1 then
+            local lines = vim.fn.readfile(hook.filepath)
+            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+            vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "sh")
+            return
+          end
+        end
+
+        -- Otherwise show metadata (multiple hooks or no file)
         local lines = {
           "# Hook Event: " .. entry.value.name,
           "",
@@ -986,7 +947,7 @@ local function create_command_previewer()
           "Hooks:",
         }
         for _, hook in ipairs(entry.value.hooks) do
-          table.insert(lines, "- " .. hook.name)
+          table.insert(lines, "- " .. hook.name .. " (" .. hook.filepath .. ")")
         end
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
         vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
@@ -2554,8 +2515,12 @@ function M.show_commands_picker(opts)
           success = load_command_locally(selection.value.command, false)
         elseif selection.value.agent then
           success = load_agent_locally(selection.value.agent, false)
-        elseif selection.value.hook then
-          success = load_hook_locally(selection.value.hook, false)
+        elseif selection.value.entry_type == "hook_event" then
+          -- Load all hooks for this event
+          for _, hook in ipairs(selection.value.hooks or {}) do
+            local hook_success = load_hook_locally(hook, false)
+            success = success or hook_success
+          end
         elseif selection.value.entry_type == "tts_file" then
           success = load_tts_file_locally(selection.value, false)
         elseif selection.value.entry_type == "template" then
@@ -2585,9 +2550,20 @@ function M.show_commands_picker(opts)
       -- Edit command file with Ctrl-e
       map("i", "<C-e>", function()
         local selection = action_state.get_selected_entry()
-        if selection and selection.value.command and not selection.value.is_help and not selection.value.is_heading then
+        if not selection or selection.value.is_help or selection.value.is_heading then
+          return
+        end
+
+        if selection.value.command then
           actions.close(prompt_bufnr)
           edit_command_file(selection.value.command)
+        elseif selection.value.entry_type == "hook_event" and selection.value.hooks then
+          -- Edit the first hook file for this event
+          if #selection.value.hooks > 0 then
+            local hook = selection.value.hooks[1]
+            actions.close(prompt_bufnr)
+            vim.cmd("edit " .. vim.fn.fnameescape(hook.filepath))
+          end
         end
       end)
 
@@ -2603,8 +2579,12 @@ function M.show_commands_picker(opts)
           success = update_command_from_global(selection.value.command, false)
         elseif selection.value.agent then
           success = update_agent_from_global(selection.value.agent, false)
-        elseif selection.value.hook then
-          success = update_hook_from_global(selection.value.hook, false)
+        elseif selection.value.entry_type == "hook_event" then
+          -- Update all hooks for this event
+          for _, hook in ipairs(selection.value.hooks or {}) do
+            local hook_success = update_hook_from_global(hook, false)
+            success = success or hook_success
+          end
         elseif selection.value.entry_type == "tts_file" then
           success = update_tts_file_from_global(selection.value, false)
         elseif selection.value.entry_type == "template" then
@@ -2642,8 +2622,12 @@ function M.show_commands_picker(opts)
           success = save_command_to_global(selection.value.command, false)
         elseif selection.value.agent then
           success = save_agent_to_global(selection.value.agent, false)
-        elseif selection.value.hook then
-          success = save_hook_to_global(selection.value.hook, false)
+        elseif selection.value.entry_type == "hook_event" then
+          -- Save all hooks for this event
+          for _, hook in ipairs(selection.value.hooks or {}) do
+            local hook_success = save_hook_to_global(hook, false)
+            success = success or hook_success
+          end
         elseif selection.value.entry_type == "tts_file" then
           success = save_tts_file_to_global(selection.value, false)
         elseif selection.value.entry_type == "template" then
