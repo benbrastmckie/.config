@@ -111,6 +111,14 @@ Task {
 - **Output**: PR/issue URLs, CI status reports
 - **Invoked By**: /implement (--create-pr), /orchestrate (workflow PRs)
 
+#### 10. complexity_estimator
+- **Purpose**: Context-aware complexity analysis for plan expansion/collapse decisions
+- **Tools**: Read, Grep, Glob
+- **Use Cases**: Auto-analysis mode in /expand and /collapse commands
+- **Analysis Factors**: Architectural significance, integration complexity, risk, testing needs
+- **Output**: JSON recommendations with 1-10 complexity scores and reasoning
+- **Invoked By**: /expand (auto-analysis mode), /collapse (auto-analysis mode)
+
 ## Integration Patterns
 
 ### Pattern 1: Single Agent Delegation
@@ -318,13 +326,16 @@ Choose agent based on primary task:
 - **Code Review**: code-reviewer
 - **Debugging**: debug-specialist
 - **Performance**: metrics-specialist
+- **Complexity Analysis**: complexity_estimator
 
 ## Command-Agent Matrix
 
 | Command | Primary Agent | Secondary Agents | Pattern |
 |---------|---------------|------------------|---------|
-| /orchestrate | Varies by phase | All 9 agents | Pipeline + Parallel |
+| /orchestrate | Varies by phase | All 10 agents | Pipeline + Parallel |
 | /implement | None (direct) | Potential: code-writer, test-specialist, github-specialist | Direct execution |
+| /expand | complexity_estimator (auto-mode) | None | Single delegation |
+| /collapse | complexity_estimator (auto-mode) | None | Single delegation |
 | /debug | debug-specialist | None | Single delegation |
 | /plan | plan-architect | Optional: research-specialist | Sequential pipeline |
 | /document | doc-writer | None | Single delegation |
@@ -564,6 +575,7 @@ Potential agent system improvements:
 | debug-specialist | ✓ | | | ✓ | ✓ | ✓ | | ✓ | |
 | metrics-specialist | ✓ | | | ✓ | ✓ | | | | |
 | github-specialist | ✓ | | | ✓ | ✓ | ✓ | | | |
+| complexity_estimator | ✓ | | | | ✓ | ✓ | | | |
 
 ### Common Invocation Template
 
