@@ -52,7 +52,6 @@ nvim/
 ├── docs/                        # Central documentation directory
 │   ├── DOCUMENTATION_STANDARDS.md  # This file
 │   ├── CODE_STANDARDS.md          # Lua coding conventions
-│   ├── GUIDELINES.md              # Development philosophy and patterns
 │   ├── INSTALLATION.md            # Setup and installation procedures
 │   ├── ARCHITECTURE.md            # System architecture and design
 │   ├── AI_TOOLING.md              # AI development tools and workflows
@@ -453,7 +452,6 @@ simultaneously.
 ## Related Documentation
 
 - [CODE_STANDARDS.md](CODE_STANDARDS.md) - Lua coding conventions and patterns
-- [GUIDELINES.md](GUIDELINES.md) - Development philosophy and architecture principles
 
 ## Notes
 

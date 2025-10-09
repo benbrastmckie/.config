@@ -66,7 +66,8 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 
 ### Core Documentation
 - [Neovim Configuration Guidelines](nvim/CLAUDE.md) - Coding standards, style guide, and architecture documentation for Neovim configuration
-- [Development Guidelines](nvim/docs/GUIDELINES.md) - Comprehensive development principles, migration strategy, and quality standards
+- [Code Standards](nvim/docs/CODE_STANDARDS.md) - Lua coding conventions, module structure, and development process
+- [Documentation Standards](nvim/docs/DOCUMENTATION_STANDARDS.md) - Documentation structure, style guide, and content standards
 - [Specifications Directory](nvim/specs/) - Implementation plans, research reports, and technical specifications
 
 ### Directory Protocols
