@@ -1,3 +1,33 @@
+# Worktree Task: parallel_expansion
+
+## Task Metadata
+- **Type**: feature
+- **Branch**: feature/parallel_expansion
+- **Created**: 2025-10-09 10:18
+- **Worktree**: ../.config-feature-parallel_expansion
+- **Session ID**: parallel_expansion-1760030313
+
+## Objective
+[Describe the main goal for this worktree]
+
+## Current Status
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+- [ ] Review
+
+## Claude Context
+Tell Claude: "I'm working on parallel_expansion in the feature/parallel_expansion worktree. The goal is to..."
+
+## Task Notes
+[Add worktree-specific context, links, or decisions]
+
+
+---
+
+# Project Configuration (Inherited from Main Worktree)
+
 # Worktree Task: github_agent
 
 ## Task Metadata
