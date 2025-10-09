@@ -285,7 +285,7 @@ The configuration is designed for easy customization:
 
 ## Learning Resources
 
-- **[NeoVim CheatSheet](nvim/README.md)** - Complete feature and keybinding reference
+- **[Neovim Configuration](nvim/README.md)** - Complete feature and keybinding reference
 - **[Git Workflow Guide](https://github.com/benbrastmckie/.config/blob/master/docs/LEARNING_GIT.md)** - Git best practices
 - **[Video Tutorials](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk)** - Feature demonstrations
 
