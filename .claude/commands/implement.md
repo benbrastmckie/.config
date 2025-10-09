@@ -990,8 +990,11 @@ Only check phases that meet BOTH criteria:
 **Detection Logic:**
 
 ```bash
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 # Source structure evaluation utilities
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/structure-eval-utils.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/adaptive-planning-logger.sh"
 

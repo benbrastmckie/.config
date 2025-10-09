@@ -57,7 +57,10 @@ Reverse phase expansion by merging expanded phase content back into the main pla
 #### 1. Analyze Current Structure
 
 ```bash
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
 
 # Normalize plan path (handle both directory and file paths)
@@ -392,8 +395,11 @@ When `MODE="auto"`, implement the following workflow:
 #### Phase 1: Setup and Discovery
 
 ```bash
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 # Source utilities
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
 
