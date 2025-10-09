@@ -47,8 +47,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Detect actual project directory for sourcing libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ACTUAL_PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Find lib directory
-LIB_DIR="/home/benjamin/.config/.claude/lib"
+LIB_DIR="$ACTUAL_PROJECT_DIR/lib"
 
 if [ ! -d "$LIB_DIR" ]; then
   fail "Lib directory not found: $LIB_DIR"

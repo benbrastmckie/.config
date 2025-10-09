@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Source test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config-feature-parallel_expansion}"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
