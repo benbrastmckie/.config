@@ -150,6 +150,8 @@ Commands should check CLAUDE.md in priority order:
 - **No historical reporting**: Don't document changes, updates, or migration paths in main documentation
 - **What, not when**: Focus on what the system does now, not how it evolved
 - **Clean narrative**: Documentation should read as if the current implementation always existed
+- **Ban historical markers**: Never use labels like "(New)", "(Old)", "(Original)", "(Current)", "(Updated)", or version indicators in feature descriptions
+- **Timeless writing**: Avoid phrases like "previously", "now supports", "recently added", "in the latest version"
 
 ### Rationale
 This project values:
@@ -256,11 +258,13 @@ Every subdirectory must have a README.md containing:
 - Use Unicode box-drawing for diagrams (see nvim/CLAUDE.md)
 - No emojis in file content (UTF-8 encoding issues)
 - Follow CommonMark specification
+- No historical commentary (see Development Philosophy → Documentation Standards)
 
 ### Documentation Updates
 - Update documentation with code changes
 - Keep examples current with implementation
 - Document breaking changes prominently
+- Remove any historical markers when updating existing docs
 
 ## Standards Discovery
 [Used by: all commands]
