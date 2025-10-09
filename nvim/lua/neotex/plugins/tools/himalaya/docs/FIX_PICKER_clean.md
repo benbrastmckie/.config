@@ -4,7 +4,7 @@
 
 The test picker currently shows inaccurate test counts (~111 vs actual 261) due to architectural inconsistencies between test structures and counting logic. This document outlines a pragmatic, evolutionary refactor that standardizes test metadata, improves counting accuracy, and maintains backward compatibility while respecting the working Neovim plugin architecture.
 
-## Core Philosophy (Following GUIDELINES.md)
+## Core Philosophy (Following CODE_STANDARDS.md)
 
 ### Evolution, Not Revolution
 This refactor acknowledges pragmatic compromises necessary for a functional test system. We will document these compromises clearly and work toward better patterns over time, ensuring all functionality remains intact.
@@ -137,7 +137,7 @@ The refactor preserves existing test infrastructure without compatibility layers
 ## Implementation Plan
 
 ### Testing Protocol (MANDATORY)
-Following GUIDELINES.md requirements, each phase MUST achieve 100% test pass rate:
+Following CODE_STANDARDS.md requirements, each phase MUST achieve 100% test pass rate:
 
 ```vim
 " After each phase implementation
@@ -149,7 +149,7 @@ Following GUIDELINES.md requirements, each phase MUST achieve 100% test pass rat
 
 ### Phase-Based Development Approach
 
-Each phase follows the structured approach from GUIDELINES.md:
+Each phase follows the structured approach from CODE_STANDARDS.md:
 
 ### Phase 1: Core Infrastructure (Week 1)
 
@@ -856,7 +856,7 @@ end, {
 })
 ```
 
-## Migration Timeline (Phase-Based per GUIDELINES.md)
+## Migration Timeline (Phase-Based per CODE_STANDARDS.md)
 
 ### Phase 1: Core Infrastructure
 **Timeline**: Week 1
@@ -997,7 +997,7 @@ end, {
 6. **Rollback Strategy**: Adapter layer allows reverting to original behavior if issues arise
 7. **CI/CD Compatibility**: Ensures headless mode (`dev_cli.lua`) continues working with exit codes
 
-## Architectural Patterns (Following GUIDELINES.md)
+## Architectural Patterns (Following CODE_STANDARDS.md)
 
 ### Consistent Error Handling
 All test counting and metadata operations will follow established patterns:
@@ -1085,7 +1085,7 @@ Performance tests require special handling:
 
 ## Summary: Pragmatic Evolution
 
-This refactor follows the GUIDELINES.md philosophy of "Evolution, Not Revolution":
+This refactor follows the CODE_STANDARDS.md philosophy of "Evolution, Not Revolution":
 
 1. **Preserves Working Code**: All test execution paths remain functional
 2. **Avoids Technical Debt**: Direct migration without adapter layers

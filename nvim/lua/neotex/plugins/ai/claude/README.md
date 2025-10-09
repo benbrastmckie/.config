@@ -171,7 +171,7 @@ The module creates these user commands:
 - `:ClaudeWorktree` - Create a new worktree with Claude session
 - `:ClaudeSessions` - Open full session browser
 - `:ClaudeSession` - Switch to a different session
-- `:ClaudeRestoreWorktree` - Restore a previously closed worktree
+- `:ClaudeRestoreWorktree` - Restore a closed worktree
 
 ### Visual Selection Commands
 

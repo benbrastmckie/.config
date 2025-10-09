@@ -1,4 +1,4 @@
-# NeoVim Configuration and CheatSheet
+# NeoVim Configuration
 
 A feature-rich Neovim configuration with AI integration optimized for LaTeX, Markdown, Jupyter Notebooks, and managing NixOS.
 
@@ -59,14 +59,14 @@ NeoVim will open with the dashboard which includes the following options:
 
 | Key | Description                                           |
 |-----|-------------------------------------------------------|
-| `s` | Restore Session - Load a previously saved session     |
+| `s` | Restore Session - Load a saved session                |
 | `r` | Recent Files - Browse and open recently edited files  |
 | `e` | Explorer - Toggle the NvimTree file explorer          |
 | `f` | Find File - Search for files in your project          |
 | `g` | Find Text - Search for text content across files      |
 | `n` | New File - Create and start editing a new file        |
 | `c` | Config - Browse Neovim configuration files            |
-| `i` | Info - Open the CheatSheet with quick references      |
+| `i` | Info - View Neovim configuration information          |
 | `m` | Manage Plugins - Open the Lazy plugin manager         |
 | `h` | Checkhealth - Run Neovim's health diagnostics         |
 | `q` | Quit - Exit Neovim                                    |
@@ -88,34 +88,56 @@ This configuration requires several dependencies including Neovim (≥ 0.9.0), G
 
 ## Documentation Structure
 
-This configuration features comprehensive documentation throughout the directory structure. Each subdirectory contains a README.md file with detailed information about its purpose, components, and usage.
+This configuration features comprehensive documentation following [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md). Every directory contains a README.md with detailed information about its purpose, components, and usage.
 
-### Core Documentation Areas
+### Central Documentation (docs/)
 
+Topic-focused documentation covering major systems and workflows:
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System design, initialization flow, and component architecture
+- **[Installation](docs/INSTALLATION.md)** - Setup instructions, dependencies, and health checks
+- **[Mappings](docs/MAPPINGS.md)** - Complete keybinding reference organized by context
+- **[AI Tooling](docs/AI_TOOLING.md)** - Git worktrees with OpenCode for parallel development
+- **[Research Tooling](docs/RESEARCH_TOOLING.md)** - LaTeX, Markdown, Jupyter, and academic workflows
+- **[NIX Workflows](docs/NIX_WORKFLOWS.md)** - NixOS system integration and management
+- **[Formal Verification](docs/FORMAL_VERIFICATION.md)** - Lean 4 and model-checker integration
+- **[Notifications](docs/NOTIFICATIONS.md)** - Unified notification system
+- **[Code Standards](docs/CODE_STANDARDS.md)** - Lua coding conventions
+- **[Documentation Standards](docs/DOCUMENTATION_STANDARDS.md)** - Documentation requirements
+
+### Module Documentation (lua/neotex/)
+
+Detailed READMEs in every directory documenting modules and functionality:
+
+- **[NeoTeX Namespace](lua/neotex/README.md)** - Configuration overview and bootstrap process
 - **[Configuration Core](lua/neotex/config/README.md)** - Essential Neovim settings (options, keymaps, autocommands)
 - **[Plugin System](lua/neotex/plugins/README.md)** - Plugin organization and management
+  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
   - [Editor Enhancements](lua/neotex/plugins/editor/README.md) - Navigation, formatting, and terminal integration
   - [LSP Configuration](lua/neotex/plugins/lsp/README.md) - Language server setup and completion
   - [Text Processing](lua/neotex/plugins/text/README.md) - LaTeX, Markdown, Jupyter, and Lean support
   - [Development Tools](lua/neotex/plugins/tools/README.md) - Git, snippets, and productivity enhancements
   - [UI Components](lua/neotex/plugins/ui/README.md) - File explorer, status line, and visual elements
-  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
+- **[Core Functionality](lua/neotex/core/README.md)** - Fundamental utilities and base functionality
 - **[Utility Functions](lua/neotex/util/README.md)** - Helper functions and performance optimization tools
+- **[Deprecated Code](lua/neotex/deprecated/README.md)** - Legacy code preserved for reference
+
+### Additional Documentation
+
 - **[File Type Support](after/README.md)** - Language-specific configurations and detection
 - **[Templates](templates/README.md)** - Document templates for LaTeX, presentations, and academic writing
 - **[Code Snippets](snippets/README.md)** - Custom snippet collections for rapid development
 - **[Scripts](scripts/README.md)** - Maintenance and diagnostic utilities
 
-### Navigation
+### Navigation Standards
 
-Each README file includes:
-- Detailed module documentation
-- Usage examples and configuration options
-- Integration points with other system components
-- Navigation links to related documentation
-- Parent/child directory relationships
+Each README follows [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md) and includes:
+- **Purpose Statement**: Clear description of directory role
+- **Module Documentation**: Details for each file with examples
+- **Related Documentation**: Cross-references to relevant docs
+- **Navigation Links**: Parent and subdirectory relationships
 
-This documentation structure ensures that information about any component is easily accessible and maintains consistency across the entire configuration.
+This documentation structure ensures information is easily accessible with consistent organization throughout the configuration.
 
 ## Maintenance and Troubleshooting
 
@@ -288,7 +310,7 @@ Lectic provides AI-assisted writing for markdown files with these features:
 3. **Visual Selection Processing**: 
    - Select text in visual mode (`v`, `V`, or `<C-v>`)
    - Press `<Esc>` to exit visual mode
-   - Press `<leader>ms` to process the previously selected text
+   - Press `<leader>ms` to process the selected text
    - You'll be prompted to add a message/question about the selection in a multi-line input box
    - Both the selected text and your message will be added to the end of the file with appropriate formatting
    - Lectic will then process the entire file

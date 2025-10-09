@@ -1,63 +1,3 @@
-# Worktree Task: parallel_expansion
-
-## Task Metadata
-- **Type**: feature
-- **Branch**: feature/parallel_expansion
-- **Created**: 2025-10-09 10:18
-- **Worktree**: ../.config-feature-parallel_expansion
-- **Session ID**: parallel_expansion-1760030313
-
-## Objective
-[Describe the main goal for this worktree]
-
-## Current Status
-- [ ] Planning
-- [ ] Implementation
-- [ ] Testing
-- [ ] Documentation
-- [ ] Review
-
-## Claude Context
-Tell Claude: "I'm working on parallel_expansion in the feature/parallel_expansion worktree. The goal is to..."
-
-## Task Notes
-[Add worktree-specific context, links, or decisions]
-
-
----
-
-# Project Configuration (Inherited from Main Worktree)
-
-# Worktree Task: github_agent
-
-## Task Metadata
-- **Type**: feature
-- **Branch**: feature/github_agent
-- **Created**: 2025-10-08 15:52
-- **Worktree**: ../.config-feature-github_agent
-- **Session ID**: github_agent-1759963953
-
-## Objective
-[Describe the main goal for this worktree]
-
-## Current Status
-- [ ] Planning
-- [ ] Implementation
-- [ ] Testing
-- [ ] Documentation
-- [ ] Review
-
-## Claude Context
-Tell Claude: "I'm working on github_agent in the feature/github_agent worktree. The goal is to..."
-
-## Task Notes
-[Add worktree-specific context, links, or decisions]
-
-
----
-
-# Project Configuration (Inherited from Main Worktree)
-
 # Project Configuration Index
 
 This CLAUDE.md serves as the central configuration and standards index for this project.
@@ -66,7 +6,8 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 
 ### Core Documentation
 - [Neovim Configuration Guidelines](nvim/CLAUDE.md) - Coding standards, style guide, and architecture documentation for Neovim configuration
-- [Development Guidelines](nvim/docs/GUIDELINES.md) - Comprehensive development principles, migration strategy, and quality standards
+- [Code Standards](nvim/docs/CODE_STANDARDS.md) - Lua coding conventions, module structure, and development process
+- [Documentation Standards](nvim/docs/DOCUMENTATION_STANDARDS.md) - Documentation structure, style guide, and content standards
 - [Specifications Directory](nvim/specs/) - Implementation plans, research reports, and technical specifications
 
 ### Directory Protocols

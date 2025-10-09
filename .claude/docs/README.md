@@ -303,7 +303,7 @@ All documentation in this directory follows:
 - **Code examples** with syntax highlighting
 - **CommonMark** specification
 
-See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.md) for complete standards.
+See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_STANDARDS.md) for complete standards.
 
 ## Contributing Documentation
 

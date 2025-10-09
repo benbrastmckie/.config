@@ -409,7 +409,7 @@ All documentation follows these standards:
 - **Code examples** with proper syntax highlighting
 - **CommonMark specification** compliance
 
-See `/home/benjamin/.config/nvim/docs/GUIDELINES.md` for complete documentation standards.
+See `/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md` for complete documentation standards.
 
 ## Troubleshooting
 
@@ -473,7 +473,7 @@ ls .claude/commands/ .claude/agents/ .claude/templates/
 ### Related Documentation
 - [CLAUDE.md](/home/benjamin/.config/CLAUDE.md) - Project configuration index
 - [nvim/CLAUDE.md](/home/benjamin/.config/nvim/CLAUDE.md) - Neovim standards
-- [nvim/docs/GUIDELINES.md](/home/benjamin/.config/nvim/docs/GUIDELINES.md) - Development guidelines
+- [nvim/docs/CODE_STANDARDS.md](/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md) - Development guidelines
 
 ### Parent
 - [← .config/](../README.md) - Parent configuration directory

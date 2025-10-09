@@ -90,7 +90,7 @@ end
 - Architecturally clean - single source of truth
 - Eliminates the problem entirely
 - Simplifies code
-- Follows "no redundancy" principle from GUIDELINES.md
+- Follows "no redundancy" principle from CODE_STANDARDS.md
 
 **Cons**:
 - Requires removing more code
