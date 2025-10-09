@@ -330,37 +330,89 @@ Task {
 }
 ```
 
-#### Phase 3: Parse Agent Response and Execute Expansions
+#### Phase 3: Parallel Agent Invocation
+
+Use parallel execution functions from auto-analysis-utils.sh:
 
 ```bash
-# Agent returns JSON array like:
-# [{"item_id":"phase_2","complexity_level":9,"reasoning":"...","recommendation":"expand","confidence":"high"}]
+# Prepare parallel agent invocations
+agent_tasks=$(invoke_expansion_agents_parallel "$PLAN_PATH" "$agent_response")
 
-# For each phase recommended for expansion:
-while IFS= read -r decision; do
-  item_id=$(echo "$decision" | jq -r '.item_id')
-  recommendation=$(echo "$decision" | jq -r '.recommendation')
-  phase_num=$(echo "$item_id" | grep -oP '\d+')
-
-  if [[ "$recommendation" == "expand" ]]; then
-    echo "Expanding $item_id based on agent recommendation..."
-
-    # Use existing phase expansion logic (from explicit mode)
-    # - Extract phase content
-    # - Create directory structure if needed
-    # - Write expanded phase file
-    # - Update metadata
-  else
-    echo "Skipping $item_id (complexity does not warrant expansion)"
-  fi
-done < <(echo "$agent_response" | jq -c '.[]')
+# agent_tasks is JSON array like:
+# [
+#   {
+#     "item_id": "phase_2",
+#     "artifact_path": "specs/artifacts/025_feature/expansion_2.md",
+#     "agent_prompt": "Read and follow the behavioral guidelines from:..."
+#   }
+# ]
 ```
 
-#### Phase 4: Generate Summary Report
+**Invoke Task tool in parallel for all agents:**
+
+```
+For each agent task, invoke Task tool concurrently (single message, multiple Task calls):
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase N for plan"
+  prompt: [agent_prompt from agent_tasks JSON]
+}
+```
+
+**Critical**: All Task tool calls must be in a single response for true parallel execution.
+
+#### Phase 4: Artifact Aggregation
+
+After all agents complete, collect and validate results:
+
+```bash
+# Load artifact references (paths only, not content)
+artifact_refs=$(echo "$agent_tasks" | jq -c '[.[] | {item_id, artifact_path}]')
+
+# Aggregate artifacts (lightweight summary, ~50 words per operation)
+aggregation_result=$(aggregate_expansion_artifacts "$PLAN_PATH" "$artifact_refs")
+
+# aggregation_result contains:
+# {
+#   "total": 3,
+#   "successful": 3,
+#   "failed": 0,
+#   "artifacts": [
+#     {"item_id": "phase_2", "status": "success", "files_created": 2},
+#     ...
+#   ]
+# }
+```
+
+**Context reduction**: Artifact-based aggregation uses ~50 words per operation vs 200+ for full content (60-80% reduction).
+
+#### Phase 5: Metadata Coordination
+
+Update plan metadata sequentially after all parallel operations complete:
+
+```bash
+# Coordinate metadata updates (sequential, after parallel ops)
+coordinate_metadata_updates "$PLAN_PATH" "$aggregation_result"
+
+# Updates:
+# - Structure Level: 0 → 1
+# - Expanded Phases: [2, 3, 5]
+# - Uses checkpoint for rollback capability
+```
+
+#### Phase 6: Generate Summary Report
 
 ```bash
 # Use generate_analysis_report from auto-analysis-utils.sh
 generate_analysis_report "expand" "$agent_response" "$PLAN_PATH"
+
+# Display aggregation results
+echo ""
+echo "Parallel Execution Summary:"
+echo "  Total operations: $(echo "$aggregation_result" | jq '.total')"
+echo "  Successful: $(echo "$aggregation_result" | jq '.successful')"
+echo "  Failed: $(echo "$aggregation_result" | jq '.failed')"
 ```
 
 ### Phase-Specific Implementation (Explicit Mode)

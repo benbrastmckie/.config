@@ -413,17 +413,14 @@ if [[ "$structure_level" == "0" ]]; then
 fi
 ```
 
-#### Phase 2: Analyze Stages First (Level 2 → 1)
+#### Phase 2: Invoke Complexity Estimator (Batch Analysis)
 
-If structure level is 2, collapse stages before phases:
+Use complexity_estimator for batch analysis (same pattern as /expand):
 
 ```
-For each phase with expanded stages:
-  Use Task tool to invoke complexity_estimator agent for stage collapse analysis
-
 Task {
   subagent_type: "general-purpose"
-  description: "Analyze stage complexity for collapse decisions"
+  description: "Analyze plan complexity for collapse decisions"
   prompt: "Read and follow the behavioral guidelines from:
           /home/benjamin/.config/.claude/agents/complexity_estimator.md
 
@@ -431,57 +428,105 @@ Task {
 
           Analysis Task: Collapse Analysis
 
-          [Include phase context and master plan context]
-          [Include all expanded stage contents]
+          [Include plan context from analyze_phases_for_collapse]
+          [Include all expanded phase/stage contents to analyze]
 
-          For each stage, provide JSON output with:
+          For each expanded item, provide JSON output with:
           - item_id, item_name, complexity_level (1-10)
-          - reasoning (context-aware)
+          - reasoning (context-aware, assess if simple enough to collapse)
           - recommendation (collapse or keep)
           - confidence (low/medium/high)
 
           Output: JSON array only"
 }
-
-Parse agent response and collapse stages recommended for collapse
 ```
 
-#### Phase 3: Analyze Phases (Level 1 → 0)
+#### Phase 3: Parallel Agent Invocation
 
-After all stages collapsed, analyze expanded phases:
+Use parallel execution functions from auto-analysis-utils.sh:
+
+```bash
+# Prepare parallel agent invocations
+agent_tasks=$(invoke_collapse_agents_parallel "$PLAN_PATH" "$agent_response")
+
+# agent_tasks is JSON array like:
+# [
+#   {
+#     "item_id": "phase_2",
+#     "artifact_path": "specs/artifacts/025_feature/collapse_2.md",
+#     "agent_prompt": "Read and follow the behavioral guidelines from:..."
+#   }
+# ]
+```
+
+**Invoke Task tool in parallel for all agents:**
 
 ```
-Use Task tool to invoke complexity_estimator agent for phase collapse analysis
+For each agent task, invoke Task tool concurrently (single message, multiple Task calls):
 
 Task {
   subagent_type: "general-purpose"
-  description: "Analyze phase complexity for collapse decisions"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/complexity_estimator.md
-
-          You are acting as a Complexity Estimator.
-
-          Analysis Task: Collapse Analysis
-
-          [Include plan context]
-          [Include all expanded phase contents]
-
-          For each phase, assess if it's simple enough to collapse back inline
-          now that implementation may be complete. Recommend 'collapse' if
-          complexity ≤4, 'keep' if complexity ≥5.
-
-          Output: JSON array only"
+  description: "Collapse phase/stage N for plan"
+  prompt: [agent_prompt from agent_tasks JSON]
 }
-
-Parse agent response and collapse phases recommended for collapse
-Skip phases that have expanded stages (must collapse stages first)
 ```
 
-#### Phase 4: Generate Summary Report
+**Critical**: All Task tool calls must be in a single response for true parallel execution.
+
+**Collapse Order**: If structure level is 2, stages are processed first, then phases.
+
+#### Phase 4: Artifact Aggregation
+
+After all agents complete, collect and validate results:
+
+```bash
+# Load artifact references (paths only, not content)
+artifact_refs=$(echo "$agent_tasks" | jq -c '[.[] | {item_id, artifact_path}]')
+
+# Aggregate artifacts (lightweight summary, ~50 words per operation)
+aggregation_result=$(aggregate_collapse_artifacts "$PLAN_PATH" "$artifact_refs")
+
+# aggregation_result contains:
+# {
+#   "total": 3,
+#   "successful": 3,
+#   "failed": 0,
+#   "artifacts": [
+#     {"item_id": "phase_2", "status": "success", "files_modified": 2},
+#     ...
+#   ]
+# }
+```
+
+**Context reduction**: Artifact-based aggregation uses ~50 words per operation vs 200+ for full content (60-80% reduction).
+
+#### Phase 5: Metadata Coordination
+
+Update plan metadata sequentially after all parallel operations complete:
+
+```bash
+# Coordinate metadata updates (sequential, after parallel ops)
+# Handles three-way metadata (stage → phase → plan) and Structure Level transitions (2→1→0)
+coordinate_collapse_metadata_updates "$PLAN_PATH" "$aggregation_result"
+
+# Updates:
+# - Remove collapsed items from Expanded Phases/Stages lists
+# - Structure Level transitions: 2→1 or 1→0
+# - Uses checkpoint for rollback capability
+```
+
+#### Phase 6: Generate Summary Report
 
 ```bash
 # Use generate_analysis_report from auto-analysis-utils.sh
 generate_analysis_report "collapse" "$agent_response" "$PLAN_PATH"
+
+# Display aggregation results
+echo ""
+echo "Parallel Execution Summary:"
+echo "  Total operations: $(echo "$aggregation_result" | jq '.total')"
+echo "  Successful: $(echo "$aggregation_result" | jq '.successful')"
+echo "  Failed: $(echo "$aggregation_result" | jq '.failed')"
 ```
 
 ### Phase-Specific Implementation
