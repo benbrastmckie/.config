@@ -54,8 +54,11 @@ Detection uses `parse-adaptive-plan.sh detect_structure_level` for accurate leve
 ### List Plans
 
 ```bash
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 # Source utilities
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-utils.sh"
 
 # Find Level 0 plans (single files not in directories)

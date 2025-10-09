@@ -41,8 +41,11 @@ Structure detection uses `parse-adaptive-plan.sh detect_structure_level`.
 
 #### 1. Plan Analysis
 ```bash
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 # Detect plan structure level
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
 LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 # Check for expanded phases

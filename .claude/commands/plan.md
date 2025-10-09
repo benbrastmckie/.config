@@ -287,7 +287,9 @@ This step runs **after** the agent-based holistic analysis (Step 8.5-8.6), provi
 #### Step 9.1: Source Complexity Utilities
 
 ```bash
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Check if complexity utilities exist
 if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh" ]; then

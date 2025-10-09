@@ -56,7 +56,10 @@ Transform a brief 30-50 line phase outline into a detailed 300-500+ line impleme
 #### 1. Analyze Current Structure
 
 ```bash
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
 
 # Check if plan is a file or directory
@@ -284,8 +287,11 @@ When `MODE="auto"`, implement the following workflow:
 #### Phase 1: Setup and Discovery
 
 ```bash
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+
 # Source utilities
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
 
