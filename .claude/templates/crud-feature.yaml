@@ -1,5 +1,8 @@
 name: "CRUD Feature Implementation"
 description: "Template for implementing Create, Read, Update, Delete operations for an entity"
+category: "feature"
+complexity_level: "medium-high"
+estimated_time: "8-12 hours"
 variables:
   - name: entity_name
     description: "Name of the entity (e.g., User, Post, Product)"

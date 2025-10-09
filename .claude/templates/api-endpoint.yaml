@@ -1,5 +1,8 @@
 name: "API Endpoint Implementation"
 description: "Template for implementing REST API endpoints with proper error handling and testing"
+category: "backend"
+complexity_level: "medium"
+estimated_time: "4-6 hours"
 variables:
   - name: endpoint_path
     description: "API endpoint path (e.g., /api/users, /api/posts/:id)"

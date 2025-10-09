@@ -1,6 +1,6 @@
 # Create Implementation Plan from Template
 
-**Command**: `/plan-from-template <template-name>`
+**Command**: `/plan-from-template <template-name>` or `/plan-from-template --list-categories` or `/plan-from-template --category <category>`
 
 **Purpose**: Generate a structured implementation plan from a reusable template with variable substitution.
 
@@ -8,22 +8,74 @@
 ```bash
 /plan-from-template crud-feature
 /plan-from-template api-endpoint
-/plan-from-template refactoring
+/plan-from-template --list-categories
+/plan-from-template --category debugging
 /plan-from-template custom/my-template
 ```
 
 ## Overview
 
 This command streamlines plan creation for common feature patterns by:
-1. Loading a predefined template
+1. Loading a predefined template (with optional category filtering)
 2. Prompting for required variables
 3. Applying variable substitution
 4. Generating a numbered implementation plan
 5. Saving to specs/plans/ directory
 
+## Template Categories
+
+Templates are organized by category for easier discovery:
+- **backend**: API endpoints, backend services
+- **feature**: Full-stack features, CRUD operations
+- **debugging**: Issue investigation and fixes
+- **documentation**: Documentation updates and syncing
+- **testing**: Test suite implementation
+- **migration**: Breaking changes and migrations
+- **research**: Research reports and investigations
+- **refactoring**: Code cleanup and consolidation
+
 ## Process
 
-### Step 1: Load Template
+### Step 1: Handle Arguments and Load Template
+
+**Argument Handling**:
+```bash
+# Handle --list-categories flag
+if [[ "$1" == "--list-categories" ]]; then
+  echo "Available template categories:"
+  echo ""
+  grep -h "^category:" .claude/templates/*.yaml 2>/dev/null | \
+    sed 's/category: "\(.*\)"/\1/' | \
+    sort -u | \
+    while read category; do
+      count=$(grep -l "category: \"$category\"" .claude/templates/*.yaml 2>/dev/null | wc -l)
+      echo "  - $category ($count templates)"
+    done
+  exit 0
+fi
+
+# Handle --category <category> flag
+if [[ "$1" == "--category" ]]; then
+  CATEGORY="$2"
+  echo "Templates in category: $CATEGORY"
+  echo ""
+  grep -l "category: \"$CATEGORY\"" .claude/templates/*.yaml 2>/dev/null | \
+    while read template_file; do
+      name=$(grep "^name:" "$template_file" | sed 's/name: "\(.*\)"/\1/')
+      desc=$(grep "^description:" "$template_file" | sed 's/description: "\(.*\)"/\1/')
+      time=$(grep "^estimated_time:" "$template_file" | sed 's/estimated_time: "\(.*\)"/\1/')
+      complexity=$(grep "^complexity_level:" "$template_file" | sed 's/complexity_level: "\(.*\)"/\1/')
+      basename_file=$(basename "$template_file" .yaml)
+      echo "  $basename_file"
+      echo "    Name: $name"
+      echo "    Description: $desc"
+      echo "    Complexity: $complexity"
+      echo "    Est. Time: $time"
+      echo ""
+    done
+  exit 0
+fi
+```
 
 **Template Discovery**:
 ```bash
@@ -36,7 +88,9 @@ elif [[ -f .claude/templates/custom/$1.yaml ]]; then
 else
   echo "ERROR: Template not found: $1"
   echo "Available templates:"
-  ls .claude/templates/*.yaml | xargs -n1 basename | sed 's/.yaml$//'
+  ls .claude/templates/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/.yaml$//'
+  echo ""
+  echo "Use --list-categories to see templates by category"
   exit 1
 fi
 ```
@@ -283,22 +337,54 @@ echo "3. Execute the plan: /implement $PLAN_FILE"
 
 ## Available Templates
 
+Use `/plan-from-template --list-categories` to see templates organized by category.
+Use `/plan-from-template --category <category>` to see templates in a specific category.
+
 ### Standard Templates
 
-**crud-feature**
-- Creates CRUD operations for an entity
-- Variables: entity_name, fields, use_auth, database_type
-- Use case: User management, product catalog
+**Backend & API**
+- **api-endpoint** (medium complexity, 4-6 hours)
+  - Implements REST API endpoints
+  - Variables: endpoint_path, methods, auth_required, request_schema
 
-**api-endpoint**
-- Implements REST API endpoints
-- Variables: endpoint_path, methods, auth_required, request_schema
-- Use case: API development
+**Feature Development**
+- **crud-feature** (medium-high complexity, 8-12 hours)
+  - Creates CRUD operations for an entity
+  - Variables: entity_name, fields, use_auth, database_type
 
-**refactoring**
-- Structured code refactoring
-- Variables: target_module, refactoring_goals, test_strategy
-- Use case: Code quality improvements
+**Debugging & Issues**
+- **debug-workflow** (medium complexity, 4-6 hours)
+  - Investigation→report→fix pattern for issues
+  - Variables: issue_description, affected_components, priority
+
+**Documentation**
+- **documentation-update** (low complexity, 2-3 hours)
+  - Synchronize documentation with code changes
+  - Variables: changed_files, doc_scope, breaking_changes
+
+**Testing**
+- **test-suite** (medium complexity, 5-7 hours)
+  - Comprehensive test suite with TDD patterns
+  - Variables: module_name, test_type, coverage_target
+
+**Migration**
+- **migration** (high complexity, 8-12 hours)
+  - Breaking change management with deprecation
+  - Variables: migration_type, affected_apis, deprecation_period
+
+**Research**
+- **research-report** (medium complexity, 4-8 hours)
+  - Structured research with recommendations
+  - Variables: topic, research_questions, depth_level
+
+**Refactoring**
+- **refactoring** (medium complexity, 6-10 hours)
+  - Structured code refactoring with safety
+  - Variables: target_module, refactoring_goals, test_strategy
+
+- **refactor-consolidation** (medium-high complexity, 6-10 hours)
+  - Code cleanup and consolidation
+  - Variables: target_module, consolidation_strategy, risk_level
 
 ### Custom Templates
 
