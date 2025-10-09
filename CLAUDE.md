@@ -1,3 +1,33 @@
+# Worktree Task: documentation
+
+## Task Metadata
+- **Type**: refactor
+- **Branch**: refactor/documentation
+- **Created**: 2025-10-09 12:58
+- **Worktree**: ../.config-refactor-documentation
+- **Session ID**: documentation-1760039925
+
+## Objective
+[Describe the main goal for this worktree]
+
+## Current Status
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+- [ ] Review
+
+## Claude Context
+Tell Claude: "I'm working on documentation in the refactor/documentation worktree. The goal is to..."
+
+## Task Notes
+[Add worktree-specific context, links, or decisions]
+
+
+---
+
+# Project Configuration (Inherited from Main Worktree)
+
 # Worktree Task: github_agent
 
 ## Task Metadata
