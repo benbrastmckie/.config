@@ -1,21 +1,32 @@
 ---
-allowed-tools: Read, Write, Edit, Bash
-argument-hint: [phase|stage] <path> <number>
-description: Collapse an expanded phase or stage back into parent file
+allowed-tools: Read, Write, Edit, Bash, Task
+argument-hint: <path> OR [phase|stage] <path> <number>
+description: Collapse expanded phases/stages automatically or collapse specific phase/stage back into parent
 command-type: workflow
 ---
 
 # Collapse Phase or Stage to Parent File
 
-I'll merge an expanded phase or stage back into its parent file and clean up the directory structure if this is the last expansion.
+I'll merge expanded phases or stages back into their parent files and clean up directory structure, either automatically based on complexity analysis or for specific items.
 
-## Syntax
+## Modes
+
+### Auto-Analysis Mode (New)
+Automatically analyze all expanded phases/stages and collapse those deemed sufficiently simple by the complexity_estimator agent.
 
 ```bash
-# Collapse phase (Level 1 → 0)
+# Analyze and collapse simple expanded phases automatically
+/collapse <plan-path>
+```
+
+### Explicit Mode (Original)
+Collapse a specific phase or stage by number.
+
+```bash
+# Collapse specific phase (Level 1 → 0)
 /collapse phase <plan-path> <phase-num>
 
-# Collapse stage (Level 2 → 1)
+# Collapse specific stage (Level 2 → 1)
 /collapse stage <phase-path> <stage-num>
 ```
 
@@ -336,24 +347,141 @@ fi
 
 ## Implementation
 
-### Type Detection
+### Mode and Argument Detection
 
 ```bash
-TYPE="$1"  # First argument: "phase" or "stage"
-PATH="$2"  # Second argument: path to plan/phase
-NUM="$3"   # Third argument: phase/stage number
+# Detect mode based on argument count
+if [[ $# -eq 1 ]]; then
+  MODE="auto"
+  PLAN_PATH="$1"
+  echo "Auto-Analysis Mode: Analyzing expanded phases/stages for collapse"
+  echo ""
+elif [[ $# -eq 3 ]]; then
+  MODE="explicit"
+  TYPE="$1"  # "phase" or "stage"
+  PATH="$2"  # path to plan/phase
+  NUM="$3"   # phase/stage number
 
-if [[ "$TYPE" != "phase" && "$TYPE" != "stage" ]]; then
-  echo "ERROR: First argument must be 'phase' or 'stage'"
-  echo "Usage: /collapse [phase|stage] <path> <number>"
+  if [[ "$TYPE" != "phase" && "$TYPE" != "stage" ]]; then
+    echo "ERROR: First argument must be 'phase' or 'stage'"
+    echo "Usage: /collapse <path>  OR  /collapse [phase|stage] <path> <number>"
+    exit 1
+  fi
+
+  echo "Explicit Mode: Collapsing $TYPE $NUM"
+  echo ""
+else
+  echo "ERROR: Invalid arguments"
+  echo ""
+  echo "Usage:"
+  echo "  Auto-analysis mode:  /collapse <path>"
+  echo "  Explicit mode:       /collapse [phase|stage] <path> <number>"
+  echo ""
+  echo "Examples:"
+  echo "  /collapse specs/plans/025_feature/"
+  echo "  /collapse phase specs/plans/025_feature/ 2"
+  echo "  /collapse stage specs/plans/025_feature/phase_2_impl/ 1"
+  exit 1
+fi
+```
+
+### Auto-Analysis Mode Implementation
+
+When `MODE="auto"`, implement the following workflow:
+
+#### Phase 1: Setup and Discovery
+
+```bash
+# Source utilities
+export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
+
+# Validate plan path
+if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then
+  echo "ERROR: Plan not found: $PLAN_PATH"
   exit 1
 fi
 
-if [[ -z "$PATH" ]] || [[ -z "$NUM" ]]; then
-  echo "ERROR: Path and number required"
-  echo "Usage: /collapse [phase|stage] <path> <number>"
-  exit 1
+# Detect structure level
+structure_level=$(detect_structure_level "$PLAN_PATH")
+echo "Current structure level: $structure_level"
+
+if [[ "$structure_level" == "0" ]]; then
+  echo "Plan has no expansions to collapse"
+  exit 0
 fi
+```
+
+#### Phase 2: Analyze Stages First (Level 2 → 1)
+
+If structure level is 2, collapse stages before phases:
+
+```
+For each phase with expanded stages:
+  Use Task tool to invoke complexity_estimator agent for stage collapse analysis
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Analyze stage complexity for collapse decisions"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/complexity_estimator.md
+
+          You are acting as a Complexity Estimator.
+
+          Analysis Task: Collapse Analysis
+
+          [Include phase context and master plan context]
+          [Include all expanded stage contents]
+
+          For each stage, provide JSON output with:
+          - item_id, item_name, complexity_level (1-10)
+          - reasoning (context-aware)
+          - recommendation (collapse or keep)
+          - confidence (low/medium/high)
+
+          Output: JSON array only"
+}
+
+Parse agent response and collapse stages recommended for collapse
+```
+
+#### Phase 3: Analyze Phases (Level 1 → 0)
+
+After all stages collapsed, analyze expanded phases:
+
+```
+Use Task tool to invoke complexity_estimator agent for phase collapse analysis
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Analyze phase complexity for collapse decisions"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/complexity_estimator.md
+
+          You are acting as a Complexity Estimator.
+
+          Analysis Task: Collapse Analysis
+
+          [Include plan context]
+          [Include all expanded phase contents]
+
+          For each phase, assess if it's simple enough to collapse back inline
+          now that implementation may be complete. Recommend 'collapse' if
+          complexity ≤4, 'keep' if complexity ≥5.
+
+          Output: JSON array only"
+}
+
+Parse agent response and collapse phases recommended for collapse
+Skip phases that have expanded stages (must collapse stages first)
+```
+
+#### Phase 4: Generate Summary Report
+
+```bash
+# Use generate_analysis_report from auto-analysis-utils.sh
+generate_analysis_report "collapse" "$agent_response" "$PLAN_PATH"
 ```
 
 ### Phase-Specific Implementation
@@ -386,18 +514,32 @@ fi
 
 ## Examples
 
-### Collapse phase
+### Auto-Analysis Mode
+
 ```bash
+# Analyze all expanded phases/stages and collapse simple ones automatically
+/collapse specs/plans/025_feature/
+
+# Agent will analyze each expanded item and recommend collapse based on:
+# - Current complexity (may be simpler after implementation)
+# - Content volume
+# - Whether detail still warrants separate file
+```
+
+**Expected latency**: 20-40 seconds for agent complexity analysis
+
+**Collapse order**: Stages first (Level 2→1), then phases (Level 1→0)
+
+### Explicit Mode
+
+```bash
+# Collapse specific phase
 /collapse phase specs/plans/025_feature/ 2
-```
 
-### Collapse stage
-```bash
+# Collapse specific stage
 /collapse stage specs/plans/025_feature/phase_2_impl/ 1
-```
 
-### Collapse last phase (converts to Level 0)
-```bash
+# Collapse last phase (converts to Level 0)
 /collapse phase specs/plans/025_feature/ 3
 # → Converts plan back to single file
 ```
