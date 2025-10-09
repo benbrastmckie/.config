@@ -2,7 +2,7 @@
 
 ## Overview
 
-The drafts system now supports both local drafts and Gmail-synced drafts.
+The drafts system supports both local drafts and Gmail-synced drafts.
 
 ## How Drafts Work
 

@@ -59,7 +59,7 @@ NeoVim will open with the dashboard which includes the following options:
 
 | Key | Description                                           |
 |-----|-------------------------------------------------------|
-| `s` | Restore Session - Load a previously saved session     |
+| `s` | Restore Session - Load a saved session                |
 | `r` | Recent Files - Browse and open recently edited files  |
 | `e` | Explorer - Toggle the NvimTree file explorer          |
 | `f` | Find File - Search for files in your project          |
@@ -288,7 +288,7 @@ Lectic provides AI-assisted writing for markdown files with these features:
 3. **Visual Selection Processing**: 
    - Select text in visual mode (`v`, `V`, or `<C-v>`)
    - Press `<Esc>` to exit visual mode
-   - Press `<leader>ms` to process the previously selected text
+   - Press `<leader>ms` to process the selected text
    - You'll be prompted to add a message/question about the selection in a multi-line input box
    - Both the selected text and your message will be added to the end of the file with appropriate formatting
    - Lectic will then process the entire file

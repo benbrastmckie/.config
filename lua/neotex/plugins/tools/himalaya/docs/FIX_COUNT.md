@@ -757,7 +757,7 @@ Phase 2 will complete the counting logic refactor, using registry data everywher
    - Categorized display shows modules, tests, and issues per category
 
 4. **Fixed Inspector Pattern**
-   - Updated to handle test_email_commands pattern better
+   - Handles test_email_commands pattern better
    - Added check for modules that return himalaya_test directly
 
 ### Registry Now Provides
