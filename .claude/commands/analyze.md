@@ -17,8 +17,9 @@ I'll analyze system performance metrics based on the specified type.
 
 **Types**:
 - `agents` - Analyze agent performance metrics and efficiency
+- `metrics` - Analyze command metrics, bottlenecks, and usage trends
 - `patterns` - (Not implemented) Reserved for future workflow pattern analysis
-- `all` - Currently equivalent to `agents` only
+- `all` - Analyzes both agents and metrics
 
 **Search Pattern** (optional): Filter results by keyword
 
@@ -27,6 +28,11 @@ I'll analyze system performance metrics based on the specified type.
 ```bash
 # Analyze agent performance
 /analyze agents
+
+# Analyze command metrics (last 30 days)
+/analyze metrics
+/analyze metrics 7   # Last 7 days
+/analyze metrics 90  # Last 90 days
 
 # Analyze workflow patterns
 /analyze patterns
@@ -100,6 +106,124 @@ Recommendations:
 - debug-assistant: Increase success rate (currently 88%)
 ```
 
+### Metrics Analysis (`/analyze metrics [timeframe]`)
+
+Analyzes command execution metrics, identifies bottlenecks, and provides data-driven optimization recommendations.
+
+**Process**:
+
+1. **Load Metrics Data**
+   - Read from `.claude/data/metrics/*.jsonl`
+   - Filter by timeframe (default: 30 days)
+   - Parse JSONL format with jq
+
+2. **Analyze Usage Trends**
+   - Count operations by type
+   - Calculate success rates
+   - Generate ASCII bar charts for visualization
+   - Identify most-used commands
+
+3. **Identify Bottlenecks**
+   - Find slowest operations (top 5)
+   - Identify most common failures
+   - Calculate failure rates by operation type
+
+4. **Template Effectiveness**
+   - Compare template vs manual planning times
+   - Calculate time savings percentage
+   - Assess template adoption rate
+
+5. **Generate Recommendations**
+   - Suggest optimizations for slow operations
+   - Recommend improvements for high-failure commands
+   - Identify template creation opportunities
+
+**Arguments**:
+- `timeframe` (optional): Days to analyze (default: 30)
+  - Examples: `7`, `30`, `90`
+
+**Output Example**:
+```
+=== Metrics Analysis Report ===
+
+Generated: 2025-10-09 16:45:23
+Timeframe: Last 30 days
+
+---
+
+## Usage Trends (Last 30 Days)
+
+### Command Usage
+
+plan                      45 ████████████████████████████████████████
+implement                 38 ████████████████████████████████████
+plan-from-template        25 ███████████████████████████
+test                      20 ████████████████████████
+report                    15 ██████████████████
+
+### Success Rate
+
+- Total operations: 143
+- Successful: 135
+- Success rate: 94%
+
+## Performance Bottlenecks
+
+### Slowest Operations
+
+- implement: 180s (180000ms)
+- plan: 45s (45000ms)
+- report: 30s (30000ms)
+- setup: 12s (12000ms)
+- test: 8s (8000ms)
+
+### Most Common Failures
+
+- test: 5 failures
+- implement: 3 failures
+
+## Template Effectiveness Analysis
+
+- Template-based planning: 15s average
+- Manual planning: 45s average
+- Time savings: 67% faster with templates
+
+## Optimization Recommendations
+
+### High-Failure Operations
+
+- **test**: 5 failures detected
+  - Review error handling and validation
+  - Add defensive checks for edge cases
+  - Consider adding pre-flight validation
+
+### Performance Optimization Opportunities
+
+- **implement**: 180s average
+  - Profile for bottlenecks
+  - Consider caching frequently accessed data
+  - Review I/O operations for optimization
+
+### Template Adoption
+
+- Manual planning used 45 times vs 25 template-based
+  - Consider creating templates for common patterns
+  - Review recent manual plans for template opportunities
+  - Promote template usage for faster planning
+```
+
+**Report Generation**:
+
+The command can optionally save reports to `specs/reports/`:
+
+```bash
+# Generate and save report
+source .claude/lib/analyze-metrics.sh
+REPORT_NUM=$(ls specs/reports/*.md 2>/dev/null | grep -o '[0-9]\{3\}' | sort -n | tail -1 | awk '{printf "%03d", $1+1}')
+REPORT_NUM=${REPORT_NUM:-001}
+generate_metrics_report 30 "specs/reports/${REPORT_NUM}_metrics_analysis.md"
+```
+
 ### Pattern Analysis (`/analyze patterns`)
 
 **Status**: Not Implemented
@@ -123,12 +247,16 @@ If workflow pattern analysis is needed in the future, consider:
 
 ### Combined Analysis (`/analyze all`)
 
-**Current Behavior**: Equivalent to `/analyze agents`
+**Behavior**: Runs both agent and metrics analysis
 
-Currently runs only agent performance analysis. Pattern analysis is not implemented (see Pattern Analysis section above).
+Executes comprehensive system analysis including:
+1. Agent performance analysis (see Agent Analysis section)
+2. Command metrics analysis (see Metrics Analysis section)
+
+Pattern analysis is not implemented (see Pattern Analysis section).
 
 **Output**:
-Same as `/analyze agents` output.
+Combined output from `/analyze agents` and `/analyze metrics` with a separator between sections.
 
 ## Integration with Other Commands
 
