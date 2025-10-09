@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 9 specialized agents
+**Current Agent Count**: 10 specialized agents
 
 ## Recent Changes
 
@@ -228,6 +228,26 @@ Agents enable modular, focused assistance by providing:
 - Running test suites
 - Analyzing test failures
 - Validating implementations
+
+---
+
+### complexity_estimator.md
+**Purpose**: Provide context-aware complexity analysis for plan expansion/collapse decisions
+
+**Capabilities**:
+- Context-aware complexity estimation (1-10 scale)
+- Architectural significance assessment
+- Integration complexity analysis
+- Risk and testing requirements evaluation
+- JSON-structured recommendations with reasoning
+
+**Allowed Tools**: Read, Grep, Glob
+
+**Typical Use Cases**:
+- Auto-analysis mode in /expand command
+- Auto-analysis mode in /collapse command
+- Determining which phases warrant separate files
+- Evaluating if expanded content can be collapsed
 
 ## Agent Definition Format
 
@@ -518,6 +538,7 @@ See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.
 ### Agent Definitions
 - [code-reviewer.md](code-reviewer.md) - Code quality analysis
 - [code-writer.md](code-writer.md) - Code implementation
+- [complexity_estimator.md](complexity_estimator.md) - Context-aware complexity analysis
 - [debug-specialist.md](debug-specialist.md) - Issue investigation
 - [doc-writer.md](doc-writer.md) - Documentation creation
 - [github-specialist.md](github-specialist.md) - GitHub operations and PR management

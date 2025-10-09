@@ -11,7 +11,7 @@ I'll merge expanded phases or stages back into their parent files and clean up d
 
 ## Modes
 
-### Auto-Analysis Mode (New)
+### Auto-Analysis Mode
 Automatically analyze all expanded phases/stages and collapse those deemed sufficiently simple by the complexity_estimator agent.
 
 ```bash
@@ -19,7 +19,7 @@ Automatically analyze all expanded phases/stages and collapse those deemed suffi
 /collapse <plan-path>
 ```
 
-### Explicit Mode (Original)
+### Explicit Mode
 Collapse a specific phase or stage by number.
 
 ```bash

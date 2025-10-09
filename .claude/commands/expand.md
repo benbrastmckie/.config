@@ -11,7 +11,7 @@ I'll expand phases or stages from inline content to detailed separate files, cre
 
 ## Modes
 
-### Auto-Analysis Mode (New)
+### Auto-Analysis Mode
 Automatically analyze all phases/stages and expand those deemed sufficiently complex by the complexity_estimator agent.
 
 ```bash
@@ -19,7 +19,7 @@ Automatically analyze all phases/stages and expand those deemed sufficiently com
 /expand <plan-path>
 ```
 
-### Explicit Mode (Original)
+### Explicit Mode
 Expand a specific phase or stage by number.
 
 ```bash
