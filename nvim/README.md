@@ -1,4 +1,4 @@
-# NeoVim Configuration and CheatSheet
+# NeoVim Configuration
 
 A feature-rich Neovim configuration with AI integration optimized for LaTeX, Markdown, Jupyter Notebooks, and managing NixOS.
 
@@ -66,7 +66,7 @@ NeoVim will open with the dashboard which includes the following options:
 | `g` | Find Text - Search for text content across files      |
 | `n` | New File - Create and start editing a new file        |
 | `c` | Config - Browse Neovim configuration files            |
-| `i` | Info - Open the CheatSheet with quick references      |
+| `i` | Info - View Neovim configuration information          |
 | `m` | Manage Plugins - Open the Lazy plugin manager         |
 | `h` | Checkhealth - Run Neovim's health diagnostics         |
 | `q` | Quit - Exit Neovim                                    |
