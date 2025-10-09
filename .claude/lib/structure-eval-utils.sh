@@ -11,8 +11,9 @@
 
 set -euo pipefail
 
-# Ensure CLAUDE_PROJECT_DIR is set
-export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+# Detect project directory dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/detect-project-dir.sh"
 
 #
 # Evaluate if an expanded phase should be collapsed
