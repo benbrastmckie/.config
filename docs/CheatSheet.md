@@ -7,7 +7,7 @@ Although I take my target audience to be academics looking to write papers in La
 Similarly, if you are looking for the bindings which come default in Vim, then you might check this [resource](https://vim.rtorr.com) out.
 I will provide links to associated tutorial videos throughout, omitting mention of the standard Vim commands which have mostly been preserved.
 For configuration instructions, see the installation instructions in the [README.md](https://github.com/benbrastmckie/.config/blob/master/README.md) as well as the [(Install Part 1)](https://youtu.be/JVIcU9ePtVE) video on YouTube.
-If you are looking for information specifically about using Git, you can find a number of resources in the [LearningGit.md](https://github.com/benbrastmckie/.config/blob/master/LearningGit.md) file that I've included.
+If you are looking for information specifically about using Git, you can find a number of resources in the [LEARNING_GIT.md](https://github.com/benbrastmckie/.config/blob/master/docs/LEARNING_GIT.md) file that I've included.
 I will also provide links to further resources for learning Vim below.
 
 ## Table of Contents

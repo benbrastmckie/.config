@@ -8,10 +8,10 @@ A modern NeoVim configuration built for **AI-assisted coding**, **LaTeX typesett
 
 **Multi-Provider AI Integration** for intelligent coding assistance:
 
-- **Avante** - AI-powered code completion, refactoring, and inline suggestions with Claude, GPT, and Gemini support
 - **Claude Code** - Advanced coding assistant with multi-provider support and custom system prompts
-- **MCP Hub** - Model Context Protocol integration for extended AI capabilities
 - **Lectic** - Persistent AI conversations for research and knowledge management
+- **Avante** - AI-powered code completion, refactoring, and inline suggestions with Claude, GPT, and Gemini support
+- **MCP Hub** - Model Context Protocol integration for extended AI capabilities
 - **Git Worktrees + OpenCode** - Parallel AI-assisted development across multiple branches
 
 **Quick Access**: `<leader>aa` (Avante), `<C-c>` (Claude Code), `<leader>ml` (Lectic)
@@ -42,6 +42,8 @@ A modern NeoVim configuration built for **AI-assisted coding**, **LaTeX typesett
 **Quick Access**: `<leader>n` prefix for all NixOS operations
 
 **See**: [NIX Workflows Documentation](nvim/docs/NIX_WORKFLOWS.md)
+
+If you are interested in using NixOS, you can find my [.dotfiles](https://github.com/benbrastmckie/.dotfiles) here.
 
 ### 4. Formal Verification with Lean
 
@@ -284,7 +286,7 @@ The configuration is designed for easy customization:
 ## Learning Resources
 
 - **[NeoVim CheatSheet](nvim/README.md)** - Complete feature and keybinding reference
-- **[Git Workflow Guide](https://github.com/benbrastmckie/.config/blob/master/docs/LearningGit.md)** - Git best practices (under construction)
+- **[Git Workflow Guide](https://github.com/benbrastmckie/.config/blob/master/docs/LEARNING_GIT.md)** - Git best practices
 - **[Video Tutorials](https://www.youtube.com/watch?v=_Ct2S65kpjQ&list=PLBYZ1xfnKeDRhCoaM4bTFrjCl3NKDBvqk)** - Feature demonstrations
 
 ## NixOS Integration
