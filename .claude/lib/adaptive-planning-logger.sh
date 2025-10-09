@@ -283,6 +283,56 @@ Log Size: $(du -h "$AP_LOG_FILE" | cut -f1)
 EOF
 }
 
+#
+# Log collapse opportunity evaluation
+# Args:
+#   $1: phase_num
+#   $2: complexity_score
+#   $3: threshold
+#   $4: triggered (true/false)
+#
+log_collapse_check() {
+  local phase_num="$1"
+  local complexity_score="$2"
+  local threshold="$3"
+  local triggered="$4"
+
+  local data
+  data=$(printf '{"phase": %d, "complexity": %.1f, "threshold": %.1f, "triggered": %s}' \
+    "$phase_num" "$complexity_score" "$threshold" "$triggered")
+
+  local message="Collapse check: Phase $phase_num complexity $complexity_score (threshold $threshold) -> $triggered"
+
+  write_log_entry "INFO" "collapse_check" "$message" "$data"
+}
+
+#
+# Log collapse invocation
+# Args:
+#   $1: phase_num
+#   $2: trigger_type (manual|auto)
+#   $3: reason
+#
+log_collapse_invocation() {
+  local phase_num="$1"
+  local trigger_type="$2"
+  local reason="$3"
+
+  # Validate trigger_type
+  if [[ "$trigger_type" != "manual" && "$trigger_type" != "auto" ]]; then
+    echo "Warning: Invalid trigger_type '$trigger_type', using 'manual'" >&2
+    trigger_type="manual"
+  fi
+
+  local data
+  data=$(printf '{"phase": %d, "trigger": "%s", "reason": "%s"}' \
+    "$phase_num" "$trigger_type" "${reason//\"/\\\"}")
+
+  local message="Collapsing phase $phase_num ($trigger_type): $reason"
+
+  write_log_entry "INFO" "collapse_invocation" "$message" "$data"
+}
+
 # Export functions for use in other scripts
 export -f rotate_log_if_needed
 export -f write_log_entry
@@ -292,5 +342,7 @@ export -f log_test_failure_pattern
 export -f log_scope_drift
 export -f log_replan_invocation
 export -f log_loop_prevention
+export -f log_collapse_check
+export -f log_collapse_invocation
 export -f query_adaptive_log
 export -f get_adaptive_stats

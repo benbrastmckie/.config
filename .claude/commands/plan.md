@@ -278,6 +278,216 @@ The agent-based analysis from Step 8.5 is presented immediately after plan creat
 
 This analysis replaces the generic complexity hint (≥50 threshold) with specific, informed recommendations based on actual plan content.
 
+### 9. Post-Creation Automatic Complexity Evaluation
+
+**IMPORTANT**: After the plan file is created and written, perform automatic complexity-based evaluation to determine if any phases should be auto-expanded.
+
+This step runs **after** the agent-based holistic analysis (Step 8.5-8.6), providing a complementary threshold-based check.
+
+#### Step 9.1: Source Complexity Utilities
+
+```bash
+export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+
+# Check if complexity utilities exist
+if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh" ]; then
+  echo "Note: Complexity utilities not found, skipping automatic evaluation"
+  # Continue to output (section 10)
+  exit 0
+fi
+
+source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
+```
+
+#### Step 9.2: Read Configurable Thresholds from CLAUDE.md
+
+Use the `read_threshold` function to read expansion thresholds with fallbacks:
+
+```bash
+# Helper function: read_threshold
+# Reads threshold value from CLAUDE.md with fallback to default
+read_threshold() {
+  local threshold_name="$1"
+  local default_value="$2"
+
+  # Find CLAUDE.md (search upward from project directory)
+  local claude_md=""
+  local search_dir="$(pwd)"
+
+  while [ "$search_dir" != "/" ]; do
+    if [ -f "$search_dir/CLAUDE.md" ]; then
+      claude_md="$search_dir/CLAUDE.md"
+      break
+    fi
+    search_dir=$(dirname "$search_dir")
+  done
+
+  # Check CLAUDE_PROJECT_DIR as fallback
+  if [ -z "$claude_md" ] && [ -f "$CLAUDE_PROJECT_DIR/CLAUDE.md" ]; then
+    claude_md="$CLAUDE_PROJECT_DIR/CLAUDE.md"
+  fi
+
+  # No CLAUDE.md found, use default
+  if [ -z "$claude_md" ]; then
+    echo "$default_value"
+    return
+  fi
+
+  # Extract threshold value from pattern: - **Threshold Name**: value
+  local threshold_value=$(grep -E "^\s*-\s+\*\*$threshold_name\*\*:" "$claude_md" | \
+                          grep -oE '[0-9]+(\.[0-9]+)?' | head -1)
+
+  # Validate threshold is numeric
+  if ! [[ "$threshold_value" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+    echo "$default_value"
+    return
+  fi
+
+  echo "$threshold_value"
+}
+
+# Read thresholds
+EXPANSION_THRESHOLD=$(read_threshold "Expansion Threshold" "8.0")
+TASK_COUNT_THRESHOLD=$(read_threshold "Task Count Threshold" "10")
+```
+
+#### Step 9.3: Evaluate Each Phase for Auto-Expansion
+
+Parse the plan file and evaluate each phase:
+
+```bash
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "AUTOMATIC COMPLEXITY EVALUATION"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Using thresholds:"
+echo "  Expansion: $EXPANSION_THRESHOLD (complexity score)"
+echo "  Task Count: $TASK_COUNT_THRESHOLD (tasks per phase)"
+echo ""
+
+# Parse total phases from plan
+total_phases=$(grep -c "^### Phase [0-9]" "$plan_file" || echo "0")
+
+if [ "$total_phases" -eq 0 ]; then
+  echo "No phases found, skipping evaluation"
+  echo ""
+else
+  echo "Evaluating $total_phases phases..."
+  echo ""
+
+  # Track expansions
+  expanded_count=0
+  expanded_phases=""
+
+  # Evaluate each phase
+  for phase_num in $(seq 1 "$total_phases"); do
+    # Extract phase content (from "### Phase N:" to next "### Phase" or "## ")
+    phase_content=$(sed -n "/^### Phase $phase_num:/,/^### Phase\|^## /p" "$plan_file" | sed '$d')
+    phase_name=$(echo "$phase_content" | grep "^### Phase $phase_num:" | \
+                 sed 's/^### Phase [0-9]*: //' | sed 's/ *\[.*\]$//' | sed 's/ *\*\*Objective\*\*.*//')
+    task_list=$(echo "$phase_content" | grep "^- \[ \]")
+
+    # Calculate complexity
+    complexity_score=$(calculate_phase_complexity "$phase_name" "$task_list" 2>/dev/null || echo "0")
+    task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
+
+    # Decide if expansion needed
+    should_expand=false
+    expansion_reason=""
+
+    # Use bc for float comparison if available
+    if command -v bc &>/dev/null; then
+      if (( $(echo "$complexity_score > $EXPANSION_THRESHOLD" | bc -l) )); then
+        should_expand=true
+        expansion_reason="complexity $complexity_score > threshold $EXPANSION_THRESHOLD"
+      fi
+    else
+      # Fallback to integer comparison
+      complexity_int=${complexity_score%.*}
+      threshold_int=${EXPANSION_THRESHOLD%.*}
+      if [ "$complexity_int" -gt "$threshold_int" ]; then
+        should_expand=true
+        expansion_reason="complexity $complexity_score > threshold $EXPANSION_THRESHOLD"
+      fi
+    fi
+
+    if [ "$task_count" -gt "$TASK_COUNT_THRESHOLD" ]; then
+      should_expand=true
+      if [ -n "$expansion_reason" ]; then
+        expansion_reason="$expansion_reason AND $task_count tasks > $TASK_COUNT_THRESHOLD"
+      else
+        expansion_reason="$task_count tasks > threshold $TASK_COUNT_THRESHOLD"
+      fi
+    fi
+
+    # Auto-expand if threshold exceeded
+    if [ "$should_expand" = "true" ]; then
+      echo "Phase $phase_num: $phase_name"
+      echo "  Complexity: $complexity_score | Tasks: $task_count"
+      echo "  Reason: $expansion_reason"
+      echo "  Action: Auto-expanding..."
+      echo ""
+
+      # Invoke /expand phase command
+      "$CLAUDE_PROJECT_DIR/.claude/commands/expand" phase "$plan_file" "$phase_num"
+
+      # Track expansion
+      expanded_count=$((expanded_count + 1))
+      expanded_phases="$expanded_phases $phase_num"
+
+      # Update plan file path after first expansion (L0 → L1 transition)
+      plan_base=$(basename "$plan_file" .md)
+      if [[ -d "${plan_file%/*}/$plan_base" ]]; then
+        plan_file="${plan_file%/*}/$plan_base/$plan_base.md"
+      fi
+
+      echo ""
+    else
+      echo "Phase $phase_num: $phase_name (complexity $complexity_score, $task_count tasks) - OK"
+    fi
+  done
+
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "EVALUATION COMPLETE"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+
+  if [ "$expanded_count" -gt 0 ]; then
+    echo "Auto-expanded $expanded_count phase(s):$expanded_phases"
+    echo "Plan structure: Level 1 (phase-expanded)"
+  else
+    echo "Plan structure: Level 0 (all phases inline)"
+  fi
+
+  echo ""
+fi
+```
+
+#### Step 9.4: Update Plan Path for Final Output
+
+After auto-expansion (if any), ensure the final plan path points to the correct location:
+
+```bash
+# Final plan path (may have changed from L0 → L1)
+FINAL_PLAN_PATH="$plan_file"
+```
+
+**Benefits of Automatic Evaluation:**
+
+- **Proactive Structure**: Plans are optimally structured before `/implement` begins
+- **No Workflow Interruption**: Eliminates mid-implementation pauses for expansion
+- **Configurable**: Project-specific thresholds in CLAUDE.md
+- **Fallback Defaults**: Works without configuration (8.0 expansion, 10 task count)
+- **Complementary**: Works alongside agent-based holistic analysis (Step 8.5)
+
+**Relationship to Agent-Based Analysis:**
+
+- **Step 8.5-8.6**: Holistic review with rationale-based recommendations
+- **Step 9**: Automatic threshold-based evaluation with auto-expansion
+- **Together**: Informed recommendations + automatic structure optimization
+
 ## Output Format
 
 ### Single File Format (Structure Level 0)

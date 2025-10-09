@@ -141,6 +141,46 @@ end
 
 ## Process
 
+### Logger Initialization
+
+Before beginning implementation, source the adaptive planning logger library to enable observability:
+
+```bash
+# Source adaptive planning logger
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../lib/adaptive-planning-logger.sh" ]; then
+  source "$SCRIPT_DIR/../lib/adaptive-planning-logger.sh"
+else
+  # Logger not found - define no-op functions so calls don't fail
+  echo "Warning: Adaptive planning logger not found. Logging disabled."
+  log_complexity_check() { :; }
+  log_test_failure_pattern() { :; }
+  log_scope_drift() { :; }
+  log_replan_invocation() { :; }
+  log_loop_prevention() { :; }
+  log_collapse_check() { :; }
+  log_collapse_invocation() { :; }
+fi
+
+# Create logs directory if needed
+LOGS_DIR="${CLAUDE_LOGS_DIR:-.claude/logs}"
+mkdir -p "$LOGS_DIR" 2>/dev/null || true
+chmod 700 "$LOGS_DIR" 2>/dev/null || true
+```
+
+**Log File Location**: `.claude/logs/adaptive-planning.log`
+**Format**: `[timestamp] LEVEL event_type: message | data=JSON`
+**Rotation**: 10MB max size, 5 files retained
+
+The logger provides observability for:
+- Complexity threshold evaluations
+- Test failure pattern detection
+- Scope drift detections
+- Replan invocations (success/failure)
+- Loop prevention enforcement
+- Collapse opportunity evaluations
+- Collapse invocations (manual and automatic)
+
 ### Progressive Plan Support
 
 This command supports all three progressive structure levels:
@@ -621,6 +661,15 @@ After each phase implementation (successful or with errors), check if plan revis
 CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement "$PROJECT_NAME")
 REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r '.replanning_count // 0')
 PHASE_REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r ".replan_phase_counts.phase_${CURRENT_PHASE} // 0")
+
+# Log loop prevention check
+log_loop_prevention "$CURRENT_PHASE" "$PHASE_REPLAN_COUNT" "2"
+
+# Check replan limit
+if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
+  # Skip detection, log warning, escalate to user
+  SKIP_REPLAN=true
+fi
 ```
 
 **Replan Limit Check:**
@@ -639,6 +688,12 @@ Detection after successful phase completion:
 COMPLEXITY_RESULT=$(.claude/lib/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
 COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.complexity_score')
 
+# Extract task count
+TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
+
+# Log complexity check (always, even if not triggered)
+log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "8" "$TASK_COUNT"
+
 # Check threshold
 if [ "$COMPLEXITY_SCORE" -gt 8 ] || [ "$TASK_COUNT" -gt 10 ]; then
   TRIGGER_TYPE="expand_phase"
@@ -653,6 +708,9 @@ Detection after test failures (2+ consecutive failures in same phase):
 # Track failure count in checkpoint
 if [ "$TEST_RESULT" = "failed" ]; then
   PHASE_FAILURE_COUNT=$((PHASE_FAILURE_COUNT + 1))
+
+  # Log test failure pattern check
+  log_test_failure_pattern "$CURRENT_PHASE" "$PHASE_FAILURE_COUNT" "2"
 
   if [ "$PHASE_FAILURE_COUNT" -ge 2 ]; then
     TRIGGER_TYPE="add_phase"
@@ -671,6 +729,9 @@ Detection via manual flag or "out of scope" annotations:
 if [ "$REPORT_SCOPE_DRIFT" = "true" ]; then
   TRIGGER_TYPE="update_tasks"
   TRIGGER_REASON="$SCOPE_DRIFT_DESCRIPTION"
+
+  # Log scope drift detection
+  log_scope_drift "$CURRENT_PHASE" "$SCOPE_DRIFT_DESCRIPTION"
 fi
 ```
 
@@ -737,6 +798,9 @@ if [ "$REVISION_STATUS" = "success" ]; then
     --last-replan-reason "$TRIGGER_REASON" \
     --add-replan-history "$REPLAN_EVENT"
 
+  # Log successful replan invocation
+  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "success" "$ACTION_TAKEN"
+
   # Log and continue with updated plan
   echo "Plan revised: $ACTION_TAKEN"
   echo "Updated plan: $UPDATED_PLAN"
@@ -745,8 +809,13 @@ if [ "$REVISION_STATUS" = "success" ]; then
   PLAN_PATH="$UPDATED_PLAN"
 else
   # Revision failed, log error and ask user
+  ERROR_MSG=$(echo "$REVISE_RESULT" | jq -r '.error_message')
+
+  # Log failed replan invocation
+  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "failure" "$ERROR_MSG"
+
   echo "Warning: Adaptive planning revision failed"
-  echo "Error: $(echo "$REVISE_RESULT" | jq -r '.error_message')"
+  echo "Error: $ERROR_MSG"
   echo "Continuing with original plan"
 fi
 ```
@@ -908,9 +977,9 @@ Check that tasks are properly marked by reading the updated file and verifying a
 - **Resume**: `/implement specs/plans/018.md 3`
 ```
 
-### 5.5. Collapse Opportunity Detection
+### 5.5. Automatic Collapse Detection
 
-After completing a phase and committing changes, evaluate if an expanded phase can be collapsed back to the main plan file using agent-based judgment.
+After completing a phase and committing changes, automatically evaluate if an expanded phase should be collapsed back to the main plan file based on complexity heuristics.
 
 **Trigger Conditions:**
 
@@ -921,96 +990,117 @@ Only check phases that meet BOTH criteria:
 **Detection Logic:**
 
 ```bash
+# Source structure evaluation utilities
+export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/structure-eval-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/adaptive-planning-logger.sh"
+
 # Check if phase is expanded and completed
 IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
 IS_PHASE_COMPLETED=$(grep -q "\[COMPLETED\]" "$PHASE_FILE" && echo "true" || echo "false")
 
 if [ "$IS_PHASE_EXPANDED" = "true" ] && [ "$IS_PHASE_COMPLETED" = "true" ]; then
-  # Evaluate collapse opportunity
+  # Get phase details for complexity calculation
+  PHASE_FILE=$(get_phase_file "$PLAN_PATH" "$CURRENT_PHASE")
+
+  if [ -f "$PHASE_FILE" ]; then
+    # Extract phase metrics
+    PHASE_CONTENT=$(cat "$PHASE_FILE")
+    PHASE_NAME=$(grep "^### Phase $CURRENT_PHASE" "$PHASE_FILE" | head -1 | sed "s/^### Phase $CURRENT_PHASE:* //" | sed 's/ \[.*\]$//')
+    TASK_COUNT=$(grep -c "^- \[x\]" "$PHASE_FILE" || echo "0")
+
+    # Calculate complexity score
+    COMPLEXITY_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$PHASE_CONTENT")
+
+    # Log collapse check (always, for observability)
+    TRIGGERED="false"
+    if [ "$TASK_COUNT" -le 5 ] && awk -v s="$COMPLEXITY_SCORE" 'BEGIN {exit !(s < 6.0)}'; then
+      TRIGGERED="true"
+    fi
+    log_collapse_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "6.0" "$TRIGGERED"
+
+    # Check collapse thresholds: tasks ≤ 5 AND complexity < 6.0
+    if [ "$TASK_COUNT" -le 5 ]; then
+      if awk -v score="$COMPLEXITY_SCORE" 'BEGIN {exit !(score < 6.0)}'; then
+
+        # Build collapse context JSON
+        COLLAPSE_CONTEXT=$(cat <<EOF
+{
+  "revision_type": "collapse_phase",
+  "current_phase": $CURRENT_PHASE,
+  "reason": "Phase $CURRENT_PHASE completed and now simple ($TASK_COUNT tasks, complexity $COMPLEXITY_SCORE)",
+  "suggested_action": "Collapse Phase $CURRENT_PHASE back into main plan",
+  "simplicity_metrics": {
+    "tasks": $TASK_COUNT,
+    "complexity_score": $COMPLEXITY_SCORE,
+    "completion": true
+  }
+}
+EOF
+)
+
+        # Invoke /revise --auto-mode for automatic collapse
+        echo "Triggering auto-collapse for Phase $CURRENT_PHASE (simple after completion)..."
+        REVISE_RESULT=$(invoke_slash_command "/revise $PLAN_PATH --auto-mode --context '$COLLAPSE_CONTEXT'")
+
+        # Parse revision result
+        REVISE_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
+
+        if [ "$REVISE_STATUS" = "success" ]; then
+          # Collapse succeeded
+          NEW_LEVEL=$(echo "$REVISE_RESULT" | jq -r '.new_structure_level')
+
+          # Log successful collapse invocation
+          log_collapse_invocation "$CURRENT_PHASE" "auto" "Phase simple after completion"
+
+          echo "✓ Auto-collapsed Phase $CURRENT_PHASE (structure level now: $NEW_LEVEL)"
+
+          # Update plan path if it changed (Level 1 → Level 0)
+          UPDATED_FILE=$(echo "$REVISE_RESULT" | jq -r '.updated_file')
+          if [ "$UPDATED_FILE" != "$PLAN_PATH" ]; then
+            PLAN_PATH="$UPDATED_FILE"
+            echo "  Plan file updated: $PLAN_PATH"
+          fi
+        else
+          # Collapse failed - log but continue
+          ERROR_MSG=$(echo "$REVISE_RESULT" | jq -r '.error_message')
+          echo "⚠ Auto-collapse failed: $ERROR_MSG"
+          echo "  Continuing with expanded structure"
+        fi
+      fi
+    fi
+  fi
 fi
 ```
 
-**Evaluation Approach:**
+**Collapse Thresholds:**
+- **Tasks**: ≤ 5 completed tasks
+- **Complexity**: < 6.0 (medium-low complexity)
+- **Both Required**: Both thresholds must be met (conservative approach)
 
-The primary agent (executing `/implement`) has the completed phase in context. I'll make an informed judgment about whether this phase is simple enough to collapse back to the main plan file.
+**Automatic Actions:**
+1. Calculate phase complexity using `calculate_phase_complexity()` from complexity-utils.sh
+2. Check if thresholds met (tasks ≤ 5 AND complexity < 6.0)
+3. Log collapse check for observability
+4. If triggered: Build collapse context JSON and invoke `/revise --auto-mode collapse_phase`
+5. Parse response and update plan path if structure level changed
+6. Log collapse invocation (auto trigger) for audit trail
 
-**Evaluation Criteria:**
-
-I'll consider:
-- **Completion status**: All tasks are done (verified)
-- **Simplicity**: Number of tasks and their individual complexity
-- **Dependencies**: Whether tasks have minimal interdependencies
-- **Value vs simplicity**: Does the separate file provide organizational value, or is it unnecessary fragmentation
-- **Conceptual importance**: Is there a reason to keep it separate even if simple (e.g., represents distinct implementation stage)
-
-**Evaluation Process:**
-
-```
-Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-collapse.md
-
-Phase [N]: [Phase Name] [COMPLETED]
-
-This phase is expanded (in separate file) and all tasks are complete.
-
-Tasks completed:
-[task list with [x] markers]
-
-Follow the evaluation criteria and provide recommendation.
-```
-
-**If Collapse Recommended:**
-
-Display formatted recommendation:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COLLAPSE OPPORTUNITY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase [N]: [Phase Name] [COMPLETED]
-
-Rationale:
-  [Agent's 2-3 sentence rationale based on understanding completed work]
-
-Recommendation:
-  This simple phase can be collapsed back into the main plan file.
-
-Command:
-  /collapse phase <plan-path> [N]
-
-Note: Collapsing is optional and non-destructive. The phase can be
-re-expanded later if needed. Consider collapsing after all phases are
-complete for best assessment of overall plan structure.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**If No Collapse Recommended:**
-
-Continue silently. No message needed for phases that should remain expanded.
-
-**Not Eligible for Collapse:**
-
-If phase is not expanded OR not completed, skip evaluation silently. No message needed.
+**Logging:**
+- **collapse_check**: Logs every evaluation (triggered or not)
+- **collapse_invocation**: Logs only when collapse executes (trigger=auto)
+- **Log file**: `.claude/logs/adaptive-planning.log`
 
 **Non-Blocking:**
+- Collapse failures are logged but don't stop implementation
+- Phase remains expanded if collapse fails
+- Implementation continues to next phase regardless
 
-This check is purely informative. The user can choose to:
-- Collapse now using the recommended command
-- Wait until all phases are complete for better overall assessment
-- Keep the phase expanded for organizational clarity
-- Ignore the recommendation entirely
-
-**Timing Considerations:**
-
-- **After each phase**: Provides early feedback on simple phases
-- **After plan completion**: Better for holistic assessment of structure
-- **User preference**: Some users prefer to collapse incrementally, others prefer to wait
-
-**Nuanced Decisions:**
-
-The agent can make judgment calls that simple heuristics cannot:
-- Keep a simple phase expanded if it's conceptually important
-- Recommend collapse despite moderate complexity if work was straightforward
-- Consider the phase in context of overall plan structure
-- Balance simplicity vs documentation clarity
+**Edge Cases:**
+- **Phase with stages**: Collapse will fail (must collapse stages first)
+- **Incomplete phase**: Skipped silently (not eligible)
+- **Complex phase**: Not triggered (stays expanded)
+- **Structure level change**: Plan path updated if last expanded phase (Level 1 → Level 0)
 
 ### 6. Incremental Summary Generation
 **Create or update partial summary after each phase:**

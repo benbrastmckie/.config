@@ -28,7 +28,9 @@ readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR}/.claude/registry"
 register_artifact() {
   local artifact_type="${1:-}"
   local artifact_path="${2:-}"
-  local metadata_json="${3:-{}}"
+  local metadata_json="${3}"
+  # Handle empty metadata with manual check to avoid bash brace expansion issue
+  [ -z "$metadata_json" ] && metadata_json="{}"
 
   if [ -z "$artifact_type" ] || [ -z "$artifact_path" ]; then
     echo "Usage: register_artifact <type> <path> [metadata]" >&2
@@ -472,6 +474,180 @@ get_report_section() {
 }
 
 # ==============================================================================
+# Artifact Creation Functions
+# ==============================================================================
+
+# create_artifact_directory: Create artifact directory with topic-based naming
+# Usage: create_artifact_directory <workflow-description>
+# Returns: project_name artifact_dir next_number
+# Example: create_artifact_directory "Implement user authentication"
+create_artifact_directory() {
+  local workflow_description="${1:-}"
+
+  if [ -z "$workflow_description" ]; then
+    echo "Usage: create_artifact_directory <workflow-description>" >&2
+    return 1
+  fi
+
+  # Convert workflow description to snake_case project name
+  # "Implement user auth" → "user_auth"
+  # "Add OAuth2 support" → "oauth2_support"
+  local project_name=$(echo "$workflow_description" | \
+    tr '[:upper:]' '[:lower:]' | \
+    sed 's/[^a-z0-9 ]//g' | \
+    tr ' ' '_' | \
+    sed 's/__*/_/g' | \
+    sed 's/^_//; s/_$//')
+
+  # Create artifact directory
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${project_name}"
+  mkdir -p "$artifact_dir"
+
+  # Get next available artifact number
+  local next_number=$(get_next_artifact_number "$artifact_dir")
+
+  # Return project name, directory, and next number (space-separated)
+  echo "$project_name" "$artifact_dir" "$next_number"
+}
+
+# get_next_artifact_number: Find next available artifact number in topic directory
+# Usage: get_next_artifact_number <topic-dir>
+# Returns: Next number with zero-padding (e.g., "001", "002")
+# Example: get_next_artifact_number "specs/artifacts/user_auth"
+get_next_artifact_number() {
+  local topic_dir="${1:-}"
+
+  if [ -z "$topic_dir" ]; then
+    echo "Usage: get_next_artifact_number <topic-dir>" >&2
+    return 1
+  fi
+
+  local max_num=0
+
+  # Find highest existing number in NNN_*.md files
+  for file in "$topic_dir"/[0-9][0-9][0-9]_*.md; do
+    [[ -e "$file" ]] || continue
+    local num=$(basename "$file" | grep -oE '^[0-9]+')
+    if [ -n "$num" ]; then
+      (( num > max_num )) && max_num=$num
+    fi
+  done
+
+  # Return next number with zero-padding
+  printf "%03d" $((max_num + 1))
+}
+
+# write_artifact_file: Write artifact with variable-length content (fallback)
+# Usage: write_artifact_file <summary_text> <artifact_path> <metadata_json>
+# Returns: 0 on success
+# Example: write_artifact_file "$summary" "specs/artifacts/test/001_topic.md" '{"topic":"test"}'
+write_artifact_file() {
+  local summary_text="${1:-}"
+  local artifact_path="${2:-}"
+  local metadata_json="${3}"
+  # Handle empty metadata with manual check to avoid bash brace expansion issue
+  [ -z "$metadata_json" ] && metadata_json="{}"
+
+  if [ -z "$summary_text" ] || [ -z "$artifact_path" ]; then
+    echo "Usage: write_artifact_file <summary> <path> <metadata>" >&2
+    return 1
+  fi
+
+  # Extract metadata fields (with fallback if jq not available or parsing fails)
+  local topic="Unknown"
+  local workflow="Unknown"
+
+  if command -v jq &> /dev/null; then
+    # jq's // operator provides fallback, no need for || with pipefail
+    topic=$(echo "$metadata_json" | jq -r '.topic // "Unknown"' 2>/dev/null) || topic="Unknown"
+    workflow=$(echo "$metadata_json" | jq -r '.workflow // "Unknown"' 2>/dev/null) || workflow="Unknown"
+  fi
+
+  # Calculate word count
+  local word_count=$(echo "$summary_text" | wc -w | tr -d ' ')
+
+  # Create artifact file with variable-length template
+  cat > "$artifact_path" <<EOF
+# $topic
+
+## Metadata
+- **Created**: $(date -u +%Y-%m-%d)
+- **Workflow**: $workflow
+- **Agent**: research-specialist
+- **Focus**: $topic
+- **Length**: $word_count words
+
+## Findings
+$summary_text
+
+## Recommendations
+(No specific recommendations provided)
+EOF
+
+  return 0
+}
+
+# generate_artifact_invocation: Generate research agent artifact invocation prompt
+# Usage: generate_artifact_invocation <artifact_path> <research_topic> <workflow_description>
+# Returns: Formatted invocation prompt
+# Example: generate_artifact_invocation "specs/artifacts/auth/001_patterns.md" "JWT vs sessions" "Implement authentication"
+generate_artifact_invocation() {
+  local artifact_path="${1:-}"
+  local research_topic="${2:-}"
+  local workflow_description="${3:-}"
+
+  if [ -z "$artifact_path" ] || [ -z "$research_topic" ]; then
+    echo "Usage: generate_artifact_invocation <artifact_path> <research_topic> <workflow>" >&2
+    return 1
+  fi
+
+  # Generate the invocation prompt
+  cat <<EOF
+OUTPUT MODE: Artifact
+
+Write your research findings directly to an artifact file at:
+$artifact_path
+
+ARTIFACT FORMAT REQUIREMENTS:
+
+1. **Variable-Length Content**: Adapt the length to match research complexity:
+   - Simple findings: 100-200 words
+   - Moderate analysis: 200-500 words
+   - Complex research: 500-1000+ words
+   - Optimize for concision but preserve all essential findings and recommendations
+   - No arbitrary length limits - use what the research needs
+
+2. **Required Structure**:
+   \`\`\`markdown
+   # $research_topic
+
+   ## Metadata
+   - **Created**: $(date -u +%Y-%m-%d)
+   - **Workflow**: $workflow_description
+   - **Agent**: research-specialist
+   - **Focus**: $research_topic
+   - **Length**: {word_count} words
+
+   ## Findings
+   {Your research findings - variable length based on complexity}
+
+   ## Recommendations
+   {Actionable recommendations based on findings - variable length}
+   \`\`\`
+
+3. **Return Format**: After writing the artifact, return only:
+   - Artifact ID: {artifact_id}
+   - Path: $artifact_path
+
+   Do NOT include the full summary in your response - it's already in the artifact file.
+
+ARTIFACT PATH: $artifact_path
+RESEARCH TOPIC: $research_topic
+WORKFLOW: $workflow_description
+EOF
+}
+
+# ==============================================================================
 # Convenience Functions
 # ==============================================================================
 
@@ -534,6 +710,12 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f validate_artifact_references
   export -f list_artifacts
   export -f get_artifact_path
+
+  # Artifact creation functions
+  export -f create_artifact_directory
+  export -f get_next_artifact_number
+  export -f write_artifact_file
+  export -f generate_artifact_invocation
 
   # Metadata extraction functions (context optimization)
   export -f get_plan_metadata

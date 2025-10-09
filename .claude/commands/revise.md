@@ -52,6 +52,24 @@ Revises the most recently discussed implementation plan according to user-provid
 /revise "Update based on performance findings" specs/reports/002_performance.md specs/reports/003_optimization.md
 ```
 
+#### Example Output with Structure Recommendations
+```
+✓ Revised plan: specs/plans/025_feature_plan.md
+  - Updated Phase 3 tasks based on complexity analysis
+  - Added error handling requirements
+  - Updated testing approach
+
+**Structure Recommendations**:
+
+*Collapse Opportunities (simple expanded phases):*
+- Phase 2: Basic Configuration (4 tasks, complexity 3.5)
+  - Command: `/collapse phase specs/plans/025_feature_plan 2`
+
+*Expansion Opportunities (complex inline phases):*
+- Phase 5: Database Migration and API Updates (12 tasks, complexity 9.2)
+  - Command: `/expand phase specs/plans/025_feature_plan 5`
+```
+
 ### Automated Mode
 
 #### Triggered by /implement (Complexity Trigger)
@@ -125,6 +143,8 @@ Revises the most recently discussed implementation plan according to user-provid
 - **Adds revision history** to track changes
 - **Creates a backup** of the original plan
 - **Updates phase details** based on your revision requirements
+- **Evaluates structure optimization** opportunities after revision
+- **Displays recommendations** for collapsing simple phases or expanding complex phases
 - **Auto-mode**: Returns structured success/failure response for /implement
 
 ### What This Command Does NOT Do
@@ -318,6 +338,50 @@ When invoked with `--auto-mode`, the command expects a `--context` parameter wit
 }
 ```
 
+#### 5. `collapse_phase` - Collapse Simple Expanded Phase
+
+**Trigger**: Phase completed and now simple (tasks ≤ 5, complexity < 6.0)
+
+**Context Fields**:
+```json
+{
+  "revision_type": "collapse_phase",
+  "current_phase": 3,
+  "reason": "Phase 3 completed and now simple (4 tasks, complexity 3.5)",
+  "suggested_action": "Collapse Phase 3 back into main plan",
+  "simplicity_metrics": {
+    "tasks": 4,
+    "complexity_score": 3.5,
+    "completion": true
+  }
+}
+```
+
+**Automated Actions**:
+1. Validate phase is expanded (not inline)
+2. Validate phase has no expanded stages
+3. Invoke `/collapse phase <plan> <phase-number>`
+4. Update structure level metadata
+5. Add revision history entry
+6. Return updated plan path
+
+**Response Format**:
+```json
+{
+  "status": "success",
+  "action_taken": "collapsed_phase",
+  "phase_collapsed": 3,
+  "reason": "Phase 3 completed and now simple (4 tasks, complexity 3.5)",
+  "new_structure_level": 1,
+  "updated_file": "specs/plans/025_plan/025_plan.md"
+}
+```
+
+**Error Cases**:
+- Phase not expanded: Return error with `error_type: "invalid_state"`
+- Phase has expanded stages: Return error with message "collapse stages first"
+- Collapse operation fails: Return error with collapse command output
+
 ### Decision Logic
 
 ```
@@ -334,6 +398,7 @@ Switch on revision_type:
   ├─ "add_phase" → Insert new phase
   ├─ "split_phase" → Split existing phase
   ├─ "update_tasks" → Modify task list
+  ├─ "collapse_phase" → Invoke /collapse phase (validate first)
   └─ Unknown type → Return error
      ↓
 Create backup of original plan
@@ -355,6 +420,26 @@ Return JSON response to /implement
   "plan_file": "<updated plan path>",
   "backup_file": "<backup path>",
   "revision_summary": "<brief description>",
+  "structure_recommendations": {
+    "collapse_opportunities": [
+      {
+        "phase": 2,
+        "phase_name": "Simple Phase",
+        "tasks": 4,
+        "complexity": 3.5,
+        "command": "/collapse phase <plan-path> 2"
+      }
+    ],
+    "expansion_opportunities": [
+      {
+        "phase": 5,
+        "phase_name": "Complex Phase",
+        "tasks": 12,
+        "complexity": 9.2,
+        "command": "/expand phase <plan-path> 5"
+      }
+    ]
+  },
   "<context-specific-fields>": "<values>"
 }
 ```
@@ -481,6 +566,17 @@ Parse JSON response
 
 # Expected: New phase inserted after Phase 1, phases renumbered
 
+# Test collapse_phase trigger
+/revise specs/plans/test_plan.md --auto-mode --context '{
+  "revision_type": "collapse_phase",
+  "current_phase": 3,
+  "reason": "Phase 3 completed and now simple (4 tasks, complexity 3.5)",
+  "suggested_action": "Collapse Phase 3 back into main plan",
+  "simplicity_metrics": {"tasks": 4, "complexity_score": 3.5, "completion": true}
+}'
+
+# Expected: Phase 3 collapsed, structure level updated
+
 # Test error handling
 /revise specs/plans/test_plan.md --auto-mode --context '{
   "revision_type": "unknown_type"
@@ -542,6 +638,15 @@ Parse JSON response
    - Documents what changed and why
    - References any reports used for guidance
    - Notes which files were modified (L1/L2)
+
+6. **Structure Optimization Analysis**
+   - Source `.claude/lib/structure-eval-utils.sh`
+   - Identify affected phases using `get_affected_phases()`
+   - Evaluate each affected phase for collapse/expansion opportunities
+   - Display recommendations using `display_structure_recommendations()`
+   - Show commands for user to execute structure optimizations
+   - **Interactive Mode**: Display recommendations to user
+   - **Auto-Mode**: Include recommendations in JSON response under `structure_recommendations` field
 
 ## Plan Structure Preservation
 
