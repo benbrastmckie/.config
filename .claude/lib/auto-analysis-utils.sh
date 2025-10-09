@@ -569,6 +569,150 @@ generate_analysis_report() {
 }
 
 # ============================================================================
+# Artifact Registry Functions
+# ============================================================================
+
+# register_operation_artifact: Register artifact in operation tracking
+# Args:
+#   $1 - plan_path: Path to plan
+#   $2 - operation_type: "expansion" or "collapse"
+#   $3 - item_id: Item identifier (e.g., "phase_2")
+#   $4 - artifact_path: Path to artifact file
+# Returns:
+#   0 on success, non-zero on failure
+register_operation_artifact() {
+  local plan_path="$1"
+  local operation_type="$2"
+  local item_id="$3"
+  local artifact_path="$4"
+
+  # Validate inputs
+  if [[ -z "$plan_path" ]] || [[ -z "$operation_type" ]] || [[ -z "$item_id" ]] || [[ -z "$artifact_path" ]]; then
+    echo "ERROR: register_operation_artifact requires plan_path, operation_type, item_id, and artifact_path" >&2
+    return 1
+  fi
+
+  # Create tracking file
+  local plan_name
+  plan_name=$(basename "$plan_path" .md)
+
+  local tracking_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+  mkdir -p "$tracking_dir"
+
+  local tracking_file="${tracking_dir}/.artifact_registry.json"
+
+  # Build registry entry
+  local entry
+  if command -v jq &> /dev/null; then
+    entry=$(jq -n \
+      --arg id "$item_id" \
+      --arg type "$operation_type" \
+      --arg path "$artifact_path" \
+      --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{item_id: $id, operation: $type, artifact_path: $path, registered: $timestamp}')
+  else
+    entry="{\"item_id\":\"$item_id\",\"operation\":\"$operation_type\",\"artifact_path\":\"$artifact_path\",\"registered\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+  fi
+
+  # Append to registry
+  if [[ -f "$tracking_file" ]]; then
+    if command -v jq &> /dev/null; then
+      local temp_file="${tracking_file}.tmp"
+      jq --argjson entry "$entry" '. += [$entry]' "$tracking_file" > "$temp_file"
+      mv "$temp_file" "$tracking_file"
+    fi
+  else
+    echo "[$entry]" > "$tracking_file"
+  fi
+
+  return 0
+}
+
+# get_artifact_path: Retrieve artifact path by item ID
+# Args:
+#   $1 - plan_path: Path to plan
+#   $2 - item_id: Item identifier
+# Returns:
+#   Artifact path or empty string
+get_artifact_path() {
+  local plan_path="$1"
+  local item_id="$2"
+
+  if [[ -z "$plan_path" ]] || [[ -z "$item_id" ]]; then
+    echo ""
+    return 1
+  fi
+
+  local plan_name
+  plan_name=$(basename "$plan_path" .md)
+
+  local tracking_file="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}/.artifact_registry.json"
+
+  if [[ ! -f "$tracking_file" ]]; then
+    echo ""
+    return 1
+  fi
+
+  if command -v jq &> /dev/null; then
+    jq -r ".[] | select(.item_id == \"$item_id\") | .artifact_path" "$tracking_file" 2>/dev/null || echo ""
+  else
+    echo ""
+  fi
+}
+
+# validate_operation_artifacts: Verify all artifacts exist
+# Args:
+#   $1 - plan_path: Path to plan
+# Returns:
+#   JSON report of validation results
+validate_operation_artifacts() {
+  local plan_path="$1"
+
+  if [[ -z "$plan_path" ]]; then
+    echo '{"valid":0,"invalid":0,"missing":[]}'
+    return 1
+  fi
+
+  local plan_name
+  plan_name=$(basename "$plan_path" .md)
+
+  local tracking_file="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}/.artifact_registry.json"
+
+  if [[ ! -f "$tracking_file" ]]; then
+    echo '{"valid":0,"invalid":0,"missing":[]}'
+    return 0
+  fi
+
+  if command -v jq &> /dev/null; then
+    local valid=0
+    local invalid=0
+    local missing="[]"
+
+    while IFS= read -r entry; do
+      local artifact_path
+      artifact_path=$(echo "$entry" | jq -r '.artifact_path')
+
+      if [[ -f "${CLAUDE_PROJECT_DIR}/${artifact_path}" ]]; then
+        valid=$((valid + 1))
+      else
+        invalid=$((invalid + 1))
+        local item_id
+        item_id=$(echo "$entry" | jq -r '.item_id')
+        missing=$(echo "$missing" | jq --arg id "$item_id" '. += [$id]')
+      fi
+    done < <(jq -c '.[]' "$tracking_file")
+
+    jq -n \
+      --argjson valid "$valid" \
+      --argjson invalid "$invalid" \
+      --argjson missing "$missing" \
+      '{valid: $valid, invalid: $invalid, missing: $missing}'
+  else
+    echo '{"valid":0,"invalid":0,"missing":[]}'
+  fi
+}
+
+# ============================================================================
 # Main (for testing)
 # ============================================================================
 
@@ -583,4 +727,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo "  - analyze_stages_for_expansion <plan_path> <phase_num>"
   echo "  - analyze_stages_for_collapse <plan_path> <phase_num>"
   echo "  - generate_analysis_report <mode> <decisions_json> <plan_path>"
+  echo "  - register_operation_artifact <plan_path> <operation_type> <item_id> <artifact_path>"
+  echo "  - get_artifact_path <plan_path> <item_id>"
+  echo "  - validate_operation_artifacts <plan_path>"
 fi

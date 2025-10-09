@@ -522,6 +522,152 @@ get_artifact_path() {
 }
 
 # ==============================================================================
+# Parallel Operation Artifact Functions
+# ==============================================================================
+
+# create_artifact_directory: Create artifact directory for parallel operations
+# Usage: create_artifact_directory <plan-path>
+# Returns: Artifact directory path
+# Example: create_artifact_directory "specs/plans/026_foo.md"
+create_artifact_directory() {
+  local plan_path="${1:-}"
+
+  if [ -z "$plan_path" ]; then
+    echo "Usage: create_artifact_directory <plan-path>" >&2
+    return 1
+  fi
+
+  # Extract plan name from path
+  local plan_name
+  plan_name=$(basename "$plan_path" .md)
+
+  # Create artifact directory
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+  mkdir -p "$artifact_dir"
+
+  echo "$artifact_dir"
+}
+
+# save_operation_artifact: Save expansion/collapse operation result
+# Usage: save_operation_artifact <plan-name> <operation-type> <item-id> <content>
+# Returns: Artifact file path
+# Example: save_operation_artifact "026_foo" "expansion" "phase_2" "$artifact_content"
+save_operation_artifact() {
+  local plan_name="${1:-}"
+  local operation_type="${2:-}"
+  local item_id="${3:-}"
+  local content="${4:-}"
+
+  if [ -z "$plan_name" ] || [ -z "$operation_type" ] || [ -z "$item_id" ]; then
+    echo "Usage: save_operation_artifact <plan-name> <operation-type> <item-id> <content>" >&2
+    return 1
+  fi
+
+  # Create artifact directory
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+  mkdir -p "$artifact_dir"
+
+  # Create artifact file
+  local artifact_file="${artifact_dir}/${operation_type}_${item_id}.md"
+  echo "$content" > "$artifact_file"
+
+  echo "$artifact_file"
+}
+
+# load_artifact_references: Load artifact paths without reading content
+# Usage: load_artifact_references <plan-name> <operation-type>
+# Returns: JSON array of artifact references
+# Example: load_artifact_references "026_foo" "expansion"
+load_artifact_references() {
+  local plan_name="${1:-}"
+  local operation_type="${2:-}"
+
+  if [ -z "$plan_name" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+
+  if [ ! -d "$artifact_dir" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Find matching artifact files
+  local pattern="${operation_type}_*.md"
+  if [ -z "$operation_type" ]; then
+    pattern="*.md"
+  fi
+
+  local artifact_files=$(find "$artifact_dir" -maxdepth 1 -name "$pattern" -type f 2>/dev/null | sort)
+
+  if [ -z "$artifact_files" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Build JSON array of references (paths only, not content)
+  if command -v jq &> /dev/null; then
+    local refs="[]"
+    for artifact_file in $artifact_files; do
+      local rel_path="${artifact_file#${CLAUDE_PROJECT_DIR}/}"
+      local item_id=$(basename "$artifact_file" .md | sed "s/^${operation_type}_//")
+      refs=$(echo "$refs" | jq \
+        --arg path "$rel_path" \
+        --arg id "$item_id" \
+        --arg size "$(wc -c < "$artifact_file")" \
+        '. += [{item_id: $id, path: $path, size: ($size | tonumber)}]')
+    done
+    echo "$refs"
+  else
+    echo "[]"
+  fi
+}
+
+# cleanup_operation_artifacts: Remove artifacts after successful operations
+# Usage: cleanup_operation_artifacts <plan-name> [operation-type]
+# Returns: Count of artifacts deleted
+# Example: cleanup_operation_artifacts "026_foo" "expansion"
+cleanup_operation_artifacts() {
+  local plan_name="${1:-}"
+  local operation_type="${2:-}"
+
+  if [ -z "$plan_name" ]; then
+    echo "0"
+    return 0
+  fi
+
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+
+  if [ ! -d "$artifact_dir" ]; then
+    echo "0"
+    return 0
+  fi
+
+  # Find matching artifacts
+  local pattern="*.md"
+  if [ -n "$operation_type" ]; then
+    pattern="${operation_type}_*.md"
+  fi
+
+  local count=0
+  for artifact_file in "$artifact_dir"/$pattern; do
+    if [ -f "$artifact_file" ]; then
+      rm -f "$artifact_file"
+      count=$((count + 1))
+    fi
+  done
+
+  # Remove directory if empty
+  if [ -z "$(ls -A "$artifact_dir" 2>/dev/null)" ]; then
+    rmdir "$artifact_dir"
+  fi
+
+  echo "$count"
+}
+
+# ==============================================================================
 # Export Functions
 # ==============================================================================
 
@@ -541,4 +687,10 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f get_plan_phase
   export -f get_plan_section
   export -f get_report_section
+
+  # Parallel operation artifact functions
+  export -f create_artifact_directory
+  export -f save_operation_artifact
+  export -f load_artifact_references
+  export -f cleanup_operation_artifacts
 fi
