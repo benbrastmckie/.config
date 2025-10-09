@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a systematic, release-ready implementation plan to fix test count discrepancies and establish a clean test hierarchy. Following GUIDELINES.md phase-based development, this refactor eliminates cruft while preserving all functionality.
+This document provides a systematic, release-ready implementation plan to fix test count discrepancies and establish a clean test hierarchy. Following CODE_STANDARDS.md phase-based development, this refactor eliminates cruft while preserving all functionality.
 
 ### ✅ IMPLEMENTATION COMPLETED - ALL PHASES
 
@@ -829,7 +829,7 @@ If issues arise:
 
 ## Notes on Pragmatic Compromises
 
-Following GUIDELINES.md philosophy:
+Following CODE_STANDARDS.md philosophy:
 - Test suites are useful for organizing related tests
 - Accept the pattern but fix the counting issue
 - Document the distinction clearly

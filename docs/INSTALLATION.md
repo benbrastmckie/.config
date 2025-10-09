@@ -408,6 +408,10 @@ If you encounter issues:
 - [Advanced Setup →](ADVANCED_SETUP.md)
 - [Platform Guides →](../../docs/README.md)
 
----
+Welcome to your new Neovim configuration! <�
+## Related Documentation
 
-**Welcome to your enhanced Neovim experience!**
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and bootstrap process
+- [NIX_WORKFLOWS.md](NIX_WORKFLOWS.md) - NixOS-specific installation and configuration
+- [AI_TOOLING.md](AI_TOOLING.md) - OpenCode and MCP setup
+- [CODE_STANDARDS.md](CODE_STANDARDS.md) - Development standards

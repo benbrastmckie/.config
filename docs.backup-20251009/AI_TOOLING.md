@@ -763,9 +763,3 @@ Git Worktrees with OpenCode enable a powerful parallel development workflow that
 5. Share successful patterns with your team
 
 This workflow represents the future of AI-assisted development: not just one AI helping one developer, but orchestrated teams of specialized AI agents working in parallel on complex projects.
-## Related Documentation
-
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and plugin loading
-- [INSTALLATION.md](INSTALLATION.md) - NixOS setup and prerequisites
-- [MAPPINGS.md](MAPPINGS.md) - OpenCode keybindings and shortcuts
-- [AI Plugins README](../lua/neotex/plugins/ai/README.md) - AI plugin configurations

@@ -159,7 +159,7 @@ f  - Find File
 g  - Find Text
 n  - New File
 c  - Config
-i  - Info (CheatSheet)
+i  - Info
 m  - Manage Plugins
 h  - Checkhealth
 q  - Quit

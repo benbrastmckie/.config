@@ -105,7 +105,7 @@ I'll assign the plan number by:
 ### 5. Standards Discovery
 I'll identify project-specific standards by:
 - Looking for `CLAUDE.md` in the project directory
-- Checking for `GUIDELINES.md` or similar documentation
+- Checking for `CODE_STANDARDS.md`, `DOCUMENTATION_STANDARDS.md`, or similar documentation
 - Analyzing existing code patterns and conventions
 - Identifying testing approaches and requirements
 

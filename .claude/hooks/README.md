@@ -532,7 +532,7 @@ All hooks follow documentation standards:
 - **Clear comments** explaining purpose and logic
 - **Examples** in this README
 
-See [/home/benjamin/.config/nvim/docs/GUIDELINES.md](../../nvim/docs/GUIDELINES.md) for complete standards.
+See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_STANDARDS.md) for complete standards.
 
 ## Navigation
 
