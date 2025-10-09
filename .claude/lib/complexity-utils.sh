@@ -240,6 +240,140 @@ analyze_plan_complexity() {
 }
 
 # ==============================================================================
+# Feature Description Analysis
+# ==============================================================================
+
+# analyze_feature_description: Analyze feature description for complexity pre-analysis
+# Usage: analyze_feature_description <feature-description>
+# Returns: JSON with complexity estimate, recommended structure, and template suggestions
+# Example: analyze_feature_description "Add user authentication with OAuth and session management"
+analyze_feature_description() {
+  local feature_desc="${1:-}"
+
+  if [ -z "$feature_desc" ]; then
+    echo '{"complexity_score":0,"recommended_structure":"single-file","suggested_phases":3,"matching_templates":[],"analysis":"No description provided"}'
+    return
+  fi
+
+  local complexity_score=0
+  local suggested_phases=3
+  local matching_templates=()
+
+  # Keyword analysis for task count estimation
+  # High complexity keywords (weight: 3 points each)
+  local high_complexity_keywords="refactor|architecture|redesign|migrate|security|authentication|authorization|integration|microservices"
+  local high_matches=$(echo "$feature_desc" | grep -oiE "$high_complexity_keywords" | wc -l | tr -d ' ')
+  complexity_score=$((complexity_score + (high_matches * 3)))
+
+  # Medium complexity keywords (weight: 2 points each)
+  local medium_complexity_keywords="implement|create|build|add|update|test|document|api|database|component"
+  local medium_matches=$(echo "$feature_desc" | grep -oiE "$medium_complexity_keywords" | wc -l | tr -d ' ')
+  complexity_score=$((complexity_score + (medium_matches * 2)))
+
+  # Low complexity keywords (weight: 1 point each)
+  local low_complexity_keywords="fix|update|modify|change|enhance|improve"
+  local low_matches=$(echo "$feature_desc" | grep -oiE "$low_complexity_keywords" | wc -l | tr -d ' ')
+  complexity_score=$((complexity_score + low_matches))
+
+  # Dependency detection (external integrations, APIs, databases) - add 2 points each
+  local dependency_keywords="oauth|api|database|postgres|mysql|redis|elasticsearch|aws|firebase|stripe|payment"
+  local dep_matches=$(echo "$feature_desc" | grep -oiE "$dependency_keywords" | wc -l | tr -d ' ')
+  complexity_score=$((complexity_score + (dep_matches * 2)))
+
+  # Architecture impact scoring - add 3 points each
+  local arch_keywords="architecture|microservice|service|module|system|framework|infrastructure"
+  local arch_matches=$(echo "$feature_desc" | grep -oiE "$arch_keywords" | wc -l | tr -d ' ')
+  complexity_score=$((complexity_score + (arch_matches * 3)))
+
+  # Cap complexity score at 15
+  if [ "$complexity_score" -gt 15 ]; then
+    complexity_score=15
+  fi
+
+  # Determine recommended structure based on complexity
+  local recommended_structure="single-file"
+  if [ "$complexity_score" -gt "$COMPLEXITY_THRESHOLD_HIGH" ]; then
+    recommended_structure="pre-expanded"
+    suggested_phases=6
+  elif [ "$complexity_score" -gt "$COMPLEXITY_THRESHOLD_MEDIUM" ]; then
+    suggested_phases=4
+  else
+    suggested_phases=3
+  fi
+
+  # Suggest appropriate templates
+  if echo "$feature_desc" | grep -qiE "crud|create.*read.*update.*delete"; then
+    matching_templates+=("crud-feature")
+  fi
+  if echo "$feature_desc" | grep -qiE "api|endpoint|rest|graphql"; then
+    matching_templates+=("api-endpoint")
+  fi
+  if echo "$feature_desc" | grep -qiE "test|testing|tdd|unit.*test"; then
+    matching_templates+=("test-suite")
+  fi
+  if echo "$feature_desc" | grep -qiE "refactor|cleanup|consolidate"; then
+    matching_templates+=("refactor-consolidation" "refactoring")
+  fi
+  if echo "$feature_desc" | grep -qiE "bug|debug|issue|fix|error"; then
+    matching_templates+=("debug-workflow")
+  fi
+  if echo "$feature_desc" | grep -qiE "document|documentation|docs"; then
+    matching_templates+=("documentation-update")
+  fi
+  if echo "$feature_desc" | grep -qiE "migrate|migration|deprecat|breaking.*change"; then
+    matching_templates+=("migration")
+  fi
+  if echo "$feature_desc" | grep -qiE "research|investigate|study|analyze|explore"; then
+    matching_templates+=("research-report")
+  fi
+
+  # Build templates JSON array
+  local templates_json="["
+  local first=1
+  for template in "${matching_templates[@]}"; do
+    if [ $first -eq 0 ]; then
+      templates_json+=","
+    fi
+    first=0
+    templates_json+="\"$template\""
+  done
+  templates_json+="]"
+
+  # Get complexity level
+  local complexity_level=$(get_complexity_level "$complexity_score")
+
+  # Build JSON response
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --argjson score "$complexity_score" \
+      --arg structure "$recommended_structure" \
+      --argjson phases "$suggested_phases" \
+      --argjson templates "$templates_json" \
+      --arg level "$complexity_level" \
+      --arg desc "$feature_desc" \
+      '{
+        complexity_score: $score,
+        complexity_level: $level,
+        recommended_structure: $structure,
+        suggested_phases: $phases,
+        matching_templates: $templates,
+        analysis: $desc
+      }'
+  else
+    cat <<EOF
+{
+  "complexity_score": $complexity_score,
+  "complexity_level": "$complexity_level",
+  "recommended_structure": "$recommended_structure",
+  "suggested_phases": $suggested_phases,
+  "matching_templates": $templates_json,
+  "analysis": "$feature_desc"
+}
+EOF
+  fi
+}
+
+# ==============================================================================
 # Helper Functions
 # ==============================================================================
 
@@ -303,6 +437,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f detect_complexity_triggers
   export -f generate_complexity_report
   export -f analyze_plan_complexity
+  export -f analyze_feature_description
   export -f get_complexity_level
   export -f format_complexity_summary
 fi
