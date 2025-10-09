@@ -464,6 +464,220 @@ generate_suggestions() {
   esac
 }
 
+# ==============================================================================
+# Parallel Operation Error Recovery (Phase 5)
+# ==============================================================================
+
+# retry_with_timeout: Generate retry metadata with extended timeout
+# Usage: retry_with_timeout <operation_name> <attempt_number>
+# Returns: JSON with retry metadata (new_timeout, should_retry, attempt)
+# Example: retry_with_timeout "Agent invocation" 0
+retry_with_timeout() {
+  local operation_name="${1:-}"
+  local attempt_number="${2:-0}"
+
+  if [[ -z "$operation_name" ]]; then
+    echo "ERROR: retry_with_timeout requires operation_name" >&2
+    return 1
+  fi
+
+  local base_timeout=120000  # 2 minutes
+  local max_attempts=3
+
+  # Calculate new timeout (1.5x increase per attempt)
+  local new_timeout=$base_timeout
+  for (( i=0; i<attempt_number; i++ )); do
+    new_timeout=$((new_timeout * 3 / 2))
+  done
+
+  # Determine if should retry
+  local should_retry="true"
+  if [[ $attempt_number -ge $max_attempts ]]; then
+    should_retry="false"
+  fi
+
+  # Return JSON metadata
+  jq -n \
+    --arg operation "$operation_name" \
+    --argjson attempt "$attempt_number" \
+    --argjson new_timeout "$new_timeout" \
+    --arg should_retry "$should_retry" \
+    --argjson max_attempts "$max_attempts" \
+    '{
+      operation: $operation,
+      attempt: $attempt,
+      new_timeout: $new_timeout,
+      should_retry: $should_retry,
+      max_attempts: $max_attempts
+    }'
+}
+
+# retry_with_fallback: Generate fallback retry metadata with reduced toolset
+# Usage: retry_with_fallback <operation_name> <attempt_number>
+# Returns: JSON with reduced toolset recommendation
+# Example: retry_with_fallback "expand_phase" 1
+retry_with_fallback() {
+  local operation_name="${1:-}"
+  local attempt_number="${2:-1}"
+
+  if [[ -z "$operation_name" ]]; then
+    echo "ERROR: retry_with_fallback requires operation_name" >&2
+    return 1
+  fi
+
+  # Define toolset levels
+  local full_toolset="Read,Write,Edit,Bash"
+  local reduced_toolset="Read,Write"
+
+  # Return JSON metadata
+  jq -n \
+    --arg operation "$operation_name" \
+    --argjson attempt "$attempt_number" \
+    --arg full_toolset "$full_toolset" \
+    --arg reduced_toolset "$reduced_toolset" \
+    --arg strategy "fallback" \
+    '{
+      operation: $operation,
+      attempt: $attempt,
+      full_toolset: $full_toolset,
+      reduced_toolset: $reduced_toolset,
+      strategy: $strategy,
+      recommendation: "Retry with reduced toolset to avoid complex operations"
+    }'
+}
+
+# handle_partial_failure: Process successful ops, report failures
+# Usage: handle_partial_failure <aggregation_json>
+# Returns: JSON with successful and failed operations separated
+# Example: handle_partial_failure '{"total":3,"successful":2,"failed":1,"artifacts":[...]}'
+handle_partial_failure() {
+  local aggregation_json="${1:-}"
+
+  if [[ -z "$aggregation_json" ]]; then
+    echo "ERROR: handle_partial_failure requires aggregation_json" >&2
+    return 1
+  fi
+
+  # Validate JSON
+  if ! echo "$aggregation_json" | jq empty 2>/dev/null; then
+    echo "ERROR: Invalid JSON provided to handle_partial_failure" >&2
+    return 1
+  fi
+
+  local total successful failed
+  total=$(echo "$aggregation_json" | jq '.total // 0')
+  successful=$(echo "$aggregation_json" | jq '.successful // 0')
+  failed=$(echo "$aggregation_json" | jq '.failed // 0')
+
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "Partial Failure Handling" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "" >&2
+  echo "Total operations: $total" >&2
+  echo "Successful: $successful" >&2
+  echo "Failed: $failed" >&2
+  echo "" >&2
+
+  if [[ $failed -eq 0 ]]; then
+    echo "All operations succeeded" >&2
+    # Return enhanced JSON with can_continue and requires_retry fields
+    local report
+    report=$(echo "$aggregation_json" | jq '. + {can_continue: true, requires_retry: false}')
+    echo "$report"
+    return 0
+  fi
+
+  # Extract successful and failed operations
+  local successful_ops failed_ops
+  successful_ops=$(echo "$aggregation_json" | jq -c '[.artifacts[] | select(.status == "success")]')
+  failed_ops=$(echo "$aggregation_json" | jq -c '[.artifacts[] | select(.status != "success")]')
+
+  echo "Failed operations:" >&2
+  echo "$failed_ops" | jq -r '.[] | "  - \(.item_id): \(.error // "Unknown error")"' >&2
+  echo "" >&2
+
+  # Build report with separated operations
+  local report
+  report=$(jq -n \
+    --argjson total "$total" \
+    --argjson successful "$successful" \
+    --argjson failed "$failed" \
+    --argjson successful_ops "$successful_ops" \
+    --argjson failed_ops "$failed_ops" \
+    '{
+      total: $total,
+      successful: $successful,
+      failed: $failed,
+      successful_operations: $successful_ops,
+      failed_operations: $failed_ops,
+      can_continue: ($successful > 0),
+      requires_retry: ($failed > 0)
+    }')
+
+  echo "$report"
+  return 0
+}
+
+# escalate_to_user: Format escalation message with context (Phase 5 version)
+# Usage: escalate_to_user_parallel <error_context_json> <recovery_options>
+# Returns: User choice or recommendation
+# Example: escalate_to_user_parallel '{"operation":"expand","failed":2}' "retry,skip,abort"
+escalate_to_user_parallel() {
+  local error_context_json="${1:-}"
+  local recovery_options="${2:-retry,skip,abort}"
+
+  if [[ -z "$error_context_json" ]]; then
+    echo "ERROR: escalate_to_user_parallel requires error_context_json" >&2
+    return 1
+  fi
+
+  # Parse context
+  local operation failed_count total_count
+  operation=$(echo "$error_context_json" | jq -r '.operation // "unknown"')
+  failed_count=$(echo "$error_context_json" | jq -r '.failed // 0')
+  total_count=$(echo "$error_context_json" | jq -r '.total // 0')
+
+  echo "" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "User Escalation Required" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "" >&2
+  echo "Operation: $operation" >&2
+  echo "Failed: $failed_count/$total_count operations" >&2
+  echo "" >&2
+  echo "Recovery Options:" >&2
+
+  # Parse and display options
+  IFS=',' read -ra OPTIONS <<< "$recovery_options"
+  local idx=1
+  for option in "${OPTIONS[@]}"; do
+    echo "  $idx. $option" >&2
+    idx=$((idx + 1))
+  done
+
+  echo "" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+
+  # Check if interactive
+  if [[ -t 0 ]]; then
+    echo -n "Choose an option (1-${#OPTIONS[@]}): " >&2
+    read -r choice
+
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#OPTIONS[@]} ]]; then
+      echo "${OPTIONS[$((choice-1))]}"
+      return 0
+    else
+      echo "Invalid choice, defaulting to: ${OPTIONS[0]}" >&2
+      echo "${OPTIONS[0]}"
+      return 0
+    fi
+  else
+    # Non-interactive, return first option
+    echo "${OPTIONS[0]}"
+    return 0
+  fi
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f classify_error
@@ -479,4 +693,8 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f detect_error_type
   export -f extract_location
   export -f generate_suggestions
+  export -f retry_with_timeout
+  export -f retry_with_fallback
+  export -f handle_partial_failure
+  export -f escalate_to_user_parallel
 fi

@@ -391,6 +391,168 @@ checkpoint_delete() {
   echo "Deleted checkpoints for: $workflow_type/$project_name"
 }
 
+# ==============================================================================
+# Parallel Operation Checkpoint Functions (Phase 5)
+# ==============================================================================
+
+# save_parallel_operation_checkpoint: Save state before parallel operations
+# Usage: save_parallel_operation_checkpoint <plan_path> <operation_type> <operations_json>
+# Returns: Path to checkpoint file
+# Example: save_parallel_operation_checkpoint "plan.md" "expand" '[{"item_id":"phase_1"}]'
+save_parallel_operation_checkpoint() {
+  local plan_path="${1:-}"
+  local operation_type="${2:-}"
+  local operations_json="${3:-}"
+
+  if [[ -z "$plan_path" ]] || [[ -z "$operation_type" ]]; then
+    echo "ERROR: save_parallel_operation_checkpoint requires plan_path and operation_type" >&2
+    return 1
+  fi
+
+  # Extract plan name
+  local plan_name
+  if [[ -d "$plan_path" ]]; then
+    plan_name=$(basename "$plan_path")
+  else
+    plan_name=$(basename "$plan_path" .md)
+  fi
+
+  # Create checkpoint directory for parallel operations
+  local checkpoint_dir="${CHECKPOINTS_DIR}/parallel_ops"
+  mkdir -p "$checkpoint_dir"
+
+  local timestamp=$(date -u +%Y%m%d_%H%M%S)
+  local checkpoint_id="parallel_${operation_type}_${plan_name}_${timestamp}"
+  local checkpoint_file="${checkpoint_dir}/${checkpoint_id}.json"
+
+  # Build checkpoint data
+  local checkpoint_data
+  checkpoint_data=$(jq -n \
+    --arg id "$checkpoint_id" \
+    --arg type "$operation_type" \
+    --arg plan "$plan_path" \
+    --arg created "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --argjson operations "${operations_json:-[]}" \
+    '{
+      checkpoint_id: $id,
+      operation_type: $type,
+      plan_path: $plan,
+      created_at: $created,
+      operations: $operations,
+      status: "pre_execution"
+    }')
+
+  echo "$checkpoint_data" > "$checkpoint_file"
+
+  echo "$checkpoint_file"
+}
+
+# restore_from_checkpoint: Rollback to pre-operation state
+# Usage: restore_from_checkpoint <checkpoint_file>
+# Returns: JSON with checkpoint data
+# Example: restore_from_checkpoint ".claude/checkpoints/parallel_ops/parallel_expand_*.json"
+restore_from_checkpoint() {
+  local checkpoint_file="${1:-}"
+
+  if [[ -z "$checkpoint_file" ]]; then
+    echo "ERROR: restore_from_checkpoint requires checkpoint_file" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$checkpoint_file" ]]; then
+    echo "ERROR: Checkpoint file not found: $checkpoint_file" >&2
+    return 1
+  fi
+
+  # Validate JSON
+  if ! jq empty "$checkpoint_file" 2>/dev/null; then
+    echo "ERROR: Invalid checkpoint JSON: $checkpoint_file" >&2
+    return 1
+  fi
+
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "Restoring from Checkpoint" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "" >&2
+
+  local operation_type plan_path created_at
+  operation_type=$(jq -r '.operation_type' "$checkpoint_file")
+  plan_path=$(jq -r '.plan_path' "$checkpoint_file")
+  created_at=$(jq -r '.created_at' "$checkpoint_file")
+
+  echo "Operation: $operation_type" >&2
+  echo "Plan: $plan_path" >&2
+  echo "Checkpoint: $created_at" >&2
+  echo "" >&2
+
+  # Return checkpoint data
+  cat "$checkpoint_file"
+
+  return 0
+}
+
+# validate_checkpoint_integrity: Verify checkpoint consistency
+# Usage: validate_checkpoint_integrity <checkpoint_file>
+# Returns: JSON with validation result {valid: true/false, errors: [...]}
+# Example: validate_checkpoint_integrity ".claude/checkpoints/parallel_ops/parallel_expand_*.json"
+validate_checkpoint_integrity() {
+  local checkpoint_file="${1:-}"
+
+  if [[ -z "$checkpoint_file" ]]; then
+    echo '{"valid":false,"errors":["Missing checkpoint_file argument"]}' >&2
+    echo '{"valid":false,"errors":["Missing checkpoint_file argument"]}'
+    return 1
+  fi
+
+  if [[ ! -f "$checkpoint_file" ]]; then
+    local error_msg="Checkpoint file not found: $checkpoint_file"
+    jq -n --arg error "$error_msg" '{"valid":false,"errors":[$error]}'
+    return 1
+  fi
+
+  # Validate JSON structure
+  if ! jq empty "$checkpoint_file" 2>/dev/null; then
+    local error_msg="Checkpoint has invalid JSON"
+    jq -n --arg error "$error_msg" '{"valid":false,"errors":[$error]}'
+    return 1
+  fi
+
+  # Check required fields
+  local required_fields=("checkpoint_id" "operation_type" "plan_path" "created_at")
+  local missing_fields=()
+
+  for field in "${required_fields[@]}"; do
+    if ! jq -e ".$field" "$checkpoint_file" >/dev/null 2>&1; then
+      missing_fields+=("$field")
+    fi
+  done
+
+  if [[ ${#missing_fields[@]} -gt 0 ]]; then
+    local errors_json=$(printf '%s\n' "${missing_fields[@]}" | jq -R . | jq -s 'map("Missing required field: " + .)')
+    jq -n --argjson errors "$errors_json" '{"valid":false,"errors":$errors}'
+    return 1
+  fi
+
+  # Check plan path exists (warning only)
+  local plan_path
+  plan_path=$(jq -r '.plan_path' "$checkpoint_file")
+
+  local warnings=()
+  if [[ ! -f "$plan_path" ]] && [[ ! -d "$plan_path" ]]; then
+    warnings+=("Plan path no longer exists: $plan_path")
+  fi
+
+  # Return success with any warnings
+  if [[ ${#warnings[@]} -gt 0 ]]; then
+    local warnings_json=$(printf '%s\n' "${warnings[@]}" | jq -R . | jq -s .)
+    jq -n --argjson warnings "$warnings_json" '{"valid":true,"warnings":$warnings}'
+  else
+    echo '{"valid":true}'
+  fi
+
+  return 0
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f save_checkpoint
@@ -401,4 +563,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f checkpoint_set_field
   export -f checkpoint_increment_replan
   export -f checkpoint_delete
+  export -f save_parallel_operation_checkpoint
+  export -f restore_from_checkpoint
+  export -f validate_checkpoint_integrity
 fi
