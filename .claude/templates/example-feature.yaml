@@ -1,5 +1,8 @@
 name: Example Custom Feature Template
 description: "Template for creating a new feature with component and testing"
+category: "feature"
+complexity_level: "medium"
+estimated_time: "8 hours"
 author: Custom
 version: 1.0
 

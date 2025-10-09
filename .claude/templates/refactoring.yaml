@@ -1,5 +1,8 @@
 name: "Code Refactoring"
 description: "Template for structured code refactoring with safety and testing"
+category: "refactoring"
+complexity_level: "medium"
+estimated_time: "6-10 hours"
 variables:
   - name: target_module
     description: "Module or component to refactor (e.g., auth, database, ui/components)"
