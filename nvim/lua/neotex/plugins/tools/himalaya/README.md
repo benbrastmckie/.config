@@ -61,15 +61,6 @@ The plugin follows a clean layered architecture:
 - **Session Persistence**: Remembers folders, selections, and window state
 - **Smart Restoration**: Optional session restoration with user confirmation
 
-## Recent Major Refactoring (Phases 1-5 Complete)
-
-The plugin recently underwent comprehensive refactoring:
-- [x] **Phase 1-3**: Modularized UI components (1000+ lines -> focused modules)
-- [x] **Phase 4**: Unified state management (removed dual state systems)
-- [x] **Phase 5**: Architecture improvements and notification standardization
-
-**Status**: Core refactoring complete, testing phases pending
-
 ## Commands
 
 ### Main Interface
