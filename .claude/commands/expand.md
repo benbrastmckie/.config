@@ -1,21 +1,32 @@
 ---
 allowed-tools: Read, Write, Edit, Bash, Glob, Task
-argument-hint: [phase|stage] <path> <number>
-description: Expand a phase or stage into a detailed separate file
+argument-hint: <path> OR [phase|stage] <path> <number>
+description: Expand phases/stages automatically or expand a specific phase/stage into detailed file
 command-type: workflow
 ---
 
 # Expand Phase or Stage to Separate File
 
-I'll expand a phase or stage from inline content to a detailed separate file, creating the progressive planning structure.
+I'll expand phases or stages from inline content to detailed separate files, creating the progressive planning structure.
 
-## Syntax
+## Modes
+
+### Auto-Analysis Mode (New)
+Automatically analyze all phases/stages and expand those deemed sufficiently complex by the complexity_estimator agent.
 
 ```bash
-# Expand phase (Level 0 → 1)
+# Analyze and expand complex phases automatically
+/expand <plan-path>
+```
+
+### Explicit Mode (Original)
+Expand a specific phase or stage by number.
+
+```bash
+# Expand specific phase (Level 0 → 1)
 /expand phase <plan-path> <phase-num>
 
-# Expand stage (Level 1 → 2)
+# Expand specific stage (Level 1 → 2)
 /expand stage <phase-path> <stage-num>
 ```
 
@@ -228,30 +239,134 @@ stage_file="$phase_subdir/stage_${stage_num}_${stage_name}.md"
 
 ## Implementation
 
-### Type Detection
+### Mode and Argument Detection
 
 ```bash
-TYPE="$1"  # First argument: "phase" or "stage"
-PATH="$2"  # Second argument: path to plan/phase
-NUM="$3"   # Third argument: phase/stage number
+# Detect mode based on argument count
+if [[ $# -eq 1 ]]; then
+  MODE="auto"
+  PLAN_PATH="$1"
+  echo "Auto-Analysis Mode: Analyzing all phases for expansion"
+  echo ""
+elif [[ $# -eq 3 ]]; then
+  MODE="explicit"
+  TYPE="$1"  # "phase" or "stage"
+  PATH="$2"  # path to plan/phase
+  NUM="$3"   # phase/stage number
 
-if [[ "$TYPE" != "phase" && "$TYPE" != "stage" ]]; then
-  echo "ERROR: First argument must be 'phase' or 'stage'"
-  echo "Usage: /expand [phase|stage] <path> <number>"
-  exit 1
-fi
+  if [[ "$TYPE" != "phase" && "$TYPE" != "stage" ]]; then
+    echo "ERROR: First argument must be 'phase' or 'stage'"
+    echo "Usage: /expand <path>  OR  /expand [phase|stage] <path> <number>"
+    exit 1
+  fi
 
-if [[ -z "$PATH" ]] || [[ -z "$NUM" ]]; then
-  echo "ERROR: Path and number required"
-  echo "Usage: /expand [phase|stage] <path> <number>"
+  echo "Explicit Mode: Expanding $TYPE $NUM"
+  echo ""
+else
+  echo "ERROR: Invalid arguments"
+  echo ""
+  echo "Usage:"
+  echo "  Auto-analysis mode:  /expand <path>"
+  echo "  Explicit mode:       /expand [phase|stage] <path> <number>"
+  echo ""
+  echo "Examples:"
+  echo "  /expand specs/plans/025_feature.md"
+  echo "  /expand phase specs/plans/025_feature.md 3"
+  echo "  /expand stage specs/plans/025_feature/phase_2_impl.md 1"
   exit 1
 fi
 ```
 
-### Phase-Specific Implementation
+### Auto-Analysis Mode Implementation
+
+When `MODE="auto"`, implement the following workflow:
+
+#### Phase 1: Setup and Discovery
 
 ```bash
-if [[ "$TYPE" == "phase" ]]; then
+# Source utilities
+export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/home/benjamin/.config}"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
+
+# Validate plan path
+if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then
+  echo "ERROR: Plan not found: $PLAN_PATH"
+  exit 1
+fi
+
+# Detect structure level
+structure_level=$(detect_structure_level "$PLAN_PATH")
+echo "Current structure level: $structure_level"
+```
+
+#### Phase 2: Invoke Complexity Estimator Agent
+
+Since bash cannot directly invoke the Task tool, show prompt for agent invocation:
+
+```
+Use Task tool to invoke complexity_estimator agent:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Analyze plan complexity for expansion decisions"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/complexity_estimator.md
+
+          You are acting as a Complexity Estimator.
+
+          Analysis Task: Expansion Analysis
+
+          [Include parent plan context from analyze_phases_for_expansion]
+          [Include all phase contents to analyze]
+
+          For each phase, provide JSON output with:
+          - item_id, item_name, complexity_level (1-10)
+          - reasoning (context-aware, not just task count)
+          - recommendation (expand or skip)
+          - confidence (low/medium/high)
+
+          Output: JSON array only"
+}
+```
+
+#### Phase 3: Parse Agent Response and Execute Expansions
+
+```bash
+# Agent returns JSON array like:
+# [{"item_id":"phase_2","complexity_level":9,"reasoning":"...","recommendation":"expand","confidence":"high"}]
+
+# For each phase recommended for expansion:
+while IFS= read -r decision; do
+  item_id=$(echo "$decision" | jq -r '.item_id')
+  recommendation=$(echo "$decision" | jq -r '.recommendation')
+  phase_num=$(echo "$item_id" | grep -oP '\d+')
+
+  if [[ "$recommendation" == "expand" ]]; then
+    echo "Expanding $item_id based on agent recommendation..."
+
+    # Use existing phase expansion logic (from explicit mode)
+    # - Extract phase content
+    # - Create directory structure if needed
+    # - Write expanded phase file
+    # - Update metadata
+  else
+    echo "Skipping $item_id (complexity does not warrant expansion)"
+  fi
+done < <(echo "$agent_response" | jq -c '.[]')
+```
+
+#### Phase 4: Generate Summary Report
+
+```bash
+# Use generate_analysis_report from auto-analysis-utils.sh
+generate_analysis_report "expand" "$agent_response" "$PLAN_PATH"
+```
+
+### Phase-Specific Implementation (Explicit Mode)
+
+```bash
+if [[ "$MODE" == "explicit" ]] && [[ "$TYPE" == "phase" ]]; then
   # Detect plan structure
   source .claude/lib/parse-adaptive-plan.sh
 
@@ -325,18 +440,32 @@ Base your analysis on:
 
 ## Examples
 
-### Expand phase
+### Auto-Analysis Mode
+
 ```bash
+# Analyze all phases and expand complex ones automatically
+/expand specs/plans/025_feature.md
+
+# Agent will analyze each phase and recommend expansion based on:
+# - Architectural significance
+# - Integration complexity
+# - Implementation uncertainty
+# - Risk and criticality
+# - Testing requirements
+```
+
+**Expected latency**: 20-40 seconds for agent complexity analysis
+
+### Explicit Mode
+
+```bash
+# Expand specific phase
 /expand phase specs/plans/025_feature.md 3
-```
 
-### Expand stage
-```bash
+# Expand specific stage
 /expand stage specs/plans/025_feature/phase_2_impl.md 1
-```
 
-### Expand phase in already-expanded plan
-```bash
+# Expand phase in already-expanded plan
 /expand phase specs/plans/025_feature/ 4
 ```
 
