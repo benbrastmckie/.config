@@ -131,8 +131,8 @@ module.setup()
 
 ## Related Documentation
 
-- [Relevant Doc 1](../../docs/RELEVANT_DOC.md)
-- [Relevant Doc 2](../../docs/ANOTHER_DOC.md)
+- [CODE_STANDARDS.md](../../docs/CODE_STANDARDS.md) - Coding conventions
+- [ARCHITECTURE.md](../../docs/ARCHITECTURE.md) - System design
 ```
 
 ### Central Documentation (docs/)

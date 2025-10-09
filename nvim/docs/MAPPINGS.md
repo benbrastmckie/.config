@@ -475,3 +475,9 @@ Active in Avante AI interface buffers.
 - [Installation Guide ←](INSTALLATION.md)
 
 For more information about the overall configuration structure, see the main [README](../README.md).
+## Related Documentation
+
+- [AI_TOOLING.md](AI_TOOLING.md) - OpenCode keybindings
+- [RESEARCH_TOOLING.md](RESEARCH_TOOLING.md) - VimTeX and research tool mappings
+- [NOTIFICATIONS.md](NOTIFICATIONS.md) - Notification system commands
+- [Neotex Plugins](../lua/neotex/plugins/README.md) - Plugin-specific keybindings

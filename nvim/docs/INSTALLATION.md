@@ -342,3 +342,9 @@ After successful installation:
 - [Keybinding Reference →](MAPPINGS.md)
 
 Welcome to your new Neovim configuration! <�
+## Related Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and bootstrap process
+- [NIX_WORKFLOWS.md](NIX_WORKFLOWS.md) - NixOS-specific installation and configuration
+- [AI_TOOLING.md](AI_TOOLING.md) - OpenCode and MCP setup
+- [CODE_STANDARDS.md](CODE_STANDARDS.md) - Development standards
