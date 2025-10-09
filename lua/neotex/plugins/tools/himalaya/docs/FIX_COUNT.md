@@ -39,7 +39,7 @@ The current test counting system in Himalaya has multiple inconsistencies and ar
 
 ## Design Principles
 
-### Core Philosophy (Following GUIDELINES.md)
+### Core Philosophy (Following CODE_STANDARDS.md)
 **Evolution, Not Revolution**: This refactor acknowledges the pragmatic realities of the existing test system while working toward more accurate counting. We will document compromises and preserve all working functionality.
 
 ### 1. Single Source of Truth
@@ -137,7 +137,7 @@ The current test counting system in Himalaya has multiple inconsistencies and ar
 
 ## Pre-Implementation Analysis
 
-Following GUIDELINES.md systematic approach, before implementing:
+Following CODE_STANDARDS.md systematic approach, before implementing:
 
 ### 1. Affected Modules Analysis
 - **test_runner.lua**: Core counting logic needs refactoring
@@ -663,7 +663,7 @@ The test system is now:
 
 ## Root Cause Analysis Approach
 
-Following GUIDELINES.md principles for addressing test failures:
+Following CODE_STANDARDS.md principles for addressing test failures:
 
 ### When Count Mismatches Occur
 1. **Ask WHY**: Why does the count mismatch exist?
@@ -806,7 +806,7 @@ Users can now immediately see that there are validation issues without having to
 
 ## Quality Checklist (Per Phase)
 
-Following GUIDELINES.md requirements, before proceeding to next phase:
+Following CODE_STANDARDS.md requirements, before proceeding to next phase:
 
 - [ ] `:HimalayaTest all` shows 100% pass rate
 - [ ] New unit tests written for registry system
