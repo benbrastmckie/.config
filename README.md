@@ -69,25 +69,47 @@ Select your operating system to follow the appropriate installation guide:
 ├── init.lua                 # Main entry point
 ├── lua/neotex/              # Core configuration
 │   ├── bootstrap.lua        # Plugin manager setup
-│   ├── core/                # Core settings
+│   ├── config/              # Core settings
 │   │   ├── autocmds.lua     # Automatic commands
-│   │   ├── functions.lua    # Utility functions
 │   │   ├── keymaps.lua      # Key mappings
 │   │   └── options.lua      # Neovim options
-│   └── plugins/             # Plugin configurations
-│       ├── lsp/             # Language server settings
-│       └── ai/              # AI integration settings
+│   ├── plugins/             # Plugin configurations (by category)
+│   │   ├── ai/              # AI integration (Avante, Claude Code, MCP)
+│   │   ├── editor/          # Editor enhancements
+│   │   ├── lsp/             # Language server settings
+│   │   ├── text/            # Text processing (LaTeX, Markdown, Jupyter)
+│   │   ├── tools/           # Development tools
+│   │   └── ui/              # UI components
+│   ├── core/                # Core functionality
+│   └── util/                # Utility functions
+├── docs/                    # Central documentation
+│   ├── INSTALLATION.md      # Setup guide
+│   ├── ARCHITECTURE.md      # System design
+│   ├── MAPPINGS.md          # Keybinding reference
+│   └── ...                  # Additional documentation
 ├── templates/               # LaTeX/document templates
-├── snippets/                # LaTeX/Markdown snippets
+├── snippets/                # Code snippets
 └── after/ftplugin/          # Language-specific settings
 ```
+
+## Documentation
+
+This configuration features comprehensive documentation:
+
+- **[Complete Reference](nvim/README.md)** - Full configuration guide with keybindings and features
+- **[Installation Guide](nvim/docs/INSTALLATION.md)** - Step-by-step setup instructions
+- **[Architecture](nvim/docs/ARCHITECTURE.md)** - System design and plugin loading
+- **[Mappings](nvim/docs/MAPPINGS.md)** - Complete keybinding reference
+- **[AI Tooling](nvim/docs/AI_TOOLING.md)** - Git worktrees with OpenCode for parallel development
+- **[Research Tooling](nvim/docs/RESEARCH_TOOLING.md)** - LaTeX, Markdown, and Jupyter workflows
+- **[Module READMEs](nvim/lua/neotex/README.md)** - Every directory includes detailed documentation
 
 ## Customization
 
 This configuration is designed to be easily customizable:
 
 1. **Adding plugins**: Edit `lua/neotex/plugins/*.lua` files using lazy.nvim format
-2. **Changing keymaps**: Modify `lua/neotex/core/keymaps.lua`
+2. **Changing keymaps**: Modify `lua/neotex/config/keymaps.lua`
 3. **Language support**: Configure in `lua/neotex/plugins/lsp/`
 4. **Adding templates**: Place new templates in the `templates/` directory
 
