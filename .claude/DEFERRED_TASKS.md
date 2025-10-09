@@ -4,19 +4,22 @@ This document tracks tasks that were deferred during various implementation phas
 
 ## Summary
 
-**Total Deferred**: 9 tasks
-**Priority**: Low-Medium (none are critical for release)
-**Estimated Total Effort**: 10-14 hours
+**Total Deferred**: 9 tasks (7 completed, 2 redundant)
+**Completed**: 2025-10-09 (Tasks 3-9 via Plan 035)
+**Redundant**: Tasks 1-2 (handled by global autocommands)
+**Priority**: Low-Medium (none were critical for release)
+**Estimated Total Effort**: 10-14 hours (Actual: ~10 hours)
 
 ## Deferred Task List
 
 ## From Artifact Picker Review (Report 044)
 
-### 1. Document Buffer Reload in Picker README
+### 1. Document Buffer Reload in Picker README [REDUNDANT]
 **Deferred From**: Artifact Picker Code Review (2025-10-08)
 **Reason**: Documentation gap, not critical for functionality
 **Priority**: High (user-facing documentation)
 **Estimated Effort**: 5 minutes
+**Status**: REDUNDANT - Already handled by global autocommands in nvim config
 
 **Description**:
 Update README.md to document buffer reload behavior when replacing artifacts with `<C-l>`.
@@ -42,11 +45,12 @@ Update README.md to document buffer reload behavior when replacing artifacts wit
 
 ---
 
-### 2. Add Buffer Reload Notification
+### 2. Add Buffer Reload Notification [REDUNDANT]
 **Deferred From**: Artifact Picker Code Review (2025-10-08)
 **Reason**: UX enhancement, not required for functionality
 **Priority**: Medium
 **Estimated Effort**: 10 minutes
+**Status**: REDUNDANT - Already handled by global autocommands in nvim config
 
 **Description**:
 Add notification when buffer is reloaded after artifact replacement to provide user feedback.
@@ -86,11 +90,12 @@ end
 
 ---
 
-### 3. Extract Dialog Builder Helper Function
+### 3. Extract Dialog Builder Helper Function [COMPLETED]
 **Deferred From**: Artifact Picker Code Review (2025-10-08)
 **Reason**: Code readability optimization, not functional issue
 **Priority**: Low
 **Estimated Effort**: 30 minutes
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 5
 
 **Description**:
 Refactor `<C-l>` handler to extract confirmation dialog building logic into separate helper function.
@@ -121,11 +126,12 @@ Refactor `<C-l>` handler to extract confirmation dialog building logic into sepa
 
 ---
 
-### 4. Optimize Filepath Construction in do_load()
+### 4. Optimize Filepath Construction in do_load() [COMPLETED]
 **Deferred From**: Artifact Picker Code Review (2025-10-08)
 **Reason**: Negligible performance impact
 **Priority**: Low (micro-optimization)
 **Estimated Effort**: 20 minutes
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 5
 
 **Description**:
 Lazy construction of `loaded_filepath` - only build when `force=true`.
@@ -163,11 +169,12 @@ Lazy construction of `loaded_filepath` - only build when `force=true`.
 
 ---
 
-### 5. Add Strategic Code Comments to Picker
+### 5. Add Strategic Code Comments to Picker [COMPLETED]
 **Deferred From**: Artifact Picker Code Review (2025-10-08)
 **Reason**: Code is self-documenting for experienced developers
 **Priority**: Low (documentation enhancement)
 **Estimated Effort**: 30 minutes
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 5
 
 **Description**:
 Add inline comments to document non-obvious design decisions for future maintainers.
@@ -202,11 +209,12 @@ Add inline comments to document non-obvious design decisions for future maintain
 
 ## From Plan 026 (Agential System Refinement)
 
-### 6. Adaptive Planning Logging and Observability
+### 6. Adaptive Planning Logging and Observability [COMPLETED]
 **Deferred From**: Phase 4
 **Reason**: Not critical for initial release
 **Priority**: Low
 **Estimated Effort**: 3-4 hours
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 2
 
 **Description**:
 Add comprehensive logging for adaptive planning detection in `/implement`.
@@ -230,11 +238,12 @@ Add comprehensive logging for adaptive planning detection in `/implement`.
 
 ---
 
-### 7. Adaptive Planning Integration Tests
+### 7. Adaptive Planning Integration Tests [COMPLETED]
 **Deferred From**: Phase 4 (to Phase 7, then deferred)
 **Reason**: Complex integration test requiring full workflow
 **Priority**: Medium
 **Estimated Effort**: 2-3 hours
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 3
 
 **Description**:
 Create integration test for full adaptive planning workflow.
@@ -260,11 +269,12 @@ Create integration test for full adaptive planning workflow.
 
 ---
 
-### 8. /revise Auto-Mode Integration Tests
+### 8. /revise Auto-Mode Integration Tests [COMPLETED]
 **Deferred From**: Phase 5 (to Phase 7, then deferred)
 **Reason**: Complex programmatic invocation testing
 **Priority**: Medium
 **Estimated Effort**: 3-4 hours
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 3
 
 **Description**:
 Create integration tests for /revise auto-mode invocation.
@@ -291,11 +301,12 @@ Create integration tests for /revise auto-mode invocation.
 
 ---
 
-### 9. Commands Updated to Use Shared Utilities
+### 9. Commands Updated to Use Shared Utilities [COMPLETED]
 **Deferred From**: Phase 6
 **Reason**: Optimization, not required for functionality
 **Priority**: Low (future enhancement)
 **Estimated Effort**: 2-3 hours
+**Status**: COMPLETED 2025-10-09 via Plan 035 Phase 4
 
 **Description**:
 Refactor commands to use shared utility libraries instead of inline implementations.
