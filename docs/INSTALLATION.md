@@ -1,344 +1,413 @@
 # Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up this Neovim configuration.
+Get up and running with this Neovim configuration in under 15 minutes.
 
-## Prerequisites
+## Introduction
 
-Before installing this configuration, ensure you have the following:
+This guide will help you install a modern, feature-rich Neovim configuration with:
+- Code intelligence via LSP (Language Server Protocol)
+- Fuzzy finding and project navigation
+- Git integration and version control
+- LaTeX support for academic writing
+- AI-powered assistance and more
 
-### Required Software
-- **Neovim** (e 0.9.0) - The latest stable version is recommended
-- **Git** - For cloning and managing the repository
-- **Node.js** and **npm** - Required for some plugins (LSP servers, etc.)
-- **Python 3** with **pip** - Required for Python-based plugins
-- **uv** package manager - Required for MCP-Hub AI integration
+See the [Technical Glossary](GLOSSARY.md) for definitions of unfamiliar terms.
 
-### Recommended Tools
-- **ripgrep** (`rg`) - For fast text searching with Telescope
-- **fd** - For fast file finding with Telescope
-- **lazygit** - For terminal-based git interface
-- **A Nerd Font** - For proper icon display (FiraCode Nerd Font recommended)
+## Quick Start
 
-### Language-Specific Dependencies
-- **LaTeX distribution** (TeXLive or MiKTeX) - For LaTeX editing support
-- **Lean 4** - For theorem proving support
-- **Jupyter** - For notebook integration
+New users start here for the fastest installation path.
 
-### Email Integration Dependencies (Optional)
-For Himalaya email integration with OAuth2 authentication:
-- **mbsync** (isync) - For IMAP synchronization
-- **cyrus-sasl-xoauth2** - For OAuth2 authentication
-- **SASL_PATH environment variable** - Must be set before starting Neovim
+### Step 1: Install Prerequisites
 
-## Installation Steps
+Ensure you have the basics installed. See [Platform Guides](../../docs/README.md#platform-installation-guides) for OS-specific commands.
 
-### Step 1: Fork the Repository
+**Required**:
+- Neovim (>= 0.9.0)
+- Git
+- A [Nerd Font](GLOSSARY.md#nerd-font) (RobotoMono recommended)
 
-1. Visit the repository on GitHub
-2. Click the "Fork" button to create your own copy
-3. This allows you to customize the configuration while keeping track of updates
+**Check if installed**:
+```bash
+nvim --version  # Should show 0.9.0 or higher
+git --version
+```
 
 ### Step 2: Backup Existing Configuration
 
-**Important**: If you have an existing Neovim configuration, back it up first:
+If you have an existing Neovim setup:
 
 ```bash
-# Backup existing Neovim configuration
 mv ~/.config/nvim ~/.config/nvim.backup
-
-# Backup existing Neovim data (optional, contains plugin data)
 mv ~/.local/share/nvim ~/.local/share/nvim.backup
 ```
 
-### Step 3: Clone Your Fork
-
-Replace `YOUR_USERNAME` with your GitHub username:
+### Step 3: Clone Configuration
 
 ```bash
-# Clone your fork to the correct location
-git clone https://github.com/YOUR_USERNAME/nvim-config.git ~/.config/nvim
-
-# Navigate to the configuration directory
+git clone https://github.com/REPOSITORY_URL ~/.config/nvim
 cd ~/.config/nvim
 ```
 
-### Step 4: Preserve Existing .config Files
+Replace `REPOSITORY_URL` with the actual repository (or your fork).
 
-If you have other applications configured in `~/.config/` that you want to preserve:
-
-```bash
-# Check what's currently in .config
-ls -la ~/.config/
-
-# The nvim directory should now be present alongside your other configs
-# No additional steps needed - other configurations remain untouched
-```
-
-**Note**: This installation only affects the `~/.config/nvim/` directory. All other configuration files in `~/.config/` (for other applications) remain completely untouched.
-
-### Step 5: Install Required Package Manager
-
-Install the `uv` package manager for Python (required for MCP-Hub):
+### Step 4: Launch Neovim
 
 ```bash
-# On macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# On NixOS (if using nix-env)
-nix-env -iA nixpkgs.uv
-
-# On Ubuntu/Debian
-curl -LsSf https://astral.sh/uv/install.sh | sh
+nvim
 ```
 
-Alternatively, see [docs/UV_SETUP.md](UV_SETUP.md) for detailed installation instructions.
+Neovim will automatically install plugins. This takes 2-5 minutes.
+Wait for completion, then restart Neovim.
 
-### Step 6: First Launch and Setup
+### Step 5: Verify Installation
 
-1. **Launch Neovim**:
-   ```bash
-   nvim
-   ```
-
-2. **Initial Plugin Installation**:
-   - Neovim will automatically start downloading and installing plugins
-   - This process may take several minutes depending on your internet connection
-   - You'll see progress messages as plugins are installed
-
-3. **Wait for Completion**:
-   - Let the initial setup complete fully
-   - Some plugins may display warnings initially - this is normal
-   - The dashboard should appear once installation is complete
-
-### Step 7: Health Check
-
-Run Neovim's health check to verify everything is working correctly:
+Run the health check:
 
 ```vim
 :checkhealth
 ```
 
-This command will check:
-- **Core Neovim functionality**
-- **Plugin dependencies**
-- **LSP server availability**
-- **External tool integration**
-- **Python and Node.js providers**
+Fix any warnings by installing missing dependencies. See [Platform Guides](../../docs/README.md) for installation commands.
 
-### Step 8: Address Health Check Issues
-
-Common issues and solutions:
-
-#### Missing External Dependencies
+**Common fixes**:
 ```bash
-# Install ripgrep (for Telescope)
-# On Ubuntu/Debian:
-sudo apt install ripgrep
-
-# On macOS:
-brew install ripgrep
-
-# On NixOS:
-nix-env -iA nixpkgs.ripgrep
-```
-
-```bash
-# Install fd (for Telescope)
-# On Ubuntu/Debian:
-sudo apt install fd-find
-
-# On macOS:
-brew install fd
-
-# On NixOS:
-nix-env -iA nixpkgs.fd
-```
-
-#### Python Provider Issues
-```bash
-# Install Python provider
+# Python provider
 pip3 install --user pynvim
 
-# Or using uv
-uv pip install pynvim
-```
-
-#### Node.js Provider Issues
-```bash
-# Install Node.js provider
+# Node.js provider
 npm install -g neovim
 ```
 
-#### LSP Server Installation
-Most LSP servers will be automatically installed by Mason when you first open relevant file types. You can also manually install them:
+### Quick Start Complete!
+
+You now have a working Neovim configuration. Try:
+- `<C-p>` - Find files
+- `<leader>ff` - Search files (leader key is Space)
+- `<leader>e` - File explorer
+
+**Next steps**:
+- Review [detailed installation](#detailed-installation) for optional features
+- Read [GLOSSARY.md](GLOSSARY.md) for technical terms
+- Explore [ADVANCED_SETUP.md](ADVANCED_SETUP.md) for customization
+
+## Prerequisites
+
+Complete prerequisites information for understanding what's needed and why.
+
+### Required Dependencies
+
+These must be installed for basic functionality.
+
+| Dependency | Purpose | Install Guide |
+|------------|---------|---------------|
+| **Neovim** (>= 0.9.0) | Modern text editor | [Platform Guides](../../docs/README.md) |
+| **Git** | Version control | [Platform Guides](../../docs/README.md) |
+| **Nerd Font** | Icon display | [Platform Guides](../../docs/README.md) |
+
+See [Prerequisites Reference](../../docs/common/prerequisites.md) for detailed dependency explanations.
+
+### Recommended Tools
+
+These significantly enhance the experience but aren't strictly required.
+
+| Tool | Purpose | Install Guide |
+|------|---------|---------------|
+| **ripgrep** (rg) | Fast text search | [Platform Guides](../../docs/README.md) |
+| **fd** | Fast file finding | [Platform Guides](../../docs/README.md) |
+| **lazygit** | Git interface | [Platform Guides](../../docs/README.md) |
+| **Node.js** | LSP servers | [Platform Guides](../../docs/README.md) |
+| **Python 3** | Python plugins | [Platform Guides](../../docs/README.md) |
+
+### Optional Dependencies
+
+For specific workflows. Can be installed later.
+
+- **LaTeX**: Academic writing support - see [Advanced Setup](ADVANCED_SETUP.md#latex)
+- **Lean 4**: Theorem proving - see [Advanced Setup](ADVANCED_SETUP.md#lean-4)
+- **Jupyter**: Notebook support - see [Advanced Setup](ADVANCED_SETUP.md#jupyter)
+
+### Installation by Platform
+
+For detailed, OS-specific installation commands:
+- [Arch Linux](../../docs/platform/arch.md)
+- [Debian/Ubuntu](../../docs/platform/debian.md)
+- [macOS](../../docs/platform/macos.md)
+- [Windows](../../docs/platform/windows.md)
+
+## Detailed Installation
+
+Comprehensive installation with customization options.
+
+### Forking for Customization
+
+If you want to customize and track your changes:
+
+1. Visit the repository on GitHub
+2. Click "Fork" to create your own copy
+3. Clone your fork instead:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/REPO_NAME.git ~/.config/nvim
+   ```
+
+This allows:
+- Tracking personal customizations
+- Syncing with upstream updates
+- Contributing improvements back
+
+See [Git Configuration Guide](../../docs/common/git-config.md) for complete forking workflow.
+
+### Plugin Installation
+
+On first launch, [Lazy.nvim](GLOSSARY.md#lazynvim) automatically:
+- Downloads all plugins
+- Installs dependencies
+- Compiles native modules
+
+**What you'll see**:
+- Progress bars for each plugin
+- Possible warnings (normal during first install)
+- Dashboard appears when complete
+
+**If installation fails**:
+```vim
+:Lazy sync     " Retry installation
+:Lazy health   " Check for issues
+```
+
+### Health Check Deep Dive
+
+The `:checkhealth` command verifies your installation. Understanding the output:
+
+**Core Neovim**:
+- Checks Neovim version and build
+- Verifies runtime paths
+
+**Providers**:
+- Python: Required for Python-based plugins
+- Node.js: Required for LSP servers and JavaScript plugins
+- Ruby: Optional, rarely needed
+
+**Plugins**:
+- Each plugin reports its health
+- Red errors need fixing
+- Yellow warnings are often optional
+
+**Fixing Common Issues**:
+
+**Missing Python provider**:
+```bash
+pip3 install --user pynvim
+```
+
+**Missing Node.js provider**:
+```bash
+npm install -g neovim
+```
+
+**Missing LSP servers**:
+```vim
+:Mason  " Opens LSP server installer
+```
+
+LSP servers install automatically when you open relevant file types, or install manually via [Mason](GLOSSARY.md#mason).
+
+### Advanced Dependencies
+
+**UV Package Manager** (optional, for MCP-Hub AI):
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# NixOS
+nix-env -iA nixpkgs.uv
+```
+
+See docs/UV_SETUP.md for details.
+
+## Verification
+
+Test core functionality after installation.
+
+### File Navigation
 
 ```vim
-:Mason
+<C-p>          " File finder (Telescope)
+<leader>ff     " Find files by name
+<leader>e      " File explorer (neo-tree)
 ```
 
-This opens the Mason interface where you can install language servers, formatters, and linters.
+### Text Search
 
-### Step 9: Email Integration Setup (Optional)
-
-If you want to use the Himalaya email integration with OAuth2:
-
-#### Environment Variable Setup
-
-**Critical**: The `SASL_PATH` environment variable must be set before starting Neovim for OAuth2 authentication to work.
-
-##### For NixOS Users
-If using home-manager with `sessionVariables`:
-```nix
-home.sessionVariables = {
-  SASL_PATH = "/path/to/cyrus-sasl-xoauth2/lib/sasl2:/path/to/cyrus-sasl/lib/sasl2";
-  GMAIL_CLIENT_ID = "your-oauth2-client-id";
-};
+```vim
+<leader>fs     " Search text in project (ripgrep)
+<leader>fw     " Find word under cursor
+<leader>fh     " Search help documentation
 ```
 
-**Important**: Start Neovim from a terminal that has loaded these session variables, not from a desktop launcher.
+### LSP Features
 
-##### For Non-NixOS Users
-Add to your shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.):
-```bash
-export SASL_PATH="/usr/lib/sasl2:/usr/lib64/sasl2:/usr/local/lib/sasl2"
-export GMAIL_CLIENT_ID="your-oauth2-client-id"
+Open any code file:
+```vim
+gd             " Go to definition
+K              " Hover documentation
+<leader>ca     " Code actions
+<leader>rn     " Rename symbol
 ```
 
-#### Verify Setup
-Before using email features, verify the environment:
-```bash
-# Check SASL_PATH is set
-echo $SASL_PATH
+### Git Integration
 
-# Check GMAIL_CLIENT_ID is set
-echo $GMAIL_CLIENT_ID
-
-# Test mbsync can find XOAUTH2
-mbsync --help | grep SASL
+```vim
+<leader>gs     " Git status (lazygit)
+<leader>gc     " Git commits
+<leader>gb     " Git blame
 ```
-
-If these variables are not set when Neovim starts:
-- Email sync will fail with authentication errors
-- OAuth token refresh will report "Missing OAuth2 credentials"
-
-## Post-Installation Configuration
-
-### Step 10: Customize Settings
-
-1. **Personal Information**: Update templates and git integration with your information
-2. **AI Configuration**: Set up AI providers (Claude, OpenAI, etc.) if desired
-3. **Keybindings**: Customize keybindings in `lua/neotex/config/keymaps.lua`
-4. **Theme**: Adjust colorscheme in `lua/neotex/plugins/ui/colorscheme.lua`
-
-### Step 11: Test Core Features
-
-Test essential functionality:
-
-1. **File Navigation**:
-   ```vim
-   <C-p>          " Open file finder
-   <leader>ff     " Search files with Telescope
-   <leader>e      " Toggle file explorer
-   ```
-
-2. **Text Search**:
-   ```vim
-   <leader>fs     " Search in project
-   <leader>fw     " Find word under cursor
-   ```
-
-3. **AI Integration** (if configured):
-   ```vim
-   <leader>ai     " Ask Avante AI
-   <leader>at     " Toggle project-specific TTS
-   ```
-
-4. **LaTeX Support** (open a .tex file):
-   ```vim
-   <leader>b      " Compile document
-   <leader>v      " View PDF
-   ```
 
 ## Troubleshooting
 
-### Plugin Issues
-If plugins fail to load:
+Common issues and their solutions.
+
+### Plugins Not Loading
+
+**Symptoms**: Commands don't work, features missing
+
+**Solutions**:
 ```vim
-:Lazy sync          " Sync all plugins
-:Lazy health        " Check plugin health
-:Lazy clean         " Clean unused plugins
+:Lazy sync          " Re-sync plugins
+:Lazy health        " Check plugin status
+:Lazy clean         " Remove unused plugins
 ```
 
-### LSP Issues
-If language servers aren't working:
+### LSP Not Working
+
+**Symptoms**: No code completion, no go-to-definition
+
+**Solutions**:
 ```vim
-:LspInfo           " Check LSP status
-:Mason             " Manage LSP servers
-:checkhealth lsp   " Detailed LSP health check
+:LspInfo            " Check LSP status
+:Mason              " Install LSP servers
+:checkhealth lsp    " Detailed LSP diagnostics
 ```
 
-### Performance Issues
-If Neovim is slow to start:
+Common cause: LSP server not installed for your file type.
+Fix: Open `:Mason` and install relevant server (e.g., `lua_ls` for Lua).
+
+### Icons Show as Boxes
+
+**Symptom**: File explorer shows squares instead of icons
+
+**Solution**: Install a Nerd Font and configure your terminal to use it.
+
+See [Platform Guides](../../docs/README.md) for Nerd Font installation.
+
+### Slow Startup
+
+**Solutions**:
 ```vim
-:AnalyzeStartup    " Analyze startup time
+:AnalyzeStartup    " See what's slow
 :ProfilePlugins    " Profile plugin load times
 ```
 
-### Reset Configuration
-If you need to start fresh:
-```bash
-# Remove plugin data
-rm -rf ~/.local/share/nvim
+Consider:
+- Disabling unused plugins
+- Lazy-loading more plugins
+- Reducing auto-commands
 
-# Remove plugin state
+### Complete Reset
+
+If things are broken beyond repair:
+
+```bash
+# Remove all plugin data
+rm -rf ~/.local/share/nvim
 rm -rf ~/.local/state/nvim
 
-# Restart Neovim - plugins will reinstall
+# Restart Neovim (will reinstall everything)
 nvim
 ```
 
-## Updating the Configuration
+## Updating Configuration
 
-To update your configuration with upstream changes:
+Keep your configuration current with upstream changes.
+
+### First-Time Setup
+
+Add the original repository as upstream:
 
 ```bash
-# Add the original repository as a remote
-git remote add upstream https://github.com/ORIGINAL_AUTHOR/nvim-config.git
+cd ~/.config/nvim
+git remote add upstream https://github.com/ORIGINAL_AUTHOR/REPO_NAME.git
+```
 
-# Fetch upstream changes
+### Pulling Updates
+
+```bash
+# Fetch latest changes
 git fetch upstream
 
-# Merge or rebase upstream changes
+# Merge into your configuration
 git merge upstream/main
-# OR
-git rebase upstream/main
 
-# Sync plugins after updates
+# Update plugins
 nvim -c "Lazy sync" -c "qa"
 ```
+
+**If you have local changes**:
+```bash
+git stash              # Save local changes
+git merge upstream/main
+git stash pop          # Restore local changes
+```
+
+See [Git Configuration Guide](../../docs/common/git-config.md) for complete workflow.
+
+## Next Steps
+
+After successful installation, explore these resources:
+
+### Essential Reading
+
+1. **[Technical Glossary](GLOSSARY.md)**: Understand LSP, Mason, providers, and other concepts
+2. **[Keybindings](MAPPINGS.md)**: Learn keyboard shortcuts (if file exists)
+3. **[Main README](../README.md)**: Feature overview and usage guide
+
+### Optional Features
+
+- **[Advanced Setup](ADVANCED_SETUP.md)**: LaTeX, email integration, terminal customization
+- **[Platform Guides](../../docs/README.md)**: OS-specific installation details
+- **[Zotero Integration](../../docs/common/zotero-setup.md)**: Bibliography management
+- **[Terminal Setup](../../docs/common/terminal-setup.md)**: Enhanced terminal experience
+
+### Customization
+
+Start customizing your configuration:
+- `lua/neotex/config/keymaps.lua` - Key bindings
+- `lua/neotex/plugins/ui/colorscheme.lua` - Color scheme
+- `lua/neotex/config/options.lua` - Editor options
 
 ## Getting Help
 
 If you encounter issues:
 
-1. **Check Health**: Run `:checkhealth` for diagnostic information
-2. **Review Logs**: Check `~/.local/state/nvim/log/` for error logs
-3. **Ask AI**: Use `<leader>ai` to ask Avante about configuration issues
-4. **Documentation**: Refer to the comprehensive README files in each directory
-5. **Scripts**: Use diagnostic scripts in the `scripts/` directory
+1. **Health Check**: `:checkhealth` provides diagnostic information
+2. **Logs**: Check `~/.local/state/nvim/log/` for error messages
+3. **Documentation**: This guide and linked resources
+4. **AI Assistant**: `<leader>ai` for configuration questions (if configured)
+5. **GitHub Issues**: Report bugs or ask questions on GitHub
 
-## Next Steps
+## Additional Resources
 
-After successful installation:
-
-1. **Read the Documentation**: Start with [README.md](../README.md)
-2. **Learn Keybindings**: Review [MAPPINGS.md](MAPPINGS.md)
-3. **Explore Features**: Try the dashboard options and various workflows
-4. **Customize**: Adapt the configuration to your specific needs
+- **[Installation Documentation Index](../../docs/README.md)**: All installation guides
+- **[Prerequisites Reference](../../docs/common/prerequisites.md)**: Detailed dependency info
+- **[Git Configuration](../../docs/common/git-config.md)**: Git workflow and setup
+- **[Technical Glossary](GLOSSARY.md)**: Term definitions
 
 ## Navigation
 
-- [Main Configuration ←](../README.md)
-- [Keybinding Reference →](MAPPINGS.md)
+- [← Main Configuration](../README.md)
+- [Technical Glossary →](GLOSSARY.md)
+- [Advanced Setup →](ADVANCED_SETUP.md)
+- [Platform Guides →](../../docs/README.md)
 
-Welcome to your new Neovim configuration! <�
+---
+
+**Welcome to your enhanced Neovim experience!**
