@@ -88,34 +88,56 @@ This configuration requires several dependencies including Neovim (≥ 0.9.0), G
 
 ## Documentation Structure
 
-This configuration features comprehensive documentation throughout the directory structure. Each subdirectory contains a README.md file with detailed information about its purpose, components, and usage.
+This configuration features comprehensive documentation following [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md). Every directory contains a README.md with detailed information about its purpose, components, and usage.
 
-### Core Documentation Areas
+### Central Documentation (docs/)
 
+Topic-focused documentation covering major systems and workflows:
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System design, initialization flow, and component architecture
+- **[Installation](docs/INSTALLATION.md)** - Setup instructions, dependencies, and health checks
+- **[Mappings](docs/MAPPINGS.md)** - Complete keybinding reference organized by context
+- **[AI Tooling](docs/AI_TOOLING.md)** - Git worktrees with OpenCode for parallel development
+- **[Research Tooling](docs/RESEARCH_TOOLING.md)** - LaTeX, Markdown, Jupyter, and academic workflows
+- **[NIX Workflows](docs/NIX_WORKFLOWS.md)** - NixOS system integration and management
+- **[Formal Verification](docs/FORMAL_VERIFICATION.md)** - Lean 4 and model-checker integration
+- **[Notifications](docs/NOTIFICATIONS.md)** - Unified notification system
+- **[Code Standards](docs/CODE_STANDARDS.md)** - Lua coding conventions
+- **[Documentation Standards](docs/DOCUMENTATION_STANDARDS.md)** - Documentation requirements
+
+### Module Documentation (lua/neotex/)
+
+Detailed READMEs in every directory documenting modules and functionality:
+
+- **[NeoTeX Namespace](lua/neotex/README.md)** - Configuration overview and bootstrap process
 - **[Configuration Core](lua/neotex/config/README.md)** - Essential Neovim settings (options, keymaps, autocommands)
 - **[Plugin System](lua/neotex/plugins/README.md)** - Plugin organization and management
+  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
   - [Editor Enhancements](lua/neotex/plugins/editor/README.md) - Navigation, formatting, and terminal integration
   - [LSP Configuration](lua/neotex/plugins/lsp/README.md) - Language server setup and completion
   - [Text Processing](lua/neotex/plugins/text/README.md) - LaTeX, Markdown, Jupyter, and Lean support
   - [Development Tools](lua/neotex/plugins/tools/README.md) - Git, snippets, and productivity enhancements
   - [UI Components](lua/neotex/plugins/ui/README.md) - File explorer, status line, and visual elements
-  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
+- **[Core Functionality](lua/neotex/core/README.md)** - Fundamental utilities and base functionality
 - **[Utility Functions](lua/neotex/util/README.md)** - Helper functions and performance optimization tools
+- **[Deprecated Code](lua/neotex/deprecated/README.md)** - Legacy code preserved for reference
+
+### Additional Documentation
+
 - **[File Type Support](after/README.md)** - Language-specific configurations and detection
 - **[Templates](templates/README.md)** - Document templates for LaTeX, presentations, and academic writing
 - **[Code Snippets](snippets/README.md)** - Custom snippet collections for rapid development
 - **[Scripts](scripts/README.md)** - Maintenance and diagnostic utilities
 
-### Navigation
+### Navigation Standards
 
-Each README file includes:
-- Detailed module documentation
-- Usage examples and configuration options
-- Integration points with other system components
-- Navigation links to related documentation
-- Parent/child directory relationships
+Each README follows [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md) and includes:
+- **Purpose Statement**: Clear description of directory role
+- **Module Documentation**: Details for each file with examples
+- **Related Documentation**: Cross-references to relevant docs
+- **Navigation Links**: Parent and subdirectory relationships
 
-This documentation structure ensures that information about any component is easily accessible and maintains consistency across the entire configuration.
+This documentation structure ensures information is easily accessible with consistent organization throughout the configuration.
 
 ## Maintenance and Troubleshooting
 
