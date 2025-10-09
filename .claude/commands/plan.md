@@ -18,6 +18,48 @@ I'll parse the arguments to separate the feature description from any report pat
 
 ## Process
 
+### 0. Feature Description Complexity Pre-Analysis
+
+**Before starting plan creation**, I'll analyze the feature description for initial complexity estimation and template recommendations.
+
+**Process**:
+1. **Load Complexity Utilities**
+   ```bash
+   source .claude/lib/complexity-utils.sh
+   ```
+
+2. **Analyze Feature Description**
+   ```bash
+   ANALYSIS=$(analyze_feature_description "$FEATURE_DESCRIPTION")
+   ```
+
+3. **Display Analysis Results**
+   ```
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   COMPLEXITY PRE-ANALYSIS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Estimated complexity: X.X (Medium)
+   Recommended structure: single-file (expand if needed)
+   Suggested phases: 4-5
+   Matching templates: test-suite, crud-feature
+
+   Recommendations:
+   - Consider using /plan-from-template for faster planning
+   - Template suggestions based on keywords in description
+   - All plans start as single-file regardless of complexity
+   - Use /expand phase during implementation if phases prove complex
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ```
+
+4. **User Options**
+   - **Continue**: Proceed with manual plan creation
+   - **Skip**: Use `--skip-analysis` flag to bypass this step
+   - **Template**: Consider using `/plan-from-template <template-name>` if templates match
+
+**Note**: This analysis is informational only. It helps guide planning decisions but doesn't restrict plan creation. All plans start as single files (Level 0) regardless of estimated complexity.
+
 ### 1. Report Integration (if provided)
 If research reports are provided, I'll:
 - Read and analyze each report
