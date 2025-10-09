@@ -1,6 +1,6 @@
 # NeoTex: AI-Powered NeoVim for Research, Development, and System Management
 
-A modern NeoVim configuration built for **AI-assisted coding**, **professional LaTeX typesetting**, **NixOS system management**, and **multi-language development** with comprehensive LSP support and Git workflow integration.
+A modern NeoVim configuration built for **AI-assisted coding**, **LaTeX typesetting**, **formal verification with Lean**, **NixOS system management**, and **multi-language development** with comprehensive LSP support and Git workflow integration.
 
 ## Core Focus Areas
 
@@ -43,7 +43,19 @@ A modern NeoVim configuration built for **AI-assisted coding**, **professional L
 
 **See**: [NIX Workflows Documentation](nvim/docs/NIX_WORKFLOWS.md)
 
-### 4. Modern Language Development
+### 4. Formal Verification with Lean
+
+**Interactive Theorem Proving Environment**:
+
+- **Lean 4 Language Server** - Full LSP support with intelligent completion and diagnostics
+- **Infoview Integration** - Live goal state display and tactic feedback
+- **Proof Navigation** - Jump to definitions, find references, hover documentation
+- **Unicode Input** - LaTeX-style abbreviations for mathematical symbols
+- **Project Management** - Support for Lean projects with dependencies and imports
+
+**See**: [Formal Verification Documentation](nvim/docs/FORMAL_VERIFICATION.md)
+
+### 5. Modern Language Development
 
 **Comprehensive LSP Support** with intelligent code assistance for:
 
@@ -56,7 +68,7 @@ A modern NeoVim configuration built for **AI-assisted coding**, **professional L
 
 **See**: [LSP Configuration](nvim/lua/neotex/plugins/lsp/README.md)
 
-### 5. Git Workflow Integration
+### 6. Git Workflow Integration
 
 **Professional Version Control**:
 
@@ -87,6 +99,14 @@ A modern NeoVim configuration built for **AI-assisted coding**, **professional L
 - **Citation Tools** - Zotero integration with smart bibliography management
 - **Collaborative Workflows** - Git-based version control for academic papers
 - **Markdown Support** - Pandoc integration for format conversion
+
+### Formal Verification Tools
+
+- **Lean 4 Integration** - Interactive theorem proving with live feedback
+- **Infoview** - Real-time proof state visualization and goal tracking
+- **Unicode Math** - LaTeX-style input for mathematical notation
+- **Proof Navigation** - Seamless jumping between definitions and theorems
+- **Project Support** - Full support for Lean projects with dependencies
 
 ### Development Productivity
 
