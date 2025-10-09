@@ -2650,6 +2650,8 @@ local function load_artifact_locally(entry, entry_type, silent, force)
   local dest = vim.fn.getcwd() .. "/.claude/" .. subdir .. "/" .. vim.fn.fnamemodify(entry.filepath, ":t")
 
   -- When forcing an overwrite of a local file, we need to get the source from global
+  -- Only resolve global filepath when forcing replacement of local artifact
+  -- Local artifacts may have modifications we want to preserve on first load
   local src
   if force and entry.is_local then
     -- Local file - get from global directory
@@ -2956,7 +2958,78 @@ function M.show_commands_picker(opts)
         end
       end)
 
+      -- Builds confirmation dialog for artifact replacement
+      -- @param artifact_name string: Name of artifact being replaced
+      -- @param is_local boolean: Whether artifact is local
+      -- @param has_dependents boolean: Whether artifact has dependent commands
+      -- @param dependent_conflicts table: List of dependent commands with local versions
+      -- @param dependent_commands table|string: List of all dependent commands
+      -- @return table: Dialog configuration with message, buttons, and default_choice
+      local function build_confirmation_dialog(artifact_name, is_local, has_dependents, dependent_conflicts, dependent_commands)
+        local message, buttons, default_choice
+
+        if has_dependents and #dependent_conflicts > 0 then
+          -- Has dependents with conflicts
+          local conflict_list = table.concat(dependent_conflicts, ", ")
+          message = string.format(
+            "Local version exists for '%s'\n\n" ..
+            "Replace with global version?\n\n" ..
+            "Dependents with local versions: %s",
+            artifact_name, conflict_list
+          )
+          buttons = string.format(
+            "&Replace '%s' only\n" ..
+            "Replace '%s' + &dependents\n" ..
+            "&Cancel",
+            artifact_name, artifact_name
+          )
+          default_choice = 3  -- Default to Cancel
+        elseif has_dependents then
+          -- Has dependents but no conflicts (all new)
+          local deps = type(dependent_commands) == "table"
+            and dependent_commands
+            or vim.split(dependent_commands, ",")
+          local dep_list = table.concat(vim.tbl_map(vim.trim, deps), ", ")
+          message = string.format(
+            "Local version exists for '%s'\n\n" ..
+            "Replace with global version?\n\n" ..
+            "Dependents (all new): %s",
+            artifact_name, dep_list
+          )
+          buttons = string.format(
+            "&Replace '%s' only\n" ..
+            "Replace '%s' + &dependents\n" ..
+            "&Cancel",
+            artifact_name, artifact_name
+          )
+          default_choice = 3  -- Default to Cancel
+        else
+          -- No dependents
+          message = string.format(
+            "Local version exists for '%s'\n\n" ..
+            "Replace with global version?",
+            artifact_name
+          )
+          buttons = string.format(
+            "&Replace '%s'\n&Cancel",
+            artifact_name
+          )
+          default_choice = 2  -- Default to Cancel
+        end
+
+        return {
+          message = message,
+          buttons = buttons,
+          default_choice = default_choice
+        }
+      end
+
       -- Load artifact locally with Ctrl-l (keeps picker open and refreshes)
+      -- <C-l> handler is complex (150+ lines) due to:
+      -- 1. Local vs global artifact detection
+      -- 2. Confirmation dialog with multiple options
+      -- 3. Buffer reload logic for modified buffers
+      -- 4. Error handling for various failure modes
       map("i", "<C-l>", function()
         local selection = action_state.get_selected_entry()
         if not selection or selection.value.is_help or selection.value.is_load_all or selection.value.is_heading then
@@ -2966,69 +3039,71 @@ function M.show_commands_picker(opts)
         -- Helper function to execute the load operation
         local function do_load(skip_dependents, force)
           local success = false
-          local loaded_filepath = nil
 
           if selection.value.command then
             success = load_command_locally(selection.value.command, false, skip_dependents, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/commands/" .. selection.value.command.name .. ".md"
-            end
           elseif selection.value.agent then
             success = load_agent_locally(selection.value.agent, false, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/agents/" .. selection.value.agent.name .. ".md"
-            end
           elseif selection.value.entry_type == "hook_event" then
             -- Load all hooks for this event
             for _, hook in ipairs(selection.value.hooks or {}) do
               local hook_success = load_hook_locally(hook, false, force)
               success = success or hook_success
-              if hook_success and not loaded_filepath then
-                loaded_filepath = vim.fn.getcwd() .. "/.claude/hooks/" .. hook.name
-              end
             end
           elseif selection.value.entry_type == "tts_file" then
             success = load_tts_file_locally(selection.value, false, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/" .. selection.value.directory .. "/" .. selection.value.name
-            end
           elseif selection.value.entry_type == "template" then
             success = load_artifact_locally(selection.value, "template", false, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/templates/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
-            end
           elseif selection.value.entry_type == "lib" then
             success = load_artifact_locally(selection.value, "lib", false, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/lib/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
-            end
           elseif selection.value.entry_type == "doc" then
             success = load_artifact_locally(selection.value, "doc", false, force)
-            if success then
-              loaded_filepath = vim.fn.getcwd() .. "/.claude/docs/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
-            end
           end
 
           -- Reload buffer if the file is currently open and was replaced
-          if success and loaded_filepath and force then
-            -- Find buffer for this file
-            local bufnr = vim.fn.bufnr(loaded_filepath)
-            if bufnr ~= -1 then
-              -- Buffer exists - reload it from disk
-              vim.schedule(function()
-                -- Check if buffer is loaded
-                if vim.api.nvim_buf_is_loaded(bufnr) then
-                  -- Use :checktime to reload buffer from disk
-                  vim.cmd(string.format("checktime %d", bufnr))
-                  -- Also explicitly reload if modified
-                  local modified = vim.api.nvim_buf_get_option(bufnr, 'modified')
-                  if modified then
-                    -- Discard changes and reload
-                    vim.api.nvim_buf_set_option(bufnr, 'modified', false)
-                    vim.cmd(string.format("buffer %d | edit", bufnr))
+          if success and force then
+            -- Build filepath only when needed (replacement case)
+            local loaded_filepath = nil
+            if selection.value.command then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/commands/" .. selection.value.command.name .. ".md"
+            elseif selection.value.agent then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/agents/" .. selection.value.agent.name .. ".md"
+            elseif selection.value.entry_type == "hook_event" then
+              if selection.value.hooks and #selection.value.hooks > 0 then
+                loaded_filepath = vim.fn.getcwd() .. "/.claude/hooks/" .. selection.value.hooks[1].name
+              end
+            elseif selection.value.entry_type == "tts_file" then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/" .. selection.value.directory .. "/" .. selection.value.name
+            elseif selection.value.entry_type == "template" then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/templates/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            elseif selection.value.entry_type == "lib" then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/lib/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            elseif selection.value.entry_type == "doc" then
+              loaded_filepath = vim.fn.getcwd() .. "/.claude/docs/" .. vim.fn.fnamemodify(selection.value.filepath, ":t")
+            end
+
+            if loaded_filepath then
+              -- Find buffer for this file
+              local bufnr = vim.fn.bufnr(loaded_filepath)
+              if bufnr ~= -1 then
+                -- Buffer exists - reload it from disk
+                -- Use vim.schedule to ensure buffer reload happens after picker closes
+                -- Immediate reload can cause picker UI glitches
+                vim.schedule(function()
+                  -- Check if buffer is loaded
+                  if vim.api.nvim_buf_is_loaded(bufnr) then
+                    -- Use :checktime to reload buffer from disk
+                    vim.cmd(string.format("checktime %d", bufnr))
+                    -- Also explicitly reload if modified
+                    local modified = vim.api.nvim_buf_get_option(bufnr, 'modified')
+                    if modified then
+                      -- Discard changes and reload
+                      vim.api.nvim_buf_set_option(bufnr, 'modified', false)
+                      vim.cmd(string.format("buffer %d | edit", bufnr))
+                    end
                   end
-                end
-              end)
+                end)
+              end
             end
           end
 
@@ -3063,7 +3138,8 @@ function M.show_commands_picker(opts)
           is_local = selection.value.agent.is_local
           artifact_name = selection.value.agent.name
         elseif selection.value.entry_type == "hook_event" then
-          -- For hook events, check if any hook is local
+          -- Detect if artifact is local by checking first hook event
+          -- Hook events are only present for local artifacts in project directory
           if selection.value.hooks and #selection.value.hooks > 0 then
             is_local = selection.value.hooks[1].is_local
             artifact_name = selection.value.hooks[1].name
@@ -3087,60 +3163,18 @@ function M.show_commands_picker(opts)
           local dependent_conflicts = has_dependents
             and find_dependent_conflicts(selection.value.command, project_dir)
             or {}
+          local dependent_commands = has_dependents and selection.value.command.dependent_commands or nil
 
-          -- Build confirmation message and buttons
-          local message, buttons, default_choice
+          -- Build confirmation dialog
+          local dialog_config = build_confirmation_dialog(
+            artifact_name,
+            is_local,
+            has_dependents,
+            dependent_conflicts,
+            dependent_commands
+          )
 
-          if has_dependents and #dependent_conflicts > 0 then
-            -- Has dependents with conflicts
-            local conflict_list = table.concat(dependent_conflicts, ", ")
-            message = string.format(
-              "Local version exists for '%s'\n\n" ..
-              "Replace with global version?\n\n" ..
-              "Dependents with local versions: %s",
-              artifact_name, conflict_list
-            )
-            buttons = string.format(
-              "&Replace '%s' only\n" ..
-              "Replace '%s' + &dependents\n" ..
-              "&Cancel",
-              artifact_name, artifact_name
-            )
-            default_choice = 3  -- Default to Cancel
-          elseif has_dependents then
-            -- Has dependents but no conflicts (all new)
-            local deps = type(selection.value.command.dependent_commands) == "table"
-              and selection.value.command.dependent_commands
-              or vim.split(selection.value.command.dependent_commands, ",")
-            local dep_list = table.concat(vim.tbl_map(vim.trim, deps), ", ")
-            message = string.format(
-              "Local version exists for '%s'\n\n" ..
-              "Replace with global version?\n\n" ..
-              "Dependents (all new): %s",
-              artifact_name, dep_list
-            )
-            buttons = string.format(
-              "&Replace '%s' only\n" ..
-              "Replace '%s' + &dependents\n" ..
-              "&Cancel",
-              artifact_name, artifact_name
-            )
-            default_choice = 3  -- Default to Cancel
-          else
-            -- No dependents
-            message = string.format(
-              "Local version exists for '%s'\n\n" ..
-              "Replace with global version?",
-              artifact_name
-            )
-            buttons = string.format(
-              "&Replace '%s'\n&Cancel",
-              artifact_name
-            )
-            default_choice = 2  -- Default to Cancel
-          end
-
-          local choice = vim.fn.confirm(message, buttons, default_choice)
+          local choice = vim.fn.confirm(dialog_config.message, dialog_config.buttons, dialog_config.default_choice)
 
           -- Handle the choice
           if choice == 0 then
