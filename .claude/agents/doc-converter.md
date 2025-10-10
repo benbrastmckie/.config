@@ -112,6 +112,20 @@ pandoc "document.docx" \
 marker_pdf "document.pdf" "document.md"
 ```
 
+**Markdown to DOCX**:
+```bash
+pandoc "document.md" -o "document.docx"
+```
+
+**Markdown to PDF**:
+```bash
+# With Typst engine (recommended)
+pandoc "document.md" -o "document.pdf" --pdf-engine=typst
+
+# With XeLaTeX engine (fallback)
+pandoc "document.md" -o "document.pdf" --pdf-engine=xelatex
+```
+
 ### Batch Directory Conversion
 
 Create organized output structure:
