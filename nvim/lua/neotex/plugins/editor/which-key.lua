@@ -290,6 +290,65 @@ return {
           )
         end
       end, desc = "toggle tts", icon = "󰔊" },
+
+      -- Yolo mode toggle - enables/disables --dangerously-skip-permissions flag
+      { "<leader>ay", function()
+        local config_path = vim.fn.expand("~/.config/nvim/lua/neotex/plugins/ai/claudecode.lua")
+
+        if vim.fn.filereadable(config_path) ~= 1 then
+          notify.editor(
+            "Claude Code config not found",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        local lines = vim.fn.readfile(config_path)
+        local modified = false
+        local yolo_enabled = false
+
+        for i, line in ipairs(lines) do
+          if line:match('%s*command = "claude') then
+            if line:match('--dangerously%-skip%-permissions') then
+              -- Disable yolo mode
+              lines[i] = '    command = "claude",'
+              yolo_enabled = false
+            else
+              -- Enable yolo mode
+              lines[i] = '    command = "claude --dangerously-skip-permissions",'
+              yolo_enabled = true
+            end
+            modified = true
+            break
+          end
+        end
+
+        if not modified then
+          notify.editor(
+            "Could not find command line in config",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        local write_ok = pcall(vim.fn.writefile, lines, config_path)
+        if not write_ok then
+          notify.editor(
+            "Failed to write config file",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        notify.editor(
+          yolo_enabled and "Yolo mode enabled (restart required)" or "Yolo mode disabled (restart required)",
+          notify.categories.USER_ACTION,
+          { config_path = config_path, yolo_enabled = yolo_enabled }
+        )
+      end, desc = "toggle yolo mode", icon = "󰒓" },
     })
 
     -- ============================================================================
