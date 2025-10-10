@@ -273,144 +273,31 @@ This is informational only and helps understand the current plan organization.
 
 ### 1.55. Proactive Expansion Check
 
-Before implementation begins, evaluate if the phase should be expanded using agent-based judgment:
+Before implementation, evaluate if phase should be expanded using agent-based judgment.
 
-**Evaluation Approach:**
+**Evaluation criteria**: Task complexity, scope breadth, interrelationships, parallel work potential, clarity vs detail tradeoff
 
-The primary agent (executing `/implement`) has the current phase in context. Rather than using shell script heuristics, I'll make an informed judgment about whether this phase would benefit from expansion to a separate file.
+**If expansion recommended**: Display formatted recommendation with rationale and `/expand phase` command
 
-**Evaluation Criteria:**
+**If not needed**: Continue silently to implementation
 
-I'll consider:
-- **Task complexity**: Not just count, but actual complexity of each task
-- **Scope breadth**: How many files, modules, or subsystems are touched
-- **Interrelationships**: Dependencies and connections between tasks
-- **Potential for parallel work**: Could tasks be better organized for parallel execution
-- **Clarity vs detail tradeoff**: Would expansion help or create unnecessary fragmentation
-
-**Evaluation Process:**
-
-```
-Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-expansion.md
-
-Current Phase [N]: [Phase Name]
-
-Tasks:
-[task list from phase]
-
-Follow the evaluation criteria and provide recommendation.
-```
-
-**If Expansion Recommended:**
-
-Display formatted recommendation:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXPANSION RECOMMENDATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase [N]: [Phase Name]
-
-Rationale:
-  [Agent's 2-3 sentence rationale based on understanding the phase]
-
-Recommendation:
-  Consider expanding this phase to a separate file for better organization.
-
-Command:
-  /expand phase <plan-path> [N]
-
-Note: This is a recommendation only. You can expand now or continue
-with implementation. The phase can be expanded later if needed.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**If No Expansion Needed:**
-
-Continue silently to implementation. No message needed for phases that are appropriately scoped.
-
-**Already Expanded:**
-
-If Step 1.4 detected the phase is already expanded, note that in the evaluation and skip recommendation.
-
-**Non-Blocking:**
-
-This check is purely informative. The user can choose to:
-- Expand now using the recommended command
-- Continue with implementation as-is
-- Expand later if phase proves complex during implementation
-
-**Relationship to Step 3.4 (Reactive Expansion):**
-
-- **Step 1.55 (Proactive)**: Evaluates BEFORE implementation based on plan content
-- **Step 3.4 (Reactive)**: Evaluates AFTER implementation based on actual complexity encountered
-- **Different contexts**: Proactive = plan preview, Reactive = implementation experience
-- **Different actions**: Proactive = recommendation only, Reactive = auto-revision via `/revise --auto-mode`
-- **Complementary**: Both serve different purposes in the workflow
+**Relationship to reactive expansion** (Step 3.4):
+- **Proactive** (1.55): Before implementation, recommendation only
+- **Reactive** (3.4): After implementation, auto-revision via `/revise --auto-mode`
 
 ### 1.6. Parallel Wave Execution
 
-After all phases in the wave are prepared (Steps 1-1.5 complete for each), execute the wave:
+For parallel agent invocation patterns, see [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation).
 
-**Single Phase Wave** (most common):
-- Execute the phase normally (agent delegation or direct)
-- Wait for completion
-- Proceed to testing and commit
+**Single Phase Wave**: Execute normally (agent delegation or direct), wait, proceed to testing
 
-**Multi-Phase Wave** (parallel execution):
-1. **Invoke all phases in parallel**:
-   - Create multiple Task tool calls in a single message
-   - Each phase gets its own agent invocation
-   - Example for Wave 2 with phases 2 and 3:
-   ```
-   Executing Wave 2 with 2 phases in parallel: Phases 2 and 3
+**Multi-Phase Wave**:
+1. Invoke all phases in parallel using multiple Task tool calls in one message
+2. Wait for wave completion, collect results, aggregate progress markers
+3. Check for failures: If any failed, stop execution and save checkpoint
+4. Proceed to wave testing and commit all changes together
 
-   [Multiple Task tool calls in this single message:]
-
-   Task { (Phase 2)
-     subagent_type: "general-purpose"
-     description: "Implement Phase 2 using code-writer protocol"
-     prompt: "Read and follow the behavioral guidelines from:
-             /home/benjamin/.config/.claude/agents/code-writer.md
-
-             You are acting as a Code Writer with the tools and constraints
-             defined in that file.
-
-             [Phase 2 tasks and context]"
-   }
-
-   Task { (Phase 3)
-     subagent_type: "general-purpose"
-     description: "Implement Phase 3 using code-writer protocol"
-     prompt: "Read and follow the behavioral guidelines from:
-             /home/benjamin/.config/.claude/agents/code-writer.md
-
-             You are acting as a Code Writer with the tools and constraints
-             defined in that file.
-
-             [Phase 3 tasks and context]"
-   }
-   ```
-
-2. **Wait for wave completion**:
-   - All phases in wave must complete before proceeding
-   - Collect results from each phase execution
-   - Aggregate any progress markers from parallel agents
-
-3. **Check for failures**:
-   - If any phase failed, stop execution
-   - Report which phases succeeded and which failed
-   - Save checkpoint with partial completion
-   - User can fix issues and resume
-
-4. **Proceed to wave testing and commit**:
-   - Run tests for all phases in wave
-   - Commit all changes from wave together
-   - Move to next wave
-
-**Parallelism Limits**:
-- Maximum 3 concurrent phases per wave
-- If wave has >3 phases, split into sub-waves of 3
-- Ensures system stability and manageable error handling
+**Parallelism limits**: Max 3 concurrent phases per wave, split into sub-waves if needed
 
 ### 2. Implementation
 Create or modify the necessary files according to the plan specifications.
@@ -426,302 +313,27 @@ Run tests by:
 
 ### 3.3. Enhanced Error Analysis (if tests fail)
 
-If tests fail, provide enhanced error messages with fix suggestions:
+**Workflow**: Capture error output → Run `.claude/lib/analyze-error.sh` → Display categorized error with location, context, suggestions, debug commands
 
-**Step 1: Capture Error Output**
-- Capture full test output including error messages
-- Identify failed tests and error locations
+**Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission
 
-**Step 2: Run Error Analysis**
-```bash
-# Analyze error output with enhanced error tool
-.claude/lib/analyze-error.sh "$ERROR_OUTPUT"
-```
-
-**Step 3: Display Enhanced Error Message**
-The enhanced analysis includes:
-- **Error Type**: Categorized (syntax, test_failure, file_not_found, import_error, null_error, timeout, permission)
-- **Location**: File and line number where error occurred
-- **Context**: 3 lines before and after error location
-- **Suggestions**: 2-3 specific, actionable fix suggestions
-- **Debug Commands**: Commands to investigate further
-
-**Step 4: Graceful Degradation**
-If tests fail:
-- Document what succeeded vs. what failed
-- Preserve partial progress
-- Suggest next steps:
-  - `/debug "<error description>"` for investigation
-  - Manual fixes based on suggestions
-  - Review recent changes with git diff
-
-**Example Enhanced Error Output:**
-```
-===============================================
-Enhanced Error Analysis
-===============================================
-
-Error Type: test_failure
-Location: tests/auth_spec.lua:42
-
-Context (around line 42):
-   39  setup(function()
-   40    session = mock_session_factory()
-   41  end)
-   42  it("should login with valid credentials", function()
-   43    local result = auth.login(session, "user", "pass")
-   44    assert.is_not_nil(result)
-   45  end)
-
-Suggestions:
-1. Check test setup - verify mocks and fixtures are initialized correctly
-2. Review test data - ensure test inputs match expected types and values
-3. Check for race conditions - add delays or synchronization if timing-sensitive
-4. Run test in isolation: :TestNearest to isolate the failure
-
-Debug Commands:
-- Investigate further: /debug "auth login test failing with nil result"
-- View file: nvim tests/auth_spec.lua
-- Run tests: :TestNearest or :TestFile
-===============================================
-```
+**Graceful degradation**: Document partial progress, suggest `/debug` or manual fixes
 
 ### 3.4. Adaptive Planning Detection
 
-After each phase implementation (successful or with errors), check if plan revision is needed.
+**Overview**: See [Adaptive Planning Features](#adaptive-planning-features) section for full details.
 
-**Step 1: Load Checkpoint and Check Replan Limits**
+**Workflow**:
+1. Load checkpoint and check replan limits (max 2 per phase)
+2. Detect triggers: Complexity (score >8 or >10 tasks), Test failure pattern (2+ consecutive), Scope drift (manual flag)
+3. Build revision context JSON and invoke `/revise --auto-mode`
+4. Parse response: Update checkpoint, increment counters, log replan history
+5. Loop prevention: Escalate to user if limit reached
 
-```bash
-# Load current checkpoint
-CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement "$PROJECT_NAME")
-REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r '.replanning_count // 0')
-PHASE_REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r ".replan_phase_counts.phase_${CURRENT_PHASE} // 0")
-
-# Log loop prevention check
-log_loop_prevention "$CURRENT_PHASE" "$PHASE_REPLAN_COUNT" "2"
-
-# Check replan limit
-if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
-  # Skip detection, log warning, escalate to user
-  SKIP_REPLAN=true
-fi
-```
-
-**Replan Limit Check:**
-- If `PHASE_REPLAN_COUNT >= 2`: Skip detection, log warning, escalate to user
-- Otherwise: Proceed with trigger detection
-
-**Step 2: Detect Triggers**
-
-Three trigger types are checked in order:
-
-**Trigger 1: Complexity Threshold Exceeded**
-
-Detection after successful phase completion:
-```bash
-# Calculate phase complexity score
-COMPLEXITY_RESULT=$(.claude/lib/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
-COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.complexity_score')
-
-# Extract task count
-TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
-
-# Log complexity check (always, even if not triggered)
-log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "8" "$TASK_COUNT"
-
-# Check threshold
-if [ "$COMPLEXITY_SCORE" -gt 8 ] || [ "$TASK_COUNT" -gt 10 ]; then
-  TRIGGER_TYPE="expand_phase"
-  TRIGGER_REASON="Phase complexity score $COMPLEXITY_SCORE exceeds threshold 8 ($TASK_COUNT tasks)"
-fi
-```
-
-**Trigger 2: Test Failure Pattern**
-
-Detection after test failures (2+ consecutive failures in same phase):
-```bash
-# Track failure count in checkpoint
-if [ "$TEST_RESULT" = "failed" ]; then
-  PHASE_FAILURE_COUNT=$((PHASE_FAILURE_COUNT + 1))
-
-  # Log test failure pattern check
-  log_test_failure_pattern "$CURRENT_PHASE" "$PHASE_FAILURE_COUNT" "2"
-
-  if [ "$PHASE_FAILURE_COUNT" -ge 2 ]; then
-    TRIGGER_TYPE="add_phase"
-    TRIGGER_REASON="Two consecutive test failures in phase $CURRENT_PHASE"
-    # Analyze failure logs for missing dependencies
-    FAILURE_ANALYSIS=$(.claude/lib/analyze-error.sh "$ERROR_OUTPUT")
-  fi
-fi
-```
-
-**Trigger 3: Scope Drift Detection**
-
-Detection via manual flag or "out of scope" annotations:
-```bash
-# Manual trigger via flag
-if [ "$REPORT_SCOPE_DRIFT" = "true" ]; then
-  TRIGGER_TYPE="update_tasks"
-  TRIGGER_REASON="$SCOPE_DRIFT_DESCRIPTION"
-
-  # Log scope drift detection
-  log_scope_drift "$CURRENT_PHASE" "$SCOPE_DRIFT_DESCRIPTION"
-fi
-```
-
-**Step 3: Invoke /revise --auto-mode**
-
-If trigger detected and replan limit not exceeded:
-
-```bash
-# Build revision context JSON
-REVISION_CONTEXT=$(jq -n \
-  --arg type "$TRIGGER_TYPE" \
-  --argjson phase "$CURRENT_PHASE" \
-  --arg reason "$TRIGGER_REASON" \
-  --arg action "$SUGGESTED_ACTION" \
-  --argjson metrics "$TRIGGER_METRICS" \
-  '{
-    revision_type: $type,
-    current_phase: $phase,
-    reason: $reason,
-    suggested_action: $action,
-    complexity_metrics: $metrics,
-    test_failure_log: $failure_log,
-    insert_position: $insert_pos,
-    new_phase_name: $new_name
-  }')
-
-# Invoke /revise with auto-mode
-REVISE_RESULT=$(invoke_slash_command "/revise $PLAN_PATH --auto-mode --context '$REVISION_CONTEXT'")
-```
-
-**Step 4: Parse Revision Response**
-
-```bash
-# Check revision status
-REVISION_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
-
-if [ "$REVISION_STATUS" = "success" ]; then
-  # Update checkpoint with replan metadata
-  UPDATED_PLAN=$(echo "$REVISE_RESULT" | jq -r '.plan_file')
-  ACTION_TAKEN=$(echo "$REVISE_RESULT" | jq -r '.action_taken')
-
-  # Increment replan counters
-  REPLAN_COUNT=$((REPLAN_COUNT + 1))
-  PHASE_REPLAN_COUNT=$((PHASE_REPLAN_COUNT + 1))
-
-  # Add to replan history
-  REPLAN_EVENT=$(jq -n \
-    --argjson phase "$CURRENT_PHASE" \
-    --arg type "$TRIGGER_TYPE" \
-    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg reason "$TRIGGER_REASON" \
-    '{
-      phase: $phase,
-      type: $type,
-      timestamp: $timestamp,
-      reason: $reason,
-      action: $action_taken
-    }')
-
-  # Update checkpoint
-  .claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" \
-    --replan-count "$REPLAN_COUNT" \
-    --phase-replan-count "phase_${CURRENT_PHASE}=$PHASE_REPLAN_COUNT" \
-    --last-replan-reason "$TRIGGER_REASON" \
-    --add-replan-history "$REPLAN_EVENT"
-
-  # Log successful replan invocation
-  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "success" "$ACTION_TAKEN"
-
-  # Log and continue with updated plan
-  echo "Plan revised: $ACTION_TAKEN"
-  echo "Updated plan: $UPDATED_PLAN"
-
-  # Reload plan and continue implementation
-  PLAN_PATH="$UPDATED_PLAN"
-else
-  # Revision failed, log error and ask user
-  ERROR_MSG=$(echo "$REVISE_RESULT" | jq -r '.error_message')
-
-  # Log failed replan invocation
-  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "failure" "$ERROR_MSG"
-
-  echo "Warning: Adaptive planning revision failed"
-  echo "Error: $ERROR_MSG"
-  echo "Continuing with original plan"
-fi
-```
-
-**Step 5: Loop Prevention Safeguards**
-
-Maximum 2 replans per phase enforced:
-```bash
-if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
-  echo "=========================================="
-  echo "Warning: Replanning Limit Reached"
-  echo "=========================================="
-  echo "Phase: $CURRENT_PHASE"
-  echo "Replans: $PHASE_REPLAN_COUNT (max 2)"
-  echo ""
-  echo "Replan History for Phase $CURRENT_PHASE:"
-  echo "$CHECKPOINT" | jq -r ".replan_history[] | select(.phase == $CURRENT_PHASE) | \
-    \"  - [\(.timestamp)] \(.type): \(.reason)\""
-  echo ""
-  echo "Recommendation: Manual review required"
-  echo "Consider using /revise interactively to adjust plan structure"
-  echo "=========================================="
-
-  # Skip further replanning for this phase
-  SKIP_REPLAN=true
-fi
-```
-
-**Trigger Details:**
-
-**Complexity Trigger Context:**
-```json
-{
-  "revision_type": "expand_phase",
-  "current_phase": 3,
-  "reason": "Phase complexity score 9.2 exceeds threshold 8 (12 tasks)",
-  "suggested_action": "Expand phase 3 into separate file",
-  "complexity_metrics": {
-    "tasks": 12,
-    "score": 9.2,
-    "estimated_duration": "4-5 sessions"
-  }
-}
-```
-
-**Test Failure Trigger Context:**
-```json
-{
-  "revision_type": "add_phase",
-  "current_phase": 2,
-  "reason": "Two consecutive test failures in authentication module",
-  "suggested_action": "Add prerequisite phase for dependency setup",
-  "test_failure_log": "Error: Module not found: crypto-utils...",
-  "insert_position": "before",
-  "new_phase_name": "Setup Dependencies"
-}
-```
-
-**Scope Drift Trigger Context:**
-```json
-{
-  "revision_type": "update_tasks",
-  "current_phase": 3,
-  "reason": "Migration script required before data model changes",
-  "suggested_action": "Add migration task before schema changes",
-  "task_operations": [
-    {"action": "insert", "position": 2, "task": "Create database migration script"}
-  ]
-}
-```
+**Trigger types**:
+- **expand_phase**: Complexity threshold exceeded
+- **add_phase**: Test failure pattern detected
+- **update_tasks**: Scope drift flagged
 
 ### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
 **Check if this phase was previously debugged:**
