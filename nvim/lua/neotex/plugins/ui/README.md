@@ -62,11 +62,60 @@ ui/
 - Tab-like interface for open buffers
 - Visual indicators for modified files
 - Mouse support for buffer switching
+- **Enhanced visibility management**: Tabs remain visible when switching to terminals/sidebars
+- Smart context awareness: Hides on alpha dashboard, shows with multiple buffers
+- Event-driven visibility updates for seamless navigation
+- **Session restore timing fix**: Autocmds registered immediately before defer_fn to eliminate timing gaps during session restoration
+
+#### Bufferline Visibility Behavior
+The bufferline implements intelligent tab visibility management:
+
+**When tabs are visible:**
+- Multiple buffers open (2 or more)
+- Switching to Claude Code terminal (`<C-c>`)
+- Opening Neo-tree sidebar
+- Navigating between windows with unlisted buffers
+- Git-ignored files in buffers
+
+**When tabs are hidden:**
+- Single buffer in session (minimal startup aesthetic)
+- Alpha dashboard is active
+- No listed buffers exist
+
+**Technical Implementation:**
+- Event-driven updates via BufEnter, WinEnter, SessionLoadPost, TermLeave, and BufDelete autocmds
+- Centralized visibility logic in `ensure_tabline_visible()` function
+- **Critical timing fix**: Autocmds registered BEFORE defer_fn to catch session restore events
+- 10ms deferred updates on terminal/buffer events for smooth transitions
+- No performance impact from event handlers
+
+See [bufferline.lua:60-173](bufferline.lua) for implementation details and [specs/reports/038_buffer_persistence_root_cause.md](../../../specs/reports/038_buffer_persistence_root_cause.md) for timing race condition analysis.
 
 ### Session Management
 - Automatic workspace persistence
 - Quick session switching
 - Integration with file explorer state
+- **Root cause fixes implemented**: Pattern matching and timing issues resolved (see below)
+- **Simplified defensive protection**: Minimal autocmd coverage guards against unknown async operations
+
+#### Session Buffer Persistence
+**Root Cause Fixed (2025-10-03)**: Buffer persistence issues were caused by two primary bugs:
+1. **claudecode.lua pattern matching bug**: Overly broad pattern unlisted .claude/ directory files
+2. **bufferline.lua timing race condition**: Autocmd registration delay created session restore gap
+
+Both bugs have been fixed at their source. See:
+- [specs/reports/038_buffer_persistence_root_cause.md](../../../specs/reports/038_buffer_persistence_root_cause.md) - Complete root cause analysis
+- [specs/plans/030_fix_buffer_persistence_root_cause.md](../../../specs/plans/030_fix_buffer_persistence_root_cause.md) - Implementation plan
+- [specs/summaries/030_buffer_persistence_root_cause_summary.md](../../../specs/summaries/030_buffer_persistence_root_cause_summary.md) - Implementation workflow
+
+**Defensive mechanism** (sessions.lua:64-84):
+- **Currently commented out** (commit 8366c70) to test if root cause fixes are sufficient
+- If buffer disappearance issues occur, uncomment the defensive autocmd in sessions.lua
+- When active: Uses BufEnter and BufWinEnter to enforce `buflisted = true` for normal file buffers
+- Simplified design: 2 events (removed BufAdd, SessionLoadPost after root cause fixes)
+- Path-agnostic protection for all normal files
+
+See implementation details in [sessions.lua:64-84](sessions.lua) and historical investigation in [specs/reports/037_debug_gitignored_buffer_disappearance.md](../../../specs/reports/037_debug_gitignored_buffer_disappearance.md).
 
 ## Plugin Analysis
 

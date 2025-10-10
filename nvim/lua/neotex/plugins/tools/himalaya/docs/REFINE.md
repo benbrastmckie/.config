@@ -1,6 +1,6 @@
 # Himalaya Plugin Refinement Plan
 
-This document outlines the systematic refinement phases for the Himalaya email plugin, following the principles in [GUIDELINES.md](GUIDELINES.md).
+This document outlines the systematic refinement phases for the Himalaya email plugin, following the principles in [CODE_STANDARDS.md](CODE_STANDARDS.md).
 
 ## Current State Analysis
 

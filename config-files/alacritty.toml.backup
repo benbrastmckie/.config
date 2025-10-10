@@ -1,0 +1,129 @@
+live_config_reload = true
+# "window.opacity" = 0.8
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[colors.bright]
+black = "#5c6370"
+blue = "#61afef"
+cyan = "#56b6c2"
+green = "#98c379"
+magenta = "#c678dd"
+red = "#e06c75"
+white = "#ECEFF4"
+yellow = "#d19a66"
+
+[colors.normal]
+black = "#3B4252"
+blue = "#81A1C1"
+cyan = "#88C0D0"
+green = "#A3BE8C"
+magenta = "#B48EAD"
+red = "#BF616A"
+white = "#abb2bf"
+yellow = "#EBCB8B"
+
+[colors.primary]
+background = "#1e2127"
+foreground = "#D8DEE9"
+
+[font]
+size = 12.0
+
+[font.bold]
+family = "RobotoMono Nerd Font Mono"
+style = "Bold"
+
+[font.bold_italic]
+family = "RobotoMono Nerd Font Mono"
+style = "Bold Italic"
+
+[font.glyph_offset]
+x = 0
+y = 0
+
+[font.italic]
+family = "RobotoMono Nerd Font Mono"
+style = "Italic"
+
+[font.normal]
+family = "RobotoMono Nerd Font Mono"
+style = "Regular"
+
+[font.offset]
+x = 1
+y = 1
+
+[scrolling]
+history = 5000
+multiplier = 10
+
+[selection]
+save_to_clipboard = true
+semantic_escape_chars = ",│`|:\"' ()[]{}<>"
+
+[shell]
+args = ["new-session", "-A"]
+program = "/run/current-system/sw/bin/tmux"
+
+# [[shell.key_bindings]]
+# action = "Paste"
+# key = "V"
+# mods = "Control|Shift"
+#
+# [[shell.key_bindings]]
+# action = "Copy"
+# key = "C"
+# mods = "Control|Shift"
+#
+# [[shell.key_bindings]]
+# action = "ResetFontSize"
+# key = "Key0"
+# mods = "Control"
+#
+# [[shell.key_bindings]]
+# action = "IncreaseFontSize"
+# key = "Equals"
+# mods = "Control"
+#
+# [[shell.key_bindings]]
+# action = "IncreaseFontSize"
+# key = "Add"
+# mods = "Control"
+#
+# [[shell.key_bindings]]
+# action = "DecreaseFontSize"
+# key = "Subtract"
+# mods = "Control"
+#
+# [[shell.key_bindings]]
+# action = "DecreaseFontSize"
+# key = "Minus"
+# mods = "Control"
+#
+# [[shell.key_bindings]]
+# action = "SpawnNewInstance"
+# key = "N"
+# mods = "Control"
+
+[window]
+decorations = "none"
+startup_mode = "Windowed"
+title = "Alacritty"
+
+[window.class]
+general = "Alacritty"
+instance = "Alacritty"
+
+[window.dimensions]
+columns = 65
+lines = 40
+
+[window.padding]
+x = 1
+y = 1
+
+[window.position]
+x = 0
+y = 0

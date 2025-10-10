@@ -57,7 +57,54 @@ return {
       end,
     })
     
-    -- Defer loading the full configuration
+    -- Enhanced tabline visibility management
+    -- Define function and register autocmds BEFORE defer_fn to catch session restore
+    -- This eliminates timing race condition during session loading
+    local function ensure_tabline_visible()
+      local buffers = vim.fn.getbufinfo({buflisted = 1})
+      if #buffers > 1 then
+        vim.opt.showtabline = 2
+      elseif #buffers <= 1 then
+        vim.opt.showtabline = 0
+      end
+    end
+
+    -- Register critical autocmds IMMEDIATELY (before defer_fn)
+    -- This ensures visibility management is active during session restoration
+    vim.api.nvim_create_autocmd({"BufEnter", "WinEnter", "SessionLoadPost"}, {
+      callback = function()
+        local filetype = vim.bo.filetype
+
+        -- Don't show tabline on alpha dashboard
+        if filetype == "alpha" then
+          vim.opt.showtabline = 0
+          return
+        end
+
+        -- Update tabline visibility based on buffer count
+        ensure_tabline_visible()
+      end,
+      desc = "Preserve bufferline visibility across window switches and session restore"
+    })
+
+    -- Restore tabline visibility when leaving terminal
+    vim.api.nvim_create_autocmd("TermLeave", {
+      pattern = "*",
+      callback = function()
+        vim.defer_fn(ensure_tabline_visible, 10)
+      end,
+      desc = "Restore bufferline when leaving terminal"
+    })
+
+    -- Update tabline visibility when buffers are deleted
+    vim.api.nvim_create_autocmd("BufDelete", {
+      callback = function()
+        vim.defer_fn(ensure_tabline_visible, 10)
+      end,
+      desc = "Update bufferline visibility on buffer deletion"
+    })
+
+    -- Defer loading the full bufferline configuration (keeps startup smooth)
     vim.defer_fn(function()
       bufferline.setup({
         options = {
@@ -106,7 +153,7 @@ return {
           },
         },
       })
-      
+
       -- Set up alpha integration after full config is loaded
       vim.api.nvim_create_autocmd("User", {
         pattern = "AlphaReady",
@@ -115,7 +162,7 @@ return {
           vim.opt.showtabline = 0
         end,
       })
-      
+
       vim.api.nvim_create_autocmd("BufUnload", {
         buffer = 0,
         desc = "enable tabline after alpha",

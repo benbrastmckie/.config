@@ -628,3 +628,8 @@ To contribute to the notification system:
 5. Consider performance impact of new notifications
 
 The unified notification system provides a powerful, flexible foundation for user feedback while maintaining a clean, distraction-free editing experience.
+## Related Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Notification system architecture
+- [CODE_STANDARDS.md](CODE_STANDARDS.md) - Notification usage conventions
+- [Util README](../lua/neotex/util/README.md) - Notification implementation details

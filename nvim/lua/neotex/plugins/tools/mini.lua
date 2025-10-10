@@ -4,7 +4,7 @@ return {
   version = false,
   event = { "VeryLazy" },
   dependencies = {
-    "hrsh7th/nvim-cmp",
+    -- nvim-cmp removed - project uses blink.cmp
   },
   config = function()
     -- Configure mini.cursorword

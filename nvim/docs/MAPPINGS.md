@@ -42,6 +42,19 @@ These keybindings are available in all contexts and override default Vim behavio
 | `J`, `K` | n,v | Display line navigation | Navigate display lines (respects wrapping) |
 | `<A-Left>`, `<A-Right>`, `<A-h>`, `<A-l>` | n | Window resizing | Resize window horizontally |
 
+### Quickfix and Location List Navigation
+
+| Key(s) | Mode | Action | Description |
+|--------|------|--------|-------------|
+| `]q` | n | Next quickfix | Jump to next quickfix item (centered) |
+| `[q` | n | Previous quickfix | Jump to previous quickfix item (centered) |
+| `]Q` | n | Last quickfix | Jump to last quickfix item (centered) |
+| `[Q` | n | First quickfix | Jump to first quickfix item (centered) |
+| `]l` | n | Next location | Jump to next location list item (centered) |
+| `[l` | n | Previous location | Jump to previous location list item (centered) |
+| `]L` | n | Last location | Jump to last location list item (centered) |
+| `[L` | n | First location | Jump to first location list item (centered) |
+
 ### Text Manipulation
 
 | Key(s) | Mode | Action | Description |
@@ -125,7 +138,6 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>ae` | Avante edit | Edit selected text with AI (visual mode) |
 | `<leader>ap` | Avante provider | Select AI provider (Claude, OpenAI, Gemini) |
 | `<leader>am` | Avante model | Select model for current provider |
-| `<leader>at` | Avante toggle | Show/hide Avante sidebar |
 
 **Other AI Tools**
 | Key | Action | Description | Availability |
@@ -134,6 +146,7 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 | `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
 | `<leader>an` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
 | `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
+| `<leader>at` | Toggle TTS | Enable/disable Claude Code TTS (project-specific only) | All files |
 
 ### FIND (`<leader>f`)
 
@@ -462,3 +475,9 @@ Active in Avante AI interface buffers.
 - [Installation Guide ←](INSTALLATION.md)
 
 For more information about the overall configuration structure, see the main [README](../README.md).
+## Related Documentation
+
+- [AI_TOOLING.md](AI_TOOLING.md) - OpenCode keybindings
+- [RESEARCH_TOOLING.md](RESEARCH_TOOLING.md) - VimTeX and research tool mappings
+- [NOTIFICATIONS.md](NOTIFICATIONS.md) - Notification system commands
+- [Neotex Plugins](../lua/neotex/plugins/README.md) - Plugin-specific keybindings

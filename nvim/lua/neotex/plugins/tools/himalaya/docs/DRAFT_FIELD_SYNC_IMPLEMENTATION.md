@@ -22,7 +22,7 @@ This document summarizes the implementation of the draft field synchronization r
 
 ### Phase 3: Enhanced Field Updates
 1. **draft_manager_v2.lua - _update_metadata_from_content**:
-   - Now extracts ALL fields including From (previously missing)
+   - Extracts ALL fields including From
    - Handles multi-line headers with proper continuation parsing
    - Separates body content from headers for clean storage
    - Updates all metadata fields, not just some

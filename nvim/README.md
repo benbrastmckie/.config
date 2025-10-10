@@ -1,4 +1,4 @@
-# NeoVim Configuration and CheatSheet
+# NeoVim Configuration
 
 A feature-rich Neovim configuration with AI integration optimized for LaTeX, Markdown, Jupyter Notebooks, and managing NixOS.
 
@@ -41,8 +41,8 @@ nvim/
 
 This Neovim configuration includes specialized support for:
 
-- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, and more
-- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, and live preview
+- **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, LaTeX-specific text surrounds, and more
+- **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, markdown-specific text surrounds, and live preview
 - **AI Assistance**: AI integration for code completion and editing suggestions with Avante, MCP-Hub tools, and knowledge assistance with Lectic
 - **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats
 - **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
@@ -51,6 +51,7 @@ This Neovim configuration includes specialized support for:
 - **File Navigation**: Telescope integration for fuzzy finding, project navigation, and more
 - **Code Operations**: LSP-powered code actions, diagnostics, and reference exploration
 - **Unified Notifications**: Intelligent notification system with category-based filtering and module-specific controls
+- **Performance Optimized**: Fast startup with optimized lazy-loading and efficient autocmd configuration
 
 ### Dashboard Overview
 
@@ -58,14 +59,14 @@ NeoVim will open with the dashboard which includes the following options:
 
 | Key | Description                                           |
 |-----|-------------------------------------------------------|
-| `s` | Restore Session - Load a previously saved session     |
+| `s` | Restore Session - Load a saved session                |
 | `r` | Recent Files - Browse and open recently edited files  |
 | `e` | Explorer - Toggle the NvimTree file explorer          |
 | `f` | Find File - Search for files in your project          |
 | `g` | Find Text - Search for text content across files      |
 | `n` | New File - Create and start editing a new file        |
 | `c` | Config - Browse Neovim configuration files            |
-| `i` | Info - Open the CheatSheet with quick references      |
+| `i` | Info - View Neovim configuration information          |
 | `m` | Manage Plugins - Open the Lazy plugin manager         |
 | `h` | Checkhealth - Run Neovim's health diagnostics         |
 | `q` | Quit - Exit Neovim                                    |
@@ -87,34 +88,56 @@ This configuration requires several dependencies including Neovim (≥ 0.9.0), G
 
 ## Documentation Structure
 
-This configuration features comprehensive documentation throughout the directory structure. Each subdirectory contains a README.md file with detailed information about its purpose, components, and usage.
+This configuration features comprehensive documentation following [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md). Every directory contains a README.md with detailed information about its purpose, components, and usage.
 
-### Core Documentation Areas
+### Central Documentation (docs/)
 
+Topic-focused documentation covering major systems and workflows:
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System design, initialization flow, and component architecture
+- **[Installation](docs/INSTALLATION.md)** - Setup instructions, dependencies, and health checks
+- **[Mappings](docs/MAPPINGS.md)** - Complete keybinding reference organized by context
+- **[AI Tooling](docs/AI_TOOLING.md)** - Git worktrees with OpenCode for parallel development
+- **[Research Tooling](docs/RESEARCH_TOOLING.md)** - LaTeX, Markdown, Jupyter, and academic workflows
+- **[NIX Workflows](docs/NIX_WORKFLOWS.md)** - NixOS system integration and management
+- **[Formal Verification](docs/FORMAL_VERIFICATION.md)** - Lean 4 and model-checker integration
+- **[Notifications](docs/NOTIFICATIONS.md)** - Unified notification system
+- **[Code Standards](docs/CODE_STANDARDS.md)** - Lua coding conventions
+- **[Documentation Standards](docs/DOCUMENTATION_STANDARDS.md)** - Documentation requirements
+
+### Module Documentation (lua/neotex/)
+
+Detailed READMEs in every directory documenting modules and functionality:
+
+- **[NeoTeX Namespace](lua/neotex/README.md)** - Configuration overview and bootstrap process
 - **[Configuration Core](lua/neotex/config/README.md)** - Essential Neovim settings (options, keymaps, autocommands)
 - **[Plugin System](lua/neotex/plugins/README.md)** - Plugin organization and management
+  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
   - [Editor Enhancements](lua/neotex/plugins/editor/README.md) - Navigation, formatting, and terminal integration
   - [LSP Configuration](lua/neotex/plugins/lsp/README.md) - Language server setup and completion
   - [Text Processing](lua/neotex/plugins/text/README.md) - LaTeX, Markdown, Jupyter, and Lean support
   - [Development Tools](lua/neotex/plugins/tools/README.md) - Git, snippets, and productivity enhancements
   - [UI Components](lua/neotex/plugins/ui/README.md) - File explorer, status line, and visual elements
-  - [AI Integration](lua/neotex/plugins/ai/README.md) - Avante, Claude Code, and MCP Hub
+- **[Core Functionality](lua/neotex/core/README.md)** - Fundamental utilities and base functionality
 - **[Utility Functions](lua/neotex/util/README.md)** - Helper functions and performance optimization tools
+- **[Deprecated Code](lua/neotex/deprecated/README.md)** - Legacy code preserved for reference
+
+### Additional Documentation
+
 - **[File Type Support](after/README.md)** - Language-specific configurations and detection
 - **[Templates](templates/README.md)** - Document templates for LaTeX, presentations, and academic writing
 - **[Code Snippets](snippets/README.md)** - Custom snippet collections for rapid development
 - **[Scripts](scripts/README.md)** - Maintenance and diagnostic utilities
 
-### Navigation
+### Navigation Standards
 
-Each README file includes:
-- Detailed module documentation
-- Usage examples and configuration options
-- Integration points with other system components
-- Navigation links to related documentation
-- Parent/child directory relationships
+Each README follows [DOCUMENTATION_STANDARDS.md](docs/DOCUMENTATION_STANDARDS.md) and includes:
+- **Purpose Statement**: Clear description of directory role
+- **Module Documentation**: Details for each file with examples
+- **Related Documentation**: Cross-references to relevant docs
+- **Navigation Links**: Parent and subdirectory relationships
 
-This documentation structure ensures that information about any component is easily accessible and maintains consistency across the entire configuration.
+This documentation structure ensures information is easily accessible with consistent organization throughout the configuration.
 
 ## Maintenance and Troubleshooting
 
@@ -154,7 +177,7 @@ Avante provides AI-powered code assistance directly within Neovim, offering inte
 
 > [Info] The `leader` key is set to `space`.
 
-- **Access the AI**: Press `<leader>aa` to ask a question or `<leader>at` to toggle the AI interface
+- **Access the AI**: Press `<leader>aa` to ask a question or `<leader>at` to toggle project-specific TTS notifications
 - **Edit with AI**: Select text in visual mode and press `<leader>ae` to edit with AI assistance
 - **Claude Code**: Use `<C-c>` to toggle Claude Code sidebar (works in any mode)
 
@@ -287,12 +310,64 @@ Lectic provides AI-assisted writing for markdown files with these features:
 3. **Visual Selection Processing**: 
    - Select text in visual mode (`v`, `V`, or `<C-v>`)
    - Press `<Esc>` to exit visual mode
-   - Press `<leader>ms` to process the previously selected text
+   - Press `<leader>ms` to process the selected text
    - You'll be prompted to add a message/question about the selection in a multi-line input box
    - Both the selected text and your message will be added to the end of the file with appropriate formatting
    - Lectic will then process the entire file
 
 Use Lectic for AI-assisted writing, brainstorming, or refining your markdown documents.
+
+### Text Surround System
+
+This configuration uses nvim-surround with filetype-aware buffer configurations to provide context-appropriate text manipulation. The same keybindings produce different outputs depending on the file type.
+
+#### Basic Keybindings (All Filetypes)
+
+- `ys{motion}{char}` - Add surround around motion
+- `ds{char}` - Delete surrounding character
+- `cs{old}{new}` - Change surround from old to new
+- `S{char}` - Surround visual selection (visual mode)
+
+Examples:
+- `ysiw"` - Surround word with double quotes
+- `ds{` - Delete surrounding curly braces
+- `cs"'` - Change double quotes to single quotes
+
+#### Filetype-Specific Surrounds
+
+**Markdown Files (.md)**
+Special surrounds available only in markdown:
+
+| Key | Result | Description |
+|-----|--------|-------------|
+| `b` | `**text**` | Bold (strong emphasis) |
+| `i` | `*text*` | Italic (emphasis) |
+| `` ` `` | `` `text` `` | Inline code |
+| `c` | `` ```lang\ntext\n``` `` | Fenced code block (prompts for language) |
+| `l` | `[text](url)` | Link (prompts for URL) |
+| `~` | `~~text~~` | Strikethrough (GFM) |
+
+**LaTeX Files (.tex)**
+Special surrounds available only in LaTeX:
+
+| Key | Result | Description |
+|-----|--------|-------------|
+| `e` | `\begin{env}...\end{env}` | Environment (prompts for name) |
+| `b` | `\textbf{text}` | Bold text |
+| `i` | `\textit{text}` | Italic text |
+| `t` | `\texttt{text}` | Typewriter (monospace) |
+| `q` | `` `text' `` | LaTeX single quotes |
+| `Q` | `` ``text'' `` | LaTeX double quotes |
+| `$` | `$text$` | Math mode |
+
+**Filetype Isolation**
+This design prevents cross-filetype pollution - pressing `ysiw + b` on "word" produces:
+- `**word**` in markdown files (markdown bold)
+- `\textbf{word}` in LaTeX files (LaTeX bold)
+
+For complete surround documentation, see:
+- [Tools Plugin README](lua/neotex/plugins/tools/README.md#surround-operations)
+- [File Type Plugin README](after/ftplugin/README.md)
 
 ### Folding System
 
@@ -418,9 +493,23 @@ This configuration includes convenient keybindings for managing NixOS systems di
 
 These commands integrate NixOS system management into your development workflow, allowing you to manage system configuration, packages, and environments without leaving your editor.
 
-### Performance Optimization Tools
+### Performance Optimization
 
-This configuration includes built-in tools for analyzing and improving performance:
+This configuration is optimized for fast startup and responsive editing:
+
+#### Performance Features
+- **Optimized Lazy-Loading**: Plugins load precisely when needed, not earlier
+  - Session Manager loads on VeryLazy event (after startup complete)
+  - LSP file operations load on BufReadPost (when reading files)
+  - nvim-surround loads on BufReadPost (ready for text manipulation)
+- **Efficient Autocommands**: File reload detection uses FocusGained and BufEnter events
+  - No CursorHold/CursorHoldI events that cause cursor pause lag
+  - Reduced autocmd fires by 98% compared to cursor-based detection
+- **Enhanced Icons**: nvim-web-devicons includes common file type icons (TypeScript, Rust, Go, YAML, TOML, Dockerfile, .env)
+- **Clean Logging**: Markdown preview uses 'warn' log level (90% reduction in debug output)
+
+#### Performance Analysis Tools
+Built-in tools for analyzing and improving performance:
 
 1. **Startup Analysis**: Run `:AnalyzeStartup` to identify bottlenecks in your NeoVim startup process
 2. **Plugin Profiling**: Use `:ProfilePlugins` to measure load times for all plugins

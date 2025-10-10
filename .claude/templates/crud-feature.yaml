@@ -1,0 +1,72 @@
+name: "CRUD Feature Implementation"
+description: "Template for implementing Create, Read, Update, Delete operations for an entity"
+category: "feature"
+complexity_level: "medium-high"
+estimated_time: "8-12 hours"
+variables:
+  - name: entity_name
+    description: "Name of the entity (e.g., User, Post, Product)"
+    type: string
+    required: true
+  - name: fields
+    description: "List of entity fields (e.g., name, email, password)"
+    type: array
+    required: true
+  - name: use_auth
+    description: "Whether authentication/authorization is required"
+    type: boolean
+    required: false
+    default: "true"
+  - name: database_type
+    description: "Database system (postgresql, mysql, sqlite, etc.)"
+    type: string
+    required: false
+    default: "postgresql"
+phases:
+  - name: "Database Schema and Models"
+    dependencies: []
+    tasks:
+      - "Create database migration for {{entity_name}} table"
+      - "Define {{entity_name}} schema with fields: {{#each fields}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}"
+      - "Add indexes for frequently queried fields"
+      - "Create {{entity_name}} model/ORM class"
+      - "Add model validation for required fields"
+      - "Write model unit tests"
+  - name: "Backend CRUD API"
+    dependencies: [1]
+    tasks:
+      - "Implement Create{{entity_name}} endpoint (POST /api/{{entity_name}}s)"
+      - "Implement Read{{entity_name}} endpoint (GET /api/{{entity_name}}s/:id)"
+      - "Implement List{{entity_name}}s endpoint (GET /api/{{entity_name}}s)"
+      - "Implement Update{{entity_name}} endpoint (PUT /api/{{entity_name}}s/:id)"
+      - "Implement Delete{{entity_name}} endpoint (DELETE /api/{{entity_name}}s/:id)"
+      - "{{#if use_auth}}Add authentication middleware to all endpoints{{/if}}"
+      - "{{#if use_auth}}Add authorization checks (user can only modify own data){{/if}}"
+      - "Add input validation for all endpoints"
+      - "Write API integration tests"
+  - name: "Frontend Components"
+    dependencies: [2]
+    tasks:
+      - "Create {{entity_name}}List component to display all {{entity_name}}s"
+      - "Create {{entity_name}}Detail component to show single {{entity_name}}"
+      - "Create {{entity_name}}Form component for create/edit"
+      - "Create {{entity_name}}Delete confirmation dialog"
+      - "Add client-side form validation"
+      - "Implement API integration in components"
+      - "Add loading and error states"
+      - "Write component tests"
+  - name: "Testing and Documentation"
+    dependencies: [1, 2, 3]
+    tasks:
+      - "Run full test suite (unit + integration + e2e)"
+      - "Test all CRUD operations with valid data"
+      - "Test error cases (invalid data, not found, unauthorized)"
+      - "Test pagination and filtering in List endpoint"
+      - "Update API documentation with new endpoints"
+      - "Add {{entity_name}} usage examples to docs"
+      - "Update database schema documentation"
+research_topics:
+  - "Best practices for {{entity_name}} validation and sanitization"
+  - "{{database_type}} performance optimization for CRUD operations"
+  - "{{#if use_auth}}Authorization patterns for resource ownership{{/if}}"
+  - "RESTful API design patterns for CRUD endpoints"

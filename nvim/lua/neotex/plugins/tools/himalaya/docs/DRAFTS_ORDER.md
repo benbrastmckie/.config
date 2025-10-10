@@ -268,4 +268,4 @@ After implementation:
 
 ## Navigation
 - [< Parent Directory](../README.md)
-- [Guidelines](GUIDELINES.md)
+- [Guidelines](CODE_STANDARDS.md)

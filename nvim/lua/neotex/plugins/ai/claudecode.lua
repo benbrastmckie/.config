@@ -35,7 +35,7 @@ return {
     },
 
     -- Base command
-    command = "claude",
+    command = "claude --dangerously-skip-permissions",
 
     -- Command variants for different modes
     command_variants = {
@@ -60,9 +60,19 @@ return {
 
   config = function(_, opts)
     require("claude-code").setup(opts)
-    
-    -- Setup session management
-    require("neotex.ai-claude").setup()
+
+    -- Setup session management with proper initialization order
+    vim.defer_fn(function()
+      -- Initialize session manager first
+      local session_manager = require("neotex.plugins.ai.claude.core.session-manager")
+      session_manager.setup()
+
+      -- Then setup the main AI claude module
+      local ok, claude_module = pcall(require, "neotex.plugins.ai.claude")
+      if ok and claude_module and claude_module.setup then
+        claude_module.setup()
+      end
+    end, 100)
 
     -- Configure terminal behavior to match old setup
     vim.api.nvim_create_autocmd("TermOpen", {
@@ -79,16 +89,16 @@ return {
       end,
     })
 
-    -- Additional autocmd to catch any Claude buffers that might get listed later
+    -- Additional autocmd to catch any Claude Code terminal buffers that might get listed later
+    -- IMPORTANT: Check buftype == "terminal" FIRST to avoid catching .claude/ directory files
     vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
       pattern = "*",
       callback = function()
         local bufname = vim.api.nvim_buf_get_name(0)
-        if bufname:match("claude") or bufname:match("ClaudeCode") or vim.bo.buftype == "terminal" then
-          if bufname:match("claude") then
-            vim.bo.buflisted = false
-            vim.bo.bufhidden = "hide"
-          end
+        -- Only unlist Claude Code terminal buffers, not .claude/ directory files
+        if vim.bo.buftype == "terminal" and (bufname:match("claude") or bufname:match("ClaudeCode")) then
+          vim.bo.buflisted = false
+          vim.bo.bufhidden = "hide"
         end
       end,
     })

@@ -74,6 +74,9 @@ Signal
 
 **/CLAUDE.md
 **/.claude/
+!.claude/
+!.claude/commands/
+!.claude/commands/*.md
 **/specs/
 # **/spec/
 nvim/test.tex

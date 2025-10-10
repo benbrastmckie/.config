@@ -4,10 +4,7 @@ return {
   dependencies = {
     'neovim/nvim-lspconfig',
     'nvim-lua/plenary.nvim',
-    'hrsh7th/nvim-cmp',         -- Completion engine
-    'hrsh7th/cmp-nvim-lsp',     -- LSP source for nvim-cmp
-    'saadparwaiz1/cmp_luasnip', -- Snippet source for nvim-cmp (optional)
-    'L3MON4D3/LuaSnip',         -- Snippet engine (optional)
+    -- nvim-cmp dependencies removed - project uses blink.cmp
   },
 
   -- Configuration options for lean.nvim

@@ -22,7 +22,7 @@
 return {
   "kylechui/nvim-surround", 
   version = "*",  -- Use the latest stable release 
-  event = "VeryLazy",
+  event = "BufReadPost",  -- Load when reading files (ready for text manipulation)
   config = function()
     require("nvim-surround").setup({
       -- Configuration here (leave default for now)
@@ -37,45 +37,6 @@ return {
         visual_line = "gS",
         delete = "ds",
         change = "cs",
-      },
-      
-      -- Configure LaTeX surroundings
-      surrounds = {
-        -- LaTeX specific surroundings
-        ["E"] = {
-          add = function()
-            return { { "\\begin{" .. vim.fn.input("Environment: ") .. "}" }, { "\\end{" .. vim.fn.input("Environment: ") .. "}" } }
-          end,
-        },
-        ["$"] = {
-          add = { "$", "$" },
-          find = "%$.-[^\\]%$",
-          delete = "^(.)().-(.)()$"
-        },
-        ["i"] = {
-          add = { "\\textit{", "}" },
-        },
-        ["b"] = {
-          add = { "\\textbf{", "}" },
-        },
-        ["t"] = {
-          add = { "\\texttt{", "}" },
-        },
-        ["u"] = {
-          add = { "\\underline{", "}" },
-        },
-        ["q"] = {
-          add = { "``", "''" },  -- LaTeX quotes
-        },
-        ["Q"] = {
-          add = { "`", "'" },    -- LaTeX single quotes
-        },
-      },
-      
-      -- Aliases configure alternative names for surrounds
-      aliases = {
-        ["b"] = { ")", "]", "}", ">", "〉", "」", "』", "〕", "】", "〗", "〙", "〛", "❯" },
-        ["q"] = { "'", '"', "`" },
       },
     })
   end,
