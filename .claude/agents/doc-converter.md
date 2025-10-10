@@ -1,6 +1,6 @@
 ---
 allowed-tools: Read, Grep, Glob, Bash, Write
-description: Convert Word (DOCX) and PDF files to Markdown format
+description: Bidirectional document conversion between Markdown, Word (DOCX), and PDF formats
 ---
 
 # Document Conversion Agent
