@@ -156,113 +156,49 @@ This thinking mode will be applied to all agent prompts in this workflow.
 
 #### Step 2: Launch Parallel Research Agents
 
-For each identified research topic, I'll create a focused research task and invoke agents in parallel:
+For each identified research topic, I'll create a focused research task and invoke agents in parallel.
 
-**Parallel Execution Pattern**:
-```markdown
-Use Task tool to invoke multiple general-purpose agents with research-specialist behavior simultaneously:
+See [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation) for detailed parallel execution patterns.
 
-Agent 1 - Codebase Patterns:
-  subagent_type: general-purpose
-  Prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/research-specialist.md
-
-          You are acting as a Research Specialist with the tools and constraints
-          defined in that file.
-
-          Search the codebase for existing implementations of [feature/concept].
-          Analyze patterns, architectures, and conventions currently in use.
-          Summarize findings in max 150 words."
-
-Agent 2 - Best Practices Research:
-  subagent_type: general-purpose
-  Prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/research-specialist.md
-
-          You are acting as a Research Specialist with the tools and constraints
-          defined in that file.
-
-          Research industry best practices for [technology/approach].
-          Use web search to find current standards (2025).
-          Summarize key recommendations in max 150 words."
-
-Agent 3 - Alternative Approaches:
-  subagent_type: general-purpose
-  Prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/research-specialist.md
-
-          You are acting as a Research Specialist with the tools and constraints
-          defined in that file.
-
-          Investigate alternative approaches to [problem/feature].
-          Compare trade-offs, complexity, and fit with project.
-          Summarize options in max 150 words."
-```
-
-**Critical Context Preservation Rule**:
-- Each research agent receives ONLY its specific research focus
-- NO orchestration routing logic in agent prompts
-- NO information about other parallel agents
-- Complete task description with success criteria
-- Reference to CLAUDE.md for project standards
+**Orchestrate-specific invocation**:
+- Launch 2-4 research agents simultaneously (single message, multiple Task blocks)
+- Each agent receives ONLY its specific research focus
+- NO orchestration routing logic in prompts
+- Complete task description with success criteria per agent
 
 #### Step 3: Research Agent Prompt Template
 
+For agent prompt structure, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
+
+**Orchestrate-specific research template**:
+
 ```markdown
-**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity)
+**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity from Step 1.5)
 
 # Research Task: [Specific Topic]
 
 ## Context
-- **Workflow**: [User's original request - brief 1 line summary]
+- **Workflow**: [User's original request - 1 line summary]
 - **Research Focus**: [This agent's specific investigation area]
-- **Project Standards**: Reference CLAUDE.md at /home/benjamin/.config/CLAUDE.md
+- **Project Standards**: /home/benjamin/.config/CLAUDE.md
 - **Complexity Level**: [Simple|Medium|Complex|Critical]
 
 ## Objective
-Investigate [specific topic] to inform the planning and implementation phases of this workflow.
+Investigate [specific topic] to inform planning and implementation.
 
 ## Requirements
+[Specific requirements for this research topic]
 
-### Investigation Scope
-- [Specific requirement 1]
-- [Specific requirement 2]
-- [Specific requirement 3]
-
-### Research Methods
-- **Codebase Search**: Use Grep/Glob to find existing patterns
-- **Documentation Review**: Read relevant files and docs
-- **Web Research**: Use WebSearch for industry standards (if applicable)
-- **Analysis**: Evaluate findings for relevance and applicability
-- **Specs Location**: Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed
+### Specs Directory Management
+Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed.
+Include "Specs Directory" in report metadata.
 
 ## Expected Output
-
-**Note**: When creating research reports, follow the SPECS.md registration process:
-1. Detect relevant project directory
-2. Check `.claude/SPECS.md` for registered specs directory
-3. Use registered location or auto-detect (project-dir/specs/)
-4. Register in SPECS.md if new
-5. Include "Specs Directory" in report metadata
-
-Provide a concise summary (max 150 words) structured as:
-
-**Findings Summary**
-- Existing patterns found (if any)
+Concise summary (max 150 words) with:
+- Existing patterns found
 - Recommended approaches
-- Potential challenges or constraints
-- Key insights for planning
-
-## Success Criteria
-- Findings are actionable and specific
-- Recommendations align with project standards
-- Challenges are clearly identified
-- Summary is concise and focused
-
-## Error Handling
-- If search yields no results: State "No existing patterns found" and recommend research-based approach
-- If access errors occur: Work with available tools and note limitations
-- If topic is unclear: Make reasonable assumptions and document them
+- Potential challenges
+- Key planning insights
 ```
 
 #### Step 3.5: Generate Project Name for Artifacts
@@ -286,124 +222,53 @@ Examples:
 Store in workflow_state.project_name for artifact path generation.
 
 **Research Agent Monitoring**:
-- **Progress Streaming**: Research agents emit `PROGRESS: <message>` markers during execution
-  - Examples: `PROGRESS: Searching codebase for auth patterns...`, `PROGRESS: Found 15 files, analyzing...`
-  - Display progress updates to user in real-time
+- **Progress Streaming**: See [Progress Marker Detection](../docs/command-patterns.md#pattern-progress-marker-detection)
 - Monitor parallel agent execution
 - Collect artifact IDs as agents complete
 
 #### Step 4: Store Research as Artifacts and Create References
 
-After each research agent completes:
+After each research agent completes, store outputs as artifacts.
 
-**Artifact Storage Process**:
-1. **Generate Artifact Path**:
-   ```
-   artifact_path = f"specs/artifacts/{project_name}/{artifact_name}.md"
-   # Example: "specs/artifacts/user_auth/existing_patterns.md"
-   ```
+See [Artifact Storage and Registry](../docs/command-patterns.md#pattern-artifact-storage-and-registry) for detailed artifact management patterns.
 
-2. **Save Research Output**:
-   - Create project directory if needed: `specs/artifacts/{project_name}/`
-   - Write research findings to artifact file
-   - Include metadata header (date, agent, workflow, focus)
-
-3. **Register Artifact**:
-   - Add to artifact_registry with descriptive ID
-   - Map ID to file path
-   - Example: `research_001: "specs/artifacts/user_auth/existing_patterns.md"`
-
-4. **Return Artifact Reference**:
-   - Instead of full 150-word summary
-   - Return: "Artifact ID: research_001, Path: {path}, Topic: {topic}"
-
-**Artifact File Format**:
-```markdown
-# {Research Topic}
-
-## Metadata
-- **Created**: 2025-10-03
-- **Workflow**: {workflow_description}
-- **Agent**: research-specialist
-- **Focus**: {specific_research_topic}
-
-## Findings
-{Research findings - full 150 words}
-
-## Recommendations
-{Key recommendations}
-```
+**Orchestrate-specific artifact handling**:
+- Generate artifact path: `specs/artifacts/{project_name}/{artifact_name}.md`
+- Register in artifact_registry with descriptive ID
+- Return references (not full content) to minimize context
 
 #### Step 5: Aggregate Artifact References (Lightweight Context)
 
-After all parallel research agents complete:
+After all parallel research agents complete, aggregate artifact references.
 
-**Aggregation Process**:
-1. **Collect Artifact References**: Gather artifact IDs and paths (not full content)
-2. **Build Reference List**: Create list of available artifacts for next phase
-3. **Minimal Context**: ~50 words of artifact metadata vs 200+ words of full summaries
-4. **Extract Actionables**: Note which artifacts contain key recommendations
-
-**Artifact Reference Template** (replaces full summary):
-```markdown
-Research Artifacts Available:
-
-1. **research_001** - Existing Patterns
-   - Path: specs/artifacts/{project_name}/existing_patterns.md
-   - Focus: Codebase analysis of current implementations
-   - Key Finding: [One-sentence summary]
-
-2. **research_002** - Best Practices
-   - Path: specs/artifacts/{project_name}/best_practices.md
-   - Focus: Industry standards and recommendations (2025)
-   - Key Finding: [One-sentence summary]
-
-3. **research_003** - Alternative Approaches
-   - Path: specs/artifacts/{project_name}/alternatives.md
-   - Focus: Trade-offs and implementation options
-   - Key Finding: [One-sentence summary]
-
-Total Context: ~50 words (vs 200+ for full summaries)
-```
+See [Artifact Reference List](../docs/command-patterns.md#pattern-artifact-reference-list) for reference format.
 
 **Context Reduction Achieved**:
 - **Before**: 200+ words of full research summaries passed to plan-architect
 - **After**: ~50 words of artifact references + selective reading by agent
 - **Reduction**: 60-80% context savings
-- **Benefits**: Full research preserved in artifacts, agent reads only what's needed
 
 #### Step 5: Save Research Checkpoint
 
-**Checkpoint Data Structure**:
+See [Save Checkpoint After Phase](../docs/command-patterns.md#pattern-save-checkpoint-after-phase) for checkpoint management.
+
+**Orchestrate-specific checkpoint data**:
 ```yaml
 checkpoint_research_complete:
   phase_name: "research"
-  completion_time: [timestamp]
   outputs:
-    research_summary: "[200 word synthesis]"
     topics_investigated: ["topic1", "topic2", "topic3"]
     parallel_agents_used: 3
     status: "success"
   next_phase: "planning"
-  performance:
-    research_time: "[duration in seconds]"
-    parallel_effectiveness: "[time saved vs sequential]"
 ```
-
-**Checkpoint Storage**:
-- Save checkpoint to workflow state (in orchestrator memory)
-- Mark research phase as completed
-- Enable recovery if workflow interrupts before planning
 
 #### Step 6: Artifact Registry Validation
 
-Before proceeding to planning:
-
-**Validation Checks**:
+Before proceeding to planning, validate:
 - [ ] All research artifacts saved to `specs/artifacts/{project_name}/`
 - [ ] Artifact registry contains all artifact IDs and paths
 - [ ] Artifact reference list ≤60 words (not full content)
-- [ ] Each artifact has metadata header
 - [ ] Checkpoint saved successfully
 
 **If validation fails**: Retry artifact save or escalate to user
@@ -1898,259 +1763,25 @@ For each subagent invocation:
 
 ### Automatic Recovery Strategies
 
-#### Timeout Errors
+See [Error Recovery Patterns](../docs/command-patterns.md#error-recovery-patterns) for detailed recovery strategies including:
+- Automatic Retry with Backoff
+- Error Classification and Routing (timeout, tool access, validation, integration)
+- User Escalation Format
 
-**Detection**:
-- Agent doesn't return within expected timeframe
-- Task tool reports timeout
-- Progress indicators stall
-
-**Recovery Sequence** (max 3 attempts):
-
-**Retry 1: Extend Timeout**
-```yaml
-action: retry_with_extended_timeout
-changes:
-  - timeout: original_timeout * 1.5
-  - same_agent: true
-  - same_prompt: true
-reasoning: "Transient slowness or complex task needs more time"
-```
-
-**Retry 2: Split Task**
-```yaml
-action: decompose_and_retry
-changes:
-  - split_into: smaller_components
-  - execute: sequentially
-  - timeout: original_timeout per component
-reasoning: "Task too large for single execution"
-```
-
-**Retry 3: Alternative Agent**
-```yaml
-action: reassign_to_different_agent
-changes:
-  - agent_type: alternative_configuration
-  - timeout: original_timeout * 2
-  - simplified_prompt: true
-reasoning: "Agent configuration may be issue"
-```
-
-**Escalation**: Manual intervention required
-
-#### Tool Access Errors
-
-**Detection**:
-- "Tool not available" errors
-- Permission denied messages
-- File access failures
-
-**Recovery Sequence** (max 2 attempts):
-
-**Retry 1: Verify and Retry**
-```yaml
-action: verify_permissions_and_retry
-checks:
-  - file_permissions: check_and_report
-  - tool_availability: verify_in_scope
-  - retry_with: same_configuration
-```
-
-**Retry 2: Reduced Toolset**
-```yaml
-action: retry_with_fallback_tools
-changes:
-  - remove_failing_tool: true
-  - use_alternatives: true
-  - example: "WebSearch fails → use only local search"
-```
-
-**Escalation**: Report tool availability issues to user
-
-#### Validation Failures
-
-**Detection**:
-- Output doesn't match expected format
-- Required fields missing
-- Invalid data in response
-
-**Recovery Sequence** (max 3 attempts):
-
-**Retry 1: Clarified Prompt**
-```yaml
-action: retry_with_clarification
-changes:
-  - add_explicit_format_spec: true
-  - add_example_output: true
-  - emphasize_requirements: true
-```
-
-**Retry 2: Simplified Requirements**
-```yaml
-action: retry_with_reduced_requirements
-changes:
-  - reduce_complexity: true
-  - focus_on_essentials: true
-  - accept_partial_success: true
-```
-
-**Retry 3: Manual Extraction**
-```yaml
-action: extract_manually
-approach:
-  - parse_unstructured_output: true
-  - infer_missing_fields: true
-  - validate_best_effort: true
-```
-
-**Escalation**: Accept partial results or report failure
-
-#### Integration Errors
-
-**Detection**:
-- /command invocation fails
-- SlashCommand tool errors
-- Unexpected command output
-
-**Recovery Sequence** (max 2 attempts):
-
-**Retry 1: Direct Retry**
-```yaml
-action: immediate_retry
-delay: 2_seconds
-same_parameters: true
-reasoning: "Transient command failure"
-```
-
-**Retry 2: Alternative Approach**
-```yaml
-action: workaround_execution
-changes:
-  - if_slash_command_fails: use_direct_implementation
-  - example: "/plan fails → manually create plan"
-```
-
-**Escalation**: Report command ecosystem issue
-
-#### Context Overflow Prevention
-
-**Detection**:
-- Orchestrator context approaching 30% threshold
-- Large summaries or excessive state
-
-**Recovery Actions**:
-
-**Action 1: Context Compaction**
-```yaml
-action: compress_context
-targets:
-  - research_summary: reduce_to_key_points
-  - error_history: keep_recent_only
-  - file_lists: store_counts_not_names
-```
-
-**Action 2: Aggressive Summarization**
-```yaml
-action: extreme_summarization
-approach:
-  - research_summary: 100_words_max
-  - keep_only: absolute_essentials
-  - offload_to_files: detailed_data
-```
-
-**Action 3: Graceful Degradation**
-```yaml
-action: reduce_workflow_scope
-changes:
-  - skip_optional_phases: true
-  - simplified_documentation: true
-  - focus_on_core: true
-```
+**Orchestrate-specific recovery**:
+- Context Overflow Prevention: Compress context, summarize aggressively, reduce workflow scope
+- Checkpoint-based recovery: Rollback to last successful phase
+- Error history tracking: Learn from failures to improve future workflows
 
 ### Checkpoint Recovery System
 
-#### Checkpoint Creation
+See [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-management-patterns) for checkpoint creation and restoration.
 
-**After Each Successful Phase**:
-```yaml
-checkpoint:
-  phase_name: "[current phase]"
-  completion_time: "[ISO 8601 timestamp]"
-  outputs:
-    primary_output: "[path or concise summary]"
-    secondary_outputs: [list]
-    status: "success|partial|failed"
-  next_phase: "[next phase name or 'complete']"
-  context_snapshot:
-    research_summary: "[if available]"
-    plan_path: "[if available]"
-    implementation_status: "[if available]"
-  performance:
-    phase_duration: "[seconds]"
-    retry_count: N
-```
-
-**Checkpoint Storage**:
-- Stored in orchestrator memory (minimal)
-- Not persisted to disk (workflow is ephemeral)
+**Orchestrate-specific checkpoints**:
+- Stored in orchestrator memory (minimal, ephemeral)
 - Used for in-session recovery only
-
-#### Checkpoint Restoration
-
-**On Workflow Interruption**:
-```yaml
-restoration_process:
-  1_identify_last_checkpoint:
-    - scan_completed_phases: true
-    - find_highest_successful: true
-
-  2_restore_context:
-    - load_checkpoint_data: true
-    - restore_workflow_state: true
-    - preserve_error_history: true
-
-  3_resume_execution:
-    - start_from_next_phase: true
-    - skip_completed_phases: true
-    - maintain_continuity: true
-```
-
-**On Error Recovery**:
-```yaml
-rollback_process:
-  if_phase_fails:
-    - rollback_to: previous_successful_checkpoint
-    - preserve_partial_work: true
-    - log_failure: error_history
-
-  resume_options:
-    - retry_failed_phase: with_adjusted_parameters
-    - skip_to_next: if_user_approves
-    - manual_intervention: if_retry_exhausted
-```
-
-### Error History Tracking
-
-**Purpose**: Learn from errors to improve future workflows
-
-**Structure**:
-```yaml
-error_history:
-  - timestamp: "[ISO 8601]"
-    phase: "research|planning|implementation|debugging|documentation"
-    error_type: "timeout|tool_access|validation|test_failure|integration"
-    error_message: "[Brief description]"
-    recovery_action: "[What was attempted]"
-    recovery_result: "success|failed|escalated"
-    lessons: "[Insights for future workflows]"
-```
-
-**Usage**:
-- Track common error patterns
-- Inform retry strategies
-- Provide context for escalations
-- Improve future orchestration
+- Enable rollback to previous successful phase
+- Preserve partial work on failures
 
 ### Manual Intervention Points
 
@@ -2165,40 +1796,7 @@ error_history:
 
 #### Escalation Format
 
-```markdown
-⚠ Manual Intervention Required
-
-**Issue**: [Brief description of problem]
-
-**Phase**: [Current workflow phase]
-
-**Attempts**: [Number of retry attempts made]
-
-**Error History**:
-[Chronological list of what was tried and results]
-
-**Current State**:
-- Completed phases: [list]
-- Last successful checkpoint: [phase name]
-- Partial work preserved: [yes/no]
-
-**Options**:
-1. Review detailed error logs and continue manually
-2. Modify approach and resume from checkpoint
-3. Rollback to last successful state
-4. Terminate workflow
-
-**Context Available**:
-- [List of available checkpoints]
-- [List of generated artifacts]
-- [Error reports if available]
-
-Please provide guidance on how to proceed.
-```
-
-#### User Response Handling
-
-After escalation, workflow pauses awaiting user input:
+See [User Escalation Format](../docs/command-patterns.md#pattern-user-escalation-format) for standard escalation message structure.
 
 **User Options**:
 - `continue`: Resume with manual fixes
@@ -2206,12 +1804,6 @@ After escalation, workflow pauses awaiting user input:
 - `rollback [phase]`: Return to checkpoint
 - `terminate`: End workflow gracefully
 - `debug`: Enter manual debugging mode
-
-**Workflow State Preservation**:
-- All checkpoints maintained
-- Error history available
-- Partial work preserved
-- Context accessible for review
 
 ## Performance Monitoring
 
