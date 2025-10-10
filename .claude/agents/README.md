@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 10 specialized agents
+**Current Agent Count**: 11 specialized agents
 
 ## Recent Changes
 
@@ -113,6 +113,27 @@ Agents enable modular, focused assistance by providing:
 - Troubleshooting failures
 - Understanding error messages
 - Investigating performance issues
+
+---
+
+### doc-converter.md
+**Purpose**: Convert Word (DOCX) and PDF files to Markdown format
+
+**Capabilities**:
+- Batch document conversion (DOCX and PDF)
+- Pandoc-based DOCX conversion (optimal quality)
+- marker-pdf-based PDF conversion (AI-powered)
+- Image extraction and organization
+- Conversion validation and quality checks
+- Progress reporting and statistics
+
+**Allowed Tools**: Read, Grep, Glob, Bash, Write
+
+**Typical Use Cases**:
+- Converting legacy documentation to Markdown
+- Batch processing document archives
+- Migrating Word docs to version control
+- Extracting content from PDF reports
 
 ---
 
@@ -540,6 +561,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 - [code-writer.md](code-writer.md) - Code implementation
 - [complexity_estimator.md](complexity_estimator.md) - Context-aware complexity analysis
 - [debug-specialist.md](debug-specialist.md) - Issue investigation
+- [doc-converter.md](doc-converter.md) - Convert Word/PDF to Markdown
 - [doc-writer.md](doc-writer.md) - Documentation creation
 - [github-specialist.md](github-specialist.md) - GitHub operations and PR management
 - [metrics-specialist.md](metrics-specialist.md) - Performance analysis
