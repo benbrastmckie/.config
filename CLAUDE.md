@@ -1,3 +1,33 @@
+# Worktree Task: optimize_claude
+
+## Task Metadata
+- **Type**: feature
+- **Branch**: feature/optimize_claude
+- **Created**: 2025-10-09 16:45
+- **Worktree**: ../.config-feature-optimize_claude
+- **Session ID**: optimize_claude-1760053547
+
+## Objective
+[Describe the main goal for this worktree]
+
+## Current Status
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+- [ ] Review
+
+## Claude Context
+Tell Claude: "I'm working on optimize_claude in the feature/optimize_claude worktree. The goal is to..."
+
+## Task Notes
+[Add worktree-specific context, links, or decisions]
+
+
+---
+
+# Project Configuration (Inherited from Main Worktree)
+
 # Project Configuration Index
 
 This CLAUDE.md serves as the central configuration and standards index for this project.
