@@ -35,6 +35,6 @@ return {
     vim.g.mkdp_path_to_chrome = "brave"
 
     -- set log level (debug, info, warn, error)
-    vim.g.mkdp_log_level = 'debug'
+    vim.g.mkdp_log_level = 'warn'
   end,
 }

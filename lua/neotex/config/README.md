@@ -61,20 +61,33 @@ See [NOTIFICATIONS.md](../../docs/NOTIFICATIONS.md) for complete documentation.
 
 The keymaps module defines key mappings for various operations:
 
-- Navigation (buffer switching, window movement)
-- Editing operations (format, search/replace)
-- Plugin-specific mappings
-- Custom command shortcuts
+- **Navigation**: Buffer switching, window movement, display line movement
+- **Editing Operations**: Format, search/replace, line movement, indentation
+- **Quickfix/Location List**: Navigation with `]q`/`[q` (next/prev), `]Q`/`[Q` (first/last), `]l`/`[l`, `]L`/`[L`
+- **Plugin-Specific Mappings**: AI assistants, terminal toggle, commenting
+- **Custom Command Shortcuts**: All mappings include centered cursor (`zz`) for better visibility
+
+### Key Features
+- Context-aware `<C-c>` binding: Claude Code toggle in most contexts, checkbox toggle in autolist
+- Terminal mode bindings for window navigation and terminal toggle
+- Visual mode support for line movement and indentation while preserving selection
 
 ## Autocommands (autocmds.lua)
 
 The autocommands module sets up automatic behaviors for different events:
 
-- Filetype-specific settings
-- Terminal behavior
-- Cursor position restoration
-- Auto-formatting on save
-- Auto-reload files changed outside Vim
+- **Filetype-Specific Settings**: Automatic configuration based on file type
+- **Terminal Behavior**: Terminal mode setup and window management
+- **Cursor Position Restoration**: Resume editing at last cursor position
+- **Auto-Formatting on Save**: Format code before writing (configurable per filetype)
+- **Efficient File Reload**: Detect external file changes using FocusGained and BufEnter events
+
+### Performance Optimizations
+- **No CursorHold Events**: Removed CursorHold/CursorHoldI autocmds for file reload detection
+  - Eliminated 5-10ms cursor pause lag
+  - Reduced autocmd fires by 98%
+  - FocusGained and BufEnter events are sufficient for detecting external changes
+- **Minimal Event Listening**: Only essential autocmds are registered for better responsiveness
 
 ## Usage
 

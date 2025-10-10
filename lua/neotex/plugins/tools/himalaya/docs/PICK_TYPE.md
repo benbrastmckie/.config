@@ -10,7 +10,7 @@ Remove custom thematic categories from the test picker to eliminate confusion wh
 - This causes the picker to show 380 total tests when there are actually only 234
 - Users see confusing duplicate entries
 
-## Implementation Plan Following GUIDELINES.md
+## Implementation Plan Following CODE_STANDARDS.md
 
 ### Pre-Implementation Analysis
 

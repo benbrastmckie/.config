@@ -20,7 +20,7 @@ Organization:
 ----------------------------------------------------------------------------------
 AI/ASSISTANT GLOBAL KEYBINDINGS                | DESCRIPTION
 ----------------------------------------------------------------------------------
-<C-c>                                          | Toggle Claude Code sidebar (all modes)
+<C-c>                                          | Toggle Claude Code (overridden in Avante/Telescope)
 <C-g>                                          | Toggle Avante interface (all modes)
 
 ----------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ O                                              | Create new bullet point above
 dd                                             | Delete line and recalculate list numbers
 d (visual mode)                                | Delete selection and recalculate numbers
 <C-n>                                          | Toggle checkbox status ([ ] ↔ [x])
-<C-c>                                          | Recalculate list numbering
+<C-c>                                          | Toggle Claude Code (global binding, not autolist)
 
 ----------------------------------------------------------------------------------
 AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
@@ -196,9 +196,7 @@ function M.setup()
       vim.keymap.set("n", "<", "<<cmd>AutolistRecalculate<cr>",
         { buffer = true, desc = "Unindent bullet" })
 
-      -- List recalculation (using leader key to avoid conflicts)
-      vim.keymap.set("n", "<leader>cr", "<cmd>AutolistRecalculate<cr>",
-        { buffer = true, desc = "Recalculate list" })
+      -- List recalculation is handled by <leader>rr in which-key
 
       -- Smart deletion that maintains list consistency
       vim.keymap.set("n", "dd", "dd<cmd>AutolistRecalculate<cr>",
@@ -293,20 +291,23 @@ function M.setup()
   --------------------------------
 
   -- Claude Code toggle (smart session management)
+  -- Note: This global mapping is overridden by buffer-local mappings in:
+  --   - Avante buffers (<C-c> clears chat history)
+  --   - Telescope pickers (<C-c> closes picker)
   map("n", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("i", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("v", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   map("t", "<C-c>", function()
-    require("neotex.ai-claude").smart_toggle()
+    require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   -- Avante toggle
@@ -431,6 +432,18 @@ function M.setup()
   -- Enhanced scrolling that keeps cursor centered
   map("n", "<c-u>", "<c-u>zz", {}, "Scroll up with centering")
   map("n", "<c-d>", "<c-d>zz", {}, "Scroll down with centering")
+
+  -- Quickfix list navigation (centered cursor for visibility)
+  map("n", "]q", "<cmd>cnext<cr>zz", {}, "Next quickfix item")
+  map("n", "[q", "<cmd>cprev<cr>zz", {}, "Previous quickfix item")
+  map("n", "]Q", "<cmd>clast<cr>zz", {}, "Last quickfix item")
+  map("n", "[Q", "<cmd>cfirst<cr>zz", {}, "First quickfix item")
+
+  -- Location list navigation (buffer-local quickfix)
+  map("n", "]l", "<cmd>lnext<cr>zz", {}, "Next location list item")
+  map("n", "[l", "<cmd>lprev<cr>zz", {}, "Previous location list item")
+  map("n", "]L", "<cmd>llast<cr>zz", {}, "Last location list item")
+  map("n", "[L", "<cmd>lfirst<cr>zz", {}, "First location list item")
 
   -- Display line navigation (respects word wrapping)
   map("v", "<S-h>", "g^", {}, "Go to start of display line")

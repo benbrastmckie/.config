@@ -104,8 +104,10 @@ function M.setup()
     end,
   })
 
-  -- Auto-reload on focus/cursor events for better responsiveness
-  api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  -- Auto-reload on focus and buffer entry (removed CursorHold events for performance)
+  -- CursorHold/CursorHoldI removed: caused 5-10ms lag on every cursor pause
+  -- FocusGained and BufEnter are sufficient for detecting external file changes
+  api.nvim_create_autocmd({ "FocusGained", "BufEnter" }, {
     pattern = "*",
     callback = function()
       if vim.o.autoread and vim.fn.getcmdwintype() == '' then

@@ -27,6 +27,9 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 [Additional documentation continues as before...]
 ]]
 
+-- Import notification module for TTS toggle functionality
+local notify = require('neotex.util.notifications')
+
 return {
   "folke/which-key.nvim",
   event = "VeryLazy",
@@ -118,6 +121,53 @@ return {
     -- HELPER FUNCTIONS FOR FILETYPE DETECTION
     -- ============================================================================
 
+    -- Toggle TTS_ENABLED in the project-specific config file
+    -- @param config_path string Path to the tts-config.sh file
+    -- @return success boolean True if toggle succeeded
+    -- @return message string Success message ("TTS enabled" or "TTS disabled")
+    -- @return error string Error message if success is false
+    local function toggle_tts_config(config_path)
+      -- Validate file exists (redundant check, but safe)
+      if vim.fn.filereadable(config_path) ~= 1 then
+        return false, nil, "Config file not readable: " .. config_path
+      end
+
+      -- Read file with error handling
+      local ok, lines = pcall(vim.fn.readfile, config_path)
+      if not ok then
+        return false, nil, "Failed to read config: " .. tostring(lines)
+      end
+
+      -- Find and toggle TTS_ENABLED
+      local modified = false
+      local message
+      for i, line in ipairs(lines) do
+        if line:match("^TTS_ENABLED=") then
+          if line:match("=true$") then
+            lines[i] = "TTS_ENABLED=false"
+            message = "TTS disabled"
+          else
+            lines[i] = "TTS_ENABLED=true"
+            message = "TTS enabled"
+          end
+          modified = true
+          break
+        end
+      end
+
+      if not modified then
+        return false, nil, "TTS_ENABLED not found in config file"
+      end
+
+      -- Write file with error handling
+      local write_ok, write_err = pcall(vim.fn.writefile, lines, config_path)
+      if not write_ok then
+        return false, nil, "Failed to write config: " .. tostring(write_err)
+      end
+
+      return true, message, nil
+    end
+
     local function is_latex()
       return vim.tbl_contains({ "tex", "latex", "bib", "cls", "sty" }, vim.bo.filetype)
     end
@@ -183,10 +233,17 @@ return {
     -- ============================================================================
 
     wk.add({
-      { "<leader>a", group = "ai", icon = "󰚩" },
+      { "<leader>a", group = "ai", icon = "󰚩", mode = { "n", "v" } },
 
       -- Claude AI commands
-      { "<leader>as", function() require("neotex.ai-claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
+      { "<leader>ac", "<cmd>ClaudeCommands<CR>", desc = "claude commands", icon = "󰘳" },
+      { "<leader>ac",
+        function() require("neotex.plugins.ai.claude.core.visual").send_visual_to_claude_with_prompt() end,
+        desc = "send selection to claude with prompt",
+        mode = { "v" },
+        icon = "󰘳"
+      },
+      { "<leader>as", function() require("neotex.plugins.ai.claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
       { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
       { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
       { "<leader>ar", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
@@ -203,6 +260,95 @@ return {
       { "<leader>al", "<cmd>LecticSubmitSelection<CR>", desc = "lectic selection", icon = "󰚟", mode = { "v" }, cond = is_lectic },
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
+
+      -- TTS toggle - project-specific only
+      { "<leader>at", function()
+        local config_path = vim.fn.getcwd() .. "/.claude/tts/tts-config.sh"
+
+        if vim.fn.filereadable(config_path) ~= 1 then
+          notify.editor(
+            "No TTS config found. Use <leader>ac to create project-specific config.",
+            notify.categories.ERROR,
+            { project_root = vim.fn.getcwd() }
+          )
+          return
+        end
+
+        local success, message, error = toggle_tts_config(config_path)
+
+        if success then
+          notify.editor(
+            message,
+            notify.categories.USER_ACTION,
+            { config_path = config_path }
+          )
+        else
+          notify.editor(
+            "Failed to toggle TTS: " .. error,
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+        end
+      end, desc = "toggle tts", icon = "󰔊" },
+
+      -- Yolo mode toggle - enables/disables --dangerously-skip-permissions flag
+      { "<leader>ay", function()
+        local config_path = vim.fn.expand("~/.config/nvim/lua/neotex/plugins/ai/claudecode.lua")
+
+        if vim.fn.filereadable(config_path) ~= 1 then
+          notify.editor(
+            "Claude Code config not found",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        local lines = vim.fn.readfile(config_path)
+        local modified = false
+        local yolo_enabled = false
+
+        for i, line in ipairs(lines) do
+          if line:match('%s*command = "claude') then
+            if line:match('--dangerously%-skip%-permissions') then
+              -- Disable yolo mode
+              lines[i] = '    command = "claude",'
+              yolo_enabled = false
+            else
+              -- Enable yolo mode
+              lines[i] = '    command = "claude --dangerously-skip-permissions",'
+              yolo_enabled = true
+            end
+            modified = true
+            break
+          end
+        end
+
+        if not modified then
+          notify.editor(
+            "Could not find command line in config",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        local write_ok = pcall(vim.fn.writefile, lines, config_path)
+        if not write_ok then
+          notify.editor(
+            "Failed to write config file",
+            notify.categories.ERROR,
+            { config_path = config_path }
+          )
+          return
+        end
+
+        notify.editor(
+          yolo_enabled and "Yolo mode enabled (restart required)" or "Yolo mode disabled (restart required)",
+          notify.categories.USER_ACTION,
+          { config_path = config_path, yolo_enabled = yolo_enabled }
+        )
+      end, desc = "toggle yolo mode", icon = "󰒓" },
     })
 
     -- ============================================================================
@@ -426,11 +572,11 @@ return {
     })
 
     -- ============================================================================
-    -- <leader>r - REFACTOR/RUN GROUP
+    -- <leader>r - RUN GROUP
     -- ============================================================================
 
     wk.add({
-      { "<leader>r", group = "refactor/run", icon = "󰌵" },
+      { "<leader>r", group = "run", icon = "󰌵" },
       { "<leader>rc", "<cmd>TermExec cmd='rm -rf ~/.cache/nvim' open=0<CR>", desc = "clear plugin cache", icon = "󰃢" },
       { "<leader>rd", function()
           local notify = require('neotex.util.notifications')

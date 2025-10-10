@@ -16,8 +16,7 @@ util/
 ├── misc.lua           # Miscellaneous helper functions
 ├── optimize.lua       # Performance optimization utilities
 ├── lectic_extras.lua  # Lectic AI integration helpers
-├── neotree-width.lua  # Neo-tree width management
-└── notifications.lua  # Unified notification system
+└── neotree-width.lua  # Neo-tree width management
 ```
 
 ## Module Structure
@@ -30,7 +29,8 @@ util/
 - **diagnostics.lua**: LSP diagnostic utilities
 - **misc.lua**: Miscellaneous helper functions
 - **optimize.lua**: Performance optimization utilities
-- **notifications.lua**: Unified notification system for entire configuration
+- **lectic_extras.lua**: Lectic AI integration helpers
+- **neotree-width.lua**: Neo-tree width management
 
 ## Usage
 

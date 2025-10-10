@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a systematic plan to clean up the Himalaya event handling system, focusing on eliminating redundancy, establishing single sources of truth, and ensuring proper file synchronization. The plan follows the principles outlined in GUIDELINES.md.
+This document outlines a systematic plan to clean up the Himalaya event handling system, focusing on eliminating redundancy, establishing single sources of truth, and ensuring proper file synchronization. The plan follows the principles outlined in CODE_STANDARDS.md.
 
 ## Current Issues
 
@@ -34,7 +34,7 @@ This document outlines a systematic plan to clean up the Himalaya event handling
 
 ## Proposed Architecture
 
-### Design Principles (per GUIDELINES.md)
+### Design Principles (per CODE_STANDARDS.md)
 
 1. **Single Source of Truth**: One authoritative handler per event
 2. **No Redundancy**: Eliminate duplicate handlers
@@ -247,7 +247,7 @@ If issues occur:
 
 ## Code Cleanup Opportunities
 
-Following GUIDELINES.md principles:
+Following CODE_STANDARDS.md principles:
 
 1. **Remove**: Duplicate event handlers
 2. **Simplify**: Event timing logic
@@ -256,4 +256,4 @@ Following GUIDELINES.md principles:
 
 ## Conclusion
 
-This plan addresses the root causes of the draft refresh issue while improving the overall event handling architecture. By following the systematic approach outlined in GUIDELINES.md, we ensure a clean, maintainable solution that prevents similar issues in the future.
+This plan addresses the root causes of the draft refresh issue while improving the overall event handling architecture. By following the systematic approach outlined in CODE_STANDARDS.md, we ensure a clean, maintainable solution that prevents similar issues in the future.
