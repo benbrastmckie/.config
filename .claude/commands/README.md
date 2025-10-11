@@ -2,9 +2,20 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 26 commands (reduced from 29 through consolidation)
+**Current Command Count**: 25 active commands + 1 deprecated (reduced from 29 through consolidation)
 
 ## Recent Changes
+
+### Command Consolidation (2025-10-10)
+
+**Deprecated Commands**:
+- `/update` → **Use `/revise` instead** (consolidated for clarity)
+
+**Why**: `/update` and `/revise` had 70% overlapping functionality, causing user confusion
+about when to use which command. All update capabilities have been integrated into
+`/revise` for a single, clear command for all content modifications.
+
+**Migration**: See [Command Selection Guide](.claude/docs/command-selection-guide.md)
 
 ### Command Consolidation (2025-10-06)
 Consolidated redundant commands for a cleaner interface:
@@ -260,16 +271,21 @@ See `.claude/templates/example-feature.yaml` for template structure.
 
 
 #### /revise
-**Purpose**: Revise existing implementation plan with new requirements
+**Purpose**: Revise existing implementation plan or research report with new requirements
 
-**Usage**: `/revise <revision-details> [report-path1] [report-path2] ...`
+**Usage**:
+- `/revise <revision-details> [context-path1] ...` (revision-first)
+- `/revise <artifact-path> <revision-details> [context-path1] ...` (path-first)
 
 **Features**:
-- Progressive structure-aware plan modification
-- Revision scope analysis (high-level vs phase-specific)
-- Research integration
-- Phase adjustment
+- **Plans**: Progressive structure-aware modification, all levels (L0/L1/L2)
+- **Reports**: Section-specific targeting, findings updates
+- Flexible syntax (revision-first or path-first)
+- Research integration for both plans and reports
+- Auto-mode for `/implement` integration (plans only)
 - No implementation (planning only)
+
+**Artifact Support**: Plans (L0/L1/L2), Reports (single-file)
 
 ---
 
@@ -295,18 +311,19 @@ See `.claude/templates/example-feature.yaml` for template structure.
 
 ---
 
-#### /update
-**Purpose**: Update plan or report with new information
+#### /update ⚠️ DEPRECATED
+**Purpose**: ⚠️ DEPRECATED - Use `/revise` instead
 
-**Usage**:
-- `/update plan <plan-path> [reason-for-update]`
-- `/update report <report-path> [specific-sections]`
+**Deprecation Date**: 2025-10-10
 
-**Features**:
-- **Plans**: Progressive structure-aware modification, phase updates, works with all levels (L0/L1/L2)
-- **Reports**: Section updates, new information integration, version tracking
-- Unified interface for both artifact types
-- Cross-reference integrity maintenance
+**Migration**: Use `/revise` for all plan and report modifications
+
+**Why Deprecated**: 70% functionality overlap with `/revise`. Consolidating to `/revise` provides:
+- Clearer command responsibilities (content vs structure)
+- Better features (auto-mode, research integration, structure recommendations)
+- Single command for all content modifications
+
+**See**: [Command Selection Guide](../docs/command-selection-guide.md) for migration examples
 
 ---
 

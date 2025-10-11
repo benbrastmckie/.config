@@ -1,12 +1,84 @@
 ---
 allowed-tools: Read, Edit, MultiEdit, Bash, Grep, Glob, WebSearch
 argument-hint: [plan|report] <path> [reason-or-sections]
-description: Update an existing implementation plan or research report
-command-type: dependent
-parent-commands: plan, report, implement
+description: ⚠️ DEPRECATED - Use /revise instead (Update an existing implementation plan or research report)
+command-type: deprecated
+parent-commands: revise
+deprecation-date: 2025-10-10
+migration-command: /revise
 ---
 
-# Update Implementation Artifact
+# ⚠️ DEPRECATED: Update Implementation Artifact
+
+**This command is deprecated as of 2025-10-10. Please use `/revise` instead.**
+
+## Migration Guide
+
+All `/update` functionality has been consolidated into `/revise` for a clearer command model.
+
+### Migration Examples
+
+**Before (using /update)**:
+```bash
+/update plan specs/plans/025_feature.md "Add Phase 6 for deployment"
+/update report specs/reports/010_analysis.md "Security section"
+```
+
+**After (using /revise)**:
+```bash
+/revise "Add Phase 6 for deployment" specs/plans/025_feature.md
+/revise "Update security section with new findings" specs/reports/010_analysis.md
+```
+
+### Why This Change?
+
+- **Clearer responsibilities**: `/revise` handles all content changes (plans and reports)
+- **Less confusion**: Single command for modifications vs multiple overlapping commands
+- **Better features**: `/revise` includes auto-mode, research integration, structure recommendations
+
+### Command Selection Guide
+
+For plan/report modifications, use:
+- **Content changes** (add/modify tasks, update findings): `/revise`
+- **Structural changes** (extract phase to file): `/expand`
+- **Structural simplification** (merge phase back): `/collapse`
+
+See [Command Selection Guide](../docs/command-selection-guide.md) for detailed decision tree.
+
+---
+
+## Deprecation Warning
+
+When executing this command, you will see:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  DEPRECATION WARNING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The /update command is deprecated. Please use /revise instead.
+
+Migration example:
+  OLD: /update plan <path> "reason"
+  NEW: /revise "reason" <path>
+
+For reports:
+  OLD: /update report <path> "sections"
+  NEW: /revise "Update sections: <details>" <path>
+
+See: .claude/docs/command-selection-guide.md
+
+This warning will appear for 30 days. /update will remain functional
+but is no longer maintained. Please migrate to /revise.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Proceeding with /update (deprecated)...
+```
+
+---
+
+## Original Documentation (for reference during migration period)
 
 I'll update an existing implementation plan or research report with new requirements, modifications, or findings.
 

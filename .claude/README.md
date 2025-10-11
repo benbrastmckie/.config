@@ -63,7 +63,10 @@ Comprehensive slash command system for all development workflows:
 - **Templates**: `/plan-from-template` for accelerated plan creation
 - **Analysis**: `/analyze`, `/refactor`, `/debug`
 - **Structure**: `/expand`, `/collapse` for progressive plan organization
-- **Utilities**: `/list`, `/update`, `/document`, `/setup`
+- **Modification**: `/revise` for plan/report updates (⚠️ `/update` deprecated)
+- **Utilities**: `/list`, `/document`, `/setup`
+
+**Recent**: `/update` deprecated (2025-10-10) - use `/revise` instead for all content modifications
 
 **Location**: `commands/` | **See**: [commands/README.md](commands/README.md)
 **Neovim**: Browse via `<leader>ac` → [Commands] section
