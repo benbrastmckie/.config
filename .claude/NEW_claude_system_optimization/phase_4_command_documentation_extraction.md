@@ -4,7 +4,7 @@
 
 This phase refactors 20+ command files in `.claude/commands/` to extract common documentation patterns to the shared file `.claude/docs/command-patterns.md` (now 1,041 lines). The goal is to reduce total command LOC from 13,020 to ~6,200 (53% reduction) while maintaining clarity and improving maintainability.
 
-**Status**: Foundation Complete (10%), Refactoring In Progress
+**Status**: Foundation Complete + implement.md Compressed (15%), Refactoring In Progress
 **Last Updated**: 2025-10-10
 
 **Links**:
@@ -12,14 +12,14 @@ This phase refactors 20+ command files in `.claude/commands/` to extract common 
 - **[Implementation Roadmap](phase_4_roadmap.md)** - 55.5-hour breakdown into 18 sessions with validation checkpoints
 
 **Current State:**
-- Total command files: 13,020 lines
+- Total command files: 12,242 lines (was 13,020, -778 from implement.md compression)
 - command-patterns.md: 1,041 lines (was 690, +351 new patterns added)
 - Backups: `.claude/commands/backups/phase4_20251010/`
 - Test suite: `.claude/tests/test_command_references.sh` ✅
 - Priority commands:
-  - orchestrate.md: 2,092 lines (target ~1,700)
-  - setup.md: ~2,200 lines (target ~1,890)
-  - implement.md: ~1,650 lines (target ~1,050)
+  - orchestrate.md: 2,092 lines (target ~1,700) - ⏳ TODO
+  - setup.md: ~2,200 lines (target ~600-800) - ⏳ TODO (see setup_md_compression_plan.md)
+  - implement.md: 868 lines (was 1,646) - ✅ COMPLETE (47% reduction)
 
 **Target State:**
 - Total command files: ~6,200 lines (53% reduction)
@@ -27,12 +27,19 @@ This phase refactors 20+ command files in `.claude/commands/` to extract common 
 - All commands use consistent reference format
 - Zero information loss
 
-**Completed Foundation Tasks** (5.5 hours):
-1. ✅ Task 1: Added Logger Init, PR Creation, Parallel Safety patterns
-2. ✅ Task 2: Backed up all 20 command files
-3. ✅ Task 3: Created validation test suite
+**Completed Tasks**:
+1. ✅ Task 1: Added Logger Init, PR Creation, Parallel Safety patterns (2h)
+2. ✅ Task 2: Backed up all 20 command files (0.5h)
+3. ✅ Task 3: Created validation test suite (3h)
+4. ✅ Sessions 5-9: implement.md compression complete (8h actual)
+   - First pass: ~390 lines (standards discovery, agent patterns, checkpoints)
+   - Second pass: ~388 lines (proactive expansion, parallel execution, error analysis, adaptive planning)
+   - Result: 1,646 → 868 lines (778 line reduction, 47% compression)
+   - Git commit: bd1e706
 
-**Remaining**: Tasks 4-18 (50 hours of refactoring work) - See [Roadmap](phase_4_roadmap.md) for detailed breakdown
+**Completed Subtotal**: 13.5 hours ✅
+
+**Remaining**: Tasks 4-18 (42 hours) - orchestrate.md, setup.md, secondary commands, validation
 
 ## Research Analysis
 
@@ -416,6 +423,8 @@ This phase engages when implementation reports test failures. For error recovery
 
 **Note:** Setup.md has minimal pattern extraction potential. Alternative: Internal optimization.
 
+**Detailed Compression Plan:** See [setup_md_compression_plan.md](setup_md_compression_plan.md) for comprehensive strategy (requires ~1,400-1,600 line reduction through aggressive template condensing).
+
 **Phase 1: Remove Redundant Documentation**
 
 | Section | Lines | Action | Savings |
@@ -466,73 +475,47 @@ This phase engages when implementation reports test failures. For error recovery
 
 ---
 
-### Priority 3: implement.md (~1,650 lines → ~1,000 lines)
+### Priority 3: implement.md (1,646 lines → 868 lines) ✅ COMPLETE
 
-**Phase 1: Shared Utilities and Logging**
+**Status**: Compression complete (47% reduction, 778 lines removed)
+**Commit**: bd1e706
+**Date**: 2025-10-10
 
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Shared Utilities Integration | 32-38 | Reference checkpoint/complexity patterns | Checkpoint Management | 10 lines |
-| Logger Initialization | 147-175 | Extract to new pattern, reference | NEW: Logger Init Pattern | 20 lines |
+**Compression Summary**:
 
-**Phase 2: Agent and Progress Patterns**
+**First Pass (~390 lines saved)**:
+- Standards Discovery and Application: 75 lines → reference
+- Agent Invocation Patterns: 45 lines → reference
+- Checkpoint Management: 85 lines → reference
+- Upward CLAUDE.md Search: 70 lines → reference
+- Resume from Checkpoint: 50 lines → reference
+- Additional consolidations: ~65 lines
 
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Dependency Analysis | 243-276 | Reference parallel execution | NEW: Parallel Safety Pattern | 15 lines |
-| Agent Monitoring + Progress | 367-411 | Replace with progress pattern reference | Progress Streaming | 30 lines |
+**Second Pass (~388 lines saved)**:
+- Proactive Expansion Check: 74 lines → 13 lines (61 saved)
+- Parallel Wave Execution: 53 lines → 11 lines (42 saved)
+- Enhanced Error Analysis: 60 lines → 7 lines (53 saved)
+- Adaptive Planning Detection: 236 lines → 15 lines (221 saved)
+- Additional refinements: ~11 lines
 
-**Phase 3: Error Handling**
+**Pattern References Added**:
+- Upward CLAUDE.md Search
+- Standards Discovery Patterns
+- Checkpoint Management Patterns
+- Agent Invocation Patterns
+- Resume from Checkpoint
+- Test Discovery from CLAUDE.md
+- Progress Marker Detection
+- Parallel Execution Safety
 
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Enhanced Error Analysis | 594-651 | Reference error classification | Error Recovery Patterns | 35 lines |
-| Error Handling and Rollback | 1197-1231 | Reference error recovery | Error Recovery Patterns | 20 lines |
-
-**Phase 4: Summary and Cross-References**
-
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Summary Generation | 1282-1350 | Reference artifact cross-refs | Artifact Referencing | 40 lines |
-| Create Pull Request | 1353-1447 | Extract to new pattern, reference | NEW: PR Creation Pattern | 60 lines |
-
-**Phase 5: Checkpoint Management**
-
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Checkpoint Detection/Resume | 1560-1645 | Replace with checkpoint pattern ref | Checkpoint Management | 50 lines |
-
-**Phase 6: Standards Discovery (Redundant with CLAUDE.md)**
-
-| Section | Lines | Action | Reference | Savings |
-|---------|-------|--------|-----------|---------|
-| Standards Discovery and Application | 65-140 | Reduce to brief summary + CLAUDE.md ref | Standards Discovery | 50 lines |
-
-**Total Implement Reduction: ~330 lines**
-**Result: 1,650 - 330 = 1,320 lines (above target of 1,000)**
-
-**Additional Optimization Needed: ~320 lines**
-
-**Phase 7: Aggressive Internal Consolidation**
-
-| Section | Lines | Action | Savings |
-|---------|-------|--------|---------|
-| Adaptive Planning Detection | 654-847 | Reduce verbose trigger explanations | 80 lines |
-| Progressive Plan Support | 184-241 | Consolidate level detection examples | 30 lines |
-| Phase Execution Protocol | 290-578 | Remove redundant step explanations | 100 lines |
-| Auto-Resume Feature | 58-64 | Merge with Finding Implementation Plan | 10 lines |
-| Integration with Other Commands | 1481-1527 | Reduce to concise table | 30 lines |
-| Resuming Implementation | 1189-1196 | Merge with Checkpoint section | 10 lines |
-
-**Additional Consolidation: ~260 lines**
-**Revised Result: 1,650 - 590 = 1,060 lines (close to target)**
-
-**Validation Criteria:**
-- [ ] All adaptive planning triggers documented
-- [ ] Checkpoint resume workflow clear
-- [ ] Error handling preserves partial work
-- [ ] Summary generation creates bidirectional links
-- [ ] PR creation optional and graceful
+**Validation Results**:
+- ✅ All adaptive planning triggers documented
+- ✅ Checkpoint resume workflow clear
+- ✅ Error handling preserves partial work
+- ✅ Summary generation creates bidirectional links
+- ✅ PR creation optional and graceful
+- ✅ Command functionality verified
+- ✅ 47% compression achieved (exceeded target)
 
 ---
 
