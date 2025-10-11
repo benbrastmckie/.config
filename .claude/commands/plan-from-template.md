@@ -391,8 +391,8 @@ Check template syntax and variable values
 /report "CRUD best practices for PostgreSQL"
 # → specs/reports/030_crud_best_practices.md
 
-# 3. (Optional) Update plan with research
-/update plan specs/plans/025_product_crud.md "Add report findings"
+# 3. (Optional) Revise plan with research
+/revise "Incorporate CRUD best practices from report" specs/plans/025_product_crud.md
 
 # 4. Implement the plan
 /implement specs/plans/025_product_crud.md

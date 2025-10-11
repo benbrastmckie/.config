@@ -35,11 +35,11 @@ This plan implements systematic optimizations to the Claude Code .claude/ system
 - [x] Template coverage increased from 20% to 75% (6 new templates created) - **COMPLETE** (commit 1f29790)
 - [x] Metrics aggregation system operational with automated analysis - **COMPLETE** (commit e90ec39)
 - [x] `/plan` command includes complexity pre-analysis recommendations - **COMPLETE** (commit bcf6e17)
-- [ ] Command documentation reduced by 1,500-2,000 LOC via extraction - **PENDING**
-- [ ] `/update` command deprecated with clear migration path - **PENDING**
+- [x] Command documentation reduced by 1,500-2,000 LOC via extraction - **COMPLETE** (Phase 4: 2,878 lines saved)
+- [x] `/update` command deprecated with clear migration path - **COMPLETE** (Phase 5)
 - [x] `/analyze agents` provides detailed performance metrics - **PARTIALLY COMPLETE** (some enhancements in e90ec39)
-- [x] All tests passing (93/93 baseline maintained) - **MAINTAINED** through Phase 3
-- [ ] Documentation updated to reflect all changes - **IN PROGRESS** (Phases 1-3 complete)
+- [x] All tests passing (93/93 baseline maintained) - **MAINTAINED** through Phase 5
+- [x] Documentation updated to reflect all changes - **COMPLETE** (Phases 1-5 complete)
 
 ## Technical Design
 
@@ -405,12 +405,21 @@ Validation:
 - **[Phase 4 Completion Status](phase_4_completion_status.md)** (430 lines)
 - **[Phase 4 Final Summary](phase_4_final_summary.md)** (144 lines) - **COMPLETION REPORT**
 
-### Phase 5: Command Consolidation (Medium Complexity)
+### Phase 5: Command Consolidation (Medium Complexity) ✅ COMPLETE
 **Objective**: Reduce command overlap by deprecating `/update` and clarifying responsibilities
 **Complexity**: Medium (6/10)
-**Status**: PENDING
+**Status**: COMPLETE ✅
+**Completion Date**: 2025-10-11
 
-**Summary**: Deprecate `/update` command and consolidate its functionality into `/revise`. Create comprehensive command selection guide to clarify when to use `/revise` vs `/expand` vs `/collapse`. Implement 30-day migration timeline with clear migration path.
+**Summary**: Deprecated `/update` command and consolidated its functionality into `/revise`. Created comprehensive command selection guide to clarify when to use `/revise` vs `/expand` vs `/collapse`. Implemented clear migration path with deprecation notices.
+
+**Achievements**:
+- ✅ Updated `/update.md` with comprehensive deprecation notice and migration guide
+- ✅ Enhanced `/revise.md` with full report support (section targeting, flexible syntax)
+- ✅ Created `command-selection-guide.md` (321 lines) with decision trees and examples
+- ✅ Updated command count from 26 to 25 active + 1 deprecated
+- ✅ Updated all cross-references in plan-from-template.md and plan-wizard.md
+- ✅ Integration testing verified all documentation links and features
 
 **Key Deliverables**:
 - Deprecation notice and runtime warnings for `/update`
