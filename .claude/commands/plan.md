@@ -103,11 +103,12 @@ I'll assign the plan number by:
 - Format: `NNN_feature_name.md` with three-digit numbering
 
 ### 5. Standards Discovery
-I'll identify project-specific standards by:
-- Looking for `CLAUDE.md` in the project directory
-- Checking for `CODE_STANDARDS.md`, `DOCUMENTATION_STANDARDS.md`, or similar documentation
-- Analyzing existing code patterns and conventions
-- Identifying testing approaches and requirements
+For standards discovery process, see [Standards Discovery Patterns](../docs/command-patterns.md#standards-discovery-patterns).
+
+**Plan-specific discovery:**
+- Identify CLAUDE.md location for plan metadata
+- Extract testing protocols for phase validation criteria
+- Note coding standards for task descriptions
 
 ### 6. Plan Structure
 The implementation plan will include:
@@ -561,117 +562,24 @@ Testing:
 
 ## Agent Usage
 
-This command can leverage specialized agents for research and planning:
+For agent invocation patterns, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns).
 
-### research-specialist Agent (Optional)
-- **Purpose**: Analyze codebase and research best practices before planning
-- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
-- **When Used**: For complex features requiring codebase analysis
-- **Invocation**: One or more parallel agents for different research topics
+**Plan-specific agents:**
 
-### plan-architect Agent
-- **Purpose**: Generate structured, phased implementation plans with progressive structure support
-- **Tools**: Read, Write, Bash, Grep, Glob, WebSearch
-- **Invocation**: Single agent after research (if any) completes
-- **Output**: Complete implementation plan in specs/plans/ (always single-file Level 0)
-- **Progressive-Aware**: Creates single-file plans with complexity hints for future expansion
+| Agent | Purpose | When Used |
+|-------|---------|-----------|
+| research-specialist | Analyze codebase and research best practices | Complex features requiring analysis |
+| plan-architect | Generate structured implementation plans | All planning workflows |
 
-### Two-Stage Planning Process
+**Two-Stage Process:**
+1. **Research** (optional): Parallel research-specialist agents for different topics
+2. **Planning**: Single plan-architect agent creates Level 0 plan
 
-#### Stage 1: Research (for complex features)
-```yaml
-# Optional: If feature requires codebase analysis or best practices research
-Task {
-  subagent_type: "general-purpose"
-  description: "Research [aspect] for [feature] using research-specialist protocol"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/research-specialist.md
-
-          You are acting as a Research Specialist with the tools and constraints
-          defined in that file.
-
-          Analyze existing [component] implementations in codebase.
-          Research industry best practices for [technology].
-          Summarize findings in max 150 words.
-  "
-}
-```
-
-#### Stage 2: Plan Generation (Progressive)
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Create progressive implementation plan for [feature] using plan-architect protocol"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/plan-architect.md
-
-          You are acting as a Plan Architect with the tools and constraints
-          defined in that file.
-
-          **Thinking Mode**: [think|think hard|think harder] (based on feature complexity)
-
-          Plan Task: Create progressive plan for [feature]
-
-          Context:
-          - Feature description: [user input]
-          - Research findings: [if stage 1 completed]
-          - Project standards: CLAUDE.md at [path]
-          - Report paths: [if provided]
-          - Specs directory: [path/to/specs/]
-          - Next plan number: [NNN]
-
-          STEP 1: Evaluate Complexity (Informational Only)
-          - Run: .claude/lib/analyze-plan-requirements.sh \"[feature description]\"
-          - Run: .claude/lib/calculate-plan-complexity.sh [tasks] [phases] [hours] [deps]
-          - Calculate complexity score for metadata
-          - Note: Score is informational; all plans start as Level 0
-
-          STEP 2: Create Single-File Plan (Structure Level 0)
-          - Create: specs/plans/NNN_feature_name.md
-          - Include all phases and tasks inline
-          - Add Structure Level: 0 and Complexity Score to metadata
-          - Add hint if complexity ≥50: \"Consider /expand phase during implementation\"
-
-          STEP 3: Requirements
-          - Use /implement-compatible checkbox format: - [ ]
-          - Include testing strategy for each phase
-          - Follow CLAUDE.md coding standards
-          - Add estimated complexity for each phase
-          - Include clear success criteria
-          - Add clear phase boundaries for future expansion if needed
-
-          STEP 4: Output Summary
-          - Report complexity score (informational)
-          - List phase count and task count
-          - Provide path to plan file
-          - If complexity ≥50: Mention expansion option
-  "
-}
-```
-
-### Agent Benefits
-- **Progressive Structure**: Always starts simple (Level 0), grows as needed
-- **Informed Planning**: Research findings incorporated into plan design
-- **Structured Output**: Consistent single-file plan format across all features
-- **Standards Compliance**: Automatic reference to project conventions
-- **Phased Approach**: Natural breakdown into testable, committable phases
-- **Scalable Organization**: Plans start simple, can expand during implementation
-- **Reusable Plans**: Plans serve as documentation and implementation guides
-- **Complexity Awareness**: Hints provided for high-complexity plans needing expansion
-
-### Workflow Integration
-1. User invokes `/plan` with feature description and optional reports
-2. If complex: Command delegates research to `research-specialist` agent(s)
-3. Command analyzes requirements and calculates complexity score (informational)
-4. Command delegates planning to `plan-architect` agent with:
-   - Research findings
-   - Complexity metrics (for hint generation)
-   - Project standards
-5. Agent calculates complexity score for metadata
-6. Agent generates single-file plan (Structure Level 0)
-7. If complexity ≥50: Agent adds hint about expansion during implementation
-8. Command returns plan path and summary for use with `/implement`
-
-For simple plans, the command can execute directly without agents. For complex features (especially in `/orchestrate` workflows), agents provide systematic research and planning.
+**Key Behaviors:**
+- Always creates single-file Level 0 plans
+- Includes complexity score in metadata (informational)
+- Adds expansion hints if complexity ≥50
+- Follows project standards from CLAUDE.md
+- Uses /implement-compatible checkbox format
 
 Let me analyze your feature requirements and create a comprehensive implementation plan.
