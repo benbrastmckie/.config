@@ -17,11 +17,9 @@ I'll run the appropriate tests for the specified feature, module, or file using 
 ## Process
 
 ### 1. Discover Testing Protocols
-I'll check for testing protocols in order of priority:
-1. **CLAUDE.md** in the project root or parent directories
-2. **Project configuration files** (package.json, Makefile, pyproject.toml, etc.)
-3. **Test directories** and existing test patterns
-4. **Language-specific conventions**
+For testing protocol discovery, see [Testing Integration Patterns](../docs/command-patterns.md#testing-integration-patterns).
+
+**Test-specific discovery:** Extract test commands, coverage thresholds, and framework configuration from CLAUDE.md or project files.
 
 ### 2. Identify Test Scope
 Based on the target provided, I'll determine:
@@ -183,78 +181,21 @@ Debug Commands:
 
 ## Agent Usage
 
-This command can delegate test execution to the `test-specialist` agent:
+For agent invocation patterns, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns).
 
-### test-specialist Agent
-- **Purpose**: Execute tests and analyze failures
-- **Tools**: Bash, Read, Grep
-- **Invocation**: Single agent for each test run
-- **Capabilities**: Multi-framework support, error categorization, structured reporting
+**Test-specific agent:**
 
-### Invocation Pattern
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Run tests for [target] using test-specialist protocol"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/test-specialist.md
+| Agent | Purpose | Key Capabilities |
+|-------|---------|------------------|
+| test-specialist | Execute tests and analyze failures | Multi-framework support, error categorization, coverage tracking |
 
-          You are acting as a Test Specialist with the tools and constraints
-          defined in that file.
+**Delegation Benefits:**
+- Framework expertise across multiple test runners
+- Structured failure analysis with error categorization
+- Coverage metrics and gap identification
+- Actionable suggestions for failures
 
-          Test Task: Execute tests for [target]
-
-          Context:
-          - Target: [feature/module/file from user]
-          - Test Commands: [from CLAUDE.md or detected]
-          - Project Standards: CLAUDE.md Testing Protocols
-
-          Execution:
-          1. Determine appropriate test command
-             - Check CLAUDE.md for test commands
-             - Detect test framework from project
-             - Run appropriate tests for target
-
-          2. Execute tests and capture output
-             - Run test command via Bash
-             - Capture stdout and stderr
-             - Note execution time
-
-          3. Analyze results
-             - Count passed/failed/skipped
-             - Extract error messages for failures
-             - Categorize errors (compilation, runtime, assertion)
-             - Calculate coverage if available
-
-          Output Format:
-          - Summary: X passed, Y failed, Z skipped
-          - Failure details with file:line references
-          - Error categorization
-          - Suggested next steps if failures found
-  "
-}
-```
-
-### Agent Benefits
-- **Framework Expertise**: Understands multiple test frameworks
-- **Error Analysis**: Categorizes failures for easier debugging
-- **Structured Output**: Consistent test result format
-- **Coverage Tracking**: Reports coverage metrics when available
-- **Actionable Suggestions**: Provides next steps for failures
-
-### Workflow Integration
-1. User invokes `/test` with target (feature/module/file)
-2. Command detects test configuration from CLAUDE.md or project
-3. Command delegates to `test-specialist` agent
-4. Agent executes tests and analyzes results
-5. Command returns formatted test report
-6. If failures: User can use `/debug` for investigation
-
-### Direct Execution Mode
-For simple, quick tests, the command can execute directly without agent delegation to minimize overhead. Agent delegation is beneficial for:
-- Complex test suites requiring analysis
-- Multi-framework test execution
-- Detailed failure diagnostics
-- Coverage report generation
+**Direct Execution:**
+Quick tests can execute directly without agent overhead. Delegate for complex test suites or detailed diagnostics.
 
 Let me analyze your project and run the appropriate tests.
