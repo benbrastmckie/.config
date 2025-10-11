@@ -251,75 +251,26 @@ Automatically enforces:
 
 ## Agent Usage
 
-This command delegates documentation work to the `doc-writer` agent:
+For agent invocation patterns, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns). For documentation standards and artifact references, see [Artifact Referencing Patterns](../docs/command-patterns.md#artifact-referencing-patterns).
 
-### doc-writer Agent
-- **Purpose**: Maintain documentation consistency and completeness
-- **Tools**: Read, Write, Edit, Grep, Glob
-- **Invocation**: Single agent for each documentation update
-- **Standards-Aware**: Automatically follows CLAUDE.md documentation policy
+**Document-specific agent:**
 
-### Invocation Pattern
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Update documentation for [changes] using doc-writer protocol"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/doc-writer.md
+| Agent | Purpose | Key Capabilities |
+|-------|---------|------------------|
+| doc-writer | Maintain documentation consistency | Standards compliance, cross-referencing, completeness checks |
 
-          You are acting as a Doc Writer with the tools and constraints
-          defined in that file.
+**Delegation Benefits:**
+- Consistent documentation format and style
+- Automatic adherence to CLAUDE.md policy
+- Proper linking between docs, specs, plans, reports
+- Ensures all required documentation exists
 
-          Documentation Task: Update docs for [description]
-
-          Context:
-          - Change description: [user input or detected changes]
-          - Files modified: [list if known]
-          - Project standards: CLAUDE.md Documentation Policy
-
-          Requirements:
-          - Update all affected README.md files
-          - Maintain Unicode box-drawing for diagrams
-          - No emojis in content (UTF-8 encoding)
-          - Cross-reference specs properly
-          - Follow CommonMark specification
-
-          Updates needed:
-          1. Identify affected documentation files
-          2. Update module listings and descriptions
-          3. Update usage examples if API changed
-          4. Fix cross-references and navigation links
-          5. Ensure every directory has README.md
-
-          Output:
-          - List of updated documentation files
-          - Summary of changes made
-          - Compliance verification
-  "
-}
-```
-
-### Agent Benefits
-- **Consistent Format**: All documentation follows same structure and style
-- **Standards Compliance**: Automatic adherence to documentation policy
-- **Cross-Referencing**: Proper linking between docs, specs, plans, reports
-- **Completeness**: Ensures all required documentation exists
-- **Quality**: Professional, clear, concise documentation
-
-### Workflow Integration
-1. User invokes `/document` with change description (optional)
-2. Command detects changes if no description provided
-3. Command delegates to `doc-writer` agent with context
-4. Agent updates all affected documentation files
-5. Command returns summary of updates and compliance status
-
-### Documentation Standards Enforced
-- **README Requirements**: Every subdirectory must have README.md
-- **Unicode Box-Drawing**: For diagrams (not ASCII art)
-- **No Emojis**: UTF-8 encoding compliance
-- **CommonMark**: Markdown specification compliance
-- **Cross-References**: Proper links to specs, plans, reports
-- **Navigation**: Parent and child directory links
+**Standards Enforced:**
+- README.md in every subdirectory
+- Unicode box-drawing for diagrams
+- No emojis (UTF-8 compliance)
+- CommonMark specification
+- Proper cross-references and navigation
 
 ## Notes
 

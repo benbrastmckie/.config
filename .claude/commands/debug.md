@@ -271,58 +271,20 @@ Tasks:
 
 ## Agent Usage
 
-This command delegates investigation work to the `debug-specialist` agent:
+For agent invocation patterns and error recovery, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns) and [Error Recovery Patterns](../docs/command-patterns.md#error-recovery-patterns).
 
-### debug-specialist Agent
-- **Purpose**: Root cause analysis and diagnostic reporting
-- **Tools**: Read, Bash, Grep, Glob, WebSearch
-- **Invocation**: Single agent for each debug request
-- **Read-Only**: Never modifies code, only investigates and reports
+**Debug-specific agent:**
 
-### Invocation Pattern
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Investigate [issue description] using debug-specialist protocol"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/debug-specialist.md
+| Agent | Purpose | Key Capabilities |
+|-------|---------|------------------|
+| debug-specialist | Root cause analysis and diagnostic reporting | Evidence gathering, structured reporting, multiple solutions |
 
-          You are acting as a Debug Specialist with the tools and constraints
-          defined in that file.
-
-          Debug Task: Investigate [issue]
-
-          Context:
-          - Issue: [user's description]
-          - Related Reports: [paths if provided]
-          - Project Standards: CLAUDE.md
-
-          Investigation:
-          1. Gather evidence (logs, code, configs)
-          2. Identify root cause
-          3. Analyze contributing factors
-          4. Propose multiple solutions with tradeoffs
-
-          Output:
-          - Debug report at specs/reports/NNN_debug_[issue].md
-          - Summary with root cause and recommended fix
-  "
-}
-```
-
-### Agent Benefits
-- **Specialized Investigation**: Focused on evidence gathering and analysis
-- **Structured Reporting**: Consistent debug report format
-- **Multiple Solutions**: Always proposes alternatives with tradeoffs
-- **Non-Invasive**: Read-only access ensures no unintended modifications
-- **Reusable Diagnostics**: Reports serve as documentation for future issues
-
-### Workflow Integration
-1. User invokes `/debug` with issue description
-2. Command delegates to `debug-specialist` agent
-3. Agent investigates systematically and creates report
-4. Command returns report path and summary
-5. User can use report with `/plan` to create fix implementation
+**Delegation Benefits:**
+- Specialized investigation methodology
+- Consistent debug report format
+- Multiple solution proposals with tradeoffs
+- Read-only access (no unintended modifications)
+- Reusable diagnostics for future issues
 
 ## Notes
 
