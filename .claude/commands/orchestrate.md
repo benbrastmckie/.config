@@ -18,7 +18,6 @@ Let me first analyze your workflow description to identify the natural phases an
 
 This command uses shared utility libraries for consistent workflow management:
 - **Checkpoint Management**: Uses `.claude/lib/checkpoint-utils.sh` for saving/restoring workflow state
-- **Artifact Registry**: Uses `.claude/lib/artifact-utils.sh` for tracking generated artifacts (reports, plans, summaries)
 - **Error Handling**: Uses `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
 
 These utilities ensure workflow state is preserved across interruptions and agent failures are handled gracefully.
@@ -67,19 +66,12 @@ checkpoints:
   workflow_complete: null
 
 context_preservation:
-  research_summary: ""  # Max 200 words (deprecated in favor of artifact_registry)
+  research_reports: []  # Paths to created report files
   plan_path: ""
   implementation_status:
     tests_passing: false
     files_modified: []
   documentation_paths: []
-
-artifact_registry:
-  # Maps artifact IDs to file paths
-  # Example:
-  # research_001: "specs/artifacts/auth_system/existing_patterns.md"
-  # research_002: "specs/artifacts/auth_system/best_practices.md"
-  # research_003: "specs/artifacts/auth_system/alternatives.md"
 
 error_history: []
 performance_metrics:
@@ -179,6 +171,8 @@ For agent prompt structure, see [Single Agent with Behavioral Injection](../docs
 
 ## Context
 - **Workflow**: [User's original request - 1 line summary]
+- **Project Name**: [project_name] (for specs directory path)
+- **Topic Slug**: [topic_slug] (for report subdirectory)
 - **Research Focus**: [This agent's specific investigation area]
 - **Project Standards**: /home/benjamin/.config/CLAUDE.md
 - **Complexity Level**: [Simple|Medium|Complex|Critical]
@@ -186,24 +180,74 @@ For agent prompt structure, see [Single Agent with Behavioral Injection](../docs
 ## Objective
 Investigate [specific topic] to inform planning and implementation.
 
+## Specs Directory Context
+- **Specs Directory**: Check `.claude/SPECS.md` for registered specs directories
+- **Auto-detection**: If no SPECS.md, detect via Glob for existing `specs/` directories
+- **Report Location**: Create report in `{specs_dir}/reports/{topic_slug}/NNN_report_name.md`
+- **Include in Metadata**: Add "Specs Directory" field to report metadata
+
 ## Requirements
 [Specific requirements for this research topic]
 
-### Specs Directory Management
-Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed.
-Include "Specs Directory" in report metadata.
+### Report File Creation
+You MUST create a report file using the Write tool. Do NOT return a summary only.
 
-## Expected Output
-Concise summary (max 150 words) with:
-- Existing patterns found
-- Recommended approaches
-- Potential challenges
-- Key planning insights
+**Topic-based Directory Structure**:
+- Reports are organized by topic in subdirectories: `specs/reports/{topic}/`
+- Topic name: `[topic_slug]` (e.g., "existing_patterns", "security_practices")
+- Use Glob to find existing reports in topic directory
+- Determine next report number (NNN format, incremental within topic)
+
+**Report File Path**: `{project}/specs/reports/{topic}/NNN_report_name.md`
+- Project: `[project_name]`
+- Topic: `[topic_slug]`
+- Number: Next available in sequence (001, 002, 003...)
+
+**Report Structure Template**:
+```markdown
+# [Report Title]
+
+## Metadata
+- **Date**: YYYY-MM-DD
+- **Specs Directory**: {project}/specs/
+- **Report Number**: NNN (within topic subdirectory)
+- **Topic**: {topic_name}
+- **Created By**: /orchestrate
+- **Workflow**: [workflow_description]
+
+## Implementation Status
+- **Status**: Research Complete
+- **Plan**: [Will be updated by plan-architect]
+- **Implementation**: [Will be updated by orchestrator]
+- **Date**: YYYY-MM-DD
+
+## Research Focus
+[This agent's specific research area]
+
+## Findings
+[Detailed findings from research]
+
+## Recommendations
+[Actionable recommendations for planning]
+
+## Potential Challenges
+[Issues or constraints to consider]
 ```
 
-#### Step 3.5: Generate Project Name for Artifacts
+## Expected Output
 
-Before launching research agents, generate a project name for artifact organization:
+**Primary Output**: Report file path in parseable format
+- Format: `REPORT_PATH: {path}`
+- Example: `REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md`
+
+**Secondary Output**: Brief summary (1-2 sentences)
+- What was researched
+- Key finding or recommendation
+```
+
+#### Step 3.5: Generate Project Name and Topic Slugs
+
+Before launching research agents, generate a project name and topic slugs for report organization:
 
 **Project Name Generation**:
 ```
@@ -219,34 +263,43 @@ Examples:
 - "Refactor session management" → "session_management"
 ```
 
-Store in workflow_state.project_name for artifact path generation.
+**Topic Slug Generation** (for each research topic):
+```
+1. Extract key terms from research topic description
+2. Remove common words
+3. Join with underscores
+4. Convert to lowercase
+5. Keep concise (2-3 words max)
+
+Examples:
+- "Existing auth patterns in codebase" → "existing_patterns"
+- "Security best practices for auth" → "security_practices"
+- "Framework-specific implementations" → "framework_implementations"
+```
+
+Store in workflow_state:
+- project_name for specs directory path
+- topic_slugs array for report directory paths
 
 **Research Agent Monitoring**:
 - **Progress Streaming**: See [Progress Marker Detection](../docs/command-patterns.md#pattern-progress-marker-detection)
 - Monitor parallel agent execution
-- Collect artifact IDs as agents complete
+- Collect report file paths as agents complete
 
-#### Step 4: Store Research as Artifacts and Create References
+#### Step 4: Collect Report Paths from Agent Output
 
-After each research agent completes, store outputs as artifacts.
+After each research agent completes, extract the report file path from its output.
 
-See [Artifact Storage and Registry](../docs/command-patterns.md#pattern-artifact-storage-and-registry) for detailed artifact management patterns.
-
-**Orchestrate-specific artifact handling**:
-- Generate artifact path: `specs/artifacts/{project_name}/{artifact_name}.md`
-- Register in artifact_registry with descriptive ID
-- Return references (not full content) to minimize context
-
-#### Step 5: Aggregate Artifact References (Lightweight Context)
-
-After all parallel research agents complete, aggregate artifact references.
-
-See [Artifact Reference List](../docs/command-patterns.md#pattern-artifact-reference-list) for reference format.
+**Report Path Extraction**:
+- Parse agent output for report file path
+- Expected format: `REPORT_PATH: {project}/specs/reports/{topic}/NNN_report_name.md`
+- Store path in workflow state research_reports array
+- Validate report file exists and is readable
 
 **Context Reduction Achieved**:
 - **Before**: 200+ words of full research summaries passed to plan-architect
-- **After**: ~50 words of artifact references + selective reading by agent
-- **Reduction**: 60-80% context savings
+- **After**: Report file paths only (~20 words) + selective reading by agent
+- **Reduction**: 90% context savings
 
 #### Step 5: Save Research Checkpoint
 
@@ -258,54 +311,59 @@ checkpoint_research_complete:
   phase_name: "research"
   outputs:
     topics_investigated: ["topic1", "topic2", "topic3"]
+    report_paths: [
+      "specs/reports/topic1/001_report_name.md",
+      "specs/reports/topic2/001_report_name.md",
+      "specs/reports/topic3/001_report_name.md"
+    ]
     parallel_agents_used: 3
     status: "success"
   next_phase: "planning"
 ```
 
-#### Step 6: Artifact Registry Validation
+#### Step 6: Report File Validation
 
 Before proceeding to planning, validate:
-- [ ] All research artifacts saved to `specs/artifacts/{project_name}/`
-- [ ] Artifact registry contains all artifact IDs and paths
-- [ ] Artifact reference list ≤60 words (not full content)
+- [ ] All research reports saved to `specs/reports/{topic}/`
+- [ ] Report paths collected in workflow state
+- [ ] All report files exist and are readable
+- [ ] Report metadata includes required fields
 - [ ] Checkpoint saved successfully
 
-**If validation fails**: Retry artifact save or escalate to user
+**If validation fails**: Retry report creation or escalate to user
 
 #### Research Phase Execution Example
 
 ```markdown
 User Request: "Add user authentication with email and password"
 
+Project Name Generated: "user_authentication"
+
 Identified Research Topics:
-1. Existing auth patterns in codebase
-2. Security best practices for auth (2025)
-3. Framework-specific auth implementations
+1. existing_patterns - Existing auth patterns in codebase
+2. security_practices - Security best practices for auth (2025)
+3. framework_implementations - Framework-specific auth implementations
 
 Parallel Agent Invocations:
-[Agent 1 - Codebase] → Finds: "No existing auth, uses session management in user.lua"
-[Agent 2 - Security] → Finds: "Bcrypt for passwords, JWT for sessions, 2FA recommended"
-[Agent 3 - Framework] → Finds: "Lua has lua-resty-jwt, examples in nginx configs"
+[Agent 1 - existing_patterns]
+  → Creates: specs/reports/existing_patterns/001_auth_patterns.md
+  → Returns: REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md
 
-Synthesized Summary (180 words):
-"Codebase currently has session management in nvim/lua/neotex/user.lua but no
-authentication system. Industry best practices (2025) recommend bcrypt for password
-hashing, JWT tokens for session management, and optional 2FA for enhanced security.
+[Agent 2 - security_practices]
+  → Creates: specs/reports/security_practices/001_best_practices.md
+  → Returns: REPORT_PATH: specs/reports/security_practices/001_best_practices.md
 
-Lua ecosystem provides lua-resty-jwt for token handling. Recommended approach:
-Implement authentication module following existing session management patterns,
-use bcrypt for password storage, JWT for auth tokens.
+[Agent 3 - framework_implementations]
+  → Creates: specs/reports/framework_implementations/001_lua_auth.md
+  → Returns: REPORT_PATH: specs/reports/framework_implementations/001_lua_auth.md
 
-Key constraints: Neovim environment may limit some libraries; focus on pure Lua
-solutions. Alternative: Delegate auth to external service if complexity warrants.
-
-Actionable insights: Build on user.lua patterns, create auth/ subdirectory, implement
-login/logout/verify functions, integrate with existing session system, add migration
-for user credentials table, implement password reset flow, consider rate limiting."
+Report Paths Collected:
+- specs/reports/existing_patterns/001_auth_patterns.md
+- specs/reports/security_practices/001_best_practices.md
+- specs/reports/framework_implementations/001_lua_auth.md
 
 Checkpoint Saved: research_complete
-Next Phase: planning
+Next Phase: planning (will receive report paths)
 ```
 
 ### Planning Phase (Sequential Execution)
@@ -317,11 +375,12 @@ Extract necessary context from previous phases:
 **From Research Phase** (if completed):
 ```yaml
 research_context:
-  artifacts:
-    research_001: "specs/artifacts/{project_name}/existing_patterns.md"
-    research_002: "specs/artifacts/{project_name}/best_practices.md"
-    research_003: "specs/artifacts/{project_name}/alternatives.md"
-  artifact_summary: "[50-word reference list with key findings]"
+  report_paths: [
+    "specs/reports/existing_patterns/001_auth_patterns.md",
+    "specs/reports/security_practices/001_best_practices.md",
+    "specs/reports/framework_implementations/001_lua_auth.md"
+  ]
+  topics: ["existing_patterns", "security_practices", "framework_implementations"]
 ```
 
 **From User Request**:
@@ -333,10 +392,10 @@ user_context:
 ```
 
 **Context Injection Strategy**:
-- Provide artifact reference list (not full summaries)
+- Provide report file paths (not full summaries)
 - Include user's original request for context
 - Reference CLAUDE.md for project standards
-- Agent uses Read tool to selectively access artifacts
+- Agent uses Read tool to selectively access reports
 - NO orchestration details or phase routing logic
 
 #### Step 2: Generate Planning Agent Prompt
@@ -349,28 +408,28 @@ user_context:
 ### User Request
 [Original workflow description]
 
-### Research Artifacts
-[If research phase completed, provide artifact references:]
+### Research Reports
+[If research phase completed, provide report paths:]
 
-Available Research Artifacts:
-1. **research_001** - Existing Patterns
-   - Path: specs/artifacts/{project_name}/existing_patterns.md
-   - Focus: Current implementation analysis
+Available Research Reports:
+1. **Existing Patterns**
+   - Path: specs/reports/existing_patterns/001_auth_patterns.md
+   - Topic: Current implementation analysis
    - Use Read tool to access full findings
 
-2. **research_002** - Best Practices
-   - Path: specs/artifacts/{project_name}/best_practices.md
-   - Focus: Industry standards (2025)
+2. **Security Practices**
+   - Path: specs/reports/security_practices/001_best_practices.md
+   - Topic: Industry standards (2025)
    - Use Read tool to access recommendations
 
-3. **research_003** - Alternative Approaches
-   - Path: specs/artifacts/{project_name}/alternatives.md
-   - Focus: Implementation options and trade-offs
+3. **Framework Implementations**
+   - Path: specs/reports/framework_implementations/001_lua_auth.md
+   - Topic: Implementation options and trade-offs
    - Use Read tool to access detailed comparisons
 
-**Instructions**: Read relevant artifacts selectively based on planning needs. Not all artifacts may be needed for the plan.
+**Instructions**: Read relevant reports selectively based on planning needs. All reports should be referenced in the plan metadata's "Research Reports" section.
 
-[If no research: "Direct implementation - no prior research artifacts"]
+[If no research: "Direct implementation - no prior research reports"]
 
 ### Project Standards
 Reference standards at: /home/benjamin/.config/CLAUDE.md
@@ -1637,7 +1696,7 @@ Choice [r/s/v/d]:
 
 If user selects resume:
 1. Load `workflow_state` from checkpoint
-2. Restore `project_name`, `artifact_registry`, `completed_phases`
+2. Restore `project_name`, `research_reports`, `completed_phases`
 3. Skip to next incomplete phase
 4. Continue workflow from that point
 
