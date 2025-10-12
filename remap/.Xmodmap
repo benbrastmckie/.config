@@ -1,9 +1,0 @@
-! Swap ESC and CAPLOCKS
-clear lock
-keycode 66 = Escape
-keycode 9 = Caps_Lock
-
-! Ctrl becomes Alt; Alt becomes Super; Super becomes Ctrl
-clear control
-keycode 64 = Alt_L
-keycode 37 = Control_L

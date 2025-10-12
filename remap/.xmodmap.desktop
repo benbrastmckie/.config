@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Remapping
-Exec=xmodmap ~/etc/X11/xinit/.Xmodmap
-Terminal=false
-Categories=Keyboard;
-X-GNOME-Autostart-enabled=true
-StartupNotify=false
