@@ -538,6 +538,10 @@ convert_file() {
         docx_failed=$((docx_failed + 1))
       else
         echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+        # Validate output
+        if ! validate_output "$output_file"; then
+          report_validation_warnings "$output_file" "md"
+        fi
       fi
       ;;
 
@@ -578,6 +582,10 @@ convert_file() {
         pdf_failed=$((pdf_failed + 1))
       else
         echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+        # Validate output
+        if ! validate_output "$output_file"; then
+          report_validation_warnings "$output_file" "md"
+        fi
       fi
       ;;
 
@@ -593,6 +601,10 @@ convert_file() {
           conversion_success=true
           md_to_docx_success=$((md_to_docx_success + 1))
           echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+          # Validate output
+          if ! validate_output "$output_file"; then
+            report_validation_warnings "$output_file" "docx"
+          fi
         else
           echo "    ✗ Failed to convert $basename"
           md_to_docx_failed=$((md_to_docx_failed + 1))
@@ -666,6 +678,141 @@ process_conversions() {
 }
 
 #
+# validate_output - Check if converted file exists and meets size requirements
+#
+# Arguments:
+#   $1 - Output file path
+#
+# Returns: 0 if valid, 1 if invalid
+#
+validate_output() {
+  local output_file="$1"
+
+  if [[ ! -f "$output_file" ]]; then
+    return 1
+  fi
+
+  local file_size
+  file_size=$(wc -c < "$output_file" 2>/dev/null || echo "0")
+
+  if [[ $file_size -lt 100 ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
+#
+# check_structure - Analyze converted Markdown file structure
+#
+# Arguments:
+#   $1 - Markdown file path
+#
+# Returns: String with structure statistics
+#
+check_structure() {
+  local md_file="$1"
+
+  if [[ ! -f "$md_file" ]]; then
+    echo "0 headings, 0 tables"
+    return
+  fi
+
+  local heading_count
+  local table_count
+
+  heading_count=$(grep -c '^#' "$md_file" 2>/dev/null || echo "0")
+  table_count=$(grep -c '^\|' "$md_file" 2>/dev/null || echo "0")
+
+  echo "$heading_count headings, $table_count tables"
+}
+
+#
+# report_validation_warnings - Report warnings for suspicious output
+#
+# Arguments:
+#   $1 - Output file path
+#   $2 - File type (md, docx, pdf)
+#
+report_validation_warnings() {
+  local output_file="$1"
+  local file_type="$2"
+
+  if [[ ! -f "$output_file" ]]; then
+    echo "    ⚠ Warning: Output file not created"
+    return
+  fi
+
+  local file_size
+  file_size=$(wc -c < "$output_file" 2>/dev/null || echo "0")
+
+  if [[ $file_size -lt 100 ]]; then
+    echo "    ⚠ Warning: Output file very small ($file_size bytes)"
+  fi
+
+  # Check Markdown structure if applicable
+  if [[ "$file_type" == "md" ]]; then
+    local structure
+    structure=$(check_structure "$output_file")
+    local heading_count
+    heading_count=$(echo "$structure" | cut -d' ' -f1)
+
+    if [[ $heading_count -eq 0 ]]; then
+      echo "    ⚠ Warning: No headings found in Markdown output"
+    fi
+  fi
+}
+
+#
+# show_missing_tools - Report unavailable tools with installation guidance
+#
+show_missing_tools() {
+  local has_missing=false
+
+  echo ""
+  echo "Missing Tools Report"
+  echo "===================="
+  echo ""
+
+  # Check DOCX converters
+  if [[ "$MARKITDOWN_AVAILABLE" == "false" ]] && [[ "$PANDOC_AVAILABLE" == "false" ]]; then
+    echo "⚠ DOCX→MD Conversion: No tools available"
+    echo "  Install MarkItDown: pip install --user 'markitdown[all]'"
+    echo "  Or install Pandoc: Use your system package manager"
+    echo ""
+    has_missing=true
+  fi
+
+  # Check PDF converters
+  if [[ "$MARKER_PDF_AVAILABLE" == "false" ]] && [[ "$PYMUPDF_AVAILABLE" == "false" ]]; then
+    echo "⚠ PDF→MD Conversion: No tools available"
+    echo "  Install marker-pdf: Complex setup (venv recommended)"
+    echo "  Or install PyMuPDF4LLM: pip install --user pymupdf4llm"
+    echo ""
+    has_missing=true
+  fi
+
+  # Check MD exporters
+  if [[ "$PANDOC_AVAILABLE" == "false" ]]; then
+    echo "⚠ MD→DOCX/PDF Conversion: Pandoc not available"
+    echo "  Install Pandoc: Use your system package manager"
+    echo ""
+    has_missing=true
+  elif [[ "$TYPST_AVAILABLE" == "false" ]] && [[ "$XELATEX_AVAILABLE" == "false" ]]; then
+    echo "⚠ MD→PDF Conversion: No PDF engine available"
+    echo "  Install Typst: Use your system package manager"
+    echo "  Or install XeLaTeX: Install texlive package"
+    echo ""
+    has_missing=true
+  fi
+
+  if [[ "$has_missing" == "false" ]]; then
+    echo "✓ All recommended tools are available"
+    echo ""
+  fi
+}
+
+#
 # generate_summary - Print conversion summary
 #
 generate_summary() {
@@ -704,8 +851,23 @@ generate_summary() {
   echo "MD → PDF: $md_to_pdf_success success, $md_to_pdf_failed failed" >> "$LOG_FILE"
 }
 
+# Check if there are files to convert or if we should show missing tools
+total_convertible=$((${#docx_files[@]} + ${#pdf_files[@]} + ${#md_files[@]}))
+
+if [[ $total_convertible -eq 0 ]]; then
+  echo "No convertible files found in $INPUT_DIR"
+  echo ""
+  show_missing_tools
+  exit 0
+fi
+
 # Process conversions
 process_conversions
 
 # Generate summary
 generate_summary
+
+# Show missing tools if any conversions failed
+if [[ $((docx_failed + pdf_failed + md_to_docx_failed + md_to_pdf_failed)) -gt 0 ]]; then
+  show_missing_tools
+fi
