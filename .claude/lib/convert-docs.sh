@@ -21,12 +21,12 @@
 #
 # Tool Priority Matrix:
 #   DOCX → MD: MarkItDown (75-80% fidelity) → Pandoc (68% fidelity)
-#   PDF → MD:  marker-pdf (95% fidelity) → PyMuPDF4LLM (55% fidelity, fast)
+#   PDF → MD:  marker_pdf (95% fidelity) → PyMuPDF4LLM (55% fidelity, fast)
 #   MD → DOCX: Pandoc (95%+ quality)
 #   MD → PDF:  Pandoc with Typst → XeLaTeX fallback
 #
 # Environment Variables:
-#   MARKER_PDF_VENV - Path to marker-pdf virtual environment
+#   MARKER_PDF_VENV - Path to marker_pdf virtual environment
 #                     (default: $HOME/venvs/pdf-tools)
 #
 # Exit Codes:
@@ -38,6 +38,15 @@ set -eu
 
 # Configuration
 MARKER_PDF_VENV="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
+
+# Timeout configuration (seconds)
+TIMEOUT_DOCX_TO_MD=60
+TIMEOUT_PDF_TO_MD=300
+TIMEOUT_MD_TO_DOCX=60
+TIMEOUT_MD_TO_PDF=120
+
+# Timeout multiplier (can be overridden by environment variable)
+TIMEOUT_MULTIPLIER="${TIMEOUT_MULTIPLIER:-1.0}"
 
 # Tool availability flags
 MARKITDOWN_AVAILABLE=false
@@ -57,6 +66,8 @@ md_to_docx_success=0
 md_to_docx_failed=0
 md_to_pdf_success=0
 md_to_pdf_failed=0
+collisions_resolved=0
+timeouts_occurred=0
 
 # Conversion direction
 CONVERSION_DIRECTION=""  # TO_MARKDOWN or FROM_MARKDOWN
@@ -82,7 +93,7 @@ detect_tools() {
     PANDOC_AVAILABLE=true
   fi
 
-  # marker-pdf (check PATH first, then venv)
+  # marker_pdf (check PATH first, then venv)
   if command -v marker_single &>/dev/null; then
     MARKER_PDF_AVAILABLE=true
     MARKER_PDF_PATH="marker_single"
@@ -108,6 +119,46 @@ detect_tools() {
 }
 
 #
+# with_timeout - Execute command with timeout protection
+#
+# Arguments:
+#   $1 - Timeout duration in seconds
+#   $2+ - Command and arguments to execute
+#
+# Returns:
+#   0 - Command succeeded within timeout
+#   1 - Command failed
+#   124 - Command timed out
+#
+# The timeout duration is multiplied by TIMEOUT_MULTIPLIER for flexibility.
+#
+with_timeout() {
+  local timeout_secs="$1"
+  shift
+
+  # Apply timeout multiplier
+  timeout_secs=$(awk "BEGIN {printf \"%.0f\", $timeout_secs * $TIMEOUT_MULTIPLIER}")
+
+  # Check if timeout command is available
+  if command -v timeout &>/dev/null; then
+    timeout "$timeout_secs" "$@"
+    local exit_code=$?
+
+    # Check if timeout occurred (exit code 124)
+    if [[ $exit_code -eq 124 ]]; then
+      timeouts_occurred=$((timeouts_occurred + 1))
+      return 124
+    fi
+
+    return $exit_code
+  else
+    # Fallback: run without timeout if timeout command not available
+    "$@"
+    return $?
+  fi
+}
+
+#
 # select_docx_tool - Select best available DOCX converter
 #
 # Returns: Tool name ("markitdown", "pandoc", or "none")
@@ -125,16 +176,71 @@ select_docx_tool() {
 #
 # select_pdf_tool - Select best available PDF converter
 #
-# Returns: Tool name ("marker-pdf", "pymupdf", or "none")
+# Returns: Tool name ("marker_pdf", "pymupdf", or "none")
 #
 select_pdf_tool() {
   if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-    echo "marker-pdf"
+    echo "marker_pdf"
   elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
     echo "pymupdf"
   else
     echo "none"
   fi
+}
+
+#
+# check_output_collision - Ensure output filename is unique
+#
+# Arguments:
+#   $1 - Proposed output file path
+#
+# Returns: Unique output file path (original or with _N suffix)
+#
+# If the proposed output file already exists, appends _1, _2, etc. until
+# finding an unused filename. Updates global collisions_resolved counter.
+#
+check_output_collision() {
+  local proposed_output="$1"
+  local output_dir
+  local output_base
+  local output_ext
+  local counter=1
+  local candidate
+
+  # If file doesn't exist, use it as-is
+  if [[ ! -f "$proposed_output" ]]; then
+    echo "$proposed_output"
+    return 0
+  fi
+
+  # Extract directory, base name, and extension
+  output_dir="$(dirname "$proposed_output")"
+  output_base="$(basename "$proposed_output")"
+
+  # Split into name and extension
+  if [[ "$output_base" == *.* ]]; then
+    output_ext=".${output_base##*.}"
+    output_base="${output_base%.*}"
+  else
+    output_ext=""
+  fi
+
+  # Find unique filename
+  while true; do
+    candidate="$output_dir/${output_base}_${counter}${output_ext}"
+    if [[ ! -f "$candidate" ]]; then
+      collisions_resolved=$((collisions_resolved + 1))
+      echo "$candidate"
+      return 0
+    fi
+    counter=$((counter + 1))
+
+    # Safety limit to prevent infinite loops
+    if [[ $counter -gt 1000 ]]; then
+      echo "$proposed_output.$$" # Use PID as last resort
+      return 1
+    fi
+  done
 }
 
 #
@@ -214,9 +320,9 @@ show_tool_detection() {
   echo ""
   echo "PDF Conversion:"
   if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-    echo "  ✓ marker-pdf (primary, 95% fidelity) at: $MARKER_PDF_PATH"
+    echo "  ✓ marker_pdf (primary, 95% fidelity) at: $MARKER_PDF_PATH"
   else
-    echo "  ✗ marker-pdf not found"
+    echo "  ✗ marker_pdf not found"
   fi
   if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
     echo "  ✓ PyMuPDF4LLM (fallback, 55% fidelity, fast)"
@@ -266,6 +372,7 @@ show_dry_run() {
   if [[ ${#docx_files[@]} -gt 0 ]]; then
     echo "DOCX Files (${#docx_files[@]}):"
     for file in "${docx_files[@]}"; do
+      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -274,6 +381,7 @@ show_dry_run() {
   if [[ ${#pdf_files[@]} -gt 0 ]]; then
     echo "PDF Files (${#pdf_files[@]}):"
     for file in "${pdf_files[@]}"; do
+      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -282,6 +390,7 @@ show_dry_run() {
   if [[ ${#md_files[@]} -gt 0 ]]; then
     echo "Markdown Files (${#md_files[@]}):"
     for file in "${md_files[@]}"; do
+      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -369,7 +478,7 @@ convert_docx() {
   local input_file="$1"
   local output_file="$2"
 
-  markitdown "$input_file" > "$output_file" 2>/dev/null
+  with_timeout "$TIMEOUT_DOCX_TO_MD" bash -c "markitdown '$input_file' > '$output_file' 2>/dev/null"
   return $?
 }
 
@@ -389,12 +498,12 @@ convert_docx_pandoc() {
   media_dir="$(dirname "$output_file")/images"
 
   mkdir -p "$media_dir"
-  pandoc "$input_file" -t gfm --extract-media="$media_dir" --wrap=preserve -o "$output_file" 2>/dev/null
+  with_timeout "$TIMEOUT_DOCX_TO_MD" pandoc "$input_file" -t gfm --extract-media="$media_dir" --wrap=preserve -o "$output_file" 2>/dev/null
   return $?
 }
 
 #
-# convert_pdf_marker - Convert PDF to Markdown using marker-pdf
+# convert_pdf_marker - Convert PDF to Markdown using marker_pdf
 #
 # Arguments:
 #   $1 - Input PDF file path
@@ -406,7 +515,7 @@ convert_pdf_marker() {
   local input_file="$1"
   local output_file="$2"
 
-  "$MARKER_PDF_PATH" "$input_file" "$output_file" --output_format markdown 2>/dev/null
+  with_timeout "$TIMEOUT_PDF_TO_MD" "$MARKER_PDF_PATH" "$input_file" "$output_file" --output_format markdown 2>/dev/null
   return $?
 }
 
@@ -423,7 +532,7 @@ convert_pdf_pymupdf() {
   local input_file="$1"
   local output_file="$2"
 
-  python3 -c "
+  with_timeout 60 python3 -c "
 import pymupdf4llm
 import sys
 
@@ -451,7 +560,7 @@ convert_md_to_docx() {
   local input_file="$1"
   local output_file="$2"
 
-  pandoc "$input_file" -o "$output_file" 2>/dev/null
+  with_timeout "$TIMEOUT_MD_TO_DOCX" pandoc "$input_file" -o "$output_file" 2>/dev/null
   return $?
 }
 
@@ -469,10 +578,10 @@ convert_md_to_pdf() {
   local output_file="$2"
 
   if [[ "$TYPST_AVAILABLE" == "true" ]]; then
-    pandoc "$input_file" --pdf-engine=typst -o "$output_file" 2>/dev/null
+    with_timeout "$TIMEOUT_MD_TO_PDF" pandoc "$input_file" --pdf-engine=typst -o "$output_file" 2>/dev/null
     return $?
   elif [[ "$XELATEX_AVAILABLE" == "true" ]]; then
-    pandoc "$input_file" --pdf-engine=xelatex -o "$output_file" 2>/dev/null
+    with_timeout "$TIMEOUT_MD_TO_PDF" pandoc "$input_file" --pdf-engine=xelatex -o "$output_file" 2>/dev/null
     return $?
   else
     return 1
@@ -497,21 +606,37 @@ convert_file() {
   local tool_used=""
   local conversion_success=false
 
+  # Extract basename and extension safely
   basename="$(basename "$input_file")"
   extension="${basename##*.}"
 
   case "${extension,,}" in
     docx)
-      # DOCX → MD conversion
+      # DOCX → MD conversion (safe quoting for special characters)
       output_file="$output_dir/${basename%.docx}.md"
+
+      # Check for output filename collision and resolve if necessary
+      output_file="$(check_output_collision "$output_file")"
 
       # Try MarkItDown first
       if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
         echo "  Converting: $basename (MarkItDown)"
-        if convert_docx "$input_file" "$output_file"; then
+        convert_docx "$input_file" "$output_file"
+        local exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
           tool_used="markitdown"
           conversion_success=true
           docx_success=$((docx_success + 1))
+        elif [[ $exit_code -eq 124 ]]; then
+          echo "    MarkItDown timed out (${TIMEOUT_DOCX_TO_MD}s), trying Pandoc fallback..."
+          # Fall back to Pandoc
+          if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
+            if convert_docx_pandoc "$input_file" "$output_file"; then
+              tool_used="pandoc"
+              conversion_success=true
+              docx_success=$((docx_success + 1))
+            fi
+          fi
         else
           echo "    MarkItDown failed, trying Pandoc fallback..."
           # Fall back to Pandoc
@@ -549,15 +674,18 @@ convert_file() {
       # PDF → MD conversion
       output_file="$output_dir/${basename%.pdf}.md"
 
-      # Try marker-pdf first
+      # Check for output filename collision and resolve if necessary
+      output_file="$(check_output_collision "$output_file")"
+
+      # Try marker_pdf first
       if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-        echo "  Converting: $basename (marker-pdf)"
+        echo "  Converting: $basename (marker_pdf)"
         if convert_pdf_marker "$input_file" "$output_file"; then
-          tool_used="marker-pdf"
+          tool_used="marker_pdf"
           conversion_success=true
           pdf_success=$((pdf_success + 1))
         else
-          echo "    marker-pdf failed, trying PyMuPDF4LLM fallback..."
+          echo "    marker_pdf failed, trying PyMuPDF4LLM fallback..."
           # Fall back to PyMuPDF4LLM
           if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
             if convert_pdf_pymupdf "$input_file" "$output_file"; then
@@ -567,7 +695,7 @@ convert_file() {
             fi
           fi
         fi
-      # Try PyMuPDF4LLM if marker-pdf unavailable
+      # Try PyMuPDF4LLM if marker_pdf unavailable
       elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
         echo "  Converting: $basename (PyMuPDF4LLM)"
         if convert_pdf_pymupdf "$input_file" "$output_file"; then
@@ -593,6 +721,9 @@ convert_file() {
       # MD → DOCX/PDF conversion (default to DOCX)
       # TODO: Phase 4 will add user control for output format selection
       output_file="$output_dir/${basename%.*}.docx"
+
+      # Check for output filename collision and resolve if necessary
+      output_file="$(check_output_collision "$output_file")"
 
       if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
         echo "  Converting: $basename → DOCX (Pandoc)"
@@ -786,7 +917,7 @@ show_missing_tools() {
   # Check PDF converters
   if [[ "$MARKER_PDF_AVAILABLE" == "false" ]] && [[ "$PYMUPDF_AVAILABLE" == "false" ]]; then
     echo "⚠ PDF→MD Conversion: No tools available"
-    echo "  Install marker-pdf: Complex setup (venv recommended)"
+    echo "  Install marker_pdf: Complex setup (venv recommended)"
     echo "  Or install PyMuPDF4LLM: pip install --user pymupdf4llm"
     echo ""
     has_missing=true
@@ -836,6 +967,14 @@ generate_summary() {
   echo "  Success: $md_to_pdf_success"
   echo "  Failed:  $md_to_pdf_failed"
   echo ""
+  if [[ $collisions_resolved -gt 0 ]]; then
+    echo "Filename collisions resolved: $collisions_resolved"
+    echo ""
+  fi
+  if [[ $timeouts_occurred -gt 0 ]]; then
+    echo "Timeouts occurred: $timeouts_occurred"
+    echo ""
+  fi
   echo "Output directory: $OUTPUT_DIR"
   echo "Conversion log: $LOG_FILE"
   echo ""
@@ -849,6 +988,12 @@ generate_summary() {
   echo "PDF → MD: $pdf_success success, $pdf_failed failed" >> "$LOG_FILE"
   echo "MD → DOCX: $md_to_docx_success success, $md_to_docx_failed failed" >> "$LOG_FILE"
   echo "MD → PDF: $md_to_pdf_success success, $md_to_pdf_failed failed" >> "$LOG_FILE"
+  if [[ $collisions_resolved -gt 0 ]]; then
+    echo "Filename collisions resolved: $collisions_resolved" >> "$LOG_FILE"
+  fi
+  if [[ $timeouts_occurred -gt 0 ]]; then
+    echo "Timeouts occurred: $timeouts_occurred" >> "$LOG_FILE"
+  fi
 }
 
 # Check if there are files to convert or if we should show missing tools
