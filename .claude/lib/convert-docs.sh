@@ -34,7 +34,7 @@
 #   1 - Error (invalid arguments, missing tools, or conversion failures)
 #
 
-set -euo pipefail
+set -eu
 
 # Configuration
 MARKER_PDF_VENV="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
@@ -356,13 +356,356 @@ echo "Output Directory: $OUTPUT_DIR" >> "$LOG_FILE"
 echo "Conversion Direction: $CONVERSION_DIRECTION" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
-# TODO: Phase 2 will implement conversion functions
-# TODO: Phase 3 will implement validation and summary
+#
+# convert_docx - Convert DOCX to Markdown using MarkItDown
+#
+# Arguments:
+#   $1 - Input DOCX file path
+#   $2 - Output Markdown file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_docx() {
+  local input_file="$1"
+  local output_file="$2"
 
-echo "Conversion script initialized successfully"
-echo "Input: $INPUT_DIR"
-echo "Output: $OUTPUT_DIR"
-echo "Direction: $CONVERSION_DIRECTION"
-echo "Found: ${#docx_files[@]} DOCX, ${#pdf_files[@]} PDF, ${#md_files[@]} MD files"
-echo ""
-echo "Phase 1 complete - conversion functions coming in Phase 2"
+  markitdown "$input_file" > "$output_file" 2>/dev/null
+  return $?
+}
+
+#
+# convert_docx_pandoc - Convert DOCX to Markdown using Pandoc
+#
+# Arguments:
+#   $1 - Input DOCX file path
+#   $2 - Output Markdown file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_docx_pandoc() {
+  local input_file="$1"
+  local output_file="$2"
+  local media_dir
+  media_dir="$(dirname "$output_file")/images"
+
+  mkdir -p "$media_dir"
+  pandoc "$input_file" -t gfm --extract-media="$media_dir" --wrap=preserve -o "$output_file" 2>/dev/null
+  return $?
+}
+
+#
+# convert_pdf_marker - Convert PDF to Markdown using marker-pdf
+#
+# Arguments:
+#   $1 - Input PDF file path
+#   $2 - Output Markdown file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_pdf_marker() {
+  local input_file="$1"
+  local output_file="$2"
+
+  "$MARKER_PDF_PATH" "$input_file" "$output_file" --output_format markdown 2>/dev/null
+  return $?
+}
+
+#
+# convert_pdf_pymupdf - Convert PDF to Markdown using PyMuPDF4LLM
+#
+# Arguments:
+#   $1 - Input PDF file path
+#   $2 - Output Markdown file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_pdf_pymupdf() {
+  local input_file="$1"
+  local output_file="$2"
+
+  python3 -c "
+import pymupdf4llm
+import sys
+
+try:
+    md_text = pymupdf4llm.to_markdown('$input_file')
+    with open('$output_file', 'w') as f:
+        f.write(md_text)
+    sys.exit(0)
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null
+  return $?
+}
+
+#
+# convert_md_to_docx - Convert Markdown to DOCX using Pandoc
+#
+# Arguments:
+#   $1 - Input Markdown file path
+#   $2 - Output DOCX file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_md_to_docx() {
+  local input_file="$1"
+  local output_file="$2"
+
+  pandoc "$input_file" -o "$output_file" 2>/dev/null
+  return $?
+}
+
+#
+# convert_md_to_pdf - Convert Markdown to PDF using Pandoc with Typst or XeLaTeX
+#
+# Arguments:
+#   $1 - Input Markdown file path
+#   $2 - Output PDF file path
+#
+# Returns: 0 on success, 1 on failure
+#
+convert_md_to_pdf() {
+  local input_file="$1"
+  local output_file="$2"
+
+  if [[ "$TYPST_AVAILABLE" == "true" ]]; then
+    pandoc "$input_file" --pdf-engine=typst -o "$output_file" 2>/dev/null
+    return $?
+  elif [[ "$XELATEX_AVAILABLE" == "true" ]]; then
+    pandoc "$input_file" --pdf-engine=xelatex -o "$output_file" 2>/dev/null
+    return $?
+  else
+    return 1
+  fi
+}
+
+#
+# convert_file - Main conversion dispatcher with automatic fallback
+#
+# Arguments:
+#   $1 - Input file path
+#   $2 - Output directory
+#
+# Updates global counters based on success/failure
+#
+convert_file() {
+  local input_file="$1"
+  local output_dir="$2"
+  local basename
+  local extension
+  local output_file
+  local tool_used=""
+  local conversion_success=false
+
+  basename="$(basename "$input_file")"
+  extension="${basename##*.}"
+
+  case "${extension,,}" in
+    docx)
+      # DOCX → MD conversion
+      output_file="$output_dir/${basename%.docx}.md"
+
+      # Try MarkItDown first
+      if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (MarkItDown)"
+        if convert_docx "$input_file" "$output_file"; then
+          tool_used="markitdown"
+          conversion_success=true
+          docx_success=$((docx_success + 1))
+        else
+          echo "    MarkItDown failed, trying Pandoc fallback..."
+          # Fall back to Pandoc
+          if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
+            if convert_docx_pandoc "$input_file" "$output_file"; then
+              tool_used="pandoc"
+              conversion_success=true
+              docx_success=$((docx_success + 1))
+            fi
+          fi
+        fi
+      # Try Pandoc if MarkItDown unavailable
+      elif [[ "$PANDOC_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (Pandoc)"
+        if convert_docx_pandoc "$input_file" "$output_file"; then
+          tool_used="pandoc"
+          conversion_success=true
+          docx_success=$((docx_success + 1))
+        fi
+      fi
+
+      if [[ "$conversion_success" == "false" ]]; then
+        echo "    ✗ Failed to convert $basename"
+        docx_failed=$((docx_failed + 1))
+      else
+        echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+      fi
+      ;;
+
+    pdf)
+      # PDF → MD conversion
+      output_file="$output_dir/${basename%.pdf}.md"
+
+      # Try marker-pdf first
+      if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (marker-pdf)"
+        if convert_pdf_marker "$input_file" "$output_file"; then
+          tool_used="marker-pdf"
+          conversion_success=true
+          pdf_success=$((pdf_success + 1))
+        else
+          echo "    marker-pdf failed, trying PyMuPDF4LLM fallback..."
+          # Fall back to PyMuPDF4LLM
+          if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
+            if convert_pdf_pymupdf "$input_file" "$output_file"; then
+              tool_used="pymupdf4llm"
+              conversion_success=true
+              pdf_success=$((pdf_success + 1))
+            fi
+          fi
+        fi
+      # Try PyMuPDF4LLM if marker-pdf unavailable
+      elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (PyMuPDF4LLM)"
+        if convert_pdf_pymupdf "$input_file" "$output_file"; then
+          tool_used="pymupdf4llm"
+          conversion_success=true
+          pdf_success=$((pdf_success + 1))
+        fi
+      fi
+
+      if [[ "$conversion_success" == "false" ]]; then
+        echo "    ✗ Failed to convert $basename"
+        pdf_failed=$((pdf_failed + 1))
+      else
+        echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+      fi
+      ;;
+
+    md|markdown)
+      # MD → DOCX/PDF conversion (default to DOCX)
+      # TODO: Phase 4 will add user control for output format selection
+      output_file="$output_dir/${basename%.*}.docx"
+
+      if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename → DOCX (Pandoc)"
+        if convert_md_to_docx "$input_file" "$output_file"; then
+          tool_used="pandoc"
+          conversion_success=true
+          md_to_docx_success=$((md_to_docx_success + 1))
+          echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
+        else
+          echo "    ✗ Failed to convert $basename"
+          md_to_docx_failed=$((md_to_docx_failed + 1))
+        fi
+      else
+        echo "    ✗ Pandoc not available for MD→DOCX conversion"
+        md_to_docx_failed=$((md_to_docx_failed + 1))
+      fi
+      ;;
+
+    *)
+      echo "  Skipping: $basename (unsupported format)"
+      ;;
+  esac
+
+  # Log conversion result
+  if [[ "$conversion_success" == "true" ]]; then
+    echo "[SUCCESS] $basename → $(basename "$output_file") (tool: $tool_used)" >> "$LOG_FILE"
+  else
+    echo "[FAILED] $basename (no suitable tool or conversion error)" >> "$LOG_FILE"
+  fi
+}
+
+#
+# process_conversions - Process all discovered files
+#
+process_conversions() {
+  local total_files=0
+  local current_file=0
+
+  # Calculate total files
+  total_files=$((${#docx_files[@]} + ${#pdf_files[@]} + ${#md_files[@]}))
+
+  if [[ $total_files -eq 0 ]]; then
+    echo "No convertible files found in $INPUT_DIR"
+    return 0
+  fi
+
+  echo "Processing $total_files files..."
+  echo ""
+
+  # Process DOCX files
+  if [[ ${#docx_files[@]} -gt 0 ]]; then
+    for file in "${docx_files[@]}"; do
+      current_file=$((current_file + 1))
+      echo "[$current_file/$total_files] Processing DOCX file"
+      convert_file "$file" "$OUTPUT_DIR"
+      echo ""
+    done
+  fi
+
+  # Process PDF files
+  if [[ ${#pdf_files[@]} -gt 0 ]]; then
+    for file in "${pdf_files[@]}"; do
+      current_file=$((current_file + 1))
+      echo "[$current_file/$total_files] Processing PDF file"
+      convert_file "$file" "$OUTPUT_DIR"
+      echo ""
+    done
+  fi
+
+  # Process MD files
+  if [[ ${#md_files[@]} -gt 0 ]]; then
+    for file in "${md_files[@]}"; do
+      current_file=$((current_file + 1))
+      echo "[$current_file/$total_files] Processing Markdown file"
+      convert_file "$file" "$OUTPUT_DIR"
+      echo ""
+    done
+  fi
+}
+
+#
+# generate_summary - Print conversion summary
+#
+generate_summary() {
+  echo "======================================"
+  echo "Conversion Summary"
+  echo "======================================"
+  echo ""
+  echo "DOCX → MD:"
+  echo "  Success: $docx_success"
+  echo "  Failed:  $docx_failed"
+  echo ""
+  echo "PDF → MD:"
+  echo "  Success: $pdf_success"
+  echo "  Failed:  $pdf_failed"
+  echo ""
+  echo "MD → DOCX:"
+  echo "  Success: $md_to_docx_success"
+  echo "  Failed:  $md_to_docx_failed"
+  echo ""
+  echo "MD → PDF:"
+  echo "  Success: $md_to_pdf_success"
+  echo "  Failed:  $md_to_pdf_failed"
+  echo ""
+  echo "Output directory: $OUTPUT_DIR"
+  echo "Conversion log: $LOG_FILE"
+  echo ""
+
+  # Write summary to log
+  echo "" >> "$LOG_FILE"
+  echo "======================================">> "$LOG_FILE"
+  echo "Conversion Summary" >> "$LOG_FILE"
+  echo "======================================" >> "$LOG_FILE"
+  echo "DOCX → MD: $docx_success success, $docx_failed failed" >> "$LOG_FILE"
+  echo "PDF → MD: $pdf_success success, $pdf_failed failed" >> "$LOG_FILE"
+  echo "MD → DOCX: $md_to_docx_success success, $md_to_docx_failed failed" >> "$LOG_FILE"
+  echo "MD → PDF: $md_to_pdf_success success, $md_to_pdf_failed failed" >> "$LOG_FILE"
+}
+
+# Process conversions
+process_conversions
+
+# Generate summary
+generate_summary
