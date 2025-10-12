@@ -70,6 +70,7 @@ md_to_pdf_success=0
 md_to_pdf_failed=0
 collisions_resolved=0
 timeouts_occurred=0
+validation_failures=0
 
 # Conversion direction
 CONVERSION_DIRECTION=""  # TO_MARKDOWN or FROM_MARKDOWN
@@ -390,29 +391,179 @@ convert_batch_parallel() {
 }
 
 #
+# validate_input_file - Validate file before conversion attempt
+#
+# Arguments:
+#   $1 - File path to validate
+#   $2 - Expected extension (docx, pdf, md)
+#
+# Returns:
+#   0 if valid, 1 if invalid
+#
+# Side Effects:
+#   Increments validation_failures counter on failure
+#   Logs validation failure to LOG_FILE
+#
+validate_input_file() {
+  local file_path="$1"
+  local expected_ext="$2"
+
+  # Helper function to log validation failures (only if LOG_FILE is set)
+  log_validation() {
+    local message="$1"
+    if [[ -n "$LOG_FILE" ]]; then
+      log_conversion "$LOG_FILE" "$message"
+    fi
+  }
+
+  # Check file exists
+  if [[ ! -f "$file_path" ]]; then
+    log_validation "[VALIDATION] File not found: $file_path"
+    validation_failures=$((validation_failures + 1))
+    return 1
+  fi
+
+  # Check file size (must be at least 1 byte)
+  local file_size
+  file_size=$(wc -c < "$file_path" 2>/dev/null || echo "0")
+
+  if [[ $file_size -eq 0 ]]; then
+    log_validation "[VALIDATION] Empty file: $file_path"
+    validation_failures=$((validation_failures + 1))
+    return 1
+  fi
+
+  # Check file is readable
+  if [[ ! -r "$file_path" ]]; then
+    log_validation "[VALIDATION] File not readable: $file_path"
+    validation_failures=$((validation_failures + 1))
+    return 1
+  fi
+
+  # Perform magic number check based on expected extension
+  case "${expected_ext,,}" in
+    docx)
+      # DOCX should be a ZIP file (PK magic number)
+      if command -v xxd &>/dev/null; then
+        local magic
+        magic=$(xxd -l 2 -p "$file_path" 2>/dev/null || echo "")
+
+        if [[ "${magic^^}" != "504B" ]]; then
+          log_validation "[VALIDATION] Invalid DOCX magic number: $file_path (expected 504B, got $magic)"
+          validation_failures=$((validation_failures + 1))
+          return 1
+        fi
+      fi
+
+      # Additional check: Verify it's recognized as a ZIP/DOCX
+      if command -v file &>/dev/null; then
+        local file_type
+        file_type=$(file -b "$file_path" 2>/dev/null || echo "")
+
+        if [[ ! "$file_type" =~ (Microsoft.*OOXML|Zip.*archive|Office.*Open.*XML) ]]; then
+          log_validation "[VALIDATION] File type mismatch for DOCX: $file_path (file reports: $file_type)"
+          validation_failures=$((validation_failures + 1))
+          return 1
+        fi
+      fi
+      ;;
+
+    pdf)
+      # PDF should start with %PDF- magic number
+      if command -v xxd &>/dev/null; then
+        local magic
+        magic=$(xxd -l 4 -p "$file_path" 2>/dev/null || echo "")
+
+        if [[ "${magic^^}" != "25504446" ]]; then
+          log_validation "[VALIDATION] Invalid PDF magic number: $file_path (expected 25504446, got $magic)"
+          validation_failures=$((validation_failures + 1))
+          return 1
+        fi
+      fi
+
+      # Additional check: Verify PDF format
+      if command -v file &>/dev/null; then
+        local file_type
+        file_type=$(file -b "$file_path" 2>/dev/null || echo "")
+
+        if [[ ! "$file_type" =~ PDF ]]; then
+          log_validation "[VALIDATION] File type mismatch for PDF: $file_path (file reports: $file_type)"
+          validation_failures=$((validation_failures + 1))
+          return 1
+        fi
+      fi
+      ;;
+
+    md|markdown)
+      # Markdown should be a text file
+      if command -v file &>/dev/null; then
+        local file_type
+        file_type=$(file -b "$file_path" 2>/dev/null || echo "")
+
+        # Accept various text formats
+        if [[ ! "$file_type" =~ (text|ASCII|UTF-8) ]]; then
+          log_validation "[VALIDATION] Non-text file for Markdown: $file_path (file reports: $file_type)"
+          validation_failures=$((validation_failures + 1))
+          return 1
+        fi
+      fi
+
+      # Sanity check: File should not be too large (>50MB)
+      if [[ $file_size -gt 52428800 ]]; then
+        log_validation "[VALIDATION] Markdown file suspiciously large: $file_path ($file_size bytes)"
+        validation_failures=$((validation_failures + 1))
+        return 1
+      fi
+      ;;
+
+    *)
+      log_validation "[VALIDATION] Unknown expected extension: $expected_ext"
+      validation_failures=$((validation_failures + 1))
+      return 1
+      ;;
+  esac
+
+  # All checks passed
+  return 0
+}
+
+#
 # discover_files - Find convertible files in input directory
 #
 # Arguments:
 #   $1 - Input directory path
 #
 # Populates global arrays: docx_files, pdf_files, md_files
+# Validates each file before adding to array
 #
 discover_files() {
   local input_dir="$1"
 
-  # Find DOCX files
+  # Find and validate DOCX files
   while IFS= read -r -d '' file; do
-    docx_files+=("$file")
+    if validate_input_file "$file" "docx"; then
+      docx_files+=("$file")
+    else
+      echo "  Skipping invalid DOCX file: $(basename "$file")"
+    fi
   done < <(find "$input_dir" -maxdepth 1 -type f -iname "*.docx" -print0 2>/dev/null)
 
-  # Find PDF files
+  # Find and validate PDF files
   while IFS= read -r -d '' file; do
-    pdf_files+=("$file")
+    if validate_input_file "$file" "pdf"; then
+      pdf_files+=("$file")
+    else
+      echo "  Skipping invalid PDF file: $(basename "$file")"
+    fi
   done < <(find "$input_dir" -maxdepth 1 -type f -iname "*.pdf" -print0 2>/dev/null)
 
-  # Find Markdown files
+  # Find and validate Markdown files
   while IFS= read -r -d '' file; do
-    md_files+=("$file")
+    if validate_input_file "$file" "md"; then
+      md_files+=("$file")
+    else
+      echo "  Skipping invalid Markdown file: $(basename "$file")"
+    fi
   done < <(find "$input_dir" -maxdepth 1 -type f \( -iname "*.md" -o -iname "*.markdown" \) -print0 2>/dev/null)
 }
 
@@ -1177,6 +1328,10 @@ generate_summary() {
     echo "Timeouts occurred: $timeouts_occurred"
     echo ""
   fi
+  if [[ $validation_failures -gt 0 ]]; then
+    echo "Validation: $validation_failures files skipped (see log)"
+    echo ""
+  fi
   echo "Output directory: $OUTPUT_DIR"
   echo "Conversion log: $LOG_FILE"
   echo ""
@@ -1195,6 +1350,9 @@ generate_summary() {
   fi
   if [[ $timeouts_occurred -gt 0 ]]; then
     echo "Timeouts occurred: $timeouts_occurred" >> "$LOG_FILE"
+  fi
+  if [[ $validation_failures -gt 0 ]]; then
+    echo "Validation failures: $validation_failures files" >> "$LOG_FILE"
   fi
 }
 
