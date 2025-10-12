@@ -10,14 +10,16 @@
 #   convert-docs.sh [INPUT_DIR] [OUTPUT_DIR]
 #   convert-docs.sh --detect-tools
 #   convert-docs.sh [INPUT_DIR] --dry-run
+#   convert-docs.sh [INPUT_DIR] [OUTPUT_DIR] --parallel [WORKERS]
 #
 # Arguments:
 #   INPUT_DIR   - Directory containing files to convert (default: current directory)
 #   OUTPUT_DIR  - Output directory for converted files (default: ./converted_output)
 #
 # Options:
-#   --detect-tools  - Display detected conversion tools and exit
-#   --dry-run       - Show files that would be converted without converting
+#   --detect-tools     - Display detected conversion tools and exit
+#   --dry-run          - Show files that would be converted without converting
+#   --parallel [N]     - Enable parallel processing with N workers (default: auto-detect CPU cores)
 #
 # Tool Priority Matrix:
 #   DOCX → MD: MarkItDown (75-80% fidelity) → Pandoc (68% fidelity)
@@ -244,6 +246,150 @@ check_output_collision() {
 }
 
 #
+# log_conversion - Thread-safe logging with atomic lock
+#
+# Arguments:
+#   $1 - Log file path
+#   $2 - Log message
+#
+# Uses mkdir-based atomic locking (portable across all systems)
+#
+log_conversion() {
+  local log_file="$1"
+  local message="$2"
+  local lock_dir="${log_file}.lock"
+  local max_wait=50  # Max 5 seconds (50 * 100ms)
+  local wait_count=0
+
+  # Acquire lock using mkdir (atomic operation)
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    sleep 0.1
+    wait_count=$((wait_count + 1))
+
+    if [ "$wait_count" -ge "$max_wait" ]; then
+      echo "Warning: Log lock timeout, writing anyway" >&2
+      break
+    fi
+  done
+
+  # Critical section: write to log
+  echo "$message" >> "$log_file"
+
+  # Release lock
+  rmdir "$lock_dir" 2>/dev/null || true
+}
+
+#
+# increment_progress - Atomic progress counter increment with display
+#
+# Arguments:
+#   $1 - Progress counter file path
+#   $2 - Total file count
+#
+# Uses flock if available, falls back to mkdir lock
+#
+increment_progress() {
+  local counter_file="$1"
+  local total="$2"
+  local lock_file="${counter_file}.lock"
+
+  # Try flock first (faster if available)
+  if command -v flock &>/dev/null; then
+    (
+      flock -x 200
+      current=$(cat "$counter_file")
+      current=$((current + 1))
+      echo "$current" > "$counter_file"
+      echo "Progress: [$current/$total] files processed"
+    ) 200>"$lock_file"
+  else
+    # Fallback to mkdir lock
+    local lock_dir="$lock_file.d"
+    while ! mkdir "$lock_dir" 2>/dev/null; do
+      sleep 0.05
+    done
+
+    current=$(cat "$counter_file")
+    current=$((current + 1))
+    echo "$current" > "$counter_file"
+    echo "Progress: [$current/$total] files processed"
+
+    rmdir "$lock_dir" 2>/dev/null || true
+  fi
+}
+
+#
+# convert_batch_parallel - Convert files in parallel using worker pool
+#
+# Arguments:
+#   $1 - Array name containing files to convert (pass by reference)
+#   $2 - Output directory
+#   $3 - Worker count
+#
+# Uses global conversion functions and counters
+#
+convert_batch_parallel() {
+  local -n files_array=$1
+  local output_dir="$2"
+  local worker_count="$3"
+
+  local total_files=${#files_array[@]}
+
+  if [ "$total_files" -eq 0 ]; then
+    return 0
+  fi
+
+  echo "Processing $total_files files with $worker_count workers..."
+  echo ""
+
+  # Initialize progress tracking
+  PROGRESS_COUNTER_FILE="$output_dir/.progress_counter"
+  echo "0" > "$PROGRESS_COUNTER_FILE"
+
+  # PID tracking for worker cleanup
+  declare -a worker_pids=()
+
+  # Dispatch workers
+  local file_index=0
+  local active_workers=0
+
+  for file in "${files_array[@]}"; do
+    # Wait for worker slot if at capacity
+    while [ "$active_workers" -ge "$worker_count" ]; do
+      # Wait for any worker to complete
+      if wait -n 2>/dev/null; then
+        active_workers=$((active_workers - 1))
+      else
+        # wait -n not supported (older bash), fall back to wait
+        wait
+        active_workers=0
+      fi
+    done
+
+    # Launch worker in background
+    (
+      convert_file "$file" "$output_dir"
+      increment_progress "$PROGRESS_COUNTER_FILE" "$total_files"
+    ) &
+
+    worker_pids+=($!)
+    active_workers=$((active_workers + 1))
+    file_index=$((file_index + 1))
+  done
+
+  # Wait for all remaining workers
+  for pid in "${worker_pids[@]}"; do
+    wait "$pid" 2>/dev/null || true
+  done
+
+  # Cleanup progress tracking
+  rm -f "$PROGRESS_COUNTER_FILE" "$PROGRESS_COUNTER_FILE.lock" 2>/dev/null || true
+
+  echo ""
+  echo "Parallel processing complete"
+}
+
+#
 # discover_files - Find convertible files in input directory
 #
 # Arguments:
@@ -412,23 +558,63 @@ show_dry_run() {
 # Main execution
 #
 
-# Parse arguments
-INPUT_DIR="${1:-.}"
-OUTPUT_DIR="${2:-./converted_output}"
-
-# Handle special flags
-if [[ "$INPUT_DIR" == "--detect-tools" ]]; then
-  detect_tools
-  show_tool_detection
-  exit 0
-fi
-
+# Parse arguments with proper --parallel support
+INPUT_DIR=""
+OUTPUT_DIR="./converted_output"
 DRY_RUN=false
-if [[ "$OUTPUT_DIR" == "--dry-run" ]] || [[ "$2" == "--dry-run" ]]; then
-  DRY_RUN=true
+PARALLEL_MODE=false
+PARALLEL_WORKERS=1
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --detect-tools)
+      detect_tools
+      show_tool_detection
+      exit 0
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --parallel)
+      PARALLEL_MODE=true
+      if [[ -n "${2:-}" ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+        PARALLEL_WORKERS="$2"
+        shift 2
+      else
+        # Auto-detect optimal worker count
+        if command -v nproc &>/dev/null; then
+          PARALLEL_WORKERS=$(nproc)
+        elif command -v sysctl &>/dev/null; then
+          PARALLEL_WORKERS=$(sysctl -n hw.ncpu 2>/dev/null || echo "4")
+        else
+          PARALLEL_WORKERS=4
+        fi
+        shift
+      fi
+      ;;
+    *)
+      if [ -z "$INPUT_DIR" ]; then
+        INPUT_DIR="$1"
+      elif [ "$OUTPUT_DIR" = "./converted_output" ]; then
+        OUTPUT_DIR="$1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Set defaults
+INPUT_DIR="${INPUT_DIR:-.}"
+
+# Cap parallel workers at reasonable maximum
+if [ "$PARALLEL_WORKERS" -gt 32 ]; then
+  echo "Warning: Capping parallel workers at 32 (requested: $PARALLEL_WORKERS)" >&2
+  PARALLEL_WORKERS=32
 fi
 
-# Validate input directory (skip for --detect-tools)
+# Validate input directory
 if [[ ! -d "$INPUT_DIR" ]]; then
   echo "Error: Input directory not found: $INPUT_DIR" >&2
   exit 1
@@ -751,16 +937,16 @@ convert_file() {
       ;;
   esac
 
-  # Log conversion result
+  # Log conversion result (thread-safe)
   if [[ "$conversion_success" == "true" ]]; then
-    echo "[SUCCESS] $basename → $(basename "$output_file") (tool: $tool_used)" >> "$LOG_FILE"
+    log_conversion "$LOG_FILE" "[SUCCESS] $basename → $(basename "$output_file") (tool: $tool_used)"
   else
-    echo "[FAILED] $basename (no suitable tool or conversion error)" >> "$LOG_FILE"
+    log_conversion "$LOG_FILE" "[FAILED] $basename (no suitable tool or conversion error)"
   fi
 }
 
 #
-# process_conversions - Process all discovered files
+# process_conversions - Process all discovered files (parallel or sequential)
 #
 process_conversions() {
   local total_files=0
@@ -774,37 +960,53 @@ process_conversions() {
     return 0
   fi
 
-  echo "Processing $total_files files..."
-  echo ""
+  # Check if parallel mode is enabled
+  if [[ "$PARALLEL_MODE" == "true" ]]; then
+    echo "Processing $total_files files in parallel mode (workers: $PARALLEL_WORKERS)..."
+    echo ""
 
-  # Process DOCX files
-  if [[ ${#docx_files[@]} -gt 0 ]]; then
-    for file in "${docx_files[@]}"; do
-      current_file=$((current_file + 1))
-      echo "[$current_file/$total_files] Processing DOCX file"
-      convert_file "$file" "$OUTPUT_DIR"
-      echo ""
-    done
-  fi
+    # Combine all files into a single array for parallel processing
+    local -a all_files=()
+    all_files+=("${docx_files[@]}")
+    all_files+=("${pdf_files[@]}")
+    all_files+=("${md_files[@]}")
 
-  # Process PDF files
-  if [[ ${#pdf_files[@]} -gt 0 ]]; then
-    for file in "${pdf_files[@]}"; do
-      current_file=$((current_file + 1))
-      echo "[$current_file/$total_files] Processing PDF file"
-      convert_file "$file" "$OUTPUT_DIR"
-      echo ""
-    done
-  fi
+    # Process all files in parallel
+    convert_batch_parallel all_files "$OUTPUT_DIR" "$PARALLEL_WORKERS"
+  else
+    # Sequential mode (original behavior)
+    echo "Processing $total_files files..."
+    echo ""
 
-  # Process MD files
-  if [[ ${#md_files[@]} -gt 0 ]]; then
-    for file in "${md_files[@]}"; do
-      current_file=$((current_file + 1))
-      echo "[$current_file/$total_files] Processing Markdown file"
-      convert_file "$file" "$OUTPUT_DIR"
-      echo ""
-    done
+    # Process DOCX files
+    if [[ ${#docx_files[@]} -gt 0 ]]; then
+      for file in "${docx_files[@]}"; do
+        current_file=$((current_file + 1))
+        echo "[$current_file/$total_files] Processing DOCX file"
+        convert_file "$file" "$OUTPUT_DIR"
+        echo ""
+      done
+    fi
+
+    # Process PDF files
+    if [[ ${#pdf_files[@]} -gt 0 ]]; then
+      for file in "${pdf_files[@]}"; do
+        current_file=$((current_file + 1))
+        echo "[$current_file/$total_files] Processing PDF file"
+        convert_file "$file" "$OUTPUT_DIR"
+        echo ""
+      done
+    fi
+
+    # Process MD files
+    if [[ ${#md_files[@]} -gt 0 ]]; then
+      for file in "${md_files[@]}"; do
+        current_file=$((current_file + 1))
+        echo "[$current_file/$total_files] Processing Markdown file"
+        convert_file "$file" "$OUTPUT_DIR"
+        echo ""
+      done
+    fi
   fi
 }
 
