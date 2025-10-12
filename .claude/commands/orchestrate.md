@@ -71,6 +71,7 @@ context_preservation:
   implementation_status:
     tests_passing: false
     files_modified: []
+  debug_reports: []  # Paths to created debug report files
   documentation_paths: []
 
 error_history: []
@@ -847,53 +848,270 @@ For test failure handling patterns, see [Test Failure Handling](../docs/command-
 
 This phase engages ONLY when implementation reports test failures. Maximum 3 debugging iterations before escalating to user.
 
-#### Step 1-2: Debug Investigation
+#### Step 1: Generate Debug Topic Slug
 
-**Orchestrate-specific debugging workflow**:
-- Track debug iterations (max 3)
-- Each iteration invokes debug-specialist agent via `/debug` command
-- Agent creates diagnostic report with fix proposals
-- Store previous attempts to refine analysis
+Before invoking debug-specialist, create a topic slug for the debug report:
 
-**Debug context includes**:
-- Failed phase number and error messages
-- Modified files from implementation
-- Plan path for intended behavior
-- Previous debug attempts (iterations 2-3)
+**Topic Slug Generation**:
+```
+1. Use failed phase number: "phase{N}_failures"
+2. Or categorize by error type:
+   - "integration_issues" - Component interaction failures
+   - "test_timeout" - Tests timing out
+   - "config_errors" - Configuration problems
+   - "dependency_missing" - Missing dependencies
+   - "syntax_errors" - Code won't compile
+3. Convert to lowercase with underscores
+4. Keep concise (2-3 words max)
 
-#### Step 3-8: Debug Investigation, Fix Application, and Checkpoint Management
+Examples:
+- Failed in Phase 1 → "phase1_failures"
+- Integration test failure → "integration_issues"
+- Config loading error → "config_errors"
+```
 
-For detailed debugging workflow patterns, see [Test Failure Handling](../docs/command-patterns.md#pattern-test-failure-handling).
+Store in workflow_state:
+- debug_topic_slug for debug directory path
+- debug_reports array for report file paths
 
-**Orchestrate-specific debugging execution**:
+#### Step 2: Invoke Debug Specialist Agent with File Creation
 
-**Agent Invocation** (Step 3-5):
-- Invoke debug-specialist with behavioral injection
-- Extract diagnostic report path and fix proposals
-- Apply fixes via code-writer agent
-- Validate test results
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Create debug report for test failures using debug-specialist protocol"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-**Decision Logic** (Step 6-7):
+  You are acting as a Debug Specialist Agent with the tools and constraints
+  defined in that file.
+
+  Create Debug Report File for Implementation Test Failures:
+
+  Context:
+  - Workflow: "[Original user workflow description]"
+  - Project: [project_name]
+  - Failed Phase: Phase [N] - [phase_name]
+  - Topic Slug: [debug_topic_slug] (for debug directory)
+  - Iteration: [1|2|3] (current debug iteration)
+
+  Test Failures:
+  [List of failing tests with error messages]
+
+  Error Details:
+  - Error messages: [extracted from test output]
+  - Modified files: [list from implementation]
+  - Plan reference: [plan_path]
+  [If iteration > 1:]
+  - Previous debug attempts: [summaries of prior iterations]
+  - Previous fixes attempted: [what was tried before]
+
+  Investigation Requirements:
+  - Analyze test failure patterns
+  - Review relevant code and configurations
+  - Identify root cause
+  - Consider previous debug attempts (if any)
+  - Propose 2-3 solutions with tradeoffs
+
+  Debug Report Creation:
+  1. Use Glob to find existing reports in debug/[debug_topic_slug]/
+  2. Determine next report number (NNN format)
+  3. Create report file: debug/[debug_topic_slug]/NNN_[descriptive_name].md
+  4. Include all required metadata fields (see debug-specialist agent)
+  5. Return: DEBUG_REPORT_PATH: debug/[debug_topic_slug]/NNN_*.md
+
+  Output Format:
+  - Primary: Debug report file path (DEBUG_REPORT_PATH: ...)
+  - Secondary: Brief summary (1-2 sentences) of root cause
+  - Tertiary: Recommended fix (which solution option)
+```
+
+#### Step 3: Extract Debug Report Path and Recommendations
+
+**Path Extraction**:
+```markdown
+From debug-specialist agent output, extract:
+- Debug report path: DEBUG_REPORT_PATH: debug/{topic}/NNN_*.md
+- Root cause summary: Brief description of the issue
+- Recommended fix: Which solution option to apply
+
+Example output:
+DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
+
+Root cause: Config file not initialized before first test runs.
+Recommended fix: Option 2 - Add config initialization in test setup hook
+```
+
+**Validation**:
+- [ ] Debug report file created and exists
+- [ ] Report includes all required metadata
+- [ ] Root cause clearly identified
+- [ ] 2-3 solutions proposed with tradeoffs
+- [ ] Recommended solution specified
+
+Store debug report path in workflow_state.debug_reports array.
+
+#### Step 4: Apply Recommended Fix
+
+Invoke code-writer agent with fix proposals from debug report:
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Apply debug fixes from report using code-writer protocol"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/code-writer.md
+
+  You are acting as a Code Writer with the tools and constraints
+  defined in that file.
+
+  Apply fixes from debug report:
+
+  Debug Report: [debug_report_path]
+  Read the report to understand:
+  - Root cause of test failures
+  - Proposed solutions (Options 1-3)
+  - Recommended solution
+
+  Task:
+  Implement the recommended solution from the debug report.
+
+  Requirements:
+  - Follow implementation steps from recommended solution
+  - Apply changes to affected files
+  - Follow project coding standards (CLAUDE.md)
+  - Do not run tests yet (orchestrator will run tests after fix)
+
+  Output:
+  - Files modified: [list]
+  - Changes made: [brief summary]
+  - Ready for testing: true
+```
+
+#### Step 5: Run Tests Again
+
+After applying fixes, run tests to validate:
+
+```bash
+# Run test command from plan or project standards
+[test_command_from_plan]
+
+# Example:
+.claude/tests/run_all_tests.sh
+# or
+pytest tests/
+# or
+npm test
+```
+
+**Capture test results**:
+- tests_passing: true|false
+- If false: error messages for next iteration
+
+#### Step 6: Decision Logic - Continue or Escalate
+
 ```yaml
 if tests_passing:
+  → Mark debug iteration successful
   → Proceed to Documentation Phase
-  → Save success checkpoint
-  → Update error_history with resolution
+  → Save success checkpoint with debug metrics
+  → Update error_history with resolution details
 
 elif iteration < 3:
   → Increment iteration counter
-  → Add attempt to previous_attempts history
+  → Add current attempt to debug history:
+      - iteration: N
+      - report_path: debug/topic/NNN_*.md
+      - fix_attempted: [summary]
+      - result: "Still failing"
+      - new_errors: [error messages]
   → Return to Step 1 with enriched context
+  → Next iteration includes all previous attempts
 
 else:  # iteration == 3
-  → Escalate to user (see User Escalation Format pattern)
+  → Escalate to user (max debugging iterations reached)
   → Save escalation checkpoint
-  → Pause workflow for manual intervention
+  → Include all debug report paths
+  → Provide manual intervention options
+  → Pause workflow for user decision
 ```
 
-**Checkpoint Management** (Step 8):
-- Success: Save `checkpoint_tests_passing` with debug metrics
-- Escalation: Save `checkpoint_escalation` with all debug report paths and attempt summaries
+#### Step 7: Update Workflow State with Debug Reports
+
+After successful debugging or escalation, update workflow state:
+
+```yaml
+workflow_state.context_preservation.debug_reports: [
+  {
+    topic: "phase1_failures",
+    path: "debug/phase1_failures/001_config_initialization.md",
+    number: "001",
+    iteration: 1,
+    resolved: true
+  }
+]
+
+# If multiple iterations:
+workflow_state.debug_history: [
+  {
+    iteration: 1,
+    report_path: "debug/phase1_failures/001_config_initialization.md",
+    fix_attempted: "Added config init in test setup",
+    result: "Still failing - config.secret nil"
+  },
+  {
+    iteration: 2,
+    report_path: "debug/phase1_failures/002_config_secrets.md",
+    fix_attempted: "Added secret initialization",
+    result: "Tests passing"
+  }
+]
+```
+
+#### Step 8: Save Debug Checkpoint
+
+**Success Checkpoint**:
+```yaml
+checkpoint_tests_passing:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: true
+    debug_iterations: N
+    debug_reports: [list of report paths]
+    issues_resolved: [list of issues fixed]
+    status: "success"
+  next_phase: "documentation"
+  performance:
+    debugging_time: "[duration]"
+    iterations_needed: N
+```
+
+**Escalation Checkpoint**:
+```yaml
+checkpoint_escalation:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: false
+    debug_iterations: 3
+    debug_reports: [all report paths]
+    unresolved_issues: [list]
+    status: "escalated"
+  next_phase: "manual_intervention"
+  user_options: ["continue", "retry", "rollback", "terminate"]
+  debug_summary: |
+    Attempted 3 debugging iterations. Issues remain:
+    - [Issue 1]
+    - [Issue 2]
+
+    Debug reports created:
+    - debug/topic/001_*.md
+    - debug/topic/002_*.md
+    - debug/topic/003_*.md
+```
 
 #### Debugging Loop Example
 
