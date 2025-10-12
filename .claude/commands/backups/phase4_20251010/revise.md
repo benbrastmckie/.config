@@ -8,99 +8,48 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Task, MultiEdit, TodoWrite, SlashC
 
 # /revise Command
 
-Revises the most recently discussed implementation plan or research report according to user-provided details, optionally incorporating insights from research reports. **This command only modifies the artifact file - it does not implement any changes or execute code.**
+Revises the most recently discussed implementation plan according to user-provided details, optionally incorporating insights from research reports. **This command only modifies the plan file - it does not implement any changes.**
 
 ## Usage
 
-### Syntax Options
-
-**Option 1: Revision-first (original)**
-```bash
-/revise <revision-details> [context-path1] [context-path2] ...
+### Interactive Mode (Default)
+```
+/revise <revision-details> [report-path1] [report-path2] ...
 ```
 
-**Option 2: Path-first (explicit artifact targeting)**
-```bash
-/revise <artifact-path> <revision-details> [context-path1] ...
+### Automated Mode (for /implement integration)
 ```
-
-**Option 3: Auto-mode (for /implement integration)**
-```bash
 /revise <plan-path> --auto-mode --context '<json-context>'
 ```
 
 ### Arguments
 
 **Interactive Mode**:
-- `<revision-details>` (required): Description of changes to make
-- `<artifact-path>` (optional): Explicit path to plan or report (inferred from conversation if omitted)
-- `[context-path1] [context-path2] ...` (optional): Research reports to guide revision
+- `<revision-details>` (required): Description of changes to make to the plan
+- `[report-path1] [report-path2] ...` (optional): Paths to research reports to guide the revision
 
 **Automated Mode**:
 - `<plan-path>` (required): Path to plan file to revise
 - `--auto-mode` (required): Enable automated revision mode
 - `--context '<json>'` (required): Structured JSON context with revision details
 
-### Artifact Types Supported
-
-- **Plans**: Implementation plans (all structure levels: L0/L1/L2)
-- **Reports**: Research reports (single-file)
-
 ## Examples
 
-### Plan Revisions
+### Interactive Mode
 
-#### Add Phase to Plan
-```bash
-# Revision-first syntax
-/revise "Add Phase 6 for deployment and monitoring"
-
-# Path-first syntax
-/revise specs/plans/025_feature.md "Add Phase 6 for deployment and monitoring"
+#### Basic Revision
+```
+/revise "Add error handling phases and update testing approach"
 ```
 
-#### Modify Phase Tasks
-```bash
-# With research context
-/revise "Update Phase 3 tasks based on performance findings" specs/reports/018_performance.md
-
-# Path-first with context
-/revise specs/plans/025_feature/ "Update Phase 3 tasks" specs/reports/018_performance.md
+#### Revision with Reports
+```
+/revise "Incorporate security best practices" specs/reports/001_security_analysis.md
 ```
 
-#### Update Plan Metadata
-```bash
-# Simple metadata update
-/revise "Update complexity to High and add security risk assessment"
-
-# Explicit path
-/revise specs/plans/025_feature.md "Update complexity to High"
+#### Multiple Reports
 ```
-
-### Report Revisions
-
-#### Update Report Findings
-```bash
-# Basic report revision
-/revise "Update findings based on implementation results" specs/reports/010_analysis.md
-
-# With additional research context
-/revise specs/reports/010_analysis.md "Incorporate new security patterns" specs/reports/015_security.md
-```
-
-#### Section-Specific Update
-```bash
-# Target specific section
-/revise "Update Authentication section with OAuth implementation learnings" specs/reports/010_security.md
-
-# Multiple sections
-/revise "Revise Recommendations and Future Work sections based on completed implementation" specs/reports/010_analysis.md
-```
-
-#### Add New Findings
-```bash
-# Add to existing report
-/revise "Add performance benchmark results to Performance section" specs/reports/012_optimization.md
+/revise "Update based on performance findings" specs/reports/002_performance.md specs/reports/003_optimization.md
 ```
 
 #### Example Output with Structure Recommendations
@@ -189,15 +138,14 @@ Revises the most recently discussed implementation plan or research report accor
 ## Important Notes
 
 ### What This Command Does
-- **Modifies plans or reports** with your requested changes
-- **Preserves completion status** of already-executed phases (plans only)
+- **Modifies the plan file** with your requested changes
+- **Preserves completion status** of already-executed phases
 - **Adds revision history** to track changes
-- **Creates a backup** of the original artifact
-- **Updates phase details** (plans) or findings/recommendations (reports)
-- **Evaluates structure optimization** opportunities after revision (plans only)
-- **Displays recommendations** for collapsing simple phases or expanding complex phases (plans only)
-- **Section targeting** for reports (focuses on specific sections when requested)
-- **Auto-mode**: Returns structured success/failure response for /implement (plans only)
+- **Creates a backup** of the original plan
+- **Updates phase details** based on your revision requirements
+- **Evaluates structure optimization** opportunities after revision
+- **Displays recommendations** for collapsing simple phases or expanding complex phases
+- **Auto-mode**: Returns structured success/failure response for /implement
 
 ### What This Command Does NOT Do
 - **Does NOT execute any code changes**
@@ -208,40 +156,6 @@ Revises the most recently discussed implementation plan or research report accor
 
 To implement the revised plan after revision, use `/implement [plan-file]`
 
-## Mode Comparison
-
-| Aspect | Interactive Mode | Auto-Mode |
-|--------|------------------|-----------|
-| **Trigger** | User explicitly calls `/revise` | `/implement` detects trigger condition |
-| **Input** | Natural language description | Structured JSON context |
-| **Confirmation** | Presents changes, asks confirmation (optional) | No confirmation, deterministic execution |
-| **Use Case** | User-driven plan/report changes | Automated plan adjustments during implementation |
-| **Revision Types** | Any content change | Specific types: expand_phase, add_phase, split_phase, update_tasks, collapse_phase |
-| **History Format** | Detailed rationale and context | Concise audit trail with trigger info |
-| **Artifact Support** | Plans and reports | Plans only |
-| **Context** | Research reports (optional) | JSON context with metrics |
-
-### When to Use Each Mode
-
-**Use Interactive Mode When**:
-- Incorporating new requirements from stakeholders
-- Revising based on research findings
-- Making strategic plan changes
-- Updating reports with new findings
-- You want visibility and control over changes
-
-**Use Auto-Mode When**:
-- `/implement` detects complexity threshold exceeded
-- Multiple test failures indicate missing prerequisites
-- Automated structure optimization needed
-- You're building automated workflows
-
-**Auto-Mode is NOT Suitable For**:
-- Strategic plan changes requiring human judgment
-- Major scope changes or pivots
-- Report modifications
-- Initial plan creation
-
 ## Progressive Plan Support
 
 This command revises all three progressive structure levels:
@@ -250,98 +164,6 @@ This command revises all three progressive structure levels:
 - **Level 2**: Revise main plan, phase files, and/or stage files
 
 The command determines which file(s) to revise based on the scope of changes and expansion status.
-
-## Artifact Type Detection
-
-This command works with both implementation plans and research reports.
-
-### Plan Detection
-- Check if path matches `*/specs/plans/*.md` or `*/specs/plans/*/`
-- Detect structure level using `parse-adaptive-plan.sh detect_structure_level`
-- Apply plan revision logic
-
-### Report Detection
-- Check if path matches `*/specs/reports/*.md`
-- Extract report metadata using `get_report_metadata()` from artifact-utils.sh
-- Apply report revision logic
-
-### Auto-Detection
-If path not provided explicitly:
-- Search conversation history for plan/report mentions
-- Prioritize most recently discussed artifact
-- Fall back to most recently modified artifact in specs/
-
-## Report Revision Process
-
-### 1. Report Analysis
-Read the existing report to understand:
-- Original research questions and scope
-- Current findings and recommendations
-- Report structure and sections
-- Last update date
-
-### 2. Revision Assessment
-Determine what needs updating:
-- New findings to incorporate
-- Sections to revise or expand
-- Recommendations to update based on implementation
-- Outdated information to remove or revise
-
-### 3. Research Integration
-If research reports provided as context:
-- Cross-reference findings
-- Identify complementary insights
-- Update recommendations based on new data
-
-### 4. Report Updates
-Apply changes using Edit tool:
-- Update specific sections (if targeted)
-- Add new findings with current date
-- Revise recommendations
-- Update metadata (last modified date)
-- Preserve original research context
-
-### 5. Version Tracking (Reports)
-Add revision entry:
-```markdown
-## Revision History
-
-### [YYYY-MM-DD] - Revision N
-**Changes**: Description of what was revised
-**Reason**: Why the revision was needed
-**Sections Updated**: List of modified sections
-**Related Plans**: Link to implementation plans if applicable
-```
-
-### Section-Specific Revision
-
-When revising reports, you can target specific sections:
-
-#### Section Detection from Revision Details
-Parse revision details for section keywords:
-- "Update <Section Name> section..."
-- "Revise findings in <Section Name>..."
-- "Add to <Section Name>:"
-
-#### Section Extraction
-Use grep to locate section in report:
-```bash
-# Find section start
-section_start=$(grep -n "^## $SECTION_NAME" "$report_path" | cut -d: -f1)
-
-# Find next section (or EOF)
-section_end=$(tail -n +$((section_start + 1)) "$report_path" | grep -n "^## " | head -1 | cut -d: -f1)
-
-# Extract section content for context
-section_content=$(sed -n "${section_start},${section_end}p" "$report_path")
-```
-
-#### Targeted Updates
-When section identified:
-1. Read only that section for context (efficiency)
-2. Apply changes to section specifically
-3. Preserve rest of report unchanged
-4. Update metadata (section modified date)
 
 ## Automated Mode Specification
 

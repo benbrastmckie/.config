@@ -372,7 +372,7 @@ Research: [Y/N, N artifacts if yes]
 Next steps:
 - Review the plan: cat specs/plans/[NNN]_[feature_name].md
 - Implement the plan: /implement specs/plans/[NNN]_[feature_name].md
-- Modify if needed: /revise "changes..." specs/plans/[NNN]_[feature_name].md
+- Modify if needed: /update plan specs/plans/[NNN]_[feature_name].md "changes..."
 
 The wizard has completed. Happy implementing! 🚀
 ```
@@ -701,7 +701,7 @@ Expected Output: "Research saved. Resume with: /plan \"...\" [artifacts]"
 
 ### Limitations
 
-- **No Plan Modification**: Wizard creates new plans only (use /revise for changes)
+- **No Plan Modification**: Wizard creates new plans only (use /update for changes)
 - **Linear Flow**: Cannot jump between steps (must complete in order)
 - **No Template Selection**: Uses default plan template (future: template wizard)
 - **Text Input Only**: No GUI or visual planning tools
