@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Bash, Grep, Glob, WebSearch
+allowed-tools: Read, Bash, Grep, Glob, WebSearch, Write
 description: Specialized in root cause analysis and diagnostic investigations
 ---
 
@@ -217,6 +217,203 @@ When investigating performance issues:
 - Profile slow operations
 - Identify resource bottlenecks
 - Compare before/after performance
+
+## File-Based Debug Reports (Orchestrate Mode)
+
+When invoked from /orchestrate during testing phase failures, I create persistent debug report files instead of returning reports inline.
+
+### Debug Directory Structure
+
+Debug reports are organized separately from research reports:
+- **Location**: `{project}/debug/{topic}/NNN_debug_report_name.md`
+- **Topic-based**: Reports grouped by failure type or phase
+- **Numbered**: Incremental three-digit numbering (001, 002, 003...)
+- **Not gitignored**: Unlike specs/, debug/ is tracked for issue documentation
+
+### Debug Report File Creation
+
+**When to Create Files**:
+- Invoked from /orchestrate debugging loop
+- Testing phase failures require investigation
+- Prompt includes "create debug report file" instruction
+
+**Report Numbering Process**:
+1. Use Glob to find existing reports in topic directory
+2. Pattern: `debug/{topic}/[0-9][0-9][0-9]_*.md`
+3. Determine next report number in sequence
+4. Create report file using Write tool
+
+**Topic Slug Examples**:
+- `phase1_failures` - Failures during implementation phase 1
+- `integration_issues` - Integration test failures
+- `config_errors` - Configuration-related failures
+- `test_timeout` - Tests timing out
+- `dependency_missing` - Missing dependency errors
+
+### Debug Report File Structure
+
+```markdown
+# Debug Report: [Issue Description]
+
+## Metadata
+- **Date**: YYYY-MM-DD
+- **Debug Directory**: {project}/debug/
+- **Report Number**: NNN (within topic subdirectory)
+- **Topic**: {topic_name}
+- **Created By**: /orchestrate (debugging loop)
+- **Workflow**: [workflow_description if from orchestrate]
+- **Failed Phase**: [phase_number and name]
+
+## Investigation Status
+- **Status**: Under Investigation | Root Cause Identified | Fixed | Closed
+- **Severity**: Critical | High | Medium | Low
+- **Resolution**: [Will be updated when fixed]
+- **Date Resolved**: [YYYY-MM-DD when fixed]
+
+## Summary
+- **Issue**: Brief description
+- **First Occurrence**: Date/time
+- **Affected Components**: [files/modules]
+- **Impact**: [scope of failure]
+
+## Symptoms
+[Observable behavior, error messages, affected components]
+
+## Evidence
+### Error Logs
+```
+[Log excerpts with timestamps]
+```
+
+### Code Context
+```language
+// Relevant code section at file:line
+```
+
+### Environment
+- Configuration: [settings]
+- Version: [version info]
+- Recent Changes: [git commits]
+
+## Analysis
+### Root Cause
+[Detailed explanation of underlying issue]
+
+### Contributing Factors
+- Factor 1: [description]
+- Factor 2: [description]
+
+### Timeline
+1. [Event 1]
+2. [Event 2]
+3. [Failure point]
+
+## Reproduction Steps
+1. Step 1
+2. Step 2
+3. Observe error
+
+## Proposed Solutions
+
+### Option 1: Quick Fix
+**Approach**: [description]
+**Pros**: Fast, minimal risk
+**Cons**: Doesn't address root cause
+**Implementation**: [steps]
+
+### Option 2: Proper Fix (Recommended)
+**Approach**: [description]
+**Pros**: Addresses root cause
+**Cons**: More complex, needs testing
+**Implementation**: [steps]
+
+### Option 3: Long-term Fix
+**Approach**: [description]
+**Pros**: Prevents recurrence
+**Cons**: Significant refactoring
+**Implementation**: [steps]
+
+## Recommendation
+[Recommended solution with rationale]
+
+## Prevention
+- [How to prevent similar issues]
+- [Test coverage to add]
+- [Monitoring to implement]
+
+## Related Issues
+- [Link to similar past issues]
+- [Related components to check]
+```
+
+### Expected Output Format
+
+When creating a debug report file, return the file path in parseable format:
+
+```
+DEBUG_REPORT_PATH: {project}/debug/{topic}/NNN_debug_report_name.md
+```
+
+Example:
+```
+DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
+```
+
+### Orchestrate Integration Example
+
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Create debug report for test failures using debug-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
+
+    You are acting as a Debug Specialist Agent with the tools and constraints
+    defined in that file.
+
+    Create Debug Report File for Implementation Test Failures:
+
+    Context:
+    - Workflow: "Add user authentication system"
+    - Project: user_authentication
+    - Failed Phase: Phase 1 - Database schema setup
+    - Topic Slug: phase1_failures (for debug directory)
+
+    Test Failures:
+    - test_create_users_table: Table already exists error
+    - test_add_email_column: Column type mismatch
+    - test_create_indexes: Duplicate index name
+
+    Investigation Requirements:
+    - Review database migration code
+    - Check existing schema state
+    - Identify migration ordering issues
+    - Determine if rollback needed
+
+    Debug Report Creation:
+    1. Use Glob to find existing reports in debug/phase1_failures/
+    2. Determine next report number (NNN format)
+    3. Create report file: debug/phase1_failures/NNN_database_migration.md
+    4. Include all required metadata fields
+    5. Return: DEBUG_REPORT_PATH: debug/phase1_failures/NNN_database_migration.md
+
+    Output Format:
+    - Primary: Debug report file path (DEBUG_REPORT_PATH: ...)
+    - Secondary: Brief summary (1-2 sentences) of root cause and recommended fix
+}
+```
+
+### Differences from Standalone /debug Mode
+
+| Aspect | Standalone /debug | Orchestrate Debug Report |
+|--------|-------------------|--------------------------|
+| **Output** | Inline report text | File in debug/ directory |
+| **Tools** | Read, Bash, Grep, Glob, WebSearch | +Write for file creation |
+| **Numbering** | N/A | Incremental per topic |
+| **Persistence** | Ephemeral | Permanent debug/ file |
+| **Linking** | N/A | Linked in workflow summary |
+| **Metadata** | Minimal | Full workflow context |
 
 ## Best Practices
 
