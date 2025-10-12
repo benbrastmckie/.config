@@ -95,14 +95,15 @@ score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0
 - Let structure grow organically during implementation
 
 ### Required Plan Sections
-1. **Metadata**: Date, feature, scope, standards file, research reports
+1. **Metadata**: Date, feature, scope, standards file, research reports (if any)
 2. **Overview**: Feature description and goals
-3. **Success Criteria**: Checkboxes for completion verification
-4. **Technical Design**: Architecture and component interactions
-5. **Implementation Phases**: Phased tasks with testing
-6. **Testing Strategy**: Overall test approach
-7. **Documentation Requirements**: What docs need updating
-8. **Dependencies**: External dependencies and prerequisites
+3. **Research Summary**: Synthesis of findings from research reports (if reports provided)
+4. **Success Criteria**: Checkboxes for completion verification
+5. **Technical Design**: Architecture and component interactions
+6. **Implementation Phases**: Phased tasks with testing
+7. **Testing Strategy**: Overall test approach
+8. **Documentation Requirements**: What docs need updating
+9. **Dependencies**: External dependencies and prerequisites
 
 ### Phase Format
 Each phase must include:
@@ -116,10 +117,19 @@ Each phase must include:
 
 ### Research Integration
 When research reports are provided:
-- Reference report findings in plan design
+- **Mandatory Inclusion**: ALL provided reports MUST be referenced in plan metadata
+- Read report content using Read tool to understand findings
 - Base technical decisions on research insights
-- Note which recommendations are implemented
-- Cross-reference report file paths
+- Note which recommendations are implemented in plan body
+- Cross-reference report file paths in metadata "Research Reports" section
+
+**Validation Requirements**:
+Before finalizing plan, verify:
+- [ ] All provided report paths are listed in metadata
+- [ ] "Research Reports" metadata section exists with proper links
+- [ ] "Research Summary" section synthesizes findings from all reports
+- [ ] Each report's "Implementation Status" updated via Edit tool
+- [ ] Plan path added to each report
 
 ### Task Granularity
 - Tasks should be specific and actionable
@@ -202,20 +212,31 @@ Task {
 
     Generate detailed implementation plan for authentication feature.
 
-    Based on research findings (see research summary):
-    - Use session-based auth pattern (found in research)
-    - Integrate with existing middleware architecture
-    - Follow security best practices identified
+    Research Reports (MANDATORY - include all in plan metadata):
+    1. Existing Patterns: specs/reports/existing_patterns/001_auth_patterns.md
+    2. Security Practices: specs/reports/security_practices/001_best_practices.md
+    3. Framework Options: specs/reports/framework_options/001_comparison.md
+
+    Based on research findings:
+    - Use session-based auth pattern (from existing_patterns report)
+    - Integrate with existing middleware architecture (from existing_patterns report)
+    - Follow security best practices identified (from security_practices report)
+    - Choose appropriate framework (from framework_options report)
 
     Plan requirements:
     - 4-6 phases covering setup, implementation, testing, docs
     - Each phase with <10 tasks
     - Testing strategy per phase
     - Integration with existing auth modules
+    - ALL research reports must be listed in plan metadata
+    - Add "Research Summary" section synthesizing key findings
 
     Reference:
-    - Research report: specs/reports/015_auth_patterns.md
     - Standards: CLAUDE.md (2-space indent, snake_case, pcall)
+
+    After creating plan:
+    - Use Edit tool to update each report's "Implementation Status" section
+    - Add plan path to each report
 
     Output: Complete plan in specs/plans/ format
 }
@@ -234,12 +255,18 @@ Task {
     You are acting as a Plan Architect Agent with the tools and constraints
     defined in that file.
 
-    Create implementation plan based on research phase findings:
+    Create implementation plan based on research phase findings.
 
-    Research Summary:
-    - Current async patterns use coroutines
-    - Popular pattern: promise-like structure
-    - Existing modules: lua/async/ (needs extension)
+    Research Reports (MANDATORY - include all in plan metadata):
+    1. Existing Patterns: specs/reports/existing_patterns/001_async_patterns.md
+    2. Best Practices: specs/reports/best_practices/001_async_best_practices.md
+    3. Alternatives: specs/reports/alternatives/001_promise_libraries.md
+
+    Read each report to understand:
+    - Current async patterns use coroutines (existing_patterns)
+    - Popular pattern: promise-like structure (best_practices)
+    - Existing modules: lua/async/ (needs extension) (existing_patterns)
+    - Alternative library comparison (alternatives)
 
     Plan Structure:
     Phase 1: Core async primitives
@@ -254,7 +281,17 @@ Task {
     - Test commands
     - Success criteria
 
+    Plan Requirements:
+    - List ALL research reports in metadata "Research Reports" section
+    - Add "Research Summary" section synthesizing findings from all reports
+    - Use Read tool to access full report content as needed
+
     Testing: Use :TestFile and :TestSuite from CLAUDE.md
+
+    After creating plan:
+    - Use Edit tool to update each report's "Implementation Status" section
+    - Add plan path to each report: "Plan: ../plans/NNN_async_promises.md"
+    - Update status to "Planning In Progress"
 
     Output: Save to specs/plans/NNN_async_promises.md
 }
@@ -300,15 +337,27 @@ Task {
 # [Feature] Implementation Plan
 
 ## Metadata
-- Date: YYYY-MM-DD
-- Feature: [Name]
-- Scope: [Brief description]
-- Estimated Phases: [N]
-- Standards File: /path/to/CLAUDE.md
-- Research Reports: [paths if any]
+- **Date**: YYYY-MM-DD
+- **Feature**: [Name]
+- **Scope**: [Brief description]
+- **Estimated Phases**: [N]
+- **Estimated Hours**: [H]
+- **Standards File**: /path/to/CLAUDE.md
+- **Research Reports**:
+  - [Report 1 Title](../reports/topic1/001_report_name.md)
+  - [Report 2 Title](../reports/topic2/001_report_name.md)
+  - [Report 3 Title](../reports/topic3/001_report_name.md)
 
 ## Overview
 [Description and goals]
+
+## Research Summary
+Brief synthesis of key findings from research reports:
+- Finding 1 from [report topic 1]
+- Finding 2 from [report topic 2]
+- Finding 3 from [report topic 3]
+
+Recommended approach based on research: [synthesis]
 
 ## Success Criteria
 - [ ] Criterion 1
@@ -383,10 +432,38 @@ Automatic plan numbering:
 
 ### Research Report Integration
 When reports are provided:
-- Read report findings
-- Extract key recommendations
-- Reference specific sections in plan
-- Link report in plan metadata
+1. **Read Reports**: Use Read tool to access full report content
+2. **Extract Findings**: Identify key recommendations for plan design
+3. **Reference in Plan**: Link reports in metadata and synthesize in "Research Summary"
+4. **Update Reports**: After plan creation, update each report's "Implementation Status"
+
+**Edit Tool Workflow for Report Updates**:
+After creating the plan, update each research report:
+
+```bash
+# For each report in the research reports list:
+# 1. Read the report to find the "Implementation Status" section
+# 2. Use Edit tool to update status:
+
+Edit {
+  file_path: "specs/reports/existing_patterns/001_auth_patterns.md"
+  old_string: |
+    ## Implementation Status
+    - **Status**: Research Complete
+    - **Plan**: [Will be updated by plan-architect]
+    - **Implementation**: [Will be updated by orchestrator]
+    - **Date**: YYYY-MM-DD
+
+  new_string: |
+    ## Implementation Status
+    - **Status**: Planning In Progress
+    - **Plan**: [../plans/013_user_authentication.md](../plans/013_user_authentication.md)
+    - **Implementation**: [Will be updated by orchestrator]
+    - **Date**: 2025-10-12
+}
+```
+
+This creates bidirectional linking: plan → reports and reports → plan.
 
 ### Standards Discovery
 Before creating plan:
@@ -434,7 +511,11 @@ Before finalizing plan:
 - [ ] Tasks use checkbox format `- [ ]`
 - [ ] Each phase has testing section
 - [ ] Standards referenced and incorporated
-- [ ] Research reports linked (if applicable)
+- [ ] **Research reports verification**:
+  - [ ] All provided reports listed in metadata "Research Reports" section
+  - [ ] "Research Summary" section synthesizes findings from all reports
+  - [ ] Each report's "Implementation Status" updated via Edit tool
+  - [ ] Plan path added to each report (bidirectional linking)
 - [ ] Success criteria defined
 - [ ] Dependencies identified
 - [ ] Documentation requirements noted
