@@ -1909,8 +1909,10 @@ end
 --- Save local command to global directory
 --- @param command table Command data
 --- @param silent boolean Don't show notifications
+--- @param agent_deps table|nil Agent dependencies map (optional)
+--- @param agents table|nil All agents list (optional)
 --- @return boolean success
-local function save_command_to_global(command, silent)
+local function save_command_to_global(command, silent, agent_deps, agents)
   local notify = require('neotex.util.notifications')
 
   if not command or not command.name then
@@ -1983,7 +1985,7 @@ local function save_command_to_global(command, silent)
     )
   end
 
-  -- Also save dependencies if they exist locally
+  -- Also save command dependencies if they exist locally
   if command.dependent_commands then
     local deps
     if type(command.dependent_commands) == "table" then
@@ -2007,9 +2009,49 @@ local function save_command_to_global(command, silent)
 
     if #saved_deps > 0 and not silent then
       notify.editor(
-        string.format("Saved %d dependencies to global for '%s'", #saved_deps, command.name),
+        string.format("Saved %d command dependencies to global for '%s'", #saved_deps, command.name),
         notify.categories.STATUS,
         { command = command.name, dependencies = table.concat(saved_deps, ", ") }
+      )
+    end
+  end
+
+  -- Also save agent dependencies if they exist locally
+  if agent_deps and agents and agent_deps[command.name] then
+    local local_agents_dir = project_dir .. "/.claude/agents"
+    local global_agents_dir = global_dir .. "/.claude/agents"
+    vim.fn.mkdir(global_agents_dir, "p")
+
+    local agent_names = agent_deps[command.name]
+    local saved_agents = {}
+
+    for _, agent_name in ipairs(agent_names) do
+      -- Find the agent in the agents list
+      local agent = nil
+      for _, a in ipairs(agents) do
+        if a.name == agent_name and a.is_local then
+          agent = a
+          break
+        end
+      end
+
+      if agent then
+        local agent_local_path = local_agents_dir .. "/" .. agent_name .. ".md"
+
+        if vim.fn.filereadable(agent_local_path) == 1 then
+          local agent_global_path = global_agents_dir .. "/" .. agent_name .. ".md"
+          local agent_content = table.concat(vim.fn.readfile(agent_local_path), "\n")
+          vim.fn.writefile(vim.split(agent_content, "\n"), agent_global_path)
+          table.insert(saved_agents, agent_name)
+        end
+      end
+    end
+
+    if #saved_agents > 0 and not silent then
+      notify.editor(
+        string.format("Saved %d agent dependencies to global for '%s'", #saved_agents, command.name),
+        notify.categories.STATUS,
+        { command = command.name, agents = table.concat(saved_agents, ", ") }
       )
     end
   end
@@ -3254,7 +3296,7 @@ function M.show_commands_picker(opts)
 
         local success = false
         if selection.value.command then
-          success = save_command_to_global(selection.value.command, false)
+          success = save_command_to_global(selection.value.command, false, structure.agent_dependencies, structure.agents)
         elseif selection.value.agent then
           success = save_agent_to_global(selection.value.agent, false)
         elseif selection.value.entry_type == "hook_event" then

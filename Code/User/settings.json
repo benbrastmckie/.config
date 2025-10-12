@@ -1,8 +1,0 @@
-{
-  "terminal.integrated.defaultProfile.osx": "fish",
-  "terminal.integrated.profiles.osx": {
-    "fish": {
-      "path": "/usr/local/bin/fish"
-    }
-  }
-}

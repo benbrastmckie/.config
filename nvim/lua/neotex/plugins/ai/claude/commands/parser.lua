@@ -26,6 +26,7 @@ local function parse_frontmatter(content)
     allowed_tools = true,
     dependent_commands = true,
     parent_commands = true,
+    agent_dependencies = true,
   }
 
   for line in frontmatter_text:gmatch("[^\n]+") do
@@ -111,7 +112,8 @@ function M.parse_command_file(filepath)
   -- Ensure array fields are always tables
   local function ensure_array(value)
     if type(value) == "string" then
-      return {}
+      -- Single value string should become array with one element
+      return { value }
     elseif type(value) == "table" then
       return value
     else
@@ -128,6 +130,7 @@ function M.parse_command_file(filepath)
     allowed_tools = ensure_array(metadata.allowed_tools),
     dependent_commands = ensure_array(metadata.dependent_commands),
     parent_commands = ensure_array(metadata.parent_commands),
+    agent_dependencies = ensure_array(metadata.agent_dependencies),
   }
 end
 
@@ -485,11 +488,19 @@ function M.build_agent_dependencies(commands, agents)
 
   -- For each command, find which agents it uses
   for cmd_name, command in pairs(commands) do
-    local cmd_filepath = command.filepath
+    local agents_used = {}
 
+    -- First, check for explicit agent-dependencies in frontmatter
+    if command.agent_dependencies and #command.agent_dependencies > 0 then
+      for _, agent_name in ipairs(command.agent_dependencies) do
+        agents_used[agent_name] = true
+      end
+    end
+
+    -- Also search for subagent_type: references in the content
+    local cmd_filepath = command.filepath
     if cmd_filepath and vim.fn.filereadable(cmd_filepath) == 1 then
       local content = vim.fn.readfile(cmd_filepath)
-      local agents_used = {}
 
       -- Search for subagent_type: references
       for _, line in ipairs(content) do
@@ -498,16 +509,16 @@ function M.build_agent_dependencies(commands, agents)
           agents_used[agent_type] = true
         end
       end
+    end
 
-      -- Convert to array and store
-      local agents_list = {}
-      for agent_name, _ in pairs(agents_used) do
-        table.insert(agents_list, agent_name)
-      end
+    -- Convert to array and store
+    local agents_list = {}
+    for agent_name, _ in pairs(agents_used) do
+      table.insert(agents_list, agent_name)
+    end
 
-      if #agents_list > 0 then
-        agent_deps[cmd_name] = agents_list
-      end
+    if #agents_list > 0 then
+      agent_deps[cmd_name] = agents_list
     end
   end
 
