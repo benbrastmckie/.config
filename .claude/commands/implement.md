@@ -64,122 +64,34 @@ If no plan file is provided, I will:
 
 ## Standards Discovery and Application
 
-Before implementing, I'll discover and apply project standards from CLAUDE.md:
+For standards discovery patterns, see:
+- [Upward CLAUDE.md Search](../docs/command-patterns.md#pattern-upward-claudemd-search)
+- [Standards Section Extraction](../docs/command-patterns.md#pattern-standards-section-extraction)
+- [Standards Application During Code Generation](../docs/command-patterns.md#pattern-standards-application-during-code-generation)
+- [Fallback Behavior](../docs/command-patterns.md#pattern-fallback-behavior)
 
-### Discovery Process
-1. **Locate CLAUDE.md**: Search upward from working directory and target directories
-2. **Check Subdirectory Standards**: Look for directory-specific CLAUDE.md files
-3. **Parse Relevant Sections**: Extract Code Standards, Testing Protocols
-4. **Handle Missing Standards**: Fall back to language-specific defaults
-
-### Standards Sections Used
-- **Code Standards**: Indentation, line length, naming conventions, error handling
-- **Testing Protocols**: Test commands, patterns, coverage requirements
-- **Documentation Policy**: Documentation requirements for new code
-- **Standards Discovery**: Discovery method, inheritance rules, fallback behavior
-
-### Application During Implementation
-Standards influence implementation as follows:
-
-#### Code Generation
-- **Indentation**: Generated code matches CLAUDE.md indentation spec (e.g., 2 spaces)
-- **Line Length**: Keep lines within specified limit (e.g., ~100 characters)
-- **Naming**: Follow naming conventions (e.g., snake_case vs camelCase)
-- **Error Handling**: Use specified error handling patterns (e.g., pcall for Lua)
-- **Module Organization**: Follow project structure patterns
-
-#### Testing
-- **Test Commands**: Use test commands from Testing Protocols (e.g., `:TestSuite`)
-- **Test Patterns**: Create test files matching patterns (e.g., `*_spec.lua`)
-- **Coverage**: Aim for coverage requirements from standards
-
-#### Documentation
-- **Inline Comments**: Document complex logic
-- **Module Headers**: Add purpose and API documentation
-- **README Updates**: Follow Documentation Policy requirements
-
-### Compliance Verification
-Before marking each phase complete and committing:
-- [ ] Code style matches CLAUDE.md specifications (indentation, line length)
-- [ ] Naming follows project conventions
-- [ ] Error handling matches project patterns
-- [ ] Tests follow testing standards and pass
-- [ ] Documentation meets policy requirements (if new modules created)
-
-### Fallback Behavior
-When CLAUDE.md not found or incomplete:
-1. **Use Language Defaults**: Apply sensible language-specific conventions
-2. **Suggest Creation**: Recommend running `/setup` to create CLAUDE.md
-3. **Graceful Degradation**: Continue with reduced standards enforcement
-4. **Document Limitations**: Note in commit message which standards were uncertain
-
-### Example: Standards Application
-
-```lua
--- From CLAUDE.md Code Standards:
--- Indentation: 2 spaces, expandtab
--- Naming: snake_case for variables/functions
--- Error Handling: Use pcall for operations that might fail
-
-local function process_user_data(user_id)  -- snake_case naming
-  local status, result = pcall(function()  -- pcall error handling
-    local data = database.query({          -- 2-space indentation
-      id = user_id,
-      fields = {"name", "email"}
-    })
-    return data
-  end)
-
-  if not status then                       -- error handling pattern
-    print("Error: " .. result)
-    return nil
-  end
-
-  return result
-end
-```
+**Implement-specific application**:
+- Apply Code Standards during code generation (indentation, naming, error handling)
+- Use Testing Protocols for test execution and validation
+- Follow Documentation Policy for new modules
+- Verify compliance before marking each phase complete
+- Document applied standards in commit messages
 
 ## Process
 
 ### Logger Initialization
 
-Before beginning implementation, source the adaptive planning logger library to enable observability:
+For logger setup pattern, see [Standard Logger Setup](../docs/command-patterns.md#pattern-standard-logger-setup).
 
-```bash
-# Source adaptive planning logger
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/../lib/adaptive-planning-logger.sh" ]; then
-  source "$SCRIPT_DIR/../lib/adaptive-planning-logger.sh"
-else
-  # Logger not found - define no-op functions so calls don't fail
-  echo "Warning: Adaptive planning logger not found. Logging disabled."
-  log_complexity_check() { :; }
-  log_test_failure_pattern() { :; }
-  log_scope_drift() { :; }
-  log_replan_invocation() { :; }
-  log_loop_prevention() { :; }
-  log_collapse_check() { :; }
-  log_collapse_invocation() { :; }
-fi
+**Implement-specific logging events**:
+- Complexity threshold evaluations (log_complexity_check)
+- Test failure pattern detection (log_test_failure_pattern)
+- Scope drift detections (log_scope_drift)
+- Replan invocations (log_replan_invocation)
+- Loop prevention enforcement (log_loop_prevention)
+- Collapse opportunity evaluations (log_collapse_check)
 
-# Create logs directory if needed
-LOGS_DIR="${CLAUDE_LOGS_DIR:-.claude/logs}"
-mkdir -p "$LOGS_DIR" 2>/dev/null || true
-chmod 700 "$LOGS_DIR" 2>/dev/null || true
-```
-
-**Log File Location**: `.claude/logs/adaptive-planning.log`
-**Format**: `[timestamp] LEVEL event_type: message | data=JSON`
-**Rotation**: 10MB max size, 5 files retained
-
-The logger provides observability for:
-- Complexity threshold evaluations
-- Test failure pattern detection
-- Scope drift detections
-- Replan invocations (success/failure)
-- Loop prevention enforcement
-- Collapse opportunity evaluations
-- Collapse invocations (manual and automatic)
+**Log file**: `.claude/logs/adaptive-planning.log` (10MB max, 5 files retained)
 
 ### Progressive Plan Support
 
@@ -313,108 +225,32 @@ Show the phase number, name, and all tasks that need to be completed.
 
 ### 1.5. Phase Complexity Analysis and Agent Selection
 
-Before implementing each phase, I will analyze its complexity to determine whether to delegate to a specialized agent or execute directly.
+For agent delegation patterns, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
 
-**Complexity Analysis Process:**
+**Implement-specific complexity scoring**:
 
-1. **Extract phase information** from the current phase:
-   - Phase name (e.g., "Phase 2: Refactor Architecture")
-   - All tasks in markdown checkbox format
-
-2. **Run complexity analyzer**:
+1. **Run complexity analyzer**:
    ```bash
    .claude/lib/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
    ```
 
-3. **Parse analyzer output** to get:
-   - `COMPLEXITY_SCORE`: 0-10 scale
-   - `SELECTED_AGENT`: Agent name or "direct"
-   - `THINKING_MODE`: Thinking directive (if applicable)
-   - `SPECIAL_CASE`: Special case category (if detected)
+2. **Agent selection thresholds**:
+   - **Direct execution** (score 0-2): Simple phases
+   - **code-writer** (score 3-5): Medium complexity
+   - **code-writer + think** (score 6-7): Medium-high complexity
+   - **code-writer + think hard** (score 8-9): High complexity
+   - **code-writer + think harder** (score 10+): Critical complexity
 
-**Agent Selection Logic:**
+3. **Special case overrides**:
+   - **doc-writer**: Documentation/README phases
+   - **test-specialist**: Testing phases
+   - **debug-specialist**: Debug/investigation phases
 
-The analyzer automatically selects the optimal approach:
-
-- **Direct execution** (score 0-2): Simple phases, I implement directly
-- **code-writer** (score 3-5): Medium complexity, basic delegation
-- **code-writer + think** (score 6-7): Medium-high complexity
-- **code-writer + think hard** (score 8-9): High complexity
-- **code-writer + think harder** (score 10+): Critical complexity
-
-**Special Case Overrides:**
-- **doc-writer**: Documentation/README phases (detected by keywords)
-- **test-specialist**: Testing phases (detected by keywords)
-- **debug-specialist**: Debug/investigation phases (detected by keywords)
-
-**Delegation Execution:**
-
-If `SELECTED_AGENT != "direct"`, I will:
-
-1. **Announce delegation** with complexity context:
-   ```
-   Delegating to {agent-name} agent (complexity score: {score}/10)
-   Phase: {phase-name}
-   Thinking mode: {mode}
-   ```
-
-2. **Invoke agent** using Task tool:
-   ```yaml
-   Task {
-     subagent_type: "general-purpose"
-     description: "Implement {short-phase-description} using {selected-agent} protocol"
-     prompt: "Read and follow the behavioral guidelines from:
-             /home/benjamin/.config/.claude/agents/{selected-agent}.md
-
-             You are acting as a {Selected Agent Name} with the tools and constraints
-             defined in that file.
-
-             {thinking-mode-directive}
-
-             Implementation Phase: {phase-name}
-
-             Tasks to complete:
-             {task-list}
-
-             Standards Compliance:
-             - Apply project standards from CLAUDE.md
-             - Follow language-specific style guides
-             - Maintain documentation requirements
-
-             Testing Requirements:
-             - Run tests after implementation (if tests exist)
-             - Verify all tasks completed
-             - Report any failures
-
-             Expected Output:
-             - All phase tasks completed
-             - Code following standards
-             - Tests passing (if applicable)
-             - Summary of changes made
-     "
-   }
-   ```
-
-3. **Monitor progress and process results**:
-   - **Progress Monitoring**: Agents emit `PROGRESS: <message>` markers during execution
-     - Example: `PROGRESS: Implementing login function in auth.lua...`
-     - Display progress markers to user as they arrive (if tool supports streaming)
-     - Progress provides real-time visibility into long-running operations
-   - **Result Processing**:
-     - Verify all tasks were completed
-     - Note any test failures or issues
-     - Use agent's output for subsequent testing and commit steps
-   - **Progress Handling**:
-     - Filter PROGRESS: lines from agent output
-     - Display them separately or inline with status indicators
-     - Do not include progress markers in final output summary
-
-**Direct Execution:**
-
-If `SELECTED_AGENT == "direct"`, I will:
-- Skip agent delegation
-- Implement the phase tasks directly following standards
-- Proceed immediately to implementation step
+**Delegation workflow**:
+- Announce delegation with complexity score
+- Invoke agent via Task tool with behavioral injection
+- Monitor PROGRESS markers for visibility
+- Collect results for testing and commit steps
 
 ### 1.4. Check Expansion Status
 
@@ -437,144 +273,31 @@ This is informational only and helps understand the current plan organization.
 
 ### 1.55. Proactive Expansion Check
 
-Before implementation begins, evaluate if the phase should be expanded using agent-based judgment:
+Before implementation, evaluate if phase should be expanded using agent-based judgment.
 
-**Evaluation Approach:**
+**Evaluation criteria**: Task complexity, scope breadth, interrelationships, parallel work potential, clarity vs detail tradeoff
 
-The primary agent (executing `/implement`) has the current phase in context. Rather than using shell script heuristics, I'll make an informed judgment about whether this phase would benefit from expansion to a separate file.
+**If expansion recommended**: Display formatted recommendation with rationale and `/expand phase` command
 
-**Evaluation Criteria:**
+**If not needed**: Continue silently to implementation
 
-I'll consider:
-- **Task complexity**: Not just count, but actual complexity of each task
-- **Scope breadth**: How many files, modules, or subsystems are touched
-- **Interrelationships**: Dependencies and connections between tasks
-- **Potential for parallel work**: Could tasks be better organized for parallel execution
-- **Clarity vs detail tradeoff**: Would expansion help or create unnecessary fragmentation
-
-**Evaluation Process:**
-
-```
-Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-expansion.md
-
-Current Phase [N]: [Phase Name]
-
-Tasks:
-[task list from phase]
-
-Follow the evaluation criteria and provide recommendation.
-```
-
-**If Expansion Recommended:**
-
-Display formatted recommendation:
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXPANSION RECOMMENDATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase [N]: [Phase Name]
-
-Rationale:
-  [Agent's 2-3 sentence rationale based on understanding the phase]
-
-Recommendation:
-  Consider expanding this phase to a separate file for better organization.
-
-Command:
-  /expand phase <plan-path> [N]
-
-Note: This is a recommendation only. You can expand now or continue
-with implementation. The phase can be expanded later if needed.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-**If No Expansion Needed:**
-
-Continue silently to implementation. No message needed for phases that are appropriately scoped.
-
-**Already Expanded:**
-
-If Step 1.4 detected the phase is already expanded, note that in the evaluation and skip recommendation.
-
-**Non-Blocking:**
-
-This check is purely informative. The user can choose to:
-- Expand now using the recommended command
-- Continue with implementation as-is
-- Expand later if phase proves complex during implementation
-
-**Relationship to Step 3.4 (Reactive Expansion):**
-
-- **Step 1.55 (Proactive)**: Evaluates BEFORE implementation based on plan content
-- **Step 3.4 (Reactive)**: Evaluates AFTER implementation based on actual complexity encountered
-- **Different contexts**: Proactive = plan preview, Reactive = implementation experience
-- **Different actions**: Proactive = recommendation only, Reactive = auto-revision via `/revise --auto-mode`
-- **Complementary**: Both serve different purposes in the workflow
+**Relationship to reactive expansion** (Step 3.4):
+- **Proactive** (1.55): Before implementation, recommendation only
+- **Reactive** (3.4): After implementation, auto-revision via `/revise --auto-mode`
 
 ### 1.6. Parallel Wave Execution
 
-After all phases in the wave are prepared (Steps 1-1.5 complete for each), execute the wave:
+For parallel agent invocation patterns, see [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation).
 
-**Single Phase Wave** (most common):
-- Execute the phase normally (agent delegation or direct)
-- Wait for completion
-- Proceed to testing and commit
+**Single Phase Wave**: Execute normally (agent delegation or direct), wait, proceed to testing
 
-**Multi-Phase Wave** (parallel execution):
-1. **Invoke all phases in parallel**:
-   - Create multiple Task tool calls in a single message
-   - Each phase gets its own agent invocation
-   - Example for Wave 2 with phases 2 and 3:
-   ```
-   Executing Wave 2 with 2 phases in parallel: Phases 2 and 3
+**Multi-Phase Wave**:
+1. Invoke all phases in parallel using multiple Task tool calls in one message
+2. Wait for wave completion, collect results, aggregate progress markers
+3. Check for failures: If any failed, stop execution and save checkpoint
+4. Proceed to wave testing and commit all changes together
 
-   [Multiple Task tool calls in this single message:]
-
-   Task { (Phase 2)
-     subagent_type: "general-purpose"
-     description: "Implement Phase 2 using code-writer protocol"
-     prompt: "Read and follow the behavioral guidelines from:
-             /home/benjamin/.config/.claude/agents/code-writer.md
-
-             You are acting as a Code Writer with the tools and constraints
-             defined in that file.
-
-             [Phase 2 tasks and context]"
-   }
-
-   Task { (Phase 3)
-     subagent_type: "general-purpose"
-     description: "Implement Phase 3 using code-writer protocol"
-     prompt: "Read and follow the behavioral guidelines from:
-             /home/benjamin/.config/.claude/agents/code-writer.md
-
-             You are acting as a Code Writer with the tools and constraints
-             defined in that file.
-
-             [Phase 3 tasks and context]"
-   }
-   ```
-
-2. **Wait for wave completion**:
-   - All phases in wave must complete before proceeding
-   - Collect results from each phase execution
-   - Aggregate any progress markers from parallel agents
-
-3. **Check for failures**:
-   - If any phase failed, stop execution
-   - Report which phases succeeded and which failed
-   - Save checkpoint with partial completion
-   - User can fix issues and resume
-
-4. **Proceed to wave testing and commit**:
-   - Run tests for all phases in wave
-   - Commit all changes from wave together
-   - Move to next wave
-
-**Parallelism Limits**:
-- Maximum 3 concurrent phases per wave
-- If wave has >3 phases, split into sub-waves of 3
-- Ensures system stability and manageable error handling
+**Parallelism limits**: Max 3 concurrent phases per wave, split into sub-waves if needed
 
 ### 2. Implementation
 Create or modify the necessary files according to the plan specifications.
@@ -590,302 +313,27 @@ Run tests by:
 
 ### 3.3. Enhanced Error Analysis (if tests fail)
 
-If tests fail, provide enhanced error messages with fix suggestions:
+**Workflow**: Capture error output → Run `.claude/lib/analyze-error.sh` → Display categorized error with location, context, suggestions, debug commands
 
-**Step 1: Capture Error Output**
-- Capture full test output including error messages
-- Identify failed tests and error locations
+**Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission
 
-**Step 2: Run Error Analysis**
-```bash
-# Analyze error output with enhanced error tool
-.claude/lib/analyze-error.sh "$ERROR_OUTPUT"
-```
-
-**Step 3: Display Enhanced Error Message**
-The enhanced analysis includes:
-- **Error Type**: Categorized (syntax, test_failure, file_not_found, import_error, null_error, timeout, permission)
-- **Location**: File and line number where error occurred
-- **Context**: 3 lines before and after error location
-- **Suggestions**: 2-3 specific, actionable fix suggestions
-- **Debug Commands**: Commands to investigate further
-
-**Step 4: Graceful Degradation**
-If tests fail:
-- Document what succeeded vs. what failed
-- Preserve partial progress
-- Suggest next steps:
-  - `/debug "<error description>"` for investigation
-  - Manual fixes based on suggestions
-  - Review recent changes with git diff
-
-**Example Enhanced Error Output:**
-```
-===============================================
-Enhanced Error Analysis
-===============================================
-
-Error Type: test_failure
-Location: tests/auth_spec.lua:42
-
-Context (around line 42):
-   39  setup(function()
-   40    session = mock_session_factory()
-   41  end)
-   42  it("should login with valid credentials", function()
-   43    local result = auth.login(session, "user", "pass")
-   44    assert.is_not_nil(result)
-   45  end)
-
-Suggestions:
-1. Check test setup - verify mocks and fixtures are initialized correctly
-2. Review test data - ensure test inputs match expected types and values
-3. Check for race conditions - add delays or synchronization if timing-sensitive
-4. Run test in isolation: :TestNearest to isolate the failure
-
-Debug Commands:
-- Investigate further: /debug "auth login test failing with nil result"
-- View file: nvim tests/auth_spec.lua
-- Run tests: :TestNearest or :TestFile
-===============================================
-```
+**Graceful degradation**: Document partial progress, suggest `/debug` or manual fixes
 
 ### 3.4. Adaptive Planning Detection
 
-After each phase implementation (successful or with errors), check if plan revision is needed.
+**Overview**: See [Adaptive Planning Features](#adaptive-planning-features) section for full details.
 
-**Step 1: Load Checkpoint and Check Replan Limits**
+**Workflow**:
+1. Load checkpoint and check replan limits (max 2 per phase)
+2. Detect triggers: Complexity (score >8 or >10 tasks), Test failure pattern (2+ consecutive), Scope drift (manual flag)
+3. Build revision context JSON and invoke `/revise --auto-mode`
+4. Parse response: Update checkpoint, increment counters, log replan history
+5. Loop prevention: Escalate to user if limit reached
 
-```bash
-# Load current checkpoint
-CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement "$PROJECT_NAME")
-REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r '.replanning_count // 0')
-PHASE_REPLAN_COUNT=$(echo "$CHECKPOINT" | jq -r ".replan_phase_counts.phase_${CURRENT_PHASE} // 0")
-
-# Log loop prevention check
-log_loop_prevention "$CURRENT_PHASE" "$PHASE_REPLAN_COUNT" "2"
-
-# Check replan limit
-if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
-  # Skip detection, log warning, escalate to user
-  SKIP_REPLAN=true
-fi
-```
-
-**Replan Limit Check:**
-- If `PHASE_REPLAN_COUNT >= 2`: Skip detection, log warning, escalate to user
-- Otherwise: Proceed with trigger detection
-
-**Step 2: Detect Triggers**
-
-Three trigger types are checked in order:
-
-**Trigger 1: Complexity Threshold Exceeded**
-
-Detection after successful phase completion:
-```bash
-# Calculate phase complexity score
-COMPLEXITY_RESULT=$(.claude/lib/analyze-phase-complexity.sh "$PHASE_NAME" "$TASK_LIST")
-COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.complexity_score')
-
-# Extract task count
-TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
-
-# Log complexity check (always, even if not triggered)
-log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "8" "$TASK_COUNT"
-
-# Check threshold
-if [ "$COMPLEXITY_SCORE" -gt 8 ] || [ "$TASK_COUNT" -gt 10 ]; then
-  TRIGGER_TYPE="expand_phase"
-  TRIGGER_REASON="Phase complexity score $COMPLEXITY_SCORE exceeds threshold 8 ($TASK_COUNT tasks)"
-fi
-```
-
-**Trigger 2: Test Failure Pattern**
-
-Detection after test failures (2+ consecutive failures in same phase):
-```bash
-# Track failure count in checkpoint
-if [ "$TEST_RESULT" = "failed" ]; then
-  PHASE_FAILURE_COUNT=$((PHASE_FAILURE_COUNT + 1))
-
-  # Log test failure pattern check
-  log_test_failure_pattern "$CURRENT_PHASE" "$PHASE_FAILURE_COUNT" "2"
-
-  if [ "$PHASE_FAILURE_COUNT" -ge 2 ]; then
-    TRIGGER_TYPE="add_phase"
-    TRIGGER_REASON="Two consecutive test failures in phase $CURRENT_PHASE"
-    # Analyze failure logs for missing dependencies
-    FAILURE_ANALYSIS=$(.claude/lib/analyze-error.sh "$ERROR_OUTPUT")
-  fi
-fi
-```
-
-**Trigger 3: Scope Drift Detection**
-
-Detection via manual flag or "out of scope" annotations:
-```bash
-# Manual trigger via flag
-if [ "$REPORT_SCOPE_DRIFT" = "true" ]; then
-  TRIGGER_TYPE="update_tasks"
-  TRIGGER_REASON="$SCOPE_DRIFT_DESCRIPTION"
-
-  # Log scope drift detection
-  log_scope_drift "$CURRENT_PHASE" "$SCOPE_DRIFT_DESCRIPTION"
-fi
-```
-
-**Step 3: Invoke /revise --auto-mode**
-
-If trigger detected and replan limit not exceeded:
-
-```bash
-# Build revision context JSON
-REVISION_CONTEXT=$(jq -n \
-  --arg type "$TRIGGER_TYPE" \
-  --argjson phase "$CURRENT_PHASE" \
-  --arg reason "$TRIGGER_REASON" \
-  --arg action "$SUGGESTED_ACTION" \
-  --argjson metrics "$TRIGGER_METRICS" \
-  '{
-    revision_type: $type,
-    current_phase: $phase,
-    reason: $reason,
-    suggested_action: $action,
-    complexity_metrics: $metrics,
-    test_failure_log: $failure_log,
-    insert_position: $insert_pos,
-    new_phase_name: $new_name
-  }')
-
-# Invoke /revise with auto-mode
-REVISE_RESULT=$(invoke_slash_command "/revise $PLAN_PATH --auto-mode --context '$REVISION_CONTEXT'")
-```
-
-**Step 4: Parse Revision Response**
-
-```bash
-# Check revision status
-REVISION_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
-
-if [ "$REVISION_STATUS" = "success" ]; then
-  # Update checkpoint with replan metadata
-  UPDATED_PLAN=$(echo "$REVISE_RESULT" | jq -r '.plan_file')
-  ACTION_TAKEN=$(echo "$REVISE_RESULT" | jq -r '.action_taken')
-
-  # Increment replan counters
-  REPLAN_COUNT=$((REPLAN_COUNT + 1))
-  PHASE_REPLAN_COUNT=$((PHASE_REPLAN_COUNT + 1))
-
-  # Add to replan history
-  REPLAN_EVENT=$(jq -n \
-    --argjson phase "$CURRENT_PHASE" \
-    --arg type "$TRIGGER_TYPE" \
-    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg reason "$TRIGGER_REASON" \
-    '{
-      phase: $phase,
-      type: $type,
-      timestamp: $timestamp,
-      reason: $reason,
-      action: $action_taken
-    }')
-
-  # Update checkpoint
-  .claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" \
-    --replan-count "$REPLAN_COUNT" \
-    --phase-replan-count "phase_${CURRENT_PHASE}=$PHASE_REPLAN_COUNT" \
-    --last-replan-reason "$TRIGGER_REASON" \
-    --add-replan-history "$REPLAN_EVENT"
-
-  # Log successful replan invocation
-  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "success" "$ACTION_TAKEN"
-
-  # Log and continue with updated plan
-  echo "Plan revised: $ACTION_TAKEN"
-  echo "Updated plan: $UPDATED_PLAN"
-
-  # Reload plan and continue implementation
-  PLAN_PATH="$UPDATED_PLAN"
-else
-  # Revision failed, log error and ask user
-  ERROR_MSG=$(echo "$REVISE_RESULT" | jq -r '.error_message')
-
-  # Log failed replan invocation
-  log_replan_invocation "$CURRENT_PHASE" "$TRIGGER_TYPE" "failure" "$ERROR_MSG"
-
-  echo "Warning: Adaptive planning revision failed"
-  echo "Error: $ERROR_MSG"
-  echo "Continuing with original plan"
-fi
-```
-
-**Step 5: Loop Prevention Safeguards**
-
-Maximum 2 replans per phase enforced:
-```bash
-if [ "$PHASE_REPLAN_COUNT" -ge 2 ]; then
-  echo "=========================================="
-  echo "Warning: Replanning Limit Reached"
-  echo "=========================================="
-  echo "Phase: $CURRENT_PHASE"
-  echo "Replans: $PHASE_REPLAN_COUNT (max 2)"
-  echo ""
-  echo "Replan History for Phase $CURRENT_PHASE:"
-  echo "$CHECKPOINT" | jq -r ".replan_history[] | select(.phase == $CURRENT_PHASE) | \
-    \"  - [\(.timestamp)] \(.type): \(.reason)\""
-  echo ""
-  echo "Recommendation: Manual review required"
-  echo "Consider using /revise interactively to adjust plan structure"
-  echo "=========================================="
-
-  # Skip further replanning for this phase
-  SKIP_REPLAN=true
-fi
-```
-
-**Trigger Details:**
-
-**Complexity Trigger Context:**
-```json
-{
-  "revision_type": "expand_phase",
-  "current_phase": 3,
-  "reason": "Phase complexity score 9.2 exceeds threshold 8 (12 tasks)",
-  "suggested_action": "Expand phase 3 into separate file",
-  "complexity_metrics": {
-    "tasks": 12,
-    "score": 9.2,
-    "estimated_duration": "4-5 sessions"
-  }
-}
-```
-
-**Test Failure Trigger Context:**
-```json
-{
-  "revision_type": "add_phase",
-  "current_phase": 2,
-  "reason": "Two consecutive test failures in authentication module",
-  "suggested_action": "Add prerequisite phase for dependency setup",
-  "test_failure_log": "Error: Module not found: crypto-utils...",
-  "insert_position": "before",
-  "new_phase_name": "Setup Dependencies"
-}
-```
-
-**Scope Drift Trigger Context:**
-```json
-{
-  "revision_type": "update_tasks",
-  "current_phase": 3,
-  "reason": "Migration script required before data model changes",
-  "suggested_action": "Add migration task before schema changes",
-  "task_operations": [
-    {"action": "insert", "position": 2, "task": "Create database migration script"}
-  ]
-}
-```
+**Trigger types**:
+- **expand_phase**: Complexity threshold exceeded
+- **add_phase**: Test failure pattern detected
+- **update_tasks**: Scope drift flagged
 
 ### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
 **Check if this phase was previously debugged:**
@@ -1238,203 +686,46 @@ If git commit fails after marking phase complete:
 
 ## Summary Generation
 
-After completing all phases, I'll:
+After completing all phases:
 
-### 1. Extract Specs Directory from Plan
-- Read the plan file
-- Extract "Specs Directory" from plan metadata
-- This is where the summary will be created (same directory as plan)
+### 1-3. Finalize Summary File
 
-### 2. Create Summary Directory
-- Location: `[specs-dir]/summaries/` (from plan metadata)
-- Create if it doesn't exist
+**Workflow**:
+- Check for partial summary: `[specs-dir]/summaries/NNN_partial.md`
+- If exists: Rename to `NNN_implementation_summary.md` and finalize
+- If not: Create new summary from scratch
+- Location: Extract specs-dir from plan metadata
+- Number: Match plan number (NNN)
 
-### 3. Finalize Summary File
-**Convert partial summary to final summary:**
+**Finalization updates**:
+- Remove "(PARTIAL)" from title
+- Change status: `in_progress` → `complete`
+- Update phases: `M/N` → `N/N`
+- Add completion date and lessons learned
+- Remove resume instructions
 
-**Step 1: Check for Partial Summary**
-- Look for `[specs-dir]/summaries/NNN_partial.md`
-- If exists: This is a resumed or interrupted implementation
+### 4-5. Registry and Cross-References
 
-**Step 2: Finalize Partial Summary**
-- Use Bash tool to rename: `NNN_partial.md` → `NNN_implementation_summary.md`
-- Use Edit tool to update the summary:
-  - Change title: Remove "(PARTIAL)"
-  - Update status: `in_progress` → `complete`
-  - Update "Phases Completed": `M/N` → `N/N`
-  - Add completion date
-  - Remove "Resume Instructions" section
-  - Add final "Lessons Learned" section
-
-**Step 3: Or Create New Summary (if no partial)**
-- If no partial summary exists: Use Write tool to create new summary
-- Format: `NNN_implementation_summary.md`
-- Number matches the plan number
-- Location: `[specs-dir]/summaries/NNN_implementation_summary.md`
-- Contains:
-  - Implementation overview
-  - Plan executed with link
-  - Reports referenced (if any)
-  - Key changes made
-  - Test results
-  - Lessons learned
-
-### 4. Update SPECS.md Registry
-- Increment "Summaries" count for this project
+**Update SPECS.md Registry**:
+- Increment "Summaries" count
 - Update "Last Updated" date
-- Use Edit tool to update SPECS.md
 
-### 5. Create Bidirectional Cross-References
-**Add backward links from plan and reports to summary:**
-
-**Step 1: Update Implementation Plan**
-- Use Edit tool to append "## Implementation Summary" section to plan file:
-  ```markdown
-  ## Implementation Summary
-  - **Status**: Complete
-  - **Date**: [YYYY-MM-DD]
-  - **Summary**: [link to specs/summaries/NNN_implementation_summary.md]
-  ```
-- Place at end of plan file
-
-**Step 2: Update Research Reports (if any)**
-- Extract research report paths from plan metadata
-- For each report:
-  - Use Edit tool to append "## Implementation Status" section:
-    ```markdown
-    ## Implementation Status
-    - **Status**: Implemented
-    - **Date**: [YYYY-MM-DD]
-    - **Plan**: [link to specs/plans/NNN.md]
-    - **Summary**: [link to specs/summaries/NNN_implementation_summary.md]
-    ```
-  - Place at end of report file
-
-**Step 3: Verify Bidirectional Links**
-- Use Read tool to verify each file was updated
-- Check that plan has "Implementation Summary" section
-- Check that each report (if any) has "Implementation Status" section
-- If verification fails: Log warning but continue (don't block)
-
-**Edge Cases:**
-- If plan/report file not writable: Log warning, continue
-- If file already has implementation section: Update existing with Edit tool, don't duplicate
-- If no research reports: Skip Step 2
-
-### Summary Format
-```markdown
-# Implementation Summary: [Feature Name]
-
-## Metadata
-- **Date Completed**: [YYYY-MM-DD]
-- **Specs Directory**: [path/to/specs/]
-- **Summary Number**: [NNN]
-- **Plan**: [Link to plan file]
-- **Research Reports**: [Links to reports used]
-- **Phases Completed**: [N/N]
-
-## Implementation Overview
-[Brief description of what was implemented]
-
-## Key Changes
-- [Major change 1]
-- [Major change 2]
-
-## Test Results
-[Summary of test outcomes]
-
-## Report Integration
-[How research informed implementation]
-
-## Lessons Learned
-[Insights from implementation]
-```
+**Bidirectional links**:
+- Add "## Implementation Summary" section to plan file
+- Add "## Implementation Status" section to each research report
+- Verify all links created (non-blocking if fails)
 
 ### 6. Create Pull Request (Optional)
 
-**When to Create PR:**
-- If `--create-pr` flag is provided, OR
-- If project CLAUDE.md has GitHub Integration configured with auto-PR for branch pattern
+For PR creation workflow, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
 
-**Prerequisites Check:**
-Before invoking github-specialist agent:
-```bash
-# Check if gh CLI is available and authenticated
-if ! command -v gh &>/dev/null; then
-  echo "Note: gh CLI not installed. Skipping PR creation."
-  echo "Install: brew install gh (or equivalent)"
-  exit 0
-fi
-
-if ! gh auth status &>/dev/null; then
-  echo "Note: gh CLI not authenticated. Skipping PR creation."
-  echo "Run: gh auth login"
-  exit 0
-fi
-```
-
-**Invoke github-specialist Agent:**
-
-Use Task tool with behavioral injection:
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Create PR for completed implementation using github-specialist protocol"
-  prompt: |
-    Read and follow the behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/github-specialist.md
-
-    You are acting as a GitHub Specialist Agent with the tools and constraints
-    defined in that file.
-
-    Create Pull Request Task:
-    - Plan: [absolute path to plan file]
-    - Branch: [current branch name from git]
-    - Base: main (or master, detect from repo)
-    - Summary: [absolute path to implementation summary]
-
-    PR Description Should Include:
-    - Implementation overview from summary file
-    - All N phases completed with links to plan
-    - Test results: All passing
-    - Research reports referenced (if any from plan metadata)
-    - File changes summary from git diff --stat
-
-    Follow PR template structure from github-specialist agent.
-
-    Output: PR URL and number for user
-}
-```
-
-**Capture PR URL:**
-After agent completes:
-- Extract PR URL from agent output
-- Update implementation summary with PR link
-- Update plan file Implementation Summary section with PR link
-
-**Example Update to Summary:**
-```markdown
-## Pull Request
-- **PR**: https://github.com/user/repo/pull/123
-- **Created**: [YYYY-MM-DD]
-- **Status**: Open
-```
-
-**Graceful Degradation:**
-If PR creation fails:
-- Log the error from agent
-- Provide manual gh pr create command
-- Continue without blocking (implementation is complete)
-- Summary file still valid without PR link
-
-**Example Manual Command:**
-```bash
-gh pr create \
-  --title "feat: [feature name from plan]" \
-  --body "$(cat pr_description.txt)" \
-  --base main
-```
+**Implement-specific PR workflow**:
+- Trigger: `--create-pr` flag or CLAUDE.md auto-PR config
+- Prerequisites: Check gh CLI installed and authenticated
+- Agent: Invoke github-specialist with behavioral injection
+- Content: Implementation overview, phases, test results, reports, file changes
+- Update: Add PR link to summary and plan files
+- Graceful degradation: Provide manual gh command if fails
 
 ## Finding the Implementation Plan
 
@@ -1559,88 +850,19 @@ For complex, multi-phase implementations requiring specialized expertise, use `/
 
 ## Checkpoint Detection and Resume
 
-Before starting implementation, I'll check for existing checkpoints that might indicate an interrupted implementation.
+For checkpoint management patterns, see [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-management-patterns).
 
-### Step 1: Check for Existing Checkpoint
+**Implement-specific checkpoint workflow**:
 
-```bash
-# Load most recent implement checkpoint
-CHECKPOINT=$(.claude/lib/load-checkpoint.sh implement 2>/dev/null || echo "")
-```
+1. **Check for existing checkpoint**: Load most recent `implement` checkpoint
+2. **Interactive resume prompt**: If found, present options (resume/start fresh/view/delete)
+3. **Resume state**: Restore plan_path, current_phase, completed_phases
+4. **Save after each phase**: After git commit, save checkpoint with progress state
+5. **Cleanup on completion**: Delete checkpoint (success) or archive to failed/ (failure)
 
-### Step 2: Interactive Resume Prompt (if checkpoint found)
-
-If a checkpoint exists for this plan, I'll present interactive options:
-
-```
-Found existing checkpoint for implementation
-Plan: [plan_path]
-Created: [created_at] ([age] ago)
-Progress: Phase [current_phase] of [total_phases] completed
-Last test status: [tests_passing]
-
-Options:
-  (r)esume - Continue from Phase [current_phase + 1]
-  (s)tart fresh - Delete checkpoint and restart from beginning
-  (v)iew details - Show checkpoint contents
-  (d)elete - Remove checkpoint without starting
-
-Choice [r/s/v/d]:
-```
-
-### Step 3: Resume Implementation State (if user chooses resume)
-
-If user selects resume:
-1. Load plan_path from checkpoint
-2. Restore current_phase, completed_phases
-3. Skip to next incomplete phase
-4. Continue implementation from that point
-
-### Step 4: Save Checkpoints After Each Phase
-
-After each phase completes successfully (after git commit):
-
-```bash
-# Build checkpoint state
-STATE_JSON=$(cat <<EOF
-{
-  "workflow_description": "Implement [plan-name]",
-  "plan_path": "$PLAN_PATH",
-  "current_phase": $CURRENT_PHASE,
-  "total_phases": $TOTAL_PHASES,
-  "completed_phases": [$COMPLETED_PHASES_ARRAY],
-  "status": "in_progress",
-  "tests_passing": true
-}
-EOF
-)
-
-# Save checkpoint
-PROJECT_NAME=$(basename "$PLAN_PATH" .md | sed 's/^[0-9]*_//')
-.claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
-```
-
-### Step 5: Cleanup on Completion
-
-On successful implementation completion:
-```bash
-# Delete checkpoint file
-rm .claude/data/checkpoints/implement_${PROJECT_NAME}_*.json
-```
-
-On implementation failure:
-```bash
-# Update checkpoint with error info, archive to failed/
-STATE_JSON=$(cat <<EOF
-{
-  "status": "failed",
-  "last_error": "$ERROR_MESSAGE",
-  "failed_phase": $CURRENT_PHASE
-}
-EOF
-)
-.claude/lib/save-checkpoint.sh implement "$PROJECT_NAME" "$STATE_JSON"
-mv .claude/data/checkpoints/implement_${PROJECT_NAME}_*.json .claude/data/checkpoints/failed/
-```
+**Checkpoint state fields**:
+- workflow_description, plan_path, current_phase, total_phases
+- completed_phases, status, tests_passing
+- replan_count, phase_replan_count, replan_history (for adaptive planning)
 
 Let me start by finding your implementation plan.

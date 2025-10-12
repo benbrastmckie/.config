@@ -107,206 +107,32 @@ $1 (or current directory)
 
 ## Argument Parsing
 
-I'll detect the mode based on arguments:
+### Mode Detection
 
-### Standard Mode
-- No flags: `/setup` or `/setup /path/to/project`
-- Behavior: Generate or update CLAUDE.md with extraction workflow
+| Mode | Flags | Arguments | Behavior | Validation |
+|------|-------|-----------|----------|------------|
+| Standard | (none) | `[project-dir]` | Generate/update CLAUDE.md | None |
+| Cleanup | `--cleanup [--dry-run] [--threshold VALUE]` | `[project-dir]` | Extract sections to optimize | `--dry-run` requires `--cleanup` |
+| Validation | `--validate` | `[project-dir]` | Validate structure | None |
+| Analysis | `--analyze` | `[project-dir]` | Generate discrepancy report | Conflicts with `--cleanup` |
+| Report Application | `--apply-report <path>` | `[project-dir]` | Apply report decisions | Path must exist |
 
-### Cleanup Mode
-- `--cleanup` flag present: `/setup --cleanup` or `/setup --cleanup /path/to/project`
-- Arguments can be in any order: `/setup --cleanup` or `/setup /path --cleanup`
-- Behavior: Run extraction optimization, focus on reducing CLAUDE.md bloat
+**Priority**: --apply-report > --cleanup > --validate > --analyze > standard
 
-### Analysis Mode
-- `--analyze` flag present: `/setup --analyze` or `/setup --analyze /path/to/project`
-- Arguments can be in any order: `/setup --analyze` or `/setup /path --analyze`
-- Behavior: Run standards analysis, generate report, never modify CLAUDE.md
-
-### Report Application Mode
-- `--apply-report <path>` flag present: `/setup --apply-report specs/reports/NNN_report.md`
-- Can include directory: `/setup --apply-report report.md /path/to/project`
-- Arguments can be in any order
-- Behavior: Parse report, backup CLAUDE.md, update with reconciled standards
-
-### Implementation Logic
-```
-Priority: --apply-report > --cleanup > --validate > --analyze > standard
-
-if "--apply-report" in arguments:
-    report_path = argument after "--apply-report"
-    project_dir = remaining non-flag argument or current directory
-    run report_application_mode(report_path, project_dir)
-elif "--cleanup" in arguments:
-    project_dir = remaining non-flag argument or current directory
-    run cleanup_mode(project_dir)
-elif "--validate" in arguments:
-    project_dir = remaining non-flag argument or current directory
-    run validation_mode(project_dir)
-elif "--analyze" in arguments:
-    project_dir = remaining non-flag argument or current directory
-    run analysis_mode(project_dir)
-else:
-    project_dir = $1 or current directory
-    run standard_mode(project_dir)
-```
+Arguments can be in any order. Project directory defaults to current directory if not specified.
 
 ### Error Handling
 
-**Invalid Flag Combinations**:
+**Flag Validation**:
+| Error | Condition | Message |
+|-------|-----------|---------|
+| Mutually exclusive modes | `--cleanup` + `--analyze` or other combinations | "Cannot use both [flag1] and [flag2] together. Choose one mode." |
+| Missing argument | `--apply-report` without path | "--apply-report requires a report file path" |
+| File not found | Report path invalid | "Report file not found: [path]. Run /setup --analyze to generate one." |
+| Invalid threshold | Unknown threshold value | "Invalid threshold: [value]. Valid: aggressive, balanced, conservative, manual" |
+| Incompatible flags | `--dry-run` without `--cleanup` | "--dry-run requires --cleanup mode" |
 
-```bash
-# Error: Multiple mode flags
-/setup --cleanup --analyze
-```
-**Output**:
-```
-Error: Cannot use both --cleanup and --analyze flags together
-
-These modes are mutually exclusive:
-  --cleanup: Optimize CLAUDE.md by extracting sections
-  --analyze: Analyze standards discrepancies
-
-Choose one mode:
-  /setup --cleanup    # For cleanup/optimization
-  /setup --analyze    # For standards analysis
-```
-
-```bash
-# Error: --dry-run without --cleanup
-/setup --dry-run
-```
-**Output**:
-```
-Error: --dry-run flag requires --cleanup mode
-
-Dry-run previews extraction changes, which only happens in cleanup mode.
-
-Correct usage:
-  /setup --cleanup --dry-run    # Preview extraction
-
-For other modes:
-  /setup                        # Standard mode (no dry-run needed)
-  /setup --analyze              # Analysis mode (read-only already)
-```
-
-```bash
-# Error: --dry-run with --analyze
-/setup --analyze --dry-run
-```
-**Output**:
-```
-Error: --dry-run is not compatible with --analyze mode
-
-Analysis mode is already read-only and never modifies files.
-Dry-run is only for preview extraction in cleanup mode.
-
-Correct usage:
-  /setup --analyze              # Analysis is already safe/read-only
-  /setup --cleanup --dry-run    # Preview extraction changes
-```
-
-**Missing Arguments**:
-
-```bash
-# Error: --apply-report without path
-/setup --apply-report
-```
-**Output**:
-```
-Error: --apply-report requires a report file path
-
-Usage: /setup --apply-report <report-path> [project-directory]
-
-Examples:
-  /setup --apply-report specs/reports/035_report.md
-  /setup --apply-report report.md /path/to/project
-
-Tip: Reports are usually in specs/reports/ directory
-     Find them with: ls specs/reports/*_report.md
-```
-
-**File Not Found**:
-
-```bash
-# Error: Report file doesn't exist
-/setup --apply-report nonexistent_report.md
-```
-**Output**:
-```
-Error: Report file not found: nonexistent_report.md
-
-Check the file path and try again.
-
-To find available reports:
-  ls specs/reports/*_report.md
-  ls specs/reports/*_standards_analysis_report.md
-
-To generate a new report:
-  /setup --analyze    # Creates new analysis report
-```
-
-**Invalid Threshold**:
-
-```bash
-# Error: Unknown threshold value
-/setup --cleanup --threshold unknown
-```
-**Output**:
-```
-Error: Invalid threshold value: 'unknown'
-
-Valid threshold values:
-  aggressive   - Extract sections >20 lines
-  balanced     - Extract sections >30 lines (default)
-  conservative - Extract sections >50 lines
-  manual       - Prompt for each section
-
-Examples:
-  /setup --cleanup --threshold aggressive
-  /setup --cleanup --threshold conservative
-```
-
-**Helpful Suggestions**:
-
-When users make common mistakes, provide helpful guidance:
-
-```bash
-# Typo in flag
-/setup --clean
-```
-**Output**:
-```
-Warning: Unknown flag: --clean
-
-Did you mean:
-  /setup --cleanup         # Optimize CLAUDE.md
-  /cleanup                 # Shorthand for --cleanup
-
-Available flags:
-  --cleanup               # Optimization mode
-  --analyze               # Standards analysis mode
-  --apply-report <path>   # Apply analysis report
-  --dry-run               # Preview (with --cleanup only)
-
-Run /setup --help for full documentation
-```
-
-```bash
-# User wants to optimize but doesn't know command
-/setup optimize
-```
-**Output**:
-```
-Note: 'optimize' is not a recognized flag
-
-To optimize CLAUDE.md, use:
-  /setup --cleanup         # Run cleanup/optimization
-  /setup --cleanup --dry-run    # Preview first
-
-Or use the shorthand:
-  /cleanup                 # Same as /setup --cleanup
-```
+**Error Suggestions**: For common typos and mistakes, suggest closest match (--clean → --cleanup), show correct syntax, and include relevant help text with available flags.
 
 ## Standards for Commands
 
@@ -535,190 +361,54 @@ Proceed with extractions? [Y/n/customize]
 ## Extraction Preferences
 [Shared by: Standard Mode (with auto-detection), Cleanup Mode]
 
-These preferences control how section extraction behaves across all modes that use extraction functionality.
+Control extraction behavior across all modes that use extraction functionality.
 
 ### Threshold Settings
 
-**Extraction Thresholds**:
-- **Aggressive** (>20 lines): Extract most detailed content, maximize conciseness
-  - Use when: CLAUDE.md is very large (>300 lines)
-  - Effect: More sections extracted, smaller main file
-  - Example: Extract sections with 20+ lines
+| Threshold | Line Trigger | Use Case | Effect | Usage |
+|-----------|--------------|----------|--------|-------|
+| Aggressive | >20 lines | Very large CLAUDE.md (>300 lines) | Maximum extraction, smallest main file | `--threshold aggressive` |
+| Balanced (default) | >30 lines | Moderate CLAUDE.md (200-300 lines) | Extract significantly detailed sections | `--cleanup` (default) |
+| Conservative | >50 lines | Manageable CLAUDE.md (150-250 lines) | Minimal extraction, keep content inline | `--threshold conservative` |
+| Manual | N/A | Full extraction control | Interactive choice for each section | `--threshold manual` |
 
-- **Balanced** (>30 lines, default): Standard extraction for typical projects
-  - Use when: CLAUDE.md is moderately large (200-300 lines)
-  - Effect: Extract only significantly detailed sections
-  - Example: Extract sections with 30+ lines
+### Directory and Naming Preferences
 
-- **Conservative** (>50 lines): Keep more content inline, extract only very large sections
-  - Use when: CLAUDE.md is somewhat large (150-250 lines) but still manageable
-  - Effect: Fewer extractions, preserve more in main file
-  - Example: Extract only sections with 50+ lines
+| Preference | Options | Default | Usage |
+|------------|---------|---------|-------|
+| Target directory | `docs/` (default), custom path, per-type | `docs/` | `--target-dir=documentation/` |
+| File naming | CAPS.md, lowercase.md, Mixed.md | CAPS.md | `--naming lowercase` |
+| Link descriptions | Include/omit descriptions | Include | `--links minimal` |
+| Quick references | Include/omit quick refs | Include | `--links descriptions-only` |
 
-- **Manual**: Prompt for each section regardless of size
-  - Use when: You want full control over every extraction decision
-  - Effect: Interactive choice for all sections
-  - Example: Choose each section individually
+**Link Style Examples**:
+```markdown
+# With descriptions (default)
+See [Testing Standards](docs/TESTING.md) for test configuration, commands, and CI/CD.
 
-**Setting Threshold**:
-```bash
-# Use default (balanced, >30 lines)
-/setup --cleanup
+# Minimal
+See [Testing Standards](docs/TESTING.md).
 
-# Use aggressive threshold
-/setup --cleanup --threshold aggressive
-
-# Use conservative threshold
-/setup --cleanup --threshold conservative
-
-# Manual selection
-/setup --cleanup --threshold manual
-```
-
-### Directory Structure Preferences
-
-**Target Directory**:
-- **Default**: `docs/` - Standard documentation directory
-- **Custom**: Specify alternative directory
-- **Per-Type**: Different directories for different content types
-
-**Examples**:
-```bash
-# Default: Extract to docs/
-/setup --cleanup
-
-# Custom directory
-/setup --cleanup --target-dir=documentation/
-
-# Per-type directories
-/setup --cleanup --test-dir=tests/docs/ --style-dir=docs/style/
-```
-
-**File Naming Convention**:
-- **CAPS.md** (default): `TESTING.md`, `CODE_STYLE.md`
-  - Pro: Stands out, matches CLAUDE.md style
-  - Con: Can be shouty in directory listings
-
-- **lowercase.md**: `testing.md`, `code-style.md`
-  - Pro: Conventional, matches most projects
-  - Con: Less distinctive
-
-- **Mixed Case**: `Testing.md`, `CodeStyle.md`
-  - Pro: Balance of readability and convention
-  - Con: Inconsistent capitalization rules
-
-**Setting Naming**:
-```bash
-# Default: CAPS.md
-/setup --cleanup
-
-# Lowercase
-/setup --cleanup --naming lowercase
-
-# Mixed case
-/setup --cleanup --naming mixed
-```
-
-### Link Style Preferences
-
-**Include Descriptions**:
-- **Yes** (default): Add brief description with each link
-  ```markdown
-  ## Testing Standards
-  See [Testing Standards](docs/TESTING.md) for detailed test configuration, commands, and CI/CD setup.
-  ```
-
-- **No**: Minimal link only
-  ```markdown
-  ## Testing Standards
-  See [Testing Standards](docs/TESTING.md).
-  ```
-
-**Quick Reference Sections**:
-- **Yes** (default): Add quick reference before link
-  ```markdown
-  ## Testing Standards
-  Quick reference:
-  - Run tests: `npm test`
-  - Coverage: `npm run coverage`
-
-  See [Testing Standards](docs/TESTING.md) for complete documentation.
-  ```
-
-- **No**: Just link, no quick reference
-  ```markdown
-  ## Testing Standards
-  See [Testing Standards](docs/TESTING.md) for complete documentation.
-  ```
-
-**Setting Link Style**:
-```bash
-# Default: Descriptions and quick references
-/setup --cleanup
-
-# Minimal links
-/setup --cleanup --links minimal
-
-# Descriptions only (no quick refs)
-/setup --cleanup --links descriptions-only
-
-# Quick refs only (no descriptions)
-/setup --cleanup --links quick-refs-only
-```
-
-### Preference Persistence (Future Enhancement)
-
-**Configuration File** (not yet implemented):
-```yaml
-# .claude/config/extraction.yml
-extraction:
-  threshold: balanced  # aggressive, balanced, conservative, manual
-  target_dir: docs/
-  naming: caps         # caps, lowercase, mixed
-  links:
-    descriptions: true
-    quick_refs: true
-  auto_detect:
-    enabled: true
-    prompt_threshold: 200
-```
-
-**Loading Preferences**:
-1. Default preferences (built-in)
-2. Project config file (`.claude/config/extraction.yml`)
-3. Global config file (`~/.claude/extraction.yml`)
-4. Command-line flags (highest priority)
-
-**Saving Current Preferences**:
-```bash
-# Save current session preferences
-/setup --cleanup --save-prefs
-
-# Creates .claude/config/extraction.yml with current settings
+# With quick reference (default)
+Quick reference: Run tests with `npm test`
+See [Testing Standards](docs/TESTING.md) for complete documentation.
 ```
 
 ### Applying Preferences
 
-**In Standard Mode** (with auto-detection):
-```bash
-# When prompted, preferences determine behavior
-/setup
-# Bloat detected → Prompt appears
-# User chooses [Y]es → Extraction uses configured preferences
-```
+**Standard Mode**: Preferences apply when user accepts cleanup prompt
+**Cleanup Mode**: Preferences always applied
+**Preview**: Use `--dry-run` to see impact before applying
 
-**In Cleanup Mode**:
 ```bash
-# Preferences always applied
-/setup --cleanup --threshold aggressive
-# Uses aggressive threshold throughout
-```
+# Default balanced extraction
+/setup --cleanup
 
-**Preview with Preferences**:
-```bash
-# Dry-run shows impact of preferences
+# Aggressive extraction with custom directory
+/setup --cleanup --threshold aggressive --target-dir=documentation/
+
+# Preview conservative extraction
 /setup --cleanup --dry-run --threshold conservative
-# Shows what would be extracted with conservative threshold
 ```
 
 ## Cleanup Mode Workflow
@@ -791,161 +481,47 @@ Done: Optimized CLAUDE.md
 
 ## Bloat Detection Algorithm
 
-### When Detection Runs
-
-Auto-detection runs in **Standard Mode** when:
-- User runs `/setup` (no flags)
-- CLAUDE.md file exists in project directory
+Runs in **Standard Mode** when `/setup` is invoked with no flags and CLAUDE.md exists.
 
 ### Detection Thresholds
 
-**Threshold 1: Total Line Count**
-```
-if CLAUDE.md total_lines > 200:
-    bloat_detected = True
-    reason = f"File is {total_lines} lines (threshold: 200)"
-```
+**Combined Logic**: `bloat_detected = (total_lines > 200) OR (any section > 30 lines)`
 
-**Threshold 2: Oversized Sections**
-```
-for section in CLAUDE.md.sections:
-    if section.line_count > 30:
-        bloat_detected = True
-        oversized_sections.append(section)
-        reason = f"Section '{section.name}' is {section.line_count} lines (threshold: 30)"
-```
+| Threshold | Condition | Example |
+|-----------|-----------|---------|
+| Total line count | File >200 lines | CLAUDE.md is 248 lines (threshold: 200) |
+| Oversized sections | Any section >30 lines | Testing Standards: 52 lines (threshold: 30) |
 
-**Combined Logic**:
-```
-bloat_detected = (total_lines > 200) OR (any section > 30 lines)
-```
+### User Prompt and Response
 
-### Interactive Prompt
+When bloat detected, prompts: "CLAUDE.md is 248 lines. Optimize first? [Y/n/c]"
 
-When bloat is detected:
-
-```
-┌─────────────────────────────────────────────────────┐
-│ CLAUDE.md Optimization Opportunity                  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  CLAUDE.md is 248 lines (threshold: 200 lines)     │
-│                                                     │
-│  Oversized sections detected:                       │
-│  • Testing Standards (52 lines)                     │
-│  • Code Style Guide (38 lines)                      │
-│  • Architecture Diagram (44 lines)                  │
-│                                                     │
-│  Optimize before continuing with setup?             │
-│                                                     │
-│  [Y]es - Extract sections now (recommended)         │
-│  [N]o  - Skip optimization, continue setup          │
-│  [C]ustomize - Choose specific sections             │
-│                                                     │
-└─────────────────────────────────────────────────────┘
-
-Your choice:
-```
-
-### User Response Handling
-
-**[Y]es - Run Optimization**:
-```
-1. Run cleanup extraction (same as /setup --cleanup)
-2. User selects what to extract interactively
-3. Create auxiliary files
-4. Update CLAUDE.md with links
-5. Report: "Optimized CLAUDE.md: 248 → 156 lines (37% reduction)"
-6. Continue with standard setup
-```
-
-**[N]o - Skip Optimization**:
-```
-1. Log: "Skipping CLAUDE.md optimization (user declined)"
-2. Continue with standard setup
-3. (User can run /setup --cleanup later if needed)
-```
-
-**[C]ustomize - Custom Selection**:
-```
-1. Show all oversized sections
-2. User checks/unchecks each section
-3. Extract only selected sections
-4. Continue with standard setup
-```
+| Response | Action | Result |
+|----------|--------|--------|
+| [Y]es | Run cleanup extraction | Extract sections → Update links → Continue setup |
+| [N]o | Skip optimization | Continue standard setup (can run /setup --cleanup later) |
+| [C]ustomize | Show all oversized sections | User selects specific sections → Extract → Continue setup |
 
 ### Opt-Out Mechanisms
 
-**Environment Variable**:
 ```bash
-# Disable auto-detection globally
+# Environment variable (global disable)
 export SKIP_CLEANUP_PROMPT=1
-/setup
-```
 
-**Command Flag**:
-```bash
-# Disable for single invocation
+# Command flag (single invocation)
 /setup --no-cleanup-prompt
-```
 
-**Configuration File** (future enhancement):
-```yaml
+# Configuration file (future)
 # .claude/config.yml
-cleanup:
-  auto_detect: false
-  threshold_lines: 250
-  threshold_section: 40
+# cleanup:
+#   auto_detect: false
 ```
 
-### State Preservation
-
-After cleanup (if accepted):
-- Original setup goal continues
-- Extraction changes are committed
-- Logging shows: "Phase 1: Cleanup → Phase 2: Setup"
-- User sees both cleanup and setup results
-
-### Example Flow
-
-```
-User runs: /setup
-     ↓
-Analyze CLAUDE.md:
-  - 248 lines total ✗ (>200)
-  - Testing Standards: 52 lines ✗ (>30)
-  - Code Style: 38 lines ✗ (>30)
-     ↓
-Bloat detected: True
-     ↓
-Prompt user: "Optimize first? [Y/n/c]"
-     ↓
-User chooses [Y]es
-     ↓
-Run cleanup extraction:
-  - Extract Testing Standards → docs/TESTING.md
-  - Extract Code Style → docs/CODE_STYLE.md
-  - Update CLAUDE.md with links
-     ↓
-Report: "Optimized CLAUDE.md: 248 → 156 lines"
-     ↓
-Continue standard setup:
-  - Generate standards
-  - Validate structure
-  - Complete setup
-     ↓
-Done: Setup complete (with cleanup)
-```
+After cleanup: Original setup goal continues, extraction committed, user sees both cleanup and setup results.
 
 ## Extraction Preview (--dry-run)
 
-### Purpose
-
-The `--dry-run` flag lets you preview extraction changes without modifying any files. This is helpful for:
-- Planning which sections to extract
-- Understanding the impact before committing
-- Reviewing changes with team members
-- Learning what the extraction process would do
+Preview extraction changes without modifying files. Helpful for planning, understanding impact, and team review.
 
 ### Usage
 
@@ -953,1138 +529,243 @@ The `--dry-run` flag lets you preview extraction changes without modifying any f
 # Preview cleanup extraction
 /setup --cleanup --dry-run [project-directory]
 
-# Works with cleanup mode only
+# Requires --cleanup mode
 /setup --dry-run              # Error: requires --cleanup
 /setup --analyze --dry-run    # Error: dry-run only with cleanup
 ```
 
-### Preview Output Format
+### Preview Output
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Extraction Preview (Dry-Run Mode)                           │
-│ No files will be modified                                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ Current State:                                              │
-│   CLAUDE.md: 248 lines                                      │
-│                                                             │
-│ Extraction Opportunities:                                   │
-│                                                             │
-│ 1. Testing Standards (52 lines)                             │
-│    → Target: docs/TESTING.md                                │
-│    → Rationale: Detailed test configuration (>30 lines)     │
-│    → Impact: -52 lines (-21%)                               │
-│    → Content: Test commands, patterns, CI/CD setup          │
-│                                                             │
-│ 2. Code Style Guide (38 lines)                              │
-│    → Target: docs/CODE_STYLE.md                             │
-│    → Rationale: Detailed formatting rules (>30 lines)       │
-│    → Impact: -38 lines (-15%)                               │
-│    → Content: Indentation, naming, linting rules            │
-│                                                             │
-│ 3. Architecture Diagram (44 lines)                          │
-│    → Target: docs/ARCHITECTURE.md                           │
-│    → Rationale: Complex ASCII diagram (>30 lines)           │
-│    → Impact: -44 lines (-18%)                               │
-│    → Content: System design, component relationships        │
-│                                                             │
-│ After Extraction:                                           │
-│   CLAUDE.md: 114 lines (-134 lines, -54% reduction)        │
-│   New files: 3 auxiliary files in docs/                     │
-│   Links: 3 new references added to CLAUDE.md                │
-│                                                             │
-│ Summary:                                                    │
-│   ✓ Total reduction: 134 lines (54%)                        │
-│   ✓ Extracted sections: 3                                   │
-│   ✓ New documentation: 3 files                              │
-│   ✓ Navigation: Clear links preserved                       │
-│                                                             │
-│ Run without --dry-run to apply these changes.               │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+Shows for each extraction candidate:
+- Section name, current line count, target file
+- Rationale (why it qualifies for extraction)
+- Impact (lines saved, % reduction)
+- Content summary
 
-### Interactive Preview
+**Interactive Selection**: Even in dry-run, you can toggle selections, preview different combinations, and see updated impact calculations.
 
-Even in dry-run mode, you can interact with the preview:
-
-```
-Extraction Preview - Select sections to include:
-
-[√] 1. Testing Standards (52 lines → docs/TESTING.md)
-[√] 2. Code Style Guide (38 lines → docs/CODE_STYLE.md)
-[√] 3. Architecture Diagram (44 lines → docs/ARCHITECTURE.md)
-[ ] 4. Quick Commands (12 lines) - Below threshold, kept inline
-
-Space: Toggle selection | A: Select all | N: Select none | Enter: Show preview
-
-Current selection: 3 sections, -134 lines (-54%)
-```
-
-### Preview Details
-
-For each extraction candidate, the preview shows:
-
-**Section Information**:
-- Name and current location in CLAUDE.md
-- Line count and percentage of total file
-- Target file path for extraction
-
-**Rationale**:
-- Why this section qualifies for extraction
-- Threshold exceeded (>30 lines, >20% of file, etc.)
-- Content type classification
-
-**Impact Analysis**:
-- Before: Current CLAUDE.md line count
-- After: Projected line count post-extraction
-- Reduction: Lines saved and percentage
-- Context: What's being moved
-
-**Content Summary**:
-- Brief description of section contents
-- Key topics covered
-- Related sections that will link to it
-
-### Comparing Preview to Actual
-
-To verify preview accuracy:
-
-```bash
-# Generate preview
-/setup --cleanup --dry-run > preview.txt
-
-# Run actual cleanup (follow prompts)
-/setup --cleanup
-
-# Compare results
-# Preview should match actual extractions
-```
-
-### Dry-Run with Auto-Detection
-
-If using standard mode with auto-detection:
-
-```bash
-/setup --dry-run
-# Error: --dry-run requires explicit --cleanup mode
-# Suggestion: Use /setup --cleanup --dry-run to preview
-```
-
-Rationale: Standard mode has multiple operations; dry-run is specific to cleanup.
+**Comparison**: Generate preview with `/setup --cleanup --dry-run > preview.txt`, then run actual cleanup and compare results.
 
 ## Standards Analysis Workflow
 
 ### Analysis Mode (--analyze)
 
-#### What Gets Analyzed
+Analyzes three sources to detect discrepancies:
 
-**Three Sources of Truth**:
-1. **CLAUDE.md** (documented standards)
-   - Parse all sections with `[Used by: ...]` metadata
-   - Extract field values (indentation, naming, test commands, etc.)
+| Source | What's Analyzed | Method |
+|--------|----------------|--------|
+| **CLAUDE.md** | Documented standards | Parse sections with `[Used by: ...]` metadata → Extract field values |
+| **Codebase** | Actual patterns | Sample files → Detect indentation, naming, error handling, test patterns → Calculate confidence |
+| **Config Files** | Tool configurations | Parse `.editorconfig`, `package.json`, `stylua.toml`, etc. → Extract tool settings |
 
-2. **Codebase** (actual patterns)
-   - **Indentation**: Detect spaces vs tabs, count spaces
-   - **Naming**: Analyze variable/function naming conventions
-   - **Line Length**: Measure common line lengths
-   - **Test Patterns**: Find test file naming patterns
-   - **Error Handling**: Detect pcall, try-catch, error handling patterns
+### Discrepancy Types
 
-3. **Configuration Files**
-   - `.editorconfig`: Indentation, line length, charset
-   - `package.json`: Scripts, lint config, test commands
-   - `pyproject.toml`: Tool configuration
-   - `stylua.toml`, `.prettierrc`, `.eslintrc`: Formatting rules
-   - `Makefile`: Build and test targets
+| Type | Description | Detection | Priority |
+|------|-------------|-----------|----------|
+| 1 | Documented ≠ Followed | CLAUDE.md value ≠ codebase pattern (>50% confidence) | Critical |
+| 2 | Followed but undocumented | Codebase pattern (>70% confidence) not in CLAUDE.md | High |
+| 3 | Config ≠ CLAUDE.md | Config file value ≠ CLAUDE.md value | High |
+| 4 | Missing section | Required section not in CLAUDE.md | Medium |
+| 5 | Incomplete section | Section exists but missing required fields | Medium |
 
-#### Discrepancy Types Detected
+**Confidence Scoring**: High (>80%), Medium (50-80%), Low (<50%) based on consistency across sampled files.
 
-| Type | Description | Example | Priority |
-|------|-------------|---------|----------|
-| Type 1 | Documented but not followed | CLAUDE.md: 2 spaces, Code: 4 spaces | Critical |
-| Type 2 | Followed but not documented | Code uses pcall, not in CLAUDE.md | High |
-| Type 3 | Configuration mismatch | .editorconfig ≠ CLAUDE.md | High |
-| Type 4 | Missing section | No Testing Protocols section | Medium |
-| Type 5 | Incomplete section | Code Standards missing Error Handling | Medium |
+### Generated Report Structure
 
-#### Confidence Scoring
+Report saved to `specs/reports/NNN_standards_analysis_report.md`:
 
-Pattern detection includes confidence scores:
-- **High (>80%)**: Consistent across 80%+ of sampled files
-- **Medium (50-80%)**: Majority pattern but some variation
-- **Low (<50%)**: No clear consensus, manual review needed
+1. **Metadata**: Date, project dir, files analyzed, languages detected
+2. **Executive Summary**: Discrepancy counts, key findings, overall status
+3. **Current State**: 3-way comparison (CLAUDE.md vs Codebase vs Config Files)
+4. **Discrepancy Analysis**: 5 sections (one per type) with examples, impact, recommendations
+5. **Gap Analysis**: Critical/High/Medium gaps, organized by priority
+6. **Interactive Gap Filling**: `[FILL IN: Field Name]` sections with:
+   - Context (current state, detected patterns, recommendations)
+   - User decision field
+   - Rationale field
+7. **Recommendations**: Prioritized action items (immediate/short-term/medium-term)
+8. **Implementation Plan**: Manual editing vs automated `--apply-report` workflow
 
-#### Generated Report Structure
-
-```markdown
-# Standards Analysis Report
-
-## Metadata
-- Analysis Date, Scope, Files Analyzed
-
-## Executive Summary
-- X discrepancies found
-- Y gaps identified
-- Z recommendations
-
-## Current State
-### Documented Standards (CLAUDE.md)
-[Parsed values]
-
-### Actual Standards (Codebase)
-[Detected patterns with confidence scores]
-
-### Configuration Files
-[Parsed config values]
-
-## Discrepancy Analysis
-### Type 1: Documented but Not Followed
-[List of violations]
-
-### Type 2: Followed but Not Documented
-[Undocumented patterns]
-
-### Type 3: Configuration Mismatches
-[Config conflicts]
-
-### Type 4: Missing Sections
-[Required sections not present]
-
-### Type 5: Incomplete Sections
-[Sections with missing fields]
-
-## Interactive Gap Filling
-[FILL IN: Indentation]
-Detected: 4 spaces (85% confidence)
-CLAUDE.md: 2 spaces
-.editorconfig: 4 spaces
-
-Decision: _______________
-Rationale: _______________
-
-[FILL IN: Error Handling]
-Detected: pcall usage in 92% of files
-CLAUDE.md: Not documented
-
-Decision: _______________
-Rationale: _______________
-
-## Recommendations
-[Prioritized action items]
-
-## Implementation Plan
-[Steps to reconcile standards]
-```
-
-#### Discrepancy Detection Algorithms
-
-For each detected discrepancy, I'll apply these algorithms:
-
-**Type 1: Documented but Not Followed**
-```
-Algorithm:
-1. Parse CLAUDE.md for standard values (e.g., "Indentation: 2 spaces")
-2. Analyze codebase and detect actual patterns
-3. Compare: If documented ≠ actual AND confidence > 50%
-   → Report Type 1 discrepancy with priority = CRITICAL
-
-Example:
-  CLAUDE.md: "Indentation: 2 spaces"
-  Detected: 4 spaces (85% confidence in 47/50 files)
-  Result: Type 1 discrepancy (CRITICAL)
-```
-
-**Type 2: Followed but Not Documented**
-```
-Algorithm:
-1. Detect consistent patterns in codebase (confidence > 70%)
-2. Check if pattern is documented in CLAUDE.md
-3. If pattern exists AND not documented
-   → Report Type 2 discrepancy with priority = HIGH
-
-Example:
-  Detected: pcall() error handling (92% of error-prone operations)
-  CLAUDE.md: No error handling field
-  Result: Type 2 discrepancy (HIGH)
-```
-
-**Type 3: Configuration Mismatches**
-```
-Algorithm:
-1. Parse configuration files for standards values
-2. Parse CLAUDE.md for same standards
-3. If config_value ≠ claude_md_value
-   → Report Type 3 discrepancy with priority = HIGH
-
-Example:
-  .editorconfig: indent_size = 4
-  CLAUDE.md: "Indentation: 2 spaces"
-  Result: Type 3 discrepancy (HIGH)
-```
-
-**Type 4: Missing Sections**
-```
-Algorithm:
-1. Define required sections: [Code Standards, Testing Protocols, Documentation Policy, Standards Discovery]
-2. Parse CLAUDE.md to check which sections exist
-3. For each missing required section
-   → Report Type 4 gap with priority = MEDIUM
-
-Example:
-  Required: "Testing Protocols" section
-  CLAUDE.md: Section not found
-  Result: Type 4 gap (MEDIUM)
-```
-
-**Type 5: Incomplete Sections**
-```
-Algorithm:
-1. Define required fields for each section:
-   - Code Standards: Indentation, Line Length, Naming, Error Handling
-   - Testing Protocols: Test Commands, Test Pattern, Coverage Requirements
-2. Parse existing sections in CLAUDE.md
-3. For each section, check if all required fields present
-4. If field missing
-   → Report Type 5 gap with priority = MEDIUM
-
-Example:
-  Section exists: "Code Standards"
-  Fields present: Indentation, Naming
-  Fields missing: Error Handling, Line Length
-  Result: Type 5 gaps (MEDIUM) x2
-```
-
-#### Gap Identification and Mapping
-
-For each identified gap, I'll suggest fill values from detected patterns:
+### Analysis Workflow
 
 ```
-Gap: Error Handling field missing in Code Standards
-     ↓
-Search codebase for error handling patterns
-     ↓
-Detected: pcall() in 45/48 Lua files (94% confidence)
-     ↓
-Suggested fill: "Error Handling: Use pcall for operations that might fail"
-     ↓
-Add to report with [FILL IN: Error Handling] marker
+User: /setup --analyze [project-dir]
+
+Claude:
+1. Discover standards (parse CLAUDE.md + sample codebase + read configs)
+2. Detect discrepancies (5 types, calculate confidence, prioritize)
+3. Generate report with [FILL IN: ...] gap markers
+
+User:
+4. Review report
+5. Fill [FILL IN: ...] sections with decisions and rationale
+
+User: /setup --apply-report specs/reports/NNN_report.md
+
+Claude:
+6. Parse filled report
+7. Backup CLAUDE.md
+8. Apply decisions (update fields, add sections, reconcile discrepancies)
+9. Validate structure
+10. Report changes made
 ```
 
-#### Prioritization Logic
+### Example Analysis
 
-Discrepancies and gaps are prioritized:
+**Indentation Discrepancy (Type 1 - Critical)**:
+- CLAUDE.md: "2 spaces" (line 42)
+- Codebase: 4 spaces (85% confidence, 40/47 files)
+- .editorconfig: `indent_size = 4`
+- Report fills: `[FILL IN: Indentation]` with context, recommendation ("Update to 4 spaces")
 
-| Priority | Conditions | Example |
-|----------|-----------|---------|
-| CRITICAL | Type 1 AND confidence > 80% | Doc says 2 spaces, 90% of files use 4 |
-| HIGH | Type 2 OR Type 3 | Undocumented pcall pattern OR config mismatch |
-| MEDIUM | Type 4 OR Type 5 | Missing Testing Protocols section |
-| LOW | Type 1 AND confidence < 50% | Weak pattern, manual review needed |
+**Error Handling Gap (Type 2 - High)**:
+- CLAUDE.md: Not documented
+- Codebase: `pcall()` used in 92% of error-prone operations
+- Report fills: `[FILL IN: Error Handling]` with recommendation ("Use pcall for operations that might fail")
 
-Report sections are ordered by priority (CRITICAL first).
+**Testing Section Missing (Type 4 - Medium)**:
+- CLAUDE.md: No Testing Protocols section
+- Codebase: `*_spec.lua` pattern (100% of test files), plenary.nvim detected
+- Report fills: `[FILL IN: Testing Protocols]` with suggested section content
 
-#### Analysis Workflow
+### Report Application
 
-```
-User runs: /setup --analyze
-     ↓
-1. Discover Standards
-   - Parse CLAUDE.md
-   - Analyze codebase patterns (sample representative files)
-   - Parse configuration files
-     ↓
-2. Detect Discrepancies
-   - Compare documented vs actual
-   - Compare actual vs config
-   - Identify missing/incomplete sections
-     ↓
-3. Generate Report
-   - Format findings
-   - Add [FILL IN: ...] markers for gaps
-   - Include detected patterns to help decision
-   - Save to specs/reports/NNN_standards_analysis_report.md
-     ↓
-4. User Reviews Report
-   - Reads analysis
-   - Fills in [FILL IN: ...] sections
-   - Makes decisions on discrepancies
-```
+See [Report Application Mode](#report-application-mode) for how `--apply-report` parses filled reports and updates CLAUDE.md.
 
-#### Report Generation Details
+## Report Application Mode (--apply-report)
 
-When generating the analysis report, I'll create a comprehensive document following this structure:
+### Overview
 
-**1. Metadata Section**
-```markdown
-## Metadata
-- **Analysis Date**: YYYY-MM-DD HH:MM:SS
-- **Project Directory**: /path/to/project
-- **CLAUDE.md Found**: Yes/No (path if found)
-- **Files Analyzed**: N source files, M config files
-- **Languages Detected**: Lua, Python, JavaScript, etc.
-```
+Parses completed analysis report (`[FILL IN: ...]` sections filled by user) and updates CLAUDE.md with reconciled standards.
 
-**2. Executive Summary**
-```markdown
-## Executive Summary
+**Usage**: `/setup --apply-report <report-path> [project-directory]`
 
-Analysis of project standards reveals:
-- **Discrepancies**: X found (Y critical, Z high priority)
-- **Missing Sections**: N required sections not present
-- **Incomplete Fields**: M fields need completion
-- **Overall Status**: [CRITICAL/NEEDS_ATTENTION/GOOD]
+### Parsing Algorithm
 
-Key findings:
-- Most critical: [Description of highest priority issue]
-- Quick wins: [Easy fixes with high impact]
-```
+1. **Locate Gaps**: Find `[FILL IN: <field>]` sections → Extract field name, context, user decision, rationale
+2. **Map to CLAUDE.md**:
+   - "Indentation" → Code Standards section, Indentation field
+   - "Error Handling" → Code Standards section (add if missing)
+   - "Testing Protocols" → New section (create if doesn't exist)
+3. **Parse Decisions**:
+   - Explicit value ("4 spaces") → Use value
+   - Blank (`___`) → Skip this gap
+   - `[Accept]` → Use recommended value from context
+4. **Validate**: Check critical gaps filled → Verify format → Warn on pattern overrides
 
-**3. Current State Section**
+### Update Strategy
 
-I'll generate three parallel comparisons:
+**Backup**: Always create `CLAUDE.md.backup.YYYYMMDD_HHMMSS` first
 
-```markdown
-## Current State
+**Update Cases**:
+| Case | Action |
+|------|--------|
+| Field exists | Locate → Replace value → Log change |
+| Section exists, field missing | Insert field → Log addition |
+| Section missing | Create section + metadata → Add fields → Log creation |
 
-### Documented Standards (CLAUDE.md)
+**Preservation**: Unaffected content unchanged → Standard section order maintained → `[Used by: ...]` metadata preserved
 
-**Code Standards**:
-- Indentation: 2 spaces
-- Naming: Not documented
-- Line Length: ~100 characters
-- Error Handling: Not documented
+### Edge Cases
 
-**Testing Protocols**:
-- Section not found
+| Scenario | Handling |
+|----------|----------|
+| No CLAUDE.md exists | Create from scratch using report |
+| Partially filled report | Apply filled only, skip blanks, log count |
+| Invalid decision | Skip gap, warn, continue |
+| Report/path issues | Error with helpful suggestion |
+| Validation fails | Don't write, report errors, backup safe |
 
-### Actual Standards (Codebase)
-
-**Code Patterns** (analyzed 47 files):
-- Indentation: 4 spaces (85% confidence, 40/47 files)
-- Naming: snake_case (78% confidence)
-- Line Length: Average 87 chars, max observed 120
-- Error Handling: pcall() used in 92% of error-prone operations
-
-**Test Patterns** (analyzed 12 test files):
-- Pattern: *_spec.lua (100%)
-- Test commands: Detected vim-test usage
-
-### Configuration Files
-
-**.editorconfig**:
-- indent_size = 4
-- max_line_length = 100
-- charset = utf-8
-
-**stylua.toml**:
-- indent_type = "Spaces"
-- indent_width = 4
-```
-
-**4. Discrepancy Analysis**
-
-For each discrepancy type, I'll list findings with priority:
-
-```markdown
-## Discrepancy Analysis
-
-### Type 1: Documented but Not Followed [CRITICAL]
-
-**Indentation Mismatch**
-- **Documented**: 2 spaces (CLAUDE.md line 42)
-- **Actual**: 4 spaces (85% confidence, 40/47 files)
-- **Impact**: Code doesn't match documentation
-- **Recommendation**: Update CLAUDE.md to match reality
-
-### Type 2: Followed but Not Documented [HIGH]
-
-**Error Handling Pattern**
-- **Pattern**: pcall() usage (92% of error-prone operations)
-- **Files**: nvim/lua/config/init.lua:25, nvim/lua/plugins/lazy.lua:18, [+12 more]
-- **Not Documented**: Error Handling field missing in Code Standards
-- **Recommendation**: Add "Error Handling: Use pcall for operations that might fail"
-
-### Type 3: Configuration Mismatches [HIGH]
-
-**Indentation: CLAUDE.md vs .editorconfig**
-- **CLAUDE.md**: 2 spaces
-- **.editorconfig**: 4 spaces
-- **Actual codebase**: 4 spaces (matches config, not docs)
-- **Recommendation**: Update CLAUDE.md to match .editorconfig
-
-### Type 4: Missing Sections [MEDIUM]
-
-**Testing Protocols**
-- **Required**: Yes (used by /test, /test-all, /implement)
-- **Present**: No
-- **Recommendation**: Add Testing Protocols section with detected patterns
-
-### Type 5: Incomplete Sections [MEDIUM]
-
-**Code Standards - Missing Fields**
-- **Section exists**: Yes (line 38-42)
-- **Fields present**: Indentation, Line Length
-- **Fields missing**: Naming conventions, Error Handling
-- **Recommendation**: Complete section with detected patterns
-```
-
-**5. Gap Analysis**
-
-Structured summary of what's missing:
-
-```markdown
-## Gap Analysis
-
-### Critical Gaps (Require Immediate Attention)
-1. Indentation discrepancy (documented ≠ actual)
-2. Testing Protocols section completely missing
-
-### High Priority Gaps (Should Address Soon)
-1. Error handling pattern undocumented
-2. Configuration file mismatch
-
-### Medium Priority Gaps (Complete When Possible)
-1. Naming conventions not documented
-2. Documentation Policy section incomplete
-```
-
-**6. Interactive Gap Filling**
-
-For each gap, I'll create a fill-in section with context:
-
-```markdown
-## Interactive Gap Filling
-
-This section allows you to make decisions about how to reconcile discrepancies and fill gaps.
-
-### [FILL IN: Indentation Standard]
-
-**Context**:
-- **CLAUDE.md currently says**: 2 spaces
-- **Codebase actually uses**: 4 spaces (85% confidence, 40/47 files)
-- **.editorconfig specifies**: indent_size = 4
-- **Recommendation**: Update to 4 spaces (matches config and reality)
-
-**Your Decision**: _______________
-(Options: "4 spaces", "2 spaces", "keep mixed")
-
-**Rationale**: _______________
-(Why did you choose this? E.g., "Match existing codebase and config")
-
----
-
-### [FILL IN: Error Handling]
-
-**Context**:
-- **Currently documented**: Not documented
-- **Detected pattern**: pcall() used in 92% of error-prone operations
-- **Example files**:
-  - nvim/lua/config/init.lua:25: `local ok, err = pcall(require, 'config')`
-  - nvim/lua/plugins/lazy.lua:18: `pcall(vim.cmd, 'colorscheme')`
-- **Recommendation**: "Error Handling: Use pcall for operations that might fail"
-
-**Your Decision**: _______________
-(Suggested text or your own standard)
-
-**Rationale**: _______________
-
----
-
-### [FILL IN: Testing Protocols]
-
-**Context**:
-- **Currently documented**: Section not found
-- **Detected patterns**:
-  - Test files: *_spec.lua (12 files found)
-  - Test framework: plenary.nvim (detected in test files)
-  - Test runner: vim-test (detected in config)
-- **Recommendation**: Add section with:
-  ```
-  ## Testing Protocols
-  [Used by: /test, /test-all, /implement]
-
-  ### Test Discovery
-  - **Test Pattern**: *_spec.lua files
-  - **Test Framework**: plenary.nvim
-  - **Test Commands**: :TestNearest, :TestFile, :TestSuite
-  ```
-
-**Your Decision**: [Accept] / [Modify] / [Skip]
-
-**If Modify, provide text**: _______________
-
-**Rationale**: _______________
-```
-
-**7. Recommendations Section**
-
-Prioritized action items:
-
-```markdown
-## Recommendations
-
-### Immediate Actions (Critical Priority)
-1. **Fix indentation documentation**: Update CLAUDE.md to specify 4 spaces (current: 2 spaces)
-   - File: CLAUDE.md line 42
-   - Change: "Indentation: 2 spaces" → "Indentation: 4 spaces"
-
-### Short-term Actions (High Priority)
-2. **Document error handling**: Add Error Handling field to Code Standards
-   - Value: "Error Handling: Use pcall for operations that might fail"
-3. **Resolve config mismatch**: Ensure CLAUDE.md and .editorconfig agree
-
-### Medium-term Actions (Medium Priority)
-4. **Add Testing Protocols section**: Use detected patterns from analysis
-5. **Document naming conventions**: Add "Naming: snake_case" based on detection
-```
-
-**8. Implementation Plan**
-
-Step-by-step guide:
-
-```markdown
-## Implementation Plan
-
-### Option 1: Manual Update
-1. Review this report and fill in all [FILL IN: ...] sections
-2. Manually edit CLAUDE.md based on your decisions
-3. Run /validate-setup to verify structure
-4. Commit changes
-
-### Option 2: Automated Update (Recommended)
-1. Review this report
-2. Fill in all [FILL IN: ...] sections with your decisions
-3. Save this report
-4. Run: `/setup --apply-report specs/reports/NNN_standards_analysis_report.md`
-5. Review the backup and updated CLAUDE.md
-6. Run /validate-setup to verify
-7. Commit changes
-
-### Verification Steps
-- [ ] All critical discrepancies resolved
-- [ ] Required sections present in CLAUDE.md
-- [ ] Configuration files and CLAUDE.md agree
-- [ ] /validate-setup passes
-- [ ] Other commands can parse CLAUDE.md (/implement, /test, etc.)
-```
-
-**File Naming and Location**
-
-Reports are saved with incremental numbering:
-
-```
-Discover existing reports: specs/reports/NNN_*.md
-Find highest number: e.g., 034
-New report number: 035
-Filename: 035_standards_analysis_report.md
-Full path: specs/reports/035_standards_analysis_report.md
-```
-
-If specs/reports/ doesn't exist, I'll create it automatically.
-
-### Report Application Mode (--apply-report)
-
-#### What Gets Applied
-
-The command parses the completed analysis report for:
-
-1. **Filled Gap Markers**: `[FILL IN: ...]` sections with user decisions
-2. **Reconciliation Choices**: User selections for handling discrepancies
-3. **Standard Values**: Explicit values for indentation, naming, etc.
-
-#### Report Parsing Algorithm
-
-**Step 1: Locate Gap Fill Sections**
-```
-Pattern: ### [FILL IN: <field_name>]
-Extract:
-  - Field name (e.g., "Indentation Standard", "Error Handling")
-  - Context provided (detected values, recommendations)
-  - User's decision (text after "Your Decision:")
-  - User's rationale (text after "Rationale:")
-```
-
-**Step 2: Parse User Decisions**
-```
-For each [FILL IN: ...] section:
-  1. Extract field name → map to CLAUDE.md section and field
-     Examples:
-       "Indentation Standard" → Code Standards section, Indentation field
-       "Error Handling" → Code Standards section, Error Handling field
-       "Testing Protocols" → New section to create
-
-  2. Extract user decision:
-     - If "Your Decision: 4 spaces" → value = "4 spaces"
-     - If "Your Decision: _______________" (blank) → skip this gap
-     - If "Your Decision: [Accept]" → use recommended value from context
-
-  3. Extract rationale (for logging/documentation purposes)
-```
-
-**Step 3: Validate Parsed Decisions**
-```
-Check:
-  - Critical gaps are filled (Type 1 discrepancies must be resolved)
-  - Values are reasonable (not empty, match expected format)
-  - Section references are valid
-
-Warn if:
-  - Some gaps unfilled (will skip those)
-  - Values don't match detected patterns (user override, but flag it)
-```
-
-#### CLAUDE.md Update Strategy
-
-**Backup Creation**
-```
-timestamp = current time in format: YYYYMMDD_HHMMSS
-backup_path = "CLAUDE.md.backup.{timestamp}"
-copy CLAUDE.md to backup_path
-log: "Backup created: {backup_path}"
-```
-
-**Update Algorithm**
-
-For each parsed decision:
-
-**Case 1: Update Existing Field**
-```
-If field exists in CLAUDE.md:
-  1. Locate field line (e.g., "- **Indentation**: 2 spaces")
-  2. Extract old value
-  3. Replace with new value from user decision
-  4. Log: "Updated {section} - {field}: {old_value} → {new_value}"
-
-Example:
-  Old: "- **Indentation**: 2 spaces"
-  Decision: "4 spaces"
-  New: "- **Indentation**: 4 spaces"
-```
-
-**Case 2: Add Missing Field to Existing Section**
-```
-If section exists but field missing:
-  1. Locate section end (next ## heading or EOF)
-  2. Insert new field before section end
-  3. Format: "- **{Field Name}**: {value}"
-  4. Log: "Added {section} - {field}: {value}"
-
-Example:
-  Section: ## Code Standards
-  Decision: Error Handling = "Use pcall for operations that might fail"
-  Insert: "- **Error Handling**: Use pcall for operations that might fail"
-```
-
-**Case 3: Create New Section**
-```
-If section doesn't exist:
-  1. Determine section position (follow standard order)
-  2. Create section with proper heading
-  3. Add [Used by: ...] metadata
-  4. Add all fields for that section
-  5. Log: "Created section: {section_name}"
-
-Example:
-  Decision: Add Testing Protocols
-  Create:
-    ## Testing Protocols
-    [Used by: /test, /test-all, /implement]
-
-    ### Test Discovery
-    - **Test Pattern**: *_spec.lua
-    - **Test Commands**: :TestNearest, :TestFile, :TestSuite
-```
-
-**Metadata Preservation**
-```
-For each section:
-  - Preserve existing [Used by: ...] metadata
-  - Add metadata if missing (based on standard schema)
-  - Verify format: "[Used by: /command1, /command2]"
-```
-
-**Section Ordering**
-```
-Standard order (maintain when creating new sections):
-1. Project Configuration Index (header)
-2. Code Standards
-3. Testing Protocols
-4. Documentation Policy
-5. Standards Discovery
-6. Specs Directory Protocol
-7. Project-specific sections
-```
-
-**Preserve Unaffected Content**
-```
-For sections not mentioned in report:
-  - Keep exactly as-is
-  - Don't reformat or modify
-  - Preserve comments, extra content, custom sections
-```
-
-#### Validation Before Write
-
-Before writing updated CLAUDE.md:
-
-```
-1. Parse generated CLAUDE.md to verify structure:
-   - All required sections present
-   - All sections have [Used by: ...] metadata
-   - Field format is correct: "- **Field**: value"
-
-2. Check that changes match user decisions:
-   - Each filled gap resulted in update
-   - No unexpected changes
-
-3. Verify parseability:
-   - Other commands can parse the structure
-   - Sections are properly delimited
-   - Markdown syntax is valid
-
-If validation fails:
-  - Don't write file
-  - Report specific errors
-  - Suggest manual review
-  - Backup remains available
-```
-
-#### Application Process
-
-```
-User runs: /setup --apply-report specs/reports/NNN_report.md
-     ↓
-1. Parse Report
-   - Extract all [FILL IN: ...] sections
-   - Validate that critical gaps are filled
-   - Parse user decisions
-     ↓
-2. Backup Existing CLAUDE.md
-   - Create CLAUDE.md.backup.TIMESTAMP
-   - Preserve original for rollback
-     ↓
-3. Generate/Update CLAUDE.md
-   - Merge detected patterns with user decisions
-   - Ensure all sections have [Used by: ...] metadata
-   - Follow established schema
-   - Preserve unaffected sections
-     ↓
-4. Validate Structure
-   - Check parseability
-   - Verify required sections present
-   - Confirm metadata format
-     ↓
-5. Report Results
-   - Summary of changes made
-   - Backup location
-   - Suggest: /validate-setup
-```
-
-#### Safety Features
-
-- **Always Creates Backup**: Original CLAUDE.md preserved
-- **Validation Before Write**: Checks structure before overwriting
-- **Partial Application**: Skips unfilled gaps, applies only completed ones
-- **Rollback Available**: Backup can be restored if needed
-
-#### Example Application
+### Workflow Example
 
 ```bash
-# Generate analysis
-/setup --analyze
-
-# Edit the generated report
-# Fill in [FILL IN: ...] sections
-
-# Apply the completed report
-/setup --apply-report specs/reports/034_standards_analysis_report.md
-
-# Output:
-# Backup created: CLAUDE.md.backup.20251001_143022
-# Updated sections:
-#   - Code Standards: Updated indentation (2 → 4 spaces)
-#   - Code Standards: Added error handling (pcall)
-#   - Testing Protocols: Updated test command
-#
-# Validation: Passed
-#
-# Suggested next step: /validate-setup
+/setup --analyze                    # Generate analysis report
+# Edit report, fill [FILL IN: ...] sections
+/setup --apply-report specs/reports/034_*.md
+# Output: Backup created, sections updated, validation passed
+/validate-setup                     # Confirm structure
 ```
 
-#### Edge Cases and Error Handling
-
-**Case: No CLAUDE.md Exists**
-```
-Scenario: User runs --apply-report but no CLAUDE.md exists
-Action:
-  1. Create new CLAUDE.md from scratch
-  2. Use report decisions to populate all sections
-  3. Add all required sections with [Used by: ...] metadata
-  4. No backup needed (nothing to back up)
-  5. Log: "Created new CLAUDE.md from report"
-```
-
-**Case: Partially Filled Report**
-```
-Scenario: User filled in some gaps but not all
-Action:
-  1. Parse all [FILL IN: ...] sections
-  2. Apply only filled sections
-  3. Skip unfilled sections (leave CLAUDE.md unchanged for those)
-  4. Log: "Applied 5 of 8 gaps (3 skipped - not filled in report)"
-  5. List which gaps were skipped
-```
-
-**Case: Invalid User Decision**
-```
-Scenario: User entered invalid value (e.g., "Your Decision: ???")
-Action:
-  1. Detect invalid/unclear decision
-  2. Skip that gap
-  3. Warn: "Skipped {field}: decision unclear ('???')"
-  4. Continue with other gaps
-```
-
-**Case: Conflicting Decisions**
-```
-Scenario: Report has contradictory decisions
-Action:
-  1. Detect conflict (e.g., two gaps both setting indentation differently)
-  2. Use first encountered value
-  3. Warn: "Conflict: {field} set twice. Using first value: {value}"
-```
-
-**Case: Report Not Found**
-```
-Scenario: User provides invalid report path
-Action:
-  1. Check if file exists
-  2. If not: error "Report not found: {path}"
-  3. Suggest: Check path or run /setup --analyze first
-```
-
-**Case: Report Format Invalid**
-```
-Scenario: Report doesn't have expected structure
-Action:
-  1. Attempt to parse
-  2. If no [FILL IN: ...] sections found: error
-  3. Suggest: Ensure report is from /setup --analyze
-```
-
-**Case: Backup Conflict**
-```
-Scenario: Backup file already exists (same timestamp)
-Action:
-  1. Append counter: CLAUDE.md.backup.{timestamp}.2
-  2. Ensure no overwrite of existing backups
-```
-
-**Case: Validation Failure**
-```
-Scenario: Generated CLAUDE.md fails validation
-Action:
-  1. Don't write file
-  2. Report specific validation errors
-  3. Explain what's wrong (e.g., "Missing [Used by: ...] in Code Standards")
-  4. Suggest: Review report or manual fix
-  5. Keep backup available
-```
-
-**Case: Permission Error**
-```
-Scenario: Cannot write to CLAUDE.md (permissions)
-Action:
-  1. Error: "Cannot write to CLAUDE.md: permission denied"
-  2. Suggest: Check file permissions
-  3. Backup not affected
-```
-
-#### Rollback Procedure
-
-If user wants to undo --apply-report:
-
-```bash
-# Find the backup
-ls -lt CLAUDE.md.backup.*
-
-# Restore from backup
-cp CLAUDE.md.backup.20251001_143022 CLAUDE.md
-
-# Verify restoration
-/validate-setup
-```
-
-Or provide a rollback command:
-```bash
-/setup --rollback CLAUDE.md.backup.20251001_143022
-```
-
-### Complete Standards Lifecycle
-
-```
-1. /setup --analyze
-   → Generates analysis report with gaps
-
-2. User edits report
-   → Fills [FILL IN: ...] sections
-
-3. /setup --apply-report <report>
-   → Updates CLAUDE.md from report
-
-4. /validate-setup
-   → Confirms standards are parseable
-
-5. Other commands use updated standards
-   → /implement, /test, /refactor, etc.
-```
+**Rollback**: Restore from backup: `cp CLAUDE.md.backup.TIMESTAMP CLAUDE.md`
 
 ## Usage Examples
 
-### Example 1: First-Time Setup with Auto-Cleanup
-
-**Scenario**: New project, needs CLAUDE.md, existing documentation is bloated
-
+### Example 1: Auto-Cleanup During Setup
 ```bash
-# Run standard setup
 /setup /path/to/project
 ```
+**Flow**: Detects bloated CLAUDE.md (248 lines) → Prompts "Optimize? [Y/n/c]" → User [Y]es → Extracts sections → Updates with links → Continues setup → Result: Optimized + standards
 
-**What Happens**:
-1. Analyzes project structure
-2. Detects existing CLAUDE.md (248 lines)
-3. Bloat detected → Prompts: "Optimize first? [Y/n/c]"
-4. User chooses [Y]es
-5. Runs cleanup extraction:
-   - Extracts Testing Standards (52 lines) → docs/TESTING.md
-   - Extracts Code Style (38 lines) → docs/CODE_STYLE.md
-   - Updates CLAUDE.md with links
-6. Reports: "Optimized CLAUDE.md: 248 → 158 lines"
-7. Continues with standard setup:
-   - Generates remaining standards
-   - Validates structure
-8. Complete: CLAUDE.md ready with standards and optimized structure
+---
 
-### Example 2: Explicit Cleanup Mode
-
-**Scenario**: CLAUDE.md has grown too large, needs optimization
-
+### Example 2: Explicit Cleanup
 ```bash
-# Run cleanup explicitly
 /setup --cleanup /path/to/project
 ```
+**Flow**: Analyzes (310 lines) → Shows 5 candidates → User selects → Extracts → Updates → Result: 310 → 166 lines (46%)
 
-**What Happens**:
-1. Analyzes CLAUDE.md (310 lines)
-2. Identifies extraction candidates:
-   - Testing Standards (52 lines)
-   - Code Style Guide (38 lines)
-   - Architecture Diagram (44 lines)
-   - API Guidelines (62 lines)
-   - Development Workflow (48 lines)
-3. Shows interactive selection
-4. User selects which to extract
-5. Creates auxiliary files
-6. Updates CLAUDE.md with links
-7. Reports: "Optimized CLAUDE.md: 310 → 166 lines (46% reduction)"
+---
 
-### Example 3: Dry-Run to Preview
-
-**Scenario**: Want to see what would be extracted before committing
-
+### Example 3: Preview Before Applying
 ```bash
-# Preview extraction
-/setup --cleanup --dry-run /path/to/project
+/setup --cleanup --dry-run /path/to/project  # Preview
+# Review output
+/setup --cleanup /path/to/project            # Apply if good
 ```
+**Flow**: Shows preview (what, where, impact) → No changes → User reviews → Runs actual if satisfied
 
-**What Happens**:
-1. Analyzes CLAUDE.md (248 lines)
-2. Shows extraction preview:
-   - What would be extracted (section names, line counts)
-   - Target files (docs/TESTING.md, etc.)
-   - Impact analysis (-134 lines, -54%)
-   - Content summaries
-3. Interactive selection (dry-run mode)
-4. Shows final preview with selected items
-5. No files modified
-6. Outputs: "Run without --dry-run to apply these changes"
+---
 
-**Follow-up**:
+### Example 4: Aggressive Extraction
 ```bash
-# If preview looks good, apply changes
-/setup --cleanup /path/to/project
-```
-
-### Example 4: Customize Extraction Thresholds
-
-**Scenario**: Want aggressive extraction for very large CLAUDE.md
-
-```bash
-# Use aggressive threshold
 /setup --cleanup --threshold aggressive /path/to/project
 ```
+**Flow**: Uses >20 line threshold (vs default >30) → Identifies more candidates → Smaller final file
 
-**What Happens**:
-1. Uses >20 line threshold (instead of default >30)
-2. Identifies more extraction candidates:
-   - Testing Standards (52 lines)
-   - Code Style Guide (38 lines)
-   - Architecture Diagram (44 lines)
-   - Quick Commands (22 lines) ← Now included
-   - Project Structure (24 lines) ← Now included
-3. More sections extracted
-4. Smaller final CLAUDE.md
+Alternative: `--threshold conservative` (>50 lines) for minimal extraction
 
-**Conservative Alternative**:
+---
+
+### Example 5: Standards Analysis
 ```bash
-# Use conservative threshold
-/setup --cleanup --threshold conservative
+/setup --analyze /path/to/project        # Generate report
+# Edit specs/reports/NNN_*.md, fill [FILL IN: ...] sections
+/setup --apply-report specs/reports/NNN_*.md   # Apply
+/validate-setup                          # Verify
 ```
-- Uses >50 line threshold
-- Extracts only largest sections
-- Keeps more content inline
+**Flow**: Analyze discrepancies → Generate report with gaps → User fills → Apply to CLAUDE.md → Validate
 
-### Example 5: Standards Analysis Workflow
+---
 
-**Scenario**: Need to check if CLAUDE.md matches actual code
-
+### Example 6: Complete Workflow
 ```bash
-# 1. Analyze discrepancies
+# 1. Initial setup with cleanup
+/setup /path/to/project                  # Accept cleanup prompt
+
+# 2. Later: Check discrepancies
 /setup --analyze /path/to/project
 
-# Generates: specs/reports/NNN_standards_analysis_report.md
+# 3. Apply corrections
+/setup --apply-report specs/reports/NNN_*.md
 
-# 2. Review report, fill in [FILL IN: ...] sections
-
-# 3. Apply reconciled standards
-/setup --apply-report specs/reports/NNN_report.md
-
-# 4. Validate result
-/validate-setup
+# 4. Periodic re-optimization
+/setup --cleanup --dry-run               # Preview
+/setup --cleanup                         # Apply if needed
 ```
+**Flow**: Setup → Analyze → Reconcile → Maintain
 
-### Example 6: Combined Workflow
+---
 
-**Scenario**: Complete project setup and optimization
+### Quick Reference
 
-```bash
-# 1. First-time setup with cleanup
-/setup /path/to/project
-# Prompts for cleanup → Accept
-# Generates standards → Validates
-
-# 2. Later: Check for discrepancies
-/setup --analyze /path/to/project
-
-# 3. Apply any corrections from analysis
-/setup --apply-report specs/reports/NNN_report.md
-
-# 4. Periodic: Re-optimize if needed
-/setup --cleanup --dry-run  # Preview
-/setup --cleanup             # Apply
-```
+| Goal | Command | Result |
+|------|---------|--------|
+| Setup with optimization | `/setup` → [Y]es prompt | CLAUDE.md + cleanup |
+| Optimize existing | `/setup --cleanup` | Extracted sections |
+| Preview changes | `/setup --cleanup --dry-run` | No-op preview |
+| Check discrepancies | `/setup --analyze` | Analysis report |
+| Apply reconciliation | `/setup --apply-report <path>` | Updated CLAUDE.md |
+| Validate structure | `/validate-setup` | Validation report |
 
 ## See Also
 

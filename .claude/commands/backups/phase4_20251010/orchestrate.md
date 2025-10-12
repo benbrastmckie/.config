@@ -168,37 +168,61 @@ See [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-age
 
 #### Step 3: Research Agent Prompt Template
 
-For agent prompt structure, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
-
-**Orchestrate-specific research template**:
-
 ```markdown
-**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity from Step 1.5)
+**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity)
 
 # Research Task: [Specific Topic]
 
 ## Context
-- **Workflow**: [User's original request - 1 line summary]
+- **Workflow**: [User's original request - brief 1 line summary]
 - **Research Focus**: [This agent's specific investigation area]
-- **Project Standards**: /home/benjamin/.config/CLAUDE.md
+- **Project Standards**: Reference CLAUDE.md at /home/benjamin/.config/CLAUDE.md
 - **Complexity Level**: [Simple|Medium|Complex|Critical]
 
 ## Objective
-Investigate [specific topic] to inform planning and implementation.
+Investigate [specific topic] to inform the planning and implementation phases of this workflow.
 
 ## Requirements
-[Specific requirements for this research topic]
 
-### Specs Directory Management
-Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed.
-Include "Specs Directory" in report metadata.
+### Investigation Scope
+- [Specific requirement 1]
+- [Specific requirement 2]
+- [Specific requirement 3]
+
+### Research Methods
+- **Codebase Search**: Use Grep/Glob to find existing patterns
+- **Documentation Review**: Read relevant files and docs
+- **Web Research**: Use WebSearch for industry standards (if applicable)
+- **Analysis**: Evaluate findings for relevance and applicability
+- **Specs Location**: Check `.claude/SPECS.md` for registered specs directories, auto-detect if needed
 
 ## Expected Output
-Concise summary (max 150 words) with:
-- Existing patterns found
+
+**Note**: When creating research reports, follow the SPECS.md registration process:
+1. Detect relevant project directory
+2. Check `.claude/SPECS.md` for registered specs directory
+3. Use registered location or auto-detect (project-dir/specs/)
+4. Register in SPECS.md if new
+5. Include "Specs Directory" in report metadata
+
+Provide a concise summary (max 150 words) structured as:
+
+**Findings Summary**
+- Existing patterns found (if any)
 - Recommended approaches
-- Potential challenges
-- Key planning insights
+- Potential challenges or constraints
+- Key insights for planning
+
+## Success Criteria
+- Findings are actionable and specific
+- Recommendations align with project standards
+- Challenges are clearly identified
+- Summary is concise and focused
+
+## Error Handling
+- If search yields no results: State "No existing patterns found" and recommend research-based approach
+- If access errors occur: Work with available tools and note limitations
+- If topic is unclear: Make reasonable assumptions and document them
 ```
 
 #### Step 3.5: Generate Project Name for Artifacts
@@ -784,57 +808,350 @@ Next: Debugging Loop
 
 ### Debugging Loop (Conditional - Only if Tests Fail)
 
-For test failure handling patterns, see [Test Failure Handling](../docs/command-patterns.md#pattern-test-failure-handling).
-
 This phase engages ONLY when implementation reports test failures. Maximum 3 debugging iterations before escalating to user.
 
-#### Step 1-2: Debug Investigation
+#### Step 1: Prepare Debug Context
 
-**Orchestrate-specific debugging workflow**:
-- Track debug iterations (max 3)
-- Each iteration invokes debug-specialist agent via `/debug` command
-- Agent creates diagnostic report with fix proposals
-- Store previous attempts to refine analysis
-
-**Debug context includes**:
-- Failed phase number and error messages
-- Modified files from implementation
-- Plan path for intended behavior
-- Previous debug attempts (iterations 2-3)
-
-#### Step 3-8: Debug Investigation, Fix Application, and Checkpoint Management
-
-For detailed debugging workflow patterns, see [Test Failure Handling](../docs/command-patterns.md#pattern-test-failure-handling).
-
-**Orchestrate-specific debugging execution**:
-
-**Agent Invocation** (Step 3-5):
-- Invoke debug-specialist with behavioral injection
-- Extract diagnostic report path and fix proposals
-- Apply fixes via code-writer agent
-- Validate test results
-
-**Decision Logic** (Step 6-7):
+**From Implementation Failure**:
 ```yaml
-if tests_passing:
-  → Proceed to Documentation Phase
-  → Save success checkpoint
-  → Update error_history with resolution
-
-elif iteration < 3:
-  → Increment iteration counter
-  → Add attempt to previous_attempts history
-  → Return to Step 1 with enriched context
-
-else:  # iteration == 3
-  → Escalate to user (see User Escalation Format pattern)
-  → Save escalation checkpoint
-  → Pause workflow for manual intervention
+debug_context:
+  failed_phase: N
+  error_message: "[Test failure details]"
+  files_modified: [list of changed files]
+  plan_path: "specs/plans/NNN_*.md"
+  tests_attempted: "[Test command that failed]"
 ```
 
-**Checkpoint Management** (Step 8):
-- Success: Save `checkpoint_tests_passing` with debug metrics
-- Escalation: Save `checkpoint_escalation` with all debug report paths and attempt summaries
+**Iteration Tracking**:
+```yaml
+debug_iteration:
+  current: 1|2|3
+  max_iterations: 3
+  previous_attempts: []  # Track what was tried
+```
+
+#### Step 2: Generate Debug Agent Prompt
+
+```markdown
+# Debug Task: Investigate Test Failures
+
+## Context
+
+### Test Failure Information
+Failed Phase: Phase [N]
+Error Message:
+```
+[Full error output from tests]
+```
+
+### Modified Files
+Files changed during implementation:
+- [file1.ext]
+- [file2.ext]
+- ...
+
+### Implementation Plan
+Plan reference: [plan_path]
+Review the plan to understand intended behavior.
+
+### Debug Iteration
+Attempt: [1|2|3] of 3
+Previous attempts: [If iteration > 1, list what was already tried]
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Investigate the test failures and create a diagnostic report with fix proposals.
+
+**Critical**: This is investigation ONLY. Do NOT modify code in this task.
+
+## Requirements
+
+### Investigation Approach
+Use the /debug command to perform root cause analysis:
+
+```bash
+/debug "[Brief description of failure]" [plan-path]
+```
+
+### Analysis Steps
+1. **Reproduce the Issue**: Understand how to trigger the failure
+2. **Identify Root Cause**: Determine why tests are failing
+3. **Evaluate Impact**: Assess scope of the problem
+4. **Propose Fixes**: Suggest specific code changes
+
+### Focus Areas
+- Logic errors in implementation
+- Missing edge case handling
+- Integration issues between components
+- Test configuration problems
+- Dependency issues
+
+## Expected Output
+
+**Primary Output**: Debug report path
+- Format: specs/reports/NNN_debug_[issue].md
+- Contains: Root cause analysis and fix proposals
+
+**Secondary Output**: Fix summary
+- Concise description of proposed fixes (max 100 words)
+- Specific files to modify
+- Confidence level: High|Medium|Low
+
+## Success Criteria
+- Root cause clearly identified
+- Fix proposals are specific and actionable
+- Proposals address the actual test failures
+- Risk assessment included for each fix
+
+## Error Handling
+- If issue is unclear: Document assumptions and request clarification
+- If multiple potential causes: Prioritize by likelihood
+- If fix requires major refactoring: Note this and suggest iterative approach
+```
+
+#### Step 3: Invoke Debug Agent
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Debug test failures from Phase [N] using debug-specialist protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/debug-specialist.md
+
+         You are acting as a Debug Specialist with the tools and constraints
+         defined in that file.
+
+         [Generated debug prompt from Step 2]"
+```
+
+**Monitoring**:
+- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
+  - Display progress updates to user in real-time
+  - Examples: `PROGRESS: Analyzing error logs...`, `PROGRESS: Identifying root cause...`
+- Track debug progress
+- Watch for root cause identification
+- Monitor for escalation signals
+
+#### Step 4: Extract Debug Report and Fix Proposals
+
+**Report Extraction**:
+```markdown
+From debug agent output, extract:
+- debug_report_path: "specs/reports/NNN_debug_*.md"
+- root_cause: "[Brief description]"
+- fix_proposals: [
+    {
+      file: "path/to/file.ext",
+      change: "[Specific modification]",
+      confidence: "High|Medium|Low"
+    },
+    ...
+  ]
+- estimated_complexity: "Simple|Moderate|Complex"
+```
+
+**Validation**:
+- [ ] Debug report created and accessible
+- [ ] Root cause identified
+- [ ] At least one fix proposal provided
+- [ ] Fix proposals are specific and actionable
+
+#### Step 5: Apply Fixes
+
+**Fix Application Prompt**:
+```markdown
+# Fix Task: Apply Debug Recommendations
+
+## Context
+
+### Debug Report
+Report: [debug_report_path]
+
+### Root Cause
+[Brief root cause description]
+
+### Proposed Fixes
+[List of specific fixes from debug report]
+
+### Files to Modify
+[List of files needing changes]
+
+## Objective
+Apply the proposed fixes to resolve test failures.
+
+## Requirements
+
+### Fix Application
+For each proposed fix:
+1. Read the affected file
+2. Apply the specific change recommended
+3. Ensure change follows project standards
+4. Preserve existing functionality
+
+### Testing
+After applying ALL fixes:
+- Run the same tests that previously failed
+- Verify tests now pass
+- Check for any new test failures
+
+### Caution
+- Apply ONLY the fixes from debug report
+- Do NOT make additional "improvements"
+- Preserve code style and conventions
+- Test after ALL fixes applied (not incrementally)
+
+## Expected Output
+
+**Primary Output**: Fix results
+- tests_passing: true|false
+- fixes_applied: N
+- files_modified: [list]
+- test_output: "[Test results]"
+
+**If Tests Still Fail**:
+- Remaining errors: "[Error details]"
+- Additional investigation needed: Yes|No
+
+## Success Criteria
+- All proposed fixes applied correctly
+- Tests now passing
+- No new test failures introduced
+- Code follows project standards
+```
+
+**Task Tool Invocation**:
+```yaml
+subagent_type: general-purpose
+description: "Apply fixes for test failures using code-writer protocol"
+prompt: "Read and follow the behavioral guidelines from:
+         /home/benjamin/.config/.claude/agents/code-writer.md
+
+         You are acting as a Code Writer with the tools and constraints
+         defined in that file.
+
+         [Generated fix prompt]"
+```
+
+#### Step 6: Evaluate Fix Results
+
+**Status Check**:
+```yaml
+fix_result:
+  tests_passing: true|false
+  fixes_applied: N
+  files_modified: [list]
+```
+
+**Decision Logic**:
+```yaml
+if tests_passing == true:
+  action: "proceed_to_documentation"
+  save_checkpoint: "tests_passing"
+  update_error_history:
+    issue: "[Root cause]"
+    resolution: "Fixed via debugging loop iteration [N]"
+
+elif debug_iteration < 3:
+  action: "retry_debugging"
+  increment_iteration: true
+  update_previous_attempts:
+    - iteration: [N]
+    - root_cause: "[What was found]"
+    - fix_attempted: "[What was tried]"
+    - result: "Tests still failing"
+
+else:  # iteration == 3
+  action: "escalate_to_user"
+  reason: "Max debugging iterations reached"
+  context:
+    debug_reports: [list of all debug report paths]
+    fixes_attempted: [summary of all attempts]
+    current_error: "[Latest error message]"
+```
+
+#### Step 7: Iteration or Escalation
+
+**If Retrying** (iteration < 3):
+```markdown
+⟳ Debugging Loop - Iteration [N+1]
+
+Previous attempt unsuccessful.
+Root cause identified: [previous root cause]
+Fix applied: [previous fix]
+Result: Tests still failing
+
+New error: [current error message]
+
+Refining analysis with additional context...
+```
+
+Return to Step 2 with updated context including previous attempts.
+
+**If Escalating** (iteration == 3):
+```markdown
+⚠ Manual Intervention Required
+
+Unable to resolve test failures after 3 debugging attempts.
+
+Debug Reports Generated:
+- [report 1 path]
+- [report 2 path]
+- [report 3 path]
+
+Fixes Attempted:
+1. [Attempt 1 summary]
+2. [Attempt 2 summary]
+3. [Attempt 3 summary]
+
+Current Error:
+```
+[Latest test failure output]
+```
+
+**Options**:
+1. Review debug reports and continue manually
+2. Modify approach and resume debugging
+3. Rollback to last successful checkpoint
+
+Workflow paused. Please provide guidance.
+```
+
+#### Step 8: Save Debug Checkpoint
+
+**Success Checkpoint** (tests now passing):
+```yaml
+checkpoint_tests_passing:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: true
+    debug_iterations: N
+    debug_reports: [list of report paths]
+    fixes_applied: [summary]
+    status: "success"
+  next_phase: "documentation"
+  performance:
+    debug_time: "[total debugging duration]"
+    iterations_needed: N
+```
+
+**Escalation Checkpoint** (manual intervention needed):
+```yaml
+checkpoint_escalation:
+  phase_name: "debugging"
+  completion_time: [timestamp]
+  outputs:
+    tests_passing: false
+    debug_iterations: 3
+    debug_reports: [all report paths]
+    fixes_attempted: [all attempts]
+    current_error: "[latest error]"
+    status: "escalated"
+  next_phase: "manual_intervention"
+  user_action_required: true
+```
 
 #### Debugging Loop Example
 
@@ -897,28 +1214,127 @@ performance_summary:
     recovery_success_rate: "N%"
 ```
 
-#### Step 2-4: Documentation Agent Invocation and Validation
+#### Step 2: Generate Documentation Agent Prompt
 
-**Orchestrate-specific documentation workflow**:
+```markdown
+# Documentation Task: Update Documentation and Generate Workflow Summary
 
-**Agent Prompt Structure**:
-- Workflow context: Original request, workflow type, artifacts generated
-- Implementation plan path with specs directory extraction
-- Files modified list and test results
-- Cross-referencing requirements for bidirectional linking
-- Invoke `/document` command for documentation updates
+## Context
 
-**Cross-Referencing Strategy** (orchestrate-specific):
-- Add "Implementation Summary" section to plan file
-- Add "Implementation Status" section to research reports
-- Verify bidirectional links using Read tool
-- Handle edge cases (duplicate sections, multiple summaries)
+### Workflow Overview
+Original request: [User's workflow description]
+Workflow type: [feature|refactor|debug|investigation]
 
-**Validation Requirements**:
-- At least one documentation file updated
-- Cross-references include all workflow artifacts
-- No broken links
-- Follows project documentation standards
+### Artifacts Generated
+**Research Reports** (if any):
+- [report_1_path]
+- [report_2_path]
+
+**Implementation Plan**:
+- Path: [plan_path]
+- Phases: N
+- Complexity: [Low|Medium|High]
+
+**Files Modified**:
+[List of all files changed during workflow]
+
+**Test Results**:
+- Final status: [Passing|Fixed after debugging]
+- Debug iterations: [N or "None"]
+
+### Project Standards
+Reference standards at: /home/benjamin/.config/CLAUDE.md
+
+## Objective
+Update all relevant documentation to reflect the changes made during this workflow
+and generate a comprehensive workflow summary.
+
+## Requirements
+
+### Specs Directory Location
+- Read the implementation plan at [plan_path]
+- Extract "Specs Directory" from plan metadata
+- Create workflow summary in: [specs-dir]/summaries/NNN_workflow_summary.md
+- Update `.claude/SPECS.md` registry: increment Summaries count
+
+### Documentation Updates
+Use the /document command to update affected documentation:
+
+```bash
+/document [brief description of changes]
+```
+
+The documentation agent will:
+- Identify affected documentation files (READMEs, guides, specs)
+- Update documentation to reflect new/changed functionality
+- Ensure consistency across all documentation
+- Follow project documentation standards
+
+### Cross-Referencing and Bidirectional Linking
+Ensure proper bidirectional cross-references between all workflow artifacts:
+
+**Step 1: After Creating Workflow Summary**
+- Summary already links to plan and reports (forward references)
+- Now add backward references from plan and reports to summary
+
+**Step 2: Update Implementation Plan**
+- Use Edit tool to append "## Implementation Summary" section to plan file:
+  ```markdown
+  ## Implementation Summary
+  - **Status**: Complete
+  - **Date**: [YYYY-MM-DD]
+  - **Summary**: [link to specs/summaries/NNN_workflow_summary.md]
+  ```
+- Place at end of plan file
+
+**Step 3: Update Research Reports (if any)**
+- For each research report referenced in the plan:
+- Use Edit tool to append "## Implementation Status" section:
+  ```markdown
+  ## Implementation Status
+  - **Status**: Implemented
+  - **Date**: [YYYY-MM-DD]
+  - **Plan**: [link to specs/plans/NNN.md]
+  - **Summary**: [link to specs/summaries/NNN_workflow_summary.md]
+  ```
+- Place at end of report file
+
+**Step 4: Verify Bidirectional Links**
+- Use Read tool to verify each file was updated
+- Check that plan has "Implementation Summary" section
+- Check that each report has "Implementation Status" section
+- If verification fails: Log warning but continue
+
+**Edge Cases:**
+- If plan/report file not writable: Log warning, continue
+- If file already has implementation section: Update existing section using Edit tool, don't duplicate
+- If multiple summaries reference same plan: Append to list in plan file
+
+### Documentation Standards
+- Follow CommonMark markdown specification
+- Use Unicode box-drawing for diagrams (no ASCII art)
+- No emojis in file content
+- Maintain existing documentation structure
+- Update modification dates
+
+## Expected Output
+
+**Primary Output**: Documentation paths
+- Updated documentation files: [list]
+- README updates: [list if any]
+- Spec updates: [list if any]
+
+**Secondary Output**: Summary preparation
+- Key changes documented: Yes|No
+- Cross-references verified: Yes|No
+- Ready for workflow summary: Yes|No
+
+## Success Criteria
+- All affected documentation updated
+- Cross-references accurate and complete
+- Documentation follows project standards
+- Changes are clear and comprehensive
+```
 
 #### Step 3: Invoke Documentation Agent
 
