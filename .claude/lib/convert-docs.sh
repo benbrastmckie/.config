@@ -50,6 +50,10 @@ TIMEOUT_MD_TO_PDF=120
 # Timeout multiplier (can be overridden by environment variable)
 TIMEOUT_MULTIPLIER="${TIMEOUT_MULTIPLIER:-1.0}"
 
+# Resource management configuration
+MAX_DISK_USAGE_GB="${MAX_DISK_USAGE_GB:-}"  # No limit by default
+MIN_FREE_SPACE_MB=100  # Minimum free space required (MB)
+
 # Tool availability flags
 MARKITDOWN_AVAILABLE=false
 PANDOC_AVAILABLE=false
@@ -316,6 +320,65 @@ increment_progress() {
     echo "Progress: [$current/$total] files processed"
 
     rmdir "$lock_dir" 2>/dev/null || true
+  fi
+}
+
+#
+# acquire_lock - Acquire conversion lock file
+#
+# Arguments:
+#   $1 - Output directory
+#
+# Returns:
+#   0 if lock acquired, 1 if already locked
+#
+# Creates a lock file with current PID to prevent concurrent conversions
+#
+acquire_lock() {
+  local output_dir="$1"
+  local lock_file="$output_dir/.convert-docs.lock"
+
+  # Check for existing lock
+  if [[ -f "$lock_file" ]]; then
+    local lock_pid
+    lock_pid=$(cat "$lock_file" 2>/dev/null || echo "")
+
+    # Check if process is still running
+    if [[ -n "$lock_pid" ]] && kill -0 "$lock_pid" 2>/dev/null; then
+      echo "Error: Another conversion is already running (PID: $lock_pid)" >&2
+      echo "Lock file: $lock_file" >&2
+      echo "If you're sure no conversion is running, remove the lock file manually." >&2
+      return 1
+    else
+      # Stale lock - remove it
+      echo "Warning: Removing stale lock file (PID $lock_pid not running)" >&2
+      rm -f "$lock_file"
+    fi
+  fi
+
+  # Create lock with current PID
+  echo "$$" > "$lock_file"
+  return 0
+}
+
+#
+# release_lock - Release conversion lock file
+#
+# Arguments:
+#   $1 - Output directory
+#
+release_lock() {
+  local output_dir="$1"
+  local lock_file="$output_dir/.convert-docs.lock"
+
+  # Only remove lock if it contains our PID
+  if [[ -f "$lock_file" ]]; then
+    local lock_pid
+    lock_pid=$(cat "$lock_file" 2>/dev/null || echo "")
+
+    if [[ "$lock_pid" == "$$" ]]; then
+      rm -f "$lock_file"
+    fi
   fi
 }
 
@@ -597,6 +660,77 @@ detect_conversion_direction() {
 }
 
 #
+# check_disk_space - Verify sufficient disk space for conversion
+#
+# Arguments:
+#   $1 - Output directory
+#
+# Returns:
+#   0 if sufficient space, 1 if insufficient (warning only, doesn't fail)
+#
+# Checks available disk space against estimated output requirements
+#
+check_disk_space() {
+  local output_dir="$1"
+
+  # Calculate total input size
+  local total_input_size=0
+
+  for file in "${docx_files[@]}" "${pdf_files[@]}" "${md_files[@]}"; do
+    if [[ -f "$file" ]]; then
+      local file_size
+      file_size=$(wc -c < "$file" 2>/dev/null || echo "0")
+      total_input_size=$((total_input_size + file_size))
+    fi
+  done
+
+  # Estimate output size (input × 1.5 for safety margin)
+  local estimated_output_mb
+  estimated_output_mb=$(awk "BEGIN {printf \"%.0f\", ($total_input_size * 1.5) / (1024 * 1024)}")
+
+  # Check available disk space using df
+  local available_mb
+  if command -v df &>/dev/null; then
+    # Try GNU df first (Linux)
+    available_mb=$(df -BM "$output_dir" 2>/dev/null | awk 'NR==2 {gsub(/M/, "", $4); print $4}')
+
+    # Fallback to BSD df (macOS)
+    if [[ -z "$available_mb" ]] || [[ "$available_mb" == "0" ]]; then
+      available_mb=$(df -m "$output_dir" 2>/dev/null | awk 'NR==2 {print $4}')
+    fi
+  else
+    # df not available, skip check
+    return 0
+  fi
+
+  # If MAX_DISK_USAGE_GB is set, check against limit
+  if [[ -n "$MAX_DISK_USAGE_GB" ]]; then
+    local max_mb
+    max_mb=$(awk "BEGIN {printf \"%.0f\", $MAX_DISK_USAGE_GB * 1024}")
+
+    if [[ $estimated_output_mb -gt $max_mb ]]; then
+      echo "Warning: Estimated output size (${estimated_output_mb}MB) exceeds MAX_DISK_USAGE_GB limit (${MAX_DISK_USAGE_GB}GB)" >&2
+      echo "  Set MAX_DISK_USAGE_GB higher or reduce input file count" >&2
+      return 1
+    fi
+  fi
+
+  # Check if available space is sufficient
+  local required_space=$((estimated_output_mb + MIN_FREE_SPACE_MB))
+
+  if [[ $available_mb -lt $required_space ]]; then
+    echo "Warning: Insufficient disk space for conversion" >&2
+    echo "  Available: ${available_mb}MB" >&2
+    echo "  Required: ${required_space}MB (estimated ${estimated_output_mb}MB + ${MIN_FREE_SPACE_MB}MB buffer)" >&2
+    echo "  Free up disk space or reduce input file count" >&2
+    return 1
+  fi
+
+  # Sufficient space available
+  return 0
+}
+
+#
 # show_tool_detection - Display detected tools
 #
 show_tool_detection() {
@@ -794,6 +928,14 @@ fi
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
+# Acquire lock to prevent concurrent conversions
+if ! acquire_lock "$OUTPUT_DIR"; then
+  exit 1
+fi
+
+# Setup trap to release lock on exit (normal, error, or interrupt)
+trap "release_lock '$OUTPUT_DIR'" EXIT
+
 # Initialize log file
 LOG_FILE="$OUTPUT_DIR/conversion.log"
 echo "Document Conversion Log - $(date)" > "$LOG_FILE"
@@ -801,6 +943,9 @@ echo "Input Directory: $INPUT_DIR" >> "$LOG_FILE"
 echo "Output Directory: $OUTPUT_DIR" >> "$LOG_FILE"
 echo "Conversion Direction: $CONVERSION_DIRECTION" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
+
+# Check disk space (warnings only, doesn't prevent conversion)
+check_disk_space "$OUTPUT_DIR"
 
 #
 # convert_docx - Convert DOCX to Markdown using MarkItDown
