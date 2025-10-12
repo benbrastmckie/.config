@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Agent Performance Tracking Hook
 # Captures SubagentStop events and updates agent-registry.json with performance metrics
+# Also writes detailed per-invocation JSONL metrics for analysis
 
 set -euo pipefail
 
 REGISTRY_FILE="${CLAUDE_PROJECT_DIR}/.claude/agents/agent-registry.json"
+METRICS_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/metrics/agents"
 
 # Ensure registry exists
 if [ ! -f "$REGISTRY_FILE" ]; then
@@ -92,3 +94,93 @@ UPDATED_DATA=$(echo "$CURRENT_DATA" | jq \
 
 # Write updated registry
 echo "$UPDATED_DATA" > "$REGISTRY_FILE"
+
+# ============================================================================
+# Per-Invocation JSONL Logging (Phase 6)
+# ============================================================================
+
+# Classify error type based on error message
+classify_error() {
+  local error_msg="$1"
+
+  case "$error_msg" in
+    *"syntax error"*|*"SyntaxError"*) echo "syntax_error" ;;
+    *"No such file"*|*"not found"*|*"File not found"*) echo "file_not_found" ;;
+    *"test"*"failed"*|*"assertion"*|*"Test"*"failed"*) echo "test_failure" ;;
+    *"timeout"*|*"timed out"*|*"Timeout"*) echo "timeout" ;;
+    *"permission denied"*|*"Permission denied"*) echo "permission_denied" ;;
+    *"compilation failed"*|*"build error"*|*"compile error"*) echo "compilation_error" ;;
+    *) echo "unknown_error" ;;
+  esac
+}
+
+# Extract tool usage from event JSON (if available)
+# Returns JSON object like {"Read":5,"Edit":3}
+extract_tool_usage() {
+  local event_json="$1"
+
+  # Try to extract tools_used from event metadata
+  local tools_used
+  tools_used=$(echo "$event_json" | jq -c '.tools_used // {}' 2>/dev/null || echo '{}')
+
+  echo "$tools_used"
+}
+
+# Generate unique invocation ID
+generate_invocation_id() {
+  local timestamp=$(date +%s)
+  local random_suffix
+
+  # Try openssl first, fallback to $RANDOM
+  if command -v openssl &> /dev/null; then
+    random_suffix=$(openssl rand -hex 3 2>/dev/null || printf "%06x" $RANDOM)
+  else
+    random_suffix=$(printf "%06x" $RANDOM)
+  fi
+
+  echo "inv_${timestamp}_${random_suffix}"
+}
+
+# Create and append JSONL record
+mkdir -p "$METRICS_DIR"
+AGENT_JSONL="${METRICS_DIR}/${AGENT_TYPE}.jsonl"
+
+# Extract additional fields
+ERROR_MSG="null"
+ERROR_TYPE="null"
+if [ "$STATUS" != "success" ]; then
+  ERROR_MSG=$(echo "$EVENT_JSON" | jq -r '.error // "Unknown error"' 2>/dev/null || echo "Unknown error")
+  ERROR_TYPE=$(classify_error "$ERROR_MSG")
+fi
+
+TOOLS_USED=$(extract_tool_usage "$EVENT_JSON")
+INVOCATION_ID=$(generate_invocation_id)
+TASK_SUMMARY=$(echo "$EVENT_JSON" | jq -r '.task_summary // .description // ""' 2>/dev/null | head -c 100)
+
+# Build JSONL record
+JSONL_RECORD=$(jq -n \
+  --arg timestamp "$TIMESTAMP" \
+  --arg agent "$AGENT_TYPE" \
+  --arg inv_id "$INVOCATION_ID" \
+  --argjson duration "$DURATION" \
+  --arg status "$STATUS" \
+  --argjson tools "$TOOLS_USED" \
+  --arg error "$ERROR_MSG" \
+  --arg error_type "$ERROR_TYPE" \
+  --arg task "$TASK_SUMMARY" \
+  '{
+    timestamp: $timestamp,
+    agent_type: $agent,
+    invocation_id: $inv_id,
+    duration_ms: ($duration | tonumber),
+    status: $status,
+    tools_used: $tools,
+    error: (if $error == "null" or $error == "Unknown error" then null else $error end),
+    error_type: (if $error_type == "null" or $error_type == "unknown_error" then null else $error_type end),
+    task_summary: (if $task == "" then null else $task end)
+  }' 2>/dev/null)
+
+# Append to JSONL file (only if record creation succeeded)
+if [ -n "$JSONL_RECORD" ] && [ "$JSONL_RECORD" != "null" ]; then
+  echo "$JSONL_RECORD" >> "$AGENT_JSONL"
+fi

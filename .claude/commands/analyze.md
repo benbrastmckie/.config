@@ -27,12 +27,14 @@ I'll analyze system performance metrics based on the specified type.
 
 ```bash
 # Analyze agent performance
-/analyze agents
+/analyze agents           # Last 30 days (default)
+/analyze agents 7         # Last 7 days
+/analyze agents 90        # Last 90 days
 
-# Analyze command metrics (last 30 days)
-/analyze metrics
-/analyze metrics 7   # Last 7 days
-/analyze metrics 90  # Last 90 days
+# Analyze command metrics
+/analyze metrics          # Last 30 days (default)
+/analyze metrics 7        # Last 7 days
+/analyze metrics 90       # Last 90 days
 
 # Analyze workflow patterns
 /analyze patterns
@@ -48,21 +50,36 @@ I'll analyze system performance metrics based on the specified type.
 
 ## Analysis Types
 
-### Agent Analysis (`/analyze agents`)
+### Agent Analysis (`/analyze agents [timeframe]`)
 
-Analyzes agent performance metrics from the agent registry and provides actionable insights.
+Analyzes agent performance metrics from both the agent registry and per-invocation JSONL metrics, providing detailed insights with tool usage patterns and error analysis.
+
+**Usage**:
+```bash
+/analyze agents        # Last 30 days (default)
+/analyze agents 7      # Last 7 days
+/analyze agents 90     # Last 90 days
+```
 
 **Process**:
 
-1. **Read Agent Registry**
-   - Load `.claude/agents/agent-registry.json`
-   - Extract performance metrics for all agents
+1. **Load Agent Data**
+   - Read `.claude/agents/agent-registry.json` for aggregate metrics
+   - Parse `.claude/data/metrics/agents/*.jsonl` for detailed per-invocation data
+   - Filter by timeframe (default: 30 days)
 
-2. **Calculate Efficiency Scores**
+2. **Calculate Comprehensive Statistics**
+   - Overall success/failure rates
+   - Duration statistics (avg, min, max, median)
+   - Tool usage aggregation and percentages
+   - Error type classification and counts
+   - Recent performance trends (7-day vs 30-day)
+
+3. **Calculate Efficiency Scores**
    - Formula: `efficiency_score = (success_rate × 0.6) + (duration_score × 0.4)`
    - Duration score: `min(1.0, target_duration / actual_avg_duration)`
 
-3. **Target Durations by Agent Type**:
+4. **Target Durations by Agent Type**:
    - research-specialist: 15000ms (15s)
    - plan-architect: 20000ms (20s)
    - code-writer: 12000ms (12s)
@@ -71,40 +88,87 @@ Analyzes agent performance metrics from the agent registry and provides actionab
    - doc-writer: 8000ms (8s)
    - default: 10000ms (10s)
 
-4. **Generate Performance Report**:
-   - Overall agent performance rankings
-   - Efficiency scores with star ratings (★★★★★)
-   - Success rates and average durations
-   - Agents needing attention (efficiency < 75%)
-   - Specific recommendations for underperformers
+5. **Generate Enhanced Performance Report**:
+   - Overall agent performance rankings with efficiency scores
+   - Star ratings (★★★★★) for visual assessment
+   - Success rates with detailed breakdown (successes/total)
+   - Average durations with trend indicators (↑↓)
+   - **Tool usage analysis** with ASCII bar charts
+   - **Common errors** with examples and occurrence counts
+   - **Performance trends** comparing recent to overall
+   - **Data-driven recommendations** for improvements
 
-5. **Identify Issues**:
+6. **Identify Issues**:
    - Low Success Rate (<90%): Agent frequently fails
    - Slow Execution: Agent exceeds target duration by >50%
-   - High Variability: Inconsistent performance
+   - High Error Count: Specific error types recurring
+   - Declining Performance: Recent metrics worse than overall
    - No Recent Activity: Agent not used recently
 
-**Output Example**:
+**Enhanced Output Example**:
 ```
 === Agent Performance Analysis ===
+Timeframe: Last 30 days
+Generated: 2025-10-11 15:30:22
 
 Overall Rankings:
 1. ★★★★★ research-specialist (94% efficiency)
-   Success: 98% | Avg Duration: 13.2s | Invocations: 245
+   Success: 98% (240/245) | Avg Duration: 13.2s | Invocations: 245
    Status: Excellent performance
 
+   Tool Usage (top 3):
+   Read            ████████████████████  45% (108 calls)
+   WebSearch       █████████████         30% (72 calls)
+   Write           ███████               15% (36 calls)
+
+   Recent Performance:
+   - Last 7 days: 96% success (23/24)
+   - Avg duration trend: ↓ improving (was 14.1s)
+
 2. ★★★★☆ code-writer (82% efficiency)
-   Success: 95% | Avg Duration: 14.8s | Invocations: 189
+   Success: 95% (179/189) | Avg Duration: 14.8s | Invocations: 189
    Status: Good performance
 
+   Tool Usage (top 3):
+   Edit            ████████████████      40% (302 calls)
+   Read            ██████████████        35% (264 calls)
+   Bash            ██████                15% (113 calls)
+
+   Common Errors:
+   - syntax_error: 5 occurrences
+   - test_failure: 3 occurrences
+
+   Recommendation: Review syntax validation before commits
+
 3. ★★★☆☆ test-specialist (68% efficiency)
-   Success: 85% | Avg Duration: 15.2s | Invocations: 67
+   Success: 85% (57/67) | Avg Duration: 15.2s | Invocations: 67
    ⚠ Needs attention: Below target efficiency (75%)
 
-Recommendations:
-- test-specialist: Consider optimizing test detection logic
-- debug-assistant: Increase success rate (currently 88%)
+   Tool Usage (top 3):
+   Bash            ████████████████████████  60% (241 calls)
+   Read            ██████████                25% (100 calls)
+   Grep            ████                      10% (40 calls)
+
+   Common Errors:
+   - test_failure: 7 occurrences
+     Example: `Test execution failed: Command 'npm test' exited with code 1`
+   - timeout: 3 occurrences
+     Example: `Test timeout after 30s`
+
+   Recommendation: Investigate test timeout issues, optimize test execution
+
+---
+
+Detailed Reports:
+Run `/analyze agents <agent-name>` for agent-specific details
+Run `/analyze agents --compare <agent1> <agent2>` for side-by-side comparison
 ```
+
+**Analysis Functions** (from `.claude/lib/analyze-metrics.sh`):
+- `parse_agent_jsonl(agent_type, timeframe)` - Extract JSONL records
+- `calculate_agent_stats(agent_type, timeframe)` - Compute statistics
+- `identify_common_errors(agent_type, timeframe)` - Error analysis
+- `analyze_tool_usage(agent_type, timeframe)` - Tool usage with ASCII charts
 
 ### Metrics Analysis (`/analyze metrics [timeframe]`)
 

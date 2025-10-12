@@ -347,6 +347,228 @@ generate_metrics_report() {
   fi
 }
 
+# ============================================================================
+# Phase 6: Enhanced Agent Performance Tracking Functions
+# ============================================================================
+
+# Function: parse_agent_jsonl
+# Description: Extract and filter agent metrics from JSONL file
+# Arguments:
+#   $1 - Agent type (e.g., "code-writer")
+#   $2 - Timeframe in days (default: 30)
+# Returns: Filtered JSONL records (one per line)
+parse_agent_jsonl() {
+  local agent_type="$1"
+  local timeframe_days="${2:-30}"
+
+  if [[ -z "$agent_type" ]]; then
+    echo "ERROR: Agent type required" >&2
+    return 1
+  fi
+
+  local agent_file="${METRICS_DIR}/agents/${agent_type}.jsonl"
+
+  if [[ ! -f "$agent_file" ]]; then
+    echo "ERROR: Agent metrics file not found: $agent_file" >&2
+    return 1
+  fi
+
+  local cutoff_date
+  cutoff_date=$(date -d "$timeframe_days days ago" +%Y-%m-%dT%H:%M:%S 2>/dev/null || \
+                date -v-"${timeframe_days}d" +%Y-%m-%dT%H:%M:%S 2>/dev/null)
+
+  jq -r --arg cutoff "$cutoff_date" \
+    'select(.timestamp >= $cutoff)' \
+    "$agent_file" 2>/dev/null || true
+}
+
+# Function: calculate_agent_stats
+# Description: Compute comprehensive statistics for an agent
+# Arguments:
+#   $1 - Agent type
+#   $2 - Timeframe in days (default: 30)
+# Returns: JSON object with computed statistics
+calculate_agent_stats() {
+  local agent_type="$1"
+  local timeframe_days="${2:-30}"
+
+  local jsonl_data
+  jsonl_data=$(parse_agent_jsonl "$agent_type" "$timeframe_days")
+
+  if [[ -z "$jsonl_data" ]]; then
+    echo "{\"error\": \"No data available for $agent_type in last $timeframe_days days\"}"
+    return 1
+  fi
+
+  # Aggregate statistics using jq
+  echo "$jsonl_data" | jq -s '
+    {
+      agent_type: .[0].agent_type,
+      timeframe_days: '$timeframe_days',
+      total_invocations: length,
+
+      # Success metrics
+      successes: map(select(.status == "success")) | length,
+      failures: map(select(.status != "success")) | length,
+      success_rate: (
+        (map(select(.status == "success")) | length) / length * 100 |
+        floor
+      ),
+
+      # Duration metrics
+      avg_duration_ms: (map(.duration_ms) | add / length | floor),
+      min_duration_ms: (map(.duration_ms) | min),
+      max_duration_ms: (map(.duration_ms) | max),
+      median_duration_ms: (
+        map(.duration_ms) | sort |
+        if length % 2 == 0
+        then .[length/2-1:length/2+1] | add / 2
+        else .[length/2]
+        end | floor
+      ),
+
+      # Tool usage aggregation
+      tools_used: (
+        map(.tools_used // {}) |
+        reduce .[] as $item ({};
+          reduce ($item | keys_unsorted[]) as $key (.;
+            .[$key] = ((.[$key] // 0) + $item[$key])
+          )
+        )
+      ),
+
+      # Error aggregation
+      errors_by_type: (
+        map(select(.error_type != null) | .error_type) |
+        group_by(.) |
+        map({(.[0]): length}) |
+        add // {}
+      ),
+
+      # Timestamp range
+      first_invocation: (map(.timestamp) | min),
+      last_invocation: (map(.timestamp) | max)
+    }
+  '
+}
+
+# Function: identify_common_errors
+# Description: Group and count error types, extract error messages
+# Arguments:
+#   $1 - Agent type
+#   $2 - Timeframe in days (default: 30)
+#   $3 - Top N errors to return (default: 5)
+# Returns: Markdown formatted error report
+identify_common_errors() {
+  local agent_type="$1"
+  local timeframe_days="${2:-30}"
+  local top_n="${3:-5}"
+
+  local jsonl_data
+  jsonl_data=$(parse_agent_jsonl "$agent_type" "$timeframe_days")
+
+  if [[ -z "$jsonl_data" ]]; then
+    echo "No error data available for $agent_type"
+    return 0
+  fi
+
+  echo "### Common Errors: $agent_type"
+  echo ""
+
+  # Get error type counts
+  local error_types
+  error_types=$(echo "$jsonl_data" | jq -r '
+    select(.error_type != null) |
+    .error_type
+  ' | sort | uniq -c | sort -rn | head -"$top_n")
+
+  if [[ -z "$error_types" ]]; then
+    echo "No errors found in timeframe"
+    return 0
+  fi
+
+  # Display error types with examples
+  echo "$error_types" | while read -r count error_type; do
+    echo "**${error_type}** ($count occurrences)"
+
+    # Get example error message
+    local example
+    example=$(echo "$jsonl_data" | jq -r \
+      --arg etype "$error_type" \
+      'select(.error_type == $etype) | .error' | head -1)
+
+    echo "  - Example: \`$example\`"
+    echo ""
+  done
+}
+
+# Function: analyze_tool_usage
+# Description: Calculate tool usage percentages and patterns
+# Arguments:
+#   $1 - Agent type
+#   $2 - Timeframe in days (default: 30)
+# Returns: Markdown formatted tool usage report
+analyze_tool_usage() {
+  local agent_type="$1"
+  local timeframe_days="${2:-30}"
+
+  local stats
+  stats=$(calculate_agent_stats "$agent_type" "$timeframe_days")
+
+  if echo "$stats" | jq -e '.error' >/dev/null 2>&1; then
+    echo "No tool usage data available for $agent_type"
+    return 0
+  fi
+
+  echo "### Tool Usage: $agent_type"
+  echo ""
+
+  # Extract tools_used and calculate percentages
+  local tools_json
+  tools_json=$(echo "$stats" | jq -r '.tools_used')
+
+  if [[ "$tools_json" == "{}" ]] || [[ "$tools_json" == "null" ]]; then
+    echo "No tool usage recorded"
+    return 0
+  fi
+
+  # Calculate total tool calls
+  local total_calls
+  total_calls=$(echo "$tools_json" | jq '[.[]] | add')
+
+  if [[ "$total_calls" -eq 0 ]] || [[ "$total_calls" == "null" ]]; then
+    echo "No tool usage recorded"
+    return 0
+  fi
+
+  # Generate sorted tool usage report with percentages and ASCII bars
+  echo "$tools_json" | jq -r --argjson total "$total_calls" '
+    to_entries |
+    map({
+      tool: .key,
+      count: .value,
+      percentage: ((.value / $total) * 100 | floor)
+    }) |
+    sort_by(-.count) |
+    .[] |
+    "\(.tool)|\(.count)|\(.percentage)"
+  ' | while IFS='|' read -r tool count percentage; do
+    # Create ASCII bar (40 chars max)
+    local bar_length=$(( percentage * 40 / 100 ))
+    local bar
+    bar=$(printf '%*s' "$bar_length" | tr ' ' '█')
+    printf "%-15s %s %3d%% (%d calls)\n" "$tool" "$bar" "$percentage" "$count"
+  done
+
+  echo ""
+  echo "**Total tool calls**: $total_calls"
+  local avg_tools_per_invocation
+  avg_tools_per_invocation=$(echo "$stats" | jq -r --argjson total "$total_calls" \
+    '($total / .total_invocations * 10 | floor) / 10')
+  echo "**Average tools per invocation**: $avg_tools_per_invocation"
+  echo ""
+}
+
 # Only run main function if script is executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Default to 30-day analysis
