@@ -47,7 +47,7 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 
 The specifications directory follows this structure:
 - `plans/` - Implementation plans (progressive structure levels)
-- `reports/` - Research reports (format: `NNN_report_name.md`)
+- `reports/{topic}/` - Research reports organized by topic (format: `NNN_report_name.md`)
 - `summaries/` - Implementation summaries linking plans to executed code
 
 All specification documents use incremental three-digit numbering (001, 002, 003...).
@@ -55,6 +55,44 @@ All specification documents use incremental three-digit numbering (001, 002, 003
 **Location**: specs/ directories can exist at project root or in subdirectories for scoped specifications.
 
 **Important**: specs/ directories are gitignored. Never attempt to commit plans, reports, or summaries to git. These are local working artifacts only.
+
+##### Directory Structure Example
+
+```
+{project}/
+├── specs/
+│   ├── reports/
+│   │   ├── existing_patterns/
+│   │   │   ├── 001_auth_patterns.md
+│   │   │   └── 002_session_patterns.md
+│   │   ├── security_practices/
+│   │   │   └── 001_best_practices.md
+│   │   └── alternatives/
+│   │       └── 001_implementation_options.md
+│   ├── plans/
+│   │   ├── 042_user_authentication.md
+│   │   └── 043_session_refactor.md
+│   └── summaries/
+│       ├── 042_implementation_summary.md
+│       └── 043_implementation_summary.md
+└── debug/
+    ├── phase1_failures/
+    │   ├── 001_config_initialization.md
+    │   └── 002_dependency_missing.md
+    └── integration_issues/
+        └── 001_auth_timeout.md
+```
+
+**Report Organization**:
+- Research reports are organized in topic subdirectories under `specs/reports/{topic}/`
+- Each topic has its own numbering sequence starting from 001
+- Topics are determined during research phase (e.g., "existing_patterns", "security_practices", "alternatives")
+
+**Debug Reports**:
+- Debug reports are created in `debug/{topic}/` (separate from specs/)
+- Debug reports are NOT gitignored (unlike specs/) for issue tracking
+- Topic examples: "phase1_failures", "integration_issues", "config_errors", "test_timeout"
+- Created during /orchestrate testing phase failures
 
 ##### Plan Structure Levels
 
