@@ -731,7 +731,81 @@ UPDATE TodoWrite to mark analysis complete and research as in-progress:
 }
 ```
 
-#### Step 2: Launch Parallel Research Agents
+#### Step 2: Determine Absolute Report Paths
+
+**CRITICAL**: Before invoking research agents, calculate ABSOLUTE paths for all report files.
+
+**EXECUTE NOW**: For EACH research topic identified in Step 1:
+
+1. **Detect Specs Directory Location**:
+   ```bash
+   # Priority order for specs directory location:
+   # 1. Check .claude/SPECS.md for registered specs directories
+   # 2. If no SPECS.md, check for .claude/specs/ directory
+   # 3. Fall back to project root specs/ directory
+
+   PROJECT_ROOT="/home/benjamin/.config"  # Current working directory
+   CLAUDE_DIR="${PROJECT_ROOT}/.claude"
+
+   # For Claude Code features, prefer .claude/specs/
+   if [ -d "${CLAUDE_DIR}/specs" ]; then
+     SPECS_DIR="${CLAUDE_DIR}/specs"
+   elif [ -f "${CLAUDE_DIR}/SPECS.md" ]; then
+     # Parse SPECS.md for registered directory
+     SPECS_DIR=$(grep "^- Path:" "${CLAUDE_DIR}/SPECS.md" | head -1 | cut -d: -f2 | tr -d ' ')
+   else
+     # Default to project root
+     SPECS_DIR="${PROJECT_ROOT}/specs"
+   fi
+   ```
+
+2. **Construct Topic Directory Path**:
+   ```bash
+   TOPIC_SLUG="orchestrate_improvements"  # From Step 3.5
+   REPORT_DIR="${SPECS_DIR}/reports/${TOPIC_SLUG}"
+
+   # Ensure directory exists before invoking agents
+   mkdir -p "${REPORT_DIR}"
+   ```
+
+3. **Calculate Next Report Number**:
+   ```bash
+   # Find highest existing report number in topic directory
+   NEXT_NUM=$(find "${REPORT_DIR}" -name "[0-9][0-9][0-9]_*.md" 2>/dev/null | wc -l)
+   NEXT_NUM=$((NEXT_NUM + 1))
+   REPORT_NUM=$(printf "%03d" ${NEXT_NUM})
+   ```
+
+4. **Construct ABSOLUTE Report Path**:
+   ```bash
+   REPORT_NAME="001_existing_patterns_analysis.md"  # Descriptive name
+   REPORT_PATH="${REPORT_DIR}/${REPORT_NAME}"
+
+   # CRITICAL: This must be an ABSOLUTE path
+   # Example: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_existing_patterns_analysis.md
+   # NOT: specs/reports/orchestrate_improvements/001_existing_patterns_analysis.md
+   ```
+
+5. **Store in Workflow State**:
+   ```yaml
+   workflow_state.research_reports[agent_index] = {
+     "agent_index": 1,
+     "topic": "existing_patterns",
+     "topic_slug": "existing_patterns",
+     "expected_path": "${REPORT_PATH}",  # ABSOLUTE path
+     "created_at": null,  # Will be set after agent completes
+     "verified": false,   # Will be set in Step 4.5
+     "retry_count": 0
+   }
+   ```
+
+**Why Absolute Paths Are Critical**:
+
+When research agents receive RELATIVE paths (e.g., `specs/reports/topic/001_report.md`), they interpret them from different base directories, resulting in reports scattered across multiple locations. This was discovered empirically when /orchestrate research agents created reports in inconsistent locations (2 at project root, 1 in .claude/).
+
+By providing ABSOLUTE paths (e.g., `/home/benjamin/.config/.claude/specs/reports/topic/001_report.md`), all agents create reports at exactly the same location, ensuring consistent report collection.
+
+#### Step 2.5: Launch Parallel Research Agents
 
 **EXECUTE NOW**: USE the Task tool to invoke research-specialist agents in parallel.
 
@@ -770,7 +844,7 @@ Here are three research tasks to execute in parallel:
 
 #### Step 3: Complete Research Agent Prompt Template
 
-The following template is used for EACH research-specialist agent invocation in Step 2.
+The following template is used for EACH research-specialist agent invocation in Step 2.5.
 
 **SUBSTITUTE** these placeholders before invoking:
 - [THINKING_MODE]: Value from Step 1.5 (think, think hard, think harder, or empty)
@@ -779,6 +853,7 @@ The following template is used for EACH research-specialist agent invocation in 
 - [PROJECT_NAME]: Generated in Step 3.5
 - [TOPIC_SLUG]: Generated in Step 3.5
 - [SPECS_DIR]: Path to specs directory (from SPECS.md or auto-detected)
+- [ABSOLUTE_REPORT_PATH]: ABSOLUTE path calculated in Step 2 (CRITICAL - must be absolute)
 - [COMPLEXITY_LEVEL]: Simple|Medium|Complex|Critical (from Step 1.5)
 - [SPECIFIC_REQUIREMENTS]: What this agent should investigate
 
@@ -844,25 +919,24 @@ Investigate [SPECIFIC_REQUIREMENTS] to inform planning and implementation phases
 
 You MUST create a research report file using the Write tool. Do NOT return only a summary.
 
-**Report File Path Determination**:
+**CRITICAL: Use the Provided Absolute Path**:
 
-1. USE Glob to find existing reports in topic directory:
-   ```
-   Glob pattern: "[SPECS_DIR]/reports/[TOPIC_SLUG]/[0-9][0-9][0-9]_*.md"
-   ```
+The orchestrator has calculated an ABSOLUTE report file path for you. You MUST use this exact path when creating the report file:
 
-2. DETERMINE next report number:
-   - Parse highest existing number in topic directory
-   - Increment by 1
-   - Format as 3-digit (001, 002, 003...)
+**Report Path**: [ABSOLUTE_REPORT_PATH]
 
-3. CONSTRUCT report filename:
-   - Format: NNN_descriptive_name.md
-   - Example: 001_auth_patterns_analysis.md
-   - Use lowercase with underscores
+Example: `/home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_existing_patterns.md`
 
-4. CREATE report file path:
-   - Full path: [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_descriptive_name.md
+**DO NOT**:
+- Recalculate the path yourself
+- Use relative paths (e.g., `specs/reports/...`)
+- Change the directory location
+- Modify the report number
+
+**DO**:
+- Use the Write tool with the exact path provided above
+- Create the report at the specified ABSOLUTE path
+- Return this exact path in your REPORT_PATH: output
 
 **Report Structure** (use this exact template):
 
@@ -925,8 +999,10 @@ You MUST create a research report file using the Write tool. Do NOT return only 
 
 **Primary Output**: Report file path in this exact format:
 ```
-REPORT_PATH: [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_descriptive_name.md
+REPORT_PATH: [ABSOLUTE_REPORT_PATH]
 ```
+
+**CRITICAL**: This must be the exact ABSOLUTE path provided to you by the orchestrator. Do NOT output a relative path.
 
 **Secondary Output**: Brief summary (1-2 sentences):
 - What was researched
@@ -934,7 +1010,7 @@ REPORT_PATH: [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_descriptive_name.md
 
 **Example Output**:
 ```
-REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md
+REPORT_PATH: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_auth_patterns.md
 
 Research investigated current authentication implementations in the codebase. Found
 session-based auth using Redis with 30-minute TTL. Primary recommendation: Extend
@@ -1471,6 +1547,152 @@ Research Phase Complete - Ready for Planning Phase
 ```
 
 This example demonstrates the complete execution flow from user request to validated research reports.
+
+#### Troubleshooting: Research Phase Common Issues
+
+##### Issue 1: Reports Created in Wrong Location (Path Inconsistency)
+
+**Symptom**: Research agents complete successfully but reports not found at expected location.
+
+**Root Cause**: Agents received RELATIVE paths and interpreted them from different base directories.
+
+**Example**:
+```
+Expected: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_report.md
+Actual:   /home/benjamin/.config/specs/reports/orchestrate_improvements/001_report.md
+          (missing .claude/ subdirectory)
+```
+
+**Diagnosis**:
+```bash
+# Search for report file in multiple locations
+find /home/benjamin/.config -name "001_*.md" -path "*/specs/reports/orchestrate_improvements/*" 2>/dev/null
+
+# Check agent prompts to verify absolute paths were provided
+grep "REPORT_PATH:" .claude/checkpoints/*.json
+```
+
+**Resolution**:
+1. **Prevention** (CRITICAL): Always provide ABSOLUTE paths in agent prompts (see Step 2)
+2. **Recovery**: If reports exist at wrong location:
+   ```bash
+   # Move reports to correct location
+   EXPECTED="/home/benjamin/.config/.claude/specs/reports/topic"
+   ACTUAL="/home/benjamin/.config/specs/reports/topic"
+
+   mkdir -p "$EXPECTED"
+   mv "$ACTUAL"/*.md "$EXPECTED/"
+   ```
+3. **Verification**: Re-run Step 4 verification to confirm all reports at expected locations
+
+**Prevention Checklist**:
+- [ ] Step 2 generates ABSOLUTE paths (starts with `/home/...`)
+- [ ] Agent prompts contain `[ABSOLUTE_REPORT_PATH]` placeholder
+- [ ] No relative paths (e.g., `specs/...`) in agent prompts
+- [ ] Directory exists before agents invoked (`mkdir -p`)
+
+##### Issue 2: Report Metadata Incomplete
+
+**Symptom**: Report file exists but missing required metadata fields.
+
+**Root Cause**: Agent didn't follow report structure template correctly.
+
+**Diagnosis**:
+```bash
+# Check report has metadata section
+head -20 /path/to/report.md | grep -E "^## Metadata|^- \*\*Date\*\*:|^- \*\*Topic\*\*:"
+```
+
+**Resolution**:
+```bash
+# Edit report to add missing metadata
+# Use Edit tool to add fields at top of file
+```
+
+**Prevention**: Research agent prompt template (Step 3) includes complete metadata template.
+
+##### Issue 3: Agent Failed to Create Report File
+
+**Symptom**: Agent completed but no REPORT_PATH in output and no file created.
+
+**Root Cause**: Agent returned summary instead of creating file, or Write tool failed.
+
+**Diagnosis**:
+- Check agent output for REPORT_PATH: marker
+- Check agent output for Write tool invocation
+- Check agent output for errors (permission denied, disk full)
+
+**Resolution**:
+1. **Retry agent invocation** with emphasized file creation requirement:
+   ```markdown
+   CRITICAL: You MUST use the Write tool to create a report file at:
+   [ABSOLUTE_REPORT_PATH]
+
+   DO NOT return only a summary. The report file must be created.
+   ```
+2. **Verify directory permissions**:
+   ```bash
+   ls -ld .claude/specs/reports/
+   mkdir -p .claude/specs/reports/topic_slug
+   ```
+
+##### Issue 4: Multiple Agents Create Same Report Number
+
+**Symptom**: Agents overwrite each other's reports, final count doesn't match agent count.
+
+**Root Cause**: Report numbers calculated before agents start, but agents run in parallel and race to create files.
+
+**Resolution**:
+- **Not an issue**: Orchestrator calculates report numbers in Step 2 BEFORE invoking agents
+- Each agent receives unique report number in its prompt
+- Parallel execution safe because paths are pre-allocated
+
+**If this still occurs**:
+- Check Step 2 implementation: Each agent must get unique `REPORT_NUM`
+- Verify agents don't recalculate report numbers themselves
+
+##### Issue 5: Research Phase Takes Too Long
+
+**Symptom**: Research agents running for >10 minutes total.
+
+**Diagnosis**:
+- Check if agents invoked in parallel (single message) or sequential (multiple messages)
+- Check agent thinking modes (too complex for simple workflows)
+
+**Resolution**:
+1. **Verify parallel execution**: All Task invocations in single message (Step 2.5)
+2. **Reduce thinking mode complexity**: Recalculate complexity score (Step 1.5)
+3. **Reduce research scope**: Fewer topics (2-3 instead of 4)
+4. **Check agent resources**: Agents may be waiting for tools (Grep on large codebase)
+
+**Expected Timings**:
+- Simple research (2 agents): 2-3 minutes parallel
+- Medium research (3 agents): 3-5 minutes parallel
+- Complex research (4 agents): 5-8 minutes parallel
+
+##### Issue 6: All Research Agents Failed
+
+**Symptom**: All agents return errors or no reports created.
+
+**Possible Causes**:
+1. **Specs directory doesn't exist**:
+   ```bash
+   mkdir -p .claude/specs/reports
+   ```
+2. **Permission denied**:
+   ```bash
+   ls -ld .claude/specs/reports
+   chmod u+w .claude/specs/reports
+   ```
+3. **Agent behavioral guidelines missing**:
+   ```bash
+   ls -l .claude/agents/research-specialist.md
+   ```
+4. **Invalid agent prompts**: Check for placeholder substitution errors
+
+**Resolution**: Check each cause systematically, fix infrastructure issues, retry research phase.
+
+**Escalation**: If all agents fail after retry and infrastructure verified, escalate to user with detailed error report.
 
 ### Planning Phase (Sequential Execution)
 
