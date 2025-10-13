@@ -18,6 +18,26 @@ readonly CHECKPOINT_SCHEMA_VERSION="1.1"
 # Checkpoint directory
 readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/checkpoints"
 
+# Wave Tracking Fields (for parallel execution - Phase 2):
+# When implementing parallel phase execution, the following fields should be
+# included in the workflow_state JSON passed to save_checkpoint():
+#
+# - current_wave: Current wave number (1-indexed)
+# - total_waves: Total number of waves in dependency graph
+# - wave_structure: Map of wave number to phase numbers
+#   Example: {"1": [1], "2": [2, 3], "3": [4]}
+# - parallel_execution_enabled: Boolean flag for --sequential override
+# - max_wave_parallelism: Maximum concurrent phases per wave (default: 3)
+# - wave_results: Detailed results for each completed/in-progress wave
+#   Example: {
+#     "1": {"phases": [1], "status": "completed", "duration_ms": 185000},
+#     "2": {"phases": [2, 3], "status": "in_progress", "parallel": true}
+#   }
+#
+# These fields enable proper wave state tracking for checkpoint resume
+# after wave failures, allowing retry of failed waves while preserving
+# completed wave progress.
+
 # ==============================================================================
 # Core Functions
 # ==============================================================================
