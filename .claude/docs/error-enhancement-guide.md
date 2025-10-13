@@ -432,6 +432,6 @@ export CLAUDE_DISABLE_ERROR_ENHANCEMENT=1
 ## Navigation
 
 - [← Documentation Index](README.md)
-- [Checkpointing Guide](checkpointing-guide.md)
+- [Checkpointing Guide](adaptive-planning-guide.md)
 - [Troubleshooting Guide](troubleshooting.md)
 - [Commands Directory](../commands/README.md)

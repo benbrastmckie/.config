@@ -492,8 +492,8 @@ Apply merged standards
 
 ## References
 
-- [Standards Integration Pattern](standards-integration-pattern.md) - How to integrate standards
+- [Standards Integration Pattern](standards-integration.md) - How to integrate standards
 - [CLAUDE.md Section Schema](claude-md-section-schema.md) - Section formats
-- [Standards Integration Examples](standards-integration-examples.md) - Concrete examples
+- [Standards Integration Examples](standards-integration.md) - Concrete examples
 - Root CLAUDE.md - Project standards
 - Command files in .claude/commands/ - Individual command documentation

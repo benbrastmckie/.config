@@ -422,8 +422,8 @@ awk "/^## $section/,/^## [^#]/" "$file" | head -n -1
 
 ## References
 
-- [Standards Integration Pattern](standards-integration-pattern.md) - How commands use these sections
-- [Standards Integration Examples](standards-integration-examples.md) - Parsing examples
+- [Standards Integration Pattern](standards-integration.md) - How commands use these sections
+- [Standards Integration Examples](standards-integration.md) - Parsing examples
 - Root CLAUDE.md - Reference implementation
 - nvim/CLAUDE.md - Subdirectory example
 

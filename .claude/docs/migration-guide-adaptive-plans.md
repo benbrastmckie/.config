@@ -484,7 +484,7 @@ mv specs/plans/backups/NNN_plan_YYYYMMDD.bak specs/plans/NNN_plan.md
 ## Support and Resources
 
 ### Documentation
-- [Adaptive Plan Structures Guide](adaptive-plan-structures.md)
+- [Adaptive Plan Structures Guide](adaptive-planning-guide.md)
 - [Commands README](../commands/README.md)
 - [Specs README](../specs/README.md)
 
