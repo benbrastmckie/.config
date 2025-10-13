@@ -1107,30 +1107,102 @@ These values are used in Step 2 when constructing research agent prompts and rep
 
 #### Step 3a: Monitor Research Agent Execution
 
-After invoking all research agents in Step 2, MONITOR their progress and execution.
+After invoking all research agents in Step 2.5, MONITOR their progress and execution with detailed visibility.
 
 **EXECUTE NOW**:
 
-1. WATCH for PROGRESS: markers from each agent:
-   - "PROGRESS: Starting research on [topic]..."
-   - "PROGRESS: Searching codebase..."
-   - "PROGRESS: Analyzing findings..."
-   - "PROGRESS: Creating report file..."
-   - "PROGRESS: Research complete."
-
-2. DISPLAY progress to user in real-time:
+1. **Emit Research Phase Start Marker**:
    ```
-   [Agent 1: existing_patterns] Searching codebase...
-   [Agent 2: security_practices] Searching for best practices...
-   [Agent 3: framework_implementations] Analyzing alternatives...
+   PROGRESS: Starting Research Phase (N agents, parallel execution)
+   ```
+   Where N is the number of research agents invoked.
+
+2. **Watch for Per-Agent Progress Markers**:
+
+   Each research agent should emit standardized progress markers in this format:
+   ```
+   PROGRESS: [Agent N/M: topic_slug] Status message
    ```
 
-3. WAIT for ALL agents to complete before proceeding to Step 4
+   Expected progression for each agent:
+   - `PROGRESS: [Agent 1/3: existing_patterns] Starting research...`
+   - `PROGRESS: [Agent 1/3: existing_patterns] Analyzing codebase...`
+   - `PROGRESS: [Agent 1/3: existing_patterns] Searching best practices...`
+   - `PROGRESS: [Agent 1/3: existing_patterns] Writing report file...`
+   - `PROGRESS: [Agent 1/3: existing_patterns] Report created ✓`
 
-4. CHECK for agent errors or failures:
-   - If agent fails: Note error, continue with other agents
-   - If all agents fail: Escalate to user
-   - If partial success: Proceed with available reports
+3. **Watch for Report Creation Markers**:
+
+   When a report file is successfully created, the agent emits:
+   ```
+   REPORT_CREATED: /absolute/path/to/report.md
+   ```
+
+   Example:
+   ```
+   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_auth_patterns.md
+   ```
+
+   **IMPORTANT**: Report path must be ABSOLUTE (verify it starts with `/`).
+
+4. **Display Aggregated Progress to User**:
+
+   As progress markers arrive, display consolidated view:
+   ```
+   PROGRESS: Starting Research Phase (3 agents, parallel execution)
+   PROGRESS: [Agent 1/3: existing_patterns] Analyzing codebase...
+   PROGRESS: [Agent 2/3: security_practices] Searching best practices...
+   PROGRESS: [Agent 3/3: alternatives] Comparing approaches...
+   PROGRESS: [Agent 1/3: existing_patterns] Report created ✓
+   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md
+   PROGRESS: [Agent 2/3: security_practices] Report created ✓
+   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
+   PROGRESS: [Agent 3/3: alternatives] Report created ✓
+   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/alternatives/001_comparison.md
+   ```
+
+5. **Track Completion Status**:
+
+   Maintain completion tracking:
+   ```yaml
+   agent_status:
+     agent_1: completed  # Report created successfully
+     agent_2: completed  # Report created successfully
+     agent_3: in_progress  # Still working
+   ```
+
+6. **Wait for ALL Agents to Complete**:
+
+   Before proceeding to Step 4, ensure all agents have reached one of these states:
+   - **completed**: Report created successfully (REPORT_CREATED marker received)
+   - **failed**: Agent returned error or timeout
+   - **partial**: Agent completed but report file missing (will be handled in Step 4.5)
+
+7. **Check for Agent Errors or Failures**:
+
+   - **Single agent fails**: Note error, collect available reports, continue
+   - **Multiple agents fail**: Assess whether remaining reports sufficient for planning
+   - **All agents fail**: Escalate to user with detailed error summary
+   - **Partial success**: Proceed with available reports, flag missing reports for retry
+
+8. **Emit Research Phase Completion Summary**:
+
+   After all agents complete:
+   ```
+   PROGRESS: Research Phase complete - N/M reports created (R retries needed)
+   ```
+
+   Example:
+   ```
+   PROGRESS: Research Phase complete - 3/3 reports verified (0 retries needed)
+   ```
+
+**Progress Marker Format Standards**:
+
+- **Phase Markers**: `PROGRESS: [Phase description]`
+- **Agent Markers**: `PROGRESS: [Agent N/M: topic] Status`
+- **Report Markers**: `REPORT_CREATED: /absolute/path/to/report.md`
+- **Completion Markers**: `PROGRESS: Phase complete - N/M reports verified (R retries)`
 
 **Expected Agent Completion Time**:
 - Simple research: 1-2 minutes per agent
@@ -1141,6 +1213,39 @@ After invoking all research agents in Step 2, MONITOR their progress and executi
 - Sequential (one after another): 3 agents × 3 minutes = 9 minutes
 - Parallel (all at once): max(3 minutes) = 3 minutes
 - Time saved: ~66% for 3 agents
+
+**Error Progress Markers**:
+
+If an agent encounters errors:
+```
+PROGRESS: [Agent 2/3: security_practices] ERROR - Failed to create report
+ERROR: Agent 2 (security_practices): Write tool failed - permission denied
+```
+
+**TodoWrite Integration**:
+
+Update task list to show per-agent progress:
+```json
+{
+  "todos": [
+    {
+      "content": "Research Agent 1/3: existing_patterns",
+      "status": "completed",
+      "activeForm": "Researching existing_patterns"
+    },
+    {
+      "content": "Research Agent 2/3: security_practices",
+      "status": "in_progress",
+      "activeForm": "Researching security_practices"
+    },
+    {
+      "content": "Research Agent 3/3: alternatives",
+      "status": "pending",
+      "activeForm": "Researching alternatives"
+    }
+  ]
+}
+```
 
 Proceed to Step 4 only after all agents complete or fail definitively.
 
