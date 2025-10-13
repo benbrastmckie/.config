@@ -14,6 +14,116 @@ I'll coordinate multiple specialized subagents through a complete development wo
 
 Let me first analyze your workflow description to identify the natural phases and requirements.
 
+## Workflow Execution Infrastructure
+
+Before beginning the workflow, I'll initialize the execution infrastructure for progress tracking, state management, and checkpoint persistence.
+
+### Workflow Initialization
+
+**EXECUTE NOW**: Initialize TodoWrite and workflow state at the start of every orchestration.
+
+**Step 1: Initialize TodoWrite with Workflow Phases**
+
+USE the TodoWrite tool to create a task list tracking all workflow phases:
+
+```json
+{
+  "todos": [
+    {
+      "content": "Analyze workflow and identify research topics",
+      "status": "pending",
+      "activeForm": "Analyzing workflow and identifying research topics"
+    },
+    {
+      "content": "Execute parallel research phase",
+      "status": "pending",
+      "activeForm": "Executing parallel research phase"
+    },
+    {
+      "content": "Create implementation plan",
+      "status": "pending",
+      "activeForm": "Creating implementation plan"
+    },
+    {
+      "content": "Implement features with testing",
+      "status": "pending",
+      "activeForm": "Implementing features with testing"
+    },
+    {
+      "content": "Debug and fix test failures (if needed)",
+      "status": "pending",
+      "activeForm": "Debugging and fixing test failures"
+    },
+    {
+      "content": "Generate documentation and workflow summary",
+      "status": "pending",
+      "activeForm": "Generating documentation and workflow summary"
+    }
+  ]
+}
+```
+
+**Step 2: Initialize Workflow State**
+
+CREATE the workflow_state structure in memory (no tool invocation - this is internal state tracking):
+
+```yaml
+workflow_state:
+  workflow_description: "[User's complete workflow description]"
+  workflow_type: "feature|refactor|debug|investigation"  # Determined from analysis
+  thinking_mode: null  # Will be set based on complexity score
+  current_phase: "analysis"
+  completed_phases: []
+  project_name: ""  # Auto-generated slug from workflow description
+
+  # Context preservation (file paths only, not content)
+  context_preservation:
+    research_reports: []  # Paths to created report files
+    plan_path: ""         # Path to implementation plan
+    implementation_status:
+      tests_passing: false
+      files_modified: []
+    debug_reports: []     # Paths to debug report files
+    documentation_paths: [] # Paths to generated documentation
+
+  # Execution tracking
+  execution_tracking:
+    phase_start_times: {}
+    phase_end_times: {}
+    agent_invocations: []  # Record of all Task tool invocations
+    error_history: []      # Record of failures and recoveries
+    debug_iteration: 0     # Current debugging iteration (max 3)
+
+  # Performance metrics
+  performance_metrics:
+    total_duration_seconds: 0
+    research_parallelization_savings: 0
+    debug_iterations_used: 0
+    agents_invoked: 0
+    files_created: 0
+```
+
+**Step 3: Check for Resumable Checkpoint**
+
+BEFORE starting fresh workflow, check if a checkpoint exists from a previous interrupted orchestration:
+
+```bash
+# Check for checkpoint file
+if [ -f .claude/checkpoints/orchestrate_latest.checkpoint ]; then
+  # Checkpoint exists - ask user if they want to resume
+  echo "Found existing orchestration checkpoint. Resume? (y/n)"
+  # If yes: load checkpoint state and skip to current_phase
+  # If no: proceed with fresh workflow
+fi
+```
+
+**Verification Checklist**:
+- [ ] TodoWrite invoked with all 6 workflow phase tasks
+- [ ] workflow_state structure initialized in memory
+- [ ] Checkpoint detection performed (resume prompt if checkpoint found)
+- [ ] current_phase set to "analysis"
+- [ ] Ready to proceed with workflow analysis
+
 ## Shared Utilities Integration
 
 This command uses shared utility libraries for consistent workflow management:
@@ -21,6 +131,198 @@ This command uses shared utility libraries for consistent workflow management:
 - **Error Handling**: Uses `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
 
 These utilities ensure workflow state is preserved across interruptions and agent failures are handled gracefully.
+
+## Error Handling Strategy
+
+Throughout the workflow, handle errors according to these principles:
+
+### Agent Invocation Failures
+
+**If Task tool invocation fails**:
+1. CAPTURE the error message from the Task tool
+2. RETRY once with the same parameters
+3. If retry fails:
+   - LOG the failure to workflow_state.execution_tracking.error_history
+   - ESCALATE to user with:
+     - Error description
+     - Phase where failure occurred
+     - Checkpoint path (for resume)
+     - Suggested manual intervention
+
+**If agent completes but returns error**:
+1. READ the agent's error output
+2. CHECK if error is recoverable (e.g., file not found, invalid input)
+3. If recoverable:
+   - CORRECT the input/context
+   - RETRY agent invocation
+4. If not recoverable:
+   - DOCUMENT in workflow_state.execution_tracking.error_history
+   - ESCALATE to user
+
+### File Creation Failures
+
+**If expected file not created** (report, plan, debug report):
+1. VERIFY file path is correct
+2. CHECK agent output for actual file path (may differ from expected)
+3. USE Read tool to attempt reading the file
+4. If file truly missing:
+   - LOG failure with phase and expected path
+   - RETRY agent invocation (max 1 retry)
+   - If still missing: ESCALATE to user
+
+### Test Failures
+
+**Test failures are expected** - handle via debugging loop:
+1. DO NOT treat test failures as errors
+2. ENTER debugging loop (max 3 iterations)
+3. ONLY escalate if debugging loop exhausted
+
+### Checkpoint Failures
+
+**If checkpoint save fails**:
+1. RETRY checkpoint save operation
+2. If persistent failure:
+   - WARN user that resumption not possible
+   - CONTINUE workflow (don't block on checkpoint)
+   - Note limitation in final summary
+
+### General Error Recovery
+
+```yaml
+error_recovery_pattern:
+  1_capture: Record full error message and context
+  2_classify: Determine if error is transient or permanent
+  3_retry: Attempt recovery once if transient
+  4_log: Add to workflow_state.execution_tracking.error_history
+  5_escalate: Provide user with clear options (resume, manual intervention, abort)
+```
+
+### Error History Structure
+
+```yaml
+workflow_state.execution_tracking.error_history:
+  - phase: "research"
+    error_type: "agent_invocation_failure"
+    error_message: "Task tool timeout after 600s"
+    recovery_attempted: "Retry invocation"
+    recovery_success: false
+    escalated_to_user: true
+    timestamp: "2025-10-12T14:30:22"
+```
+
+## Progress Streaming
+
+Throughout the workflow, emit progress markers to provide real-time visibility into execution status.
+
+### Progress Marker Format
+
+USE `PROGRESS:` prefix for all progress messages:
+
+```
+PROGRESS: [phase] - [action_description]
+```
+
+### When to Emit Progress Markers
+
+**At Phase Transitions**:
+```
+PROGRESS: Starting Research Phase (parallel execution)
+PROGRESS: Research Phase complete - 3 reports created
+PROGRESS: Starting Planning Phase (sequential execution)
+PROGRESS: Planning Phase complete - plan created
+PROGRESS: Starting Implementation Phase (adaptive execution)
+PROGRESS: Implementation Phase complete - tests passing
+PROGRESS: Starting Documentation Phase (sequential execution)
+PROGRESS: Documentation Phase complete - workflow summary generated
+```
+
+**During Agent Invocations**:
+```
+PROGRESS: Invoking 3 research-specialist agents in parallel...
+PROGRESS: Research agent 1/3 completed (existing_patterns)
+PROGRESS: Research agent 2/3 completed (security_practices)
+PROGRESS: Research agent 3/3 completed (framework_implementations)
+
+PROGRESS: Invoking plan-architect agent...
+PROGRESS: Plan created: specs/plans/042_user_authentication.md
+
+PROGRESS: Invoking code-writer agent with /implement...
+PROGRESS: Implementation Phase 1/4 complete
+PROGRESS: Implementation Phase 2/4 complete
+PROGRESS: Implementation Phase 3/4 complete
+PROGRESS: Implementation Phase 4/4 complete - tests passing
+
+PROGRESS: Invoking doc-writer agent for workflow summary...
+PROGRESS: Workflow summary created: specs/summaries/042_summary.md
+```
+
+**During Debugging Loop**:
+```
+PROGRESS: Entering debugging loop (iteration 1/3)
+PROGRESS: Invoking debug-specialist agent...
+PROGRESS: Debug report created: debug/test_failures/001_auth_timeout.md
+PROGRESS: Applying recommended fix via code-writer agent...
+PROGRESS: Fix applied - running tests...
+PROGRESS: Tests passing ✓ - debugging complete
+```
+
+**During File Operations**:
+```
+PROGRESS: Saving research checkpoint...
+PROGRESS: Checkpoint saved: .claude/checkpoints/orchestrate_user_auth_20251012_143022.json
+
+PROGRESS: Verifying report files created...
+PROGRESS: All 3 reports verified and readable
+```
+
+**During Cross-Reference Creation**:
+```
+PROGRESS: Creating bidirectional cross-references...
+PROGRESS: Plan → Reports links added (3 links)
+PROGRESS: Reports → Plan links added (3 links)
+PROGRESS: Summary → All artifacts links added (7 links)
+PROGRESS: Cross-reference validation complete
+```
+
+### Progress Streaming Best Practices
+
+1. **Emit Before Long Operations**: Always emit before agent invocations, file reads, or bash operations
+2. **Include Context**: Specify which phase/agent/file is being processed
+3. **Show Counts**: Use "N/M" format for multi-step operations
+4. **Indicate Success**: Use ✓ for successful completions
+5. **Update TodoWrite**: Emit progress after updating TodoWrite status
+
+### Progress + TodoWrite Coordination
+
+ALWAYS update TodoWrite BEFORE emitting phase transition progress marker:
+
+```
+1. Update TodoWrite (mark current phase complete, next phase in_progress)
+2. Emit PROGRESS: marker
+3. Proceed with next phase
+```
+
+**Example**:
+```
+[Update TodoWrite: research → completed, planning → in_progress]
+PROGRESS: Research Phase complete - 3 reports created
+PROGRESS: Starting Planning Phase (sequential execution)
+[Invoke plan-architect agent]
+```
+
+### Progress Marker Density
+
+**Appropriate Density**:
+- Phase transitions: Always
+- Agent invocations: Always
+- Long-running operations (>30s): Every 30s or at natural checkpoints
+- File operations: For important files (plans, reports, summaries)
+- Verification steps: At completion
+
+**Avoid Over-Emitting**:
+- Internal state updates (don't emit for every workflow_state change)
+- Trivial operations (string formatting, variable assignment)
+- Repeated operations (don't emit for each of 100 files read)
 
 ### Step 1: Parse Workflow Description
 
@@ -173,6 +475,38 @@ CALCULATE workflow complexity score to determine thinking mode for all agents in
 → Total: 23 (Critical, thinking mode: "think harder")
 
 This thinking mode will be prepended to ALL agent prompts in subsequent phases.
+
+**State Management**:
+
+UPDATE workflow_state after determining thinking mode and research strategy:
+
+```yaml
+workflow_state.thinking_mode = "[calculated thinking mode]"
+workflow_state.current_phase = "research"
+workflow_state.execution_tracking.phase_start_times["analysis"] = [current timestamp]
+workflow_state.execution_tracking.phase_end_times["analysis"] = [current timestamp]
+workflow_state.completed_phases.append("analysis")
+```
+
+UPDATE TodoWrite to mark analysis complete and research as in-progress:
+
+```json
+{
+  "todos": [
+    {
+      "content": "Analyze workflow and identify research topics",
+      "status": "completed",
+      "activeForm": "Analyzing workflow and identifying research topics"
+    },
+    {
+      "content": "Execute parallel research phase",
+      "status": "in_progress",
+      "activeForm": "Executing parallel research phase"
+    },
+    // ... remaining todos unchanged ...
+  ]
+}
+```
 
 #### Step 2: Launch Parallel Research Agents
 
@@ -755,6 +1089,45 @@ Performance:
 Next Phase: Planning
 ```
 
+**State Management**:
+
+UPDATE workflow_state after research phase completes:
+
+```yaml
+workflow_state.current_phase = "planning"
+workflow_state.execution_tracking.phase_start_times["research"] = [research start timestamp]
+workflow_state.execution_tracking.phase_end_times["research"] = [current timestamp]
+workflow_state.execution_tracking.agents_invoked += [number of research agents]
+workflow_state.execution_tracking.files_created += [number of reports]
+workflow_state.completed_phases.append("research")
+workflow_state.context_preservation.research_reports = [array of report paths]
+```
+
+UPDATE TodoWrite to mark research complete and planning as next:
+
+```json
+{
+  "todos": [
+    {
+      "content": "Analyze workflow and identify research topics",
+      "status": "completed",
+      "activeForm": "Analyzing workflow and identifying research topics"
+    },
+    {
+      "content": "Execute parallel research phase",
+      "status": "completed",
+      "activeForm": "Executing parallel research phase"
+    },
+    {
+      "content": "Create implementation plan",
+      "status": "in_progress",
+      "activeForm": "Creating implementation plan"
+    },
+    // ... remaining todos unchanged ...
+  ]
+}
+```
+
 #### Step 7: Complete Research Phase Execution Example
 
 **Full Workflow Example**: "Add user authentication with email and password"
@@ -1313,6 +1686,50 @@ OUTPUT completion status to user with comprehensive details.
 **Checkpoint Saved**: .claude/checkpoints/orchestrate_[project_name]_[timestamp].json
 
 **Next Phase**: Implementation
+```
+
+**State Management**:
+
+UPDATE workflow_state after planning phase completes:
+
+```yaml
+workflow_state.current_phase = "implementation"
+workflow_state.execution_tracking.phase_start_times["planning"] = [planning start timestamp]
+workflow_state.execution_tracking.phase_end_times["planning"] = [current timestamp]
+workflow_state.execution_tracking.agents_invoked += 1  # plan-architect agent
+workflow_state.execution_tracking.files_created += 1  # plan file
+workflow_state.completed_phases.append("planning")
+workflow_state.context_preservation.plan_path = [extracted plan path]
+```
+
+UPDATE TodoWrite to mark planning complete and implementation as next:
+
+```json
+{
+  "todos": [
+    {
+      "content": "Analyze workflow and identify research topics",
+      "status": "completed",
+      "activeForm": "Analyzing workflow and identifying research topics"
+    },
+    {
+      "content": "Execute parallel research phase",
+      "status": "completed",
+      "activeForm": "Executing parallel research phase"
+    },
+    {
+      "content": "Create implementation plan",
+      "status": "completed",
+      "activeForm": "Creating implementation plan"
+    },
+    {
+      "content": "Implement features with testing",
+      "status": "in_progress",
+      "activeForm": "Implementing features with testing"
+    },
+    // ... remaining todos unchanged ...
+  ]
+}
 ```
 
 **Transition Confirmation**:
@@ -2082,6 +2499,45 @@ The implementation succeeded. Proceeding to documentation phase to update
 project documentation and generate workflow summary.
 ```
 
+**State Management** (Success Path):
+
+UPDATE workflow_state after implementation phase completes successfully:
+
+```yaml
+workflow_state.current_phase = "documentation"
+workflow_state.execution_tracking.phase_start_times["implementation"] = [impl start timestamp]
+workflow_state.execution_tracking.phase_end_times["implementation"] = [current timestamp]
+workflow_state.execution_tracking.agents_invoked += 1  # code-writer agent
+workflow_state.completed_phases.append("implementation")
+workflow_state.context_preservation.implementation_status.tests_passing = true
+workflow_state.context_preservation.implementation_status.files_modified = [modified files array]
+```
+
+UPDATE TodoWrite to mark implementation complete and skip debugging (tests passed):
+
+```json
+{
+  "todos": [
+    // ... previous todos all marked completed ...
+    {
+      "content": "Implement features with testing",
+      "status": "completed",
+      "activeForm": "Implementing features with testing"
+    },
+    {
+      "content": "Debug and fix test failures (if needed)",
+      "status": "completed",
+      "activeForm": "Debugging and fixing test failures (skipped - tests passed)"
+    },
+    {
+      "content": "Generate documentation and workflow summary",
+      "status": "in_progress",
+      "activeForm": "Generating documentation and workflow summary"
+    }
+  ]
+}
+```
+
 **IF FAILURE PATH** (tests failing):
 
 ```markdown
@@ -2106,6 +2562,46 @@ Files modified before failure:
 
 The implementation encountered test failures. Entering debugging loop to
 investigate and fix issues. Maximum 3 debugging iterations before escalation.
+```
+
+**State Management** (Failure Path):
+
+UPDATE workflow_state after implementation phase fails:
+
+```yaml
+workflow_state.current_phase = "debugging"
+workflow_state.execution_tracking.phase_start_times["implementation"] = [impl start timestamp]
+workflow_state.execution_tracking.phase_end_times["implementation"] = [current timestamp]
+workflow_state.execution_tracking.agents_invoked += 1  # code-writer agent
+workflow_state.completed_phases.append("implementation")  # Marked complete even if failed
+workflow_state.context_preservation.implementation_status.tests_passing = false
+workflow_state.context_preservation.implementation_status.files_modified = [partial files array]
+workflow_state.execution_tracking.debug_iteration = 0  # Reset for debugging loop
+```
+
+UPDATE TodoWrite to mark implementation complete (with failure) and debugging as next:
+
+```json
+{
+  "todos": [
+    // ... previous todos all marked completed ...
+    {
+      "content": "Implement features with testing",
+      "status": "completed",
+      "activeForm": "Implementing features with testing (tests failed)"
+    },
+    {
+      "content": "Debug and fix test failures (if needed)",
+      "status": "in_progress",
+      "activeForm": "Debugging and fixing test failures"
+    },
+    {
+      "content": "Generate documentation and workflow summary",
+      "status": "pending",
+      "activeForm": "Generating documentation and workflow summary"
+    }
+  ]
+}
 ```
 
 **Implementation Instructions**:
@@ -2657,6 +3153,46 @@ ELSE:
    Next: Documentation Phase
    ```
 
+**State Management** (Debugging Success):
+
+UPDATE workflow_state after debugging completes successfully:
+
+```yaml
+workflow_state.current_phase = "documentation"
+workflow_state.execution_tracking.phase_start_times["debugging"] = [debug start timestamp]
+workflow_state.execution_tracking.phase_end_times["debugging"] = [current timestamp]
+workflow_state.execution_tracking.debug_iteration = [final iteration number]
+workflow_state.execution_tracking.agents_invoked += [debug_iteration × 2]  # debug-specialist + code-writer per iteration
+workflow_state.completed_phases.append("debugging")
+workflow_state.context_preservation.debug_reports = [array of debug report paths]
+workflow_state.context_preservation.implementation_status.tests_passing = true
+```
+
+UPDATE TodoWrite to mark debugging complete:
+
+```json
+{
+  "todos": [
+    // ... previous todos all marked completed ...
+    {
+      "content": "Implement features with testing",
+      "status": "completed",
+      "activeForm": "Implementing features with testing"
+    },
+    {
+      "content": "Debug and fix test failures (if needed)",
+      "status": "completed",
+      "activeForm": "Debugging and fixing test failures"
+    },
+    {
+      "content": "Generate documentation and workflow summary",
+      "status": "in_progress",
+      "activeForm": "Generating documentation and workflow summary"
+    }
+  ]
+}
+```
+
 **EXIT debugging loop → PROCEED to Phase 6 (Documentation)**
 
 ---
@@ -3019,118 +3555,1088 @@ Outcome: ⚠️ Escalated to user after 3 iterations
 
 ### Documentation Phase (Sequential Execution)
 
-This phase updates all relevant documentation and generates a comprehensive workflow summary.
+This phase completes the workflow by updating project documentation, generating a comprehensive workflow summary with performance metrics, establishing bidirectional cross-references between all artifacts, and optionally creating a pull request.
 
 #### Step 1: Prepare Documentation Context
 
-**Gather All Workflow Artifacts**:
+GATHER workflow artifacts and build documentation context structure for the doc-writer agent.
+
+**EXECUTE NOW: Gather Workflow Artifacts**
+
+EXTRACT the following from workflow_state and prior phase checkpoints:
+
+1. **Research report paths** (from research phase checkpoint, if completed)
+2. **Implementation plan path** (from planning phase checkpoint)
+3. **Implementation status** (from implementation phase checkpoint)
+4. **Debug report paths** (from debugging phase checkpoint, if occurred)
+5. **Modified files list** (from implementation agent output)
+6. **Test results** (passing or fixed_after_debugging)
+
+BUILD the documentation context structure:
+
 ```yaml
 documentation_context:
-  files_modified: [list from implementation]
-  plan_path: "specs/plans/NNN_*.md"
-  research_reports: [list if research phase completed]
-  debug_reports: [list if debugging occurred]
-  test_results: "passing|fixed_after_debugging"
+  # From workflow initialization
   workflow_description: "[Original user request]"
+  workflow_type: "feature|refactor|debug|investigation"
+  project_name: "[generated project name]"
+
+  # From research phase (if completed)
+  research_reports: [
+    "specs/reports/existing_patterns/001_report.md",
+    "specs/reports/security_practices/001_report.md"
+  ]
+  research_topics: ["existing_patterns", "security_practices"]
+
+  # From planning phase
+  plan_path: "specs/plans/NNN_feature_name.md"
+  plan_number: NNN
+  phase_count: N
+
+  # From implementation phase
+  implementation_status:
+    tests_passing: true
+    phases_completed: "N/N"
+    files_modified: [
+      "file1.ext",
+      "file2.ext"
+    ]
+    git_commits: [
+      "hash1",
+      "hash2"
+    ]
+
+  # From debugging phase (if occurred)
+  debug_reports: [
+    "debug/phase1_failures/001_config_init.md"
+  ]
+  debug_iterations: N
+  issues_resolved: [
+    "Issue 1 description",
+    "Issue 2 description"
+  ]
+
+  # Current phase
+  current_phase: "documentation"
 ```
 
-**Calculate Performance Metrics**:
+**VERIFICATION CHECKLIST**:
+- [ ] workflow_description extracted from state
+- [ ] All phase outputs collected (research, planning, implementation, debugging)
+- [ ] File paths verified (all referenced files exist)
+- [ ] Context structure complete
+
+#### Step 2: Calculate Performance Metrics
+
+CALCULATE workflow timing and performance metrics explicitly.
+
+**EXECUTE NOW: Calculate Performance Metrics**
+
+COMPUTE workflow performance using these explicit algorithms:
+
+1. **Total Workflow Time**:
+   ```
+   total_time = current_timestamp - workflow_start_timestamp
+   total_minutes = total_time / 60
+   total_hours = total_minutes / 60
+   formatted_duration = sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+   ```
+
+2. **Phase Breakdown**:
+   For each completed phase, calculate:
+   ```
+   phase_duration = phase_end_timestamp - phase_start_timestamp
+   phase_minutes = phase_duration / 60
+   ```
+
+3. **Parallelization Metrics** (if research phase completed):
+   ```
+   parallel_agents = count(research_reports)
+   estimated_sequential_time = parallel_agents × average_research_time
+   actual_parallel_time = research_phase_duration
+   time_saved = estimated_sequential_time - actual_parallel_time
+   time_saved_percentage = (time_saved / estimated_sequential_time) × 100
+   ```
+
+4. **Error Recovery Metrics** (if debugging occurred):
+   ```
+   total_errors = count(debug_reports)
+   auto_recovered = total_errors (if tests eventually passed)
+   manual_interventions = 0 (if no user escalation)
+   recovery_success_rate = (auto_recovered / total_errors) × 100
+   ```
+
+BUILD the performance data structure:
+
 ```yaml
 performance_summary:
-  total_workflow_time: "[duration in minutes]"
-  phase_breakdown:
-    research: "[duration or 'skipped']"
-    planning: "[duration]"
-    implementation: "[duration]"
-    debugging: "[duration or 'not_needed']"
+  # Time metrics
+  total_workflow_time: "[HH:MM:SS format]"
+  total_minutes: N
+
+  # Phase breakdown
+  phase_times:
+    research: "[HH:MM:SS or 'Skipped']"
+    planning: "[HH:MM:SS]"
+    implementation: "[HH:MM:SS]"
+    debugging: "[HH:MM:SS or 'Not needed']"
     documentation: "[current phase]"
 
+  # Parallel execution metrics (if research completed)
   parallelization_metrics:
     parallel_research_agents: N
-    time_saved_estimate: "[% saved vs sequential]"
+    estimated_sequential_time: "[minutes]"
+    actual_parallel_time: "[minutes]"
+    time_saved_estimate: "[N% saved vs sequential]"
 
+  # Error recovery metrics (if debugging occurred)
   error_recovery:
     total_errors: N
     auto_recovered: N
     manual_interventions: N
-    recovery_success_rate: "N%"
+    recovery_success_rate: "[N%]"
 ```
 
-#### Step 2-4: Documentation Agent Invocation and Validation
+**VERIFICATION CHECKLIST**:
+- [ ] All timestamps extracted from checkpoints
+- [ ] Duration calculations correct (no negative times)
+- [ ] Parallelization metrics calculated (if applicable)
+- [ ] Error recovery metrics calculated (if debugging occurred)
 
-**Orchestrate-specific documentation workflow**:
+#### Step 3: Invoke Doc-Writer Agent
 
-**Agent Prompt Structure**:
-- Workflow context: Original request, workflow type, artifacts generated
-- Implementation plan path with specs directory extraction
-- Files modified list and test results
-- Cross-referencing requirements for bidirectional linking
-- Invoke `/document` command for documentation updates
+INVOKE the doc-writer agent with complete inline prompt including workflow summary template and cross-reference instructions.
 
-**Cross-Referencing Strategy** (orchestrate-specific):
-- Add "Implementation Summary" section to plan file
-- Add "Implementation Status" section to research reports
-- Verify bidirectional links using Read tool
-- Handle edge cases (duplicate sections, multiple summaries)
+**EXECUTE NOW: Invoke Doc-Writer Agent**
 
-**Validation Requirements**:
-- At least one documentation file updated
-- Cross-references include all workflow artifacts
-- No broken links
-- Follows project documentation standards
+USE the Task tool to invoke the doc-writer agent NOW.
 
-#### Step 3: Invoke Documentation Agent
+Task tool invocation:
 
-**Task Tool Invocation**:
 ```yaml
 subagent_type: general-purpose
-description: "Update documentation for workflow using doc-writer protocol"
-prompt: "Read and follow the behavioral guidelines from:
-         /home/benjamin/.config/.claude/agents/doc-writer.md
 
-         You are acting as a Doc Writer with the tools and constraints
-         defined in that file.
+description: "Update documentation and generate workflow summary using doc-writer protocol"
 
-         [Generated documentation prompt from Step 2]"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/doc-writer.md
+
+  You are acting as a Documentation Writer Agent with the tools and constraints
+  defined in that file.
+
+  ## Documentation Task: Complete Workflow Documentation
+
+  ### Workflow Context
+  - **Original Request**: [workflow_description]
+  - **Workflow Type**: [workflow_type]
+  - **Project Name**: [project_name]
+  - **Completion Date**: [current_date YYYY-MM-DD]
+
+  ### Artifacts Generated
+
+  **Research Reports** (if research phase completed):
+  [For each report in research_reports:]
+  - [report_path] - [topic]
+
+  **Implementation Plan**:
+  - Path: [plan_path]
+  - Number: [plan_number]
+  - Phases: [phase_count]
+
+  **Implementation Status**:
+  - Tests: [passing/fixed_after_debugging]
+  - Phases Completed: [N/N]
+  - Files Modified: [count] files
+  - Git Commits: [count] commits
+
+  **Debug Reports** (if debugging occurred):
+  [For each report in debug_reports:]
+  - [debug_report_path] - [issue resolved]
+  - Iterations: [debug_iterations]
+
+  ### Performance Metrics
+  - Total Duration: [total_workflow_time HH:MM:SS]
+  - Research Time: [research_phase_time or "Skipped"]
+  - Planning Time: [planning_phase_time]
+  - Implementation Time: [implementation_phase_time]
+  - Debugging Time: [debugging_phase_time or "Not needed"]
+  - Parallelization Savings: [time_saved_percentage% or "N/A"]
+  - Error Recovery Rate: [recovery_success_rate% or "100% (no errors)"]
+
+  ### Documentation Requirements
+
+  1. **Update Project Documentation**:
+     - Review files modified during implementation
+     - Update relevant README files
+     - Add usage examples where appropriate
+     - Ensure documentation follows CLAUDE.md standards
+
+  2. **Create Workflow Summary**:
+     Create a comprehensive workflow summary file at:
+     `[plan_directory]/specs/summaries/[plan_number]_workflow_summary.md`
+
+     Use this exact template:
+
+     ```markdown
+     # Workflow Summary: [Feature/Task Name]
+
+     ## Metadata
+     - **Date Completed**: [YYYY-MM-DD]
+     - **Specs Directory**: [specs_directory_path]
+     - **Summary Number**: [NNN] (matches plan number)
+     - **Workflow Type**: [feature|refactor|debug|investigation]
+     - **Original Request**: [workflow_description]
+     - **Total Duration**: [HH:MM:SS]
+
+     ## Workflow Execution
+
+     ### Phases Completed
+     - [x] Research (parallel) - [duration or "Skipped"]
+     - [x] Planning (sequential) - [duration]
+     - [x] Implementation (adaptive) - [duration]
+     - [x] Debugging (conditional) - [duration or "Not needed"]
+     - [x] Documentation (sequential) - [duration]
+
+     ### Artifacts Generated
+
+     **Research Reports**:
+     [If research phase completed, list each report:]
+     - [Report 1: path - brief description]
+     - [Report 2: path - brief description]
+
+     [If no research: "(No research phase - direct implementation)"]
+
+     **Implementation Plan**:
+     - Path: [plan_path]
+     - Phases: [phase_count]
+     - Complexity: [Low|Medium|High]
+     - Link: [relative link to plan file]
+
+     **Debug Reports**:
+     [If debugging occurred, list each report:]
+     - [Debug report 1: path - issue addressed]
+
+     [If no debugging: "(No debugging needed - tests passed on first run)"]
+
+     ## Implementation Overview
+
+     ### Key Changes
+     **Files Created**:
+     [For each new file:]
+     - [new_file.ext] - [brief purpose]
+
+     **Files Modified**:
+     [For each modified file:]
+     - [modified_file.ext] - [changes made]
+
+     **Files Deleted**:
+     [For each deleted file:]
+     - [deleted_file.ext] - [reason for deletion]
+
+     ### Technical Decisions
+     [Key architectural or technical decisions made during workflow]
+     - Decision 1: [what and why]
+     - Decision 2: [what and why]
+
+     ## Test Results
+
+     **Final Status**: ✓ All tests passing
+
+     [If debugging occurred:]
+     **Debugging Summary**:
+     - Iterations required: [debug_iterations]
+     - Issues resolved:
+       1. [Issue 1 and fix]
+       2. [Issue 2 and fix]
+
+     ## Performance Metrics
+
+     ### Workflow Efficiency
+     - Total workflow time: [HH:MM:SS]
+     - Estimated manual time: [HH:MM:SS calculated estimate]
+     - Time saved: [N%]
+
+     ### Phase Breakdown
+     | Phase | Duration | Status |
+     |-------|----------|--------|
+     | Research | [time] | [Completed/Skipped] |
+     | Planning | [time] | Completed |
+     | Implementation | [time] | Completed |
+     | Debugging | [time] | [Completed/Not needed] |
+     | Documentation | [time] | Completed |
+
+     ### Parallelization Effectiveness
+     [If research completed:]
+     - Research agents used: [N]
+     - Parallel vs sequential time: [N% faster]
+
+     [If no research: "No parallel execution in this workflow"]
+
+     ### Error Recovery
+     [If debugging occurred:]
+     - Total errors encountered: [N]
+     - Automatically recovered: [N]
+     - Manual interventions: [0 or N]
+     - Recovery success rate: [N%]
+
+     [If no errors: "Zero errors - clean implementation"]
+
+     ## Cross-References
+
+     ### Research Phase
+     [If applicable:]
+     This workflow incorporated findings from:
+     - [Report 1 path and title]
+     - [Report 2 path and title]
+
+     ### Planning Phase
+     Implementation followed the plan at:
+     - [Plan path and title]
+
+     ### Related Documentation
+     Documentation updated includes:
+     - [Doc 1 path]
+     - [Doc 2 path]
+
+     ## Lessons Learned
+
+     ### What Worked Well
+     - [Success 1 - what went smoothly]
+     - [Success 2 - effective strategies]
+
+     ### Challenges Encountered
+     - [Challenge 1 and how it was resolved]
+     - [Challenge 2 and resolution approach]
+
+     ### Recommendations for Future
+     - [Recommendation 1 for similar workflows]
+     - [Recommendation 2 for improvements]
+
+     ## Notes
+
+     [Any additional context, caveats, or important information about this workflow]
+
+     ---
+
+     *Workflow orchestrated using /orchestrate command*
+     *For questions or issues, refer to the implementation plan and research reports linked above.*
+     ```
+
+  3. **Create Cross-References**:
+
+     a. **Update Implementation Plan** ([plan_path]):
+        Add at bottom of plan file:
+        ```markdown
+        ## Implementation Summary
+        This plan was executed on [YYYY-MM-DD]. See workflow summary:
+        - [Summary path link]
+
+        Status: ✅ COMPLETE
+        - Duration: [HH:MM:SS]
+        - Tests: All passing
+        - Files modified: [N]
+        ```
+
+     b. **Update Research Reports** (if any):
+        For each report in research_reports, add:
+        ```markdown
+        ## Implementation Reference
+        Findings from this report were incorporated into:
+        - [Plan path] - Implementation plan
+        - [Summary path] - Workflow execution summary
+        - Date: [YYYY-MM-DD]
+        ```
+
+     c. **Update Debug Reports** (if any):
+        For each report in debug_reports, add:
+        ```markdown
+        ## Resolution Summary
+        This issue was resolved during:
+        - Workflow: [workflow_description]
+        - Iteration: [N]
+        - Summary: [Summary path link]
+        ```
+
+  ### Output Requirements
+
+  Return results in this format:
+
+  ```
+  PROGRESS: Updating project documentation...
+  PROGRESS: Updating [file1.ext]...
+  PROGRESS: Updating [file2.ext]...
+  PROGRESS: Creating workflow summary...
+  PROGRESS: Adding cross-references...
+
+  DOCUMENTATION_RESULTS:
+  - updated_files: [list of documentation files modified]
+  - readme_updates: [list of README files updated]
+  - workflow_summary_created: [summary file path]
+  - cross_references_added: [count]
+  - documentation_complete: true
+  ```
+
+  ### Quality Checklist
+  - [ ] Purpose clearly stated in updated docs
+  - [ ] Usage examples included where appropriate
+  - [ ] Cross-references added bidirectionally
+  - [ ] Unicode box-drawing used (not ASCII art)
+  - [ ] No emojis in content
+  - [ ] Code examples have syntax highlighting
+  - [ ] Navigation links updated
+  - [ ] CommonMark compliant
+  - [ ] Workflow summary follows template exactly
+  - [ ] All cross-references validated (files exist)
 ```
 
-**Monitoring**:
-- **Progress Streaming**: Watch for `PROGRESS: <message>` markers in agent output
-  - Display progress updates to user in real-time
-  - Examples: `PROGRESS: Updating README.md...`, `PROGRESS: Adding cross-references...`
-- Track documentation updates
-- Verify cross-referencing
-- Watch for completion signal
+**Monitoring During Agent Execution**:
+- Watch for `PROGRESS: <message>` markers in agent output
+- Display progress updates to user in real-time
+- Verify summary file creation
+- Validate cross-reference updates
+
+**VERIFICATION CHECKLIST**:
+- [ ] Task tool invoked with doc-writer protocol
+- [ ] Complete prompt provided inline (not referenced)
+- [ ] Workflow summary template inlined in prompt
+- [ ] Cross-reference instructions explicit
+- [ ] Agent execution monitored (progress markers)
 
 #### Step 4: Extract Documentation Results
 
-**Results Extraction**:
-```markdown
-From documentation agent output, extract:
-- updated_files: [list of documentation files modified]
-- readme_updates: [list of README files updated]
-- spec_updates: [list of spec files updated]
-- cross_references_added: N
-- documentation_complete: true|false
-```
+PARSE the doc-writer agent output to extract and validate documentation results.
 
-**Validation**:
+**EXECUTE NOW: Extract and Validate Documentation Results**
+
+1. **Locate Results Block**:
+   Search agent output for "DOCUMENTATION_RESULTS:" marker
+
+2. **Extract Results Data**:
+   ```yaml
+   documentation_results:
+     updated_files: [
+       "file1.ext",
+       "file2.ext"
+     ]
+     readme_updates: [
+       "dir1/README.md",
+       "dir2/README.md"
+     ]
+     workflow_summary_created: "specs/summaries/NNN_workflow_summary.md"
+     cross_references_added: N
+     documentation_complete: true
+   ```
+
+3. **Validate Results**:
+   - At least one documentation file updated (updated_files not empty)
+   - Workflow summary file created and exists
+   - Cross-references count > 0 (at least plan → summary link)
+   - documentation_complete is true
+
+4. **Store in Workflow State**:
+   ```yaml
+   workflow_state.documentation_paths: [
+     "specs/summaries/NNN_workflow_summary.md",
+     ...updated_files,
+     ...readme_updates
+   ]
+   ```
+
+**Validation Checklist**:
 - [ ] At least one documentation file updated
+- [ ] Workflow summary file exists at expected path
+- [ ] Summary file follows template structure (verify key sections present)
 - [ ] Cross-references include all workflow artifacts
-- [ ] Documentation follows project standards
-- [ ] No broken links or invalid references
+- [ ] Plan file updated with "Implementation Summary" section
+- [ ] Research reports updated with "Implementation Reference" (if applicable)
+- [ ] Debug reports updated with "Resolution Summary" (if applicable)
+- [ ] No broken links (all referenced paths valid)
+- [ ] Documentation follows project standards (CLAUDE.md compliance)
 
-#### Step 5: Generate Workflow Summary
-
-**Summary File Creation**:
-
-**Location Determination**:
+**Error Handling**:
 ```yaml
-summary_location:
-  directory: "same as plan (specs/summaries/)"
-  filename: "NNN_workflow_summary.md"
-  number: "matches plan number"
+if documentation_complete == false:
+  ERROR: "Documentation phase incomplete"
+  → Check agent output for error messages
+  → Verify doc-writer has Write and Edit tool access
+  → Retry with clarified instructions if recoverable
+  → Escalate to user if persistent failure
+
+if workflow_summary_created == null:
+  ERROR: "Workflow summary not created"
+  → Check specs/summaries/ directory exists
+  → Verify plan_number extracted correctly
+  → Retry summary creation explicitly
+
+if cross_references_added == 0:
+  WARNING: "No cross-references created"
+  → Cross-reference step may have failed
+  → Manually update files if needed
+  → Note in workflow completion message
 ```
+
+**VERIFICATION CHECKLIST**:
+- [ ] Results extracted from agent output
+- [ ] All expected fields present
+- [ ] Validation checklist completed
+- [ ] Error handling triggered if issues detected
+
+#### Step 5: Verify Cross-References
+
+VALIDATE that bidirectional cross-references were created correctly by the doc-writer agent.
+
+**EXECUTE NOW: Verify Bidirectional Cross-References**
+
+1. **Read Implementation Plan** ([plan_path]):
+   ```
+   USE Read tool to open plan file
+   SEARCH for "## Implementation Summary" section
+   VERIFY section exists and includes:
+   - Summary path link
+   - Completion date
+   - Status (COMPLETE)
+   ```
+
+2. **Read Workflow Summary** ([summary_path]):
+   ```
+   USE Read tool to open summary file
+   SEARCH for "## Cross-References" section
+   VERIFY section includes:
+   - Research reports (if applicable)
+   - Implementation plan
+   - Related documentation
+   ```
+
+3. **Read Research Reports** (if any):
+   ```
+   FOR each report in research_reports:
+     USE Read tool to open report file
+     SEARCH for "## Implementation Reference" section
+     VERIFY section exists and includes:
+     - Plan path link
+     - Summary path link
+     - Completion date
+   ```
+
+4. **Read Debug Reports** (if any):
+   ```
+   FOR each report in debug_reports:
+     USE Read tool to open debug report file
+     SEARCH for "## Resolution Summary" section
+     VERIFY section includes:
+     - Workflow description
+     - Summary path link
+   ```
+
+**Cross-Reference Validation Matrix**:
+
+| From | To | Link Type | Verified |
+|------|-----|-----------|----------|
+| Plan | Summary | Implementation Summary section | [ ] |
+| Summary | Plan | Cross-References section | [ ] |
+| Summary | Reports | Cross-References section | [ ] |
+| Reports | Plan | Implementation Reference section | [ ] |
+| Reports | Summary | Implementation Reference section | [ ] |
+| Debug | Summary | Resolution Summary section | [ ] |
+
+**If Validation Fails**:
+```yaml
+if any_validation_fails:
+  WARNING: "Cross-reference validation failed"
+  → Report which links are missing
+  → Attempt manual cross-reference creation
+  → Use Edit tool to add missing sections
+  → Re-validate after manual fixes
+```
+
+**VERIFICATION CHECKLIST**:
+- [ ] All plan → summary links verified
+- [ ] All summary → plan links verified
+- [ ] All summary → report links verified (if applicable)
+- [ ] All report → plan/summary links verified (if applicable)
+- [ ] All debug → summary links verified (if applicable)
+- [ ] Cross-reference matrix complete
+
+#### Step 6: Save Final Checkpoint
+
+CREATE final checkpoint with complete workflow metrics.
+
+**EXECUTE NOW: Save Final Workflow Checkpoint**
+
+USE checkpoint utility:
+```bash
+.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$CHECKPOINT_DATA"
+```
+
+Where CHECKPOINT_DATA is:
+```yaml
+checkpoint_workflow_complete:
+  # Phase identification
+  phase_name: "documentation"
+  completion_time: [current_timestamp]
+
+  # Documentation outputs
+  outputs:
+    documentation_updated: [list of updated files]
+    workflow_summary_created: "[summary_path]"
+    cross_references_added: N
+    status: "success"
+
+  # Workflow completion
+  next_phase: "complete"
+  workflow_status: "success"
+
+  # Complete workflow metrics
+  final_metrics:
+    # Time metrics
+    total_workflow_time: "[HH:MM:SS]"
+    total_minutes: N
+
+    # Phase completion
+    phases_completed: [
+      "research",    # or "skipped"
+      "planning",
+      "implementation",
+      "debugging",   # or "not_needed"
+      "documentation"
+    ]
+
+    # Artifact counts
+    artifacts_generated:
+      research_reports: N
+      implementation_plan: 1
+      workflow_summary: 1
+      debug_reports: N
+      documentation_updates: N
+
+    # File changes
+    files_modified: N
+    files_created: N
+    files_deleted: N
+    git_commits: N
+
+    # Performance
+    parallelization_savings: "[N% or 'N/A']"
+    error_recovery_success: "[N% or '100% (no errors)']"
+
+  # Complete workflow summary
+  workflow_summary:
+    research_reports: [list of paths]
+    implementation_plan: "[plan_path]"
+    workflow_summary: "[summary_path]"
+    debug_reports: [list of paths]
+    tests_passing: true
+    documentation_complete: true
+```
+
+**Checkpoint File Location**:
+```
+.claude/data/checkpoints/orchestrate_${PROJECT_NAME}_${TIMESTAMP}.json
+```
+
+**VERIFICATION CHECKLIST**:
+- [ ] Checkpoint saved successfully
+- [ ] All workflow metrics included
+- [ ] Artifact paths recorded
+- [ ] Status set to "complete"
+
+#### Step 7: Conditional PR Creation
+
+EVALUATE whether to create a pull request and invoke github-specialist agent if required.
+
+**EXECUTE NOW: Check for PR Creation Flag**
+
+1. **Check for --create-pr Flag**:
+   ```
+   if "--create-pr" in original_command_arguments:
+     pr_creation_required = true
+   else:
+     pr_creation_required = false
+   ```
+
+2. **Prerequisites Check** (if pr_creation_required):
+   ```bash
+   # Check if gh CLI is available and authenticated
+   if ! command -v gh &>/dev/null; then
+     echo "Note: gh CLI not installed. Skipping PR creation."
+     echo "Install: brew install gh (or equivalent)"
+     pr_creation_required = false
+   fi
+
+   if ! gh auth status &>/dev/null; then
+     echo "Note: gh CLI not authenticated. Skipping PR creation."
+     echo "Run: gh auth login"
+     pr_creation_required = false
+   fi
+   ```
+
+3. **Invoke github-specialist Agent** (if pr_creation_required):
+
+   **EXECUTE NOW: Invoke GitHub Specialist Agent**
+
+   USE the Task tool to invoke github-specialist agent NOW.
+
+   Task tool invocation:
+   ```yaml
+   subagent_type: general-purpose
+
+   description: "Create PR for completed workflow using github-specialist protocol"
+
+   prompt: |
+     Read and follow the behavioral guidelines from:
+     /home/benjamin/.config/.claude/agents/github-specialist.md
+
+     You are acting as a GitHub Specialist Agent with the tools and constraints
+     defined in that file.
+
+     ## PR Creation Task: Workflow Completion Pull Request
+
+     ### Workflow Context
+     - **Plan**: [absolute path to implementation plan]
+     - **Branch**: [current branch name from git]
+     - **Base**: main (or master, detect from repo)
+     - **Summary**: [absolute path to workflow summary]
+     - **Original Request**: [workflow_description]
+
+     ### PR Description Content
+
+     Create a comprehensive PR description following this structure:
+
+     ```markdown
+     # [Feature/Task Name]
+
+     ## Summary
+     [Brief 1-2 sentence summary of what was implemented]
+
+     ## Workflow Overview
+     This PR was created through a complete /orchestrate workflow:
+
+     **Research Phase**: [N reports generated or "Skipped"]
+     [If research completed:]
+     - [Report 1 title and key finding]
+     - [Report 2 title and key finding]
+
+     **Planning Phase**: [Phase count]-phase implementation plan
+     - Complexity: [Low|Medium|High]
+     - See: [plan path]
+
+     **Implementation Phase**: All [N] phases completed successfully
+     - Tests: [All passing or Fixed after M debug iterations]
+     - Files modified: [N]
+     - Commits: [N]
+
+     **Debugging Phase**: [N iterations or "Not needed"]
+     [If debugging occurred:]
+     - Issues resolved: [M]
+     - See debug reports: [debug report paths]
+
+     **Documentation Phase**: [N] files updated
+     - Documentation: [list updated files]
+     - Workflow summary: [summary path]
+
+     ## Performance Metrics
+     - **Total Duration**: [HH:MM:SS]
+     - **Parallelization Savings**: [N% or "N/A"]
+     - **Error Recovery**: [success rate or "100% (no errors)"]
+
+     ## File Changes
+     [Use git diff --stat to show change summary]
+
+     **Files Created**: [N]
+     **Files Modified**: [N]
+     **Files Deleted**: [N]
+
+     ## Cross-References
+
+     **Implementation Plan**: [plan path]
+     **Workflow Summary**: [summary path]
+     [If research:]
+     **Research Reports**:
+     - [report 1 path]
+     - [report 2 path]
+     [If debugging:]
+     **Debug Reports**:
+     - [debug report 1 path]
+
+     ## Test Results
+     ✓ All tests passing
+
+     [If debugging occurred:]
+     Fixed issues:
+     1. [Issue 1 description]
+     2. [Issue 2 description]
+
+     ## Checklist
+     - [x] All implementation phases completed
+     - [x] Tests passing
+     - [x] Documentation updated
+     - [x] Code follows project standards
+     - [ ] Ready for review
+     ```
+
+     ### Output Required
+
+     Return PR details in this format:
+     ```
+     PR_CREATED:
+     - url: [PR URL]
+     - number: [PR number]
+     - branch: [feature branch]
+     - base: [base branch]
+     ```
+   ```
+
+4. **Capture PR URL** (if created):
+   ```
+   PARSE github-specialist output for PR_CREATED block
+   EXTRACT pr_url and pr_number
+
+   STORE in workflow_state:
+   workflow_state.pr_url = pr_url
+   workflow_state.pr_number = pr_number
+   ```
+
+5. **Update Workflow Summary with PR Link** (if created):
+   ```
+   USE Edit tool to update workflow summary file
+   ADD section at bottom:
+
+   ## Pull Request
+   - **PR**: [pr_url]
+   - **Number**: #[pr_number]
+   - **Created**: [YYYY-MM-DD]
+   - **Status**: Open
+   ```
+
+6. **Graceful Degradation** (if PR creation fails):
+   ```yaml
+   if pr_creation_fails:
+     LOG error message from github-specialist
+
+     DISPLAY manual PR creation command:
+     ```
+     To create PR manually:
+
+     gh pr create \
+       --title "feat: [feature name]" \
+       --body-file [pr_description_file] \
+       --base main
+     ```
+
+     CONTINUE workflow (don't block on PR failure)
+   ```
+
+**VERIFICATION CHECKLIST**:
+- [ ] --create-pr flag checked
+- [ ] Prerequisites validated (gh CLI, auth)
+- [ ] github-specialist agent invoked (if required)
+- [ ] PR URL captured and stored
+- [ ] Workflow summary updated with PR link
+- [ ] Error handled gracefully (if PR creation fails)
+
+**State Management**:
+
+UPDATE workflow_state after documentation phase completes:
+
+```yaml
+workflow_state.current_phase = "complete"
+workflow_state.execution_tracking.phase_start_times["documentation"] = [doc start timestamp]
+workflow_state.execution_tracking.phase_end_times["documentation"] = [current timestamp]
+workflow_state.execution_tracking.agents_invoked += 1  # doc-writer agent
+workflow_state.execution_tracking.agents_invoked += 1  # github-specialist (if PR created)
+workflow_state.execution_tracking.files_created += 1  # workflow summary
+workflow_state.completed_phases.append("documentation")
+workflow_state.context_preservation.documentation_paths = [summary_path, updated_doc_paths...]
+
+# Calculate total duration
+workflow_state.performance_metrics.total_duration_seconds =
+  workflow_state.execution_tracking.phase_end_times["documentation"] -
+  workflow_state.execution_tracking.phase_start_times["analysis"]
+```
+
+UPDATE TodoWrite to mark all tasks complete:
+
+```json
+{
+  "todos": [
+    {
+      "content": "Analyze workflow and identify research topics",
+      "status": "completed",
+      "activeForm": "Analyzing workflow and identifying research topics"
+    },
+    {
+      "content": "Execute parallel research phase",
+      "status": "completed",
+      "activeForm": "Executing parallel research phase"
+    },
+    {
+      "content": "Create implementation plan",
+      "status": "completed",
+      "activeForm": "Creating implementation plan"
+    },
+    {
+      "content": "Implement features with testing",
+      "status": "completed",
+      "activeForm": "Implementing features with testing"
+    },
+    {
+      "content": "Debug and fix test failures (if needed)",
+      "status": "completed",
+      "activeForm": "Debugging and fixing test failures"
+    },
+    {
+      "content": "Generate documentation and workflow summary",
+      "status": "completed",
+      "activeForm": "Generating documentation and workflow summary"
+    }
+  ]
+}
+```
+
+#### Step 8: Workflow Completion Message
+
+OUTPUT final workflow summary to user with comprehensive details.
+
+**EXECUTE NOW: Display Workflow Completion Message**
+
+USE this exact format:
+
+```markdown
+┌─────────────────────────────────────────────────────────────┐
+│                     WORKFLOW COMPLETE                       │
+└─────────────────────────────────────────────────────────────┘
+
+**Duration**: [HH:MM:SS]
+
+**Phases Executed**:
+[If research completed:]
+✓ Research (parallel) - [duration]
+  - Topics: [N]
+  - Reports: [report paths]
+
+✓ Planning (sequential) - [duration]
+  - Plan: [plan_path]
+  - Phases: [N]
+
+✓ Implementation (adaptive) - [duration]
+  - Phases completed: [N/N]
+  - Files modified: [N]
+  - Git commits: [N]
+
+[If debugging occurred:]
+✓ Debugging ([N] iterations) - [duration]
+  - Issues resolved: [M]
+  - Debug reports: [debug report paths]
+
+✓ Documentation (sequential) - [duration]
+  - Documentation updates: [N] files
+  - Workflow summary: [summary_path]
+  - Cross-references: [N] links
+
+**Implementation Results**:
+- Files created: [N]
+- Files modified: [N]
+- Files deleted: [N]
+- Tests: ✓ All passing
+
+**Performance Metrics**:
+[If parallelization used:]
+- Time saved via parallelization: [N%]
+[If error recovery occurred:]
+- Error recovery: [N/M errors auto-recovered]
+[Else:]
+- Error-free execution: 100%
+
+**Artifacts Generated**:
+[If research:]
+- Research reports: [N] reports in [M] topics
+[Always:]
+- Implementation plan: [plan_path]
+- Workflow summary: [summary_path]
+[If debugging:]
+- Debug reports: [N] reports
+
+[If PR created:]
+**Pull Request**:
+- PR #[pr_number]: [pr_url]
+- Status: Open for review
+
+**Next Steps**:
+[If PR created:]
+1. Review PR at [pr_url]
+2. Request reviews from team members
+3. Merge when approved
+
+[Else:]
+1. Review workflow summary: [summary_path]
+2. Review implementation plan: [plan_path]
+3. Consider creating PR with: gh pr create
+
+**Summary**: [summary_path]
+Review the workflow summary for complete details, cross-references, and lessons learned.
+
+┌─────────────────────────────────────────────────────────────┐
+│  All workflow artifacts saved and cross-referenced.         │
+│  Thank you for using /orchestrate!                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Completion Data to Display**:
+
+Extract from workflow_state and performance_summary:
+- Total duration (formatted HH:MM:SS)
+- All phase durations (or "Skipped"/"Not needed")
+- Artifact counts and paths
+- File modification counts
+- Test status
+- Performance metrics (parallelization, error recovery)
+- PR information (if created)
+
+**VERIFICATION CHECKLIST**:
+- [ ] Completion message displayed to user
+- [ ] All key metrics included
+- [ ] Artifact paths provided
+- [ ] Next steps suggested
+- [ ] Message formatted clearly (Unicode box-drawing)
+
+#### Step 9: Cleanup Final Checkpoint
+
+REMOVE checkpoint file after successful workflow completion.
+
+**EXECUTE NOW: Cleanup Completed Workflow Checkpoint**
+
+```bash
+# Delete checkpoint file (workflow complete, no resume needed)
+rm -f .claude/data/checkpoints/orchestrate_${PROJECT_NAME}_*.json
+
+# Log completion
+echo "[$(date)] Workflow ${PROJECT_NAME} completed successfully" >> .claude/logs/orchestrate.log
+```
+
+**Checkpoint Cleanup Logic**:
+```yaml
+if workflow_status == "success":
+  → Delete checkpoint file (no longer needed)
+  → Log completion to orchestrate.log
+
+elif workflow_status == "escalated":
+  → Keep checkpoint file (user may resume)
+  → Move to .claude/data/checkpoints/failed/ for investigation
+
+elif workflow_status == "error":
+  → Keep checkpoint file (debugging needed)
+  → Archive to .claude/data/checkpoints/failed/
+```
+
+**VERIFICATION CHECKLIST**:
+- [ ] Checkpoint file removed (if success)
+- [ ] Completion logged
+- [ ] Failed checkpoints archived (if applicable)
+
+#### Workflow Summary Template (Reference)
+
+The complete workflow summary template is inlined in Step 3 (doc-writer agent prompt) above. This reference section is provided for documentation purposes only.
 
 **Summary Template**:
 ```markdown
