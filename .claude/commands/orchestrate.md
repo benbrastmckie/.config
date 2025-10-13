@@ -2161,295 +2161,860 @@ Files modified before failure:
 
 ### Debugging Loop (Conditional - Only if Tests Fail)
 
-For test failure handling patterns, see [Test Failure Handling](../docs/command-patterns.md#pattern-test-failure-handling).
-
-This phase engages ONLY when implementation reports test failures. Maximum 3 debugging iterations before escalating to user.
-
-#### Step 1: Generate Debug Topic Slug
-
-Before invoking debug-specialist, create a topic slug for the debug report:
-
-**Topic Slug Generation**:
-```
-1. Use failed phase number: "phase{N}_failures"
-2. Or categorize by error type:
-   - "integration_issues" - Component interaction failures
-   - "test_timeout" - Tests timing out
-   - "config_errors" - Configuration problems
-   - "dependency_missing" - Missing dependencies
-   - "syntax_errors" - Code won't compile
-3. Convert to lowercase with underscores
-4. Keep concise (2-3 words max)
-
-Examples:
-- Failed in Phase 1 → "phase1_failures"
-- Integration test failure → "integration_issues"
-- Config loading error → "config_errors"
+**ENTRY CONDITIONS**:
+```yaml
+if workflow_state.implementation_status.tests_passing == false:
+  ENTER debugging loop
+else:
+  SKIP to Phase 6 (Documentation)
 ```
 
-Store in workflow_state:
-- debug_topic_slug for debug directory path
-- debug_reports array for report file paths
+**EXECUTE NOW: Initialize Debugging State**
+
+Before first iteration, initialize debugging state:
+
+```yaml
+workflow_state.debug_iteration = 0
+workflow_state.debug_topic_slug = ""      # Generated in Step 1
+workflow_state.debug_reports = []         # Populated each iteration
+workflow_state.debug_history = []         # Tracks all attempts
+```
+
+**Iteration Limit**: Maximum 3 debugging iterations. After 3 failures, escalate to user with actionable options.
+
+**Loop Strategy**: Each iteration follows this sequence:
+1. Generate debug topic slug (iteration 1 only)
+2. Invoke debug-specialist → create report file
+3. Extract report path and recommendations
+4. Invoke code-writer → apply fix from report
+5. Run tests again
+6. Evaluate results → continue, succeed, or escalate
+
+---
+
+#### Step 1: Generate Debug Topic Slug (First Iteration Only)
+
+**EXECUTE NOW: Generate Topic Slug**
+
+IF debug_iteration == 1 AND debug_topic_slug is empty:
+
+ANALYZE the test failure error messages to categorize the issue type.
+
+**Topic Slug Algorithm**:
+
+1. **Phase-Based** (default): Use failed phase number from implementation
+   - Format: `phase{N}_failures`
+   - Example: Phase 1 failed → `phase1_failures`
+
+2. **Error-Type-Based** (preferred if pattern clear):
+   - Integration failures → `integration_issues`
+   - Timeout errors → `test_timeout`
+   - Configuration errors → `config_errors`
+   - Missing dependencies → `dependency_missing`
+   - Syntax/compilation → `syntax_errors`
+
+3. **Slug Rules**:
+   - Lowercase with underscores
+   - Concise (2-3 words max)
+   - Descriptive of root issue type
+
+**EXECUTE: Create Slug**
+
+```bash
+# Example slug generation logic
+if error_message contains "timeout":
+  debug_topic_slug = "test_timeout"
+elif error_message contains "config":
+  debug_topic_slug = "config_errors"
+elif error_message contains "integration":
+  debug_topic_slug = "integration_issues"
+elif error_message contains "dependency" or "module not found":
+  debug_topic_slug = "dependency_missing"
+else:
+  # Default: use failed phase number
+  debug_topic_slug = "phase{failed_phase_number}_failures"
+```
+
+**Store in workflow_state**:
+```yaml
+workflow_state.debug_topic_slug = "[generated_slug]"
+```
+
+**Examples**:
+- Integration test failure → `integration_issues`
+- Phase 1 config loading error → `phase1_failures` or `config_errors`
+- Test timeout in Phase 3 → `test_timeout`
+
+---
 
 #### Step 2: Invoke Debug Specialist Agent with File Creation
 
-**Task Tool Invocation**:
+**EXECUTE NOW: USE the Task tool to invoke debug-specialist agent**
+
+This agent will:
+- Investigate test failure root cause
+- Analyze error messages and code context
+- Create persistent debug report file
+- Propose 2-3 solution options
+- Recommend best fix approach
+
+**Task Tool Invocation** (execute this now):
+
 ```yaml
-subagent_type: general-purpose
-description: "Create debug report for test failures using debug-specialist protocol"
-prompt: |
-  Read and follow the behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/debug-specialist.md
+Task {
+  subagent_type: "general-purpose"
+  description: "Create debug report for test failures using debug-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
 
-  You are acting as a Debug Specialist Agent with the tools and constraints
-  defined in that file.
+    You are acting as a Debug Specialist Agent with the tools and constraints
+    defined in that file.
 
-  Create Debug Report File for Implementation Test Failures:
+    Create Debug Report File for Implementation Test Failures:
 
-  Context:
-  - Workflow: "[Original user workflow description]"
-  - Project: [project_name]
-  - Failed Phase: Phase [N] - [phase_name]
-  - Topic Slug: [debug_topic_slug] (for debug directory)
-  - Iteration: [1|2|3] (current debug iteration)
+    ## Context
+    - **Workflow**: "[workflow_state.workflow_description]"
+    - **Project**: [project_name]
+    - **Failed Phase**: Phase [failed_phase_number] - [phase_name]
+    - **Topic Slug**: [workflow_state.debug_topic_slug]
+    - **Iteration**: [workflow_state.debug_iteration] of 3
 
-  Test Failures:
-  [List of failing tests with error messages]
+    ## Test Failures
+    [workflow_state.implementation_status.test_output]
 
-  Error Details:
-  - Error messages: [extracted from test output]
-  - Modified files: [list from implementation]
-  - Plan reference: [plan_path]
-  [If iteration > 1:]
-  - Previous debug attempts: [summaries of prior iterations]
-  - Previous fixes attempted: [what was tried before]
+    ## Error Details
+    - **Error messages**:
+      [workflow_state.implementation_status.error_messages]
 
-  Investigation Requirements:
-  - Analyze test failure patterns
-  - Review relevant code and configurations
-  - Identify root cause
-  - Consider previous debug attempts (if any)
-  - Propose 2-3 solutions with tradeoffs
+    - **Modified files**:
+      [workflow_state.implementation_status.files_modified]
 
-  Debug Report Creation:
-  1. Use Glob to find existing reports in debug/[debug_topic_slug]/
-  2. Determine next report number (NNN format)
-  3. Create report file: debug/[debug_topic_slug]/NNN_[descriptive_name].md
-  4. Include all required metadata fields (see debug-specialist agent)
-  5. Return: DEBUG_REPORT_PATH: debug/[debug_topic_slug]/NNN_*.md
+    - **Plan reference**: [workflow_state.plan_path]
 
-  Output Format:
-  - Primary: Debug report file path (DEBUG_REPORT_PATH: ...)
-  - Secondary: Brief summary (1-2 sentences) of root cause
-  - Tertiary: Recommended fix (which solution option)
+    [IF debug_iteration > 1:]
+    ## Previous Debug Attempts
+    [FOR each attempt in workflow_state.debug_history:]
+    ### Iteration [attempt.iteration]
+    - **Report**: [attempt.report_path]
+    - **Fix attempted**: [attempt.fix_attempted]
+    - **Result**: [attempt.result]
+    - **New errors**: [attempt.new_errors]
+
+    ## Investigation Requirements
+    - Analyze test failure patterns and root cause
+    - Review relevant code and configurations
+    - Consider previous debug attempts (if iteration > 1)
+    - Identify why previous fixes didn't work (if applicable)
+    - Propose 2-3 solutions with tradeoffs
+    - Recommend the most likely solution to succeed
+
+    ## Debug Report Creation Instructions
+    1. USE Glob to find existing reports: `debug/[debug_topic_slug]/[0-9][0-9][0-9]_*.md`
+    2. DETERMINE next report number (NNN format, incremental)
+    3. CREATE report file using Write tool:
+       Path: `debug/[debug_topic_slug]/NNN_[descriptive_name].md`
+    4. INCLUDE all required metadata fields (see agent file, lines 256-346)
+    5. RETURN file path in parseable format
+
+    ## Expected Output Format
+
+    **Primary Output** (required):
+    ```
+    DEBUG_REPORT_PATH: debug/[topic]/NNN_descriptive_name.md
+    ```
+
+    **Secondary Output** (required):
+    Brief summary (1-2 sentences):
+    - Root cause: [What is causing the failure]
+    - Recommended fix: Option [N] - [Brief description]
+
+    Example:
+    ```
+    DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
+
+    Root cause: Config file not initialized before first test runs.
+    Recommended fix: Option 2 - Add config initialization in test setup hook
+    ```
+}
 ```
+
+**WAIT for agent completion before proceeding.**
+
+---
 
 #### Step 3: Extract Debug Report Path and Recommendations
 
-**Path Extraction**:
-```markdown
-From debug-specialist agent output, extract:
-- Debug report path: DEBUG_REPORT_PATH: debug/{topic}/NNN_*.md
-- Root cause summary: Brief description of the issue
-- Recommended fix: Which solution option to apply
+**EXECUTE NOW: Parse Debug Specialist Output**
 
-Example output:
-DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
+From the debug-specialist agent output, EXTRACT the following information:
 
-Root cause: Config file not initialized before first test runs.
-Recommended fix: Option 2 - Add config initialization in test setup hook
-```
+**Required Extraction**:
 
-**Validation**:
-- [ ] Debug report file created and exists
-- [ ] Report includes all required metadata
+1. **Debug Report Path**:
+   - Pattern: `DEBUG_REPORT_PATH: debug/{topic}/NNN_*.md`
+   - Example: `DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md`
+   - Store in: `debug_report_path` variable
+
+2. **Root Cause Summary**:
+   - Pattern: After "Root cause:" line
+   - Extract: Brief 1-2 sentence description
+   - Store in: `root_cause` variable
+
+3. **Recommended Fix**:
+   - Pattern: After "Recommended fix:" line
+   - Extract: Which option number and brief description
+   - Store in: `recommended_fix` variable
+
+**EXECUTE: Validation Checklist**
+
+Before proceeding, verify:
+- [ ] Debug report file exists at extracted path
+- [ ] File contains all required metadata sections
 - [ ] Root cause clearly identified
-- [ ] 2-3 solutions proposed with tradeoffs
-- [ ] Recommended solution specified
+- [ ] 2-3 solution options proposed with tradeoffs
+- [ ] Recommended solution explicitly specified
+- [ ] File follows debug report structure (see debug-specialist.md lines 256-346)
 
-Store debug report path in workflow_state.debug_reports array.
+**IF validation fails**:
+- RETRY debug-specialist invocation with clarifying instructions
+- Maximum 2 retries before escalating to user
 
-#### Step 4: Apply Recommended Fix
+**EXECUTE: Store in Workflow State**
 
-Invoke code-writer agent with fix proposals from debug report:
-
-**Task Tool Invocation**:
 ```yaml
-subagent_type: general-purpose
-description: "Apply debug fixes from report using code-writer protocol"
-prompt: |
-  Read and follow the behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/code-writer.md
+workflow_state.debug_reports.append(debug_report_path)
 
-  You are acting as a Code Writer with the tools and constraints
-  defined in that file.
-
-  Apply fixes from debug report:
-
-  Debug Report: [debug_report_path]
-  Read the report to understand:
-  - Root cause of test failures
-  - Proposed solutions (Options 1-3)
-  - Recommended solution
-
-  Task:
-  Implement the recommended solution from the debug report.
-
-  Requirements:
-  - Follow implementation steps from recommended solution
-  - Apply changes to affected files
-  - Follow project coding standards (CLAUDE.md)
-  - Do not run tests yet (orchestrator will run tests after fix)
-
-  Output:
-  - Files modified: [list]
-  - Changes made: [brief summary]
-  - Ready for testing: true
+# Example state after extraction:
+workflow_state:
+  debug_reports: [
+    "debug/phase1_failures/001_config_initialization.md"
+  ]
 ```
+
+**Example Parsed Output**:
+```
+debug_report_path = "debug/phase1_failures/001_config_initialization.md"
+root_cause = "Config file not initialized before first test runs"
+recommended_fix = "Option 2 - Add config initialization in test setup hook"
+```
+
+---
+
+#### Step 4: Apply Recommended Fix Using Code Writer Agent
+
+**EXECUTE NOW: USE the Task tool to invoke code-writer agent**
+
+This agent will:
+- Read the debug report created in Step 3
+- Understand the root cause and proposed solutions
+- Implement the recommended solution
+- Apply changes to affected files
+- Prepare code for testing (but NOT run tests yet)
+
+**Task Tool Invocation** (execute this now):
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Apply debug fixes from report using code-writer protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-writer.md
+
+    You are acting as a Code Writer Agent with the tools and constraints
+    defined in that file.
+
+    Apply fixes from debug report:
+
+    ## Debug Report
+    **Path**: [debug_report_path from Step 3]
+
+    READ the report using the Read tool to understand:
+    - Root cause of test failures (Analysis section)
+    - Proposed solutions (Options 1-3 in Proposed Solutions section)
+    - Recommended solution (Recommendation section)
+    - Implementation steps (within recommended solution option)
+
+    ## Task
+    IMPLEMENT the recommended solution from the debug report.
+
+    ## Requirements
+    - Follow implementation steps from recommended solution option
+    - Apply changes to affected files using Edit or Write tools
+    - Follow project coding standards (reference: /home/benjamin/.config/CLAUDE.md)
+    - Add comments explaining the fix where appropriate
+    - DO NOT run tests yet (orchestrator will run tests in Step 5)
+
+    ## Context for Implementation
+    - **Iteration**: [workflow_state.debug_iteration] of 3
+    - **Previous attempts**: [IF iteration > 1: summary of previous fixes]
+    - **Files to modify**: [From debug report's recommended solution]
+
+    ## Expected Output
+    Provide a brief summary:
+    - **Files modified**: [list of files changed]
+    - **Changes made**: [brief description of what was fixed]
+    - **Ready for testing**: true
+
+    Example:
+    ```
+    Files modified:
+    - tests/setup.lua
+    - config/init.lua
+
+    Changes made:
+    - Added config initialization in test setup hook
+    - Ensured config loads before first test runs
+
+    Ready for testing: true
+    ```
+}
+```
+
+**WAIT for agent completion before proceeding to testing.**
+
+**EXECUTE: Capture Fix Summary**
+
+From code-writer output, extract:
+- `files_modified`: List of files changed
+- `fix_description`: Brief summary of changes
+- Store for debug history in Step 7
+
+---
 
 #### Step 5: Run Tests Again
 
-After applying fixes, run tests to validate:
+**EXECUTE NOW: Run Tests to Validate Fix**
+
+After code-writer applies the fix, run tests to determine if issue is resolved.
+
+**Test Command Determination**:
+
+1. **From Plan** (preferred): Check `workflow_state.plan_path` for test command
+2. **From CLAUDE.md** (fallback): Check Testing Protocols section
+3. **Default**: Use project-standard test command
+
+**EXECUTE: Run Test Command**
 
 ```bash
-# Run test command from plan or project standards
-[test_command_from_plan]
+# Execute test command via Bash tool
+# Example commands (use appropriate for project):
 
-# Example:
-.claude/tests/run_all_tests.sh
-# or
+# Claude Code project:
+bash .claude/tests/run_all_tests.sh
+
+# Python project:
 pytest tests/
-# or
+
+# JavaScript project:
 npm test
+
+# General:
+[test_command from plan or CLAUDE.md]
 ```
 
-**Capture test results**:
-- tests_passing: true|false
-- If false: error messages for next iteration
+**EXECUTE: Capture Test Results**
 
-#### Step 6: Decision Logic - Continue or Escalate
+Parse test output to extract:
+
+1. **Test Status**:
+   ```yaml
+   tests_passing: true | false
+   ```
+
+2. **Test Output** (if failing):
+   ```yaml
+   test_output: "[Full test output for next iteration context]"
+   error_messages: [
+     "Error 1 from output",
+     "Error 2 from output"
+   ]
+   ```
+
+3. **Success Indicators**:
+   - All tests pass: `tests_passing = true`
+   - Same errors: `tests_passing = false, errors unchanged`
+   - New errors: `tests_passing = false, errors different`
+   - Fewer errors: `tests_passing = false, progress = true`
+
+**EXECUTE: Update Workflow State**
 
 ```yaml
-if tests_passing:
-  → Mark debug iteration successful
-  → Proceed to Documentation Phase
-  → Save success checkpoint with debug metrics
-  → Update error_history with resolution details
-
-elif iteration < 3:
-  → Increment iteration counter
-  → Add current attempt to debug history:
-      - iteration: N
-      - report_path: debug/topic/NNN_*.md
-      - fix_attempted: [summary]
-      - result: "Still failing"
-      - new_errors: [error messages]
-  → Return to Step 1 with enriched context
-  → Next iteration includes all previous attempts
-
-else:  # iteration == 3
-  → Escalate to user (max debugging iterations reached)
-  → Save escalation checkpoint
-  → Include all debug report paths
-  → Provide manual intervention options
-  → Pause workflow for user decision
+workflow_state.implementation_status.tests_passing = [true|false]
+workflow_state.implementation_status.test_output = "[latest output]"
+workflow_state.implementation_status.error_messages = [extracted errors]
 ```
 
-#### Step 7: Update Workflow State with Debug Reports
+**Example Result**:
+```yaml
+# Success case:
+tests_passing: true
+test_output: "All 47 tests passed in 12.3s"
 
-After successful debugging or escalation, update workflow state:
+# Failure case:
+tests_passing: false
+test_output: "[Full output showing 3 failing tests]"
+error_messages: [
+  "test_auth: JWT decode error",
+  "test_session: Token validation failed",
+  "test_middleware: nil config.secret"
+]
+```
+
+---
+
+#### Step 6: Iteration Control and Decision Logic
+
+**EXECUTE NOW: Evaluate Test Results and Determine Next Action**
+
+Based on test results from Step 5, execute the appropriate branch:
+
+```python
+# Increment iteration counter (always at loop start)
+# NOTE: Counter incremented at START of iteration, not end
+workflow_state.debug_iteration += 1
+
+# Decision tree (evaluate in this order):
+
+IF tests_passing == true:
+  # SUCCESS PATH
+  EXECUTE: Branch 1 - Tests Passing (Success)
+
+ELIF debug_iteration >= 3:
+  # ESCALATION PATH (limit reached)
+  EXECUTE: Branch 2 - Escalation to User
+
+ELSE:
+  # CONTINUE PATH (try again)
+  EXECUTE: Branch 3 - Continue Debugging Loop
+```
+
+---
+
+### Branch 1: Tests Passing (Success)
+
+**Condition**: `tests_passing == true`
+
+**EXECUTE: Success Actions**
+
+1. **Mark debugging successful**:
+   ```yaml
+   workflow_state.debug_status = "resolved"
+   workflow_state.debug_iterations_needed = debug_iteration
+   ```
+
+2. **Add resolution to debug history**:
+   ```yaml
+   workflow_state.debug_history.append({
+     iteration: debug_iteration,
+     report_path: debug_report_path,
+     fix_attempted: fix_description,
+     result: "Tests passing",
+     resolution: "Success"
+   })
+   ```
+
+3. **Update error history** (for tracking):
+   ```yaml
+   workflow_state.error_history.append({
+     phase: "implementation",
+     issue: root_cause,
+     debug_reports: workflow_state.debug_reports,
+     resolution: "Fixed in iteration {debug_iteration}",
+     fix_applied: fix_description
+   })
+   ```
+
+4. **SAVE checkpoint**:
+   ```bash
+   # Create checkpoint file with success status
+   cat > .claude/checkpoints/checkpoint_tests_passing.yaml << 'EOF'
+   phase_name: "debugging"
+   completion_time: $(date -Iseconds)
+   outputs:
+     tests_passing: true
+     debug_iterations: ${debug_iteration}
+     debug_reports: ${workflow_state.debug_reports[@]}
+     issues_resolved: ["${root_cause}"]
+     status: "success"
+   next_phase: "documentation"
+   performance:
+     debugging_time: "${duration}"
+     iterations_needed: ${debug_iteration}
+   EOF
+   ```
+
+5. **OUTPUT to user**:
+   ```markdown
+   ✓ Debugging Phase Complete
+
+   Tests passing: ✓
+   Debug iterations: {debug_iteration}
+   Issues resolved: {issues_count}
+   Debug reports: {report_paths}
+
+   Next: Documentation Phase
+   ```
+
+**EXIT debugging loop → PROCEED to Phase 6 (Documentation)**
+
+---
+
+### Branch 2: Escalation to User
+
+**Condition**: `debug_iteration >= 3 AND tests_passing == false`
+
+**EXECUTE: Escalation Actions**
+
+1. **Mark debugging as escalated**:
+   ```yaml
+   workflow_state.debug_status = "escalated"
+   workflow_state.debug_iterations_needed = 3
+   ```
+
+2. **Add final attempt to debug history**:
+   ```yaml
+   workflow_state.debug_history.append({
+     iteration: 3,
+     report_path: debug_report_path,
+     fix_attempted: fix_description,
+     result: "Still failing after 3 iterations",
+     escalation_reason: "Maximum debugging iterations reached"
+   })
+   ```
+
+3. **SAVE escalation checkpoint**:
+   ```bash
+   # Create escalation checkpoint
+   cat > .claude/checkpoints/checkpoint_escalation.yaml << 'EOF'
+   phase_name: "debugging"
+   completion_time: $(date -Iseconds)
+   outputs:
+     tests_passing: false
+     debug_iterations: 3
+     debug_reports: ${workflow_state.debug_reports[@]}
+     unresolved_issues: ${workflow_state.implementation_status.error_messages[@]}
+     status: "escalated"
+   next_phase: "manual_intervention"
+   user_options: ["continue", "retry", "rollback", "terminate"]
+   debug_summary: |
+     Attempted 3 debugging iterations. Tests still failing.
+
+     Issues remaining:
+     ${workflow_state.implementation_status.error_messages[@]}
+
+     Debug reports created:
+     ${workflow_state.debug_reports[@]}
+   EOF
+   ```
+
+4. **PRESENT escalation message to user**:
+
+```markdown
+⚠️ **Debugging Loop: Maximum Iterations Reached**
+
+**Status**: Escalation required after 3 debugging iterations
+
+---
+
+## Issue Summary
+
+**Original Problem**:
+[Root cause from first debug report: workflow_state.debug_history[0].root_cause]
+
+**Tests Status**: Still failing after 3 fix attempts
+
+**Unresolved Errors**:
+[FOR each error in workflow_state.implementation_status.error_messages:]
+- {error}
+
+---
+
+## Debugging Attempts
+
+### Iteration 1
+- **Debug Report**: {workflow_state.debug_reports[0]}
+- **Fix Attempted**: {workflow_state.debug_history[0].fix_attempted}
+- **Result**: {workflow_state.debug_history[0].result}
+- **New Errors**: {workflow_state.debug_history[0].new_errors}
+
+### Iteration 2
+- **Debug Report**: {workflow_state.debug_reports[1]}
+- **Fix Attempted**: {workflow_state.debug_history[1].fix_attempted}
+- **Result**: {workflow_state.debug_history[1].result}
+- **New Errors**: {workflow_state.debug_history[1].new_errors}
+
+### Iteration 3
+- **Debug Report**: {workflow_state.debug_reports[2]}
+- **Fix Attempted**: {workflow_state.debug_history[2].fix_attempted}
+- **Result**: {workflow_state.debug_history[2].result}
+- **New Errors**: {workflow_state.debug_history[2].new_errors}
+
+---
+
+## Your Options
+
+I've reached the maximum automated debugging iterations (3). Here are your options:
+
+**Option 1: Manual Investigation**
+- Review the 3 debug reports created:
+  - {workflow_state.debug_reports[0]}
+  - {workflow_state.debug_reports[1]}
+  - {workflow_state.debug_reports[2]}
+- Manually investigate and fix the issue
+- Resume workflow after fixing: Use checkpoint_escalation to resume
+
+**Option 2: Retry with Guidance**
+- Provide additional context or hints about the issue
+- I'll retry debugging with your guidance
+- Command: `/orchestrate resume --with-context "your guidance"`
+
+**Option 3: Alternative Approach**
+- Rollback to last successful phase (Phase 4: Implementation complete)
+- Try a different implementation approach
+- Command: `/orchestrate rollback phase4`
+
+**Option 4: Skip Debugging**
+- Proceed to documentation phase despite failing tests
+- Mark tests as "known issues" in documentation
+- Command: `/orchestrate continue --skip-tests`
+
+**Option 5: Terminate Workflow**
+- End workflow here, preserve all work completed
+- Checkpoints saved: research, planning, implementation, debugging attempts
+- Command: `/orchestrate terminate`
+
+---
+
+## Checkpoint Saved
+
+A checkpoint has been saved at:
+- **Checkpoint ID**: `checkpoint_escalation`
+- **Phase**: debugging (incomplete)
+- **Resume Command**: `/orchestrate resume`
+
+All debug reports, implementation work, and history are preserved.
+
+---
+
+## Recommended Next Steps
+
+1. **Investigate manually**: Start with the most recent debug report ({workflow_state.debug_reports[2]})
+2. **Check for patterns**: Do all 3 attempts share a common issue?
+3. **Review test configuration**: Are tests themselves correct?
+4. **Consider scope**: Is this issue within original workflow scope?
+
+**What would you like to do?** [Respond with option number or custom action]
+```
+
+**PAUSE workflow and WAIT for user input.**
+
+**EXIT debugging loop → Wait for user decision**
+
+---
+
+### Branch 3: Continue Debugging Loop
+
+**Condition**: `debug_iteration < 3 AND tests_passing == false`
+
+**EXECUTE: Prepare for Next Iteration**
+
+1. **Add current attempt to debug history**:
+   ```yaml
+   workflow_state.debug_history.append({
+     iteration: debug_iteration,
+     report_path: debug_report_path,
+     fix_attempted: fix_description,
+     result: "Still failing",
+     new_errors: workflow_state.implementation_status.error_messages
+   })
+   ```
+
+2. **Prepare context for next iteration**:
+   - Keep `workflow_state.debug_topic_slug` (don't regenerate)
+   - Keep `workflow_state.debug_reports` (accumulate)
+   - Keep `workflow_state.debug_history` (accumulate)
+   - Update `error_messages` with latest failures
+
+3. **OUTPUT to user**:
+   ```markdown
+   Debugging iteration {debug_iteration} complete.
+   Tests still failing. Attempting iteration {debug_iteration + 1}...
+   ```
+
+4. **RETURN to Step 2** (Invoke Debug Specialist) with enriched context:
+   - Next invocation will include debug_history
+   - debug-specialist will see previous attempts
+   - code-writer will know what was already tried
+
+**CONTINUE debugging loop → RETURN to Step 2 (iteration {debug_iteration + 1})**
+
+---
+
+**Summary of Decision Logic**:
+
+| Condition | Action | Next Phase |
+|-----------|--------|------------|
+| Tests passing | Save success checkpoint | Phase 6 (Documentation) |
+| Iteration >= 3, tests failing | Save escalation checkpoint, present options | User Decision |
+| Iteration < 3, tests failing | Add to history, continue loop | Step 2 (next iteration) |
+
+---
+
+#### Step 7: Update Workflow State (All Branches)
+
+**EXECUTE: Update workflow_state (performed in all branches)**
+
+Update workflow state based on debugging outcome:
 
 ```yaml
+# State updated in Branch 1 (Success):
 workflow_state.context_preservation.debug_reports: [
   {
-    topic: "phase1_failures",
-    path: "debug/phase1_failures/001_config_initialization.md",
-    number: "001",
-    iteration: 1,
+    topic: "[debug_topic_slug]",
+    path: "debug/{topic}/NNN_*.md",
+    number: "NNN",
+    iteration: N,
     resolved: true
   }
 ]
 
-# If multiple iterations:
+# State updated in Branch 2 (Escalation):
+workflow_state.context_preservation.debug_reports: [
+  {topic: "...", path: "...", resolved: false},
+  {topic: "...", path: "...", resolved: false},
+  {topic: "...", path: "...", resolved: false}
+]
+
+# State updated in Branch 3 (Continue):
 workflow_state.debug_history: [
-  {
-    iteration: 1,
-    report_path: "debug/phase1_failures/001_config_initialization.md",
-    fix_attempted: "Added config init in test setup",
-    result: "Still failing - config.secret nil"
-  },
-  {
-    iteration: 2,
-    report_path: "debug/phase1_failures/002_config_secrets.md",
-    fix_attempted: "Added secret initialization",
-    result: "Tests passing"
-  }
+  {iteration: 1, result: "Still failing", ...},
+  {iteration: 2, result: "Still failing", ...}
 ]
 ```
 
-#### Step 8: Save Debug Checkpoint
+---
 
-**Success Checkpoint**:
+#### Debugging Loop Code Examples
+
+**Example 1: Single Iteration Success**
+
 ```yaml
-checkpoint_tests_passing:
-  phase_name: "debugging"
-  completion_time: [timestamp]
-  outputs:
-    tests_passing: true
-    debug_iterations: N
-    debug_reports: [list of report paths]
-    issues_resolved: [list of issues fixed]
-    status: "success"
-  next_phase: "documentation"
-  performance:
-    debugging_time: "[duration]"
-    iterations_needed: N
-```
+# Scenario: Fix works on first try
 
-**Escalation Checkpoint**:
-```yaml
-checkpoint_escalation:
-  phase_name: "debugging"
-  completion_time: [timestamp]
-  outputs:
-    tests_passing: false
-    debug_iterations: 3
-    debug_reports: [all report paths]
-    unresolved_issues: [list]
-    status: "escalated"
-  next_phase: "manual_intervention"
-  user_options: ["continue", "retry", "rollback", "terminate"]
-  debug_summary: |
-    Attempted 3 debugging iterations. Issues remain:
-    - [Issue 1]
-    - [Issue 2]
-
-    Debug reports created:
-    - debug/topic/001_*.md
-    - debug/topic/002_*.md
-    - debug/topic/003_*.md
-```
-
-#### Debugging Loop Example
-
-```markdown
 Iteration 1:
-- Debug: Found "undefined variable 'config' in auth.lua:42"
-- Fix: Added config parameter to function signature
-- Test: Still failing - "config.secret is nil"
+  debug_iteration: 1
+  debug_topic_slug: "phase1_failures"
+
+  Step 2: debug-specialist creates:
+    - Report: debug/phase1_failures/001_config_initialization.md
+    - Root cause: "Config not initialized before tests"
+    - Recommended: "Option 2 - Add init in test setup"
+
+  Step 3: Extract:
+    - debug_report_path = "debug/phase1_failures/001_config_initialization.md"
+
+  Step 4: code-writer applies:
+    - Modified: tests/setup.lua
+    - Added: config.init() call in setup function
+
+  Step 5: Run tests:
+    - Result: All 47 tests pass
+    - tests_passing = true
+
+  Step 6: Branch 1 (Success):
+    - Save checkpoint(success)
+    - debug_iterations_needed = 1
+    - EXIT loop → Phase 6 (Documentation)
+
+Outcome: ✓ Success in 1 iteration
+```
+
+**Example 2: Two Iteration Success**
+
+```yaml
+# Scenario: First fix incomplete, second fix succeeds
+
+Iteration 1:
+  debug_iteration: 1
+  debug_topic_slug: "integration_issues"
+
+  Step 2: debug-specialist creates:
+    - Report: debug/integration_issues/001_auth_token_missing.md
+    - Root cause: "Auth token not passed to middleware"
+    - Recommended: "Option 1 - Add token to request context"
+
+  Step 4: code-writer applies:
+    - Modified: middleware/auth.lua
+    - Added: token extraction from headers
+
+  Step 5: Run tests:
+    - Result: 2 tests still failing
+    - Error: "config.secret is nil"
+    - tests_passing = false
+
+  Step 6: Branch 3 (Continue):
+    - Add to debug_history[0]
+    - CONTINUE to Iteration 2
 
 Iteration 2:
-- Debug: config.secret not initialized in test environment
-- Fix: Added config initialization in test setup
-- Test: Still failing - "JWT decode error"
+  debug_iteration: 2
+  debug_topic_slug: "integration_issues" (reuse)
+
+  Step 2: debug-specialist creates (with history):
+    - Report: debug/integration_issues/002_secret_initialization.md
+    - Context: "Previous fix addressed token extraction, but config.secret still nil"
+    - Root cause: "Secret not loaded in test environment"
+    - Recommended: "Option 2 - Mock secret in test config"
+
+  Step 4: code-writer applies:
+    - Modified: tests/config_mock.lua
+    - Added: config.secret = "test-secret-key"
+
+  Step 5: Run tests:
+    - Result: All tests pass
+    - tests_passing = true
+
+  Step 6: Branch 1 (Success):
+    - Save checkpoint(success)
+    - debug_iterations_needed = 2
+    - EXIT loop → Phase 6 (Documentation)
+
+Outcome: ✓ Success in 2 iterations
+```
+
+**Example 3: Three Iteration Escalation**
+
+```yaml
+# Scenario: Issue proves too complex for automated debugging
+
+Iteration 1:
+  debug_topic_slug: "test_timeout"
+  Report: debug/test_timeout/001_async_hang.md
+  Fix: Added timeout wrapper
+  Result: Still hangs (different line)
+
+Iteration 2:
+  Report: debug/test_timeout/002_promise_deadlock.md
+  Fix: Fixed promise resolution order
+  Result: New error - "coroutine error"
 
 Iteration 3:
-- Debug: JWT library not available in test context
-- Fix: Added jwt library mock for tests
-- Test: ✓ All tests passing
+  debug_iteration: 3
+  Report: debug/test_timeout/003_coroutine_state.md
+  Fix: Added coroutine state cleanup
+  Result: Still failing - "coroutine in wrong state"
+  tests_passing = false
 
-Checkpoint Saved: tests_passing
-Next Phase: documentation
+Step 6: Branch 2 (Escalation):
+  debug_iteration >= 3 AND tests_passing == false
+  SAVE checkpoint(escalation)
+  PRESENT escalation message with 3 reports
+  PAUSE workflow
+  WAIT for user decision
+
+Outcome: ⚠️ Escalated to user after 3 iterations
 ```
 
 ### Documentation Phase (Sequential Execution)
