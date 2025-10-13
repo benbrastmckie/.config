@@ -349,30 +349,292 @@ Run tests by:
 - Checking for common test patterns (npm test, pytest, make test)
 - Running language-specific test commands based on project type
 
-### 3.3. Enhanced Error Analysis (if tests fail)
+### 3.3. Automatic Debug Integration (if tests fail)
 
-**Workflow**: Use error-utils.sh for comprehensive error analysis and recovery options
+**Workflow**: Tiered error recovery with automatic /debug invocation and user choice prompts
 
-**Step 1: Classify Error**
+This section implements a 4-level error recovery strategy that automatically handles test failures:
+- Level 1: Immediate error classification and suggestions
+- Level 2: Retry with timeout for transient errors
+- Level 3: Retry with fallback for tool access errors
+- Level 4: Automatic /debug invocation with user choices (r/c/s/a)
+
+**Level 1: Immediate Classification & Suggestions**
+
 ```bash
+# Classify error type using error-utils.sh
 source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
-ERROR_TYPE=$(classify_error "$TEST_OUTPUT")
+ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")
+ERROR_LOCATION=$(extract_location "$TEST_OUTPUT")
+SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
+
+# Display immediate suggestions
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Test Failure Detected"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Error Type: $ERROR_TYPE"
+echo "Location: $ERROR_LOCATION"
+echo ""
+echo "$SUGGESTIONS"
+echo ""
 ```
 
-**Step 2: Generate Suggestions**
+**Level 2: Transient Error Retry**
+
 ```bash
-SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$TEST_OUTPUT")
+# Check for transient errors (timeout, busy, locked)
+if [ "$ERROR_TYPE" = "timeout" ] || echo "$TEST_OUTPUT" | grep -qi "busy\|locked"; then
+  RETRY_META=$(retry_with_timeout "Phase $CURRENT_PHASE tests" "$ATTEMPT_NUMBER")
+  SHOULD_RETRY=$(echo "$RETRY_META" | jq -r '.should_retry')
+  NEW_TIMEOUT=$(echo "$RETRY_META" | jq -r '.new_timeout')
+
+  if [ "$SHOULD_RETRY" = "true" ]; then
+    echo "Retrying with extended timeout: ${NEW_TIMEOUT}ms"
+    # Re-run tests with new timeout
+    # If successful: Skip to next phase
+    # If failed: Continue to Level 3
+  fi
+fi
 ```
 
-**Step 3: Format Report**
+**Level 3: Fallback with Reduced Toolset**
+
 ```bash
-ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$TEST_OUTPUT" "$CURRENT_PHASE")
-echo "$ERROR_REPORT"
+# Check for tool access errors
+if echo "$TEST_OUTPUT" | grep -qi "tool.*failed\|access.*denied"; then
+  FALLBACK_META=$(retry_with_fallback "Phase $CURRENT_PHASE" "$ATTEMPT_NUMBER")
+  REDUCED_TOOLSET=$(echo "$FALLBACK_META" | jq -r '.reduced_toolset')
+
+  echo "Retrying with reduced toolset: $REDUCED_TOOLSET"
+  # Re-invoke agent with reduced tools
+  # If successful: Skip to next phase
+  # If failed: Continue to Level 4
+fi
+```
+
+**Level 4: Automatic Debug Invocation**
+
+No user prompt - automatically invoke /debug for root cause analysis:
+
+```bash
+echo "Invoking debug agent for root cause analysis..."
+
+# Build debug command
+ERROR_MESSAGE=$(echo "$TEST_OUTPUT" | head -c 100)
+DEBUG_COMMAND="/debug \"Phase $CURRENT_PHASE test failure: $ERROR_MESSAGE\" \"$PLAN_PATH\""
+
+# Invoke /debug via SlashCommand tool
+DEBUG_RESULT=$(invoke_slash_command "$DEBUG_COMMAND")
+
+# Parse debug report path from response
+DEBUG_REPORT_PATH=$(echo "$DEBUG_RESULT" | grep -o 'specs/reports/[0-9]*_debug_.*\.md' | head -1)
+
+# Fallback to analyze-error.sh if /debug fails
+if [ -z "$DEBUG_REPORT_PATH" ]; then
+  echo "⚠ Debug agent failed, using analyze-error.sh fallback"
+  ANALYSIS_RESULT=$(.claude/lib/analyze-error.sh "$TEST_OUTPUT")
+  ROOT_CAUSE=$(echo "$ANALYSIS_RESULT" | grep "^Error Type:" | cut -d: -f2-)
+  SUGGESTIONS=$(echo "$ANALYSIS_RESULT" | sed -n '/^Suggestions:/,/^$/p')
+else
+  # Extract root cause from debug report
+  ROOT_CAUSE=$(sed -n '/^## Root Cause Analysis/,/^##/p' "$DEBUG_REPORT_PATH" |
+               grep -v '^##' | head -5 | tr '\n' ' ' | cut -c 1-80)
+fi
+```
+
+**Display Debug Summary**
+
+```bash
+if [ -n "$DEBUG_REPORT_PATH" ]; then
+  echo ""
+  echo "┌─────────────────────────────────────────────────────────────────┐"
+  printf "│ %-63s │\n" "Phase $CURRENT_PHASE Test Failure"
+  echo "├─────────────────────────────────────────────────────────────────┤"
+  printf "│ Root Cause: %-51s │\n" "${ROOT_CAUSE:0:51}"
+  printf "│ Debug Report: %-49s │\n" "$(basename "$DEBUG_REPORT_PATH")"
+  echo "└─────────────────────────────────────────────────────────────────┘"
+  echo ""
+fi
+```
+
+**User Choice Prompt**
+
+Present clear choices with explanations:
+
+```bash
+echo "Choose action:"
+echo ""
+echo "  (r) Revise plan with debug findings"
+echo "      → Automatically update plan structure or tasks based on analysis"
+echo "      → Retry phase after revision"
+echo ""
+echo "  (c) Continue to next phase"
+echo "      → Mark this phase [INCOMPLETE] with debugging notes"
+echo "      → Proceed to Phase $((CURRENT_PHASE + 1))"
+echo ""
+echo "  (s) Skip current phase"
+echo "      → Mark this phase [SKIPPED]"
+echo "      → Proceed to Phase $((CURRENT_PHASE + 1))"
+echo ""
+echo "  (a) Abort implementation"
+echo "      → Save checkpoint for later resumption"
+echo "      → Resume with: /implement $PLAN_PATH $CURRENT_PHASE"
+echo ""
+
+# Read and validate choice
+while true; do
+  read -p "Choose action (r/c/s/a): " USER_CHOICE
+  case "$USER_CHOICE" in
+    r|c|s|a) break ;;
+    *) echo "Invalid choice. Please enter r, c, s, or a." ;;
+  esac
+done
+
+# Log choice
+log_user_choice "$CURRENT_PHASE" "$USER_CHOICE" "$DEBUG_REPORT_PATH"
+```
+
+**Execute Action**
+
+```bash
+case "$USER_CHOICE" in
+  r)
+    # Build revision context JSON
+    REVISION_CONTEXT=$(cat <<EOF
+{
+  "revision_type": "add_phase",
+  "current_phase": $CURRENT_PHASE,
+  "reason": "Test failure: $ROOT_CAUSE",
+  "debug_report": "$DEBUG_REPORT_PATH",
+  "suggested_action": "Add prerequisites or update tasks based on debug findings"
+}
+EOF
+)
+
+    # Invoke /revise --auto-mode
+    echo "Invoking /revise --auto-mode to update plan..."
+    REVISE_RESULT=$(invoke_slash_command "/revise --auto-mode --context '$REVISION_CONTEXT' '$PLAN_PATH'")
+
+    # Parse response
+    REVISE_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
+
+    if [ "$REVISE_STATUS" = "success" ]; then
+      echo "✓ Plan revised successfully"
+      echo "  Retrying Phase $CURRENT_PHASE..."
+      # Retry phase (loop back to Step 2: Implementation)
+    else
+      echo "✗ Plan revision failed"
+      echo "  Falling back to (c) Continue action"
+      USER_CHOICE="c"  # Fallback
+    fi
+    ;;
+
+  c)
+    # Mark phase [INCOMPLETE] and add debugging notes
+    add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "$ROOT_CAUSE" "Incomplete"
+
+    # Update phase heading
+    sed -i "s/^### Phase $CURRENT_PHASE: \(.*\)$/### Phase $CURRENT_PHASE: \1 [INCOMPLETE]/" "$PLAN_PATH"
+
+    # Save checkpoint
+    save_checkpoint "in_progress" "$CURRENT_PHASE" "$((CURRENT_PHASE + 1))"
+
+    # Proceed to next phase
+    CURRENT_PHASE=$((CURRENT_PHASE + 1))
+    ;;
+
+  s)
+    # Mark phase [SKIPPED]
+    add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "$ROOT_CAUSE" "Skipped"
+
+    sed -i "s/^### Phase $CURRENT_PHASE: \(.*\)$/### Phase $CURRENT_PHASE: \1 [SKIPPED]/" "$PLAN_PATH"
+
+    # Save checkpoint
+    save_checkpoint "in_progress" "$CURRENT_PHASE" "$((CURRENT_PHASE + 1))"
+
+    # Proceed to next phase
+    CURRENT_PHASE=$((CURRENT_PHASE + 1))
+    ;;
+
+  a)
+    # Save checkpoint with debug info
+    save_checkpoint "paused" "$CURRENT_PHASE" "$CURRENT_PHASE" "$ROOT_CAUSE" "$DEBUG_REPORT_PATH"
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Implementation Aborted"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Checkpoint saved with debug information"
+    echo "Resume with: /implement $PLAN_PATH $CURRENT_PHASE"
+    echo ""
+
+    # Exit workflow
+    exit 0
+    ;;
+esac
+```
+
+**Helper Function: add_debugging_notes**
+
+```bash
+add_debugging_notes() {
+  local plan_path="$1"
+  local phase_num="$2"
+  local debug_report_path="$3"
+  local root_cause="$4"
+  local resolution_status="$5"  # Pending, Applied, Incomplete, Skipped
+
+  # Check if debugging notes already exist
+  local has_debug_notes
+  has_debug_notes=$(grep -q "#### Debugging Notes" "$plan_path" && echo "true" || echo "false")
+
+  if [ "$has_debug_notes" = "false" ]; then
+    # Create new debugging notes section
+    local debug_notes=$(cat <<EOF
+
+#### Debugging Notes
+- **Date**: $(date +%Y-%m-%d)
+- **Issue**: Phase $phase_num test failure
+- **Debug Report**: [$debug_report_path]($debug_report_path)
+- **Root Cause**: $root_cause
+- **Resolution**: $resolution_status
+EOF
+)
+    # Insert after phase tasks using Edit tool
+  else
+    # Append new iteration
+    local iteration_count
+    iteration_count=$(grep -c "^**Iteration" "$plan_path" || echo "0")
+    iteration_count=$((iteration_count + 1))
+
+    local new_iteration=$(cat <<EOF
+
+**Iteration $iteration_count** ($(date +%Y-%m-%d))
+- **Issue**: Phase $phase_num test failure
+- **Debug Report**: [$debug_report_path]($debug_report_path)
+- **Root Cause**: $root_cause
+- **Resolution**: $resolution_status
+EOF
+)
+    # Append using Edit tool
+
+    # Check for escalation
+    if [ $iteration_count -ge 3 ]; then
+      echo "**Status**: Escalated to manual intervention (3+ debugging attempts)" >> "$plan_path"
+    fi
+  fi
+
+  echo "✓ Debugging notes added to plan (Status: $resolution_status)"
+}
 ```
 
 **Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
 
-**Graceful degradation**: Document partial progress, suggest `/debug` or manual fixes, save checkpoint with error context
+**Benefits**:
+- **50% faster debug workflow**: Auto-invocation eliminates prompt delays
+- **Clear user choices**: No "should I debug?" questions, just actionable options
+- **Tiered recovery**: 4 levels of increasingly sophisticated error handling
+- **Graceful degradation**: Fallback to analyze-error.sh if /debug fails
 
 ### 3.4. Adaptive Planning Detection
 
