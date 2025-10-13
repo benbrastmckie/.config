@@ -191,6 +191,7 @@ Commands should check CLAUDE.md in priority order:
 - **Clean narrative**: Documentation should read as if the current implementation always existed
 - **Ban historical markers**: Never use labels like "(New)", "(Old)", "(Original)", "(Current)", "(Updated)", or version indicators in feature descriptions
 - **Timeless writing**: Avoid phrases like "previously", "now supports", "recently added", "in the latest version"
+- **No migration guides**: Do not create migration guides or compatibility documentation for refactors
 
 ### Rationale
 This project values:
@@ -298,12 +299,48 @@ Different projects have different complexity needs. Adjust thresholds to match y
 
 ### Claude Code Commands
 Located in `.claude/commands/`:
+- `/orchestrate <workflow-description>` - Coordinate specialized agents through complete development workflows
 - `/implement [plan-file]` - Execute implementation plans
 - `/report <topic>` - Generate research documentation
 - `/plan <feature>` - Create implementation plans
 - `/plan-from-template <template-name>` - Generate plans from reusable templates
 - `/test <target>` - Run project-specific tests
 - `/setup` - Configure or update this CLAUDE.md file
+
+#### /orchestrate - Multi-Agent Workflow Coordination
+
+The /orchestrate command coordinates specialized agents through end-to-end development workflows:
+
+**Workflow Phases**:
+1. **Research** (Parallel): research-specialist agents investigate patterns, practices, alternatives (2-4 agents)
+2. **Planning** (Sequential): plan-architect synthesizes research into structured implementation plan
+3. **Implementation** (Adaptive): code-writer executes plan phase-by-phase with testing
+4. **Debugging** (Conditional): debug-specialist investigates failures, code-writer applies fixes (max 3 iterations)
+5. **Documentation** (Sequential): doc-writer updates docs and generates workflow summary
+
+**Agent Coordination Patterns**:
+- **Parallel execution**: Research agents run concurrently (single message, multiple Task invocations)
+- **Sequential execution**: Planning, implementation, documentation execute in order
+- **Conditional execution**: Debugging only triggers on test failures
+- **Iteration limiting**: Max 3 debug iterations before user escalation
+
+**Usage**: `/orchestrate <workflow-description> [--create-pr]`
+
+**Example**: `/orchestrate Add user authentication with email and password`
+
+**Artifacts Generated**:
+- Research reports: `specs/reports/{topic}/NNN_report.md`
+- Implementation plan: `specs/plans/NNN_feature.md`
+- Workflow summary: `specs/summaries/NNN_summary.md`
+- Debug reports (if needed): `debug/{topic}/NNN_report.md`
+
+**State Management**:
+- TodoWrite tracks all 6 workflow phases
+- Checkpoints saved at phase boundaries for resumption
+- Progress markers (PROGRESS:) emitted for real-time visibility
+- Error history tracked for debugging and recovery
+
+See `.claude/commands/orchestrate.md` for detailed workflow patterns and agent invocation examples.
 
 ## Quick Reference
 

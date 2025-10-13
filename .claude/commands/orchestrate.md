@@ -5135,36 +5135,100 @@ When invoked with `<workflow-description>`:
 
 ## Usage Examples
 
-### Example 1: Feature Development
-```
-/orchestrate Add user authentication with email and password
-```
-Expected flow:
-- Research: auth patterns, security best practices
-- Planning: structured multi-phase plan
-- Implementation: backend + frontend + tests
-- Documentation: API docs, user guide
+### Example 1: Simple Feature (No Research)
 
-### Example 2: Bug Investigation and Fix
 ```
-/orchestrate Fix the command picker synchronization issue
+/orchestrate Add hello world function
 ```
-Expected flow:
-- Research: analyze current implementation, find issue
-- Planning: fix strategy with validation
-- Implementation: apply fix
-- Debugging: ensure tests pass
-- Documentation: issue report and fix notes
 
-### Example 3: Refactoring
+**Expected Execution**:
+- Skip research (simple feature)
+- Plan: plan-architect creates implementation plan
+- Implement: code-writer executes plan
+- Document: doc-writer updates documentation
+
+**Duration**: ~5 minutes
+**Agents Invoked**: 3 (plan-architect, code-writer, doc-writer)
+
+**Artifacts Generated**:
+- `specs/plans/NNN_hello_world.md` - Implementation plan
+- `[source_file]` - Source file containing hello world function
+- `specs/summaries/NNN_hello_world_summary.md` - Workflow summary
+
+### Example 2: Medium Feature (With Research)
+
 ```
-/orchestrate Refactor the specs directory structure for better organization
+/orchestrate Add configuration validation module
 ```
-Expected flow:
-- Research: current structure, best practices
-- Planning: incremental refactoring approach
-- Implementation: gradual restructuring with tests
-- Documentation: architectural updates
+
+**Expected Execution**:
+- Research: 2-3 parallel research-specialist agents investigate patterns and practices
+- Plan: plan-architect synthesizes research into implementation plan
+- Implement: code-writer executes plan
+- Document: doc-writer updates documentation
+
+**Duration**: ~15 minutes
+**Agents Invoked**: 5-6 (2-3 research-specialist, plan-architect, code-writer, doc-writer)
+
+**Artifacts Generated**:
+- `specs/reports/existing_patterns/001_config_patterns.md` - Research report #1
+- `specs/reports/best_practices/001_validation_practices.md` - Research report #2
+- `specs/plans/NNN_config_validation.md` - Implementation plan referencing reports
+- `[source_files]` - Validation module implementation
+- `specs/summaries/NNN_config_validation_summary.md` - Workflow summary
+
+### Example 3: Complex Feature (With Debugging)
+
+```
+/orchestrate Add authentication middleware with session management
+```
+
+**Expected Execution**:
+- Research: 2 parallel research-specialist agents
+- Plan: plan-architect creates comprehensive plan
+- Implement: code-writer executes plan (may fail tests initially)
+- Debug: debug-specialist investigates failures, code-writer applies fixes (1-3 iterations)
+- Document: doc-writer updates documentation
+
+**Duration**: ~30-45 minutes
+**Agents Invoked**: 6-8 (2 research-specialist, plan-architect, code-writer, 1-2 debug-specialist, 1-2 code-writer for fixes, doc-writer)
+
+**Artifacts Generated**:
+- `specs/reports/auth_patterns/001_auth_research.md`
+- `specs/reports/security_practices/001_security_research.md`
+- `specs/plans/NNN_authentication_middleware.md`
+- `debug/phase2_failures/001_missing_dependency.md` - Debug report (if needed)
+- `[source_files]` - Authentication middleware implementation
+- `specs/summaries/NNN_authentication_summary.md`
+
+### Example 4: Workflow with Escalation
+
+```
+/orchestrate Implement payment processing with external API integration
+```
+
+**Expected Execution**:
+- Research: 3 parallel research-specialist agents
+- Plan: plan-architect creates plan
+- Implement: code-writer attempts implementation
+- Debug: 3 iterations of debug-specialist + code-writer (all fail)
+- Escalation: User receives actionable message with checkpoint
+
+**Duration**: ~20 minutes (escalated before completion)
+**Agents Invoked**: 9-10 (3 research-specialist, plan-architect, code-writer, 3 debug-specialist, 3 code-writer for fixes)
+
+**Artifacts Generated**:
+- `specs/reports/payment_apis/001_api_research.md`
+- `specs/reports/integration_patterns/001_integration_research.md`
+- `specs/reports/security/001_security_research.md`
+- `specs/plans/NNN_payment_processing.md`
+- `debug/integration_issues/001_api_connection_failed.md` - Debug report iteration 1
+- `debug/integration_issues/002_authentication_error.md` - Debug report iteration 2
+- `debug/integration_issues/003_missing_credentials.md` - Debug report iteration 3
+- `[source_files]` - Partial payment implementation
+- **NO summary file** (workflow escalated before documentation phase)
+
+**Escalation Checkpoint**: `.claude/checkpoints/orchestrate_payment_processing.json`
 
 ## Notes
 
