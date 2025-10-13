@@ -1312,12 +1312,235 @@ Extracted: `specs/reports/existing_patterns/001_auth_patterns.md`
 - [ ] Report paths stored in workflow_state.research_reports array
 - [ ] Number of reports matches number of successful agents
 
-If any report is missing or invalid:
-- Retry agent invocation (max 1 retry per agent)
-- If retry fails: Proceed with available reports, note missing reports
-- If all reports missing: Escalate to user
+Proceed to Step 4.5 for comprehensive verification.
 
-Proceed to Step 5 only after all validations pass.
+#### Step 4.5: Verify Report Files (Batch Verification)
+
+**CRITICAL**: Perform comprehensive verification of all reports including path consistency checks.
+
+This step addresses the path inconsistency issue discovered in Report 004 where agents created
+reports at different locations than expected.
+
+**EXECUTE NOW**:
+
+For EACH report in workflow_state.research_reports:
+
+1. **Extract Expected Path**:
+   ```yaml
+   expected_path = workflow_state.research_reports[agent_index].expected_path
+   # This is the ABSOLUTE path provided to agent in Step 2
+   # Example: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_report.md
+   ```
+
+2. **Verify File Exists at Expected Path** (CRITICAL):
+   ```bash
+   # Check if file exists at exact path specified
+   if [ -f "$expected_path" ]; then
+     echo "✓ Report exists at expected path: $expected_path"
+     verified=true
+   else
+     echo "✗ MISSING at expected path: $expected_path"
+     verified=false
+   fi
+   ```
+
+3. **Search for Report in Other Locations** (Path Mismatch Detection):
+
+   If file not found at expected path, search for it elsewhere:
+   ```bash
+   # Extract report filename from expected path
+   REPORT_FILENAME=$(basename "$expected_path")
+   TOPIC_SLUG=$(echo "$expected_path" | grep -oP "reports/\K[^/]+")
+
+   # Search in common alternative locations
+   find /home/benjamin/.config -name "$REPORT_FILENAME" \
+     -path "*/specs/reports/${TOPIC_SLUG}/*" 2>/dev/null
+
+   # Common alternative locations to check:
+   # - Project root: /home/benjamin/.config/specs/reports/topic/
+   # - Claude dir: /home/benjamin/.config/.claude/specs/reports/topic/
+   # - Working dir: ./specs/reports/topic/
+   ```
+
+4. **Classify Verification Result**:
+
+   ```yaml
+   verification_status:
+     success: File exists at expected absolute path
+     path_mismatch: File exists but at different location
+     file_not_found: No file found anywhere
+     invalid_metadata: File exists but metadata incomplete
+     permission_denied: File exists but cannot read
+   ```
+
+5. **Validate Report Metadata** (if file found):
+
+   ```bash
+   # Check first 30 lines for required metadata
+   head -30 "$REPORT_PATH" | grep -E "^## Metadata" >/dev/null
+   if [ $? -eq 0 ]; then
+     # Check for required fields
+     head -30 "$REPORT_PATH" | grep -E "^- \*\*Date\*\*:" >/dev/null && \
+     head -30 "$REPORT_PATH" | grep -E "^- \*\*Topic\*\*:" >/dev/null && \
+     head -30 "$REPORT_PATH" | grep -E "^- \*\*Research Focus\*\*:" >/dev/null
+
+     if [ $? -eq 0 ]; then
+       echo "✓ Metadata complete"
+       metadata_valid=true
+     else
+       echo "✗ Metadata incomplete"
+       metadata_valid=false
+     fi
+   else
+     echo "✗ No metadata section found"
+     metadata_valid=false
+   fi
+   ```
+
+6. **Build Agent-to-Report Mapping**:
+
+   Store comprehensive mapping in workflow_state for debugging:
+   ```yaml
+   workflow_state.research_reports[agent_index] = {
+     "agent_index": 1,
+     "topic": "existing_patterns",
+     "topic_slug": "existing_patterns",
+     "expected_path": "/home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md",
+     "actual_path": "/home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md",  # Same if verified
+     "created_at": "2025-10-13T14:30:22Z",
+     "verified": true,
+     "verification_status": "success",
+     "metadata_valid": true,
+     "retry_count": 0
+   }
+   ```
+
+7. **Aggregate Verification Results**:
+
+   ```yaml
+   verification_summary:
+     total_reports: 3
+     verified_success: 2    # Reports at expected paths
+     path_mismatch: 1       # Reports found at different locations
+     file_not_found: 0      # Reports completely missing
+     invalid_metadata: 0    # Reports with incomplete metadata
+     permission_denied: 0   # Reports that cannot be read
+   ```
+
+**Verification Decision Tree**:
+
+```
+For EACH report:
+  ├─ File at expected path?
+  │  ├─ YES
+  │  │  ├─ Metadata valid?
+  │  │  │  ├─ YES → Status: success, verified: true
+  │  │  │  └─ NO → Status: invalid_metadata, verified: false
+  │  │  └─ Cannot read?
+  │  │     └─ YES → Status: permission_denied, verified: false
+  │  │
+  │  └─ NO (not at expected path)
+  │     ├─ Search finds file elsewhere?
+  │     │  ├─ YES → Status: path_mismatch, verified: false
+  │     │  │        actual_path: [found location]
+  │     │  └─ NO → Status: file_not_found, verified: false
+  │     │
+  │     └─ Check REPORT_CREATED marker in agent output
+  │        ├─ Marker found → Parse actual path from marker
+  │        └─ No marker → file_not_found
+```
+
+**Display Verification Summary**:
+
+After verifying all reports, display summary:
+```
+PROGRESS: Verifying research reports...
+
+✓ Report 1/3: existing_patterns - verified at expected path
+✗ Report 2/3: security_practices - PATH MISMATCH
+  Expected: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
+  Actual:   /home/benjamin/.config/specs/reports/security_practices/001_practices.md
+✓ Report 3/3: alternatives - verified at expected path
+
+Verification Summary:
+- Total Reports: 3
+- Verified Successfully: 2
+- Path Mismatches: 1
+- Missing Reports: 0
+
+NEXT: Proceeding to Step 4.6 (Retry Failed Reports) for 1 failed verification
+```
+
+**Proceed Based on Results**:
+
+- **All reports verified** (verified: true for all):
+  → Skip Step 4.6, proceed directly to Step 5 (Save Checkpoint)
+  → Display: "PROGRESS: All reports verified - proceeding to planning phase"
+
+- **Some reports failed verification**:
+  → Proceed to Step 4.6 (Retry Failed Reports)
+  → Pass failed report list to retry logic
+
+- **All reports failed verification**:
+  → Escalate to user with detailed error report
+  → Display: "ERROR: All research reports failed verification - see details above"
+
+**Update Workflow State**:
+
+```yaml
+workflow_state.research_phase_data.verification_summary = {
+  "total_reports": 3,
+  "verified_success": 2,
+  "path_mismatch": 1,
+  "file_not_found": 0,
+  "invalid_metadata": 0,
+  "permission_denied": 0,
+  "verification_timestamp": "2025-10-13T14:35:00Z"
+}
+
+workflow_state.research_phase_data.failed_reports = [
+  {
+    "agent_index": 2,
+    "topic": "security_practices",
+    "expected_path": "/home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md",
+    "actual_path": "/home/benjamin/.config/specs/reports/security_practices/001_practices.md",
+    "status": "path_mismatch"
+  }
+]
+```
+
+**Error Classifications** (using error-utils.sh):
+
+```bash
+# Source error utilities
+source .claude/lib/error-utils.sh
+
+# Classify each verification failure
+case "$verification_status" in
+  file_not_found)
+    error_type=$(classify_error "report_missing" "Report file not found after agent completion")
+    ;;
+  path_mismatch)
+    error_type=$(classify_error "path_inconsistency" "Report created at different location than expected")
+    ;;
+  invalid_metadata)
+    error_type=$(classify_error "incomplete_output" "Report metadata section incomplete")
+    ;;
+  permission_denied)
+    error_type=$(classify_error "file_access" "Cannot read report file - permission denied")
+    ;;
+esac
+```
+
+**Benefits of Batch Verification**:
+
+- **Preserves Parallelism**: Verification happens AFTER all agents complete (not during)
+- **Complete Picture**: See all verification results before deciding on retry strategy
+- **Path Mismatch Detection**: Discover path interpretation issues (Report 004 finding)
+- **Detailed Diagnostics**: Build comprehensive agent-to-report mapping for debugging
+- **Efficient Retry**: Only retry actually failed agents, not all agents
+
+Proceed to Step 4.6 if any reports failed verification, otherwise skip to Step 5.
 
 #### Step 5: Save Research Checkpoint
 
