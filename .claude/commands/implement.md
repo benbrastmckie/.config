@@ -1,6 +1,6 @@
 ---
 allowed-tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, TodoWrite, Task, SlashCommand
-argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan] [--create-pr]
+argument-hint: [plan-file] [starting-phase] [--report-scope-drift "<description>"] [--force-replan] [--create-pr] [--dashboard] [--dry-run]
 description: Execute implementation plan with automated testing, adaptive replanning, and commits (auto-resumes most recent incomplete plan if no args)
 command-type: primary
 dependent-commands: list, update, revise, debug, document, expand, github-specialist
@@ -61,6 +61,148 @@ If no plan file is provided, I will:
 2. Check if it has incomplete phases or tasks
 3. Resume from the first incomplete phase
 4. If all recent plans are complete, show a list to choose from
+
+## Progress Dashboard (Optional)
+
+Enable real-time visual progress tracking with the `--dashboard` flag:
+
+```bash
+/implement specs/plans/025_plan.md --dashboard
+```
+
+**Features**:
+- **Real-time ANSI rendering**: Visual dashboard with Unicode box-drawing
+- **Phase progress**: See all phases with status icons (✓ Complete, → In Progress, ⬚ Pending)
+- **Progress bar**: Visual representation of completion percentage
+- **Time tracking**: Elapsed time and estimated remaining duration
+- **Test results**: Last test status with pass/fail indicator
+- **Wave information**: Shows parallel execution waves when using dependency-based execution
+
+**Terminal Requirements**:
+- **Supported**: xterm, xterm-256color, screen, tmux, kitty, alacritty, most modern terminals
+- **Unsupported**: dumb terminals, non-interactive shells, terminals without ANSI support
+
+**Graceful Fallback**:
+When terminal doesn't support ANSI codes, automatically falls back to traditional `PROGRESS:` markers without requiring any action.
+
+**Dashboard Layout Example**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Implementation Progress: User Authentication Feature         │
+├─────────────────────────────────────────────────────────────┤
+│ Phase 1: Foundation ............................ ✓ Complete  │
+│ Phase 2: Core Implementation ................... ✓ Complete  │
+│ Phase 3: Testing & Validation .................. → In Progress│
+│ Phase 4: Documentation ......................... ⬚ Pending    │
+│ Phase 5: Cleanup ............................... ⬚ Pending    │
+├─────────────────────────────────────────────────────────────┤
+│ Progress: [████████████████░░░░░░░░░░░░] 60% (3/5 phases)   │
+│ Elapsed: 14m 32s  |  Estimated Remaining: ~10m              │
+├─────────────────────────────────────────────────────────────┤
+│ Current Task: Running integration tests                     │
+│ Last Test: test_auth_flow.lua ..................... ✓ PASS   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implementation Details**:
+The dashboard uses `.claude/lib/progress-dashboard.sh` utility which provides:
+- Multi-layer terminal capability detection (TERM env, tput, interactive check)
+- In-place ANSI updates without scrolling
+- Performance-optimized rendering (minimal redraws)
+- Support for both sequential and parallel (wave-based) execution
+
+## Dry-Run Mode (Preview and Validation)
+
+Preview execution plan without making changes using the `--dry-run` flag:
+
+```bash
+/implement specs/plans/025_plan.md --dry-run
+```
+
+**Dry-Run Analysis**:
+1. **Plan parsing**: Parse plan structure, phases, tasks, and dependencies
+2. **Complexity evaluation**: Calculate hybrid complexity scores for each phase
+3. **Agent assignments**: Show which agents would be invoked for each phase
+4. **Duration estimation**: Estimate time based on agent-registry metrics
+5. **File analysis**: List files and tests that would be affected
+6. **Execution preview**: Display wave-based execution order with parallelism
+7. **Confirmation prompt**: Option to proceed with actual implementation
+
+**Preview Output Example**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Implementation Plan: User Authentication Feature (Dry-Run)  │
+├─────────────────────────────────────────────────────────────┤
+│ Plan Structure: Level 1 (Phase 2 expanded)                  │
+│ Total Phases: 5  |  Estimated Duration: ~42 minutes         │
+├─────────────────────────────────────────────────────────────┤
+│ Wave 1 (Sequential):                                         │
+│   Phase 1: Foundation                       [Direct] 8min   │
+│     Complexity: 2.4  |  Tasks: 4  |  Agent: None            │
+│     Files: auth/base.lua, auth/types.lua                    │
+│     Tests: test_auth_foundation.lua                         │
+│                                                              │
+│ Wave 2 (Parallel - 2 phases):                               │
+│   Phase 2: Core Auth Logic                [Writer] 15min   │
+│     Complexity: 6.8  |  Tasks: 8  |  Agent: code-writer     │
+│     Files: auth/login.lua, auth/session.lua                 │
+│     Tests: test_login.lua, test_session.lua                 │
+│   Phase 3: Token Management               [Writer] 12min   │
+│     Complexity: 5.2  |  Tasks: 6  |  Agent: code-writer     │
+│     Files: auth/token.lua, auth/refresh.lua                 │
+│     Tests: test_token_validation.lua                        │
+│                                                              │
+│ Wave 3 (Sequential):                                         │
+│   Phase 4: Integration Tests           [Test-Spec] 5min    │
+│     Complexity: 3.1  |  Tasks: 3  |  Agent: test-specialist │
+│     Tests: test_auth_integration.lua                        │
+│   Phase 5: Documentation                  [Doc-Write] 2min  │
+│     Complexity: 1.8  |  Tasks: 2  |  Agent: doc-writer      │
+│     Files: auth/README.md, CHANGELOG.md                     │
+├─────────────────────────────────────────────────────────────┤
+│ Execution Summary:                                           │
+│   Total Waves: 3  |  Parallel Phases: 2  |  Max Concurrent: 2│
+│   Files Modified: 9  |  Tests Created: 5                    │
+│   Estimated Time: 42 minutes (30min with parallelism)       │
+└─────────────────────────────────────────────────────────────┘
+
+Proceed with implementation? (y/n):
+```
+
+**Dry-Run with Dashboard**:
+Combine flags for visual preview:
+```bash
+/implement specs/plans/025_plan.md --dry-run --dashboard
+```
+
+Shows dashboard preview with simulated execution without making changes.
+
+**Use Cases**:
+- **Validation**: Verify plan structure before execution
+- **Time estimation**: Understand time commitment
+- **Resource planning**: See which agents will be invoked
+- **Dependency verification**: Confirm wave-based execution order is correct
+- **File impact assessment**: Review which files will be modified
+- **Team coordination**: Share execution plan with team before starting
+
+**Dry-Run Scope**:
+- ✓ Parses plan and analyzes structure
+- ✓ Calculates complexity scores
+- ✓ Determines agent assignments
+- ✓ Estimates duration from agent registry
+- ✓ Lists affected files and tests
+- ✓ Shows execution waves and parallelism
+- ✗ Does not create/modify files
+- ✗ Does not run tests
+- ✗ Does not create git commits
+- ✗ Does not invoke agents
+
+**Implementation Details**:
+Duration estimation uses `.claude/lib/agent-registry-utils.sh` to retrieve historical performance data:
+- Average agent execution time per complexity point
+- Success rates and retry probabilities
+- Parallel execution efficiency factors
+- Test execution time estimates
 
 ## Standards Discovery and Application
 
@@ -129,6 +271,51 @@ source "$UTILS_DIR/adaptive-planning-logger.sh"
 
 **Log file**: `.claude/logs/adaptive-planning.log` (10MB max, 5 files retained)
 
+**Step 4: Initialize Progress Dashboard (Optional)**
+
+If the `--dashboard` flag is present, source and initialize the progress dashboard utility:
+
+```bash
+# Parse --dashboard flag from arguments
+DASHBOARD_ENABLED=false
+for arg in "$@"; do
+  if [ "$arg" = "--dashboard" ]; then
+    DASHBOARD_ENABLED=true
+    break
+  fi
+done
+
+# Source dashboard utility if enabled
+if [ "$DASHBOARD_ENABLED" = "true" ]; then
+  if [ -f "$UTILS_DIR/progress-dashboard.sh" ]; then
+    source "$UTILS_DIR/progress-dashboard.sh"
+
+    # Detect terminal capabilities
+    TERMINAL_CAPABILITIES=$(detect_terminal_capabilities)
+    ANSI_SUPPORTED=$(echo "$TERMINAL_CAPABILITIES" | jq -r '.ansi_supported')
+
+    if [ "$ANSI_SUPPORTED" != "true" ]; then
+      echo "⚠ Dashboard requested but terminal doesn't support ANSI"
+      echo "  Reason: $(echo "$TERMINAL_CAPABILITIES" | jq -r '.reason')"
+      echo "  Falling back to traditional progress markers"
+      DASHBOARD_ENABLED=false
+    else
+      echo "✓ Progress dashboard enabled (ANSI terminal detected)"
+    fi
+  else
+    echo "⚠ progress-dashboard.sh not found, disabling dashboard"
+    DASHBOARD_ENABLED=false
+  fi
+fi
+```
+
+**Dashboard lifecycle during implementation**:
+
+1. **Before phase loop begins**: Call `initialize_dashboard "$PLAN_NAME" "$TOTAL_PHASES"`
+2. **After each phase completes**: Call `update_dashboard_phase "$PHASE_NUM" "$PHASE_STATUS" "$CURRENT_TASK"`
+3. **During phase execution**: Update dashboard with test results and current task
+4. **On completion or error**: Call `clear_dashboard` before displaying final messages
+
 **Integration Complete**: All shared utilities are now available for use throughout implementation
 
 ### Progressive Plan Support
@@ -183,6 +370,207 @@ Let me first locate the implementation plan:
    - Generate implementation summary
    - Update referenced reports if needed
    - Link plan and reports in summary
+
+### Step 0.5: Dry-Run Mode Execution (if --dry-run flag present)
+
+If the `--dry-run` flag is detected, execute preview mode instead of actual implementation:
+
+**Step 1: Parse Flag and Plan**
+```bash
+# Check for --dry-run flag
+DRY_RUN=false
+for arg in "$@"; do
+  if [ "$arg" = "--dry-run" ]; then
+    DRY_RUN=true
+    break
+  fi
+done
+
+if [ "$DRY_RUN" = "true" ]; then
+  # Parse plan structure
+  PLAN_PATH="$1"  # First argument is plan path
+  STRUCTURE_LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+
+  # Extract plan metadata
+  PLAN_NAME=$(grep "^# " "$PLAN_PATH" | head -1 | sed 's/^# //')
+  TOTAL_PHASES=$(grep -c "^### Phase [0-9]" "$PLAN_PATH")
+
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Dry-Run Mode: $PLAN_NAME"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+fi
+```
+
+**Step 2: Analyze Each Phase**
+```bash
+# For each phase, gather analysis data
+declare -a PHASE_ANALYSIS
+
+for phase_num in $(seq 1 $TOTAL_PHASES); do
+  # Extract phase details
+  PHASE_SECTION=$(sed -n "/^### Phase $phase_num:/,/^### Phase $((phase_num + 1)):/p" "$PLAN_PATH")
+  PHASE_NAME=$(echo "$PHASE_SECTION" | grep "^### Phase $phase_num:" | sed "s/^### Phase $phase_num: //")
+  TASK_LIST=$(echo "$PHASE_SECTION" | grep "^- \[ \]" || echo "")
+  TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
+
+  # Run hybrid complexity evaluation
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
+  COMPLEXITY_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_PATH")
+  COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.final_score')
+
+  # Determine agent assignment
+  AGENT_TYPE="None"
+  if echo "$PHASE_NAME" | grep -qi "document\|readme\|doc"; then
+    AGENT_TYPE="doc-writer"
+  elif echo "$PHASE_NAME" | grep -qi "test"; then
+    AGENT_TYPE="test-specialist"
+  elif echo "$PHASE_NAME" | grep -qi "debug"; then
+    AGENT_TYPE="debug-specialist"
+  elif (( $(echo "$COMPLEXITY_SCORE >= 10" | bc -l) )); then
+    AGENT_TYPE="code-writer (think harder)"
+  elif (( $(echo "$COMPLEXITY_SCORE >= 8" | bc -l) )); then
+    AGENT_TYPE="code-writer (think hard)"
+  elif (( $(echo "$COMPLEXITY_SCORE >= 6" | bc -l) )); then
+    AGENT_TYPE="code-writer (think)"
+  elif (( $(echo "$COMPLEXITY_SCORE >= 3" | bc -l) )); then
+    AGENT_TYPE="code-writer"
+  fi
+
+  # Extract file references from tasks
+  FILES_MENTIONED=$(echo "$TASK_LIST" | grep -o '[a-zA-Z0-9_/-]*\.\(lua\|js\|py\|sh\|md\)' | sort -u | tr '\n' ', ' | sed 's/,$//')
+
+  # Extract test references
+  TESTS_MENTIONED=$(echo "$TASK_LIST" | grep -o 'test[a-zA-Z0-9_/-]*\.\(lua\|js\|py\|sh\)' | sort -u | tr '\n' ', ' | sed 's/,$//')
+
+  # Estimate duration based on complexity and agent type
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/agent-registry-utils.sh"
+  if [ "$AGENT_TYPE" != "None" ]; then
+    AGENT_METRICS=$(get_agent_metrics "$(echo $AGENT_TYPE | cut -d' ' -f1)")
+    AVG_DURATION=$(echo "$AGENT_METRICS" | jq -r '.average_duration_seconds // 600')
+    ESTIMATED_MINUTES=$(echo "scale=0; ($AVG_DURATION + ($COMPLEXITY_SCORE * 60)) / 60" | bc)
+  else
+    ESTIMATED_MINUTES=$(echo "scale=0; $COMPLEXITY_SCORE * 2" | bc)
+  fi
+
+  # Store phase analysis
+  PHASE_ANALYSIS[$phase_num]=$(cat <<EOF
+{
+  "phase_num": $phase_num,
+  "phase_name": "$PHASE_NAME",
+  "complexity": $COMPLEXITY_SCORE,
+  "tasks": $TASK_COUNT,
+  "agent": "$AGENT_TYPE",
+  "files": "$FILES_MENTIONED",
+  "tests": "$TESTS_MENTIONED",
+  "duration_minutes": $ESTIMATED_MINUTES
+}
+EOF
+)
+done
+```
+
+**Step 3: Parse Dependencies and Generate Waves**
+```bash
+# Use dependency parser to generate execution waves
+WAVES=$(.claude/lib/parse-phase-dependencies.sh "$PLAN_PATH")
+
+# Parse wave information
+declare -A WAVE_PHASES
+WAVE_COUNT=0
+
+while IFS=: read -r wave_label phase_list; do
+  WAVE_NUM=$(echo "$wave_label" | grep -o '[0-9]*')
+  WAVE_PHASES[$WAVE_NUM]="$phase_list"
+  WAVE_COUNT=$WAVE_NUM
+done <<< "$WAVES"
+```
+
+**Step 4: Display Dry-Run Preview**
+```bash
+# Display formatted preview
+echo "┌─────────────────────────────────────────────────────────────┐"
+printf "│ Implementation Plan: %-38s │\n" "$PLAN_NAME (Dry-Run)"
+echo "├─────────────────────────────────────────────────────────────┤"
+printf "│ Plan Structure: Level %-1s %-33s │\n" "$STRUCTURE_LEVEL" "(expanded phases: ...)"
+TOTAL_DURATION=0
+for i in $(seq 1 $TOTAL_PHASES); do
+  PHASE_DATA="${PHASE_ANALYSIS[$i]}"
+  DURATION=$(echo "$PHASE_DATA" | jq -r '.duration_minutes')
+  TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
+done
+printf "│ Total Phases: %-2s  |  Estimated Duration: ~%-2s minutes   │\n" "$TOTAL_PHASES" "$TOTAL_DURATION"
+echo "├─────────────────────────────────────────────────────────────┤"
+
+# Display each wave
+for wave_num in $(seq 1 $WAVE_COUNT); do
+  PHASES_IN_WAVE="${WAVE_PHASES[$wave_num]}"
+  PHASE_ARRAY=($PHASES_IN_WAVE)
+  PHASE_COUNT=${#PHASE_ARRAY[@]}
+
+  if [ $PHASE_COUNT -eq 1 ]; then
+    echo "│ Wave $wave_num (Sequential):                                       │"
+  else
+    printf "│ Wave %d (Parallel - %d phases):                              │\n" "$wave_num" "$PHASE_COUNT"
+  fi
+
+  for phase_num in "${PHASE_ARRAY[@]}"; do
+    PHASE_DATA="${PHASE_ANALYSIS[$phase_num]}"
+    PHASE_NAME=$(echo "$PHASE_DATA" | jq -r '.phase_name' | cut -c 1-30)
+    COMPLEXITY=$(echo "$PHASE_DATA" | jq -r '.complexity')
+    TASKS=$(echo "$PHASE_DATA" | jq -r '.tasks')
+    AGENT=$(echo "$PHASE_DATA" | jq -r '.agent' | cut -c 1-12)
+    FILES=$(echo "$PHASE_DATA" | jq -r '.files' | cut -c 1-50)
+    TESTS=$(echo "$PHASE_DATA" | jq -r '.tests' | cut -c 1-50)
+    DURATION=$(echo "$PHASE_DATA" | jq -r '.duration_minutes')
+
+    printf "│   Phase %d: %-30s [%-10s] %2dmin │\n" "$phase_num" "$PHASE_NAME" "$AGENT" "$DURATION"
+    printf "│     Complexity: %-4s  |  Tasks: %-2s  |  Agent: %-12s │\n" "$COMPLEXITY" "$TASKS" "$AGENT"
+
+    if [ -n "$FILES" ] && [ "$FILES" != "null" ]; then
+      printf "│     Files: %-50s │\n" "$FILES"
+    fi
+    if [ -n "$TESTS" ] && [ "$TESTS" != "null" ]; then
+      printf "│     Tests: %-50s │\n" "$TESTS"
+    fi
+    echo "│                                                              │"
+  done
+done
+
+echo "├─────────────────────────────────────────────────────────────┤"
+printf "│ Execution Summary:                                           │\n"
+PARALLEL_PHASES=$((TOTAL_PHASES - WAVE_COUNT))
+printf "│   Total Waves: %-2s  |  Parallel Phases: %-2s  |  Max Concurrent: 3│\n" "$WAVE_COUNT" "$PARALLEL_PHASES"
+
+# Count unique files and tests
+UNIQUE_FILES=$(for i in $(seq 1 $TOTAL_PHASES); do echo "${PHASE_ANALYSIS[$i]}" | jq -r '.files'; done | tr ',' '\n' | sort -u | wc -l)
+UNIQUE_TESTS=$(for i in $(seq 1 $TOTAL_PHASES); do echo "${PHASE_ANALYSIS[$i]}" | jq -r '.tests'; done | tr ',' '\n' | sort -u | wc -l)
+
+printf "│   Files Modified: %-2s  |  Tests Created: %-2s                    │\n" "$UNIQUE_FILES" "$UNIQUE_TESTS"
+
+# Calculate parallel time savings
+PARALLEL_DURATION=$(echo "scale=0; $TOTAL_DURATION * 0.7" | bc)
+printf "│   Estimated Time: %d minutes (%dmin with parallelism)       │\n" "$TOTAL_DURATION" "$PARALLEL_DURATION"
+echo "└─────────────────────────────────────────────────────────────┘"
+echo ""
+```
+
+**Step 5: Prompt for Confirmation**
+```bash
+# Ask user if they want to proceed
+read -p "Proceed with implementation? (y/n): " PROCEED
+
+if [ "$PROCEED" != "y" ] && [ "$PROCEED" != "Y" ]; then
+  echo "Dry-run complete. Exiting without changes."
+  exit 0
+fi
+
+# If user confirms, continue with normal implementation
+echo "Proceeding with implementation..."
+echo ""
+```
+
+**Dry-Run Exit**: If user declines, exit immediately without making changes. If user confirms, continue with normal implementation flow.
 
 ## Parallel Execution with Dependencies
 
@@ -265,6 +653,8 @@ Show the phase number, name, and all tasks that need to be completed.
 
 For agent delegation patterns, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
 
+**Note**: This step uses the hybrid complexity score ($COMPLEXITY_SCORE) from Step 1.5 (Hybrid Complexity Evaluation) for agent selection thresholds.
+
 **Implement-specific complexity scoring**:
 
 1. **Run complexity analyzer**:
@@ -272,7 +662,7 @@ For agent delegation patterns, see [Single Agent with Behavioral Injection](../d
    .claude/lib/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
    ```
 
-2. **Agent selection thresholds**:
+2. **Agent selection thresholds** (using hybrid complexity score from Step 1.5):
    - **Direct execution** (score 0-2): Simple phases
    - **code-writer** (score 3-5): Medium complexity
    - **code-writer + think** (score 6-7): Medium-high complexity
@@ -309,9 +699,93 @@ IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_
 
 This is informational only and helps understand the current plan organization.
 
+### 1.5. Hybrid Complexity Evaluation
+
+Evaluate phase complexity using hybrid approach (threshold + agent for borderline cases).
+
+**Workflow**:
+
+1. **Calculate threshold-based score**:
+   ```bash
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
+
+   THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
+   TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
+   ```
+
+2. **Determine if agent evaluation needed**:
+   ```bash
+   AGENT_NEEDED="false"
+   if [ "$THRESHOLD_SCORE" -ge 7 ] || [ "$TASK_COUNT" -ge 8 ]; then
+     AGENT_NEEDED="true"
+     echo "Borderline complexity detected (score: $THRESHOLD_SCORE, tasks: $TASK_COUNT)"
+     echo "Invoking complexity_estimator agent for context-aware analysis..."
+   fi
+   ```
+
+3. **Run hybrid evaluation**:
+   ```bash
+   EVALUATION_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_FILE")
+
+   COMPLEXITY_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.final_score')
+   EVALUATION_METHOD=$(echo "$EVALUATION_RESULT" | jq -r '.evaluation_method')
+
+   echo "Complexity Score: $COMPLEXITY_SCORE ($EVALUATION_METHOD)"
+
+   # If agent was used, display reasoning
+   if [ "$AGENT_NEEDED" = "true" ]; then
+     AGENT_REASONING=$(echo "$EVALUATION_RESULT" | jq -r '.agent_reasoning // "N/A"')
+     if [ "$AGENT_REASONING" != "N/A" ]; then
+       echo "Agent Reasoning: $AGENT_REASONING"
+     fi
+
+     # Check for agent errors
+     AGENT_ERROR=$(echo "$EVALUATION_RESULT" | jq -r '.agent_error // "null"')
+     if [ "$AGENT_ERROR" != "null" ]; then
+       echo "⚠ Agent evaluation failed: $AGENT_ERROR"
+       echo "  Falling back to threshold score: $COMPLEXITY_SCORE"
+     fi
+   fi
+   ```
+
+4. **Log evaluation for analytics**:
+   ```bash
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/adaptive-planning-logger.sh"
+
+   log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" \
+     "$COMPLEXITY_THRESHOLD_HIGH" "$([ $AGENT_NEEDED = 'true' ] && echo 'true' || echo 'false')"
+
+   # If score reconciliation occurred, log discrepancy details
+   if [ "$EVALUATION_METHOD" != "threshold" ]; then
+     THRESHOLD_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.threshold_score // 0')
+     AGENT_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.agent_score // 0')
+     SCORE_DIFF=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.score_difference // 0')
+
+     log_complexity_discrepancy "$PHASE_NAME" "$THRESHOLD_SCORE" "$AGENT_SCORE" \
+       "$SCORE_DIFF" "$AGENT_REASONING" "$EVALUATION_METHOD"
+   fi
+   ```
+
+5. **Use score for downstream decisions**:
+   - Export COMPLEXITY_SCORE for Steps 1.55 (Proactive Expansion) and 1.6 (Agent Selection)
+   ```bash
+   export COMPLEXITY_SCORE
+   export EVALUATION_METHOD
+   ```
+
+**Expected Impact**: 30% reduction in expansion errors via context-aware evaluation
+
+**Error Handling**:
+- Agent timeout (60s): Fallback to threshold score
+- Agent invocation failure: Fallback to threshold score
+- Invalid agent response: Fallback to threshold score
+- All fallbacks logged for improvement tracking
+
 ### 1.55. Proactive Expansion Check
 
 Before implementation, evaluate if phase should be expanded using agent-based judgment.
+
+**Note**: This step uses the hybrid complexity score ($COMPLEXITY_SCORE) from Step 1.5.
 
 **Evaluation criteria**: Task complexity, scope breadth, interrelationships, parallel work potential, clarity vs detail tradeoff
 
