@@ -1542,6 +1542,380 @@ esac
 
 Proceed to Step 4.6 if any reports failed verification, otherwise skip to Step 5.
 
+#### Step 4.6: Retry Failed Reports (Error Recovery)
+
+**CRITICAL**: Handle verification failures with intelligent retry logic and path correction.
+
+This step provides automatic recovery from path inconsistencies and transient failures discovered
+during verification (Step 4.5).
+
+**EXECUTE NOW** (only if Step 4.5 reported failures):
+
+For EACH failed report from workflow_state.research_phase_data.failed_reports:
+
+**Step 1: Identify Failed Agent**
+
+```yaml
+failed_report = workflow_state.research_phase_data.failed_reports[i]
+agent_index = failed_report.agent_index
+topic = failed_report.topic
+topic_slug = failed_report.topic_slug
+verification_status = failed_report.status
+expected_path = failed_report.expected_path
+actual_path = failed_report.actual_path  # May be null if file_not_found
+```
+
+**Step 2: Classify Error Type and Determine Retry Strategy**
+
+Use error-utils.sh to classify error and determine if retryable:
+
+```bash
+source .claude/lib/error-utils.sh
+
+case "$verification_status" in
+  file_not_found)
+    # Report completely missing after agent completion
+    error_classification="transient"  # Likely timing issue or agent error
+    retry_strategy="reinvoke_agent"
+    retryable=true
+    ;;
+
+  path_mismatch)
+    # Report exists but at wrong location (CRITICAL - Report 004 issue)
+    error_classification="path_interpretation"
+    retry_strategy="move_file_or_retry"  # Two options
+    retryable=true
+    ;;
+
+  invalid_metadata)
+    # Report exists but metadata incomplete
+    error_classification="incomplete_output"
+    retry_strategy="fix_metadata_or_retry"
+    retryable=true
+    ;;
+
+  permission_denied)
+    # Cannot read report file (system issue)
+    error_classification="infrastructure"
+    retry_strategy="escalate"  # Not retryable by agent
+    retryable=false
+    ;;
+
+  agent_crashed)
+    # Agent returned error during execution
+    error_classification="agent_failure"
+    retry_strategy="reinvoke_agent"
+    retryable=true
+    ;;
+esac
+```
+
+**Step 3: Handle Path Mismatch** (CRITICAL - Report 004 Recovery)
+
+If verification_status == "path_mismatch":
+
+```bash
+# Option 1: Move file to correct location (PREFERRED - faster, preserves work)
+if [ -f "$actual_path" ]; then
+  echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Correcting path mismatch..."
+
+  # Ensure target directory exists
+  expected_dir=$(dirname "$expected_path")
+  mkdir -p "$expected_dir"
+
+  # Move file from actual location to expected location
+  mv "$actual_path" "$expected_path"
+
+  if [ $? -eq 0 ]; then
+    echo "✓ File moved successfully to: $expected_path"
+
+    # Update workflow_state
+    workflow_state.research_reports[agent_index].actual_path = "$expected_path"
+    workflow_state.research_reports[agent_index].verified = true
+    workflow_state.research_reports[agent_index].verification_status = "success"
+    workflow_state.research_reports[agent_index].recovery_method = "file_moved"
+
+    # Remove from failed_reports list
+    # Continue to next failed report
+    continue
+  else
+    echo "✗ File move failed - falling back to agent retry"
+    retry_strategy="reinvoke_agent"
+  fi
+fi
+
+# Option 2: Retry agent with EMPHASIZED absolute path (fallback)
+# Only if file move failed or file not found
+echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Retrying with emphasized path..."
+retry_strategy="reinvoke_agent_emphasize_path"
+```
+
+**Step 4: Handle Metadata Fixes**
+
+If verification_status == "invalid_metadata" and file exists:
+
+```bash
+# Attempt quick metadata fix without full retry
+echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Attempting metadata fix..."
+
+# Read current report
+current_content=$(cat "$expected_path")
+
+# Check what metadata is missing
+missing_date=$(echo "$current_content" | grep -q "^- \*\*Date\*\*:" || echo "true")
+missing_topic=$(echo "$current_content" | grep -q "^- \*\*Topic\*\*:" || echo "true")
+
+if [ "$missing_date" = "true" ] || [ "$missing_topic" = "true" ]; then
+  # Try to prepend metadata section
+  metadata_fix_possible=true
+  # Use Edit tool to add metadata
+  # If successful, mark verified and continue
+  # If fails, fall back to agent retry
+fi
+```
+
+**Step 5: Retrieve Agent Prompt for Retry**
+
+If retry_strategy requires agent reinvocation:
+
+```yaml
+# Agent prompts stored in Step 2 before invocation
+agent_prompt = workflow_state.research_phase_data.agent_prompts[topic_slug]
+
+# Verify prompt exists
+if agent_prompt is null:
+  echo "ERROR: Cannot retry - agent prompt not stored in checkpoint"
+  mark_as_escalated
+  continue
+```
+
+**Step 6: Check Retry Count Limit**
+
+Before retrying, enforce retry limit (prevents infinite loops):
+
+```yaml
+current_retry_count = workflow_state.research_reports[agent_index].retry_count
+
+if current_retry_count >= 1:
+  echo "ERROR: Max retry limit reached for agent $agent_index ($topic)"
+  echo "Agent has already been retried $current_retry_count times"
+  mark_as_escalated
+  add_to_final_failed_reports
+  continue
+```
+
+**Step 7: Reinvoke Agent with Modified Prompt** (if retryable)
+
+```bash
+# For path_mismatch retry, emphasize absolute path requirement
+if [ "$retry_strategy" = "reinvoke_agent_emphasize_path" ]; then
+  path_emphasis="
+
+**CRITICAL PATH REQUIREMENT**:
+Your previous invocation created the report at a different location than expected.
+You MUST use this EXACT ABSOLUTE PATH when creating the report:
+
+  $expected_path
+
+DO NOT use relative paths. DO NOT modify this path. Use it exactly as provided.
+"
+  agent_prompt="${path_emphasis}\n\n${agent_prompt}"
+fi
+
+# For file_not_found retry, emphasize file creation requirement
+if [ "$verification_status" = "file_not_found" ]; then
+  file_emphasis="
+
+**CRITICAL FILE CREATION REQUIREMENT**:
+Your previous invocation did not create a report file.
+You MUST use the Write tool to create a file at:
+
+  $expected_path
+
+Do NOT return only a summary. The file MUST be created.
+"
+  agent_prompt="${file_emphasis}\n\n${agent_prompt}"
+fi
+
+# Emit progress marker
+echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Retrying (attempt 1/1)..."
+
+# Invoke agent using Task tool
+# (Same invocation pattern as Step 2.5)
+```
+
+**Step 8: Verify Retry Result**
+
+After retry agent completes:
+
+```bash
+# Re-run verification for this specific report
+# (Same logic as Step 4.5)
+
+if [ verification successful ]; then
+  echo "✓ Retry successful for agent $agent_index ($topic)"
+
+  # Update workflow_state
+  workflow_state.research_reports[agent_index].verified = true
+  workflow_state.research_reports[agent_index].retry_count += 1
+  workflow_state.research_reports[agent_index].recovery_method = "agent_retry"
+
+  # Remove from failed list
+  continue
+else
+  echo "✗ Retry failed for agent $agent_index ($topic)"
+
+  # Update workflow_state
+  workflow_state.research_reports[agent_index].retry_count += 1
+  workflow_state.research_reports[agent_index].recovery_method = "retry_failed"
+
+  # Add to final failed reports for escalation
+  add_to_final_failed_reports
+fi
+```
+
+**Error Output Examples**:
+
+```
+# file_not_found
+PROGRESS: [Agent 2/3: security_practices] Retrying (attempt 1/1)...
+ERROR: Report missing for Agent 2/3 (topic: security_practices)
+Expected: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
+Agent completed successfully but report file not found at expected location.
+Retrying agent invocation with emphasized file creation requirement...
+
+# path_mismatch (CRITICAL - Report 004)
+PROGRESS: [Agent 1/3: existing_patterns] Correcting path mismatch...
+✓ File moved successfully to: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md
+
+# invalid_metadata
+PROGRESS: [Agent 3/3: alternatives] Attempting metadata fix...
+✓ Metadata fields added successfully
+
+# agent_crashed
+PROGRESS: [Agent 2/3: security_practices] Retrying (attempt 1/1)...
+ERROR: Agent failed for topic: security_practices
+Agent output indicates crash or error condition.
+Retrying agent invocation with same prompt...
+
+# permission_denied (not retryable)
+ERROR: Cannot read report for Agent 2/3 (topic: security_practices)
+Path: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
+Permission denied - this is a system issue, not retryable by agent.
+Escalating to user.
+```
+
+**Step 9: Aggregate Retry Results**
+
+After all retries complete:
+
+```yaml
+retry_summary:
+  total_retries_attempted: 2
+  successful_recoveries: 1
+  failed_recoveries: 1
+  recovery_methods:
+    file_moved: 1       # Path mismatch corrected by moving file
+    agent_retry: 0      # Agent reinvoked and succeeded
+    metadata_fixed: 0   # Metadata corrected without retry
+    retry_failed: 1     # Retry attempted but still failed
+    escalated: 0        # Not retryable, escalated to user
+```
+
+**Display Retry Summary**:
+
+```
+PROGRESS: Retry phase complete
+
+Retry Summary:
+- Retries Attempted: 2
+- Successful Recoveries: 1
+  - Path mismatch corrected: 1
+  - Agent retry succeeded: 0
+- Failed Recoveries: 1
+  - Will proceed with 2/3 reports
+
+Updated Report Status:
+✓ Report 1/3: existing_patterns - recovered (file moved)
+✗ Report 2/3: security_practices - FAILED (retry exhausted)
+✓ Report 3/3: alternatives - verified
+
+NEXT: Proceeding to Step 5 (Save Checkpoint) with 2 verified reports
+```
+
+**Step 10: Determine Next Action**
+
+```yaml
+total_reports = workflow_state.research_reports.length
+verified_reports = count(verified: true)
+failed_reports = count(verified: false)
+
+if failed_reports == 0:
+  # All reports verified (including recoveries)
+  display("PROGRESS: All reports verified after recovery - proceeding to planning")
+  proceed_to_step_5()
+
+elif verified_reports >= (total_reports / 2):
+  # Majority verified, can proceed with partial reports
+  display("WARNING: Proceeding with $verified_reports/$total_reports reports")
+  display("Missing reports: " + list(failed topics))
+  proceed_to_step_5()
+
+elif failed_reports == total_reports:
+  # All reports failed even after retry
+  display("ERROR: All research reports failed - cannot proceed to planning")
+  escalate_to_user_with_detailed_error_report()
+  exit_workflow()
+
+else:
+  # Less than half verified
+  display("ERROR: Insufficient reports verified ($verified_reports/$total_reports)")
+  display("Cannot proceed to planning with this few reports")
+  escalate_to_user_with_detailed_error_report()
+  exit_workflow()
+```
+
+**Update Workflow State**:
+
+```yaml
+workflow_state.research_phase_data.retry_summary = {
+  "total_retries_attempted": 2,
+  "successful_recoveries": 1,
+  "failed_recoveries": 1,
+  "recovery_methods": {
+    "file_moved": 1,
+    "agent_retry": 0,
+    "metadata_fixed": 0,
+    "retry_failed": 1,
+    "escalated": 0
+  },
+  "retry_timestamp": "2025-10-13T14:40:00Z"
+}
+
+# Update each recovered report
+workflow_state.research_reports[agent_index].recovery_method = "file_moved"
+workflow_state.research_reports[agent_index].retry_count = 1
+workflow_state.research_reports[agent_index].verified = true
+```
+
+**Loop Prevention**:
+
+- **Max 1 retry per agent**: retry_count checked before reinvocation
+- **Retry count tracked**: Stored in workflow_state.research_reports[].retry_count
+- **Replan history logged**: For audit trail (if integrated with adaptive planning)
+- **User escalation**: When limit exceeded or non-retryable errors
+
+**Benefits of Intelligent Retry**:
+
+- **Path Mismatch Recovery**: Automatically corrects Report 004 issue by moving files
+- **Targeted Retry**: Only retry actually failed agents, not all agents
+- **Loop Prevention**: Max 1 retry limit prevents infinite retry cycles
+- **Preserves Parallelism**: Retries can still be parallel if multiple agents failed
+- **Graceful Degradation**: Can proceed with partial reports if majority verified
+- **Comprehensive Logging**: All retry attempts logged for debugging
+
+Proceed to Step 5 after retry phase completes (regardless of results, but note status).
+
 #### Step 5: Save Research Checkpoint
 
 SAVE workflow checkpoint after research phase completion.
