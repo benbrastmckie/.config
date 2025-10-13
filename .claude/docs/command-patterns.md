@@ -1167,6 +1167,8 @@ EOF
 
 ### Pattern Usage
 
+For comprehensive command development guidance, see [Creating Commands](creating-commands.md).
+
 Commands should reference these patterns using relative links:
 
 ```markdown
