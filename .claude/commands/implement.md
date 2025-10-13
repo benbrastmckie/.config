@@ -79,9 +79,45 @@ For standards discovery patterns, see:
 
 ## Process
 
-### Logger Initialization
+### Utility Initialization
+
+Before beginning implementation, initialize all required utilities for consistent error handling, state management, and logging.
+
+**Step 1: Detect Project Directory**
+```bash
+# Detect project root dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# Sets: CLAUDE_PROJECT_DIR
+```
+
+**Step 2: Source Shared Utilities**
+
+Use Bash tool to verify utilities are available:
+```bash
+# Verify and prepare utilities
+UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
+
+# Core utilities (required)
+[ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/complexity-utils.sh" ] || { echo "ERROR: complexity-utils.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/adaptive-planning-logger.sh" ] || { echo "ERROR: adaptive-planning-logger.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/agent-registry-utils.sh" ] || { echo "ERROR: agent-registry-utils.sh not found"; exit 1; }
+
+echo "✓ All required utilities available"
+```
+
+**Step 3: Initialize Logger**
 
 For logger setup pattern, see [Standard Logger Setup](../docs/command-patterns.md#pattern-standard-logger-setup).
+
+```bash
+# Initialize adaptive planning logger
+source "$UTILS_DIR/adaptive-planning-logger.sh"
+
+# Logger is now available for all subsequent operations
+```
 
 **Implement-specific logging events**:
 - Complexity threshold evaluations (log_complexity_check)
@@ -92,6 +128,8 @@ For logger setup pattern, see [Standard Logger Setup](../docs/command-patterns.m
 - Collapse opportunity evaluations (log_collapse_check)
 
 **Log file**: `.claude/logs/adaptive-planning.log` (10MB max, 5 files retained)
+
+**Integration Complete**: All shared utilities are now available for use throughout implementation
 
 ### Progressive Plan Support
 
@@ -313,11 +351,28 @@ Run tests by:
 
 ### 3.3. Enhanced Error Analysis (if tests fail)
 
-**Workflow**: Capture error output → Run `.claude/lib/analyze-error.sh` → Display categorized error with location, context, suggestions, debug commands
+**Workflow**: Use error-utils.sh for comprehensive error analysis and recovery options
 
-**Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission
+**Step 1: Classify Error**
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+ERROR_TYPE=$(classify_error "$TEST_OUTPUT")
+```
 
-**Graceful degradation**: Document partial progress, suggest `/debug` or manual fixes
+**Step 2: Generate Suggestions**
+```bash
+SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$TEST_OUTPUT")
+```
+
+**Step 3: Format Report**
+```bash
+ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$TEST_OUTPUT" "$CURRENT_PHASE")
+echo "$ERROR_REPORT"
+```
+
+**Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
+
+**Graceful degradation**: Document partial progress, suggest `/debug` or manual fixes, save checkpoint with error context
 
 ### 3.4. Adaptive Planning Detection
 
@@ -644,11 +699,44 @@ This will start from the specified phase number.
 ## Error Handling and Rollback
 
 ### Test Failures
-If tests fail or issues arise:
-1. I'll show the error details
-2. We'll fix the issues together
-3. Re-run tests before proceeding
-4. Only move forward when tests pass
+
+When tests fail, use error-utils.sh for systematic error analysis and recovery:
+
+**Step 1: Capture Error Output**
+```bash
+# Capture test failure output
+TEST_ERROR_OUTPUT=$(run_tests 2>&1)
+TEST_EXIT_CODE=$?
+```
+
+**Step 2: Classify Error Type**
+```bash
+# Use error-utils.sh to classify the error
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+
+ERROR_TYPE=$(classify_error "$TEST_ERROR_OUTPUT")
+# Returns: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
+```
+
+**Step 3: Generate Recovery Suggestions**
+```bash
+# Get actionable recovery suggestions based on error type
+SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$TEST_ERROR_OUTPUT")
+```
+
+**Step 4: Format Error Report**
+```bash
+# Use error-utils.sh to format a structured error report
+ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$TEST_ERROR_OUTPUT" "$CURRENT_PHASE")
+echo "$ERROR_REPORT"
+```
+
+**Step 5: Decide Next Action**
+- Display formatted error report with suggestions
+- Attempt automated fixes for common issues (if applicable)
+- Re-run tests after fixes
+- Only move forward when tests pass
+- If unresolvable: Save checkpoint and escalate to user
 
 ### Phase Failure Handling
 **What happens when a phase fails:**
@@ -852,17 +940,89 @@ For complex, multi-phase implementations requiring specialized expertise, use `/
 
 For checkpoint management patterns, see [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-management-patterns).
 
-**Implement-specific checkpoint workflow**:
+**Implement-specific checkpoint workflow using checkpoint-utils.sh**:
 
-1. **Check for existing checkpoint**: Load most recent `implement` checkpoint
-2. **Interactive resume prompt**: If found, present options (resume/start fresh/view/delete)
-3. **Resume state**: Restore plan_path, current_phase, completed_phases
-4. **Save after each phase**: After git commit, save checkpoint with progress state
-5. **Cleanup on completion**: Delete checkpoint (success) or archive to failed/ (failure)
+**Step 1: Check for Existing Checkpoint**
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+
+# Load most recent implement checkpoint
+CHECKPOINT_DATA=$(load_checkpoint "implement")
+CHECKPOINT_EXISTS=$?
+
+if [ $CHECKPOINT_EXISTS -eq 0 ]; then
+  # Checkpoint found - parse state
+  PLAN_PATH=$(echo "$CHECKPOINT_DATA" | jq -r '.plan_path')
+  CURRENT_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
+  TOTAL_PHASES=$(echo "$CHECKPOINT_DATA" | jq -r '.total_phases')
+fi
+```
+
+**Step 2: Interactive Resume Prompt**
+```bash
+if [ $CHECKPOINT_EXISTS -eq 0 ]; then
+  echo "Found checkpoint: Phase $CURRENT_PHASE/$TOTAL_PHASES"
+  echo "Options: (r)esume, (s)tart fresh, (v)iew, (d)elete"
+  read -r CHOICE
+
+  case "$CHOICE" in
+    r) # Resume from checkpoint
+       echo "Resuming from Phase $CURRENT_PHASE"
+       ;;
+    s) # Start fresh
+       delete_checkpoint "implement"
+       ;;
+    v) # View checkpoint
+       view_checkpoint "implement"
+       ;;
+    d) # Delete and start fresh
+       delete_checkpoint "implement"
+       ;;
+  esac
+fi
+```
+
+**Step 3: Save Checkpoint After Each Phase**
+```bash
+# After successful git commit
+save_checkpoint "implement" "$CHECKPOINT_DATA"
+
+# Checkpoint data structure
+CHECKPOINT_DATA=$(cat <<EOF
+{
+  "workflow_description": "implement",
+  "plan_path": "$PLAN_PATH",
+  "current_phase": $NEXT_PHASE,
+  "total_phases": $TOTAL_PHASES,
+  "completed_phases": [$COMPLETED_PHASES_ARRAY],
+  "status": "in_progress",
+  "tests_passing": true,
+  "replan_count": $REPLAN_COUNT,
+  "phase_replan_count": {$PHASE_REPLAN_COUNTS},
+  "replan_history": [$REPLAN_HISTORY_ARRAY]
+}
+EOF
+)
+```
+
+**Step 4: Cleanup on Completion**
+```bash
+# On successful completion
+delete_checkpoint "implement"
+
+# On failure
+archive_checkpoint "implement" "failed"
+```
 
 **Checkpoint state fields**:
 - workflow_description, plan_path, current_phase, total_phases
 - completed_phases, status, tests_passing
 - replan_count, phase_replan_count, replan_history (for adaptive planning)
+
+**Benefits of checkpoint-utils.sh**:
+- Automatic schema migration for checkpoint format changes
+- Atomic save operations prevent corrupted checkpoints
+- Consistent checkpoint naming and location
+- Built-in validation before loading
 
 Let me start by finding your implementation plan.

@@ -126,9 +126,40 @@ fi
 
 ## Shared Utilities Integration
 
-This command uses shared utility libraries for consistent workflow management:
-- **Checkpoint Management**: Uses `.claude/lib/checkpoint-utils.sh` for saving/restoring workflow state
-- **Error Handling**: Uses `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
+### Utility Initialization
+
+Before starting the workflow, initialize all required utilities for consistent error handling, state management, and logging.
+
+**Step 1: Detect Project Directory**
+```bash
+# Detect project root dynamically
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# Sets: CLAUDE_PROJECT_DIR
+```
+
+**Step 2: Source Required Utilities**
+```bash
+UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
+
+# Verify utilities exist
+[ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
+
+# Source utilities
+source "$UTILS_DIR/error-utils.sh"
+source "$UTILS_DIR/checkpoint-utils.sh"
+
+echo "✓ Shared utilities initialized"
+```
+
+**Available Utilities**:
+- **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh` for saving/restoring workflow state
+- **Error Handling**: `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
+  - `retry_with_backoff()`: Automatic retry with exponential backoff
+  - `classify_error()`: Categorize error types
+  - `suggest_recovery()`: Generate recovery suggestions
+  - `format_error_report()`: Structured error reporting
 
 These utilities ensure workflow state is preserved across interruptions and agent failures are handled gracefully.
 
@@ -138,37 +169,102 @@ Throughout the workflow, handle errors according to these principles:
 
 ### Agent Invocation Failures
 
-**If Task tool invocation fails**:
-1. CAPTURE the error message from the Task tool
-2. RETRY once with the same parameters
-3. If retry fails:
-   - LOG the failure to workflow_state.execution_tracking.error_history
-   - ESCALATE to user with:
-     - Error description
-     - Phase where failure occurred
-     - Checkpoint path (for resume)
-     - Suggested manual intervention
+**Use error-utils.sh for systematic retry and recovery**:
 
-**If agent completes but returns error**:
-1. READ the agent's error output
-2. CHECK if error is recoverable (e.g., file not found, invalid input)
-3. If recoverable:
-   - CORRECT the input/context
-   - RETRY agent invocation
-4. If not recoverable:
-   - DOCUMENT in workflow_state.execution_tracking.error_history
-   - ESCALATE to user
+**Step 1: Wrap Agent Invocation with retry_with_backoff()**
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+
+# Define the agent invocation command
+invoke_agent() {
+  # Invoke Task tool with agent parameters
+  # Returns 0 on success, non-zero on failure
+}
+
+# Use retry_with_backoff for automatic retry with exponential backoff
+AGENT_RESULT=$(retry_with_backoff invoke_agent "research_agent_invocation")
+RETRY_STATUS=$?
+```
+
+**Step 2: Handle Retry Outcomes**
+```bash
+if [ $RETRY_STATUS -eq 0 ]; then
+  # Agent invocation succeeded (possibly after retries)
+  echo "✓ Agent invocation successful"
+else
+  # All retries exhausted, classify and handle error
+  ERROR_TYPE=$(classify_error "$AGENT_RESULT")
+  ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$AGENT_RESULT" "$CURRENT_PHASE")
+
+  # Log to workflow_state.execution_tracking.error_history
+  echo "$ERROR_REPORT"
+
+  # Save checkpoint and escalate to user
+  save_workflow_checkpoint
+fi
+```
+
+**Step 3: Validate Agent Output**
+```bash
+# If agent completes but returns error content
+if grep -q "ERROR" "$AGENT_OUTPUT"; then
+  # Classify the error type
+  ERROR_TYPE=$(classify_error "$AGENT_OUTPUT")
+
+  # Get recovery suggestions
+  SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$AGENT_OUTPUT")
+
+  # Decide recovery action based on error type
+  case "$ERROR_TYPE" in
+    "file_not_found"|"import_error")
+      # Recoverable - correct context and retry
+      retry_with_backoff invoke_agent_with_corrected_context
+      ;;
+    *)
+      # Not recoverable - escalate
+      format_error_report "$ERROR_TYPE" "$AGENT_OUTPUT" "$CURRENT_PHASE"
+      save_checkpoint_and_escalate
+      ;;
+  esac
+fi
+```
+
+**Benefits**:
+- Exponential backoff prevents overwhelming failed services
+- Automatic retry reduces transient failures
+- Consistent error classification and reporting
+- Logged retry attempts for debugging
 
 ### File Creation Failures
 
-**If expected file not created** (report, plan, debug report):
-1. VERIFY file path is correct
-2. CHECK agent output for actual file path (may differ from expected)
-3. USE Read tool to attempt reading the file
-4. If file truly missing:
-   - LOG failure with phase and expected path
-   - RETRY agent invocation (max 1 retry)
-   - If still missing: ESCALATE to user
+**Use error-utils.sh for file creation verification and retry**:
+
+```bash
+# Define file verification function
+verify_file_created() {
+  local expected_path="$1"
+  [ -f "$expected_path" ] && return 0 || return 1
+}
+
+# Retry file creation with backoff
+if ! retry_with_backoff "verify_file_created $EXPECTED_FILE_PATH"; then
+  # File still missing after retries
+  ERROR_TYPE="file_not_found"
+  ERROR_MSG="Expected file not created: $EXPECTED_FILE_PATH"
+
+  # Classify and format error
+  ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$ERROR_MSG" "$CURRENT_PHASE")
+  echo "$ERROR_REPORT"
+
+  # Get recovery suggestions
+  SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$ERROR_MSG")
+  echo "Recovery options:"
+  echo "$SUGGESTIONS"
+
+  # Save checkpoint and escalate
+  save_checkpoint_and_escalate
+fi
+```
 
 ### Test Failures
 
@@ -179,12 +275,31 @@ Throughout the workflow, handle errors according to these principles:
 
 ### Checkpoint Failures
 
-**If checkpoint save fails**:
-1. RETRY checkpoint save operation
-2. If persistent failure:
-   - WARN user that resumption not possible
-   - CONTINUE workflow (don't block on checkpoint)
-   - Note limitation in final summary
+**Use checkpoint-utils.sh with automatic retry**:
+
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+
+# Save checkpoint with automatic retry
+if ! save_checkpoint "orchestrate" "$CHECKPOINT_DATA"; then
+  # Save failed after retries
+  echo "⚠ Warning: Checkpoint save failed"
+  echo "Workflow will continue, but resume may not be possible"
+  echo "This will be noted in the final summary"
+
+  # Log failure but don't block workflow
+  log_error "checkpoint_save_failed" "orchestrate" "$CURRENT_PHASE"
+
+  # Continue execution (checkpoint is not critical)
+fi
+```
+
+**Graceful degradation**:
+- Checkpoint failures don't block workflow execution
+- User warned that resume won't be possible
+- Failure logged for debugging
+- Workflow continues normally
+- Limitation documented in summary
 
 ### General Error Recovery
 
