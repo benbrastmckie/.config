@@ -433,5 +433,5 @@ export CLAUDE_DISABLE_ERROR_ENHANCEMENT=1
 
 - [← Documentation Index](README.md)
 - [Checkpointing Guide](adaptive-planning-guide.md)
-- [Troubleshooting Guide](troubleshooting.md)
+- [Troubleshooting Guide](orchestration-guide.md#troubleshooting)
 - [Commands Directory](../commands/README.md)

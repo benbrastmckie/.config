@@ -86,13 +86,24 @@ performance_metrics:
 
 #### Step 1: Identify Research Topics
 
-I'll analyze the workflow description to extract 2-4 focused research topics:
+ANALYZE the workflow description to extract 2-4 focused research topics.
 
-**Topic Extraction Logic**:
-- **Existing Patterns**: "How is [feature/component] currently implemented?"
-- **Best Practices**: "What are industry standards for [technology/approach]?"
-- **Alternatives**: "What alternative approaches exist for [problem]?"
-- **Technical Constraints**: "What limitations or requirements should we consider?"
+**EXECUTE NOW**:
+
+1. READ the user's workflow description from the /orchestrate invocation
+2. IDENTIFY key areas requiring investigation:
+   - Existing implementations in codebase
+   - Industry best practices and standards
+   - Alternative approaches and trade-offs
+   - Technical constraints and requirements
+3. EXTRACT 2-4 specific topics based on workflow complexity
+4. GENERATE topic titles for each research area
+
+**Topic Categories** (use as guidance):
+- **existing_patterns**: Current codebase implementations and patterns
+- **best_practices**: Industry standards for the technology/approach
+- **alternatives**: Alternative implementations and their trade-offs
+- **constraints**: Technical limitations, requirements, security considerations
 
 **Complexity-Based Research Strategy**:
 ```yaml
@@ -121,130 +132,267 @@ Critical Workflows (system-wide impact):
 
 #### Step 1.5: Determine Thinking Mode
 
-Analyze workflow complexity to set appropriate thinking mode for agents:
+CALCULATE workflow complexity score to determine thinking mode for all agents in this workflow.
 
-**Complexity Indicators**:
-- **Simple** (score 0-3): Direct implementation, well-known patterns, single file changes
-- **Medium** (score 4-6): Multiple components, some design decisions, moderate scope
-- **Complex** (score 7-9): Architecture changes, novel solutions, large scope
-- **Critical** (score 10+): System-wide impact, security concerns, breaking changes
+**EXECUTE NOW**:
 
-**Scoring Algorithm**:
-```
-score = 0
-score += count_keywords(["implement", "architecture", "redesign"]) * 3
-score += count_keywords(["add", "improve", "refactor"]) * 2
-score += count_keywords(["security", "breaking", "core"]) * 4
-score += estimated_file_count / 5
-score += (research_topics_needed - 1) * 2
-```
+1. ANALYZE workflow description for complexity indicators
+2. CALCULATE complexity score using this algorithm:
 
-**Thinking Mode Assignment**:
-- score 0-3: No special thinking mode
-- score 4-6: "think"
-- score 7-9: "think hard"
-- score 10+: "think harder"
+   ```
+   score = 0
+   score += count_keywords(["implement", "architecture", "redesign"]) × 3
+   score += count_keywords(["add", "improve", "refactor"]) × 2
+   score += count_keywords(["security", "breaking", "core"]) × 4
+   score += estimated_file_count / 5
+   score += (research_topics_needed - 1) × 2
+   ```
 
-This thinking mode will be applied to all agent prompts in this workflow.
+3. MAP complexity score to thinking mode:
+   - score 0-3: No special thinking mode (standard processing)
+   - score 4-6: "think" (moderate complexity, careful reasoning)
+   - score 7-9: "think hard" (high complexity, deep analysis)
+   - score 10+: "think harder" (critical decisions, security implications)
+
+4. STORE thinking_mode in workflow_state for use in all agent prompts
+
+**Examples**:
+
+"Add hello world function"
+→ Keywords: "add" (×1) = 2 points, files: ~1 = 0 points, topics: 0 = 0 points
+→ Total: 2 (Simple, no thinking mode)
+
+"Implement user authentication system"
+→ Keywords: "implement" (×1) = 3 points, "authentication" suggests security context
+→ Files: ~8-10 = 2 points, topics: 3 = 4 points
+→ Total: 9 (Complex, thinking mode: "think hard")
+
+"Refactor core security module with breaking changes"
+→ Keywords: "refactor" (×1) = 2, "security" (×1) = 4, "breaking" (×1) = 4, "core" (×1) = 4
+→ Files: ~15 = 3 points, topics: 4 = 6 points
+→ Total: 23 (Critical, thinking mode: "think harder")
+
+This thinking mode will be prepended to ALL agent prompts in subsequent phases.
 
 #### Step 2: Launch Parallel Research Agents
 
-For each identified research topic, I'll create a focused research task and invoke agents in parallel.
+**EXECUTE NOW**: USE the Task tool to invoke research-specialist agents in parallel.
 
-See [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation) for detailed parallel execution patterns.
+For EACH research topic identified in Step 1:
 
-**Orchestrate-specific invocation**:
-- Launch 2-4 research agents simultaneously (single message, multiple Task blocks)
-- Each agent receives ONLY its specific research focus
-- NO orchestration routing logic in prompts
-- Complete task description with success criteria per agent
+INVOKE a research-specialist agent using the Task tool with these exact parameters:
 
-#### Step 3: Research Agent Prompt Template
+```json
+{
+  "subagent_type": "general-purpose",
+  "description": "Research [TOPIC_NAME] using research-specialist protocol",
+  "prompt": "Read and follow the behavioral guidelines from:\n/home/benjamin/.config/.claude/agents/research-specialist.md\n\nYou are acting as a Research Specialist Agent with the tools and constraints defined in that file.\n\n[COMPLETE PROMPT FROM STEP 3 - SEE BELOW]"
+}
+```
 
-For agent prompt structure, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
+**CRITICAL**: Send ALL research Task invocations in a SINGLE MESSAGE.
 
-**Orchestrate-specific research template**:
+This enables parallel execution. Do NOT send Task invocations sequentially - they must all be in one response to execute concurrently.
+
+**Example Parallel Invocation** (3 research topics):
+
+```
+Here are three research tasks to execute in parallel:
+
+[Task tool invocation #1 for existing_patterns]
+[Task tool invocation #2 for security_practices]
+[Task tool invocation #3 for framework_implementations]
+```
+
+**WAIT** for all research agents to complete before proceeding to Step 3.5.
+
+**Monitoring**:
+- Watch for PROGRESS: markers from each agent
+- Collect REPORT_PATH: outputs as agents complete
+- Verify all agents complete successfully before moving to Step 4
+
+#### Step 3: Complete Research Agent Prompt Template
+
+The following template is used for EACH research-specialist agent invocation in Step 2.
+
+**SUBSTITUTE** these placeholders before invoking:
+- [THINKING_MODE]: Value from Step 1.5 (think, think hard, think harder, or empty)
+- [TOPIC_TITLE]: Research topic title (e.g., "Authentication Patterns in Codebase")
+- [USER_WORKFLOW]: Original user workflow description (1 line)
+- [PROJECT_NAME]: Generated in Step 3.5
+- [TOPIC_SLUG]: Generated in Step 3.5
+- [SPECS_DIR]: Path to specs directory (from SPECS.md or auto-detected)
+- [COMPLEXITY_LEVEL]: Simple|Medium|Complex|Critical (from Step 1.5)
+- [SPECIFIC_REQUIREMENTS]: What this agent should investigate
+
+**Complete Prompt Template**:
 
 ```markdown
-**Thinking Mode**: [think|think hard|think harder] (based on workflow complexity from Step 1.5)
+**Thinking Mode**: [THINKING_MODE]
 
-# Research Task: [Specific Topic]
+# Research Task: [TOPIC_TITLE]
 
 ## Context
-- **Workflow**: [User's original request - 1 line summary]
-- **Project Name**: [project_name] (for specs directory path)
-- **Topic Slug**: [topic_slug] (for report subdirectory)
-- **Research Focus**: [This agent's specific investigation area]
+- **Workflow**: [USER_WORKFLOW]
+- **Project Name**: [PROJECT_NAME]
+- **Topic Slug**: [TOPIC_SLUG]
+- **Research Focus**: [SPECIFIC_REQUIREMENTS]
 - **Project Standards**: /home/benjamin/.config/CLAUDE.md
-- **Complexity Level**: [Simple|Medium|Complex|Critical]
+- **Complexity Level**: [COMPLEXITY_LEVEL]
 
 ## Objective
-Investigate [specific topic] to inform planning and implementation.
+Investigate [SPECIFIC_REQUIREMENTS] to inform planning and implementation phases.
 
 ## Specs Directory Context
-- **Specs Directory**: Check `.claude/SPECS.md` for registered specs directories
-- **Auto-detection**: If no SPECS.md, detect via Glob for existing `specs/` directories
-- **Report Location**: Create report in `{specs_dir}/reports/{topic_slug}/NNN_report_name.md`
+- **Specs Directory Detection**:
+  1. Check .claude/SPECS.md for registered specs directories
+  2. If no SPECS.md, use Glob to find existing specs/ directories
+  3. Default to project root specs/ if none found
+- **Report Location**: Create report in [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_report_name.md
 - **Include in Metadata**: Add "Specs Directory" field to report metadata
 
-## Requirements
-[Specific requirements for this research topic]
+## Research Requirements
 
-### Report File Creation
-You MUST create a report file using the Write tool. Do NOT return a summary only.
+[SPECIFIC_REQUIREMENTS - Agent should investigate these areas:]
 
-**Topic-based Directory Structure**:
-- Reports are organized by topic in subdirectories: `specs/reports/{topic}/`
-- Topic name: `[topic_slug]` (e.g., "existing_patterns", "security_practices")
-- Use Glob to find existing reports in topic directory
-- Determine next report number (NNN format, incremental within topic)
+### For "existing_patterns" Topics:
+- Search codebase for related implementations using Grep/Glob
+- Read relevant source files to understand current patterns
+- Identify architectural decisions and design patterns used
+- Document file locations with line number references
+- Note any inconsistencies or technical debt
 
-**Report File Path**: `{project}/specs/reports/{topic}/NNN_report_name.md`
-- Project: `[project_name]`
-- Topic: `[topic_slug]`
-- Number: Next available in sequence (001, 002, 003...)
+### For "best_practices" Topics:
+- Use WebSearch to find 2025-current best practices
+- Focus on authoritative sources (official docs, security guides)
+- Compare industry standards with current implementation
+- Identify gaps between best practices and current state
+- Recommend specific improvements
 
-**Report Structure Template**:
+### For "alternatives" Topics:
+- Research 2-3 alternative implementation approaches
+- Document pros/cons of each alternative
+- Consider trade-offs (performance, complexity, maintainability)
+- Recommend which alternative best fits this project
+- Provide concrete examples from similar projects
+
+### For "constraints" Topics:
+- Identify technical limitations (platform, dependencies, performance)
+- Document security considerations and requirements
+- Note compatibility requirements (backwards compatibility, API contracts)
+- Consider resource constraints (time, team expertise, infrastructure)
+- Flag high-risk areas requiring careful design
+
+## Report File Creation
+
+You MUST create a research report file using the Write tool. Do NOT return only a summary.
+
+**Report File Path Determination**:
+
+1. USE Glob to find existing reports in topic directory:
+   ```
+   Glob pattern: "[SPECS_DIR]/reports/[TOPIC_SLUG]/[0-9][0-9][0-9]_*.md"
+   ```
+
+2. DETERMINE next report number:
+   - Parse highest existing number in topic directory
+   - Increment by 1
+   - Format as 3-digit (001, 002, 003...)
+
+3. CONSTRUCT report filename:
+   - Format: NNN_descriptive_name.md
+   - Example: 001_auth_patterns_analysis.md
+   - Use lowercase with underscores
+
+4. CREATE report file path:
+   - Full path: [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_descriptive_name.md
+
+**Report Structure** (use this exact template):
+
 ```markdown
 # [Report Title]
 
 ## Metadata
 - **Date**: YYYY-MM-DD
-- **Specs Directory**: {project}/specs/
+- **Specs Directory**: [SPECS_DIR]
 - **Report Number**: NNN (within topic subdirectory)
-- **Topic**: {topic_name}
-- **Created By**: /orchestrate
-- **Workflow**: [workflow_description]
+- **Topic**: [TOPIC_SLUG]
+- **Created By**: /orchestrate (research phase)
+- **Workflow**: [USER_WORKFLOW]
 
 ## Implementation Status
 - **Status**: Research Complete
-- **Plan**: [Will be updated by plan-architect]
-- **Implementation**: [Will be updated by orchestrator]
+- **Plan**: (will be added by plan-architect)
+- **Implementation**: (will be added after implementation)
 - **Date**: YYYY-MM-DD
 
 ## Research Focus
-[This agent's specific research area]
+[Description of what this research investigated]
 
 ## Findings
-[Detailed findings from research]
+
+### Current State Analysis
+[Detailed findings from codebase analysis - include file references with line numbers]
+
+### Industry Best Practices
+[Findings from web research - include authoritative sources]
+
+### Key Insights
+[Important discoveries, patterns identified, issues found]
 
 ## Recommendations
-[Actionable recommendations for planning]
+
+### Primary Recommendation: [Approach Name]
+**Description**: [What this approach entails]
+**Pros**:
+- [Advantage 1]
+- [Advantage 2]
+**Cons**:
+- [Limitation 1]
+**Suitability**: [Why this fits the project]
+
+### Alternative Approach: [Approach Name]
+[Secondary recommendation if applicable]
 
 ## Potential Challenges
-[Issues or constraints to consider]
+- [Challenge 1 and mitigation strategy]
+- [Challenge 2 and mitigation strategy]
+
+## References
+- [File: path/to/file.ext, lines X-Y - description]
+- [URL: https://... - authoritative source]
+- [Related code: path/to/related.ext]
 ```
 
 ## Expected Output
 
-**Primary Output**: Report file path in parseable format
-- Format: `REPORT_PATH: {path}`
-- Example: `REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md`
-
-**Secondary Output**: Brief summary (1-2 sentences)
-- What was researched
-- Key finding or recommendation
+**Primary Output**: Report file path in this exact format:
 ```
+REPORT_PATH: [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_descriptive_name.md
+```
+
+**Secondary Output**: Brief summary (1-2 sentences):
+- What was researched
+- Key finding or primary recommendation
+
+**Example Output**:
+```
+REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md
+
+Research investigated current authentication implementations in the codebase. Found
+session-based auth using Redis with 30-minute TTL. Primary recommendation: Extend
+existing session pattern rather than implementing OAuth from scratch.
+```
+
+## Success Criteria
+- Report file created at correct path with correct number
+- Report includes all required metadata fields
+- Findings include specific file references with line numbers
+- Recommendations are actionable and project-specific
+- Report path returned in parseable format (REPORT_PATH: ...)
+```
+
+End of prompt template.
 
 #### Step 3.5: Generate Project Name and Topic Slugs
 

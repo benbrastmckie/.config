@@ -450,7 +450,7 @@ The dependency parser is implemented in `.claude/utils/parse-phase-dependencies.
 
 ### Example Parallel Plan
 
-See `.claude/docs/parallel-execution-example.md` for a complete example plan with dependencies and expected execution waves.
+See `.claude/docs/orchestration-guide.md` for a complete example plan with dependencies and expected execution waves.
 
 ## Interactive Plan Wizard
 
@@ -694,7 +694,7 @@ Track efficiency improvements with these metrics:
 - `.claude/utils/parse-phase-dependencies.sh` - Dependency parser
 
 ### Documentation
-- `.claude/docs/parallel-execution-example.md` - Example parallel plan
+- `.claude/docs/orchestration-guide.md` - Example parallel plan
 - `.claude/commands/README.md` - Command reference
 - Plan 022 - Workflow Efficiency Enhancements implementation plan
 

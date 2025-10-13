@@ -12,6 +12,59 @@ Extracting common functionality to shared libraries:
 
 ## Available Utilities
 
+### conversion-logger.sh
+
+Structured logging for document conversion operations with validation and statistics.
+
+**Key Functions:**
+- `init_conversion_log()` - Initialize conversion log file
+- `log_conversion_start()` - Log start of conversion
+- `log_conversion_success()` - Log successful conversion
+- `log_conversion_failure()` - Log failed conversion
+- `log_conversion_fallback()` - Log fallback attempt
+- `log_tool_detection()` - Log tool detection results
+- `log_phase_start()` - Log start of conversion phase
+- `log_phase_end()` - Log end of conversion phase
+- `log_validation_check()` - Log validation check result
+- `log_summary()` - Log conversion summary statistics
+- `rotate_conversion_log_if_needed()` - Rotate log files automatically
+
+**Usage Example:**
+```bash
+# Source the utility library
+source .claude/lib/conversion-logger.sh
+
+# Initialize log
+init_conversion_log "output/conversion.log" "input/" "output/"
+
+# Log conversion lifecycle
+log_conversion_start "file.docx" "markdown"
+log_conversion_success "file.docx" "file.md" "markitdown" 1500
+log_validation_check "file.md" "size" "pass" "File size OK"
+
+# Log summary
+log_summary 10 8 2 0
+```
+
+**Log Format:**
+```
+[2025-10-12 14:30:45] START: document.docx -> markdown
+[2025-10-12 14:30:47] SUCCESS: document.docx
+  Tool: markitdown
+  Output: document.md
+  Size: 15234 bytes
+  Duration: 1850ms
+```
+
+**Log Rotation:**
+- Max file size: 10MB
+- Max rotated files: 5
+- Rotation format: conversion.log → conversion.log.1 → conversion.log.2...
+
+**Used By:** `/convert-docs`, `convert-docs.sh`
+
+---
+
 ### adaptive-planning-logger.sh
 
 Structured logging for adaptive planning trigger evaluations and replanning events.

@@ -12,8 +12,8 @@ I am a specialized agent focused on bidirectional document conversion between Ma
 ### Document Conversion
 - **Bidirectional Conversion**: Support both TO Markdown and FROM Markdown
 - **TO Markdown**:
-  - Convert DOCX files using Pandoc (optimal for Word documents)
-  - Convert PDF files using marker-pdf (AI-powered PDF processing)
+  - Convert DOCX files using MarkItDown or Pandoc
+  - Convert PDF files using MarkItDown or PyMuPDF4LLM
 - **FROM Markdown**:
   - Convert Markdown to DOCX using Pandoc (95%+ quality preservation)
   - Convert Markdown to PDF using Pandoc with Typst/XeLaTeX engine
@@ -56,16 +56,15 @@ Based on comprehensive testing (see Research Report 003), the agent uses intelli
    - Tables converted to grid format (more verbose)
 
 **PDF → Markdown Priority:**
-1. **marker-pdf** (primary) - 95% fidelity, best quality
-   - AI-powered layout understanding
-   - Excellent table structure recognition
-   - Handles complex layouts and equations
-   - May have installation issues
-2. **PyMuPDF4LLM** (fallback) - 55% fidelity, extremely fast (0.14s)
+1. **MarkItDown** (primary) - Handles most PDF formats well
+   - Easy to install and configure
+   - Consistent quality across document types
+   - Integrated approach for both DOCX and PDF
+2. **PyMuPDF4LLM** (backup) - Fast, lightweight alternative
    - Zero configuration required
    - Perfect Unicode preservation
    - Lightweight dependencies
-   - Tables become plain text (quality loss)
+   - Good for simple PDFs
 
 **Markdown → DOCX:**
 1. **Pandoc** (only option) - Excellent quality (95%+ preservation)
@@ -86,13 +85,6 @@ else
   MARKITDOWN_AVAILABLE=false
 fi
 
-# Check PyMuPDF4LLM availability
-if python3 -c "import pymupdf4llm" 2>/dev/null; then
-  PYMUPDF4LLM_AVAILABLE=true
-else
-  PYMUPDF4LLM_AVAILABLE=false
-fi
-
 # Check Pandoc availability
 if command -v pandoc &> /dev/null; then
   PANDOC_AVAILABLE=true
@@ -100,11 +92,11 @@ else
   PANDOC_AVAILABLE=false
 fi
 
-# Check marker-pdf availability (optional)
-if command -v marker-pdf &> /dev/null; then
-  MARKER_PDF_AVAILABLE=true
+# Check PyMuPDF4LLM availability
+if python3 -c "import pymupdf4llm" 2>/dev/null; then
+  PYMUPDF4LLM_AVAILABLE=true
 else
-  MARKER_PDF_AVAILABLE=false
+  PYMUPDF4LLM_AVAILABLE=false
 fi
 ```
 
@@ -116,15 +108,14 @@ fi
 3. If both fail, report file as failed
 
 **For PDF Conversion:**
-1. Try marker-pdf (if available)
+1. Try MarkItDown (if available)
 2. If fails or unavailable, try PyMuPDF4LLM
 3. If both fail, report file as failed
 
 **Logging:** Each conversion logs which tool was used with quality indicator:
-- `"MarkItDown (HIGH quality)"` for DOCX primary tool
-- `"marker-pdf (HIGH quality, 95% fidelity)"` for PDF primary tool
-- `"Pandoc (MEDIUM quality)"` for DOCX fallback
-- `"PyMuPDF4LLM (FAST, moderate quality, 55% fidelity)"` for PDF fallback
+- `"MarkItDown (PRIMARY tool)"` for DOCX/PDF primary tool
+- `"Pandoc (FALLBACK)"` for DOCX fallback
+- `"PyMuPDF4LLM (BACKUP, fast)"` for PDF backup
 
 ## Behavioral Guidelines
 
@@ -191,12 +182,13 @@ pandoc "document.docx" \
   -o "document.md"
 ```
 
-**PDF to Markdown** (Priority: marker-pdf → PyMuPDF4LLM):
+**PDF to Markdown** (Priority: MarkItDown → PyMuPDF4LLM):
 ```bash
-# Primary: marker-pdf (HIGH quality, 95% fidelity)
-marker_pdf "document.pdf" "document.md"
+# Primary: MarkItDown
+# Note: Redirect stderr to avoid warnings in output
+markitdown "document.pdf" 2>/dev/null > "document.md"
 
-# Fallback: PyMuPDF4LLM (FAST, moderate quality, 55% fidelity)
+# Backup: PyMuPDF4LLM (fast, lightweight)
 python3 -c "
 import pymupdf4llm
 md_text = pymupdf4llm.to_markdown('document.pdf')
@@ -235,7 +227,7 @@ output/
 ### Conversion Workflow
 
 1. **Tool Detection Phase**
-   - Detect available conversion tools (MarkItDown, PyMuPDF4LLM, Pandoc, marker-pdf)
+   - Detect available conversion tools (MarkItDown, Pandoc, PyMuPDF4LLM)
    - Select best available tool for each file type
    - Report which tools will be used
 
@@ -246,7 +238,7 @@ output/
 
 3. **Conversion Phase**
    - Process DOCX files with MarkItDown (primary) or Pandoc (fallback)
-   - Process PDF files with marker-pdf (primary) or PyMuPDF4LLM (fallback)
+   - Process PDF files with MarkItDown (primary) or PyMuPDF4LLM (backup)
    - Track successes, failures, and which tool was used
    - Emit progress for each file
 
@@ -314,26 +306,6 @@ else
   MARKITDOWN_AVAILABLE=false
 fi
 
-# Check marker-pdf in PATH
-if command -v marker-pdf &> /dev/null; then
-  MARKER_VERSION=$(marker-pdf --version 2>&1 || echo "unknown")
-  echo "✓ marker-pdf (PATH): AVAILABLE - $MARKER_VERSION" | tee -a "$LOG_FILE"
-  MARKER_PATH_AVAILABLE=true
-else
-  echo "✗ marker-pdf (PATH): NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKER_PATH_AVAILABLE=false
-fi
-
-# Check marker-pdf in venv
-VENV_PATH="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
-if [ -x "$VENV_PATH/bin/marker-pdf" ]; then
-  echo "✓ marker-pdf (venv): AVAILABLE at $VENV_PATH" | tee -a "$LOG_FILE"
-  MARKER_VENV_AVAILABLE=true
-else
-  echo "✗ marker-pdf (venv): NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKER_VENV_AVAILABLE=false
-fi
-
 # Check PyMuPDF4LLM
 if python3 -c "import pymupdf4llm" 2>/dev/null; then
   PYMUPDF_VERSION=$(python3 -c "import pymupdf4llm; print(pymupdf4llm.__version__)" 2>/dev/null || echo "unknown")
@@ -364,7 +336,6 @@ echo "========================================" >> "$LOG_FILE"
 - Use checkmark symbols (✓/✗) for visual clarity
 - Log to both stdout and log file with `tee -a`
 - Set boolean flags for each tool's availability
-- Check both PATH and venv locations for marker-pdf
 
 #### Phase 2: Tool Selection Phase
 
@@ -390,15 +361,12 @@ else
 fi
 
 # Select PDF converter
-if [ "$MARKER_PATH_AVAILABLE" = true ]; then
-  PDF_TOOL="marker-pdf"
-  echo "PDF Converter: marker-pdf from PATH (HIGH quality, 95% fidelity)" | tee -a "$LOG_FILE"
-elif [ "$MARKER_VENV_AVAILABLE" = true ]; then
-  PDF_TOOL="marker-pdf-venv"
-  echo "PDF Converter: marker-pdf from venv (HIGH quality, 95% fidelity)" | tee -a "$LOG_FILE"
+if [ "$MARKITDOWN_AVAILABLE" = true ]; then
+  PDF_TOOL="markitdown"
+  echo "PDF Converter: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
 elif [ "$PYMUPDF_AVAILABLE" = true ]; then
   PDF_TOOL="pymupdf4llm"
-  echo "PDF Converter: PyMuPDF4LLM (FAST, moderate quality, 55% fidelity, fallback)" | tee -a "$LOG_FILE"
+  echo "PDF Converter: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
 else
   PDF_TOOL="none"
   echo "PDF Converter: NONE AVAILABLE - PDF conversions will fail" | tee -a "$LOG_FILE"
@@ -421,9 +389,9 @@ echo "========================================" >> "$LOG_FILE"
 ```
 
 **Key Points:**
-- Follow priority matrix (MarkItDown > Pandoc, marker-pdf > PyMuPDF4LLM)
-- Include quality indicators (HIGH/MEDIUM/FAST) and fidelity percentages
-- Indicate fallback status when not using primary tool
+- Follow priority matrix (MarkItDown > Pandoc for DOCX, MarkItDown > PyMuPDF4LLM for PDF)
+- Include quality indicators (PRIMARY/FALLBACK/BACKUP)
+- Indicate fallback/backup status when not using primary tool
 - Warn explicitly when no tools available
 - Store selected tool in variable for later use
 
@@ -521,27 +489,20 @@ echo "" >> "$LOG_FILE"
 
 # Decision tree logging for PDF tool selection
 echo "Tool Selection Decision Tree:" | tee -a "$LOG_FILE"
-echo "  Question: Is marker-pdf in PATH?" | tee -a "$LOG_FILE"
-if [ "$MARKER_PATH_AVAILABLE" = true ]; then
+echo "  Question: Is MarkItDown available?" | tee -a "$LOG_FILE"
+if [ "$MARKITDOWN_AVAILABLE" = true ]; then
   echo "  Answer: YES" | tee -a "$LOG_FILE"
-  echo "  Result: Using marker-pdf from PATH (highest priority)" | tee -a "$LOG_FILE"
+  echo "  Result: Using MarkItDown (primary tool)" | tee -a "$LOG_FILE"
 else
   echo "  Answer: NO" | tee -a "$LOG_FILE"
-  echo "  Question: Is marker-pdf in venv at $VENV_PATH?" | tee -a "$LOG_FILE"
-  if [ "$MARKER_VENV_AVAILABLE" = true ]; then
+  echo "  Question: Is PyMuPDF4LLM available?" | tee -a "$LOG_FILE"
+  if [ "$PYMUPDF_AVAILABLE" = true ]; then
     echo "  Answer: YES" | tee -a "$LOG_FILE"
-    echo "  Result: Using marker-pdf from venv (second priority)" | tee -a "$LOG_FILE"
+    echo "  Result: Using PyMuPDF4LLM (backup)" | tee -a "$LOG_FILE"
+    echo "  Reason: MarkItDown not available" | tee -a "$LOG_FILE"
   else
     echo "  Answer: NO" | tee -a "$LOG_FILE"
-    echo "  Question: Is PyMuPDF4LLM available?" | tee -a "$LOG_FILE"
-    if [ "$PYMUPDF_AVAILABLE" = true ]; then
-      echo "  Answer: YES" | tee -a "$LOG_FILE"
-      echo "  Result: Using PyMuPDF4LLM (fallback)" | tee -a "$LOG_FILE"
-      echo "  Reason: marker-pdf not available in PATH or venv" | tee -a "$LOG_FILE"
-    else
-      echo "  Answer: NO" | tee -a "$LOG_FILE"
-      echo "  Result: No PDF converter available" | tee -a "$LOG_FILE"
-    fi
+    echo "  Result: No PDF converter available" | tee -a "$LOG_FILE"
   fi
 fi
 
@@ -654,19 +615,16 @@ When generating orchestrated conversion scripts, use these parameterized variabl
 - `$INPUT_DIR` - Source directory for input files
 - `$OUTPUT_DIR` - Destination directory for converted files
 - `$LOG_FILE` - Path to detailed conversion log
-- `$VENV_PATH` - Virtual environment path (default: `$HOME/venvs/pdf-tools`)
 
 **Tool Availability Flags:**
 - `$PANDOC_AVAILABLE` - Boolean: Pandoc available
 - `$MARKITDOWN_AVAILABLE` - Boolean: MarkItDown available
-- `$MARKER_PATH_AVAILABLE` - Boolean: marker-pdf in PATH
-- `$MARKER_VENV_AVAILABLE` - Boolean: marker-pdf in venv
 - `$PYMUPDF_AVAILABLE` - Boolean: PyMuPDF4LLM available
 - `$TYPST_AVAILABLE` - Boolean: Typst PDF engine available
 
 **Selected Tool Variables:**
 - `$DOCX_TOOL` - Selected DOCX converter (markitdown/pandoc/none)
-- `$PDF_TOOL` - Selected PDF converter (marker-pdf/marker-pdf-venv/pymupdf4llm/none)
+- `$PDF_TOOL` - Selected PDF converter (markitdown/pymupdf4llm/none)
 - `$PDF_ENGINE` - Selected PDF engine (typst/xelatex/none)
 
 **Status Tracking:**
@@ -786,10 +744,9 @@ fi
 ```
 
 **Quality Indicators:**
-- **HIGH**: Primary tools (marker-pdf 95%, MarkItDown 75-80%)
-- **MEDIUM**: Fallback tools (Pandoc 68%)
-- **FAST**: Speed-optimized tools (PyMuPDF4LLM 55%)
-- **FALLBACK**: Explicitly indicate when using non-primary tool
+- **PRIMARY**: Primary tool (MarkItDown 75-80% for both DOCX and PDF)
+- **FALLBACK**: DOCX fallback tool (Pandoc 68%)
+- **BACKUP**: PDF backup tool (PyMuPDF4LLM, fast)
 
 **Key Points:**
 - Always log WHICH tool was used
@@ -1036,8 +993,8 @@ Output directory: ./markdown_output
 **Process**:
 1. Create output directory structure
 2. Discover documents (Glob for *.docx, *.pdf)
-3. Convert DOCX files (Pandoc with image extraction)
-4. Convert PDF files (marker-pdf)
+3. Convert DOCX files (MarkItDown or Pandoc with image extraction)
+4. Convert PDF files (MarkItDown or PyMuPDF4LLM)
 5. Validate results
 6. Generate summary report
 
@@ -1051,12 +1008,12 @@ Output directory: ./markdown_output
 **Input**:
 ```
 Convert only PDF files from ./research/ directory.
-Use marker-pdf for best quality on academic papers.
+Use MarkItDown for consistent quality on academic papers.
 ```
 
 **Process**:
 1. Filter for PDF files only
-2. Process with marker-pdf
+2. Process with MarkItDown (or PyMuPDF4LLM as backup)
 3. Organize output
 4. Report results
 
@@ -1124,8 +1081,8 @@ Following the shared error handling guidelines:
 - Example: File locked, permission denied
 
 **Conversion Command Failures**:
-- 1 retry with different options
-- Example: Pandoc timeout, marker-pdf memory error
+- 1 retry with different options or automatic fallback to backup tool
+- Example: Pandoc timeout, MarkItDown failure
 
 **No retries for**:
 - Corrupted source files
@@ -1156,34 +1113,25 @@ select_docx_tool() {
 **Detect and Select Best PDF Converter:**
 ```bash
 select_pdf_tool() {
-  # Try marker-pdf in PATH first (best quality, respects explicit activation)
-  if command -v marker-pdf &> /dev/null; then
-    echo "marker-pdf"
-    echo "INFO: Using marker-pdf from PATH (HIGH quality, 95% fidelity)" >&2
-    return 0
-  fi
-
-  # Check for marker-pdf in virtual environment (auto-detection)
-  local venv_path="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
-  if [ -x "$venv_path/bin/marker-pdf" ]; then
-    echo "marker-pdf-venv"
-    echo "INFO: Using marker-pdf from venv at $venv_path (HIGH quality, 95% fidelity)" >&2
+  # Try MarkItDown first (primary tool for both DOCX and PDF)
+  if command -v markitdown &> /dev/null; then
+    echo "markitdown"
+    echo "INFO: Using MarkItDown (PRIMARY tool)" >&2
     return 0
   fi
 
   # Fallback to PyMuPDF4LLM (requires PyMuPDF >= 1.26.3)
   if python3 -c "import pymupdf4llm; pymupdf4llm.to_markdown" 2>/dev/null; then
     echo "pymupdf4llm"
-    echo "INFO: Using PyMuPDF4LLM (FAST, moderate quality, 55% fidelity)" >&2
+    echo "INFO: Using PyMuPDF4LLM (BACKUP, fast)" >&2
     return 0
   fi
 
   # No tools available
   echo "none"
   echo "ERROR: No PDF converter available" >&2
-  echo "  - Install marker-pdf for best quality" >&2
-  echo "  - Setup: python3.12 -m venv ~/venvs/pdf-tools && source ~/venvs/pdf-tools/bin/activate && pip install marker-pdf" >&2
-  echo "  - Or install PyMuPDF4LLM for speed: pip install --user pymupdf4llm" >&2
+  echo "  - Install MarkItDown: pip install --user 'markitdown[all]' (recommended)" >&2
+  echo "  - Or install PyMuPDF4LLM: pip install --user pymupdf4llm (lightweight backup)" >&2
   return 1
 }
 ```
@@ -1220,6 +1168,10 @@ convert_pdf() {
   local tool="$3"
 
   case "$tool" in
+    markitdown)
+      markitdown "$input" 2>/dev/null > "$output"
+      return $?
+      ;;
     pymupdf4llm)
       python3 -c "
 import pymupdf4llm
@@ -1227,15 +1179,6 @@ md_text = pymupdf4llm.to_markdown('$input')
 with open('$output', 'w', encoding='utf-8') as f:
     f.write(md_text)
 " 2>&1
-      return $?
-      ;;
-    marker-pdf)
-      marker-pdf "$input" "$output" 2>&1
-      return $?
-      ;;
-    marker-pdf-venv)
-      local venv_path="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
-      "$venv_path/bin/marker-pdf" "$input" "$output" 2>&1
       return $?
       ;;
     *)
@@ -1309,14 +1252,11 @@ fi
    - On failure: Report file as failed
 
 **PDF Conversion Fallback Chain:**
-1. **Primary**: marker-pdf PATH (95% fidelity)
+1. **Primary**: MarkItDown
    - On success: Done
    - On failure: → Step 2
-2. **Secondary**: marker-pdf venv (95% fidelity)
-   - On success: Done (log venv usage)
-   - On failure: → Step 3
-3. **Fallback**: PyMuPDF4LLM (55% fidelity, fast)
-   - On success: Done (log fallback reason)
+2. **Backup**: PyMuPDF4LLM (fast)
+   - On success: Done (log backup reason)
    - On failure: Report file as failed with diagnostic
 
 #### Error Analysis and Recovery
@@ -1327,11 +1267,11 @@ fi
 - **Corrupted DOCX**: Fall back to Pandoc (often more resilient)
 - **Password-protected**: Report as failed, suggest unlocking
 
-**marker-pdf Failure Scenarios:**
-- **Password-protected PDF**: Check with `pdfinfo`, report specific error
-- **Memory errors**: Report file as failed, suggest processing in chunks
-- **Corrupted PDF**: Try PyMuPDF4LLM fallback (sometimes more forgiving)
-- **Missing venv**: Auto-detect and use PATH version if available
+**PyMuPDF4LLM Failure Scenarios:**
+- **Password-protected PDF**: Report as failed, suggest unlocking
+- **Memory errors**: Report file as failed
+- **Corrupted PDF**: Report as failed with diagnostic
+- **Import errors**: Check Python environment and package installation
 
 **Pandoc Failure Scenarios:**
 - **Timeout**: Increase timeout, try with simpler format
@@ -1367,9 +1307,9 @@ When tools are not available:
   - If only Pandoc available: Use Pandoc (log as fallback)
   - Installation guidance: `pip install --user 'markitdown[all]'` or system Pandoc
 - **PDF Conversion**:
-  - If neither marker-pdf nor PyMuPDF4LLM available: Skip PDF files, report error
-  - If only PyMuPDF4LLM available: Use PyMuPDF4LLM (log as fallback)
-  - Installation guidance: marker-pdf (complex setup) or `pip install --user pymupdf4llm`
+  - If neither MarkItDown nor PyMuPDF4LLM available: Skip PDF files, report error
+  - If only PyMuPDF4LLM available: Use PyMuPDF4LLM (log as backup)
+  - Installation guidance: `pip install --user 'markitdown[all]'` or `pip install --user pymupdf4llm`
 - Report missing tools to user with installation instructions
 - Continue processing files that can be converted (partial success is acceptable)
 
@@ -1463,11 +1403,12 @@ Task {
 - Verify output files created: `output/*.md`
 
 ### Bash
-- Execute Pandoc for DOCX conversion
-- Execute marker_pdf for PDF conversion
+- Execute MarkItDown for DOCX and PDF conversion
+- Execute Pandoc for DOCX fallback
+- Execute PyMuPDF4LLM for PDF backup
 - Create directories: `mkdir -p`
 - Validate files: `wc -c`, `grep`, `test`
-- Check tool availability: `which pandoc`, `which marker_pdf`
+- Check tool availability: `which markitdown`, `which pandoc`
 
 ### Write
 - Create conversion summary reports
@@ -1481,20 +1422,23 @@ This agent focuses on single-task batch conversion operations, completing in one
 
 ### Tool Dependencies
 
-**Required**:
-- `pandoc` - For DOCX conversion
-- `marker_pdf` - For PDF conversion
+**Recommended**:
+- `markitdown` - For DOCX and PDF conversion (primary tool)
+- `pandoc` - For DOCX conversion fallback and MD export
+- `pymupdf4llm` - For PDF conversion backup (lightweight)
 
 **Verification**:
 ```bash
-if ! command -v pandoc &> /dev/null; then
-  echo "ERROR: pandoc not found. Install: nix-env -iA nixpkgs.pandoc"
-  exit 1
+if ! command -v markitdown &> /dev/null; then
+  echo "WARNING: markitdown not found. Install: pip install --user 'markitdown[all]'"
 fi
 
-if ! command -v marker_pdf &> /dev/null; then
-  echo "ERROR: marker_pdf not found. Install via home-manager or pip"
-  exit 1
+if ! command -v pandoc &> /dev/null; then
+  echo "WARNING: pandoc not found. Install via system package manager"
+fi
+
+if ! python3 -c "import pymupdf4llm" 2>/dev/null; then
+  echo "WARNING: pymupdf4llm not found. Install: pip install --user pymupdf4llm"
 fi
 ```
 
@@ -1529,7 +1473,8 @@ detect_pdf_engine() {
 
 **For Large Files** (>50 pages):
 - Pandoc: Generally fast (<5 seconds)
-- marker-pdf: May take 30-60 seconds per file
+- MarkItDown: Typically fast (<10 seconds)
+- PyMuPDF4LLM: Very fast (<5 seconds)
 
 ### Output Organization Best Practices
 
@@ -1588,9 +1533,6 @@ INPUT_DIR="${1:-.}"
 OUTPUT_DIR="${2:-./converted_output}"
 LOG_FILE="$OUTPUT_DIR/conversion.log"
 
-# Configuration
-VENV_PATH="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
-
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
@@ -1621,25 +1563,6 @@ if command -v pandoc &> /dev/null; then
 else
   echo "✗ Pandoc: NOT AVAILABLE" | tee -a "$LOG_FILE"
   PANDOC_AVAILABLE=false
-fi
-
-# Detect marker-pdf in PATH
-if command -v marker-pdf &> /dev/null; then
-  MARKER_VERSION=$(marker-pdf --version 2>&1 || echo "unknown")
-  echo "✓ marker-pdf (PATH): AVAILABLE - $MARKER_VERSION" | tee -a "$LOG_FILE"
-  MARKER_PATH_AVAILABLE=true
-else
-  echo "✗ marker-pdf (PATH): NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKER_PATH_AVAILABLE=false
-fi
-
-# Detect marker-pdf in venv
-if [ -x "$VENV_PATH/bin/marker-pdf" ]; then
-  echo "✓ marker-pdf (venv): AVAILABLE at $VENV_PATH" | tee -a "$LOG_FILE"
-  MARKER_VENV_AVAILABLE=true
-else
-  echo "✗ marker-pdf (venv): NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKER_VENV_AVAILABLE=false
 fi
 
 # Detect PyMuPDF4LLM
@@ -1676,15 +1599,12 @@ else
 fi
 
 # Select PDF converter
-if [ "$MARKER_PATH_AVAILABLE" = true ]; then
-  PDF_TOOL="marker-pdf"
-  echo "PDF Converter: marker-pdf from PATH (HIGH quality, 95% fidelity)" | tee -a "$LOG_FILE"
-elif [ "$MARKER_VENV_AVAILABLE" = true ]; then
-  PDF_TOOL="marker-pdf-venv"
-  echo "PDF Converter: marker-pdf from venv (HIGH quality, 95% fidelity)" | tee -a "$LOG_FILE"
+if [ "$MARKITDOWN_AVAILABLE" = true ]; then
+  PDF_TOOL="markitdown"
+  echo "PDF Converter: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
 elif [ "$PYMUPDF_AVAILABLE" = true ]; then
   PDF_TOOL="pymupdf4llm"
-  echo "PDF Converter: PyMuPDF4LLM (FAST, moderate quality, 55% fidelity)" | tee -a "$LOG_FILE"
+  echo "PDF Converter: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
 else
   PDF_TOOL="none"
   echo "PDF Converter: NONE AVAILABLE - PDF conversions will be skipped" | tee -a "$LOG_FILE"
@@ -1771,21 +1691,12 @@ if [ "$PDF_TOOL" != "none" ]; then
     echo "  [$((pdf_success + pdf_failed + 1))] Processing: $filename" | tee -a "$LOG_FILE"
 
     case "$PDF_TOOL" in
-      marker-pdf)
-        if marker-pdf "$file" "$output_file" 2>> "$LOG_FILE"; then
-          echo "    ✓ SUCCESS: marker-pdf from PATH (HIGH quality)" | tee -a "$LOG_FILE"
+      markitdown)
+        if markitdown "$file" 2>/dev/null > "$output_file"; then
+          echo "    ✓ SUCCESS: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
           pdf_success=$((pdf_success + 1))
         else
-          echo "    ✗ FAILED: marker-pdf conversion failed" | tee -a "$LOG_FILE"
-          pdf_failed=$((pdf_failed + 1))
-        fi
-        ;;
-      marker-pdf-venv)
-        if "$VENV_PATH/bin/marker-pdf" "$file" "$output_file" 2>> "$LOG_FILE"; then
-          echo "    ✓ SUCCESS: marker-pdf from venv (HIGH quality)" | tee -a "$LOG_FILE"
-          pdf_success=$((pdf_success + 1))
-        else
-          echo "    ✗ FAILED: marker-pdf venv conversion failed" | tee -a "$LOG_FILE"
+          echo "    ✗ FAILED: MarkItDown conversion failed" | tee -a "$LOG_FILE"
           pdf_failed=$((pdf_failed + 1))
         fi
         ;;
@@ -1796,7 +1707,7 @@ md_text = pymupdf4llm.to_markdown('$file')
 with open('$output_file', 'w', encoding='utf-8') as f:
     f.write(md_text)
 " 2>> "$LOG_FILE"; then
-          echo "    ✓ SUCCESS: PyMuPDF4LLM (FAST, moderate quality)" | tee -a "$LOG_FILE"
+          echo "    ✓ SUCCESS: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
           pdf_success=$((pdf_success + 1))
         else
           echo "    ✗ FAILED: PyMuPDF4LLM conversion failed" | tee -a "$LOG_FILE"
@@ -1907,9 +1818,8 @@ echo "Log file: $LOG_FILE"
 - `$INPUT_DIR` - Source directory (default: current directory)
 - `$OUTPUT_DIR` - Destination directory (default: ./converted_output)
 - `$LOG_FILE` - Log file path (always in OUTPUT_DIR)
-- `$VENV_PATH` - marker-pdf venv path (default: ~/venvs/pdf-tools)
 - `$DOCX_TOOL` - Selected DOCX converter (markitdown/pandoc/none)
-- `$PDF_TOOL` - Selected PDF converter (marker-pdf/marker-pdf-venv/pymupdf4llm/none)
+- `$PDF_TOOL` - Selected PDF converter (markitdown/pymupdf4llm/none)
 
 **Exit Codes:**
 - 0: All conversions successful

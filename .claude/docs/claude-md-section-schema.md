@@ -220,7 +220,7 @@ end
 Link to other files for detailed standards:
 
 ```markdown
-- **Lua**: See [Neovim Configuration Guidelines](nvim/CLAUDE.md)
+- **Lua**: See [Neovim Configuration Guidelines](../../nvim/CLAUDE.md)
 ```
 
 ## Metadata Schema
@@ -425,7 +425,7 @@ awk "/^## $section/,/^## [^#]/" "$file" | head -n -1
 - [Standards Integration Pattern](standards-integration.md) - How commands use these sections
 - [Standards Integration Examples](standards-integration.md) - Parsing examples
 - Root CLAUDE.md - Reference implementation
-- nvim/CLAUDE.md - Subdirectory example
+- ../../nvim/CLAUDE.md - Subdirectory example
 
 ## Version History
 
