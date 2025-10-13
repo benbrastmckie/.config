@@ -1,6 +1,6 @@
 ---
 allowed-tools: Task, TodoWrite, Read, Write, Bash, Grep, Glob
-argument-hint: <workflow-description> [--parallel] [--sequential] [--create-pr]
+argument-hint: <workflow-description> [--parallel] [--sequential] [--create-pr] [--dry-run]
 description: Coordinate subagents through end-to-end development workflows
 command-type: primary
 dependent-commands: report, plan, implement, debug, test, document, github-specialist
@@ -9,6 +9,114 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 # Multi-Agent Workflow Orchestration
 
 I'll coordinate multiple specialized subagents through a complete development workflow, from research to documentation, while preserving context and enabling intelligent parallelization.
+
+## Dry-Run Mode (Preview and Validation)
+
+Preview the complete workflow execution without invoking agents or making changes using the `--dry-run` flag:
+
+```bash
+/orchestrate "Add user authentication with JWT tokens" --dry-run
+```
+
+**Dry-Run Analysis**:
+1. **Workflow parsing**: Analyze workflow description and determine workflow type
+2. **Research topic identification**: Identify research topics from workflow description
+3. **Agent planning**: Determine which agents will be invoked for each phase
+4. **Duration estimation**: Estimate time based on workflow complexity and agent metrics
+5. **Execution preview**: Display phase-by-phase workflow with agent assignments
+6. **Artifact preview**: List reports, plans, and files that would be created
+7. **Confirmation prompt**: Option to proceed with actual workflow execution
+
+**Preview Output Example**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Workflow: Add user authentication with JWT tokens (Dry-Run)│
+├─────────────────────────────────────────────────────────────┤
+│ Workflow Type: feature  |  Estimated Duration: ~28 minutes  │
+│ Complexity: Medium-High  |  Agents Required: 6              │
+├─────────────────────────────────────────────────────────────┤
+│ Phase 1: Research (Parallel - 3 agents)           ~8min    │
+│   ├─ research-specialist: "JWT authentication patterns"    │
+│   │    Report: specs/reports/jwt_patterns/001_*.md         │
+│   ├─ research-specialist: "Security best practices"        │
+│   │    Report: specs/reports/security/001_*.md             │
+│   └─ research-specialist: "Token refresh strategies"       │
+│        Report: specs/reports/token_refresh/001_*.md        │
+│                                                              │
+│ Phase 2: Planning (Sequential)                    ~5min    │
+│   └─ plan-architect: Synthesize research into plan         │
+│        Plan: specs/plans/NNN_user_authentication.md        │
+│        Uses: 3 research reports                             │
+│                                                              │
+│ Phase 3: Implementation (Adaptive)                ~12min   │
+│   └─ code-writer: Execute plan phase-by-phase              │
+│        Files: auth/, middleware/, utils/                    │
+│        Tests: test_auth.lua, test_jwt.lua                   │
+│        Phases: 4 (1 sequential, 1 parallel wave)           │
+│                                                              │
+│ Phase 4: Debugging (Conditional)                  ~0min    │
+│   └─ debug-specialist: Skipped (no test failures)          │
+│        Triggers: Only if implementation tests fail          │
+│        Max iterations: 3                                    │
+│                                                              │
+│ Phase 5: Documentation (Sequential)               ~3min    │
+│   └─ doc-writer: Update docs and generate summary          │
+│        Files: README.md, CHANGELOG.md, API.md               │
+│        Summary: specs/summaries/NNN_*.md                    │
+├─────────────────────────────────────────────────────────────┤
+│ Execution Summary:                                           │
+│   Total Phases: 5  |  Conditional Phases: 1  |  Parallel: Yes│
+│   Agents Invoked: 6  |  Reports: 3  |  Plans: 1            │
+│   Files Created: ~12  |  Tests: ~5                          │
+│   Estimated Time: 28 minutes (20min with parallelism)      │
+└─────────────────────────────────────────────────────────────┘
+
+Proceed with workflow execution? (y/n):
+```
+
+**Workflow Type Detection**:
+- **feature**: Adding new functionality (triggers full workflow)
+- **refactor**: Code restructuring (skips research if standards exist)
+- **debug**: Investigation and fixes (starts with debug phase)
+- **investigation**: Research-only (skips implementation)
+
+**Use Cases**:
+- **Validation**: Verify workflow interpretation before execution
+- **Time estimation**: Understand time commitment for complete workflow
+- **Resource planning**: See which agents will be involved
+- **Scope verification**: Confirm research topics and implementation scope
+- **Team coordination**: Share workflow plan before starting
+- **Budget estimation**: Understand LLM API costs based on agent count
+
+**Dry-Run Scope**:
+- ✓ Analyzes workflow description
+- ✓ Identifies research topics
+- ✓ Determines agent assignments
+- ✓ Estimates phase durations
+- ✓ Shows execution order and parallelism
+- ✓ Lists artifacts to be created
+- ✗ Does not invoke agents
+- ✗ Does not create files
+- ✗ Does not execute commands
+- ✗ Does not create reports/plans
+
+**Dry-Run with Other Flags**:
+```bash
+# Dry-run with parallel research (default)
+/orchestrate "Add feature X" --dry-run
+
+# Dry-run with sequential research
+/orchestrate "Add feature X" --dry-run --sequential
+
+# Dry-run with PR creation enabled
+/orchestrate "Add feature X" --dry-run --create-pr
+```
+
+**Implementation Details**:
+- Workflow analysis uses pattern matching and keyword detection
+- Duration estimation from `.claude/lib/agent-registry-utils.sh` metrics
+- Research topic extraction via semantic analysis of workflow description
+- Agent selection based on workflow type and phase requirements
 
 ## Workflow Analysis
 
