@@ -6,6 +6,33 @@ Specialized AI agent definitions for Claude Code. Each agent is a focused assist
 
 ## Recent Changes
 
+### Orchestration Integration (2025-10-12)
+Agents enhanced for comprehensive multi-phase workflow orchestration:
+
+**research-specialist**:
+- Direct file creation for research reports in `specs/reports/{topic}/`
+- Topic-based organization with incremental numbering per topic
+- Structured metadata including workflow context and specs directory
+- Integration with /orchestrate research phase
+
+**debug-specialist**:
+- File-based debug reports in `debug/{topic}/` directory
+- Persistent debugging documentation separate from gitignored specs/
+- Integration with /orchestrate debugging loop
+- Structured investigation reports with root cause analysis
+
+**plan-architect**:
+- Report verification and linking in plan metadata
+- Cross-referencing research reports in implementation plans
+- Enhanced metadata for research-driven planning
+- Integration with /orchestrate planning phase
+
+**Benefits**:
+- End-to-end workflow coordination through /orchestrate
+- Persistent documentation for all workflow phases
+- Clear artifact organization (specs/ for plans/reports, debug/ for investigations)
+- Complete traceability from research through debugging
+
 ### Shared Protocols (2025-10-06)
 Agents now reference shared protocol documentation in `.claude/agents/shared/`:
 - `progress-streaming-protocol.md` - Standard progress reporting format
@@ -106,13 +133,16 @@ Agents enable modular, focused assistance by providing:
 - Environment investigation
 - Root cause analysis
 - Diagnostic report generation
+- File-based debug reports for orchestrated workflows
+- Persistent debugging documentation in `debug/{topic}/`
 
-**Allowed Tools**: Read, Grep, Glob, Bash
+**Allowed Tools**: Read, Grep, Glob, Bash, WebSearch, Write
 
 **Typical Use Cases**:
 - Troubleshooting failures
 - Understanding error messages
 - Investigating performance issues
+- Creating debug reports during /orchestrate debugging loop
 
 ---
 
@@ -121,8 +151,9 @@ Agents enable modular, focused assistance by providing:
 
 **Capabilities**:
 - Batch document conversion (DOCX and PDF)
-- Pandoc-based DOCX conversion (optimal quality)
-- marker-pdf-based PDF conversion (AI-powered)
+- MarkItDown-based DOCX and PDF conversion (primary tool)
+- Pandoc-based DOCX conversion fallback
+- PyMuPDF4LLM PDF conversion backup (fast, lightweight)
 - Image extraction and organization
 - Conversion validation and quality checks
 - Progress reporting and statistics
@@ -223,6 +254,9 @@ Agents enable modular, focused assistance by providing:
 - Feasibility analysis
 - Alternative comparison
 - Report writing
+- Direct report file creation in `specs/reports/{topic}/`
+- Topic-based organization with incremental numbering
+- Integration with /orchestrate research phase
 
 **Allowed Tools**: Read, Write, Grep, Glob, WebSearch
 
@@ -230,6 +264,7 @@ Agents enable modular, focused assistance by providing:
 - Technology evaluation
 - Problem investigation
 - Pre-implementation research
+- Research phase execution in orchestrated workflows
 
 ---
 
@@ -572,8 +607,8 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Related
 - [← Parent Directory](../README.md)
 - [commands/](../commands/README.md) - Commands that use agents
-- [docs/agent-integration-guide.md](../docs/agent-integration-guide.md) - Integration guide
-- [docs/agent-development-guide.md](../docs/agent-development-guide.md) - Development guide
+- [docs/using-agents.md](../docs/using-agents.md) - Integration guide
+- [docs/creating-agents.md](../docs/creating-agents.md) - Development guide
 
 ## Examples
 

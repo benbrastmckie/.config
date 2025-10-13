@@ -309,7 +309,7 @@ Need to modify plan or report?
 ## Additional Resources
 
 - **Command Patterns**: [command-patterns.md](command-patterns.md)
-- **Adaptive Plan Structures**: [adaptive-plan-structures.md](adaptive-plan-structures.md)
+- **Adaptive Plan Structures**: [adaptive-planning-guide.md](adaptive-planning-guide.md)
 - **Migration Guide**: [migration-guide-adaptive-plans.md](migration-guide-adaptive-plans.md)
 - **Commands README**: [../commands/README.md](../commands/README.md)
 

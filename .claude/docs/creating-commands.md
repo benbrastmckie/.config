@@ -1477,7 +1477,7 @@ Return to user:
 - **[Command Quick Reference](command-reference.md)** - Quick lookup for all commands
 - **[Command Patterns](command-patterns.md)** - Reusable implementation patterns
 - **[Agent Reference](agent-reference.md)** - Quick agent reference (created in Phase 4)
-- **[Agent Development Guide](creating-agents.md)** - How to create agents (renamed from agent-development-guide.md in Phase 4)
+- **[Agent Development Guide](creating-agents.md)** - How to create agents (renamed from creating-agents.md in Phase 4)
 - **[Standards Integration Guide](standards-integration.md)** - Standards integration details (created in Phase 4)
 - **[Commands README](../commands/README.md)** - Complete command list and navigation
 

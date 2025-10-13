@@ -1,556 +1,878 @@
 # Document Conversion Guide
 
-Quick-start guide for bidirectional document conversion: convert between Word/PDF and Markdown formats using the `/convert-docs` command.
-
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Example Patterns](#example-patterns)
-- [Converting FROM Markdown](#converting-from-markdown)
-- [What It Does](#what-it-does)
-- [Tool Information](#tool-information)
-- [Quality Expectations](#quality-expectations)
+Complete guide for bidirectional document conversion using the `/convert-docs` command. Convert between DOCX, PDF, and Markdown formats with intelligent tool selection and automatic fallback.
 
 ## Quick Start
 
-The `/convert-docs` command provides bidirectional document conversion:
+The simplest way to use `/convert-docs` is with natural language:
 
-- **TO Markdown**: Convert Word documents (DOCX) and PDF files to Markdown format
-- **FROM Markdown**: Convert Markdown files to PDF or DOCX format
+```bash
+# Convert a single Markdown file to PDF
+/convert-docs ./my-document.md to pdf
 
-The command automatically detects conversion direction based on file extensions in the input directory.
+# Convert a Markdown file to Word format
+/convert-docs ./notes.md to docx
 
-### Basic Syntax
+# Convert all Word and PDF files in a directory to Markdown
+/convert-docs ./reports
 
+# Convert all Markdown files to both PDF and DOCX
+/convert-docs ./markdown-docs to pdf and docx
+
+# Convert with custom output location
+/convert-docs ./source-files ./output-folder
 ```
-/convert-docs <input-directory> [output-directory] [file-types]
+
+That's it! The command automatically:
+- Detects file types
+- Selects the best conversion tools
+- Handles fallback if tools fail
+- Preserves formatting and structure
+- Extracts/embeds images
+
+## Tool Architecture
+
+Understanding which tools are used helps you get the best results:
+
+### DOCX → Markdown
+
+**Primary Tool: MarkItDown** (75-80% fidelity)
+- Excellent table preservation (pipe-style)
+- Perfect Unicode/emoji support
+- Fast processing
+- Zero configuration
+
+**Fallback Tool: Pandoc** (68% fidelity)
+- Reliable baseline conversion
+- Good heading/list preservation
+- Grid-style tables (more verbose)
+- Wide compatibility
+
+### PDF → Markdown
+
+**Primary Tool: MarkItDown**
+- Handles most PDF formats well
+- Consistent quality
+- Easy installation
+- Integrated with DOCX conversion
+
+**Backup Tool: PyMuPDF4LLM** (fast, lightweight)
+- Zero configuration required
+- Perfect Unicode preservation
+- Extremely fast (<5s for large files)
+- Good for simple text-based PDFs
+
+### Markdown → DOCX
+
+**Tool: Pandoc** (95%+ quality)
+- Excellent preservation of structure
+- Automatic image embedding
+- Professional formatting
+- Industry-standard output
+
+### Markdown → PDF
+
+**Primary: Pandoc with Typst engine**
+- Modern, fast PDF generation
+- Excellent Unicode support
+- Clean, professional output
+
+**Fallback: Pandoc with XeLaTeX engine**
+- Traditional LaTeX engine
+- Good Unicode support
+- Widely available
+
+### How Tool Selection Works
+
+The command automatically:
+1. **Tries primary tool** for the file type
+2. **Falls back** to backup tool if primary fails or times out
+3. **Logs which tool** succeeded for each file
+4. **Reports statistics** showing tool usage
+
+You don't need to specify tools - it handles everything automatically!
+
+### Installation
+
+Install the tools you need:
+
+```bash
+# Minimum setup (handles all conversions)
+pip install --user 'markitdown[all]'
+sudo apt install pandoc  # or your package manager
+
+# Recommended additions
+pip install --user pymupdf4llm  # PDF backup
+nix-env -iA nixpkgs.typst       # Modern PDF engine
+```
+
+**Check what's installed**:
+```bash
+/convert-docs --detect-tools
+```
+
+## Command Syntax
+
+### Basic Form
+
+```bash
+/convert-docs <input> [output] [options]
 ```
 
 **Parameters**:
-- `input-directory` (required): Directory containing files to convert
-- `output-directory` (optional): Where to save converted Markdown files (default: same as input)
-- `file-types` (optional): Comma-separated list like `docx,pdf` (default: both)
+- `input` (required): File or directory to convert
+- `output` (optional): Where to save converted files (default: `./converted_output`)
+- `options` (optional): Flags like `--parallel`, `--use-agent`, `--dry-run`
 
-### Simplest Usage
+### Natural Language Support
 
-Convert all DOCX and PDF files in a directory:
+The command understands natural language:
 
+```bash
+# Convert single file to specific format
+/convert-docs ./document.md to pdf
+/convert-docs ./notes.md to word
+
+# Convert directory
+/convert-docs ./my-documents
+/convert-docs ./pdfs to markdown
+
+# Specify output location
+/convert-docs ./source ./output
 ```
+
+### Options
+
+**`--use-agent`** - Enable comprehensive 5-phase workflow:
+```bash
+/convert-docs ./docs ./output --use-agent
+```
+Provides detailed logging, validation, and quality reporting.
+
+**`--parallel [N]`** - Process files in parallel:
+```bash
+/convert-docs ./archive ./output --parallel 8
+```
+Processes N files simultaneously (default: auto-detect CPU cores).
+
+**`--detect-tools`** - Show available tools:
+```bash
+/convert-docs --detect-tools
+```
+Displays which conversion tools are installed.
+
+**`--dry-run`** - Preview without converting:
+```bash
+/convert-docs ./documents --dry-run
+```
+Shows what would be converted without doing conversions.
+
+## Conversion Modes
+
+The `/convert-docs` command supports two execution modes:
+
+### Script Mode (Default)
+
+Fast, direct conversion with minimal overhead:
+
+```bash
+/convert-docs ./documents ./output
+```
+
+**Features**:
+- Speed: <0.5s overhead, instant start
+- Automatic tool selection and fallback
+- Progress indicators `[N/Total]`
+- Conversion log with statistics
+- Parallel processing support
+
+**Use for**:
+- Quick batch conversions
+- Large file collections
+- Standard conversion workflows
+
+### Agent Mode (--use-agent)
+
+Comprehensive 5-phase orchestration with detailed logging:
+
+```bash
+/convert-docs ./documents ./output --use-agent
+```
+
+**Features**:
+- Speed: ~2-3s agent initialization overhead
+- Structured logging with phase-by-phase reporting
+- Quality validation and verification
+- Tool selection explanations
+- Structure analysis (heading/table counts)
+
+**Use for**:
+- Quality-critical conversions
+- Auditing and compliance
+- Troubleshooting conversion issues
+- Learning which tools work best
+
+**Automatic Agent Triggers**:
+Agent mode activates automatically if you include these keywords:
+- "detailed logging"
+- "quality reporting"
+- "verify tools"
+- "orchestrated workflow"
+- "comprehensive logging"
+
+## Usage Examples
+
+### Basic Conversions
+
+#### Convert Single File to PDF
+
+```bash
+/convert-docs ./my-notes.md to pdf
+```
+
+Output: `./converted_output/my-notes.pdf`
+
+#### Convert Single File to Word
+
+```bash
+/convert-docs ./documentation.md to docx
+```
+
+Output: `./converted_output/documentation.docx`
+
+#### Convert All Documents in Directory
+
+```bash
 /convert-docs ./my-documents
 ```
 
-This converts all Word and PDF files in `./my-documents` and saves the Markdown files in the same directory.
+Automatically converts:
+- All `.docx` files → `.md` files
+- All `.pdf` files → `.md` files
+- All `.md` files → `.pdf` and `.docx` files
 
-## Example Patterns
+#### Convert with Custom Output Location
 
-### 1. Convert a Single Directory
-
-Convert all documents in one location:
-
-```
-/convert-docs /home/benjamin/Documents/research
-```
-
-All DOCX and PDF files in the research directory will be converted to `.md` files in the same location.
-
-### 2. Convert with Custom Output Location
-
-Keep source files separate from converted files:
-
-```
-/convert-docs ./source-docs ./converted-markdown
+```bash
+/convert-docs ./source-docs ./markdown-output
 ```
 
-Original files stay in `./source-docs`, converted Markdown files go to `./converted-markdown`.
+Keeps source and output separate.
 
-### 3. Convert Only DOCX Files
+### Advanced Conversions
 
-Process only Word documents:
+#### Quality-Critical with Agent Mode
 
-```
-/convert-docs ./documents ./markdown docx
-```
+Use comprehensive logging and validation:
 
-PDFs in the directory will be ignored. Only `.docx` files are converted.
-
-### 4. Convert Only PDF Files
-
-Process only PDF documents:
-
-```
-/convert-docs ./pdfs ./markdown pdf
+```bash
+/convert-docs ./important-docs ./output with detailed logging
 ```
 
-Only `.pdf` files are converted. Word documents are ignored.
+Agent mode activates, provides:
+- Tool detection and version reporting
+- Tool selection reasoning
+- Per-file validation
+- Quality warnings
 
-### 5. Batch Process Large Collections
+#### Parallel Processing
 
-Convert an entire document library:
+Convert large collections quickly:
 
-```
-/convert-docs /mnt/backup/company-docs /home/benjamin/markdown-archive
-```
-
-The command recursively processes all DOCX and PDF files in subdirectories, maintaining the directory structure in the output location.
-
-## Converting FROM Markdown
-
-The `/convert-docs` command supports reverse conversion: transforming Markdown files to PDF or DOCX formats.
-
-### How Direction Detection Works
-
-The command automatically detects conversion direction based on file extensions:
-
-- **Input contains `.md` files**: Converts FROM Markdown TO PDF/DOCX
-- **Input contains `.docx` or `.pdf` files**: Converts TO Markdown (standard direction)
-- **Input contains both**: Command will ask for clarification
-
-### Basic Markdown Conversion
-
-Convert Markdown files to both PDF and DOCX:
-
-```
-/convert-docs ./markdown-docs ./output
+```bash
+/convert-docs ./archive ./output --parallel 8
 ```
 
-By default, each `.md` file produces both a `.pdf` and `.docx` file in the output directory.
+Processes 8 files simultaneously using worker pool.
 
-### Example Patterns for Markdown Conversion
+#### Dry Run Preview
 
-#### 1. Convert Documentation to PDF
+See what would be converted:
 
-Convert technical documentation to PDF format:
-
-```
-/convert-docs ./docs ./pdf-output
+```bash
+/convert-docs ./documents --dry-run
 ```
 
-All Markdown files in `./docs` are converted to PDF (and DOCX) in `./pdf-output`.
+Shows file counts and conversion direction without converting.
 
-#### 2. Convert Notes to Word Format
+#### Check Available Tools
 
-Convert personal notes to Word documents:
+Verify conversion tools installed:
 
-```
-/convert-docs ~/notes/markdown ~/notes/docx
-```
-
-Great for sharing Markdown notes with colleagues who prefer Word.
-
-#### 3. Batch Convert Research Papers
-
-Convert a collection of Markdown research papers:
-
-```
-/convert-docs ~/research/papers ~/research/formatted
+```bash
+/convert-docs --detect-tools
 ```
 
-Produces professional PDF and DOCX versions of your Markdown papers.
+Displays tool availability and selected converters.
 
-#### 4. Convert README to Document
+### Real-World Scenarios
 
-Convert project documentation to distributable formats:
+#### Scenario 1: Legacy Documentation Migration
 
+Convert old Word docs to Markdown for version control:
+
+```bash
+/convert-docs ~/legacy-docs ~/docs-markdown
 ```
+
+Result:
+- All `.docx` files → `.md` files
+- Images extracted to `images/` subdirectory
+- Preserves heading structure and formatting
+
+#### Scenario 2: Research Paper Collection
+
+Convert PDF papers to Markdown for indexing:
+
+```bash
+/convert-docs ~/research/pdfs ~/research/markdown --parallel 4
+```
+
+Result:
+- Fast parallel processing
+- Text extracted from PDFs
+- Tables and structure preserved
+- Ready for full-text search
+
+#### Scenario 3: Documentation Distribution
+
+Convert Markdown docs to distributable formats:
+
+```bash
 /convert-docs ./project-docs ./release-docs
 ```
 
-Useful for creating user guides from Markdown documentation.
+Result:
+- Each `.md` → `.docx` and `.pdf`
+- Professional formatting
+- Images embedded automatically
+- Ready for stakeholder distribution
 
-### PDF Engine Requirements
+#### Scenario 4: Meeting Notes Archive
 
-Converting Markdown to PDF requires a PDF engine. The command supports:
+Convert scattered DOCX meeting notes:
 
-**Recommended: Typst**
-- Modern, fast PDF engine
-- Excellent Unicode support
-- Better handling of emoji and special characters
-- Installation:
-  ```bash
-  # NixOS (in configuration.nix)
-  environment.systemPackages = [ pkgs.typst ];
-
-  # Or via nix-env
-  nix-env -iA nixpkgs.typst
-  ```
-
-**Alternative: XeLaTeX**
-- Traditional LaTeX engine (likely already installed)
-- Part of texlive-full package
-- Good Unicode support
-- Command checks for this automatically
-
-The conversion agent will:
-1. Check for Typst first (preferred)
-2. Fall back to XeLaTeX if Typst unavailable
-3. Warn if no PDF engine found
-
-### Output Format Details
-
-**Default behavior** (single Markdown file):
-```
-input: document.md
-output: document.pdf, document.docx
-```
-
-**Batch processing** (multiple Markdown files):
-```
-input directory:
-  ├── doc1.md
-  ├── doc2.md
-  └── doc3.md
-
-output directory:
-  ├── doc1.pdf
-  ├── doc1.docx
-  ├── doc2.pdf
-  ├── doc2.docx
-  ├── doc3.pdf
-  └── doc3.docx
-```
-
-### Quality Preservation
-
-**Markdown → DOCX**:
-- Excellent quality (95%+ accuracy)
-- Headings, lists, tables preserved perfectly
-- Images embedded automatically (from relative paths)
-- Text formatting (bold, italic, code) maintained
-- Links converted to Word hyperlinks
-
-**Markdown → PDF**:
-- Good to excellent quality
-- Depends on PDF engine (Typst recommended)
-- Unicode and special characters handled well
-- Tables and code blocks formatted cleanly
-- Professional-looking output
-
-### Common Use Cases
-
-**1. Share Documentation with Non-Technical Users**
-```
-/convert-docs ./technical-docs ./user-docs
-```
-Convert Markdown technical docs to Word/PDF for stakeholders.
-
-**2. Create Distributable Reports**
-```
-/convert-docs ./reports/markdown ./reports/final
-```
-Generate professional PDF reports from Markdown sources.
-
-**3. Archive Version-Controlled Docs**
-```
-/convert-docs ./repo-docs ./archived-pdfs
-```
-Create point-in-time PDF snapshots of evolving Markdown documentation.
-
-**4. Convert Blog Posts to Documents**
-```
-/convert-docs ~/blog/posts ~/blog/printable
-```
-Make printable/distributable versions of Markdown blog content.
-
-### Limitations
-
-Some Markdown features may not convert perfectly:
-
-- **Custom HTML**: HTML blocks in Markdown may not convert to PDF/DOCX
-- **Advanced Tables**: Complex table layouts may need adjustment
-- **Code Syntax Highlighting**: Language-specific highlighting lost in conversion
-- **Markdown Extensions**: Non-standard Markdown syntax may not be supported
-
-### Tips for Best Results
-
-**1. Use Standard Markdown**
-Stick to CommonMark syntax for best compatibility across formats.
-
-**2. Use Relative Image Paths**
-```markdown
-![Alt text](./images/diagram.png)
-```
-Pandoc will embed images automatically if paths are relative.
-
-**3. Test with Sample Files**
-Try converting a few files first to verify output quality before batch processing.
-
-**4. Check PDF Engine**
-Verify you have a PDF engine installed:
 ```bash
-which typst    # Check for Typst
-which xelatex  # Check for XeLaTeX
+/convert-docs ~/meetings/2024 ~/meetings/markdown
 ```
 
-## What It Does
+Result:
+- Unified Markdown format
+- Searchable archive
+- Version control ready
+- Preserves all text and structure
 
-The `/convert-docs` command provides intelligent bidirectional document conversion through an automated agent system.
+#### Scenario 5: Blog Post Distribution
 
-### How It Works
+Convert Markdown blog posts to PDF:
 
-**Converting TO Markdown**:
-1. **Scans Directory**: Finds all DOCX and PDF files in the input directory and subdirectories
-2. **Selects Tools**: Automatically chooses the best conversion tool for each file type
-3. **Converts Files**: Processes each file using specialized conversion tools
-4. **Extracts Media**: Saves embedded images to an organized media directory
-5. **Generates Markdown**: Creates clean, readable Markdown files with proper formatting
+```bash
+/convert-docs ~/blog/posts ~/blog/pdfs to pdf
+```
 
-**Converting FROM Markdown**:
-1. **Scans Directory**: Finds all Markdown (.md) files in the input directory
-2. **Checks PDF Engine**: Verifies Typst or XeLaTeX is available for PDF generation
-3. **Converts to DOCX**: Uses Pandoc to create Word documents from Markdown
-4. **Converts to PDF**: Uses Pandoc with PDF engine to create PDF files
-5. **Embeds Images**: Automatically embeds images from relative paths in output files
-
-### What Gets Converted
-
-The command preserves important document elements:
-
-- **Headings**: Document structure with proper heading levels
-- **Lists**: Ordered and unordered lists with nesting
-- **Tables**: Converted to Markdown table format
-- **Images**: Extracted to separate files and linked in Markdown
-- **Links**: URL and cross-references maintained
-- **Text Formatting**: Bold, italic, and other basic formatting
-- **Code Blocks**: Programming code preserved with formatting
-
-### Tools Used
-
-The conversion agent uses specialized tools based on conversion direction:
-
-**Converting TO Markdown**:
-
-- **Pandoc** for Word Documents (DOCX):
-  - Industry-standard document converter
-  - 95%+ conversion accuracy for Word files
-  - Excellent preservation of formatting and structure
-
-- **marker_pdf** for PDF Files:
-  - AI-powered PDF converter
-  - Handles complex PDFs with tables and images
-  - Works well with both text-based and scanned PDFs
-
-**Converting FROM Markdown**:
-
-- **Pandoc** for both DOCX and PDF output:
-  - Universal document converter
-  - Creates professional Word documents
-  - Generates PDF via Typst or XeLaTeX engine
-  - Excellent quality preservation (95%+ for DOCX)
-  - Automatic image embedding
+Result:
+- Professional PDF versions of blog posts
+- Ready for download/distribution
+- Embedded images and formatting
 
 ## Quality Expectations
 
-### DOCX Conversion Quality
+### DOCX → Markdown Quality
 
-Word document conversion provides excellent results:
+**MarkItDown (Primary)**:
+- Fidelity: 75-80%
+- Excellent: Tables (pipe-style), headings, lists
+- Good: Text formatting (bold, italic, code)
+- Preserved: Unicode, emoji, links
+- Limitations: Custom Word styles may not translate
 
-- Heading styles convert perfectly to Markdown headers
-- Lists maintain hierarchy and formatting
-- Tables convert to standard Markdown pipe tables
-- Images are extracted and properly referenced
-- Text formatting (bold, italic) preserved accurately
+**Pandoc (Fallback)**:
+- Fidelity: 68%
+- Excellent: Headings, lists, basic formatting
+- Good: Tables (grid format), text styling
+- Preserved: Links, basic structure
+- Limitations: Tables more verbose than pipe-style
 
-**Expected Accuracy**: 95%+ for documents using standard Word styles
+### PDF → Markdown Quality
 
-### PDF Conversion Quality
+**MarkItDown (Primary)**:
+- Quality: Good to excellent for most PDFs
+- Best for: Text-based PDFs, standard layouts
+- Handles: Tables, headings, basic structure
+- Limitations: Complex multi-column layouts
 
-PDF conversion quality depends on document complexity:
+**PyMuPDF4LLM (Backup)**:
+- Quality: Fast, moderate fidelity
+- Speed: Extremely fast (<5s large files)
+- Best for: Simple text-based PDFs
+- Limitations: Tables become plain text
 
-**Text-Based PDFs**:
-- Clean text extraction
-- Good structure preservation
-- Reliable table conversion
+### Markdown → DOCX Quality
 
-**Scanned PDFs**:
-- AI-powered OCR handles image-based text
-- Tables and complex layouts processed intelligently
-- Quality depends on scan quality and document complexity
+**Pandoc**:
+- Quality: 95%+ preservation
+- Excellent: All standard Markdown elements
+- Perfect: Headings, lists, tables, links
+- Automatic: Image embedding from relative paths
+- Limitations: Custom HTML may not convert
 
-**Expected Accuracy**: Good to excellent, with better results for well-formatted documents
+### Markdown → PDF Quality
 
-### Common Limitations
+**Typst Engine (Recommended)**:
+- Quality: Excellent, modern output
+- Excellent: Unicode, emoji, special characters
+- Professional: Clean formatting, good typography
+- Fast: Quick generation
 
-Some elements may require manual review:
+**XeLaTeX Engine (Fallback)**:
+- Quality: Good, traditional LaTeX output
+- Good: Unicode support
+- Reliable: Established, predictable
+- Slower: Traditional LaTeX compilation
 
-- Complex multi-level tables may need formatting adjustments
-- Heavily formatted documents may lose some visual styling
-- Scanned documents with poor image quality may have OCR errors
-- Custom fonts and advanced typography are simplified
+### Elements Preserved Across Conversions
 
-## Tool Information
+**Well-Preserved**:
+- Headings (H1-H6 hierarchy)
+- Ordered and unordered lists
+- Basic text formatting (bold, italic)
+- Links and hyperlinks
+- Simple tables
+- Images (extracted or embedded)
+- Code blocks
 
-### Pandoc: Universal Document Converter
+**May Require Review**:
+- Complex multi-level tables
+- Custom formatting and styles
+- Embedded objects (charts, diagrams)
+- Advanced typography
+- Custom HTML or LaTeX
 
-**What Pandoc Does**:
-Pandoc is a universal document converter that handles bidirectional conversion between Word, PDF, and Markdown formats. It reads document structures and converts between formats while preserving content and formatting.
+**Not Preserved**:
+- Document metadata (except basic)
+- Comments and track changes
+- Macros and scripts
+- Custom fonts (simplified)
+- Complex page layouts
 
-**Why We Use It**:
-- Industry-standard tool with proven reliability
-- Excellent format preservation in both directions
-- Handles complex document structures
-- Actively maintained with extensive documentation
-- Supports PDF generation via multiple engines
+## Advanced Features
 
-**Basic Functionality**:
-- **To Markdown**: Converts DOCX files to multiple Markdown variants
-- **From Markdown**: Generates DOCX and PDF from Markdown files
-- Extracts and embeds images automatically
-- Preserves document metadata and structure
-- Supports customization through command-line options
+### Parallel Processing
 
-**Learn More**:
-- Repository: https://github.com/jgm/pandoc
-- Manual: https://pandoc.org/MANUAL.html
-- Official Site: https://pandoc.org/
+Speed up large batch conversions:
 
-**Installation** (if running manually):
 ```bash
-# Ubuntu/Debian
-sudo apt install pandoc
-
-# macOS
-brew install pandoc
-
-# Arch Linux
-sudo pacman -S pandoc
+/convert-docs ./archive ./output --parallel 8
 ```
 
-### marker_pdf: PDF Conversion
+**How it works**:
+- Creates worker pool with N workers
+- Processes N files simultaneously
+- Thread-safe progress tracking
+- Atomic logging with locks
+- Automatic worker cleanup
 
-**What marker_pdf Does**:
-marker_pdf is an AI-powered PDF converter that uses machine learning to understand document structure. It can handle complex PDFs including scanned documents, tables, images, and mixed content.
+**When to use**:
+- Large file collections (>50 files)
+- Fast storage (SSD)
+- Multi-core CPU available
 
-**Why We Use It**:
-- AI-powered for intelligent structure recognition
-- Handles both text-based and scanned PDFs
-- Fast batch processing capabilities
-- Extracts images with proper text flow
-- Open-source and actively maintained
+**Performance**:
+- 2-4x faster for I/O-bound conversions
+- Scales with CPU cores (up to 32 workers)
+- Automatic CPU core detection if N not specified
 
-**Basic Functionality**:
-- Converts PDF files to Markdown format
-- OCR support for scanned documents
-- Table structure detection and conversion
-- Image extraction with text alignment
-- Layout analysis for complex documents
+### Timeout Protection
 
-**Performance Notes**:
-- First run downloads ML model dependencies (may take a few minutes)
-- Subsequent conversions are fast
-- More complex PDFs take longer to process
-- AI models improve accuracy over time
+All conversions have configurable timeouts:
 
-**Learn More**:
-- Repository: https://github.com/datalab-to/marker
-- Documentation: See repository README
+**Default Timeouts**:
+- DOCX → MD: 60 seconds
+- PDF → MD: 300 seconds (5 minutes)
+- MD → DOCX: 60 seconds
+- MD → PDF: 120 seconds (2 minutes)
 
-**Installation** (if running manually):
+**Timeout Multiplier**:
+Adjust globally via environment variable:
+
 ```bash
-pip install marker-pdf
+TIMEOUT_MULTIPLIER=2.0 /convert-docs ./docs ./output
 ```
 
-### PDF Engines: Typst and XeLaTeX
+Doubles all timeouts (useful for very large files).
 
-**What PDF Engines Do**:
-PDF engines are required for converting Markdown to PDF format. They take Markdown content (processed by Pandoc) and render it as a formatted PDF document.
+**Behavior**:
+- On timeout: Automatically try fallback tool
+- Logged: Timeout events tracked in statistics
+- Continued: Processing continues to next file
 
-**Supported Engines**:
+### Resource Management
 
-**Typst (Recommended)**:
-- Modern, fast PDF generation
-- Excellent Unicode and emoji support
-- Clean, professional output
-- Better handling of complex characters
-- Installation:
-  ```bash
-  # NixOS (configuration.nix)
-  environment.systemPackages = [ pkgs.typst ];
+#### Disk Space Checking
 
-  # Via nix-env
-  nix-env -iA nixpkgs.typst
+Automatic disk space verification:
 
-  # Other systems
-  # See: https://github.com/typst/typst
-  ```
+```bash
+MAX_DISK_USAGE_GB=10 /convert-docs ./docs ./output
+```
 
-**XeLaTeX (Traditional)**:
-- Part of TeX Live distribution
-- Widely available on most systems
-- Good Unicode support
-- Established, reliable
-- Usually pre-installed via texlive-full
+Warns if estimated output exceeds limit.
 
-**Engine Selection**:
-The conversion agent automatically:
-1. Checks for Typst first (preferred for quality)
-2. Falls back to XeLaTeX if available
-3. Warns if no PDF engine found
+**Checks**:
+- Available disk space
+- Estimated output size (input × 1.5)
+- Minimum free space buffer (100MB)
 
-**Why Typst is Preferred**:
-- Faster processing
-- Better handling of modern Unicode (emoji, symbols)
-- Cleaner error messages
-- More predictable formatting
+#### Concurrency Protection
 
-## Tips for Best Results
+Prevents multiple conversions to same directory:
 
-### For Word Documents
+**Mechanism**:
+- Creates `.convert-docs.lock` file with PID
+- Checks if process still running
+- Removes stale locks automatically
+- Prevents race conditions
 
-1. **Use Built-in Styles**: Documents using Word's built-in heading styles (Heading 1, Heading 2, etc.) convert better than manually formatted headings
-2. **Standard Tables**: Simple tables convert more reliably than complex merged-cell layouts
-3. **Image Format**: Common image formats (JPEG, PNG) extract cleanly
+**Behavior**:
+- Error if another conversion active
+- Automatic cleanup on exit
+- Manual removal instructions if needed
 
-### For PDF Files
+### Logging and Validation
 
-1. **Text-Based PDFs**: PDFs created from Word or other digital sources convert better than scanned documents
-2. **Clear Scans**: If converting scanned PDFs, higher resolution scans produce better OCR results
-3. **Standard Layouts**: PDFs with standard paragraph and heading structure convert more accurately
+#### Conversion Log
 
-### For Markdown Files
+Every conversion generates `conversion.log`:
 
-1. **Use Standard Syntax**: Stick to CommonMark or GitHub Flavored Markdown for best compatibility
-2. **Relative Image Paths**: Use relative paths for images so Pandoc can embed them automatically
-3. **Simple Tables**: Basic pipe tables convert better than complex HTML tables
-4. **Test PDF Engine**: Verify Typst or XeLaTeX is installed before batch converting to PDF
-5. **Avoid Custom HTML**: HTML blocks may not convert properly to DOCX/PDF
+**Location**: `<output-directory>/conversion.log`
 
-### General Recommendations
+**Contents**:
+- Timestamp and metadata
+- Tool detection results
+- Per-file conversion attempts
+- Success/failure status
+- Tool used for each file
+- Error messages
+- Summary statistics
 
-1. **Test First**: Try converting a few sample files before processing large batches
-2. **Review Output**: Manually check a few converted files to ensure quality meets your needs
-3. **Keep Originals**: The command doesn't delete source files, so you can re-convert with different settings if needed
-4. **Directory Structure**: The command preserves subdirectory structure when converting multiple directories
+**Example Log Entry**:
+```
+[2025-10-12 14:32:15] START: research_paper.pdf -> markdown
+[2025-10-12 14:32:18] SUCCESS: research_paper.pdf
+  Tool: markitdown
+  Output: research_paper.md
+  Size: 45123 bytes
+  Duration: 2847ms
+```
+
+#### File Validation
+
+Automatic validation of input and output files:
+
+**Input Validation**:
+- Magic number verification (file type check)
+- File size validation (not empty, not too large)
+- Read permission check
+- DOCX: ZIP format verification
+- PDF: PDF header verification
+- Markdown: Text file validation
+
+**Output Validation**:
+- File existence check
+- Size validation (>100 bytes)
+- Structure check (heading count, table count)
+- Image reference validation
+- Warnings for suspicious outputs
+
+#### Progress Tracking
+
+Real-time progress indicators:
+
+**Script Mode**:
+```
+[3/15] Processing DOCX file
+  Converting: meeting_notes.docx (MarkItDown)
+    ✓ Converted to meeting_notes.md (using markitdown)
+```
+
+**Agent Mode**:
+```
+PROGRESS: Converting DOCX (3 of 15): meeting_notes.docx...
+PROGRESS: Validating conversions...
+PROGRESS: Conversion complete: 14 succeeded, 1 failed
+```
+
+## Implementation Details
+
+The command delegates to two implementation layers:
+
+### Layer 1: convert-docs.sh Script
+
+Core conversion engine (`/home/benjamin/.config/.claude/lib/convert-docs.sh`)
+
+**Responsibilities**:
+- Tool detection and validation
+- File discovery and validation
+- Conversion execution with timeout protection
+- Automatic fallback handling
+- Progress tracking
+- Logging and statistics
+- Resource management (disk space, locking)
+
+**Key Features**:
+- Thread-safe logging with atomic locks
+- Parallel processing with worker pools
+- Timeout protection (configurable)
+- Output filename collision resolution
+- Magic number validation (file type verification)
+- Graceful degradation when tools missing
+
+**Usage** (direct script invocation):
+```bash
+bash .claude/lib/convert-docs.sh ~/docs ~/output
+bash .claude/lib/convert-docs.sh ~/docs ~/output --parallel 4
+bash .claude/lib/convert-docs.sh --detect-tools
+```
+
+### Layer 2: doc-converter Agent
+
+AI-powered conversion orchestrator when agent mode enabled
+
+**Responsibilities** (5-Phase Workflow):
+1. **Tool Detection Phase**: Report tool versions and availability
+2. **Tool Selection Phase**: Explain tool choice with quality indicators
+3. **Conversion Phase**: Execute conversions with detailed logging
+4. **Verification Phase**: Validate output and structure
+5. **Summary Phase**: Generate comprehensive statistics
+
+**Agent Definition**: `/home/benjamin/.config/.claude/agents/doc-converter.md`
+
+**Allowed Tools**: Read, Grep, Glob, Bash, Write
+
+**When Invoked**:
+- User includes `--use-agent` flag
+- User includes orchestration keywords in request
+- Quality-critical conversions requiring audit trails
 
 ## Troubleshooting
 
-### Conversion Fails
+### Common Issues
 
-If a conversion fails:
-- Check that input files are valid DOCX or PDF files (not corrupted)
-- Ensure you have write permissions in the output directory
-- Try converting a single file to isolate the problem
+#### No Tools Available
 
-### Poor Quality Output
+**Symptom**: "No converter available" error
 
-If converted Markdown has issues:
-- For DOCX: Check if the Word document uses custom styles or complex formatting
-- For PDF: Scanned PDFs may need higher quality scans for better OCR
-- Complex tables may need manual review and adjustment
+**Solution**: Install conversion tools:
+```bash
+# Minimum setup (handles everything)
+pip install --user 'markitdown[all]'
 
-### Missing Images
+# Add fallback tools
+pip install --user pymupdf4llm
+sudo apt install pandoc  # or system package manager
+```
 
-If images don't appear:
-- Check the `media/` subdirectory in the output location
-- Verify image links in the Markdown file point to the correct location
-- Some embedded images may not extract if they're in unsupported formats
+#### Conversion Fails
 
-## Next Steps
+**Symptom**: Individual files fail to convert
 
-After converting your documents:
+**Possible Causes**:
+1. Corrupted source file
+2. Password-protected PDF
+3. Unsupported file format
+4. Permission denied
 
-1. **Review converted files** for accuracy
-2. **Adjust links** if you move files to different directories
-3. **Commit to version control** to track documentation changes
-4. **Update cross-references** between documents if needed
+**Debugging**:
+```bash
+# Check file validity
+file document.pdf
+file document.docx
 
-For questions or issues with the `/convert-docs` command, consult your Claude Code documentation or the tool repositories linked above.
+# Try with agent mode for detailed logging
+/convert-docs ./problem-file ./output --use-agent
+```
+
+Check `conversion.log` for specific error messages.
+
+#### Poor Quality Output
+
+**Symptom**: Converted Markdown has issues
+
+**For DOCX**:
+- Check: Does source use custom styles?
+- Try: Use standard Word heading styles
+- Fallback: Pandoc may handle differently
+
+**For PDF**:
+- Check: Is PDF text-based or scanned?
+- Try: PyMuPDF4LLM backup for simple PDFs
+- Limitation: Complex layouts need manual review
+
+**For Markdown → DOCX/PDF**:
+- Check: Does Markdown use standard syntax?
+- Avoid: Custom HTML blocks
+- Use: CommonMark or GitHub Flavored Markdown
+
+#### Missing Images
+
+**Symptom**: Images don't appear in converted Markdown
+
+**Check**:
+1. Look in `images/` subdirectory of output directory
+2. Verify image links in Markdown point to correct paths
+3. Ensure source file actually has embedded images
+
+**For Markdown → DOCX/PDF**:
+- Use relative image paths: `./images/diagram.png`
+- Ensure images exist at those paths
+- Pandoc automatically embeds relative images
+
+#### Timeout Errors
+
+**Symptom**: Conversion times out on large files
+
+**Solutions**:
+```bash
+# Increase timeout multiplier
+TIMEOUT_MULTIPLIER=3.0 /convert-docs ./docs ./output
+
+# Use parallel processing (may help with batch)
+/convert-docs ./docs ./output --parallel 4
+
+# Process individually
+/convert-docs ./single-large-file ./output
+```
+
+#### Lock File Error
+
+**Symptom**: "Another conversion is already running"
+
+**Check**:
+```bash
+# See if conversion actually running
+ps aux | grep convert-docs
+
+# If no process, remove stale lock
+rm <output-directory>/.convert-docs.lock
+```
+
+### Getting Help
+
+#### Verbose Output
+
+Use agent mode for detailed diagnostics:
+
+```bash
+/convert-docs ./problem-files ./output with detailed logging
+```
+
+Reviews:
+- Exact tool versions
+- Tool selection reasoning
+- Per-file conversion attempts
+- Validation results
+- Quality warnings
+
+#### Check Tool Availability
+
+Verify all tools installed:
+
+```bash
+/convert-docs --detect-tools
+```
+
+Shows which tools are available and which are missing.
+
+#### Dry Run Analysis
+
+Preview conversion without executing:
+
+```bash
+/convert-docs ./documents --dry-run
+```
+
+Shows:
+- Files that would be converted
+- File counts by type
+- Conversion direction
+- No actual conversion
+
+## Best Practices
+
+### For Best Results
+
+**1. Use Standard Formatting**:
+- DOCX: Use built-in heading styles
+- PDF: Prefer text-based over scanned
+- Markdown: Stick to CommonMark syntax
+
+**2. Test First**:
+- Convert a few sample files
+- Verify quality meets needs
+- Adjust workflow as needed
+
+**3. Keep Originals**:
+- Source files never deleted
+- Can re-convert with different settings
+- Safe to experiment
+
+**4. Review Output**:
+- Spot-check converted files
+- Verify critical elements preserved
+- Manual cleanup if needed for complex documents
+
+**5. Use Appropriate Mode**:
+- Script mode: Fast batch conversions
+- Agent mode: Quality-critical, auditing, troubleshooting
+
+### Workflow Recommendations
+
+**Documentation Migration**:
+```bash
+# 1. Test sample
+/convert-docs ./sample-docs ./test-output
+
+# 2. Review quality
+ls -lh ./test-output
+cat ./test-output/sample.md
+
+# 3. Batch convert
+/convert-docs ./all-docs ./markdown-output --parallel 8
+
+# 4. Version control
+cd ./markdown-output
+git init
+git add .
+git commit -m "Initial markdown migration"
+```
+
+**Distribution Workflow**:
+```bash
+# 1. Create Markdown source
+nvim ./docs/user-guide.md
+
+# 2. Generate distributable formats
+/convert-docs ./docs/user-guide.md to pdf and docx
+
+# 3. Verify PDF quality
+xdg-open ./converted_output/user-guide.pdf
+
+# 4. Distribute
+cp ./converted_output/user-guide.* ~/shared/
+```
+
+## Navigation
+
+### Related Documentation
+- [Command Reference](../commands/convert-docs.md) - `/convert-docs` command specification
+- [Agent Definition](../agents/doc-converter.md) - `doc-converter` agent details
+- [Script Implementation](../lib/convert-docs.sh) - Core conversion engine
+
+### Tool Documentation
+- [MarkItDown](https://github.com/microsoft/markitdown) - Primary conversion tool
+- [Pandoc Manual](https://pandoc.org/MANUAL.html) - Universal document converter
+- [PyMuPDF4LLM](https://github.com/pymupdf/PyMuPDF) - Fast PDF library
+- [Typst](https://typst.app/) - Modern PDF generation
+
+### Parent Directory
+- [← Documentation Index](./README.md)

@@ -16,13 +16,13 @@ This directory provides:
 
 ```
 docs/
-├── agent-development-guide.md       Agent creation guide
-├── agent-integration-guide.md       Agent invocation patterns
+├── creating-agents.md       Agent creation guide
+├── using-agents.md       Agent invocation patterns
 ├── claude-md-section-schema.md      CLAUDE.md section format
 ├── command-standardization-checklist.md  Command quality checklist
 ├── command-standards-flow.md        Standards discovery flow
-├── standards-integration-examples.md     Standards usage examples
-├── standards-integration-pattern.md Standards application pattern
+├── standards-integration.md     Standards usage examples
+├── standards-integration.md Standards application pattern
 ├── tts-integration-guide.md         TTS system guide
 └── tts-message-examples.md          TTS message examples
 ```
@@ -31,7 +31,7 @@ docs/
 
 ### Agent Documentation
 
-#### agent-development-guide.md
+#### creating-agents.md
 **Purpose**: Complete guide for creating custom agents
 
 **Contents**:
@@ -48,7 +48,7 @@ docs/
 
 ---
 
-#### agent-integration-guide.md
+#### using-agents.md
 **Purpose**: Guide for invoking and coordinating agents
 
 **Contents**:
@@ -120,7 +120,7 @@ docs/
 
 ---
 
-#### standards-integration-pattern.md
+#### standards-integration.md
 **Purpose**: Pattern for applying standards in commands
 
 **Contents**:
@@ -137,7 +137,7 @@ docs/
 
 ---
 
-#### standards-integration-examples.md
+#### standards-integration.md
 **Purpose**: Real-world examples of standards usage
 
 **Contents**:
@@ -197,25 +197,25 @@ docs/
 Start with:
 1. [TTS Integration Guide](tts-integration-guide.md) - Set up notifications
 2. [Command Standards Flow](command-standards-flow.md) - Understand standards
-3. [Standards Integration Examples](standards-integration-examples.md) - Learn by example
+3. [Standards Integration Examples](standards-integration.md) - Learn by example
 
 ### For Command Developers
 Read:
 1. [Command Standardization Checklist](command-standardization-checklist.md) - Quality requirements
-2. [Standards Integration Pattern](standards-integration-pattern.md) - Implementation pattern
+2. [Standards Integration Pattern](standards-integration.md) - Implementation pattern
 3. [CLAUDE.md Section Schema](claude-md-section-schema.md) - Section format
 
 ### For Agent Developers
 Study:
-1. [Agent Development Guide](agent-development-guide.md) - Create agents
-2. [Agent Integration Guide](agent-integration-guide.md) - Use agents
+1. [Agent Development Guide](creating-agents.md) - Create agents
+2. [Agent Integration Guide](using-agents.md) - Use agents
 3. Examples in [../agents/](../agents/README.md) - Real implementations
 
 ### For Troubleshooting
 Consult:
 1. [TTS Integration Guide](tts-integration-guide.md) - TTS issues
 2. [Command Standards Flow](command-standards-flow.md) - Standards discovery
-3. [Agent Integration Guide](agent-integration-guide.md) - Agent problems
+3. [Agent Integration Guide](using-agents.md) - Agent problems
 
 ## Neovim Integration
 
@@ -331,8 +331,8 @@ Before committing:
 ## Navigation
 
 ### Integration Guides
-- [agent-development-guide.md](agent-development-guide.md) - Agent creation
-- [agent-integration-guide.md](agent-integration-guide.md) - Agent usage
+- [creating-agents.md](creating-agents.md) - Agent creation
+- [using-agents.md](using-agents.md) - Agent usage
 - [tts-integration-guide.md](tts-integration-guide.md) - TTS setup
 - [tts-message-examples.md](tts-message-examples.md) - TTS messages
 
@@ -340,8 +340,8 @@ Before committing:
 - [claude-md-section-schema.md](claude-md-section-schema.md) - Section schema
 - [command-standardization-checklist.md](command-standardization-checklist.md) - Quality checklist
 - [command-standards-flow.md](command-standards-flow.md) - Discovery flow
-- [standards-integration-examples.md](standards-integration-examples.md) - Examples
-- [standards-integration-pattern.md](standards-integration-pattern.md) - Pattern
+- [standards-integration.md](standards-integration.md) - Examples
+- [standards-integration.md](standards-integration.md) - Pattern
 
 ### Related
 - [← Parent Directory](../README.md)
@@ -365,7 +365,7 @@ nvim .claude/tts/tts-config.sh
 ```
 
 ### Create Agent
-See: [agent-development-guide.md](agent-development-guide.md)
+See: [creating-agents.md](creating-agents.md)
 
 ```markdown
 ---
@@ -395,7 +395,7 @@ command-type: primary
 ```
 
 ### Use Standards
-See: [standards-integration-pattern.md](standards-integration-pattern.md)
+See: [standards-integration.md](standards-integration.md)
 
 ```markdown
 ## Standards Discovery
@@ -414,8 +414,8 @@ See: [standards-integration-pattern.md](standards-integration-pattern.md)
 - [../hooks/tts-dispatcher.sh](../hooks/tts-dispatcher.sh)
 
 ### Agents
-- [agent-development-guide.md](agent-development-guide.md)
-- [agent-integration-guide.md](agent-integration-guide.md)
+- [creating-agents.md](creating-agents.md)
+- [using-agents.md](using-agents.md)
 - [../agents/README.md](../agents/README.md)
 
 ### Commands
@@ -425,6 +425,6 @@ See: [standards-integration-pattern.md](standards-integration-pattern.md)
 
 ### Standards
 - [claude-md-section-schema.md](claude-md-section-schema.md)
-- [standards-integration-pattern.md](standards-integration-pattern.md)
-- [standards-integration-examples.md](standards-integration-examples.md)
+- [standards-integration.md](standards-integration.md)
+- [standards-integration.md](standards-integration.md)
 - [/home/benjamin/.config/CLAUDE.md](../../CLAUDE.md)
