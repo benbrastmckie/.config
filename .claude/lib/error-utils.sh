@@ -678,6 +678,112 @@ escalate_to_user_parallel() {
   fi
 }
 
+# ==============================================================================
+# Orchestrate-Specific Error Contexts (Phase 1)
+# ==============================================================================
+
+# format_orchestrate_agent_failure: Format agent invocation failure for orchestrate
+# Usage: format_orchestrate_agent_failure <agent-type> <workflow-phase> <error-message> [checkpoint-path]
+# Returns: Formatted error report with context
+# Example: format_orchestrate_agent_failure "research-specialist" "research" "timeout" ".claude/checkpoints/orchestrate_*.json"
+format_orchestrate_agent_failure() {
+  local agent_type="${1:-unknown}"
+  local workflow_phase="${2:-unknown}"
+  local error_message="${3:-}"
+  local checkpoint_path="${4:-}"
+
+  cat <<EOF
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Agent Invocation Failure
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Workflow Context:
+- Phase: $workflow_phase
+- Agent Type: $agent_type
+- Error: $error_message
+
+$(if [ -n "$checkpoint_path" ] && [ -f "$checkpoint_path" ]; then
+  echo "Resume Command:"
+  local workflow_type=$(jq -r '.workflow_type // "orchestrate"' "$checkpoint_path")
+  local workflow_desc=$(jq -r '.workflow_description // ""' "$checkpoint_path")
+  echo "  /orchestrate \"$workflow_desc\" --resume"
+fi)
+
+Recovery Options:
+1. Retry agent invocation (automatic retry with backoff already attempted)
+2. Skip this agent and proceed with available results
+3. Manual intervention: investigate logs and checkpoint state
+4. Abort workflow and resolve underlying issue
+
+Troubleshooting:
+- Check agent registry: .claude/lib/agent-registry-utils.sh
+- Review logs: .claude/logs/adaptive-planning.log
+- Inspect checkpoint: $(if [ -n "$checkpoint_path" ]; then echo "$checkpoint_path"; else echo "Not saved"; fi)
+EOF
+}
+
+# format_orchestrate_test_failure: Format test failure in orchestrate workflow
+# Usage: format_orchestrate_test_failure <workflow-phase> <test-output> <checkpoint-path>
+# Returns: Formatted error report with workflow context
+# Example: format_orchestrate_test_failure "implementation" "Test failed: foo" ".claude/checkpoints/orchestrate_*.json"
+format_orchestrate_test_failure() {
+  local workflow_phase="${1:-unknown}"
+  local test_output="${2:-}"
+  local checkpoint_path="${3:-}"
+
+  # Detect error type from test output
+  local error_type=$(detect_error_type "$test_output")
+  local location=$(extract_location "$test_output")
+
+  cat <<EOF
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Test Failure in Orchestrate Workflow
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Workflow Context:
+- Phase: $workflow_phase
+- Error Type: $error_type
+$(if [ -n "$location" ]; then echo "- Location: $location"; fi)
+
+Test Output:
+$(echo "$test_output" | head -20)
+
+$(generate_suggestions "$error_type" "$test_output" "$location")
+
+$(if [ -n "$checkpoint_path" ] && [ -f "$checkpoint_path" ]; then
+  echo "Resume After Fix:"
+  local workflow_desc=$(jq -r '.workflow_description // ""' "$checkpoint_path")
+  echo "  /orchestrate \"$workflow_desc\" --resume"
+fi)
+
+Debug Options:
+1. Invoke /debug for detailed analysis
+2. Review implementation phase output
+3. Check test configuration and setup
+4. Manually fix and retry phase
+EOF
+}
+
+# format_orchestrate_phase_context: Add workflow phase context to any error
+# Usage: format_orchestrate_phase_context <base-error> <phase> <agent-type> [params]
+# Returns: Error with orchestrate context prepended
+# Example: format_orchestrate_phase_context "Connection timeout" "planning" "plan-architect" "retries:3"
+format_orchestrate_phase_context() {
+  local base_error="${1:-}"
+  local phase="${2:-unknown}"
+  local agent_type="${3:-}"
+  local params="${4:-}"
+
+  cat <<EOF
+[Orchestrate Workflow Error]
+Phase: $phase
+$(if [ -n "$agent_type" ]; then echo "Agent: $agent_type"; fi)
+$(if [ -n "$params" ]; then echo "Parameters: $params"; fi)
+
+Error: $base_error
+EOF
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f classify_error
@@ -697,4 +803,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f retry_with_fallback
   export -f handle_partial_failure
   export -f escalate_to_user_parallel
+  export -f format_orchestrate_agent_failure
+  export -f format_orchestrate_test_failure
+  export -f format_orchestrate_phase_context
 fi
