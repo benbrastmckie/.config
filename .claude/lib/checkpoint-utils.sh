@@ -13,7 +13,7 @@ source "$SCRIPT_DIR/detect-project-dir.sh"
 # ==============================================================================
 
 # Schema version for checkpoint format
-readonly CHECKPOINT_SCHEMA_VERSION="1.1"
+readonly CHECKPOINT_SCHEMA_VERSION="1.2"
 
 # Checkpoint directory
 readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/checkpoints"
@@ -107,7 +107,10 @@ save_checkpoint() {
         replanning_count: ($state.replanning_count // 0),
         last_replan_reason: ($state.last_replan_reason // null),
         replan_phase_counts: ($state.replan_phase_counts // {}),
-        replan_history: ($state.replan_history // [])
+        replan_history: ($state.replan_history // []),
+        debug_report_path: ($state.debug_report_path // null),
+        user_last_choice: ($state.user_last_choice // null),
+        debug_iteration_count: ($state.debug_iteration_count // 0)
       }')
   else
     # Fallback: Basic JSON construction without jq
@@ -289,11 +292,25 @@ migrate_checkpoint_format() {
   # Migrate from 1.0 to 1.1 (add replanning fields)
   if [ "$current_version" = "1.0" ]; then
     jq '. + {
-      schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+      schema_version: "1.1",
       replanning_count: (.replanning_count // 0),
       last_replan_reason: (.last_replan_reason // null),
       replan_phase_counts: (.replan_phase_counts // {}),
       replan_history: (.replan_history // [])
+    }' "$checkpoint_file" > "${checkpoint_file}.migrated"
+
+    # Replace original with migrated version
+    mv "${checkpoint_file}.migrated" "$checkpoint_file"
+    current_version="1.1"
+  fi
+
+  # Migrate from 1.1 to 1.2 (add debug fields)
+  if [ "$current_version" = "1.1" ]; then
+    jq '. + {
+      schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+      debug_report_path: (.debug_report_path // null),
+      user_last_choice: (.user_last_choice // null),
+      debug_iteration_count: (.debug_iteration_count // 0)
     }' "$checkpoint_file" > "${checkpoint_file}.migrated"
 
     # Replace original with migrated version
