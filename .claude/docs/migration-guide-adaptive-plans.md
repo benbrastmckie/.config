@@ -373,15 +373,15 @@ After completing migrations:
 ## Implementation Plans
 
 See adaptive plan structures:
-- [Dashboard](specs/plans/015_dashboard/) - Tier 2
-- [Refactor](specs/plans/020_refactor/) - Tier 3
+- Dashboard (specs/plans/015_dashboard/) - example - Tier 2
+- Refactor (specs/plans/020_refactor/) - example - Tier 3
 ```
 
 2. **Update README files** (if plans linked):
 ```markdown
 Current plans:
-- [015_dashboard](specs/plans/015_dashboard/015_dashboard.md) [T2]
-- [020_refactor](specs/plans/020_refactor/020_refactor.md) [T3]
+- 015_dashboard.md (example) [T2]
+- 020_refactor.md (example) [T3]
 ```
 
 ### Update Team

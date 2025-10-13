@@ -457,6 +457,6 @@ When reporting issues, include:
 ### Contact and Resources
 
 - GitHub Issues: (project repository)
-- Documentation: `specs/parallel_execution_architecture.md`
+- Documentation: `specs/orchestration-guide.md`
 - Test Suites: `.claude/tests/test_parallel_*.sh`
 - Utility Functions: `.claude/lib/auto-analysis-utils.sh`

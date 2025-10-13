@@ -803,8 +803,8 @@ Proceed with these operations? (y/n):
 
 ## Related Documentation
 
-- [/orchestrate Command](.claude/commands/orchestrate.md) - Full command documentation
-- [/expand Command](.claude/commands/expand.md) - Phase expansion details
-- [/collapse Command](.claude/commands/collapse.md) - Phase collapse details
+- [/orchestrate Command](../commands/orchestrate.md) - Full command documentation
+- [/expand Command](../commands/expand.md) - Phase expansion details
+- [/collapse Command](../commands/collapse.md) - Phase collapse details
 - [Agent Development Guide](creating-agents.md) - Creating specialized agents
 - [Adaptive Planning Guide](adaptive-planning-guide.md) - Progressive plan structures

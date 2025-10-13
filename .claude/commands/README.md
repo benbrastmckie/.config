@@ -6,6 +6,23 @@ Custom slash command definitions for Claude Code. Each command extends Claude's 
 
 ## Recent Changes
 
+### Orchestration Enhancement (2025-10-12)
+Complete multi-agent workflow coordination with enhanced capabilities:
+
+**/orchestrate**:
+- Research phase creates persistent report files in `specs/reports/{topic}/`
+- Debug loop creates persistent debug reports in `debug/{topic}/`
+- Planning phase cross-references research reports automatically
+- Documentation phase generates comprehensive workflow summaries
+- Complete artifact traceability from research through implementation
+
+**Integration Benefits**:
+- Agents create files directly (no inline summaries)
+- Topic-based organization for better discoverability
+- Clear separation: specs/ (gitignored) vs debug/ (tracked)
+- Full end-to-end workflow automation with proper documentation
+- Intelligent error recovery with persistent debugging artifacts
+
 ### Command Consolidation (2025-10-10)
 
 **Deprecated Commands**:
@@ -15,15 +32,13 @@ Custom slash command definitions for Claude Code. Each command extends Claude's 
 about when to use which command. All update capabilities have been integrated into
 `/revise` for a single, clear command for all content modifications.
 
-**Migration**: See [Command Selection Guide](.claude/docs/command-selection-guide.md)
+**Migration**: See [Command Selection Guide](.claude/docs/creating-commands.md)
 
 ### Command Consolidation (2025-10-06)
 Consolidated redundant commands for a cleaner interface:
 - `/cleanup` → **Removed** (use `/setup --cleanup` instead)
 - `/validate-setup` → **Removed** (use `/setup --validate` instead)
 - `/analyze-agents` + `/analyze-patterns` → **Removed** (use `/analyze [type]` instead)
-
-**Migration**: See `.claude/docs/MIGRATION_GUIDE.md` for command replacements
 
 ### Shared Utilities Integration (2025-10-06)
 Commands now reference shared utility libraries in `.claude/lib/`:
@@ -170,13 +185,18 @@ Commands provide structured, repeatable workflows for:
 #### /orchestrate
 **Purpose**: Coordinate subagents through end-to-end development workflows
 
-**Usage**: `/orchestrate <workflow-description> [--parallel] [--sequential]`
+**Usage**: `/orchestrate <workflow-description> [--parallel] [--sequential] [--create-pr]`
 
 **Features**:
-- Multi-agent coordination
+- Multi-agent coordination with persistent artifacts
+- Research phase creates report files in `specs/reports/{topic}/`
+- Debug loop creates report files in `debug/{topic}/`
+- Planning phase cross-references research reports
+- Documentation phase with comprehensive summaries
 - Parallel or sequential execution
-- Progress tracking
-- Error handling and recovery
+- Progress tracking with TodoWrite
+- Intelligent error recovery with debugging loop
+- Optional PR creation on completion
 
 ---
 
@@ -323,7 +343,7 @@ See `.claude/templates/example-feature.yaml` for template structure.
 - Better features (auto-mode, research integration, structure recommendations)
 - Single command for all content modifications
 
-**See**: [Command Selection Guide](../docs/command-selection-guide.md) for migration examples
+**See**: [Command Selection Guide](../docs/creating-commands.md) for migration examples
 
 ---
 

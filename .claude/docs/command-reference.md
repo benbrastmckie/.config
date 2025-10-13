@@ -425,7 +425,7 @@ This reference provides quick access to all available commands with their purpos
 
 **Reason**: Consolidated into `/revise` to reduce command overlap and confusion
 
-**See**: [update.md](../commands/update.md), [Command Selection Guide](command-selection-guide.md)
+**See**: [update.md](../commands/update.md), [Command Selection Guide](creating-commands.md)
 
 ---
 
@@ -520,7 +520,7 @@ Code quality analysis:
 - **[Creating Commands](creating-commands.md)** - Comprehensive guide for developing commands
 - **[Command Patterns](command-patterns.md)** - Reusable implementation patterns
 - **[Agent Reference](agent-reference.md)** - Quick agent reference (Phase 4)
-- **[Command Selection Guide](command-selection-guide.md)** - Decision tree for choosing commands
+- **[Command Selection Guide](creating-commands.md)** - Decision tree for choosing commands
 - **[Commands README](../commands/README.md)** - Complete command documentation
 
 ---

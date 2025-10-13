@@ -584,7 +584,7 @@ specs/plans/002_auth/
 
 ## Troubleshooting
 
-For common issues and solutions, see: [Troubleshooting Guide](troubleshooting_parallel_operations.md)
+For common issues and solutions, see: [Troubleshooting Guide](orchestration-guide.md)
 
 **Quick Fixes:**
 
@@ -636,6 +636,6 @@ For common issues and solutions, see: [Troubleshooting Guide](troubleshooting_pa
 ## Feedback and Support
 
 For questions, issues, or suggestions:
-- Documentation: `specs/parallel_execution_architecture.md`
-- Troubleshooting: `specs/troubleshooting_parallel_operations.md`
+- Documentation: `specs/orchestration-guide.md`
+- Troubleshooting: `specs/orchestration-guide.md`
 - Test Examples: `.claude/tests/test_parallel_*.sh`

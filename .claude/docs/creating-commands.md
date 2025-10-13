@@ -1484,7 +1484,6 @@ Return to user:
 ---
 
 **Notes**:
-- This guide consolidates command-standardization-checklist.md, command-standards-flow.md, and command-selection-guide.md
 - For specific implementation patterns, always reference command-patterns.md rather than duplicating
 - Follow the Development Philosophy: present-focused documentation, no historical markers
 - Use Unicode box-drawing for diagrams, no emojis in content

@@ -43,7 +43,7 @@ For plan/report modifications, use:
 - **Structural changes** (extract phase to file): `/expand`
 - **Structural simplification** (merge phase back): `/collapse`
 
-See [Command Selection Guide](../docs/command-selection-guide.md) for detailed decision tree.
+See [Command Selection Guide](../docs/creating-commands.md) for detailed decision tree.
 
 ---
 
@@ -66,7 +66,7 @@ For reports:
   OLD: /update report <path> "sections"
   NEW: /revise "Update sections: <details>" <path>
 
-See: .claude/docs/command-selection-guide.md
+See: .claude/docs/creating-commands.md
 
 This warning will appear for 30 days. /update will remain functional
 but is no longer maintained. Please migrate to /revise.

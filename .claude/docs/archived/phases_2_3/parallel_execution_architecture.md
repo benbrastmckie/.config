@@ -557,4 +557,4 @@ Final Optimized Structure
 
 ## Troubleshooting
 
-See [Troubleshooting Guide](troubleshooting_parallel_operations.md) for common issues and solutions.
+See [Troubleshooting Guide](orchestration-guide.md) for common issues and solutions.

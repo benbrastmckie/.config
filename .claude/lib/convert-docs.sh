@@ -23,13 +23,9 @@
 #
 # Tool Priority Matrix:
 #   DOCX → MD: MarkItDown (75-80% fidelity) → Pandoc (68% fidelity)
-#   PDF → MD:  marker_pdf (95% fidelity) → PyMuPDF4LLM (55% fidelity, fast)
+#   PDF → MD:  MarkItDown (primary) → PyMuPDF4LLM (backup, fast)
 #   MD → DOCX: Pandoc (95%+ quality)
 #   MD → PDF:  Pandoc with Typst → XeLaTeX fallback
-#
-# Environment Variables:
-#   MARKER_PDF_VENV - Path to marker_pdf virtual environment
-#                     (default: $HOME/venvs/pdf-tools)
 #
 # Exit Codes:
 #   0 - Success (all conversions completed)
@@ -37,9 +33,6 @@
 #
 
 set -eu
-
-# Configuration
-MARKER_PDF_VENV="${MARKER_PDF_VENV:-$HOME/venvs/pdf-tools}"
 
 # Timeout configuration (seconds)
 TIMEOUT_DOCX_TO_MD=60
@@ -57,8 +50,6 @@ MIN_FREE_SPACE_MB=100  # Minimum free space required (MB)
 # Tool availability flags
 MARKITDOWN_AVAILABLE=false
 PANDOC_AVAILABLE=false
-MARKER_PDF_AVAILABLE=false
-MARKER_PDF_PATH=""
 PYMUPDF_AVAILABLE=false
 TYPST_AVAILABLE=false
 XELATEX_AVAILABLE=false
@@ -86,8 +77,8 @@ LOG_FILE=""
 # detect_tools - Check for available conversion tools
 #
 # Sets global flags for tool availability:
-#   MARKITDOWN_AVAILABLE, PANDOC_AVAILABLE, MARKER_PDF_AVAILABLE,
-#   PYMUPDF_AVAILABLE, TYPST_AVAILABLE, XELATEX_AVAILABLE
+#   MARKITDOWN_AVAILABLE, PANDOC_AVAILABLE, PYMUPDF_AVAILABLE,
+#   TYPST_AVAILABLE, XELATEX_AVAILABLE
 #
 detect_tools() {
   # MarkItDown
@@ -98,15 +89,6 @@ detect_tools() {
   # Pandoc
   if command -v pandoc &>/dev/null; then
     PANDOC_AVAILABLE=true
-  fi
-
-  # marker_pdf (check PATH first, then venv)
-  if command -v marker_single &>/dev/null; then
-    MARKER_PDF_AVAILABLE=true
-    MARKER_PDF_PATH="marker_single"
-  elif [[ -f "$MARKER_PDF_VENV/bin/marker_single" ]]; then
-    MARKER_PDF_AVAILABLE=true
-    MARKER_PDF_PATH="$MARKER_PDF_VENV/bin/marker_single"
   fi
 
   # PyMuPDF4LLM
@@ -183,11 +165,11 @@ select_docx_tool() {
 #
 # select_pdf_tool - Select best available PDF converter
 #
-# Returns: Tool name ("marker_pdf", "pymupdf", or "none")
+# Returns: Tool name ("markitdown", "pymupdf", or "none")
 #
 select_pdf_tool() {
-  if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-    echo "marker_pdf"
+  if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
+    echo "markitdown"
   elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
     echo "pymupdf"
   else
@@ -737,26 +719,19 @@ show_tool_detection() {
   echo "Document Conversion Tools Detection"
   echo "===================================="
   echo ""
-  echo "DOCX Conversion:"
+  echo "Document Conversion (DOCX/PDF → Markdown):"
   if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
-    echo "  ✓ MarkItDown (primary, 75-80% fidelity)"
+    echo "  ✓ MarkItDown (primary, 75-80% fidelity for DOCX and PDF)"
   else
     echo "  ✗ MarkItDown not found"
   fi
   if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
-    echo "  ✓ Pandoc (fallback, 68% fidelity)"
+    echo "  ✓ Pandoc (fallback for DOCX, 68% fidelity)"
   else
     echo "  ✗ Pandoc not found"
   fi
-  echo ""
-  echo "PDF Conversion:"
-  if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-    echo "  ✓ marker_pdf (primary, 95% fidelity) at: $MARKER_PDF_PATH"
-  else
-    echo "  ✗ marker_pdf not found"
-  fi
   if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
-    echo "  ✓ PyMuPDF4LLM (fallback, 55% fidelity, fast)"
+    echo "  ✓ PyMuPDF4LLM (backup for PDF, fast)"
   else
     echo "  ✗ PyMuPDF4LLM not found"
   fi
@@ -985,7 +960,7 @@ convert_docx_pandoc() {
 }
 
 #
-# convert_pdf_marker - Convert PDF to Markdown using marker_pdf
+# convert_pdf_markitdown - Convert PDF to Markdown using MarkItDown
 #
 # Arguments:
 #   $1 - Input PDF file path
@@ -993,11 +968,11 @@ convert_docx_pandoc() {
 #
 # Returns: 0 on success, 1 on failure
 #
-convert_pdf_marker() {
+convert_pdf_markitdown() {
   local input_file="$1"
   local output_file="$2"
 
-  with_timeout "$TIMEOUT_PDF_TO_MD" "$MARKER_PDF_PATH" "$input_file" "$output_file" --output_format markdown 2>/dev/null
+  with_timeout "$TIMEOUT_PDF_TO_MD" bash -c "markitdown '$input_file' > '$output_file' 2>/dev/null"
   return $?
 }
 
@@ -1159,15 +1134,27 @@ convert_file() {
       # Check for output filename collision and resolve if necessary
       output_file="$(check_output_collision "$output_file")"
 
-      # Try marker_pdf first
-      if [[ "$MARKER_PDF_AVAILABLE" == "true" ]]; then
-        echo "  Converting: $basename (marker_pdf)"
-        if convert_pdf_marker "$input_file" "$output_file"; then
-          tool_used="marker_pdf"
+      # Try MarkItDown first
+      if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (MarkItDown)"
+        convert_pdf_markitdown "$input_file" "$output_file"
+        local exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
+          tool_used="markitdown"
           conversion_success=true
           pdf_success=$((pdf_success + 1))
+        elif [[ $exit_code -eq 124 ]]; then
+          echo "    MarkItDown timed out (${TIMEOUT_PDF_TO_MD}s), trying PyMuPDF4LLM fallback..."
+          # Fall back to PyMuPDF4LLM
+          if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
+            if convert_pdf_pymupdf "$input_file" "$output_file"; then
+              tool_used="pymupdf4llm"
+              conversion_success=true
+              pdf_success=$((pdf_success + 1))
+            fi
+          fi
         else
-          echo "    marker_pdf failed, trying PyMuPDF4LLM fallback..."
+          echo "    MarkItDown failed, trying PyMuPDF4LLM fallback..."
           # Fall back to PyMuPDF4LLM
           if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
             if convert_pdf_pymupdf "$input_file" "$output_file"; then
@@ -1177,7 +1164,7 @@ convert_file() {
             fi
           fi
         fi
-      # Try PyMuPDF4LLM if marker_pdf unavailable
+      # Try PyMuPDF4LLM if MarkItDown unavailable
       elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
         echo "  Converting: $basename (PyMuPDF4LLM)"
         if convert_pdf_pymupdf "$input_file" "$output_file"; then
@@ -1403,20 +1390,12 @@ show_missing_tools() {
   echo "===================="
   echo ""
 
-  # Check DOCX converters
-  if [[ "$MARKITDOWN_AVAILABLE" == "false" ]] && [[ "$PANDOC_AVAILABLE" == "false" ]]; then
-    echo "⚠ DOCX→MD Conversion: No tools available"
-    echo "  Install MarkItDown: pip install --user 'markitdown[all]'"
-    echo "  Or install Pandoc: Use your system package manager"
-    echo ""
-    has_missing=true
-  fi
-
-  # Check PDF converters
-  if [[ "$MARKER_PDF_AVAILABLE" == "false" ]] && [[ "$PYMUPDF_AVAILABLE" == "false" ]]; then
-    echo "⚠ PDF→MD Conversion: No tools available"
-    echo "  Install marker_pdf: Complex setup (venv recommended)"
-    echo "  Or install PyMuPDF4LLM: pip install --user pymupdf4llm"
+  # Check document converters
+  if [[ "$MARKITDOWN_AVAILABLE" == "false" ]] && [[ "$PANDOC_AVAILABLE" == "false" ]] && [[ "$PYMUPDF_AVAILABLE" == "false" ]]; then
+    echo "⚠ Document→MD Conversion: No tools available"
+    echo "  Install MarkItDown: pip install --user 'markitdown[all]' (recommended, handles DOCX and PDF)"
+    echo "  Or install Pandoc: Use your system package manager (DOCX only)"
+    echo "  Or install PyMuPDF4LLM: pip install --user pymupdf4llm (PDF only, fast)"
     echo ""
     has_missing=true
   fi

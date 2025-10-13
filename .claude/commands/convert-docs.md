@@ -87,8 +87,8 @@ Both modes use the same intelligent tool priority:
 2. **Pandoc** (fallback) - 68% fidelity
 
 ### PDF to Markdown
-1. **marker-pdf** (primary) - 95% fidelity, best quality
-2. **PyMuPDF4LLM** (fallback) - 55% fidelity, fast
+1. **MarkItDown** (primary) - Handles most PDF formats well
+2. **PyMuPDF4LLM** (backup) - Fast, lightweight alternative
 
 ### Markdown to DOCX/PDF
 - **Pandoc** - 95%+ quality with Typst or XeLaTeX engines
@@ -111,11 +111,11 @@ output_directory/
 
 ### Script Mode Workflow
 
-1. **Detect Tools** - Find available converters (MarkItDown, Pandoc, marker-pdf, PyMuPDF4LLM)
+1. **Detect Tools** - Find available converters (MarkItDown, Pandoc, PyMuPDF4LLM)
 2. **Discover Files** - Find DOCX, PDF, or MD files; auto-detect conversion direction
 3. **Convert Files** - Process each file with progress indicators [N/Total]
-   - Use primary tool (MarkItDown for DOCX, marker-pdf for PDF)
-   - On failure: automatically retry with fallback tool (Pandoc, PyMuPDF4LLM)
+   - Use primary tool (MarkItDown for DOCX and PDF)
+   - On failure: automatically retry with fallback tool (Pandoc for DOCX, PyMuPDF4LLM for PDF)
    - Log success/failure for each file
 4. **Validate** - Check output file sizes and structure
 5. **Report** - Display conversion statistics and any failures
@@ -203,10 +203,9 @@ Task {
 ## Installation Guidance
 
 If tools are missing:
-- **MarkItDown**: `pip install --user 'markitdown[all]'`
+- **MarkItDown**: `pip install --user 'markitdown[all]'` (recommended, handles both DOCX and PDF)
 - **Pandoc**: Use system package manager (apt, brew, pacman, etc.)
-- **marker-pdf**: Complex setup (venv recommended at `~/venvs/pdf-tools`)
-- **PyMuPDF4LLM**: `pip install --user pymupdf4llm`
+- **PyMuPDF4LLM**: `pip install --user pymupdf4llm` (lightweight PDF backup)
 - **Typst**: System package manager
 - **XeLaTeX**: Install texlive package
 

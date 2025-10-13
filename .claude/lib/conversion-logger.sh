@@ -115,7 +115,7 @@ log_conversion_start() {
 # Arguments:
 #   $1 - Input file path
 #   $2 - Output file path
-#   $3 - Tool used (markitdown, pandoc, marker_pdf, pymupdf4llm)
+#   $3 - Tool used (markitdown, pandoc, pymupdf4llm)
 #   $4 - Duration in milliseconds (optional)
 #
 log_conversion_success() {

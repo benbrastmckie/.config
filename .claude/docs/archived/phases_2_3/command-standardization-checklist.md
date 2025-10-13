@@ -189,8 +189,8 @@ grep -l "Integration with Other Commands" .claude/commands/*.md | wc -l
 
 ## References
 
-- [Standards Integration Pattern](standards-integration-pattern.md) - Template
-- [Command Standards Flow](command-standards-flow.md) - Workflow diagram
+- [Standards Integration Pattern](standards-integration.md) - Template
+- [Command Standards Flow](creating-commands.md) - Workflow diagram
 - [Research Report 033](../specs/reports/033_slash_command_standards_integration_analysis.md) - Original analysis
 
 ## Notes
