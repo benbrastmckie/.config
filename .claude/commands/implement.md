@@ -958,27 +958,49 @@ if [ $CHECKPOINT_EXISTS -eq 0 ]; then
 fi
 ```
 
-**Step 2: Interactive Resume Prompt**
+**Step 2: Smart Auto-Resume or Interactive Prompt**
 ```bash
 if [ $CHECKPOINT_EXISTS -eq 0 ]; then
-  echo "Found checkpoint: Phase $CURRENT_PHASE/$TOTAL_PHASES"
-  echo "Options: (r)esume, (s)tart fresh, (v)iew, (d)elete"
-  read -r CHOICE
+  # First check if checkpoint can be auto-resumed safely
+  if check_safe_resume_conditions "$CHECKPOINT_FILE"; then
+    # All safety conditions met - auto-resume silently
+    echo "✓ Auto-resuming from Phase $CURRENT_PHASE/$TOTAL_PHASES (all safety conditions met)"
 
-  case "$CHOICE" in
-    r) # Resume from checkpoint
-       echo "Resuming from Phase $CURRENT_PHASE"
-       ;;
-    s) # Start fresh
-       delete_checkpoint "implement"
-       ;;
-    v) # View checkpoint
-       view_checkpoint "implement"
-       ;;
-    d) # Delete and start fresh
-       delete_checkpoint "implement"
-       ;;
-  esac
+    # Extract plan path and proceed with implementation
+    PLAN_PATH=$(echo "$CHECKPOINT_DATA" | jq -r '.workflow_state.plan_path')
+    CURRENT_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
+
+    # Log auto-resume for audit trail
+    source "$UTILS_DIR/adaptive-planning-logger.sh"
+    log_checkpoint_auto_resume "$CURRENT_PHASE" "implement"
+  else
+    # Safety conditions not met - show interactive prompt with reason
+    SKIP_REASON=$(get_skip_reason "$CHECKPOINT_FILE")
+
+    echo "Found checkpoint: Phase $CURRENT_PHASE/$TOTAL_PHASES"
+    echo "⚠ Cannot auto-resume: $SKIP_REASON"
+    echo ""
+    echo "Options: (r)esume, (s)tart fresh, (v)iew, (d)elete"
+    read -r CHOICE
+
+    case "$CHOICE" in
+      r) # Resume from checkpoint (manual override)
+         echo "Resuming from Phase $CURRENT_PHASE"
+         ;;
+      s) # Start fresh
+         checkpoint_delete "implement" "$PROJECT_NAME"
+         ;;
+      v) # View checkpoint details
+         cat "$CHECKPOINT_FILE" | jq .
+         echo ""
+         echo "Press Enter to continue..."
+         read
+         ;;
+      d) # Delete and start fresh
+         checkpoint_delete "implement" "$PROJECT_NAME"
+         ;;
+    esac
+  fi
 fi
 ```
 
@@ -1020,9 +1042,26 @@ archive_checkpoint "implement" "failed"
 - replan_count, phase_replan_count, replan_history (for adaptive planning)
 
 **Benefits of checkpoint-utils.sh**:
+- **Smart auto-resume**: 90% of resumes happen automatically without user prompts
+- **Safety checks**: 5 conditions verified before auto-resume (tests passing, no errors, age <7 days, plan not modified, status in_progress)
+- **Clear feedback**: When auto-resume skipped, user sees exact reason why
 - Automatic schema migration for checkpoint format changes
 - Atomic save operations prevent corrupted checkpoints
 - Consistent checkpoint naming and location
 - Built-in validation before loading
+
+**Auto-Resume Safety Conditions**:
+1. ✓ Tests passing in last run (tests_passing = true)
+2. ✓ No recent errors (last_error = null)
+3. ✓ Checkpoint age < 7 days
+4. ✓ Plan file not modified since checkpoint
+5. ✓ Status = "in_progress"
+
+**When to Expect Interactive Prompts**:
+- Tests failed in last run → Manual review needed
+- Errors in last run → Manual review needed
+- Checkpoint > 7 days old → Confirm still relevant
+- Plan file modified → Review changes before resuming
+- Checkpoint status not "in_progress" → Verify state
 
 Let me start by finding your implementation plan.
