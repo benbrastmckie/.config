@@ -60,7 +60,9 @@ Transform a brief 30-50 line phase outline into a detailed 300-500+ line impleme
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
-source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
 
 # Check if plan is a file or directory
 if [[ -d "$plan_path" ]]; then
@@ -292,7 +294,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Source utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-adaptive-plan.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
 
 # Validate plan path

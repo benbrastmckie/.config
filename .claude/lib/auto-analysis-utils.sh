@@ -7,7 +7,9 @@ set -euo pipefail
 
 # Source dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/parse-adaptive-plan.sh"
+source "$SCRIPT_DIR/parse-plan-core.sh"
+source "$SCRIPT_DIR/plan-structure-utils.sh"
+source "$SCRIPT_DIR/plan-metadata-utils.sh"
 source "$SCRIPT_DIR/json-utils.sh" 2>/dev/null || true
 source "$SCRIPT_DIR/error-utils.sh" 2>/dev/null || true
 
