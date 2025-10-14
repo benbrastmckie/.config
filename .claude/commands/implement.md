@@ -33,7 +33,7 @@ This command includes intelligent plan revision capabilities that detect when re
 - **Checkpoint Management**: Uses `.claude/lib/checkpoint-utils.sh` for workflow state persistence
 - **Complexity Analysis**: Uses `.claude/lib/complexity-utils.sh` for phase complexity scoring
 - **Adaptive Logging**: Uses `.claude/lib/adaptive-planning-logger.sh` for trigger evaluation logging
-- **Error Handling**: Uses `.claude/lib/error-utils.sh` for error classification and recovery
+- **Error Handling**: Uses `.claude/lib/error-handling.sh` for error classification and recovery
 
 These shared utilities provide consistent, tested implementations across all commands.
 
@@ -181,7 +181,7 @@ Initialize required utilities for consistent error handling, state management, a
 2. **Verify core utilities**:
    ```bash
    UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
-   [ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/error-handling.sh" ] || { echo "ERROR: error-handling.sh not found"; exit 1; }
    [ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
    [ -f "$UTILS_DIR/complexity-utils.sh" ] || { echo "ERROR: complexity-utils.sh not found"; exit 1; }
    [ -f "$UTILS_DIR/adaptive-planning-logger.sh" ] || { echo "ERROR: adaptive-planning-logger.sh not found"; exit 1; }
@@ -209,7 +209,7 @@ source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Step 2 & 3: Source utilities and logger
 UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
-for util in error-utils.sh checkpoint-utils.sh complexity-utils.sh adaptive-planning-logger.sh agent-registry-utils.sh; do
+for util in error-handling.sh checkpoint-utils.sh complexity-utils.sh adaptive-planning-logger.sh agent-registry-utils.sh; do
   [ -f "$UTILS_DIR/$util" ] || { echo "ERROR: $util not found"; exit 1; }
 done
 source "$UTILS_DIR/adaptive-planning-logger.sh"
@@ -467,7 +467,7 @@ Run tests by:
 - **Tiered recovery**: 4 escalating levels of error handling
 
 **Quick Overview**:
-1. Classify error type and display suggestions (error-utils.sh)
+1. Classify error type and display suggestions (error-handling.sh)
 2. Retry transient errors (timeout, busy, locked) with extended timeout
 3. Retry tool access errors with reduced toolset fallback
 4. Auto-invoke /debug agent for root cause analysis
@@ -478,9 +478,9 @@ Run tests by:
 
 **Key Execution Requirements**:
 
-1. **Error classification** (uses error-utils.sh):
+1. **Error classification** (uses error-handling.sh):
    ```bash
-   source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+   source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
    ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")  # → syntax, test_failure, timeout, etc.
    SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
    ```
@@ -501,7 +501,7 @@ Run tests by:
 **Quick Example - Tiered Recovery**:
 ```bash
 # Level 1: Classify and suggest
-source "$UTILS_DIR/error-utils.sh"
+source "$UTILS_DIR/error-handling.sh"
 ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")  # → "syntax"
 echo "Error Type: $ERROR_TYPE"
 echo "$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT")"
@@ -691,7 +691,7 @@ This will start from the specified phase number.
 
 ### Test Failures
 
-When tests fail, use error-utils.sh for systematic error analysis and recovery:
+When tests fail, use error-handling.sh for systematic error analysis and recovery:
 
 **Step 1: Capture Error Output**
 ```bash
@@ -702,8 +702,8 @@ TEST_EXIT_CODE=$?
 
 **Step 2: Classify Error Type**
 ```bash
-# Use error-utils.sh to classify the error
-source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+# Use error-handling.sh to classify the error
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
 
 ERROR_TYPE=$(classify_error "$TEST_ERROR_OUTPUT")
 # Returns: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
@@ -717,7 +717,7 @@ SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$TEST_ERROR_OUTPUT")
 
 **Step 4: Format Error Report**
 ```bash
-# Use error-utils.sh to format a structured error report
+# Use error-handling.sh to format a structured error report
 ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$TEST_ERROR_OUTPUT" "$CURRENT_PHASE")
 echo "$ERROR_REPORT"
 ```

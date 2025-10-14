@@ -11,7 +11,7 @@ source "$SCRIPT_DIR/parse-plan-core.sh"
 source "$SCRIPT_DIR/plan-structure-utils.sh"
 source "$SCRIPT_DIR/plan-metadata-utils.sh"
 source "$SCRIPT_DIR/json-utils.sh" 2>/dev/null || true
-source "$SCRIPT_DIR/error-utils.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/error-handling.sh" 2>/dev/null || true
 
 # Source modular components
 source "$SCRIPT_DIR/agent-invocation.sh"

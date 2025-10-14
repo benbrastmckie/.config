@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test shared utility libraries
-# Tests: checkpoint-utils, error-utils, complexity-utils, artifact-operations
+# Tests: checkpoint-utils, error-handling, complexity-utils, artifact-operations
 
 set -euo pipefail
 
@@ -169,16 +169,16 @@ fi
 echo ""
 
 # ============================================================================
-# Test error-utils.sh
+# Test error-handling.sh
 # ============================================================================
 
-info "Testing error-utils.sh"
+info "Testing error-handling.sh"
 
 # Source the library
-if source "$LIB_DIR/error-utils.sh" 2>/dev/null; then
-  pass "error-utils.sh sourced successfully"
+if source "$LIB_DIR/error-handling.sh" 2>/dev/null; then
+  pass "error-handling.sh sourced successfully"
 else
-  fail "Failed to source error-utils.sh"
+  fail "Failed to source error-handling.sh"
 fi
 
 # Test classify_error
