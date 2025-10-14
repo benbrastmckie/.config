@@ -416,3716 +416,457 @@ performance_metrics:
 
 ### Research Phase (Parallel Execution)
 
-#### Step 1: Identify Research Topics
+The research phase coordinates multiple specialized agents to investigate different aspects of the workflow in parallel, then verifies all research outputs before proceeding.
 
-ANALYZE the workflow description to extract 2-4 focused research topics.
+**When to Use Research Phase**:
+- **Complex workflows** requiring investigation of existing patterns, best practices, alternatives, or constraints
+- **Medium+ complexity** (keywords: "implement", "add with research", "redesign", "architecture")
+- **Skip for simple tasks** (keywords: "fix", "update single file", "small change")
 
-**EXECUTE NOW**:
+**Quick Overview**:
+1. Analyze workflow complexity and determine thinking mode
+2. Identify 2-4 research topics based on complexity
+3. Launch research-specialist agents in parallel (single message, multiple Task calls)
+4. Monitor agent execution and collect report paths
+5. Verify reports exist at expected paths (with automatic path mismatch recovery)
+6. Save checkpoint with research outputs
 
-1. READ the user's workflow description from the /orchestrate invocation
-2. IDENTIFY key areas requiring investigation:
-   - Existing implementations in codebase
-   - Industry best practices and standards
-   - Alternative approaches and trade-offs
-   - Technical constraints and requirements
-3. EXTRACT 2-4 specific topics based on workflow complexity
-4. GENERATE topic titles for each research area
+**Pattern Details**: See [Orchestration Patterns - Research Phase](../templates/orchestration-patterns.md#research-phase-parallel-execution) for:
+- Complete step-by-step execution procedure (7 detailed steps)
+- Complexity score calculation algorithm
+- Thinking mode determination matrix
+- Absolute path calculation requirements
+- Parallel agent invocation patterns
+- Progress monitoring and PROGRESS: marker standards
+- Report verification and error recovery procedures
+- Checkpoint creation and state management
+- Full workflow example with timing metrics
 
-**Topic Categories** (use as guidance):
-- **existing_patterns**: Current codebase implementations and patterns
-- **best_practices**: Industry standards for the technology/approach
-- **alternatives**: Alternative implementations and their trade-offs
-- **constraints**: Technical limitations, requirements, security considerations
+**Key Execution Requirements**:
 
-**Complexity-Based Research Strategy**:
+1. **Complexity Analysis** (Step 1.5):
+   ```
+   score = keywords("implement"/"architecture") × 3
+         + keywords("add"/"improve") × 2
+         + keywords("security"/"breaking") × 4
+         + estimated_files / 5
+         + (research_topics - 1) × 2
+
+   Thinking Mode:
+   - 0-3: standard (no special mode)
+   - 4-6: "think" (moderate)
+   - 7-9: "think hard" (complex)
+   - 10+: "think harder" (critical)
+   ```
+
+2. **Parallel Agent Invocation** (Step 2.5):
+   - **CRITICAL**: Send ALL Task tool invocations in SINGLE message
+   - Use general-purpose subagent_type
+   - Reference research-specialist.md behavioral guidelines
+   - Include thinking mode in each agent prompt
+   - Provide ABSOLUTE report paths (not relative)
+
+3. **Report Verification** (Steps 4.5-4.6):
+   - Verify files exist at expected ABSOLUTE paths
+   - Detect path mismatches (file created at different location)
+   - Automatic recovery: move files to correct location OR retry agent
+   - Max 1 retry per agent (loop prevention)
+   - Proceed if ≥50% reports verified
+
+4. **Checkpoint and State Management** (Step 5):
+   - Save checkpoint after all reports verified
+   - Store: research_reports (array of paths), thinking_mode, complexity_score, project_name
+   - Update workflow_state.current_phase = "planning"
+   - Update TodoWrite to mark research complete
+
+**Context Reduction Benefit**:
+- **Before**: Pass 200+ words × N reports = 600+ words for 3 reports
+- **After**: Pass N file paths × 50 chars = 150 chars for 3 reports
+- **Savings**: 99.75% context reduction (600 words → 150 chars)
+
+**Performance Metrics**:
+- **Simple research**: 1-2 min/agent in parallel (vs 3-6 min sequential)
+- **Complex research**: 4-6 min/agent in parallel (vs 12-18 min sequential)
+- **Time savings**: ~66% for 3 agents, ~75% for 4 agents
+
+**Error Recovery** (Step 4.6):
 ```yaml
-Simple Workflows (skip research):
-  - Keywords: "fix", "update", "small change"
-  - Action: Skip directly to planning phase
-  - Thinking Mode: None (standard processing)
-
-Medium Workflows (focused research):
-  - Keywords: "add", "improve", "refactor"
-  - Topics: 2-3 focused areas
-  - Example: existing patterns + best practices
-  - Thinking Mode: "think" (moderate complexity)
-
-Complex Workflows (comprehensive research):
-  - Keywords: "implement", "redesign", "architecture"
-  - Topics: 3-4 comprehensive areas
-  - Example: patterns + practices + alternatives + constraints
-  - Thinking Mode: "think hard" (high complexity)
-
-Critical Workflows (system-wide impact):
-  - Keywords: "security", "breaking change", "core refactor"
-  - Topics: 4+ comprehensive areas
-  - Thinking Mode: "think harder" (critical decisions)
+Error Types and Recovery:
+  path_mismatch:
+    recovery: Move file to expected path OR retry with emphasized path
+    retryable: true
+  file_not_found:
+    recovery: Retry agent with emphasized file creation requirement
+    retryable: true
+  invalid_metadata:
+    recovery: Fix metadata with Edit tool OR retry agent
+    retryable: true
+  permission_denied:
+    recovery: Escalate to user (infrastructure issue)
+    retryable: false
 ```
 
-#### Step 1.5: Determine Thinking Mode
-
-CALCULATE workflow complexity score to determine thinking mode for all agents in this workflow.
-
-**EXECUTE NOW**:
-
-1. ANALYZE workflow description for complexity indicators
-2. CALCULATE complexity score using this algorithm:
-
-   ```
-   score = 0
-   score += count_keywords(["implement", "architecture", "redesign"]) × 3
-   score += count_keywords(["add", "improve", "refactor"]) × 2
-   score += count_keywords(["security", "breaking", "core"]) × 4
-   score += estimated_file_count / 5
-   score += (research_topics_needed - 1) × 2
-   ```
-
-3. MAP complexity score to thinking mode:
-   - score 0-3: No special thinking mode (standard processing)
-   - score 4-6: "think" (moderate complexity, careful reasoning)
-   - score 7-9: "think hard" (high complexity, deep analysis)
-   - score 10+: "think harder" (critical decisions, security implications)
-
-4. STORE thinking_mode in workflow_state for use in all agent prompts
-
-**Examples**:
-
-"Add hello world function"
-→ Keywords: "add" (×1) = 2 points, files: ~1 = 0 points, topics: 0 = 0 points
-→ Total: 2 (Simple, no thinking mode)
-
-"Implement user authentication system"
-→ Keywords: "implement" (×1) = 3 points, "authentication" suggests security context
-→ Files: ~8-10 = 2 points, topics: 3 = 4 points
-→ Total: 9 (Complex, thinking mode: "think hard")
-
-"Refactor core security module with breaking changes"
-→ Keywords: "refactor" (×1) = 2, "security" (×1) = 4, "breaking" (×1) = 4, "core" (×1) = 4
-→ Files: ~15 = 3 points, topics: 4 = 6 points
-→ Total: 23 (Critical, thinking mode: "think harder")
-
-This thinking mode will be prepended to ALL agent prompts in subsequent phases.
-
-**State Management**:
-
-UPDATE workflow_state after determining thinking mode and research strategy:
-
-```yaml
-workflow_state.thinking_mode = "[calculated thinking mode]"
-workflow_state.current_phase = "research"
-workflow_state.execution_tracking.phase_start_times["analysis"] = [current timestamp]
-workflow_state.execution_tracking.phase_end_times["analysis"] = [current timestamp]
-workflow_state.completed_phases.append("analysis")
-```
-
-UPDATE TodoWrite to mark analysis complete and research as in-progress:
-
-```json
-{
-  "todos": [
-    {
-      "content": "Analyze workflow and identify research topics",
-      "status": "completed",
-      "activeForm": "Analyzing workflow and identifying research topics"
-    },
-    {
-      "content": "Execute parallel research phase",
-      "status": "in_progress",
-      "activeForm": "Executing parallel research phase"
-    },
-    // ... remaining todos unchanged ...
-  ]
-}
-```
-
-#### Step 2: Determine Absolute Report Paths
-
-**CRITICAL**: Before invoking research agents, calculate ABSOLUTE paths for all report files.
-
-**EXECUTE NOW**: For EACH research topic identified in Step 1:
-
-1. **Detect Specs Directory Location**:
-   ```bash
-   # Priority order for specs directory location:
-   # 1. Check .claude/SPECS.md for registered specs directories
-   # 2. If no SPECS.md, check for .claude/specs/ directory
-   # 3. Fall back to project root specs/ directory
-
-   PROJECT_ROOT="/home/benjamin/.config"  # Current working directory
-   CLAUDE_DIR="${PROJECT_ROOT}/.claude"
-
-   # For Claude Code features, prefer .claude/specs/
-   if [ -d "${CLAUDE_DIR}/specs" ]; then
-     SPECS_DIR="${CLAUDE_DIR}/specs"
-   elif [ -f "${CLAUDE_DIR}/SPECS.md" ]; then
-     # Parse SPECS.md for registered directory
-     SPECS_DIR=$(grep "^- Path:" "${CLAUDE_DIR}/SPECS.md" | head -1 | cut -d: -f2 | tr -d ' ')
-   else
-     # Default to project root
-     SPECS_DIR="${PROJECT_ROOT}/specs"
-   fi
-   ```
-
-2. **Construct Topic Directory Path**:
-   ```bash
-   TOPIC_SLUG="orchestrate_improvements"  # From Step 3.5
-   REPORT_DIR="${SPECS_DIR}/reports/${TOPIC_SLUG}"
-
-   # Ensure directory exists before invoking agents
-   mkdir -p "${REPORT_DIR}"
-   ```
-
-3. **Calculate Next Report Number**:
-   ```bash
-   # Find highest existing report number in topic directory
-   NEXT_NUM=$(find "${REPORT_DIR}" -name "[0-9][0-9][0-9]_*.md" 2>/dev/null | wc -l)
-   NEXT_NUM=$((NEXT_NUM + 1))
-   REPORT_NUM=$(printf "%03d" ${NEXT_NUM})
-   ```
-
-4. **Construct ABSOLUTE Report Path**:
-   ```bash
-   REPORT_NAME="001_existing_patterns_analysis.md"  # Descriptive name
-   REPORT_PATH="${REPORT_DIR}/${REPORT_NAME}"
-
-   # CRITICAL: This must be an ABSOLUTE path
-   # Example: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_existing_patterns_analysis.md
-   # NOT: specs/reports/orchestrate_improvements/001_existing_patterns_analysis.md
-   ```
-
-5. **Store in Workflow State**:
-   ```yaml
-   workflow_state.research_reports[agent_index] = {
-     "agent_index": 1,
-     "topic": "existing_patterns",
-     "topic_slug": "existing_patterns",
-     "expected_path": "${REPORT_PATH}",  # ABSOLUTE path
-     "created_at": null,  # Will be set after agent completes
-     "verified": false,   # Will be set in Step 4.5
-     "retry_count": 0
-   }
-   ```
-
-#### Step 2.5: Launch Parallel Research Agents
-
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist agents in parallel.
-
-For EACH research topic identified in Step 1:
-
-INVOKE a research-specialist agent using the Task tool with these exact parameters:
-
-```json
-{
-  "subagent_type": "general-purpose",
-  "description": "Research [TOPIC_NAME] using research-specialist protocol",
-  "prompt": "Read and follow the behavioral guidelines from:\n/home/benjamin/.config/.claude/agents/research-specialist.md\n\nYou are acting as a Research Specialist Agent with the tools and constraints defined in that file.\n\n[COMPLETE PROMPT FROM STEP 3 - SEE BELOW]"
-}
-```
-
-**CRITICAL**: Send ALL research Task invocations in a SINGLE MESSAGE.
-
-This enables parallel execution. Do NOT send Task invocations sequentially - they must all be in one response to execute concurrently.
-
-**Example Parallel Invocation** (3 research topics):
-
-```
-Here are three research tasks to execute in parallel:
-
-[Task tool invocation #1 for existing_patterns]
-[Task tool invocation #2 for security_practices]
-[Task tool invocation #3 for framework_implementations]
-```
-
-**WAIT** for all research agents to complete before proceeding to Step 3.5.
-
-**Monitoring**:
-- Watch for PROGRESS: markers from each agent
-- Collect REPORT_PATH: outputs as agents complete
-- Verify all agents complete successfully before moving to Step 4
-
-#### Step 3: Research Agent Prompt Template
-
-**Use the complete template from**: `.claude/templates/orchestration-patterns.md#research-agent-prompt-template`
-
-The template includes:
-- Required placeholders to substitute (THINKING_MODE, TOPIC_TITLE, ABSOLUTE_REPORT_PATH, etc.)
-- Research requirements by topic type (existing_patterns, best_practices, alternatives, constraints)
-- Report structure and format
-- Expected output format (REPORT_PATH: /absolute/path)
-
-**Key Points**:
-- Always use ABSOLUTE paths for report files (calculated in Step 2)
-- Include thinking mode from Step 1.5
-- Specify research requirements based on topic category
-- Agent must return REPORT_PATH: in parseable format
-
-#### Step 3.5: Generate Project Name and Topic Slugs
-
-**EXECUTE NOW**: Generate project name and topic slugs BEFORE invoking research agents (Step 2).
-
-**Project Name Generation Algorithm**:
-
-1. EXTRACT key terms from workflow description
-2. REMOVE common words: [the, a, an, implement, add, create, build, develop, refactor, update, fix]
-3. JOIN remaining words with underscores
-4. CONVERT to lowercase
-5. LIMIT to 3-4 words maximum
-6. STORE in workflow_state.project_name
-
-**Examples**:
-
-"Implement user authentication system"
-→ Extract: [Implement, user, authentication, system]
-→ Remove: [Implement] (common word)
-→ Remaining: [user, authentication, system]
-→ Result: "user_authentication_system" (3 words)
-
-"Add payment processing flow"
-→ Extract: [Add, payment, processing, flow]
-→ Remove: [Add] (common word)
-→ Remaining: [payment, processing, flow]
-→ Result: "payment_processing_flow" (3 words)
-
-"Refactor session management"
-→ Extract: [Refactor, session, management]
-→ Remove: [Refactor] (common word)
-→ Remaining: [session, management]
-→ Result: "session_management" (2 words)
-
-**Topic Slug Generation Algorithm** (for EACH research topic):
-
-1. EXTRACT key terms from research topic description
-2. REMOVE common words: [the, a, an, in, for, with, how, what, patterns, approaches]
-3. JOIN remaining words with underscores
-4. CONVERT to lowercase
-5. KEEP concise (2-3 words maximum)
-6. STORE in workflow_state.topic_slugs array (same order as research_topics)
-
-**Examples**:
-
-"Existing auth patterns in codebase"
-→ Extract: [Existing, auth, patterns, in, codebase]
-→ Remove: [in] (common word)
-→ Keep: [existing, patterns] (concise)
-→ Result: "existing_patterns"
-
-"Security best practices for authentication (2025)"
-→ Extract: [Security, best, practices, for, authentication]
-→ Remove: [for] (common word)
-→ Keep: [security, practices]
-→ Result: "security_practices"
-
-"Framework-specific authentication implementations"
-→ Extract: [Framework, specific, authentication, implementations]
-→ Keep: [framework, implementations] (concise)
-→ Result: "framework_implementations"
-
-**Common Topic Slugs** (use as guidance for consistency):
-- existing_patterns
-- best_practices
-- security_practices
-- alternatives
-- framework_implementations
-- performance_considerations
-- migration_strategy
-- integration_approaches
-
-**VERIFY** before proceeding:
-- workflow_state.project_name is set (will be used in specs path)
-- workflow_state.topic_slugs array matches number of research_topics
-- All slugs are lowercase with underscores only (no spaces, hyphens)
-
-These values are used in Step 2 when constructing research agent prompts and report file paths.
-
-#### Step 3a: Monitor Research Agent Execution
-
-After invoking all research agents in Step 2.5, MONITOR their progress and execution with detailed visibility.
-
-**EXECUTE NOW**:
-
-1. **Emit Research Phase Start Marker**:
-   ```
-   PROGRESS: Starting Research Phase (N agents, parallel execution)
-   ```
-   Where N is the number of research agents invoked.
-
-2. **Watch for Per-Agent Progress Markers**:
-
-   Each research agent should emit standardized progress markers in this format:
-   ```
-   PROGRESS: [Agent N/M: topic_slug] Status message
-   ```
-
-   Expected progression for each agent:
-   - `PROGRESS: [Agent 1/3: existing_patterns] Starting research...`
-   - `PROGRESS: [Agent 1/3: existing_patterns] Analyzing codebase...`
-   - `PROGRESS: [Agent 1/3: existing_patterns] Searching best practices...`
-   - `PROGRESS: [Agent 1/3: existing_patterns] Writing report file...`
-   - `PROGRESS: [Agent 1/3: existing_patterns] Report created ✓`
-
-3. **Watch for Report Creation Markers**:
-
-   When a report file is successfully created, the agent emits:
-   ```
-   REPORT_CREATED: /absolute/path/to/report.md
-   ```
-
-   Example:
-   ```
-   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_auth_patterns.md
-   ```
-
-   **IMPORTANT**: Report path must be ABSOLUTE (verify it starts with `/`).
-
-4. **Display Aggregated Progress to User**:
-
-   As progress markers arrive, display consolidated view:
-   ```
-   PROGRESS: Starting Research Phase (3 agents, parallel execution)
-   PROGRESS: [Agent 1/3: existing_patterns] Analyzing codebase...
-   PROGRESS: [Agent 2/3: security_practices] Searching best practices...
-   PROGRESS: [Agent 3/3: alternatives] Comparing approaches...
-   PROGRESS: [Agent 1/3: existing_patterns] Report created ✓
-   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md
-   PROGRESS: [Agent 2/3: security_practices] Report created ✓
-   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
-   PROGRESS: [Agent 3/3: alternatives] Report created ✓
-   REPORT_CREATED: /home/benjamin/.config/.claude/specs/reports/alternatives/001_comparison.md
-   ```
-
-5. **Track Completion Status**:
-
-   Maintain completion tracking:
-   ```yaml
-   agent_status:
-     agent_1: completed  # Report created successfully
-     agent_2: completed  # Report created successfully
-     agent_3: in_progress  # Still working
-   ```
-
-6. **Wait for ALL Agents to Complete**:
-
-   Before proceeding to Step 4, ensure all agents have reached one of these states:
-   - **completed**: Report created successfully (REPORT_CREATED marker received)
-   - **failed**: Agent returned error or timeout
-   - **partial**: Agent completed but report file missing (will be handled in Step 4.5)
-
-7. **Check for Agent Errors or Failures**:
-
-   - **Single agent fails**: Note error, collect available reports, continue
-   - **Multiple agents fail**: Assess whether remaining reports sufficient for planning
-   - **All agents fail**: Escalate to user with detailed error summary
-   - **Partial success**: Proceed with available reports, flag missing reports for retry
-
-8. **Emit Research Phase Completion Summary**:
-
-   After all agents complete:
-   ```
-   PROGRESS: Research Phase complete - N/M reports created (R retries needed)
-   ```
-
-   Example:
-   ```
-   PROGRESS: Research Phase complete - 3/3 reports verified (0 retries needed)
-   ```
-
-**Progress Marker Format Standards**:
-
-- **Phase Markers**: `PROGRESS: [Phase description]`
-- **Agent Markers**: `PROGRESS: [Agent N/M: topic] Status`
-- **Report Markers**: `REPORT_CREATED: /absolute/path/to/report.md`
-- **Completion Markers**: `PROGRESS: Phase complete - N/M reports verified (R retries)`
-
-**Expected Agent Completion Time**:
-- Simple research: 1-2 minutes per agent
-- Medium research: 2-4 minutes per agent
-- Complex research: 4-6 minutes per agent
-
-**Parallel Execution Benefit**:
-- Sequential (one after another): 3 agents × 3 minutes = 9 minutes
-- Parallel (all at once): max(3 minutes) = 3 minutes
-- Time saved: ~66% for 3 agents
-
-**Error Progress Markers**:
-
-If an agent encounters errors:
-```
-PROGRESS: [Agent 2/3: security_practices] ERROR - Failed to create report
-ERROR: Agent 2 (security_practices): Write tool failed - permission denied
-```
-
-**TodoWrite Integration**: Research agents can be tracked as TodoWrite subtasks if desired.
-
-Proceed to Step 4 only after all agents complete or fail definitively.
-
-#### Step 4: Collect Report Paths from Agent Output
-
-EXTRACT report file paths from completed research agent outputs.
-
-**EXECUTE NOW**:
-
-For EACH completed research agent:
-
-1. PARSE agent output for report path line:
-   - Expected format: "REPORT_PATH: [path]"
-   - Example: "REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md"
-
-2. EXTRACT the file path:
-   - Remove "REPORT_PATH: " prefix
-   - Trim whitespace
-   - Validate path format (must contain specs/reports/{topic}/)
-
-3. VALIDATE report file exists:
-   ```bash
-   # Use Read tool or Bash to verify
-   if [ -f "$REPORT_PATH" ]; then
-     echo "✓ Report exists: $REPORT_PATH"
-   else
-     echo "✗ Report missing: $REPORT_PATH"
-     # Flag for retry or manual intervention
-   fi
-   ```
-
-4. STORE valid report path in workflow_state.research_reports array:
-   ```yaml
-   workflow_state.research_reports: [
-     "specs/reports/existing_patterns/001_auth_patterns.md",
-     "specs/reports/security_practices/001_best_practices.md",
-     "specs/reports/framework_implementations/001_lua_auth.md"
-   ]
-   ```
-
-**Path Extraction Examples**:
-
-Agent Output:
-```
-I've completed research on authentication patterns in the codebase.
-
-REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md
-
-Summary: Found session-based auth using Redis with 30-minute TTL...
-```
-
-Extracted: `specs/reports/existing_patterns/001_auth_patterns.md`
-
-**Context Reduction Achieved**:
-- **Before**: Pass 200+ words of research summary to planning phase
-- **After**: Pass 1 file path (~50 characters) to planning phase
-- **Reduction**: 97% context savings per report
-- **With 3 reports**: 600 words → 150 characters (99.75% savings)
-
-**VERIFICATION CHECKLIST**:
-- [ ] All research agents completed (or failed definitively)
-- [ ] Report path extracted from each successful agent
-- [ ] Report files exist and are readable
-- [ ] Report paths stored in workflow_state.research_reports array
-- [ ] Number of reports matches number of successful agents
-
-Proceed to Step 4.5 for comprehensive verification.
-
-#### Step 4.5: Verify Report Files (Batch Verification)
-
-**CRITICAL**: Perform comprehensive verification of all reports including path consistency checks.
-
-This step addresses the path inconsistency issue discovered in Report 004 where agents created
-reports at different locations than expected.
-
-**EXECUTE NOW**:
-
-For EACH report in workflow_state.research_reports:
-
-1. **Extract Expected Path**:
-   ```yaml
-   expected_path = workflow_state.research_reports[agent_index].expected_path
-   # This is the ABSOLUTE path provided to agent in Step 2
-   # Example: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_report.md
-   ```
-
-2. **Verify File Exists at Expected Path** (CRITICAL):
-   ```bash
-   # Check if file exists at exact path specified
-   if [ -f "$expected_path" ]; then
-     echo "✓ Report exists at expected path: $expected_path"
-     verified=true
-   else
-     echo "✗ MISSING at expected path: $expected_path"
-     verified=false
-   fi
-   ```
-
-3. **Search for Report in Other Locations** (Path Mismatch Detection):
-
-   If file not found at expected path, search for it elsewhere:
-   ```bash
-   # Extract report filename from expected path
-   REPORT_FILENAME=$(basename "$expected_path")
-   TOPIC_SLUG=$(echo "$expected_path" | grep -oP "reports/\K[^/]+")
-
-   # Search in common alternative locations
-   find /home/benjamin/.config -name "$REPORT_FILENAME" \
-     -path "*/specs/reports/${TOPIC_SLUG}/*" 2>/dev/null
-
-   # Common alternative locations to check:
-   # - Project root: /home/benjamin/.config/specs/reports/topic/
-   # - Claude dir: /home/benjamin/.config/.claude/specs/reports/topic/
-   # - Working dir: ./specs/reports/topic/
-   ```
-
-4. **Classify Verification Result**:
-
-   ```yaml
-   verification_status:
-     success: File exists at expected absolute path
-     path_mismatch: File exists but at different location
-     file_not_found: No file found anywhere
-     invalid_metadata: File exists but metadata incomplete
-     permission_denied: File exists but cannot read
-   ```
-
-5. **Validate Report Metadata** (if file found):
-
-   ```bash
-   # Check first 30 lines for required metadata
-   head -30 "$REPORT_PATH" | grep -E "^## Metadata" >/dev/null
-   if [ $? -eq 0 ]; then
-     # Check for required fields
-     head -30 "$REPORT_PATH" | grep -E "^- \*\*Date\*\*:" >/dev/null && \
-     head -30 "$REPORT_PATH" | grep -E "^- \*\*Topic\*\*:" >/dev/null && \
-     head -30 "$REPORT_PATH" | grep -E "^- \*\*Research Focus\*\*:" >/dev/null
-
-     if [ $? -eq 0 ]; then
-       echo "✓ Metadata complete"
-       metadata_valid=true
-     else
-       echo "✗ Metadata incomplete"
-       metadata_valid=false
-     fi
-   else
-     echo "✗ No metadata section found"
-     metadata_valid=false
-   fi
-   ```
-
-6. **Build Agent-to-Report Mapping**:
-
-   Store comprehensive mapping in workflow_state for debugging:
-   ```yaml
-   workflow_state.research_reports[agent_index] = {
-     "agent_index": 1,
-     "topic": "existing_patterns",
-     "topic_slug": "existing_patterns",
-     "expected_path": "/home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md",
-     "actual_path": "/home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md",  # Same if verified
-     "created_at": "2025-10-13T14:30:22Z",
-     "verified": true,
-     "verification_status": "success",
-     "metadata_valid": true,
-     "retry_count": 0
-   }
-   ```
-
-7. **Aggregate Verification Results**:
-
-   ```yaml
-   verification_summary:
-     total_reports: 3
-     verified_success: 2    # Reports at expected paths
-     path_mismatch: 1       # Reports found at different locations
-     file_not_found: 0      # Reports completely missing
-     invalid_metadata: 0    # Reports with incomplete metadata
-     permission_denied: 0   # Reports that cannot be read
-   ```
-
-**Verification Decision Tree**:
-
-```
-For EACH report:
-  ├─ File at expected path?
-  │  ├─ YES
-  │  │  ├─ Metadata valid?
-  │  │  │  ├─ YES → Status: success, verified: true
-  │  │  │  └─ NO → Status: invalid_metadata, verified: false
-  │  │  └─ Cannot read?
-  │  │     └─ YES → Status: permission_denied, verified: false
-  │  │
-  │  └─ NO (not at expected path)
-  │     ├─ Search finds file elsewhere?
-  │     │  ├─ YES → Status: path_mismatch, verified: false
-  │     │  │        actual_path: [found location]
-  │     │  └─ NO → Status: file_not_found, verified: false
-  │     │
-  │     └─ Check REPORT_CREATED marker in agent output
-  │        ├─ Marker found → Parse actual path from marker
-  │        └─ No marker → file_not_found
-```
-
-**Display Verification Summary**:
-
-After verifying all reports, display summary:
-```
-PROGRESS: Verifying research reports...
-
-✓ Report 1/3: existing_patterns - verified at expected path
-✗ Report 2/3: security_practices - PATH MISMATCH
-  Expected: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
-  Actual:   /home/benjamin/.config/specs/reports/security_practices/001_practices.md
-✓ Report 3/3: alternatives - verified at expected path
-
-Verification Summary:
-- Total Reports: 3
-- Verified Successfully: 2
-- Path Mismatches: 1
-- Missing Reports: 0
-
-NEXT: Proceeding to Step 4.6 (Retry Failed Reports) for 1 failed verification
-```
-
-**Proceed Based on Results**:
-
-- **All reports verified** (verified: true for all):
-  → Skip Step 4.6, proceed directly to Step 5 (Save Checkpoint)
-  → Display: "PROGRESS: All reports verified - proceeding to planning phase"
-
-- **Some reports failed verification**:
-  → Proceed to Step 4.6 (Retry Failed Reports)
-  → Pass failed report list to retry logic
-
-- **All reports failed verification**:
-  → Escalate to user with detailed error report
-  → Display: "ERROR: All research reports failed verification - see details above"
-
-**Update Workflow State**:
-
-```yaml
-workflow_state.research_phase_data.verification_summary = {
-  "total_reports": 3,
-  "verified_success": 2,
-  "path_mismatch": 1,
-  "file_not_found": 0,
-  "invalid_metadata": 0,
-  "permission_denied": 0,
-  "verification_timestamp": "2025-10-13T14:35:00Z"
-}
-
-workflow_state.research_phase_data.failed_reports = [
-  {
-    "agent_index": 2,
-    "topic": "security_practices",
-    "expected_path": "/home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md",
-    "actual_path": "/home/benjamin/.config/specs/reports/security_practices/001_practices.md",
-    "status": "path_mismatch"
-  }
-]
-```
-
-**Error Classifications** (using error-utils.sh):
+**Quick Example**:
 
 ```bash
-# Source error utilities
-source .claude/lib/error-utils.sh
+# Step 1: Analyze workflow
+WORKFLOW="Implement user authentication with sessions"
+COMPLEXITY_SCORE=9  # "implement" + "authentication" (security) + ~10 files
+THINKING_MODE="think hard"  # Score 7-9
 
-# Classify each verification failure
-case "$verification_status" in
-  file_not_found)
-    error_type=$(classify_error "report_missing" "Report file not found after agent completion")
-    ;;
-  path_mismatch)
-    error_type=$(classify_error "path_inconsistency" "Report created at different location than expected")
-    ;;
-  invalid_metadata)
-    error_type=$(classify_error "incomplete_output" "Report metadata section incomplete")
-    ;;
-  permission_denied)
-    error_type=$(classify_error "file_access" "Cannot read report file - permission denied")
-    ;;
-esac
+# Step 1: Identify topics
+TOPICS=("existing_patterns" "security_practices" "framework_implementations")
+
+# Step 2: Launch agents (PARALLEL - single message)
+# Task 1: Research existing auth patterns
+# Task 2: Research 2025 security best practices
+# Task 3: Research Lua authentication libraries
+# [All three Task invocations in ONE message]
+
+# Step 3a: Monitor execution
+PROGRESS: Starting Research Phase (3 agents, parallel execution)
+PROGRESS: [Agent 1/3: existing_patterns] Analyzing codebase...
+PROGRESS: [Agent 2/3: security_practices] Searching best practices...
+PROGRESS: [Agent 3/3: framework_implementations] Comparing libraries...
+REPORT_CREATED: /home/user/.claude/specs/reports/existing_patterns/001_analysis.md
+REPORT_CREATED: /home/user/.claude/specs/reports/security_practices/001_practices.md
+REPORT_CREATED: /home/user/.claude/specs/reports/framework_implementations/001_libraries.md
+PROGRESS: Research Phase complete - 3/3 reports verified (0 retries)
+
+# Step 5: Save checkpoint
+CHECKPOINT=".claude/checkpoints/orchestrate_user_authentication_20251013.json"
 ```
 
-Proceed to Step 4.6 if any reports failed verification, otherwise skip to Step 5.
-
-#### Step 4.6: Retry Failed Reports (Error Recovery)
-
-**CRITICAL**: Handle verification failures with intelligent retry logic and path correction.
-
-This step provides automatic recovery from path inconsistencies and transient failures discovered
-during verification (Step 4.5).
-
-**EXECUTE NOW** (only if Step 4.5 reported failures):
-
-For EACH failed report from workflow_state.research_phase_data.failed_reports:
-
-**Step 1: Identify Failed Agent**
-
-```yaml
-failed_report = workflow_state.research_phase_data.failed_reports[i]
-agent_index = failed_report.agent_index
-topic = failed_report.topic
-topic_slug = failed_report.topic_slug
-verification_status = failed_report.status
-expected_path = failed_report.expected_path
-actual_path = failed_report.actual_path  # May be null if file_not_found
-```
-
-**Step 2: Classify Error Type and Determine Retry Strategy**
-
-Use error-utils.sh to classify error and determine if retryable:
-
-```bash
-source .claude/lib/error-utils.sh
-
-case "$verification_status" in
-  file_not_found)
-    # Report completely missing after agent completion
-    error_classification="transient"  # Likely timing issue or agent error
-    retry_strategy="reinvoke_agent"
-    retryable=true
-    ;;
-
-  path_mismatch)
-    # Report exists but at wrong location (CRITICAL - Report 004 issue)
-    error_classification="path_interpretation"
-    retry_strategy="move_file_or_retry"  # Two options
-    retryable=true
-    ;;
-
-  invalid_metadata)
-    # Report exists but metadata incomplete
-    error_classification="incomplete_output"
-    retry_strategy="fix_metadata_or_retry"
-    retryable=true
-    ;;
-
-  permission_denied)
-    # Cannot read report file (system issue)
-    error_classification="infrastructure"
-    retry_strategy="escalate"  # Not retryable by agent
-    retryable=false
-    ;;
-
-  agent_crashed)
-    # Agent returned error during execution
-    error_classification="agent_failure"
-    retry_strategy="reinvoke_agent"
-    retryable=true
-    ;;
-esac
-```
-
-**Step 3: Handle Path Mismatch** (CRITICAL - Report 004 Recovery)
-
-If verification_status == "path_mismatch":
-
-```bash
-# Option 1: Move file to correct location (PREFERRED - faster, preserves work)
-if [ -f "$actual_path" ]; then
-  echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Correcting path mismatch..."
-
-  # Ensure target directory exists
-  expected_dir=$(dirname "$expected_path")
-  mkdir -p "$expected_dir"
-
-  # Move file from actual location to expected location
-  mv "$actual_path" "$expected_path"
-
-  if [ $? -eq 0 ]; then
-    echo "✓ File moved successfully to: $expected_path"
-
-    # Update workflow_state
-    workflow_state.research_reports[agent_index].actual_path = "$expected_path"
-    workflow_state.research_reports[agent_index].verified = true
-    workflow_state.research_reports[agent_index].verification_status = "success"
-    workflow_state.research_reports[agent_index].recovery_method = "file_moved"
-
-    # Remove from failed_reports list
-    # Continue to next failed report
-    continue
-  else
-    echo "✗ File move failed - falling back to agent retry"
-    retry_strategy="reinvoke_agent"
-  fi
-fi
-
-# Option 2: Retry agent with EMPHASIZED absolute path (fallback)
-# Only if file move failed or file not found
-echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Retrying with emphasized path..."
-retry_strategy="reinvoke_agent_emphasize_path"
-```
-
-**Step 4: Handle Metadata Fixes**
-
-If verification_status == "invalid_metadata" and file exists:
-
-```bash
-# Attempt quick metadata fix without full retry
-echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Attempting metadata fix..."
-
-# Read current report
-current_content=$(cat "$expected_path")
-
-# Check what metadata is missing
-missing_date=$(echo "$current_content" | grep -q "^- \*\*Date\*\*:" || echo "true")
-missing_topic=$(echo "$current_content" | grep -q "^- \*\*Topic\*\*:" || echo "true")
-
-if [ "$missing_date" = "true" ] || [ "$missing_topic" = "true" ]; then
-  # Try to prepend metadata section
-  metadata_fix_possible=true
-  # Use Edit tool to add metadata
-  # If successful, mark verified and continue
-  # If fails, fall back to agent retry
-fi
-```
-
-**Step 5: Retrieve Agent Prompt for Retry**
-
-If retry_strategy requires agent reinvocation:
-
-```yaml
-# Agent prompts stored in Step 2 before invocation
-agent_prompt = workflow_state.research_phase_data.agent_prompts[topic_slug]
-
-# Verify prompt exists
-if agent_prompt is null:
-  echo "ERROR: Cannot retry - agent prompt not stored in checkpoint"
-  mark_as_escalated
-  continue
-```
-
-**Step 6: Check Retry Count Limit**
-
-Before retrying, enforce retry limit (prevents infinite loops):
-
-```yaml
-current_retry_count = workflow_state.research_reports[agent_index].retry_count
-
-if current_retry_count >= 1:
-  echo "ERROR: Max retry limit reached for agent $agent_index ($topic)"
-  echo "Agent has already been retried $current_retry_count times"
-  mark_as_escalated
-  add_to_final_failed_reports
-  continue
-```
-
-**Step 7: Reinvoke Agent with Modified Prompt** (if retryable)
-
-```bash
-# For path_mismatch retry, emphasize absolute path requirement
-if [ "$retry_strategy" = "reinvoke_agent_emphasize_path" ]; then
-  path_emphasis="
-
-**CRITICAL PATH REQUIREMENT**:
-Your previous invocation created the report at a different location than expected.
-You MUST use this EXACT ABSOLUTE PATH when creating the report:
-
-  $expected_path
-
-DO NOT use relative paths. DO NOT modify this path. Use it exactly as provided.
-"
-  agent_prompt="${path_emphasis}\n\n${agent_prompt}"
-fi
-
-# For file_not_found retry, emphasize file creation requirement
-if [ "$verification_status" = "file_not_found" ]; then
-  file_emphasis="
-
-**CRITICAL FILE CREATION REQUIREMENT**:
-Your previous invocation did not create a report file.
-You MUST use the Write tool to create a file at:
-
-  $expected_path
-
-Do NOT return only a summary. The file MUST be created.
-"
-  agent_prompt="${file_emphasis}\n\n${agent_prompt}"
-fi
-
-# Emit progress marker
-echo "PROGRESS: [Agent $agent_index/$total_agents: $topic] Retrying (attempt 1/1)..."
-
-# Invoke agent using Task tool
-# (Same invocation pattern as Step 2.5)
-```
-
-**Step 8: Verify Retry Result**
-
-After retry agent completes:
-
-```bash
-# Re-run verification for this specific report
-# (Same logic as Step 4.5)
-
-if [ verification successful ]; then
-  echo "✓ Retry successful for agent $agent_index ($topic)"
-
-  # Update workflow_state
-  workflow_state.research_reports[agent_index].verified = true
-  workflow_state.research_reports[agent_index].retry_count += 1
-  workflow_state.research_reports[agent_index].recovery_method = "agent_retry"
-
-  # Remove from failed list
-  continue
-else
-  echo "✗ Retry failed for agent $agent_index ($topic)"
-
-  # Update workflow_state
-  workflow_state.research_reports[agent_index].retry_count += 1
-  workflow_state.research_reports[agent_index].recovery_method = "retry_failed"
-
-  # Add to final failed reports for escalation
-  add_to_final_failed_reports
-fi
-```
-
-**Error Output Examples**:
-
-```
-# file_not_found
-PROGRESS: [Agent 2/3: security_practices] Retrying (attempt 1/1)...
-ERROR: Report missing - retrying with emphasized file creation requirement...
-
-# path_mismatch (CRITICAL - Report 004)
-PROGRESS: [Agent 1/3: existing_patterns] Correcting path mismatch...
-✓ File moved successfully to expected location
-```
-
-**Step 9: Aggregate Retry Results**
-
-After all retries complete:
-
-```yaml
-retry_summary:
-  total_retries_attempted: 2
-  successful_recoveries: 1
-  failed_recoveries: 1
-  recovery_methods:
-    file_moved: 1       # Path mismatch corrected by moving file
-    agent_retry: 0      # Agent reinvoked and succeeded
-    metadata_fixed: 0   # Metadata corrected without retry
-    retry_failed: 1     # Retry attempted but still failed
-    escalated: 0        # Not retryable, escalated to user
-```
-
-**Display Retry Summary**:
-
-```
-PROGRESS: Retry phase complete
-
-Retry Summary:
-- Retries Attempted: 2
-- Successful Recoveries: 1
-  - Path mismatch corrected: 1
-  - Agent retry succeeded: 0
-- Failed Recoveries: 1
-  - Will proceed with 2/3 reports
-
-Updated Report Status:
-✓ Report 1/3: existing_patterns - recovered (file moved)
-✗ Report 2/3: security_practices - FAILED (retry exhausted)
-✓ Report 3/3: alternatives - verified
-
-NEXT: Proceeding to Step 5 (Save Checkpoint) with 2 verified reports
-```
-
-**Step 10: Determine Next Action**
-
-```yaml
-total_reports = workflow_state.research_reports.length
-verified_reports = count(verified: true)
-failed_reports = count(verified: false)
-
-if failed_reports == 0:
-  # All reports verified (including recoveries)
-  display("PROGRESS: All reports verified after recovery - proceeding to planning")
-  proceed_to_step_5()
-
-elif verified_reports >= (total_reports / 2):
-  # Majority verified, can proceed with partial reports
-  display("WARNING: Proceeding with $verified_reports/$total_reports reports")
-  display("Missing reports: " + list(failed topics))
-  proceed_to_step_5()
-
-elif failed_reports == total_reports:
-  # All reports failed even after retry
-  display("ERROR: All research reports failed - cannot proceed to planning")
-  escalate_to_user_with_detailed_error_report()
-  exit_workflow()
-
-else:
-  # Less than half verified
-  display("ERROR: Insufficient reports verified ($verified_reports/$total_reports)")
-  display("Cannot proceed to planning with this few reports")
-  escalate_to_user_with_detailed_error_report()
-  exit_workflow()
-```
-
-**Update Workflow State**:
-
-```yaml
-workflow_state.research_phase_data.retry_summary = {
-  "total_retries_attempted": 2,
-  "successful_recoveries": 1,
-  "failed_recoveries": 1,
-  "recovery_methods": {
-    "file_moved": 1,
-    "agent_retry": 0,
-    "metadata_fixed": 0,
-    "retry_failed": 1,
-    "escalated": 0
-  },
-  "retry_timestamp": "2025-10-13T14:40:00Z"
-}
-
-# Update each recovered report
-workflow_state.research_reports[agent_index].recovery_method = "file_moved"
-workflow_state.research_reports[agent_index].retry_count = 1
-workflow_state.research_reports[agent_index].verified = true
-```
-
-**Loop Prevention**:
-
-- **Max 1 retry per agent**: retry_count checked before reinvocation
-- **Retry count tracked**: Stored in workflow_state.research_reports[].retry_count
-- **Replan history logged**: For audit trail (if integrated with adaptive planning)
-- **User escalation**: When limit exceeded or non-retryable errors
-
-Proceed to Step 5 after retry phase completes (regardless of results, but note status).
-
-#### Step 5: Save Research Checkpoint
-
-SAVE workflow checkpoint after research phase completion.
-
-**EXECUTE NOW**:
-
-USE the checkpoint utility to save research phase state:
-
-```bash
-# Source checkpoint utilities
-source .claude/lib/checkpoint-utils.sh
-
-# Prepare checkpoint data
-CHECKPOINT_DATA=$(cat <<EOF
-{
-  "workflow_type": "orchestrate",
-  "project_name": "${PROJECT_NAME}",
-  "workflow_description": "${USER_WORKFLOW_DESCRIPTION}",
-  "status": "research_complete",
-  "current_phase": "research",
-  "completed_phases": ["research"],
-  "workflow_state": {
-    "research_topics": ${RESEARCH_TOPICS_JSON},
-    "research_reports": ${RESEARCH_REPORTS_JSON},
-    "project_name": "${PROJECT_NAME}",
-    "topic_slugs": ${TOPIC_SLUGS_JSON},
-    "thinking_mode": "${THINKING_MODE}",
-    "complexity_score": ${COMPLEXITY_SCORE}
-  },
-  "performance_metrics": {
-    "research_start_time": "${RESEARCH_START_TIME}",
-    "research_end_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "parallel_agents_used": ${NUM_RESEARCH_AGENTS},
-    "reports_created": ${NUM_REPORTS_CREATED}
-  },
-  "next_phase": "planning"
-}
-EOF
-)
-
-# Save checkpoint
-CHECKPOINT_PATH=$(save_checkpoint "orchestrate" "${PROJECT_NAME}" "$CHECKPOINT_DATA")
-echo "Checkpoint saved: $CHECKPOINT_PATH"
-```
-
-**Checkpoint Fields Explanation**:
-
-- **workflow_type**: Always "orchestrate" for this command
-- **project_name**: Generated in Step 3.5, used for checkpoint filename
-- **workflow_description**: Original user request
-- **status**: "research_complete" indicates research phase finished
-- **current_phase**: "research" (phase just completed)
-- **completed_phases**: Array of all completed phases (["research"] so far)
-- **workflow_state**: Complete state including reports, topics, complexity
-- **performance_metrics**: Timing data for performance analysis
-- **next_phase**: "planning" (where to resume if interrupted)
-
-**Benefits**:
-- **Resumability**: Workflow can be resumed if interrupted
-- **State Preservation**: All research outputs preserved
-- **Performance Tracking**: Metrics for optimization analysis
-- **Error Recovery**: Can rollback to pre-planning state if needed
-
-Proceed to Step 6 only after checkpoint successfully saved.
-
-#### Step 6: Research Phase Execution Verification
-
-VERIFY all research phase execution requirements before proceeding to planning phase.
-
-**EXECUTE NOW**: Check each requirement explicitly.
-
-**VERIFICATION CHECKLIST**:
-
-1. **Agent Invocation Verified**:
-   - [ ] Task tool invoked for each research topic
-   - [ ] All Task invocations sent in SINGLE message (parallel execution)
-   - [ ] All agents completed successfully OR failed with clear error message
-   - Verification: Review agent invocation message, count Task tool calls
-
-2. **Report Files Created**:
-   - [ ] Each successful agent created a report file
-   - [ ] Report files exist at expected paths: specs/reports/{topic_slug}/NNN_*.md
-   - [ ] Report numbering follows NNN format (001, 002, 003...)
-   - Verification: Use Read tool to verify each report file exists and is readable
-
-3. **Report Paths Collected**:
-   - [ ] REPORT_PATH extracted from each agent output
-   - [ ] Report paths stored in workflow_state.research_reports array
-   - [ ] Number of paths matches number of successful agents
-   - Verification: Print workflow_state.research_reports array contents
-
-4. **Report Metadata Complete**:
-   - [ ] Each report includes all required metadata fields
-   - [ ] Specs Directory field present in each report
-   - [ ] Topic field matches topic_slug from Step 3.5
-   - Verification: Read first 20 lines of each report, check for metadata section
-
-5. **Checkpoint Saved**:
-   - [ ] Research checkpoint saved successfully
-   - [ ] Checkpoint file exists at expected path
-   - [ ] Checkpoint includes all research_reports paths
-   - Verification: Use bash to verify checkpoint file exists
-
-**Verification Commands**:
-
-```bash
-# Verify report files exist
-for REPORT in "${RESEARCH_REPORTS[@]}"; do
-  if [ -f "$REPORT" ]; then
-    echo "✓ Report exists: $REPORT"
-  else
-    echo "✗ MISSING: $REPORT"
-    VALIDATION_FAILED=true
-  fi
-done
-
-# Verify checkpoint saved
-CHECKPOINT_FILE=".claude/checkpoints/orchestrate_${PROJECT_NAME}_*.json"
-if ls $CHECKPOINT_FILE 1>/dev/null 2>&1; then
-  echo "✓ Checkpoint saved"
-else
-  echo "✗ Checkpoint missing"
-  VALIDATION_FAILED=true
-fi
-
-# If validation failed
-if [ "$VALIDATION_FAILED" = true ]; then
-  echo "ERROR: Research phase validation failed"
-  echo "Review errors above and retry failed steps"
-  exit 1
-fi
-```
-
-**If Validation Fails**:
-
-- **Missing Report Files**:
-  - Retry agent invocation for missing reports (max 1 retry)
-  - If retry fails: Proceed with available reports, document missing reports
-
-- **Invalid Metadata**:
-  - Use Edit tool to correct metadata in report file
-  - Ensure all required fields present
-
-- **Checkpoint Save Failed**:
-  - Retry checkpoint save operation
-  - If persistent: Continue without checkpoint (note resumption not possible)
-
-**DO NOT PROCEED** to planning phase until all validation checks pass (or failures are explicitly handled).
-
-**Success Output**:
-
-```
-✓ Research Phase Complete
-
-Research Topics Investigated: 3
-- existing_patterns
-- security_practices
-- framework_implementations
-
-Reports Created: 3
-- specs/reports/existing_patterns/001_auth_patterns.md
-- specs/reports/security_practices/001_best_practices.md
-- specs/reports/framework_implementations/001_lua_auth.md
-
-Checkpoint Saved: .claude/checkpoints/orchestrate_user_authentication_20251012_143022.json
-
-Performance:
-- Total Time: 3m 24s
-- Parallel Agents: 3
-- Time Saved vs Sequential: ~68%
-
-Next Phase: Planning
-```
-
-**State Management**:
-
-UPDATE workflow_state after research phase completes:
-
-```yaml
-workflow_state.current_phase = "planning"
-workflow_state.execution_tracking.phase_start_times["research"] = [research start timestamp]
-workflow_state.execution_tracking.phase_end_times["research"] = [current timestamp]
-workflow_state.execution_tracking.agents_invoked += [number of research agents]
-workflow_state.execution_tracking.files_created += [number of reports]
-workflow_state.completed_phases.append("research")
-workflow_state.context_preservation.research_reports = [array of report paths]
-```
-
-UPDATE TodoWrite to mark research complete and planning as next:
-
-```json
-{
-  "todos": [
-    {
-      "content": "Analyze workflow and identify research topics",
-      "status": "completed",
-      "activeForm": "Analyzing workflow and identifying research topics"
-    },
-    {
-      "content": "Execute parallel research phase",
-      "status": "completed",
-      "activeForm": "Executing parallel research phase"
-    },
-    {
-      "content": "Create implementation plan",
-      "status": "in_progress",
-      "activeForm": "Creating implementation plan"
-    },
-    // ... remaining todos unchanged ...
-  ]
-}
-```
-
-#### Step 7: Complete Research Phase Execution Example
-
-**Full Workflow Example**: "Add user authentication with email and password"
-
-**Step 1: Identify Research Topics**
-```
-Workflow: "Add user authentication with email and password"
-Complexity Analysis: "add" (×1) + "authentication" (security) + ~8 files estimated
-Complexity Score: 8 (Complex)
-
-Research Topics Identified:
-1. existing_patterns - Current authentication implementations in codebase
-2. security_practices - Password hashing and session management (2025 standards)
-3. framework_implementations - Lua-specific authentication libraries and patterns
-```
-
-**Step 1.5: Determine Thinking Mode**
-```
-Complexity Score: 8
-Thinking Mode: "think hard" (score 7-9 = high complexity)
-```
-
-**Step 3.5: Generate Project Name and Topic Slugs**
-```
-Project Name: "user_authentication" (from "user authentication")
-
-Topic Slugs:
-1. "existing_patterns" (from "Current authentication implementations")
-2. "security_practices" (from "Password hashing and session management")
-3. "framework_implementations" (from "Lua-specific authentication libraries")
-```
-
-**Step 2: Launch Parallel Research Agents**
-```
-Invoking 3 research-specialist agents in parallel (single message):
-
-Task {
-  subagent_type: "general-purpose",
-  description: "Research existing authentication patterns using research-specialist",
-  prompt: "Read and follow: .claude/agents/research-specialist.md\n\n**Thinking Mode**: think hard\n\n# Research Task: Current Authentication Implementations\n\n[Full prompt with all placeholders substituted...]"
-}
-
-Task {
-  subagent_type: "general-purpose",
-  description: "Research security best practices using research-specialist",
-  prompt: "Read and follow: .claude/agents/research-specialist.md\n\n**Thinking Mode**: think hard\n\n# Research Task: Password Hashing and Session Management Best Practices\n\n[Full prompt...]"
-}
-
-Task {
-  subagent_type: "general-purpose",
-  description: "Research Lua authentication libraries using research-specialist",
-  prompt: "Read and follow: .claude/agents/research-specialist.md\n\n**Thinking Mode**: think hard\n\n# Research Task: Lua-Specific Authentication Libraries\n\n[Full prompt...]"
-}
-```
-
-**Step 3a: Monitor Execution**
-```
-[Agent 1: existing_patterns] PROGRESS: Searching codebase for auth implementations...
-[Agent 2: security_practices] PROGRESS: Searching for 2025 password hashing standards...
-[Agent 3: framework_implementations] PROGRESS: Researching Lua auth libraries...
-[Agent 1: existing_patterns] PROGRESS: Found 12 files, analyzing patterns...
-[Agent 2: security_practices] PROGRESS: Analyzing Argon2 vs bcrypt recommendations...
-[Agent 3: framework_implementations] PROGRESS: Comparing lua-resty-session vs custom...
-[Agent 1: existing_patterns] PROGRESS: Creating report file...
-[Agent 2: security_practices] PROGRESS: Creating report file...
-[Agent 3: framework_implementations] PROGRESS: Creating report file...
-[Agent 1: existing_patterns] PROGRESS: Research complete.
-[Agent 2: security_practices] PROGRESS: Research complete.
-[Agent 3: framework_implementations] PROGRESS: Research complete.
-
-All agents completed in 3m 24s (sequential would be ~9m 30s)
-```
-
-**Step 4: Collect Report Paths**
-```
-Agent 1 Output: "REPORT_PATH: specs/reports/existing_patterns/001_auth_patterns.md"
-Agent 2 Output: "REPORT_PATH: specs/reports/security_practices/001_best_practices.md"
-Agent 3 Output: "REPORT_PATH: specs/reports/framework_implementations/001_lua_auth.md"
-
-Workflow State Updated:
-{
-  "research_reports": [
-    "specs/reports/existing_patterns/001_auth_patterns.md",
-    "specs/reports/security_practices/001_best_practices.md",
-    "specs/reports/framework_implementations/001_lua_auth.md"
-  ]
-}
-```
-
-**Step 5: Save Checkpoint**
-```
-Checkpoint saved: .claude/checkpoints/orchestrate_user_authentication_20251012_143022.json
-
-Checkpoint contents:
-{
-  "workflow_type": "orchestrate",
-  "project_name": "user_authentication",
-  "status": "research_complete",
-  "current_phase": "research",
-  "workflow_state": {
-    "research_reports": [...],
-    "thinking_mode": "think hard",
-    "complexity_score": 8
-  },
-  "next_phase": "planning"
-}
-```
-
-**Step 6: Validation**
-```
-✓ 3 Task tool invocations sent in single message
-✓ All 3 agents completed successfully
-✓ 3 report files created and validated
-✓ 3 report paths collected in workflow_state
-✓ Checkpoint saved successfully
-
-Research Phase Complete - Ready for Planning Phase
-```
-
-This example demonstrates the complete execution flow from user request to validated research reports.
+**Proceed to Planning Phase** after research checkpoint saved and all reports verified.
 
 ### Planning Phase (Sequential Execution)
 
-#### Step 1: Prepare Planning Context
+The planning phase synthesizes research findings into a structured implementation plan with clear phases, tasks, and testing requirements.
 
-EXTRACT necessary context from completed workflow phases for the planning agent.
+**When to Use Planning Phase**:
+- **All workflows** require a plan (simple plans for simple tasks, detailed plans for complex features)
+- Follows research phase (if research was performed) OR starts directly from user request
+- Single plan-architect agent execution (not parallel)
 
-**EXECUTE NOW**:
+**Quick Overview**:
+1. Prepare planning context (research reports, user request, thinking mode, standards path)
+2. Generate plan-architect agent prompt with all context
+3. Invoke plan-architect agent (references plan-architect.md protocol)
+4. Extract plan path from agent output and validate plan file
+5. Save checkpoint with plan path and metadata
+6. Display completion status and proceed to implementation
 
-1. READ workflow_state to identify completed phases and available artifacts
-2. EXTRACT research report paths from workflow_state.research_reports array (if research phase completed)
-3. EXTRACT user's original workflow description
-4. EXTRACT project_name and thinking_mode from workflow_state
-5. VERIFY all referenced files exist before passing to planning agent
+**Pattern Details**: See [Orchestration Patterns - Planning Phase](../templates/orchestration-patterns.md#planning-phase-sequential-execution) for:
+- Complete context extraction procedure
+- Planning agent prompt template with all placeholders
+- Plan validation checklist and bash verification commands
+- Checkpoint creation with plan metadata
+- State management and TodoWrite updates
+- Full workflow example with timing
 
-**Context Sources**:
+**Key Execution Requirements**:
 
-**From Research Phase** (if research completed):
-```yaml
-research_context:
-  report_paths: workflow_state.research_reports  # Array of file paths only
-  topics: workflow_state.topic_slugs  # Topics investigated
-  # DO NOT read report content - agent will use Read tool selectively
-```
+1. **Context Preparation** (Step 1):
+   ```yaml
+   Planning Context:
+     research_reports: [array of paths] OR null  # From research phase
+     workflow_description: "[original user request]"
+     project_name: "[generated in research or from request]"
+     thinking_mode: "[from research phase]" OR null
+     claude_md_path: "/path/to/CLAUDE.md"
 
-**Example**:
-```yaml
-research_context:
-  report_paths: [
-    "specs/reports/existing_patterns/001_auth_patterns.md",
-    "specs/reports/security_practices/001_best_practices.md",
-    "specs/reports/framework_implementations/001_lua_auth.md"
-  ]
-  topics: ["existing_patterns", "security_practices", "framework_implementations"]
-```
+   Context Injection:
+     - Provide report PATHS only (not summaries)
+     - Agent uses Read tool to access reports selectively
+     - Include thinking mode for consistency
+     - No orchestration logic passed to agent
+   ```
 
-**From User Request**:
-```yaml
-user_context:
-  workflow_description: workflow_state.workflow_description  # Original user request
-  project_name: workflow_state.project_name  # Generated in research phase
-  workflow_type: workflow_state.workflow_type  # feature|refactor|debug|investigation
-  thinking_mode: workflow_state.thinking_mode  # Determined in research phase Step 1.5
-```
+2. **Agent Invocation** (Step 3):
+   - **SINGLE** Task tool invocation (sequential, not parallel)
+   - Subagent type: general-purpose
+   - Reference: plan-architect.md behavioral guidelines
+   - Agent can invoke /plan slash command
+   - Wait for agent completion before proceeding
 
-**From Project Standards**:
-```yaml
-standards_reference:
-  claude_md_path: "/home/benjamin/.config/CLAUDE.md"
-  # Agent will read this file for project-specific standards
-```
+3. **Plan Validation** (Step 4):
+   ```bash
+   Required Sections:
+     - ## Metadata (Date, Feature, Scope, Standards, Research Reports)
+     - ## Overview (Success criteria)
+     - ## Implementation Phases (Numbered phases with tasks)
+     - ## Testing Strategy
 
-**Context Injection Strategy**:
-- Provide report file paths ONLY (not full summaries) - agent uses Read tool to access content selectively
-- Include user's original request for full context understanding
-- Reference CLAUDE.md path for project standards
-- Include thinking_mode from research phase for consistency
-- NO orchestration details or phase routing logic passed to agent
+   Validation:
+     - Plan file exists at extracted path
+     - All required sections present
+     - Tasks reference specific files
+     - Research reports referenced (if research performed)
+     - Max 1 retry if validation fails
+   ```
 
-**Context Validation Checklist**:
-- [ ] Research report paths exist (if research phase completed)
-- [ ] User workflow description is clear and complete
-- [ ] Project name is set correctly
-- [ ] Thinking mode is specified (if applicable)
-- [ ] CLAUDE.md path is valid
+4. **Checkpoint and State** (Step 5):
+   - Save checkpoint with: plan_path, plan_number, phase_count, complexity
+   - Store ONLY plan path (not content) - agent reads file when needed
+   - Update workflow_state.current_phase = "implementation"
+   - Mark planning complete in completed_phases array
 
-#### Step 2: Generate Planning Agent Prompt
+**Context Reduction**:
+- **Research reports**: Pass paths (~50 chars each) instead of full content (~1000+ chars)
+- **Plan output**: Store path (~50 chars) instead of full plan (~5000+ chars)
+- **Total savings**: ~95-98% context reduction for subsequent phases
 
-GENERATE the complete prompt for the plan-architect agent using the template below.
+**Performance Metrics**:
+- **Simple planning**: 1-2 minutes (direct implementation)
+- **Medium planning**: 2-4 minutes (with research integration)
+- **Complex planning**: 4-6 minutes (synthesis of multiple reports)
 
-**EXECUTE NOW**:
-
-1. SUBSTITUTE all placeholders in the template with actual values from Step 1
-2. VERIFY all research report paths are included (if research phase completed)
-3. VERIFY thinking_mode is prepended if applicable
-4. CONSTRUCT complete prompt string for Task tool invocation
-
-**Placeholders to Substitute**:
-- [THINKING_MODE]: Value from workflow_state.thinking_mode (e.g., "think hard") or empty if not set
-- [FEATURE_NAME]: Extracted from workflow_description or project_name
-- [USER_WORKFLOW_DESCRIPTION]: Original user request from workflow_state
-- [REPORT_PATHS]: Array of research report paths with descriptions
-- [PROJECT_STANDARDS_PATH]: Path to CLAUDE.md
-
-**Complete Prompt Template**:
-
-```markdown
-[THINKING_MODE_LINE]
-
-# Planning Task: Create Implementation Plan for [FEATURE_NAME]
-
-## Context
-
-### User Request
-[Original workflow description]
-
-### Research Reports
-[If research phase completed, provide report paths:]
-
-Available Research Reports:
-1. **Existing Patterns**
-   - Path: specs/reports/existing_patterns/001_auth_patterns.md
-   - Topic: Current implementation analysis
-   - Use Read tool to access full findings
-
-2. **Security Practices**
-   - Path: specs/reports/security_practices/001_best_practices.md
-   - Topic: Industry standards (2025)
-   - Use Read tool to access recommendations
-
-3. **Framework Implementations**
-   - Path: specs/reports/framework_implementations/001_lua_auth.md
-   - Topic: Implementation options and trade-offs
-   - Use Read tool to access detailed comparisons
-
-**Instructions**: Read relevant reports selectively based on planning needs. All reports should be referenced in the plan metadata's "Research Reports" section.
-
-[If no research: "Direct implementation - no prior research reports"]
-
-### Project Standards
-Reference standards at: /home/benjamin/.config/CLAUDE.md
-
-## Objective
-Create a comprehensive, phased implementation plan for [feature/task] that:
-- Synthesizes research findings into actionable steps
-- Defines clear implementation phases with tasks
-- Establishes testing strategy for each phase
-- Follows project coding standards and conventions
-
-## Requirements
-
-### Plan Structure
-Use the /plan command to generate a structured implementation plan:
+**Quick Example**:
 
 ```bash
-/plan [feature description] [research-report-path-if-exists]
-```
-
-The plan should include:
-- Metadata (date, feature, scope, standards file, research reports)
-- Overview and success criteria
-- Technical design decisions
-- Implementation phases with specific tasks
-- Testing strategy
-- Documentation requirements
-- Risk assessment
-
-### Task Specificity
-Each task should:
-- Reference specific files to create/modify
-- Include line number ranges where applicable
-- Specify testing requirements
-- Define validation criteria
-
-### Context from Research
-[If research completed]
-Incorporate these key findings:
-- [Insight 1]
-- [Insight 2]
-- [Insight 3]
-
-Recommended approach: [From research synthesis]
-
-## Expected Output
-
-**Primary Output**: Path to generated implementation plan
-- Format: `specs/plans/NNN_feature_name.md`
-- Location: Most appropriate directory in project structure
-- **Note**: The /plan command will automatically:
-  - Read specs directory from research reports (if provided)
-  - Check/register in `.claude/SPECS.md`
-  - Include "Specs Directory" in plan metadata
-
-**Secondary Output**: Brief summary of plan
-- Number of phases
-- Estimated complexity
-- Key technical decisions
-
-## Success Criteria
-- Plan follows project standards (CLAUDE.md)
-- Phases are well-defined and testable
-- Tasks are specific and actionable
-- Testing strategy is comprehensive
-- Plan integrates research recommendations
-
-## Error Handling
-- If /plan command fails: Report error and provide manual planning guidance
-- If standards unclear: Make reasonable assumptions following best practices
-- If research conflicts: Document trade-offs and chosen approach
-```
-
-End of prompt template.
-
-**Prompt Verification Checklist**:
-- [ ] Thinking mode prepended if applicable (check workflow_state.thinking_mode)
-- [ ] Feature name substituted correctly
-- [ ] User workflow description included
-- [ ] Research report paths listed (if research phase completed) or "no prior research" noted
-- [ ] Project standards path (/home/benjamin/.config/CLAUDE.md) included
-- [ ] Expected output format specified (plan file path + summary)
-- [ ] Success criteria clearly defined
-
-#### Step 3: Invoke Planning Agent
-
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
-
-SEND this Task tool invocation NOW with these exact parameters:
-
-```json
-{
-  "subagent_type": "general-purpose",
-  "description": "Create implementation plan for [FEATURE_NAME] using plan-architect protocol",
-  "prompt": "Read and follow the behavioral guidelines from:\n/home/benjamin/.config/.claude/agents/plan-architect.md\n\nYou are acting as a Plan Architect with the tools and constraints defined in that file.\n\n[COMPLETE_PROMPT_FROM_STEP_2]"
-}
-```
-
-**Substitutions**:
-- [FEATURE_NAME]: Feature name from workflow_state.project_name
-- [COMPLETE_PROMPT_FROM_STEP_2]: Full prompt string generated in Step 2 (with all placeholders already substituted)
-
-**Execution Details**:
-- This is a SINGLE agent invocation (sequential execution, not parallel)
-- Agent has full access to project files for analysis
-- Agent can invoke /plan slash command
-- Agent will return plan file path and summary
-
-**WAIT** for planning agent to complete before proceeding to Step 4.
-
-**Monitoring**:
-- **Progress Streaming**: WATCH for `PROGRESS: <message>` markers in agent output
-  - Examples: `PROGRESS: Analyzing requirements...`, `PROGRESS: Designing 4 phases...`
-  - DISPLAY progress updates to user in real-time
-- Track planning progress through agent updates
-- Watch for plan file creation notification
-
-#### Step 4: Extract Plan Path and Validation
-
-EXTRACT plan file path from planning agent output and VALIDATE plan quality.
-
-**EXECUTE NOW**:
-
-1. PARSE agent output to extract plan file path
-2. EXTRACT plan metadata (number, phases, complexity)
-3. VALIDATE plan file exists and is well-formed
-4. VERIFY plan meets quality requirements
-
-**Path Extraction Algorithm**:
-
-From planning agent output:
-
-```
-Step 1: SEARCH for plan path pattern
-- Pattern: "specs/plans/NNN_*.md" or "PLAN_PATH: specs/plans/..."
-- Extract: Full file path
-
-Step 2: PARSE plan metadata
-- Plan number: NNN (from filename)
-- Read file metadata section
-- Extract: phase_count, complexity, research_reports
-
-Step 3: CONSTRUCT plan data structure
-plan_data = {
-  path: "specs/plans/NNN_feature_name.md",
-  number: NNN,
-  phase_count: N,
-  complexity: "Low|Medium|High"
-}
-
-Step 4: STORE in workflow_state
-workflow_state.plan_path = plan_data.path
-workflow_state.plan_number = plan_data.number
-```
-
-**Validation Bash Commands**:
-
-```bash
-# Verify plan file exists
-PLAN_PATH="specs/plans/NNN_feature_name.md"
-if [ -f "$PLAN_PATH" ]; then
-  echo "✓ Plan file exists: $PLAN_PATH"
-else
-  echo "✗ Plan file missing: $PLAN_PATH"
-  exit 1
-fi
-
-# Verify plan has required sections
-REQUIRED_SECTIONS=("## Metadata" "## Overview" "## Implementation Phases" "## Testing Strategy")
-for SECTION in "${REQUIRED_SECTIONS[@]}"; do
-  if grep -q "$SECTION" "$PLAN_PATH"; then
-    echo "✓ Section found: $SECTION"
-  else
-    echo "✗ Missing section: $SECTION"
-    VALIDATION_FAILED=true
-  fi
-done
-
-# Verify plan references research reports (if research phase completed)
-if [ ${#RESEARCH_REPORTS[@]} -gt 0 ]; then
-  if grep -q "Research Reports:" "$PLAN_PATH"; then
-    echo "✓ Plan references research reports"
-  else
-    echo "⚠ Warning: Plan doesn't reference research reports"
-  fi
-fi
-```
-
-**Validation Checklist**:
-- [ ] Plan file exists at expected path
-- [ ] Plan file is readable (not empty, not corrupted)
-- [ ] Plan includes required metadata fields (Date, Feature, Scope, Standards File)
-- [ ] Plan has Implementation Phases section with numbered phases
-- [ ] Plan includes Testing Strategy section
-- [ ] Plan tasks reference specific files (not just abstract descriptions)
-- [ ] Plan references research reports in metadata (if research phase completed)
-
-**If Validation Fails**:
-- **Missing File**: Check agent output for errors, retry planning agent invocation (max 1 retry)
-- **Incomplete Plan**: Invoke planning agent again with clarification about missing sections
-- **No File References**: Accept plan but note tasks may be less specific than desired
-- **If Retry Fails**: Escalate to user with error details and partial plan (if exists)
-
-#### Step 5: Save Planning Checkpoint
-
-SAVE workflow checkpoint after planning phase completion.
-
-**EXECUTE NOW**:
-
-USE the checkpoint utility to save planning phase state:
-
-```bash
-# Source checkpoint utilities
-source .claude/lib/checkpoint-utils.sh
-
-# Prepare checkpoint data
-CHECKPOINT_DATA=$(cat <<EOF
-{
-  "workflow_type": "orchestrate",
-  "project_name": "${PROJECT_NAME}",
-  "workflow_description": "${USER_WORKFLOW_DESCRIPTION}",
-  "status": "plan_ready",
-  "current_phase": "planning",
-  "completed_phases": ["research", "planning"],
-  "workflow_state": {
-    "research_reports": ${RESEARCH_REPORTS_JSON},
-    "plan_path": "${PLAN_PATH}",
-    "plan_number": ${PLAN_NUMBER},
-    "phase_count": ${PHASE_COUNT},
-    "complexity": "${COMPLEXITY}",
-    "thinking_mode": "${THINKING_MODE}"
-  },
-  "performance_metrics": {
-    "research_time": "${RESEARCH_DURATION}",
-    "planning_start_time": "${PLANNING_START_TIME}",
-    "planning_end_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "planning_duration": "${PLANNING_DURATION}"
-  },
-  "next_phase": "implementation"
-}
-EOF
+# Step 1: Prepare context
+RESEARCH_REPORTS=( \
+  "specs/reports/existing_patterns/001_analysis.md" \
+  "specs/reports/security_practices/001_practices.md" \
 )
+WORKFLOW_DESC="Add user authentication with email and password"
+THINKING_MODE="think hard"
 
-# Save checkpoint
-CHECKPOINT_PATH=$(save_checkpoint "orchestrate" "${PROJECT_NAME}" "$CHECKPOINT_DATA")
-echo "Checkpoint saved: $CHECKPOINT_PATH"
-```
+# Step 3: Invoke planning agent
+# Task tool invocation with plan-architect.md reference
+# Agent reads research reports, invokes /plan command
 
-**Checkpoint Fields Explanation**:
+# Step 4: Extract and validate
+PLAN_PATH="specs/plans/013_user_authentication.md"
+# Verify plan exists, has required sections, references research
 
-- **workflow_type**: Always "orchestrate" for this command
-- **project_name**: Generated in research phase Step 3.5
-- **workflow_description**: Original user request
-- **status**: "plan_ready" indicates planning phase complete
-- **current_phase**: "planning" (phase just completed)
-- **completed_phases**: Array of all completed phases (["research", "planning"] or just ["planning"] if research skipped)
-- **workflow_state.plan_path**: Plan file path for implementation phase
-- **workflow_state.plan_number**: Plan number (NNN) for reference
-- **workflow_state.phase_count**: Number of implementation phases
-- **workflow_state.complexity**: Plan complexity (Low|Medium|High)
-- **performance_metrics**: Timing data for performance analysis
-- **next_phase**: "implementation" (where to resume if interrupted)
+# Step 5: Save checkpoint
+CHECKPOINT=".claude/checkpoints/orchestrate_user_authentication_20251013.json"
+# Store: plan_path, plan_number=013, phase_count=4, complexity=Medium
 
-**Context Update**:
-- Store ONLY plan path in workflow_state, not plan content (agent will read file when needed)
-- Mark planning phase as completed in completed_phases array
-- Prepare workflow_state for implementation phase
-
-**Benefits**:
-- **Resumability**: Can resume from implementation phase if interrupted
-- **State Preservation**: Plan path and metadata preserved
-- **Performance Tracking**: Planning duration recorded for metrics
-- **Error Recovery**: Can rollback to pre-implementation state if needed
-
-Proceed to Step 6 only after checkpoint successfully saved.
-
-#### Step 6: Planning Phase Completion
-
-OUTPUT completion status to user with comprehensive details.
-
-**EXECUTE NOW**:
-
-1. VERIFY all planning phase success criteria met
-2. FORMAT completion message with plan details
-3. DISPLAY status to user
-4. CONFIRM transition to implementation phase
-
-**Success Criteria Verification**:
-- [ ] Plan file created successfully
-- [ ] Plan includes all required sections (Metadata, Phases, Testing)
-- [ ] Plan metadata complete (Date, Scope, Standards)
-- [ ] Plan references research reports (if research phase completed)
-- [ ] Checkpoint saved successfully
-- [ ] workflow_state updated with plan_path
-
-**Completion Message Format**:
-
-```markdown
+# Step 6: Display completion
 ✓ Planning Phase Complete
-
-**Plan Created**: specs/plans/NNN_feature_name.md
-
-**Plan Details**:
-- Plan Number: NNN
-- Implementation Phases: N
-- Complexity: Medium
-- Estimated Hours: X-Y
-
-[If research phase completed]
-**Incorporating Research From**:
-- specs/reports/existing_patterns/001_auth_patterns.md
-- specs/reports/security_practices/001_best_practices.md
-- specs/reports/framework_implementations/001_lua_auth.md
-
-**Performance**:
-- Planning Time: X minutes Y seconds
-
-**Checkpoint Saved**: .claude/checkpoints/orchestrate_[project_name]_[timestamp].json
-
-**Next Phase**: Implementation
-```
-
-**State Management**:
-
-UPDATE workflow_state after planning phase completes:
-
-```yaml
-workflow_state.current_phase = "implementation"
-workflow_state.execution_tracking.phase_start_times["planning"] = [planning start timestamp]
-workflow_state.execution_tracking.phase_end_times["planning"] = [current timestamp]
-workflow_state.execution_tracking.agents_invoked += 1  # plan-architect agent
-workflow_state.execution_tracking.files_created += 1  # plan file
-workflow_state.completed_phases.append("planning")
-workflow_state.context_preservation.plan_path = [extracted plan path]
-```
-
-UPDATE TodoWrite to mark planning complete and implementation as next:
-
-```json
-{
-  "todos": [
-    {
-      "content": "Analyze workflow and identify research topics",
-      "status": "completed",
-      "activeForm": "Analyzing workflow and identifying research topics"
-    },
-    {
-      "content": "Execute parallel research phase",
-      "status": "completed",
-      "activeForm": "Executing parallel research phase"
-    },
-    {
-      "content": "Create implementation plan",
-      "status": "completed",
-      "activeForm": "Creating implementation plan"
-    },
-    {
-      "content": "Implement features with testing",
-      "status": "in_progress",
-      "activeForm": "Implementing features with testing"
-    },
-    // ... remaining todos unchanged ...
-  ]
-}
-```
-
-**Transition Confirmation**:
-
-After displaying completion message, confirm workflow will proceed to implementation phase:
-```
+Plan Created: specs/plans/013_user_authentication.md
+Phases: 4, Complexity: Medium, Est. Hours: 12-15
+Incorporating Research From: 2 reports
+Planning Time: 2m 45s
 → Proceeding to Implementation Phase
 ```
 
-Proceed immediately to Implementation Phase Step 1 (Prepare Implementation Context).
-
-#### Step 7: Complete Planning Phase Execution Example
-
-**Full Workflow Example**: "Add user authentication with email and password" (continuing from completed Research Phase)
-
-**Context from Research Phase**:
-```
-Research Phase Completed:
-- 3 research reports created
-- Project name: "user_authentication"
-- Thinking mode: "think hard"
-- Complexity score: 8
-```
-
-**Step 1: Prepare Planning Context**
-```
-EXTRACT context from workflow_state:
-
-research_context:
-  report_paths: [
-    "specs/reports/existing_patterns/001_auth_patterns.md",
-    "specs/reports/security_practices/001_best_practices.md",
-    "specs/reports/framework_implementations/001_lua_auth.md"
-  ]
-  topics: ["existing_patterns", "security_practices", "framework_implementations"]
-
-user_context:
-  workflow_description: "Add user authentication with email and password"
-  project_name: "user_authentication"
-  workflow_type: "feature"
-  thinking_mode: "think hard"
-
-standards_reference:
-  claude_md_path: "/home/benjamin/.config/CLAUDE.md"
-
-Context validation:
-✓ 3 research report paths exist
-✓ User workflow description clear
-✓ Project name set: user_authentication
-✓ Thinking mode specified: think hard
-✓ CLAUDE.md path valid
-```
-
-**Step 2: Generate Planning Agent Prompt**
-```
-SUBSTITUTE placeholders in template:
-
-- [THINKING_MODE]: "**Thinking Mode**: think hard"
-- [FEATURE_NAME]: "User Authentication"
-- [USER_WORKFLOW_DESCRIPTION]: "Add user authentication with email and password"
-- [REPORT_PATHS]:
-  1. specs/reports/existing_patterns/001_auth_patterns.md - Current auth patterns
-  2. specs/reports/security_practices/001_best_practices.md - Security standards (2025)
-  3. specs/reports/framework_implementations/001_lua_auth.md - Lua auth libraries
-- [PROJECT_STANDARDS_PATH]: /home/benjamin/.config/CLAUDE.md
-
-Prompt verification:
-✓ Thinking mode prepended
-✓ Feature name substituted
-✓ User workflow description included
-✓ All 3 research reports listed
-✓ Project standards path included
-✓ Expected output format specified
-```
-
-**Step 3: Invoke Planning Agent**
-```
-Task tool invocation sent:
-
-{
-  "subagent_type": "general-purpose",
-  "description": "Create implementation plan for User Authentication using plan-architect protocol",
-  "prompt": "Read and follow: .claude/agents/plan-architect.md\n\n**Thinking Mode**: think hard\n\n# Planning Task: Create Implementation Plan for User Authentication\n\n[Complete prompt with all substitutions...]"
-}
-
-Agent execution:
-PROGRESS: Reading research reports...
-PROGRESS: Analyzing security requirements from reports...
-PROGRESS: Designing 4 implementation phases...
-PROGRESS: Creating plan file...
-PROGRESS: Planning complete.
-
-Agent completed in 2m 45s
-```
-
-**Step 4: Extract Plan Path and Validation**
-```
-Agent output:
-"I've created a comprehensive implementation plan at specs/plans/013_user_authentication.md.
-The plan includes 4 phases with approximately 12-15 hours of implementation work..."
-
-Extracted plan data:
-{
-  path: "specs/plans/013_user_authentication.md",
-  number: "013",
-  phase_count: 4,
-  complexity: "Medium"
-}
-
-Validation commands executed:
-✓ Plan file exists: specs/plans/013_user_authentication.md
-✓ Section found: ## Metadata
-✓ Section found: ## Overview
-✓ Section found: ## Implementation Phases
-✓ Section found: ## Testing Strategy
-✓ Plan references research reports
-
-All validations passed
-```
-
-**Step 5: Save Planning Checkpoint**
-```
-Checkpoint saved: .claude/checkpoints/orchestrate_user_authentication_20251012_145810.json
-
-Checkpoint contents:
-{
-  "workflow_type": "orchestrate",
-  "project_name": "user_authentication",
-  "status": "plan_ready",
-  "current_phase": "planning",
-  "completed_phases": ["research", "planning"],
-  "workflow_state": {
-    "research_reports": [
-      "specs/reports/existing_patterns/001_auth_patterns.md",
-      "specs/reports/security_practices/001_best_practices.md",
-      "specs/reports/framework_implementations/001_lua_auth.md"
-    ],
-    "plan_path": "specs/plans/013_user_authentication.md",
-    "plan_number": "013",
-    "phase_count": 4,
-    "complexity": "Medium",
-    "thinking_mode": "think hard"
-  },
-  "performance_metrics": {
-    "research_time": "3m 24s",
-    "planning_duration": "2m 45s"
-  },
-  "next_phase": "implementation"
-}
-```
-
-**Step 6: Planning Phase Completion**
-```
-✓ Planning Phase Complete
-
-**Plan Created**: specs/plans/013_user_authentication.md
-
-**Plan Details**:
-- Plan Number: 013
-- Implementation Phases: 4
-- Complexity: Medium
-- Estimated Hours: 12-15
-
-**Incorporating Research From**:
-- specs/reports/existing_patterns/001_auth_patterns.md
-- specs/reports/security_practices/001_best_practices.md
-- specs/reports/framework_implementations/001_lua_auth.md
-
-**Performance**:
-- Planning Time: 2 minutes 45 seconds
-
-**Checkpoint Saved**: .claude/checkpoints/orchestrate_user_authentication_20251012_145810.json
-
-**Next Phase**: Implementation
-
-→ Proceeding to Implementation Phase
-```
-
-This example demonstrates the complete planning phase execution flow from research output to validated implementation plan.
+**Proceed to Implementation Phase** after planning checkpoint saved and plan validated.
 
 ### Implementation Phase (Adaptive Execution)
 
-#### Step 1: Extract Implementation Context
-
-EXTRACT plan path and metadata from planning phase output to prepare for implementation agent invocation.
-
-**EXECUTE NOW: Extract Context from Planning Phase**
-
-From the planning phase checkpoint (saved in Step 5 of Planning Phase), EXTRACT:
-
-1. **Plan File Path**:
-   - Variable: plan_path
-   - Example: "specs/plans/042_user_authentication.md"
-   - Source: planning_phase_checkpoint.outputs.plan_path
-
-2. **Plan Metadata**:
-   - Plan number: Extract from filename (NNN prefix)
-   - Phase count: Read from plan file metadata
-   - Complexity level: Read from plan metadata or estimate
-
-3. **Store in workflow_state**:
-   ```yaml
-   workflow_state.implementation_context:
-     plan_path: "[extracted_path]"
-     plan_number: "[NNN]"
-     phase_count: "[N]"
-     complexity: "[Low|Medium|High]"
-   ```
-
-**Context Extraction Commands**:
-```bash
-# Extract plan path from checkpoint
-PLAN_PATH=$(jq -r '.outputs.plan_path' < checkpoint_plan_ready.json)
-
-# Extract plan number from filename
-PLAN_NUMBER=$(basename "$PLAN_PATH" | grep -oP '^\d+')
-
-# Read phase count from plan file
-PHASE_COUNT=$(grep -c "^### Phase" "$PLAN_PATH")
-
-# Read complexity from metadata
-COMPLEXITY=$(grep "^- \*\*Complexity\*\*:" "$PLAN_PATH" | cut -d: -f2 | tr -d ' ')
-```
-
-**Validation**:
-- Verify plan file exists: Use Read tool to check plan_path
-- Verify plan is complete: Check for all required sections (phases, tasks, testing)
-- If validation fails: Report error and halt workflow
-
-**Verification Checklist**:
-- [ ] Plan path extracted and validated (file exists)
-- [ ] Plan number parsed correctly (3-digit format)
-- [ ] Phase count matches plan structure
-- [ ] Complexity level identified or defaulted
-
-#### Step 2: Build Implementation Agent Prompt
-
-**EXECUTE NOW: Construct Code-Writer Prompt**
-
-BUILD the complete prompt for the code-writer agent using this template:
-
-**Prompt Template** (use verbatim, substituting bracketed variables):
-
-```
-Read and follow the behavioral guidelines from:
-/home/benjamin/.config/.claude/agents/code-writer.md
-
-You are acting as a Code Writer Agent with the tools and constraints
-defined in that file.
-
-# Implementation Task: Execute Implementation Plan
-
-## Context
-
-### Implementation Plan
-Plan file: [plan_path]
-Plan number: [plan_number]
-Total phases: [phase_count]
-Complexity: [complexity]
-
-Read the complete plan to understand:
-- All implementation phases
-- Specific tasks for each phase
-- Testing requirements per phase
-- Success criteria
-
-### Project Standards
-Reference standards at: /home/benjamin/.config/CLAUDE.md
-
-Apply these standards during code generation:
-- Indentation: 2 spaces, expandtab
-- Naming: snake_case for variables/functions
-- Error handling: Use pcall for Lua, try-catch for others
-- Line length: ~100 characters soft limit
-- Documentation: Comment non-obvious logic
-
-## Objective
-
-Execute the implementation plan phase by phase using the /implement command.
-
-## Requirements
-
-### Execution Approach
-
-Use the /implement command to execute the plan:
-
-```bash
-/implement [plan_path]
-```
-
-The /implement command will:
-- Parse plan and identify all phases with dependencies
-- Execute phases in dependency order (parallel where possible)
-- Run tests after each phase
-- Create git commit for each completed phase
-- Handle errors with automatic retry (max 3 attempts)
-- Update plan with completion markers
-
-### Phase-by-Phase Execution
-
-For each phase, /implement will:
-1. Display phase name and tasks
-2. Implement all tasks in phase following project standards
-3. Run phase-specific tests
-4. Validate all tests pass
-5. Create structured git commit
-6. Save checkpoint before next phase
-
-### Testing Requirements
-
-**CRITICAL**: Tests must run after EACH phase, not just at the end.
-
-- Run tests after completing each phase
-- Tests must pass before proceeding to next phase
-- If tests fail: STOP and report (do not continue to next phase)
-- Test commands: Use commands specified in plan or project CLAUDE.md
-
-### Error Handling
-
-- Automatic retry for transient errors (max 3 attempts per operation)
-- If tests fail: DO NOT proceed to next phase
-- Report test failures with detailed error messages and file locations
-- Preserve all completed work even if later phase fails
-- Save checkpoint at failure point for debugging
-
-## Expected Output
-
-**SUCCESS CASE** - All Phases Complete:
-```
-TESTS_PASSING: true
-PHASES_COMPLETED: [N]/[N]
-FILES_MODIFIED: [file1.ext, file2.ext, ...]
-GIT_COMMITS: [hash1, hash2, ...]
-IMPLEMENTATION_STATUS: success
-```
-
-**FAILURE CASE** - Tests Failed:
-```
-TESTS_PASSING: false
-PHASES_COMPLETED: [M]/[N]
-FAILED_PHASE: [N]
-ERROR_MESSAGE: [Test failure details with file locations]
-FILES_MODIFIED: [files changed before failure]
-IMPLEMENTATION_STATUS: failed
-```
-
-## Output Format Requirements
-
-**REQUIRED**: Structure your final output to include these exact markers so the orchestrator can parse results:
-
-1. Test status line: `TESTS_PASSING: true` or `TESTS_PASSING: false`
-2. Phases completed line: `PHASES_COMPLETED: M/N`
-3. If failed, include: `FAILED_PHASE: N` and `ERROR_MESSAGE: [details]`
-4. File changes line: `FILES_MODIFIED: [array of file paths]`
-5. Git commits line: `GIT_COMMITS: [array of commit hashes]`
-
-## Success Criteria
-
-- All plan phases executed successfully (N/N)
-- All tests passing after final phase
-- Code follows project standards (verified before each commit)
-- Git commits created for each phase with structured messages
-- No merge conflicts or build errors
-- Implementation status clearly indicated
-
-## Error Handling
-
-- **Timeout errors**: Retry with extended timeout (up to 600000ms)
-- **Test failures**: STOP immediately, report phase and error details
-- **Tool access errors**: Retry with available tools (Read/Write/Edit fallback)
-- **Persistent errors**: Report for debugging (do not skip or ignore)
-```
-
-**Variable Substitution**:
-Replace these variables from workflow_state:
-- [plan_path]: workflow_state.implementation_context.plan_path
-- [plan_number]: workflow_state.implementation_context.plan_number
-- [phase_count]: workflow_state.implementation_context.phase_count
-- [complexity]: workflow_state.implementation_context.complexity
-
-**Store Prompt**:
-```yaml
-workflow_state.implementation_prompt: "[generated_prompt]"
-```
-
-#### Step 3: Invoke Code-Writer Agent for Implementation
-
-**EXECUTE NOW: USE Task Tool to Invoke Code-Writer Agent**
-
-Invoke the code-writer agent NOW using the Task tool with these exact parameters:
-
-**Task Tool Invocation** (execute this call):
-
-```json
-{
-  "subagent_type": "general-purpose",
-  "description": "Execute implementation plan [plan_number] using code-writer protocol",
-  "timeout": 600000,
-  "prompt": "[workflow_state.implementation_prompt from Step 2]"
-}
-```
-
-**Timeout Justification**: 600000ms (10 minutes) allows for:
-- Multi-phase implementation (4-8 phases typical)
-- Test execution after each phase
-- Git commit creation per phase
-- Automatic error retry (up to 3 attempts)
-- Complex implementations with many files
-
-**Invocation Instructions**:
-1. USE the Task tool (not SlashCommand or Bash)
-2. SET subagent_type to "general-purpose"
-3. SET timeout to 600000 (not default 120000)
-4. PASS complete prompt from Step 2 verbatim
-5. WAIT for agent completion (do not proceed to Step 4 until done)
-
-**While Waiting for Agent**:
-
-Monitor agent output for PROGRESS markers:
-- `PROGRESS: Implementing Phase N: [phase name]...`
-- `PROGRESS: Running tests for Phase N...`
-- `PROGRESS: Creating git commit for Phase N...`
-- `PROGRESS: All tests passing, proceeding to Phase N+1...`
-
-Display progress updates to user in real-time for transparency.
-
-**After Agent Completes**:
-Store complete agent output for parsing in Step 4:
-```yaml
-workflow_state.implementation_output: "[agent_output]"
-```
-
-**Verification Checklist**:
-- [ ] Task tool invoked (not just described)
-- [ ] Timeout set to 600000ms (extended for complex implementations)
-- [ ] Agent type set to "general-purpose"
-- [ ] Complete prompt passed to agent
-- [ ] Agent output captured for status extraction
-
-#### Step 4: Parse Implementation Results and Test Status
-
-**EXECUTE NOW: Extract Status from Agent Output**
-
-PARSE the agent output (workflow_state.implementation_output) to extract implementation results.
-
-**Status Extraction Algorithm**:
-
-```python
-# Pseudo-code for status extraction
-
-# 1. Extract test status
-if "TESTS_PASSING: true" in agent_output:
-    tests_passing = True
-elif "TESTS_PASSING: false" in agent_output:
-    tests_passing = False
-else:
-    # Fallback: search for test result indicators
-    if "all tests pass" in agent_output.lower() or "✓ all passing" in agent_output.lower():
-        tests_passing = True
-    else:
-        tests_passing = False
-
-# 2. Extract phases completed
-match = re.search(r'PHASES_COMPLETED: (\d+)/(\d+)', agent_output)
-if match:
-    completed = int(match.group(1))
-    total = int(match.group(2))
-else:
-    # Fallback: count completed phase markers
-    completed = agent_output.count('[COMPLETED]')
-    total = workflow_state.implementation_context.phase_count
-
-# 3. Extract file changes
-match = re.search(r'FILES_MODIFIED: \[(.*?)\]', agent_output)
-if match:
-    files_modified = match.group(1).split(', ')
-else:
-    # Fallback: empty list
-    files_modified = []
-
-# 4. Extract git commits
-match = re.search(r'GIT_COMMITS: \[(.*?)\]', agent_output)
-if match:
-    git_commits = match.group(1).split(', ')
-else:
-    git_commits = []
-
-# 5. If tests failed, extract failure details
-if not tests_passing:
-    match = re.search(r'FAILED_PHASE: (\d+)', agent_output)
-    failed_phase = int(match.group(1)) if match else None
-
-    match = re.search(r'ERROR_MESSAGE: (.*?)(?:\n|$)', agent_output)
-    error_message = match.group(1) if match else "Unknown error"
-```
-
-**Concrete Extraction Commands**:
-
-```bash
-# Extract test status
-TESTS_PASSING=$(echo "$AGENT_OUTPUT" | grep -oP 'TESTS_PASSING: \K(true|false)' || echo "false")
-
-# Extract phases completed
-PHASES_COMPLETED=$(echo "$AGENT_OUTPUT" | grep -oP 'PHASES_COMPLETED: \K\d+/\d+' || echo "0/0")
-
-# Extract modified files
-FILES_MODIFIED=$(echo "$AGENT_OUTPUT" | grep -oP 'FILES_MODIFIED: \[\K[^\]]+' || echo "")
-
-# Extract git commits
-GIT_COMMITS=$(echo "$AGENT_OUTPUT" | grep -oP 'GIT_COMMITS: \[\K[^\]]+' || echo "")
-
-# If tests failed, extract failure details
-if [ "$TESTS_PASSING" = "false" ]; then
-    FAILED_PHASE=$(echo "$AGENT_OUTPUT" | grep -oP 'FAILED_PHASE: \K\d+' || echo "unknown")
-    ERROR_MESSAGE=$(echo "$AGENT_OUTPUT" | grep -oP 'ERROR_MESSAGE: \K.*' || echo "Unknown error")
-fi
-```
-
-**Store Results in Workflow State**:
-
-```yaml
-workflow_state.implementation_status:
-  tests_passing: [true|false]
-  phases_completed: "[M]/[N]"
-  files_modified: [array]
-  git_commits: [array]
-  status: "success|failed"
-
-# If failed:
-workflow_state.implementation_failure:
-  failed_phase: [N]
-  error_message: "[details]"
-  partial_completion: true
-```
-
-**Validation Checklist**:
-- [ ] Test status clearly extracted (true or false, not ambiguous)
-- [ ] Phase completion count matches plan structure
-- [ ] If tests passing: files_modified and git_commits present
-- [ ] If tests failing: failed_phase and error_message present
-- [ ] Status stored for use in Step 5 conditional branching
-
-**Error Handling**:
-If status extraction fails (cannot determine test status):
-- Log warning: "Could not parse implementation status from agent output"
-- Default to: tests_passing = false (safe default, triggers debugging)
-- Continue to Step 5 with failure status
-
-#### Step 5: Evaluate Test Status and Determine Next Phase
-
-**EXECUTE NOW: Branch Workflow Based on Test Results**
-
-EVALUATE the test status extracted in Step 4 and ROUTE the workflow accordingly.
-
-**Branching Decision Tree**:
-
-```
-READ workflow_state.implementation_status.tests_passing
-
-IF tests_passing == true:
-    ├─→ ROUTE: Documentation Phase (Phase 6)
-    ├─→ CHECKPOINT: implementation_complete
-    ├─→ STATUS: Implementation successful, all tests passing
-    └─→ PROCEED to Step 6 (Save Success Checkpoint)
-
-ELSE (tests_passing == false):
-    ├─→ ROUTE: Debugging Loop (Phase 5)
-    ├─→ CHECKPOINT: implementation_incomplete
-    ├─→ STATUS: Implementation failed, debugging required
-    ├─→ PREPARE: Debug context with error details
-    └─→ PROCEED to Step 6 (Save Failure Checkpoint)
-```
-
-**Decision Implementation**:
-
-```python
-# Execute this branching logic
-
-if workflow_state.implementation_status.tests_passing == True:
-    # SUCCESS PATH
-    next_phase = "documentation"
-    checkpoint_type = "implementation_complete"
-    workflow_status = "Tests passing, implementation successful"
-
-    # Prepare documentation context
-    documentation_context = {
-        "plan_path": workflow_state.implementation_context.plan_path,
-        "files_modified": workflow_state.implementation_status.files_modified,
-        "git_commits": workflow_state.implementation_status.git_commits,
-        "test_status": "all passing"
-    }
-
-else:
-    # FAILURE PATH
-    next_phase = "debugging"
-    checkpoint_type = "implementation_incomplete"
-    workflow_status = "Tests failing, debugging required"
-
-    # Prepare debugging context
-    debug_context = {
-        "plan_path": workflow_state.implementation_context.plan_path,
-        "failed_phase": workflow_state.implementation_failure.failed_phase,
-        "error_message": workflow_state.implementation_failure.error_message,
-        "files_modified": workflow_state.implementation_status.files_modified,
-        "phases_completed": workflow_state.implementation_status.phases_completed
-    }
-```
-
-**Context Preparation**:
-
-**FOR SUCCESS PATH** (tests passing):
-```yaml
-workflow_state.next_phase: "documentation"
-workflow_state.documentation_context:
-  plan_path: "[path]"
-  implementation_complete: true
-  files_modified: [array]
-  git_commits: [array]
-  test_results: "all passing"
-```
-
-**FOR FAILURE PATH** (tests failing):
-```yaml
-workflow_state.next_phase: "debugging"
-workflow_state.debug_context:
-  plan_path: "[path]"
-  failed_phase: [N]
-  error_message: "[details]"
-  files_modified: [array]
-  phases_completed: "[M]/[N]"
-  iteration: 0
-```
-
-**Store Branch Decision**:
-```yaml
-workflow_state.implementation_branch:
-  decision: "success|failure"
-  next_phase: "documentation|debugging"
-  timestamp: "[ISO 8601 timestamp]"
-  reason: "[Test status explanation]"
-```
-
-**Verification Checklist**:
-- [ ] Test status evaluated (not skipped)
-- [ ] Branch decision made (success or failure path chosen)
-- [ ] Context prepared for next phase
-- [ ] Workflow state updated with next_phase
-- [ ] If failure: debug_context includes all error details
-
-#### Step 6: Save Checkpoint for Implementation Phase
-
-**EXECUTE NOW: Save Checkpoint Based on Branch Decision**
-
-SAVE checkpoint using checkpoint-utils.sh based on the branch decision from Step 5.
-
-**Checkpoint Creation**:
-
-**IF SUCCESS PATH** (tests passing):
-
-```bash
-# Create success checkpoint
-CHECKPOINT_DATA=$(cat <<EOF
-{
-  "workflow": "orchestrate",
-  "phase_name": "implementation",
-  "completion_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "outputs": {
-    "tests_passing": true,
-    "phases_completed": "${PHASES_COMPLETED}",
-    "files_modified": [${FILES_MODIFIED}],
-    "git_commits": [${GIT_COMMITS}],
-    "status": "success"
-  },
-  "next_phase": "documentation",
-  "branch_decision": "success",
-  "performance": {
-    "implementation_time": "${DURATION_SECONDS}s",
-    "phases_executed": ${PHASE_COUNT}
-  },
-  "context_for_next_phase": {
-    "plan_path": "${PLAN_PATH}",
-    "files_modified": [${FILES_MODIFIED}],
-    "git_commits": [${GIT_COMMITS}]
-  }
-}
-EOF
-)
-
-# Save checkpoint
-.claude/lib/save-checkpoint.sh orchestrate "implementation_complete" "$CHECKPOINT_DATA"
-```
-
-**IF FAILURE PATH** (tests failing):
-
-```bash
-# Create failure checkpoint
-CHECKPOINT_DATA=$(cat <<EOF
-{
-  "workflow": "orchestrate",
-  "phase_name": "implementation",
-  "completion_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "outputs": {
-    "tests_passing": false,
-    "phases_completed": "${PHASES_COMPLETED}",
-    "failed_phase": ${FAILED_PHASE},
-    "error_message": "${ERROR_MESSAGE}",
-    "files_modified": [${FILES_MODIFIED}],
-    "status": "failed"
-  },
-  "next_phase": "debugging",
-  "branch_decision": "failure",
-  "debug_context": {
-    "plan_path": "${PLAN_PATH}",
-    "failed_phase": ${FAILED_PHASE},
-    "error_message": "${ERROR_MESSAGE}",
-    "files_modified": [${FILES_MODIFIED}],
-    "phases_completed": "${PHASES_COMPLETED}",
-    "iteration": 0
-  }
-}
-EOF
-)
-
-# Save checkpoint
-.claude/lib/save-checkpoint.sh orchestrate "implementation_incomplete" "$CHECKPOINT_DATA"
-```
-
-**Checkpoint File Locations**:
-- Success: `.claude/data/checkpoints/orchestrate_implementation_complete_[timestamp].json`
-- Failure: `.claude/data/checkpoints/orchestrate_implementation_incomplete_[timestamp].json`
-
-**Verification Checklist**:
-- [ ] Checkpoint file created in .claude/data/checkpoints/
-- [ ] Checkpoint contains all required fields (outputs, next_phase, context)
-- [ ] If success: includes files_modified and git_commits
-- [ ] If failure: includes failed_phase and error_message
-- [ ] Checkpoint enables workflow resumption from this point
-
-#### Step 7: Output Implementation Phase Status
-
-**EXECUTE NOW: Display Status Message to User**
-
-DISPLAY appropriate completion message based on branch decision from Step 5.
-
-**IF SUCCESS PATH** (tests passing):
-
-```markdown
-OUTPUT to user:
-
-✓ Implementation Phase Complete
-
-**Summary**:
-- All phases executed: [N]/[N]
-- Tests passing: ✓
-- Files modified: [M] files
-- Git commits: [N] commits
-
-**Modified Files**:
-[List each file from workflow_state.implementation_status.files_modified]
-
-**Git Commits**:
-[List each commit hash from workflow_state.implementation_status.git_commits]
-
-**Next Phase**: Documentation (Phase 6)
-
-The implementation succeeded. Proceeding to documentation phase to update
-project documentation and generate workflow summary.
-```
-
-**State Management** (Success Path):
-
-UPDATE workflow_state after implementation phase completes successfully:
-
-```yaml
-workflow_state.current_phase = "documentation"
-workflow_state.execution_tracking.phase_start_times["implementation"] = [impl start timestamp]
-workflow_state.execution_tracking.phase_end_times["implementation"] = [current timestamp]
-workflow_state.execution_tracking.agents_invoked += 1  # code-writer agent
-workflow_state.completed_phases.append("implementation")
-workflow_state.context_preservation.implementation_status.tests_passing = true
-workflow_state.context_preservation.implementation_status.files_modified = [modified files array]
-```
-
-UPDATE TodoWrite to mark implementation complete and skip debugging (tests passed):
-
-```json
-{
-  "todos": [
-    // ... previous todos all marked completed ...
-    {
-      "content": "Implement features with testing",
-      "status": "completed",
-      "activeForm": "Implementing features with testing"
-    },
-    {
-      "content": "Debug and fix test failures (if needed)",
-      "status": "completed",
-      "activeForm": "Debugging and fixing test failures (skipped - tests passed)"
-    },
-    {
-      "content": "Generate documentation and workflow summary",
-      "status": "in_progress",
-      "activeForm": "Generating documentation and workflow summary"
-    }
-  ]
-}
-```
-
-**IF FAILURE PATH** (tests failing):
-
-```markdown
-OUTPUT to user:
-
-⚠ Implementation Phase Incomplete
-
-**Summary**:
-- Phases completed: [M]/[N]
-- Failed at: Phase [N]
-- Tests passing: ✗
-
-**Failure Details**:
-Phase [N] failed with error:
-[error_message from workflow_state.implementation_failure.error_message]
-
-**Partial Progress**:
-Files modified before failure:
-[List each file from workflow_state.implementation_status.files_modified]
-
-**Next Phase**: Debugging Loop (Phase 5)
-
-The implementation encountered test failures. Entering debugging loop to
-investigate and fix issues. Maximum 3 debugging iterations before escalation.
-```
-
-**State Management** (Failure Path):
-
-UPDATE workflow_state after implementation phase fails:
-
-```yaml
-workflow_state.current_phase = "debugging"
-workflow_state.execution_tracking.phase_start_times["implementation"] = [impl start timestamp]
-workflow_state.execution_tracking.phase_end_times["implementation"] = [current timestamp]
-workflow_state.execution_tracking.agents_invoked += 1  # code-writer agent
-workflow_state.completed_phases.append("implementation")  # Marked complete even if failed
-workflow_state.context_preservation.implementation_status.tests_passing = false
-workflow_state.context_preservation.implementation_status.files_modified = [partial files array]
-workflow_state.execution_tracking.debug_iteration = 0  # Reset for debugging loop
-```
-
-UPDATE TodoWrite to mark implementation complete (with failure) and debugging as next:
-
-```json
-{
-  "todos": [
-    // ... previous todos all marked completed ...
-    {
-      "content": "Implement features with testing",
-      "status": "completed",
-      "activeForm": "Implementing features with testing (tests failed)"
-    },
-    {
-      "content": "Debug and fix test failures (if needed)",
-      "status": "in_progress",
-      "activeForm": "Debugging and fixing test failures"
-    },
-    {
-      "content": "Generate documentation and workflow summary",
-      "status": "pending",
-      "activeForm": "Generating documentation and workflow summary"
-    }
-  ]
-}
-```
-
-**Implementation Instructions**:
-
-```python
-# Display message based on branch decision
-
-if workflow_state.implementation_branch.decision == "success":
-    print(f"""
-✓ Implementation Phase Complete
-
-**Summary**:
-- All phases executed: {workflow_state.implementation_status.phases_completed}
-- Tests passing: ✓
-- Files modified: {len(workflow_state.implementation_status.files_modified)} files
-- Git commits: {len(workflow_state.implementation_status.git_commits)} commits
-
-**Modified Files**:
-{format_file_list(workflow_state.implementation_status.files_modified)}
-
-**Git Commits**:
-{format_commit_list(workflow_state.implementation_status.git_commits)}
-
-**Next Phase**: Documentation (Phase 6)
-    """)
-
-else:  # failure path
-    print(f"""
-⚠ Implementation Phase Incomplete
-
-**Summary**:
-- Phases completed: {workflow_state.implementation_status.phases_completed}
-- Failed at: Phase {workflow_state.implementation_failure.failed_phase}
-- Tests passing: ✗
-
-**Failure Details**:
-Phase {workflow_state.implementation_failure.failed_phase} failed with error:
-{workflow_state.implementation_failure.error_message}
-
-**Partial Progress**:
-Files modified before failure:
-{format_file_list(workflow_state.implementation_status.files_modified)}
-
-**Next Phase**: Debugging Loop (Phase 5)
-    """)
-```
-
-**Verification Checklist**:
-- [ ] Appropriate message displayed (success or failure)
-- [ ] Message includes all relevant details (files, commits, errors)
-- [ ] Next phase clearly indicated
-- [ ] User understands what happened and what comes next
-
-### Debugging Loop (Conditional - Only if Tests Fail)
-
-**ENTRY CONDITIONS**:
-```yaml
-if workflow_state.implementation_status.tests_passing == false:
-  ENTER debugging loop
-else:
-  SKIP to Phase 6 (Documentation)
-```
-
-**EXECUTE NOW: Initialize Debugging State**
-
-Before first iteration, initialize debugging state:
-
-```yaml
-workflow_state.debug_iteration = 0
-workflow_state.debug_topic_slug = ""      # Generated in Step 1
-workflow_state.debug_reports = []         # Populated each iteration
-workflow_state.debug_history = []         # Tracks all attempts
-```
-
-**Iteration Limit**: Maximum 3 debugging iterations. After 3 failures, escalate to user with actionable options.
-
-**Loop Strategy**: Each iteration follows this sequence:
-1. Generate debug topic slug (iteration 1 only)
-2. Invoke debug-specialist → create report file
-3. Extract report path and recommendations
-4. Invoke code-writer → apply fix from report
-5. Run tests again
-6. Evaluate results → continue, succeed, or escalate
-
----
-
-#### Step 1: Generate Debug Topic Slug (First Iteration Only)
-
-**EXECUTE NOW: Generate Topic Slug**
-
-IF debug_iteration == 1 AND debug_topic_slug is empty:
-
-ANALYZE the test failure error messages to categorize the issue type.
-
-**Topic Slug Algorithm**:
-
-1. **Phase-Based** (default): Use failed phase number from implementation
-   - Format: `phase{N}_failures`
-   - Example: Phase 1 failed → `phase1_failures`
-
-2. **Error-Type-Based** (preferred if pattern clear):
-   - Integration failures → `integration_issues`
-   - Timeout errors → `test_timeout`
-   - Configuration errors → `config_errors`
-   - Missing dependencies → `dependency_missing`
-   - Syntax/compilation → `syntax_errors`
-
-3. **Slug Rules**:
-   - Lowercase with underscores
-   - Concise (2-3 words max)
-   - Descriptive of root issue type
-
-**EXECUTE: Create Slug**
-
-```bash
-# Example slug generation logic
-if error_message contains "timeout":
-  debug_topic_slug = "test_timeout"
-elif error_message contains "config":
-  debug_topic_slug = "config_errors"
-elif error_message contains "integration":
-  debug_topic_slug = "integration_issues"
-elif error_message contains "dependency" or "module not found":
-  debug_topic_slug = "dependency_missing"
-else:
-  # Default: use failed phase number
-  debug_topic_slug = "phase{failed_phase_number}_failures"
-```
-
-**Store in workflow_state**:
-```yaml
-workflow_state.debug_topic_slug = "[generated_slug]"
-```
-
-**Examples**:
-- Integration test failure → `integration_issues`
-- Phase 1 config loading error → `phase1_failures` or `config_errors`
-- Test timeout in Phase 3 → `test_timeout`
-
----
-
-#### Step 2: Invoke Debug Specialist Agent with File Creation
-
-**EXECUTE NOW: USE the Task tool to invoke debug-specialist agent**
-
-This agent will:
-- Investigate test failure root cause
-- Analyze error messages and code context
-- Create persistent debug report file
-- Propose 2-3 solution options
-- Recommend best fix approach
-
-**Task Tool Invocation** (execute this now):
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Create debug report for test failures using debug-specialist protocol"
-  prompt: |
-    Read and follow the behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/debug-specialist.md
-
-    You are acting as a Debug Specialist Agent with the tools and constraints
-    defined in that file.
-
-    Create Debug Report File for Implementation Test Failures:
-
-    ## Context
-    - **Workflow**: "[workflow_state.workflow_description]"
-    - **Project**: [project_name]
-    - **Failed Phase**: Phase [failed_phase_number] - [phase_name]
-    - **Topic Slug**: [workflow_state.debug_topic_slug]
-    - **Iteration**: [workflow_state.debug_iteration] of 3
-
-    ## Test Failures
-    [workflow_state.implementation_status.test_output]
-
-    ## Error Details
-    - **Error messages**:
-      [workflow_state.implementation_status.error_messages]
-
-    - **Modified files**:
-      [workflow_state.implementation_status.files_modified]
-
-    - **Plan reference**: [workflow_state.plan_path]
-
-    [IF debug_iteration > 1:]
-    ## Previous Debug Attempts
-    [FOR each attempt in workflow_state.debug_history:]
-    ### Iteration [attempt.iteration]
-    - **Report**: [attempt.report_path]
-    - **Fix attempted**: [attempt.fix_attempted]
-    - **Result**: [attempt.result]
-    - **New errors**: [attempt.new_errors]
-
-    ## Investigation Requirements
-    - Analyze test failure patterns and root cause
-    - Review relevant code and configurations
-    - Consider previous debug attempts (if iteration > 1)
-    - Identify why previous fixes didn't work (if applicable)
-    - Propose 2-3 solutions with tradeoffs
-    - Recommend the most likely solution to succeed
-
-    ## Debug Report Creation Instructions
-    1. USE Glob to find existing reports: `debug/[debug_topic_slug]/[0-9][0-9][0-9]_*.md`
-    2. DETERMINE next report number (NNN format, incremental)
-    3. CREATE report file using Write tool:
-       Path: `debug/[debug_topic_slug]/NNN_[descriptive_name].md`
-    4. INCLUDE all required metadata fields (see agent file, lines 256-346)
-    5. RETURN file path in parseable format
-
-    ## Expected Output Format
-
-    **Primary Output** (required):
-    ```
-    DEBUG_REPORT_PATH: debug/[topic]/NNN_descriptive_name.md
-    ```
-
-    **Secondary Output** (required):
-    Brief summary (1-2 sentences):
-    - Root cause: [What is causing the failure]
-    - Recommended fix: Option [N] - [Brief description]
-
-    Example:
-    ```
-    DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
-
-    Root cause: Config file not initialized before first test runs.
-    Recommended fix: Option 2 - Add config initialization in test setup hook
-    ```
-}
-```
-
-**WAIT for agent completion before proceeding.**
-
----
-
-#### Step 3: Extract Debug Report Path and Recommendations
-
-**EXECUTE NOW: Parse Debug Specialist Output**
-
-From the debug-specialist agent output, EXTRACT the following information:
-
-**Required Extraction**:
-
-1. **Debug Report Path**:
-   - Pattern: `DEBUG_REPORT_PATH: debug/{topic}/NNN_*.md`
-   - Example: `DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md`
-   - Store in: `debug_report_path` variable
-
-2. **Root Cause Summary**:
-   - Pattern: After "Root cause:" line
-   - Extract: Brief 1-2 sentence description
-   - Store in: `root_cause` variable
-
-3. **Recommended Fix**:
-   - Pattern: After "Recommended fix:" line
-   - Extract: Which option number and brief description
-   - Store in: `recommended_fix` variable
-
-**EXECUTE: Validation Checklist**
-
-Before proceeding, verify:
-- [ ] Debug report file exists at extracted path
-- [ ] File contains all required metadata sections
-- [ ] Root cause clearly identified
-- [ ] 2-3 solution options proposed with tradeoffs
-- [ ] Recommended solution explicitly specified
-- [ ] File follows debug report structure (see debug-specialist.md lines 256-346)
-
-**IF validation fails**:
-- RETRY debug-specialist invocation with clarifying instructions
-- Maximum 2 retries before escalating to user
-
-**EXECUTE: Store in Workflow State**
-
-```yaml
-workflow_state.debug_reports.append(debug_report_path)
-
-# Example state after extraction:
-workflow_state:
-  debug_reports: [
-    "debug/phase1_failures/001_config_initialization.md"
-  ]
-```
-
-**Example Parsed Output**:
-```
-debug_report_path = "debug/phase1_failures/001_config_initialization.md"
-root_cause = "Config file not initialized before first test runs"
-recommended_fix = "Option 2 - Add config initialization in test setup hook"
-```
-
----
-
-#### Step 4: Apply Recommended Fix Using Code Writer Agent
-
-**EXECUTE NOW: USE the Task tool to invoke code-writer agent**
-
-This agent will:
-- Read the debug report created in Step 3
-- Understand the root cause and proposed solutions
-- Implement the recommended solution
-- Apply changes to affected files
-- Prepare code for testing (but NOT run tests yet)
-
-**Task Tool Invocation** (execute this now):
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Apply debug fixes from report using code-writer protocol"
-  prompt: |
-    Read and follow the behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/code-writer.md
-
-    You are acting as a Code Writer Agent with the tools and constraints
-    defined in that file.
-
-    Apply fixes from debug report:
-
-    ## Debug Report
-    **Path**: [debug_report_path from Step 3]
-
-    READ the report using the Read tool to understand:
-    - Root cause of test failures (Analysis section)
-    - Proposed solutions (Options 1-3 in Proposed Solutions section)
-    - Recommended solution (Recommendation section)
-    - Implementation steps (within recommended solution option)
-
-    ## Task
-    IMPLEMENT the recommended solution from the debug report.
-
-    ## Requirements
-    - Follow implementation steps from recommended solution option
-    - Apply changes to affected files using Edit or Write tools
-    - Follow project coding standards (reference: /home/benjamin/.config/CLAUDE.md)
-    - Add comments explaining the fix where appropriate
-    - DO NOT run tests yet (orchestrator will run tests in Step 5)
-
-    ## Context for Implementation
-    - **Iteration**: [workflow_state.debug_iteration] of 3
-    - **Previous attempts**: [IF iteration > 1: summary of previous fixes]
-    - **Files to modify**: [From debug report's recommended solution]
-
-    ## Expected Output
-    Provide a brief summary:
-    - **Files modified**: [list of files changed]
-    - **Changes made**: [brief description of what was fixed]
-    - **Ready for testing**: true
-
-    Example:
-    ```
-    Files modified:
-    - tests/setup.lua
-    - config/init.lua
-
-    Changes made:
-    - Added config initialization in test setup hook
-    - Ensured config loads before first test runs
-
-    Ready for testing: true
-    ```
-}
-```
-
-**WAIT for agent completion before proceeding to testing.**
-
-**EXECUTE: Capture Fix Summary**
-
-From code-writer output, extract:
-- `files_modified`: List of files changed
-- `fix_description`: Brief summary of changes
-- Store for debug history in Step 7
-
----
-
-#### Step 5: Run Tests Again
-
-**EXECUTE NOW: Run Tests to Validate Fix**
-
-After code-writer applies the fix, run tests to determine if issue is resolved.
-
-**Test Command Determination**:
-
-1. **From Plan** (preferred): Check `workflow_state.plan_path` for test command
-2. **From CLAUDE.md** (fallback): Check Testing Protocols section
-3. **Default**: Use project-standard test command
-
-**EXECUTE: Run Test Command**
-
-```bash
-# Execute test command via Bash tool
-# Example commands (use appropriate for project):
-
-# Claude Code project:
-bash .claude/tests/run_all_tests.sh
-
-# Python project:
-pytest tests/
-
-# JavaScript project:
-npm test
-
-# General:
-[test_command from plan or CLAUDE.md]
-```
-
-**EXECUTE: Capture Test Results**
-
-Parse test output to extract:
-
-1. **Test Status**:
-   ```yaml
-   tests_passing: true | false
-   ```
-
-2. **Test Output** (if failing):
-   ```yaml
-   test_output: "[Full test output for next iteration context]"
-   error_messages: [
-     "Error 1 from output",
-     "Error 2 from output"
-   ]
-   ```
-
-3. **Success Indicators**:
-   - All tests pass: `tests_passing = true`
-   - Same errors: `tests_passing = false, errors unchanged`
-   - New errors: `tests_passing = false, errors different`
-   - Fewer errors: `tests_passing = false, progress = true`
-
-**EXECUTE: Update Workflow State**
-
-```yaml
-workflow_state.implementation_status.tests_passing = [true|false]
-workflow_state.implementation_status.test_output = "[latest output]"
-workflow_state.implementation_status.error_messages = [extracted errors]
-```
-
-**Example Result**:
-```yaml
-# Success case:
-tests_passing: true
-test_output: "All 47 tests passed in 12.3s"
-
-# Failure case:
-tests_passing: false
-test_output: "[Full output showing 3 failing tests]"
-error_messages: [
-  "test_auth: JWT decode error",
-  "test_session: Token validation failed",
-  "test_middleware: nil config.secret"
-]
-```
-
----
-
-#### Step 6: Iteration Control and Decision Logic
-
-**EXECUTE NOW: Evaluate Test Results and Determine Next Action**
-
-Based on test results from Step 5, execute the appropriate branch:
-
-```python
-# Increment iteration counter (always at loop start)
-# NOTE: Counter incremented at START of iteration, not end
-workflow_state.debug_iteration += 1
-
-# Decision tree (evaluate in this order):
-
-IF tests_passing == true:
-  # SUCCESS PATH
-  EXECUTE: Branch 1 - Tests Passing (Success)
-
-ELIF debug_iteration >= 3:
-  # ESCALATION PATH (limit reached)
-  EXECUTE: Branch 2 - Escalation to User
-
-ELSE:
-  # CONTINUE PATH (try again)
-  EXECUTE: Branch 3 - Continue Debugging Loop
-```
-
----
-
-### Branch 1: Tests Passing (Success)
-
-**Condition**: `tests_passing == true`
-
-**EXECUTE: Success Actions**
-
-1. **Mark debugging successful**:
-   ```yaml
-   workflow_state.debug_status = "resolved"
-   workflow_state.debug_iterations_needed = debug_iteration
-   ```
-
-2. **Add resolution to debug history**:
-   ```yaml
-   workflow_state.debug_history.append({
-     iteration: debug_iteration,
-     report_path: debug_report_path,
-     fix_attempted: fix_description,
-     result: "Tests passing",
-     resolution: "Success"
-   })
-   ```
-
-3. **Update error history** (for tracking):
-   ```yaml
-   workflow_state.error_history.append({
-     phase: "implementation",
-     issue: root_cause,
-     debug_reports: workflow_state.debug_reports,
-     resolution: "Fixed in iteration {debug_iteration}",
-     fix_applied: fix_description
-   })
-   ```
-
-4. **SAVE checkpoint**:
+The implementation phase executes the plan using /implement command, runs tests after each phase, and conditionally enters debugging loop if tests fail.
+
+**When to Use Implementation Phase**:
+- **All workflows** that have a validated plan file
+- Follows planning phase completion
+- Single code-writer agent execution with /implement command
+- Conditional debugging loop (max 3 iterations) if tests fail
+
+**Quick Overview**:
+1. Extract plan path and metadata from planning checkpoint
+2. Build code-writer agent prompt with plan context
+3. Invoke code-writer agent with /implement command (extended timeout)
+4. Parse implementation results (test status, phases completed, files modified)
+5. Evaluate test status → Success: proceed to docs OR Failure: enter debugging loop
+6. Save checkpoint with implementation status
+7. Display implementation status and transition decision
+
+**Conditional Debugging Loop** (if tests fail):
+1. Generate debug topic slug (first iteration only)
+2. Invoke debug-specialist agent → creates report in debug/{topic}/NNN_report.md
+3. Extract report path and recommended fixes
+4. Apply fixes using code-writer agent
+5. Run tests again → Pass: exit loop OR Fail: continue
+6. Iteration control → Iteration < 3: retry OR Iteration ≥ 3: escalate to user
+
+**Pattern Details**: See [Orchestration Patterns - Implementation Phase](../templates/orchestration-patterns.md#implementation-phase-adaptive-execution) for:
+- Complete 7-step implementation execution procedure
+- Complete 7-step debugging loop procedure
+- Code-writer agent prompt template
+- Debug-specialist agent prompt template
+- Result parsing algorithms (regex patterns for status extraction)
+- Checkpoint creation for implementation and debugging states
+- Debugging iteration control and escalation logic
+- Full workflow examples with debugging scenarios
+
+**Key Execution Requirements**:
+
+1. **Context Extraction** (Step 1):
    ```bash
-   # Create checkpoint file with success status
-   cat > .claude/checkpoints/checkpoint_tests_passing.yaml << 'EOF'
-   phase_name: "debugging"
-   completion_time: $(date -Iseconds)
-   outputs:
+   # Extract from planning checkpoint
+   PLAN_PATH=$(jq -r '.workflow_state.plan_path' < checkpoint.json)
+   PLAN_NUMBER=$(basename "$PLAN_PATH" | grep -oP '^\d+')
+   PHASE_COUNT=$(grep -c "^### Phase" "$PLAN_PATH")
+   COMPLEXITY=$(grep "^- \*\*Complexity\*\*:" "$PLAN_PATH" | cut -d: -f2 | tr -d ' ')
+   ```
+
+2. **Agent Invocation** (Step 3):
+   ```json
+   {
+     "subagent_type": "general-purpose",
+     "description": "Execute implementation plan NNN using code-writer",
+     "timeout": 600000,  // CRITICAL: 10min for multi-phase execution
+     "prompt": "Read: .claude/agents/code-writer.md\n\n/implement [plan_path]"
+   }
+   ```
+
+3. **Result Parsing** (Step 4):
+   ```python
+   # Extract from agent output using regex
+   tests_passing = bool(re.search(r'TESTS_PASSING: true', output))
+   phases = re.search(r'PHASES_COMPLETED: (\d+)/(\d+)', output)
+   files = re.search(r'FILES_MODIFIED: \[(.*?)\]', output)
+   commits = re.search(r'GIT_COMMITS: \[(.*?)\]', output)
+   failed_phase = re.search(r'FAILED_PHASE: (\d+)', output)
+   error_msg = re.search(r'ERROR_MESSAGE: (.+)', output)
+   ```
+
+4. **Decision Logic** (Step 5):
+   ```yaml
+   Evaluation Tree:
+     tests_passing == true:
+       → Proceed to Documentation Phase (Success Path)
+     tests_passing == false:
+       → Enter Debugging Loop (Failure Path)
+         Loop Conditions:
+           - Max 3 debugging iterations
+           - Each iteration: debug report → fix → test
+           - Exit on: tests pass OR max iterations reached
+           - Escalate to user if max iterations exceeded
+   ```
+
+5. **Debugging Loop Requirements** (Conditional):
+   - **Debug Topic Slug** (first iter only): Extract from error type (e.g., "test_timeout", "null_pointer")
+   - **Debug Agent**: Invokes debug-specialist.md protocol
+   - **Report Creation**: debug/{topic}/NNN_report.md (gitignored for issue tracking)
+   - **Fix Application**: Code-writer applies recommended fixes
+   - **Iteration Tracking**: workflow_state.debug_iteration (0-3)
+   - **Escalation**: Present 3 debug reports to user, pause workflow
+
+6. **Checkpoint Creation** (Step 6):
+   ```yaml
+   Implementation Success Checkpoint:
+     status: "implementation_complete"
      tests_passing: true
-     debug_iterations: ${debug_iteration}
-     debug_reports: ${workflow_state.debug_reports[@]}
-     issues_resolved: ["${root_cause}"]
-     status: "success"
-   next_phase: "documentation"
-   performance:
-     debugging_time: "${duration}"
-     iterations_needed: ${debug_iteration}
-   EOF
-   ```
+     phases_completed: "N/N"
+     files_modified: [array]
+     git_commits: [array]
+     next_phase: "documentation"
 
-5. **OUTPUT to user**:
-   ```markdown
-   ✓ Debugging Phase Complete
-
-   Tests passing: ✓
-   Debug iterations: {debug_iteration}
-   Issues resolved: {issues_count}
-   Debug reports: {report_paths}
-
-   Next: Documentation Phase
-   ```
-
-**State Management** (Debugging Success):
-
-UPDATE workflow_state after debugging completes successfully:
-
-```yaml
-workflow_state.current_phase = "documentation"
-workflow_state.execution_tracking.phase_start_times["debugging"] = [debug start timestamp]
-workflow_state.execution_tracking.phase_end_times["debugging"] = [current timestamp]
-workflow_state.execution_tracking.debug_iteration = [final iteration number]
-workflow_state.execution_tracking.agents_invoked += [debug_iteration × 2]  # debug-specialist + code-writer per iteration
-workflow_state.completed_phases.append("debugging")
-workflow_state.context_preservation.debug_reports = [array of debug report paths]
-workflow_state.context_preservation.implementation_status.tests_passing = true
-```
-
-UPDATE TodoWrite to mark debugging complete:
-
-```json
-{
-  "todos": [
-    // ... previous todos all marked completed ...
-    {
-      "content": "Implement features with testing",
-      "status": "completed",
-      "activeForm": "Implementing features with testing"
-    },
-    {
-      "content": "Debug and fix test failures (if needed)",
-      "status": "completed",
-      "activeForm": "Debugging and fixing test failures"
-    },
-    {
-      "content": "Generate documentation and workflow summary",
-      "status": "in_progress",
-      "activeForm": "Generating documentation and workflow summary"
-    }
-  ]
-}
-```
-
-**EXIT debugging loop → PROCEED to Phase 6 (Documentation)**
-
----
-
-### Branch 2: Escalation to User
-
-**Condition**: `debug_iteration >= 3 AND tests_passing == false`
-
-**EXECUTE: Escalation Actions**
-
-1. **Mark debugging as escalated**:
-   ```yaml
-   workflow_state.debug_status = "escalated"
-   workflow_state.debug_iterations_needed = 3
-   ```
-
-2. **Add final attempt to debug history**:
-   ```yaml
-   workflow_state.debug_history.append({
-     iteration: 3,
-     report_path: debug_report_path,
-     fix_attempted: fix_description,
-     result: "Still failing after 3 iterations",
-     escalation_reason: "Maximum debugging iterations reached"
-   })
-   ```
-
-3. **SAVE escalation checkpoint**:
-   ```bash
-   # Create escalation checkpoint
-   cat > .claude/checkpoints/checkpoint_escalation.yaml << 'EOF'
-   phase_name: "debugging"
-   completion_time: $(date -Iseconds)
-   outputs:
+   Debugging Checkpoint (each iteration):
+     status: "debugging_iteration_M"
+     debug_iteration: M
+     debug_topic: "{topic}"
+     debug_reports: [array of M reports]
      tests_passing: false
-     debug_iterations: 3
-     debug_reports: ${workflow_state.debug_reports[@]}
-     unresolved_issues: ${workflow_state.implementation_status.error_messages[@]}
-     status: "escalated"
-   next_phase: "manual_intervention"
-   user_options: ["continue", "retry", "rollback", "terminate"]
-   debug_summary: |
-     Attempted 3 debugging iterations. Tests still failing.
-
-     Issues remaining:
-     ${workflow_state.implementation_status.error_messages[@]}
-
-     Debug reports created:
-     ${workflow_state.debug_reports[@]}
-   EOF
+     next_action: "retry" OR "escalate"
    ```
 
-4. **PRESENT escalation message to user**:
+**Context Reduction**:
+- **Plan reference**: Pass path (~50 chars) instead of full plan (~5000+ chars)
+- **Implementation output**: Store status markers (~200 chars) instead of full output (~3000+ chars)
+- **Debug reports**: Pass paths (~60 chars each) instead of full reports (~1500+ chars each)
 
-```markdown
-⚠️ **Debugging Loop: Maximum Iterations Reached**
+**Performance Metrics**:
+- **Implementation time**: 3-10 minutes per phase (depends on complexity)
+- **Total implementation**: 15-60 minutes (4-8 phases typical)
+- **Debug iteration**: 2-5 minutes per iteration
+- **Max debugging time**: 15 minutes (3 iterations × 5 min)
 
-**Status**: Escalation required after 3 debugging iterations
+**Quick Example - Success Path**:
 
----
+```bash
+# Step 1: Extract context
+PLAN_PATH="specs/plans/013_user_authentication.md"
+PHASE_COUNT=4
+COMPLEXITY="Medium"
 
-## Issue Summary
+# Step 3: Invoke code-writer (timeout 600000ms)
+# Agent executes: /implement specs/plans/013_user_authentication.md
+# Output after 25 minutes:
+PROGRESS: Implementing Phase 1: Database schema...
+PROGRESS: Running tests for Phase 1... ✓ All passing
+PROGRESS: Creating git commit for Phase 1... ✓ e8f3a21
+PROGRESS: Implementing Phase 2: Authentication API...
+PROGRESS: Running tests for Phase 2... ✓ All passing
+...
+PROGRESS: All phases complete - 4/4 phases
 
-**Original Problem**:
-[Root cause from first debug report: workflow_state.debug_history[0].root_cause]
+# Step 4: Parse results
+TESTS_PASSING: true
+PHASES_COMPLETED: 4/4
+FILES_MODIFIED: [users.lua, auth.lua, session.lua, tests/auth_spec.lua]
+GIT_COMMITS: [e8f3a21, a3f9b10, c7e2d43, f1a8c91]
+IMPLEMENTATION_STATUS: success
 
-**Tests Status**: Still failing after 3 fix attempts
+# Step 5: Evaluate → tests_passing == true
+→ Proceed to Documentation Phase
 
-**Unresolved Errors**:
-[FOR each error in workflow_state.implementation_status.error_messages:]
-- {error}
-
----
-
-## Debugging Attempts
-
-### Iteration 1
-- **Debug Report**: {workflow_state.debug_reports[0]}
-- **Fix Attempted**: {workflow_state.debug_history[0].fix_attempted}
-- **Result**: {workflow_state.debug_history[0].result}
-- **New Errors**: {workflow_state.debug_history[0].new_errors}
-
-### Iteration 2
-- **Debug Report**: {workflow_state.debug_reports[1]}
-- **Fix Attempted**: {workflow_state.debug_history[1].fix_attempted}
-- **Result**: {workflow_state.debug_history[1].result}
-- **New Errors**: {workflow_state.debug_history[1].new_errors}
-
-### Iteration 3
-- **Debug Report**: {workflow_state.debug_reports[2]}
-- **Fix Attempted**: {workflow_state.debug_history[2].fix_attempted}
-- **Result**: {workflow_state.debug_history[2].result}
-- **New Errors**: {workflow_state.debug_history[2].new_errors}
-
----
-
-## Your Options
-
-I've reached the maximum automated debugging iterations (3). Here are your options:
-
-**Option 1: Manual Investigation**
-- Review the 3 debug reports created:
-  - {workflow_state.debug_reports[0]}
-  - {workflow_state.debug_reports[1]}
-  - {workflow_state.debug_reports[2]}
-- Manually investigate and fix the issue
-- Resume workflow after fixing: Use checkpoint_escalation to resume
-
-**Option 2: Retry with Guidance**
-- Provide additional context or hints about the issue
-- I'll retry debugging with your guidance
-- Command: `/orchestrate resume --with-context "your guidance"`
-
-**Option 3: Alternative Approach**
-- Rollback to last successful phase (Phase 4: Implementation complete)
-- Try a different implementation approach
-- Command: `/orchestrate rollback phase4`
-
-**Option 4: Skip Debugging**
-- Proceed to documentation phase despite failing tests
-- Mark tests as "known issues" in documentation
-- Command: `/orchestrate continue --skip-tests`
-
-**Option 5: Terminate Workflow**
-- End workflow here, preserve all work completed
-- Checkpoints saved: research, planning, implementation, debugging attempts
-- Command: `/orchestrate terminate`
-
----
-
-## Checkpoint Saved
-
-A checkpoint has been saved at:
-- **Checkpoint ID**: `checkpoint_escalation`
-- **Phase**: debugging (incomplete)
-- **Resume Command**: `/orchestrate resume`
-
-All debug reports, implementation work, and history are preserved.
-
----
-
-## Recommended Next Steps
-
-1. **Investigate manually**: Start with the most recent debug report ({workflow_state.debug_reports[2]})
-2. **Check for patterns**: Do all 3 attempts share a common issue?
-3. **Review test configuration**: Are tests themselves correct?
-4. **Consider scope**: Is this issue within original workflow scope?
-
-**What would you like to do?** [Respond with option number or custom action]
+# Step 6: Save checkpoint (implementation_complete)
 ```
 
-**PAUSE workflow and WAIT for user input.**
+**Quick Example - Debugging Path**:
 
-**EXIT debugging loop → Wait for user decision**
+```bash
+# Step 1-3: Same as success path
+# Step 4: Parse results after Phase 2
+TESTS_PASSING: false
+PHASES_COMPLETED: 2/4
+FAILED_PHASE: 2
+ERROR_MESSAGE: auth_spec.lua:42 - Expected 200, got 401
 
----
+# Step 5: Evaluate → tests_passing == false
+→ Enter Debugging Loop
 
-### Branch 3: Continue Debugging Loop
+# Debugging Iteration 1:
+#   Step 1: Generate topic slug = "auth_status_code"
+#   Step 2: Invoke debug-specialist
+#   Output: debug/auth_status_code/001_session_cookie.md
+#   Step 3: Extract: "Check session cookie initialization"
+#   Step 4: Apply fix (code-writer modifies session.lua)
+#   Step 5: Run tests → TESTS_PASSING: true
+#   Step 6: Iteration control → tests pass, exit loop
 
-**Condition**: `debug_iteration < 3 AND tests_passing == false`
-
-**EXECUTE: Prepare for Next Iteration**
-
-1. **Add current attempt to debug history**:
-   ```yaml
-   workflow_state.debug_history.append({
-     iteration: debug_iteration,
-     report_path: debug_report_path,
-     fix_attempted: fix_description,
-     result: "Still failing",
-     new_errors: workflow_state.implementation_status.error_messages
-   })
-   ```
-
-2. **Prepare context for next iteration**:
-   - Keep `workflow_state.debug_topic_slug` (don't regenerate)
-   - Keep `workflow_state.debug_reports` (accumulate)
-   - Keep `workflow_state.debug_history` (accumulate)
-   - Update `error_messages` with latest failures
-
-3. **OUTPUT to user**:
-   ```markdown
-   Debugging iteration {debug_iteration} complete.
-   Tests still failing. Attempting iteration {debug_iteration + 1}...
-   ```
-
-4. **RETURN to Step 2** (Invoke Debug Specialist) with enriched context:
-   - Next invocation will include debug_history
-   - debug-specialist will see previous attempts
-   - code-writer will know what was already tried
-
-**CONTINUE debugging loop → RETURN to Step 2 (iteration {debug_iteration + 1})**
-
----
-
-**Summary of Decision Logic**:
-
-| Condition | Action | Next Phase |
-|-----------|--------|------------|
-| Tests passing | Save success checkpoint | Phase 6 (Documentation) |
-| Iteration >= 3, tests failing | Save escalation checkpoint, present options | User Decision |
-| Iteration < 3, tests failing | Add to history, continue loop | Step 2 (next iteration) |
-
----
-
-#### Step 7: Update Workflow State (All Branches)
-
-**EXECUTE: Update workflow_state (performed in all branches)**
-
-Update workflow state based on debugging outcome:
-
-```yaml
-# State updated in Branch 1 (Success):
-workflow_state.context_preservation.debug_reports: [
-  {
-    topic: "[debug_topic_slug]",
-    path: "debug/{topic}/NNN_*.md",
-    number: "NNN",
-    iteration: N,
-    resolved: true
-  }
-]
-
-# State updated in Branch 2 (Escalation):
-workflow_state.context_preservation.debug_reports: [
-  {topic: "...", path: "...", resolved: false},
-  {topic: "...", path: "...", resolved: false},
-  {topic: "...", path: "...", resolved: false}
-]
-
-# State updated in Branch 3 (Continue):
-workflow_state.debug_history: [
-  {iteration: 1, result: "Still failing", ...},
-  {iteration: 2, result: "Still failing", ...}
-]
+# Step 6: Save checkpoint (debugging_resolved, iteration_count=1)
+# Step 7: Display success with debugging note
+→ Proceed to Documentation Phase (resolved after 1 debug iteration)
 ```
 
----
+**Quick Example - Escalation Path**:
 
-#### Debugging Loop Code Examples
+```bash
+# Debugging Iteration 1: Tests still fail
+# Debugging Iteration 2: Tests still fail
+# Debugging Iteration 3: Tests still fail
 
-**Example 1: Single Iteration Success**
+# Step 6: Iteration control → debug_iteration=3 AND tests_passing=false
+→ Escalate to user
 
-```yaml
-# Scenario: Fix works on first try
+# Display:
+⚠️ Implementation Blocked - Manual Intervention Required
 
-Iteration 1:
-  debug_iteration: 1
-  debug_topic_slug: "phase1_failures"
+Debugging Attempts: 3 iterations
+Debug Reports Created:
+  1. debug/coroutine_state/001_async_hang.md
+  2. debug/coroutine_state/002_promise_deadlock.md
+  3. debug/coroutine_state/003_event_loop.md
 
-  Step 2: debug-specialist creates:
-    - Report: debug/phase1_failures/001_config_initialization.md
-    - Root cause: "Config not initialized before tests"
-    - Recommended: "Option 2 - Add init in test setup"
+Last Error: tests/async_spec.lua:15 - coroutine in wrong state
 
-  Step 3: Extract:
-    - debug_report_path = "debug/phase1_failures/001_config_initialization.md"
+Checkpoint Saved: .claude/checkpoints/orchestrate_..._escalation.json
 
-  Step 4: code-writer applies:
-    - Modified: tests/setup.lua
-    - Added: config.init() call in setup function
+Options:
+  1. Review debug reports and provide guidance
+  2. Adjust plan complexity and retry
+  3. Continue to documentation with known test failures (not recommended)
 
-  Step 5: Run tests:
-    - Result: All 47 tests pass
-    - tests_passing = true
-
-  Step 6: Branch 1 (Success):
-    - Save checkpoint(success)
-    - debug_iterations_needed = 1
-    - EXIT loop → Phase 6 (Documentation)
-
-Outcome: ✓ Success in 1 iteration
+Workflow paused - awaiting user input.
 ```
 
-**Example 2: Two Iteration Success**
-
-```yaml
-# Scenario: First fix incomplete, second fix succeeds
-
-Iteration 1:
-  debug_iteration: 1
-  debug_topic_slug: "integration_issues"
-
-  Step 2: debug-specialist creates:
-    - Report: debug/integration_issues/001_auth_token_missing.md
-    - Root cause: "Auth token not passed to middleware"
-    - Recommended: "Option 1 - Add token to request context"
-
-  Step 4: code-writer applies:
-    - Modified: middleware/auth.lua
-    - Added: token extraction from headers
-
-  Step 5: Run tests:
-    - Result: 2 tests still failing
-    - Error: "config.secret is nil"
-    - tests_passing = false
-
-  Step 6: Branch 3 (Continue):
-    - Add to debug_history[0]
-    - CONTINUE to Iteration 2
-
-Iteration 2:
-  debug_iteration: 2
-  debug_topic_slug: "integration_issues" (reuse)
-
-  Step 2: debug-specialist creates (with history):
-    - Report: debug/integration_issues/002_secret_initialization.md
-    - Context: "Previous fix addressed token extraction, but config.secret still nil"
-    - Root cause: "Secret not loaded in test environment"
-    - Recommended: "Option 2 - Mock secret in test config"
-
-  Step 4: code-writer applies:
-    - Modified: tests/config_mock.lua
-    - Added: config.secret = "test-secret-key"
-
-  Step 5: Run tests:
-    - Result: All tests pass
-    - tests_passing = true
-
-  Step 6: Branch 1 (Success):
-    - Save checkpoint(success)
-    - debug_iterations_needed = 2
-    - EXIT loop → Phase 6 (Documentation)
-
-Outcome: ✓ Success in 2 iterations
-```
-
-**Example 3: Three Iteration Escalation**
-
-```yaml
-# Scenario: Issue proves too complex for automated debugging
-
-Iteration 1:
-  debug_topic_slug: "test_timeout"
-  Report: debug/test_timeout/001_async_hang.md
-  Fix: Added timeout wrapper
-  Result: Still hangs (different line)
-
-Iteration 2:
-  Report: debug/test_timeout/002_promise_deadlock.md
-  Fix: Fixed promise resolution order
-  Result: New error - "coroutine error"
-
-Iteration 3:
-  debug_iteration: 3
-  Report: debug/test_timeout/003_coroutine_state.md
-  Fix: Added coroutine state cleanup
-  Result: Still failing - "coroutine in wrong state"
-  tests_passing = false
-
-Step 6: Branch 2 (Escalation):
-  debug_iteration >= 3 AND tests_passing == false
-  SAVE checkpoint(escalation)
-  PRESENT escalation message with 3 reports
-  PAUSE workflow
-  WAIT for user decision
-
-Outcome: ⚠️ Escalated to user after 3 iterations
-```
+**Proceed to Documentation Phase** after implementation succeeds OR user resolves escalation.
 
 ### Documentation Phase (Sequential Execution)
 

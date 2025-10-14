@@ -257,7 +257,7 @@ output/
 
 ## Workflow Orchestration
 
-For quality-critical conversions, batch processing, or when detailed logging is required, use orchestrated multi-stage workflows. This section documents reusable patterns for comprehensive conversion orchestration.
+For quality-critical conversions, batch processing, or detailed logging requirements, use orchestrated multi-stage workflows.
 
 ### When to Use Orchestration
 
@@ -271,714 +271,81 @@ Use orchestrated workflows when:
 
 For simple, one-off conversions, use the basic conversion strategies instead.
 
-### Multi-Stage Conversion Workflow Pattern
+### Workflow Phases
 
-The orchestrated workflow consists of 5 distinct phases, each with structured logging and verification.
+The orchestrated workflow consists of 5 distinct phases:
 
-#### Phase 1: Tool Detection Phase
+1. **Tool Detection**: Detect available tools with version information
+2. **Tool Selection**: Select best tool based on priority matrix
+3. **Conversion**: Execute conversions with automatic fallback
+4. **Verification**: Validate outputs and explain tool selection
+5. **Summary Reporting**: Generate comprehensive statistics
 
-Detect all available tools with version information and report availability status.
+**Pattern Details**: See [Document Conversion Orchestration](../docs/doc-conversion-orchestration.md) for:
+- Complete 5-phase workflow pattern with code examples
+- Template variables and customization options
+- Logging integration at each phase
+- Error handling and automatic fallback logic
+- Orchestration best practices
 
-**Pattern:**
+### Quick Reference
+
 ```bash
-# Initialize section
-echo "========================================" | tee -a "$LOG_FILE"
-echo "TOOL DETECTION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
+# Phase 1: Tool Detection
+if command -v markitdown &> /dev/null; then MARKITDOWN_AVAILABLE=true; fi
 
-# Check each tool with version
-if command -v pandoc &> /dev/null; then
-  PANDOC_VERSION=$(pandoc --version | head -n1)
-  echo "✓ Pandoc: AVAILABLE - $PANDOC_VERSION" | tee -a "$LOG_FILE"
-  PANDOC_AVAILABLE=true
-else
-  echo "✗ Pandoc: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  PANDOC_AVAILABLE=false
+# Phase 2: Tool Selection
+DOCX_TOOL=$([ "$MARKITDOWN_AVAILABLE" = true ] && echo "markitdown" || echo "pandoc")
+
+# Phase 3: Conversion with fallback
+if ! markitdown "$INPUT" 2>/dev/null > "$OUTPUT"; then
+  pandoc "$INPUT" -t gfm -o "$OUTPUT"  # Automatic fallback
 fi
 
-if command -v markitdown &> /dev/null; then
-  MARKITDOWN_VERSION=$(markitdown --version 2>&1 || echo "unknown")
-  echo "✓ MarkItDown: AVAILABLE - $MARKITDOWN_VERSION" | tee -a "$LOG_FILE"
-  MARKITDOWN_AVAILABLE=true
-else
-  echo "✗ MarkItDown: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKITDOWN_AVAILABLE=false
-fi
+# Phase 4: Verification
+FILE_SIZE=$(wc -c < "$OUTPUT")
+[ "$FILE_SIZE" -lt 100 ] && echo "⚠ Suspiciously small"
 
-# Check PyMuPDF4LLM
-if python3 -c "import pymupdf4llm" 2>/dev/null; then
-  PYMUPDF_VERSION=$(python3 -c "import pymupdf4llm; print(pymupdf4llm.__version__)" 2>/dev/null || echo "unknown")
-  echo "✓ PyMuPDF4LLM: AVAILABLE - version $PYMUPDF_VERSION" | tee -a "$LOG_FILE"
-  PYMUPDF_AVAILABLE=true
-else
-  echo "✗ PyMuPDF4LLM: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  PYMUPDF_AVAILABLE=false
-fi
-
-# Check PDF engines (for MD→PDF)
-if command -v typst &> /dev/null; then
-  TYPST_VERSION=$(typst --version 2>&1)
-  echo "✓ Typst: AVAILABLE - $TYPST_VERSION" | tee -a "$LOG_FILE"
-  TYPST_AVAILABLE=true
-else
-  echo "✗ Typst: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  TYPST_AVAILABLE=false
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
+# Phase 5: Summary
+echo "Conversions: $SUCCESS_COUNT succeeded, $FAILED_COUNT failed"
 ```
 
-**Key Points:**
-- Check ALL conversion tools, not just those needed for current task
-- Capture version information for debugging
-- Use checkmark symbols (✓/✗) for visual clarity
-- Log to both stdout and log file with `tee -a`
-- Set boolean flags for each tool's availability
-
-#### Phase 2: Tool Selection Phase
-
-Based on detection results, select the best available tool for each conversion type and report the selection with quality indicators.
-
-**Pattern:**
-```bash
-echo "" | tee -a "$LOG_FILE"
-echo "TOOL SELECTION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Select DOCX converter
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  DOCX_TOOL="markitdown"
-  echo "DOCX Converter: MarkItDown (HIGH quality, 75-80% fidelity)" | tee -a "$LOG_FILE"
-elif [ "$PANDOC_AVAILABLE" = true ]; then
-  DOCX_TOOL="pandoc"
-  echo "DOCX Converter: Pandoc (MEDIUM quality, 68% fidelity, fallback)" | tee -a "$LOG_FILE"
-else
-  DOCX_TOOL="none"
-  echo "DOCX Converter: NONE AVAILABLE - DOCX conversions will fail" | tee -a "$LOG_FILE"
-fi
-
-# Select PDF converter
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  PDF_TOOL="markitdown"
-  echo "PDF Converter: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
-elif [ "$PYMUPDF_AVAILABLE" = true ]; then
-  PDF_TOOL="pymupdf4llm"
-  echo "PDF Converter: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
-else
-  PDF_TOOL="none"
-  echo "PDF Converter: NONE AVAILABLE - PDF conversions will fail" | tee -a "$LOG_FILE"
-fi
-
-# Select PDF engine (for MD→PDF conversions)
-if [ "$TYPST_AVAILABLE" = true ]; then
-  PDF_ENGINE="typst"
-  echo "PDF Engine (MD→PDF): Typst (recommended)" | tee -a "$LOG_FILE"
-elif command -v xelatex &> /dev/null; then
-  PDF_ENGINE="xelatex"
-  echo "PDF Engine (MD→PDF): XeLaTeX (fallback)" | tee -a "$LOG_FILE"
-else
-  PDF_ENGINE="none"
-  echo "PDF Engine (MD→PDF): NONE AVAILABLE" | tee -a "$LOG_FILE"
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Follow priority matrix (MarkItDown > Pandoc for DOCX, MarkItDown > PyMuPDF4LLM for PDF)
-- Include quality indicators (PRIMARY/FALLBACK/BACKUP)
-- Indicate fallback/backup status when not using primary tool
-- Warn explicitly when no tools available
-- Store selected tool in variable for later use
-
-#### Phase 3: Conversion Phase
-
-Execute conversions with detailed logging showing which tool was used and the outcome.
-
-**Pattern:**
-```bash
-echo "" | tee -a "$LOG_FILE"
-echo "CONVERSION PHASE: DOCX → Markdown" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-if [ "$DOCX_TOOL" != "none" ]; then
-  echo "Converting $input_file → $output_file..." | tee -a "$LOG_FILE"
-  echo "Tool selected: $DOCX_TOOL" | tee -a "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-
-  case "$DOCX_TOOL" in
-    markitdown)
-      if markitdown "$input_file" 2>/dev/null > "$output_file"; then
-        echo "✓ SUCCESS: Conversion complete" | tee -a "$LOG_FILE"
-        echo "  Tool used: MarkItDown (HIGH quality, 75-80% fidelity)" | tee -a "$LOG_FILE"
-        echo "  Output: $output_file" | tee -a "$LOG_FILE"
-        CONVERSION_SUCCESS=true
-      else
-        echo "✗ FAILED: MarkItDown conversion failed" | tee -a "$LOG_FILE"
-        echo "  Attempting Pandoc fallback..." | tee -a "$LOG_FILE"
-
-        # Automatic fallback to Pandoc
-        if [ "$PANDOC_AVAILABLE" = true ]; then
-          if pandoc "$input_file" -t gfm --wrap=preserve -o "$output_file" 2>> "$LOG_FILE"; then
-            echo "✓ SUCCESS: Conversion complete (fallback)" | tee -a "$LOG_FILE"
-            echo "  Tool used: Pandoc (MEDIUM quality, 68% fidelity)" | tee -a "$LOG_FILE"
-            CONVERSION_SUCCESS=true
-          else
-            echo "✗ FAILED: Pandoc fallback also failed" | tee -a "$LOG_FILE"
-            CONVERSION_SUCCESS=false
-          fi
-        else
-          CONVERSION_SUCCESS=false
-        fi
-      fi
-      ;;
-
-    pandoc)
-      if pandoc "$input_file" -t gfm --wrap=preserve -o "$output_file" 2>> "$LOG_FILE"; then
-        echo "✓ SUCCESS: Conversion complete" | tee -a "$LOG_FILE"
-        echo "  Tool used: Pandoc (MEDIUM quality, 68% fidelity)" | tee -a "$LOG_FILE"
-        CONVERSION_SUCCESS=true
-      else
-        echo "✗ FAILED: Pandoc conversion failed" | tee -a "$LOG_FILE"
-        CONVERSION_SUCCESS=false
-      fi
-      ;;
-
-    *)
-      echo "✗ ERROR: Unknown tool: $DOCX_TOOL" | tee -a "$LOG_FILE"
-      CONVERSION_SUCCESS=false
-      ;;
-  esac
-
-  if [ "$CONVERSION_SUCCESS" = true ]; then
-    FILE_SIZE=$(wc -c < "$output_file")
-    echo "  File size: $FILE_SIZE bytes" | tee -a "$LOG_FILE"
-  fi
-else
-  echo "✗ SKIPPED: No DOCX converter available" | tee -a "$LOG_FILE"
-  CONVERSION_SUCCESS=false
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Log tool selection BEFORE conversion attempt
-- Include automatic fallback logic (MarkItDown→Pandoc)
-- Log success/failure with tool used and quality indicator
-- Report output file size for verification
-- Track conversion success for summary phase
-- Redirect stderr appropriately (suppress for MarkItDown, capture for others)
-
-#### Phase 4: Verification Phase
-
-Verify conversion results and explain tool selection decisions with decision tree logging.
-
-**Pattern:**
-```bash
-echo "" | tee -a "$LOG_FILE"
-echo "VERIFICATION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Decision tree logging for PDF tool selection
-echo "Tool Selection Decision Tree:" | tee -a "$LOG_FILE"
-echo "  Question: Is MarkItDown available?" | tee -a "$LOG_FILE"
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  echo "  Answer: YES" | tee -a "$LOG_FILE"
-  echo "  Result: Using MarkItDown (primary tool)" | tee -a "$LOG_FILE"
-else
-  echo "  Answer: NO" | tee -a "$LOG_FILE"
-  echo "  Question: Is PyMuPDF4LLM available?" | tee -a "$LOG_FILE"
-  if [ "$PYMUPDF_AVAILABLE" = true ]; then
-    echo "  Answer: YES" | tee -a "$LOG_FILE"
-    echo "  Result: Using PyMuPDF4LLM (backup)" | tee -a "$LOG_FILE"
-    echo "  Reason: MarkItDown not available" | tee -a "$LOG_FILE"
-  else
-    echo "  Answer: NO" | tee -a "$LOG_FILE"
-    echo "  Result: No PDF converter available" | tee -a "$LOG_FILE"
-  fi
-fi
-
-echo "" >> "$LOG_FILE"
-
-# File validation
-if [ -f "$output_file" ]; then
-  FILE_SIZE=$(wc -c < "$output_file")
-
-  if [ "$FILE_SIZE" -lt 100 ]; then
-    echo "⚠ WARNING: Output file suspiciously small ($FILE_SIZE bytes)" | tee -a "$LOG_FILE"
-  else
-    echo "✓ File size validation passed ($FILE_SIZE bytes)" | tee -a "$LOG_FILE"
-  fi
-
-  # Structure validation
-  HEADING_COUNT=$(grep -c '^#' "$output_file" || echo "0")
-  TABLE_COUNT=$(grep -c '^\|' "$output_file" || echo "0")
-  echo "✓ Document structure: $HEADING_COUNT headings, $TABLE_COUNT table rows" | tee -a "$LOG_FILE"
-else
-  echo "✗ ERROR: Output file not created" | tee -a "$LOG_FILE"
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Document WHY each tool was selected with decision tree format
-- Show question→answer flow through priority chain
-- Validate output file exists and has reasonable size
-- Perform structure checks (headings, tables)
-- Use warning symbols (⚠) for quality concerns
-- Explain fallback reasons explicitly
-
-#### Phase 5: Summary Reporting Phase
-
-Generate comprehensive summary with statistics, stage-by-stage results, and overall outcomes.
-
-**Pattern:**
-```bash
-echo "" | tee -a "$LOG_FILE"
-echo "SUMMARY REPORTING PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Stage-by-stage summary
-echo "Conversion Summary:" | tee -a "$LOG_FILE"
-echo "-------------------" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-echo "Stage 1 (MD→DOCX):" | tee -a "$LOG_FILE"
-if [ "$STAGE1_SUCCESS" = true ]; then
-  echo "  ✓ SUCCESS (Pandoc)" | tee -a "$LOG_FILE"
-else
-  echo "  ✗ FAILED" | tee -a "$LOG_FILE"
-fi
-echo "" >> "$LOG_FILE"
-
-echo "Stage 2 (DOCX→MD):" | tee -a "$LOG_FILE"
-echo "  Tool selected: $DOCX_TOOL" | tee -a "$LOG_FILE"
-if [ "$STAGE2_SUCCESS" = true ]; then
-  echo "  ✓ SUCCESS" | tee -a "$LOG_FILE"
-else
-  echo "  ✗ FAILED" | tee -a "$LOG_FILE"
-fi
-echo "" >> "$LOG_FILE"
-
-# Overall statistics
-echo "Overall Results:" | tee -a "$LOG_FILE"
-echo "----------------" >> "$LOG_FILE"
-TOTAL_STAGES=2
-SUCCESS_COUNT=0
-[ "$STAGE1_SUCCESS" = true ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-[ "$STAGE2_SUCCESS" = true ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-
-echo "Successful stages: $SUCCESS_COUNT / $TOTAL_STAGES" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Output files listing
-echo "Output Files:" | tee -a "$LOG_FILE"
-echo "-------------" >> "$LOG_FILE"
-for file in "$OUTPUT_DIR"/*.md "$OUTPUT_DIR"/*.docx "$OUTPUT_DIR"/*.pdf; do
-  [ -f "$file" ] && echo "  ✓ $file" | tee -a "$LOG_FILE"
-done
-echo "" >> "$LOG_FILE"
-
-echo "========================================" >> "$LOG_FILE"
-echo "Conversion completed: $(date)" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-echo ""
-echo "Multi-stage conversion complete!"
-echo "Log file: $LOG_FILE"
-```
-
-**Key Points:**
-- Summarize each stage individually
-- Report which tool was used for each stage
-- Calculate overall success rate
-- List all output files created
-- Add completion timestamp
-- Provide log file location to user
-
-### Orchestration Template Variables
-
-When generating orchestrated conversion scripts, use these parameterized variables:
-
-**Required Variables:**
-- `$INPUT_DIR` - Source directory for input files
-- `$OUTPUT_DIR` - Destination directory for converted files
-- `$LOG_FILE` - Path to detailed conversion log
-
-**Tool Availability Flags:**
-- `$PANDOC_AVAILABLE` - Boolean: Pandoc available
-- `$MARKITDOWN_AVAILABLE` - Boolean: MarkItDown available
-- `$PYMUPDF_AVAILABLE` - Boolean: PyMuPDF4LLM available
-- `$TYPST_AVAILABLE` - Boolean: Typst PDF engine available
-
-**Selected Tool Variables:**
-- `$DOCX_TOOL` - Selected DOCX converter (markitdown/pandoc/none)
-- `$PDF_TOOL` - Selected PDF converter (markitdown/pymupdf4llm/none)
-- `$PDF_ENGINE` - Selected PDF engine (typst/xelatex/none)
-
-**Status Tracking:**
-- `$STAGE1_SUCCESS` - Boolean: Stage 1 completion status
-- `$STAGE2_SUCCESS` - Boolean: Stage 2 completion status
-- `$CONVERSION_SUCCESS` - Boolean: Current conversion status
-
-### Best Practices for Orchestrated Workflows
-
-**Logging:**
-- Use `tee -a` to output to both console and log file simultaneously
-- Include timestamps for phase start/end
-- Use separator lines (===) for visual section breaks
-- Prefix messages with symbols (✓/✗/⚠) for status clarity
-
-**Error Handling:**
-- Don't use `set -e` in orchestrated workflows (continue on errors)
-- Track success/failure flags explicitly
-- Attempt fallback tools automatically when primary fails
-- Log failure reasons with context
-
-**Verification:**
-- Always verify output files exist before marking success
-- Check file sizes for reasonable values
-- Validate document structure (headings, tables)
-- Document WHY tools were selected in verification phase
-
-**Adaptability:**
-- Make tool detection extensible (easy to add new tools)
-- Use parameterized variables for all paths
-- Support custom venv paths via environment variables
-- Generate user-customizable scripts with clear comments
+**For Simple Conversions**: Skip orchestration overhead and use basic conversion strategies (see "Conversion Strategies" section).
 
 ## Logging System Patterns
 
-Comprehensive logging is essential for debugging, auditing, and quality verification. This section documents structured logging patterns for conversion workflows.
+Comprehensive logging is essential for debugging, auditing, and quality verification.
 
-### Log File Initialization
+**Patterns**: See [Logging Patterns](../docs/logging-patterns.md) for complete documentation:
+- Log file initialization with headers and context
+- Section headers with separators (major/minor)
+- Tool usage logging with quality indicators
+- Error logging with full context preservation
+- Timestamped entries for duration tracking
+- Progress logging with counters and percentages
+- Verification logging with pass/fail indicators
+- Decision tree logging for tool selection
+- Best practices for consistency and readability
 
-Initialize log files with headers, timestamps, and context information.
-
-**Pattern:**
+**Quick Example**:
 ```bash
-# Log file setup
-LOG_FILE="$OUTPUT_DIR/conversion.log"
-
-# Initialize with header
+# Initialize log
+LOG_FILE="conversion.log"
 echo "========================================" > "$LOG_FILE"
-echo "Document Conversion Task" >> "$LOG_FILE"
-echo "Started: $(date)" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
+echo "Conversion Task - $(date)" >> "$LOG_FILE"
 
-# Add context information
-echo "Input directory: $INPUT_DIR" >> "$LOG_FILE"
-echo "Output directory: $OUTPUT_DIR" >> "$LOG_FILE"
-echo "User: $(whoami)" >> "$LOG_FILE"
-echo "Host: $(hostname)" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Use `>` for first write (overwrites existing log)
-- Use `>>` for subsequent writes (appends)
-- Include timestamp in ISO 8601 or human-readable format
-- Add context (directories, user, host) for debugging
-- Use separator lines for visual clarity
-
-### Section Headers with Separators
-
-Structure log files with clear section boundaries.
-
-**Pattern:**
-```bash
-# Major section header
-echo "" >> "$LOG_FILE"
-echo "========================================" | tee -a "$LOG_FILE"
+# Log with sections and status symbols
 echo "TOOL DETECTION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
+echo "✓ MarkItDown: AVAILABLE" | tee -a "$LOG_FILE"
 
-# Minor section header
-echo "" >> "$LOG_FILE"
-echo "File Processing:" >> "$LOG_FILE"
-echo "-------------------" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Use `====` (40 chars) for major sections
-- Use `----` (20 chars) for subsections
-- Add blank lines before and after headers
-- Use `tee -a` to show headers in console too
-- ALL CAPS for major section names
-
-### Tool Usage Logging with Quality Indicators
-
-Log which tools were used with quality/fidelity metadata.
-
-**Pattern:**
-```bash
-# Log tool selection
-echo "Tool selected: $TOOL_NAME" | tee -a "$LOG_FILE"
-echo "Quality: HIGH (95% fidelity)" >> "$LOG_FILE"
-echo "Reason: Primary tool available" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Log tool execution result
-if [ "$CONVERSION_SUCCESS" = true ]; then
+# Log tool usage with quality indicator
+echo "Tool selected: MarkItDown (HIGH quality)" | tee -a "$LOG_FILE"
+if markitdown "$FILE" > output.md; then
   echo "✓ SUCCESS: Conversion complete" | tee -a "$LOG_FILE"
-  echo "  Tool used: MarkItDown (HIGH quality, 75-80% fidelity)" | tee -a "$LOG_FILE"
-  echo "  Duration: ${duration}s" >> "$LOG_FILE"
-else
-  echo "✗ FAILED: Conversion failed" | tee -a "$LOG_FILE"
-  echo "  Tool attempted: $TOOL_NAME" | tee -a "$LOG_FILE"
-  echo "  Error: $error_message" >> "$LOG_FILE"
 fi
 ```
 
-**Quality Indicators:**
-- **PRIMARY**: Primary tool (MarkItDown 75-80% for both DOCX and PDF)
-- **FALLBACK**: DOCX fallback tool (Pandoc 68%)
-- **BACKUP**: PDF backup tool (PyMuPDF4LLM, fast)
-
-**Key Points:**
-- Always log WHICH tool was used
-- Include quality/fidelity rating
-- Explain WHY this tool was selected (primary/fallback/only available)
-- Log execution duration for performance tracking
-- Use status symbols (✓/✗) for quick scanning
-
-### Error Logging with Context Preservation
-
-Capture errors with full context for debugging.
-
-**Pattern:**
-```bash
-# Capture error output
-ERROR_OUTPUT=$(conversion_command 2>&1)
-EXIT_CODE=$?
-
-if [ $EXIT_CODE -ne 0 ]; then
-  echo "✗ CONVERSION FAILED" | tee -a "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-  echo "Error Details:" >> "$LOG_FILE"
-  echo "  Exit code: $EXIT_CODE" >> "$LOG_FILE"
-  echo "  File: $input_file" >> "$LOG_FILE"
-  echo "  Tool: $TOOL_NAME" >> "$LOG_FILE"
-  echo "  Timestamp: $(date)" >> "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-  echo "Error Output:" >> "$LOG_FILE"
-  echo "$ERROR_OUTPUT" >> "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-
-  # Log context for debugging
-  echo "File Info:" >> "$LOG_FILE"
-  ls -lh "$input_file" >> "$LOG_FILE"
-  file "$input_file" >> "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-fi
-```
-
-**Key Points:**
-- Capture both stdout and stderr (`2>&1`)
-- Save exit code immediately
-- Log file path, tool name, timestamp
-- Include full error output
-- Add file metadata (size, type) for debugging
-- Preserve context even when continuing to next file
-
-### Timestamped Entries for Long-Running Operations
-
-Add timestamps for tracking duration and progress.
-
-**Pattern:**
-```bash
-# Start timestamp
-START_TIME=$(date +%s)
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting conversion: $filename" | tee -a "$LOG_FILE"
-
-# Conversion happens here...
-
-# End timestamp with duration
-END_TIME=$(date +%s)
-DURATION=$((END_TIME - START_TIME))
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $filename (${DURATION}s)" | tee -a "$LOG_FILE"
-```
-
-**Key Points:**
-- Use Unix timestamps (`date +%s`) for duration calculations
-- Use human-readable format for log entries
-- Log start and end times
-- Calculate and report duration
-- Useful for performance analysis and timeout debugging
-
-### Progress Logging for Batch Operations
-
-Track progress through batches with counters and percentages.
-
-**Pattern:**
-```bash
-TOTAL_FILES=10
-CURRENT_FILE=0
-
-for file in *.docx; do
-  CURRENT_FILE=$((CURRENT_FILE + 1))
-  PERCENT=$((CURRENT_FILE * 100 / TOTAL_FILES))
-
-  echo "" | tee -a "$LOG_FILE"
-  echo "[$CURRENT_FILE/$TOTAL_FILES] ($PERCENT%) Processing: $file" | tee -a "$LOG_FILE"
-
-  # Conversion logic...
-
-  if [ "$SUCCESS" = true ]; then
-    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-  else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-  fi
-done
-
-# Summary
-echo "" | tee -a "$LOG_FILE"
-echo "Batch Complete: $SUCCESS_COUNT succeeded, $FAILED_COUNT failed" | tee -a "$LOG_FILE"
-```
-
-**Key Points:**
-- Show current position and total (`[5/10]`)
-- Calculate and display percentage
-- Maintain running success/failure counters
-- Provide summary at end
-- Use `tee -a` to show progress in console
-
-### Verification Logging Pattern
-
-Log verification steps with clear pass/fail indicators.
-
-**Pattern:**
-```bash
-echo "" >> "$LOG_FILE"
-echo "Verification Checks:" >> "$LOG_FILE"
-echo "-------------------" >> "$LOG_FILE"
-
-# File exists check
-if [ -f "$output_file" ]; then
-  echo "✓ Output file created" >> "$LOG_FILE"
-else
-  echo "✗ Output file missing" >> "$LOG_FILE"
-  VERIFICATION_FAILED=true
-fi
-
-# File size check
-FILE_SIZE=$(wc -c < "$output_file" 2>/dev/null || echo "0")
-if [ "$FILE_SIZE" -gt 100 ]; then
-  echo "✓ File size acceptable: $FILE_SIZE bytes" >> "$LOG_FILE"
-else
-  echo "⚠ WARNING: File suspiciously small: $FILE_SIZE bytes" >> "$LOG_FILE"
-fi
-
-# Structure check
-HEADING_COUNT=$(grep -c '^#' "$output_file" 2>/dev/null || echo "0")
-TABLE_COUNT=$(grep -c '^\|' "$output_file" 2>/dev/null || echo "0")
-echo "✓ Document structure: $HEADING_COUNT headings, $TABLE_COUNT tables" >> "$LOG_FILE"
-
-# Image reference check
-IMAGE_COUNT=$(grep -c '!\[.*\](.*)' "$output_file" 2>/dev/null || echo "0")
-if [ "$IMAGE_COUNT" -gt 0 ]; then
-  echo "INFO: $IMAGE_COUNT image references found" >> "$LOG_FILE"
-fi
-```
-
-**Status Symbols:**
-- `✓` - Check passed
-- `✗` - Check failed (critical)
-- `⚠` - Warning (non-critical)
-- `INFO:` - Informational message
-
-**Key Points:**
-- Verify file existence first
-- Check file size for reasonable values
-- Validate document structure
-- Count and report structural elements
-- Use consistent status symbols
-- Distinguish critical failures from warnings
-
-### Decision Tree Logging
-
-Document WHY decisions were made with question→answer flow.
-
-**Pattern:**
-```bash
-echo "Tool Selection Decision Tree:" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-echo "Q: Is MarkItDown available?" >> "$LOG_FILE"
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  echo "A: YES" >> "$LOG_FILE"
-  echo "→ Selected: MarkItDown (primary tool)" >> "$LOG_FILE"
-else
-  echo "A: NO" >> "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-  echo "Q: Is Pandoc available?" >> "$LOG_FILE"
-  if [ "$PANDOC_AVAILABLE" = true ]; then
-    echo "A: YES" >> "$LOG_FILE"
-    echo "→ Selected: Pandoc (fallback)" >> "$LOG_FILE"
-    echo "→ Reason: MarkItDown not available" >> "$LOG_FILE"
-  else
-    echo "A: NO" >> "$LOG_FILE"
-    echo "→ Result: No converter available" >> "$LOG_FILE"
-    echo "→ Action: Skip DOCX conversion" >> "$LOG_FILE"
-  fi
-fi
-
-echo "" >> "$LOG_FILE"
-```
-
-**Key Points:**
-- Use Q: for questions, A: for answers
-- Use `→` for results and reasons
-- Show complete decision path
-- Explain fallback reasoning
-- Indent nested decision points
-- Makes debugging tool selection issues easier
-
-### Best Practices for Logging
-
-**Consistency:**
-- Use consistent status symbols throughout (✓/✗/⚠)
-- Use consistent separator styles (=== for major, --- for minor)
-- Use consistent timestamp formats
-- Use consistent indentation (2 spaces for details)
-
-**Completeness:**
-- Log tool detection results
-- Log tool selection and reasons
-- Log conversion attempts and results
-- Log verification checks
-- Log final summary statistics
-
-**Readability:**
-- Use `tee -a` for important messages (show in console + log)
-- Use blank lines to separate logical sections
-- Use indentation to show hierarchy
-- Use visual symbols for quick scanning
-
-**Context Preservation:**
-- Capture full error output
-- Log file metadata on errors
-- Save command-line arguments
-- Record environment variables (PATH, venv locations)
-
-**Performance Tracking:**
-- Log start/end timestamps
-- Calculate and report durations
-- Track batch progress with counters
-- Report summary statistics
+**Status Symbols**: ✓ (success), ✗ (failure), ⚠ (warning), INFO: (informational)
 
 ## Typical Workflows
 
@@ -1508,323 +875,34 @@ output/
 └── conversion.log
 ```
 
-## Reference: Standalone Script Template (Advanced Use Only)
+## Reference: Standalone Script Template
 
 **Note**: Direct execution via Bash tool is the default behavior. This template is provided only for users who explicitly request standalone, customizable scripts.
 
-For user reference when explicitly requested, I can generate standalone conversion scripts with full orchestration support. This template implements all 5 workflow phases with comprehensive logging, tool detection, automatic fallback, and verification.
+For user reference when explicitly requested, I can generate standalone conversion scripts with full orchestration support.
 
-**Template Usage:**
-```bash
-# Reference-only: Use for explicit script generation requests
-# Replace [PLACEHOLDER] values with actual paths/parameters
-# Customize workflow phases as needed for specific use cases
-```
+**Template Location**: See [Document Conversion Script Template](../docs/doc-conversion-script-template.sh) for:
+- Full 5-phase orchestrated bash script (~270 lines)
+- Parameterized variables (INPUT_DIR, OUTPUT_DIR, LOG_FILE)
+- Tool detection and selection logic
+- Automatic fallback implementation
+- Comprehensive logging integration
+- Verification and reporting phases
 
-**Full Orchestrated Template:**
-```bash
-#!/bin/bash
-# Orchestrated Document Conversion Script
-# Generated by doc-converter agent
-# Implements 5-phase workflow: Detection, Selection, Conversion, Verification, Summary
+**Usage Note**: This template is reference-only. Use for explicit script generation requests where users need customizable, standalone files.
 
-# Script parameters
-INPUT_DIR="${1:-.}"
-OUTPUT_DIR="${2:-./converted_output}"
-LOG_FILE="$OUTPUT_DIR/conversion.log"
+**Customization Options**:
+- **Simple conversions**: Remove orchestration phases (keep conversion + summary)
+- **Quality-critical**: Keep all 5 phases with extra validation
+- **Round-trip conversions**: Duplicate Phase 3 for multiple stages
+- **Multi-stage workflows**: Add stage-specific tracking and summaries
 
-# Create output directory
-mkdir -p "$OUTPUT_DIR"
-
-# ========================================
-# PHASE 1: TOOL DETECTION
-# ========================================
-echo "========================================" | tee "$LOG_FILE"
-echo "TOOL DETECTION PHASE" | tee -a "$LOG_FILE"
-echo "Started: $(date)" | tee -a "$LOG_FILE"
-echo "========================================" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Detect MarkItDown
-if command -v markitdown &> /dev/null; then
-  MARKITDOWN_VERSION=$(markitdown --version 2>&1 || echo "unknown")
-  echo "✓ MarkItDown: AVAILABLE - $MARKITDOWN_VERSION" | tee -a "$LOG_FILE"
-  MARKITDOWN_AVAILABLE=true
-else
-  echo "✗ MarkItDown: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  MARKITDOWN_AVAILABLE=false
-fi
-
-# Detect Pandoc
-if command -v pandoc &> /dev/null; then
-  PANDOC_VERSION=$(pandoc --version | head -n1)
-  echo "✓ Pandoc: AVAILABLE - $PANDOC_VERSION" | tee -a "$LOG_FILE"
-  PANDOC_AVAILABLE=true
-else
-  echo "✗ Pandoc: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  PANDOC_AVAILABLE=false
-fi
-
-# Detect PyMuPDF4LLM
-if python3 -c "import pymupdf4llm" 2>/dev/null; then
-  PYMUPDF_VERSION=$(python3 -c "import pymupdf4llm; print(pymupdf4llm.__version__)" 2>/dev/null || echo "unknown")
-  echo "✓ PyMuPDF4LLM: AVAILABLE - version $PYMUPDF_VERSION" | tee -a "$LOG_FILE"
-  PYMUPDF_AVAILABLE=true
-else
-  echo "✗ PyMuPDF4LLM: NOT AVAILABLE" | tee -a "$LOG_FILE"
-  PYMUPDF_AVAILABLE=false
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-# ========================================
-# PHASE 2: TOOL SELECTION
-# ========================================
-echo "" | tee -a "$LOG_FILE"
-echo "TOOL SELECTION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Select DOCX converter
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  DOCX_TOOL="markitdown"
-  echo "DOCX Converter: MarkItDown (HIGH quality, 75-80% fidelity)" | tee -a "$LOG_FILE"
-elif [ "$PANDOC_AVAILABLE" = true ]; then
-  DOCX_TOOL="pandoc"
-  echo "DOCX Converter: Pandoc (MEDIUM quality, 68% fidelity, fallback)" | tee -a "$LOG_FILE"
-else
-  DOCX_TOOL="none"
-  echo "DOCX Converter: NONE AVAILABLE - DOCX conversions will be skipped" | tee -a "$LOG_FILE"
-fi
-
-# Select PDF converter
-if [ "$MARKITDOWN_AVAILABLE" = true ]; then
-  PDF_TOOL="markitdown"
-  echo "PDF Converter: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
-elif [ "$PYMUPDF_AVAILABLE" = true ]; then
-  PDF_TOOL="pymupdf4llm"
-  echo "PDF Converter: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
-else
-  PDF_TOOL="none"
-  echo "PDF Converter: NONE AVAILABLE - PDF conversions will be skipped" | tee -a "$LOG_FILE"
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-# ========================================
-# PHASE 3: CONVERSION
-# ========================================
-echo "" | tee -a "$LOG_FILE"
-echo "CONVERSION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Initialize counters
-docx_success=0
-docx_failed=0
-pdf_success=0
-pdf_failed=0
-
-# Convert DOCX files
-if [ "$DOCX_TOOL" != "none" ]; then
-  echo "Converting DOCX files..." | tee -a "$LOG_FILE"
-
-  for file in "$INPUT_DIR"/*.docx; do
-    [ -e "$file" ] || continue
-
-    filename=$(basename "$file" .docx)
-    safe_name=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-    output_file="$OUTPUT_DIR/${safe_name}.md"
-
-    echo "  [$((docx_success + docx_failed + 1))] Processing: $filename" | tee -a "$LOG_FILE"
-
-    case "$DOCX_TOOL" in
-      markitdown)
-        if markitdown "$file" 2>/dev/null > "$output_file"; then
-          echo "    ✓ SUCCESS: MarkItDown (HIGH quality)" | tee -a "$LOG_FILE"
-          docx_success=$((docx_success + 1))
-        else
-          echo "    ✗ FAILED: MarkItDown failed, trying Pandoc fallback..." | tee -a "$LOG_FILE"
-          if [ "$PANDOC_AVAILABLE" = true ]; then
-            if pandoc "$file" -t gfm --wrap=preserve -o "$output_file" 2>> "$LOG_FILE"; then
-              echo "    ✓ SUCCESS: Pandoc (MEDIUM quality, fallback)" | tee -a "$LOG_FILE"
-              docx_success=$((docx_success + 1))
-            else
-              echo "    ✗ FAILED: Pandoc fallback also failed" | tee -a "$LOG_FILE"
-              docx_failed=$((docx_failed + 1))
-            fi
-          else
-            docx_failed=$((docx_failed + 1))
-          fi
-        fi
-        ;;
-      pandoc)
-        if pandoc "$file" -t gfm --wrap=preserve -o "$output_file" 2>> "$LOG_FILE"; then
-          echo "    ✓ SUCCESS: Pandoc (MEDIUM quality)" | tee -a "$LOG_FILE"
-          docx_success=$((docx_success + 1))
-        else
-          echo "    ✗ FAILED: Pandoc conversion failed" | tee -a "$LOG_FILE"
-          docx_failed=$((docx_failed + 1))
-        fi
-        ;;
-    esac
-  done
-else
-  echo "Skipping DOCX files (no converter available)" | tee -a "$LOG_FILE"
-fi
-
-echo "" >> "$LOG_FILE"
-
-# Convert PDF files
-if [ "$PDF_TOOL" != "none" ]; then
-  echo "Converting PDF files..." | tee -a "$LOG_FILE"
-
-  for file in "$INPUT_DIR"/*.pdf; do
-    [ -e "$file" ] || continue
-
-    filename=$(basename "$file" .pdf)
-    safe_name=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-    output_file="$OUTPUT_DIR/${safe_name}.md"
-
-    echo "  [$((pdf_success + pdf_failed + 1))] Processing: $filename" | tee -a "$LOG_FILE"
-
-    case "$PDF_TOOL" in
-      markitdown)
-        if markitdown "$file" 2>/dev/null > "$output_file"; then
-          echo "    ✓ SUCCESS: MarkItDown (PRIMARY tool)" | tee -a "$LOG_FILE"
-          pdf_success=$((pdf_success + 1))
-        else
-          echo "    ✗ FAILED: MarkItDown conversion failed" | tee -a "$LOG_FILE"
-          pdf_failed=$((pdf_failed + 1))
-        fi
-        ;;
-      pymupdf4llm)
-        if python3 -c "
-import pymupdf4llm
-md_text = pymupdf4llm.to_markdown('$file')
-with open('$output_file', 'w', encoding='utf-8') as f:
-    f.write(md_text)
-" 2>> "$LOG_FILE"; then
-          echo "    ✓ SUCCESS: PyMuPDF4LLM (BACKUP, fast)" | tee -a "$LOG_FILE"
-          pdf_success=$((pdf_success + 1))
-        else
-          echo "    ✗ FAILED: PyMuPDF4LLM conversion failed" | tee -a "$LOG_FILE"
-          pdf_failed=$((pdf_failed + 1))
-        fi
-        ;;
-    esac
-  done
-else
-  echo "Skipping PDF files (no converter available)" | tee -a "$LOG_FILE"
-fi
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-# ========================================
-# PHASE 4: VERIFICATION
-# ========================================
-echo "" | tee -a "$LOG_FILE"
-echo "VERIFICATION PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Verify converted files
-for file in "$OUTPUT_DIR"/*.md; do
-  [ -e "$file" ] || continue
-
-  FILE_SIZE=$(wc -c < "$file" 2>/dev/null || echo "0")
-
-  if [ "$FILE_SIZE" -lt 100 ]; then
-    echo "⚠ WARNING: $(basename "$file") suspiciously small ($FILE_SIZE bytes)" | tee -a "$LOG_FILE"
-  fi
-
-  # Structure validation
-  HEADING_COUNT=$(grep -c '^#' "$file" 2>/dev/null || echo "0")
-  TABLE_COUNT=$(grep -c '^\|' "$file" 2>/dev/null || echo "0")
-  echo "✓ $(basename "$file"): $HEADING_COUNT headings, $TABLE_COUNT tables" >> "$LOG_FILE"
-done
-
-echo "" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-# ========================================
-# PHASE 5: SUMMARY REPORTING
-# ========================================
-echo "" | tee -a "$LOG_FILE"
-echo "SUMMARY REPORTING PHASE" | tee -a "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Conversion statistics
-echo "Conversion Summary:" | tee -a "$LOG_FILE"
-echo "-------------------" >> "$LOG_FILE"
-echo "  DOCX: $docx_success succeeded, $docx_failed failed" | tee -a "$LOG_FILE"
-echo "  PDF:  $pdf_success succeeded, $pdf_failed failed" | tee -a "$LOG_FILE"
-echo "  Total: $((docx_success + pdf_success)) succeeded, $((docx_failed + pdf_failed)) failed" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Tool usage summary
-echo "Tools Used:" | tee -a "$LOG_FILE"
-echo "  DOCX Converter: $DOCX_TOOL" | tee -a "$LOG_FILE"
-echo "  PDF Converter: $PDF_TOOL" | tee -a "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# List output files
-echo "Output Files:" | tee -a "$LOG_FILE"
-for file in "$OUTPUT_DIR"/*.md; do
-  [ -e "$file" ] && echo "  ✓ $file" | tee -a "$LOG_FILE"
-done
-echo "" >> "$LOG_FILE"
-
-echo "========================================" >> "$LOG_FILE"
-echo "Conversion completed: $(date)" >> "$LOG_FILE"
-echo "========================================" >> "$LOG_FILE"
-
-echo ""
-echo "Conversion complete!"
-echo "Output directory: $OUTPUT_DIR"
-echo "Log file: $LOG_FILE"
-```
-
-**Template Customization Guide:**
-
-**For Simple Conversions** (skip orchestration overhead):
-- Remove Phase 1 (Tool Detection) if tools are known
-- Remove Phase 4 (Verification) for trusted input
-- Keep only Phase 3 (Conversion) and Phase 5 (Summary)
-
-**For Quality-Critical Conversions**:
-- Keep all 5 phases
-- Add extra validation checks in Phase 4
-- Add comparison metrics (before/after file sizes)
-- Add quality scoring based on structure counts
-
-**For Round-Trip Conversions**:
-- Use this template as base
-- Add Stage 1: MD→DOCX/PDF conversions before Phase 3
-- Keep all verification and logging
-- Add decision tree logging for tool selection
-
-**For Multi-Stage Workflows**:
-- Duplicate Phase 3 for each stage (Stage 1, Stage 2, etc.)
-- Add stage-specific success tracking
-- Include inter-stage verification
-- Generate stage-by-stage summary in Phase 5
-
-**Template Variables Reference:**
-- `$INPUT_DIR` - Source directory (default: current directory)
-- `$OUTPUT_DIR` - Destination directory (default: ./converted_output)
-- `$LOG_FILE` - Log file path (always in OUTPUT_DIR)
-- `$DOCX_TOOL` - Selected DOCX converter (markitdown/pandoc/none)
-- `$PDF_TOOL` - Selected PDF converter (markitdown/pymupdf4llm/none)
-
-**Exit Codes:**
-- 0: All conversions successful
-- 1: Some conversions failed (check log for details)
-- 2: No converters available
+**Template Variables**:
+- `$INPUT_DIR` - Source directory
+- `$OUTPUT_DIR` - Destination directory
+- `$LOG_FILE` - Detailed log path
+- `$DOCX_TOOL` / `$PDF_TOOL` - Selected converters
+- Success/failure counters for statistics
 
 ## Quality Standards
 

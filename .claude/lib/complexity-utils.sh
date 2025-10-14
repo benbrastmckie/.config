@@ -447,9 +447,9 @@ agent_based_complexity_score() {
   fi
 
   # Check if agent file exists
-  local agent_file="${CLAUDE_PROJECT_DIR}/.claude/agents/complexity_estimator.md"
+  local agent_file="${CLAUDE_PROJECT_DIR}/.claude/agents/complexity-estimator.md"
   if [ ! -f "$agent_file" ]; then
-    echo '{"status":"error","error":"complexity_estimator.md not found"}'
+    echo '{"status":"error","error":"complexity-estimator.md not found"}'
     return 1
   fi
 

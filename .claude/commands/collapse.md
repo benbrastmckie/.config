@@ -428,7 +428,7 @@ Task {
   subagent_type: "general-purpose"
   description: "Analyze plan complexity for collapse decisions"
   prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/complexity_estimator.md
+          /home/benjamin/.config/.claude/agents/complexity-estimator.md
 
           You are acting as a Complexity Estimator.
 

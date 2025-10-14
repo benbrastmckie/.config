@@ -113,96 +113,28 @@ The dashboard uses `.claude/lib/progress-dashboard.sh` utility which provides:
 
 ## Dry-Run Mode (Preview and Validation)
 
-Preview execution plan without making changes using the `--dry-run` flag:
+Preview execution plan without making changes using the `--dry-run` flag.
 
-```bash
-/implement specs/plans/025_plan.md --dry-run
-```
+**Usage**: `/implement specs/plans/025_plan.md --dry-run` or combine with `--dashboard` for visual preview
 
-**Dry-Run Analysis**:
-1. **Plan parsing**: Parse plan structure, phases, tasks, and dependencies
-2. **Complexity evaluation**: Calculate hybrid complexity scores for each phase
-3. **Agent assignments**: Show which agents would be invoked for each phase
-4. **Duration estimation**: Estimate time based on agent-registry metrics
-5. **File analysis**: List files and tests that would be affected
-6. **Execution preview**: Display wave-based execution order with parallelism
-7. **Confirmation prompt**: Option to proceed with actual implementation
+**Analysis Performed**:
+1. Plan parsing (structure, phases, tasks, dependencies)
+2. Complexity evaluation (hybrid complexity scores per phase)
+3. Agent assignments (which agents invoked for each phase)
+4. Duration estimation (agent-registry metrics)
+5. File/test analysis (affected files and tests)
+6. Execution preview (wave-based order with parallelism)
+7. Confirmation prompt (proceed or exit)
 
-**Preview Output Example**:
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Implementation Plan: User Authentication Feature (Dry-Run)  │
-├─────────────────────────────────────────────────────────────┤
-│ Plan Structure: Level 1 (Phase 2 expanded)                  │
-│ Total Phases: 5  |  Estimated Duration: ~42 minutes         │
-├─────────────────────────────────────────────────────────────┤
-│ Wave 1 (Sequential):                                         │
-│   Phase 1: Foundation                       [Direct] 8min   │
-│     Complexity: 2.4  |  Tasks: 4  |  Agent: None            │
-│     Files: auth/base.lua, auth/types.lua                    │
-│     Tests: test_auth_foundation.lua                         │
-│                                                              │
-│ Wave 2 (Parallel - 2 phases):                               │
-│   Phase 2: Core Auth Logic                [Writer] 15min   │
-│     Complexity: 6.8  |  Tasks: 8  |  Agent: code-writer     │
-│     Files: auth/login.lua, auth/session.lua                 │
-│     Tests: test_login.lua, test_session.lua                 │
-│   Phase 3: Token Management               [Writer] 12min   │
-│     Complexity: 5.2  |  Tasks: 6  |  Agent: code-writer     │
-│     Files: auth/token.lua, auth/refresh.lua                 │
-│     Tests: test_token_validation.lua                        │
-│                                                              │
-│ Wave 3 (Sequential):                                         │
-│   Phase 4: Integration Tests           [Test-Spec] 5min    │
-│     Complexity: 3.1  |  Tasks: 3  |  Agent: test-specialist │
-│     Tests: test_auth_integration.lua                        │
-│   Phase 5: Documentation                  [Doc-Write] 2min  │
-│     Complexity: 1.8  |  Tasks: 2  |  Agent: doc-writer      │
-│     Files: auth/README.md, CHANGELOG.md                     │
-├─────────────────────────────────────────────────────────────┤
-│ Execution Summary:                                           │
-│   Total Waves: 3  |  Parallel Phases: 2  |  Max Concurrent: 2│
-│   Files Modified: 9  |  Tests Created: 5                    │
-│   Estimated Time: 42 minutes (30min with parallelism)       │
-└─────────────────────────────────────────────────────────────┘
+**Output Preview** (displays Unicode box-drawing with plan structure, waves, phase details, complexity scores, agent types, files, tests, duration estimates, execution summary)
 
-Proceed with implementation? (y/n):
-```
+**Use Cases**: Validation, time estimation, resource planning, dependency verification, file impact assessment, team coordination
 
-**Dry-Run with Dashboard**:
-Combine flags for visual preview:
-```bash
-/implement specs/plans/025_plan.md --dry-run --dashboard
-```
+**Scope**:
+- Analyzes: Plan structure, complexity scores, agent assignments, duration, affected files/tests, execution waves
+- Does NOT: Create/modify files, run tests, create git commits, invoke agents
 
-Shows dashboard preview with simulated execution without making changes.
-
-**Use Cases**:
-- **Validation**: Verify plan structure before execution
-- **Time estimation**: Understand time commitment
-- **Resource planning**: See which agents will be invoked
-- **Dependency verification**: Confirm wave-based execution order is correct
-- **File impact assessment**: Review which files will be modified
-- **Team coordination**: Share execution plan with team before starting
-
-**Dry-Run Scope**:
-- ✓ Parses plan and analyzes structure
-- ✓ Calculates complexity scores
-- ✓ Determines agent assignments
-- ✓ Estimates duration from agent registry
-- ✓ Lists affected files and tests
-- ✓ Shows execution waves and parallelism
-- ✗ Does not create/modify files
-- ✗ Does not run tests
-- ✗ Does not create git commits
-- ✗ Does not invoke agents
-
-**Implementation Details**:
-Duration estimation uses `.claude/lib/agent-registry-utils.sh` to retrieve historical performance data:
-- Average agent execution time per complexity point
-- Success rates and retry probabilities
-- Parallel execution efficiency factors
-- Test execution time estimates
+**Duration Estimation**: Uses `.claude/lib/agent-registry-utils.sh` for historical performance data (agent execution time per complexity point, success rates, retry probabilities, parallel execution efficiency, test execution estimates)
 
 ## Standards Discovery and Application
 
@@ -223,100 +155,72 @@ For standards discovery patterns, see:
 
 ### Utility Initialization
 
-Before beginning implementation, initialize all required utilities for consistent error handling, state management, and logging.
+Initialize required utilities for consistent error handling, state management, and logging before beginning implementation.
 
-**Step 1: Detect Project Directory**
+**When to Initialize**:
+- **Before implementation**: Run once at command start
+- **Required utilities**: 5 core utilities (error, checkpoint, complexity, logger, agent-registry)
+- **Optional**: Progress dashboard if `--dashboard` flag present
+
+**Initialization Overview**:
+1. Detect project directory (sets CLAUDE_PROJECT_DIR)
+2. Source and verify 5 core utilities
+3. Initialize adaptive planning logger
+4. Initialize progress dashboard if enabled (terminal capability detection)
+
+**Pattern Details**: See [Standard Logger Setup](../docs/command-patterns.md#pattern-standard-logger-setup) for logger initialization patterns.
+
+**Key Execution Requirements**:
+
+1. **Detect project directory**:
+   ```bash
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+   source "$SCRIPT_DIR/../lib/detect-project-dir.sh"  # Sets CLAUDE_PROJECT_DIR
+   ```
+
+2. **Verify core utilities**:
+   ```bash
+   UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
+   [ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/complexity-utils.sh" ] || { echo "ERROR: complexity-utils.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/adaptive-planning-logger.sh" ] || { echo "ERROR: adaptive-planning-logger.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/agent-registry-utils.sh" ] || { echo "ERROR: agent-registry-utils.sh not found"; exit 1; }
+   ```
+
+3. **Initialize logger** (`.claude/logs/adaptive-planning.log`, 10MB max, 5 files retained):
+   ```bash
+   source "$UTILS_DIR/adaptive-planning-logger.sh"
+   ```
+
+4. **Initialize dashboard** (optional, with terminal capability detection):
+   ```bash
+   if [ "$DASHBOARD_FLAG" = "true" ] && [ -f "$UTILS_DIR/progress-dashboard.sh" ]; then
+     source "$UTILS_DIR/progress-dashboard.sh"
+     TERMINAL_CAPABILITIES=$(detect_terminal_capabilities)
+     [ "$(echo "$TERMINAL_CAPABILITIES" | jq -r '.ansi_supported')" = "true" ] && DASHBOARD_ENABLED=true
+   fi
+   ```
+
+**Quick Example**:
 ```bash
-# Detect project root dynamically
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Step 1: Detect project
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
-# Sets: CLAUDE_PROJECT_DIR
-```
 
-**Step 2: Source Shared Utilities**
-
-Use Bash tool to verify utilities are available:
-```bash
-# Verify and prepare utilities
+# Step 2 & 3: Source utilities and logger
 UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
-
-# Core utilities (required)
-[ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
-[ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
-[ -f "$UTILS_DIR/complexity-utils.sh" ] || { echo "ERROR: complexity-utils.sh not found"; exit 1; }
-[ -f "$UTILS_DIR/adaptive-planning-logger.sh" ] || { echo "ERROR: adaptive-planning-logger.sh not found"; exit 1; }
-[ -f "$UTILS_DIR/agent-registry-utils.sh" ] || { echo "ERROR: agent-registry-utils.sh not found"; exit 1; }
-
-echo "✓ All required utilities available"
-```
-
-**Step 3: Initialize Logger**
-
-For logger setup pattern, see [Standard Logger Setup](../docs/command-patterns.md#pattern-standard-logger-setup).
-
-```bash
-# Initialize adaptive planning logger
+for util in error-utils.sh checkpoint-utils.sh complexity-utils.sh adaptive-planning-logger.sh agent-registry-utils.sh; do
+  [ -f "$UTILS_DIR/$util" ] || { echo "ERROR: $util not found"; exit 1; }
+done
 source "$UTILS_DIR/adaptive-planning-logger.sh"
 
-# Logger is now available for all subsequent operations
+# Step 4: Dashboard (optional)
+[ "$DASHBOARD_FLAG" = "true" ] && source "$UTILS_DIR/progress-dashboard.sh" && initialize_dashboard "$PLAN_NAME" "$TOTAL_PHASES"
 ```
 
-**Implement-specific logging events**:
-- Complexity threshold evaluations (log_complexity_check)
-- Test failure pattern detection (log_test_failure_pattern)
-- Scope drift detections (log_scope_drift)
-- Replan invocations (log_replan_invocation)
-- Loop prevention enforcement (log_loop_prevention)
-- Collapse opportunity evaluations (log_collapse_check)
+**Logging Events**: log_complexity_check, log_test_failure_pattern, log_scope_drift, log_replan_invocation, log_loop_prevention, log_collapse_check
 
-**Log file**: `.claude/logs/adaptive-planning.log` (10MB max, 5 files retained)
-
-**Step 4: Initialize Progress Dashboard (Optional)**
-
-If the `--dashboard` flag is present, source and initialize the progress dashboard utility:
-
-```bash
-# Parse --dashboard flag from arguments
-DASHBOARD_ENABLED=false
-for arg in "$@"; do
-  if [ "$arg" = "--dashboard" ]; then
-    DASHBOARD_ENABLED=true
-    break
-  fi
-done
-
-# Source dashboard utility if enabled
-if [ "$DASHBOARD_ENABLED" = "true" ]; then
-  if [ -f "$UTILS_DIR/progress-dashboard.sh" ]; then
-    source "$UTILS_DIR/progress-dashboard.sh"
-
-    # Detect terminal capabilities
-    TERMINAL_CAPABILITIES=$(detect_terminal_capabilities)
-    ANSI_SUPPORTED=$(echo "$TERMINAL_CAPABILITIES" | jq -r '.ansi_supported')
-
-    if [ "$ANSI_SUPPORTED" != "true" ]; then
-      echo "⚠ Dashboard requested but terminal doesn't support ANSI"
-      echo "  Reason: $(echo "$TERMINAL_CAPABILITIES" | jq -r '.reason')"
-      echo "  Falling back to traditional progress markers"
-      DASHBOARD_ENABLED=false
-    else
-      echo "✓ Progress dashboard enabled (ANSI terminal detected)"
-    fi
-  else
-    echo "⚠ progress-dashboard.sh not found, disabling dashboard"
-    DASHBOARD_ENABLED=false
-  fi
-fi
-```
-
-**Dashboard lifecycle during implementation**:
-
-1. **Before phase loop begins**: Call `initialize_dashboard "$PLAN_NAME" "$TOTAL_PHASES"`
-2. **After each phase completes**: Call `update_dashboard_phase "$PHASE_NUM" "$PHASE_STATUS" "$CURRENT_TASK"`
-3. **During phase execution**: Update dashboard with test results and current task
-4. **On completion or error**: Call `clear_dashboard` before displaying final messages
-
-**Integration Complete**: All shared utilities are now available for use throughout implementation
+**Dashboard Lifecycle**: initialize_dashboard → update_dashboard_phase (after each phase) → clear_dashboard (on completion)
 
 ### Progressive Plan Support
 
@@ -373,312 +277,50 @@ Let me first locate the implementation plan:
 
 ### Step 0.5: Dry-Run Mode Execution (if --dry-run flag present)
 
-If the `--dry-run` flag is detected, execute preview mode instead of actual implementation:
+Execute preview mode instead of actual implementation when `--dry-run` flag detected. See [Dry-Run Mode](#dry-run-mode-preview-and-validation) for feature details and output examples.
 
-**Step 1: Parse Flag and Plan**
-```bash
-# Check for --dry-run flag
-DRY_RUN=false
-for arg in "$@"; do
-  if [ "$arg" = "--dry-run" ]; then
-    DRY_RUN=true
-    break
-  fi
-done
+**Execution Workflow**:
+1. Parse flag and plan metadata
+2. Analyze phases (complexity, agent assignment, duration via hybrid_complexity_evaluation)
+3. Generate execution waves (parse-phase-dependencies.sh)
+4. Display formatted preview (Unicode box-drawing with waves, phases, agents, files, tests, estimates)
+5. Prompt and either exit or continue to normal flow
 
-if [ "$DRY_RUN" = "true" ]; then
-  # Parse plan structure
-  PLAN_PATH="$1"  # First argument is plan path
-  STRUCTURE_LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
-
-  # Extract plan metadata
-  PLAN_NAME=$(grep "^# " "$PLAN_PATH" | head -1 | sed 's/^# //')
-  TOTAL_PHASES=$(grep -c "^### Phase [0-9]" "$PLAN_PATH")
-
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "Dry-Run Mode: $PLAN_NAME"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-fi
-```
-
-**Step 2: Analyze Each Phase**
-```bash
-# For each phase, gather analysis data
-declare -a PHASE_ANALYSIS
-
-for phase_num in $(seq 1 $TOTAL_PHASES); do
-  # Extract phase details
-  PHASE_SECTION=$(sed -n "/^### Phase $phase_num:/,/^### Phase $((phase_num + 1)):/p" "$PLAN_PATH")
-  PHASE_NAME=$(echo "$PHASE_SECTION" | grep "^### Phase $phase_num:" | sed "s/^### Phase $phase_num: //")
-  TASK_LIST=$(echo "$PHASE_SECTION" | grep "^- \[ \]" || echo "")
-  TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
-
-  # Run hybrid complexity evaluation
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
-  COMPLEXITY_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_PATH")
-  COMPLEXITY_SCORE=$(echo "$COMPLEXITY_RESULT" | jq -r '.final_score')
-
-  # Determine agent assignment
-  AGENT_TYPE="None"
-  if echo "$PHASE_NAME" | grep -qi "document\|readme\|doc"; then
-    AGENT_TYPE="doc-writer"
-  elif echo "$PHASE_NAME" | grep -qi "test"; then
-    AGENT_TYPE="test-specialist"
-  elif echo "$PHASE_NAME" | grep -qi "debug"; then
-    AGENT_TYPE="debug-specialist"
-  elif (( $(echo "$COMPLEXITY_SCORE >= 10" | bc -l) )); then
-    AGENT_TYPE="code-writer (think harder)"
-  elif (( $(echo "$COMPLEXITY_SCORE >= 8" | bc -l) )); then
-    AGENT_TYPE="code-writer (think hard)"
-  elif (( $(echo "$COMPLEXITY_SCORE >= 6" | bc -l) )); then
-    AGENT_TYPE="code-writer (think)"
-  elif (( $(echo "$COMPLEXITY_SCORE >= 3" | bc -l) )); then
-    AGENT_TYPE="code-writer"
-  fi
-
-  # Extract file references from tasks
-  FILES_MENTIONED=$(echo "$TASK_LIST" | grep -o '[a-zA-Z0-9_/-]*\.\(lua\|js\|py\|sh\|md\)' | sort -u | tr '\n' ', ' | sed 's/,$//')
-
-  # Extract test references
-  TESTS_MENTIONED=$(echo "$TASK_LIST" | grep -o 'test[a-zA-Z0-9_/-]*\.\(lua\|js\|py\|sh\)' | sort -u | tr '\n' ', ' | sed 's/,$//')
-
-  # Estimate duration based on complexity and agent type
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/agent-registry-utils.sh"
-  if [ "$AGENT_TYPE" != "None" ]; then
-    AGENT_METRICS=$(get_agent_metrics "$(echo $AGENT_TYPE | cut -d' ' -f1)")
-    AVG_DURATION=$(echo "$AGENT_METRICS" | jq -r '.average_duration_seconds // 600')
-    ESTIMATED_MINUTES=$(echo "scale=0; ($AVG_DURATION + ($COMPLEXITY_SCORE * 60)) / 60" | bc)
-  else
-    ESTIMATED_MINUTES=$(echo "scale=0; $COMPLEXITY_SCORE * 2" | bc)
-  fi
-
-  # Store phase analysis
-  PHASE_ANALYSIS[$phase_num]=$(cat <<EOF
-{
-  "phase_num": $phase_num,
-  "phase_name": "$PHASE_NAME",
-  "complexity": $COMPLEXITY_SCORE,
-  "tasks": $TASK_COUNT,
-  "agent": "$AGENT_TYPE",
-  "files": "$FILES_MENTIONED",
-  "tests": "$TESTS_MENTIONED",
-  "duration_minutes": $ESTIMATED_MINUTES
-}
-EOF
-)
-done
-```
-
-**Step 3: Parse Dependencies and Generate Waves**
-```bash
-# Use dependency parser to generate execution waves
-WAVES=$(.claude/lib/parse-phase-dependencies.sh "$PLAN_PATH")
-
-# Parse wave information
-declare -A WAVE_PHASES
-WAVE_COUNT=0
-
-while IFS=: read -r wave_label phase_list; do
-  WAVE_NUM=$(echo "$wave_label" | grep -o '[0-9]*')
-  WAVE_PHASES[$WAVE_NUM]="$phase_list"
-  WAVE_COUNT=$WAVE_NUM
-done <<< "$WAVES"
-```
-
-**Step 4: Display Dry-Run Preview**
-```bash
-# Display formatted preview
-echo "┌─────────────────────────────────────────────────────────────┐"
-printf "│ Implementation Plan: %-38s │\n" "$PLAN_NAME (Dry-Run)"
-echo "├─────────────────────────────────────────────────────────────┤"
-printf "│ Plan Structure: Level %-1s %-33s │\n" "$STRUCTURE_LEVEL" "(expanded phases: ...)"
-TOTAL_DURATION=0
-for i in $(seq 1 $TOTAL_PHASES); do
-  PHASE_DATA="${PHASE_ANALYSIS[$i]}"
-  DURATION=$(echo "$PHASE_DATA" | jq -r '.duration_minutes')
-  TOTAL_DURATION=$((TOTAL_DURATION + DURATION))
-done
-printf "│ Total Phases: %-2s  |  Estimated Duration: ~%-2s minutes   │\n" "$TOTAL_PHASES" "$TOTAL_DURATION"
-echo "├─────────────────────────────────────────────────────────────┤"
-
-# Display each wave
-for wave_num in $(seq 1 $WAVE_COUNT); do
-  PHASES_IN_WAVE="${WAVE_PHASES[$wave_num]}"
-  PHASE_ARRAY=($PHASES_IN_WAVE)
-  PHASE_COUNT=${#PHASE_ARRAY[@]}
-
-  if [ $PHASE_COUNT -eq 1 ]; then
-    echo "│ Wave $wave_num (Sequential):                                       │"
-  else
-    printf "│ Wave %d (Parallel - %d phases):                              │\n" "$wave_num" "$PHASE_COUNT"
-  fi
-
-  for phase_num in "${PHASE_ARRAY[@]}"; do
-    PHASE_DATA="${PHASE_ANALYSIS[$phase_num]}"
-    PHASE_NAME=$(echo "$PHASE_DATA" | jq -r '.phase_name' | cut -c 1-30)
-    COMPLEXITY=$(echo "$PHASE_DATA" | jq -r '.complexity')
-    TASKS=$(echo "$PHASE_DATA" | jq -r '.tasks')
-    AGENT=$(echo "$PHASE_DATA" | jq -r '.agent' | cut -c 1-12)
-    FILES=$(echo "$PHASE_DATA" | jq -r '.files' | cut -c 1-50)
-    TESTS=$(echo "$PHASE_DATA" | jq -r '.tests' | cut -c 1-50)
-    DURATION=$(echo "$PHASE_DATA" | jq -r '.duration_minutes')
-
-    printf "│   Phase %d: %-30s [%-10s] %2dmin │\n" "$phase_num" "$PHASE_NAME" "$AGENT" "$DURATION"
-    printf "│     Complexity: %-4s  |  Tasks: %-2s  |  Agent: %-12s │\n" "$COMPLEXITY" "$TASKS" "$AGENT"
-
-    if [ -n "$FILES" ] && [ "$FILES" != "null" ]; then
-      printf "│     Files: %-50s │\n" "$FILES"
-    fi
-    if [ -n "$TESTS" ] && [ "$TESTS" != "null" ]; then
-      printf "│     Tests: %-50s │\n" "$TESTS"
-    fi
-    echo "│                                                              │"
-  done
-done
-
-echo "├─────────────────────────────────────────────────────────────┤"
-printf "│ Execution Summary:                                           │\n"
-PARALLEL_PHASES=$((TOTAL_PHASES - WAVE_COUNT))
-printf "│   Total Waves: %-2s  |  Parallel Phases: %-2s  |  Max Concurrent: 3│\n" "$WAVE_COUNT" "$PARALLEL_PHASES"
-
-# Count unique files and tests
-UNIQUE_FILES=$(for i in $(seq 1 $TOTAL_PHASES); do echo "${PHASE_ANALYSIS[$i]}" | jq -r '.files'; done | tr ',' '\n' | sort -u | wc -l)
-UNIQUE_TESTS=$(for i in $(seq 1 $TOTAL_PHASES); do echo "${PHASE_ANALYSIS[$i]}" | jq -r '.tests'; done | tr ',' '\n' | sort -u | wc -l)
-
-printf "│   Files Modified: %-2s  |  Tests Created: %-2s                    │\n" "$UNIQUE_FILES" "$UNIQUE_TESTS"
-
-# Calculate parallel time savings
-PARALLEL_DURATION=$(echo "scale=0; $TOTAL_DURATION * 0.7" | bc)
-printf "│   Estimated Time: %d minutes (%dmin with parallelism)       │\n" "$TOTAL_DURATION" "$PARALLEL_DURATION"
-echo "└─────────────────────────────────────────────────────────────┘"
-echo ""
-```
-
-**Step 5: Prompt for Confirmation**
-```bash
-# Ask user if they want to proceed
-read -p "Proceed with implementation? (y/n): " PROCEED
-
-if [ "$PROCEED" != "y" ] && [ "$PROCEED" != "Y" ]; then
-  echo "Dry-run complete. Exiting without changes."
-  exit 0
-fi
-
-# If user confirms, continue with normal implementation
-echo "Proceeding with implementation..."
-echo ""
-```
-
-**Dry-Run Exit**: If user declines, exit immediately without making changes. If user confirms, continue with normal implementation flow.
+**Implementation**: Phase analysis uses hybrid_complexity_evaluation(); agent assignment maps complexity to types; duration from agent-registry-utils.sh; wave display shows sequential/parallel patterns; file/test extraction via regex
 
 ## Parallel Execution with Dependencies
 
-Before executing phases, I will analyze phase dependencies to enable parallel execution:
+Analyze phase dependencies to enable parallel execution in waves.
 
-### Dependency Analysis
+**Dependency Analysis Workflow**:
+1. **Parse dependencies**: Use `parse-phase-dependencies.sh` to generate execution waves (format: `WAVE_1:1`, `WAVE_2:2 3`, etc.)
+2. **Group phases**: Each wave contains parallelizable phases, waves execute sequentially
+3. **Execute waves**: Single-phase waves run normally, multi-phase waves invoke multiple agents simultaneously (multiple Task calls in one message)
+4. **Error handling**: Fail-fast on phase failure, preserve checkpoint, report successes/failures, allow resume from failed wave
 
-**Step 1: Parse Dependencies**
-```bash
-# Use dependency parser to generate execution waves
-WAVES=$(.claude/lib/parse-phase-dependencies.sh "$PLAN_FILE")
-```
+**Parallel Execution Safety**: Max 3 concurrent phases per wave, fail-fast behavior, checkpoint after each wave, aggregate test results
 
-**Step 2: Group Phases into Waves**
-- Parse wave output: `WAVE_1:1`, `WAVE_2:2 3`, `WAVE_3:4`
-- Each wave contains phases that can execute in parallel
-- Waves execute sequentially (wait for wave completion before next)
-
-**Step 3: Execute Waves**
-
-For each wave:
-1. **Single Phase**: Execute normally (sequential)
-2. **Multiple Phases**: Execute in parallel
-   - Invoke multiple agents simultaneously using multiple Task tool calls in one message
-   - Each phase gets its own agent based on complexity analysis
-   - Wait for all phases in wave to complete
-   - Collect results from all parallel executions
-
-**Step 4: Error Handling**
-- If any phase in a wave fails, stop execution
-- Preserve checkpoint with partial completion
-- Report which phases succeeded and which failed
-- User can resume from failed wave
-
-### Parallel Execution Safety
-
-- **Max Parallelism**: Limit to 3 concurrent phases per wave
-- **Fail-Fast**: Stop wave execution if any phase fails
-- **Checkpoint Preservation**: Save state after each wave
-- **Result Collection**: Aggregate test results and file changes from parallel phases
-
-### Dependency Format
-
-Phases declare dependencies in their header:
-```markdown
-### Phase N: Phase Name
-dependencies: [1, 2]  # Depends on phases 1 and 2
-```
-
-- Empty array `[]` or omitted = no dependencies (can run in wave 1)
-- Multiple dependencies = wait for all to complete
-- Circular dependencies are detected and rejected
+**Dependency Format**: Phases declare dependencies in header (`dependencies: [1, 2]`). Empty array or omitted = no dependencies (wave 1). Circular dependencies detected and rejected.
 
 ## Phase Execution Protocol
 
-### Execution Flow
+Execute phases either sequentially (traditional) or in parallel waves (with dependencies).
 
-**Sequential Execution** (no dependencies or dependencies: [] omitted):
-- Execute phases one by one in order (Phase 1, 2, 3, ...)
-- Traditional workflow, fully backward compatible
+**Execution Modes**:
+- **Sequential**: Execute phases in order (Phase 1, 2, 3, ...) when no dependencies declared
+- **Parallel**: Parse dependencies into waves, execute waves sequentially, parallelize phases within waves (>1 phase per wave)
 
-**Parallel Execution** (with dependency declarations):
-- Parse dependencies into execution waves
-- Execute each wave sequentially
-- Within each wave, execute phases in parallel if wave contains >1 phase
-- Wait for wave completion before next wave
+**Wave Execution Flow**:
+1. **Wave Initialization**: Identify phases in current wave, log wave execution start
+2. **Phase Preparation**: Display phase number, name, tasks for each phase in wave
+3. **Complexity Analysis**: Run analyzer, calculate hybrid complexity score (see Step 1.5)
+4. **Agent Selection** (using $COMPLEXITY_SCORE from Step 1.5):
+   - Direct execution (0-2), code-writer (3-5), code-writer + think (6-7), code-writer + think hard (8-9), code-writer + think harder (10+)
+   - Special case overrides: doc-writer (documentation), test-specialist (testing), debug-specialist (debug)
+5. **Delegation**: Invoke agent via Task tool with behavioral injection, monitor PROGRESS markers
+6. **Testing and Commit**: Execute for all phases in wave (see subsequent sections)
 
-For each wave, I will:
-
-### 0. Wave Initialization
-- Identify phases in current wave from dependency analysis
-- Log: "Executing Wave N with M phase(s): [phase numbers]"
-
-For each phase in the wave, I will prepare:
-
-### 1. Display Phase Information
-Show the phase number, name, and all tasks that need to be completed.
-
-### 1.5. Phase Complexity Analysis and Agent Selection
-
-For agent delegation patterns, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
-
-**Note**: This step uses the hybrid complexity score ($COMPLEXITY_SCORE) from Step 1.5 (Hybrid Complexity Evaluation) for agent selection thresholds.
-
-**Implement-specific complexity scoring**:
-
-1. **Run complexity analyzer**:
-   ```bash
-   .claude/lib/analyze-phase-complexity.sh "<phase-name>" "<task-list>"
-   ```
-
-2. **Agent selection thresholds** (using hybrid complexity score from Step 1.5):
-   - **Direct execution** (score 0-2): Simple phases
-   - **code-writer** (score 3-5): Medium complexity
-   - **code-writer + think** (score 6-7): Medium-high complexity
-   - **code-writer + think hard** (score 8-9): High complexity
-   - **code-writer + think harder** (score 10+): Critical complexity
-
-3. **Special case overrides**:
-   - **doc-writer**: Documentation/README phases
-   - **test-specialist**: Testing phases
-   - **debug-specialist**: Debug/investigation phases
-
-**Delegation workflow**:
-- Announce delegation with complexity score
-- Invoke agent via Task tool with behavioral injection
-- Monitor PROGRESS markers for visibility
-- Collect results for testing and commit steps
+**Pattern Details**: See [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection) for delegation patterns.
 
 ### 1.4. Check Expansion Status
 
@@ -701,85 +343,79 @@ This is informational only and helps understand the current plan organization.
 
 ### 1.5. Hybrid Complexity Evaluation
 
-Evaluate phase complexity using hybrid approach (threshold + agent for borderline cases).
+Evaluate phase complexity using hybrid approach: threshold-based scoring with agent evaluation for borderline cases (score ≥7 or ≥8 tasks).
 
-**Workflow**:
+**When to Use**:
+- **Every phase**: Always evaluate complexity before implementation
+- **Borderline cases**: Automatic agent invocation for context-aware analysis
+- **Agent triggers**: Threshold score ≥7 OR task count ≥8
 
-1. **Calculate threshold-based score**:
+**Workflow Overview**:
+1. Calculate threshold-based score (complexity-utils.sh)
+2. Determine if agent evaluation needed (borderline thresholds)
+3. Run hybrid_complexity_evaluation function (may invoke agent)
+4. Parse result (final_score, evaluation_method, agent_reasoning)
+5. Log evaluation for analytics (adaptive-planning-logger.sh)
+6. Export COMPLEXITY_SCORE for downstream decisions (expansion, agent selection)
+
+**Key Execution Requirements**:
+
+1. **Threshold calculation** (uses complexity-utils.sh):
    ```bash
    source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
-
    THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
    TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
    ```
 
-2. **Determine if agent evaluation needed**:
+2. **Hybrid evaluation with agent fallback**:
    ```bash
+   # Determine if agent needed (score ≥7 OR tasks ≥8)
    AGENT_NEEDED="false"
-   if [ "$THRESHOLD_SCORE" -ge 7 ] || [ "$TASK_COUNT" -ge 8 ]; then
-     AGENT_NEEDED="true"
-     echo "Borderline complexity detected (score: $THRESHOLD_SCORE, tasks: $TASK_COUNT)"
-     echo "Invoking complexity_estimator agent for context-aware analysis..."
-   fi
-   ```
+   [ "$THRESHOLD_SCORE" -ge 7 ] || [ "$TASK_COUNT" -ge 8 ] && AGENT_NEEDED="true"
 
-3. **Run hybrid evaluation**:
-   ```bash
+   # Run hybrid evaluation (may invoke complexity_estimator agent)
    EVALUATION_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_FILE")
-
    COMPLEXITY_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.final_score')
-   EVALUATION_METHOD=$(echo "$EVALUATION_RESULT" | jq -r '.evaluation_method')
-
-   echo "Complexity Score: $COMPLEXITY_SCORE ($EVALUATION_METHOD)"
-
-   # If agent was used, display reasoning
-   if [ "$AGENT_NEEDED" = "true" ]; then
-     AGENT_REASONING=$(echo "$EVALUATION_RESULT" | jq -r '.agent_reasoning // "N/A"')
-     if [ "$AGENT_REASONING" != "N/A" ]; then
-       echo "Agent Reasoning: $AGENT_REASONING"
-     fi
-
-     # Check for agent errors
-     AGENT_ERROR=$(echo "$EVALUATION_RESULT" | jq -r '.agent_error // "null"')
-     if [ "$AGENT_ERROR" != "null" ]; then
-       echo "⚠ Agent evaluation failed: $AGENT_ERROR"
-       echo "  Falling back to threshold score: $COMPLEXITY_SCORE"
-     fi
-   fi
+   EVALUATION_METHOD=$(echo "$EVALUATION_RESULT" | jq -r '.evaluation_method')  # "threshold", "agent", or "reconciled"
    ```
 
-4. **Log evaluation for analytics**:
+3. **Logging and analytics**:
    ```bash
    source "${CLAUDE_PROJECT_DIR}/.claude/lib/adaptive-planning-logger.sh"
+   log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "$COMPLEXITY_THRESHOLD_HIGH" "$AGENT_NEEDED"
 
-   log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" \
-     "$COMPLEXITY_THRESHOLD_HIGH" "$([ $AGENT_NEEDED = 'true' ] && echo 'true' || echo 'false')"
-
-   # If score reconciliation occurred, log discrepancy details
-   if [ "$EVALUATION_METHOD" != "threshold" ]; then
-     THRESHOLD_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.threshold_score // 0')
-     AGENT_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.agent_score // 0')
-     SCORE_DIFF=$(echo "$EVALUATION_RESULT" | jq -r '.reconciliation_details.score_difference // 0')
-
-     log_complexity_discrepancy "$PHASE_NAME" "$THRESHOLD_SCORE" "$AGENT_SCORE" \
-       "$SCORE_DIFF" "$AGENT_REASONING" "$EVALUATION_METHOD"
-   fi
+   # Log discrepancy if agent evaluation differed from threshold
+   [ "$EVALUATION_METHOD" != "threshold" ] && log_complexity_discrepancy "$PHASE_NAME" "$THRESHOLD_SCORE" "$AGENT_SCORE" "$SCORE_DIFF" "$AGENT_REASONING" "$EVALUATION_METHOD"
    ```
 
-5. **Use score for downstream decisions**:
-   - Export COMPLEXITY_SCORE for Steps 1.55 (Proactive Expansion) and 1.6 (Agent Selection)
+4. **Export for downstream use**:
    ```bash
-   export COMPLEXITY_SCORE
+   export COMPLEXITY_SCORE      # Used by Steps 1.55 (Proactive Expansion) and 1.6 (Agent Selection)
    export EVALUATION_METHOD
    ```
 
+**Quick Example**:
+```bash
+# Calculate threshold score
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
+THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
+TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]")
+
+# Run hybrid evaluation (auto-invokes agent if borderline)
+EVALUATION_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_FILE")
+COMPLEXITY_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.final_score')
+EVALUATION_METHOD=$(echo "$EVALUATION_RESULT" | jq -r '.evaluation_method')
+
+echo "Complexity Score: $COMPLEXITY_SCORE ($EVALUATION_METHOD)"
+
+# Log and export
+log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "$COMPLEXITY_THRESHOLD_HIGH" "$([ $THRESHOLD_SCORE -ge 7 ] && echo 'true' || echo 'false')"
+export COMPLEXITY_SCORE EVALUATION_METHOD
+```
+
 **Expected Impact**: 30% reduction in expansion errors via context-aware evaluation
 
-**Error Handling**:
-- Agent timeout (60s): Fallback to threshold score
-- Agent invocation failure: Fallback to threshold score
-- Invalid agent response: Fallback to threshold score
-- All fallbacks logged for improvement tracking
+**Error Handling**: Agent timeout/failure/invalid response → Fallback to threshold score (all fallbacks logged)
 
 ### 1.55. Proactive Expansion Check
 
@@ -825,290 +461,86 @@ Run tests by:
 
 ### 3.3. Automatic Debug Integration (if tests fail)
 
-**Workflow**: Tiered error recovery with automatic /debug invocation and user choice prompts
+**When to Use Automatic Debug Integration**:
+- **Test failures** in any phase during implementation
+- **Automatic triggers**: No manual invocation needed
+- **Tiered recovery**: 4 escalating levels of error handling
 
-This section implements a 4-level error recovery strategy that automatically handles test failures:
-- Level 1: Immediate error classification and suggestions
-- Level 2: Retry with timeout for transient errors
-- Level 3: Retry with fallback for tool access errors
-- Level 4: Automatic /debug invocation with user choices (r/c/s/a)
+**Quick Overview**:
+1. Classify error type and display suggestions (error-utils.sh)
+2. Retry transient errors (timeout, busy, locked) with extended timeout
+3. Retry tool access errors with reduced toolset fallback
+4. Auto-invoke /debug agent for root cause analysis
+5. Present user choices: (r)evise, (c)ontinue, (s)kip, (a)bort
+6. Execute chosen action and update plan with debugging notes
 
-**Level 1: Immediate Classification & Suggestions**
+**Pattern Details**: See [Error Handling Patterns](../docs/command-patterns.md#error-handling-patterns) for complete tiered recovery workflow.
 
+**Key Execution Requirements**:
+
+1. **Error classification** (uses error-utils.sh):
+   ```bash
+   source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+   ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")  # → syntax, test_failure, timeout, etc.
+   SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
+   ```
+
+2. **Automatic /debug invocation** (Level 4):
+   ```bash
+   DEBUG_RESULT=$(invoke_slash_command "/debug \"Phase $CURRENT_PHASE failure\" \"$PLAN_PATH\"")
+   DEBUG_REPORT_PATH=$(extract_report_path "$DEBUG_RESULT")
+   # Fallback: .claude/lib/analyze-error.sh if /debug fails
+   ```
+
+3. **User choice actions**:
+   - **(r)evise**: Invoke `/revise --auto-mode` with debug findings, retry phase
+   - **(c)ontinue**: Mark `[INCOMPLETE]`, add debugging notes, proceed to next phase
+   - **(s)kip**: Mark `[SKIPPED]`, add debugging notes, proceed to next phase
+   - **(a)bort**: Save checkpoint with debug info, exit for manual intervention
+
+**Quick Example - Tiered Recovery**:
 ```bash
-# Classify error type using error-utils.sh
-source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
-ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")
-ERROR_LOCATION=$(extract_location "$TEST_OUTPUT")
-SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
-
-# Display immediate suggestions
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Test Failure Detected"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+# Level 1: Classify and suggest
+source "$UTILS_DIR/error-utils.sh"
+ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")  # → "syntax"
 echo "Error Type: $ERROR_TYPE"
-echo "Location: $ERROR_LOCATION"
-echo ""
-echo "$SUGGESTIONS"
-echo ""
-```
+echo "$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT")"
 
-**Level 2: Transient Error Retry**
-
-```bash
-# Check for transient errors (timeout, busy, locked)
-if [ "$ERROR_TYPE" = "timeout" ] || echo "$TEST_OUTPUT" | grep -qi "busy\|locked"; then
-  RETRY_META=$(retry_with_timeout "Phase $CURRENT_PHASE tests" "$ATTEMPT_NUMBER")
-  SHOULD_RETRY=$(echo "$RETRY_META" | jq -r '.should_retry')
-  NEW_TIMEOUT=$(echo "$RETRY_META" | jq -r '.new_timeout')
-
-  if [ "$SHOULD_RETRY" = "true" ]; then
-    echo "Retrying with extended timeout: ${NEW_TIMEOUT}ms"
-    # Re-run tests with new timeout
-    # If successful: Skip to next phase
-    # If failed: Continue to Level 3
-  fi
+# Level 2: Transient retry (if timeout/busy)
+if [ "$ERROR_TYPE" = "timeout" ]; then
+  RETRY_META=$(retry_with_timeout "Phase 3 tests" "$ATTEMPT_NUMBER")
+  # Retry with extended timeout if SHOULD_RETRY=true
 fi
-```
 
-**Level 3: Fallback with Reduced Toolset**
-
-```bash
-# Check for tool access errors
-if echo "$TEST_OUTPUT" | grep -qi "tool.*failed\|access.*denied"; then
-  FALLBACK_META=$(retry_with_fallback "Phase $CURRENT_PHASE" "$ATTEMPT_NUMBER")
-  REDUCED_TOOLSET=$(echo "$FALLBACK_META" | jq -r '.reduced_toolset')
-
-  echo "Retrying with reduced toolset: $REDUCED_TOOLSET"
-  # Re-invoke agent with reduced tools
-  # If successful: Skip to next phase
-  # If failed: Continue to Level 4
+# Level 3: Tool fallback (if tool access error)
+if echo "$TEST_OUTPUT" | grep -qi "tool.*failed"; then
+  FALLBACK_META=$(retry_with_fallback "Phase 3" "$ATTEMPT_NUMBER")
+  # Retry with REDUCED_TOOLSET
 fi
-```
 
-**Level 4: Automatic Debug Invocation**
+# Level 4: Auto-invoke /debug
+DEBUG_RESULT=$(invoke_slash_command "/debug \"Phase 3 test failure\" \"plan.md\"")
+DEBUG_REPORT_PATH=$(echo "$DEBUG_RESULT" | grep -o 'specs/reports/.*\.md')
 
-No user prompt - automatically invoke /debug for root cause analysis:
+# Present choices
+echo "Choose: (r)evise, (c)ontinue, (s)kip, (a)bort"
+read -p "Action: " USER_CHOICE
 
-```bash
-echo "Invoking debug agent for root cause analysis..."
-
-# Build debug command
-ERROR_MESSAGE=$(echo "$TEST_OUTPUT" | head -c 100)
-DEBUG_COMMAND="/debug \"Phase $CURRENT_PHASE test failure: $ERROR_MESSAGE\" \"$PLAN_PATH\""
-
-# Invoke /debug via SlashCommand tool
-DEBUG_RESULT=$(invoke_slash_command "$DEBUG_COMMAND")
-
-# Parse debug report path from response
-DEBUG_REPORT_PATH=$(echo "$DEBUG_RESULT" | grep -o 'specs/reports/[0-9]*_debug_.*\.md' | head -1)
-
-# Fallback to analyze-error.sh if /debug fails
-if [ -z "$DEBUG_REPORT_PATH" ]; then
-  echo "⚠ Debug agent failed, using analyze-error.sh fallback"
-  ANALYSIS_RESULT=$(.claude/lib/analyze-error.sh "$TEST_OUTPUT")
-  ROOT_CAUSE=$(echo "$ANALYSIS_RESULT" | grep "^Error Type:" | cut -d: -f2-)
-  SUGGESTIONS=$(echo "$ANALYSIS_RESULT" | sed -n '/^Suggestions:/,/^$/p')
-else
-  # Extract root cause from debug report
-  ROOT_CAUSE=$(sed -n '/^## Root Cause Analysis/,/^##/p' "$DEBUG_REPORT_PATH" |
-               grep -v '^##' | head -5 | tr '\n' ' ' | cut -c 1-80)
-fi
-```
-
-**Display Debug Summary**
-
-```bash
-if [ -n "$DEBUG_REPORT_PATH" ]; then
-  echo ""
-  echo "┌─────────────────────────────────────────────────────────────────┐"
-  printf "│ %-63s │\n" "Phase $CURRENT_PHASE Test Failure"
-  echo "├─────────────────────────────────────────────────────────────────┤"
-  printf "│ Root Cause: %-51s │\n" "${ROOT_CAUSE:0:51}"
-  printf "│ Debug Report: %-49s │\n" "$(basename "$DEBUG_REPORT_PATH")"
-  echo "└─────────────────────────────────────────────────────────────────┘"
-  echo ""
-fi
-```
-
-**User Choice Prompt**
-
-Present clear choices with explanations:
-
-```bash
-echo "Choose action:"
-echo ""
-echo "  (r) Revise plan with debug findings"
-echo "      → Automatically update plan structure or tasks based on analysis"
-echo "      → Retry phase after revision"
-echo ""
-echo "  (c) Continue to next phase"
-echo "      → Mark this phase [INCOMPLETE] with debugging notes"
-echo "      → Proceed to Phase $((CURRENT_PHASE + 1))"
-echo ""
-echo "  (s) Skip current phase"
-echo "      → Mark this phase [SKIPPED]"
-echo "      → Proceed to Phase $((CURRENT_PHASE + 1))"
-echo ""
-echo "  (a) Abort implementation"
-echo "      → Save checkpoint for later resumption"
-echo "      → Resume with: /implement $PLAN_PATH $CURRENT_PHASE"
-echo ""
-
-# Read and validate choice
-while true; do
-  read -p "Choose action (r/c/s/a): " USER_CHOICE
-  case "$USER_CHOICE" in
-    r|c|s|a) break ;;
-    *) echo "Invalid choice. Please enter r, c, s, or a." ;;
-  esac
-done
-
-# Log choice
-log_user_choice "$CURRENT_PHASE" "$USER_CHOICE" "$DEBUG_REPORT_PATH"
-```
-
-**Execute Action**
-
-```bash
 case "$USER_CHOICE" in
-  r)
-    # Build revision context JSON
-    REVISION_CONTEXT=$(cat <<EOF
-{
-  "revision_type": "add_phase",
-  "current_phase": $CURRENT_PHASE,
-  "reason": "Test failure: $ROOT_CAUSE",
-  "debug_report": "$DEBUG_REPORT_PATH",
-  "suggested_action": "Add prerequisites or update tasks based on debug findings"
-}
-EOF
-)
-
-    # Invoke /revise --auto-mode
-    echo "Invoking /revise --auto-mode to update plan..."
-    REVISE_RESULT=$(invoke_slash_command "/revise --auto-mode --context '$REVISION_CONTEXT' '$PLAN_PATH'")
-
-    # Parse response
-    REVISE_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
-
-    if [ "$REVISE_STATUS" = "success" ]; then
-      echo "✓ Plan revised successfully"
-      echo "  Retrying Phase $CURRENT_PHASE..."
-      # Retry phase (loop back to Step 2: Implementation)
-    else
-      echo "✗ Plan revision failed"
-      echo "  Falling back to (c) Continue action"
-      USER_CHOICE="c"  # Fallback
-    fi
-    ;;
-
-  c)
-    # Mark phase [INCOMPLETE] and add debugging notes
-    add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "$ROOT_CAUSE" "Incomplete"
-
-    # Update phase heading
-    sed -i "s/^### Phase $CURRENT_PHASE: \(.*\)$/### Phase $CURRENT_PHASE: \1 [INCOMPLETE]/" "$PLAN_PATH"
-
-    # Save checkpoint
-    save_checkpoint "in_progress" "$CURRENT_PHASE" "$((CURRENT_PHASE + 1))"
-
-    # Proceed to next phase
-    CURRENT_PHASE=$((CURRENT_PHASE + 1))
-    ;;
-
-  s)
-    # Mark phase [SKIPPED]
-    add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "$ROOT_CAUSE" "Skipped"
-
-    sed -i "s/^### Phase $CURRENT_PHASE: \(.*\)$/### Phase $CURRENT_PHASE: \1 [SKIPPED]/" "$PLAN_PATH"
-
-    # Save checkpoint
-    save_checkpoint "in_progress" "$CURRENT_PHASE" "$((CURRENT_PHASE + 1))"
-
-    # Proceed to next phase
-    CURRENT_PHASE=$((CURRENT_PHASE + 1))
-    ;;
-
-  a)
-    # Save checkpoint with debug info
-    save_checkpoint "paused" "$CURRENT_PHASE" "$CURRENT_PHASE" "$ROOT_CAUSE" "$DEBUG_REPORT_PATH"
-
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Implementation Aborted"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "Checkpoint saved with debug information"
-    echo "Resume with: /implement $PLAN_PATH $CURRENT_PHASE"
-    echo ""
-
-    # Exit workflow
-    exit 0
-    ;;
+  r) invoke_slash_command "/revise --auto-mode --context '$REVISION_CONTEXT' '$PLAN_PATH'" ;;
+  c) add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "Incomplete" ;;
+  s) add_debugging_notes "$PLAN_PATH" "$CURRENT_PHASE" "$DEBUG_REPORT_PATH" "Skipped" ;;
+  a) save_checkpoint "paused" "$CURRENT_PHASE" "$CURRENT_PHASE"; exit 0 ;;
 esac
 ```
 
-**Helper Function: add_debugging_notes**
+**Error Categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
 
-```bash
-add_debugging_notes() {
-  local plan_path="$1"
-  local phase_num="$2"
-  local debug_report_path="$3"
-  local root_cause="$4"
-  local resolution_status="$5"  # Pending, Applied, Incomplete, Skipped
+**Helper Function**: `add_debugging_notes(plan_path, phase_num, debug_report_path, root_cause, resolution_status)`
+- Creates "#### Debugging Notes" section with date, issue, report link, root cause, resolution
+- Appends iterations for repeat failures, escalates after 3+ attempts
 
-  # Check if debugging notes already exist
-  local has_debug_notes
-  has_debug_notes=$(grep -q "#### Debugging Notes" "$plan_path" && echo "true" || echo "false")
-
-  if [ "$has_debug_notes" = "false" ]; then
-    # Create new debugging notes section
-    local debug_notes=$(cat <<EOF
-
-#### Debugging Notes
-- **Date**: $(date +%Y-%m-%d)
-- **Issue**: Phase $phase_num test failure
-- **Debug Report**: [$debug_report_path]($debug_report_path)
-- **Root Cause**: $root_cause
-- **Resolution**: $resolution_status
-EOF
-)
-    # Insert after phase tasks using Edit tool
-  else
-    # Append new iteration
-    local iteration_count
-    iteration_count=$(grep -c "^**Iteration" "$plan_path" || echo "0")
-    iteration_count=$((iteration_count + 1))
-
-    local new_iteration=$(cat <<EOF
-
-**Iteration $iteration_count** ($(date +%Y-%m-%d))
-- **Issue**: Phase $phase_num test failure
-- **Debug Report**: [$debug_report_path]($debug_report_path)
-- **Root Cause**: $root_cause
-- **Resolution**: $resolution_status
-EOF
-)
-    # Append using Edit tool
-
-    # Check for escalation
-    if [ $iteration_count -ge 3 ]; then
-      echo "**Status**: Escalated to manual intervention (3+ debugging attempts)" >> "$plan_path"
-    fi
-  fi
-
-  echo "✓ Debugging notes added to plan (Status: $resolution_status)"
-}
-```
-
-**Error categories**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission, unknown
-
-**Benefits**:
-- **50% faster debug workflow**: Auto-invocation eliminates prompt delays
-- **Clear user choices**: No "should I debug?" questions, just actionable options
-- **Tiered recovery**: 4 levels of increasingly sophisticated error handling
-- **Graceful degradation**: Fallback to analyze-error.sh if /debug fails
+**Benefits**: 50% faster debug workflow, 4-level tiered recovery, graceful degradation, clear user choices
 
 ### 3.4. Adaptive Planning Detection
 
@@ -1168,236 +600,59 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ### 5. Plan Update (After Git Commit Succeeds)
-**Incremental plan updates after each phase:**
 
-**Step 1: Mark Phase Tasks Complete**
+Update plan files incrementally after each successful phase completion.
 
-Use the Edit tool to mark tasks as complete in the appropriate file:
-- **Level 0**: Update tasks in main plan file
-- **Level 1**: If phase is expanded, update tasks in phase file; otherwise update in main plan
-- **Level 2**: If stage is expanded, update tasks in stage file; otherwise in phase file
+**Update Steps**:
+1. **Mark tasks complete**: Use Edit tool to change `- [ ]` → `- [x]` in appropriate file based on expansion status
+2. **Add completion marker**: Change `### Phase N: Phase Name` → `### Phase N: Phase Name [COMPLETED]`
+3. **Verify updates**: Read updated file and verify all phase tasks show `[x]`
+4. **Update progress section**: Add/update "## Implementation Progress" with last phase, date, commit, status, resume command
 
-**Approach**:
-- Use Edit tool to change completed tasks: `- [ ]` → `- [x]`
-- Check if phase/stage is expanded using progressive utilities
-- Update in appropriate location based on expansion status
+**Level-Aware Updates**: Use progressive utilities (is_phase_expanded, is_stage_expanded) to determine correct file location (Level 0: main plan only, Level 1: phase file or main plan, Level 2: stage file, phase file, or main plan)
 
-**Step 2: Add Phase Completion Marker**
-
-Add completion marker to phase heading:
-- **Level 0**: Add `[COMPLETED]` to phase heading in main plan
-- **Level 1**: If phase is expanded, add marker to phase file; otherwise to main plan
-- **Level 2**: Mark appropriate stage files and phase overview as complete
-
-Use Edit tool to change:
-`### Phase N: Phase Name` → `### Phase N: Phase Name [COMPLETED]`
-
-**Step 3: Verify Plan Updated**
-
-Check that tasks are properly marked by reading the updated file and verifying all phase tasks show `[x]`.
-
-**Step 4: Add/Update Implementation Progress Section**
-- Use Edit tool to add or update "## Implementation Progress" section
-- Place after metadata, before overview
-- Include:
-  - Last completed phase number and name
-  - Completion date
-  - Git commit hash
-  - Resume instructions: `/implement <plan-file> <next-phase-number>`
-
-**Example Implementation Progress Section:**
-```markdown
-## Implementation Progress
-
-- **Last Completed Phase**: Phase 2: Core Implementation
-- **Date**: 2025-10-03
-- **Commit**: abc1234
-- **Status**: In Progress (2/5 phases complete)
-- **Resume**: `/implement specs/plans/018.md 3`
-```
+**Progress Section Content**: Last completed phase, completion date, git commit hash, status "In Progress (M/N phases complete)", resume instructions `/implement <plan-file> <next-phase-number>`
 
 ### 5.5. Automatic Collapse Detection
 
-After completing a phase and committing changes, automatically evaluate if an expanded phase should be collapsed back to the main plan file based on complexity heuristics.
+Automatically evaluate if an expanded phase should be collapsed back to the main plan file after completion.
 
-**Trigger Conditions:**
+**Trigger Conditions**: Phase is expanded (separate file) AND phase is completed (all tasks marked [x])
 
-Only check phases that meet BOTH criteria:
-1. **Phase is expanded** (in a separate file, not inline)
-2. **Phase is completed** (all tasks marked [x])
+**Collapse Thresholds**: Tasks ≤ 5 AND Complexity < 6.0 (both required, conservative approach)
 
-**Detection Logic:**
+**Workflow**:
+1. Check phase expansion and completion status (parse-adaptive-plan.sh)
+2. Extract metrics: task count, complexity score (complexity-utils.sh)
+3. Log evaluation (log_collapse_check for observability)
+4. If thresholds met: Build collapse context JSON, invoke `/revise --auto-mode collapse_phase`
+5. Update plan path if structure level changed (Level 1 → Level 0)
+6. Log collapse invocation (log_collapse_invocation for audit trail)
 
-```bash
-# Detect project directory dynamically
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+**Pattern Details**: See [Adaptive Planning Features](#adaptive-planning-features) for collapse workflow integration.
 
-# Source structure evaluation utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/structure-eval-utils.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/adaptive-planning-logger.sh"
+**Logging**: All evaluations logged to `.claude/logs/adaptive-planning.log`
 
-# Check if phase is expanded and completed
-IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
-IS_PHASE_COMPLETED=$(grep -q "\[COMPLETED\]" "$PHASE_FILE" && echo "true" || echo "false")
+**Non-Blocking**: Collapse failures logged but don't stop implementation
 
-if [ "$IS_PHASE_EXPANDED" = "true" ] && [ "$IS_PHASE_COMPLETED" = "true" ]; then
-  # Get phase details for complexity calculation
-  PHASE_FILE=$(get_phase_file "$PLAN_PATH" "$CURRENT_PHASE")
-
-  if [ -f "$PHASE_FILE" ]; then
-    # Extract phase metrics
-    PHASE_CONTENT=$(cat "$PHASE_FILE")
-    PHASE_NAME=$(grep "^### Phase $CURRENT_PHASE" "$PHASE_FILE" | head -1 | sed "s/^### Phase $CURRENT_PHASE:* //" | sed 's/ \[.*\]$//')
-    TASK_COUNT=$(grep -c "^- \[x\]" "$PHASE_FILE" || echo "0")
-
-    # Calculate complexity score
-    COMPLEXITY_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$PHASE_CONTENT")
-
-    # Log collapse check (always, for observability)
-    TRIGGERED="false"
-    if [ "$TASK_COUNT" -le 5 ] && awk -v s="$COMPLEXITY_SCORE" 'BEGIN {exit !(s < 6.0)}'; then
-      TRIGGERED="true"
-    fi
-    log_collapse_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "6.0" "$TRIGGERED"
-
-    # Check collapse thresholds: tasks ≤ 5 AND complexity < 6.0
-    if [ "$TASK_COUNT" -le 5 ]; then
-      if awk -v score="$COMPLEXITY_SCORE" 'BEGIN {exit !(score < 6.0)}'; then
-
-        # Build collapse context JSON
-        COLLAPSE_CONTEXT=$(cat <<EOF
-{
-  "revision_type": "collapse_phase",
-  "current_phase": $CURRENT_PHASE,
-  "reason": "Phase $CURRENT_PHASE completed and now simple ($TASK_COUNT tasks, complexity $COMPLEXITY_SCORE)",
-  "suggested_action": "Collapse Phase $CURRENT_PHASE back into main plan",
-  "simplicity_metrics": {
-    "tasks": $TASK_COUNT,
-    "complexity_score": $COMPLEXITY_SCORE,
-    "completion": true
-  }
-}
-EOF
-)
-
-        # Invoke /revise --auto-mode for automatic collapse
-        echo "Triggering auto-collapse for Phase $CURRENT_PHASE (simple after completion)..."
-        REVISE_RESULT=$(invoke_slash_command "/revise $PLAN_PATH --auto-mode --context '$COLLAPSE_CONTEXT'")
-
-        # Parse revision result
-        REVISE_STATUS=$(echo "$REVISE_RESULT" | jq -r '.status')
-
-        if [ "$REVISE_STATUS" = "success" ]; then
-          # Collapse succeeded
-          NEW_LEVEL=$(echo "$REVISE_RESULT" | jq -r '.new_structure_level')
-
-          # Log successful collapse invocation
-          log_collapse_invocation "$CURRENT_PHASE" "auto" "Phase simple after completion"
-
-          echo "✓ Auto-collapsed Phase $CURRENT_PHASE (structure level now: $NEW_LEVEL)"
-
-          # Update plan path if it changed (Level 1 → Level 0)
-          UPDATED_FILE=$(echo "$REVISE_RESULT" | jq -r '.updated_file')
-          if [ "$UPDATED_FILE" != "$PLAN_PATH" ]; then
-            PLAN_PATH="$UPDATED_FILE"
-            echo "  Plan file updated: $PLAN_PATH"
-          fi
-        else
-          # Collapse failed - log but continue
-          ERROR_MSG=$(echo "$REVISE_RESULT" | jq -r '.error_message')
-          echo "⚠ Auto-collapse failed: $ERROR_MSG"
-          echo "  Continuing with expanded structure"
-        fi
-      fi
-    fi
-  fi
-fi
-```
-
-**Collapse Thresholds:**
-- **Tasks**: ≤ 5 completed tasks
-- **Complexity**: < 6.0 (medium-low complexity)
-- **Both Required**: Both thresholds must be met (conservative approach)
-
-**Automatic Actions:**
-1. Calculate phase complexity using `calculate_phase_complexity()` from complexity-utils.sh
-2. Check if thresholds met (tasks ≤ 5 AND complexity < 6.0)
-3. Log collapse check for observability
-4. If triggered: Build collapse context JSON and invoke `/revise --auto-mode collapse_phase`
-5. Parse response and update plan path if structure level changed
-6. Log collapse invocation (auto trigger) for audit trail
-
-**Logging:**
-- **collapse_check**: Logs every evaluation (triggered or not)
-- **collapse_invocation**: Logs only when collapse executes (trigger=auto)
-- **Log file**: `.claude/logs/adaptive-planning.log`
-
-**Non-Blocking:**
-- Collapse failures are logged but don't stop implementation
-- Phase remains expanded if collapse fails
-- Implementation continues to next phase regardless
-
-**Edge Cases:**
-- **Phase with stages**: Collapse will fail (must collapse stages first)
-- **Incomplete phase**: Skipped silently (not eligible)
-- **Complex phase**: Not triggered (stays expanded)
-- **Structure level change**: Plan path updated if last expanded phase (Level 1 → Level 0)
+**Edge Cases**: Phase with stages (collapse stages first), incomplete phase (skipped), complex phase (not triggered), structure level change (plan path updated)
 
 ### 6. Incremental Summary Generation
-**Create or update partial summary after each phase:**
 
-**Step 1: Determine Summary Path**
-- Extract specs directory from plan metadata
-- Summary path: `[specs-dir]/summaries/NNN_partial.md`
-- Number matches plan number
+Create or update partial summary after each phase completion to track implementation progress.
 
-**Step 2: Create or Update Partial Summary**
-- If first phase: Use Write tool to create new partial summary
-- If subsequent phase: Use Edit tool to update existing partial summary
-- Include:
-  - Status: "in_progress"
-  - Phases completed: "M/N"
-  - Last completed phase name and date
-  - Last git commit hash
-  - Resume instructions
+**Workflow**:
+1. Extract specs directory and determine summary path: `[specs-dir]/summaries/NNN_partial.md`
+2. Create (first phase) or update (subsequent phases) partial summary using Write/Edit tools
+3. Update with status "in_progress", phases completed "M/N", last phase details, commit hash, resume instructions
 
-**Partial Summary Template:**
-```markdown
-# Implementation Summary: [Feature Name] (PARTIAL)
+**Required Content**:
+- Metadata: Date started, specs directory, plan link, status, phases completed count
+- Progress: Last completed phase (name, date, commit), phases checklist with completion dates
+- Resume: Instructions for `/implement [plan-path] M+1` (auto-resume enabled by default)
+- Notes: Brief implementation observations
 
-## Metadata
-- **Date Started**: [YYYY-MM-DD]
-- **Specs Directory**: [path/to/specs/]
-- **Summary Number**: [NNN]
-- **Plan**: [Link to plan file]
-- **Status**: in_progress
-- **Phases Completed**: M/N
-
-## Progress
-
-### Last Completed Phase
-- **Phase**: Phase M: [Phase Name]
-- **Completed**: [YYYY-MM-DD]
-- **Commit**: [hash]
-
-### Phases Summary
-- [x] Phase 1: [Name] - Completed [date]
-- [x] Phase 2: [Name] - Completed [date]
-- [ ] Phase 3: [Name] - Pending
-- [ ] Phase 4: [Name] - Pending
-
-## Resume Instructions
-To continue this implementation:
-```
-/implement [plan-path] M+1
-```
-
-Auto-resume is enabled by default when calling /implement without arguments.
-
-## Implementation Notes
-[Brief notes about progress, challenges, or decisions made]
-```
+**Template Reference**: See finalized summaries in `specs/summaries/` for structure examples
 
 ### 7. Before Starting Next Phase
 **Defensive check before proceeding:**
@@ -1643,161 +898,90 @@ Generated code follows standards automatically
 
 ## Agent Usage
 
-This command does not directly invoke specialized agents. Instead, it executes implementation directly using its own tools (Read, Edit, Write, Bash, TodoWrite).
-
-### Potential Agent Integration (Future Enhancement)
-While `/implement` currently works autonomously, it could potentially delegate to specialized agents:
-
-- **code-writer**: For complex code generation tasks
-  - Would receive plan context and phase requirements
-  - Could apply standards more intelligently
-  - Would use TodoWrite for task tracking
-
-- **test-specialist**: For test execution and analysis
-  - Could provide more detailed test failure diagnostics
-  - Would categorize errors more effectively
-  - Could suggest fixes for common test failures
-
-- **code-reviewer**: For standards compliance checking
-  - Optional pre-commit validation
-  - Could run after each phase before marking complete
-  - Would provide structured feedback on standards violations
-
-### Current Design Rationale
-`/implement` executes directly without agent delegation because:
-1. **Performance**: Avoids agent invocation overhead for simple implementations
-2. **Context**: Maintains full implementation context across all phases
-3. **Control**: Direct execution provides more predictable behavior
-4. **Simplicity**: Easier to debug and reason about
-
-For complex, multi-phase implementations requiring specialized expertise, use `/orchestrate` instead, which fully leverages the agent system.
+This command executes implementation directly using its own tools (Read, Edit, Write, Bash, TodoWrite) for performance, context preservation, and predictable behavior. For complex implementations requiring specialized agents, use `/orchestrate` instead.
 
 ## Checkpoint Detection and Resume
 
 For checkpoint management patterns, see [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-management-patterns).
 
-**Implement-specific checkpoint workflow using checkpoint-utils.sh**:
+**When to Use Checkpoints**:
+- **Automatic saves**: After each phase completion with git commit
+- **Auto-resume**: 90% of resumes happen automatically without prompts
+- **Safety checks**: 5 conditions verified before auto-resume
 
-**Step 1: Check for Existing Checkpoint**
+**Workflow Overview**:
+1. Check for existing checkpoint (load_checkpoint)
+2. Evaluate auto-resume safety conditions (5 checks)
+3. Auto-resume if safe, otherwise show interactive prompt with reason
+4. Save checkpoint after each phase (atomic save operations)
+5. Cleanup on completion or archive on failure
+
+**Pattern Details**: See [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-management-patterns) for complete workflow including safety checks, schema migration, and error handling.
+
+**Key Execution Requirements**:
+
+1. **Load checkpoint** (uses checkpoint-utils.sh):
+   ```bash
+   source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+   CHECKPOINT_DATA=$(load_checkpoint "implement")
+   CHECKPOINT_EXISTS=$?
+
+   [ $CHECKPOINT_EXISTS -eq 0 ] && PLAN_PATH=$(echo "$CHECKPOINT_DATA" | jq -r '.plan_path')
+   ```
+
+2. **Smart auto-resume with safety checks**:
+   ```bash
+   if check_safe_resume_conditions "$CHECKPOINT_FILE"; then
+     # Auto-resume silently (90% of cases)
+     log_checkpoint_auto_resume "$CURRENT_PHASE" "implement"
+   else
+     # Show interactive prompt with reason
+     SKIP_REASON=$(get_skip_reason "$CHECKPOINT_FILE")
+     echo "⚠ Cannot auto-resume: $SKIP_REASON"
+     # Offer: (r)esume, (s)tart fresh, (v)iew, (d)elete
+   fi
+   ```
+
+3. **Save checkpoint after phase**:
+   ```bash
+   CHECKPOINT_DATA='{"workflow_description":"implement", "plan_path":"'$PLAN_PATH'", "current_phase":'$NEXT_PHASE', "total_phases":'$TOTAL_PHASES', "status":"in_progress", "tests_passing":true, "replan_count":'$REPLAN_COUNT'}'
+   save_checkpoint "implement" "$CHECKPOINT_DATA"
+   ```
+
+**Quick Example - Auto-Resume Flow**:
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
-
-# Load most recent implement checkpoint
+# Check for checkpoint
 CHECKPOINT_DATA=$(load_checkpoint "implement")
-CHECKPOINT_EXISTS=$?
 
-if [ $CHECKPOINT_EXISTS -eq 0 ]; then
-  # Checkpoint found - parse state
-  PLAN_PATH=$(echo "$CHECKPOINT_DATA" | jq -r '.plan_path')
-  CURRENT_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
-  TOTAL_PHASES=$(echo "$CHECKPOINT_DATA" | jq -r '.total_phases')
-fi
-```
-
-**Step 2: Smart Auto-Resume or Interactive Prompt**
-```bash
-if [ $CHECKPOINT_EXISTS -eq 0 ]; then
-  # First check if checkpoint can be auto-resumed safely
+if [ $? -eq 0 ]; then
+  # Evaluate 5 safety conditions
   if check_safe_resume_conditions "$CHECKPOINT_FILE"; then
-    # All safety conditions met - auto-resume silently
-    echo "✓ Auto-resuming from Phase $CURRENT_PHASE/$TOTAL_PHASES (all safety conditions met)"
-
-    # Extract plan path and proceed with implementation
-    PLAN_PATH=$(echo "$CHECKPOINT_DATA" | jq -r '.workflow_state.plan_path')
+    # All safety conditions met → Auto-resume (no prompt)
     CURRENT_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
-
-    # Log auto-resume for audit trail
-    source "$UTILS_DIR/adaptive-planning-logger.sh"
-    log_checkpoint_auto_resume "$CURRENT_PHASE" "implement"
+    echo "✓ Auto-resuming from Phase $CURRENT_PHASE"
   else
-    # Safety conditions not met - show interactive prompt with reason
-    SKIP_REASON=$(get_skip_reason "$CHECKPOINT_FILE")
-
-    echo "Found checkpoint: Phase $CURRENT_PHASE/$TOTAL_PHASES"
-    echo "⚠ Cannot auto-resume: $SKIP_REASON"
-    echo ""
-    echo "Options: (r)esume, (s)tart fresh, (v)iew, (d)elete"
-    read -r CHOICE
-
-    case "$CHOICE" in
-      r) # Resume from checkpoint (manual override)
-         echo "Resuming from Phase $CURRENT_PHASE"
-         ;;
-      s) # Start fresh
-         checkpoint_delete "implement" "$PROJECT_NAME"
-         ;;
-      v) # View checkpoint details
-         cat "$CHECKPOINT_FILE" | jq .
-         echo ""
-         echo "Press Enter to continue..."
-         read
-         ;;
-      d) # Delete and start fresh
-         checkpoint_delete "implement" "$PROJECT_NAME"
-         ;;
-    esac
+    # Safety condition failed → Interactive prompt with specific reason
+    echo "⚠ Cannot auto-resume: $(get_skip_reason "$CHECKPOINT_FILE")"
+    # Prompt user for manual decision
   fi
 fi
+
+# After each phase completes
+save_checkpoint "implement" "$CHECKPOINT_DATA"  # Atomic save
+
+# On completion
+delete_checkpoint "implement"  # Cleanup
 ```
-
-**Step 3: Save Checkpoint After Each Phase**
-```bash
-# After successful git commit
-save_checkpoint "implement" "$CHECKPOINT_DATA"
-
-# Checkpoint data structure
-CHECKPOINT_DATA=$(cat <<EOF
-{
-  "workflow_description": "implement",
-  "plan_path": "$PLAN_PATH",
-  "current_phase": $NEXT_PHASE,
-  "total_phases": $TOTAL_PHASES,
-  "completed_phases": [$COMPLETED_PHASES_ARRAY],
-  "status": "in_progress",
-  "tests_passing": true,
-  "replan_count": $REPLAN_COUNT,
-  "phase_replan_count": {$PHASE_REPLAN_COUNTS},
-  "replan_history": [$REPLAN_HISTORY_ARRAY]
-}
-EOF
-)
-```
-
-**Step 4: Cleanup on Completion**
-```bash
-# On successful completion
-delete_checkpoint "implement"
-
-# On failure
-archive_checkpoint "implement" "failed"
-```
-
-**Checkpoint state fields**:
-- workflow_description, plan_path, current_phase, total_phases
-- completed_phases, status, tests_passing
-- replan_count, phase_replan_count, replan_history (for adaptive planning)
-
-**Benefits of checkpoint-utils.sh**:
-- **Smart auto-resume**: 90% of resumes happen automatically without user prompts
-- **Safety checks**: 5 conditions verified before auto-resume (tests passing, no errors, age <7 days, plan not modified, status in_progress)
-- **Clear feedback**: When auto-resume skipped, user sees exact reason why
-- Automatic schema migration for checkpoint format changes
-- Atomic save operations prevent corrupted checkpoints
-- Consistent checkpoint naming and location
-- Built-in validation before loading
 
 **Auto-Resume Safety Conditions**:
-1. ✓ Tests passing in last run (tests_passing = true)
-2. ✓ No recent errors (last_error = null)
-3. ✓ Checkpoint age < 7 days
-4. ✓ Plan file not modified since checkpoint
-5. ✓ Status = "in_progress"
+1. Tests passing in last run (tests_passing = true)
+2. No recent errors (last_error = null)
+3. Checkpoint age < 7 days
+4. Plan file not modified since checkpoint
+5. Status = "in_progress"
 
-**When to Expect Interactive Prompts**:
-- Tests failed in last run → Manual review needed
-- Errors in last run → Manual review needed
-- Checkpoint > 7 days old → Confirm still relevant
-- Plan file modified → Review changes before resuming
-- Checkpoint status not "in_progress" → Verify state
+**Checkpoint State Fields**: workflow_description, plan_path, current_phase, total_phases, completed_phases, status, tests_passing, replan_count, phase_replan_count, replan_history
+
+**Benefits**: Smart auto-resume (90% automatic), 5-condition safety checks, clear feedback on skip reason, schema migration, atomic saves, consistent naming, built-in validation
 
 Let me start by finding your implementation plan.
