@@ -35,15 +35,15 @@ cleanup() {
 # Test helper functions
 pass() {
   echo -e "${GREEN}✓ PASS${NC}: $1"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 fail() {
   echo -e "${RED}✗ FAIL${NC}: $1"
   echo "  Reason: $2"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 info() {
@@ -53,6 +53,9 @@ info() {
 # Create test plan with expanded phase
 create_expanded_plan() {
   local plan_dir="$TEST_DIR/specs/plans/001_test"
+
+  # Ensure directory exists
+  mkdir -p "$plan_dir"
 
   # Main plan with summary
   cat > "$plan_dir/001_test.md" <<'EOF'
