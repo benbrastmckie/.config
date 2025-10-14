@@ -2,6 +2,8 @@
 
 This directory contains shared utility libraries used across multiple Claude Code commands.
 
+**Note**: This README documents **sourced utility libraries** (functions that are sourced into other scripts). For documentation of **standalone utility scripts** (executable scripts), see [UTILS_README.md](UTILS_README.md).
+
 ## Purpose
 
 Extracting common functionality to shared libraries:
