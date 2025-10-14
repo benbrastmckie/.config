@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Shared checkpoint management utilities
 # Provides functions for checkpoint save, load, validate, and migrate
+#
+# Checkpoint Storage Locations:
+# - .claude/checkpoints/ - Primary checkpoint storage (used by this utility)
+#   - Workflow checkpoints (implement, orchestrate, etc.)
+#   - parallel_ops/ - Temporary parallel operation checkpoints
+# - .claude/data/checkpoints/ - Alternative persistent storage (legacy, not currently used)
+#   - Kept for backward compatibility
+#   - See .claude/data/checkpoints/README.md for historical documentation
 
 set -euo pipefail
 
