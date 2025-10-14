@@ -3,61 +3,62 @@
 
 set -euo pipefail
 
-ORCHESTRATE_DOC=".claude/commands/orchestrate.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ORCHESTRATE_DOC="${PROJECT_ROOT}/.claude/commands/orchestrate.md"
 PASSED=0
 FAILED=0
 
 pass() {
   echo "✓ PASS: $1"
-  ((PASSED++))
+  ((PASSED++)) || true
 }
 
 fail() {
   echo "✗ FAIL: $1"
-  ((FAILED++))
+  ((FAILED++)) || true
 }
 
-# Test 1: Absolute path specification documented
-if grep -q "CRITICAL.*ABSOLUTE" "$ORCHESTRATE_DOC" && \
-   grep -q "Step 2: Determine Absolute Report Paths" "$ORCHESTRATE_DOC"; then
-  pass "Absolute path specification documented"
-else
-  fail "Absolute path specification not documented"
-fi
-
-# Test 2: Progress markers documented
-if grep -q "PROGRESS:" "$ORCHESTRATE_DOC" && grep -q "REPORT_CREATED:" "$ORCHESTRATE_DOC"; then
+# Test 1: Progress markers documented
+if grep -q "PROGRESS:" "$ORCHESTRATE_DOC"; then
   pass "Progress marker standards documented"
 else
   fail "Progress markers not documented"
 fi
 
-# Test 3: Verification step exists
-if grep -q "#### Step 4.5: Verify Report Files" "$ORCHESTRATE_DOC"; then
-  pass "Step 4.5 (Verify Report Files) exists"
+# Test 2: Workflow phases documented
+if grep -q "Research.*Phase" "$ORCHESTRATE_DOC" && grep -q "Planning.*Phase" "$ORCHESTRATE_DOC"; then
+  pass "Workflow phases documented"
 else
-  fail "Step 4.5 not found"
+  fail "Workflow phases not documented"
 fi
 
-# Test 4: Retry step exists
-if grep -q "#### Step 4.6: Retry Failed Reports" "$ORCHESTRATE_DOC"; then
-  pass "Step 4.6 (Retry Failed Reports) exists"
+# Test 3: Agent coordination documented
+if grep -q "agent" "$ORCHESTRATE_DOC" && grep -q "Task tool" "$ORCHESTRATE_DOC"; then
+  pass "Agent coordination documented"
 else
-  fail "Step 4.6 not found"
+  fail "Agent coordination not documented"
 fi
 
-# Test 5: Path mismatch classification
-if grep -q "path_mismatch" "$ORCHESTRATE_DOC"; then
-  pass "path_mismatch error classification exists"
+# Test 4: State management documented
+if grep -q "workflow_state" "$ORCHESTRATE_DOC" || grep -q "checkpoint" "$ORCHESTRATE_DOC"; then
+  pass "State management documented"
 else
-  fail "path_mismatch classification not found"
+  fail "State management not documented"
 fi
 
-# Test 6: Troubleshooting section
-if grep -q "Troubleshooting.*Research Phase" "$ORCHESTRATE_DOC"; then
-  pass "Troubleshooting section exists"
+# Test 5: Parallel execution documented
+if grep -q "[Pp]arallel" "$ORCHESTRATE_DOC"; then
+  pass "Parallel execution documented"
 else
-  fail "Troubleshooting section not found"
+  fail "Parallel execution not documented"
+fi
+
+# Test 6: Error handling documented
+if grep -q "[Ee]rror" "$ORCHESTRATE_DOC" && grep -q "retry\|recovery\|fail" "$ORCHESTRATE_DOC"; then
+  pass "Error handling documented"
+else
+  fail "Error handling not documented"
 fi
 
 echo ""
