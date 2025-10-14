@@ -13,6 +13,10 @@
 
 set -euo pipefail
 
+# Source timestamp utilities for consistent timestamp operations
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/timestamp-utils.sh"
+
 # Configuration
 CONVERSION_LOG_FILE=""
 

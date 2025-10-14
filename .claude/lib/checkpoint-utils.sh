@@ -15,6 +15,7 @@ set -euo pipefail
 # Detect project directory dynamically
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/detect-project-dir.sh"
+source "$SCRIPT_DIR/timestamp-utils.sh"
 
 # ==============================================================================
 # Checkpoint Schema
