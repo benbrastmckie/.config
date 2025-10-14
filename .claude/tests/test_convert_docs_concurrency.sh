@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# test_convert_docs_concurrency.sh - Test concurrency protection for convert-docs.sh
+# test_convert_docs_concurrency.sh - Test concurrency protection for convert-core.sh
 #
 
 set -euo pipefail
@@ -17,7 +17,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Script path
-SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-docs.sh"
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-core.sh"
 
 # Test directories
 TEST_BASE_DIR="/tmp/convert-docs-concurrency-test-$$"
@@ -329,7 +329,7 @@ main() {
 
   # Check if script exists
   if [[ ! -f "$SCRIPT_PATH" ]]; then
-    echo -e "${RED}Error: convert-docs.sh not found at $SCRIPT_PATH${NC}"
+    echo -e "${RED}Error: convert-core.sh not found at $SCRIPT_PATH${NC}"
     exit 1
   fi
 

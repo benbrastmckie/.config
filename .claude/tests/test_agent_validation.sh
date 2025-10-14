@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test agent behavior file validation
-# Tests expansion_specialist and collapse_specialist agent files
+# Tests expansion-specialist and collapse-specialist agent files
 
 set -euo pipefail
 
@@ -107,32 +107,32 @@ main() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
 
-  # Test expansion_specialist
-  echo "Testing expansion_specialist agent:"
-  test_case "Agent file exists" validate_agent_file_exists "expansion_specialist"
-  test_case "Has role section" validate_agent_has_role "expansion_specialist"
-  test_case "Has behavioral guidelines" validate_agent_has_guidelines "expansion_specialist"
-  test_case "Has workflow documentation" validate_agent_has_workflow "expansion_specialist"
-  test_case "Has tools specification" validate_agent_has_tools "expansion_specialist"
-  test_case "Has constraints" validate_agent_has_constraints "expansion_specialist"
-  test_case "Has artifact format" validate_agent_has_artifact_format "expansion_specialist"
-  test_case "Has error handling" validate_agent_has_error_handling "expansion_specialist"
-  test_case "Has success criteria" validate_agent_has_success_criteria "expansion_specialist"
-  test_case "Has examples" validate_agent_has_examples "expansion_specialist"
+  # Test expansion-specialist
+  echo "Testing expansion-specialist agent:"
+  test_case "Agent file exists" validate_agent_file_exists "expansion-specialist"
+  test_case "Has role section" validate_agent_has_role "expansion-specialist"
+  test_case "Has behavioral guidelines" validate_agent_has_guidelines "expansion-specialist"
+  test_case "Has workflow documentation" validate_agent_has_workflow "expansion-specialist"
+  test_case "Has tools specification" validate_agent_has_tools "expansion-specialist"
+  test_case "Has constraints" validate_agent_has_constraints "expansion-specialist"
+  test_case "Has artifact format" validate_agent_has_artifact_format "expansion-specialist"
+  test_case "Has error handling" validate_agent_has_error_handling "expansion-specialist"
+  test_case "Has success criteria" validate_agent_has_success_criteria "expansion-specialist"
+  test_case "Has examples" validate_agent_has_examples "expansion-specialist"
   echo ""
 
-  # Test collapse_specialist
-  echo "Testing collapse_specialist agent:"
-  test_case "Agent file exists" validate_agent_file_exists "collapse_specialist"
-  test_case "Has role section" validate_agent_has_role "collapse_specialist"
-  test_case "Has behavioral guidelines" validate_agent_has_guidelines "collapse_specialist"
-  test_case "Has workflow documentation" validate_agent_has_workflow "collapse_specialist"
-  test_case "Has tools specification" validate_agent_has_tools "collapse_specialist"
-  test_case "Has constraints" validate_agent_has_constraints "collapse_specialist"
-  test_case "Has artifact format" validate_agent_has_artifact_format "collapse_specialist"
-  test_case "Has error handling" validate_agent_has_error_handling "collapse_specialist"
-  test_case "Has success criteria" validate_agent_has_success_criteria "collapse_specialist"
-  test_case "Has examples" validate_agent_has_examples "collapse_specialist"
+  # Test collapse-specialist
+  echo "Testing collapse-specialist agent:"
+  test_case "Agent file exists" validate_agent_file_exists "collapse-specialist"
+  test_case "Has role section" validate_agent_has_role "collapse-specialist"
+  test_case "Has behavioral guidelines" validate_agent_has_guidelines "collapse-specialist"
+  test_case "Has workflow documentation" validate_agent_has_workflow "collapse-specialist"
+  test_case "Has tools specification" validate_agent_has_tools "collapse-specialist"
+  test_case "Has constraints" validate_agent_has_constraints "collapse-specialist"
+  test_case "Has artifact format" validate_agent_has_artifact_format "collapse-specialist"
+  test_case "Has error handling" validate_agent_has_error_handling "collapse-specialist"
+  test_case "Has success criteria" validate_agent_has_success_criteria "collapse-specialist"
+  test_case "Has examples" validate_agent_has_examples "collapse-specialist"
   echo ""
 
   # Summary

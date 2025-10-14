@@ -63,7 +63,156 @@ log_summary 10 8 2 0
 - Max rotated files: 5
 - Rotation format: conversion.log → conversion.log.1 → conversion.log.2...
 
-**Used By:** `/convert-docs`, `convert-docs.sh`
+**Used By:** `/convert-docs`, `convert-core.sh`
+
+---
+
+### convert-core.sh
+
+Main document conversion orchestration module with tool detection, file discovery, and batch processing.
+
+**Key Functions:**
+- `detect_tools()` - Detect available conversion tools (MarkItDown, Pandoc, PyMuPDF4LLM, Typst, XeLaTeX)
+- `select_docx_tool()` - Select best DOCX converter
+- `select_pdf_tool()` - Select best PDF converter
+- `with_timeout()` - Execute command with timeout protection
+- `discover_files()` - Find convertible files with validation
+- `validate_input_file()` - Validate file magic numbers and format
+- `convert_file()` - Main conversion dispatcher with automatic fallback
+- `process_conversions()` - Process files sequentially or in parallel
+- `convert_batch_parallel()` - Parallel conversion with worker pool
+- `check_output_collision()` - Ensure unique output filenames
+- `acquire_lock()` / `release_lock()` - Prevent concurrent conversions
+- `check_disk_space()` - Verify sufficient disk space
+- `show_tool_detection()` - Display detected tools
+- `show_dry_run()` - Display files that would be converted
+- `generate_summary()` - Print conversion statistics
+- `main_conversion()` - Main entry point for conversion workflow
+
+**Usage Example:**
+```bash
+# Source the module
+source .claude/lib/convert-core.sh
+
+# Run conversion
+main_conversion "/path/to/input" "/path/to/output"
+
+# Or with options
+main_conversion "/path/to/input" "/path/to/output" --parallel 4
+main_conversion "/path/to/input" --dry-run
+```
+
+**Module Dependencies:**
+- `convert-docx.sh` - DOCX conversion functions
+- `convert-pdf.sh` - PDF conversion functions
+- `convert-markdown.sh` - Markdown validation functions
+
+**Supported Conversions:**
+- DOCX → Markdown (MarkItDown primary, Pandoc fallback)
+- PDF → Markdown (MarkItDown primary, PyMuPDF4LLM fallback)
+- Markdown → DOCX (Pandoc)
+- Markdown → PDF (Pandoc with Typst or XeLaTeX)
+
+**Used By:** `/convert-docs`
+
+---
+
+### convert-docx.sh
+
+DOCX conversion utilities for DOCX ↔ Markdown transformations.
+
+**Key Functions:**
+- `convert_docx()` - DOCX→MD using MarkItDown
+- `convert_docx_pandoc()` - DOCX→MD using Pandoc with image extraction
+- `convert_md_to_docx()` - MD→DOCX using Pandoc
+
+**Usage Example:**
+```bash
+# Sourced automatically by convert-core.sh
+# Functions available after sourcing convert-core.sh
+
+source .claude/lib/convert-docx.sh
+
+# Convert DOCX to Markdown
+convert_docx "input.docx" "output.md"
+
+# Convert Markdown to DOCX
+convert_md_to_docx "input.md" "output.docx"
+```
+
+**Dependencies:**
+- MarkItDown (optional, primary tool for DOCX→MD)
+- Pandoc (optional, fallback and MD→DOCX)
+- `with_timeout()` from convert-core.sh
+
+**Used By:** `convert-core.sh`
+
+---
+
+### convert-pdf.sh
+
+PDF conversion utilities for PDF ↔ Markdown transformations.
+
+**Key Functions:**
+- `convert_pdf_markitdown()` - PDF→MD using MarkItDown
+- `convert_pdf_pymupdf()` - PDF→MD using PyMuPDF4LLM
+- `convert_md_to_pdf()` - MD→PDF using Pandoc with Typst or XeLaTeX
+
+**Usage Example:**
+```bash
+# Sourced automatically by convert-core.sh
+# Functions available after sourcing convert-core.sh
+
+source .claude/lib/convert-pdf.sh
+
+# Convert PDF to Markdown
+convert_pdf_markitdown "input.pdf" "output.md"
+
+# Convert Markdown to PDF
+convert_md_to_pdf "input.md" "output.pdf"
+```
+
+**Dependencies:**
+- MarkItDown (optional, primary tool for PDF→MD)
+- PyMuPDF4LLM (optional, backup for PDF→MD)
+- Pandoc (required for MD→PDF)
+- Typst or XeLaTeX (PDF engine, Typst preferred)
+- `with_timeout()` from convert-core.sh
+
+**Used By:** `convert-core.sh`
+
+---
+
+### convert-markdown.sh
+
+Markdown validation and structure analysis utilities.
+
+**Key Functions:**
+- `check_structure()` - Analyze Markdown structure (headings, tables)
+- `report_validation_warnings()` - Report conversion quality warnings
+
+**Usage Example:**
+```bash
+# Sourced automatically by convert-core.sh
+# Functions available after sourcing convert-core.sh
+
+source .claude/lib/convert-markdown.sh
+
+# Analyze Markdown structure
+STRUCTURE=$(check_structure "document.md")
+echo "Structure: $STRUCTURE"  # Output: "15 headings, 3 tables"
+
+# Report validation warnings
+report_validation_warnings "output.md" "md"
+```
+
+**Validation Checks:**
+- File existence
+- File size (minimum 100 bytes)
+- Heading presence in Markdown
+- Structure analysis (heading count, table count)
+
+**Used By:** `convert-core.sh`
 
 ---
 

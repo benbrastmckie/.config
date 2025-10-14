@@ -474,7 +474,7 @@ Run tests by:
 5. Present user choices: (r)evise, (c)ontinue, (s)kip, (a)bort
 6. Execute chosen action and update plan with debugging notes
 
-**Pattern Details**: See [Error Handling Patterns](../docs/command-patterns.md#error-handling-patterns) for complete tiered recovery workflow.
+**Pattern Details**: See [Error Recovery Patterns](../docs/command-patterns.md#error-recovery-patterns) for complete tiered recovery workflow.
 
 **Key Execution Requirements**:
 

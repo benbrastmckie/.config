@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# test_convert_docs_edge_cases.sh - Test edge cases in convert-docs.sh
+# test_convert_docs_edge_cases.sh - Test edge cases in convert-core.sh
 #
 # Tests edge case handling without requiring actual conversion tools:
 #   - Filename safety (using --dry-run mode)
@@ -23,7 +23,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Script path
-SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-docs.sh"
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-core.sh"
 
 # Test directory
 TEST_DIR="/tmp/convert-docs-test-$$"
@@ -231,9 +231,9 @@ main() {
   fi
 }
 
-# Check if convert-docs.sh exists
+# Check if convert-core.sh exists
 if [[ ! -f "$SCRIPT_PATH" ]]; then
-  echo "Error: convert-docs.sh not found at $SCRIPT_PATH"
+  echo "Error: convert-core.sh not found at $SCRIPT_PATH"
   exit 1
 fi
 
