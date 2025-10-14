@@ -182,26 +182,33 @@ Checkpoints are automatically migrated from v1.0 to v1.1 when loaded. Backups ar
 
 ---
 
-### error-utils.sh
+### error-handling.sh
 
 Error classification, recovery, and escalation utilities.
 
 **Key Functions:**
 - `classify_error()` - Classify error as transient/permanent/fatal
+- `detect_error_type()` - Detect specific error type from message
 - `suggest_recovery()` - Suggest recovery action for error type
+- `generate_suggestions()` - Generate error-specific suggestions
 - `retry_with_backoff()` - Retry command with exponential backoff
+- `retry_with_timeout()` - Generate retry metadata with extended timeout
+- `retry_with_fallback()` - Generate fallback retry metadata
 - `log_error_context()` - Log error with context for debugging
 - `escalate_to_user()` - Present error to user with options
+- `escalate_to_user_parallel()` - Format escalation for parallel operations
 - `try_with_fallback()` - Try primary approach, fall back to alternative
 - `format_error_report()` - Format error message with context
-- `check_required_tool()` - Check if required tool is available
-- `check_file_writable()` - Check if file/directory is writable
+- `handle_partial_failure()` - Process successful operations, report failures
 - `cleanup_on_error()` - Cleanup temp files on error
+- `format_orchestrate_agent_failure()` - Format agent invocation failures
+- `format_orchestrate_test_failure()` - Format test failures in workflows
+- `extract_location()` - Extract file location from error message
 
 **Usage Example:**
 ```bash
 # Source the utility library
-source .claude/lib/error-utils.sh
+source .claude/lib/error-handling.sh
 
 # Classify an error
 ERROR_MSG="Database connection timeout"
@@ -242,6 +249,65 @@ format_error_report \
 - Exponential backoff: 500ms → 1s → 2s
 
 **Used By:** `/implement`, `/orchestrate`, `/test`, `/setup`
+
+---
+
+### validation-utils.sh
+
+Input validation and parameter checking utilities.
+
+**Key Functions:**
+- `require_param()` - Exit with error if parameter is empty
+- `validate_file_exists()` - Check if file exists
+- `validate_dir_exists()` - Check if directory exists
+- `validate_number()` - Check if value is a valid positive integer
+- `validate_positive_number()` - Check if value is positive (> 0)
+- `validate_float()` - Check if value is a valid float
+- `validate_path_safe()` - Validate path doesn't contain dangerous characters
+- `validate_choice()` - Validate value is one of allowed choices
+- `validate_boolean()` - Validate value is a boolean
+- `validate_not_empty()` - Validate value is not empty or whitespace
+- `validate_file_readable()` - Check if file is readable
+- `validate_file_writable()` - Check if file is writable
+- `check_required_tool()` - Check if required tool is available
+- `check_file_writable()` - Legacy function for file writability (use validate_file_writable instead)
+
+**Usage Example:**
+```bash
+# Source the utility library
+source .claude/lib/validation-utils.sh
+
+# Require parameters
+require_param "plan_file" "$1" || exit 1
+
+# Validate file exists
+if validate_file_exists "$plan_file"; then
+  echo "Plan file found"
+fi
+
+# Validate number
+if validate_positive_number "$phase_number"; then
+  echo "Valid phase number: $phase_number"
+fi
+
+# Validate choice
+validate_choice "$mode" "sequential" "parallel" "hybrid" || exit 1
+
+# Check required tools
+check_required_tool "jq" "sudo apt install jq" || exit 1
+check_required_tool "git" || exit 1
+```
+
+**Validation Patterns:**
+- **File Operations**: validate_file_exists, validate_file_readable, validate_file_writable
+- **Directory Operations**: validate_dir_exists
+- **Number Validation**: validate_number, validate_positive_number, validate_float
+- **String Validation**: validate_not_empty, require_param
+- **Choice Validation**: validate_choice, validate_boolean
+- **Path Safety**: validate_path_safe (prevents directory traversal)
+- **Tool Availability**: check_required_tool
+
+**Used By:** All commands requiring input validation
 
 ---
 
@@ -464,6 +530,12 @@ All utilities require:
 Optional dependencies noted in each utility's documentation.
 
 ## Version History
+
+### v1.2 (2025-10-14)
+- Split error-utils.sh into error-handling.sh and validation-utils.sh
+- Enhanced error-handling.sh with orchestrate-specific contexts
+- Added comprehensive validation functions to validation-utils.sh
+- Improved error classification and recovery patterns
 
 ### v1.1 (2025-10-06)
 - Created checkpoint-utils.sh with checkpoint management

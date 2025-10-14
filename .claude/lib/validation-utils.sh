@@ -228,6 +228,59 @@ validate_file_writable() {
   return 0
 }
 
+# check_required_tool <tool-name> [install-suggestion]
+# Check if required tool is available
+# Returns: 0 if available, 1 if missing
+# Example: check_required_tool "jq" "sudo apt install jq"
+check_required_tool() {
+  local tool_name="${1:-}"
+  local install_suggestion="${2:-}"
+
+  if ! command -v "$tool_name" &> /dev/null; then
+    error "Required tool not found: $tool_name"
+    if [ -n "$install_suggestion" ]; then
+      echo "Install with: $install_suggestion" >&2
+    fi
+    return 1
+  fi
+
+  return 0
+}
+
+# check_file_writable <path>
+# Check if file/directory is writable (legacy function, use validate_file_writable instead)
+# Usage: check_file_writable <path>
+# Returns: 0 if writable, 1 if not
+# Example: check_file_writable "/protected/dir/file.txt"
+check_file_writable() {
+  local path="${1:-}"
+
+  if [ -z "$path" ]; then
+    error "No path provided"
+    return 1
+  fi
+
+  # Check if path exists
+  if [ -e "$path" ]; then
+    # Check if writable
+    if [ -w "$path" ]; then
+      return 0
+    else
+      error "Path not writable: $path"
+      return 1
+    fi
+  else
+    # Check if parent directory is writable
+    local parent_dir=$(dirname "$path")
+    if [ -w "$parent_dir" ]; then
+      return 0
+    else
+      error "Parent directory not writable: $parent_dir"
+      return 1
+    fi
+  fi
+}
+
 # Export functions for use by sourcing scripts
 export -f require_param
 export -f validate_file_exists
@@ -241,3 +294,5 @@ export -f validate_boolean
 export -f validate_not_empty
 export -f validate_file_readable
 export -f validate_file_writable
+export -f check_required_tool
+export -f check_file_writable

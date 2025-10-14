@@ -275,11 +275,11 @@ source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
 
 # Verify utilities exist
-[ -f "$UTILS_DIR/error-utils.sh" ] || { echo "ERROR: error-utils.sh not found"; exit 1; }
+[ -f "$UTILS_DIR/error-handling.sh" ] || { echo "ERROR: error-handling.sh not found"; exit 1; }
 [ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
 
 # Source utilities
-source "$UTILS_DIR/error-utils.sh"
+source "$UTILS_DIR/error-handling.sh"
 source "$UTILS_DIR/checkpoint-utils.sh"
 
 echo "✓ Shared utilities initialized"
@@ -287,7 +287,7 @@ echo "✓ Shared utilities initialized"
 
 **Available Utilities**:
 - **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh` for saving/restoring workflow state
-- **Error Handling**: `.claude/lib/error-utils.sh` for agent error recovery and fallback strategies
+- **Error Handling**: `.claude/lib/error-handling.sh` for agent error recovery and fallback strategies
   - `retry_with_backoff()`: Automatic retry with exponential backoff
   - `classify_error()`: Categorize error types
   - `suggest_recovery()`: Generate recovery suggestions
@@ -301,7 +301,7 @@ These utilities ensure workflow state is preserved across interruptions and agen
 
 ### Error Handling Principles
 
-1. **Agent Invocation Failures**: Use `retry_with_backoff()` from error-utils.sh for automatic retry with exponential backoff
+1. **Agent Invocation Failures**: Use `retry_with_backoff()` from error-handling.sh for automatic retry with exponential backoff
 2. **File Creation Failures**: Verify expected files created, retry if missing, search alternative locations
 3. **Test Failures**: Enter debugging loop (max 3 iterations), DO NOT treat as errors
 4. **Checkpoint Failures**: Graceful degradation - warn user but continue workflow
@@ -309,7 +309,7 @@ These utilities ensure workflow state is preserved across interruptions and agen
 ### Utility Integration
 
 Source required utilities from `.claude/lib/`:
-- `error-utils.sh` - retry_with_backoff(), classify_error(), format_error_report(), suggest_recovery()
+- `error-handling.sh` - retry_with_backoff(), classify_error(), format_error_report(), suggest_recovery()
 - `checkpoint-utils.sh` - save_checkpoint(), load_checkpoint()
 
 ### Recovery Pattern
