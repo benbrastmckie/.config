@@ -5,11 +5,9 @@
 
 set -e
 
-# Error handling
-error() {
-  echo "Error: $*" >&2
-  exit 1
-}
+# Source base utilities for common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/base-utils.sh"
 
 # Extract phase name from phase heading
 # Usage: extract_phase_name <plan_file> <phase_num>
@@ -133,7 +131,6 @@ extract_stage_content() {
 }
 
 # Export functions for sourcing
-export -f error
 export -f extract_phase_name
 export -f extract_phase_content
 export -f extract_stage_name

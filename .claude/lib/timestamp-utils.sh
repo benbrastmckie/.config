@@ -16,10 +16,9 @@
 
 set -euo pipefail
 
-# Simple error function (avoid sourcing error-utils.sh to prevent circular dependencies)
-error() {
-  echo "Error: $*" >&2
-}
+# Source base utilities for common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/base-utils.sh"
 
 # get_file_mtime <file_path>
 # Returns: Unix timestamp of file modification time
