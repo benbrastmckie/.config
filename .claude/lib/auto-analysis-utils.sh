@@ -63,7 +63,7 @@ invoke_complexity_estimator() {
   echo "" >&2
 
   # Build agent prompt
-  local agent_file="/home/benjamin/.config/.claude/agents/complexity_estimator.md"
+  local agent_file="/home/benjamin/.config/.claude/agents/complexity-estimator.md"
   local task_description
 
   if [[ "$mode" == "expansion" ]]; then
@@ -783,7 +783,7 @@ invoke_expansion_agents_parallel() {
     local agent_prompt
     agent_prompt=$(cat <<EOF
 Read and follow the behavioral guidelines from:
-/home/benjamin/.config/.claude/agents/expansion_specialist.md
+/home/benjamin/.config/.claude/agents/expansion-specialist.md
 
 Expansion Task: phase $item_num
 
@@ -1077,7 +1077,7 @@ invoke_collapse_agents_parallel() {
     local agent_prompt
     agent_prompt=$(cat <<EOF
 Read and follow the behavioral guidelines from:
-/home/benjamin/.config/.claude/agents/collapse_specialist.md
+/home/benjamin/.config/.claude/agents/collapse-specialist.md
 
 Collapse Task: phase $item_num
 
@@ -1355,7 +1355,7 @@ review_plan_hierarchy() {
     }')
 
   # Build agent prompt for hierarchy review
-  local agent_file="/home/benjamin/.config/.claude/agents/complexity_estimator.md"
+  local agent_file="/home/benjamin/.config/.claude/agents/complexity-estimator.md"
   local agent_prompt
   agent_prompt=$(cat <<EOF
 Read and follow the behavioral guidelines from:
