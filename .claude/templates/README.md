@@ -74,7 +74,7 @@ Add custom templates directly to this directory:
 - Use same format as standard templates
 - Reference as `my-workflow` in `/plan-from-template` command
 - See `example-feature.yaml` for template structure reference
-- Full guide: [Template System Guide](../docs/template-system-guide.md)
+- Follow format and guidelines in this README
 
 ## Using Templates
 
@@ -279,7 +279,6 @@ The picker will automatically detect new templates on next open.
 
 ## References
 
-- [Creating Custom Templates Guide](../docs/template-system-guide.md)
-- [Plan Wizard](/commands/plan-wizard.md) - Interactive planning
+- [Plan Wizard](../commands/plan-wizard.md) - Interactive planning
 - [Plan Command](../commands/plan.md) - Manual planning
 - [Implementation Standards](../../CLAUDE.md)
