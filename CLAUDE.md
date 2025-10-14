@@ -240,7 +240,7 @@ Backward compatibility is secondary to these goals.
 - **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh`
 - **Complexity Analysis**: `.claude/lib/complexity-utils.sh`
 - **Adaptive Logging**: `.claude/lib/adaptive-planning-logger.sh`
-- **Error Handling**: `.claude/lib/error-utils.sh`
+- **Error Handling**: `.claude/lib/error-handling.sh`
 
 ## Adaptive Planning Configuration
 [Used by: /plan, /expand, /implement, /revise]
