@@ -33,9 +33,22 @@ test_reference_links_resolve() {
 
       # Check if anchor exists in command-patterns.md
       # Anchors in markdown are section headers converted to lowercase with spaces as hyphens
-      if ! grep -qi "^## .*$anchor" "$PATTERNS_FILE" && \
-         ! grep -qi "^### .*$anchor" "$PATTERNS_FILE" && \
-         ! grep -qi "^### Pattern:.*$anchor" "$PATTERNS_FILE"; then
+      # Convert headers to anchor format for comparison
+      local anchor_found=false
+      while IFS= read -r header_line; do
+        # Extract header text and convert to anchor format
+        if [[ $header_line =~ ^##[#]?[[:space:]]+(.+)$ ]]; then
+          local header_text="${BASH_REMATCH[1]}"
+          # Convert to anchor: lowercase, spaces to hyphens, remove special chars
+          local generated_anchor=$(echo "$header_text" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+          if [ "$generated_anchor" = "$anchor" ]; then
+            anchor_found=true
+            break
+          fi
+        fi
+      done < "$PATTERNS_FILE"
+
+      if [ "$anchor_found" = false ]; then
         broken_refs+=("$anchor")
         test_passed=false
       fi

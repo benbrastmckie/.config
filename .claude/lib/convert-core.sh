@@ -1,38 +1,29 @@
 #!/usr/bin/env bash
 #
-# convert-docs.sh - Document conversion utility
+# convert-core.sh - Document conversion orchestration
 #
-# Converts between Markdown, DOCX, and PDF formats using optimal tools with
-# automatic fallback. Designed for speed and reliability in common conversion
-# scenarios.
+# Main orchestration module for document conversion. Handles tool detection,
+# file discovery, validation, conversion dispatching, and reporting.
 #
 # Usage:
-#   convert-docs.sh [INPUT_DIR] [OUTPUT_DIR]
-#   convert-docs.sh --detect-tools
-#   convert-docs.sh [INPUT_DIR] --dry-run
-#   convert-docs.sh [INPUT_DIR] [OUTPUT_DIR] --parallel [WORKERS]
+#   source convert-core.sh
+#   main_conversion [INPUT_DIR] [OUTPUT_DIR] [OPTIONS]
 #
-# Arguments:
-#   INPUT_DIR   - Directory containing files to convert (default: current directory)
-#   OUTPUT_DIR  - Output directory for converted files (default: ./converted_output)
-#
-# Options:
-#   --detect-tools     - Display detected conversion tools and exit
-#   --dry-run          - Show files that would be converted without converting
-#   --parallel [N]     - Enable parallel processing with N workers (default: auto-detect CPU cores)
-#
-# Tool Priority Matrix:
-#   DOCX → MD: MarkItDown (75-80% fidelity) → Pandoc (68% fidelity)
-#   PDF → MD:  MarkItDown (primary) → PyMuPDF4LLM (backup, fast)
-#   MD → DOCX: Pandoc (95%+ quality)
-#   MD → PDF:  Pandoc with Typst → XeLaTeX fallback
-#
-# Exit Codes:
-#   0 - Success (all conversions completed)
-#   1 - Error (invalid arguments, missing tools, or conversion failures)
+# Dependencies:
+#   - convert-docx.sh (DOCX conversion functions)
+#   - convert-pdf.sh (PDF conversion functions)
+#   - convert-markdown.sh (Markdown utilities)
 #
 
 set -eu
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source format-specific conversion modules
+source "$SCRIPT_DIR/convert-docx.sh"
+source "$SCRIPT_DIR/convert-pdf.sh"
+source "$SCRIPT_DIR/convert-markdown.sh"
 
 # Timeout configuration (seconds)
 TIMEOUT_DOCX_TO_MD=60
@@ -778,7 +769,6 @@ show_dry_run() {
   if [[ ${#docx_files[@]} -gt 0 ]]; then
     echo "DOCX Files (${#docx_files[@]}):"
     for file in "${docx_files[@]}"; do
-      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -787,7 +777,6 @@ show_dry_run() {
   if [[ ${#pdf_files[@]} -gt 0 ]]; then
     echo "PDF Files (${#pdf_files[@]}):"
     for file in "${pdf_files[@]}"; do
-      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -796,7 +785,6 @@ show_dry_run() {
   if [[ ${#md_files[@]} -gt 0 ]]; then
     echo "Markdown Files (${#md_files[@]}):"
     for file in "${md_files[@]}"; do
-      # Safe basename extraction for files with special characters
       echo "  - $(basename "$file")"
     done
     echo ""
@@ -811,237 +799,6 @@ show_dry_run() {
     echo "Would convert ${#md_files[@]} Markdown files to DOCX/PDF"
   else
     echo "No convertible files found"
-  fi
-}
-
-#
-# Main execution
-#
-
-# Parse arguments with proper --parallel support
-INPUT_DIR=""
-OUTPUT_DIR="./converted_output"
-DRY_RUN=false
-PARALLEL_MODE=false
-PARALLEL_WORKERS=1
-
-# Parse command-line arguments
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --detect-tools)
-      detect_tools
-      show_tool_detection
-      exit 0
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    --parallel)
-      PARALLEL_MODE=true
-      if [[ -n "${2:-}" ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
-        PARALLEL_WORKERS="$2"
-        shift 2
-      else
-        # Auto-detect optimal worker count
-        if command -v nproc &>/dev/null; then
-          PARALLEL_WORKERS=$(nproc)
-        elif command -v sysctl &>/dev/null; then
-          PARALLEL_WORKERS=$(sysctl -n hw.ncpu 2>/dev/null || echo "4")
-        else
-          PARALLEL_WORKERS=4
-        fi
-        shift
-      fi
-      ;;
-    *)
-      if [ -z "$INPUT_DIR" ]; then
-        INPUT_DIR="$1"
-      elif [ "$OUTPUT_DIR" = "./converted_output" ]; then
-        OUTPUT_DIR="$1"
-      fi
-      shift
-      ;;
-  esac
-done
-
-# Set defaults
-INPUT_DIR="${INPUT_DIR:-.}"
-
-# Cap parallel workers at reasonable maximum
-if [ "$PARALLEL_WORKERS" -gt 32 ]; then
-  echo "Warning: Capping parallel workers at 32 (requested: $PARALLEL_WORKERS)" >&2
-  PARALLEL_WORKERS=32
-fi
-
-# Validate input directory
-if [[ ! -d "$INPUT_DIR" ]]; then
-  echo "Error: Input directory not found: $INPUT_DIR" >&2
-  exit 1
-fi
-
-# Initialize file arrays (required for bash -u mode)
-docx_files=()
-pdf_files=()
-md_files=()
-
-# Detect tools
-detect_tools
-
-# Discover files
-discover_files "$INPUT_DIR"
-
-# Detect conversion direction
-detect_conversion_direction
-
-# Handle dry run
-if [[ "$DRY_RUN" == "true" ]]; then
-  show_dry_run "$INPUT_DIR"
-  exit 0
-fi
-
-# Create output directory
-mkdir -p "$OUTPUT_DIR"
-
-# Acquire lock to prevent concurrent conversions
-if ! acquire_lock "$OUTPUT_DIR"; then
-  exit 1
-fi
-
-# Setup trap to release lock on exit (normal, error, or interrupt)
-trap "release_lock '$OUTPUT_DIR'" EXIT
-
-# Initialize log file
-LOG_FILE="$OUTPUT_DIR/conversion.log"
-echo "Document Conversion Log - $(date)" > "$LOG_FILE"
-echo "Input Directory: $INPUT_DIR" >> "$LOG_FILE"
-echo "Output Directory: $OUTPUT_DIR" >> "$LOG_FILE"
-echo "Conversion Direction: $CONVERSION_DIRECTION" >> "$LOG_FILE"
-echo "" >> "$LOG_FILE"
-
-# Check disk space (warnings only, doesn't prevent conversion)
-check_disk_space "$OUTPUT_DIR"
-
-#
-# convert_docx - Convert DOCX to Markdown using MarkItDown
-#
-# Arguments:
-#   $1 - Input DOCX file path
-#   $2 - Output Markdown file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_docx() {
-  local input_file="$1"
-  local output_file="$2"
-
-  with_timeout "$TIMEOUT_DOCX_TO_MD" bash -c "markitdown '$input_file' > '$output_file' 2>/dev/null"
-  return $?
-}
-
-#
-# convert_docx_pandoc - Convert DOCX to Markdown using Pandoc
-#
-# Arguments:
-#   $1 - Input DOCX file path
-#   $2 - Output Markdown file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_docx_pandoc() {
-  local input_file="$1"
-  local output_file="$2"
-  local media_dir
-  media_dir="$(dirname "$output_file")/images"
-
-  mkdir -p "$media_dir"
-  with_timeout "$TIMEOUT_DOCX_TO_MD" pandoc "$input_file" -t gfm --extract-media="$media_dir" --wrap=preserve -o "$output_file" 2>/dev/null
-  return $?
-}
-
-#
-# convert_pdf_markitdown - Convert PDF to Markdown using MarkItDown
-#
-# Arguments:
-#   $1 - Input PDF file path
-#   $2 - Output Markdown file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_pdf_markitdown() {
-  local input_file="$1"
-  local output_file="$2"
-
-  with_timeout "$TIMEOUT_PDF_TO_MD" bash -c "markitdown '$input_file' > '$output_file' 2>/dev/null"
-  return $?
-}
-
-#
-# convert_pdf_pymupdf - Convert PDF to Markdown using PyMuPDF4LLM
-#
-# Arguments:
-#   $1 - Input PDF file path
-#   $2 - Output Markdown file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_pdf_pymupdf() {
-  local input_file="$1"
-  local output_file="$2"
-
-  with_timeout 60 python3 -c "
-import pymupdf4llm
-import sys
-
-try:
-    md_text = pymupdf4llm.to_markdown('$input_file')
-    with open('$output_file', 'w') as f:
-        f.write(md_text)
-    sys.exit(0)
-except Exception as e:
-    sys.exit(1)
-" 2>/dev/null
-  return $?
-}
-
-#
-# convert_md_to_docx - Convert Markdown to DOCX using Pandoc
-#
-# Arguments:
-#   $1 - Input Markdown file path
-#   $2 - Output DOCX file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_md_to_docx() {
-  local input_file="$1"
-  local output_file="$2"
-
-  with_timeout "$TIMEOUT_MD_TO_DOCX" pandoc "$input_file" -o "$output_file" 2>/dev/null
-  return $?
-}
-
-#
-# convert_md_to_pdf - Convert Markdown to PDF using Pandoc with Typst or XeLaTeX
-#
-# Arguments:
-#   $1 - Input Markdown file path
-#   $2 - Output PDF file path
-#
-# Returns: 0 on success, 1 on failure
-#
-convert_md_to_pdf() {
-  local input_file="$1"
-  local output_file="$2"
-
-  if [[ "$TYPST_AVAILABLE" == "true" ]]; then
-    with_timeout "$TIMEOUT_MD_TO_PDF" pandoc "$input_file" --pdf-engine=typst -o "$output_file" 2>/dev/null
-    return $?
-  elif [[ "$XELATEX_AVAILABLE" == "true" ]]; then
-    with_timeout "$TIMEOUT_MD_TO_PDF" pandoc "$input_file" --pdf-engine=xelatex -o "$output_file" 2>/dev/null
-    return $?
-  else
-    return 1
   fi
 }
 
@@ -1069,7 +826,7 @@ convert_file() {
 
   case "${extension,,}" in
     docx)
-      # DOCX → MD conversion (safe quoting for special characters)
+      # DOCX → MD conversion
       output_file="$output_dir/${basename%.docx}.md"
 
       # Check for output filename collision and resolve if necessary
@@ -1188,7 +945,6 @@ convert_file() {
 
     md|markdown)
       # MD → DOCX/PDF conversion (default to DOCX)
-      # TODO: Phase 4 will add user control for output format selection
       output_file="$output_dir/${basename%.*}.docx"
 
       # Check for output filename collision and resolve if necessary
@@ -1319,67 +1075,6 @@ validate_output() {
 }
 
 #
-# check_structure - Analyze converted Markdown file structure
-#
-# Arguments:
-#   $1 - Markdown file path
-#
-# Returns: String with structure statistics
-#
-check_structure() {
-  local md_file="$1"
-
-  if [[ ! -f "$md_file" ]]; then
-    echo "0 headings, 0 tables"
-    return
-  fi
-
-  local heading_count
-  local table_count
-
-  heading_count=$(grep -c '^#' "$md_file" 2>/dev/null || echo "0")
-  table_count=$(grep -c '^\|' "$md_file" 2>/dev/null || echo "0")
-
-  echo "$heading_count headings, $table_count tables"
-}
-
-#
-# report_validation_warnings - Report warnings for suspicious output
-#
-# Arguments:
-#   $1 - Output file path
-#   $2 - File type (md, docx, pdf)
-#
-report_validation_warnings() {
-  local output_file="$1"
-  local file_type="$2"
-
-  if [[ ! -f "$output_file" ]]; then
-    echo "    ⚠ Warning: Output file not created"
-    return
-  fi
-
-  local file_size
-  file_size=$(wc -c < "$output_file" 2>/dev/null || echo "0")
-
-  if [[ $file_size -lt 100 ]]; then
-    echo "    ⚠ Warning: Output file very small ($file_size bytes)"
-  fi
-
-  # Check Markdown structure if applicable
-  if [[ "$file_type" == "md" ]]; then
-    local structure
-    structure=$(check_structure "$output_file")
-    local heading_count
-    heading_count=$(echo "$structure" | cut -d' ' -f1)
-
-    if [[ $heading_count -eq 0 ]]; then
-      echo "    ⚠ Warning: No headings found in Markdown output"
-    fi
-  fi
-}
-
-#
 # show_missing_tools - Report unavailable tools with installation guidance
 #
 show_missing_tools() {
@@ -1462,7 +1157,7 @@ generate_summary() {
 
   # Write summary to log
   echo "" >> "$LOG_FILE"
-  echo "======================================">> "$LOG_FILE"
+  echo "======================================" >> "$LOG_FILE"
   echo "Conversion Summary" >> "$LOG_FILE"
   echo "======================================" >> "$LOG_FILE"
   echo "DOCX → MD: $docx_success success, $docx_failed failed" >> "$LOG_FILE"
@@ -1480,23 +1175,134 @@ generate_summary() {
   fi
 }
 
-# Check if there are files to convert or if we should show missing tools
-total_convertible=$((${#docx_files[@]} + ${#pdf_files[@]} + ${#md_files[@]}))
+#
+# Main execution function (called from convert-docs.md command)
+#
+# This function is exported so convert-docs.md can call it directly
+#
+main_conversion() {
+  # Parse arguments with proper --parallel support
+  INPUT_DIR=""
+  OUTPUT_DIR="./converted_output"
+  DRY_RUN=false
+  PARALLEL_MODE=false
+  PARALLEL_WORKERS=1
 
-if [[ $total_convertible -eq 0 ]]; then
-  echo "No convertible files found in $INPUT_DIR"
-  echo ""
-  show_missing_tools
-  exit 0
-fi
+  # Parse command-line arguments
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --detect-tools)
+        detect_tools
+        show_tool_detection
+        exit 0
+        ;;
+      --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+      --parallel)
+        PARALLEL_MODE=true
+        if [[ -n "${2:-}" ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+          PARALLEL_WORKERS="$2"
+          shift 2
+        else
+          # Auto-detect optimal worker count
+          if command -v nproc &>/dev/null; then
+            PARALLEL_WORKERS=$(nproc)
+          elif command -v sysctl &>/dev/null; then
+            PARALLEL_WORKERS=$(sysctl -n hw.ncpu 2>/dev/null || echo "4")
+          else
+            PARALLEL_WORKERS=4
+          fi
+          shift
+        fi
+        ;;
+      *)
+        if [ -z "$INPUT_DIR" ]; then
+          INPUT_DIR="$1"
+        elif [ "$OUTPUT_DIR" = "./converted_output" ]; then
+          OUTPUT_DIR="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
 
-# Process conversions
-process_conversions
+  # Set defaults
+  INPUT_DIR="${INPUT_DIR:-.}"
 
-# Generate summary
-generate_summary
+  # Cap parallel workers at reasonable maximum
+  if [ "$PARALLEL_WORKERS" -gt 32 ]; then
+    echo "Warning: Capping parallel workers at 32 (requested: $PARALLEL_WORKERS)" >&2
+    PARALLEL_WORKERS=32
+  fi
 
-# Show missing tools if any conversions failed
-if [[ $((docx_failed + pdf_failed + md_to_docx_failed + md_to_pdf_failed)) -gt 0 ]]; then
-  show_missing_tools
-fi
+  # Validate input directory
+  if [[ ! -d "$INPUT_DIR" ]]; then
+    echo "Error: Input directory not found: $INPUT_DIR" >&2
+    exit 1
+  fi
+
+  # Initialize file arrays (required for bash -u mode)
+  docx_files=()
+  pdf_files=()
+  md_files=()
+
+  # Detect tools
+  detect_tools
+
+  # Discover files
+  discover_files "$INPUT_DIR"
+
+  # Detect conversion direction
+  detect_conversion_direction
+
+  # Handle dry run
+  if [[ "$DRY_RUN" == "true" ]]; then
+    show_dry_run "$INPUT_DIR"
+    exit 0
+  fi
+
+  # Create output directory
+  mkdir -p "$OUTPUT_DIR"
+
+  # Acquire lock to prevent concurrent conversions
+  if ! acquire_lock "$OUTPUT_DIR"; then
+    exit 1
+  fi
+
+  # Setup trap to release lock on exit (normal, error, or interrupt)
+  trap "release_lock '$OUTPUT_DIR'" EXIT
+
+  # Initialize log file
+  LOG_FILE="$OUTPUT_DIR/conversion.log"
+  echo "Document Conversion Log - $(date)" > "$LOG_FILE"
+  echo "Input Directory: $INPUT_DIR" >> "$LOG_FILE"
+  echo "Output Directory: $OUTPUT_DIR" >> "$LOG_FILE"
+  echo "Conversion Direction: $CONVERSION_DIRECTION" >> "$LOG_FILE"
+  echo "" >> "$LOG_FILE"
+
+  # Check disk space (warnings only, doesn't prevent conversion)
+  check_disk_space "$OUTPUT_DIR"
+
+  # Check if there are files to convert or if we should show missing tools
+  total_convertible=$((${#docx_files[@]} + ${#pdf_files[@]} + ${#md_files[@]}))
+
+  if [[ $total_convertible -eq 0 ]]; then
+    echo "No convertible files found in $INPUT_DIR"
+    echo ""
+    show_missing_tools
+    exit 0
+  fi
+
+  # Process conversions
+  process_conversions
+
+  # Generate summary
+  generate_summary
+
+  # Show missing tools if any conversions failed
+  if [[ $((docx_failed + pdf_failed + md_to_docx_failed + md_to_pdf_failed)) -gt 0 ]]; then
+    show_missing_tools
+  fi
+}

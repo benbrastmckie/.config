@@ -155,7 +155,9 @@ Otherwise: Use Script Mode (Bash tool)
 Execute the conversion script directly:
 
 ```bash
-bash /home/benjamin/.config/.claude/lib/convert-docs.sh "{input_dir}" "{output_dir}"
+# Source the conversion core module and run main function
+source /home/benjamin/.config/.claude/lib/convert-core.sh
+main_conversion "{input_dir}" "{output_dir}"
 ```
 
 The script handles:

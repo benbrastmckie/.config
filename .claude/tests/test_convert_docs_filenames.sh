@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# test_convert_docs_filenames.sh - Test filename safety in convert-docs.sh
+# test_convert_docs_filenames.sh - Test filename safety in convert-core.sh
 #
 # Tests that special characters in filenames are handled correctly:
 #   - Spaces
@@ -14,6 +14,12 @@
 
 set -eu
 
+# Check for required dependencies
+if ! command -v zip >/dev/null 2>&1; then
+  echo "SKIP: zip command not available (required for DOCX file creation)"
+  exit 0
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,7 +32,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Script path
-SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-docs.sh"
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert-core.sh"
 
 # Test directory
 TEST_DIR="/tmp/convert-docs-test-$$"
@@ -246,9 +252,9 @@ main() {
   fi
 }
 
-# Check if convert-docs.sh exists
+# Check if convert-core.sh exists
 if [[ ! -f "$SCRIPT_PATH" ]]; then
-  echo "Error: convert-docs.sh not found at $SCRIPT_PATH"
+  echo "Error: convert-core.sh not found at $SCRIPT_PATH"
   exit 1
 fi
 

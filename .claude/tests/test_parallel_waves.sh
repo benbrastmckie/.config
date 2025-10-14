@@ -3,6 +3,14 @@
 
 set -euo pipefail
 
+# Check if parse-phase-dependencies.sh exists
+# This script was removed in Phase 1 refactor (commit 6f03824) as dead code
+if [ ! -f ".claude/lib/parse-phase-dependencies.sh" ]; then
+  echo "SKIP: parse-phase-dependencies.sh was removed (wave generation functionality deprecated)"
+  echo "This test validates functionality that is no longer part of the system."
+  exit 0
+fi
+
 # Setup test environment
 TEST_DIR=$(mktemp -d)
 trap "rm -rf $TEST_DIR" EXIT
