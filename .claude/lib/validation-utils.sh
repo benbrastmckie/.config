@@ -19,10 +19,9 @@
 
 set -euo pipefail
 
-# Simple error function (avoid sourcing error-utils.sh to prevent circular dependencies)
-error() {
-  echo "Error: $*" >&2
-}
+# Source base utilities for common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/base-utils.sh"
 
 # require_param <param_name> <param_value> [error_message]
 # Exits with error if parameter is empty
