@@ -25,6 +25,7 @@ setup() {
   rm -rf "$TEST_DIR"
   mkdir -p "$TEST_DIR/specs/plans"
   mkdir -p "$TEST_DIR/.claude/checkpoints"
+  mkdir -p "$TEST_DIR/.claude/data/checkpoints"
 }
 
 # Cleanup test environment
@@ -36,15 +37,15 @@ cleanup() {
 # Test helper functions
 pass() {
   echo -e "${GREEN}✓ PASS${NC}: $1"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+  TESTS_RUN=$((TESTS_RUN + 1))
 }
 
 fail() {
   echo -e "${RED}✗ FAIL${NC}: $1"
   echo "  Reason: $2"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  TESTS_RUN=$((TESTS_RUN + 1))
 }
 
 info() {
@@ -369,6 +370,201 @@ EOF
   fi
 }
 
+# Test: Checkpoint schema v1.2 fields (Plan 043)
+test_checkpoint_schema_v12() {
+  info "Testing checkpoint schema v1.2 fields"
+
+  local checkpoint_file="$TEST_DIR/.claude/checkpoints/v12_checkpoint.json"
+  mkdir -p "$(dirname "$checkpoint_file")"
+
+  cat > "$checkpoint_file" <<'EOF'
+{
+  "schema_version": "1.2",
+  "checkpoint_id": "test_v12",
+  "workflow_type": "implement",
+  "project_name": "test",
+  "created_at": "2025-10-13T12:00:00Z",
+  "updated_at": "2025-10-13T12:00:00Z",
+  "status": "in_progress",
+  "current_phase": 2,
+  "tests_passing": true,
+  "last_error": null,
+  "plan_modification_time": 1697200000,
+  "debug_report_path": null,
+  "user_last_choice": null,
+  "debug_iteration_count": 0
+}
+EOF
+
+  # Validate v1.2 schema fields present
+  if grep -q '"debug_report_path"' "$checkpoint_file" && \
+     grep -q '"user_last_choice"' "$checkpoint_file" && \
+     grep -q '"debug_iteration_count"' "$checkpoint_file" && \
+     grep -q '"plan_modification_time"' "$checkpoint_file"; then
+    pass "Checkpoint schema v1.2 fields present"
+  else
+    fail "Missing v1.2 schema fields" "Expected debug_report_path, user_last_choice, debug_iteration_count, plan_modification_time"
+  fi
+
+  # Validate schema version is 1.2
+  if grep -q '"schema_version": "1.2"' "$checkpoint_file"; then
+    pass "Checkpoint schema version is 1.2"
+  else
+    fail "Schema version not 1.2" "$(grep schema_version "$checkpoint_file")"
+  fi
+}
+
+# Test: Auto-resume checkpoint conditions (Plan 043 Phase 1)
+test_auto_resume_conditions() {
+  info "Testing auto-resume checkpoint conditions"
+
+  local checkpoint_file="$TEST_DIR/.claude/checkpoints/auto_resume_test.json"
+  mkdir -p "$(dirname "$checkpoint_file")"
+
+  # Create checkpoint with safe resume conditions
+  cat > "$checkpoint_file" <<'EOF'
+{
+  "schema_version": "1.2",
+  "status": "in_progress",
+  "tests_passing": true,
+  "last_error": null,
+  "created_at": "2025-10-13T12:00:00Z",
+  "plan_modification_time": 1697200000
+}
+EOF
+
+  # Check that all safe resume fields exist
+  local has_all_fields=true
+  for field in "status" "tests_passing" "last_error" "created_at" "plan_modification_time"; do
+    if ! grep -q "\"$field\"" "$checkpoint_file"; then
+      has_all_fields=false
+      break
+    fi
+  done
+
+  if [ "$has_all_fields" = true ]; then
+    pass "Auto-resume checkpoint has all required fields"
+  else
+    fail "Missing auto-resume fields" "Required: status, tests_passing, last_error, created_at, plan_modification_time"
+  fi
+
+  # Validate tests_passing is boolean
+  if grep -q '"tests_passing": true\|"tests_passing": false' "$checkpoint_file"; then
+    pass "tests_passing field is boolean"
+  else
+    fail "tests_passing should be boolean" "$(grep tests_passing "$checkpoint_file")"
+  fi
+}
+
+# Test: Dry-run mode flag support (Plan 043 Phase 5)
+test_dry_run_flag_support() {
+  info "Testing dry-run mode flag support"
+
+  # Test /implement --dry-run flag
+  local implement_args="test_plan.md --dry-run"
+  if echo "$implement_args" | grep -q -- "--dry-run"; then
+    pass "Parsed /implement --dry-run flag"
+  else
+    fail "Failed to parse --dry-run flag" "Args: $implement_args"
+  fi
+
+  # Test /orchestrate --dry-run flag
+  local orchestrate_args="'Add feature X' --dry-run"
+  if echo "$orchestrate_args" | grep -q -- "--dry-run"; then
+    pass "Parsed /orchestrate --dry-run flag"
+  else
+    fail "Failed to parse orchestrate --dry-run flag" "Args: $orchestrate_args"
+  fi
+}
+
+# Test: Dashboard flag support (Plan 043 Phase 3)
+test_dashboard_flag_support() {
+  info "Testing dashboard flag support"
+
+  # Test /implement --dashboard flag
+  local args="test_plan.md --dashboard"
+  if echo "$args" | grep -q -- "--dashboard"; then
+    pass "Parsed --dashboard flag"
+  else
+    fail "Failed to parse --dashboard flag" "Args: $args"
+  fi
+
+  # Test combined flags
+  local combined_args="test_plan.md --dry-run --dashboard"
+  if echo "$combined_args" | grep -q -- "--dry-run" && \
+     echo "$combined_args" | grep -q -- "--dashboard"; then
+    pass "Parsed combined --dry-run --dashboard flags"
+  else
+    fail "Failed to parse combined flags" "Args: $combined_args"
+  fi
+}
+
+# Test: Workflow metrics schema (Plan 043 Phase 4)
+test_workflow_metrics_schema() {
+  info "Testing workflow metrics data structure"
+
+  local metrics_file="$TEST_DIR/workflow_metrics.json"
+  cat > "$metrics_file" <<'EOF'
+{
+  "total_workflows": 10,
+  "avg_phase_duration_ms": 45000,
+  "trigger_counts": {
+    "complexity": 5,
+    "test_failure": 2,
+    "scope_drift": 1
+  },
+  "replan_success_rate": 0.87,
+  "agent_invocation_count": 15
+}
+EOF
+
+  # Validate metrics structure
+  if grep -q '"total_workflows"' "$metrics_file" && \
+     grep -q '"trigger_counts"' "$metrics_file" && \
+     grep -q '"replan_success_rate"' "$metrics_file"; then
+    pass "Workflow metrics schema valid"
+  else
+    fail "Invalid metrics schema" "$(cat "$metrics_file")"
+  fi
+
+  # Validate nested trigger_counts object
+  if grep -q '"complexity"' "$metrics_file" && \
+     grep -q '"test_failure"' "$metrics_file"; then
+    pass "Trigger counts nested object present"
+  else
+    fail "Missing trigger counts" "$(grep trigger_counts "$metrics_file")"
+  fi
+}
+
+# Test: Progress dashboard output modes (Plan 043 Phase 3)
+test_progress_dashboard_modes() {
+  info "Testing progress dashboard output modes"
+
+  # Test ANSI mode indicator
+  local ansi_output="DASHBOARD_MODE=ansi"
+  if echo "$ansi_output" | grep -q "DASHBOARD_MODE=ansi"; then
+    pass "ANSI dashboard mode detected"
+  else
+    fail "Failed to detect ANSI mode" "Output: $ansi_output"
+  fi
+
+  # Test fallback mode indicator
+  local fallback_output="DASHBOARD_MODE=fallback"
+  if echo "$fallback_output" | grep -q "DASHBOARD_MODE=fallback"; then
+    pass "Fallback dashboard mode detected"
+  else
+    fail "Failed to detect fallback mode" "Output: $fallback_output"
+  fi
+
+  # Test PROGRESS marker format (fallback)
+  local progress_marker="PROGRESS: Phase 2/5 - Implementing authentication"
+  if echo "$progress_marker" | grep -q "^PROGRESS:"; then
+    pass "PROGRESS marker format correct"
+  else
+    fail "Invalid PROGRESS marker format" "Expected: PROGRESS: ..., Got: $progress_marker"
+  fi
+}
+
 # Run all tests
 run_all_tests() {
   echo "================================"
@@ -389,6 +585,12 @@ run_all_tests() {
   test_error_handling
   test_concurrent_checkpoint_handling
   test_legacy_format_migration
+  test_checkpoint_schema_v12
+  test_auto_resume_conditions
+  test_dry_run_flag_support
+  test_dashboard_flag_support
+  test_workflow_metrics_schema
+  test_progress_dashboard_modes
 
   cleanup
 

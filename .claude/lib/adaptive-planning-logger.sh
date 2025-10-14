@@ -333,6 +333,27 @@ log_collapse_invocation() {
   write_log_entry "INFO" "collapse_invocation" "$message" "$data"
 }
 
+# log_complexity_discrepancy: Log threshold vs agent score differences
+# Usage: log_complexity_discrepancy <phase> <threshold-score> <agent-score> <diff> <reasoning> <method>
+# Example: log_complexity_discrepancy "Phase 3" 5 9 4.0 "Agent reasoning" "agent"
+log_complexity_discrepancy() {
+  local phase="$1"
+  local threshold_score="$2"
+  local agent_score="$3"
+  local score_diff="$4"
+  local agent_reasoning="${5:-}"
+  local reconciliation_method="${6:-}"
+
+  local data
+  data=$(printf '{"phase": "%s", "threshold_score": %s, "agent_score": %s, "difference": %s, "reconciliation_method": "%s", "agent_reasoning": "%s"}' \
+    "${phase//\"/\\\"}" "$threshold_score" "$agent_score" "$score_diff" \
+    "${reconciliation_method//\"/\\\"}" "${agent_reasoning//\"/\\\"}")
+
+  local message="Complexity discrepancy in $phase: threshold=$threshold_score, agent=$agent_score, diff=$score_diff, method=$reconciliation_method"
+
+  write_log_entry "INFO" "complexity_discrepancy" "$message" "$data"
+}
+
 # Export functions for use in other scripts
 export -f rotate_log_if_needed
 export -f write_log_entry
@@ -344,5 +365,6 @@ export -f log_replan_invocation
 export -f log_loop_prevention
 export -f log_collapse_check
 export -f log_collapse_invocation
+export -f log_complexity_discrepancy
 export -f query_adaptive_log
 export -f get_adaptive_stats

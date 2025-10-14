@@ -428,6 +428,330 @@ EOF
 }
 
 # ==============================================================================
+# Hybrid Complexity Evaluation (Agent + Threshold)
+# ==============================================================================
+
+# agent_based_complexity_score: Invoke complexity_estimator agent for context-aware analysis
+# Usage: agent_based_complexity_score <phase-name> <phase-content> <plan-overview> <plan-goals>
+# Returns: JSON with status, score, reasoning, confidence
+# Example: agent_based_complexity_score "Phase 3" "$CONTENT" "$OVERVIEW" "$GOALS"
+agent_based_complexity_score() {
+  local phase_name="${1:-}"
+  local phase_content="${2:-}"
+  local plan_overview="${3:-}"
+  local plan_goals="${4:-}"
+
+  if [ -z "$phase_name" ] || [ -z "$phase_content" ]; then
+    echo '{"status":"error","error":"Missing required parameters"}'
+    return 1
+  fi
+
+  # Check if agent file exists
+  local agent_file="${CLAUDE_PROJECT_DIR}/.claude/agents/complexity_estimator.md"
+  if [ ! -f "$agent_file" ]; then
+    echo '{"status":"error","error":"complexity_estimator.md not found"}'
+    return 1
+  fi
+
+  # Build context JSON for agent
+  local context_json
+  context_json=$(jq -n \
+    --arg phase_name "$phase_name" \
+    --arg phase_content "$phase_content" \
+    --arg plan_overview "$plan_overview" \
+    --arg plan_goals "$plan_goals" \
+    '{
+      parent_plan_context: {
+        overview: $plan_overview,
+        goals: $plan_goals
+      },
+      current_structure_level: 0,
+      items_to_analyze: [
+        {
+          item_id: "phase_evaluation",
+          item_name: $phase_name,
+          content: $phase_content
+        }
+      ]
+    }')
+
+  # Invoke agent with timeout (60 seconds)
+  local agent_response
+  agent_response=$(timeout 60 claude_code_task \
+    --subagent-type "general-purpose" \
+    --description "Estimate phase complexity with context-aware analysis" \
+    --prompt "
+      Read and follow behavioral guidelines from:
+      ${agent_file}
+
+      You are acting as a Complexity Estimator with constraints:
+      - Read-only operations (tools: Read, Grep, Glob only)
+      - Context-aware analysis (not just keyword matching)
+      - JSON output with structured recommendations
+
+      Analysis Task: Phase Complexity Evaluation
+
+      Context: $context_json
+
+      For the phase, provide: item_id, item_name, complexity_level (1-10),
+      reasoning (context-aware), recommendation (expand/skip), confidence (low/medium/high).
+
+      Output Format: JSON array
+    " 2>&1)
+
+  local exit_code=$?
+
+  # Check for timeout
+  if [ $exit_code -eq 124 ]; then
+    echo '{"status":"error","error":"Agent invocation timed out (60s)"}'
+    return 1
+  fi
+
+  # Check for other invocation errors
+  if [ $exit_code -ne 0 ]; then
+    local error_msg
+    error_msg=$(echo "$agent_response" | tail -1)
+    jq -n --arg error "$error_msg" '{"status":"error","error":$error}'
+    return 1
+  fi
+
+  # Extract JSON from response (agent returns array, we want first item)
+  local agent_result
+  agent_result=$(echo "$agent_response" | jq '.[0]' 2>/dev/null)
+
+  if [ -z "$agent_result" ] || [ "$agent_result" = "null" ]; then
+    echo '{"status":"error","error":"Failed to parse agent response as JSON array"}'
+    return 1
+  fi
+
+  # Validate required fields
+  local complexity_level
+  complexity_level=$(echo "$agent_result" | jq -r '.complexity_level // "null"')
+  local reasoning
+  reasoning=$(echo "$agent_result" | jq -r '.reasoning // "null"')
+  local confidence
+  confidence=$(echo "$agent_result" | jq -r '.confidence // "null"')
+
+  if [ "$complexity_level" = "null" ] || [ "$reasoning" = "null" ] || [ "$confidence" = "null" ]; then
+    echo '{"status":"error","error":"Agent response missing required fields"}'
+    return 1
+  fi
+
+  # Validate complexity_level range (1-10)
+  if ! [[ "$complexity_level" =~ ^[0-9]+$ ]] || [ "$complexity_level" -lt 1 ] || [ "$complexity_level" -gt 10 ]; then
+    echo '{"status":"error","error":"Agent complexity_level out of range (1-10)"}'
+    return 1
+  fi
+
+  # Return structured result
+  jq -n \
+    --arg status "success" \
+    --argjson score "$complexity_level" \
+    --arg reasoning "$reasoning" \
+    --arg confidence "$confidence" \
+    --arg raw "$agent_response" \
+    '{
+      status: $status,
+      score: $score,
+      reasoning: $reasoning,
+      confidence: $confidence,
+      agent_response: $raw
+    }'
+}
+
+# reconcile_scores: Reconcile threshold and agent scores using confidence
+# Usage: reconcile_scores <threshold-score> <agent-score> <agent-confidence> <agent-reasoning>
+# Returns: JSON with final_score, reconciliation_method, reconciliation_reason
+# Example: reconcile_scores 8 5 "high" "Agent reasoning text"
+reconcile_scores() {
+  local threshold_score="$1"
+  local agent_score="$2"
+  local agent_confidence="$3"
+  local agent_reasoning="${4:-No reasoning provided}"
+
+  # Validate inputs
+  if [ -z "$threshold_score" ] || [ -z "$agent_score" ] || [ -z "$agent_confidence" ]; then
+    echo '{"error":"Missing required parameters for score reconciliation"}'
+    return 1
+  fi
+
+  # Calculate absolute score difference
+  local score_diff
+  score_diff=$(awk -v t="$threshold_score" -v a="$agent_score" \
+    'BEGIN {diff = (a > t ? a - t : t - a); printf "%.1f", diff}')
+
+  # Decision variables
+  local reconciliation_method
+  local final_score
+  local reconciliation_reason
+
+  # Decision tree for reconciliation
+  if awk -v d="$score_diff" 'BEGIN {exit !(d < 2.0)}'; then
+    # Scores agree (difference < 2): Use threshold (faster, proven)
+    reconciliation_method="threshold"
+    final_score="$threshold_score"
+    reconciliation_reason="Agent agrees with threshold (diff: $score_diff)"
+
+  elif [ "$agent_confidence" = "high" ]; then
+    # Scores disagree, agent highly confident: Use agent
+    reconciliation_method="agent"
+    final_score="$agent_score"
+    reconciliation_reason="Agent high confidence overrides threshold (diff: $score_diff)"
+
+  elif [ "$agent_confidence" = "medium" ]; then
+    # Scores disagree, agent medium confidence: Average
+    reconciliation_method="hybrid"
+    final_score=$(awk -v t="$threshold_score" -v a="$agent_score" \
+      'BEGIN {avg = (t + a) / 2.0; printf "%.1f", avg}')
+    reconciliation_reason="Average of threshold and medium-confidence agent (diff: $score_diff)"
+
+  else
+    # Scores disagree, agent low confidence: Use threshold
+    reconciliation_method="threshold_fallback"
+    final_score="$threshold_score"
+    reconciliation_reason="Agent low confidence, fallback to threshold (diff: $score_diff)"
+  fi
+
+  # Build JSON response
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --argjson final "$final_score" \
+      --arg method "$reconciliation_method" \
+      --arg reason "$reconciliation_reason" \
+      --argjson threshold "$threshold_score" \
+      --argjson agent "$agent_score" \
+      --arg confidence "$agent_confidence" \
+      --argjson diff "$score_diff" \
+      '{
+        final_score: $final,
+        reconciliation_method: $method,
+        reconciliation_reason: $reason,
+        threshold_score: $threshold,
+        agent_score: $agent,
+        agent_confidence: $confidence,
+        score_difference: $diff
+      }'
+  else
+    cat <<EOF
+{
+  "final_score": $final_score,
+  "reconciliation_method": "$reconciliation_method",
+  "reconciliation_reason": "$reconciliation_reason",
+  "threshold_score": $threshold_score,
+  "agent_score": $agent_score,
+  "agent_confidence": "$agent_confidence",
+  "score_difference": $score_diff
+}
+EOF
+  fi
+}
+
+# hybrid_complexity_evaluation: Complete hybrid evaluation workflow
+# Usage: hybrid_complexity_evaluation <phase-name> <task-list> <plan-file>
+# Returns: JSON with final_score, evaluation_method, reasoning
+# Example: hybrid_complexity_evaluation "Phase 3" "$TASKS" "plan.md"
+hybrid_complexity_evaluation() {
+  local phase_name="${1:-}"
+  local task_list="${2:-}"
+  local plan_file="${3:-}"
+
+  # Step 1: Calculate threshold-based score
+  local threshold_score
+  threshold_score=$(calculate_phase_complexity "$phase_name" "$task_list")
+
+  local task_count
+  task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
+
+  # Step 2: Determine if agent evaluation needed
+  local agent_needed="false"
+  if [ "$threshold_score" -ge 7 ] || [ "$task_count" -ge 8 ]; then
+    agent_needed="true"
+  fi
+
+  # Step 3: Invoke agent if needed
+  if [ "$agent_needed" = "true" ]; then
+    # Extract plan context
+    local plan_overview=""
+    local plan_goals=""
+
+    if [ -f "$plan_file" ]; then
+      plan_overview=$(sed -n '/^## Overview$/,/^##/p' "$plan_file" | sed '$d' | tail -n +2)
+      plan_goals=$(sed -n '/^## Success Criteria$/,/^##/p' "$plan_file" | sed '$d' | tail -n +2)
+    fi
+
+    # Build phase content from task list
+    local phase_content="$task_list"
+
+    # Invoke agent
+    local agent_result
+    agent_result=$(agent_based_complexity_score "$phase_name" "$phase_content" \
+      "$plan_overview" "$plan_goals")
+
+    local agent_status
+    agent_status=$(echo "$agent_result" | jq -r '.status')
+
+    if [ "$agent_status" = "success" ]; then
+      # Agent succeeded - reconcile scores
+      local agent_score
+      agent_score=$(echo "$agent_result" | jq -r '.score')
+
+      local agent_confidence
+      agent_confidence=$(echo "$agent_result" | jq -r '.confidence')
+
+      local agent_reasoning
+      agent_reasoning=$(echo "$agent_result" | jq -r '.reasoning')
+
+      # Reconcile
+      local reconciliation
+      reconciliation=$(reconcile_scores "$threshold_score" "$agent_score" \
+        "$agent_confidence" "$agent_reasoning")
+
+      local final_score
+      final_score=$(echo "$reconciliation" | jq -r '.final_score')
+
+      local evaluation_method
+      evaluation_method=$(echo "$reconciliation" | jq -r '.reconciliation_method')
+
+      # Return result
+      jq -n \
+        --argjson score "$final_score" \
+        --arg method "$evaluation_method" \
+        --arg reasoning "$agent_reasoning" \
+        --argjson reconciliation "$reconciliation" \
+        '{
+          final_score: $score,
+          evaluation_method: $method,
+          agent_reasoning: $reasoning,
+          reconciliation_details: $reconciliation
+        }'
+    else
+      # Agent failed - fallback to threshold
+      local agent_error
+      agent_error=$(echo "$agent_result" | jq -r '.error')
+
+      jq -n \
+        --argjson score "$threshold_score" \
+        --arg method "threshold_fallback" \
+        --arg error "$agent_error" \
+        '{
+          final_score: $score,
+          evaluation_method: $method,
+          agent_error: $error
+        }'
+    fi
+  else
+    # Agent not needed - use threshold only
+    jq -n \
+      --argjson score "$threshold_score" \
+      --arg method "threshold" \
+      '{
+        final_score: $score,
+        evaluation_method: $method
+      }'
+  fi
+}
+
+# ==============================================================================
 # Export Functions
 # ==============================================================================
 
@@ -440,4 +764,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f analyze_feature_description
   export -f get_complexity_level
   export -f format_complexity_summary
+  export -f agent_based_complexity_score
+  export -f reconcile_scores
+  export -f hybrid_complexity_evaluation
 fi
