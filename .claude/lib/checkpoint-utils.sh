@@ -7,7 +7,6 @@ set -euo pipefail
 # Detect project directory dynamically
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/detect-project-dir.sh"
-source "$SCRIPT_DIR/timestamp-utils.sh"
 
 # ==============================================================================
 # Checkpoint Schema
@@ -77,7 +76,7 @@ save_checkpoint() {
     local plan_mtime=""
     local plan_path=$(echo "$state_json" | jq -r '.plan_path // empty')
     if [ -n "$plan_path" ] && [ -f "$plan_path" ]; then
-      plan_mtime=$(get_file_mtime "$plan_path" 2>/dev/null || echo "")
+      plan_mtime=$(stat -c %Y "$plan_path" 2>/dev/null || stat -f %m "$plan_path" 2>/dev/null || echo "")
     fi
 
     # Use jq for robust JSON handling
@@ -668,7 +667,7 @@ check_safe_resume_conditions() {
 
   # Condition 5: Plan not modified since checkpoint (if plan_modification_time available)
   if [ "$plan_modification_time" != "null" ] && [ -n "$plan_path" ] && [ -f "$plan_path" ]; then
-    local current_plan_mtime=$(get_file_mtime "$plan_path" 2>/dev/null || echo "0")
+    local current_plan_mtime=$(stat -c %Y "$plan_path" 2>/dev/null || stat -f %m "$plan_path" 2>/dev/null || echo "0")
     if [ "$current_plan_mtime" != "$plan_modification_time" ]; then
       return 1
     fi
@@ -740,7 +739,7 @@ get_skip_reason() {
 
   # Check plan modification
   if [ "$plan_modification_time" != "null" ] && [ -n "$plan_path" ] && [ -f "$plan_path" ]; then
-    local current_plan_mtime=$(get_file_mtime "$plan_path" 2>/dev/null || echo "0")
+    local current_plan_mtime=$(stat -c %Y "$plan_path" 2>/dev/null || stat -f %m "$plan_path" 2>/dev/null || echo "0")
     if [ "$current_plan_mtime" != "$plan_modification_time" ]; then
       echo "Plan file modified since checkpoint"
       return 0
