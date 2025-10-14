@@ -63,10 +63,15 @@ for test_file in $TEST_FILES; do
       echo "$test_output" | tail -20
       FAILED_TESTS=$((FAILED_TESTS + 1))
     else
-      # Count passes from output
-      local_passed=$(echo "$test_output" | grep -c "✓ PASS" || echo "0")
-      local_failed=$(echo "$test_output" | grep -c "✗ FAIL" || echo "0")
-      local_skipped=$(echo "$test_output" | grep -c "⊘ SKIP" || echo "0")
+      # Count passes from output (grep -c returns 0 on no match but exits with 1)
+      local_passed=$(echo "$test_output" | grep -c "✓ PASS" || true)
+      local_failed=$(echo "$test_output" | grep -c "✗ FAIL" || true)
+      local_skipped=$(echo "$test_output" | grep -c "⊘ SKIP" || true)
+
+      # Ensure values are numeric (grep -c always outputs a number, but double-check)
+      [ -z "$local_passed" ] && local_passed=0
+      [ -z "$local_failed" ] && local_failed=0
+      [ -z "$local_skipped" ] && local_skipped=0
 
       TOTAL_TESTS=$((TOTAL_TESTS + local_passed + local_failed + local_skipped))
 

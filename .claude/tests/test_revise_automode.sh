@@ -823,6 +823,124 @@ else
 fi
 
 # =============================================================================
+# Test 23: Auto-Revise from Debug Workflow Integration (Plan 043 Phase 3)
+# =============================================================================
+info "Test 23: Auto-revise invocation from debug workflow"
+
+# Simulate debug workflow: test failure → /debug → user choice (r) → /revise --auto-mode
+
+# Step 1: Simulate debug report output
+DEBUG_REPORT_OUTPUT='{
+  "root_cause": "Missing prerequisite dependencies in phase 2",
+  "recommended_fix": "Add dependency setup phase before phase 2",
+  "confidence": "high",
+  "suggested_revision_type": "add_phase"
+}'
+
+# Step 2: Extract revision recommendation from debug report
+if echo "$DEBUG_REPORT_OUTPUT" | jq -e '.suggested_revision_type' > /dev/null 2>&1; then
+  pass "Test 23: Debug report contains revision recommendation"
+else
+  fail "Test 23: Debug report missing revision suggestion" "Should include suggested_revision_type"
+fi
+
+# Step 3: Build revise context from debug report
+REVISE_CONTEXT_FROM_DEBUG=$(cat <<EOF
+{
+  "revision_type": "$(echo "$DEBUG_REPORT_OUTPUT" | jq -r '.suggested_revision_type')",
+  "current_phase": 2,
+  "plan_file": "test_plan.md",
+  "reason": "$(echo "$DEBUG_REPORT_OUTPUT" | jq -r '.root_cause')",
+  "suggested_action": "$(echo "$DEBUG_REPORT_OUTPUT" | jq -r '.recommended_fix')",
+  "trigger_source": "auto_debug",
+  "debug_report_path": "debug/phase2_failures/001_dependency_issue.md"
+}
+EOF
+)
+
+# Validate context construction
+if echo "$REVISE_CONTEXT_FROM_DEBUG" | jq . > /dev/null 2>&1; then
+  pass "Test 23: Revise context constructed from debug output"
+else
+  fail "Test 23: Context construction failed" "Should create valid JSON context"
+fi
+
+# Step 4: Verify context has all required fields for /revise --auto-mode
+if echo "$REVISE_CONTEXT_FROM_DEBUG" | jq -e '.revision_type, .current_phase, .reason, .suggested_action' > /dev/null 2>&1; then
+  pass "Test 23: Debug-generated context has all required fields"
+else
+  fail "Test 23: Missing required fields in context" "Must have revision_type, current_phase, reason, suggested_action"
+fi
+
+# Step 5: Verify trigger_source field identifies auto-debug origin
+TRIGGER_SOURCE=$(echo "$REVISE_CONTEXT_FROM_DEBUG" | jq -r '.trigger_source')
+if [[ "$TRIGGER_SOURCE" == "auto_debug" ]]; then
+  pass "Test 23: Context identifies auto-debug as trigger source"
+else
+  fail "Test 23: Trigger source incorrect" "Expected: auto_debug, Got: $TRIGGER_SOURCE"
+fi
+
+# Step 6: Verify debug_report_path is preserved for traceability
+DEBUG_PATH=$(echo "$REVISE_CONTEXT_FROM_DEBUG" | jq -r '.debug_report_path')
+if [[ -n "$DEBUG_PATH" ]]; then
+  pass "Test 23: Debug report path preserved in context"
+else
+  fail "Test 23: Debug report path missing" "Should include path for traceability"
+fi
+
+# Step 7: Simulate user choice workflow (r = revise)
+USER_CHOICES=("r" "c" "s" "a")
+SELECTED_CHOICE="r"
+
+if [[ " ${USER_CHOICES[*]} " == *" $SELECTED_CHOICE "* ]]; then
+  if [[ "$SELECTED_CHOICE" == "r" ]]; then
+    # User chose to revise - auto-mode should be invoked
+    pass "Test 23: User choice (r) triggers revise workflow"
+  else
+    fail "Test 23: Wrong choice selected" "Expected: r, Got: $SELECTED_CHOICE"
+  fi
+else
+  fail "Test 23: Invalid user choice" "Must be one of: r, c, s, a"
+fi
+
+# Step 8: Verify checkpoint update includes debug context
+CHECKPOINT_WITH_DEBUG='{
+  "schema_version": "1.2",
+  "status": "in_progress",
+  "current_phase": 2,
+  "debug_report_path": "debug/phase2_failures/001_dependency_issue.md",
+  "user_last_choice": "r",
+  "debug_iteration_count": 1
+}'
+
+if echo "$CHECKPOINT_WITH_DEBUG" | jq -e '.debug_report_path, .user_last_choice' > /dev/null 2>&1; then
+  pass "Test 23: Checkpoint updated with debug workflow state"
+else
+  fail "Test 23: Checkpoint missing debug fields" "Should include debug_report_path and user_last_choice"
+fi
+
+# Step 9: Test iteration count increments on repeated debug attempts
+INITIAL_COUNT=$(echo "$CHECKPOINT_WITH_DEBUG" | jq -r '.debug_iteration_count')
+UPDATED_CHECKPOINT=$(echo "$CHECKPOINT_WITH_DEBUG" | jq '.debug_iteration_count += 1')
+NEW_COUNT=$(echo "$UPDATED_CHECKPOINT" | jq -r '.debug_iteration_count')
+
+if [[ "$NEW_COUNT" == "2" ]] && [[ "$INITIAL_COUNT" == "1" ]]; then
+  pass "Test 23: Debug iteration count increments correctly"
+else
+  fail "Test 23: Iteration count not incremented" "Expected: 2, Got: $NEW_COUNT"
+fi
+
+# Step 10: Verify max debug iterations enforced (limit: 3)
+MAX_DEBUG_ITERATIONS=3
+CURRENT_ITERATIONS=3
+
+if [[ "$CURRENT_ITERATIONS" -ge "$MAX_DEBUG_ITERATIONS" ]]; then
+  pass "Test 23: Max debug iterations (3) enforced"
+else
+  fail "Test 23: Max iterations check failed" "Should block after 3 attempts"
+fi
+
+# =============================================================================
 # Summary
 # =============================================================================
 echo

@@ -631,7 +631,7 @@ check_safe_resume_conditions() {
   fi
 
   # Extract checkpoint fields
-  local tests_passing=$(jq -r '.tests_passing // true' "$checkpoint_file")
+  local tests_passing=$(jq -r 'if .tests_passing == null then "true" else (.tests_passing | tostring) end' "$checkpoint_file")
   local last_error=$(jq -r '.last_error // null' "$checkpoint_file")
   local status=$(jq -r '.status // "unknown"' "$checkpoint_file")
   local created_at=$(jq -r '.created_at // ""' "$checkpoint_file")
@@ -700,7 +700,7 @@ get_skip_reason() {
   fi
 
   # Extract checkpoint fields
-  local tests_passing=$(jq -r '.tests_passing // true' "$checkpoint_file")
+  local tests_passing=$(jq -r 'if .tests_passing == null then "true" else (.tests_passing | tostring) end' "$checkpoint_file")
   local last_error=$(jq -r '.last_error // null' "$checkpoint_file")
   local status=$(jq -r '.status // "unknown"' "$checkpoint_file")
   local created_at=$(jq -r '.created_at // ""' "$checkpoint_file")
