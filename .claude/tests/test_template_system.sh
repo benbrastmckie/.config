@@ -98,7 +98,9 @@ variables:
   - name: test_var
 EOF
 
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1 | grep -q "missing 'name' field"; then
+  local output
+  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1) || true
+  if echo "$output" | grep -q "missing 'name' field"; then
     pass "Template without name fails validation"
   else
     fail "Template without name should fail" "Expected name field error"
@@ -115,7 +117,9 @@ variables:
   - name: test_var
 EOF
 
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1 | grep -q "missing 'description' field"; then
+  local output
+  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1) || true
+  if echo "$output" | grep -q "missing 'description' field"; then
     pass "Template without description fails validation"
   else
     fail "Template without description should fail" "Expected description field error"
@@ -125,7 +129,9 @@ EOF
 test_nonexistent_template_fails() {
   info "Testing nonexistent template file"
 
-  if bash "$LIB_DIR/parse-template.sh" "$TEST_DIR/nonexistent.yaml" validate 2>&1 | grep -q "not found"; then
+  local output
+  output=$(bash "$LIB_DIR/parse-template.sh" "$TEST_DIR/nonexistent.yaml" validate 2>&1) || true
+  if echo "$output" | grep -q "not found"; then
     pass "Nonexistent template fails with error"
   else
     fail "Nonexistent template should fail" "Expected file not found error"
@@ -409,7 +415,7 @@ EOF
   local output
   output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
 
-  if echo "$output" | grep -q "- name" && echo "$output" | grep -q "- email" && echo "$output" | grep -q "- password"; then
+  if echo "$output" | grep -q -- "- name" && echo "$output" | grep -q -- "- email" && echo "$output" | grep -q -- "- password"; then
     pass "Each iteration processes all array items"
   else
     fail "Each iteration failed" "Output: $output"
