@@ -128,7 +128,7 @@ extract_phases() {
 
     # Count phases (lines starting with "  - name:")
     if [[ $in_phases -eq 1 ]] && [[ "$line" =~ ^[[:space:]]+-[[:space:]]+name: ]]; then
-      ((phase_count++))
+      phase_count=$((phase_count + 1))
     fi
   done < "$TEMPLATE_FILE"
 
