@@ -1,26 +1,26 @@
+---
+allowed-tools: Read, Write, Bash, Grep, Glob
+argument-hint: <template-name> or --list-categories or --category <category>
+description: Generate a structured implementation plan from a reusable template with variable substitution
+command-type: primary
+dependent-commands: plan, implement
+---
+
 # Create Implementation Plan from Template
 
-**Command**: `/plan-from-template <template-name>` or `/plan-from-template --list-categories` or `/plan-from-template --category <category>`
+I'll generate a structured implementation plan from a predefined template with interactive variable substitution.
 
-**Purpose**: Generate a structured implementation plan from a reusable template with variable substitution.
-
-**Usage**:
-```bash
-/plan-from-template crud-feature
-/plan-from-template api-endpoint
-/plan-from-template --list-categories
-/plan-from-template --category debugging
-/plan-from-template custom/my-template
-```
+## Arguments
+$ARGUMENTS
 
 ## Overview
 
 This command streamlines plan creation for common feature patterns by:
 1. Loading a predefined template (with optional category filtering)
-2. Prompting for required variables
-3. Applying variable substitution
+2. Prompting for required variables interactively
+3. Applying variable substitution using the template system
 4. Generating a numbered implementation plan
-5. Saving to specs/plans/ directory
+5. Saving to the appropriate specs/plans/ directory
 
 ## Template Categories
 
@@ -38,532 +38,242 @@ Templates are organized by category for easier discovery:
 
 ### Step 1: Handle Arguments and Load Template
 
-**Argument Handling**:
-```bash
-# Handle --list-categories flag
-if [[ "$1" == "--list-categories" ]]; then
-  echo "Available template categories:"
-  echo ""
+I'll first check what argument was provided and handle accordingly:
+
+**If `--list-categories` provided**:
+- Use Bash to list all unique categories from templates:
+  ```bash
   grep -h "^category:" .claude/templates/*.yaml 2>/dev/null | \
-    sed 's/category: "\(.*\)"/\1/' | \
-    sort -u | \
-    while read category; do
-      count=$(grep -l "category: \"$category\"" .claude/templates/*.yaml 2>/dev/null | wc -l)
-      echo "  - $category ($count templates)"
-    done
-  exit 0
-fi
+    sed 's/category: "\(.*\)"/\1/' | sort -u
+  ```
+- For each category, count templates and display in format:
+  ```
+  Available template categories:
+    - backend (2 templates)
+    - feature (3 templates)
+    ...
+  ```
+- Stop execution after displaying categories
 
-# Handle --category <category> flag
-if [[ "$1" == "--category" ]]; then
-  CATEGORY="$2"
-  echo "Templates in category: $CATEGORY"
-  echo ""
-  grep -l "category: \"$CATEGORY\"" .claude/templates/*.yaml 2>/dev/null | \
-    while read template_file; do
-      name=$(grep "^name:" "$template_file" | sed 's/name: "\(.*\)"/\1/')
-      desc=$(grep "^description:" "$template_file" | sed 's/description: "\(.*\)"/\1/')
-      time=$(grep "^estimated_time:" "$template_file" | sed 's/estimated_time: "\(.*\)"/\1/')
-      complexity=$(grep "^complexity_level:" "$template_file" | sed 's/complexity_level: "\(.*\)"/\1/')
-      basename_file=$(basename "$template_file" .yaml)
-      echo "  $basename_file"
-      echo "    Name: $name"
-      echo "    Description: $desc"
-      echo "    Complexity: $complexity"
-      echo "    Est. Time: $time"
-      echo ""
-    done
-  exit 0
-fi
-```
+**If `--category <category>` provided**:
+- Extract category name from second argument
+- Use Bash to find all templates with matching category
+- For each matching template, extract and display:
+  - Template filename (without .yaml)
+  - Name
+  - Description
+  - Complexity level
+  - Estimated time
+- Stop execution after displaying templates
 
-**Template Discovery**:
-```bash
-# Check standard templates
-if [[ -f .claude/templates/$1.yaml ]]; then
-  TEMPLATE_FILE=".claude/templates/$1.yaml"
-# Check custom templates
-elif [[ -f .claude/templates/custom/$1.yaml ]]; then
-  TEMPLATE_FILE=".claude/templates/custom/$1.yaml"
-else
-  echo "ERROR: Template not found: $1"
-  echo "Available templates:"
-  ls .claude/templates/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/.yaml$//'
-  echo ""
-  echo "Use --list-categories to see templates by category"
-  exit 1
-fi
-```
-
-**Template Validation**:
-```bash
-# Validate template structure
-.claude/lib/parse-template.sh "$TEMPLATE_FILE" validate
-
-if [[ $? -ne 0 ]]; then
-  echo "ERROR: Invalid template structure"
-  exit 1
-fi
-```
+**If template name provided**:
+- Check if template exists in `.claude/templates/<name>.yaml`
+- If not found, check `.claude/templates/custom/<name>.yaml`
+- If still not found, display error with list of available templates
+- Once found, validate template structure using:
+  ```bash
+  .claude/lib/parse-template.sh <template-file> validate
+  ```
+- If validation fails, display error and stop
 
 ### Step 2: Extract Template Metadata
 
-**Get Template Information**:
-```bash
-# Extract metadata
-METADATA=$(.claude/lib/parse-template.sh "$TEMPLATE_FILE" extract-metadata)
-TEMPLATE_NAME=$(echo "$METADATA" | grep -o '"name":"[^"]*"' | sed 's/"name":"\(.*\)"/\1/')
-TEMPLATE_DESC=$(echo "$METADATA" | grep -o '"description":"[^"]*"' | sed 's/"description":"\(.*\)"/\1/')
+I'll extract template information and variable definitions:
 
-echo "Template: $TEMPLATE_NAME"
-echo "Description: $TEMPLATE_DESC"
-echo ""
-```
+**Extract template metadata**:
+- Use Bash to call parse-template.sh:
+  ```bash
+  .claude/lib/parse-template.sh <template-file> extract-metadata
+  ```
+- Parse the JSON output to extract name and description
+- Display template name and description to the user
 
-**Extract Variable Definitions**:
-```bash
-# Get variable list
-VARIABLES=$(.claude/lib/parse-template.sh "$TEMPLATE_FILE" extract-variables)
-
-# Example VARIABLES format:
-# [
-#   {"name":"entity_name","type":"string","required":true},
-#   {"name":"fields","type":"array","required":true},
-#   {"name":"use_auth","type":"boolean","required":false}
-# ]
-```
+**Extract variable definitions**:
+- Use Bash to call parse-template.sh:
+  ```bash
+  .claude/lib/parse-template.sh <template-file> extract-variables
+  ```
+- Returns JSON array of variables with fields: name, type, required
+- Example format:
+  ```json
+  [
+    {"name":"entity_name","type":"string","required":true},
+    {"name":"fields","type":"array","required":true},
+    {"name":"use_auth","type":"boolean","required":false}
+  ]
+  ```
 
 ### Step 3: Collect Variable Values
 
-**Interactive Variable Collection**:
+I'll prompt the user for each variable value interactively:
 
-For each variable in the template, prompt the user:
+**For each variable in the extracted variable list**:
+1. Display prompt: `variable_name (type): `
+2. Wait for user input
+3. Validate:
+   - If required and empty → display error and re-prompt
+   - If optional and empty → skip this variable
+4. Format value based on type:
+   - **string**: Use as-is, wrap in quotes for JSON
+   - **array**: Parse comma-separated input (e.g., "name, email, password") into JSON array `["name","email","password"]`
+   - **boolean**: Convert true/yes/1/y → `true`, everything else → `false`
+5. Build JSON object with all collected variables
 
-```bash
-echo "Please provide values for template variables:"
-echo ""
+**Example interaction**:
+```
+Please provide values for template variables:
 
-# Initialize variables JSON
-VARIABLES_JSON="{"
-FIRST=1
-
-# Parse each variable and prompt
-while IFS= read -r var_def; do
-  VAR_NAME=$(echo "$var_def" | grep -o '"name":"[^"]*"' | sed 's/"name":"\(.*\)"/\1/')
-  VAR_TYPE=$(echo "$var_def" | grep -o '"type":"[^"]*"' | sed 's/"type":"\(.*\)"/\1/')
-  VAR_REQUIRED=$(echo "$var_def" | grep -o '"required":[^,}]*' | sed 's/"required"://')
-
-  # Prompt user
-  echo -n "$VAR_NAME ($VAR_TYPE): "
-  read -r var_value
-
-  # Validate required variables
-  if [[ "$VAR_REQUIRED" == "true" ]] && [[ -z "$var_value" ]]; then
-    echo "ERROR: $VAR_NAME is required"
-    exit 1
-  fi
-
-  # Skip if empty and not required
-  [[ -z "$var_value" ]] && continue
-
-  # Add to JSON
-  if [[ $FIRST -ne 1 ]]; then
-    VARIABLES_JSON+=","
-  fi
-  FIRST=0
-
-  # Format based on type
-  if [[ "$VAR_TYPE" == "array" ]]; then
-    # Parse comma-separated list into JSON array
-    # Example: "name, email, password" -> ["name","email","password"]
-    ARRAY_JSON="["
-    ARRAY_FIRST=1
-    IFS=',' read -ra ITEMS <<< "$var_value"
-    for item in "${ITEMS[@]}"; do
-      item=$(echo "$item" | xargs)  # Trim whitespace
-      if [[ $ARRAY_FIRST -ne 1 ]]; then
-        ARRAY_JSON+=","
-      fi
-      ARRAY_FIRST=0
-      ARRAY_JSON+="\"$item\""
-    done
-    ARRAY_JSON+="]"
-    VARIABLES_JSON+="\"$VAR_NAME\":$ARRAY_JSON"
-  elif [[ "$VAR_TYPE" == "boolean" ]]; then
-    # Convert to true/false
-    if [[ "$var_value" =~ ^(true|yes|1|y)$ ]]; then
-      VARIABLES_JSON+="\"$VAR_NAME\":true"
-    else
-      VARIABLES_JSON+="\"$VAR_NAME\":false"
-    fi
-  else
-    # String type
-    VARIABLES_JSON+="\"$VAR_NAME\":\"$var_value\""
-  fi
-done <<< "$VARIABLES"
-
-VARIABLES_JSON+="}"
+entity_name (string): User
+fields (array): name, email, password
+use_auth (boolean): true
+database_type (string): postgresql
 ```
 
-**Validation Example**:
-```bash
-# Example collected variables:
-# {
-#   "entity_name":"User",
-#   "fields":["name","email","password"],
-#   "use_auth":true,
-#   "database_type":"postgresql"
-# }
+**Result JSON**:
+```json
+{
+  "entity_name":"User",
+  "fields":["name","email","password"],
+  "use_auth":true,
+  "database_type":"postgresql"
+}
 ```
+
+**Implementation note**: Since Claude cannot use bash `read` interactively, I'll prompt the user for each variable in my response text, then wait for the user to provide the values. Once all values are collected, I'll proceed to substitution.
 
 ### Step 4: Apply Variable Substitution
 
-**Generate Plan Content**:
-```bash
-# Apply variable substitution to template
-PLAN_CONTENT=$(.claude/lib/substitute-variables.sh "$TEMPLATE_FILE" "$VARIABLES_JSON")
+I'll use the template substitution utility to generate the plan content:
 
-if [[ $? -ne 0 ]]; then
-  echo "ERROR: Variable substitution failed"
-  exit 1
-fi
-```
+**Substitution process**:
+- Call substitute-variables.sh with template file and variables JSON:
+  ```bash
+  .claude/lib/substitute-variables.sh <template-file> '<variables-json>'
+  ```
+- The utility handles:
+  - Simple variables: `{{entity_name}}` → `User`
+  - Arrays: `{{#each fields}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}` → `name, email, password`
+  - Conditionals: `{{#if use_auth}}Add authentication{{/if}}` → `Add authentication` (if true)
+- If substitution fails, display error and stop
 
-**Substitution Examples**:
-
-Before substitution:
+**Example transformation**:
 ```yaml
+# Before:
 tasks:
   - "Create {{entity_name}} model"
-  - "Add fields: {{#each fields}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}"
   - "{{#if use_auth}}Add authentication{{/if}}"
-```
 
-After substitution:
-```yaml
+# After:
 tasks:
   - "Create User model"
-  - "Add fields: name, email, password"
   - "Add authentication"
 ```
 
 ### Step 5: Generate Plan File
 
-**Determine Plan Number**:
-```bash
-# Find the appropriate specs directory
-if [[ -d specs/plans ]]; then
-  PLANS_DIR="specs/plans"
-elif [[ -d .claude/specs/plans ]]; then
-  PLANS_DIR=".claude/specs/plans"
-else
-  # Create in most appropriate location
-  PLANS_DIR="specs/plans"
-  mkdir -p "$PLANS_DIR"
-fi
+I'll determine the plan number, generate the filename, and create the plan file:
 
-# Find next plan number
-NEXT_NUM=$(ls "$PLANS_DIR"/*.md 2>/dev/null | \
-  grep -o '[0-9]\{3\}' | \
-  sort -n | \
-  tail -1 | \
-  awk '{printf "%03d", $1+1}')
+**Determine specs directory**:
+- Check for `specs/plans/` in current directory
+- If not found, check for `.claude/specs/plans/`
+- If neither exists, create `specs/plans/`
 
-# Default to 001 if no plans exist
-NEXT_NUM=${NEXT_NUM:-001}
-```
+**Find next plan number**:
+- List all plan files in the specs directory
+- Extract three-digit numbers (001, 002, etc.)
+- Find the highest number and increment by 1
+- Default to 001 if no plans exist
+- Format as three digits with leading zeros
 
-**Create Feature Name from Variables**:
-```bash
-# Generate filename from entity_name or similar
-ENTITY_NAME=$(echo "$VARIABLES_JSON" | grep -o '"entity_name":"[^"]*"' | sed 's/"entity_name":"\(.*\)"/\1/' | tr '[:upper:]' '[:lower:]')
+**Generate feature name**:
+- Try to extract `entity_name` or similar key variable from JSON
+- Convert to lowercase with underscores
+- If no entity_name, use template name as feature name
+- Example: `entity_name:"Product"` → `product_crud_implementation`
 
-if [[ -n "$ENTITY_NAME" ]]; then
-  FEATURE_NAME="${ENTITY_NAME}_crud_implementation"
-else
-  # Fallback: use template name
-  FEATURE_NAME=$(echo "$TEMPLATE_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-fi
+**Create plan file** using Write tool:
+- Filename format: `<specs-dir>/<number>_<feature-name>.md`
+- Content structure:
+  ```markdown
+  # <Template Name>
 
-PLAN_FILE="$PLANS_DIR/${NEXT_NUM}_${FEATURE_NAME}.md"
-```
+  ## Metadata
+  - **Date**: <current-date>
+  - **Plan Number**: <NNN>
+  - **Feature**: <feature-name>
+  - **Template**: <template-name>
+  - **Standards File**: <path-to-CLAUDE.md>
 
-**Generate Plan with Metadata**:
-```bash
-cat > "$PLAN_FILE" <<EOF
-# $TEMPLATE_NAME
+  ## Template Variables
+  - entity_name: User
+  - fields: ["name","email","password"]
+  - use_auth: true
 
-## Metadata
+  ## Overview
+  Generated from template: <template-name>
+  <template-description>
 
-- **Date**: $(date +%Y-%m-%d)
-- **Specs Directory**: $(dirname "$PLANS_DIR")
-- **Plan Number**: $NEXT_NUM
-- **Feature**: $FEATURE_NAME
-- **Template**: $1
-- **Standards File**: $(find . -name "CLAUDE.md" -type f | head -1)
-
-## Template Variables
-
-$(echo "$VARIABLES_JSON" | sed 's/,/\n/g' | sed 's/[{}]//g' | sed 's/"//g' | sed 's/^/- /')
-
-## Overview
-
-Generated from template: $TEMPLATE_NAME
-$TEMPLATE_DESC
-
-$(echo "$PLAN_CONTENT")
-EOF
-```
+  <substituted-plan-content>
+  ```
 
 ### Step 6: Display Confirmation
 
-**Output**:
-```bash
-echo ""
-echo "✓ Plan created successfully"
-echo ""
-echo "Plan file: $PLAN_FILE"
-echo "Plan number: $NEXT_NUM"
-echo "Template: $TEMPLATE_NAME"
-echo ""
-echo "Variables used:"
-echo "$VARIABLES_JSON" | sed 's/,/\n/g' | sed 's/[{}]//g' | sed 's/"//g' | sed 's/^/  /'
-echo ""
-echo "Next steps:"
-echo "1. Review the generated plan: cat $PLAN_FILE"
-echo "2. Customize phases and tasks if needed"
-echo "3. Execute the plan: /implement $PLAN_FILE"
+I'll display a success message with next steps:
+
+**Success output format**:
+```
+Plan created successfully
+
+Plan file: <path-to-plan>
+Plan number: <NNN>
+Template: <template-name>
+
+Variables used:
+  - entity_name: User
+  - fields: ["name","email","password"]
+  - use_auth: true
+
+Next steps:
+1. Review the generated plan
+2. Customize phases and tasks if needed
+3. Execute the plan: /implement <plan-file>
 ```
 
 ## Available Templates
 
-Use `/plan-from-template --list-categories` to see templates organized by category.
+Use `/plan-from-template --list-categories` to see all templates organized by category.
 Use `/plan-from-template --category <category>` to see templates in a specific category.
 
-### Standard Templates
+11 standard templates available in categories: backend, feature, debugging, documentation, testing, migration, research, refactoring.
+Custom templates can be placed in `.claude/templates/custom/`.
 
-**Backend & API**
-- **api-endpoint** (medium complexity, 4-6 hours)
-  - Implements REST API endpoints
-  - Variables: endpoint_path, methods, auth_required, request_schema
+## Example Usage
 
-**Feature Development**
-- **crud-feature** (medium-high complexity, 8-12 hours)
-  - Creates CRUD operations for an entity
-  - Variables: entity_name, fields, use_auth, database_type
-
-**Debugging & Issues**
-- **debug-workflow** (medium complexity, 4-6 hours)
-  - Investigation→report→fix pattern for issues
-  - Variables: issue_description, affected_components, priority
-
-**Documentation**
-- **documentation-update** (low complexity, 2-3 hours)
-  - Synchronize documentation with code changes
-  - Variables: changed_files, doc_scope, breaking_changes
-
-**Testing**
-- **test-suite** (medium complexity, 5-7 hours)
-  - Comprehensive test suite with TDD patterns
-  - Variables: module_name, test_type, coverage_target
-
-**Migration**
-- **migration** (high complexity, 8-12 hours)
-  - Breaking change management with deprecation
-  - Variables: migration_type, affected_apis, deprecation_period
-
-**Research**
-- **research-report** (medium complexity, 4-8 hours)
-  - Structured research with recommendations
-  - Variables: topic, research_questions, depth_level
-
-**Refactoring**
-- **refactoring** (medium complexity, 6-10 hours)
-  - Structured code refactoring with safety
-  - Variables: target_module, refactoring_goals, test_strategy
-
-- **refactor-consolidation** (medium-high complexity, 6-10 hours)
-  - Code cleanup and consolidation
-  - Variables: target_module, consolidation_strategy, risk_level
-
-### Custom Templates
-
-Place custom templates in `.claude/templates/custom/`:
-```bash
-/plan-from-template custom/my-template
-```
-
-## Examples
-
-### Example 1: CRUD Feature
 ```bash
 /plan-from-template crud-feature
-
-# Prompts:
-#   entity_name (string): Product
-#   fields (array): name, price, description, stock
-#   use_auth (boolean): true
-#   database_type (string): postgresql
-
-# Generates: specs/plans/025_product_crud_implementation.md
-```
-
-### Example 2: API Endpoint
-```bash
-/plan-from-template api-endpoint
-
-# Prompts:
-#   endpoint_path (string): /api/users/:id/profile
-#   methods (array): GET, PUT
-#   auth_required (boolean): true
-#   request_schema (array): bio, avatar_url, preferences
-
-# Generates: specs/plans/026_user_profile_api.md
-```
-
-### Example 3: Refactoring
-```bash
-/plan-from-template refactoring
-
-# Prompts:
-#   target_module (string): auth/session-manager
-#   refactoring_goals (array): readability, testability, performance
-#   test_strategy (string): unit
-
-# Generates: specs/plans/027_session_manager_refactoring.md
+# Prompts for: entity_name, fields, use_auth, database_type
+# Generates: specs/plans/NNN_<entity>_crud_implementation.md
 ```
 
 ## Error Handling
 
-**Template Not Found**:
-```bash
-ERROR: Template not found: invalid-template
-Available templates:
-  crud-feature
-  api-endpoint
-  refactoring
-  custom/my-template
-```
+Common errors and their resolution:
+- **Template not found**: Lists available templates
+- **Invalid template structure**: Shows validation errors
+- **Required variable missing**: Re-prompts for required values
+- **Substitution failed**: Displays error with details
 
-**Invalid Template Structure**:
-```bash
-ERROR: Template missing 'name' field
-VALIDATION FAILED: 1 error(s)
-```
+## Integration
 
-**Required Variable Missing**:
-```bash
-entity_name (string):
-ERROR: entity_name is required
-```
+**Typical workflow**: `/plan-from-template` → `/implement` → `/document`
+**With research**: `/plan-from-template` → `/revise` (with reports) → `/implement`
 
-**Variable Substitution Failed**:
-```bash
-ERROR: Variable substitution failed
-Check template syntax and variable values
-```
-
-## Integration with Other Commands
-
-### Workflow Integration
-
-**Complete Template-Based Workflow**:
-```bash
-# 1. Create plan from template
-/plan-from-template crud-feature
-# → specs/plans/025_product_crud.md
-
-# 2. (Optional) Research if needed
-/report "CRUD best practices for PostgreSQL"
-# → specs/reports/030_crud_best_practices.md
-
-# 3. (Optional) Revise plan with research
-/revise "Incorporate CRUD best practices from report" specs/plans/025_product_crud.md
-
-# 4. Implement the plan
-/implement specs/plans/025_product_crud.md
-
-# 5. Document changes
-/document "Implemented product CRUD operations"
-```
-
-### Comparison with Other Planning Commands
-
-**Use /plan-from-template when**:
-- Building common, well-understood patterns
-- Want consistent structure across similar features
-- Need fast plan generation (60-80% faster)
-- Following established project patterns
-
-**Use /plan when**:
-- Building unique, complex features
-- Need flexible, custom structure
-- Want research-driven planning
-- Exploring new architectural patterns
-
-**Use /plan-wizard when**:
-- New to the project or planning process
-- Want guided, interactive experience
-- Need help identifying components
-- Want research integration prompts
-
-## Advanced Usage
-
-### Creating Custom Templates
-
-1. **Copy existing template**:
-```bash
-cp .claude/templates/crud-feature.yaml .claude/templates/custom/my-feature.yaml
-```
-
-2. **Edit template**:
-- Update name and description
-- Define variables for your use case
-- Customize phases and tasks
-- Add variable substitution
-
-3. **Use custom template**:
-```bash
-/plan-from-template custom/my-feature
-```
-
-### Template Versioning
-
-Track template changes in git:
-```bash
-git add .claude/templates/
-git commit -m "feat: add new feature template"
-```
-
-## Performance Characteristics
-
-- **Template Loading**: <50ms
-- **Variable Collection**: Interactive (user-dependent)
-- **Substitution**: <100ms
-- **Plan Generation**: <200ms
-- **Total Time**: ~2-5 minutes (vs 10-20 minutes manual planning)
-
-## Security Considerations
-
-- Templates are reviewed code (safe)
-- Variable values are sanitized
-- No code execution in templates
-- Templates cannot access filesystem
-- User input validated by type
-
-## Future Enhancements
-
-Planned improvements:
-- Template inheritance (extend base templates)
-- Template marketplace (share community templates)
-- Visual template editor
-- Template preview before generation
-- Template validation tests
+**When to use**:
+- `/plan-from-template`: Common patterns, fast generation (60-80% faster than manual)
+- `/plan`: Unique features, custom structure, research-driven
+- `/plan-wizard`: Guided experience with component identification
 
 ## References
 
-- [Template System Guide](../docs/template-system-guide.md)
-- [Template README](../templates/README.md)
-- [Creating Custom Templates](../docs/template-system-guide.md#creating-custom-templates)
-- [Plan Command](plan.md) - Manual planning
-- [Plan Wizard](plan-wizard.md) - Interactive planning
+- Template documentation: `.claude/templates/README.md`
+- Related commands: `/plan`, `/plan-wizard`, `/implement`, `/revise`
