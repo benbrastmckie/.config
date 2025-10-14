@@ -4,8 +4,8 @@
   "workflow_type": "implement",
   "project_name": "test_project",
   "workflow_description": "Test workflow",
-  "created_at": "2025-10-12T22:30:31Z",
-  "updated_at": "2025-10-12T22:30:31Z",
+  "created_at": "2025-10-07T05:00:46Z",
+  "updated_at": "2025-10-07T05:00:46Z",
   "status": "in_progress",
   "current_phase": 2,
   "total_phases": 5,
@@ -13,12 +13,12 @@
     1
   ],
   "workflow_state": {
-    "plan_path": "/tmp/tmp.sxRFz9f7Vj/test_plan.md",
+    "plan_path": "/tmp/tmp.dce2jXORb5/test_plan.md",
     "current_phase": 2
   },
   "last_error": null,
-  "tests_passing": false,
-  "plan_modification_time": 1760394631,
+  "tests_passing": true,
+  "plan_modification_time": 1760418046,
   "replanning_count": 0,
   "last_replan_reason": null,
   "replan_phase_counts": {},
