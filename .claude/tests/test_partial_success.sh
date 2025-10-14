@@ -19,7 +19,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Source the library under test
-source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
 
 # Helper function to run a test
 run_test() {

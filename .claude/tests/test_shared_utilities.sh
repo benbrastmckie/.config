@@ -103,13 +103,13 @@ if [ -f "$CHECKPOINT_FILE" ]; then
     fail "Checkpoint missing project name"
   fi
 
-  # Check for schema version (v1.1 with replanning fields)
+  # Check for schema version (v1.2 with replanning fields)
   if command -v jq &>/dev/null; then
     SCHEMA_VERSION=$(jq -r '.schema_version // "unknown"' "$CHECKPOINT_FILE")
-    if [ "$SCHEMA_VERSION" = "1.1" ]; then
-      pass "Checkpoint schema version is 1.1"
+    if [ "$SCHEMA_VERSION" = "1.2" ]; then
+      pass "Checkpoint schema version is 1.2"
     else
-      fail "Checkpoint schema version mismatch" "Expected 1.1, got $SCHEMA_VERSION"
+      fail "Checkpoint schema version mismatch" "Expected 1.2, got $SCHEMA_VERSION"
     fi
 
     # Check replanning fields
