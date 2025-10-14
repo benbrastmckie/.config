@@ -10,6 +10,30 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 
 I'll coordinate multiple specialized subagents through a complete development workflow, from research to documentation, while preserving context and enabling intelligent parallelization.
 
+## Reference Files
+
+This command uses standardized patterns defined in external reference files:
+
+- **Agent Templates**: `.claude/templates/orchestration-patterns.md`
+  - Complete agent prompt templates for all 5 agents
+  - Phase coordination patterns (parallel, sequential, adaptive, conditional)
+  - Checkpoint structure and operations
+  - Error recovery patterns
+
+- **Command Examples**: `.claude/docs/command-examples.md`
+  - Dry-run mode output examples
+  - Dashboard progress formatting
+  - Checkpoint save/restore patterns
+  - Test execution patterns
+  - Git commit formatting
+
+- **Logging Patterns**: `.claude/docs/logging-patterns.md`
+  - PROGRESS: marker format and usage
+  - Structured logging format
+  - Error logging with recovery suggestions
+  - Summary report format
+  - File path output format
+
 ## Dry-Run Mode (Preview and Validation)
 
 Preview the complete workflow execution without invoking agents or making changes using the `--dry-run` flag:
@@ -273,279 +297,62 @@ These utilities ensure workflow state is preserved across interruptions and agen
 
 ## Error Handling Strategy
 
-Throughout the workflow, handle errors according to these principles:
+**See comprehensive patterns in**: `.claude/templates/orchestration-patterns.md#error-recovery-patterns`
 
-### Agent Invocation Failures
+### Error Handling Principles
 
-**Use error-utils.sh for systematic retry and recovery**:
+1. **Agent Invocation Failures**: Use `retry_with_backoff()` from error-utils.sh for automatic retry with exponential backoff
+2. **File Creation Failures**: Verify expected files created, retry if missing, search alternative locations
+3. **Test Failures**: Enter debugging loop (max 3 iterations), DO NOT treat as errors
+4. **Checkpoint Failures**: Graceful degradation - warn user but continue workflow
 
-**Step 1: Wrap Agent Invocation with retry_with_backoff()**
-```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/error-utils.sh"
+### Utility Integration
 
-# Define the agent invocation command
-invoke_agent() {
-  # Invoke Task tool with agent parameters
-  # Returns 0 on success, non-zero on failure
-}
+Source required utilities from `.claude/lib/`:
+- `error-utils.sh` - retry_with_backoff(), classify_error(), format_error_report(), suggest_recovery()
+- `checkpoint-utils.sh` - save_checkpoint(), load_checkpoint()
 
-# Use retry_with_backoff for automatic retry with exponential backoff
-AGENT_RESULT=$(retry_with_backoff invoke_agent "research_agent_invocation")
-RETRY_STATUS=$?
-```
-
-**Step 2: Handle Retry Outcomes**
-```bash
-if [ $RETRY_STATUS -eq 0 ]; then
-  # Agent invocation succeeded (possibly after retries)
-  echo "✓ Agent invocation successful"
-else
-  # All retries exhausted, classify and handle error
-  ERROR_TYPE=$(classify_error "$AGENT_RESULT")
-  ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$AGENT_RESULT" "$CURRENT_PHASE")
-
-  # Log to workflow_state.execution_tracking.error_history
-  echo "$ERROR_REPORT"
-
-  # Save checkpoint and escalate to user
-  save_workflow_checkpoint
-fi
-```
-
-**Step 3: Validate Agent Output**
-```bash
-# If agent completes but returns error content
-if grep -q "ERROR" "$AGENT_OUTPUT"; then
-  # Classify the error type
-  ERROR_TYPE=$(classify_error "$AGENT_OUTPUT")
-
-  # Get recovery suggestions
-  SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$AGENT_OUTPUT")
-
-  # Decide recovery action based on error type
-  case "$ERROR_TYPE" in
-    "file_not_found"|"import_error")
-      # Recoverable - correct context and retry
-      retry_with_backoff invoke_agent_with_corrected_context
-      ;;
-    *)
-      # Not recoverable - escalate
-      format_error_report "$ERROR_TYPE" "$AGENT_OUTPUT" "$CURRENT_PHASE"
-      save_checkpoint_and_escalate
-      ;;
-  esac
-fi
-```
-
-**Benefits**:
-- Exponential backoff prevents overwhelming failed services
-- Automatic retry reduces transient failures
-- Consistent error classification and reporting
-- Logged retry attempts for debugging
-
-### File Creation Failures
-
-**Use error-utils.sh for file creation verification and retry**:
-
-```bash
-# Define file verification function
-verify_file_created() {
-  local expected_path="$1"
-  [ -f "$expected_path" ] && return 0 || return 1
-}
-
-# Retry file creation with backoff
-if ! retry_with_backoff "verify_file_created $EXPECTED_FILE_PATH"; then
-  # File still missing after retries
-  ERROR_TYPE="file_not_found"
-  ERROR_MSG="Expected file not created: $EXPECTED_FILE_PATH"
-
-  # Classify and format error
-  ERROR_REPORT=$(format_error_report "$ERROR_TYPE" "$ERROR_MSG" "$CURRENT_PHASE")
-  echo "$ERROR_REPORT"
-
-  # Get recovery suggestions
-  SUGGESTIONS=$(suggest_recovery "$ERROR_TYPE" "$ERROR_MSG")
-  echo "Recovery options:"
-  echo "$SUGGESTIONS"
-
-  # Save checkpoint and escalate
-  save_checkpoint_and_escalate
-fi
-```
-
-### Test Failures
-
-**Test failures are expected** - handle via debugging loop:
-1. DO NOT treat test failures as errors
-2. ENTER debugging loop (max 3 iterations)
-3. ONLY escalate if debugging loop exhausted
-
-### Checkpoint Failures
-
-**Use checkpoint-utils.sh with automatic retry**:
-
-```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
-
-# Save checkpoint with automatic retry
-if ! save_checkpoint "orchestrate" "$CHECKPOINT_DATA"; then
-  # Save failed after retries
-  echo "⚠ Warning: Checkpoint save failed"
-  echo "Workflow will continue, but resume may not be possible"
-  echo "This will be noted in the final summary"
-
-  # Log failure but don't block workflow
-  log_error "checkpoint_save_failed" "orchestrate" "$CURRENT_PHASE"
-
-  # Continue execution (checkpoint is not critical)
-fi
-```
-
-**Graceful degradation**:
-- Checkpoint failures don't block workflow execution
-- User warned that resume won't be possible
-- Failure logged for debugging
-- Workflow continues normally
-- Limitation documented in summary
-
-### General Error Recovery
+### Recovery Pattern
 
 ```yaml
-error_recovery_pattern:
-  1_capture: Record full error message and context
-  2_classify: Determine if error is transient or permanent
-  3_retry: Attempt recovery once if transient
-  4_log: Add to workflow_state.execution_tracking.error_history
-  5_escalate: Provide user with clear options (resume, manual intervention, abort)
+error_recovery:
+  1. Capture error message and context
+  2. Classify error type (transient/permanent)
+  3. Retry if transient (exponential backoff)
+  4. Log to workflow_state.error_history
+  5. Escalate to user if unrecoverable
 ```
 
-### Error History Structure
-
-```yaml
-workflow_state.execution_tracking.error_history:
-  - phase: "research"
-    error_type: "agent_invocation_failure"
-    error_message: "Task tool timeout after 600s"
-    recovery_attempted: "Retry invocation"
-    recovery_success: false
-    escalated_to_user: true
-    timestamp: "2025-10-12T14:30:22"
-```
+See `.claude/templates/orchestration-patterns.md` for detailed implementation examples.
 
 ## Progress Streaming
 
-Throughout the workflow, emit progress markers to provide real-time visibility into execution status.
+**See comprehensive patterns in**: `.claude/docs/logging-patterns.md#progress-markers`
 
 ### Progress Marker Format
 
-USE `PROGRESS:` prefix for all progress messages:
-
+Use `PROGRESS:` prefix for all progress messages:
 ```
 PROGRESS: [phase] - [action_description]
 ```
 
-### When to Emit Progress Markers
+### When to Emit
 
-**At Phase Transitions**:
-```
-PROGRESS: Starting Research Phase (parallel execution)
-PROGRESS: Research Phase complete - 3 reports created
-PROGRESS: Starting Planning Phase (sequential execution)
-PROGRESS: Planning Phase complete - plan created
-PROGRESS: Starting Implementation Phase (adaptive execution)
-PROGRESS: Implementation Phase complete - tests passing
-PROGRESS: Starting Documentation Phase (sequential execution)
-PROGRESS: Documentation Phase complete - workflow summary generated
-```
+- **Phase transitions**: Starting/completing each workflow phase
+- **Agent invocations**: Before and after each agent
+- **File operations**: Creating/verifying important files (plans, reports, summaries)
+- **Long operations**: Every 30s or at natural checkpoints
+- **Verification steps**: At completion
 
-**During Agent Invocations**:
-```
-PROGRESS: Invoking 3 research-specialist agents in parallel...
-PROGRESS: Research agent 1/3 completed (existing_patterns)
-PROGRESS: Research agent 2/3 completed (security_practices)
-PROGRESS: Research agent 3/3 completed (framework_implementations)
+### Best Practices
 
-PROGRESS: Invoking plan-architect agent...
-PROGRESS: Plan created: specs/plans/042_user_authentication.md
+1. Emit before long operations (agent invocations, file reads, bash operations)
+2. Include context (phase/agent/file being processed)
+3. Use "N/M" format for multi-step operations
+4. Use ✓ for successful completions
+5. Update TodoWrite BEFORE emitting phase transition markers
 
-PROGRESS: Invoking code-writer agent with /implement...
-PROGRESS: Implementation Phase 1/4 complete
-PROGRESS: Implementation Phase 2/4 complete
-PROGRESS: Implementation Phase 3/4 complete
-PROGRESS: Implementation Phase 4/4 complete - tests passing
-
-PROGRESS: Invoking doc-writer agent for workflow summary...
-PROGRESS: Workflow summary created: specs/summaries/042_summary.md
-```
-
-**During Debugging Loop**:
-```
-PROGRESS: Entering debugging loop (iteration 1/3)
-PROGRESS: Invoking debug-specialist agent...
-PROGRESS: Debug report created: debug/test_failures/001_auth_timeout.md
-PROGRESS: Applying recommended fix via code-writer agent...
-PROGRESS: Fix applied - running tests...
-PROGRESS: Tests passing ✓ - debugging complete
-```
-
-**During File Operations**:
-```
-PROGRESS: Saving research checkpoint...
-PROGRESS: Checkpoint saved: .claude/checkpoints/orchestrate_user_auth_20251012_143022.json
-
-PROGRESS: Verifying report files created...
-PROGRESS: All 3 reports verified and readable
-```
-
-**During Cross-Reference Creation**:
-```
-PROGRESS: Creating bidirectional cross-references...
-PROGRESS: Plan → Reports links added (3 links)
-PROGRESS: Reports → Plan links added (3 links)
-PROGRESS: Summary → All artifacts links added (7 links)
-PROGRESS: Cross-reference validation complete
-```
-
-### Progress Streaming Best Practices
-
-1. **Emit Before Long Operations**: Always emit before agent invocations, file reads, or bash operations
-2. **Include Context**: Specify which phase/agent/file is being processed
-3. **Show Counts**: Use "N/M" format for multi-step operations
-4. **Indicate Success**: Use ✓ for successful completions
-5. **Update TodoWrite**: Emit progress after updating TodoWrite status
-
-### Progress + TodoWrite Coordination
-
-ALWAYS update TodoWrite BEFORE emitting phase transition progress marker:
-
-```
-1. Update TodoWrite (mark current phase complete, next phase in_progress)
-2. Emit PROGRESS: marker
-3. Proceed with next phase
-```
-
-**Example**:
-```
-[Update TodoWrite: research → completed, planning → in_progress]
-PROGRESS: Research Phase complete - 3 reports created
-PROGRESS: Starting Planning Phase (sequential execution)
-[Invoke plan-architect agent]
-```
-
-### Progress Marker Density
-
-**Appropriate Density**:
-- Phase transitions: Always
-- Agent invocations: Always
-- Long-running operations (>30s): Every 30s or at natural checkpoints
-- File operations: For important files (plans, reports, summaries)
-- Verification steps: At completion
-
-**Avoid Over-Emitting**:
-- Internal state updates (don't emit for every workflow_state change)
-- Trivial operations (string formatting, variable assignment)
-- Repeated operations (don't emit for each of 100 files read)
+See `.claude/docs/logging-patterns.md` for detailed examples and patterns.
 
 ### Step 1: Parse Workflow Description
 
@@ -836,190 +643,21 @@ Here are three research tasks to execute in parallel:
 - Collect REPORT_PATH: outputs as agents complete
 - Verify all agents complete successfully before moving to Step 4
 
-#### Step 3: Complete Research Agent Prompt Template
+#### Step 3: Research Agent Prompt Template
 
-The following template is used for EACH research-specialist agent invocation in Step 2.5.
+**Use the complete template from**: `.claude/templates/orchestration-patterns.md#research-agent-prompt-template`
 
-**SUBSTITUTE** these placeholders before invoking:
-- [THINKING_MODE]: Value from Step 1.5 (think, think hard, think harder, or empty)
-- [TOPIC_TITLE]: Research topic title (e.g., "Authentication Patterns in Codebase")
-- [USER_WORKFLOW]: Original user workflow description (1 line)
-- [PROJECT_NAME]: Generated in Step 3.5
-- [TOPIC_SLUG]: Generated in Step 3.5
-- [SPECS_DIR]: Path to specs directory (from SPECS.md or auto-detected)
-- [ABSOLUTE_REPORT_PATH]: ABSOLUTE path calculated in Step 2 (CRITICAL - must be absolute)
-- [COMPLEXITY_LEVEL]: Simple|Medium|Complex|Critical (from Step 1.5)
-- [SPECIFIC_REQUIREMENTS]: What this agent should investigate
+The template includes:
+- Required placeholders to substitute (THINKING_MODE, TOPIC_TITLE, ABSOLUTE_REPORT_PATH, etc.)
+- Research requirements by topic type (existing_patterns, best_practices, alternatives, constraints)
+- Report structure and format
+- Expected output format (REPORT_PATH: /absolute/path)
 
-**Complete Prompt Template**:
-
-```markdown
-**Thinking Mode**: [THINKING_MODE]
-
-# Research Task: [TOPIC_TITLE]
-
-## Context
-- **Workflow**: [USER_WORKFLOW]
-- **Project Name**: [PROJECT_NAME]
-- **Topic Slug**: [TOPIC_SLUG]
-- **Research Focus**: [SPECIFIC_REQUIREMENTS]
-- **Project Standards**: /home/benjamin/.config/CLAUDE.md
-- **Complexity Level**: [COMPLEXITY_LEVEL]
-
-## Objective
-Investigate [SPECIFIC_REQUIREMENTS] to inform planning and implementation phases.
-
-## Specs Directory Context
-- **Specs Directory Detection**:
-  1. Check .claude/SPECS.md for registered specs directories
-  2. If no SPECS.md, use Glob to find existing specs/ directories
-  3. Default to project root specs/ if none found
-- **Report Location**: Create report in [SPECS_DIR]/reports/[TOPIC_SLUG]/NNN_report_name.md
-- **Include in Metadata**: Add "Specs Directory" field to report metadata
-
-## Research Requirements
-
-[SPECIFIC_REQUIREMENTS - Agent should investigate these areas:]
-
-### For "existing_patterns" Topics:
-- Search codebase for related implementations using Grep/Glob
-- Read relevant source files to understand current patterns
-- Identify architectural decisions and design patterns used
-- Document file locations with line number references
-- Note any inconsistencies or technical debt
-
-### For "best_practices" Topics:
-- Use WebSearch to find 2025-current best practices
-- Focus on authoritative sources (official docs, security guides)
-- Compare industry standards with current implementation
-- Identify gaps between best practices and current state
-- Recommend specific improvements
-
-### For "alternatives" Topics:
-- Research 2-3 alternative implementation approaches
-- Document pros/cons of each alternative
-- Consider trade-offs (performance, complexity, maintainability)
-- Recommend which alternative best fits this project
-- Provide concrete examples from similar projects
-
-### For "constraints" Topics:
-- Identify technical limitations (platform, dependencies, performance)
-- Document security considerations and requirements
-- Note compatibility requirements (backwards compatibility, API contracts)
-- Consider resource constraints (time, team expertise, infrastructure)
-- Flag high-risk areas requiring careful design
-
-## Report File Creation
-
-You MUST create a research report file using the Write tool. Do NOT return only a summary.
-
-**CRITICAL: Use the Provided Absolute Path**:
-
-The orchestrator has calculated an ABSOLUTE report file path for you. You MUST use this exact path when creating the report file:
-
-**Report Path**: [ABSOLUTE_REPORT_PATH]
-
-Example: `/home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_existing_patterns.md`
-
-**DO NOT**:
-- Recalculate the path yourself
-- Use relative paths (e.g., `specs/reports/...`)
-- Change the directory location
-- Modify the report number
-
-**DO**:
-- Use the Write tool with the exact path provided above
-- Create the report at the specified ABSOLUTE path
-- Return this exact path in your REPORT_PATH: output
-
-**Report Structure** (use this exact template):
-
-```markdown
-# [Report Title]
-
-## Metadata
-- **Date**: YYYY-MM-DD
-- **Specs Directory**: [SPECS_DIR]
-- **Report Number**: NNN (within topic subdirectory)
-- **Topic**: [TOPIC_SLUG]
-- **Created By**: /orchestrate (research phase)
-- **Workflow**: [USER_WORKFLOW]
-
-## Implementation Status
-- **Status**: Research Complete
-- **Plan**: (will be added by plan-architect)
-- **Implementation**: (will be added after implementation)
-- **Date**: YYYY-MM-DD
-
-## Research Focus
-[Description of what this research investigated]
-
-## Findings
-
-### Current State Analysis
-[Detailed findings from codebase analysis - include file references with line numbers]
-
-### Industry Best Practices
-[Findings from web research - include authoritative sources]
-
-### Key Insights
-[Important discoveries, patterns identified, issues found]
-
-## Recommendations
-
-### Primary Recommendation: [Approach Name]
-**Description**: [What this approach entails]
-**Pros**:
-- [Advantage 1]
-- [Advantage 2]
-**Cons**:
-- [Limitation 1]
-**Suitability**: [Why this fits the project]
-
-### Alternative Approach: [Approach Name]
-[Secondary recommendation if applicable]
-
-## Potential Challenges
-- [Challenge 1 and mitigation strategy]
-- [Challenge 2 and mitigation strategy]
-
-## References
-- [File: path/to/file.ext, lines X-Y - description]
-- [URL: https://... - authoritative source]
-- [Related code: path/to/related.ext]
-```
-
-## Expected Output
-
-**Primary Output**: Report file path in this exact format:
-```
-REPORT_PATH: [ABSOLUTE_REPORT_PATH]
-```
-
-**CRITICAL**: This must be the exact ABSOLUTE path provided to you by the orchestrator. Do NOT output a relative path.
-
-**Secondary Output**: Brief summary (1-2 sentences):
-- What was researched
-- Key finding or primary recommendation
-
-**Example Output**:
-```
-REPORT_PATH: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_auth_patterns.md
-
-Research investigated current authentication implementations in the codebase. Found
-session-based auth using Redis with 30-minute TTL. Primary recommendation: Extend
-existing session pattern rather than implementing OAuth from scratch.
-```
-
-## Success Criteria
-- Report file created at correct path with correct number
-- Report includes all required metadata fields
-- Findings include specific file references with line numbers
-- Recommendations are actionable and project-specific
-- Report path returned in parseable format (REPORT_PATH: ...)
-```
-
-End of prompt template.
+**Key Points**:
+- Always use ABSOLUTE paths for report files (calculated in Step 2)
+- Include thinking mode from Step 1.5
+- Specify research requirements based on topic category
+- Agent must return REPORT_PATH: in parseable format
 
 #### Step 3.5: Generate Project Name and Topic Slugs
 
