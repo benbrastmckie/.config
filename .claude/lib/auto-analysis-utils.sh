@@ -13,8 +13,7 @@ source "$SCRIPT_DIR/error-utils.sh" 2>/dev/null || true
 
 # Source modular components
 source "$SCRIPT_DIR/agent-invocation.sh"
-source "$SCRIPT_DIR/phase-analysis.sh"
-source "$SCRIPT_DIR/stage-analysis.sh"
+source "$SCRIPT_DIR/analysis-pattern.sh"
 source "$SCRIPT_DIR/artifact-management.sh"
 
 # ============================================================================
@@ -609,8 +608,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   echo ""
   echo "Modular Components:"
   echo "  - agent-invocation.sh: Agent coordination and prompt building"
-  echo "  - phase-analysis.sh: Phase expansion/collapse analysis"
-  echo "  - stage-analysis.sh: Stage expansion/collapse analysis"
+  echo "  - analysis-pattern.sh: Unified phase/stage expansion/collapse analysis"
   echo "  - artifact-management.sh: Report generation and artifact tracking"
   echo ""
   echo "Available functions (from modules):"
