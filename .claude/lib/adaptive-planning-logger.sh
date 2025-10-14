@@ -10,6 +10,10 @@
 
 set -euo pipefail
 
+# Source timestamp utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/timestamp-utils.sh"
+
 # Configuration
 readonly AP_LOG_FILE="${CLAUDE_LOGS_DIR:-.claude/logs}/adaptive-planning.log"
 readonly AP_LOG_MAX_SIZE=$((10 * 1024 * 1024))  # 10MB
@@ -64,7 +68,7 @@ write_log_entry() {
   rotate_log_if_needed
 
   local timestamp
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")  # ISO 8601 with Z suffix for UTC
 
   local entry
   if [[ -n "$data" ]]; then
