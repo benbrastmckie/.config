@@ -1,6 +1,8 @@
-# Utilities Directory
+# Standalone Utility Scripts
 
 Core utility scripts supporting all .claude/ subsystems. These scripts provide essential functionality for checkpointing, templates, error analysis, and workflow coordination.
+
+**Note**: This README documents **standalone utility scripts** (executable scripts). For documentation of **sourced utility libraries** (functions that are sourced into other scripts), see [README.md](README.md).
 
 ## Purpose
 
