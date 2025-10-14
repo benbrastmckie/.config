@@ -799,12 +799,6 @@ UPDATE TodoWrite to mark analysis complete and research as in-progress:
    }
    ```
 
-**Why Absolute Paths Are Critical**:
-
-When research agents receive RELATIVE paths (e.g., `specs/reports/topic/001_report.md`), they interpret them from different base directories, resulting in reports scattered across multiple locations. This was discovered empirically when /orchestrate research agents created reports in inconsistent locations (2 at project root, 1 in .claude/).
-
-By providing ABSOLUTE paths (e.g., `/home/benjamin/.config/.claude/specs/reports/topic/001_report.md`), all agents create reports at exactly the same location, ensuring consistent report collection.
-
 #### Step 2.5: Launch Parallel Research Agents
 
 **EXECUTE NOW**: USE the Task tool to invoke research-specialist agents in parallel.
@@ -1222,30 +1216,7 @@ PROGRESS: [Agent 2/3: security_practices] ERROR - Failed to create report
 ERROR: Agent 2 (security_practices): Write tool failed - permission denied
 ```
 
-**TodoWrite Integration**:
-
-Update task list to show per-agent progress:
-```json
-{
-  "todos": [
-    {
-      "content": "Research Agent 1/3: existing_patterns",
-      "status": "completed",
-      "activeForm": "Researching existing_patterns"
-    },
-    {
-      "content": "Research Agent 2/3: security_practices",
-      "status": "in_progress",
-      "activeForm": "Researching security_practices"
-    },
-    {
-      "content": "Research Agent 3/3: alternatives",
-      "status": "pending",
-      "activeForm": "Researching alternatives"
-    }
-  ]
-}
-```
+**TodoWrite Integration**: Research agents can be tracked as TodoWrite subtasks if desired.
 
 Proceed to Step 4 only after all agents complete or fail definitively.
 
@@ -1532,14 +1503,6 @@ case "$verification_status" in
 esac
 ```
 
-**Benefits of Batch Verification**:
-
-- **Preserves Parallelism**: Verification happens AFTER all agents complete (not during)
-- **Complete Picture**: See all verification results before deciding on retry strategy
-- **Path Mismatch Detection**: Discover path interpretation issues (Report 004 finding)
-- **Detailed Diagnostics**: Build comprehensive agent-to-report mapping for debugging
-- **Efficient Retry**: Only retry actually failed agents, not all agents
-
 Proceed to Step 4.6 if any reports failed verification, otherwise skip to Step 5.
 
 #### Step 4.6: Retry Failed Reports (Error Recovery)
@@ -1779,30 +1742,11 @@ fi
 ```
 # file_not_found
 PROGRESS: [Agent 2/3: security_practices] Retrying (attempt 1/1)...
-ERROR: Report missing for Agent 2/3 (topic: security_practices)
-Expected: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
-Agent completed successfully but report file not found at expected location.
-Retrying agent invocation with emphasized file creation requirement...
+ERROR: Report missing - retrying with emphasized file creation requirement...
 
 # path_mismatch (CRITICAL - Report 004)
 PROGRESS: [Agent 1/3: existing_patterns] Correcting path mismatch...
-✓ File moved successfully to: /home/benjamin/.config/.claude/specs/reports/existing_patterns/001_analysis.md
-
-# invalid_metadata
-PROGRESS: [Agent 3/3: alternatives] Attempting metadata fix...
-✓ Metadata fields added successfully
-
-# agent_crashed
-PROGRESS: [Agent 2/3: security_practices] Retrying (attempt 1/1)...
-ERROR: Agent failed for topic: security_practices
-Agent output indicates crash or error condition.
-Retrying agent invocation with same prompt...
-
-# permission_denied (not retryable)
-ERROR: Cannot read report for Agent 2/3 (topic: security_practices)
-Path: /home/benjamin/.config/.claude/specs/reports/security_practices/001_practices.md
-Permission denied - this is a system issue, not retryable by agent.
-Escalating to user.
+✓ File moved successfully to expected location
 ```
 
 **Step 9: Aggregate Retry Results**
@@ -1904,15 +1848,6 @@ workflow_state.research_reports[agent_index].verified = true
 - **Retry count tracked**: Stored in workflow_state.research_reports[].retry_count
 - **Replan history logged**: For audit trail (if integrated with adaptive planning)
 - **User escalation**: When limit exceeded or non-retryable errors
-
-**Benefits of Intelligent Retry**:
-
-- **Path Mismatch Recovery**: Automatically corrects Report 004 issue by moving files
-- **Targeted Retry**: Only retry actually failed agents, not all agents
-- **Loop Prevention**: Max 1 retry limit prevents infinite retry cycles
-- **Preserves Parallelism**: Retries can still be parallel if multiple agents failed
-- **Graceful Degradation**: Can proceed with partial reports if majority verified
-- **Comprehensive Logging**: All retry attempts logged for debugging
 
 Proceed to Step 5 after retry phase completes (regardless of results, but note status).
 
@@ -2249,152 +2184,6 @@ Research Phase Complete - Ready for Planning Phase
 ```
 
 This example demonstrates the complete execution flow from user request to validated research reports.
-
-#### Troubleshooting: Research Phase Common Issues
-
-##### Issue 1: Reports Created in Wrong Location (Path Inconsistency)
-
-**Symptom**: Research agents complete successfully but reports not found at expected location.
-
-**Root Cause**: Agents received RELATIVE paths and interpreted them from different base directories.
-
-**Example**:
-```
-Expected: /home/benjamin/.config/.claude/specs/reports/orchestrate_improvements/001_report.md
-Actual:   /home/benjamin/.config/specs/reports/orchestrate_improvements/001_report.md
-          (missing .claude/ subdirectory)
-```
-
-**Diagnosis**:
-```bash
-# Search for report file in multiple locations
-find /home/benjamin/.config -name "001_*.md" -path "*/specs/reports/orchestrate_improvements/*" 2>/dev/null
-
-# Check agent prompts to verify absolute paths were provided
-grep "REPORT_PATH:" .claude/checkpoints/*.json
-```
-
-**Resolution**:
-1. **Prevention** (CRITICAL): Always provide ABSOLUTE paths in agent prompts (see Step 2)
-2. **Recovery**: If reports exist at wrong location:
-   ```bash
-   # Move reports to correct location
-   EXPECTED="/home/benjamin/.config/.claude/specs/reports/topic"
-   ACTUAL="/home/benjamin/.config/specs/reports/topic"
-
-   mkdir -p "$EXPECTED"
-   mv "$ACTUAL"/*.md "$EXPECTED/"
-   ```
-3. **Verification**: Re-run Step 4 verification to confirm all reports at expected locations
-
-**Prevention Checklist**:
-- [ ] Step 2 generates ABSOLUTE paths (starts with `/home/...`)
-- [ ] Agent prompts contain `[ABSOLUTE_REPORT_PATH]` placeholder
-- [ ] No relative paths (e.g., `specs/...`) in agent prompts
-- [ ] Directory exists before agents invoked (`mkdir -p`)
-
-##### Issue 2: Report Metadata Incomplete
-
-**Symptom**: Report file exists but missing required metadata fields.
-
-**Root Cause**: Agent didn't follow report structure template correctly.
-
-**Diagnosis**:
-```bash
-# Check report has metadata section
-head -20 /path/to/report.md | grep -E "^## Metadata|^- \*\*Date\*\*:|^- \*\*Topic\*\*:"
-```
-
-**Resolution**:
-```bash
-# Edit report to add missing metadata
-# Use Edit tool to add fields at top of file
-```
-
-**Prevention**: Research agent prompt template (Step 3) includes complete metadata template.
-
-##### Issue 3: Agent Failed to Create Report File
-
-**Symptom**: Agent completed but no REPORT_PATH in output and no file created.
-
-**Root Cause**: Agent returned summary instead of creating file, or Write tool failed.
-
-**Diagnosis**:
-- Check agent output for REPORT_PATH: marker
-- Check agent output for Write tool invocation
-- Check agent output for errors (permission denied, disk full)
-
-**Resolution**:
-1. **Retry agent invocation** with emphasized file creation requirement:
-   ```markdown
-   CRITICAL: You MUST use the Write tool to create a report file at:
-   [ABSOLUTE_REPORT_PATH]
-
-   DO NOT return only a summary. The report file must be created.
-   ```
-2. **Verify directory permissions**:
-   ```bash
-   ls -ld .claude/specs/reports/
-   mkdir -p .claude/specs/reports/topic_slug
-   ```
-
-##### Issue 4: Multiple Agents Create Same Report Number
-
-**Symptom**: Agents overwrite each other's reports, final count doesn't match agent count.
-
-**Root Cause**: Report numbers calculated before agents start, but agents run in parallel and race to create files.
-
-**Resolution**:
-- **Not an issue**: Orchestrator calculates report numbers in Step 2 BEFORE invoking agents
-- Each agent receives unique report number in its prompt
-- Parallel execution safe because paths are pre-allocated
-
-**If this still occurs**:
-- Check Step 2 implementation: Each agent must get unique `REPORT_NUM`
-- Verify agents don't recalculate report numbers themselves
-
-##### Issue 5: Research Phase Takes Too Long
-
-**Symptom**: Research agents running for >10 minutes total.
-
-**Diagnosis**:
-- Check if agents invoked in parallel (single message) or sequential (multiple messages)
-- Check agent thinking modes (too complex for simple workflows)
-
-**Resolution**:
-1. **Verify parallel execution**: All Task invocations in single message (Step 2.5)
-2. **Reduce thinking mode complexity**: Recalculate complexity score (Step 1.5)
-3. **Reduce research scope**: Fewer topics (2-3 instead of 4)
-4. **Check agent resources**: Agents may be waiting for tools (Grep on large codebase)
-
-**Expected Timings**:
-- Simple research (2 agents): 2-3 minutes parallel
-- Medium research (3 agents): 3-5 minutes parallel
-- Complex research (4 agents): 5-8 minutes parallel
-
-##### Issue 6: All Research Agents Failed
-
-**Symptom**: All agents return errors or no reports created.
-
-**Possible Causes**:
-1. **Specs directory doesn't exist**:
-   ```bash
-   mkdir -p .claude/specs/reports
-   ```
-2. **Permission denied**:
-   ```bash
-   ls -ld .claude/specs/reports
-   chmod u+w .claude/specs/reports
-   ```
-3. **Agent behavioral guidelines missing**:
-   ```bash
-   ls -l .claude/agents/research-specialist.md
-   ```
-4. **Invalid agent prompts**: Check for placeholder substitution errors
-
-**Resolution**: Check each cause systematically, fix infrastructure issues, retry research phase.
-
-**Escalation**: If all agents fail after retry and infrastructure verified, escalate to user with detailed error report.
 
 ### Planning Phase (Sequential Execution)
 
