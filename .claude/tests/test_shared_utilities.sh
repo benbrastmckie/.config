@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test shared utility libraries
-# Tests: checkpoint-utils, error-utils, complexity-utils, artifact-utils
+# Tests: checkpoint-utils, error-utils, complexity-utils, artifact-operations
 
 set -euo pipefail
 
@@ -338,16 +338,16 @@ fi
 echo ""
 
 # ============================================================================
-# Test artifact-utils.sh
+# Test artifact-operations.sh
 # ============================================================================
 
-info "Testing artifact-utils.sh"
+info "Testing artifact-operations.sh"
 
 # Source the library
-if source "$LIB_DIR/artifact-utils.sh" 2>/dev/null; then
-  pass "artifact-utils.sh sourced successfully"
+if source "$LIB_DIR/artifact-operations.sh" 2>/dev/null; then
+  pass "artifact-operations.sh sourced successfully"
 else
-  fail "Failed to source artifact-utils.sh"
+  fail "Failed to source artifact-operations.sh"
 fi
 
 # Test register_artifact

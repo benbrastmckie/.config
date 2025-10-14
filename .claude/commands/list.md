@@ -30,7 +30,7 @@ I'll find and list implementation artifacts across the codebase using optimized 
 
 ## Optimization Strategy
 
-**Context Optimization**: Uses `lib/artifact-utils.sh` metadata extraction functions for metadata-only reads:
+**Context Optimization**: Uses `lib/artifact-operations.sh` metadata extraction functions for metadata-only reads:
 - Plans: ~88% context reduction (1.5MB → 180KB estimated)
 - Reports: ~85-90% context reduction
 - Summaries: Reads only metadata sections
@@ -59,7 +59,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Source utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
 
 # Find Level 0 plans (single files not in directories)
 find . -path "*/specs/plans/*.md" -type f -not -path "*/specs/plans/*/*"
@@ -98,7 +98,7 @@ Indicators:
 
 ```bash
 # Source utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
 
 # Find all reports
 for report in specs/reports/*.md; do

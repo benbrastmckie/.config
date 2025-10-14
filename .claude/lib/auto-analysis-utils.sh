@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/error-utils.sh" 2>/dev/null || true
 # Source modular components
 source "$SCRIPT_DIR/agent-invocation.sh"
 source "$SCRIPT_DIR/analysis-pattern.sh"
-source "$SCRIPT_DIR/artifact-management.sh"
+source "$SCRIPT_DIR/artifact-operations.sh"
 
 # ============================================================================
 # Parallel Execution Functions
@@ -39,8 +39,7 @@ invoke_expansion_agents_parallel() {
   local plan_name
   plan_name=$(basename "$plan_path" .md)
 
-  # Create artifact directory
-  source "$SCRIPT_DIR/artifact-utils.sh"
+  # Create artifact directory (function now available from artifact-operations.sh sourced at top)
   local artifact_dir
   artifact_dir=$(create_artifact_directory "$plan_path")
 
@@ -327,8 +326,7 @@ invoke_collapse_agents_parallel() {
     plan_name=$(basename "$plan_path" .md)
   fi
 
-  # Create artifact directory
-  source "$SCRIPT_DIR/artifact-utils.sh"
+  # Create artifact directory (function now available from artifact-operations.sh sourced at top)
   local artifact_dir
   artifact_dir=$(create_artifact_directory "$plan_path")
 
