@@ -304,6 +304,7 @@ Located in `.claude/commands/`:
 - `/report <topic>` - Generate research documentation
 - `/plan <feature>` - Create implementation plans
 - `/plan-from-template <template-name>` - Generate plans from reusable templates
+- `/plan-wizard` - Interactive plan creation with guided prompts
 - `/test <target>` - Run project-specific tests
 - `/setup` - Configure or update this CLAUDE.md file
 
@@ -341,6 +342,52 @@ The /orchestrate command coordinates specialized agents through end-to-end devel
 - Error history tracked for debugging and recovery
 
 See `.claude/commands/orchestrate.md` for detailed workflow patterns and agent invocation examples.
+
+#### Template-Based Planning
+
+The template system provides rapid plan generation from reusable templates.
+
+**Available Commands**:
+- `/plan-from-template <template-name>` - Generate plan from template with variable substitution
+- `/plan-wizard` - Interactive guided plan creation with optional research
+
+**When to use templates**:
+- Common patterns (CRUD, API endpoints, refactoring, migrations)
+- Fast plan generation (60-80% faster than manual planning)
+- Consistent structure across similar features
+- Standardized workflows (testing, documentation, debugging)
+
+**Template Categories**:
+- `backend` - API endpoints, backend services
+- `feature` - General features, CRUD operations
+- `refactoring` - Code consolidation, structural improvements
+- `testing` - Test suite setup and enhancement
+- `documentation` - Documentation updates and generation
+- `research` - Research reports and analysis
+- `debugging` - Debug workflows and troubleshooting
+- `migration` - Data and code migrations
+
+**Usage Examples**:
+```bash
+# Direct template usage
+/plan-from-template crud-feature
+
+# Interactive wizard with research
+/plan-wizard
+
+# List available templates
+/plan-from-template --list
+
+# List by category
+/plan-from-template --category feature
+```
+
+**Template System Components**:
+- Templates: `.claude/templates/*.yaml` (11 standard templates)
+- Utilities: `.claude/lib/parse-template.sh`, `.claude/lib/substitute-variables.sh`
+- Integration: `.claude/lib/template-integration.sh`
+
+See `.claude/templates/README.md` for template structure and creation guide.
 
 ## Quick Reference
 
