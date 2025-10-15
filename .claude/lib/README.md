@@ -86,6 +86,85 @@ After the refactor, the library is organized into functional domains:
 
 ## Core Modules
 
+### Recent Consolidation (Stage 3 - October 2025)
+
+Following Stage 3 of the directory optimization, several utilities have been consolidated for improved maintainability:
+
+#### plan-core-bundle.sh (1,159 lines) - NEW
+**Consolidates**: parse-plan-core.sh, plan-structure-utils.sh, plan-metadata-utils.sh
+
+Core planning utilities bundled into a single module. The original files now act as lightweight wrappers that source this bundle.
+
+**Key Functions:** All functions from the three consolidated modules
+- Plan parsing (extract_phase_name, extract_phase_content, parse_phase_list)
+- Structure operations (detect_structure_level, is_phase_expanded, list_expanded_phases)
+- Metadata manipulation (add_phase_metadata, update_structure_level, merge_phase_into_plan)
+
+**Usage Example:**
+```bash
+# New way (recommended)
+source .claude/lib/plan-core-bundle.sh
+
+# Old way (still works via wrapper)
+source .claude/lib/parse-plan-core.sh
+```
+
+**Benefits:** Reduced sourcing overhead (3 files → 1), consistent function availability, simplified imports
+
+---
+
+#### unified-logger.sh (717 lines) - NEW
+**Consolidates**: adaptive-planning-logger.sh, conversion-logger.sh
+
+Unified logging interface for all operation types. The original logger files now act as wrappers that source this unified logger.
+
+**Key Functions:** All functions from both loggers
+- Adaptive planning events (log_complexity_check, log_replan_invocation, log_loop_prevention)
+- Conversion operations (log_conversion_start, log_conversion_success, log_tool_detection)
+- Common logging (init_log, rotate_log_if_needed, query_log)
+
+**Usage Example:**
+```bash
+# New way (recommended)
+source .claude/lib/unified-logger.sh
+
+# Old way (still works via wrapper)
+source .claude/lib/adaptive-planning-logger.sh
+```
+
+**Benefits:** Consistent logging interface, reduced duplication, single log format standard
+
+---
+
+#### base-utils.sh (~100 lines) - NEW
+**Purpose**: Common utility functions to eliminate circular dependencies
+
+Provides base functions used across multiple utilities, eliminating 4 duplicate `error()` function implementations.
+
+**Key Functions:**
+- `error()` - Print error message and exit
+- `warn()` - Print warning message
+- `info()` - Print info message
+- `debug()` - Print debug message (if DEBUG=1)
+- `require_command()` - Check for required command
+- `require_file()` - Check for required file
+- `require_dir()` - Check for required directory
+
+**Usage Example:**
+```bash
+source .claude/lib/base-utils.sh
+
+# Use common error function
+error "Configuration file not found"
+
+# Check for required tools
+require_command "jq" "Please install jq: sudo apt install jq"
+```
+
+**Benefits:** Zero dependencies (breaks circular dependency cycles), consistent error handling, eliminates code duplication
+
+---
+
 ### Parsing & Plans
 
 #### parse-plan-core.sh (140 lines)

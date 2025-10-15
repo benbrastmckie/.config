@@ -48,6 +48,42 @@ Commands now reference shared utility libraries in `.claude/lib/`:
 - `error-utils.sh` - Error classification and recovery
 - `adaptive-planning-logger.sh` - Adaptive planning logging
 
+### Phase 7 Modularization (2025-10-15)
+
+**Reference-Based Composition Pattern**: Commands now use a modular documentation architecture where detailed sections are extracted to `commands/shared/` files and referenced via markdown links.
+
+**File Size Reductions**:
+- `orchestrate.md`: 2,720 → 850 lines (68.8% reduction, 1,870 lines saved)
+- `implement.md`: 987 → 498 lines (49.5% reduction, 489 lines saved)
+- `setup.md`: 911 → 375 lines (58.8% reduction, 536 lines saved)
+- `revise.md`: 878 → 406 lines (53.8% reduction, 472 lines saved)
+- **Total**: 5,496 → 2,129 lines (61.3% reduction, 3,367 lines saved)
+
+**Shared Documentation Files Created** (`commands/shared/`):
+- `workflow-phases.md` (1,903 lines) - 5 workflow phases for orchestration
+- `phase-execution.md` (383 lines) - Checkpoint, test, commit workflow
+- `implementation-workflow.md` (152 lines) - Implementation patterns
+- `setup-modes.md` (406 lines) - 5 setup command modes
+- `bloat-detection.md` (266 lines) - Bloat detection algorithms
+- `extraction-strategies.md` (348 lines) - Extraction preferences
+- `standards-analysis.md` (247 lines) - Standards analysis procedures
+- `revise-auto-mode.md` (434 lines) - Auto-mode specification
+- `revision-types.md` (109 lines) - 5 revision types
+
+**Consolidated Utilities** (`lib/`):
+- `plan-core-bundle.sh` (1,159 lines) - Consolidates 3 planning utilities
+- `unified-logger.sh` (717 lines) - Consolidates 2 loggers
+- `base-utils.sh` (~100 lines) - Common error(), warn(), info() functions
+
+**Benefits**:
+- **Reduced Duplication**: Common patterns documented once, referenced everywhere
+- **Improved Maintainability**: Update shared file once, all commands benefit
+- **Better Navigation**: Command files show summaries, shared files provide details
+- **Simplified Imports**: 3 → 1 for planning utils, 2 → 1 for loggers
+- **Backward Compatibility**: Wrapper files maintain compatibility during transition
+
+**See**: [commands/shared/README.md](shared/README.md) for shared documentation index
+
 ## Purpose
 
 Commands provide structured, repeatable workflows for:

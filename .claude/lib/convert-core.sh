@@ -1306,3 +1306,8 @@ main_conversion() {
     show_missing_tools
   fi
 }
+
+# Execute main_conversion if script is run directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main_conversion "$@"
+fi

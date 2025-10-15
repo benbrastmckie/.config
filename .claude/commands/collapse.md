@@ -61,9 +61,8 @@ Reverse phase expansion by merging expanded phase content back into the main pla
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
-source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
+# Source consolidated planning utilities
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
 
 # Normalize plan path (handle both directory and file paths)
 if [[ -f "$plan_path" ]] && [[ "$plan_path" == *.md ]]; then
@@ -402,9 +401,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 
 # Source utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
+# Source consolidated planning utilities
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
 
 # Validate plan path
