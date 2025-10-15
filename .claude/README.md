@@ -54,6 +54,264 @@ This directory provides a complete development workflow ecosystem:
 └── settings.local.json  Hook and permission configuration
 ```
 
+## Directory Roles
+
+### lib/ - Sourced Utility Libraries
+**Purpose**: Modular bash functions sourced by commands, agents, and other utilities
+
+**Characteristics**:
+- Contains `.sh` files with reusable bash functions
+- Sourced via `source "$CLAUDE_PROJECT_DIR/.claude/lib/utility.sh"`
+- Used for logic extraction and code reuse
+- Examples: plan parsing, checkpoint management, error handling
+
+**When to Use**: Shared functionality used by multiple commands or agents
+
+**Documentation**: See [lib/README.md](lib/README.md) for complete function inventory
+
+---
+
+### utils/ - Standalone Helper Scripts
+**Purpose**: Task-specific helper scripts that may be executed directly or sourced
+
+**Characteristics**:
+- Contains executable scripts (may be `.sh` or other types)
+- Less general-purpose than lib/ utilities
+- May have specific command-line interfaces
+- Examples: parse-adaptive-plan.sh, parse-template.sh
+
+**Difference from lib/**: utils/ scripts are often invoked directly, while lib/ files are always sourced
+
+---
+
+### commands/ - Slash Command Prompts
+**Purpose**: User-invokable slash command definitions (markdown files)
+
+**Characteristics**:
+- Contains `.md` files defining slash commands
+- Invoked by user via `/command-name` syntax
+- May source lib/ utilities for implementation
+- Frontmatter specifies allowed tools and metadata
+- Examples: `/implement`, `/plan`, `/orchestrate`
+
+**Structure**: Commands can reference shared documentation in `commands/shared/`
+
+**Documentation**: See [commands/README.md](commands/README.md)
+
+---
+
+### agents/ - AI Assistant Behavioral Guidelines
+**Purpose**: Agent prompt definitions invoked programmatically by commands
+
+**Characteristics**:
+- Contains `.md` files with agent behavioral prompts
+- Invoked via Task tool by commands (not directly by users)
+- Define agent behavior, tools, constraints, and objectives
+- Frontmatter specifies tool access and metadata
+- Examples: code-writer, test-specialist, research-specialist
+
+**Structure**: Agents can reference shared protocols in `agents/shared/`
+
+**Documentation**: See [agents/README.md](agents/README.md)
+
+---
+
+### data/ - Runtime Data (gitignored)
+**Purpose**: Generated data, logs, and state files not committed to repository
+
+**Characteristics**:
+- All subdirectories are gitignored
+- Contains: checkpoints, logs, metrics, agent data, template usage
+- Organized by data type and purpose
+- Cleaned up automatically based on age and type
+
+**Subdirectories**:
+- `checkpoints/` - Workflow state for resume capability
+- `logs/` - Debug logs, hook execution logs, TTS logs
+- `metrics/` - Command performance tracking (JSONL)
+- `agents/` - Agent runtime data and performance metrics
+- `templates/` - Template usage statistics
+
+**Important**: Never reference data/ files in committed documentation
+
+---
+
+### templates/ - Plan Templates (YAML)
+**Purpose**: Reusable plan structures with variable substitution
+
+**Characteristics**:
+- Contains `.yaml` files with template definitions
+- Used by `/plan-from-template` and `/plan-wizard` commands
+- Support variables, conditionals, and array iteration
+- Categories: backend, feature, refactoring, testing, documentation
+
+**Structure**: Variables section + plan structure with placeholders
+
+**Documentation**: See [templates/README.md](templates/README.md) and [docs/template-system-guide.md](docs/template-system-guide.md)
+
+---
+
+### docs/ - Integration Guides (markdown)
+**Purpose**: Documentation about system architecture, standards, and usage
+
+**Characteristics**:
+- Contains `.md` files for reference documentation
+- Committed to repository (unlike specs/)
+- Describes system behavior and patterns
+- Examples: command-patterns.md, template-system-guide.md
+
+**Difference from specs/**: docs/ is committed documentation, specs/ is gitignored working artifacts
+
+---
+
+### specs/ - Working Artifacts (gitignored)
+**Purpose**: Local working artifacts (plans, reports, summaries) not committed to repository
+
+**Characteristics**:
+- All subdirectories and contents are gitignored
+- Contains: implementation plans, research reports, summaries
+- Organized with incremental numbering (001, 002, 003...)
+- Location can be at project root or in subdirectories
+
+**Subdirectories**:
+- `plans/` - Implementation plans (progressive structure levels L0/L1/L2)
+- `reports/{topic}/` - Research reports organized by topic
+- `summaries/` - Implementation summaries linking plans to code
+
+**Important**: specs/ are local working artifacts only, never commit these to git
+
+---
+
+### hooks/ - Event Automation Scripts
+**Purpose**: Event-driven scripts triggered by lifecycle events
+
+**Characteristics**:
+- Contains bash scripts triggered by Claude Code events
+- Registered in `settings.local.json`
+- Always non-blocking and asynchronous
+- Examples: post-command-metrics.sh, tts-notification.sh
+
+**Active Events**: Stop (completion), Notification (permission requests)
+
+**Documentation**: See [hooks/README.md](hooks/README.md)
+
+---
+
+### tests/ - System Test Suites
+**Purpose**: Test suites for validating system functionality
+
+**Characteristics**:
+- Contains bash test scripts (`test_*.sh`)
+- Run via `./run_all_tests.sh`
+- Categories: utilities, commands, integration, adaptive planning
+- Coverage target: ≥80% for modified code
+
+**Documentation**: See [tests/README.md](tests/README.md)
+
+---
+
+### checkpoints/ - Legacy Location (deprecated)
+**⚠️ Deprecated**: Checkpoint files have been moved to `data/checkpoints/`
+
+Checkpoints should now be stored in `data/checkpoints/` which is gitignored and organized with other runtime data.
+
+---
+
+### tts/ - Voice Notification System
+**Purpose**: Text-to-speech notification system with configurable voices
+
+**Characteristics**:
+- Contains TTS dispatcher, configuration, and library scripts
+- Uniform "directory, branch" message format
+- Supports completion and permission notification categories
+- Debug logging available
+
+**Documentation**: See [tts/README.md](tts/README.md)
+
+---
+
+## Phase 7: Modular Architecture
+
+### Modular Design Principles
+
+The `.claude/` directory implements three key patterns for maintainability and scalability:
+
+**Reference-Based Composition**: Commands reference shared documentation files instead of duplicating content, reducing file sizes by 28-58% while maintaining clarity.
+
+**Consolidated Utilities**: Utility libraries merge overlapping functionality (plan-core-bundle.sh consolidates 3 planning utilities = 1,159 lines, unified-logger.sh consolidates 2 loggers = 717 lines).
+
+**Progressive Organization**: Plans use organic structure evolution (L0→L1→L2) based on actual complexity, avoiding premature organization.
+
+### Command → Shared Documentation References
+
+Commands now use a reference-based composition pattern where detailed documentation is extracted to `commands/shared/` files:
+
+```
+orchestrate.md (850 lines, 68.8% reduction)
+  ├─→ shared/workflow-phases.md (1,903 lines)
+  ├─→ shared/setup-modes.md (406 lines)
+  ├─→ shared/bloat-detection.md (266 lines)
+  └─→ shared/extraction-strategies.md (348 lines)
+
+implement.md (498 lines, 49.5% reduction)
+  ├─→ shared/phase-execution.md (383 lines)
+  ├─→ shared/implementation-workflow.md (152 lines)
+  └─→ shared/revise-auto-mode.md (434 lines)
+
+setup.md (375 lines, 58.8% reduction)
+revise.md (406 lines, 53.8% reduction)
+```
+
+**Benefits**:
+- **Reduced Duplication**: Common patterns documented once, referenced everywhere
+- **Consistent Updates**: Update shared file once, all commands benefit
+- **Improved Navigation**: Command summaries + deep-dive links
+- **Maintainability**: Single source of truth for each concept
+
+### Utility Consolidation
+
+Planning utilities, loggers, and base functions have been consolidated:
+
+```
+lib/plan-core-bundle.sh (1,159 lines)
+  ├─ Consolidates: parse-plan-core.sh + plan-structure-utils.sh + plan-metadata-utils.sh
+  └─ Used by: implement, expand, collapse, revise (4 commands)
+
+lib/unified-logger.sh (717 lines)
+  ├─ Consolidates: adaptive-planning-logger.sh + conversion-logger.sh
+  └─ Used by: implement, expand, orchestrate (3 commands)
+
+lib/base-utils.sh (~100 lines)
+  ├─ Common utilities: error(), warn(), info(), debug(), require_*()
+  └─ Eliminates 4 duplicate error() functions across utilities
+```
+
+**Benefits**:
+- Simplified imports: 3 planning utilities → 1 bundle, 2 loggers → 1 unified
+- Eliminated circular dependencies via zero-dependency base-utils.sh
+- Consistent error handling and logging interfaces
+- Backward compatibility maintained via wrapper files
+
+### Phase 7 Results
+
+| Metric | Before | After | Reduction |
+|--------|--------|-------|-----------|
+| orchestrate.md | 2,720 lines | 850 lines | 68.8% (1,870 lines) |
+| implement.md | 987 lines | 498 lines | 49.5% (489 lines) |
+| setup.md | 911 lines | 375 lines | 58.8% (536 lines) |
+| revise.md | 878 lines | 406 lines | 53.8% (472 lines) |
+| **Total Command Reduction** | **5,496 lines** | **2,129 lines** | **61.3% (3,367 lines saved)** |
+
+**New Shared Files Created**:
+- `commands/shared/`: 9 files (~2,447 lines total reusable documentation)
+- `lib/`: 3 consolidated utilities (plan-core-bundle.sh, unified-logger.sh, base-utils.sh)
+
+**Commands Updated**: 7 commands now use consolidated utilities (implement, expand, collapse, orchestrate, revise, shared documentation files)
+
+**Architecture Diagrams**: See [docs/architecture.md](docs/architecture.md) for visual representation of command→shared references and utility consolidation.
+
+---
+
 ## Core Capabilities
 
 ### Commands
