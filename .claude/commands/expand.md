@@ -132,6 +132,7 @@ phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
 **Main plan metadata:**
 - Update `Structure Level: 1`
 - Update `Expanded Phases: [phase_num]` (append to list)
+- Preserve `spec_updater_checklist` section if present
 
 **Phase file metadata:**
 - Add `Phase Number: N`
@@ -139,6 +140,7 @@ phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
 - Add `Objective: <from original>`
 - Add `Complexity: <High|Medium|Low>`
 - Add `Status: PENDING`
+- Copy `spec_updater_checklist` from main plan if present
 
 **Replace inline phase with summary:**
 ```markdown
@@ -246,36 +248,54 @@ stage_file="$phase_subdir/stage_${stage_num}_${stage_name}.md"
 ### Mode and Argument Detection
 
 ```bash
-# Detect mode based on argument count
-if [[ $# -eq 1 ]]; then
+# Parse flags and arguments
+AUTO_MODE=false
+
+# Check for --auto-mode flag
+ARGS=()
+for arg in "$@"; do
+  if [[ "$arg" == "--auto-mode" ]]; then
+    AUTO_MODE=true
+  else
+    ARGS+=("$arg")
+  fi
+done
+
+# Detect mode based on argument count (after flag extraction)
+if [[ ${#ARGS[@]} -eq 1 ]]; then
   MODE="auto"
-  PLAN_PATH="$1"
-  echo "Auto-Analysis Mode: Analyzing all phases for expansion"
-  echo ""
-elif [[ $# -eq 3 ]]; then
+  PLAN_PATH="${ARGS[0]}"
+  if [[ "$AUTO_MODE" == false ]]; then
+    echo "Auto-Analysis Mode: Analyzing all phases for expansion"
+    echo ""
+  fi
+elif [[ ${#ARGS[@]} -eq 3 ]]; then
   MODE="explicit"
-  TYPE="$1"  # "phase" or "stage"
-  PATH="$2"  # path to plan/phase
-  NUM="$3"   # phase/stage number
+  TYPE="${ARGS[0]}"  # "phase" or "stage"
+  PATH="${ARGS[1]}"  # path to plan/phase
+  NUM="${ARGS[2]}"   # phase/stage number
 
   if [[ "$TYPE" != "phase" && "$TYPE" != "stage" ]]; then
     echo "ERROR: First argument must be 'phase' or 'stage'"
-    echo "Usage: /expand <path>  OR  /expand [phase|stage] <path> <number>"
+    echo "Usage: /expand <path>  OR  /expand [phase|stage] <path> <number> [--auto-mode]"
     exit 1
   fi
 
-  echo "Explicit Mode: Expanding $TYPE $NUM"
-  echo ""
+  if [[ "$AUTO_MODE" == false ]]; then
+    echo "Explicit Mode: Expanding $TYPE $NUM"
+    echo ""
+  fi
 else
   echo "ERROR: Invalid arguments"
   echo ""
   echo "Usage:"
-  echo "  Auto-analysis mode:  /expand <path>"
-  echo "  Explicit mode:       /expand [phase|stage] <path> <number>"
+  echo "  Auto-analysis mode:  /expand <path> [--auto-mode]"
+  echo "  Explicit mode:       /expand [phase|stage] <path> <number> [--auto-mode]"
   echo ""
   echo "Examples:"
   echo "  /expand specs/plans/025_feature.md"
   echo "  /expand phase specs/plans/025_feature.md 3"
+  echo "  /expand phase specs/plans/025_feature.md 3 --auto-mode"
   echo "  /expand stage specs/plans/025_feature/phase_2_impl.md 1"
   exit 1
 fi
@@ -529,6 +549,122 @@ Base your analysis on:
 /expand phase specs/plans/025_feature/ 4
 ```
 
+## Auto-Mode Behavior
+
+When `--auto-mode` flag is used, the command operates non-interactively for agent coordination:
+
+### Output Format
+
+**Auto-mode JSON Output**:
+```json
+{
+  "expansion_status": "success",
+  "plan_path": "/absolute/path/to/plan.md",
+  "phase_num": 2,
+  "expanded_file": "/absolute/path/to/plan/phase_2_name.md",
+  "structure_level": 1,
+  "validation": {
+    "file_created": true,
+    "parent_plan_updated": true,
+    "metadata_updated": true,
+    "checklist_preserved": true
+  }
+}
+```
+
+**Error Output**:
+```json
+{
+  "expansion_status": "error",
+  "error_type": "phase_not_found"|"already_expanded"|"expansion_failed"|"validation_failed",
+  "error_message": "Detailed error description",
+  "plan_path": "/absolute/path/to/plan.md",
+  "phase_num": 2
+}
+```
+
+### Auto-Mode Features
+
+1. **Non-Interactive**: No prompts or confirmations
+2. **JSON Output**: Structured output for agent parsing
+3. **Validation Included**: Detailed validation status in output
+4. **Checklist Preservation**: Verifies spec updater checklist copied
+5. **Silent Operation**: Minimal console output (only JSON)
+
+### Validation Checks
+
+When `AUTO_MODE=true`, perform these additional validations:
+
+```bash
+# After expansion completes
+EXPANDED_FILE="$PLAN_DIR/phase_${NUM}_*.md"
+
+# 1. Verify file created
+if [[ ! -f "$EXPANDED_FILE" ]]; then
+  echo '{"expansion_status":"error","error_type":"validation_failed","error_message":"Expanded file not created"}' >&2
+  exit 1
+fi
+
+# 2. Verify parent plan updated
+if ! grep -q "phase_${NUM}_" "$MAIN_PLAN"; then
+  echo '{"expansion_status":"error","error_type":"validation_failed","error_message":"Parent plan not updated with link"}' >&2
+  exit 1
+fi
+
+# 3. Verify metadata updated
+EXPANDED_PHASES=$(grep "Expanded Phases" "$MAIN_PLAN" | grep -o "\[$NUM\]")
+if [[ -z "$EXPANDED_PHASES" ]]; then
+  echo '{"expansion_status":"warning","warning":"Expanded Phases metadata not updated"}' >&2
+fi
+
+# 4. Verify spec updater checklist preserved
+if ! grep -q "## Spec Updater Checklist" "$EXPANDED_FILE"; then
+  CHECKLIST_PRESERVED=false
+else
+  CHECKLIST_PRESERVED=true
+fi
+
+# Output JSON result
+cat <<EOF
+{
+  "expansion_status": "success",
+  "plan_path": "$MAIN_PLAN",
+  "phase_num": $NUM,
+  "expanded_file": "$EXPANDED_FILE",
+  "structure_level": 1,
+  "validation": {
+    "file_created": true,
+    "parent_plan_updated": true,
+    "metadata_updated": true,
+    "checklist_preserved": $CHECKLIST_PRESERVED
+  }
+}
+EOF
+```
+
+### Integration with plan_expander Agent
+
+The plan_expander agent (`.claude/agents/plan-expander.md`) uses this command in auto-mode:
+
+```bash
+# Agent invokes via SlashCommand tool
+/expand phase /path/to/plan.md 2 --auto-mode
+```
+
+Agent parses JSON output for validation:
+```bash
+# Parse expansion result
+RESULT=$(/expand phase "$PLAN_PATH" "$PHASE_NUM" --auto-mode)
+STATUS=$(echo "$RESULT" | jq -r '.expansion_status')
+
+if [[ "$STATUS" == "success" ]]; then
+  # Extract validation details
+  FILE_EXISTS=$(echo "$RESULT" | jq -r '.validation.file_created')
+  PARENT_UPDATED=$(echo "$RESULT" | jq -r '.validation.parent_plan_updated')
+  # Continue processing...
+fi
+```
+
 ## Standards Applied
 
 Following CLAUDE.md standards:
@@ -536,5 +672,6 @@ Following CLAUDE.md standards:
 - **Metadata Consistency**: All three levels synchronized
 - **Agent Integration**: Complex expansions use research
 - **Git Tracking**: All file operations tracked
+- **Auto-Mode Support**: Non-interactive JSON output for agent coordination
 
 Let me expand the requested phase or stage.
