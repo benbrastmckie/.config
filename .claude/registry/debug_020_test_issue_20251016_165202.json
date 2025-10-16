@@ -1,0 +1,11 @@
+{
+  "artifact_id": "debug_020_test_issue_20251016_165202",
+  "artifact_type": "debug",
+  "artifact_path": "/home/benjamin/.config/.claude/tests/fixtures/test_topic_workspace/001_test_topic/debug/020_test_issue.md",
+  "created_at": "2025-10-16T16:52:02Z",
+  "metadata": {
+    "topic": "001_test_topic",
+    "artifact_type": "debug",
+    "number": "020"
+  }
+}

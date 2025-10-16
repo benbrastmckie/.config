@@ -65,6 +65,21 @@ phases:
       - "Update API documentation with new endpoints"
       - "Add {{entity_name}} usage examples to docs"
       - "Update database schema documentation"
+      - "Update plan checkboxes across hierarchy (use checkbox-utils.sh)"
+spec_updater_checklist:
+  - "Ensure plan is in topic-based directory structure (specs/{NNN_topic}/)"
+  - "Create standard subdirectories if needed (reports/, debug/, scripts/, outputs/)"
+  - "Update cross-references if artifacts moved during implementation"
+  - "Create implementation summary in summaries/ when complete"
+  - "Verify gitignore compliance (debug/ committed, others ignored)"
+  - "Update checkboxes across hierarchy after each phase completion"
+phase_completion_protocol:
+  - "After completing each phase, update checkboxes across all hierarchy levels"
+  - "Use: source .claude/lib/checkbox-utils.sh && mark_phase_complete <plan_path> <phase_num>"
+  - "Verify consistency: verify_checkbox_consistency <plan_path> <phase_num>"
+  - "For Level 0 (single file): Updates main plan only"
+  - "For Level 1 (phase files): Updates phase file + main plan"
+  - "For Level 2 (stage files): Updates stage + phase + main plan"
 research_topics:
   - "Best practices for {{entity_name}} validation and sanitization"
   - "{{database_type}} performance optimization for CRUD operations"
