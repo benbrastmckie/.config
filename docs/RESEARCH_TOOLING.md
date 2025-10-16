@@ -76,11 +76,19 @@ $pdf_mode = 1;    # Use pdflatex instead of xelatex
 $out_dir = '.';   # Build in source directory
 ```
 
+**Draft vs Final Mode**:
+- **Draft Mode** (`<leader>ld`): Fast iteration with `$draft_mode=1`
+- **Final Mode** (`<leader>lf`): Optimized build for distribution
+- **Continuous** (`<leader>lc`): VimTeX auto-recompilation on save
+
+Note: XeLaTeX draft mode provides infrastructure for fast compilation but may not show significant speed improvements compared to final mode. The primary benefit is the separation of draft and final workflows.
+
 **Performance Benefits**:
 - Build artifacts isolated from source files
 - Cleaner project directory structure
 - Better error messages in quickfix window
 - Consistent compilation behavior across projects
+- Draft/final mode separation for workflow clarity
 
 ### Forward and Inverse Search
 
