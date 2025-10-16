@@ -19,27 +19,88 @@ This command uses shared utility libraries for robust operation:
 
 ## Command Modes
 
-The /setup command provides five distinct modes for different CLAUDE.md management tasks: Standard (default, with auto-cleanup detection), Cleanup (optimize file size), Validation (verify structure), Analysis (detect discrepancies), and Report Application (apply analysis results).
+### 1. Standard Mode (default)
+Generate or update CLAUDE.md with smart section extraction. Automatically detects bloated CLAUDE.md and offers cleanup.
 
-**See**: [Setup Command Modes](shared/setup-modes.md) for comprehensive details on:
+**Usage**: `/setup [project-directory]`
 
-- **Standard Mode**: Generate/update CLAUDE.md with automatic bloat detection and cleanup prompts
-- **Cleanup Mode**: Optimize CLAUDE.md by extracting detailed sections to auxiliary files (`--cleanup`, `--dry-run`)
-- **Validation Mode**: Verify CLAUDE.md structure and linked standards files (`--validate`)
-- **Analysis Mode**: Generate discrepancy reports comparing CLAUDE.md, codebase, and config files (`--analyze`)
-- **Report Application Mode**: Parse and apply completed analysis reports (`--apply-report <path>`)
+**Auto-Detection**:
+- Analyzes existing CLAUDE.md size and structure
+- If CLAUDE.md >200 lines OR has sections >30 lines:
+  - Prompts: "CLAUDE.md is 248 lines. Optimize first? [Y/n/c]"
+  - [Y]es: Run cleanup extraction before setup
+  - [N]o: Skip cleanup, continue with standard setup
+  - [C]ustomize: Choose specific sections to extract
+- Seamlessly integrates cleanup into setup workflow
 
-**Quick Mode Overview**:
+### 2. Cleanup Mode
+Optimize CLAUDE.md by extracting detailed sections to auxiliary files, keeping the main file concise and focused.
 
-| Mode | Usage | Primary Goal |
-|------|-------|-------------|
-| Standard | `/setup` | Generate/update standards |
-| Cleanup | `/setup --cleanup [--dry-run]` | Optimize file size |
-| Validation | `/setup --validate` | Verify structure |
-| Analysis | `/setup --analyze` | Detect discrepancies |
-| Report Application | `/setup --apply-report <path>` | Apply reconciliation |
+**Usage**:
+- Standard: `/setup --cleanup [project-directory]`
+- Preview: `/setup --cleanup --dry-run [project-directory]`
 
-Each mode includes detailed workflows, interactive prompts, and integration patterns with other commands.
+**Features**:
+- Analyzes CLAUDE.md for bloat (>30 line sections)
+- Identifies extraction candidates (testing details, style guides, architecture diagrams)
+- Interactive selection of what to extract
+- Creates organized auxiliary files in docs/ directory
+- Updates CLAUDE.md with clear links to extracted content
+- Preserves all information while improving navigability
+- **Dry-run mode**: Preview extractions without making changes
+
+**Dry-Run Mode** (`--dry-run`):
+- Shows exactly what would be extracted
+- Displays before/after line counts
+- Shows impact analysis (% reduction)
+- No files are created or modified
+- Helpful for planning and reviewing before committing
+
+**When to Use**:
+- CLAUDE.md is >200 lines and hard to navigate
+- Detailed reference material buries quick-reference info
+- You want to keep CLAUDE.md focused on essentials
+- Use `--dry-run` to preview changes before applying
+- Equivalent to standalone `/cleanup` command
+
+### 3. Validation Mode
+Validate that CLAUDE.md and all linked standards files are properly configured.
+
+**Usage**: `/setup --validate [project-directory]`
+
+**Features**:
+- Validates CLAUDE.md exists and has required sections
+- Checks all linked standards files are readable
+- Verifies specs directory structure
+- Tests documented commands are executable
+- Identifies missing or incomplete sections
+- Generates validation report with fix suggestions
+
+**Equivalent to**: `/validate-setup [project-directory]`
+
+### 4. Analysis Mode
+Analyze existing CLAUDE.md and codebase to identify discrepancies and gaps, generating a comprehensive analysis report.
+
+**Usage**: `/setup --analyze [project-directory]`
+
+**Features**:
+- Discovers standards from three sources: CLAUDE.md, codebase patterns, configuration files
+- Detects 5 types of discrepancies
+- Identifies missing or incomplete sections
+- Generates interactive gap-filling report in specs/reports/
+- Never modifies files (safe exploration)
+
+### 5. Report Application Mode
+Parse a completed analysis report and update CLAUDE.md with reconciled standards.
+
+**Usage**: `/setup --apply-report <report-path> [project-directory]`
+
+**Features**:
+- Parses completed `[FILL IN: ...]` sections from analysis reports
+- Creates backup before modifying CLAUDE.md
+- Updates standards based on user decisions
+- Validates generated CLAUDE.md structure
+- Suggests running `/setup --validate`
 
 ## Target Directory
 $1 (or current directory)
@@ -144,21 +205,124 @@ I'll examine any existing CLAUDE.md to identify:
 - Content better suited for auxiliary files
 
 ### 2. Smart Section Extraction
+[Used by: Standard Mode (optional), Cleanup Mode (always)]
 
-The extraction system identifies bloated sections and moves detailed content to auxiliary files while keeping CLAUDE.md concise and command-parseable. It uses intelligent decision criteria, interactive prompts, and configurable thresholds.
+This extraction process optimizes CLAUDE.md by moving detailed content to auxiliary files while keeping essential information inline.
 
-**See**: [Extraction Strategies](shared/extraction-strategies.md) for comprehensive details on:
+For sections that would benefit from extraction, I'll offer to move them to dedicated files:
 
-- **Extraction Mapping**: Section type to file mapping (Testing → docs/TESTING.md, etc.)
-- **Decision Criteria**: When to extract vs keep inline based on size, usage frequency, and content type
-- **File Organization**: Optimal directory structure and navigation patterns
-- **Benefits**: Improved readability, maintainability, and version control
+| Section Type | Suggested File | Extraction Trigger |
+|-------------|---------------|-------------------|
+| Testing Standards | `docs/TESTING.md` | >20 lines of test details |
+| Code Style Guide | `docs/CODE_STYLE.md` | Detailed formatting rules |
+| Documentation Guide | `docs/DOCUMENTATION.md` | Template examples |
+| Command Reference | `docs/COMMANDS.md` | >10 commands |
+| Architecture | `docs/ARCHITECTURE.md` | Complex diagrams |
 
-**Quick Reference**:
-- Extract sections >30 lines (balanced), >20 lines (aggressive), or >50 lines (conservative)
-- Interactive prompts for each candidate: [E]xtract, [K]eep, or [S]implify
-- Creates auxiliary files in docs/ with bidirectional navigation links
-- Preserves all information while improving CLAUDE.md navigability
+### 3. Interactive Extraction Process
+
+For each extractable section, I'll ask:
+
+```
+Found: Testing Standards (45 lines) in CLAUDE.md
+
+Would you like to:
+[E]xtract to docs/TESTING.md and link it
+[K]eep in CLAUDE.md as-is
+[S]implify in place without extraction
+```
+
+If you choose extraction, I'll:
+1. Create the auxiliary file with the content
+2. Replace the section in CLAUDE.md with a concise summary and link
+3. Add navigation links between files
+
+### 4. Optimal CLAUDE.md Structure
+
+#### Goal: Command-Parseable Standards File
+```markdown
+# Project Configuration Index
+
+This CLAUDE.md serves as the central configuration and standards index.
+
+## Code Standards
+[Used by: /implement, /refactor, /plan]
+
+### General Principles
+- **Indentation**: [detected or user-specified]
+- **Line Length**: [detected or default]
+- **Naming**: [language-appropriate conventions]
+- **Error Handling**: [language-specific patterns]
+
+## Testing Protocols
+[Used by: /test, /test-all, /implement]
+
+### Test Discovery
+[How commands should find tests]
+
+### [Project Type] Testing
+- **Test Commands**: [detected test commands]
+- **Test Pattern**: [detected test file patterns]
+- **Coverage Requirements**: [suggested thresholds]
+
+## Documentation Policy
+[Used by: /document, /plan]
+
+### README Requirements
+[Standard requirements for documentation]
+
+## Standards Discovery
+[Used by: all commands]
+
+### Discovery Method
+[Standard discovery explanation]
+
+## Specs Directory Protocol
+[Kept inline - essential for spec workflow]
+```
+
+### 5. Decision Criteria
+
+I'll recommend extraction when:
+- Section is >30 lines of detailed content
+- Content is reference material (not daily use)
+- Multiple examples or templates present
+- Complex configuration rarely changed
+
+I'll keep inline when:
+- Quick reference commands (<10 lines)
+- Critical navigation/index information
+- Specs protocol (core to Claude)
+- Daily-use information
+
+### 6. File Organization
+
+```
+project/
+├── CLAUDE.md              # Concise index
+├── docs/
+│   ├── TESTING.md        # Extracted test details
+│   ├── CODE_STYLE.md     # Extracted style guide
+│   └── ...               # Other extracted sections
+└── specs/
+    ├── plans/
+    ├── reports/
+    └── summaries/
+```
+
+### 7. Benefits
+
+**Concise CLAUDE.md:**
+- Quick to scan and navigate
+- Focuses on essential info
+- Easy to maintain
+- Clear hierarchy
+
+**Auxiliary Files:**
+- Detailed documentation without length constraints
+- Topic-focused organization
+- Better version control (smaller diffs)
+- Can be referenced from multiple places
 
 ## Interactive Setup
 
@@ -195,92 +359,334 @@ Proceed with extractions? [Y/n/customize]
 ```
 
 ## Extraction Preferences
+[Shared by: Standard Mode (with auto-detection), Cleanup Mode]
 
-Extraction behavior is controlled by configurable thresholds (aggressive/balanced/conservative/manual) and customizable directory/naming preferences. Use `--dry-run` to preview impact before applying changes.
+Control extraction behavior across all modes that use extraction functionality.
 
-**See**: [Extraction Strategies](shared/extraction-strategies.md#extraction-preferences) for details on:
+### Threshold Settings
 
-- **Threshold Settings**: Aggressive (>20 lines), Balanced (>30 lines, default), Conservative (>50 lines), Manual (interactive)
-- **Directory/Naming Preferences**: Target directory, file naming conventions, link styles
-- **Applying Preferences**: How preferences apply in Standard vs Cleanup modes
+| Threshold | Line Trigger | Use Case | Effect | Usage |
+|-----------|--------------|----------|--------|-------|
+| Aggressive | >20 lines | Very large CLAUDE.md (>300 lines) | Maximum extraction, smallest main file | `--threshold aggressive` |
+| Balanced (default) | >30 lines | Moderate CLAUDE.md (200-300 lines) | Extract significantly detailed sections | `--cleanup` (default) |
+| Conservative | >50 lines | Manageable CLAUDE.md (150-250 lines) | Minimal extraction, keep content inline | `--threshold conservative` |
+| Manual | N/A | Full extraction control | Interactive choice for each section | `--threshold manual` |
 
-**Quick Reference**:
+### Directory and Naming Preferences
+
+| Preference | Options | Default | Usage |
+|------------|---------|---------|-------|
+| Target directory | `docs/` (default), custom path, per-type | `docs/` | `--target-dir=documentation/` |
+| File naming | CAPS.md, lowercase.md, Mixed.md | CAPS.md | `--naming lowercase` |
+| Link descriptions | Include/omit descriptions | Include | `--links minimal` |
+| Quick references | Include/omit quick refs | Include | `--links descriptions-only` |
+
+**Link Style Examples**:
+```markdown
+# With descriptions (default)
+See [Testing Standards](docs/TESTING.md) for test configuration, commands, and CI/CD.
+
+# Minimal
+See [Testing Standards](docs/TESTING.md).
+
+# With quick reference (default)
+Quick reference: Run tests with `npm test`
+See [Testing Standards](docs/TESTING.md) for complete documentation.
+```
+
+### Applying Preferences
+
+**Standard Mode**: Preferences apply when user accepts cleanup prompt
+**Cleanup Mode**: Preferences always applied
+**Preview**: Use `--dry-run` to see impact before applying
+
 ```bash
-/setup --cleanup                                    # Balanced (default)
-/setup --cleanup --threshold aggressive             # Maximum extraction
-/setup --cleanup --dry-run --threshold conservative # Preview minimal extraction
+# Default balanced extraction
+/setup --cleanup
+
+# Aggressive extraction with custom directory
+/setup --cleanup --threshold aggressive --target-dir=documentation/
+
+# Preview conservative extraction
+/setup --cleanup --dry-run --threshold conservative
 ```
 
 ## Cleanup Mode Workflow
 
-Cleanup Mode optimizes CLAUDE.md through a 6-step workflow: analyze for bloat, show extraction opportunities, interactive selection, extract sections, update CLAUDE.md with links, and validate results. Best for ongoing maintenance when CLAUDE.md exceeds 200 lines.
+### When to Use Each Mode
 
-**See**: [Setup Command Modes](shared/setup-modes.md#cleanup-mode-workflow) for comprehensive workflow details:
-
-- **Mode Selection Guide**: When to use Standard vs Cleanup mode
-- **Cleanup Workflow**: 6-step process from analysis to validation
-- **Common Workflows**: Initial setup, maintenance, optimization, complete lifecycle
-
-**Quick Workflow**:
 ```
-/setup --cleanup → Analyze (measure, identify candidates) → Show opportunities (impact %)
-→ Interactive selection ([E]xtract/[K]eep/[S]implify) → Extract to docs/
-→ Update CLAUDE.md with links → Validate (verify, report)
+Choose your mode based on your goal:
+
+Standard Mode (/setup)
+├─ Goal: Set up or update CLAUDE.md with standards
+├─ When: New project or updating standards
+└─ Extraction: Optional, if CLAUDE.md becomes bloated
+
+Cleanup Mode (/setup --cleanup)
+├─ Goal: Optimize existing CLAUDE.md
+├─ When: CLAUDE.md is >200 lines or hard to navigate
+└─ Extraction: Primary focus, always runs
+
+Equivalent: /cleanup → /setup --cleanup
+```
+
+### Cleanup vs Standard Mode
+
+| Aspect | Standard Mode | Cleanup Mode |
+|--------|--------------|--------------|
+| **Primary Goal** | Generate/update standards | Optimize CLAUDE.md size |
+| **Extraction** | Optional (if bloated) | Always runs |
+| **Standards Generation** | Yes | No |
+| **Standards Analysis** | Available (--analyze) | Not available |
+| **Best For** | Initial setup, updates | Ongoing maintenance |
+
+### Cleanup Workflow
+
+```
+User runs: /setup --cleanup
+     ↓
+1. Analyze CLAUDE.md
+   - Measure total lines
+   - Identify sections >30 lines
+   - Find extraction candidates
+     ↓
+2. Show Extraction Opportunities
+   - List each candidate with line count
+   - Show impact (% reduction)
+   - Suggest target files
+     ↓
+3. Interactive Selection
+   - User chooses [E]xtract / [K]eep / [S]implify
+   - Customize extraction threshold
+   - Select specific sections
+     ↓
+4. Extract Sections
+   - Create auxiliary files in docs/
+   - Move content preserving structure
+   - Add navigation breadcrumbs
+     ↓
+5. Update CLAUDE.md
+   - Replace extracted sections with links
+   - Add quick reference if applicable
+   - Preserve unextracted content
+     ↓
+6. Validation
+   - Verify all links work
+   - Check no information lost
+   - Report final line count
+     ↓
+Done: Optimized CLAUDE.md
 ```
 
 ## Bloat Detection Algorithm
 
-Automatic detection in Standard Mode uses combined logic: `bloat_detected = (total_lines > 200) OR (any section > 30 lines)`. When triggered, prompts user to optimize before continuing setup. Can be disabled via environment variable or command flag.
+Runs in **Standard Mode** when `/setup` is invoked with no flags and CLAUDE.md exists.
 
-**See**: [Bloat Detection Algorithm](shared/bloat-detection.md) for comprehensive details on:
+### Detection Thresholds
 
-- **Detection Thresholds**: Total line count (>200) and section size (>30 lines) triggers
-- **User Interaction**: [Y]es/[N]o/[C]ustomize prompt responses and workflow integration
-- **Opt-Out Mechanisms**: Environment variables, command flags, and future configuration
-- **Detection Examples**: Scenarios demonstrating when and how bloat is detected
+**Combined Logic**: `bloat_detected = (total_lines > 200) OR (any section > 30 lines)`
 
-**Quick Reference**:
-- Triggers: CLAUDE.md >200 lines OR any section >30 lines
-- Prompt: "CLAUDE.md is 248 lines. Optimize first? [Y/n/c]"
-- Opt-out: `export SKIP_CLEANUP_PROMPT=1` or `/setup --no-cleanup-prompt`
+| Threshold | Condition | Example |
+|-----------|-----------|---------|
+| Total line count | File >200 lines | CLAUDE.md is 248 lines (threshold: 200) |
+| Oversized sections | Any section >30 lines | Testing Standards: 52 lines (threshold: 30) |
+
+### User Prompt and Response
+
+When bloat detected, prompts: "CLAUDE.md is 248 lines. Optimize first? [Y/n/c]"
+
+| Response | Action | Result |
+|----------|--------|--------|
+| [Y]es | Run cleanup extraction | Extract sections → Update links → Continue setup |
+| [N]o | Skip optimization | Continue standard setup (can run /setup --cleanup later) |
+| [C]ustomize | Show all oversized sections | User selects specific sections → Extract → Continue setup |
+
+### Opt-Out Mechanisms
+
+```bash
+# Environment variable (global disable)
+export SKIP_CLEANUP_PROMPT=1
+
+# Command flag (single invocation)
+/setup --no-cleanup-prompt
+
+# Configuration file (future)
+# .claude/config.yml
+# cleanup:
+#   auto_detect: false
+```
+
+After cleanup: Original setup goal continues, extraction committed, user sees both cleanup and setup results.
 
 ## Extraction Preview (--dry-run)
 
-Preview mode shows exactly what would be extracted without modifying files. Displays section name, line count, target file, rationale, and impact (% reduction) for each candidate. Helpful for planning and team review.
+Preview extraction changes without modifying files. Helpful for planning, understanding impact, and team review.
 
-**See**: [Extraction Strategies](shared/extraction-strategies.md#extraction-preview-dry-run) for comprehensive details on:
+### Usage
 
-- **Usage**: Requires `--cleanup` mode, errors without it
-- **Preview Output**: Section details, rationale, impact calculations, content summaries
-- **Workflow Integration**: Planning phase, team review, iterative refinement
-- **Example Output**: Detailed preview format showing extraction candidates and total impact
-
-**Quick Reference**:
 ```bash
-/setup --cleanup --dry-run                      # Preview with balanced threshold
-/setup --cleanup --dry-run --threshold aggressive # Preview maximum extraction
+# Preview cleanup extraction
+/setup --cleanup --dry-run [project-directory]
+
+# Requires --cleanup mode
+/setup --dry-run              # Error: requires --cleanup
+/setup --analyze --dry-run    # Error: dry-run only with cleanup
 ```
+
+### Preview Output
+
+Shows for each extraction candidate:
+- Section name, current line count, target file
+- Rationale (why it qualifies for extraction)
+- Impact (lines saved, % reduction)
+- Content summary
+
+**Interactive Selection**: Even in dry-run, you can toggle selections, preview different combinations, and see updated impact calculations.
+
+**Comparison**: Generate preview with `/setup --cleanup --dry-run > preview.txt`, then run actual cleanup and compare results.
 
 ## Standards Analysis Workflow
 
-Analysis Mode detects discrepancies by comparing three sources (CLAUDE.md, codebase patterns, config files) and generates interactive gap-filling reports. Report Application Mode parses completed reports and reconciles CLAUDE.md with user decisions.
+### Analysis Mode (--analyze)
 
-**See**: [Standards Analysis and Report Application](shared/standards-analysis.md) for comprehensive details on:
+Analyzes three sources to detect discrepancies:
 
-- **Analysis Mode**: 3-source analysis, 5 discrepancy types, confidence scoring, report structure
-- **Analysis Workflow**: 10-step process from discovery to validation
-- **Example Analysis**: Indentation discrepancies, error handling gaps, missing sections
-- **Report Application Mode**: Parsing algorithm, update strategy, edge cases, rollback procedures
-- **Integration Examples**: Complete workflows, partial application, ongoing maintenance
-- **Best Practices**: When to analyze, gap-filling strategy, rollback and recovery
+| Source | What's Analyzed | Method |
+|--------|----------------|--------|
+| **CLAUDE.md** | Documented standards | Parse sections with `[Used by: ...]` metadata → Extract field values |
+| **Codebase** | Actual patterns | Sample files → Detect indentation, naming, error handling, test patterns → Calculate confidence |
+| **Config Files** | Tool configurations | Parse `.editorconfig`, `package.json`, `stylua.toml`, etc. → Extract tool settings |
 
-**Quick Reference**:
-```bash
-/setup --analyze                           # Generate analysis report
-# Edit specs/reports/NNN_*.md, fill [FILL IN: ...] sections
-/setup --apply-report specs/reports/NNN_*.md  # Apply reconciliation
-/validate-setup                            # Verify changes
+### Discrepancy Types
+
+| Type | Description | Detection | Priority |
+|------|-------------|-----------|----------|
+| 1 | Documented ≠ Followed | CLAUDE.md value ≠ codebase pattern (>50% confidence) | Critical |
+| 2 | Followed but undocumented | Codebase pattern (>70% confidence) not in CLAUDE.md | High |
+| 3 | Config ≠ CLAUDE.md | Config file value ≠ CLAUDE.md value | High |
+| 4 | Missing section | Required section not in CLAUDE.md | Medium |
+| 5 | Incomplete section | Section exists but missing required fields | Medium |
+
+**Confidence Scoring**: High (>80%), Medium (50-80%), Low (<50%) based on consistency across sampled files.
+
+### Generated Report Structure
+
+Report saved to `specs/reports/NNN_standards_analysis_report.md`:
+
+1. **Metadata**: Date, project dir, files analyzed, languages detected
+2. **Executive Summary**: Discrepancy counts, key findings, overall status
+3. **Current State**: 3-way comparison (CLAUDE.md vs Codebase vs Config Files)
+4. **Discrepancy Analysis**: 5 sections (one per type) with examples, impact, recommendations
+5. **Gap Analysis**: Critical/High/Medium gaps, organized by priority
+6. **Interactive Gap Filling**: `[FILL IN: Field Name]` sections with:
+   - Context (current state, detected patterns, recommendations)
+   - User decision field
+   - Rationale field
+7. **Recommendations**: Prioritized action items (immediate/short-term/medium-term)
+8. **Implementation Plan**: Manual editing vs automated `--apply-report` workflow
+
+### Analysis Workflow
+
 ```
+User: /setup --analyze [project-dir]
+
+Claude:
+1. Discover standards (parse CLAUDE.md + sample codebase + read configs)
+2. Detect discrepancies (5 types, calculate confidence, prioritize)
+3. Generate report with [FILL IN: ...] gap markers
+
+User:
+4. Review report
+5. Fill [FILL IN: ...] sections with decisions and rationale
+
+User: /setup --apply-report specs/reports/NNN_report.md
+
+Claude:
+6. Parse filled report
+7. Backup CLAUDE.md
+8. Apply decisions (update fields, add sections, reconcile discrepancies)
+9. Validate structure
+10. Report changes made
+```
+
+### Example Analysis
+
+**Indentation Discrepancy (Type 1 - Critical)**:
+- CLAUDE.md: "2 spaces" (line 42)
+- Codebase: 4 spaces (85% confidence, 40/47 files)
+- .editorconfig: `indent_size = 4`
+- Report fills: `[FILL IN: Indentation]` with context, recommendation ("Update to 4 spaces")
+
+**Error Handling Gap (Type 2 - High)**:
+- CLAUDE.md: Not documented
+- Codebase: `pcall()` used in 92% of error-prone operations
+- Report fills: `[FILL IN: Error Handling]` with recommendation ("Use pcall for operations that might fail")
+
+**Testing Section Missing (Type 4 - Medium)**:
+- CLAUDE.md: No Testing Protocols section
+- Codebase: `*_spec.lua` pattern (100% of test files), plenary.nvim detected
+- Report fills: `[FILL IN: Testing Protocols]` with suggested section content
+
+### Report Application
+
+See [Report Application Mode](#report-application-mode) for how `--apply-report` parses filled reports and updates CLAUDE.md.
+
+## Report Application Mode (--apply-report)
+
+### Overview
+
+Parses completed analysis report (`[FILL IN: ...]` sections filled by user) and updates CLAUDE.md with reconciled standards.
+
+**Usage**: `/setup --apply-report <report-path> [project-directory]`
+
+### Parsing Algorithm
+
+1. **Locate Gaps**: Find `[FILL IN: <field>]` sections → Extract field name, context, user decision, rationale
+2. **Map to CLAUDE.md**:
+   - "Indentation" → Code Standards section, Indentation field
+   - "Error Handling" → Code Standards section (add if missing)
+   - "Testing Protocols" → New section (create if doesn't exist)
+3. **Parse Decisions**:
+   - Explicit value ("4 spaces") → Use value
+   - Blank (`___`) → Skip this gap
+   - `[Accept]` → Use recommended value from context
+4. **Validate**: Check critical gaps filled → Verify format → Warn on pattern overrides
+
+### Update Strategy
+
+**Backup**: Always create `CLAUDE.md.backup.YYYYMMDD_HHMMSS` first
+
+**Update Cases**:
+| Case | Action |
+|------|--------|
+| Field exists | Locate → Replace value → Log change |
+| Section exists, field missing | Insert field → Log addition |
+| Section missing | Create section + metadata → Add fields → Log creation |
+
+**Preservation**: Unaffected content unchanged → Standard section order maintained → `[Used by: ...]` metadata preserved
+
+### Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| No CLAUDE.md exists | Create from scratch using report |
+| Partially filled report | Apply filled only, skip blanks, log count |
+| Invalid decision | Skip gap, warn, continue |
+| Report/path issues | Error with helpful suggestion |
+| Validation fails | Don't write, report errors, backup safe |
+
+### Workflow Example
+
+```bash
+/setup --analyze                    # Generate analysis report
+# Edit report, fill [FILL IN: ...] sections
+/setup --apply-report specs/reports/034_*.md
+# Output: Backup created, sections updated, validation passed
+/validate-setup                     # Confirm structure
+```
+
+**Rollback**: Restore from backup: `cp CLAUDE.md.backup.TIMESTAMP CLAUDE.md`
 
 ## Usage Examples
 
@@ -363,14 +769,144 @@ Alternative: `--threshold conservative` (>50 lines) for minimal extraction
 
 ## See Also
 
-**Related Commands**: [/cleanup](cleanup.md) (wrapper for `--cleanup`), [/validate-setup](validate-setup.md) (verify structure), [/implement](implement.md) (uses generated standards), [/test](test.md) (uses Testing Protocols), [/refactor](refactor.md) (validates against standards)
+### Related Commands
 
-**Shared Documentation**: See [shared/setup-modes.md](shared/setup-modes.md), [shared/bloat-detection.md](shared/bloat-detection.md), [shared/extraction-strategies.md](shared/extraction-strategies.md), and [shared/standards-analysis.md](shared/standards-analysis.md) for comprehensive details.
+**[/cleanup](cleanup.md)**: Lightweight wrapper for `/setup --cleanup`
+- Quick access to cleanup functionality
+- Equivalent behavior to /setup --cleanup
+- Use when you only need optimization
 
-**Resources**: Generated CLAUDE.md files are stored in project root. Extracted standards go to docs/. Analysis reports go to specs/reports/.
+**[/validate-setup](validate-setup.md)**: Validate CLAUDE.md structure
+- Run after /setup to verify standards
+- Checks parseability for other commands
+- Validates metadata and field formats
 
-## Summary
+**[/implement](implement.md)**: Execute implementation plans
+- Uses standards from CLAUDE.md
+- Relies on properly structured standards
+- Benefits from optimized CLAUDE.md
 
-The /setup command creates the foundation that other commands rely on by generating CLAUDE.md with parseable standards sections (Code Standards, Testing Protocols, Documentation Policy, Standards Discovery). It detects project type, analyzes existing conventions, and validates parseability to ensure seamless integration with /implement, /test, /document, /plan, and /refactor.
+**[/test](test.md)**: Run project tests
+- Uses Testing Protocols from CLAUDE.md
+- Discovers tests based on documented patterns
+- Benefits from clear test documentation
+
+**[/refactor](refactor.md)**: Analyze code for refactoring
+- Validates against CLAUDE.md standards
+- Uses code standards for quality checks
+- Benefits from comprehensive standards
+
+### Documentation References
+
+**Setup Process**:
+- [Command Modes](#command-modes) - All available modes
+- [Argument Parsing](#argument-parsing) - Flag combinations
+- [Cleanup Mode Workflow](#cleanup-mode-workflow) - Detailed cleanup process
+
+**Standards Analysis**:
+- [Bloat Detection Algorithm](#bloat-detection-algorithm) - How detection works
+- [Standards Analysis Workflow](#standards-analysis-workflow) - Analysis mode details
+- [Report Application Mode](#report-application-mode) - Applying analysis reports
+
+**Extraction**:
+- [Smart Section Extraction](#2-smart-section-extraction) - Extraction logic
+- [Extraction Preferences](#extraction-preferences) - Configuration options
+- [Extraction Preview](#extraction-preview---dry-run) - Dry-run mode details
+
+**Workflows**:
+- [Cleanup Mode Workflow](#cleanup-mode-workflow) - When and how to use cleanup
+- [Complete Standards Lifecycle](#complete-standards-lifecycle) - Full workflow
+
+### External Resources
+
+**Project Standards**:
+- CLAUDE.md - Project standards file (target of setup/cleanup)
+- docs/ - Extracted documentation directory
+- specs/reports/ - Standards analysis reports
+- specs/plans/ - Implementation plans
+
+**Configuration** (Future):
+- .claude/config/extraction.yml - Extraction preferences
+- .claude/config.yml - Global Claude Code configuration
+
+## Integration with Other Commands
+
+### How /setup Supports Other Commands
+
+This command creates the foundation that other commands rely on:
+
+#### For /implement
+- Generates **Code Standards** section with indentation, naming, error handling
+- Creates **Testing Protocols** section with test commands
+- Ensures standards are parseable for automatic application
+
+#### For /test
+- Generates **Testing Protocols** section with test commands and patterns
+- Detects project test framework and configuration
+- Documents test discovery rules
+
+#### For /document
+- Generates **Documentation Policy** section with README requirements
+- Sets format guidelines and character encoding rules
+- Defines navigation link patterns
+
+#### For /plan
+- Creates all standard sections for plan generation
+- Documents project conventions for accurate planning
+- Ensures plans can capture standards properly
+
+#### For /refactor
+- Generates comprehensive standards for validation
+- Documents code quality thresholds
+- Provides clear validation criteria
+
+### Standards Generation Workflow
+
+```
+User runs: /setup
+     ↓
+/setup analyzes project:
+  - Detects language (Lua, JS, Python, etc.)
+  - Finds test framework
+  - Identifies existing conventions
+     ↓
+Generates CLAUDE.md with:
+  - Code Standards (with [Used by: ...] metadata)
+  - Testing Protocols (with test commands)
+  - Documentation Policy (with requirements)
+  - Standards Discovery (with discovery rules)
+     ↓
+Validates parseability:
+  - Checks all sections have metadata
+  - Verifies field format consistency
+  - Tests that commands can parse structure
+     ↓
+Result: CLAUDE.md optimized for command integration
+```
+
+### Example: Generated Standards
+
+For a Lua/Neovim project, /setup would generate:
+
+```markdown
+## Code Standards
+[Used by: /implement, /refactor, /plan]
+
+### General Principles
+- **Indentation**: 2 spaces, expandtab
+- **Line Length**: ~100 characters (soft limit)
+- **Naming**: snake_case for variables/functions, PascalCase for modules
+- **Error Handling**: Use pcall for operations that might fail
+
+## Testing Protocols
+[Used by: /test, /test-all, /implement]
+
+### Neovim Testing
+- **Test Commands**: `:TestNearest`, `:TestFile`, `:TestSuite`, `:TestLast`
+- **Test Pattern**: `*_spec.lua`, `test_*.lua`
+- **Test Framework**: plenary.nvim, busted
+```
+
+These sections are immediately usable by /implement, /test, and other commands.
 
 Let me analyze your project and help organize your CLAUDE.md efficiently.
