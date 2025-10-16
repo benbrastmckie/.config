@@ -16,8 +16,27 @@ return {
     vim.g.tex_indent_items = false                 -- Disable indent for enumerate
     vim.g.tex_indent_brace = false                 -- Disable brace indent
 
-    -- Suppression settings
-    vim.g.vimtex_quickfix_mode = 0                 -- Suppress quickfix on save/build
+    -- Compiler settings
+    vim.g.vimtex_compiler_method = 'latexmk'       -- Explicit compiler backend selection
+    vim.g.vimtex_compiler_latexmk = {              -- latexmk configuration
+      build_dir = 'build',                         -- Build artifacts directory
+      options = {
+        '-xelatex',                                -- Use XeLaTeX engine
+        '-interaction=nonstopmode',                -- Don't stop on errors
+        '-file-line-error',                        -- Better error messages
+        '-synctex=1',                              -- Enable SyncTeX
+      },
+    }
+
+    -- Quickfix settings
+    vim.g.vimtex_quickfix_mode = 2                 -- Open quickfix window on errors (2 = auto-close when empty)
+    vim.g.vimtex_quickfix_ignore_filters = {       -- Filter out common noise
+      'Underfull',
+      'Overfull',
+      'specifier changed to',
+      'Token not allowed in a PDF string',
+      'Package hyperref Warning',
+    }
     vim.g.vimtex_log_ignore = {                    -- Suppress specific log messages
       'Underfull',
       'Overfull',

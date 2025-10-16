@@ -39,17 +39,48 @@ Source File (.tex)
 ┌─────────────────────┐
 │ latexmk             │
 │ • Manages build     │
-│ • Runs pdflatex     │
+│ • Runs XeLaTeX      │
 │ • Handles bibtex    │
+│ • Build isolation   │
 └──────┬──────────────┘
        │
        ▼
 ┌─────────────────────┐
 │ PDF Output          │
-│ • zathura displays  │
+│ • sioyek displays   │
 │ • synctex enabled   │
 └─────────────────────┘
 ```
+
+### LaTeX Compilation Optimization
+
+The configuration includes global optimizations for faster and more reliable LaTeX compilation.
+
+**Global Configuration** (`~/.config/latexmk/latexmkrc`):
+- **Engine**: XeLaTeX for Unicode and modern font support
+- **Build Isolation**: Artifacts stored in `build/` directory
+- **Auxiliary File Handling**: `$emulate_aux = 1` for faster processing
+- **Loop Prevention**: Maximum 5 recompilation attempts
+- **Error Reporting**: `-file-line-error` for better debugging
+
+**VimTeX Compiler Settings**:
+- **Method**: Explicitly set to `latexmk`
+- **Engine**: XeLaTeX with `-xelatex` flag
+- **Error Visibility**: Quickfix mode re-enabled (mode 2)
+- **Error Filtering**: Common noise filtered from quickfix
+
+**Project-Specific Overrides**:
+Create a `.latexmkrc` in your project directory to override global settings:
+```perl
+$pdf_mode = 1;    # Use pdflatex instead of xelatex
+$out_dir = '.';   # Build in source directory
+```
+
+**Performance Benefits**:
+- Build artifacts isolated from source files
+- Cleaner project directory structure
+- Better error messages in quickfix window
+- Consistent compilation behavior across projects
 
 ### Forward and Inverse Search
 
