@@ -123,6 +123,59 @@ Plans use progressive organization that grows based on actual complexity discove
 
 **Collapse Operations**: Use `/collapse-phase` and `/collapse-stage` to merge content back and simplify structure.
 
+##### Phase Dependencies and Wave-Based Execution
+
+Plans support phase dependency declarations that enable parallel execution of independent phases during implementation.
+
+**Dependency Syntax**:
+```markdown
+### Phase N: [Phase Name]
+
+**Dependencies**: [] or [1, 2, 3]
+**Risk**: Low|Medium|High
+**Estimated Time**: X-Y hours
+```
+
+**Dependency Format**:
+- `Dependencies: []` - No dependencies (independent phase, can run in parallel)
+- `Dependencies: [1]` - Depends on phase 1 (waits for phase 1 to complete)
+- `Dependencies: [1, 2]` - Depends on phases 1 and 2
+- `Dependencies: [1, 3, 5]` - Depends on multiple phases
+
+**Rules**:
+- Dependencies are phase numbers (integers)
+- A phase can only depend on earlier phases (no forward dependencies)
+- Circular dependencies are detected and rejected during wave calculation
+- Self-dependencies are invalid
+
+**Wave-Based Execution**:
+- Orchestrator calculates execution waves using topological sorting (Kahn's algorithm)
+- Independent phases within a wave execute in parallel (40-60% time savings)
+- Sequential phases execute in dependency order
+- Wave execution is automatic when using `/orchestrate`
+
+**Example**:
+```markdown
+### Phase 1: Foundation Setup
+**Dependencies**: []  # No dependencies - Wave 1
+
+### Phase 2: Database Schema
+**Dependencies**: [1]  # Depends on Phase 1 - Wave 2
+
+### Phase 3: API Endpoints
+**Dependencies**: [1]  # Depends on Phase 1 - Wave 2 (parallel with Phase 2)
+
+### Phase 4: Integration Tests
+**Dependencies**: [2, 3]  # Depends on Phases 2 and 3 - Wave 3
+```
+
+This creates 3 execution waves:
+- Wave 1: Phase 1
+- Wave 2: Phases 2 and 3 (parallel execution)
+- Wave 3: Phase 4
+
+See `.claude/docs/phase_dependencies.md` for detailed dependency syntax and examples.
+
 ## Testing Protocols
 [Used by: /test, /test-all, /implement]
 
@@ -385,20 +438,30 @@ Located in `.claude/commands/`:
 
 #### /orchestrate - Multi-Agent Workflow Coordination
 
-The /orchestrate command coordinates specialized agents through end-to-end development workflows:
+The /orchestrate command coordinates specialized agents through end-to-end development workflows with automated complexity evaluation, plan expansion, and wave-based parallel execution.
 
 **Workflow Phases**:
 1. **Research** (Parallel): research-specialist agents investigate patterns, practices, alternatives (2-4 agents)
 2. **Planning** (Sequential): plan-architect synthesizes research into structured implementation plan
-3. **Implementation** (Adaptive): code-writer executes plan phase-by-phase with testing
-4. **Debugging** (Conditional): debug-specialist investigates failures, code-writer applies fixes (max 3 iterations)
-5. **Documentation** (Sequential): doc-writer updates docs and generates workflow summary
+3. **Complexity Evaluation** (Automated): complexity-estimator analyzes plan phases for expansion needs
+4. **Plan Expansion** (Adaptive): plan-expander agents expand complex phases (complexity ≥8 or >10 tasks)
+5. **Implementation** (Wave-Based): code-writer agents execute independent phases in parallel waves
+6. **Debugging** (Conditional): debug-specialist investigates failures, code-writer applies fixes (max 3 iterations)
+7. **Documentation** (Sequential): doc-writer updates docs and generates workflow summary
 
 **Agent Coordination Patterns**:
-- **Parallel execution**: Research agents run concurrently (single message, multiple Task invocations)
-- **Sequential execution**: Planning, implementation, documentation execute in order
+- **Parallel execution**: Research agents and independent phases run concurrently (single message, multiple Task invocations)
+- **Sequential execution**: Planning, documentation execute in order
+- **Wave-based execution**: Phases grouped by dependencies, independent phases execute in parallel
 - **Conditional execution**: Debugging only triggers on test failures
 - **Iteration limiting**: Max 3 debug iterations before user escalation
+
+**Enhanced Capabilities**:
+- **Automated Complexity Evaluation**: Uses hybrid threshold + agent-based scoring to identify complex phases
+- **Automatic Plan Expansion**: Expands phases with complexity ≥8 or >10 tasks to separate files
+- **Wave-Based Parallelization**: Analyzes phase dependencies and executes independent phases in parallel (40-60% time savings)
+- **Continuous Context Preservation**: Spec updater maintains <30% context usage throughout workflow
+- **Plan Hierarchy Updates**: Automatically updates all plan levels (main → phase → stage) after completion
 
 **Usage**: `/orchestrate <workflow-description> [--create-pr]`
 
@@ -406,17 +469,26 @@ The /orchestrate command coordinates specialized agents through end-to-end devel
 
 **Artifacts Generated**:
 - Research reports: `specs/reports/{topic}/NNN_report.md`
-- Implementation plan: `specs/plans/NNN_feature.md`
+- Implementation plan: `specs/plans/NNN_feature.md` (or expanded directory structure)
 - Workflow summary: `specs/summaries/NNN_summary.md`
 - Debug reports (if needed): `debug/{topic}/NNN_report.md`
+- Complexity evaluation results: Saved in workflow checkpoint
 
 **State Management**:
-- TodoWrite tracks all 6 workflow phases
+- TodoWrite tracks all 7 workflow phases
 - Checkpoints saved at phase boundaries for resumption
 - Progress markers (PROGRESS:) emitted for real-time visibility
 - Error history tracked for debugging and recovery
+- Wave execution state tracked for parallel phase coordination
+
+**Performance Targets**:
+- Context usage: <30% throughout workflow
+- Parallel research: 60-80% time savings vs sequential
+- Wave-based implementation: 40-60% time savings vs sequential
+- Complexity evaluation accuracy: >80% vs manual assessment
 
 See `.claude/commands/orchestrate.md` for detailed workflow patterns and agent invocation examples.
+See `.claude/templates/orchestration-patterns.md` for agent prompt templates and integration patterns.
 
 #### Template-Based Planning
 
