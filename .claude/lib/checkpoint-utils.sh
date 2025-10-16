@@ -25,7 +25,7 @@ source "$SCRIPT_DIR/timestamp-utils.sh"
 readonly CHECKPOINT_SCHEMA_VERSION="1.2"
 
 # Checkpoint directory
-readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/checkpoints"
+readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints"
 
 # Wave Tracking Fields (for parallel execution - Phase 2):
 # When implementing parallel phase execution, the following fields should be

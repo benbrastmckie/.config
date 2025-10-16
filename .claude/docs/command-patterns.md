@@ -364,10 +364,10 @@ fi
 
 ### Checkpoint File Structure
 
-Checkpoints are stored in `.claude/checkpoints/`:
+Checkpoints are stored in `.claude/data/checkpoints/`:
 
 ```
-.claude/checkpoints/
+.claude/data/checkpoints/
   workflow-001.json
   workflow-002.json
   implement-plan-025.json
@@ -969,7 +969,7 @@ else
 fi
 
 # Initialize log directory with permissions
-LOG_DIR=".claude/logs"
+LOG_DIR=".claude/data/logs"
 if [ ! -d "$LOG_DIR" ]; then
   mkdir -p "$LOG_DIR" 2>/dev/null || {
     echo "Warning: Could not create log directory"
