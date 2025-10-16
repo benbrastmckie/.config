@@ -184,10 +184,19 @@ Tasks:
 - [ ] Task description with file reference
 - [ ] Another specific task
 - [ ] Testing task
+- [ ] Update plan checkboxes across hierarchy (use checkbox-utils.sh)
 
 Testing:
 - Test command or approach
 - Expected outcomes
+
+**Phase Completion Protocol**:
+When phase is complete, update checkboxes across all hierarchy levels:
+```bash
+source .claude/lib/checkbox-utils.sh
+mark_phase_complete <plan_path> <phase_num>
+verify_checkbox_consistency <plan_path> <phase_num>
+```
 ```
 
 ### 7. Standards Integration

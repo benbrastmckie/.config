@@ -141,7 +141,55 @@ When implementing from plans, detect and navigate tier structure:
 2. **Plan**: Understand the change scope
 3. **Implement**: Write/modify code following standards
 4. **Test**: Run tests to verify changes
-5. **Track**: Update TodoWrite for multi-phase work
+5. **Update Hierarchy**: Update plan checkboxes across all levels
+6. **Track**: Update TodoWrite for multi-phase work
+
+### Updating Plan Hierarchy After Task Completion
+
+**After completing tasks, update plan checkboxes across all hierarchy levels**:
+
+1. **Source checkbox utilities**:
+   ```bash
+   source .claude/lib/checkbox-utils.sh
+   ```
+
+2. **Update hierarchy** (from deepest level to plan):
+   ```bash
+   # For specific task completion
+   propagate_checkbox_update <plan_path> <phase_num> "<task_pattern>" "x"
+
+   # For phase completion (all tasks)
+   mark_phase_complete <plan_path> <phase_num>
+   ```
+
+3. **Verify consistency**:
+   ```bash
+   verify_checkbox_consistency <plan_path> <phase_num>
+   ```
+
+**Update Protocol**:
+- Complete tasks → Mark checkboxes → Propagate to parents → Verify
+- Use fuzzy task matching: "Create API" matches "Create API endpoints"
+- Always update after each task completion, not in batches
+- Checkbox states: `"x"` (complete), `" "` (pending)
+
+**Example Workflow**:
+```bash
+# Implement feature
+# ... code changes ...
+
+# Mark task complete across hierarchy
+source .claude/lib/checkbox-utils.sh
+propagate_checkbox_update "specs/009_topic/009_topic.md" 2 "Implement authentication" "x"
+
+# Verify all levels synchronized
+verify_checkbox_consistency "specs/009_topic/009_topic.md" 2
+```
+
+**Hierarchy Levels**:
+- **Level 0**: Single file (update main plan only)
+- **Level 1**: Phase files (update phase file + main plan)
+- **Level 2**: Stage files (update stage + phase + main plan)
 
 ### Testing After Changes
 After any code modification:

@@ -17,6 +17,25 @@
       "success_rate": 0.0,
       "last_execution": null,
       "last_status": null
+    },
+    "spec-updater": {
+      "type": "specialized",
+      "description": "Manages spec artifacts in topic-based directory structure with proper placement and cross-references",
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "total_invocations": 0,
+      "successes": 0,
+      "total_duration_ms": 0,
+      "avg_duration_ms": 0,
+      "success_rate": 0.0,
+      "last_execution": null,
+      "last_status": null
     }
   },
   "metadata": {

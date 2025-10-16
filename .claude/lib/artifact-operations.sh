@@ -577,6 +577,78 @@ get_report_section() {
 # Artifact Creation Functions
 # ==============================================================================
 
+# create_topic_artifact: Create artifact in topic-based subdirectory
+# Usage: create_topic_artifact <topic-dir> <artifact-type> <artifact-name> <content>
+# Returns: Artifact file path
+# Example: create_topic_artifact "specs/009_orchestration" "debug" "bundle_compatibility" "$debug_content"
+create_topic_artifact() {
+  local topic_dir="${1:-}"
+  local artifact_type="${2:-}"
+  local artifact_name="${3:-}"
+  local content="${4:-}"
+
+  if [ -z "$topic_dir" ] || [ -z "$artifact_type" ] || [ -z "$artifact_name" ]; then
+    echo "Usage: create_topic_artifact <topic-dir> <artifact-type> <name> <content>" >&2
+    return 1
+  fi
+
+  # Validate artifact type
+  case "$artifact_type" in
+    debug|scripts|outputs|artifacts|backups|data|logs|notes)
+      ;;
+    *)
+      echo "Error: Invalid artifact type '$artifact_type'" >&2
+      echo "Valid types: debug, scripts, outputs, artifacts, backups, data, logs, notes" >&2
+      return 1
+      ;;
+  esac
+
+  # Create artifact subdirectory
+  local artifact_subdir="${CLAUDE_PROJECT_DIR}/${topic_dir}/${artifact_type}"
+  mkdir -p "$artifact_subdir"
+
+  # Get next artifact number
+  local next_num=$(get_next_artifact_number "$artifact_subdir")
+
+  # Create artifact file path
+  local artifact_file="${artifact_subdir}/${next_num}_${artifact_name}.md"
+
+  # Write content to file
+  if [ -n "$content" ]; then
+    echo "$content" > "$artifact_file"
+  else
+    # Create empty file with basic metadata
+    cat > "$artifact_file" <<EOF
+# ${artifact_name}
+
+## Metadata
+- **Date**: $(date -u +%Y-%m-%d)
+- **Topic**: $(basename "$topic_dir")
+- **Type**: $artifact_type
+- **Number**: $next_num
+
+## Content
+(Content to be added)
+EOF
+  fi
+
+  # Set executable permission for scripts
+  if [ "$artifact_type" = "scripts" ]; then
+    chmod +x "$artifact_file" 2>/dev/null || true
+  fi
+
+  # Register artifact
+  local metadata_json=$(jq -n \
+    --arg topic "$(basename "$topic_dir")" \
+    --arg type "$artifact_type" \
+    --arg num "$next_num" \
+    '{topic: $topic, artifact_type: $type, number: $num}')
+
+  register_artifact "$artifact_type" "${topic_dir}/${artifact_type}/${next_num}_${artifact_name}.md" "$metadata_json" >/dev/null
+
+  echo "$artifact_file"
+}
+
 # create_artifact_directory: Create artifact directory for plan operations
 # Usage: create_artifact_directory <plan-path>
 # Returns: Artifact directory path
@@ -652,6 +724,8 @@ get_next_artifact_number() {
     [[ -e "$file" ]] || continue
     local num=$(basename "$file" | grep -oE '^[0-9]+')
     if [ -n "$num" ]; then
+      # Strip leading zeros to avoid octal interpretation (10#$num forces base-10)
+      num=$((10#$num))
       (( num > max_num )) && max_num=$num
     fi
   done
@@ -1035,6 +1109,91 @@ cleanup_operation_artifacts() {
   fi
 
   echo "$count"
+}
+
+# cleanup_topic_artifacts: Clean up temporary topic-scoped artifacts
+# Usage: cleanup_topic_artifacts <topic-dir> <artifact-type> [age-days]
+# Returns: Count of artifacts deleted
+# Example: cleanup_topic_artifacts "specs/009_orchestration" "scripts" 7
+cleanup_topic_artifacts() {
+  local topic_dir="${1:-}"
+  local artifact_type="${2:-}"
+  local age_days="${3:-0}"
+
+  if [ -z "$topic_dir" ] || [ -z "$artifact_type" ]; then
+    echo "Usage: cleanup_topic_artifacts <topic-dir> <artifact-type> [age-days]" >&2
+    return 1
+  fi
+
+  local artifact_subdir="${CLAUDE_PROJECT_DIR}/${topic_dir}/${artifact_type}"
+
+  if [ ! -d "$artifact_subdir" ]; then
+    echo "0"
+    return 0
+  fi
+
+  local count=0
+
+  # Clean up based on age
+  if [ "$age_days" -gt 0 ]; then
+    # Remove files older than specified days
+    local cutoff_date=$(date -u -d "$age_days days ago" +%Y%m%d 2>/dev/null || date -u -v-${age_days}d +%Y%m%d)
+
+    for artifact_file in "$artifact_subdir"/*; do
+      if [ ! -f "$artifact_file" ]; then
+        continue
+      fi
+
+      local file_date=$(date -u -r "$artifact_file" +%Y%m%d 2>/dev/null || stat -f %Sm -t %Y%m%d "$artifact_file" 2>/dev/null)
+
+      if [ -n "$file_date" ] && [ "$file_date" -lt "$cutoff_date" ]; then
+        rm -f "$artifact_file"
+        count=$((count + 1))
+      fi
+    done
+  else
+    # Remove all files in subdirectory (age_days = 0 means all)
+    for artifact_file in "$artifact_subdir"/*; do
+      if [ -f "$artifact_file" ]; then
+        rm -f "$artifact_file"
+        count=$((count + 1))
+      fi
+    done
+  fi
+
+  # Remove subdirectory if empty
+  if [ -z "$(ls -A "$artifact_subdir" 2>/dev/null)" ]; then
+    rmdir "$artifact_subdir"
+  fi
+
+  echo "$count"
+}
+
+# cleanup_all_temp_artifacts: Clean up all temporary artifacts from topic directory
+# Usage: cleanup_all_temp_artifacts <topic-dir>
+# Returns: Total count of artifacts deleted
+# Example: cleanup_all_temp_artifacts "specs/009_orchestration"
+cleanup_all_temp_artifacts() {
+  local topic_dir="${1:-}"
+
+  if [ -z "$topic_dir" ]; then
+    echo "Usage: cleanup_all_temp_artifacts <topic-dir>" >&2
+    return 1
+  fi
+
+  local total_count=0
+
+  # Clean up temporary artifact types (not debug/ which is committed)
+  for artifact_type in scripts outputs artifacts backups data logs notes; do
+    local artifact_subdir="${CLAUDE_PROJECT_DIR}/${topic_dir}/${artifact_type}"
+
+    if [ -d "$artifact_subdir" ]; then
+      local count=$(cleanup_topic_artifacts "$topic_dir" "$artifact_type" 0)
+      total_count=$((total_count + count))
+    fi
+  done
+
+  echo "$total_count"
 }
 
 # ==============================================================================
@@ -1560,6 +1719,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f get_report_section
 
   # Artifact creation functions
+  export -f create_topic_artifact
   export -f create_artifact_directory
   export -f create_artifact_directory_with_workflow
   export -f get_next_artifact_number
@@ -1575,6 +1735,8 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f save_operation_artifact
   export -f load_artifact_references
   export -f cleanup_operation_artifacts
+  export -f cleanup_topic_artifacts
+  export -f cleanup_all_temp_artifacts
 
   # Report generation functions
   export -f generate_analysis_report

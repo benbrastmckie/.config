@@ -81,6 +81,12 @@ phases:
       - "{{#if_eq risk_level 'high'}}Perform additional integration testing{{/if_eq}}"
       - "Document refactoring decisions and rationale"
       - "Update CHANGELOG if public API affected"
+spec_updater_checklist:
+  - "Ensure plan is in topic-based directory structure (specs/{NNN_topic}/)"
+  - "Create standard subdirectories if needed (reports/, debug/, scripts/, outputs/)"
+  - "Update cross-references if artifacts moved during implementation"
+  - "Create implementation summary in summaries/ when complete"
+  - "Verify gitignore compliance (debug/ committed, others ignored)"
 research_topics:
   - "Refactoring patterns for {{consolidation_strategy}}"
   - "Safe refactoring practices for {{risk_level}} risk code"

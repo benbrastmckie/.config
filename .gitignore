@@ -77,8 +77,12 @@ Signal
 !.claude/
 !.claude/commands/
 !.claude/commands/*.md
-**/specs/
-# **/spec/
+# Topic-based specs organization (added by /migrate-specs)
+# Gitignore all specs subdirectories
+specs/*/*
+# Un-ignore debug subdirectories within topics
+!specs/*/debug/
+!specs/*/debug/**
 nvim/test.tex
 himalaya/config.toml
 himalaya/config.toml.bak

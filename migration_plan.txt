@@ -1,0 +1,169 @@
+Migration Plan Generated: 2025-10-15 16:52:06
+================================================================
+
+Topic 1: 002_setup_standards_analysis_enhancement
+  Source Plan: /home/benjamin/.config/specs/plans/002_setup_standards_analysis_enhancement.md
+  Target Dir: /home/benjamin/.config/specs/002_setup_standards_analysis_enhancement/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/002_setup_standards_analysis_enhancement.md → /home/benjamin/.config/specs/002_setup_standards_analysis_enhancement/002_setup_standards_analysis_enhancement.md
+
+Topic 2: 001_standardize_command_claudemd_integration
+  Source Plan: /home/benjamin/.config/specs/plans/001_standardize_command_claudemd_integration.md
+  Target Dir: /home/benjamin/.config/specs/001_standardize_command_claudemd_integration/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/001_standardize_command_claudemd_integration.md → /home/benjamin/.config/specs/001_standardize_command_claudemd_integration/001_standardize_command_claudemd_integration.md
+
+Topic 3: 006_picker_ui_consistency
+  Source Plan: /home/benjamin/.config/specs/plans/006_picker_ui_consistency.md
+  Target Dir: /home/benjamin/.config/specs/006_picker_ui_consistency/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/006_picker_ui_consistency.md → /home/benjamin/.config/specs/006_picker_ui_consistency/006_picker_ui_consistency.md
+
+Topic 4: 003_integrate_cleanup_into_setup
+  Source Plan: /home/benjamin/.config/specs/plans/003_integrate_cleanup_into_setup.md
+  Target Dir: /home/benjamin/.config/specs/003_integrate_cleanup_into_setup/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/003_integrate_cleanup_into_setup.md → /home/benjamin/.config/specs/003_integrate_cleanup_into_setup/003_integrate_cleanup_into_setup.md
+
+Topic 5: 009_orchestration_enhancement_adapted
+  Source Plan: /home/benjamin/.config/specs/plans/009_orchestration_enhancement_adapted.md
+  Target Dir: /home/benjamin/.config/specs/009_orchestration_enhancement_adapted/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/009_orchestration_enhancement_adapted.md → /home/benjamin/.config/specs/009_orchestration_enhancement_adapted/009_orchestration_enhancement_adapted.md
+
+Topic 6: 005_picker_hierarchical_structure
+  Source Plan: /home/benjamin/.config/specs/plans/005_picker_hierarchical_structure.md
+  Target Dir: /home/benjamin/.config/specs/005_picker_hierarchical_structure/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/005_picker_hierarchical_structure.md → /home/benjamin/.config/specs/005_picker_hierarchical_structure/005_picker_hierarchical_structure.md
+
+Topic 7: 007_installation_docs_consolidation
+  Source Plan: /home/benjamin/.config/specs/plans/007_installation_docs_consolidation.md
+  Target Dir: /home/benjamin/.config/specs/007_installation_docs_consolidation/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/007_installation_docs_consolidation.md → /home/benjamin/.config/specs/007_installation_docs_consolidation/007_installation_docs_consolidation.md
+
+Topic 8: 008_dynamic_worktree_detection
+  Source Plan: /home/benjamin/.config/specs/plans/008_dynamic_worktree_detection.md
+  Target Dir: /home/benjamin/.config/specs/008_dynamic_worktree_detection/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/008_dynamic_worktree_detection.md → /home/benjamin/.config/specs/008_dynamic_worktree_detection/008_dynamic_worktree_detection.md
+
+Topic 9: 004_picker_refactor
+  Source Plan: /home/benjamin/.config/specs/plans/004_picker_refactor.md
+  Target Dir: /home/benjamin/.config/specs/004_picker_refactor/
+  Create Subdirectories:
+    - reports/
+    - plans/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+  Move Artifacts:
+    - /home/benjamin/.config/specs/plans/004_picker_refactor.md → /home/benjamin/.config/specs/004_picker_refactor/004_picker_refactor.md
+
+Topic 10: 043_orchestration_enhancement (expanded)
+  Source Plan: /home/benjamin/.config/specs/plans/043_orchestration_enhancement/ (directory)
+  Target Dir: /home/benjamin/.config/specs/043_orchestration_enhancement/
+  Rename: Yes (already in directory format)
+  Create Missing Subdirectories:
+    - reports/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+
+Topic 11: 009_orchestration_enhancement_adapted (expanded)
+  Source Plan: /home/benjamin/.config/specs/plans/009_orchestration_enhancement_adapted/ (directory)
+  Target Dir: /home/benjamin/.config/specs/009_orchestration_enhancement_adapted/
+  Rename: Yes (already in directory format)
+  Create Missing Subdirectories:
+    - reports/
+    - summaries/
+    - debug/
+    - scripts/
+    - outputs/
+    - artifacts/
+    - backups/
+
+
+Total Migration:
+  - Topics to create: 11
+  - Estimated duration: 2-3 minutes
+

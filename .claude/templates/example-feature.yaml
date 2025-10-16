@@ -64,4 +64,11 @@ plan:
     - "Documentation complete and accurate"
     - "Code follows project standards"
 
+  spec_updater_checklist:
+    - "Ensure plan is in topic-based directory structure (specs/{NNN_topic}/)"
+    - "Create standard subdirectories if needed (reports/, debug/, scripts/, outputs/)"
+    - "Update cross-references if artifacts moved during implementation"
+    - "Create implementation summary in summaries/ when complete"
+    - "Verify gitignore compliance (debug/ committed, others ignored)"
+
   estimated_hours: "{{estimated_hours}}"
