@@ -1,5 +1,7 @@
 # Consolidate .claude/ Untracked Directories Implementation Plan
 
+/orchestrate when I run /orchestrate, /report, /debug, or any command that involves research, I want those commands to mobilizes subagents to do the research in order to preserve the context window of the primary agent (check that these commands all do this). I also want those research subagents to create a report in the appropriate {relevant_location_in_project}/specs/{NNN_topic}/reports/NNN_*.md (and similarly for debug) which I see is not always taking place currently. Please carefully study .claude/ in order to plan and implement a refactor that overcomes these issues. I don't want those research agents to use the /report command, or any of the other commands. Rather, the research specialists should contain the minimal instructions they need to do the research in question, create the report, and pass a brief summary and reference back to the primary agent. Please carefully research these issues, plan an elegant refactor, implement, the changes, run tests, and update all documentation.
+
 ## Metadata
 - **Date**: 2025-10-16
 - **Feature**: Directory Consolidation

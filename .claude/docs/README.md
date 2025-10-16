@@ -21,7 +21,8 @@ docs/
 Core System Guides/
 ├── command-reference.md               Complete command catalog
 ├── agent-reference.md                 Complete agent catalog
-└── claude-md-section-schema.md        CLAUDE.md section format
+├── claude-md-section-schema.md        CLAUDE.md section format
+└── command_architecture_standards.md  Command/agent architecture standards
 │
 Advanced Features/
 ├── orchestration-guide.md             Multi-agent workflows
@@ -108,6 +109,29 @@ Archived/
 - Understanding agent capabilities
 - Finding which commands use agents
 - Planning agent workflows
+
+---
+
+#### command_architecture_standards.md
+**Purpose**: Architecture standards for command and agent files to ensure execution clarity
+
+**Contents**:
+- Fundamental understanding: Command files as AI execution scripts
+- Core standards: Executable instructions must be inline
+- Reference patterns: When and how to use external references
+- Refactoring guidelines: What to extract vs keep inline
+- Testing standards: Validation criteria before commits
+- Anti-patterns: Common mistakes to avoid
+- Pre-commit validation scripts
+
+**Use Cases**:
+- Creating or modifying command files
+- Refactoring commands without breaking execution
+- Reviewing pull requests for command changes
+- Understanding why certain patterns are required
+- Preventing regression of command functionality
+
+**Critical**: This document must be followed when modifying any files in `.claude/commands/` or `.claude/agents/`
 
 ---
 
@@ -481,6 +505,7 @@ Before committing:
 - [command-reference.md](command-reference.md) - Command catalog
 - [agent-reference.md](agent-reference.md) - Agent catalog
 - [claude-md-section-schema.md](claude-md-section-schema.md) - Section schema
+- [command_architecture_standards.md](command_architecture_standards.md) - Architecture standards
 
 **Advanced Features**:
 - [orchestration-guide.md](orchestration-guide.md) - Multi-agent workflows
@@ -516,6 +541,7 @@ Before committing:
 **Standards**:
 - [standards-integration.md](standards-integration.md)
 - [claude-md-section-schema.md](claude-md-section-schema.md)
+- [command_architecture_standards.md](command_architecture_standards.md)
 - [creating-commands.md](creating-commands.md#standards-discovery)
 
 **Testing**:
@@ -623,6 +649,7 @@ See: [standards-integration.md](standards-integration.md)
 - [creating-commands.md](creating-commands.md)
 
 ### Standards and Quality
+- [command_architecture_standards.md](command_architecture_standards.md)
 - [standards-integration.md](standards-integration.md)
 - [claude-md-section-schema.md](claude-md-section-schema.md)
 - [creating-commands.md](creating-commands.md#quality-checklist)

@@ -286,6 +286,53 @@ TTS_COMPLETION_ENABLED=false  # Disable completion notifications
 TTS_PERMISSION_ENABLED=false  # Disable permission notifications
 ```
 
+## Message Format Reference
+
+### Uniform Message Format
+
+All TTS notifications use the same format:
+```
+[directory], [branch]
+```
+
+The comma provides a natural pause between directory and branch name.
+
+### Completion Message Examples
+
+**Format**: `"directory, branch"`
+
+**Examples**:
+```
+"config, master"           # .config directory on master branch
+"neovim, feature-vim"      # neovim directory on feature-vim branch
+"backend, develop"         # backend directory on develop branch
+"nice_connectives, main"   # nice_connectives directory on main branch
+```
+
+**Purpose**:
+- Identifies which session is ready for input
+- Minimal, non-verbose announcement
+- Instant branch awareness
+- Uses root directory name (not full path)
+
+### Permission Message Examples
+
+**Format**: `"directory, branch"` (identical to completion)
+
+**Examples**:
+```
+"config, master"           # Permission needed in .config on master
+"neovim, feature-vim"      # Permission needed in neovim on feature-vim
+"backend, develop"         # Permission needed in backend on develop
+"nice_connectives, main"   # Permission needed in nice_connectives on main
+```
+
+**Purpose**:
+- Same minimal format as completion messages
+- Know which directory/branch needs attention
+- No verbose "Permission needed. Tool." messages
+- Consistent, predictable notifications
+
 ## Troubleshooting
 
 ### No Audio Output
@@ -401,6 +448,60 @@ TTS_VOICE_PARAMS="65:190"
 TTS_VOICE_PARAMS="50:120"
 ```
 
+### Customizing Messages
+
+Edit `.claude/tts/tts-messages.sh` to customize message templates:
+
+```bash
+# Find the generate_completion_message function
+# Add custom logic for your command:
+
+case "$command" in
+  *mycustom*)
+    message="$message My custom completion message."
+    ;;
+esac
+```
+
+## Testing Messages
+
+Test messages by sending JSON to the dispatcher:
+
+```bash
+# Test completion notification
+echo '{"hook_event_name":"Stop","status":"success","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
+
+# Test permission request
+echo '{"hook_event_name":"Notification","message":"Permission needed"}' | bash .claude/hooks/tts-dispatcher.sh
+
+# Test error notification
+echo '{"hook_event_name":"Stop","status":"error","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
+
+# Test session start
+echo '{"hook_event_name":"SessionStart","cwd":"'$(pwd)'"}' | bash .claude/hooks/tts-dispatcher.sh
+```
+
+## Integration with Commands
+
+### Commands with TTS Support
+
+All commands support TTS notifications via hooks:
+- `/implement` - Phase completions, test results, final status
+- `/orchestrate` - Agent completions, phase transitions
+- `/test` - Test suite results, pass/fail counts
+- `/plan` - Plan generation completion
+- `/revise` - Revision completion
+
+### Custom Notifications
+
+Commands can emit custom TTS notifications via:
+```bash
+# From command scripts
+echo "TTS: Custom notification message" >&2
+```
+
+The TTS dispatcher monitors stderr for `TTS:` prefixed messages and converts them to speech.
+
 ## Accessibility Considerations
 
 TTS significantly enhances accessibility:
@@ -410,9 +511,35 @@ TTS significantly enhances accessibility:
 - **Remote work**: Know when long-running operations complete
 - **Background awareness**: Stay informed without constant monitoring
 
-## Uninstallation
+## Best Practices
 
-To disable TTS completely:
+### When to Use TTS
+
+**Recommended for**:
+- Long-running operations (>2 minutes)
+- Background workflows (orchestration, implementation)
+- Operations you want to monitor while multitasking
+- Error detection during unattended execution
+
+**Not recommended for**:
+- Quick commands (<30 seconds)
+- Interactive commands requiring immediate attention
+- Noisy environments (notifications may be disruptive)
+- Shared workspaces (may disturb others)
+
+### Configuration Tips
+
+**For minimal distraction**:
+- Use completion notifications only
+- Set lower volume
+- Add frequently-used commands to silent list
+
+**For maximum awareness**:
+- Enable both completion and permission notifications
+- Use clearer voice settings (slower speed)
+- Enable debug logging for troubleshooting
+
+## Uninstallation
 
 ### Temporary Disable
 
@@ -469,7 +596,42 @@ espeak-ng voices (run `espeak-ng --voices` for full list):
 - `en-gb+f1` - British English, female
 - `en-gb+m1` - British English, male
 
-### Resources
+### System Requirements
+
+**Linux**:
+- espeak-ng (recommended) or festival
+- PulseAudio or PipeWire for audio
+
+**macOS**:
+- Uses system `say` command (built-in)
+- No additional installation required
+
+**Windows**:
+- Uses PowerShell TTS (built-in)
+- No additional installation required
+
+### Performance Impact
+
+**Minimal overhead**:
+- Hooks execute asynchronously (non-blocking)
+- TTS generation happens in background
+- No impact on command execution time
+- Audio playback concurrent with continued work
+
+### Privacy Considerations
+
+**No external services**:
+- All TTS processing local (system TTS engines)
+- No data sent to external services
+- No logging of notification content
+- User can disable at any time
+
+## Related Topics
+
+- [Orchestration Guide](orchestration-guide.md) - Multi-agent workflows with TTS notifications
+- [Efficiency Guide](efficiency-guide.md) - Performance optimization including TTS configuration
+
+## Resources
 
 - **espeak-ng Documentation**: https://github.com/espeak-ng/espeak-ng
 - **Claude Code Hooks**: https://docs.claude.com/en/docs/claude-code/hooks
