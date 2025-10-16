@@ -83,6 +83,18 @@ $out_dir = '.';   # Build in source directory
 
 Note: XeLaTeX draft mode provides infrastructure for fast compilation but may not show significant speed improvements compared to final mode. The primary benefit is the separation of draft and final workflows.
 
+**Alternative Compilation Backends**:
+
+*Tectonic* (optional, for compatible documents):
+- Modern Rust-based LaTeX engine with automatic package management
+- Faster compilation for simpler documents (5-20% improvement)
+- Self-contained with reproducible builds
+- Limitations: Not all LaTeX packages supported (e.g., some Springer templates, algorithm packages)
+- Installation: `nix profile install nixpkgs#tectonic`
+- Usage: `tectonic --synctex document.tex`
+- Best for: Modern LaTeX workflows, simple documents, reproducible builds
+- Not recommended for: Complex academic templates, legacy packages
+
 **Performance Benefits**:
 - Build artifacts isolated from source files
 - Cleaner project directory structure
