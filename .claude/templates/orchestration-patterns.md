@@ -1854,6 +1854,239 @@ All artifact paths should be calculated from the topic:
 
 ---
 
+### Plan Hierarchy Update Integration
+
+The spec-updater agent is responsible for keeping plan hierarchies synchronized as implementation progresses. When plans are expanded using `/expand`, the parent/grandparent spec files must be updated to reflect completion status.
+
+**Integration Points**:
+- **`/implement` command**: After each phase completion (Step 5: Plan Update After Git Commit)
+- **`/orchestrate` command**: In Documentation Phase after implementation completes
+
+**When to Update**:
+- After phase tasks are completed and tests pass
+- After git commit is created for the phase
+- Before checkpoint save (to ensure state consistency)
+- For expanded plan hierarchies (Level 1 and Level 2 structures)
+
+**Skip Conditions**:
+- Level 0 plans (single file) - no hierarchy to update
+- Plans not using progressive expansion (`/expand`)
+- Implementation did not use `/implement` command
+
+#### Plan Hierarchy Structure
+
+Progressive plan structures require different update strategies:
+
+**Level 0** (Single File):
+- Format: `specs/{topic}/{topic}.md`
+- Update: Direct checkbox updates in single file
+- No hierarchy propagation needed
+
+**Level 1** (Phase Expansion):
+- Format: `specs/{topic}/{topic}/` directory with phase files
+- Files: Main plan + `phase_N_name.md` files
+- Update: Stage → Phase → Main plan propagation
+
+**Level 2** (Stage Expansion):
+- Format: Nested phase/stage directories
+- Files: Main plan + phase directories + stage files
+- Update: Stage → Phase → Main plan (3-level propagation)
+
+#### Spec-Updater Invocation Pattern for /implement
+
+After phase completion in `/implement` workflow:
+
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after Phase N completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy checkboxes after Phase ${PHASE_NUM} completion.
+
+    Plan: ${PLAN_PATH}
+    Phase: ${PHASE_NUM}
+    All tasks in this phase have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
+    3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
+    4. Report: List all files updated (stage → phase → main plan)
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of updated files at each level
+    - Verification that all levels are synchronized
+}
+```
+
+**Timing**: Invoke after git commit succeeds, before checkpoint save
+
+**Error Handling**:
+- If hierarchy update fails: Log error and continue (non-critical for progress)
+- User notified in checkpoint that manual sync may be needed
+- Include hierarchy_updated: false in checkpoint data
+
+#### Spec-Updater Invocation Pattern for /orchestrate
+
+In Documentation Phase after implementation completes:
+
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after workflow completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy for completed workflow.
+
+    Plan: ${PLAN_PATH}
+    All phases have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Detect structure level: detect_structure_level "${PLAN_PATH}"
+    3. For each completed phase: mark_phase_complete "${PLAN_PATH}" ${phase_num}
+    4. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" (all phases)
+    5. Report: List all files updated across hierarchy
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of all updated files (stage → phase → main plan)
+    - Verification that all levels are synchronized
+}
+```
+
+**Timing**: After implementation phase completes, before workflow summary generation
+
+**Integration with Workflow Summary**:
+Add hierarchy update confirmation to workflow summary:
+```markdown
+## Plan Hierarchy Status
+- Structure Level: [0|1|2]
+- All parent plans synchronized: [Yes|No]
+- Files updated: [list of plan files updated]
+```
+
+#### Checkbox Utilities Integration
+
+The spec-updater agent uses functions from `.claude/lib/checkbox-utils.sh`:
+
+**`mark_phase_complete(plan_path, phase_num)`**:
+- Marks all tasks in a phase as complete `[x]`
+- Handles Level 0/1/2 plan structures automatically
+- Updates both expanded phase file and main plan
+
+**`verify_checkbox_consistency(plan_path, phase_num)`**:
+- Verifies checkbox states match across hierarchy levels
+- Returns 0 if consistent, 1 if inconsistencies found
+- Level 0 always returns 0 (no hierarchy)
+
+**`propagate_checkbox_update(plan_path, phase_num, task_pattern, new_state)`**:
+- Updates single checkbox across all hierarchy levels
+- Uses fuzzy task matching for flexible updates
+- Propagates: Stage → Phase → Main plan
+
+#### Error Handling Patterns
+
+**Hierarchy Update Failure**:
+```bash
+# After spec-updater agent invocation
+if ! check_hierarchy_update_success; then
+  warn "Hierarchy update failed - manual sync may be needed"
+
+  # Update checkpoint with failure status
+  CHECKPOINT_DATA=$(jq '.hierarchy_updated = false' <<< "$CHECKPOINT_DATA")
+
+  # Continue workflow (non-critical failure)
+  continue_workflow
+fi
+```
+
+**Missing Utilities**:
+```bash
+# Verify checkbox-utils.sh available
+if [ ! -f ".claude/lib/checkbox-utils.sh" ]; then
+  error "checkbox-utils.sh not found"
+  error "Cannot update plan hierarchy"
+
+  # Skip hierarchy update but continue
+  skip_hierarchy_update
+fi
+```
+
+**Validation Failures**:
+```bash
+# After verify_checkbox_consistency
+if ! verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"; then
+  warn "Checkbox inconsistency detected in plan hierarchy"
+  warn "Main plan may not reflect phase completion status"
+
+  # Log for manual review
+  log_hierarchy_inconsistency "$PLAN_PATH" "$PHASE_NUM"
+fi
+```
+
+#### Checkpoint Integration
+
+Update checkpoint schema to track hierarchy update status:
+
+```json
+{
+  "checkpoint_type": "implement",
+  "current_phase": 3,
+  "completed_phases": [1, 2, 3],
+
+  "hierarchy_updated": true,
+  "hierarchy_update_results": {
+    "phase_3": {
+      "updated_files": [
+        "specs/042_auth/phase_3_testing.md",
+        "specs/042_auth/042_auth.md"
+      ],
+      "structure_level": 1,
+      "consistency_verified": true
+    }
+  }
+}
+```
+
+#### Progress Markers
+
+Use consistent progress markers for hierarchy updates:
+
+```
+PROGRESS: Phase 3 complete - updating plan hierarchy...
+PROGRESS: Invoking spec-updater agent for hierarchy update
+PROGRESS: Plan hierarchy updated successfully
+PROGRESS: Files synchronized: phase_3_testing.md → 042_auth.md
+PROGRESS: Saving checkpoint with hierarchy update status
+```
+
+#### Integration with Shared Utilities
+
+**Dependencies**:
+- `.claude/lib/checkbox-utils.sh` - Core checkbox update functions
+- `.claude/lib/plan-core-bundle.sh` - Plan structure detection
+- `.claude/agents/spec-updater.md` - Agent behavioral guidelines
+
+**Utility Functions Used**:
+- `detect_structure_level()` - Identify Level 0/1/2
+- `get_plan_directory()` - Find plan directory
+- `get_phase_file()` - Get expanded phase file path
+- `mark_phase_complete()` - Mark all phase tasks complete
+- `verify_checkbox_consistency()` - Validate synchronization
+
+---
+
 ## Phase Coordination Patterns
 
 ### Research Phase (Parallel Execution)

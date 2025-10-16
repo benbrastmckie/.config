@@ -769,6 +769,78 @@ This command uses specialized agents for each workflow phase:
 - **Tools**: Read, Write, Edit, Grep, Glob
 - **Invocation**: Single agent, sequential execution
 
+#### Plan Hierarchy Update in Documentation Phase
+
+After implementation completes successfully, update plan hierarchy to ensure all parent/grandparent plan files reflect completion status.
+
+**When to Update**:
+- After implementation phase completes (all tests passing)
+- Before generating workflow summary
+- For all expanded plan hierarchies (Level 1 and Level 2)
+
+**Update Workflow**:
+
+1. **Determine Plan Structure**:
+   ```bash
+   # Check if implementation created an expanded plan
+   PLAN_PATH=$(get_plan_path_from_implementation_phase)
+   STRUCTURE_LEVEL=$(detect_structure_level "$PLAN_PATH")
+   ```
+
+2. **Invoke Spec-Updater Agent** (if expanded):
+   ```
+   Task {
+     subagent_type: "general-purpose"
+     description: "Update plan hierarchy after workflow completion"
+     prompt: |
+       Read and follow the behavioral guidelines from:
+       /home/benjamin/.config/.claude/agents/spec-updater.md
+
+       You are acting as a Spec Updater Agent.
+
+       Update plan hierarchy for completed workflow.
+
+       Plan: ${PLAN_PATH}
+       All phases have been completed successfully.
+
+       Steps:
+       1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+       2. Detect structure level: detect_structure_level "${PLAN_PATH}"
+       3. For each completed phase: mark_phase_complete "${PLAN_PATH}" ${phase_num}
+       4. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" (all phases)
+       5. Report: List all files updated across hierarchy
+
+       Expected output:
+       - Confirmation of hierarchy update
+       - List of all updated files (stage → phase → main plan)
+       - Verification that all levels are synchronized
+   }
+   ```
+
+3. **Validate Update Success**:
+   - Check agent response for successful completion
+   - Verify all hierarchy levels updated (if applicable)
+   - Confirm no consistency errors reported
+
+4. **Include in Workflow Summary**:
+   Add hierarchy update confirmation to workflow summary:
+   ```markdown
+   ## Plan Hierarchy Status
+   - Structure Level: [0|1|2]
+   - All parent plans synchronized: [Yes|No]
+   - Files updated: [list of plan files updated]
+   ```
+
+**Error Handling**:
+- If hierarchy update fails: Log warning but continue with summary generation
+- User notified in workflow summary that manual sync may be needed
+- Link to checkbox-utils.sh for manual synchronization
+
+**Skip Conditions**:
+- Level 0 plans (single file) - no hierarchy to update
+- Plans not using progressive expansion
+- Implementation phase did not use /implement command
+
 ### Agent Integration Benefits
 - **Specialized Expertise**: Each agent optimized for its specific task
 - **Tool Restrictions**: Security through limited tool access per agent
