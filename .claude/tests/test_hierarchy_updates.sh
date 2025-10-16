@@ -76,7 +76,7 @@ EOF
   update_checkbox "$test_file" "Implement feature A" "x"
 
   # Verify update
-  if grep -qF "- [x] Implement feature A" "$test_file"; then
+  if grep -qF -- "- [x] Implement feature A" "$test_file"; then
     pass_test "Update checkbox in single file"
   else
     fail_test "Update checkbox in single file - checkbox not updated"
@@ -100,7 +100,7 @@ EOF
   update_checkbox "$test_file" "authentication middleware" "x"
 
   # Verify fuzzy match worked
-  if grep -qF "- [x] Implement authentication middleware" "$test_file"; then
+  if grep -qF -- "- [x] Implement authentication middleware" "$test_file"; then
     pass_test "Fuzzy matching works correctly"
   else
     fail_test "Fuzzy matching failed"
@@ -130,7 +130,7 @@ EOF
   propagate_checkbox_update "$plan_file" 1 "Create module A" "x" 2>/dev/null || true
 
   # Verify update
-  if grep -qF "- [x] Create module A" "$plan_file"; then
+  if grep -qF -- "- [x] Create module A" "$plan_file"; then
     pass_test "Level 0 propagation works"
   else
     fail_test "Level 0 propagation failed"
@@ -165,7 +165,7 @@ EOF
   mark_phase_complete "$plan_file" 1
 
   # Verify Phase 1 tasks marked complete
-  local phase1_complete=$(sed -n '/^### Phase 1:/,/^### Phase 2:/p' "$plan_file" | grep -cF "- [x]" || echo "0")
+  local phase1_complete=$(sed -n '/^### Phase 1:/,/^### Phase 2:/p' "$plan_file" | grep -cF -- "- [x]" || echo "0")
 
   if [[ "$phase1_complete" -eq 2 ]]; then
     pass_test "Mark phase complete (Level 0)"
