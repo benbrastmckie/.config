@@ -61,15 +61,15 @@ Preview the complete workflow execution without invoking agents or making change
 ├─────────────────────────────────────────────────────────────┤
 │ Phase 1: Research (Parallel - 3 agents)           ~8min    │
 │   ├─ research-specialist: "JWT authentication patterns"    │
-│   │    Report: specs/reports/jwt_patterns/001_*.md         │
+│   │    Report: specs/042_authentication/reports/001_*.md   │
 │   ├─ research-specialist: "Security best practices"        │
-│   │    Report: specs/reports/security/001_*.md             │
+│   │    Report: specs/042_authentication/reports/002_*.md   │
 │   └─ research-specialist: "Token refresh strategies"       │
-│        Report: specs/reports/token_refresh/001_*.md        │
+│        Report: specs/042_authentication/reports/003_*.md   │
 │                                                              │
 │ Phase 2: Planning (Sequential)                    ~5min    │
 │   └─ plan-architect: Synthesize research into plan         │
-│        Plan: specs/plans/NNN_user_authentication.md        │
+│        Plan: specs/042_authentication/plans/001_auth.md    │
 │        Uses: 3 research reports                             │
 │                                                              │
 │ Phase 3: Implementation (Adaptive)                ~12min   │
@@ -86,7 +86,7 @@ Preview the complete workflow execution without invoking agents or making change
 │ Phase 5: Documentation (Sequential)               ~3min    │
 │   └─ doc-writer: Update docs and generate summary          │
 │        Files: README.md, CHANGELOG.md, API.md               │
-│        Summary: specs/summaries/NNN_*.md                    │
+│        Summary: specs/042_authentication/summaries/001_*.md│
 ├─────────────────────────────────────────────────────────────┤
 │ Execution Summary:                                           │
 │   Total Phases: 5  |  Conditional Phases: 1  |  Parallel: Yes│
@@ -596,9 +596,9 @@ When invoked with `<workflow-description>`:
 **Agents Invoked**: 3 (plan-architect, code-writer, doc-writer)
 
 **Artifacts Generated**:
-- `specs/plans/NNN_hello_world.md` - Implementation plan
+- `specs/010_hello/plans/001_hello_world.md` - Implementation plan
 - `[source_file]` - Source file containing hello world function
-- `specs/summaries/NNN_hello_world_summary.md` - Workflow summary
+- `specs/010_hello/summaries/001_implementation_summary.md` - Workflow summary
 
 ### Example 2: Medium Feature (With Research)
 
@@ -616,11 +616,11 @@ When invoked with `<workflow-description>`:
 **Agents Invoked**: 5-6 (2-3 research-specialist, plan-architect, code-writer, doc-writer)
 
 **Artifacts Generated**:
-- `specs/reports/existing_patterns/001_config_patterns.md` - Research report #1
-- `specs/reports/best_practices/001_validation_practices.md` - Research report #2
-- `specs/plans/NNN_config_validation.md` - Implementation plan referencing reports
+- `specs/011_config/reports/001_config_patterns.md` - Research report #1
+- `specs/011_config/reports/002_validation_practices.md` - Research report #2
+- `specs/011_config/plans/001_config_validation.md` - Implementation plan referencing reports
 - `[source_files]` - Validation module implementation
-- `specs/summaries/NNN_config_validation_summary.md` - Workflow summary
+- `specs/011_config/summaries/001_implementation_summary.md` - Workflow summary
 
 ### Example 3: Complex Feature (With Debugging)
 
@@ -639,12 +639,12 @@ When invoked with `<workflow-description>`:
 **Agents Invoked**: 6-8 (2 research-specialist, plan-architect, code-writer, 1-2 debug-specialist, 1-2 code-writer for fixes, doc-writer)
 
 **Artifacts Generated**:
-- `specs/reports/auth_patterns/001_auth_research.md`
-- `specs/reports/security_practices/001_security_research.md`
-- `specs/plans/NNN_authentication_middleware.md`
-- `debug/phase2_failures/001_missing_dependency.md` - Debug report (if needed)
+- `specs/012_auth/reports/001_auth_research.md`
+- `specs/012_auth/reports/002_security_research.md`
+- `specs/012_auth/plans/001_authentication_middleware.md`
+- `specs/012_auth/debug/001_missing_dependency.md` - Debug report (if needed)
 - `[source_files]` - Authentication middleware implementation
-- `specs/summaries/NNN_authentication_summary.md`
+- `specs/012_auth/summaries/001_implementation_summary.md`
 
 ### Example 4: Workflow with Escalation
 
@@ -663,13 +663,13 @@ When invoked with `<workflow-description>`:
 **Agents Invoked**: 9-10 (3 research-specialist, plan-architect, code-writer, 3 debug-specialist, 3 code-writer for fixes)
 
 **Artifacts Generated**:
-- `specs/reports/payment_apis/001_api_research.md`
-- `specs/reports/integration_patterns/001_integration_research.md`
-- `specs/reports/security/001_security_research.md`
-- `specs/plans/NNN_payment_processing.md`
-- `debug/integration_issues/001_api_connection_failed.md` - Debug report iteration 1
-- `debug/integration_issues/002_authentication_error.md` - Debug report iteration 2
-- `debug/integration_issues/003_missing_credentials.md` - Debug report iteration 3
+- `specs/013_payment/reports/001_api_research.md`
+- `specs/013_payment/reports/002_integration_research.md`
+- `specs/013_payment/reports/003_security_research.md`
+- `specs/013_payment/plans/001_payment_processing.md`
+- `specs/013_payment/debug/001_api_connection_failed.md` - Debug report iteration 1
+- `specs/013_payment/debug/002_authentication_error.md` - Debug report iteration 2
+- `specs/013_payment/debug/003_missing_credentials.md` - Debug report iteration 3
 - `[source_files]` - Partial payment implementation
 - **NO summary file** (workflow escalated before documentation phase)
 

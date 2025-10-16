@@ -278,14 +278,49 @@ If git commit fails after marking phase complete:
 
 After completing all phases:
 
-### 1-3. Finalize Summary File
+### 1-3. Finalize Summary File Using Uniform Structure
 
-**Workflow**:
-- Check for partial summary: `[specs-dir]/summaries/NNN_partial.md`
-- If exists: Rename to `NNN_implementation_summary.md` and finalize
-- If not: Create new summary from scratch
-- Location: Extract specs-dir from plan metadata
-- Number: Match plan number (NNN)
+**Step 1: Source Required Utilities**
+```bash
+source .claude/lib/artifact-operations.sh
+source .claude/lib/template-integration.sh
+```
+
+**Step 2: Extract Topic Directory from Plan Path**
+```bash
+# Explicit path extraction from plan file path
+# Example: specs/042_auth/plans/001_plan.md → specs/042_auth
+PLAN_DIR=$(dirname "$PLAN_PATH")      # Get directory containing plan file
+TOPIC_DIR=$(dirname "$PLAN_DIR")      # Get parent directory (topic directory)
+
+# This works for all structure levels:
+# Level 0: specs/042_auth/plans/001_plan.md → specs/042_auth
+# Level 1: specs/042_auth/plans/001_plan/001_plan.md → specs/042_auth/plans/001_plan → ...
+# (For Level 1+, need to navigate up appropriately)
+```
+
+**Step 3: Create or Update Summary Using Utility**
+```bash
+# Check for partial summary first
+PARTIAL_SUMMARY="${TOPIC_DIR}/summaries/${PLAN_NUM}_partial.md"
+
+if [ -f "$PARTIAL_SUMMARY" ]; then
+  # Finalize existing partial summary
+  FINAL_SUMMARY="${TOPIC_DIR}/summaries/${PLAN_NUM}_implementation_summary.md"
+  mv "$PARTIAL_SUMMARY" "$FINAL_SUMMARY"
+  # Update status and completion fields in file
+else
+  # Create new summary using uniform structure
+  SUMMARY_PATH=$(create_topic_artifact "$TOPIC_DIR" "summaries" "implementation_summary_${PLAN_NUM}" "$SUMMARY_CONTENT")
+  # Creates: ${TOPIC_DIR}/summaries/NNN_implementation_summary.md
+fi
+```
+
+**Benefits of Uniform Structure**:
+- Summary in same topic directory as plan
+- Easy cross-referencing: `../summaries/NNN_*.md` from plan
+- Consistent numbering matches plan number
+- Single utility manages all artifact creation
 
 **Finalization updates**:
 - Remove "(PARTIAL)" from title

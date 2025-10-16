@@ -665,6 +665,35 @@ See `.claude/docs/specs_migration_guide.md` for detailed migration instructions.
 
 ## Troubleshooting
 
+### Issue: Flat Structure Bug (Legacy)
+
+**Symptom**: Artifacts created in flat structure (`specs/plans/`, `specs/reports/`) instead of topic-based (`specs/{NNN_topic}/plans/`, `specs/{NNN_topic}/reports/`)
+
+**Cause**: Commands prior to 2025-10-16 used inconsistent path construction
+
+**Solution**:
+- All commands updated to use uniform topic-based structure
+- `/plan`, `/report`, `/debug`, `/implement`, `/orchestrate` now use `create_topic_artifact()` utility
+- All artifacts MUST be in `specs/{NNN_topic}/{artifact_type}/` format
+- Flat structure is deprecated
+
+**Migration**:
+- Existing flat-structure artifacts can remain in place (still readable)
+- New artifacts automatically use uniform structure
+- Optional: Use manual migration to move old artifacts to topic directories
+
+**Verification**:
+```bash
+# Check for old flat structure (should be empty after updates)
+ls specs/plans/ 2>/dev/null && echo "WARNING: Flat plans/ directory exists"
+ls specs/reports/ 2>/dev/null && echo "WARNING: Flat reports/ directory exists"
+ls debug/ 2>/dev/null && echo "WARNING: Root debug/ directory exists"
+
+# All artifacts should now be in topic directories
+find specs -name "*.md" -type f | head -10
+# Expected: specs/NNN_topic/{artifact_type}/NNN_*.md pattern
+```
+
 ### Issue: Debug Files Not Tracked by Git
 
 **Symptom**: `git status` shows nothing for `specs/*/debug/*.md` files

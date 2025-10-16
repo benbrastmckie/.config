@@ -29,7 +29,7 @@ return {
     }
 
     -- Quickfix settings
-    vim.g.vimtex_quickfix_mode = 2                 -- Open quickfix window on errors (2 = auto-close when empty)
+    vim.g.vimtex_quickfix_mode = 0                 -- Open quickfix window on errors (2 = auto-close when empty)
     vim.g.vimtex_quickfix_ignore_filters = {       -- Filter out common noise
       'Underfull',
       'Overfull',

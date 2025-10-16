@@ -45,54 +45,79 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 #### Specifications Structure (`specs/`)
 [Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries]
 
-The specifications directory follows this structure:
-- `plans/` - Implementation plans (progressive structure levels)
-- `reports/{topic}/` - Research reports organized by topic (format: `NNN_report_name.md`)
-- `summaries/` - Implementation summaries linking plans to executed code
+The specifications directory uses a uniform topic-based structure where all artifacts for a feature are organized together:
 
-All specification documents use incremental three-digit numbering (001, 002, 003...).
+**Structure**: `specs/{NNN_topic}/{artifact_type}/NNN_artifact_name.md`
 
-**Location**: specs/ directories can exist at project root or in subdirectories for scoped specifications.
+**Topic Directories** (`{NNN_topic}`):
+- Three-digit numbered directories (001, 002, 003...)
+- Each topic contains all artifacts for a feature or area
+- Topic name describes the feature (e.g., `042_authentication`, `001_cleanup`)
 
-**Important**: specs/ directories are gitignored. Never attempt to commit plans, reports, or summaries to git. These are local working artifacts only.
+**Artifact Types** (subdirectories within each topic):
+- `plans/` - Implementation plans
+- `reports/` - Research reports
+- `summaries/` - Implementation summaries
+- `debug/` - Debug reports (COMMITTED to git for issue tracking)
+- `scripts/` - Investigation scripts (temporary)
+- `outputs/` - Test outputs (temporary)
+- `artifacts/` - Operation artifacts (optional cleanup)
+- `backups/` - Backups (optional cleanup)
+
+**Artifact Numbering**:
+- Each artifact type uses three-digit numbering within the topic (001, 002, 003...)
+- Numbering resets per topic directory
+- Example: `specs/042_auth/plans/001_user_auth.md`, `specs/042_auth/plans/002_session.md`
+
+**Location**: specs/ directories can exist at project root or in subdirectories (e.g., `.claude/specs/`) for scoped specifications.
+
+**Important**: Most specs/ artifacts are gitignored (plans/, reports/, summaries/, scripts/, outputs/, artifacts/, backups/). Debug reports in `debug/` subdirectories are COMMITTED to git for issue tracking.
 
 ##### Directory Structure Example
 
 ```
 {project}/
 ├── specs/
-│   ├── reports/
-│   │   ├── existing_patterns/
-│   │   │   ├── 001_auth_patterns.md
-│   │   │   └── 002_session_patterns.md
-│   │   ├── security_practices/
-│   │   │   └── 001_best_practices.md
-│   │   └── alternatives/
-│   │       └── 001_implementation_options.md
-│   ├── plans/
-│   │   ├── 042_user_authentication.md
-│   │   └── 043_session_refactor.md
-│   └── summaries/
-│       ├── 042_implementation_summary.md
-│       └── 043_implementation_summary.md
-└── debug/
-    ├── phase1_failures/
-    │   ├── 001_config_initialization.md
-    │   └── 002_dependency_missing.md
-    └── integration_issues/
-        └── 001_auth_timeout.md
+│   ├── 001_cleanup/
+│   │   ├── plans/
+│   │   │   ├── 001_refactor_utilities.md
+│   │   │   └── 002_fix_artifact_bugs.md
+│   │   ├── reports/
+│   │   │   └── 001_cleanup_analysis.md
+│   │   ├── summaries/
+│   │   │   └── 002_implementation_summary.md
+│   │   └── debug/
+│   │       └── 001_path_resolution.md
+│   └── 042_authentication/
+│       ├── plans/
+│       │   ├── 001_user_authentication.md
+│       │   └── 002_session_management.md
+│       ├── reports/
+│       │   ├── 001_auth_patterns.md
+│       │   ├── 002_security_practices.md
+│       │   └── 003_alternatives.md
+│       ├── summaries/
+│       │   └── 001_implementation_summary.md
+│       ├── debug/
+│       │   └── 001_token_refresh.md
+│       ├── scripts/
+│       ├── outputs/
+│       ├── artifacts/
+│       └── backups/
+└── .claude/
+    └── specs/
+        └── 001_config/
+            ├── plans/
+            ├── reports/
+            └── summaries/
 ```
 
-**Report Organization**:
-- Research reports are organized in topic subdirectories under `specs/reports/{topic}/`
-- Each topic has its own numbering sequence starting from 001
-- Topics are determined during research phase (e.g., "existing_patterns", "security_practices", "alternatives")
-
-**Debug Reports**:
-- Debug reports are created in `debug/{topic}/` (separate from specs/)
-- Debug reports are NOT gitignored (unlike specs/) for issue tracking
-- Topic examples: "phase1_failures", "integration_issues", "config_errors", "test_timeout"
-- Created during /orchestrate testing phase failures
+**Uniform Structure Benefits**:
+- All artifacts for a feature in one directory
+- Easy to find related plans, reports, summaries, debug reports
+- Consistent numbering within each artifact type
+- Clear separation between committed (debug/) and gitignored artifacts
+- Supports both project-root (`specs/`) and scoped (`.claude/specs/`) locations
 
 ##### Plan Structure Levels
 
@@ -468,10 +493,10 @@ The /orchestrate command coordinates specialized agents through end-to-end devel
 **Example**: `/orchestrate Add user authentication with email and password`
 
 **Artifacts Generated**:
-- Research reports: `specs/reports/{topic}/NNN_report.md`
-- Implementation plan: `specs/plans/NNN_feature.md` (or expanded directory structure)
-- Workflow summary: `specs/summaries/NNN_summary.md`
-- Debug reports (if needed): `debug/{topic}/NNN_report.md`
+- Research reports: `specs/{NNN_topic}/reports/NNN_report.md`
+- Implementation plan: `specs/{NNN_topic}/plans/001_feature.md` (or expanded directory structure)
+- Workflow summary: `specs/{NNN_topic}/summaries/001_summary.md`
+- Debug reports (if needed): `specs/{NNN_topic}/debug/NNN_report.md`
 - Complexity evaluation results: Saved in workflow checkpoint
 
 **State Management**:

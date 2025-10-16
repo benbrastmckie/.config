@@ -62,11 +62,43 @@ Investigates issues and creates a comprehensive diagnostic report without making
 - **Check Recent Changes**: Review git history if relevant
 - **Environmental Factors**: Consider system-specific issues
 
-### 4. Documentation
-- Create numbered report in `specs/reports/` directory
-- Include all findings and evidence
-- Document potential solutions (but don't implement)
-- Provide clear next steps for resolution
+### 4. Debug Report Creation Using Uniform Structure
+
+**Step 1: Source Required Utilities**
+```bash
+source .claude/lib/artifact-operations.sh
+source .claude/lib/template-integration.sh
+```
+
+**Step 2: Determine Topic Directory**
+- If plan path provided as context: Extract topic from plan path
+- If report path provided: Extract topic from report path
+- If no context: Create new topic for debug issue using `get_or_create_topic_dir()`
+
+**Step 3: Create Debug Report**
+```bash
+# Extract or create topic directory
+if [ -n "$PLAN_PATH" ]; then
+  # Extract from plan: specs/042_auth/plans/001_plan.md → specs/042_auth
+  TOPIC_DIR=$(dirname "$(dirname "$PLAN_PATH")")
+elif [ -n "$REPORT_PATH" ]; then
+  # Extract from report: specs/042_auth/reports/001_report.md → specs/042_auth
+  TOPIC_DIR=$(dirname "$(dirname "$REPORT_PATH")")
+else
+  # Create new topic for standalone debug
+  TOPIC_DIR=$(get_or_create_topic_dir "$ISSUE_DESCRIPTION" "specs")
+fi
+
+# Create debug report in topic's debug/ subdirectory
+DEBUG_PATH=$(create_topic_artifact "$TOPIC_DIR" "debug" "$DEBUG_NAME" "$DEBUG_CONTENT")
+# Creates: ${TOPIC_DIR}/debug/NNN_debug_issue.md
+```
+
+**Benefits**:
+- Debug reports in same topic as related plans/reports
+- Easy cross-referencing within topic
+- Debug reports are committed to git (unlike other artifact types)
+- Single utility manages creation
 
 ## Report Structure
 
@@ -143,12 +175,16 @@ Investigates issues and creates a comprehensive diagnostic report without making
 
 ## Output
 
-Creates a debug report at:
+Creates a debug report in the topic-based structure:
 ```
-specs/reports/NNN_debug_[issue_name].md
+specs/{NNN_topic}/debug/NNN_debug_[issue_name].md
 ```
 
-Where NNN is the next sequential number.
+Where:
+- `{NNN_topic}` = Three-digit numbered topic directory (e.g., `042_authentication`)
+- `NNN` = Next sequential number within topic's debug/ subdirectory
+
+**Important**: Debug reports are **committed to git** (unlike other artifact types which are gitignored). This ensures debugging history is preserved in the repository.
 
 ## Best Practices
 
@@ -184,7 +220,7 @@ Where NNN is the next sequential number.
 After creating the debug report, automatically annotate the plan with debugging history.
 
 ### Step 1: Identify Plan and Failed Phase
-- Check if any argument is a plan path (`specs/plans/*.md`)
+- Check if any argument is a plan path (e.g., `specs/{NNN_topic}/plans/*.md`)
 - If yes: Determine which phase failed (from issue description or plan analysis)
 - Extract phase number from user's description or by analyzing plan
 
@@ -195,12 +231,13 @@ After creating the debug report, automatically annotate the plan with debugging 
 
 ### Step 3: Annotate Plan with Debugging Notes
 - Use Edit tool to add "#### Debugging Notes" subsection after the failed phase
+- Use relative path for debug report link (e.g., `../debug/NNN_debug_*.md`)
 - Format:
   ```markdown
   #### Debugging Notes
   - **Date**: [YYYY-MM-DD]
   - **Issue**: [Brief description from issue-description argument]
-  - **Debug Report**: [link to specs/reports/NNN_debug_*.md]
+  - **Debug Report**: [../debug/NNN_debug_issue.md](../debug/NNN_debug_issue.md)
   - **Root Cause**: [One-line summary from debug report]
   - **Resolution**: Pending
   ```
@@ -237,7 +274,7 @@ Tasks:
 #### Debugging Notes
 - **Date**: 2025-10-03
 - **Issue**: Phase 3 tests failing with null pointer exception
-- **Debug Report**: [../reports/026_debug_phase3.md](../reports/026_debug_phase3.md)
+- **Debug Report**: [../debug/001_debug_phase3.md](../debug/001_debug_phase3.md)
 - **Root Cause**: Missing null check in error handler
 - **Resolution**: Applied
 - **Fix Applied In**: abc1234
