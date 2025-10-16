@@ -36,7 +36,7 @@ fi
 
 # Adaptive planning log
 if [[ -z "${AP_LOG_FILE:-}" ]]; then
-  readonly AP_LOG_FILE="${CLAUDE_LOGS_DIR:-.claude/logs}/adaptive-planning.log"
+  readonly AP_LOG_FILE="${CLAUDE_LOGS_DIR:-.claude/data/logs}/adaptive-planning.log"
 fi
 mkdir -p "$(dirname "$AP_LOG_FILE")"
 

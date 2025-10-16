@@ -69,7 +69,7 @@ readonly ARTIFACT_TYPE_SUMMARY="summary"
 readonly ARTIFACT_TYPE_CHECKPOINT="checkpoint"
 
 # Registry directory
-readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR}/.claude/registry"
+readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/registry"
 
 # ==============================================================================
 # Registry Operations
@@ -1547,7 +1547,7 @@ present_recommendations_for_approval() {
     echo "" >&2
 
     # Log approval decision
-    local log_dir="${CLAUDE_PROJECT_DIR}/.claude/logs"
+    local log_dir="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
     mkdir -p "$log_dir"
     local log_file="$log_dir/approval-decisions.log"
 
@@ -1560,7 +1560,7 @@ present_recommendations_for_approval() {
     echo "" >&2
 
     # Log rejection
-    local log_dir="${CLAUDE_PROJECT_DIR}/.claude/logs"
+    local log_dir="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
     mkdir -p "$log_dir"
     local log_file="$log_dir/approval-decisions.log"
 

@@ -304,7 +304,7 @@ Backward compatibility is secondary to these goals.
 - Maximum 2 replans per phase prevents infinite loops
 
 ### Logging
-- **Log File**: `.claude/logs/adaptive-planning.log`
+- **Log File**: `.claude/data/logs/adaptive-planning.log`
 - **Log Rotation**: 10MB max, 5 files retained
 - **Query Logs**: Use functions from `.claude/lib/adaptive-planning-logger.sh`
 

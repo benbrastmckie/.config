@@ -363,7 +363,7 @@ if [ -n "$ARTIFACT_ID" ]; then
   pass "register_artifact() returned artifact ID: $ARTIFACT_ID"
 
   # Check registry file exists
-  REGISTRY_DIR="$TEST_DIR/.claude/registry"
+  REGISTRY_DIR="$TEST_DIR/.claude/data/registry"
   if [ -d "$REGISTRY_DIR" ]; then
     pass "Registry directory created"
 

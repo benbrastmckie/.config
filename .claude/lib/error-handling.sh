@@ -342,7 +342,7 @@ retry_with_fallback() {
 # ==============================================================================
 
 # Error log directory
-readonly ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/logs"
+readonly ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/data/logs"
 
 # log_error_context: Log error with context for debugging
 # Usage: log_error_context <error-type> <location> <message> [context-data]
