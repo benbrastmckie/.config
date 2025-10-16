@@ -980,6 +980,406 @@ fi
 
 ---
 
+### Wave-Based Parallelization Integration
+
+After plan expansion completes, the orchestrator should analyze phase dependencies to enable parallel execution of independent phases during implementation.
+
+**Integration Point**: Between Plan Expansion Phase and Implementation Phase
+
+**Purpose**:
+- Parse Dependencies metadata from phase headers
+- Calculate execution waves using topological sorting (Kahn's algorithm)
+- Execute independent phases in parallel within each wave
+- Coordinate multiple code-writer agents for wave-based execution
+- Verify all phases in wave complete before proceeding to next wave
+
+#### Dependency Syntax
+
+Phase dependencies are specified in phase metadata using the `Dependencies` field:
+
+```markdown
+### Phase 2: Database Schema Setup
+
+**Dependencies**: [1]
+**Risk**: Medium
+**Estimated Time**: 2-3 hours
+```
+
+**Dependency Format**:
+- `Dependencies: []` - No dependencies (independent phase)
+- `Dependencies: [1]` - Depends on phase 1
+- `Dependencies: [1, 2]` - Depends on phases 1 and 2
+- `Dependencies: [1, 3, 5]` - Depends on multiple phases
+
+**Rules**:
+- Dependencies are phase numbers (integers)
+- A phase can only depend on earlier phases (no forward dependencies)
+- Circular dependencies are detected and rejected
+- Self-dependencies are invalid
+
+#### Dependency Analysis Integration
+
+**Step 1: Source Dependency Analysis Utilities**
+
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/dependency-analysis.sh"
+```
+
+**Step 2: Validate Dependencies**
+
+Before calculating waves, validate all dependency references:
+
+```bash
+# Validate dependencies in plan
+if ! validate_dependencies "$PLAN_PATH"; then
+  echo "ERROR: Invalid dependencies found in plan"
+  echo "Fix dependency errors before proceeding"
+  save_checkpoint_and_escalate
+  exit 1
+fi
+
+# Check for circular dependencies
+if ! detect_circular_dependencies "$PLAN_PATH"; then
+  echo "ERROR: Circular dependencies detected in plan"
+  echo "Plan has dependency cycles - cannot proceed"
+  save_checkpoint_and_escalate
+  exit 1
+fi
+
+echo "PROGRESS: Dependency validation complete - no issues found"
+```
+
+**Step 3: Calculate Execution Waves**
+
+Use Kahn's algorithm to calculate execution waves:
+
+```bash
+# Calculate waves using topological sort
+WAVES_JSON=$(calculate_execution_waves "$PLAN_PATH")
+
+if [ $? -ne 0 ]; then
+  echo "ERROR: Wave calculation failed"
+  echo "$WAVES_JSON"
+  save_checkpoint_and_escalate
+  exit 1
+fi
+
+# Parse wave structure
+WAVE_COUNT=$(echo "$WAVES_JSON" | jq 'length')
+echo "PROGRESS: Calculated $WAVE_COUNT execution waves"
+
+# Display wave structure
+for wave_idx in $(seq 0 $((WAVE_COUNT - 1))); do
+  WAVE_PHASES=$(echo "$WAVES_JSON" | jq -r ".[$wave_idx] | join(\", \")")
+  echo "PROGRESS: Wave $((wave_idx + 1)): phases $WAVE_PHASES"
+done
+```
+
+**Step 4: Wave-Based Implementation Loop**
+
+Execute phases wave-by-wave, with parallel execution within each wave:
+
+```bash
+# Execute each wave
+for wave_idx in $(seq 0 $((WAVE_COUNT - 1))); do
+  WAVE_NUM=$((wave_idx + 1))
+  WAVE_PHASES=$(echo "$WAVES_JSON" | jq -r ".[$wave_idx][]")
+  PHASE_COUNT=$(echo "$WAVE_PHASES" | wc -w)
+
+  echo "PROGRESS: Starting Wave $WAVE_NUM ($PHASE_COUNT phases)"
+
+  if [ $PHASE_COUNT -eq 1 ]; then
+    # Single phase - execute sequentially
+    phase_num=$WAVE_PHASES
+    echo "PROGRESS: Executing phase $phase_num..."
+
+    # Invoke code-writer for single phase
+    invoke_code_writer "$PLAN_PATH" "$phase_num"
+
+    echo "PROGRESS: Phase $phase_num complete"
+  else
+    # Multiple phases - execute in parallel
+    echo "PROGRESS: Executing $PHASE_COUNT phases in parallel..."
+
+    # Invoke all code-writer agents in parallel (SINGLE MESSAGE)
+    declare -a AGENT_PROMPTS
+    for phase_num in $WAVE_PHASES; do
+      AGENT_PROMPTS+=("$(create_code_writer_prompt "$PLAN_PATH" "$phase_num")")
+    done
+
+    # Parallel invocation (all Task calls in one message)
+    invoke_parallel_code_writers "${AGENT_PROMPTS[@]}"
+
+    echo "PROGRESS: All $PHASE_COUNT phases in wave complete"
+  fi
+
+  # Verify all phases in wave completed successfully
+  for phase_num in $WAVE_PHASES; do
+    if ! verify_phase_completion "$PLAN_PATH" "$phase_num"; then
+      echo "ERROR: Phase $phase_num failed"
+      save_checkpoint_and_escalate
+      exit 1
+    fi
+  done
+
+  echo "PROGRESS: Wave $WAVE_NUM complete - proceeding to next wave"
+done
+
+echo "PROGRESS: All waves complete - implementation finished"
+```
+
+#### Parallel Code-Writer Invocation Pattern
+
+When a wave contains multiple independent phases, invoke all code-writer agents in a SINGLE message:
+
+```markdown
+I'll implement 3 independent phases in parallel (Wave 2):
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Implement phase 3"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/code-writer.md
+
+          Task: Implement phase 3 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 3
+          Phase Name: [PHASE_NAME]
+
+          Use SlashCommand tool to invoke:
+          /implement [PLAN_PATH] 3
+
+          Mark phase complete and create git commit when done."
+}
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Implement phase 4"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/code-writer.md
+
+          Task: Implement phase 4 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 4
+          Phase Name: [PHASE_NAME]
+
+          Use SlashCommand tool to invoke:
+          /implement [PLAN_PATH] 4
+
+          Mark phase complete and create git commit when done."
+}
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Implement phase 5"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/code-writer.md
+
+          Task: Implement phase 5 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 5
+          Phase Name: [PHASE_NAME]
+
+          Use SlashCommand tool to invoke:
+          /implement [PLAN_PATH] 5
+
+          Mark phase complete and create git commit when done."
+}
+```
+
+**Critical**: All Task invocations MUST be in a single message for true parallel execution.
+
+#### Sequential Fallback
+
+If parallel execution fails or is not suitable, fall back to sequential execution:
+
+```bash
+# Sequential fallback
+echo "⚠ Warning: Parallel execution not available - using sequential fallback"
+
+for phase_num in $WAVE_PHASES; do
+  echo "PROGRESS: Executing phase $phase_num sequentially..."
+  invoke_code_writer "$PLAN_PATH" "$phase_num"
+  verify_phase_completion "$PLAN_PATH" "$phase_num" || exit 1
+done
+```
+
+#### Checkpoint Integration
+
+Update checkpoint with wave execution state:
+
+```json
+{
+  "checkpoint_type": "orchestrate",
+  "current_phase": "implementation",
+  "completed_phases": ["analysis", "research", "planning", "complexity_evaluation", "expansion"],
+
+  "wave_execution": {
+    "plan_path": "/absolute/path/to/plan.md",
+    "total_waves": 3,
+    "current_wave": 2,
+    "completed_waves": [1],
+    "wave_structure": [
+      [1, 2],
+      [3, 4, 5],
+      [6]
+    ],
+    "phases_completed": [1, 2],
+    "phases_in_progress": [3, 4, 5]
+  }
+}
+```
+
+#### Error Handling
+
+**Phase Failure in Wave**:
+```bash
+# If any phase in wave fails, abort wave
+for phase_num in $WAVE_PHASES; do
+  if ! verify_phase_completion "$PLAN_PATH" "$phase_num"; then
+    echo "ERROR: Phase $phase_num failed in Wave $WAVE_NUM"
+
+    # Check which phases succeeded
+    for p in $WAVE_PHASES; do
+      if verify_phase_completion "$PLAN_PATH" "$p"; then
+        echo "Phase $p: SUCCESS"
+      else
+        echo "Phase $p: FAILED"
+      fi
+    done
+
+    # Save checkpoint with partial progress
+    save_checkpoint "orchestrate" "$WORKFLOW_STATE"
+
+    # Enter debugging loop for failed phase
+    echo "PROGRESS: Entering debugging loop for phase $phase_num"
+    enter_debugging_loop "$phase_num"
+  fi
+done
+```
+
+**Invalid Dependencies**:
+```bash
+# Validate dependencies before wave calculation
+if ! validate_dependencies "$PLAN_PATH"; then
+  INVALID_DEPS=$(parse_invalid_dependencies "$PLAN_PATH")
+  echo "ERROR: Invalid dependencies detected:"
+  echo "$INVALID_DEPS"
+  echo ""
+  echo "Fix these dependency errors in the plan before continuing"
+  save_checkpoint_and_escalate
+  exit 1
+fi
+```
+
+**Circular Dependencies**:
+```bash
+# Detect circular dependencies
+if detect_circular_dependencies "$PLAN_PATH"; then
+  echo "No circular dependencies detected ✓"
+else
+  echo "ERROR: Circular dependency cycle detected"
+
+  # calculate_execution_waves will identify phases in cycle
+  CYCLE_INFO=$(calculate_execution_waves "$PLAN_PATH" 2>&1)
+  echo "$CYCLE_INFO"
+
+  echo "Break the dependency cycle before continuing"
+  save_checkpoint_and_escalate
+  exit 1
+fi
+```
+
+#### Progress Markers
+
+Use consistent progress markers for wave-based execution:
+
+```
+PROGRESS: Starting Dependency Analysis Phase
+PROGRESS: Validating phase dependencies...
+PROGRESS: All dependencies valid ✓
+PROGRESS: Checking for circular dependencies...
+PROGRESS: No circular dependencies detected ✓
+PROGRESS: Calculating execution waves using topological sort...
+PROGRESS: Calculated 3 execution waves
+PROGRESS: Wave 1: phases 1, 2
+PROGRESS: Wave 2: phases 3, 4, 5
+PROGRESS: Wave 3: phase 6
+PROGRESS: Starting Wave-Based Implementation
+PROGRESS: Starting Wave 1 (2 phases)
+PROGRESS: Executing phases 1, 2 in parallel...
+PROGRESS: Phase 1 complete ✓
+PROGRESS: Phase 2 complete ✓
+PROGRESS: Wave 1 complete - proceeding to Wave 2
+PROGRESS: Starting Wave 2 (3 phases)
+PROGRESS: Executing phases 3, 4, 5 in parallel...
+PROGRESS: Phase 3 complete ✓
+PROGRESS: Phase 4 complete ✓
+PROGRESS: Phase 5 complete ✓
+PROGRESS: Wave 2 complete - proceeding to Wave 3
+PROGRESS: Starting Wave 3 (1 phase)
+PROGRESS: Executing phase 6...
+PROGRESS: Phase 6 complete ✓
+PROGRESS: Wave 3 complete
+PROGRESS: All waves complete - implementation finished
+```
+
+#### Performance Metrics
+
+Track wave-based parallelization effectiveness:
+
+```json
+{
+  "performance_metrics": {
+    "wave_execution": {
+      "total_waves": 3,
+      "total_phases": 6,
+      "parallel_phases": 5,
+      "sequential_phases": 1,
+      "estimated_sequential_duration": 360,
+      "actual_parallel_duration": 180,
+      "time_savings_seconds": 180,
+      "parallelization_effectiveness": 0.50
+    }
+  }
+}
+```
+
+**Effectiveness Calculation**:
+```
+effectiveness = (sequential_time - parallel_time) / sequential_time
+target: > 0.40 (40% time savings)
+```
+
+#### Integration with Plan Templates
+
+Update plan templates to include Dependencies field:
+
+**Phase Template Example**:
+```markdown
+### Phase N: [Phase Name]
+
+**Objective**: [What this phase accomplishes]
+**Dependencies**: [] or [1, 2, 3]
+**Complexity**: Low|Medium|High
+**Risk**: Low|Medium|High
+**Estimated Time**: X-Y hours
+
+#### Tasks
+
+- [ ] Task 1
+- [ ] Task 2
+```
+
+#### Documentation References
+
+For dependency syntax and wave calculation details:
+- Dependency Analysis: `.claude/lib/dependency-analysis.sh`
+- Phase Dependencies Guide: `.claude/docs/phase_dependencies.md` (to be created in Task 4.4)
+- Plan Templates: `.claude/templates/*.yaml` (updated in Task 4.3)
+
+---
+
 ### Implementation Agent Prompt Template
 
 Template for code-writer agent invocation during implementation phase.
