@@ -1,0 +1,62 @@
+# Global latexmk configuration for optimized LaTeX compilation
+# See: https://mg.readthedocs.io/latexmk.html
+
+# PDF Generation Mode
+# 1 = pdflatex, 4 = lualatex, 5 = xelatex
+$pdf_mode = 5;  # Use XeLaTeX for Unicode and modern font support
+
+# Draft Mode Support
+# Set $draft_mode=1 via command line or environment for fast iteration
+# Example: latexmk -pdf -e '$draft_mode=1' file.tex
+$draft_mode = $ENV{'LATEXMK_DRAFT_MODE'} || 0;  # Default: final mode
+
+# XeLaTeX Configuration
+# Draft mode: zero compression for faster compilation
+# Final mode: full optimization
+if ($draft_mode) {
+  $xelatex = 'xelatex -interaction=nonstopmode -file-line-error -synctex=1 -output-driver="xdvipdfmx -z0" %O %S';
+} else {
+  $xelatex = 'xelatex -interaction=nonstopmode -file-line-error -synctex=1 %O %S';
+}
+
+# Build Directory
+# Isolates build artifacts from source files
+$out_dir = 'build';
+$aux_dir = 'build';
+
+# Auxiliary File Handling
+# Faster handling of .aux files and bibliography processing
+$emulate_aux = 1;
+
+# Compilation Loop Prevention
+# Maximum number of recompilation attempts
+$max_repeat = 5;
+
+# Error Reporting
+# Better error messages for debugging
+# -file-line-error is already in $xelatex command above
+
+# Cleanup Rules
+# Files to remove with latexmk -c (clean)
+@generated_exts = qw(aux bbl bcf blg fdb_latexmk fls log nav out run.xml snm synctex.gz toc vrb);
+
+# Files to remove with latexmk -C (clean all)
+$clean_ext = "bbl nav snm vrb run.xml synctex.gz";
+
+# Preview/Viewer Configuration
+# (This can be overridden by VimTeX)
+$pdf_previewer = 'start sioyek %S';
+
+# Continuous Mode
+# Auto-recompile on file changes (can be enabled per-project)
+# $preview_continuous_mode = 1;  # Uncomment for auto-compile
+
+# BiTeX/BibLaTeX Configuration
+$bibtex_use = 2;  # Use biber for biblatex
+
+# Project-Specific Overrides
+# To override these settings in a specific project, create a .latexmkrc
+# file in your project directory with the settings you want to change.
+# Example:
+#   $pdf_mode = 1;  # Use pdflatex instead
+#   $out_dir = '.';  # Build in source directory
