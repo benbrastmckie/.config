@@ -175,11 +175,98 @@ Analyze phase dependencies to enable parallel execution in waves.
 
 ## Phase Execution Protocol
 
-The phase execution protocol defines the step-by-step workflow for executing each phase: task execution, testing, adaptive planning triggers, commit workflow, and error handling.
+The phase execution protocol defines the step-by-step workflow for executing each phase: task execution, testing, adaptive planning triggers, commit workflow, plan hierarchy updates, and error handling.
 
 **See**: [Phase Execution Protocol](shared/phase-execution.md) for comprehensive details on all execution steps and workflows.
 
-**Quick Reference**: For each phase → Read phase file → Execute tasks sequentially → Run tests after each task → Check adaptive triggers → Create git commit → Update checkpoints → Move to next phase
+**Quick Reference**: For each phase → Read phase file → Execute tasks sequentially → Run tests after each task → Check adaptive triggers → Create git commit → **Update plan hierarchy** → Update checkpoints → Move to next phase
+
+### Plan Hierarchy Update After Phase Completion
+
+After successfully completing a phase (tests passing and git commit created), update the plan hierarchy to ensure all parent/grandparent plan files reflect completion status.
+
+**When to Update**:
+- After git commit succeeds for the phase
+- Before saving the checkpoint
+- For all hierarchy levels (Level 0, Level 1, Level 2)
+
+**Update Workflow**:
+
+1. **Invoke Spec-Updater Agent**:
+   ```
+   Task {
+     subagent_type: "general-purpose"
+     description: "Update plan hierarchy after Phase N completion"
+     prompt: |
+       Read and follow the behavioral guidelines from:
+       /home/benjamin/.config/.claude/agents/spec-updater.md
+
+       You are acting as a Spec Updater Agent.
+
+       Update plan hierarchy checkboxes after Phase ${PHASE_NUM} completion.
+
+       Plan: ${PLAN_PATH}
+       Phase: ${PHASE_NUM}
+       All tasks in this phase have been completed.
+
+       Steps:
+       1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+       2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
+       3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
+       4. Report: List all files updated (stage → phase → main plan)
+
+       Expected output:
+       - Confirmation of hierarchy update
+       - List of updated files
+       - Verification status
+   }
+   ```
+
+2. **Validate Update Success**:
+   - Check agent response for successful completion
+   - Verify all hierarchy levels updated
+   - Confirm no consistency errors
+
+3. **Handle Update Failures**:
+   - If hierarchy update fails: Log error and escalate to user
+   - Do NOT proceed to checkpoint save if update fails
+   - Preserve phase completion in working directory
+   - User can manually fix hierarchy and resume
+
+4. **Update Checkpoint State**:
+   Add `hierarchy_updated` field to checkpoint data:
+   ```bash
+   CHECKPOINT_DATA='{
+     "workflow_description":"implement",
+     "plan_path":"'$PLAN_PATH'",
+     "current_phase":'$NEXT_PHASE',
+     "total_phases":'$TOTAL_PHASES',
+     "status":"in_progress",
+     "tests_passing":true,
+     "hierarchy_updated":true,
+     "replan_count":'$REPLAN_COUNT'
+   }'
+   save_checkpoint "implement" "$CHECKPOINT_DATA"
+   ```
+
+**Hierarchy Levels**:
+- **Level 0** (single file): Update checkboxes in main plan only
+- **Level 1** (expanded phases): Update phase file + main plan
+- **Level 2** (stage expansion): Update stage file + phase file + main plan
+
+**Error Handling**:
+- Hierarchy update failures are non-fatal but logged
+- User notified if parent plans couldn't be updated
+- Phase still marked complete in deepest level file
+- Can be manually synced later using checkbox-utils.sh
+
+**Graceful Degradation**:
+If spec-updater agent is unavailable, fall back to direct checkbox-utils.sh calls:
+```bash
+source .claude/lib/checkbox-utils.sh
+mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"
+```
 
 ## Test Detection Patterns
 
@@ -526,7 +613,7 @@ delete_checkpoint "implement"  # Cleanup
 4. Plan file not modified since checkpoint
 5. Status = "in_progress"
 
-**Checkpoint State Fields**: workflow_description, plan_path, current_phase, total_phases, completed_phases, status, tests_passing, replan_count, phase_replan_count, replan_history
+**Checkpoint State Fields**: workflow_description, plan_path, current_phase, total_phases, completed_phases, status, tests_passing, hierarchy_updated, replan_count, phase_replan_count, replan_history
 
 **Benefits**: Smart auto-resume (90% automatic), 5-condition safety checks, clear feedback on skip reason, schema migration, atomic saves, consistent naming, built-in validation
 
