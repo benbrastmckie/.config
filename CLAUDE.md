@@ -253,6 +253,16 @@ Commands should check CLAUDE.md in priority order:
 - **Markdown**: Use Unicode box-drawing for diagrams, follow CommonMark spec
 - **Shell Scripts**: Follow ShellCheck recommendations, use bash -e for error handling
 
+### Command and Agent Architecture Standards
+[Used by: All slash commands and agent development]
+
+- **Command files** (`.claude/commands/*.md`) are AI execution scripts, not traditional code
+- **Executable instructions** must be inline, not replaced by external references
+- **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
+- **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
+- **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
+- See [Command Architecture Standards](.claude/docs/command_architecture_standards.md) for complete guidelines
+
 ## Development Philosophy
 [Used by: /refactor, /implement, /plan, /document]
 
@@ -261,6 +271,7 @@ Commands should check CLAUDE.md in priority order:
 - **System integration**: What matters is that existing commands and agents work well together in the current implementation
 - **No legacy burden**: Don't compromise current design to support old formats or deprecated patterns
 - **Migration is acceptable**: Breaking changes are acceptable when they improve system quality
+- **Exception - Command Files**: Command and agent files require special refactoring rules (see [Command Architecture Standards](.claude/docs/command_architecture_standards.md)) because they are AI prompts, not traditional code
 
 ### Documentation Standards
 - **Present-focused**: Document the current implementation accurately and clearly
