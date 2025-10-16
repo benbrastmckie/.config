@@ -92,9 +92,9 @@ propagate_checkbox_update() {
     return 0
   fi
 
-  # Get main plan file
+  # Get main plan file (parent directory of plan_dir + plan_name.md)
   local plan_name=$(basename "$plan_dir")
-  local main_plan="$plan_dir/$plan_name.md"
+  local main_plan="$(dirname "$plan_dir")/$plan_name.md"
 
   # Level 1 or 2: Check if phase is expanded
   local phase_file=$(get_phase_file "$plan_path" "$phase_num" 2>/dev/null || echo "")
@@ -143,7 +143,7 @@ verify_checkbox_consistency() {
   # Get plan directory
   local plan_dir=$(get_plan_directory "$plan_path")
   local plan_name=$(basename "$plan_dir")
-  local main_plan="$plan_dir/$plan_name.md"
+  local main_plan="$(dirname "$plan_dir")/$plan_name.md"
 
   # Check if phase is expanded
   local phase_file=$(get_phase_file "$plan_path" "$phase_num" 2>/dev/null || echo "")
@@ -219,9 +219,9 @@ mark_phase_complete() {
     return 0
   fi
 
-  # Get main plan file
+  # Get main plan file (parent directory of plan_dir + plan_name.md)
   local plan_name=$(basename "$plan_dir")
-  local main_plan="$plan_dir/$plan_name.md"
+  local main_plan="$(dirname "$plan_dir")/$plan_name.md"
 
   # Get phase file if expanded
   local phase_file=$(get_phase_file "$plan_path" "$phase_num" 2>/dev/null || echo "")
