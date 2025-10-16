@@ -365,6 +365,621 @@ PLAN_PATH: [PLAN_PATH]
 
 ---
 
+### Complexity Evaluation Integration
+
+After the plan-architect creates the implementation plan, the orchestrator should evaluate plan complexity to determine if phases need expansion before implementation begins.
+
+**Integration Point**: Between Planning Phase and Implementation Phase
+
+**Purpose**:
+- Analyze phase complexity using context-aware evaluation
+- Recommend phase expansion for complex phases (complexity ≥7 or >10 tasks)
+- Enable automatic `/expand` invocation based on complexity analysis
+- Save complexity evaluation results in checkpoint for later reference
+
+#### Hybrid Complexity Evaluation
+
+The orchestrator uses a hybrid evaluation approach combining threshold-based and agent-based complexity scoring:
+
+**Threshold-Based Scoring** (Fast, keyword-based):
+- Function: `calculate_phase_complexity()` from `complexity-utils.sh`
+- Speed: Instant
+- Accuracy: ~70%
+- Method: Keyword matching + task counting
+
+**Agent-Based Scoring** (Slow, context-aware):
+- Agent: `complexity-estimator` (`.claude/agents/complexity-estimator.md`)
+- Speed: ~5-15 seconds per phase
+- Accuracy: ~85-90%
+- Method: Contextual analysis considering architectural impact, integration complexity, uncertainty
+
+**Hybrid Evaluation** (Best of both):
+- Function: `hybrid_complexity_evaluation()` from `complexity-utils.sh`
+- Logic: Threshold first, then agent if score ≥7 or tasks ≥8
+- Reconciliation: Confidence-based score merging
+
+#### Integration Steps
+
+**Step 1: Source Complexity Utilities**
+
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
+```
+
+**Step 2: Evaluate Each Phase**
+
+After plan creation, evaluate all phases:
+
+```bash
+# Read plan file
+PLAN_PATH="/path/to/plan.md"
+
+# Extract phases from plan
+PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH")
+
+# Evaluate each phase
+declare -a COMPLEXITY_RESULTS
+
+for phase_num in $(seq 1 $PHASE_COUNT); do
+  # Extract phase name
+  PHASE_NAME=$(sed -n "/^### Phase $phase_num:/p" "$PLAN_PATH" | sed 's/^### Phase [0-9]*: //')
+
+  # Extract task list for phase
+  TASK_LIST=$(sed -n "/^### Phase $phase_num:/,/^### Phase/p" "$PLAN_PATH" | grep "^- \[ \]")
+
+  # Run hybrid complexity evaluation
+  COMPLEXITY_JSON=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_PATH")
+
+  # Store result
+  COMPLEXITY_RESULTS[$phase_num]="$COMPLEXITY_JSON"
+
+  echo "PROGRESS: Phase $phase_num complexity evaluation complete"
+done
+```
+
+**Step 3: Parse Evaluation Results**
+
+```bash
+# Parse complexity results
+for phase_num in $(seq 1 $PHASE_COUNT); do
+  RESULT="${COMPLEXITY_RESULTS[$phase_num]}"
+
+  # Extract final score
+  FINAL_SCORE=$(echo "$RESULT" | jq -r '.final_score')
+
+  # Extract evaluation method (threshold, agent, hybrid, threshold_fallback)
+  EVAL_METHOD=$(echo "$RESULT" | jq -r '.evaluation_method')
+
+  # Check if expansion recommended
+  if awk -v score="$FINAL_SCORE" 'BEGIN {exit !(score >= 8.0)}'; then
+    echo "PROGRESS: Phase $phase_num (score: $FINAL_SCORE) - expansion recommended"
+    PHASES_TO_EXPAND+=("$phase_num")
+  else
+    echo "PROGRESS: Phase $phase_num (score: $FINAL_SCORE) - no expansion needed"
+  fi
+done
+```
+
+**Step 4: Automatic Phase Expansion**
+
+If any phases exceed complexity threshold, automatically expand them:
+
+```bash
+if [ ${#PHASES_TO_EXPAND[@]} -gt 0 ]; then
+  echo "PROGRESS: Expanding ${#PHASES_TO_EXPAND[@]} complex phases..."
+
+  for phase_num in "${PHASES_TO_EXPAND[@]}"; do
+    # Invoke /expand command for each phase
+    /expand "$PLAN_PATH" --phase "$phase_num" --auto-mode
+
+    echo "PROGRESS: Phase $phase_num expanded to separate file"
+  done
+
+  # Update plan structure level
+  PLAN_STRUCTURE_LEVEL=1  # Now Level 1 (phase files)
+fi
+```
+
+**Step 5: Update Checkpoint with Complexity Results**
+
+Add complexity evaluation results to checkpoint:
+
+```json
+{
+  "checkpoint_type": "orchestrate",
+  "current_phase": "complexity_evaluation",
+  "completed_phases": ["analysis", "research", "planning"],
+
+  "complexity_evaluation": {
+    "evaluated_at": "2025-10-15T14:45:00",
+    "plan_path": "/absolute/path/to/plan.md",
+    "phase_evaluations": [
+      {
+        "phase_num": 1,
+        "phase_name": "Foundation Setup",
+        "final_score": 5.0,
+        "evaluation_method": "threshold",
+        "expansion_recommended": false
+      },
+      {
+        "phase_num": 2,
+        "phase_name": "Core Architecture Refactor",
+        "final_score": 9.0,
+        "evaluation_method": "agent",
+        "agent_confidence": "high",
+        "expansion_recommended": true,
+        "expanded": true
+      }
+    ],
+    "phases_expanded": [2, 4],
+    "plan_structure_level": 1
+  },
+
+  "context_preservation": {
+    "plan_path": "/absolute/path/to/plan.md",
+    ...
+  }
+}
+```
+
+#### Error Handling
+
+**Agent Invocation Failure**:
+```bash
+# If agent-based scoring fails, fallback to threshold
+COMPLEXITY_JSON=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_PATH")
+
+EVAL_METHOD=$(echo "$COMPLEXITY_JSON" | jq -r '.evaluation_method')
+
+if [ "$EVAL_METHOD" = "threshold_fallback" ]; then
+  echo "⚠ Warning: Agent evaluation failed, using threshold scoring"
+  AGENT_ERROR=$(echo "$COMPLEXITY_JSON" | jq -r '.agent_error')
+  echo "Agent error: $AGENT_ERROR"
+fi
+```
+
+**Parsing Failures**:
+```bash
+# Validate JSON structure
+if ! echo "$COMPLEXITY_JSON" | jq empty 2>/dev/null; then
+  echo "ERROR: Invalid complexity evaluation JSON"
+  # Fallback: Use threshold scoring only
+  THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
+  COMPLEXITY_JSON=$(jq -n --argjson score "$THRESHOLD_SCORE" '{final_score:$score,evaluation_method:"threshold_fallback"}')
+fi
+```
+
+#### Progress Markers
+
+Use consistent progress markers for complexity evaluation:
+
+```
+PROGRESS: Starting Complexity Evaluation Phase
+PROGRESS: Evaluating Phase 1/5 complexity...
+PROGRESS: Phase 1 - score: 5.0 (threshold) - no expansion
+PROGRESS: Evaluating Phase 2/5 complexity...
+PROGRESS: Invoking complexity-estimator agent for Phase 2...
+PROGRESS: Phase 2 - score: 9.0 (agent, high confidence) - expansion recommended
+PROGRESS: Complexity Evaluation Phase complete - 2/5 phases need expansion
+PROGRESS: Expanding complex phases...
+PROGRESS: Phase 2 expanded to separate file
+PROGRESS: Phase 4 expanded to separate file
+PROGRESS: Expansion complete - plan structure now Level 1
+```
+
+#### Integration with /expand Command
+
+When automatic expansion is triggered, the `/expand` command should be invoked in auto-mode:
+
+```bash
+# Invoke /expand with --auto-mode flag
+/expand "$PLAN_PATH" --phase "$phase_num" --auto-mode
+```
+
+The `--auto-mode` flag (to be implemented in Phase 3, Task 3.3) enables:
+- Non-interactive expansion
+- JSON output for automation
+- Validation feedback for orchestrator
+- Preservation of spec updater checklist
+
+#### Complexity Thresholds
+
+The following thresholds control expansion decisions (from CLAUDE.md):
+
+- **Expansion Threshold**: 8.0 (phases with complexity score ≥8 are expanded)
+- **Task Count Threshold**: 10 (phases with >10 tasks are expanded regardless of score)
+- **Agent Invocation Threshold**: 7.0 (agent invoked if threshold score ≥7 or tasks ≥8)
+
+These thresholds can be adjusted in CLAUDE.md's "Adaptive Planning Configuration" section.
+
+#### Performance Considerations
+
+- **Threshold Evaluation**: <1 second per phase
+- **Agent Evaluation**: 5-15 seconds per phase (only for complex phases)
+- **Total Overhead**: ~30-60 seconds for typical 5-phase plan
+- **Parallelization**: Not applicable (sequential evaluation required for context)
+
+#### Integration with Spec Updater
+
+After expansion, ensure spec updater checklist is preserved in expanded files:
+
+```bash
+# Verify spec updater checklist in expanded phase file
+EXPANDED_PHASE_FILE="$PLAN_DIR/phase_${phase_num}_*.md"
+
+if ! grep -q "Spec Updater Checklist" "$EXPANDED_PHASE_FILE"; then
+  echo "⚠ Warning: Spec updater checklist missing in expanded phase"
+  # Checklist should be preserved by /expand command
+fi
+```
+
+---
+
+### Plan Expansion Integration
+
+After complexity evaluation completes, the orchestrator should coordinate automatic expansion of complex phases before implementation begins.
+
+**Integration Point**: Between Complexity Evaluation Phase and Implementation Phase
+
+**Purpose**:
+- Automatically expand phases with complexity ≥8 or >10 tasks
+- Coordinate parallel or sequential expansion based on dependencies
+- Verify all expansions successful before proceeding to implementation
+- Update plan structure level after expansions
+
+#### Expansion Coordination Logic
+
+**Step 1: Parse Complexity Evaluation Results**
+
+Extract expansion recommendations from complexity evaluator output:
+
+```bash
+# Complexity evaluator returns JSON with phases_to_expand
+COMPLEXITY_RESULTS=$(hybrid_complexity_evaluation "$PLAN_PATH")
+
+# Extract phases that need expansion
+PHASES_TO_EXPAND=$(echo "$COMPLEXITY_RESULTS" | jq -r '.expansion_plan.recommendations[] | select(.recommendation == "expand") | .phase_num')
+
+# Check if can parallelize
+CAN_PARALLELIZE=$(echo "$COMPLEXITY_RESULTS" | jq -r '.expansion_plan.can_parallelize')
+```
+
+**Step 2: Determine Expansion Strategy**
+
+Based on `can_parallelize` flag:
+
+```markdown
+if CAN_PARALLELIZE == true:
+  # Invoke all plan_expander agents in parallel (single message)
+  for phase in PHASES_TO_EXPAND:
+    Task(agent: plan_expander, phase: phase_num)
+
+else:
+  # Invoke plan_expander agents sequentially
+  for phase in PHASES_TO_EXPAND:
+    result = Task(agent: plan_expander, phase: phase_num)
+    verify(result)
+    if failed: break
+```
+
+**Step 3: Parallel Invocation Pattern**
+
+When `can_parallelize: true`, invoke all agents in a SINGLE message:
+
+```markdown
+I'll expand 3 complex phases in parallel:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase 2"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/plan-expander.md
+
+          Task: Expand phase 2 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 2
+          Phase Name: [PHASE_NAME]
+          Complexity Score: 9.0
+
+          Use SlashCommand tool to invoke:
+          /expand phase [PLAN_PATH] 2
+
+          Verify expansion results and return validation JSON."
+}
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase 4"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/plan-expander.md
+
+          Task: Expand phase 4 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 4
+          Phase Name: [PHASE_NAME]
+          Complexity Score: 8.5
+
+          Use SlashCommand tool to invoke:
+          /expand phase [PLAN_PATH] 4
+
+          Verify expansion results and return validation JSON."
+}
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase 5"
+  prompt: "Read and follow behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/plan-expander.md
+
+          Task: Expand phase 5 of implementation plan
+          Plan Path: [ABSOLUTE_PLAN_PATH]
+          Phase Number: 5
+          Phase Name: [PHASE_NAME]
+          Complexity Score: 9.2
+
+          Use SlashCommand tool to invoke:
+          /expand phase [PLAN_PATH] 5
+
+          Verify expansion results and return validation JSON."
+}
+```
+
+**Critical**: All Task invocations MUST be in a single message for true parallel execution.
+
+**Step 4: Sequential Invocation Pattern**
+
+When `can_parallelize: false`, invoke agents one at a time:
+
+```bash
+# Expand phases sequentially
+for phase_num in $PHASES_TO_EXPAND; do
+  echo "PROGRESS: Expanding phase $phase_num..."
+
+  # Invoke plan_expander agent
+  EXPANSION_RESULT=$(invoke_plan_expander "$PLAN_PATH" "$phase_num")
+
+  # Verify expansion succeeded
+  EXPANSION_STATUS=$(echo "$EXPANSION_RESULT" | jq -r '.expansion_status')
+
+  if [ "$EXPANSION_STATUS" != "success" ]; then
+    echo "ERROR: Phase $phase_num expansion failed"
+    ERROR_MESSAGE=$(echo "$EXPANSION_RESULT" | jq -r '.error_message')
+    echo "Error: $ERROR_MESSAGE"
+
+    # Save checkpoint and escalate
+    save_checkpoint "orchestrate" "$WORKFLOW_STATE"
+    exit 1
+  fi
+
+  echo "PROGRESS: Phase $phase_num expanded successfully"
+done
+```
+
+**Step 5: Verify Expansion Results**
+
+After all expansions complete (parallel or sequential), verify results:
+
+```bash
+# Collect expansion results
+declare -a EXPANSION_RESULTS
+
+for result in "${AGENT_OUTPUTS[@]}"; do
+  EXPANSION_RESULTS+=("$result")
+done
+
+# Verify all expansions succeeded
+TOTAL_EXPANSIONS=${#EXPANSION_RESULTS[@]}
+SUCCESSFUL_EXPANSIONS=0
+
+for result in "${EXPANSION_RESULTS[@]}"; do
+  STATUS=$(echo "$result" | jq -r '.expansion_status')
+
+  if [ "$STATUS" = "success" ]; then
+    ((SUCCESSFUL_EXPANSIONS++))
+
+    # Verify validation details
+    FILE_EXISTS=$(echo "$result" | jq -r '.validation.file_exists')
+    PARENT_UPDATED=$(echo "$result" | jq -r '.validation.parent_plan_updated')
+    METADATA_CORRECT=$(echo "$result" | jq -r '.validation.metadata_correct')
+    CHECKLIST_PRESERVED=$(echo "$result" | jq -r '.validation.spec_updater_checklist_preserved')
+
+    if [ "$FILE_EXISTS" = "false" ] || [ "$PARENT_UPDATED" = "false" ] || \
+       [ "$METADATA_CORRECT" = "false" ]; then
+      echo "⚠ Warning: Validation issues detected in expansion"
+      echo "  File exists: $FILE_EXISTS"
+      echo "  Parent updated: $PARENT_UPDATED"
+      echo "  Metadata correct: $METADATA_CORRECT"
+    fi
+
+    if [ "$CHECKLIST_PRESERVED" = "false" ]; then
+      echo "⚠ Warning: Spec updater checklist not preserved in expanded phase"
+    fi
+  else
+    echo "ERROR: Expansion failed - $(echo "$result" | jq -r '.error_message')"
+  fi
+done
+
+# Summary
+echo "PROGRESS: Expansion Phase complete - $SUCCESSFUL_EXPANSIONS/$TOTAL_EXPANSIONS phases expanded"
+
+if [ $SUCCESSFUL_EXPANSIONS -ne $TOTAL_EXPANSIONS ]; then
+  echo "ERROR: Some expansions failed - aborting workflow"
+  save_checkpoint "orchestrate" "$WORKFLOW_STATE"
+  exit 1
+fi
+```
+
+**Step 6: Update Plan Structure Level**
+
+After successful expansions, update checkpoint with new structure level:
+
+```json
+{
+  "checkpoint_type": "orchestrate",
+  "current_phase": "expansion",
+  "completed_phases": ["analysis", "research", "planning", "complexity_evaluation"],
+
+  "plan_structure": {
+    "plan_path": "/absolute/path/to/plan.md",
+    "structure_level": 1,
+    "expanded_phases": [2, 4, 5],
+    "expansion_completed_at": "2025-10-16T15:30:00"
+  },
+
+  "expansion_results": [
+    {
+      "phase_num": 2,
+      "expanded_file": "/absolute/path/to/plan/phase_2_name.md",
+      "expansion_status": "success"
+    }
+  ]
+}
+```
+
+#### Error Handling
+
+**Agent Invocation Failure**:
+```bash
+# Retry expansion with backoff
+if ! retry_with_backoff invoke_plan_expander "$PLAN_PATH" "$phase_num"; then
+  echo "ERROR: Plan expander agent invocation failed after retries"
+  ERROR_TYPE=$(classify_error "$RESULT")
+  format_error_report "$ERROR_TYPE" "$RESULT" "expansion"
+  save_checkpoint_and_escalate
+fi
+```
+
+**Validation Failures**:
+```bash
+# Check validation details
+FILE_EXISTS=$(echo "$EXPANSION_RESULT" | jq -r '.validation.file_exists')
+
+if [ "$FILE_EXISTS" = "false" ]; then
+  echo "ERROR: Expanded file not created - expansion failed"
+
+  # Try to find file at alternative location
+  PHASE_NUM=$(echo "$EXPANSION_RESULT" | jq -r '.phase_num')
+  PLAN_DIR=$(dirname "$PLAN_PATH")
+  ALTERNATIVE_FILE=$(find "$PLAN_DIR" -name "phase_${PHASE_NUM}_*.md" -type f 2>/dev/null | head -1)
+
+  if [ -n "$ALTERNATIVE_FILE" ]; then
+    echo "Found expanded file at alternative location: $ALTERNATIVE_FILE"
+  else
+    echo "Expansion verification failed - file truly missing"
+    save_checkpoint_and_escalate
+  fi
+fi
+```
+
+**Partial Expansion Failures**:
+```bash
+# If some expansions succeeded but others failed
+if [ $SUCCESSFUL_EXPANSIONS -gt 0 ] && [ $SUCCESSFUL_EXPANSIONS -lt $TOTAL_EXPANSIONS ]; then
+  echo "⚠ Warning: Partial expansion failure"
+  echo "  Successful: $SUCCESSFUL_EXPANSIONS"
+  echo "  Failed: $((TOTAL_EXPANSIONS - SUCCESSFUL_EXPANSIONS))"
+
+  # Save partial progress in checkpoint
+  save_checkpoint "orchestrate" "$WORKFLOW_STATE"
+
+  # Ask user whether to:
+  # 1. Retry failed expansions
+  # 2. Proceed with successfully expanded phases
+  # 3. Abort workflow
+  escalate_to_user "partial_expansion_failure"
+fi
+```
+
+#### Progress Markers
+
+Use consistent progress markers for expansion phase:
+
+```
+PROGRESS: Starting Plan Expansion Phase
+PROGRESS: Complexity evaluation identified 3 phases for expansion
+PROGRESS: Expansion strategy: parallel (phases are independent)
+PROGRESS: Invoking 3 plan_expander agents in parallel...
+PROGRESS: Plan expander agent 1/3 completed (phase 2)
+PROGRESS: Plan expander agent 2/3 completed (phase 4)
+PROGRESS: Plan expander agent 3/3 completed (phase 5)
+PROGRESS: Verifying expansion results...
+PROGRESS: All 3 expansions verified successfully
+PROGRESS: Plan structure updated - now Level 1
+PROGRESS: Plan Expansion Phase complete - proceeding to implementation
+```
+
+#### Integration with /expand Command
+
+The plan_expander agent uses the `/expand` command via SlashCommand tool. Ensure `/expand` supports:
+
+**Auto-Mode Flag** (Task 3.3):
+```bash
+/expand phase <plan-path> <phase-num> --auto-mode
+```
+
+**Auto-mode behavior**:
+- Non-interactive (no prompts)
+- JSON output for automation
+- Validation feedback included
+- Preserves spec updater checklist
+
+**JSON Output Format** (for agent parsing):
+```json
+{
+  "expansion_status": "success",
+  "plan_path": "/absolute/path/to/plan.md",
+  "phase_num": 2,
+  "expanded_file": "/absolute/path/to/plan/phase_2_name.md",
+  "structure_level": 1,
+  "validation": {
+    "file_created": true,
+    "parent_plan_updated": true,
+    "metadata_updated": true,
+    "checklist_preserved": true
+  }
+}
+```
+
+#### Checkpoint Integration
+
+Save checkpoint after expansion phase:
+
+```bash
+# After all expansions complete
+save_checkpoint "orchestrate" "$(create_checkpoint_json)"
+
+# Checkpoint includes:
+# - Completed expansion phase
+# - Expansion results for each phase
+# - Updated plan structure level
+# - Expanded phase file paths
+```
+
+#### Performance Considerations
+
+- **Parallel Expansion**: ~30-60 seconds per phase (concurrent)
+- **Sequential Expansion**: ~30-60 seconds per phase (cumulative)
+- **Parallel Savings**: Up to 60% for 3+ phases
+- **Total Overhead**: ~1-3 minutes for typical 5-phase plan
+
+#### Integration with Spec Updater
+
+After expansion, verify spec updater checklist preserved:
+
+```bash
+# For each expanded phase file
+EXPANDED_FILE="$PLAN_DIR/phase_${phase_num}_*.md"
+
+if ! grep -q "## Spec Updater Checklist" "$EXPANDED_FILE"; then
+  echo "⚠ Warning: Spec updater checklist missing in $EXPANDED_FILE"
+
+  # Checklist should be preserved by /expand command
+  # If missing, may indicate /expand bug or manual intervention needed
+fi
+```
+
+---
+
 ### Implementation Agent Prompt Template
 
 Template for code-writer agent invocation during implementation phase.
@@ -702,6 +1317,140 @@ SUMMARY_PATH: [SUMMARY_PATH]
 - Performance metrics included
 - Lessons learned documented
 ```
+
+---
+
+### Spec Updater Agent Integration
+
+The spec-updater agent manages artifact placement in the topic-based directory structure. While most artifact creation is handled inline by other agents (research-specialist creates reports, plan-architect creates plans, doc-writer creates summaries), spec-updater ensures proper organization for complex scenarios.
+
+**When to Use Spec-Updater**:
+- **Direct Invocation**: When creating artifacts that need complex placement logic or cross-reference updates
+- **Post-Migration**: When updating artifact paths after reorganization
+- **Bulk Operations**: When moving or reorganizing multiple artifacts
+
+**Topic-Based Structure Integration**:
+
+All artifacts are now organized under topic directories:
+```
+specs/{NNN_topic}/
+├── {NNN_topic}.md              # Main plan
+├── reports/                     # Research reports
+├── summaries/                   # Implementation summaries
+├── debug/                       # Debug reports (COMMITTED to git)
+├── scripts/                     # Investigation scripts (gitignored)
+├── outputs/                     # Test outputs (gitignored)
+└── artifacts/                   # Operation artifacts (gitignored)
+```
+
+**Debug Report Creation Pattern** (Updated for Topic-Based Structure):
+
+When the debugging loop creates debug reports, they should be placed in the topic's debug/ subdirectory:
+
+```markdown
+# Calculate debug report path from plan path
+PLAN_PATH="/home/benjamin/.config/specs/009_orchestration_enhancement/009_orchestration_enhancement.md"
+TOPIC_DIR=$(dirname "$PLAN_PATH")
+DEBUG_DIR="$TOPIC_DIR/debug"
+
+# Ensure debug directory exists
+mkdir -p "$DEBUG_DIR"
+
+# Find next debug report number within topic
+MAX_NUM=$(find "$DEBUG_DIR" -name "*.md" | sed 's/.*\/0*\([0-9]*\)_.*/\1/' | sort -n | tail -1)
+NEXT_NUM=$(printf "%03d" $((MAX_NUM + 1)))
+
+# Create debug report path
+DEBUG_REPORT_PATH="$DEBUG_DIR/${NEXT_NUM}_issue_description.md"
+```
+
+**Debug Report Template (Updated)**:
+
+```markdown
+# Debug Report: [Issue Description]
+
+## Metadata
+- **Date**: YYYY-MM-DD
+- **Topic**: {NNN_topic_name}
+- **Main Plan**: ../../{NNN_topic}.md
+- **Phase**: Phase N
+- **Iteration**: 1|2|3
+
+## Issue Description
+[What went wrong]
+
+## Root Cause Analysis
+[Why it happened]
+
+## Fix Proposals
+[Specific fixes with confidence levels]
+
+## Resolution
+[What was done, if resolved]
+```
+
+**Gitignore Compliance**:
+
+Important distinction for artifact categories:
+- **debug/**: COMMITTED to git (exception to gitignore, for issue tracking)
+- **scripts/**, **outputs/**, **artifacts/**: GITIGNORED (temporary, ephemeral)
+- **reports/**, **plans/**, **summaries/**: GITIGNORED (regenerable from code)
+
+Verify gitignore rules:
+```bash
+# Debug file should be tracked
+touch specs/{topic}/debug/test.md
+git status specs/{topic}/debug/test.md  # Should show as untracked (not ignored)
+
+# Scripts file should be gitignored
+touch specs/{topic}/scripts/test.sh
+git status specs/{topic}/scripts/test.sh  # Should show nothing (gitignored)
+```
+
+**Cross-Reference Updates**:
+
+When creating artifacts, update cross-references:
+1. Debug report → Main plan: `../../{NNN_topic}.md`
+2. Summary → Main plan: `../{NNN_topic}.md`
+3. Main plan → Reports: `reports/001_report.md`
+
+**Agent Integration Examples**:
+
+For debug report creation during debugging loop:
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Create debug report using spec-updater patterns"
+  prompt: |
+    Follow patterns from .claude/agents/spec-updater.md
+
+    Create debug report for test failure in Phase 2.
+
+    Topic: {topic_name} (extracted from plan path)
+    Debug Directory: specs/{topic_name}/debug/
+    Report Number: Find highest, use next (001, 002, etc.)
+
+    Include metadata linking to:
+    - Main plan: ../../{topic_name}.md
+    - Phase: Phase 2
+    - Iteration: 1
+
+    Template: Follow debug report structure from spec-updater.md
+}
+```
+
+**Path Calculation Guidelines**:
+
+All artifact paths should be calculated from the topic:
+- Extract topic name from plan path: `dirname $PLAN_PATH`
+- Ensure subdirectories exist: `mkdir -p $TOPIC_DIR/{debug,scripts,outputs,artifacts}`
+- Number artifacts within topic scope: Independent numbering per subdirectory
+- Use absolute paths for agent invocations
+
+**Spec-Updater Agent Reference**:
+- Agent Definition: `.claude/agents/spec-updater.md`
+- Behavioral Guidelines: Artifact creation, cross-reference maintenance, gitignore compliance
+- Tools: Read, Write, Edit, Grep, Glob, Bash
 
 ---
 
