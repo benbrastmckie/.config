@@ -291,6 +291,338 @@ mark_phase_complete "specs/009_topic/009_topic.md" 2
 
 This marks all checkboxes in Phase 2 as complete across all hierarchy levels.
 
+### Invocation from /implement Command
+
+**Context**: After each phase completion in `/implement` workflow (Step 5: Plan Update After Git Commit)
+
+**Invocation Pattern**:
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after Phase N completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy checkboxes after Phase ${PHASE_NUM} completion.
+
+    Plan: ${PLAN_PATH}
+    Phase: ${PHASE_NUM}
+    All tasks in this phase have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
+    3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
+    4. Report: List all files updated (stage → phase → main plan)
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of updated files at each level
+    - Verification that all levels are synchronized
+}
+```
+
+**Example Output**:
+```
+✓ Plan hierarchy update complete
+
+Files updated:
+- specs/042_auth/phase_3_testing.md (all tasks marked complete)
+- specs/042_auth/042_auth.md (Phase 3 tasks marked complete)
+
+Verification:
+- Structure Level: 1 (Phase expansion)
+- Consistency verified: All levels synchronized
+- Total checkboxes updated: 8 tasks across 2 files
+```
+
+**Timing**: Invoke after git commit succeeds, before checkpoint save
+
+### Invocation from /orchestrate Command
+
+**Context**: In Documentation Phase after implementation completes
+
+**Invocation Pattern**:
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after workflow completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy for completed workflow.
+
+    Plan: ${PLAN_PATH}
+    All phases have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Detect structure level: detect_structure_level "${PLAN_PATH}"
+    3. For each completed phase: mark_phase_complete "${PLAN_PATH}" ${phase_num}
+    4. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" (all phases)
+    5. Report: List all files updated across hierarchy
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of all updated files (stage → phase → main plan)
+    - Verification that all levels are synchronized
+}
+```
+
+**Example Output**:
+```
+✓ Plan hierarchy update complete for all phases
+
+Files updated:
+- specs/042_auth/phase_1_setup.md (all tasks marked complete)
+- specs/042_auth/phase_2_implementation.md (all tasks marked complete)
+- specs/042_auth/phase_3_testing.md (all tasks marked complete)
+- specs/042_auth/042_auth.md (all 3 phases marked complete)
+
+Verification:
+- Structure Level: 1 (Phase expansion)
+- All phases synchronized: Yes
+- Total checkboxes updated: 24 tasks across 4 files
+```
+
+**Timing**: After implementation phase completes, before workflow summary generation
+
+### Error Handling for Checkbox Propagation
+
+**Common Failure Modes**:
+
+**1. Checkbox Utility Not Found**:
+```bash
+# Detection
+if [ ! -f ".claude/lib/checkbox-utils.sh" ]; then
+  error "checkbox-utils.sh not found"
+  error "Cannot update plan hierarchy"
+fi
+
+# Recovery
+- Notify user that hierarchy update skipped
+- Continue workflow (non-critical operation)
+- Log error for manual review
+```
+
+**2. Task Pattern Not Found**:
+```bash
+# Function returns 1 if task not found
+if ! update_checkbox "$FILE" "$TASK_PATTERN" "x"; then
+  warn "Task pattern '$TASK_PATTERN' not found in $FILE"
+  warn "Using mark_phase_complete as fallback"
+  mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+fi
+```
+
+**3. File Permission Errors**:
+```bash
+# Detection
+if [ ! -w "$PLAN_FILE" ]; then
+  error "Plan file is not writable: $PLAN_FILE"
+fi
+
+# Recovery
+- Check file ownership and permissions
+- Attempt chmod if appropriate
+- Escalate to user if permissions cannot be fixed
+```
+
+**4. Hierarchy Inconsistency**:
+```bash
+# Verification failure
+if ! verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"; then
+  warn "Checkbox inconsistency detected"
+  warn "Main plan may not reflect all phase completions"
+
+  # Log for manual review
+  echo "Inconsistency at $(date): $PLAN_PATH Phase $PHASE_NUM" >> .claude/logs/hierarchy-errors.log
+fi
+```
+
+**5. Missing Phase File**:
+```bash
+# Detection
+PHASE_FILE=$(get_phase_file "$PLAN_PATH" "$PHASE_NUM")
+if [ -z "$PHASE_FILE" ]; then
+  info "Phase $PHASE_NUM not expanded - updating main plan only"
+  update_checkbox "$PLAN_PATH" "$TASK_PATTERN" "x"
+fi
+```
+
+### Troubleshooting Common Hierarchy Update Issues
+
+**Issue 1: Checkboxes not propagating to main plan**
+
+**Symptoms**:
+- Phase file shows tasks complete `[x]`
+- Main plan still shows tasks incomplete `[ ]`
+
+**Diagnosis**:
+```bash
+# Check structure level
+detect_structure_level "$PLAN_PATH"
+
+# Check if phase is actually expanded
+get_phase_file "$PLAN_PATH" "$PHASE_NUM"
+
+# Verify checkbox-utils.sh is sourced
+type mark_phase_complete
+```
+
+**Solution**:
+```bash
+# Manually propagate updates
+source .claude/lib/checkbox-utils.sh
+mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"
+```
+
+**Issue 2: Fuzzy matching not finding tasks**
+
+**Symptoms**:
+- `update_checkbox` returns 1 (task not found)
+- Error: "Task pattern not found"
+
+**Diagnosis**:
+```bash
+# Check exact task text in file
+grep "Task pattern" "$FILE"
+
+# Check for special characters or formatting
+cat -A "$FILE" | grep "Task pattern"
+```
+
+**Solution**:
+```bash
+# Use more specific pattern
+update_checkbox "$FILE" "exact task description" "x"
+
+# Or use mark_phase_complete as fallback
+mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+```
+
+**Issue 3: Permission denied errors**
+
+**Symptoms**:
+- `mv: cannot move ... Permission denied`
+- Checkbox update fails silently
+
+**Diagnosis**:
+```bash
+# Check file permissions
+ls -l "$PLAN_FILE"
+
+# Check directory permissions
+ls -ld "$(dirname "$PLAN_FILE")"
+
+# Check file ownership
+stat -c "%U %G" "$PLAN_FILE"
+```
+
+**Solution**:
+```bash
+# Fix permissions if you own the file
+chmod u+w "$PLAN_FILE"
+
+# If permission issues persist
+sudo chown $USER "$PLAN_FILE"  # Use with caution
+```
+
+**Issue 4: Updates not visible in git**
+
+**Symptoms**:
+- Checkboxes updated in file
+- `git diff` shows no changes
+
+**Diagnosis**:
+```bash
+# Check if file is actually modified
+stat -c "%Y" "$PLAN_FILE"  # Last modification time
+
+# Check git status
+git status "$PLAN_FILE"
+
+# Check if changes were written
+cat "$PLAN_FILE" | grep "\[x\]"
+```
+
+**Solution**:
+```bash
+# Verify temp file was moved correctly
+# checkbox-utils.sh uses temp files for updates
+# Check if update_checkbox completed successfully
+
+# Re-run update if needed
+mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+```
+
+**Issue 5: Level 2 (stage) updates not propagating**
+
+**Symptoms**:
+- Stage file updated
+- Phase file and main plan not updated
+
+**Diagnosis**:
+```bash
+# Check structure level
+LEVEL=$(detect_structure_level "$PLAN_PATH")
+echo "Structure Level: $LEVEL"
+
+# Check for stage files
+find "$(dirname "$PLAN_PATH")" -name "stage_*.md"
+```
+
+**Solution**:
+```bash
+# Level 2 requires stage_num parameter (not yet fully supported)
+# Workaround: Update phase file manually, then propagate
+update_checkbox "$PHASE_FILE" "$TASK_PATTERN" "x"
+propagate_checkbox_update "$PLAN_PATH" "$PHASE_NUM" "$TASK_PATTERN" "x"
+```
+
+**General Debugging Steps**:
+
+1. **Check utility availability**:
+   ```bash
+   source .claude/lib/checkbox-utils.sh
+   type update_checkbox
+   type mark_phase_complete
+   ```
+
+2. **Verify plan structure**:
+   ```bash
+   detect_structure_level "$PLAN_PATH"
+   get_plan_directory "$PLAN_PATH"
+   get_phase_file "$PLAN_PATH" "$PHASE_NUM"
+   ```
+
+3. **Test with simple update**:
+   ```bash
+   # Try updating a single checkbox first
+   update_checkbox "$FILE" "simple task" "x"
+   ```
+
+4. **Check for syntax errors in plan**:
+   ```bash
+   # Verify checkbox format
+   grep -E "^- \[[ x]\]" "$PLAN_FILE"
+   ```
+
+5. **Enable verbose output**:
+   ```bash
+   # Add set -x to see what's happening
+   set -x
+   mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+   set +x
+   ```
+
 ## Example Usage
 
 ### From /orchestrate (Debugging Phase)
@@ -505,6 +837,16 @@ Before finalizing artifact operations:
 - [ ] Links use relative paths
 - [ ] Debug reports in debug/ (if applicable)
 - [ ] Scripts in scripts/ (if applicable)
+
+**For Plan Hierarchy Updates**:
+- [ ] Hierarchy update invoked after phase completion
+- [ ] All hierarchy levels synchronized (stage → phase → main plan)
+- [ ] Checkbox consistency verified with `verify_checkbox_consistency`
+- [ ] Updated files listed in output
+- [ ] No permission errors during update
+- [ ] Checkpoint includes `hierarchy_updated` status
+- [ ] Error handling tested for missing utilities
+- [ ] Fuzzy matching working correctly for task patterns
 
 ## Reference Documents
 
