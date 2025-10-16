@@ -119,6 +119,11 @@ Task {
 - Use for: Documentation updates
 - Tools: Read, Edit, Write
 - When: Synchronizing docs with code changes
+
+**spec-updater**
+- Use for: Plan hierarchy updates, artifact management
+- Tools: Read, Edit, Bash (sourcing checkbox-utils.sh)
+- When: After phase completion in `/implement`, after implementation in `/orchestrate`
 Commands that coordinate specialized agents should use behavioral injection for clear role assignment and tool restrictions.
 
 ### Pattern: Single Agent with Behavioral Injection
@@ -203,6 +208,111 @@ Use when one agent's output informs the next agent's task.
 4. Documentation agent → documents changes
 
 **Critical**: Store only paths/references between phases, not full content.
+
+### Pattern: Spec-Updater for Plan Hierarchy Updates
+
+Use the spec-updater agent to maintain checkbox synchronization across plan hierarchy levels (Level 0/1/2) after phase completion.
+
+**When to use**:
+- After completing a phase in `/implement` (Step 5: after git commit)
+- After completing implementation in `/orchestrate` (Documentation Phase)
+- When checkboxes need to be propagated from child files to parent files
+
+**Integration timing**:
+```
+Implementation → Testing → Git Commit Success → [Invoke Spec-Updater] → Checkpoint Save
+```
+
+**Agent invocation template**:
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy checkboxes"
+  prompt: "Read and follow the behavioral guidelines from:
+          /home/benjamin/.config/.claude/agents/spec-updater.md
+
+          You are acting as a Spec Updater Agent.
+
+          Update plan hierarchy checkboxes after Phase {phase_num} completion.
+
+          Plan: {plan_path}
+          Phase: {phase_num}
+          Tasks Completed: {task_list}
+
+          Steps:
+          1. Source checkbox-utils.sh:
+             source /home/benjamin/.config/.claude/lib/checkbox-utils.sh
+          2. Mark phase complete:
+             mark_phase_complete \"{plan_path}\" {phase_num}
+          3. Verify consistency:
+             verify_checkbox_consistency \"{plan_path}\" {phase_num}
+          4. Report: List files updated (main plan, phase file, stage file if exists)
+
+          Expected output:
+          - List of files updated with checkbox changes
+          - Verification status (consistent/inconsistent)
+          - Any errors encountered
+  "
+}
+```
+
+**Checkbox-utils.sh functions**:
+- `mark_phase_complete <plan_path> <phase_num>` - Marks all tasks in phase as complete
+- `propagate_checkbox_update <plan_path> <phase_num> <task_pattern> <new_state>` - Propagates single checkbox update
+- `verify_checkbox_consistency <plan_path> <phase_num>` - Verifies parent/child synchronization
+- `update_checkbox <file> <task_pattern> <new_state>` - Updates single checkbox in file
+
+**Plan hierarchy levels**:
+- **Level 0**: Single file (`plan.md`) - No propagation needed
+- **Level 1**: Plan + phase files (`plan.md`, `plan/phase_N_name.md`) - Propagate phase → main
+- **Level 2**: Plan + phase + stage files (`plan.md`, `plan/phase_N/phase_N_overview.md`, `plan/phase_N/stage_M.md`) - Propagate stage → phase → main
+
+**Checkpoint integration**:
+```bash
+# Add hierarchy_updated field to checkpoint
+checkpoint_data=$(jq -n \
+  --arg phase "$current_phase" \
+  --argjson hierarchy_updated true \
+  '{
+    phase: $phase,
+    hierarchy_updated: $hierarchy_updated,
+    timestamp: now | todate
+  }')
+```
+
+**Error handling**:
+- If spec-updater fails, do not save checkpoint
+- Log error and escalate to user
+- Provide option to continue without hierarchy update (manual fix later)
+- Never proceed to next phase if hierarchy update fails
+
+**Example usage in /implement**:
+```bash
+# After git commit success (Step 5)
+echo "Updating plan hierarchy..."
+
+# Invoke spec-updater agent
+agent_result=$(invoke_spec_updater_agent "$plan_path" "$phase_num" "$completed_tasks")
+
+# Check result
+if [ $? -eq 0 ]; then
+  echo "✓ Plan hierarchy updated successfully"
+  hierarchy_updated=true
+else
+  echo "✗ Plan hierarchy update failed"
+  hierarchy_updated=false
+  # Escalate to user
+fi
+
+# Save checkpoint with hierarchy_updated status
+save_checkpoint "$workflow_id" "$(create_checkpoint_data "$current_phase" "$hierarchy_updated")"
+```
+
+**Benefits**:
+- Ensures parent plans stay synchronized with child progress
+- Prevents stale checkbox states in expanded plans
+- Enables accurate progress tracking across hierarchy levels
+- Maintains data consistency without manual intervention
 
 ---
 

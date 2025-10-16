@@ -442,6 +442,16 @@ The spec updater agent manages artifacts in topic-based directory structure:
 - `/expand` preserves spec updater checklist in expanded files
 - Implementation phase uses spec updater for artifact management
 
+**Plan Hierarchy Updates** (`.claude/lib/checkbox-utils.sh`):
+- Automatically updates checkboxes across plan hierarchy levels after phase completion
+- Functions: `update_checkbox()`, `propagate_checkbox_update()`, `mark_phase_complete()`, `verify_checkbox_consistency()`
+- Supports Level 0 (single file), Level 1 (expanded phases), Level 2 (stages → phases → main)
+- Integration points:
+  - `/implement` Step 5: Invokes spec-updater agent after git commit success
+  - `/orchestrate` Documentation Phase: Updates hierarchy after implementation complete
+  - Checkpoint field: `hierarchy_updated` tracks update status
+- Ensures parent/grandparent plan files stay synchronized with child progress
+
 ### Git Workflow
 - Feature branches for new development
 - Clean, atomic commits with descriptive messages
