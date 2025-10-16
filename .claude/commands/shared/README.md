@@ -18,6 +18,7 @@ When Claude processes a command, it automatically reads referenced files, making
 
 ### High Priority (orchestrate.md)
 - `workflow-phases.md` - Detailed phase descriptions (~800 lines)
+- `orchestrate-enhancements.md` - Complexity evaluation, expansion, wave-based patterns (~350 lines) ✓
 - `error-recovery.md` - Error handling patterns (~400 lines)
 - `context-management.md` - Context optimization guide (~300 lines)
 - `agent-coordination.md` - Agent invocation patterns (~500 lines)
