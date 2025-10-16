@@ -151,6 +151,55 @@ link_template_to_plan() {
   fi
 }
 
+# Get or create topic directory with proper numbering
+# Args: $1 = description (for generating topic name)
+#       $2 = base specs directory (optional, defaults to "specs")
+# Returns: topic directory path (e.g., "specs/042_authentication")
+get_or_create_topic_dir() {
+  local description="${1:-}"
+  local base_specs_dir="${2:-specs}"
+
+  if [[ -z "$description" ]]; then
+    echo "Error: get_or_create_topic_dir requires description" >&2
+    return 1
+  fi
+
+  # Convert description to topic name (lowercase with underscores)
+  local topic_name
+  topic_name=$(echo "$description" | \
+    tr '[:upper:]' '[:lower:]' | \
+    sed 's/[^a-z0-9 ]//g' | \
+    tr ' ' '_' | \
+    sed 's/__*/_/g' | \
+    sed 's/^_//; s/_$//' | \
+    cut -c1-50)  # Limit length
+
+  # Find next available topic number
+  local max_num=0
+
+  if [[ -d "$base_specs_dir" ]]; then
+    while IFS= read -r topic_dir; do
+      local num
+      num=$(basename "$topic_dir" | grep -oE "^[0-9]+" || echo "0")
+      # Remove leading zeros to avoid octal interpretation
+      num=$((10#$num))
+      if [[ $num -gt $max_num ]]; then
+        max_num=$num
+      fi
+    done < <(find "$base_specs_dir" -maxdepth 1 -type d -name "[0-9]*_*" 2>/dev/null)
+  fi
+
+  # Create topic directory with number
+  local next_num
+  next_num=$(printf "%03d" $((max_num + 1)))
+  local topic_dir="${base_specs_dir}/${next_num}_${topic_name}"
+
+  # Create topic directory with all standard subdirectories
+  mkdir -p "$topic_dir"/{plans,reports,summaries,debug,scripts,outputs,artifacts,backups}
+
+  echo "$topic_dir"
+}
+
 # Get the next available plan number
 # Args: $1 = plans directory (optional, defaults to specs/plans)
 # Returns: next plan number (e.g., "047")

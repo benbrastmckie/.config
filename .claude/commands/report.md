@@ -21,34 +21,73 @@ First, I'll analyze the topic to determine:
 - Relevant files and directories in the codebase
 - Most appropriate location for the specs/reports/ directory
 
-### 2. Location Determination and Registration
-I'll determine the specs directory location using this process:
+### 2. Topic-Based Location Determination
+I'll determine the topic directory location using the uniform structure:
 
-**Step 1: Detect Project Directory**
-- Analyze the topic and search for relevant files
-- Identify the deepest directory that encompasses all relevant content
-- This becomes the "project directory" for this report
+**Step 1: Source Required Utilities**
+```bash
+source .claude/lib/artifact-operations.sh
+source .claude/lib/template-integration.sh
+```
 
-**Step 2: Check SPECS.md Registry**
-- Read `.claude/SPECS.md` to see if this project is already registered
-- Look for a section matching the project directory path
+**Step 2: Determine Topic from Research Question**
+- Analyze the research topic/question
+- Extract key concepts for topic naming
+- Search for existing topic directories that match
+- If found: Use existing topic directory
+- If not found: Create new topic directory using `get_or_create_topic_dir()`
 
-**Step 3: Use Registered or Auto-Detect**
-- If found in SPECS.md: Use the registered specs directory
-- If not found: Auto-detect best location (project-dir/specs/) and register it
+**Step 3: Get or Create Topic Directory**
+```bash
+# Extract topic from research question
+TOPIC_DESC=$(extract_topic_from_question "$RESEARCH_TOPIC")
 
-**Step 4: Register in SPECS.md**
-- If new project: Create new section in SPECS.md with project path and specs directory
-- Update "Last Updated" date and increment "Reports" count
-- Use Edit tool to update SPECS.md
+# Check for existing topics that match
+EXISTING_TOPIC=$(find_matching_topic "$TOPIC_DESC")
 
-### 3. Report Numbering
-I'll determine the report number by:
-- Checking for existing reports in the target `specs/reports/` directory
-- Finding the highest numbered report (e.g., `002_*.md`)
-- Incrementing to the next number (e.g., `003`)
-- Using `001` if no numbered reports exist
-- Ensuring consistent three-digit format with leading zeros
+if [ -n "$EXISTING_TOPIC" ]; then
+  TOPIC_DIR="$EXISTING_TOPIC"
+else
+  # Create new topic directory
+  TOPIC_DIR=$(get_or_create_topic_dir "$TOPIC_DESC" "specs")
+  # Creates: specs/{NNN_topic}/ with subdirectories
+fi
+```
+
+**Step 4: Verify Topic Structure**
+- Ensure topic directory has all standard subdirectories:
+  - `reports/` - Research reports
+  - `plans/` - Implementation plans
+  - `summaries/` - Implementation summaries
+  - `debug/` - Debug reports
+  - Other subdirectories as needed
+
+### 3. Report Creation Using Uniform Structure
+I'll create the report using `create_topic_artifact()`:
+
+**Step 1: Get Next Report Number Within Topic**
+```bash
+# Get next number in topic's reports/ subdirectory
+NEXT_NUM=$(get_next_artifact_number "${TOPIC_DIR}/reports")
+```
+
+**Step 2: Generate Report Name**
+- Convert research topic to snake_case (e.g., "API Patterns" → "api_patterns")
+- Truncate to reasonable length (50 chars)
+
+**Step 3: Create Report File**
+```bash
+REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "$REPORT_NAME" "$REPORT_CONTENT")
+# Creates: ${TOPIC_DIR}/reports/NNN_report_name.md
+# Auto-numbers, registers in artifact registry
+```
+
+**Benefits of Uniform Structure**:
+- All artifacts for a topic in one directory
+- Easy to find related plans, reports, summaries
+- Consistent numbering within topic
+- Automatic subdirectory creation
+- Single utility manages all artifact creation
 
 ### 4. Research Phase
 I'll conduct thorough research by:
@@ -68,32 +107,23 @@ The report will include:
 - **Recommendations**: Suggested improvements or next steps
 - **References**: Links to relevant files and resources
 
-### 6. Report Creation
-I'll create the report as a markdown file with automatic numbering:
-
-#### Numbering System
-- Format: `NNN_topic_name.md` where NNN is a three-digit number
-- I'll find the highest numbered report in the target directory
-- The new report will use the next sequential number (e.g., 001, 002, 003...)
-- If no reports exist, start with 001
-- Example: `003_terminal_compatibility_analysis.md`
-
-#### File Creation
-- Located in `[relevant-dir]/specs/reports/NNN_[topic-name].md`
-- Topic name will be converted to lowercase with underscores
-- Following professional documentation standards
-- Including diagrams and code examples where helpful
-- Cross-referencing relevant files with precise locations
-
-### 7. Report Metadata
+### 6. Report Metadata
 Each report will include:
-- **Specs Directory**: Path to the specs/ directory (for consistency with related plans/summaries)
-- **Report Number**: Three-digit number within this specs directory
+- **Topic Directory**: Path to the topic directory (e.g., `specs/042_authentication/`)
+- **Report Number**: Three-digit number within this topic's reports/ subdirectory
 - Creation date and time
 - Research scope and boundaries
 - Files analyzed
 - Search queries used
 - Time investment estimate
+
+**Path Format**:
+- Located in `specs/{NNN_topic}/reports/NNN_report_name.md`
+- Topic: `{NNN_topic}` = three-digit numbered topic (e.g., `042_authentication`)
+- Report name converted to lowercase with underscores
+- Following professional documentation standards
+- Including diagrams and code examples where helpful
+- Cross-referencing relevant files with precise locations
 
 ## Output Format
 
@@ -104,10 +134,9 @@ The report will be formatted as:
 
 ## Metadata
 - **Date**: [YYYY-MM-DD]
-- **Specs Directory**: [path/to/specs/]
-- **Report Number**: [NNN]
+- **Topic Directory**: [specs/{NNN_topic}/ or .claude/specs/{NNN_topic}/]
+- **Report Number**: [NNN] (within topic)
 - **Scope**: [Description of research scope]
-- **Primary Directory**: [Location of report]
 - **Files Analyzed**: [Count and key files]
 
 ## Executive Summary

@@ -47,12 +47,13 @@ Follow specs directory protocol with adaptive tier selection:
 Plans use three organizational tiers based on complexity:
 
 **Tier 1: Single File** (Complexity: <50)
-- **Format**: `specs/plans/NNN_feature_name.md`
+- **Format**: `specs/{NNN_topic}/plans/NNN_feature_name.md`
 - **Use Case**: Simple features (<10 tasks, <4 phases)
 - **Structure**: All content in one file with inline phases
+- **Example**: `specs/042_authentication/plans/001_user_auth.md`
 
 **Tier 2: Phase Directory** (Complexity: 50-200)
-- **Format**: `specs/plans/NNN_feature_name/`
+- **Format**: `specs/{NNN_topic}/plans/NNN_feature_name/`
 - **Use Case**: Medium features (10-50 tasks, 4-10 phases)
 - **Structure**:
   - `NNN_feature_name.md` (overview with metadata and phase summaries)
@@ -60,9 +61,10 @@ Plans use three organizational tiers based on complexity:
   - `phase_2_name.md`
   - etc.
 - **Cross-references**: Overview links to phase files, phase files link back
+- **Example**: `specs/042_authentication/plans/002_session_refactor/`
 
 **Tier 3: Hierarchical Tree** (Complexity: ≥200)
-- **Format**: `specs/plans/NNN_feature_name/`
+- **Format**: `specs/{NNN_topic}/plans/NNN_feature_name/`
 - **Use Case**: Complex features (>50 tasks, >10 phases)
 - **Structure**:
   - `NNN_feature_name.md` (main overview)
@@ -73,6 +75,13 @@ Plans use three organizational tiers based on complexity:
   - `phase_2_name/` (phase directory)
     - etc.
 - **Cross-references**: Overview → phase overviews → stage files
+- **Example**: `specs/042_authentication/plans/003_complex_oauth/`
+
+**Topic-Based Organization**:
+- Plans organized in numbered topic directories: `specs/{NNN_topic}/`
+- Topic numbers are three-digit sequential (001, 002, 003...)
+- All artifacts for a topic in same directory (plans/, reports/, summaries/, debug/)
+- For .claude/ scoped work: `.claude/specs/{NNN_topic}/plans/NNN_*.md`
 
 **Complexity Calculation**:
 ```
@@ -213,9 +222,9 @@ Task {
     Generate detailed implementation plan for authentication feature.
 
     Research Reports (MANDATORY - include all in plan metadata):
-    1. Existing Patterns: specs/reports/existing_patterns/001_auth_patterns.md
-    2. Security Practices: specs/reports/security_practices/001_best_practices.md
-    3. Framework Options: specs/reports/framework_options/001_comparison.md
+    1. Existing Patterns: specs/042_authentication/reports/001_auth_patterns.md
+    2. Security Practices: specs/042_authentication/reports/002_best_practices.md
+    3. Framework Options: specs/042_authentication/reports/003_framework_comparison.md
 
     Based on research findings:
     - Use session-based auth pattern (from existing_patterns report)
@@ -236,9 +245,9 @@ Task {
 
     After creating plan:
     - Use Edit tool to update each report's "Implementation Status" section
-    - Add plan path to each report
+    - Add plan path to each report using relative paths (e.g., ../plans/001_*.md)
 
-    Output: Complete plan in specs/plans/ format
+    Output: Complete plan in topic-based structure (specs/{NNN_topic}/plans/NNN_*.md)
 }
 ```
 
@@ -258,9 +267,9 @@ Task {
     Create implementation plan based on research phase findings.
 
     Research Reports (MANDATORY - include all in plan metadata):
-    1. Existing Patterns: specs/reports/existing_patterns/001_async_patterns.md
-    2. Best Practices: specs/reports/best_practices/001_async_best_practices.md
-    3. Alternatives: specs/reports/alternatives/001_promise_libraries.md
+    1. Existing Patterns: specs/015_async/reports/001_async_patterns.md
+    2. Best Practices: specs/015_async/reports/002_async_best_practices.md
+    3. Alternatives: specs/015_async/reports/003_promise_libraries.md
 
     Read each report to understand:
     - Current async patterns use coroutines (existing_patterns)
@@ -290,10 +299,10 @@ Task {
 
     After creating plan:
     - Use Edit tool to update each report's "Implementation Status" section
-    - Add plan path to each report: "Plan: ../plans/NNN_async_promises.md"
+    - Add plan path to each report: "Plan: ../plans/001_async_promises.md"
     - Update status to "Planning In Progress"
 
-    Output: Save to specs/plans/NNN_async_promises.md
+    Output: Save to topic-based structure (specs/015_async/plans/001_async_promises.md)
 }
 ```
 
@@ -312,7 +321,7 @@ Task {
 
     Update existing plan with user-provided changes:
 
-    Original plan: specs/plans/003_config_refactor.md
+    Original plan: specs/008_config/plans/003_config_refactor.md
 
     User changes:
     - Split Phase 2 into two phases (too complex)
@@ -344,9 +353,9 @@ Task {
 - **Estimated Hours**: [H]
 - **Standards File**: /path/to/CLAUDE.md
 - **Research Reports**:
-  - [Report 1 Title](../reports/topic1/001_report_name.md)
-  - [Report 2 Title](../reports/topic2/001_report_name.md)
-  - [Report 3 Title](../reports/topic3/001_report_name.md)
+  - [Report 1 Title](../reports/001_report_name.md)
+  - [Report 2 Title](../reports/002_report_name.md)
+  - [Report 3 Title](../reports/003_report_name.md)
 
 ## Overview
 [Description and goals]
@@ -422,11 +431,18 @@ My tools support comprehensive planning:
 - **WebSearch**: Research best practices if needed
 
 ### Numbering Plans
-Automatic plan numbering:
-1. Find existing plans in specs/plans/
-2. Get highest number (e.g., 012)
-3. Use next number (e.g., 013)
-4. Format: `013_feature_name.md`
+Automatic plan numbering within topic directories:
+1. Determine or create topic directory: `specs/{NNN_topic}/`
+2. Find existing plans in topic's plans/ subdirectory
+3. Get highest plan number within topic (e.g., 002)
+4. Use next number (e.g., 003)
+5. Format: `specs/{NNN_topic}/plans/003_feature_name.md`
+
+**Topic Organization**:
+- Each topic has its own three-digit number (001, 002, 003...)
+- All artifacts for a topic in same directory
+- Plan numbering resets per topic
+- Example: `specs/042_authentication/plans/001_user_auth.md`
 
 **Important**: specs/ directories are gitignored. Never attempt to commit plan files to git - they are local working artifacts only.
 
@@ -446,7 +462,7 @@ After creating the plan, update each research report:
 # 2. Use Edit tool to update status:
 
 Edit {
-  file_path: "specs/reports/existing_patterns/001_auth_patterns.md"
+  file_path: "specs/042_authentication/reports/001_auth_patterns.md"
   old_string: |
     ## Implementation Status
     - **Status**: Research Complete
@@ -457,9 +473,9 @@ Edit {
   new_string: |
     ## Implementation Status
     - **Status**: Planning In Progress
-    - **Plan**: [../plans/013_user_authentication.md](../plans/013_user_authentication.md)
+    - **Plan**: [../plans/001_user_authentication.md](../plans/001_user_authentication.md)
     - **Implementation**: [Will be updated by orchestrator]
-    - **Date**: 2025-10-12
+    - **Date**: 2025-10-16
 }
 ```
 
