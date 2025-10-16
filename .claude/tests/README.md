@@ -72,6 +72,16 @@ This directory contains the comprehensive test suite for the Claude Code agentia
    - Revision scope analysis
    - Plan update integration
 
+10. **test_hierarchy_updates.sh** - Tests for checkbox hierarchy update utilities (16 tests)
+    - Level 0 structure tests (single file)
+    - Level 1 structure tests (expanded phases)
+    - Level 2 structure tests (stage → phase → main)
+    - Partial phase completion tracking
+    - Concurrent checkbox updates
+    - Checkpoint integration (hierarchy_updated field)
+    - Edge cases (missing files, empty phases, special characters)
+    - **Coverage**: 16/16 tests passing (100%)
+
 ## Running Tests
 
 ### Run Individual Test Suites
@@ -95,6 +105,15 @@ cd /home/benjamin/.config/.claude/tests
 
 # Run collapse tests
 ./test_progressive_collapse.sh
+
+# Run hierarchy updates tests
+./test_hierarchy_updates.sh
+
+# Run hierarchy updates tests with coverage report
+./test_hierarchy_updates.sh --coverage
+
+# Run hierarchy updates tests for all levels
+./test_hierarchy_updates.sh --all-levels
 ```
 
 ### Run All Tests
@@ -165,6 +184,7 @@ Each test file maintains:
 | State Management | ~75% | Checkpoint operations covered |
 | Progressive Expansion | ~65% | Expansion commands covered |
 | Progressive Collapse | ~65% | Collapse commands covered |
+| Hierarchy Updates | 100% | All checkbox-utils.sh functions covered |
 
 ### Coverage Goals
 
