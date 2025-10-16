@@ -567,7 +567,10 @@ FINAL_PLAN_PATH="$plan_file"
 
 ### Phase 1: [Foundation/Setup]
 **Objective**: [What this phase accomplishes]
+**Dependencies**: []
 **Complexity**: [Low/Medium/High]
+**Risk**: [Low/Medium/High]
+**Estimated Time**: [X-Y hours]
 
 Tasks:
 - [ ] Specific task with file reference
@@ -579,7 +582,57 @@ Testing:
 ```
 
 ### Phase 2: [Core Implementation]
+**Dependencies**: [1]
 [Continue with subsequent phases...]
+
+## Phase Dependencies
+
+Phase dependencies enable wave-based parallel execution during implementation. Phases with no dependencies (or satisfied dependencies) can execute in parallel, significantly reducing implementation time.
+
+**Dependency Syntax**:
+- `Dependencies: []` - No dependencies (independent phase, can run in wave 1)
+- `Dependencies: [1]` - Depends on phase 1 completing first
+- `Dependencies: [1, 2]` - Depends on phases 1 and 2 both completing first
+- `Dependencies: [2, 3, 5]` - Depends on multiple non-consecutive phases
+
+**Rules**:
+- Dependencies are phase numbers (integers)
+- A phase can only depend on earlier phases (no forward dependencies)
+- Circular dependencies are invalid and will be detected
+- Self-dependencies are invalid
+- If no Dependencies field specified, defaults to `[]` (independent)
+
+**Wave Calculation**:
+The `/orchestrate` command uses topological sorting (Kahn's algorithm) to calculate execution waves:
+- **Wave 1**: All phases with no dependencies execute in parallel
+- **Wave 2**: All phases that only depend on Wave 1 phases execute in parallel
+- **Wave N**: Continues until all phases scheduled
+
+**Example**:
+```markdown
+### Phase 1: Database Setup
+**Dependencies**: []
+
+### Phase 2: API Layer
+**Dependencies**: [1]
+
+### Phase 3: Frontend Components
+**Dependencies**: [1]
+
+### Phase 4: Integration Tests
+**Dependencies**: [2, 3]
+```
+
+**Execution Waves**:
+- Wave 1: Phase 1
+- Wave 2: Phases 2, 3 (parallel)
+- Wave 3: Phase 4
+
+**Performance Impact**:
+- Example above: 40-50% time savings compared to sequential execution
+- Wave-based execution typically achieves 30-60% time savings depending on dependency structure
+
+For detailed dependency documentation, see `.claude/docs/phase_dependencies.md`
 
 ## Testing Strategy
 [Overall testing approach]
