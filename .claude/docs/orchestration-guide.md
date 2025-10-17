@@ -230,6 +230,205 @@ artifact_refs=$(aggregate_expansion_artifacts "$plan_path")
 - Total context: ~1200 tokens
 - **Reduction: 85%**
 
+**Context Preservation Standards:**
+
+This artifact-based aggregation pattern implements **Standard 7 (Forward Message Pattern)** from [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards), where subagent responses are passed via artifact references rather than re-summarized content. Combined with **Standard 8 (Context Pruning)**, orchestration workflows achieve 60-85% context reduction while maintaining complete operation history in artifacts.
+
+## Context Pruning Workflows
+
+### Overview
+
+**Context pruning** actively removes completed operation data from the execution context after metadata extraction. This prevents context accumulation in multi-phase workflows, maintaining target context usage **<30% throughout** (Standard 8).
+
+### Pruning Policy Decision Tree
+
+Choose pruning policy based on workflow type and complexity:
+
+```
+┌─────────────────────────────────────┐
+│  Select Pruning Policy              │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+        ┌──────────────┐
+        │ Workflow Type │
+        └──────┬───────┘
+               │
+       ┌───────┴───────┬───────────────┐
+       │               │               │
+       ▼               ▼               ▼
+  Orchestrate    Implement      Single-Agent
+  (5-7 phases)   (3-5 phases)   (1-2 phases)
+       │               │               │
+       ▼               ▼               ▼
+  AGGRESSIVE      MODERATE         MINIMAL
+  (<20% target)   (20-30%)        (30-50%)
+```
+
+**Policy Characteristics:**
+
+| Policy | Context Target | Prune Frequency | Artifact Retention | Use Cases |
+|--------|---------------|-----------------|-------------------|-----------|
+| **Aggressive** | <20% | After each phase | Metadata only, 0-day full content | Orchestrate workflows (research → plan → implement → debug → document) |
+| **Moderate** | 20-30% | After major milestones | Metadata + summaries, 7-day full content | Implement workflows (phase-by-phase execution with testing) |
+| **Minimal** | 30-50% | End of workflow only | Full content retained | Single-agent operations (report generation, debugging analysis) |
+
+### Pruning Utility Examples
+
+#### 1. `prune_subagent_output()` - Prune After Metadata Extraction
+
+Call immediately after extracting metadata from subagent outputs:
+
+```bash
+# Research phase completes with 3 reports
+RESEARCH_OUTPUTS=(
+  "specs/042_auth/reports/001_jwt_patterns.md"
+  "specs/042_auth/reports/002_security.md"
+  "specs/042_auth/reports/003_integration.md"
+)
+
+# Extract metadata first
+for output in "${RESEARCH_OUTPUTS[@]}"; do
+  METADATA=$(extract_report_metadata "$output")
+  # METADATA: {path, 50-word summary, key_findings[]}
+  REPORT_METADATA+=("$METADATA")
+
+  # Prune full content, keep metadata in context
+  prune_subagent_output "$output" "$METADATA"
+done
+
+# Context accumulated: 3 × 250 tokens = 750 tokens
+# Without pruning: 3 × 5000 tokens = 15,000 tokens
+# Reduction: 95%
+```
+
+#### 2. `prune_phase_metadata()` - Prune After Phase Completion
+
+Call after completing a workflow phase (testing passed, committed):
+
+```bash
+# Phase 2 completes: code written, tests pass, committed
+PHASE_2_DATA='
+{
+  "phase_number": 2,
+  "status": "completed",
+  "files_modified": ["src/auth.py", "tests/test_auth.py"],
+  "commit_hash": "a1b2c3d",
+  "tests_passing": true
+}
+'
+
+# Prune detailed phase metadata, keep completion status
+prune_phase_metadata "phase_2" "$PHASE_2_DATA"
+
+# Context retained: {phase: 2, status: "completed", commit: "a1b2c3d"}
+# Context pruned: files_modified[], tests_passing details, full diffs
+# Reduction: 80%
+```
+
+#### 3. `apply_pruning_policy()` - Automatic Policy-Based Pruning
+
+Call at workflow checkpoints to apply configured pruning policy:
+
+```bash
+# Orchestrate workflow after research phase
+apply_pruning_policy \
+  --mode aggressive \
+  --workflow orchestrate \
+  --phase research \
+  --artifacts "${RESEARCH_OUTPUTS[@]}"
+
+# Actions performed:
+# 1. Prune all research report full content
+# 2. Retain metadata only (paths + 50-word summaries)
+# 3. Log pruning operation to checkpoint
+# 4. Update context usage metrics
+
+# Context before: 18,000 tokens (research + planning + coordination)
+# Context after: 3,500 tokens (metadata + active planning context)
+# Reduction: 81%
+```
+
+### Context Usage Target: <30%
+
+**Monitoring Context Usage:**
+
+```bash
+# Check context usage at workflow checkpoints
+CONTEXT_USAGE=$(calculate_context_usage)
+echo "Current context usage: $CONTEXT_USAGE%"
+
+if [[ $CONTEXT_USAGE -gt 30 ]]; then
+  echo "⚠ Context usage above target, applying aggressive pruning"
+  apply_pruning_policy --mode aggressive --workflow "$WORKFLOW_TYPE"
+fi
+```
+
+**Expected Context Usage by Workflow Phase:**
+
+| Workflow | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Phase 6 | Phase 7 |
+|----------|---------|---------|---------|---------|---------|---------|---------|
+| **Orchestrate (aggressive pruning)** | 15% | 18% | 22% | 20% | 19% | 21% | 18% |
+| **Implement (moderate pruning)** | 18% | 24% | 28% | 26% | 25% | - | - |
+| **Single-agent (minimal pruning)** | 25% | 35% | 42% | - | - | - | - |
+
+### Complete Example: Orchestrate Workflow with Aggressive Pruning
+
+```bash
+#!/bin/bash
+# /orchestrate workflow with context pruning
+
+# Phase 1: Research (parallel, 3 agents)
+RESEARCH_OUTPUTS=(research1.md research2.md research3.md)
+for output in "${RESEARCH_OUTPUTS[@]}"; do
+  METADATA=$(extract_report_metadata "$output")
+  prune_subagent_output "$output" "$METADATA"
+done
+apply_pruning_policy --mode aggressive --workflow orchestrate --phase research
+# Context: 15% (750 tokens metadata only)
+
+# Phase 2: Planning (single agent)
+PLAN_OUTPUT="specs/042_auth/plans/001_implementation.md"
+PLAN_METADATA=$(extract_plan_metadata "$PLAN_OUTPUT")
+prune_subagent_output "$PLAN_OUTPUT" "$PLAN_METADATA"
+apply_pruning_policy --mode aggressive --workflow orchestrate --phase planning
+# Context: 18% (750 + 250 = 1,000 tokens accumulated)
+
+# Phase 3: Implementation (phase 1 only)
+implement_phase_1 "$PLAN_OUTPUT"
+PHASE_1_DATA='{"phase": 1, "status": "completed", "commit": "abc123"}'
+prune_phase_metadata "phase_1" "$PHASE_1_DATA"
+apply_pruning_policy --mode aggressive --workflow orchestrate --phase implementation
+# Context: 22% (1,000 + 500 = 1,500 tokens accumulated)
+
+# Phases 4-7: Continue with aggressive pruning...
+# Final context: 18% (vs 85% without pruning)
+```
+
+### Utility Library Reference
+
+Context pruning utilities are provided by `.claude/lib/context-pruning.sh`:
+
+```bash
+# Core Functions
+prune_subagent_output <artifact_path> <metadata_json>
+prune_phase_metadata <phase_id> <phase_data_json>
+apply_pruning_policy --mode <aggressive|moderate|minimal> --workflow <type> [--phase <name>]
+calculate_context_usage
+
+# Pruning Configuration
+configure_pruning_policy <workflow_type> <policy_name>
+get_pruning_retention_days <policy_name>
+validate_pruning_config
+
+# Logging and Monitoring
+log_pruning_operation <artifact_path> <pruned_tokens> <retained_tokens>
+get_pruning_statistics <workflow_id>
+export_pruning_report <output_path>
+```
+
+See [Command Architecture Standards - Standard 8](command_architecture_standards.md#standard-8) for complete context pruning specifications.
+
 ## User Workflows
 
 ### Workflow 1: Expand Complex Plan

@@ -55,6 +55,17 @@ $ .claude/lib/generate-testing-protocols.sh 5 "pytest jest"
 
 Analyzes CLAUDE.md for bloat and recommends extractions.
 
+**IMPORTANT - Command File Optimization**:
+
+This optimization utility is designed for **CLAUDE.md files only**, NOT for command files (`.claude/commands/*.md`). Command files follow different architectural standards where execution logic must remain inline for AI interpretation.
+
+**DO NOT apply this utility to:**
+- Command files (`.claude/commands/*.md`)
+- Agent files (`.claude/agents/*.md`)
+- Any file containing executable instructions for Claude
+
+**Rationale**: Command files are AI execution scripts, not documentation. Over-extraction of command content violates [Command Architecture Standards - Standard 1 (Inline Execution)](command_architecture_standards.md#standard-1), which requires workflow logic, tool invocations, and decision points to remain inline for direct AI interpretation.
+
 **Usage**:
 ```bash
 .claude/lib/optimize-claude-md.sh [file] [options]
