@@ -176,6 +176,7 @@ Automatically enforces:
 - **ASCII Diagrams**: Using Unicode box-drawing characters
 - **No Emojis**: In file content (only runtime UI)
 - **UTF-8 Encoding**: All documentation files
+- **Timeless Writing**: No historical commentary, temporal markers, or version references (see CLAUDE.md "Development Philosophy → Documentation Standards")
 
 ### Markdown Standards
 - Clear, concise language
@@ -199,6 +200,36 @@ Automatically enforces:
 - **Add emojis**: Follow encoding standards
 - **Create without purpose**: Every doc should add value
 - **Ignore standards**: Always check CLAUDE.md
+
+## Documentation Review Checklist
+
+Before finalizing documentation updates, verify:
+
+### Content Quality
+- [ ] Documentation describes current state accurately
+- [ ] Technical details are correct and complete
+- [ ] Examples are functional and relevant
+- [ ] Navigation links work correctly
+
+### Standards Compliance
+- [ ] No emojis in file content (UTF-8 compliance)
+- [ ] Unicode box-drawing used for diagrams (not ASCII art)
+- [ ] Markdown follows CommonMark specification
+- [ ] Line length within limits (if specified in CLAUDE.md)
+
+### Timeless Writing Policy
+- [ ] No temporal markers: "(New)", "(Old)", "(Updated)", "(Current)", "(Deprecated)"
+- [ ] No temporal phrases: "previously", "recently", "now supports", "used to", "no longer"
+- [ ] No migration language: "migration from", "backward compatibility", "breaking change"
+- [ ] No version references in descriptions: "v1.0", "since version", "as of version"
+- [ ] Documentation reads as if current implementation always existed
+- [ ] Historical context moved to CHANGELOG.md if needed
+
+### Directory Structure
+- [ ] Every subdirectory has README.md
+- [ ] README includes: purpose, modules, navigation
+- [ ] Cross-references are complete and accurate
+- [ ] Parent/child links maintained
 
 ## Integration with Other Commands
 
