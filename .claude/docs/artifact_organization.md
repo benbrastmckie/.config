@@ -665,17 +665,17 @@ See `.claude/docs/archive/specs_migration_guide.md` for detailed migration instr
 
 ## Troubleshooting
 
-### Issue: Flat Structure Bug (Legacy)
+### Issue: Flat Structure Bug
 
 **Symptom**: Artifacts created in flat structure (`specs/plans/`, `specs/reports/`) instead of topic-based (`specs/{NNN_topic}/plans/`, `specs/{NNN_topic}/reports/`)
 
-**Cause**: Commands prior to 2025-10-16 used inconsistent path construction
+**Cause**: Inconsistent path construction in command implementations
 
 **Solution**:
-- All commands updated to use uniform topic-based structure
-- `/plan`, `/report`, `/debug`, `/implement`, `/orchestrate` now use `create_topic_artifact()` utility
+- All commands use uniform topic-based structure
+- `/plan`, `/report`, `/debug`, `/implement`, `/orchestrate` use `create_topic_artifact()` utility
 - All artifacts MUST be in `specs/{NNN_topic}/{artifact_type}/` format
-- Flat structure is deprecated
+- Flat structure is not supported
 
 **Migration**:
 - Existing flat-structure artifacts can remain in place (still readable)
