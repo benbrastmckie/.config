@@ -599,6 +599,139 @@ Main processing functions for user data operations.
 - [← Parent Directory](../README.md)
 ```
 
+## Command Architecture Standards Integration
+
+When developing commands or agents, CLAUDE.md standards discovery is complemented by **command architecture standards** which govern how command files themselves are structured.
+
+### Two Types of Standards
+
+**CLAUDE.md Standards** (this guide):
+- Project-specific coding standards (indentation, naming, error handling)
+- Testing protocols and test commands
+- Documentation policies
+- Language-specific conventions
+- Discovered at runtime by commands
+
+**Command Architecture Standards** ([command_architecture_standards.md](command_architecture_standards.md)):
+- How command/agent files are structured (Standards 1-5)
+- How commands pass context between agents (Standards 6-8)
+- How commands manage file size and complexity (Standards 9-11)
+- Apply to `.claude/commands/*.md` and `.claude/agents/*.md` files themselves
+- Apply during command development, not runtime
+
+### When to Use Each
+
+**Use CLAUDE.md Standards** when:
+- Generating user code (not command files)
+- Running tests on user code
+- Creating documentation for user projects
+- Applying project-specific conventions
+
+**Use Command Architecture Standards** when:
+- Writing or modifying command files (`.claude/commands/*.md`)
+- Creating agent files (`.claude/agents/*.md`)
+- Deciding what to keep inline vs extract to utilities
+- Implementing context-efficient agent invocations
+- Refactoring command file structure
+
+### Example: Two Standards in One Command
+
+A command file follows **both** standard types:
+
+```markdown
+---
+allowed-tools: Read, Write, Edit, Bash
+description: Implementation command
+---
+
+# Implement Command
+
+<!-- Command Architecture Standard 1: Inline execution requirements -->
+I'll implement the feature following these steps:
+1. Discover project standards from CLAUDE.md
+2. Generate code matching discovered standards
+3. Run tests specified in CLAUDE.md
+4. Create documentation per CLAUDE.md policy
+
+## Standards Discovery and Application
+
+<!-- CLAUDE.md standards discovery (this guide) -->
+### Discovery Process
+1. Locate CLAUDE.md recursively upward
+2. Parse Code Standards section
+3. Extract indentation, naming, error handling
+4. Apply during code generation
+
+<!-- Command Architecture Standard 6: Metadata-only passing -->
+### Research Integration
+For research reports, I'll extract metadata instead of passing full content:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research using researcher protocol"
+  prompt: "Read and follow: .claude/agents/researcher.md
+
+          Research [topic].
+
+          Return: {path, 50-word summary, key_findings}"
+}
+
+<!-- Apply CLAUDE.md standards to generated user code -->
+After research, I'll generate code matching CLAUDE.md standards:
+- Indentation: {discovered_indentation}
+- Naming: {discovered_naming}
+- Error handling: {discovered_error_handling}
+```
+
+In this example:
+- Command file structure follows **Command Architecture Standards** (inline execution, metadata-only passing)
+- Generated user code follows **CLAUDE.md Standards** (indentation, naming from project CLAUDE.md)
+
+### Integration Examples
+
+**Command Files** (command_architecture_standards.md applies):
+- `.claude/commands/implement.md` - Must have inline execution steps (Standard 1)
+- `.claude/commands/orchestrate.md` - Must use metadata-only artifact passing (Standard 6)
+- `.claude/agents/researcher.md` - Must have inline behavioral guidelines (Standard 1)
+
+**User Code** (CLAUDE.md standards apply):
+- `src/module.lua` - Follows indentation, naming from project CLAUDE.md
+- `tests/spec.lua` - Uses test patterns from CLAUDE.md Testing Protocols
+- `docs/README.md` - Follows format from CLAUDE.md Documentation Policy
+
+**Utility Libraries** (neither applies directly):
+- `.claude/lib/artifact-operations.sh` - General bash best practices
+- `.claude/lib/checkpoint-utils.sh` - Internal utility conventions
+
+### Cross-References
+
+When implementing standards discovery in commands, reference both standard types:
+
+```markdown
+## Standards Discovery and Application
+
+This command follows:
+- **[Command Architecture Standards](command_architecture_standards.md)** for command file structure (Standards 1-11)
+- **CLAUDE.md Standards** (this guide) for project-specific code generation
+
+### Discovery Process
+[CLAUDE.md discovery steps from this guide]
+
+### Context Preservation
+[Standard 6-8 from command_architecture_standards.md]
+
+### Application
+[Apply CLAUDE.md standards to generated code]
+```
+
+### References
+
+- [command_architecture_standards.md](command_architecture_standards.md) - Command file structure standards (Standards 1-11)
+- [CLAUDE.md Section Schema](claude-md-section-schema.md) - Project CLAUDE.md format
+- [Creating Commands](creating-commands.md) - Command development guide integrating both standard types
+
+---
+
 ## Quick Reference
 
 ### Command Integration Checklist
