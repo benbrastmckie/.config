@@ -174,67 +174,28 @@ I'll conduct thorough research by:
 - **Web Research** (if needed): Gathering external context and best practices
 
 ### 6. Report Structure
-The report will include:
+
+Reports follow the standard structure defined in `.claude/templates/report-structure.md`.
+
+Key sections include:
 - **Executive Summary**: Brief overview of findings
 - **Background**: Context and problem space
-- **Current State Analysis**: How things currently work
-- **Key Findings**: Important discoveries and insights
-- **Technical Details**: In-depth technical analysis
-- **Recommendations**: Suggested improvements or next steps
+- **Analysis**: Detailed research findings organized by area
+- **Technical Details**: Implementation patterns, dependencies, constraints
+- **Recommendations**: Prioritized actionable suggestions
+- **Implementation Status**: Tracking for when recommendations are implemented
 - **References**: Links to relevant files and resources
 
 ### 7. Report Metadata
-Each report will include:
+
+Each report includes standardized metadata:
 - **Topic Directory**: Path to the topic directory (e.g., `specs/042_authentication/`)
 - **Report Number**: Three-digit number within this topic's reports/ subdirectory
-- Creation date and time
-- Research scope and boundaries
-- Files analyzed
-- Search queries used
-- Time investment estimate
+- Creation date, research scope, files analyzed
 
-**Path Format**:
-- Located in `specs/{NNN_topic}/reports/NNN_report_name.md`
-- Topic: `{NNN_topic}` = three-digit numbered topic (e.g., `042_authentication`)
-- Report name converted to lowercase with underscores
-- Following professional documentation standards
-- Including diagrams and code examples where helpful
-- Cross-referencing relevant files with precise locations
+**Path Format**: `specs/{NNN_topic}/reports/NNN_report_name.md`
 
-## Output Format
-
-The report will be formatted as:
-
-```markdown
-# [Topic] Research Report
-
-## Metadata
-- **Date**: [YYYY-MM-DD]
-- **Topic Directory**: [specs/{NNN_topic}/ or .claude/specs/{NNN_topic}/]
-- **Report Number**: [NNN] (within topic)
-- **Scope**: [Description of research scope]
-- **Files Analyzed**: [Count and key files]
-
-## Executive Summary
-[Brief overview of findings]
-
-## Analysis
-[Detailed research findings]
-
-## Recommendations
-[Actionable insights and suggestions]
-
-## Implementation Status
-- **Status**: Research Complete
-- **Plan**: None yet
-- **Implementation**: Not started
-- **Date**: [YYYY-MM-DD]
-
-*This section will be updated if/when recommendations are implemented.*
-
-## References
-[Links to relevant files and resources]
-```
+For complete report structure and section guidelines, see `.claude/templates/report-structure.md`
 
 ## Agent Usage
 

@@ -181,50 +181,18 @@ Standalone debug report created:
 
 ## Report Structure
 
-```markdown
-# Debug Report: [Issue Title]
+Debug reports follow the standard structure defined in `.claude/templates/debug-structure.md`.
 
-## Metadata
-- **Date**: [YYYY-MM-DD]
-- **Issue**: [Brief description]
-- **Severity**: [Critical|High|Medium|Low]
-- **Type**: Debugging investigation
-- **Related Reports**: [List of reference reports]
+Key sections include:
+- **Problem Statement**: Detailed description of reported vs expected behavior
+- **Investigation Process**: Methodology, hypotheses tested, diagnostic tools used
+- **Findings**: Root cause analysis with code evidence
+- **Proposed Solutions**: Multiple options with pros/cons and effort/risk assessment
+- **Recommendations**: Prioritized actions including preventive measures
+- **Testing Strategy**: How to validate fixes and prevent regressions
+- **Resolution Status**: Tracking for when the issue is fixed
 
-## Problem Statement
-[Detailed description of the issue and its impact]
-
-## Investigation Process
-[Step-by-step investigation methodology]
-
-## Findings
-
-### Root Cause Analysis
-[Primary cause identification]
-
-### Contributing Factors
-[Secondary issues that compound the problem]
-
-### Evidence
-[Code snippets, logs, environment details]
-
-## Proposed Solutions
-
-### Option 1: [Solution Name]
-[Description, pros, cons, implementation approach]
-
-### Option 2: [Solution Name]
-[Alternative approach if applicable]
-
-## Recommendations
-[Prioritized list of actions to resolve the issue]
-
-## Next Steps
-[Clear action items for implementation]
-
-## References
-[Links to relevant files, documentation, external resources]
-```
+For complete debug report structure and investigation guidelines, see `.claude/templates/debug-structure.md`
 
 ## Investigation Techniques
 
