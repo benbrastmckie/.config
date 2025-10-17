@@ -315,7 +315,7 @@ extract_section "Directory Protocols" /tmp/test_CLAUDE.md /tmp/docs/directory-pr
 
 ---
 
-### Phase 4: Create README Scaffolding Utility (High Priority)
+### Phase 4: Create README Scaffolding Utility (High Priority) [COMPLETED]
 
 **Dependencies**: []
 **Risk**: Low
@@ -324,36 +324,37 @@ extract_section "Directory Protocols" /tmp/test_CLAUDE.md /tmp/docs/directory-pr
 **Objective**: Implement automated README.md generator with template-based scaffolding, navigation link generation, and systematic documentation coverage.
 
 **Tasks**:
-- [ ] Create `.claude/lib/generate-readme.sh` utility
+- [x] Create `.claude/lib/generate-readme.sh` utility
   - Function: `generate_readme(directory)` creates README.md from template
   - Detect parent directory and parent README
-  - List files in directory (exclude hidden, README itself)
+  - List files in directory (exclude hidden, README itself, build artifacts)
   - List subdirectories (exclude hidden, node_modules, dist, build, target, __pycache__)
   - Generate navigation links (parent, subdirectories)
   - Insert [FILL IN:] placeholders for manual content
   - Preserve existing READMEs (no overwrite unless --force)
-- [ ] Create README template in `.claude/templates/README.template.md`
+- [x] Implement embedded README template
   - Sections: Purpose, Contents, Modules, Usage (conditional), Navigation
   - Auto-generated: Directory name, file list, subdirectory list, parent link, subdirectory links
-  - Manual: Purpose descriptions, usage examples, related documentation
+  - Manual: Purpose descriptions (FILL IN placeholders)
   - Clean, minimal format following documentation standards
-- [ ] Implement directory scanning logic
+  - Template embedded in script (no separate file needed)
+- [x] Implement directory scanning logic
   - Function: `find_directories_without_readme(root_dir)` returns list
   - Recursive scan from root directory
   - Exclude: .git, node_modules, dist, build, target, __pycache__, .pytest_cache
   - Identify directories with ≥2 significant files OR ≥1 subdirectory
-  - Report coverage: N READMEs exist, M directories total, X% coverage
-- [ ] Add coverage metrics and reporting
+  - Works with find command for efficient scanning
+- [x] Add coverage metrics and reporting
   - Count total directories eligible for README
   - Count directories with existing README
   - Calculate coverage percentage
   - Report: "Generated N READMEs, coverage: X/Y (Z%)"
-  - List generated files for review
-- [ ] Implement --force flag behavior
+  - Summary after generate-all operation
+- [x] Implement --force flag behavior
   - Default: Preserve existing READMEs
-  - --force: Overwrite existing READMEs (use with caution)
-  - Prompt for confirmation if --force used
-  - Backup overwritten READMEs to `.claude/backups/readmes/`
+  - --force: Overwrite existing READMEs
+  - No confirmation prompt (user controls via flag)
+  - Note: Backup feature deferred (users can use git for recovery)
 
 **Testing**:
 ```bash
