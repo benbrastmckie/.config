@@ -325,6 +325,13 @@ For detailed usage, see `.claude/commands/README.md` and individual command file
 - **Find Files**: `<C-p>` (Telescope)
 - **Search Project**: `<leader>sg` (Telescope grep)
 
+### Setup Utilities
+- **Test Detection**: `.claude/lib/detect-testing.sh [dir]` - Score testing infrastructure (0-6)
+- **Optimize CLAUDE.md**: `.claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run` - Analyze bloat
+- **Generate READMEs**: `.claude/lib/generate-readme.sh --generate-all [dir]` - Documentation coverage
+
+See [Setup Guide](.claude/docs/setup-command-guide.md) for detailed usage patterns and troubleshooting.
+
 ### Navigation
 - [Neovim Configuration](nvim/)
 - [Specifications](nvim/specs/)
