@@ -13,21 +13,23 @@
 
 ## Overview
 
-This plan optimizes the .claude/ command and agent system to achieve lean, efficient workflows with minimal console output and reduced token usage. Current analysis shows significant opportunities for improvement:
+This plan optimizes the .claude/ command and agent system to achieve lean, efficient workflows with minimal console output and reduced token usage. Comprehensive research has identified specific redundancies and optimization opportunities.
 
-**Current State**:
-- Commands embed 100-200+ line templates inline (report, debug, refactor)
-- 17 agents averaging ~490 lines each (8,361 total lines)
-- Verbose console output mixing essential info with procedural details
-- Repeated agent templates (37+ Task invocation patterns)
-- No standardized output pattern
+**Current State** (Research-Validated):
+- **Commands**: 17 files with duplicated tool allowlists (~8,500 words redundant)
+- **Checkpoint Management**: Repeated 5 times across commands (~3,000 words)
+- **Agent Invocations**: Spec-updater pattern duplicated 6+ times (~1,200 words)
+- **Agents**: 17 agents averaging ~490 lines each (8,361 total lines)
+- **Output Patterns**: 3 different progress formats, inconsistent completion messages
+- **Total Redundancy**: ~14,980 words of duplicated content identified
 
 **Target State**:
-- Templates extracted to .claude/templates/ for reuse
+- High-impact template extractions completed first (Phase 1.5)
+- Tool allowlists, checkpoint patterns, agent invocations consolidated
 - Agent prompts reduced 60-70% via template references
-- Standardized "summary + link" output pattern
+- Standardized output patterns across all commands
 - Context usage <30% throughout workflows
-- Token savings: 4,600+ per workflow
+- Token savings: ~14,980 words (~30% command verbosity reduction)
 
 ## Success Criteria
 - [ ] All command templates extracted to .claude/templates/
@@ -122,12 +124,80 @@ Expected Outcome:
 - Command file sizes reduced by ~100-200 lines each
 - Templates maintain all structural information
 
-### Phase 2: Agent Optimization - Top 3 Verbose Agents [PARTIAL]
-**Objective**: Reduce verbosity in doc-converter, spec-updater, and debug-specialist agents
-**Complexity**: High
+### Phase 1.5: High-Impact Template Extraction [NEW]
+**Objective**: Extract highest-redundancy patterns identified in research before agent optimization
+**Complexity**: Medium
 **Dependencies**: [1]
+**Risk**: Low
+**Estimated Time**: 3-4 hours
+
+Tasks:
+- [ ] Extract tool allowlists from 17 command files
+  - [ ] Create `.claude/templates/command-frontmatter.md` with standard allowed-tools YAML
+  - [ ] Update implement.md, orchestrate.md, plan.md, report.md, debug.md, document.md, refactor.md (line 2 of each)
+  - [ ] Update test.md, test-all.md, revise.md, expand.md, collapse.md, list.md, analyze.md
+  - [ ] Update migrate-specs.md, plan-from-template.md, plan-wizard.md
+  - [ ] Replace inline allowlists with: "See `.claude/templates/command-frontmatter.md` for standard tool access"
+- [ ] Extract checkpoint management pattern from 5 commands
+  - [ ] Create `.claude/templates/checkpoint-management-pattern.md`
+  - [ ] Extract from implement.md (lines 1166-1230), orchestrate.md (lines 2790-2860)
+  - [ ] Update plan.md, debug.md, document.md to reference template
+  - [ ] Template includes: save_checkpoint(), load_checkpoint(), checkpoint JSON schema
+- [ ] Extract spec-updater invocation pattern from 6 commands
+  - [ ] Create `.claude/templates/agent-invocation-spec-updater.md`
+  - [ ] Extract from plan.md (lines 514-555), report.md (lines 102-141), orchestrate.md (lines 2730-2760)
+  - [ ] Update implement.md, debug.md, document.md to reference template
+  - [ ] Template includes: Task YAML structure, operation types, variable reference
+- [ ] Extract forward message pattern from 3 commands
+  - [ ] Create `.claude/templates/forward-message-complete-pattern.md`
+  - [ ] Extract from implement.md (lines 596-625), orchestrate.md (lines 542-599), plan.md (lines 82-161)
+  - [ ] Template includes: forward_message() usage, metadata extraction, context reduction workflow
+- [ ] Extract complexity evaluation pattern from 4 commands
+  - [ ] Create `.claude/docs/complexity-patterns.md` for documentation
+  - [ ] Document patterns from implement.md (lines 430-500), plan.md (lines 235-300), orchestrate.md (lines 445-460)
+  - [ ] Include threshold calculations, helper function patterns, evaluation workflow
+
+Testing:
+```bash
+# Verify all new templates exist
+ls -la .claude/templates/command-frontmatter.md
+ls -la .claude/templates/checkpoint-management-pattern.md
+ls -la .claude/templates/agent-invocation-spec-updater.md
+ls -la .claude/templates/forward-message-complete-pattern.md
+ls -la .claude/docs/complexity-patterns.md
+
+# Verify commands reference templates correctly
+grep -n "command-frontmatter" .claude/commands/implement.md
+grep -n "checkpoint-management" .claude/commands/orchestrate.md
+grep -n "spec-updater" .claude/commands/plan.md
+
+# Count line reductions in key commands
+wc -l .claude/commands/implement.md
+wc -l .claude/commands/orchestrate.md
+wc -l .claude/commands/plan.md
+```
+
+Expected Outcome:
+- 5 new template/doc files created
+- Tool allowlist extracted from 17 files (~8,500 words saved)
+- Checkpoint pattern extracted from 5 files (~3,000 words saved)
+- Spec-updater pattern extracted from 6 files (~1,200 words saved)
+- Forward message pattern extracted from 3 files (~280 words saved)
+- Complexity patterns documented (~1,080 words saved)
+- **Total Phase 1.5 Savings**: ~14,060 words (28% command verbosity reduction)
+
+### Phase 2: Agent Optimization - Top 3 Verbose Agents [PARTIAL]
+**Objective**: Reduce verbosity in doc-converter, spec-updater, and debug-specialist agents by removing redundant tool docs
+**Complexity**: High
+**Dependencies**: [1, 1.5]
 **Risk**: Medium
 **Estimated Time**: 3-4 hours
+
+**Research Findings**:
+- All agents contain redundant Tool usage instructions (~500 words each)
+- Agent invocation examples are duplicated across agents
+- Tool access documentation repeated from command files
+- Opportunity: Remove tool docs, reference shared template instead
 
 Tasks:
 - [x] Audit doc-converter.md (949 lines) for extractable content
@@ -136,11 +206,20 @@ Tasks:
 - [x] Create `.claude/templates/agent-invocation-patterns.md` consolidating Task tool usage examples
 - [x] Extract repeated Tool descriptions to `.claude/templates/agent-tool-descriptions.md`
 - [ ] Update doc-converter.md to reference shared templates (target: <400 lines, 58% reduction)
+  - [ ] Remove redundant Tool usage sections (reference agent-tool-descriptions.md)
+  - [ ] Remove duplicated invocation examples (reference agent-invocation-patterns.md)
+  - [ ] Preserve core conversion logic and behavioral guidelines
 - [ ] Update spec-updater.md to reference shared templates (target: <350 lines, 59% reduction)
+  - [ ] Remove redundant Tool sections
+  - [ ] Remove duplicated checkpoint management docs (now in Phase 1.5 template)
+  - [ ] Preserve artifact lifecycle and gitignore logic
 - [ ] Update debug-specialist.md to reference shared templates (target: <250 lines, 60% reduction)
-- [ ] Verify all agent functionality preserved
+  - [ ] Remove redundant Tool sections
+  - [ ] Remove duplicated debugging workflow (extract to shared debug pattern)
+  - [ ] Preserve specialized debugging strategies
+- [ ] Verify all agent functionality preserved through test invocations
 
-**Note**: Templates created provide foundation for agent optimization. Individual agent updates require careful manual refactoring to preserve functionality while achieving 60-70% size reduction. Recommend completing agent optimization in separate focused implementation.
+**Note**: Phase 1.5 templates provide foundation for agent optimization. Focus on removing redundant tool documentation and referencing shared patterns.
 
 Testing:
 ```bash
@@ -160,23 +239,40 @@ Expected Outcome:
 - Total savings: 1,436 lines from top 3 agents alone
 
 ### Phase 3: Agent Optimization - Remaining Agents
-**Objective**: Apply optimization patterns to remaining 14 agents
+**Objective**: Apply optimization patterns to remaining 14 agents, consolidate agent invocation patterns
 **Complexity**: High
-**Dependencies**: [2]
+**Dependencies**: [1.5, 2]
 **Risk**: Medium
 **Estimated Time**: 4-5 hours
 
+**Research Findings**:
+- 37+ Task invocation patterns identified across agents (highly redundant)
+- All agents repeat similar Tool usage instructions
+- Agent invocation examples could be consolidated to 3-4 standard patterns
+
 Tasks:
 - [ ] Create optimization checklist from Phase 2 learnings
+- [ ] Consolidate agent invocation patterns
+  - [ ] Analyze 37+ Task invocation examples across agents
+  - [ ] Create 3-4 standard invocation templates in agent-invocation-patterns.md
+  - [ ] Include: research agent pattern, implementation agent pattern, analysis agent pattern, utility agent pattern
 - [ ] Optimize github-specialist.md (570 lines → target <250 lines)
+  - [ ] Remove Tool docs (reference shared template)
+  - [ ] Remove redundant invocation examples
 - [ ] Optimize plan-architect.md (538 lines → target <220 lines)
+  - [ ] Remove Tool docs and complexity calculation redundancy
 - [ ] Optimize metrics-specialist.md (460 lines → target <200 lines)
+  - [ ] Remove Tool docs and checkpoint management redundancy
 - [ ] Optimize code-writer.md (441 lines → target <190 lines)
+  - [ ] Remove Tool docs
 - [ ] Optimize test-specialist.md (439 lines → target <190 lines)
+  - [ ] Remove Tool docs
 - [ ] Optimize research-specialist.md → target <150 lines
+  - [ ] Remove Tool docs, consolidate research patterns
 - [ ] Optimize doc-writer.md → target <150 lines
 - [ ] Optimize code-reviewer.md → target <150 lines
 - [ ] Optimize complexity-estimator.md → target <150 lines
+  - [ ] Remove complexity calculation redundancy (now in Phase 1.5 template)
 - [ ] Optimize expansion-specialist.md → target <150 lines
 - [ ] Optimize collapse-specialist.md → target <150 lines
 - [ ] Optimize plan-expander.md → target <150 lines
@@ -201,23 +297,48 @@ Expected Outcome:
 - No functionality lost
 
 ### Phase 4: Output Pattern Standardization
-**Objective**: Update all commands to use consistent minimal output pattern
+**Objective**: Update all commands to use consistent minimal output pattern based on research findings
 **Complexity**: Medium
-**Dependencies**: [1]
+**Dependencies**: [1, 1.5]
 **Risk**: Low
 **Estimated Time**: 3-4 hours
 
+**Research Findings**:
+- **Progress Markers**: 3 different formats found
+  - implement.md: `PROGRESS: Phase X - description`
+  - orchestrate.md: `PROGRESS: [phase] - [action_description]`
+  - debug.md: Similar but slightly different format
+- **Completion Messages**: Each command has custom format (inconsistent)
+  - implement.md lines 1230+: Verbose completion message
+  - orchestrate.md lines 1890+: Different format, similar content
+  - plan.md: No explicit completion message format
+- **Context Metrics**: Inconsistent reporting (95% vs 99.75% vs 92-95%)
+
 Tasks:
-- [ ] Audit current output patterns across all commands
+- [ ] Audit current output patterns across all commands (document findings)
 - [ ] Create output pattern test script: `.claude/tests/test_output_patterns.sh`
-- [ ] Update `/report` command output to "✓ Report Complete\nArtifact: [path]\nSummary: [summary]"
-- [ ] Update `/debug` command output to minimal pattern
-- [ ] Update `/plan` command output to minimal pattern
-- [ ] Update `/implement` command to use PROGRESS markers consistently
-- [ ] Update `/orchestrate` command output (already has good PROGRESS markers)
-- [ ] Update `/expand` command output to minimal pattern
-- [ ] Update `/collapse` command output to minimal pattern
-- [ ] Update `/test` and `/test-all` command outputs
+- [ ] Standardize progress marker format
+  - [ ] Define unified format in output-patterns.md: `PROGRESS: [component] - [action] - [context]`
+  - [ ] Update implement.md to use standard format
+  - [ ] Update orchestrate.md to use standard format
+  - [ ] Update debug.md to use standard format
+  - [ ] Update plan.md, document.md, refactor.md to use standard format
+- [ ] Standardize completion message format
+  - [ ] Create completion-message-template.md with Unicode box-drawing
+  - [ ] Template variables: [DURATION], [ARTIFACTS], [METRICS]
+  - [ ] Update implement.md (lines 1230+) to use template
+  - [ ] Update orchestrate.md (lines 1890+) to use template
+  - [ ] Update plan.md to add completion message using template
+  - [ ] Update all commands to use consistent completion format
+- [ ] Standardize context metrics reporting
+  - [ ] Define standard calculation method in context-metrics-standard.md
+  - [ ] Update implement.md (lines 596-625): standardize "95% context reduction" reporting
+  - [ ] Update orchestrate.md (lines 542-599): standardize "99.75% context reduction" reporting
+  - [ ] Update plan.md (lines 82-161): standardize "92-95% reduction" reporting
+  - [ ] All commands use same metrics format and calculation
+- [ ] Update minimal success pattern for all commands
+  - [ ] Format: "✓ [Operation] Complete\nArtifact: [absolute-path]\nSummary: [1-2 line description]"
+  - [ ] Update /report, /debug, /plan, /expand, /collapse, /test, /test-all
 - [ ] Add stderr separation documentation (for future implementation)
 - [ ] Update CLAUDE.md with standard output pattern documentation
 
@@ -240,7 +361,7 @@ Expected Outcome:
 ### Phase 5: Context Optimization and Validation
 **Objective**: Ensure context usage stays <30% throughout workflows and measure improvements
 **Complexity**: Medium
-**Dependencies**: [1, 2, 3, 4]
+**Dependencies**: [1, 1.5, 2, 3, 4]
 **Risk**: Low
 **Estimated Time**: 2-3 hours
 
@@ -426,3 +547,43 @@ When all phases complete:
   - Testing results and validation
   - Performance improvements measured
 - [ ] Summary location: `specs/summaries/060_lean_workflow_optimization.md`
+
+## Revision History
+
+### 2025-10-17 - Revision 1: Research-Based Optimization
+**Changes**:
+- Added new Phase 1.5: High-Impact Template Extraction (5 major extractions)
+- Updated Overview with research-validated current state and specific redundancy metrics
+- Updated Phase 2 dependencies to include Phase 1.5, added specific redundancy removal tasks
+- Updated Phase 3 dependencies and tasks with agent invocation pattern consolidation
+- Updated Phase 4 with specific output pattern issues and standardization targets
+- Updated Phase 5 dependencies to include Phase 1.5
+
+**Reason**:
+Comprehensive codebase research identified specific high-impact optimization opportunities:
+- ~14,980 words of redundant content across commands/agents
+- Tool allowlists duplicated across 17 files
+- Checkpoint management patterns repeated 5 times
+- Spec-updater invocations repeated 6+ times
+- Inconsistent output patterns across 8+ commands
+
+**Research Findings Used**:
+- Top 5 verbosity patterns with file:line references
+- Top 3 redundancy issues with affected files
+- Recommended template extractions with specific sources
+- Output pattern standardization opportunities
+
+**Modified Phases**:
+- Phase 1: Already completed (no changes)
+- Phase 1.5: NEW - High-impact template extraction before agent optimization
+- Phase 2: Updated dependencies [1, 1.5], added specific redundancy removal subtasks
+- Phase 3: Updated dependencies [1.5, 2], added agent invocation pattern consolidation
+- Phase 4: Updated dependencies [1, 1.5], added specific output pattern fixes
+- Phase 5: Updated dependencies to include [1.5]
+
+**Priority Rationale**:
+Phase 1.5 extracts the highest-redundancy patterns (~14,060 words) before agent optimization, providing:
+1. Immediate 28% command verbosity reduction
+2. Foundation templates for Phase 2/3 agent optimization
+3. Clear reference patterns for output standardization in Phase 4
+4. Reduced risk by validating template approach before agent changes

@@ -306,7 +306,7 @@ Located in `.claude/commands/`:
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts
 - `/test <target>` - Run project-specific tests per Testing Protocols
-- `/setup` - Configure or update this CLAUDE.md file
+- `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
 
 **Orchestration**: 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, wave-based implementation, and conditional debugging. Performance: <30% context usage, 40-80% time savings vs sequential.
 
