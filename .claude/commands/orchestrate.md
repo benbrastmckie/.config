@@ -459,6 +459,158 @@ The research phase coordinates multiple specialized agents to investigate differ
    - 10+: "think harder" (critical)
    ```
 
+**EXECUTE NOW - Calculate Report Paths** (Step 2: Before Agent Invocation)
+
+BEFORE invoking research agents, calculate absolute report paths for each research topic.
+
+**Required Preparation**:
+
+```bash
+# Source required utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+
+# Identify research topics from workflow description
+# Number of topics based on complexity:
+#   - Low complexity (score 0-3): 0-1 topics (skip research)
+#   - Medium complexity (score 4-6): 2 topics
+#   - High complexity (score 7-9): 3 topics
+#   - Critical complexity (score 10+): 4 topics
+```
+
+**Example: Extracting Research Topics from Workflow**:
+
+```bash
+# Example workflow description
+WORKFLOW="Add user authentication with OAuth2 and session management"
+
+# Identify research topics based on complexity
+# For this workflow (complexity ~8): 3 topics
+TOPICS=(
+  "authentication_patterns"    # OAuth2 implementation patterns
+  "session_management"          # Session storage and lifecycle
+  "security_best_practices"     # Auth security considerations
+)
+
+echo "Identified ${#TOPICS[@]} research topics for workflow"
+```
+
+**Adapting Topics**:
+
+```bash
+# Example topics (adapt based on workflow):
+TOPICS=("existing_patterns" "best_practices" "integration_approaches")
+
+# Calculate absolute paths for each topic
+declare -A REPORT_PATHS
+
+for topic in "${TOPICS[@]}"; do
+  # Create topic directory if it doesn't exist
+  TOPIC_DIR="${CLAUDE_PROJECT_DIR}/specs/reports/${topic}"
+  mkdir -p "$TOPIC_DIR"
+
+  # Get next available number for this topic
+  NEXT_NUM=$(get_next_artifact_number "$TOPIC_DIR")
+
+  # Construct absolute path
+  REPORT_PATH="${TOPIC_DIR}/${NEXT_NUM}_analysis.md"
+
+  # Store in associative array
+  REPORT_PATHS["$topic"]="$REPORT_PATH"
+
+  echo "  Research Topic: $topic"
+  echo "  Report Path: $REPORT_PATH"
+done
+```
+
+**Verification Checkpoint**:
+- [ ] All topic directories created
+- [ ] Absolute paths calculated for each topic
+- [ ] Paths stored in REPORT_PATHS array
+- [ ] Ready to pass paths to research agents
+
+**Integration with Agent Invocation**:
+
+For each research agent, include the calculated absolute path in the agent prompt:
+
+```markdown
+**CRITICAL: Create Report File**
+
+You MUST create a research report file using the Write tool at this EXACT path:
+
+**Report Path**: ${REPORT_PATHS["topic_name"]}
+
+DO NOT:
+- Return only a summary
+- Use relative paths
+- Calculate the path yourself
+
+DO:
+- Use Write tool with exact path above
+- Create complete report (not abbreviated)
+- Return: REPORT_PATH: ${REPORT_PATHS["topic_name"]}
+
+After completing research, return this exact format:
+
+**Primary Output**:
+```
+REPORT_PATH: ${REPORT_PATHS["topic_name"]}
+```
+
+**Secondary Output**: Brief summary (1-2 sentences ONLY)
+```
+
+**Path Calculation Benefits**:
+- Eliminates path mismatch errors (agents use exact paths)
+- Ensures consistent numbering across topics
+- Prevents race conditions in parallel execution
+- Enables verification of expected file locations
+
+**Complete Task Tool Invocation Example**:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns with artifact creation"
+  timeout: 300000  # 5 minutes per research agent
+  prompt: "
+    **CRITICAL: Create Report File**
+
+    **Report Path**: /home/benjamin/.config/.claude/specs/reports/authentication_patterns/001_analysis.md
+
+    You MUST create a research report file using the Write tool at the EXACT path above.
+
+    DO NOT:
+    - Return only a summary
+    - Use relative paths
+    - Calculate the path yourself
+
+    DO:
+    - Use Write tool with exact path above
+    - Create complete report (not abbreviated)
+    - Return: REPORT_PATH: /absolute/path
+
+    ---
+
+    ## Research Task: Authentication Patterns
+
+    Analyze existing authentication implementations in the codebase:
+    1. Search for authentication-related files
+    2. Identify patterns and conventions
+    3. Document integration points
+    4. Note security considerations
+
+    ## Expected Output
+
+    **Primary Output**:
+    \`\`\`
+    REPORT_PATH: /home/benjamin/.config/.claude/specs/reports/authentication_patterns/001_analysis.md
+    \`\`\`
+
+    **Secondary Output**: Brief 1-2 sentence summary
+  "
+}
+```
+
 2. **Parallel Agent Invocation** (Step 2.5):
    - **CRITICAL**: Send ALL Task tool invocations in SINGLE message
    - Use general-purpose subagent_type
@@ -466,7 +618,207 @@ The research phase coordinates multiple specialized agents to investigate differ
    - Include thinking mode in each agent prompt
    - Provide ABSOLUTE report paths (not relative)
 
-3. **Report Verification** (Steps 4.5-4.6):
+**CRITICAL: Parallel Agent Invocation Pattern**:
+
+To achieve true parallel execution, invoke ALL research agents in a SINGLE message:
+
+```
+# Correct: Single message with 3 Task calls
+Task(research-specialist: authentication_patterns)
+Task(research-specialist: session_management)
+Task(research-specialist: security_best_practices)
+
+# Agents execute in parallel, ~66% time savings vs sequential
+```
+
+**DO NOT** invoke sequentially (defeats parallelism):
+
+```
+# Incorrect: Sequential invocations
+Task(research-specialist: authentication_patterns)
+[wait for response]
+Task(research-specialist: session_management)
+[wait for response]
+Task(research-specialist: security_best_practices)
+```
+
+**EXECUTE NOW - Parse REPORT_PATH from Agent Outputs** (Step 3.5: After Agent Completion):
+
+After research agents complete, extract REPORT_PATH from each agent's response:
+
+```bash
+# Parse agent outputs for REPORT_PATH
+declare -A AGENT_REPORT_PATHS
+
+for topic in "${!REPORT_PATHS[@]}"; do
+  AGENT_OUTPUT="${RESEARCH_AGENT_OUTPUTS[$topic]}"  # From Task tool results
+
+  # Extract REPORT_PATH line (format: "REPORT_PATH: /absolute/path")
+  EXTRACTED_PATH=$(echo "$AGENT_OUTPUT" | grep -oP 'REPORT_PATH:\s*\K/.+' | head -1)
+
+  if [ -z "$EXTRACTED_PATH" ]; then
+    echo "  ⚠️  Agent for '$topic' did not return REPORT_PATH"
+    echo "    Using pre-calculated path: ${REPORT_PATHS[$topic]}"
+    EXTRACTED_PATH="${REPORT_PATHS[$topic]}"
+  else
+    echo "  ✓ Agent reported: $EXTRACTED_PATH"
+
+    # Verify path matches expected
+    if [ "$EXTRACTED_PATH" != "${REPORT_PATHS[$topic]}" ]; then
+      echo "  ⚠️  Path mismatch detected!"
+      echo "    Expected: ${REPORT_PATHS[$topic]}"
+      echo "    Agent returned: $EXTRACTED_PATH"
+      echo "    Using expected path (more reliable)"
+      EXTRACTED_PATH="${REPORT_PATHS[$topic]}"
+    fi
+  fi
+
+  AGENT_REPORT_PATHS["$topic"]="$EXTRACTED_PATH"
+done
+
+# Export for subsequent phases
+export RESEARCH_REPORT_PATHS=("${AGENT_REPORT_PATHS[@]}")
+echo "PROGRESS: Parsed ${#AGENT_REPORT_PATHS[@]} report paths from agent outputs"
+```
+
+**Verification Checklist**:
+- [ ] REPORT_PATH extracted from each agent output
+- [ ] Fallback to pre-calculated path if missing
+- [ ] Path mismatch detection and correction
+- [ ] Paths exported for planning phase
+
+**EXECUTE NOW - Verify Report File Creation** (Step 4: After Agent Completion)
+
+AFTER all research agents complete, verify that report files were created at expected paths.
+
+**Required Verification**:
+
+```bash
+# Wait for all agents to complete
+# (Tool execution handles this automatically for parallel Task invocations)
+
+# Verify each expected report file
+echo "PROGRESS: Verifying research report files..."
+
+VERIFIED_REPORTS=()
+FAILED_REPORTS=()
+
+for topic in "${!REPORT_PATHS[@]}"; do
+  EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+  echo "  Checking: $EXPECTED_PATH"
+
+  # Check file exists
+  if [ ! -f "$EXPECTED_PATH" ]; then
+    echo "    ✗ File not found at expected path"
+    FAILED_REPORTS+=("$topic:$EXPECTED_PATH:file_not_found")
+    continue
+  fi
+
+  # Check file is non-empty
+  FILE_SIZE=$(wc -c < "$EXPECTED_PATH")
+  if [ "$FILE_SIZE" -lt 100 ]; then
+    echo "    ✗ File too small (${FILE_SIZE} bytes, expected >100)"
+    FAILED_REPORTS+=("$topic:$EXPECTED_PATH:file_too_small")
+    continue
+  fi
+
+  # Verify file has required sections
+  if ! grep -q "^# " "$EXPECTED_PATH"; then
+    echo "    ✗ File missing markdown headers"
+    FAILED_REPORTS+=("$topic:$EXPECTED_PATH:invalid_format")
+    continue
+  fi
+
+  echo "    ✓ Verified ($FILE_SIZE bytes)"
+  VERIFIED_REPORTS+=("$EXPECTED_PATH")
+done
+
+# Calculate verification success rate
+TOTAL_EXPECTED=${#REPORT_PATHS[@]}
+TOTAL_VERIFIED=${#VERIFIED_REPORTS[@]}
+SUCCESS_RATE=$((TOTAL_VERIFIED * 100 / TOTAL_EXPECTED))
+
+echo ""
+echo "PROGRESS: Report verification complete - $TOTAL_VERIFIED/$TOTAL_EXPECTED verified (${SUCCESS_RATE}%)"
+```
+
+**Verification Checklist**:
+- [ ] All expected report files checked
+- [ ] File existence validated
+- [ ] File size verified (>100 bytes)
+- [ ] Basic format validated (markdown headers present)
+- [ ] Success rate calculated
+
+**Handling Verification Failures**:
+
+```bash
+# If any reports failed verification
+if [ ${#FAILED_REPORTS[@]} -gt 0 ]; then
+  echo ""
+  echo "WARNING: ${#FAILED_REPORTS[@]} report(s) failed verification:"
+
+  for failure in "${FAILED_REPORTS[@]}"; do
+    IFS=':' read -r topic path reason <<< "$failure"
+    echo "  - Topic: $topic"
+    echo "    Path: $path"
+    echo "    Reason: $reason"
+  done
+
+  # Decide whether to proceed or fail
+  if [ $SUCCESS_RATE -lt 50 ]; then
+    echo ""
+    echo "ERROR: Verification success rate too low (${SUCCESS_RATE}% < 50%)"
+    echo "  Cannot proceed with planning phase"
+    echo "  Recommendation: Review agent outputs and retry research phase"
+    exit 1
+  else
+    echo ""
+    echo "WARNING: Proceeding with ${SUCCESS_RATE}% success rate"
+    echo "  This may impact planning quality"
+  fi
+fi
+```
+
+**Path Mismatch Recovery** (Optional - Advanced):
+
+If an agent created a file at a different location than expected:
+
+```bash
+# Search for reports created in wrong locations
+for topic in "${!REPORT_PATHS[@]}"; do
+  EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+  if [ ! -f "$EXPECTED_PATH" ]; then
+    # Search for files matching topic name in specs/reports/
+    FOUND_FILE=$(find "${CLAUDE_PROJECT_DIR}/specs/reports" -name "*${topic}*.md" -type f -mmin -10 | head -1)
+
+    if [ -n "$FOUND_FILE" ]; then
+      echo "  Path mismatch detected:"
+      echo "    Expected: $EXPECTED_PATH"
+      echo "    Found: $FOUND_FILE"
+      echo "    Action: Moving file to correct location"
+
+      # Move file to expected location
+      mv "$FOUND_FILE" "$EXPECTED_PATH"
+
+      # Re-verify
+      if [ -f "$EXPECTED_PATH" ]; then
+        echo "    ✓ Recovered successfully"
+        VERIFIED_REPORTS+=("$EXPECTED_PATH")
+      fi
+    fi
+  fi
+done
+```
+
+**Verification Benefits**:
+- Early detection of agent failures
+- Automatic recovery for path mismatches
+- Clear error messaging for debugging
+- Prevents propagation of incomplete research to planning phase
+
+3. **Report Verification Summary** (Steps 4.5-4.6):
    - Verify files exist at expected ABSOLUTE paths
    - Detect path mismatches (file created at different location)
    - Automatic recovery: move files to correct location OR retry agent
@@ -541,20 +893,9 @@ CHECKPOINT=".claude/checkpoints/orchestrate_user_authentication_20251013.json"
 
 #### Research Phase - Forward Message Integration
 
-After research agents complete, use forward_message pattern to extract metadata and preserve context.
+**EXECUTE NOW - Extract Metadata from Report Files**:
 
-**When to Use**:
-- After all research-specialist agents complete
-- Before passing results to planning phase
-- To achieve 95%+ context reduction
-
-**Workflow**:
-1. Collect research agent outputs
-2. Use forward_message to extract artifact metadata
-3. Store metadata in checkpoint (not full content)
-4. Track context metrics
-
-**Key Execution**:
+Use forward_message pattern to extract lightweight metadata from report FILES (not agent summaries):
 
 ```bash
 # Source context preservation utilities
@@ -562,51 +903,100 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
 # Track context before metadata extraction
-CONTEXT_BEFORE=$(track_context_usage "before" "research_phase_synthesis" "")
+CONTEXT_BEFORE=$(track_context_usage "before" "research_synthesis" "")
 
-# For each research agent output
-RESEARCH_METADATA=""
-for i in $(seq 1 $RESEARCH_AGENT_COUNT); do
-  SUBAGENT_OUTPUT="$( # output from research agent $i )"
+# Extract metadata from each report file
+declare -A REPORT_METADATA
 
-  # Extract metadata using forward_message
-  RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "research_agent_$i")
+for topic in "${!AGENT_REPORT_PATHS[@]}"; do
+  REPORT_FILE="${AGENT_REPORT_PATHS[$topic]}"
 
-  # Extract artifact path and metadata
-  ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
-  ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
+  echo "PROGRESS: Extracting metadata from $topic"
+  echo "  Report file: $REPORT_FILE"
 
-  # Cache metadata for on-demand loading
-  cache_metadata "$ARTIFACT_PATH" "$ARTIFACT_METADATA"
+  # Use extract_report_metadata utility (operates on FILES)
+  METADATA_JSON=$(extract_report_metadata "$REPORT_FILE")
 
-  # Accumulate metadata summaries
-  SUMMARY=$(echo "$ARTIFACT_METADATA" | jq -r '.summary')
-  RESEARCH_METADATA="$RESEARCH_METADATA\n$SUMMARY"
+  # Parse lightweight metadata fields
+  TITLE=$(echo "$METADATA_JSON" | jq -r '.title // "Untitled"')
+  SUMMARY=$(echo "$METADATA_JSON" | jq -r '.summary // "No summary"')  # ~50 words
+  KEY_FINDINGS=$(echo "$METADATA_JSON" | jq -r '.key_findings[]' | head -3)
+
+  # Store metadata (NOT full report content)
+  REPORT_METADATA["$topic"]=$(jq -n \
+    --arg path "$REPORT_FILE" \
+    --arg title "$TITLE" \
+    --arg summary "$SUMMARY" \
+    --argjson findings "$(echo "$KEY_FINDINGS" | jq -Rs 'split("\n") | map(select(length > 0))')" \
+    '{
+      path: $path,
+      title: $title,
+      summary: $summary,
+      key_findings: $findings
+    }')
+
+  METADATA_SIZE=$(echo "${REPORT_METADATA[$topic]}" | wc -c)
+  echo "  Metadata extracted: ${METADATA_SIZE} bytes"
 done
 
-# Track context after (metadata only, not full reports)
-CONTEXT_AFTER=$(track_context_usage "after" "research_phase_synthesis" "$RESEARCH_METADATA")
+# Calculate context reduction metrics
+TOTAL_REPORT_SIZE=$(find "${CLAUDE_PROJECT_DIR}/specs/reports" \
+  -name "[0-9][0-9][0-9]_*.md" -mmin -10 -exec wc -c {} + | tail -1 | awk '{print $1}')
+TOTAL_METADATA_SIZE=$(echo "${REPORT_METADATA[@]}" | wc -c)
 
-# Calculate and log reduction
-CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
-echo "PROGRESS: Research synthesis complete - context reduction: ${CONTEXT_REDUCTION}%"
+if [ "$TOTAL_REPORT_SIZE" -gt 0 ]; then
+  REDUCTION_PERCENT=$(awk -v full="$TOTAL_REPORT_SIZE" -v meta="$TOTAL_METADATA_SIZE" \
+    'BEGIN {printf "%.1f", (1 - meta/full) * 100}')
+else
+  REDUCTION_PERCENT="0.0"
+fi
 
-# Store in checkpoint (paths + metadata only)
-workflow_state.context_preservation.research_reports=[
-  {"path": "$REPORT_PATH_1", "metadata": {...}},
-  {"path": "$REPORT_PATH_2", "metadata": {...}}
-]
+# Track context after
+CONTEXT_AFTER=$(track_context_usage "after" "research_synthesis" "$(echo "${REPORT_METADATA[@]}")")
+
+echo ""
+echo "Context Reduction Metrics:"
+echo "  Full reports size: ${TOTAL_REPORT_SIZE} bytes"
+echo "  Metadata size: ${TOTAL_METADATA_SIZE} bytes"
+echo "  Reduction: ${REDUCTION_PERCENT}%"
+echo ""
+
+# Verify target achieved
+if awk -v r="$REDUCTION_PERCENT" 'BEGIN {exit !(r >= 92)}'; then
+  echo "✓ Context reduction target achieved (≥92%)"
+else
+  echo "⚠️  WARNING: Context reduction ${REDUCTION_PERCENT}% below 92% target"
+  echo "   This may indicate issues with metadata extraction"
+fi
+
+# Store for planning phase (paths + metadata, NOT content)
+workflow_state.context_preservation.research_reports=$(jq -n \
+  --argjson metadata "$(printf '%s\n' "${REPORT_METADATA[@]}" | jq -s '.')" \
+  '$metadata')
 ```
 
+**Key Changes from Previous Implementation**:
+- Operates on FILES using `extract_report_metadata()` (not agent summaries)
+- Uses report file paths from `AGENT_REPORT_PATHS` array
+- Calculates and reports actual context reduction metrics
+- Verifies 92%+ reduction target
+- Stores only metadata (not full content) for planning phase
+
+**Verification Checklist**:
+- [ ] Metadata extracted from report FILES (not agent outputs)
+- [ ] Context reduction calculated and displayed
+- [ ] Target of ≥92% reduction verified
+- [ ] Metadata stored for planning phase (not full reports)
+
 **Benefits**:
-- 95% context reduction (full reports ~3000 chars → metadata ~150 chars)
-- On-demand loading: Planning agent loads full reports only when needed
-- Checkpoint efficiency: Minimal checkpoint size enables faster save/restore
-- Context preservation: Metadata provides sufficient context for most operations
+- 92-97% context reduction (full reports ~5000 bytes → metadata ~250 bytes)
+- File-based extraction: More reliable than parsing agent summaries
+- Measurable metrics: Actual reduction percentage calculated and verified
+- Planning phase efficiency: Receives paths + metadata only
 
 **Integration with Planning Phase**:
 - Pass report paths (not summaries) to plan-architect agent
-- Agent uses load_metadata_on_demand() to read full reports selectively
+- Agent uses Read tool to access full report content as needed
 - Metadata summaries available for quick reference without reading files
 
 ### Planning Phase (Sequential Execution)

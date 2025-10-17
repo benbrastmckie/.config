@@ -1,9 +1,9 @@
 ---
-allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob
-argument-hint: [project-directory] [--cleanup [--dry-run]] [--validate] [--analyze] [--apply-report <report-path>]
-description: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, validation, standards analysis, and report-driven updates
+allowed-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob, SlashCommand
+argument-hint: [project-directory] [--cleanup [--dry-run]] [--validate] [--analyze] [--apply-report <report-path>] [--enhance-with-docs]
+description: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, validation, standards analysis, report-driven updates, and automatic documentation enhancement
 command-type: primary
-dependent-commands: none
+dependent-commands: orchestrate
 ---
 
 # Setup Project Standards
@@ -102,6 +102,40 @@ Parse a completed analysis report and update CLAUDE.md with reconciled standards
 - Validates generated CLAUDE.md structure
 - Suggests running `/setup --validate`
 
+### 6. Documentation Enhancement Mode
+Automatically discover project documentation and enhance CLAUDE.md by delegating to /orchestrate.
+
+**Usage**: `/setup --enhance-with-docs [project-directory]`
+
+**Features**:
+- Discovers documentation files (docs/, TESTING.md, CONTRIBUTING.md, etc.)
+- Analyzes testing infrastructure and detects TDD practices
+- Identifies gaps between discovered docs and CLAUDE.md
+- Automatically updates CLAUDE.md with links and TDD requirements
+- Generates workflow summary with changes made
+
+**Workflow**: Delegates to /orchestrate with predetermined 4-phase workflow:
+- **Phase 1**: Research (3 parallel agents: doc discovery, test analysis, TDD detection) ~40s
+- **Phase 2**: Planning (gap analysis and reconciliation) ~15s
+- **Phase 3**: Implementation (CLAUDE.md enhancement) ~10s
+- **Phase 4**: Documentation (workflow summary) ~10s
+- **Total time**: ~75 seconds
+
+**Use When**:
+- Project has documentation not referenced in CLAUDE.md
+- Testing practices documented but not enforced
+- Want automatic CLAUDE.md enhancement
+- After adding new documentation files
+- Periodically to keep CLAUDE.md in sync
+
+**Output Artifacts**:
+- Updated CLAUDE.md with documentation links
+- Research reports (3): doc_discovery/, test_analysis/, tdd_detection/
+- Enhancement plan (1): reconciliation strategy
+- Workflow summary (1): changes made and cross-references
+
+**Validation**: After enhancement, run `/validate-setup` to verify CLAUDE.md structure and links.
+
 ## Target Directory
 $1 (or current directory)
 
@@ -116,8 +150,9 @@ $1 (or current directory)
 | Validation | `--validate` | `[project-dir]` | Validate structure | None |
 | Analysis | `--analyze` | `[project-dir]` | Generate discrepancy report | Conflicts with `--cleanup` |
 | Report Application | `--apply-report <path>` | `[project-dir]` | Apply report decisions | Path must exist |
+| Enhancement | `--enhance-with-docs` | `[project-dir]` | Discover docs and enhance CLAUDE.md | Delegates to /orchestrate |
 
-**Priority**: --apply-report > --cleanup > --validate > --analyze > standard
+**Priority**: --apply-report > --enhance-with-docs > --cleanup > --validate > --analyze > standard
 
 Arguments can be in any order. Project directory defaults to current directory if not specified.
 
@@ -756,6 +791,14 @@ Alternative: `--threshold conservative` (>50 lines) for minimal extraction
 
 ---
 
+### Example 7: Documentation Enhancement
+```bash
+/setup --enhance-with-docs /path/to/project
+```
+**Flow**: Discovers docs → Analyzes tests → Detects TDD → Creates plan → Enhances CLAUDE.md → Generates summary → Result: CLAUDE.md with doc links + TDD requirements
+
+---
+
 ### Quick Reference
 
 | Goal | Command | Result |
@@ -765,6 +808,7 @@ Alternative: `--threshold conservative` (>50 lines) for minimal extraction
 | Preview changes | `/setup --cleanup --dry-run` | No-op preview |
 | Check discrepancies | `/setup --analyze` | Analysis report |
 | Apply reconciliation | `/setup --apply-report <path>` | Updated CLAUDE.md |
+| Enhance with docs | `/setup --enhance-with-docs` | CLAUDE.md + doc links |
 | Validate structure | `/validate-setup` | Validation report |
 
 ## See Also
@@ -908,5 +952,121 @@ For a Lua/Neovim project, /setup would generate:
 ```
 
 These sections are immediately usable by /implement, /test, and other commands.
+
+## Enhancement Mode Process
+
+When `--enhance-with-docs` flag is detected:
+
+### 1. Validate Project Directory
+- Check if the provided (or current) directory exists
+- Convert to absolute path for consistency
+- Verify it's a valid project directory
+
+### 2. Display Initial Message
+Show the user what will happen:
+```
+Enhancing CLAUDE.md with discovered documentation...
+Project: /absolute/path/to/project
+
+Delegating to /orchestrate for multi-agent workflow:
+- Phase 1: Research (3 parallel agents, ~40s)
+- Phase 2: Planning (gap analysis, ~15s)
+- Phase 3: Implementation (CLAUDE.md enhancement, ~10s)
+- Phase 4: Documentation (workflow summary, ~10s)
+
+Starting workflow...
+```
+
+### 3. Build Orchestrate Message
+Create the predetermined orchestrate invocation message with the project directory:
+
+```
+Analyze project documentation at [PROJECT_DIR] and enhance CLAUDE.md with discovered standards. Follow this workflow:
+
+Phase 1: Research (parallel)
+  - Agent 1: Discover all documentation files (docs/, TESTING.md, CONTRIBUTING.md, etc.)
+  - Agent 2: Analyze testing infrastructure (framework, test count, organization)
+  - Agent 3: Detect TDD practices and calculate confidence score
+
+Phase 2: Planning
+  - Synthesize research into gap analysis
+  - Create reconciliation plan for CLAUDE.md
+
+Phase 3: Implementation
+  - Update CLAUDE.md with documentation links
+  - Add TDD requirements if detected (≥50% confidence)
+  - Enhance Testing Protocols section
+
+Phase 4: Documentation
+  - Generate workflow summary with before/after comparison
+  - List all changes made
+
+Project directory: [PROJECT_DIR]
+```
+
+### 4. Invoke /orchestrate
+Use the SlashCommand tool to invoke /orchestrate with the message above. The orchestrate command will handle:
+- Launching the 3 research agents in parallel
+- Collecting and synthesizing reports
+- Creating the enhancement plan
+- Implementing CLAUDE.md updates
+- Generating the workflow summary
+
+### 5. Display Results
+After /orchestrate completes, show summary:
+```
+Enhancement complete!
+
+Artifacts created:
+- Research reports (3): .claude/specs/reports/doc_discovery/, test_analysis/, tdd_detection/
+- Enhancement plan (1): .claude/specs/plans/NNN_claude_enhancement.md
+- Updated CLAUDE.md with documentation links and TDD requirements
+- Workflow summary (1): .claude/specs/summaries/NNN_*.md
+
+Next steps:
+1. Review the changes made to CLAUDE.md
+2. Run /validate-setup to verify structure
+3. Commit changes if satisfied
+```
+
+### Error Handling
+
+**If project directory doesn't exist**:
+```
+Error: Directory not found: /path/to/directory
+Usage: /setup --enhance-with-docs [project-directory]
+```
+
+**If /orchestrate is unavailable**:
+```
+Error: /orchestrate command not available
+This mode requires the /orchestrate command to function.
+Please ensure all Claude Code commands are properly installed.
+```
+
+**If orchestrate workflow fails**:
+```
+Enhancement workflow encountered an error.
+See orchestrate output above for details.
+CLAUDE.md has not been modified (or has been backed up).
+```
+
+### Mode Detection Priority
+
+When parsing arguments, check flags in this order:
+1. --apply-report (highest priority)
+2. --enhance-with-docs
+3. --cleanup
+4. --validate
+5. --analyze
+6. Standard mode (default, no flags)
+
+If `--enhance-with-docs` is detected:
+- Ignore all other mode flags
+- Extract project directory argument
+- Skip all standard setup logic
+- Execute Enhancement Mode process above
+
+---
 
 Let me analyze your project and help organize your CLAUDE.md efficiently.
