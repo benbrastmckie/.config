@@ -286,7 +286,7 @@ Validation:
 
 ---
 
-### Phase 3: Update `/report` and `/debug` Commands for Topic Integration
+### Phase 3: Update `/report` and `/debug` Commands for Topic Integration [COMPLETED]
 **Dependencies**: [1, 2]
 **Risk**: Medium
 **Estimated Time**: 3-4 hours
@@ -294,19 +294,19 @@ Validation:
 **Objective**: Integrate topic-based utilities and spec-updater agent into `/report` and `/debug` commands
 
 Tasks:
-- [ ] Update `/report` command workflow (.claude/commands/report.md:1-300)
+- [x] Update `/report` command workflow (.claude/commands/report.md:1-300)
   - Extract topic from research question via `extract_topic_from_question()`
   - Get/create topic directory via `get_or_create_topic_dir()`
   - Use topic/reports/ subdirectory for report file
   - Get next report number via `get_next_artifact_number(topic_dir/reports)`
 
-- [ ] Add spec-updater invocation to `/report` (.claude/commands/report.md:300-400)
+- [x] Add spec-updater invocation to `/report` (.claude/commands/report.md:300-400)
   - After report file is written
   - Invoke spec-updater agent to update cross-references
   - Pass report path, topic directory, related plan path (if any)
   - spec-updater adds report reference to plan metadata
 
-- [ ] Create spec-updater invocation template for report creation (.claude/commands/report.md:402-470)
+- [x] Create spec-updater invocation template for report creation (.claude/commands/report.md:402-470)
   ```markdown
   Task tool invocation:
   subagent_type: general-purpose
@@ -330,19 +330,19 @@ Tasks:
     - Plan files modified (if any)
   ```
 
-- [ ] Update `/debug` command workflow (.claude/commands/debug.md:1-350)
+- [x] Update `/debug` command workflow (.claude/commands/debug.md:1-350)
   - Extract topic from issue description or use plan's topic
   - Get/create topic directory (usually same as plan's topic)
   - Use topic/debug/ subdirectory for debug report file
   - Get next debug number via `get_next_artifact_number(topic_dir/debug)`
 
-- [ ] Add spec-updater invocation to `/debug` (.claude/commands/debug.md:350-450)
+- [x] Add spec-updater invocation to `/debug` (.claude/commands/debug.md:350-450)
   - After debug report file is written
   - Invoke spec-updater agent to link debug report to plan
   - Pass debug report path, plan path, phase number (if applicable)
   - spec-updater updates plan with debug report reference
 
-- [ ] Create spec-updater invocation template for debug report creation (.claude/commands/debug.md:452-520)
+- [x] Create spec-updater invocation template for debug report creation (.claude/commands/debug.md:452-520)
   ```markdown
   Task tool invocation:
   subagent_type: general-purpose
@@ -369,7 +369,7 @@ Tasks:
     - Gitignore validation result
   ```
 
-- [ ] Update command documentation (.claude/commands/report.md:600-650, .claude/commands/debug.md:600-650)
+- [x] Update command documentation (.claude/commands/report.md:600-650, .claude/commands/debug.md:600-650)
   - Document topic-based artifact creation
   - Add examples with topic directories
   - Note cross-referencing behavior

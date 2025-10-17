@@ -100,6 +100,85 @@ DEBUG_PATH=$(create_topic_artifact "$TOPIC_DIR" "debug" "$DEBUG_NAME" "$DEBUG_CO
 - Debug reports are committed to git (unlike other artifact types)
 - Single utility manages creation
 
+### 5. Spec-Updater Agent Invocation
+
+**IMPORTANT**: After the debug report file is created and written, invoke the spec-updater agent to link the debug report to the related plan and update cross-references.
+
+This step ensures the debug report is properly integrated into the topic structure and the plan is annotated with debugging information.
+
+#### Step 5.1: Invoke Spec-Updater Agent
+
+Use the Task tool to invoke the spec-updater agent:
+
+```
+Task tool invocation:
+subagent_type: general-purpose
+description: "Link debug report to plan"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/spec-updater.md
+
+  You are acting as a Spec Updater Agent.
+
+  Context:
+  - Debug report created at: {debug_report_path}
+  - Topic directory: {topic_dir}
+  - Related plan: {plan_path}
+  - Failed phase: {phase_number} (if applicable)
+  - Operation: debug_report_creation
+
+  Tasks:
+  1. Add debug report reference to plan metadata:
+     - Update plan's "Debug Reports" section (create if missing)
+     - Use relative path (e.g., ../debug/NNN_debug_issue.md)
+
+  2. If phase specified, add debugging note to phase section:
+     - Add "#### Debugging Notes" subsection after phase tasks
+     - Include: Date, Issue, Debug Report link, Root Cause
+     - Format for tracking resolution status
+
+  3. Verify debug/ subdirectory is NOT gitignored:
+     - Debug reports must be committed to git
+     - Check git status to confirm tracking
+
+  4. Update cross-references:
+     - Debug report links to plan
+     - Plan links to debug report
+     - Bidirectional references validated
+
+  Return:
+  - Link status (successful/failed)
+  - Plan modifications made
+  - Gitignore validation result (debug/ should NOT be ignored)
+  - Confirmation message for user
+```
+
+#### Step 5.2: Handle Spec-Updater Response
+
+After spec-updater completes:
+- Display link status to user
+- Show which plan file was modified (if any)
+- Confirm gitignore compliance (debug/ not ignored)
+- If warnings/issues: Show them and suggest fixes
+
+**Example Output**:
+```
+Debug report linked to plan:
+✓ Plan annotated: specs/042_auth/plans/001_implementation.md
+✓ Debug report reference added to Phase 3
+✓ Gitignore compliance verified (debug/ is committed)
+✓ All cross-references validated
+```
+
+or if no plan provided:
+
+```
+Standalone debug report created:
+✓ Report available for future plan linkage
+✓ Gitignore compliance verified (debug/ is committed)
+✓ Topic structure validated
+```
+
 ## Report Structure
 
 ```markdown
