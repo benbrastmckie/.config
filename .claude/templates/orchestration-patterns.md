@@ -1764,7 +1764,7 @@ NEXT_NUM=$(printf "%03d" $((MAX_NUM + 1)))
 DEBUG_REPORT_PATH="$DEBUG_DIR/${NEXT_NUM}_issue_description.md"
 ```
 
-**Debug Report Template (Updated)**:
+**Debug Report Template**:
 
 ```markdown
 # Debug Report: [Issue Description]
