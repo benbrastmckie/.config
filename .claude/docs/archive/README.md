@@ -23,6 +23,8 @@ For current, up-to-date documentation, refer to the main documentation directory
 
 - **topic_based_organization.md** - Topic-based organization guide (consolidated into directory-protocols.md)
 - **artifact_organization.md** - Artifact organization guide (consolidated into directory-protocols.md)
+- **development-philosophy.md** - Development philosophy and refactoring principles (consolidated into writing-standards.md)
+- **timeless_writing_guide.md** - Timeless writing patterns and examples (consolidated into writing-standards.md)
 
 ### Migration Guides
 
