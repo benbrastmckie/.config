@@ -4,7 +4,7 @@
 
 The hierarchical agent architecture enables multi-level agent coordination that minimizes context window consumption through metadata-based context passing and recursive supervision. This guide covers the complete architecture, patterns, utilities, and best practices for implementing hierarchical agent workflows.
 
-For command architecture standards and context preservation requirements, see [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) (Standards 1, 6-8).
+For agent invocation patterns and behavioral injection, see [Using Agents](using-agents.md). For command architecture standards and context preservation requirements, see [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) (Standards 1, 6-8).
 
 ## Table of Contents
 
