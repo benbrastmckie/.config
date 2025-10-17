@@ -205,7 +205,7 @@ grep -r "docs/lib" .claude/docs/ || echo "No stale references"
 
 Expected: lib/README.md exists, docs/lib removed, no stale references
 
-### Phase 4: Integrate Uncategorized Files into README.md Structure
+### Phase 4: Integrate Uncategorized Files into README.md Structure [COMPLETED]
 **Dependencies**: [1, 2]
 **Risk**: Low
 **Estimated Time**: 1.5-2 hours
@@ -213,19 +213,19 @@ Expected: lib/README.md exists, docs/lib removed, no stale references
 **Objective**: Add all 11 uncategorized files to README.md structure tree with proper categorization
 
 Tasks:
-- [ ] Read `.claude/docs/README.md:1` to understand current structure
-- [ ] Map each uncategorized file to appropriate category:
+- [x] Read `.claude/docs/README.md:1` to understand current structure
+- [x] Map each uncategorized file to appropriate category:
   - Core System: phase_dependencies.md
   - Advanced Features: artifact_organization.md, spec_updater_guide.md
   - Development: command_architecture_standards.md, command-examples.md, logging-patterns.md
   - (Archived: migration-guide-adaptive-plans.md, specs_migration_guide.md, orchestration_enhancement_guide.md, architecture.md)
   - (Merged: tts-system-integration.md)
-- [ ] Update README.md "Documentation Structure" section (lines ~76-200) with new entries
-- [ ] Add brief 1-line descriptions for each newly categorized file
-- [ ] Update file counts in category headers (e.g., "Core System Guides (4)" → "(5)")
-- [ ] Add archive section at bottom of structure tree with link to archive/README.md
-- [ ] Verify alphabetical or logical ordering within each category
-- [ ] Update "Quick Reference by Document Type" section if needed (lines ~577-637)
+- [x] Update README.md "Documentation Structure" section (lines ~76-200) with new entries
+- [x] Add brief 1-line descriptions for each newly categorized file
+- [x] Update file counts in category headers (e.g., "Core System Guides (4)" → "(5)")
+- [x] Add archive section at bottom of structure tree with link to archive/README.md
+- [x] Verify alphabetical or logical ordering within each category
+- [x] Update "Quick Reference by Document Type" section if needed (lines ~577-637)
 
 Testing:
 ```bash
