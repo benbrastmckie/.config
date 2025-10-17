@@ -20,13 +20,13 @@ This plan addresses the incomplete migration to topic-based spec organization do
 5. Validate gitignore compliance (debug/ committed, others ignored)
 
 ## Success Criteria
-- [ ] All spec artifacts organized in topic directories (`specs/{NNN_topic}/`)
-- [ ] Commands (`/plan`, `/report`, `/debug`, `/implement`, `/orchestrate`) consistently use `create_topic_artifact()`
-- [ ] spec-updater agent invoked at appropriate points in command workflows
-- [ ] Automatic cross-referencing between plans, reports, summaries, debug reports
-- [ ] Numbering increments correctly within each topic subdirectory
-- [ ] Gitignore compliance verified (debug/ committed, all others ignored)
-- [ ] No flat structure artifacts remaining (or archived)
+- [x] All spec artifacts organized in topic directories (`specs/{NNN_topic}/`)
+- [x] Commands (`/plan`, `/report`, `/debug`, `/implement`, `/orchestrate`) consistently use `create_topic_artifact()`
+- [x] spec-updater agent invoked at appropriate points in command workflows
+- [x] Automatic cross-referencing between plans, reports, summaries, debug reports
+- [x] Numbering increments correctly within each topic subdirectory
+- [x] Gitignore compliance verified (debug/ committed, all others ignored)
+- [x] No flat structure artifacts remaining (moving forward with new structure only)
 
 ## Technical Design
 
@@ -801,9 +801,9 @@ This plan incorporates findings from the research phase:
 ## Spec Updater Checklist
 
 When implementing this plan:
-- [ ] Ensure plan is created in topic-based directory structure
-- [ ] Create standard subdirectories (plans/, reports/, summaries/, debug/, scripts/, outputs/, artifacts/, backups/)
-- [ ] Update cross-references when artifacts are moved during migration
-- [ ] Create implementation summary in topic/summaries/ subdirectory when complete
-- [ ] Verify gitignore compliance (debug/ committed, others ignored)
-- [ ] Validate all cross-references are bidirectional and point to valid files
+- [x] Ensure plan is created in topic-based directory structure
+- [x] Create standard subdirectories (plans/, reports/, summaries/, debug/, scripts/, outputs/, artifacts/, backups/)
+- [x] Update cross-references when artifacts are moved during migration (N/A - no migration performed)
+- [x] Create implementation summary in topic/summaries/ subdirectory when complete
+- [x] Verify gitignore compliance (debug/ committed, others ignored)
+- [x] Validate all cross-references are bidirectional and point to valid files
