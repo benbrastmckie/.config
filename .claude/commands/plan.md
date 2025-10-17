@@ -367,13 +367,81 @@ The agent-based analysis from Step 8.5 is presented immediately after plan creat
 
 This analysis replaces the generic complexity hint (≥50 threshold) with specific, informed recommendations based on actual plan content.
 
-### 9. Post-Creation Automatic Complexity Evaluation
+### 9. Spec-Updater Agent Invocation
 
-**IMPORTANT**: After the plan file is created and written, perform automatic complexity-based evaluation to determine if any phases should be auto-expanded.
+**IMPORTANT**: After the plan file is created and written, invoke the spec-updater agent to verify topic structure and initialize cross-references.
 
-This step runs **after** the agent-based holistic analysis (Step 8.5-8.6), providing a complementary threshold-based check.
+This step ensures the topic directory structure is properly initialized and ready for implementation.
 
-#### Step 9.1: Source Complexity Utilities
+#### Step 9.1: Invoke Spec-Updater Agent
+
+Use the Task tool to invoke the spec-updater agent:
+
+```
+Task tool invocation:
+subagent_type: general-purpose
+description: "Initialize topic structure for new plan"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/spec-updater.md
+
+  You are acting as a Spec Updater Agent.
+
+  Context:
+  - Plan created at: {plan_path}
+  - Topic directory: {topic_dir}
+  - Operation: plan_creation
+
+  Tasks:
+  1. Verify topic subdirectories exist:
+     - reports/
+     - plans/
+     - summaries/
+     - debug/
+     - scripts/
+     - outputs/
+     - artifacts/
+     - backups/
+
+  2. Create any missing subdirectories
+
+  3. Create .gitkeep in debug/ subdirectory (ensures directory tracked in git)
+
+  4. Validate gitignore compliance:
+     - Debug reports should NOT be gitignored
+     - All other subdirectories should be gitignored
+
+  5. Initialize plan metadata cross-reference section if missing
+
+  Return:
+  - Verification status (subdirectories_ok: true/false, gitignore_ok: true/false)
+  - List of subdirectories created (if any)
+  - Any warnings or issues encountered
+  - Confirmation message for user
+```
+
+#### Step 9.2: Handle Spec-Updater Response
+
+After spec-updater completes:
+- Display verification status to user
+- If warnings/issues: Show them and suggest fixes
+- If successful: Continue to complexity evaluation
+
+**Example Output**:
+```
+Topic structure verified:
+✓ All subdirectories present
+✓ Gitignore compliance validated
+✓ Debug directory ready for issue tracking
+```
+
+### 10. Post-Creation Automatic Complexity Evaluation
+
+**IMPORTANT**: After spec-updater verification completes, perform automatic complexity-based evaluation to determine if any phases should be auto-expanded.
+
+This step runs **after** spec-updater invocation (Step 9), providing automated structure optimization.
+
+#### Step 10.1: Source Complexity Utilities
 
 ```bash
 # Detect project directory dynamically
@@ -383,14 +451,14 @@ source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 # Check if complexity utilities exist
 if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh" ]; then
   echo "Note: Complexity utilities not found, skipping automatic evaluation"
-  # Continue to output (section 10)
+  # Continue to output (section 11)
   exit 0
 fi
 
 source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
 ```
 
-#### Step 9.2: Read Configurable Thresholds from CLAUDE.md
+#### Step 10.2: Read Configurable Thresholds from CLAUDE.md
 
 Use the `read_threshold` function to read expansion thresholds with fallbacks:
 
@@ -442,7 +510,7 @@ EXPANSION_THRESHOLD=$(read_threshold "Expansion Threshold" "8.0")
 TASK_COUNT_THRESHOLD=$(read_threshold "Task Count Threshold" "10")
 ```
 
-#### Step 9.3: Evaluate Each Phase for Auto-Expansion
+#### Step 10.3: Evaluate Each Phase for Auto-Expansion
 
 Parse the plan file and evaluate each phase:
 
@@ -556,7 +624,7 @@ else
 fi
 ```
 
-#### Step 9.4: Update Plan Path for Final Output
+#### Step 10.4: Update Plan Path for Final Output
 
 After auto-expansion (if any), ensure the final plan path points to the correct location:
 
@@ -573,11 +641,12 @@ FINAL_PLAN_PATH="$plan_file"
 - **Fallback Defaults**: Works without configuration (8.0 expansion, 10 task count)
 - **Complementary**: Works alongside agent-based holistic analysis (Step 8.5)
 
-**Relationship to Agent-Based Analysis:**
+**Relationship to Spec-Updater and Agent-Based Analysis:**
 
 - **Step 8.5-8.6**: Holistic review with rationale-based recommendations
-- **Step 9**: Automatic threshold-based evaluation with auto-expansion
-- **Together**: Informed recommendations + automatic structure optimization
+- **Step 9**: Spec-updater verifies topic structure and initializes cross-references
+- **Step 10**: Automatic threshold-based evaluation with auto-expansion
+- **Together**: Proper structure + informed recommendations + automatic optimization
 
 ## Output Format
 
