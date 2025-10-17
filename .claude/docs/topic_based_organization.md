@@ -169,7 +169,155 @@ Reports reference plans they inform:
 - [User Authentication](../plans/001_user_auth.md)
 ```
 
+## Context-Efficient Artifact Usage
+
+When working with artifacts across workflows, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+
+### Metadata Extraction Examples
+
+**Example 1: Research Reports for Planning**
+```bash
+# Instead of passing full reports (15,000 tokens)
+for report in specs/042_auth/reports/*.md; do
+  METADATA=$(extract_report_metadata "$report")
+  REPORT_METADATA+=("$METADATA")
+done
+
+# Pass metadata only (750 tokens) - 95% reduction
+Task {
+  prompt: "Create implementation plan...
+          Research Reports (metadata):
+          ${REPORT_METADATA[@]}
+
+          Use Read tool to access full content selectively if needed."
+}
+```
+
+**Example 2: Plans for Implementation**
+```bash
+# Extract plan metadata
+PLAN_META=$(extract_plan_metadata "specs/042_auth/042_auth.md")
+
+# Pass to implementation agent (250 tokens vs 3000 tokens)
+Task {
+  prompt: "Implement Phase 1...
+          Plan (metadata): $PLAN_META
+
+          Read full plan if needed for task details."
+}
+```
+
+**Context Reduction Metrics**:
+- **Reports**: 5000 tokens → 250 tokens (95% reduction)
+- **Plans**: 3000 tokens → 250 tokens (92% reduction)
+- **Target**: <30% context usage throughout multi-phase workflows
+
+## Gitignore Compliance Protocols
+
+Ensure proper gitignore compliance for all artifacts within topic directories.
+
+### Compliance Rules
+
+| Artifact Type | Committed to Git | Reason |
+|---------------|------------------|--------|
+| `debug/` | ✓ YES | Project history, issue tracking |
+| `plans/` | ✗ NO | Local working artifacts |
+| `reports/` | ✗ NO | Local working artifacts |
+| `summaries/` | ✗ NO | Local working artifacts |
+| `scripts/` | ✗ NO | Temporary investigation |
+| `outputs/` | ✗ NO | Regenerable test results |
+| `artifacts/` | ✗ NO | Operational metadata |
+| `backups/` | ✗ NO | Temporary recovery files |
+
+### Validation Utility
+
+```bash
+# Validate gitignore compliance
+validate_gitignore_compliance "specs/042_auth"
+
+# Returns JSON:
+# {
+#   "debug_committed": true,
+#   "plans_ignored": true,
+#   "reports_ignored": true,
+#   "summaries_ignored": true,
+#   "scripts_ignored": true,
+#   "outputs_ignored": true,
+#   "artifacts_ignored": true,
+#   "backups_ignored": true,
+#   "violations": []
+# }
+```
+
+### Automatic Compliance Checking
+
+Compliance checking integrated into workflow commands:
+
+```bash
+# /orchestrate automatically validates compliance
+/orchestrate "Add authentication"
+
+# Runs validation after artifact creation:
+# - Checks debug/ tracked
+# - Checks other directories ignored
+# - Reports violations before proceeding
+```
+
+### Manual Compliance Verification
+
+```bash
+# Test specific file
+git check-ignore -v specs/042_auth/debug/001_issue.md
+# Expected: No output (not ignored)
+
+git check-ignore -v specs/042_auth/reports/001_research.md
+# Expected: .gitignore:N:specs/ (gitignored)
+
+# Test entire topic
+for type in debug plans reports summaries scripts outputs artifacts backups; do
+  if [ -d "specs/042_auth/$type" ]; then
+    echo "Checking $type/"
+    for file in specs/042_auth/$type/*; do
+      if [ "$type" = "debug" ]; then
+        git check-ignore "$file" && echo "ERROR: $file should not be ignored"
+      else
+        git check-ignore "$file" || echo "ERROR: $file should be ignored"
+      fi
+    done
+  fi
+done
+```
+
+### Fixing Compliance Violations
+
+**Violation: Debug files gitignored**
+```bash
+# Check .gitignore rules
+grep -n "specs" .gitignore
+
+# Should see exception:
+# !specs/**/debug/
+# !specs/**/debug/**
+
+# If missing, add exception
+echo "!specs/**/debug/" >> .gitignore
+echo "!specs/**/debug/**" >> .gitignore
+```
+
+**Violation: Non-debug files tracked**
+```bash
+# Check what's tracked
+git ls-files specs/042_auth/
+
+# Should only show debug/ files
+# If other files tracked, they were committed before gitignore
+# Remove from git but keep locally:
+git rm --cached specs/042_auth/reports/001_research.md
+```
+
 ## Best Practices
+
+**Cross-Reference**: See [Command Architecture Standards](command_architecture_standards.md) for context preservation patterns when working with topic artifacts.
 
 ### Topic Naming
 
@@ -248,6 +396,17 @@ create_topic_artifact "<topic_dir>" "<type>" "<name>" "<content>"
 # Cleanup temporary artifacts
 cleanup_topic_artifacts "<topic_dir>" "<type>" [age_days]
 cleanup_all_temp_artifacts "<topic_dir>"
+```
+
+**Metadata Extraction** (see [Command Architecture Standards - Standard 6](command_architecture_standards.md#standard-6)):
+
+```bash
+# Extract metadata for context-efficient artifact usage
+extract_report_metadata "<topic_dir>/reports/001_report.md"
+extract_plan_metadata "<topic_dir>/plans/001_plan.md"
+
+# Returns: {path, 50-word summary, key findings}
+# Use metadata-only passing to reduce context usage by 95%
 ```
 
 ### Validation

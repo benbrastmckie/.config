@@ -351,6 +351,145 @@ Research Reports:
   - [Library Analysis](../reports/001_library_analysis.md)
 ```
 
+## Cross-Reference Best Practices
+
+When creating cross-references between artifacts, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standard 6](command_architecture_standards.md#standard-6)).
+
+### Metadata Extraction for Cross-References
+
+Use `extract_report_metadata()` utility from `.claude/lib/artifact-operations.sh` when creating cross-references:
+
+```bash
+# Extract metadata from research reports
+for report in specs/042_auth/reports/*.md; do
+  METADATA=$(extract_report_metadata "$report")
+  # Returns: {path, 50-word summary, key_findings[]}
+  REPORT_METADATA+=("$METADATA")
+done
+
+# Create plan with metadata references
+cat > "specs/042_auth/042_auth.md" <<EOF
+# Authentication Implementation Plan
+
+## Research Reports (metadata)
+$(for meta in "${REPORT_METADATA[@]}"; do
+  # Extract path and summary from metadata
+  PATH=$(echo "$meta" | jq -r '.path')
+  SUMMARY=$(echo "$meta" | jq -r '.summary')
+  echo "- [$PATH]($PATH): $SUMMARY"
+done)
+
+Use Read tool to access full report content selectively if needed.
+EOF
+```
+
+**Context Reduction**: 95% (250 tokens vs 5000 tokens per report)
+
+### Agent Invocation Pattern
+
+When invoking spec-updater agent, use **behavioral injection pattern** (see [Command Architecture Standards](command_architecture_standards.md#agent-invocation-patterns)):
+
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Create summary using spec-updater protocol"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    [Task-specific instructions here]
+}
+```
+
+## Bidirectional Cross-Referencing
+
+The spec updater agent maintains **automatic bidirectional cross-references** between all artifacts in the topic directory:
+
+### Cross-Referencing Workflow
+
+**Standard Workflow**:
+1. **Create artifact** → Spec updater determines artifact path and number
+2. **Extract metadata** → Use `extract_report_metadata()` or `extract_plan_metadata()`
+3. **Update parent references** → Add metadata-only reference from parent plan to new artifact
+4. **Update child references** → Add parent plan link to new artifact's metadata
+5. **Verify links** → Test relative paths resolve correctly
+
+**Example Flow**:
+```bash
+# Step 1: Create research report
+REPORT_PATH="specs/042_auth/reports/001_jwt_patterns.md"
+create_topic_artifact "specs/042_auth" "reports" "jwt_patterns" "$CONTENT"
+
+# Step 2: Extract metadata
+REPORT_METADATA=$(extract_report_metadata "$REPORT_PATH")
+
+# Step 3: Update parent plan (add reference to report)
+update_parent_references "specs/042_auth/042_auth.md" "$REPORT_METADATA"
+
+# Step 4: Add parent link to report
+add_parent_link "$REPORT_PATH" "../042_auth.md"
+
+# Step 5: Verify bidirectional links
+verify_cross_references "specs/042_auth"
+```
+
+### Bidirectional Reference Utilities
+
+**`create_bidirectional_link(parent_artifact, child_artifact)`**:
+```bash
+# Automatically creates forward and backward references
+create_bidirectional_link \
+  "specs/042_auth/042_auth.md" \
+  "specs/042_auth/reports/001_jwt_patterns.md"
+
+# Creates:
+# 1. Forward: Parent → Child (metadata-only reference)
+# 2. Backward: Child → Parent (full link)
+```
+
+**`update_parent_references(parent_path, child_metadata)`**:
+```bash
+# Add metadata-only reference to parent
+CHILD_METADATA=$(extract_report_metadata "specs/042_auth/reports/001_jwt_patterns.md")
+update_parent_references "specs/042_auth/042_auth.md" "$CHILD_METADATA"
+
+# Appends to "Research Reports" section:
+# - [JWT Patterns](reports/001_jwt_patterns.md): 50-word summary of JWT authentication patterns...
+```
+
+**`validate_cross_references(topic_directory)`**:
+```bash
+# Validate all cross-references within topic
+validate_cross_references "specs/042_auth"
+
+# Checks:
+# - All relative paths resolve
+# - Parent plans reference all child artifacts
+# - Child artifacts reference parent plans
+# - No broken links
+```
+
+### Cross-Reference Types
+
+| Reference Type | Direction | Format | Context Usage |
+|----------------|-----------|--------|---------------|
+| **Plan → Report** | Forward | Metadata + link | 250 tokens (95% reduction) |
+| **Report → Plan** | Backward | Full link | 50 tokens |
+| **Plan → Debug** | Forward | Full link + metadata | 150 tokens |
+| **Debug → Plan** | Backward | Full link | 50 tokens |
+| **Plan → Summary** | Forward | Metadata + link | 250 tokens |
+| **Summary → Plan** | Backward | Full link + report refs | 300 tokens |
+
+### Automated Cross-Reference Maintenance
+
+The spec updater agent automatically maintains cross-references during:
+- **Artifact creation**: Creates bidirectional links on first artifact creation
+- **Artifact moves**: Updates all references when artifacts are reorganized
+- **Plan expansion**: Preserves cross-references when expanding phases/stages
+- **Plan collapse**: Updates cross-references when collapsing phases/stages
+
 ## Quality Checklist
 
 Before finalizing spec updater operations:

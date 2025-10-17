@@ -370,6 +370,47 @@ create_topic_artifact "specs/009_topic" "debug" "test_failure" "# Debug Report\n
 - Summary → Plan + Reports: Links in summary
 - Debug → Plan: Relative path `../../plan.md`
 
+#### Metadata Extraction
+
+When referencing artifacts in cross-references, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+
+**Metadata Extraction Utilities** (`.claude/lib/artifact-operations.sh`):
+
+```bash
+# Extract metadata from research reports
+METADATA=$(extract_report_metadata "specs/042_auth/reports/001_jwt_patterns.md")
+# Returns: {path, 50-word summary, key_findings, file_paths, recommendations}
+
+# Extract metadata from implementation plans
+PLAN_META=$(extract_plan_metadata "specs/042_auth/042_auth.md")
+# Returns: {path, complexity_score, phases[], time_estimate, dependencies}
+
+# Generic metadata loader with caching
+META=$(load_metadata_on_demand "specs/042_auth/reports/001_jwt_patterns.md")
+```
+
+**Usage in Cross-References**:
+
+```bash
+# Instead of passing full report content (5000 tokens)
+# Pass metadata only (250 tokens)
+
+for report in specs/042_auth/reports/*.md; do
+  METADATA=$(extract_report_metadata "$report")
+  REPORT_REFS+=("$METADATA")
+done
+
+# Create plan with metadata references
+echo "## Research Reports (metadata)" >> plan.md
+for meta in "${REPORT_REFS[@]}"; do
+  PATH=$(echo "$meta" | jq -r '.path')
+  SUMMARY=$(echo "$meta" | jq -r '.summary')
+  echo "- [$PATH]($PATH): $SUMMARY" >> plan.md
+done
+
+# Context reduction: 95% (250 tokens vs 5000 tokens per report)
+```
+
 ### Phase 3: Cleanup
 
 **Automatic Cleanup** (after workflow):
@@ -509,6 +550,292 @@ cleanup_all_temp_artifacts <topic-dir>
 **Example**:
 ```bash
 cleanup_all_temp_artifacts "specs/009_orchestration"
+```
+
+**extract_report_metadata()**
+
+Extract metadata from research reports for metadata-only passing.
+
+```bash
+extract_report_metadata <report-path>
+```
+
+**Returns** (JSON):
+```json
+{
+  "path": "specs/042_auth/reports/001_jwt_patterns.md",
+  "summary": "50-word summary of report...",
+  "key_findings": ["finding1", "finding2", "finding3"],
+  "file_paths": ["file1.js", "file2.js"],
+  "recommendations": ["rec1", "rec2"]
+}
+```
+
+**Example**:
+```bash
+METADATA=$(extract_report_metadata "specs/042_auth/reports/001_jwt_patterns.md")
+echo "$METADATA" | jq '.summary'
+# Output: "50-word summary of JWT authentication patterns..."
+```
+
+**extract_plan_metadata()**
+
+Extract metadata from implementation plans.
+
+```bash
+extract_plan_metadata <plan-path>
+```
+
+**Returns** (JSON):
+```json
+{
+  "path": "specs/042_auth/042_auth.md",
+  "complexity_score": 8.5,
+  "phases": [{"name": "Phase 1", "tasks": 5}, ...],
+  "time_estimate": "3-5 hours",
+  "dependencies": []
+}
+```
+
+**Example**:
+```bash
+PLAN_META=$(extract_plan_metadata "specs/042_auth/042_auth.md")
+echo "$PLAN_META" | jq '.complexity_score'
+# Output: 8.5
+```
+
+**load_metadata_on_demand()**
+
+Generic metadata loader with caching.
+
+```bash
+load_metadata_on_demand <artifact-path>
+```
+
+**Features**:
+- Caches metadata to avoid repeated extractions
+- Auto-detects artifact type (report vs plan)
+- Returns cached metadata if available
+
+**Example**:
+```bash
+# First call extracts metadata
+META=$(load_metadata_on_demand "specs/042_auth/reports/001_jwt_patterns.md")
+
+# Second call returns cached metadata (fast)
+META=$(load_metadata_on_demand "specs/042_auth/reports/001_jwt_patterns.md")
+```
+
+## Anti-Patterns
+
+When working with artifacts, avoid these common anti-patterns that violate [Command Architecture Standards 6-7](command_architecture_standards.md#context-preservation-standards):
+
+### Anti-Pattern 1: Full Content Passing
+
+**Problem**: Passing entire artifact content instead of metadata.
+
+**Bad Example**:
+```bash
+# Passes 5000 tokens per report (15,000 total)
+for report in specs/042_auth/reports/*.md; do
+  CONTENT=$(cat "$report")
+  REPORTS_FULL+=("$CONTENT")
+done
+
+# Pass to planning agent (massive context usage)
+Task {
+  prompt: "...
+          Research Reports:
+          ${REPORTS_FULL[@]}
+          ..."
+}
+```
+
+**Context Usage**: 15,000 tokens (3 reports × 5000 tokens each)
+
+**Good Example**:
+```bash
+# Passes 250 tokens per report (750 total)
+for report in specs/042_auth/reports/*.md; do
+  METADATA=$(extract_report_metadata "$report")
+  REPORT_METADATA+=("$METADATA")
+done
+
+# Pass metadata only
+Task {
+  prompt: "...
+          Research Reports (metadata):
+          ${REPORT_METADATA[@]}
+
+          Use Read tool to access full content selectively if needed.
+          ..."
+}
+```
+
+**Context Usage**: 750 tokens (95% reduction)
+
+### Anti-Pattern 2: No Cross-Reference Tracking
+
+**Problem**: Creating artifacts without maintaining bidirectional references.
+
+**Bad Example**:
+```bash
+# Create report without linking to plan
+create_topic_artifact "specs/042_auth" "reports" "jwt_patterns" "$CONTENT"
+# No cross-reference added
+```
+
+**Result**: Orphaned artifacts, broken navigation
+
+**Good Example**:
+```bash
+# Create report with bidirectional linking
+REPORT_PATH=$(create_topic_artifact "specs/042_auth" "reports" "jwt_patterns" "$CONTENT")
+REPORT_META=$(extract_report_metadata "$REPORT_PATH")
+
+# Update parent plan (forward reference)
+update_parent_references "specs/042_auth/042_auth.md" "$REPORT_META"
+
+# Add parent link to report (backward reference)
+add_parent_link "$REPORT_PATH" "../042_auth.md"
+```
+
+**Result**: Fully connected artifact graph
+
+### Anti-Pattern 3: Ignoring Retention Policies
+
+**Problem**: Not cleaning up temporary artifacts.
+
+**Bad Example**:
+```bash
+# Create investigation scripts
+create_topic_artifact "specs/042_auth" "scripts" "investigate" "$SCRIPT"
+
+# Never clean up (accumulates over time)
+```
+
+**Result**: Disk bloat, gitignored junk accumulation
+
+**Good Example**:
+```bash
+# Create investigation scripts
+create_topic_artifact "specs/042_auth" "scripts" "investigate" "$SCRIPT"
+
+# After workflow complete, clean up
+cleanup_all_temp_artifacts "specs/042_auth"
+```
+
+**Result**: Clean working directory
+
+## Artifact Lifecycle Management
+
+Complete lifecycle documentation for all artifact types, including creation → usage → completion → archival stages.
+
+### Lifecycle Stages
+
+**1. Creation** → Artifact generated during workflow phase
+**2. Usage** → Artifact referenced during subsequent phases
+**3. Completion** → Workflow phase finished, artifact finalized
+**4. Archival** → Long-term storage or cleanup applied
+
+### Retention Policies
+
+| Artifact Type | Retention Policy | Cleanup Trigger | Automated |
+|---------------|------------------|-----------------|-----------|
+| **Debug reports** | Permanent | Never | No |
+| **Investigation scripts** | 0 days | Workflow completion | Yes |
+| **Test outputs** | 0 days | Test verification complete | Yes |
+| **Operation artifacts** | 30 days | Configurable age-based | Optional |
+| **Backups** | 30 days | Operation verified successful | Optional |
+| **Reports** | Indefinite | Never | No |
+| **Plans** | Indefinite | Never | No |
+| **Summaries** | Indefinite | Never | No |
+
+### Cleanup Triggers and Automation
+
+**Automatic Cleanup Triggers**:
+
+```bash
+# Integrated into /orchestrate workflow
+# Runs after workflow completion
+cleanup_all_temp_artifacts "$TOPIC_DIR"
+```
+
+**Triggered By**:
+- `/orchestrate` workflow completion
+- `/implement` workflow completion
+- Explicit `/cleanup` command (if added)
+
+**Manual Cleanup**:
+
+```bash
+# Clean specific artifact type
+cleanup_topic_artifacts "specs/042_auth" "scripts"
+cleanup_topic_artifacts "specs/042_auth" "outputs"
+
+# Clean with age filter
+cleanup_topic_artifacts "specs/042_auth" "artifacts" 30
+cleanup_topic_artifacts "specs/042_auth" "backups" 30
+```
+
+**Validation Utility** (`validate_cleanup_compliance()`):
+
+```bash
+# Verify cleanup policies followed
+validate_cleanup_compliance "specs/042_auth"
+
+# Checks:
+# - scripts/ empty after workflow
+# - outputs/ empty after test verification
+# - debug/ contains only committed files
+# - artifacts/ contains only files <30 days old
+# - backups/ contains only files <30 days old
+```
+
+### Metadata Tracking Throughout Lifecycle
+
+Metadata is tracked at each lifecycle stage:
+
+**Stage 1: Creation**
+```bash
+# Capture creation metadata
+ARTIFACT_PATH=$(create_topic_artifact "specs/042_auth" "reports" "jwt_patterns" "$CONTENT")
+METADATA=$(extract_report_metadata "$ARTIFACT_PATH")
+# Metadata includes: path, creation_time, type
+```
+
+**Stage 2: Usage**
+```bash
+# Track usage in workflow state
+WORKFLOW_STATE+=("artifact_used:$ARTIFACT_PATH")
+# Metadata includes: last_accessed, reference_count
+```
+
+**Stage 3: Completion**
+```bash
+# Mark artifact as finalized
+finalize_artifact "$ARTIFACT_PATH"
+# Metadata includes: completion_time, final_size
+```
+
+**Stage 4: Archival**
+```bash
+# Apply retention policy
+apply_retention_policy "specs/042_auth" "artifacts" 30
+# Metadata includes: archival_time, retention_status
+```
+
+**Metadata Query Utilities**:
+
+```bash
+# Query artifact metadata
+get_artifact_metadata "specs/042_auth/reports/001_jwt_patterns.md"
+
+# List artifacts by lifecycle stage
+list_artifacts_by_stage "specs/042_auth" "usage"
+
+# Get retention status
+check_retention_status "specs/042_auth/artifacts/expansion_metadata.json"
 ```
 
 ---

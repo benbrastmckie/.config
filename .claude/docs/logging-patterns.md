@@ -55,6 +55,19 @@ PROGRESS: Phase 3 complete - tests passing
 
 ### Agent Invocation Markers
 
+**Context-Efficient Logging** (see [Command Architecture Standards - Standard 6](command_architecture_standards.md#standard-6)):
+
+When logging artifact references, use **metadata-only** format to minimize context usage:
+
+```bash
+# Instead of logging full content (5000 tokens)
+PROGRESS: Report created with content: [entire report content...]
+
+# Log metadata only (250 tokens) - 95% reduction
+PROGRESS: Report created: specs/042_auth/reports/001_jwt_patterns.md
+PROGRESS: Report metadata: {path, 50-word summary, key_findings}
+```
+
 **Research Agents (Parallel)**:
 ```
 PROGRESS: Invoking 3 research-specialist agents in parallel...
