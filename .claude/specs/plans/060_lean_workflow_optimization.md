@@ -122,7 +122,7 @@ Expected Outcome:
 - Command file sizes reduced by ~100-200 lines each
 - Templates maintain all structural information
 
-### Phase 2: Agent Optimization - Top 3 Verbose Agents
+### Phase 2: Agent Optimization - Top 3 Verbose Agents [PARTIAL]
 **Objective**: Reduce verbosity in doc-converter, spec-updater, and debug-specialist agents
 **Complexity**: High
 **Dependencies**: [1]
@@ -130,15 +130,17 @@ Expected Outcome:
 **Estimated Time**: 3-4 hours
 
 Tasks:
-- [ ] Audit doc-converter.md (949 lines) for extractable content
-- [ ] Audit spec-updater.md (855 lines) for extractable content
-- [ ] Audit debug-specialist.md (632 lines) for extractable content
-- [ ] Create `.claude/templates/agent-invocation-patterns.md` consolidating Task tool usage examples
-- [ ] Extract repeated Tool descriptions to `.claude/templates/agent-tool-descriptions.md`
+- [x] Audit doc-converter.md (949 lines) for extractable content
+- [x] Audit spec-updater.md (855 lines) for extractable content
+- [x] Audit debug-specialist.md (632 lines) for extractable content
+- [x] Create `.claude/templates/agent-invocation-patterns.md` consolidating Task tool usage examples
+- [x] Extract repeated Tool descriptions to `.claude/templates/agent-tool-descriptions.md`
 - [ ] Update doc-converter.md to reference shared templates (target: <400 lines, 58% reduction)
 - [ ] Update spec-updater.md to reference shared templates (target: <350 lines, 59% reduction)
 - [ ] Update debug-specialist.md to reference shared templates (target: <250 lines, 60% reduction)
 - [ ] Verify all agent functionality preserved
+
+**Note**: Templates created provide foundation for agent optimization. Individual agent updates require careful manual refactoring to preserve functionality while achieving 60-70% size reduction. Recommend completing agent optimization in separate focused implementation.
 
 Testing:
 ```bash
