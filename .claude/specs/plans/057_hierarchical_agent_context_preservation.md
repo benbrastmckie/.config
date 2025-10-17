@@ -566,11 +566,12 @@ Validation:
 **Objective**: Validate context reduction, update tests, and document hierarchical agent patterns
 
 Tasks:
-- [ ] Create comprehensive context metrics validation script (.claude/scripts/validate_context_reduction.sh:1-300)
+- [x] Create comprehensive context metrics validation script (.claude/scripts/validate_context_reduction.sh:1-476)
   - Run all commands in test mode
   - Measure context usage at each phase
   - Verify context <30% threshold throughout workflows
   - Generate context reduction report
+  - Validates: metadata extraction, forward_message, context pruning, command integration, agent templates
 
 - [ ] Run validation across all commands
   ```bash
@@ -637,11 +638,12 @@ Tasks:
   - Document debug-analyst role (.claude/agents/debug-analyst.md)
   - Add examples for each role
 
-- [ ] Create context reduction metrics dashboard (.claude/scripts/context_metrics_dashboard.sh:1-200)
+- [x] Create context reduction metrics dashboard (.claude/scripts/context_metrics_dashboard.sh:1-403)
   - Parse `.claude/data/logs/context-metrics.log`
   - Generate summary statistics (avg reduction, max reduction, min reduction)
-  - Identify commands with highest context usage
+  - Identify commands with highest context usage (<70% reduction)
   - Generate improvement recommendations
+  - Supports text and JSON output formats
 
 - [ ] Run final validation and generate report
   ```bash
