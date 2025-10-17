@@ -779,7 +779,7 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
 
 ---
 
-### Phase 7: Checkpoint-Template System Integration (NEW from Report 052)
+### Phase 7: Checkpoint-Template System Integration (NEW from Report 052) [PARTIAL COMPLETION]
 
 **Objective**: Upgrade checkpoint schema to v1.3, implement template-checkpoint integration, and create unified documentation guide consolidating 22 scattered references
 
@@ -787,9 +787,13 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
 
 **Files**: 1 schema upgrade + 1 command enhancement + 1 unified guide + migration script
 
+**Status**: Infrastructure complete (schema v1.3, migration, unified guide), command integration deferred
+
+**Completed**: 2025-10-17 (infrastructure components only)
+
 **Tasks**:
 
-- [ ] Upgrade checkpoint schema to v1.3 (Report 052 Recommendation 1, HIGH PRIORITY):
+- [x] Upgrade checkpoint schema to v1.3 (Report 052 Recommendation 1, HIGH PRIORITY):
   - Update `.claude/lib/checkpoint-utils.sh` CHECKPOINT_SCHEMA_VERSION to "1.3"
   - Add new fields to checkpoint JSON structure:
     - `topic_directory` (string, nullable): Path to topic directory (e.g., "specs/042_authentication")
@@ -801,7 +805,7 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
   - Update `save_checkpoint()` function to populate new fields from workflow_state when provided
   - File: .claude/lib/checkpoint-utils.sh
 
-- [ ] Create checkpoint migration script v1.2 → v1.3:
+- [x] Create checkpoint migration script v1.2 → v1.3:
   - Create file: `.claude/lib/migrate-checkpoint-v1.3.sh`
   - Implement migration logic using jq to add new fields with safe defaults:
     - topic_directory: Extract from workflow_state.topic_directory or null
@@ -815,7 +819,7 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
   - Test migration on existing checkpoints
   - File: .claude/lib/migrate-checkpoint-v1.3.sh
 
-- [ ] Update `migrate_checkpoint_format()` in checkpoint-utils.sh:
+- [x] Update `migrate_checkpoint_format()` in checkpoint-utils.sh:
   - Add v1.2 → v1.3 migration case to existing migration function
   - Use same migration logic as standalone script
   - Ensure backward compatibility (all new fields nullable/optional)
@@ -836,7 +840,7 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
   - Update `/implement` command to detect template-generated checkpoints and use template context for intelligent defaults
   - File: .claude/commands/plan-from-template.md
 
-- [ ] Create unified checkpoint_template_guide.md (Report 052 Recommendation 4, MEDIUM PRIORITY):
+- [x] Create unified checkpoint_template_guide.md (Report 052 Recommendation 4, MEDIUM PRIORITY):
   - Create file: `.claude/docs/checkpoint_template_guide.md`
   - Consolidate content from 22 scattered references into single comprehensive guide
   - Structure (per Report 052 design):
@@ -872,6 +876,16 @@ Expected: Pattern libraries created, 106 plans migrated, commands reference patt
   - Update `.claude/docs/README.md`: Add "Checkpoint-Template System" section linking to checkpoint_template_guide.md
   - Update `.claude/templates/README.md`: Add note about template-checkpoint integration and link to unified guide
   - Files: Multiple documentation files
+
+**Deferred Tasks** (command integration - requires separate focused implementation):
+- [ ] Implement template-checkpoint integration (modify /plan-from-template command)
+- [ ] Update /orchestrate to populate context_preservation fields
+- [ ] Update /implement to populate topic_directory, spec_maintenance fields
+- [ ] Add cross-references to directory-protocols.md, development-workflow.md, README.md, templates/README.md
+
+**Reason for Deferral**: Command integration requires careful modification of complex command files (100-500 lines each) and thorough testing. Core infrastructure (schema, migration, documentation) is complete and backward-compatible, allowing command integration to proceed independently.
+
+**Implementation Guide**: See `.claude/specs/plans/069_phase_7_remaining_tasks.md` for detailed implementation instructions.
 
 **Testing**:
 ```bash
