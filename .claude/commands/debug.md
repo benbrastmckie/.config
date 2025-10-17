@@ -62,6 +62,191 @@ Investigates issues and creates a comprehensive diagnostic report without making
 - **Check Recent Changes**: Review git history if relevant
 - **Environmental Factors**: Consider system-specific issues
 
+### 3.5. Parallel Hypothesis Investigation (for Complex Issues)
+
+For complex issues with multiple potential root causes, use parallel debug-analyst agents to investigate hypotheses simultaneously.
+
+**When to Use**:
+- **Multiple potential causes**: Issue could stem from 2-4 different root causes
+- **Complex systems**: Integration failures, race conditions, state management issues
+- **Unknown root cause**: Initial investigation doesn't reveal obvious culprit
+- **Performance degradation**: Multiple bottlenecks or optimization opportunities
+
+**Workflow Overview**:
+1. Generate 2-4 prioritized hypotheses based on initial analysis
+2. Invoke debug-analyst agent for each hypothesis in parallel
+3. Use forward_message to extract metadata from each investigation
+4. Synthesize findings to identify confirmed hypothesis
+5. Create consolidated debug report with all investigation results
+
+**Key Execution Requirements**:
+
+1. **Generate hypotheses** (from initial investigation):
+   ```bash
+   # Priority levels: high (most likely), medium (alternative), low (edge case)
+   HYPOTHESES='[
+     {"hypothesis": "Missing import statement", "priority": "high"},
+     {"hypothesis": "Incorrect function signature", "priority": "medium"},
+     {"hypothesis": "Race condition in async code", "priority": "low"}
+   ]'
+
+   # Extract count for parallel invocation
+   HYPOTHESIS_COUNT=$(echo "$HYPOTHESES" | jq '. | length')
+   echo "PROGRESS: Investigating $HYPOTHESIS_COUNT hypotheses in parallel"
+   ```
+
+2. **Invoke debug-analyst agents in parallel** (single message, multiple Task tool calls):
+   ```bash
+   # Source context preservation utilities
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
+
+   # Track context before parallel investigation
+   CONTEXT_BEFORE=$(track_context_usage "before" "debug_parallel_investigation" "")
+
+   # Build agent prompts for each hypothesis
+   for i in $(seq 0 $((HYPOTHESIS_COUNT - 1))); do
+     HYPOTHESIS=$(echo "$HYPOTHESES" | jq -r ".[$i].hypothesis")
+     PRIORITY=$(echo "$HYPOTHESES" | jq -r ".[$i].priority")
+
+     # Create invocation prompt for agent
+     DEBUG_ANALYST_PROMPT=$(cat <<EOF
+Read and follow behavioral guidelines from:
+${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+
+You are acting as a Debug Analyst Agent.
+
+Investigation Context:
+- Issue: "${ISSUE_DESCRIPTION}"
+- Failed test: ${TEST_COMMAND}
+- Modified files: ${FILE_LIST}
+- Hypothesis: ${HYPOTHESIS}
+- Priority: ${PRIORITY}
+
+Investigate this hypothesis and create artifact at:
+specs/${TOPIC_DIR}/debug/$(printf "%03d" $((i+1)))_investigation_${HYPOTHESIS// /_}.md
+
+Return metadata only (path + 50-word summary + confirmation JSON).
+
+Expected response format:
+{
+  "artifact_path": "specs/${TOPIC_DIR}/debug/NNN_investigation.md",
+  "metadata": {
+    "title": "Debug Investigation: ${ISSUE_DESCRIPTION}",
+    "summary": "[50-word summary of findings]",
+    "root_cause": "[concise root cause]",
+    "proposed_fix": "[brief fix description]",
+    "hypothesis_confirmed": true|false
+  }
+}
+EOF
+)
+
+     # Note: Actual Task tool invocation happens in AI execution layer
+     # Multiple Task calls in single message for parallel execution
+   done
+   ```
+
+3. **Collect and synthesize results using forward_message**:
+   ```bash
+   # Parse all subagent responses
+   INVESTIGATION_RESULTS=""
+   for i in $(seq 1 $HYPOTHESIS_COUNT); do
+     SUBAGENT_OUTPUT="$( # output from Task tool call $i )"
+
+     # Extract metadata using forward_message
+     INVESTIGATION_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "debug_investigation_$i")
+
+     # Accumulate results
+     INVESTIGATION_RESULTS=$(echo "$INVESTIGATION_RESULTS" | jq ". += [$INVESTIGATION_RESULT]")
+   done
+
+   # Identify confirmed hypothesis
+   CONFIRMED_INVESTIGATION=$(echo "$INVESTIGATION_RESULTS" | jq -r '.[] | select(.metadata.hypothesis_confirmed == true) | .artifact_path' | head -1)
+
+   # Track context after (metadata only, not full investigations)
+   SUMMARIES=$(echo "$INVESTIGATION_RESULTS" | jq -r '.[].metadata.summary' | tr '\n' ' ')
+   CONTEXT_AFTER=$(track_context_usage "after" "debug_parallel_investigation" "$SUMMARIES")
+
+   # Calculate reduction
+   CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+   echo "PROGRESS: Parallel investigation complete - context reduction: ${CONTEXT_REDUCTION}%"
+   ```
+
+4. **Load confirmed investigation and create consolidated report**:
+   ```bash
+   if [ -n "$CONFIRMED_INVESTIGATION" ]; then
+     # Load full investigation artifact for confirmed hypothesis
+     FULL_INVESTIGATION=$(load_metadata_on_demand "$CONFIRMED_INVESTIGATION")
+
+     # Extract root cause and proposed fix
+     ROOT_CAUSE=$(echo "$FULL_INVESTIGATION" | jq -r '.root_cause')
+     PROPOSED_FIX=$(echo "$FULL_INVESTIGATION" | jq -r '.proposed_fix')
+
+     echo "PROGRESS: Root cause confirmed: $ROOT_CAUSE"
+   else
+     # No hypothesis confirmed - require manual investigation
+     echo "WARNING: No hypothesis confirmed. Manual investigation required."
+     ROOT_CAUSE="Investigation inconclusive - see individual investigation reports"
+   fi
+
+   # Create consolidated debug report with all investigation paths
+   # Include metadata summaries from all hypotheses
+   # Reference confirmed investigation for detailed findings
+   ```
+
+**Quick Example**:
+```bash
+# Generate hypotheses
+HYPOTHESES='[
+  {"hypothesis": "Missing import of refreshToken()", "priority": "high"},
+  {"hypothesis": "Incorrect token expiry calculation", "priority": "medium"},
+  {"hypothesis": "Session storage race condition", "priority": "low"}
+]'
+
+# Invoke 3 debug-analyst agents in parallel (single message, 3 Task tool calls)
+# Each creates investigation artifact: specs/042_auth/debug/001_investigation_*.md
+
+# Collect results using forward_message
+RESULTS=$(collect_parallel_investigations "$SUBAGENT_OUTPUTS")
+
+# Metadata returned (3 × 50 words = 150 words):
+# - Investigation 1: "Hypothesis CONFIRMED: Missing import..."
+# - Investigation 2: "Hypothesis REJECTED: Token calculation correct..."
+# - Investigation 3: "Hypothesis REJECTED: No race condition detected..."
+
+# Load confirmed investigation only
+CONFIRMED_PATH=$(echo "$RESULTS" | jq -r '.[] | select(.metadata.hypothesis_confirmed == true) | .artifact_path')
+FULL_INVESTIGATION=$(load_metadata_on_demand "$CONFIRMED_PATH")
+
+# Create consolidated debug report referencing confirmed investigation
+# Prune alternative investigations (unconfirmed hypotheses)
+```
+
+**Expected Impact**:
+- 90% context reduction vs. sequential full investigations (150 words metadata vs. 3 × full reports)
+- 60% faster investigation time (parallel vs. sequential)
+- Systematic hypothesis validation (no missed alternatives)
+- Clear audit trail (all hypotheses documented)
+
+**Integration Points**:
+- **Agent template**: `.claude/agents/debug-analyst.md`
+- **Utilities**: `artifact-operations.sh` (forward_message, load_metadata_on_demand), `context-metrics.sh` (tracking)
+- **Output artifacts**: `specs/{topic}/debug/NNN_investigation_*.md` (one per hypothesis)
+- **Consolidated report**: `specs/{topic}/debug/NNN_debug_[issue_name].md` (synthesized findings)
+
+**Error Handling**:
+- Agent timeout/failure → Skip hypothesis, log warning, continue with remaining
+- All hypotheses rejected → Manual investigation flag in consolidated report
+- Multiple hypotheses confirmed → Escalate to user for disambiguation
+
+**Benefits**:
+- Parallel investigation eliminates sequential time overhead
+- Metadata-based passing preserves context
+- All hypotheses explored systematically
+- Failed hypotheses documented for future reference
+- Clear path from investigation to fix
+
 ### 4. Debug Report Creation Using Uniform Structure
 
 **Step 1: Source Required Utilities**
