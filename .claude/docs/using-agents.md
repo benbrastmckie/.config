@@ -424,7 +424,7 @@ Verify:
 **Solutions**:
 1. Check `allowed-tools:` in agent frontmatter
 2. Verify tool name spelling matches exactly
-3. Ensure tool is available in Claude Code v2.0.1
+3. Ensure tool is available in Claude Code
 
 ### Agent Timeout
 

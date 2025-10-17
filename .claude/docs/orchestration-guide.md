@@ -390,11 +390,11 @@ checkpoint_data=$(restore_from_checkpoint "$checkpoint_file")
 
 ### Execution Speed
 
-**Sequential (Old):**
+**Sequential Execution:**
 - 5 operations × 45s each = 225s
 - Plus overhead: ~240s total
 
-**Parallel (New):**
+**Parallel Execution:**
 - 5 operations × 45s concurrent = 45s
 - Plus coordination: ~60s total
 - **Speedup: 4x**

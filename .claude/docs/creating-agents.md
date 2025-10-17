@@ -504,8 +504,3 @@ version: 2.0
 last-updated: 2025-10-01
 ---
 ```
-
-Track major changes:
-- Version 1.0: Initial implementation
-- Version 2.0: Added testing requirements
-- Version 2.1: Enhanced error handling guidance
