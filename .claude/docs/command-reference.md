@@ -6,6 +6,12 @@ Quick lookup guide for all Claude Code slash commands. For comprehensive command
 
 This reference provides quick access to all available commands with their purpose, usage, and relationships. Commands are organized alphabetically and grouped by type and agent usage for easy navigation.
 
+## Architectural Context
+
+Commands are **AI execution scripts**, not traditional workflow automation. They contain executable instructions, agent invocation logic, and decision points that Claude interprets directly. Commands follow 11 architectural standards (Standards 1-11) covering inline execution requirements, context preservation, and lean design principles.
+
+See [Command Architecture Standards](command_architecture_standards.md) for complete standards documentation.
+
 ---
 
 ## Command Index (Alphabetical)

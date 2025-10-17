@@ -456,7 +456,136 @@ Follow this 8-step procedure when creating a new command:
 
 **Output**: Command discoverable and documented
 
-### 3.4 Quality Checklist
+###  3.3 Pattern Library Integration
+
+Commands should reference reusable bash procedures from pattern libraries rather than duplicating inline.
+
+#### When to Reference Pattern Libraries (Standard 9)
+
+**Reference bash-patterns.md** for:
+- Utility initialization sequences (sourcing checkpoint-utils.sh, artifact-operations.sh, etc.)
+- Checkpoint setup boilerplate (mkdir, restore_checkpoint, validate_checkpoint)
+- Metadata extraction patterns (extract_report_metadata, extract_plan_metadata)
+- Context pruning patterns (apply_pruning_policy, prune_subagent_output)
+- Error handling wrappers (classify_error, suggest_recovery)
+
+**Reference implementation-patterns.md** for:
+- Phase-by-phase execution patterns (load plan, parse phases, execute tasks)
+- Test-after-phase patterns (get test command, execute, validate)
+- Git commit patterns (stage files, structured message, verify)
+- Checkpoint save patterns (prepare workflow_state JSON, save, verify)
+
+#### Inline Execution Requirements (Standard 1)
+
+**Keep inline in command files**:
+- Workflow orchestration logic (which agent to invoke when)
+- Decision points (if tests fail, invoke debug agent)
+- Tool invocations (Task, Read, Write, Edit, Bash calls)
+- Agent selection decisions
+- Context assembly for agent prompts
+- Success criteria evaluation
+- Phase transition logic
+
+#### Pattern Reference Examples
+
+**Example: Reference bash procedure** (Standard 9):
+```markdown
+## Workflow
+
+### Step 1: Initialize Utilities
+
+Source required utility libraries:
+```bash
+# Initialize utilities (see bash-patterns.md#utility-init)
+source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
+```
+
+See `.claude/templates/bash-patterns.md#utility-initialization` for complete pattern.
+```
+
+**Example: Keep workflow logic inline** (Standard 1):
+```markdown
+### Step 3: Invoke Planning Agent
+
+After research completes, invoke planning agent with research context:
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan"
+  prompt: "Read and follow: .claude/agents/plan-architect.md
+
+          Create implementation plan for: $FEATURE_NAME
+
+          Research Reports (metadata):
+          ${RESEARCH_METADATA[@]}
+
+          Output: specs/plans/NNN_plan.md"
+}
+```
+```
+
+**Key Distinction**:
+- Bash procedures (utility init, checkpoint setup) → **Reference pattern libraries**
+- Workflow logic (agent invocation, decisions) → **Keep inline**
+
+See [Command Architecture Standards](command_architecture_standards.md#standard-1) and [Standard 9](command_architecture_standards.md#standard-9) for complete guidance.
+
+### 3.4 Command Size Thresholds (Standard 11)
+
+Commands should target lean sizes. Excessive size indicates over-extraction or inline duplication.
+
+#### Target Sizes by Complexity
+
+| Complexity | Target Size | Warning Threshold | Bloat Indicators |
+|------------|-------------|-------------------|------------------|
+| **Simple** | <5KB | <3KB or >8KB | Single-phase workflows, minimal agent coordination |
+| **Focused** | <15KB | <10KB or >20KB | Multi-phase workflows, 2-3 agent types, moderate decision logic |
+| **Complex** | <25KB | <20KB or >30KB | Orchestration workflows, 5+ agent types, parallel execution, complex error handling |
+
+#### Size Analysis
+
+**Check command size**:
+```bash
+wc -c < .claude/commands/my-command.md
+# Compare to target thresholds above
+```
+
+**Bloat indicators**:
+- Large inline bash procedures (>50 lines) appearing in 3+ commands
+- Agent behavior defined inline (should use behavioral injection)
+- Full artifact content passed to agents (should use metadata-only)
+- Repeated utility initialization sequences (should reference bash-patterns.md)
+- Duplicated checkpoint setup boilerplate (should reference pattern libraries)
+
+**Solutions**:
+1. **Extract bash procedures** to `bash-patterns.md` or `implementation-patterns.md` (Standard 9)
+2. **Use behavioral injection** for agent invocations (reference agent files, don't inline)
+3. **Pass metadata only** between agents (Standard 6)
+4. **Reference pattern libraries** for common procedures
+5. **Simplify decision logic** if overly complex
+
+**Example: Reducing command size**:
+```markdown
+# BEFORE: 30KB command (bloated)
+- 50 lines utility initialization (inline)
+- 80 lines checkpoint setup (inline)
+- 100 lines agent behavior (inline)
+- 150 lines metadata extraction (inline)
+Total: 380 lines of reusable procedures
+
+# AFTER: 12KB command (lean)
+- "See bash-patterns.md#utility-init" (1 line reference)
+- "See bash-patterns.md#checkpoint-setup" (1 line reference)
+- "Read and follow: .claude/agents/agent-name.md" (behavioral injection)
+- "extract_report_metadata()" (utility call)
+Total: Procedures referenced, not duplicated
+```
+
+See [Command Architecture Standards](command_architecture_standards.md#standard-11) for complete size guidelines.
+
+### 3.5 Quality Checklist
 
 Before committing a new command, verify:
 
@@ -734,7 +863,114 @@ Search for CLAUDE.md
 
 ## 5. Agent Integration
 
-### 5.1 When Commands Use Agents
+### 5.1 Layered Context Architecture
+
+When invoking agents, use a layered context model to minimize context consumption while preserving execution completeness.
+
+#### Five Context Layers
+
+**1. Meta-Context (Behavioral Injection)**:
+- Agent behavior definition (read from `.claude/agents/[agent-name].md`)
+- Tool restrictions and allowed operations
+- Output format requirements
+- Passed via: `Read and follow: .claude/agents/[agent-name].md`
+- Size: ~0 tokens (agent reads file directly, not passed inline)
+
+**2. Operational Context (Task Instructions)**:
+- Specific task description and objectives
+- Step-by-step execution requirements
+- Success criteria and validation steps
+- Passed via: Task `prompt` parameter
+- Size: 200-500 tokens typical
+
+**3. Domain Context (Project Standards)**:
+- Project-specific coding standards (CLAUDE.md)
+- Language conventions and style guides
+- Testing protocols and coverage requirements
+- Passed via: Reference to CLAUDE.md + key constraints
+- Size: 50-100 tokens (reference + highlights, not full content)
+
+**4. Historical Context (Prior Phase Results)**:
+- Results from completed workflow phases
+- Artifacts created in previous steps
+- Key findings and recommendations
+- Passed via: **Metadata only** (path + 50-word summary)
+- Size: 250 tokens per artifact (vs 5000 tokens for full content)
+
+**5. Environmental Context (Workflow State)**:
+- Current phase in workflow
+- Checkpoint data and resume information
+- Progress tracking and completion status
+- Passed via: Minimal state JSON
+- Size: 100-200 tokens
+
+#### Context-Efficient Agent Invocation Example
+
+**Traditional approach** (all context inline):
+```yaml
+Task {
+  prompt: "You are a research specialist with tools: Read, Grep, Glob, WebSearch, WebFetch.
+
+          Research authentication patterns in the codebase.
+
+          Project Standards:
+          - Indentation: 2 spaces
+          - Naming: snake_case
+          - Error handling: pcall
+          - Testing: ≥80% coverage
+          [200 more lines of CLAUDE.md content...]
+
+          Previous research found that...
+          [5000 tokens of prior research content...]
+
+          Workflow state: phase 2 of 5..."
+}
+# Total: ~12,000 tokens (bloated)
+```
+
+**Layered approach** (context-efficient):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research auth patterns using research-specialist protocol"
+  prompt: "# Layer 1: Meta-Context (0 tokens - file read)
+          Read and follow: .claude/agents/research-specialist.md
+
+          # Layer 2: Operational Context (300 tokens)
+          Research Topic: Authentication patterns in Lua applications
+
+          Requirements:
+          - Search codebase for existing auth implementations
+          - Research JWT vs sessions best practices
+          - Identify security considerations
+
+          Output: Create report at specs/042_auth/reports/001_patterns.md
+
+          # Layer 3: Domain Context (50 tokens)
+          Project Standards: CLAUDE.md
+          - Lua style: 2-space indent, snake_case
+          - Security: HTTPS only, no credentials in code
+
+          # Layer 4: Historical Context (250 tokens)
+          Prior Research:
+          - specs/041_api/reports/001_rest_patterns.md: 'REST API patterns with OpenResty. Recommends JWT for stateless auth.'
+
+          # Layer 5: Environmental Context (100 tokens)
+          Workflow Phase: research (1/5)
+          Thinking Mode: think hard"
+}
+# Total: ~700 tokens (94% reduction)
+```
+
+**Benefits**:
+- 12,000 tokens → 700 tokens (94% reduction)
+- Agent reads behavior from file (no inline duplication)
+- Historical context passed as metadata (selective reading)
+- Clear separation of concerns
+
+See [Command Architecture Standards](command_architecture_standards.md#layered-context-architecture) for complete details.
+
+### 5.2 When Commands Use Agents
 
 Commands delegate to agents when tasks require:
 

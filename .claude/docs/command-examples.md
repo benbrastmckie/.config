@@ -826,6 +826,213 @@ fi
 
 ---
 
+## Context Preservation Examples
+
+**Note**: These examples are supplemental reference material demonstrating Standards 6-8 context preservation patterns. Commands should reference these patterns rather than duplicating inline.
+
+### Metadata-Only Passing Example (Standard 6)
+
+**Scenario**: Research phase produces 3 reports. Planning phase needs research context but not full 15,000 tokens.
+
+**Traditional approach** (full content passing):
+```bash
+# Research phase completes with 3 reports
+REPORT_1=$(cat specs/042_auth/reports/001_jwt_patterns.md)    # 5000 tokens
+REPORT_2=$(cat specs/042_auth/reports/002_security.md)        # 5000 tokens
+REPORT_3=$(cat specs/042_auth/reports/003_integration.md)     # 5000 tokens
+
+# Pass to planning agent (15,000 tokens!)
+Task {
+  prompt: "...
+          Research Reports:
+
+          Report 1: JWT Patterns
+          $REPORT_1
+
+          Report 2: Security Practices
+          $REPORT_2
+
+          Report 3: Integration Approaches
+          $REPORT_3
+
+          Create implementation plan..."
+}
+# Context usage: 15,000 tokens (100% of reports)
+```
+
+**Metadata-only approach** (Standard 6):
+```bash
+# Research phase completes with 3 reports
+REPORTS=(
+  "specs/042_auth/reports/001_jwt_patterns.md"
+  "specs/042_auth/reports/002_security.md"
+  "specs/042_auth/reports/003_integration.md"
+)
+
+# Extract metadata (not full content)
+for report in "${REPORTS[@]}"; do
+  METADATA=$(extract_report_metadata "$report")
+  # METADATA: {"path": "...", "summary": "50 words...", "key_findings": [...]}
+  REPORT_REFS+=("$METADATA")
+done
+
+# Pass to planning agent (metadata only: 250 tokens)
+Task {
+  prompt: "...
+          Research Reports (reference):
+          ${REPORT_REFS[@]}
+
+          Use Read tool to access full content selectively if needed.
+          Not all reports may be relevant to your specific planning tasks.
+
+          Create implementation plan..."
+}
+# Context usage: 250 tokens (99% reduction from 15,000)
+```
+
+**Benefits**:
+- 15,000 tokens → 250 tokens (98% reduction)
+- Agent reads selectively (only relevant reports)
+- Full details preserved in files
+- Bidirectional cross-referencing supported
+
+### Forward Message Pattern Example (Standard 7)
+
+**Scenario**: Sequential workflow where research → planning → implementation. Each phase needs prior context.
+
+**Traditional approach** (re-summarization):
+```bash
+# Research phase completes
+RESEARCH_RESULT="[Agent's full 2000-token response]"
+
+# Planning phase: Re-summarize research (200 tokens overhead)
+RESEARCH_SUMMARY="Research found JWT patterns with HMAC-SHA256..."
+Task {
+  prompt: "...
+          Prior Research:
+          $RESEARCH_SUMMARY
+
+          Create plan..."
+}
+
+# Implementation phase: Re-summarize plan (200 tokens overhead)
+PLAN_SUMMARY="Plan has 5 phases focusing on auth service, middleware..."
+Task {
+  prompt: "...
+          Prior Planning:
+          $PLAN_SUMMARY
+
+          Implement phase 1..."
+}
+# Total overhead: 400 tokens from paraphrasing
+```
+
+**Forward message approach** (Standard 7):
+```bash
+# Research phase completes
+RESEARCH_RESULT="[Agent's full response]"
+
+# Extract handoff context (no paraphrasing)
+HANDOFF=$(forward_message "$RESEARCH_RESULT")
+# HANDOFF: artifact paths, 50-word agent summary, next steps
+
+# Planning phase: Use agent's original words
+Task {
+  prompt: "...
+          Previous Phase:
+          $HANDOFF
+
+          Continue from where research left off..."
+}
+
+# Planning completes
+PLANNING_RESULT="[Agent's full response]"
+HANDOFF=$(forward_message "$PLANNING_RESULT")
+
+# Implementation phase: Direct handoff
+Task {
+  prompt: "...
+          Previous Phase:
+          $HANDOFF
+
+          Execute plan phase 1..."
+}
+# Total overhead: 0 tokens (agent's own summaries used)
+```
+
+**Benefits**:
+- Eliminates 200-300 tokens per transition
+- Preserves agent's structure and emphasis
+- Reduces accumulated paraphrasing errors
+- Maintains workflow continuity
+
+### Context Pruning Example (Standard 8)
+
+**Scenario**: /orchestrate workflow with research → planning → implementation → documentation. Without pruning, context grows 80-90%.
+
+**Without pruning**:
+```bash
+# Phase 1: Research (3 agents in parallel)
+RESEARCH_1="[5000 tokens]"
+RESEARCH_2="[5000 tokens]"
+RESEARCH_3="[5000 tokens]"
+# Accumulated: 15,000 tokens
+
+# Phase 2: Planning
+PLAN="[3000 tokens]"
+# Accumulated: 15,000 + 3,000 = 18,000 tokens
+
+# Phase 3: Implementation (5 phases)
+IMPL_1="[2000 tokens]"
+IMPL_2="[2000 tokens]"
+IMPL_3="[2000 tokens]"
+IMPL_4="[2000 tokens]"
+IMPL_5="[2000 tokens]"
+# Accumulated: 18,000 + 10,000 = 28,000 tokens
+
+# Phase 4: Documentation
+DOCS="[1000 tokens]"
+# Total accumulated: 29,000 tokens (580% of original 5,000)
+```
+
+**With aggressive pruning** (orchestration workflow):
+```bash
+# Phase 1: Research completes
+for output in "${RESEARCH_OUTPUTS[@]}"; do
+  METADATA=$(extract_report_metadata "$output")
+  prune_subagent_output "$output" "$METADATA"
+done
+apply_pruning_policy --mode aggressive --workflow orchestrate
+# Accumulated: 750 tokens (metadata only)
+
+# Phase 2: Planning completes
+PLAN_METADATA=$(extract_plan_metadata "$PLAN_OUTPUT")
+prune_subagent_output "$PLAN_OUTPUT" "$PLAN_METADATA")
+# Accumulated: 750 + 250 = 1,000 tokens
+
+# Phase 3: Implementation completes
+# Keep only current phase + previous phase metadata
+prune_phase_metadata --keep-recent 1
+# Accumulated: 1,000 + 500 = 1,500 tokens
+
+# Phase 4: Documentation completes
+prune_phase_metadata --keep-recent 0
+# Total accumulated: 1,500 tokens (30% of non-pruned 5,000)
+```
+
+**Pruning policies**:
+- **Aggressive** (orchestration): <20% context usage, prune everything except artifact paths and 50-word summaries
+- **Moderate** (implementation): 20-30% usage, keep recent phase metadata (last 2 phases)
+- **Minimal** (single-agent): 30-50% usage, minimal pruning
+
+**Benefits**:
+- 29,000 tokens → 1,500 tokens (95% reduction)
+- Enables long-running workflows
+- Maintains <30% context throughout
+- Workflow continuity preserved
+
+---
+
 ## Usage Notes
 
 ### Referencing This File

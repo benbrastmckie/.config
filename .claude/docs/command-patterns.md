@@ -2,6 +2,8 @@
 
 This document provides reusable patterns and examples for implementing Claude Code commands. Commands should reference these patterns rather than duplicating documentation inline.
 
+For command architecture standards and design principles, see [Command Architecture Standards](command_architecture_standards.md).
+
 **Last Updated**: 2025-10-10
 
 ---
@@ -1273,6 +1275,196 @@ EOF
 
 ---
 
+## Extraction Boundaries
+
+Commands are AI execution scripts, not traditional code. Understanding what must stay inline versus what can be extracted is critical for maintainability and execution correctness.
+
+### Procedures vs Execution Logic
+
+**Procedures (Extractable - Standard 9)**:
+- Reusable bash functions appearing in 3+ commands
+- Utility initialization sequences (sourcing libraries, setting paths)
+- Checkpoint setup boilerplate
+- Metadata extraction patterns
+- Standard error handling wrappers
+
+**Execution Logic (Inline-Required - Standard 1)**:
+- Workflow orchestration (which agent to invoke when)
+- Decision points (if tests fail, invoke debug agent)
+- Tool invocations (Task, Read, Write, Edit calls)
+- Context assembly for agent prompts
+- Success criteria evaluation
+- Phase transition logic
+
+### Distinguishing Standard 9 from Standard 1
+
+**Standard 9 (Orchestrate Patterns)**: Extract common bash procedures to pattern libraries
+**Standard 1 (Inline Execution)**: Keep workflow logic and tool invocations inline in commands
+
+**Example - Extractable (Standard 9)**:
+```bash
+# bash-patterns.md - Reusable utility initialization
+init_utilities() {
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
+}
+```
+
+**Example - Must Stay Inline (Standard 1)**:
+```yaml
+# Command file - Workflow orchestration logic
+if tests_pass; then
+  # Invoke documentation agent (tool invocation)
+  Task {
+    subagent_type: "general-purpose"
+    description: "Update documentation"
+    prompt: "Read and follow: .claude/agents/doc-writer.md
+
+            Update documentation for completed implementation..."
+  }
+else
+  # Invoke debugging agent (decision point)
+  Task {
+    subagent_type: "general-purpose"
+    description: "Debug test failures"
+    prompt: "Read and follow: .claude/agents/debug-specialist.md
+
+            Investigate test failures..."
+  }
+fi
+```
+
+### When to Extract vs Keep Inline
+
+**Extract to pattern libraries** when:
+- Bash procedure appears in 3+ commands
+- Procedure is >50 lines
+- Procedure has no decision logic (pure utility)
+- Procedure doesn't invoke tools (Task, Read, etc.)
+
+**Keep inline in command** when:
+- Workflow orchestration logic
+- Tool invocations (Task, Read, Write, Edit, Bash)
+- Agent selection decisions
+- Context assembly for prompts
+- Success/failure routing
+- Unique to single command
+
+See [Command Architecture Standards](command_architecture_standards.md#standard-1) for complete inline requirements.
+
+---
+
+## Context Preservation Patterns
+
+Commands should minimize context usage through metadata-only passing, forward message patterns, and context pruning. Target: <30% context usage throughout workflows.
+
+### Metadata-Only Passing (Standard 6)
+
+Pass artifact paths and summaries instead of full content between agents.
+
+**Benefits**:
+- 99% context reduction (5000 tokens → 250 tokens)
+- Preserves full details in artifact files
+- Agents read selectively using Read tool
+- Supports bidirectional cross-referencing
+
+**Pattern**:
+```bash
+# After research phase completes
+RESEARCH_REPORTS=(
+  "specs/042_auth/reports/001_jwt_patterns.md"
+  "specs/042_auth/reports/002_security_practices.md"
+)
+
+# Extract metadata (not full content)
+for report in "${RESEARCH_REPORTS[@]}"; do
+  METADATA=$(extract_report_metadata "$report")
+  # METADATA contains: path, 50-word summary, key findings
+  REPORT_METADATA+=("$METADATA")
+done
+
+# Pass to planning agent (metadata only, not full 5000 tokens)
+Task {
+  prompt: "...
+          Research Reports (metadata):
+          ${REPORT_METADATA[@]}
+
+          Use Read tool to access full content if needed.
+          ..."
+}
+```
+
+**Utility**: `extract_report_metadata()` in `.claude/lib/artifact-operations.sh`
+
+### Forward Message Pattern (Standard 7)
+
+Pass subagent responses directly to next phase without re-summarization.
+
+**Benefits**:
+- Eliminates paraphrasing overhead (200-300 tokens per agent)
+- Preserves agent's original structure and emphasis
+- Reduces context accumulation in sequential workflows
+
+**Pattern**:
+```bash
+# Research phase completes
+RESEARCH_OUTPUT=$(agent_task_result)
+
+# Extract handoff context (don't paraphrase)
+HANDOFF=$(forward_message "$RESEARCH_OUTPUT")
+# HANDOFF contains: artifact paths, 50-word summary, next steps
+
+# Pass to next phase (no re-summarization)
+Task {
+  prompt: "...
+          Previous Phase Output:
+          $HANDOFF
+
+          Continue from where research left off...
+          ..."
+}
+```
+
+**Utility**: `forward_message()` in `.claude/lib/artifact-operations.sh`
+
+### Context Pruning (Standard 8)
+
+Prune full content after metadata extraction. Retain only artifact paths and metadata.
+
+**Benefits**:
+- 80-90% reduction in accumulated context
+- Maintains workflow continuity
+- Enables long-running multi-phase operations
+
+**Pattern**:
+```bash
+# After metadata extraction
+FULL_OUTPUT=$(cat .claude/tmp/research_output.txt)
+METADATA=$(extract_report_metadata "$FULL_OUTPUT")
+
+# Prune full output (keep metadata only)
+prune_subagent_output "$FULL_OUTPUT" "$METADATA"
+
+# Apply pruning policy based on workflow
+apply_pruning_policy --mode aggressive --workflow orchestrate
+# Modes: aggressive (orchestration), moderate (implementation), minimal (single-agent)
+```
+
+**Pruning Policy Decision Tree**:
+- **Aggressive** (orchestration workflows): <20% context usage, prune everything except paths and 50-word summaries
+- **Moderate** (implementation workflows): 20-30% context usage, prune after metadata extraction but keep recent phase metadata
+- **Minimal** (single-agent workflows): 30-50% context usage, minimal pruning
+
+**Utilities**:
+- `prune_subagent_output()` - Remove full output after metadata extraction
+- `prune_phase_metadata()` - Remove phase data after completion
+- `apply_pruning_policy()` - Automatic pruning by workflow type
+
+See [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 details.
+
+---
+
 ## Notes
 
 ### Pattern Usage
@@ -1296,17 +1488,26 @@ This file is the single source of truth for common command patterns. When patter
 
 ### When to Extract vs Inline
 
-**Extract to this file** when:
-- Pattern appears in 3+ commands
-- Pattern is >50 lines
-- Pattern is complex and benefits from detailed explanation
-- Pattern evolves frequently
+**Extract to pattern libraries** (Standard 9) when:
+- **Bash procedures** appear in 3+ commands
+- Procedure is >50 lines
+- Procedure has no decision logic (pure utility)
+- Examples: utility initialization, checkpoint setup, metadata extraction
+- Extraction target: `bash-patterns.md`, `implementation-patterns.md`
 
-**Keep inline in command** when:
+**Keep inline in commands** (Standard 1) when:
+- **Workflow orchestration logic** (which agent when, decision points)
+- **Tool invocations** (Task, Read, Write, Edit calls)
 - Pattern is command-specific
-- Pattern is <20 lines
-- Pattern is simple and self-explanatory
-- Command needs unique variation of pattern
+- Pattern includes agent selection or context assembly
+- Command needs unique variation
+- Examples: agent invocation sequences, success criteria evaluation, phase transitions
+
+**Key Distinction**:
+- Standard 1 (Inline Execution): Execution-critical content (workflow logic, tool calls)
+- Standard 9 (Orchestrate Patterns): Reusable procedures (bash functions, setup boilerplate)
+
+See [Extraction Boundaries](#extraction-boundaries) section above for detailed examples.
 
 ---
 
