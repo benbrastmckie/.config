@@ -1046,8 +1046,59 @@ The planning phase synthesizes research findings into a structured implementatio
    - **SINGLE** Task tool invocation (sequential, not parallel)
    - Subagent type: general-purpose
    - Reference: plan-architect.md behavioral guidelines
-   - Agent can invoke /plan slash command
+   - Agent invokes /plan slash command
    - Wait for agent completion before proceeding
+
+**EXECUTE NOW - Delegate Planning to plan-architect Agent**:
+
+Invoke the plan-architect agent to create the implementation plan:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan using plan-architect protocol"
+  timeout: 600000  # 10 minutes for complex planning
+  prompt: "
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    ## Planning Task
+
+    ### Context
+    - Workflow: ${WORKFLOW_DESC}
+    - Thinking Mode: ${THINKING_MODE}
+    - Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+    ### Research Reports Available
+    $(for path in \"${RESEARCH_REPORT_PATHS[@]}\"; do
+      echo \"    - $path\"
+    done)
+
+    Use Read tool to access report content as needed.
+
+    ### Your Task
+    1. Read all research reports to understand findings
+    2. Invoke SlashCommand: /plan \"${WORKFLOW_DESC}\" ${RESEARCH_REPORT_PATHS[@]}
+    3. Verify plan file created successfully
+    4. Return: PLAN_PATH: /absolute/path/to/plan.md
+
+    ## Expected Output
+
+    **Primary Output**:
+    \`\`\`
+    PLAN_PATH: /absolute/path/to/specs/plans/NNN_feature.md
+    \`\`\`
+
+    **Secondary Output**: Brief summary (1-2 sentences)
+  "
+}
+```
+
+**Verification Checklist**:
+- [ ] plan-architect agent invoked via Task tool
+- [ ] Agent prompt includes workflow description, thinking mode, and research report paths
+- [ ] Agent instructed to invoke /plan command
+- [ ] Agent expected to return PLAN_PATH
 
 3. **Plan Validation** (Step 4):
    ```bash
@@ -1064,6 +1115,65 @@ The planning phase synthesizes research findings into a structured implementatio
      - Research reports referenced (if research performed)
      - Max 1 retry if validation fails
    ```
+
+**EXECUTE NOW - Verify Plan File Created**:
+
+After plan-architect agent completes, parse and verify the plan file:
+
+```bash
+# Parse PLAN_PATH from agent output
+PLAN_PATH=$(echo "$PLANNING_AGENT_OUTPUT" | grep -oP 'PLAN_PATH:\s*\K/.+' | head -1)
+
+if [ -z "$PLAN_PATH" ]; then
+  echo "ERROR: plan-architect did not return PLAN_PATH"
+  exit 1
+fi
+
+echo "PROGRESS: Verifying plan file: $PLAN_PATH"
+
+# Verify plan file exists
+if [ ! -f "$PLAN_PATH" ]; then
+  echo "ERROR: Plan file not found at $PLAN_PATH"
+  exit 1
+fi
+
+# Verify plan references research reports
+REPORT_REF_COUNT=$(grep -c "specs/reports/" "$PLAN_PATH" 2>/dev/null || echo 0)
+if [ $REPORT_REF_COUNT -lt 1 ]; then
+  echo "WARNING: Plan may not reference research reports"
+fi
+
+# Verify plan has required sections
+for section in "Metadata" "Overview" "Implementation Phases" "Testing Strategy"; do
+  if ! grep -q "## $section" "$PLAN_PATH"; then
+    echo "WARNING: Plan missing section: $section"
+  fi
+done
+
+echo "✓ Plan file verified: $PLAN_PATH"
+export IMPLEMENTATION_PLAN_PATH="$PLAN_PATH"
+```
+
+**Verification Checklist**:
+- [ ] PLAN_PATH extracted from agent output
+- [ ] Plan file exists at expected path
+- [ ] Plan references research reports (if research performed)
+- [ ] Plan has required sections (Metadata, Overview, Phases, Testing)
+- [ ] Path exported for implementation phase
+
+**Failure Handling**:
+
+```bash
+# If plan creation failed
+if [ -z "$PLAN_PATH" ] || [ ! -f "$PLAN_PATH" ]; then
+  echo ""
+  echo "ERROR: Plan creation failed"
+  echo "  Agent output: $PLANNING_AGENT_OUTPUT"
+  echo "  Action: Review agent output for errors"
+  echo "  Recommendation: Check research reports quality or retry planning"
+  exit 1
+fi
+```
 
 4. **Checkpoint and State** (Step 5):
    - Save checkpoint with: plan_path, plan_number, phase_count, complexity
