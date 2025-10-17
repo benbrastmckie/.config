@@ -74,6 +74,87 @@ allowed-tools: Read, Write, Edit, Bash, TodoWrite
 **Testing**: Read, Bash, Grep, TodoWrite
 **Debugging**: Read, Bash, Grep, Glob, WebSearch
 
+**Rationale for Tool Combinations**: These groupings ensure agents have sufficient tools for their task while maintaining security through restriction. Inline requirements (Standard 1) mean agents must be self-contained with appropriate tool access, not relying on external helper agents.
+
+**See Also**: [Command Architecture Standards](command_architecture_standards.md#agent-file-standards) for complete tool selection guidelines.
+
+## Agent Output Requirements
+
+### Metadata Extraction Compatibility
+
+When designing agents for multi-agent workflows, ensure outputs are compatible with metadata extraction utilities:
+
+**For Research Agents**:
+```markdown
+## Executive Summary
+[50-word summary of findings - REQUIRED for extract_report_metadata()]
+
+## Key Findings
+- [Finding 1 with file:line references]
+- [Finding 2 with file:line references]
+
+## Recommendations
+1. [Recommendation 1]
+2. [Recommendation 2]
+```
+
+**For Planning Agents**:
+```markdown
+## Metadata
+- **Complexity**: Low/Medium/High
+- **Time Estimate**: N-M hours
+- **Phases**: N
+
+## Success Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+```
+
+**For Implementation Agents**:
+```markdown
+Output Format:
+```
+IMPLEMENTATION_COMPLETE: true
+FILES_MODIFIED: [list]
+TESTS_PASSED: [count]
+```
+```
+
+**Why This Matters**: Structured outputs enable `extract_report_metadata()` and `forward_message()` utilities to extract metadata (path + 50-word summary) instead of passing full content between agents, achieving 99% context reduction.
+
+**See Also**: [Hierarchical Agents Guide](hierarchical_agents.md#metadata-extraction) for complete metadata extraction patterns.
+
+### Structural Annotations (Standard 5)
+
+Add annotations to agent file templates to guide future refactoring:
+
+```markdown
+## Behavioral Guidelines
+[EXECUTION-CRITICAL: These guidelines define core agent behavior and must remain inline]
+
+### Tool Usage
+[INLINE-REQUIRED: Tool invocation patterns must stay in agent definition]
+
+**Research Pattern**:
+```bash
+# ALWAYS search codebase before researching externally
+grep -r "pattern" lib/ src/
+```
+
+### Output Format
+[EXAMPLE-ONLY: Can be supplemented with external examples]
+
+Return structured JSON with status, artifacts[], summary.
+```
+
+**Annotation Types**:
+- `[EXECUTION-CRITICAL]` - Cannot be moved to external files
+- `[INLINE-REQUIRED]` - Must stay inline for proper agent behavior
+- `[REFERENCE-OK]` - Can be supplemented with external references
+- `[EXAMPLE-ONLY]` - Can be moved to external files if core example remains
+
+**See Also**: [Command Architecture Standards](command_architecture_standards.md#standard-5) for complete structural annotation guidelines.
+
 ### description (required)
 
 Brief one-line description of agent's purpose.

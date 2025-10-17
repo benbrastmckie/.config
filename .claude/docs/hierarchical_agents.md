@@ -4,6 +4,8 @@
 
 The hierarchical agent architecture enables multi-level agent coordination that minimizes context window consumption through metadata-based context passing and recursive supervision. This guide covers the complete architecture, patterns, utilities, and best practices for implementing hierarchical agent workflows.
 
+For command architecture standards and context preservation requirements, see [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) (Standards 1, 6-8).
+
 ## Table of Contents
 
 - [Architecture Principles](#architecture-principles)
@@ -488,6 +490,246 @@ prune_phase_metadata "research"
 # Before saving checkpoint
 prune_workflow_metadata "$workflow_type"
 ```
+
+## Context Pruning for Multi-Agent Workflows
+
+When coordinating multiple agents, apply aggressive context pruning to maintain <30% context usage throughout the workflow.
+
+### When to Prune
+
+**1. After Metadata Extraction** (Most Critical):
+```bash
+# Immediately after extracting metadata from subagent output
+subagent_output="Research complete. Created report at specs/042_auth/reports/001_patterns.md..."
+
+# Extract metadata
+metadata=$(extract_report_metadata "specs/042_auth/reports/001_patterns.md")
+
+# Prune full output immediately
+prune_subagent_output "research_agent_1"
+
+# Now only metadata retained in memory (250 tokens vs 5000 tokens)
+# Original output logged to .claude/data/logs/subagent-outputs.log
+```
+
+**2. Between Workflow Phases**:
+```bash
+# After research phase completes, before planning starts
+prune_phase_metadata "research"
+
+# After planning completes, before implementation starts
+prune_phase_metadata "planning"
+
+# This prevents accumulation of stale data across phases
+```
+
+**3. Before Checkpoint Saves**:
+```bash
+# Before saving workflow state to checkpoint
+apply_pruning_policy "$workflow_type"
+save_checkpoint "orchestrate"
+
+# Ensures checkpoints only contain essential metadata, not full artifacts
+```
+
+### Pruning Policy Decision Tree
+
+Choose pruning aggressiveness based on workflow characteristics:
+
+**Aggressive Pruning** (orchestration workflows):
+```bash
+# Target: <20% context usage throughout
+apply_pruning_policy --mode aggressive --workflow orchestrate
+
+# Prunes:
+# - Full subagent outputs after metadata extraction
+# - Completed phase data after phase transitions
+# - Intermediate artifacts after final artifact created
+#
+# Retains:
+# - Artifact paths only
+# - 50-word summaries
+# - Workflow status
+
+# Best for: /orchestrate, multi-agent research, complex workflows
+# Context reduction: 90-95%
+```
+
+**Moderate Pruning** (implementation workflows):
+```bash
+# Target: 20-30% context usage
+apply_pruning_policy --mode moderate --workflow implement
+
+# Prunes:
+# - Subagent outputs after metadata extraction
+# - Test outputs after validation
+# - Build logs after successful build
+#
+# Retains:
+# - Recent phase metadata (last 2 phases)
+# - Current phase full context
+# - Error messages from failures
+
+# Best for: /implement, /plan, /debug
+# Context reduction: 70-85%
+```
+
+**Minimal Pruning** (single-agent workflows):
+```bash
+# Target: 30-50% context usage
+apply_pruning_policy --mode minimal --workflow document
+
+# Prunes:
+# - Only explicitly marked temporary data
+# - Large artifacts after reading
+#
+# Retains:
+# - Most workflow context
+# - Agent outputs
+# - Recent operations
+
+# Best for: /document, /refactor, /test
+# Context reduction: 40-60%
+```
+
+### Context Reduction Metrics
+
+**Measure Context Savings**:
+```bash
+# Before subagent invocation
+CONTEXT_BEFORE=$(get_context_size)
+
+# Invoke subagent
+Task { ... }
+
+# Extract metadata and prune
+metadata=$(extract_report_metadata "$report_path")
+prune_subagent_output "$subagent_id"
+
+# After pruning
+CONTEXT_AFTER=$(get_context_size)
+
+# Calculate reduction
+REDUCTION=$((100 - (CONTEXT_AFTER * 100 / CONTEXT_BEFORE)))
+echo "Context reduction: ${REDUCTION}%"
+
+# Log to metrics
+log_context_metrics "orchestrate" "$REDUCTION"
+```
+
+**Target Metrics**:
+- Per-subagent reduction: ≥90%
+- Per-phase reduction: ≥85%
+- Full workflow usage: <30% of available context
+
+### Pruning in Parallel Agent Coordination
+
+**Pattern**: Prune each subagent immediately after metadata extraction, not after all complete.
+
+**Sequential Pruning** (correct):
+```bash
+# Parallel agent invocations
+Task { subagent 1 } &
+Task { subagent 2 } &
+Task { subagent 3 } &
+
+# As each completes, extract metadata and prune immediately
+for agent_id in subagent_1 subagent_2 subagent_3; do
+  if agent_complete "$agent_id"; then
+    metadata=$(extract_agent_metadata "$agent_id")
+    prune_subagent_output "$agent_id"  # Prune immediately
+  fi
+done
+```
+
+**Batch Pruning** (incorrect - allows context to accumulate):
+```bash
+# Wait for all agents to complete
+wait_for_all_agents
+
+# Extract all metadata
+for agent_id in subagent_1 subagent_2 subagent_3; do
+  metadata=$(extract_agent_metadata "$agent_id")
+done
+
+# Prune all at once
+prune_all_subagent_outputs  # Too late - context already high
+```
+
+### Utility References
+
+**Context Pruning Functions** (`.claude/lib/context-pruning.sh`):
+```bash
+# Prune specific subagent
+prune_subagent_output "$agent_id"
+
+# Prune completed phase
+prune_phase_metadata "$phase_name"
+
+# Prune entire workflow
+prune_workflow_metadata "$workflow_type"
+
+# Apply policy-based pruning
+apply_pruning_policy --mode [aggressive|moderate|minimal] --workflow [name]
+```
+
+**Metadata Extraction** (`.claude/lib/artifact-operations.sh`):
+```bash
+# Extract before pruning
+extract_report_metadata "$report_path"
+extract_plan_metadata "$plan_path"
+load_metadata_on_demand "$artifact_path"  # Auto-detect + cache
+```
+
+**Context Measurement**:
+```bash
+# Get current context size (tokens)
+get_context_size
+
+# Log context metrics
+log_context_metrics "$command" "$reduction_percent"
+```
+
+### Example: Orchestrate Research Phase with Pruning
+
+```bash
+#!/usr/bin/env bash
+source .claude/lib/artifact-operations.sh
+source .claude/lib/context-pruning.sh
+
+# Launch 3 research agents in parallel
+Task { research-specialist: Topic 1 } &
+PID1=$!
+Task { research-specialist: Topic 2 } &
+PID2=$!
+Task { research-specialist: Topic 3 } &
+PID3=$!
+
+# As each completes, extract metadata and prune immediately
+for pid in $PID1 $PID2 $PID3; do
+  wait $pid
+  agent_output=$(get_agent_output "$pid")
+
+  # Extract metadata (path + 50-word summary)
+  report_path=$(echo "$agent_output" | grep -oP 'specs/[^[:space:]]+\.md')
+  metadata=$(extract_report_metadata "$report_path")
+
+  # Prune full output immediately
+  prune_subagent_output "agent_$pid"
+
+  # Log context reduction
+  echo "Pruned agent_$pid: 95% context reduction"
+done
+
+# After all agents complete, prune research phase before planning
+prune_phase_metadata "research"
+
+# Context usage: <30% (vs >80% without pruning)
+```
+
+**See Also**:
+- [Command Architecture Standards](command_architecture_standards.md#standard-8) for context pruning requirements (Standard 8)
+- [Forward Message Pattern](#forward-message-pattern) (this document) for no-paraphrase handoffs
 
 ## Command Integration
 

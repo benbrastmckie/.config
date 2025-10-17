@@ -10,6 +10,117 @@ This guide contains the ONLY correct pattern for agent invocation. Any command t
 
 This project uses specialized agent behaviors to handle specific workflow tasks. Agent behaviors are defined in `.claude/agents/` and are invoked using the `general-purpose` agent type with behavioral injection, following the supervisor pattern for multi-agent coordination.
 
+For command architecture standards and context preservation patterns, see [Command Architecture Standards](command_architecture_standards.md).
+
+## Layered Context Architecture
+
+Agent invocations use a layered context model to separate concerns and minimize context consumption:
+
+### Five Context Layers
+
+**1. Meta-Context (Behavioral Injection)**:
+- Agent behavior definition (read from `.claude/agents/[agent-name].md`)
+- Tool restrictions and allowed operations
+- Output format requirements
+- Passed via: `Read and follow: .claude/agents/[agent-name].md`
+- Size: ~0 tokens (agent reads file directly, not passed inline)
+
+**2. Operational Context (Task Instructions)**:
+- Specific task description and objectives
+- Step-by-step execution requirements
+- Success criteria and validation steps
+- Passed via: Task `prompt` parameter
+- Size: 200-500 tokens typical
+
+**3. Domain Context (Project Standards)**:
+- Project-specific coding standards (CLAUDE.md)
+- Language conventions and style guides
+- Testing protocols and coverage requirements
+- Passed via: Reference to CLAUDE.md + key constraints
+- Size: 50-100 tokens (reference + highlights, not full content)
+
+**4. Historical Context (Prior Phase Results)**:
+- Results from completed workflow phases
+- Artifacts created in previous steps
+- Key findings and recommendations
+- Passed via: Metadata only (path + 50-word summary)
+- Size: 250 tokens per artifact (vs 5000 tokens for full content)
+
+**5. Environmental Context (Workflow State)**:
+- Current phase in workflow
+- Checkpoint data and resume information
+- Progress tracking and completion status
+- Passed via: Minimal state JSON
+- Size: 100-200 tokens
+
+### Practical Example
+
+**Traditional Invocation** (bloated context):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    You are a Research Specialist. Your role is to analyze codebases and
+    gather implementation guidance... [500-word agent definition inline]
+
+    Research Topic: Authentication patterns
+
+    Project Standards: [Full CLAUDE.md content - 5000 tokens]
+
+    Prior Research: [Full report 1 content - 3000 tokens]
+                    [Full report 2 content - 2500 tokens]
+
+    Current Workflow State: [Detailed state - 500 tokens]
+}
+# Total: ~11,500 tokens
+```
+
+**Layered Invocation** (optimized):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns using research-specialist protocol"
+  prompt: |
+    # Layer 1: Meta-Context (0 tokens - file read)
+    Read and follow: .claude/agents/research-specialist.md
+
+    # Layer 2: Operational Context (300 tokens)
+    Research Topic: Authentication patterns in Lua applications
+
+    Requirements:
+    - Search codebase for existing auth implementations
+    - Research JWT vs sessions best practices
+    - Identify security considerations
+
+    Output: Create report at specs/042_auth/reports/001_patterns.md
+
+    # Layer 3: Domain Context (50 tokens)
+    Project Standards: CLAUDE.md
+    - Lua style: 2-space indent, snake_case
+    - Security: HTTPS only, no credentials in code
+
+    # Layer 4: Historical Context (250 tokens)
+    Prior Research:
+    - specs/041_api/reports/001_rest_patterns.md: "REST API patterns with OpenResty. Recommends JWT for stateless auth."
+
+    # Layer 5: Environmental Context (100 tokens)
+    Workflow Phase: research (1/5)
+    Thinking Mode: think hard
+}
+# Total: ~700 tokens (94% reduction)
+```
+
+### Benefits
+
+- **Context Reduction**: 90-95% reduction through metadata-only historical context
+- **Clarity**: Separation of concerns makes agent invocations easier to debug
+- **Reusability**: Meta-context (agent behaviors) shared across invocations
+- **Scalability**: Enables 10+ parallel agents without context exhaustion
+
+**See Also**:
+- [Command Architecture Standards](command_architecture_standards.md#layered-context-architecture) for complete layered context guidelines
+- [Hierarchical Agents Guide](hierarchical_agents.md#metadata-extraction) for metadata extraction patterns
+
 ## Critical: Agent Invocation Pattern
 
 **Available Agent Types** (via Task tool):
@@ -331,6 +442,137 @@ Choose agent based on primary task:
 - **Debugging**: debug-specialist
 - **Performance**: metrics-specialist
 - **Complexity Analysis**: complexity_estimator
+
+## Context-Efficient Agent Integration
+
+When integrating agents into multi-phase workflows, apply these context preservation patterns from Standards 6-8:
+
+### Pattern: Metadata-Only Passing (Standard 6)
+
+**Problem**: Passing full artifact content between agents consumes excessive context.
+
+**Solution**: Extract and pass only metadata (path + 50-word summary).
+
+**Implementation**:
+```bash
+# After research agent completes
+report_path="specs/042_auth/reports/001_patterns.md"
+
+# Extract metadata instead of reading full content
+source .claude/lib/artifact-operations.sh
+metadata=$(extract_report_metadata "$report_path")
+
+# Pass metadata to planning agent (250 tokens vs 5000 tokens)
+summary=$(echo "$metadata" | jq -r '.summary')  # 50 words max
+```
+
+**Reduction**: 95-99% context savings per artifact
+
+### Pattern: Forward Message (Standard 7)
+
+**Problem**: Primary agent re-summarizes subagent outputs, adding paraphrasing overhead.
+
+**Solution**: Pass subagent responses directly without re-summarization.
+
+**Implementation**:
+```bash
+# After subagent completes
+subagent_output="Research complete. Created report at specs/042_auth/reports/001_patterns.md.
+Summary: JWT vs sessions analysis..."
+
+# Extract handoff context (no paraphrasing)
+handoff=$(forward_message "$subagent_output")
+
+# Pass to next phase unchanged
+planning_context=$(echo "$handoff" | jq -r '.next_phase_context')
+```
+
+**Reduction**: Eliminates 200-300 token paraphrasing overhead per subagent
+
+### Pattern: Context Pruning (Standard 8)
+
+**Problem**: Completed phase data accumulates throughout workflow.
+
+**Solution**: Prune full content after metadata extraction, retain only paths.
+
+**Implementation**:
+```bash
+# After research phase completes
+source .claude/lib/context-pruning.sh
+
+# Prune research phase data
+prune_phase_metadata "research"
+
+# Completed phases now represented as:
+# { "phase": "research", "artifacts": ["path1", "path2"], "status": "complete" }
+# vs full content: 15000+ tokens
+```
+
+**Reduction**: 80-90% reduction in accumulated context
+
+### Metadata Extraction Examples
+
+**For Research Reports** (extract_report_metadata):
+```bash
+metadata=$(extract_report_metadata "specs/042_auth/reports/001_patterns.md")
+# Returns:
+# {
+#   "title": "Authentication Patterns Analysis",
+#   "summary": "JWT vs sessions comparison. JWT recommended for APIs, sessions for web apps. Security considerations: HTTPS, token expiry, refresh rotation.",
+#   "file_paths": ["lib/auth/jwt.lua", "lib/auth/sessions.lua"],
+#   "recommendations": ["Use JWT for API auth", "Use sessions for web", "Implement refresh token rotation"]
+# }
+```
+
+**For Implementation Plans** (extract_plan_metadata):
+```bash
+metadata=$(extract_plan_metadata "specs/042_auth/plans/001_implementation.md")
+# Returns:
+# {
+#   "title": "Authentication Implementation Plan",
+#   "complexity": "Medium",
+#   "phases": 5,
+#   "time_estimate": "6-8 hours",
+#   "success_criteria": 8
+# }
+```
+
+### Context Targets
+
+**Per-Artifact**:
+- Full content: 1000-5000 tokens
+- Metadata: 50-250 tokens
+- **Target reduction**: 80-95%
+
+**Per-Phase**:
+- Without metadata extraction: 5000-15000 tokens
+- With metadata extraction: 500-2000 tokens
+- **Target reduction**: 87-97%
+
+**Full Workflow**:
+- Without context management: 20000-50000 tokens
+- With context management: 2000-8000 tokens
+- **Target**: <30% context usage throughout
+
+### Utilities Reference
+
+**Metadata Extraction**: `.claude/lib/artifact-operations.sh`
+- `extract_report_metadata()` - Research reports
+- `extract_plan_metadata()` - Implementation plans
+- `load_metadata_on_demand()` - Auto-detection with caching
+
+**Forward Message**: `.claude/lib/artifact-operations.sh`
+- `forward_message()` - Extract handoff without paraphrasing
+- `parse_subagent_response()` - Parse structured JSON/YAML
+
+**Context Pruning**: `.claude/lib/context-pruning.sh`
+- `prune_subagent_output()` - Prune after metadata extraction
+- `prune_phase_metadata()` - Prune completed phases
+- `apply_pruning_policy()` - Automatic policy-based pruning
+
+**See Also**:
+- [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 details
+- [Hierarchical Agents Guide](hierarchical_agents.md) for complete context management architecture
 
 ## Command-Agent Matrix
 
