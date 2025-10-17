@@ -1048,7 +1048,7 @@ ${CHANGES_LIST}
 ## Test Plan
 ${TEST_PLAN}
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )
 
@@ -1107,7 +1107,7 @@ create_pr_or_fallback() {
 - Plan: [link to implementation plan]
 - Reports: [links to research reports]
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 **Best practices**:
