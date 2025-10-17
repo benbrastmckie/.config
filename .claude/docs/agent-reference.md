@@ -13,6 +13,8 @@ This reference provides:
 
 Use this as a quick decision guide for agent selection in command development.
 
+For command architecture standards and agent invocation patterns, see [Command Architecture Standards](command_architecture_standards.md).
+
 ## Agent Directory
 
 ### code-reviewer
@@ -306,6 +308,31 @@ Quick reference for which tools each agent can use:
 **Tool Restrictions**: Agents can ONLY use tools listed in their allowed-tools. Attempting to use unlisted tools will result in permission errors.
 
 **Invocation Pattern**: Always use `general-purpose` agent type with behavioral injection. See [Using Agents](using-agents.md) for complete pattern.
+
+## Context Preservation Requirements
+
+When using agents in multi-agent workflows, follow these context preservation patterns to minimize context window consumption:
+
+### Standards 6-8: Context Efficiency
+
+**Standard 6: Metadata-Only Passing** - Pass artifact references (path + 50-word summary) instead of full content between agents. Achieves 99% context reduction.
+
+**Standard 7: Forward Message Pattern** - Pass subagent responses directly to next phase without re-summarization. Eliminates paraphrasing overhead (200-300 tokens per agent).
+
+**Standard 8: Context Pruning** - Prune full content after metadata extraction. Retain only artifact paths and metadata. Achieves 80-90% reduction in accumulated context.
+
+### Utilities
+
+- `extract_report_metadata()` - Extract title + 50-word summary from research reports (`.claude/lib/artifact-operations.sh`)
+- `extract_plan_metadata()` - Extract complexity + phase count from implementation plans
+- `forward_message()` - Extract handoff context from subagent output without paraphrasing
+- `prune_subagent_output()` - Remove full output after metadata extraction (`.claude/lib/context-pruning.sh`)
+
+### Target
+
+Maintain <30% context usage throughout multi-agent workflows through aggressive metadata extraction and pruning.
+
+**See Also**: [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for complete details on Standards 6-8.
 
 ## Quick Invocation Template
 
