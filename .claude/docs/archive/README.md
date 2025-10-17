@@ -19,6 +19,11 @@ For current, up-to-date documentation, refer to the main documentation directory
 
 ## Archived Documents
 
+### Documentation Consolidation (2025-10-17)
+
+- **topic_based_organization.md** - Topic-based organization guide (consolidated into directory-protocols.md)
+- **artifact_organization.md** - Artifact organization guide (consolidated into directory-protocols.md)
+
 ### Migration Guides
 
 - **migration-guide-adaptive-plans.md** - Migration guide for adaptive planning tier system (superseded by integrated documentation)
