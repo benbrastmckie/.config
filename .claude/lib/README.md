@@ -920,24 +920,46 @@ SUGGESTIONS=$(suggest_structure_improvements "$EVAL")
 
 #### analyze-metrics.sh (579 lines)
 
-Performance and workflow metrics analysis.
+Performance and workflow metrics analysis. Consolidates functionality from deprecated workflow-metrics.sh.
+
+**Features:**
+- **Workflow timing analysis** - Duration, phase counts, average times
+- **Agent performance tracking** - Invocation stats, success rates, duration averages
+- **Complexity evaluation metrics** - Method usage, discrepancies, agent invocation rates
+- **Markdown report generation** - Human-readable performance summaries
 
 **Key Functions:**
 - `collect_workflow_metrics()` - Collect metrics from workflow execution
 - `generate_metrics_report()` - Generate performance report
 - `analyze_agent_performance()` - Analyze agent performance patterns
 - `identify_bottlenecks()` - Identify workflow bottlenecks
+- `aggregate_workflow_times()` - Extract timing data from adaptive-planning.log
+- `aggregate_agent_metrics()` - Extract agent performance from agent-registry.json
+- `aggregate_complexity_metrics()` - Extract complexity evaluation statistics
 
 **Usage Example:**
 ```bash
 source .claude/lib/analyze-metrics.sh
 
-# Collect metrics
+# Collect workflow metrics
 METRICS=$(collect_workflow_metrics "$WORKFLOW_TYPE")
 
-# Generate report
+# Aggregate timing data
+TIMING=$(aggregate_workflow_times)
+DURATION=$(echo "$TIMING" | jq -r '.workflow_duration_seconds')
+
+# Generate full performance report
 generate_metrics_report "$METRICS" > report.md
 ```
+
+**Data Sources:**
+- `.claude/logs/adaptive-planning.log` - Workflow timing markers
+- `.claude/agents/agent-registry.json` - Agent performance data
+
+**Report Sections:**
+1. Workflow Summary - Duration, phases, average time
+2. Agent Performance - Per-agent statistics table
+3. Complexity Evaluation - Method distribution and metrics
 
 **Used By:** `/analyze`
 
@@ -1021,22 +1043,51 @@ list_available_templates "feature"
 
 #### progress-dashboard.sh (351 lines)
 
-Real-time progress tracking for long-running operations.
+Progress dashboard rendering utility for real-time visual feedback during implementation workflows.
+
+**Features:**
+- **Terminal capability detection** - Automatically detects ANSI support
+- **ANSI rendering** - In-place updates using ANSI escape codes
+- **Unicode box-drawing** - Professional layout with Unicode characters
+- **Graceful fallback** - Falls back to PROGRESS markers on unsupported terminals
+- **Parallel execution support** - Wave-based execution visualization
 
 **Key Functions:**
-- `init_dashboard()` - Initialize progress dashboard
-- `update_progress()` - Update progress indicators
-- `show_dashboard()` - Display current progress
-- `log_progress_event()` - Log progress event
+- `detect_terminal_capabilities()` - Detects terminal support for ANSI rendering
+- `render_dashboard()` - Renders the complete dashboard with all information
+- `initialize_dashboard()` - Initializes dashboard by reserving screen space
+- `update_dashboard_phase()` - Updates phase status
+- `clear_dashboard()` - Clears dashboard area on completion or error
+- `render_progress_markers()` - Fallback rendering using PROGRESS markers
 
 **Usage Example:**
 ```bash
 source .claude/lib/progress-dashboard.sh
 
-init_dashboard "Implementation" 5
-update_progress 3 "Phase 3: Testing"
-show_dashboard
+# Initialize dashboard
+initialize_dashboard "My Implementation Plan" 5
+
+# Render full dashboard
+render_dashboard \
+  "My Plan" \
+  2 \
+  5 \
+  '[{"number":1,"name":"Setup","status":"completed"}]' \
+  323 \
+  492 \
+  "Running tests" \
+  '{"name":"auth_test","status":"pass"}' \
+  '{"wave_num":2,"total_waves":3,"phases_in_wave":2,"parallel":true}'
+
+# Clear dashboard on completion
+clear_dashboard
 ```
+
+**Integration:** Automatically used by `/implement` when `--dashboard` flag is provided
+
+**Supported Terminals:** bash with xterm-256color, zsh with color support, tmux with 256 colors, GNOME Terminal, Konsole (Linux), iTerm2, Terminal.app (macOS)
+
+**Unsupported Terminals:** Emacs shell (TERM=dumb), non-interactive contexts, terminals without tput, terminals with <8 colors
 
 **Used By:** `/implement`, `/orchestrate`
 
