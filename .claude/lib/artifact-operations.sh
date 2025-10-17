@@ -2435,6 +2435,211 @@ EOF
 }
 
 # ==============================================================================
+# Recursive Supervision Support
+# ==============================================================================
+
+# Supervision depth tracking (global variable)
+SUPERVISION_DEPTH=${SUPERVISION_DEPTH:-0}
+MAX_SUPERVISION_DEPTH=3
+
+# invoke_sub_supervisor: Invoke sub-supervisor for complex multi-level workflows
+# Usage: invoke_sub_supervisor <task-domain> <subagent-count> <task-list-json> [max-words]
+# Returns: JSON with summary and artifact metadata
+# Example: invoke_sub_supervisor "security_research" 2 '[{"task":"Auth patterns"},{"task":"Security practices"}]' 100
+invoke_sub_supervisor() {
+  local task_domain="${1:-}"
+  local subagent_count="${2:-2}"
+  local task_list_json="${3:-[]}"
+  local max_words="${4:-100}"
+
+  if [ -z "$task_domain" ]; then
+    echo "Usage: invoke_sub_supervisor <task-domain> <subagent-count> <task-list-json> [max-words]" >&2
+    return 1
+  fi
+
+  # Check depth limit
+  SUPERVISION_DEPTH=$((SUPERVISION_DEPTH + 1))
+  if [ "$SUPERVISION_DEPTH" -gt "$MAX_SUPERVISION_DEPTH" ]; then
+    echo "{\"error\":\"Maximum supervision depth ($MAX_SUPERVISION_DEPTH) exceeded\"}" >&2
+    SUPERVISION_DEPTH=$((SUPERVISION_DEPTH - 1))
+    return 1
+  fi
+
+  # Load sub-supervisor template
+  local template_file="${CLAUDE_PROJECT_DIR}/.claude/templates/sub_supervisor_pattern.md"
+  if [ ! -f "$template_file" ]; then
+    echo "{\"error\":\"Sub-supervisor template not found: $template_file\"}" >&2
+    SUPERVISION_DEPTH=$((SUPERVISION_DEPTH - 1))
+    return 1
+  fi
+
+  # Convert task list JSON to numbered list
+  local task_list=""
+  if command -v jq &> /dev/null; then
+    local idx=1
+    while IFS= read -r task; do
+      if [ -n "$task" ]; then
+        task_list="${task_list}${idx}. ${task}"$'\n'
+        idx=$((idx + 1))
+      fi
+    done < <(echo "$task_list_json" | jq -r '.[] | .task')
+  fi
+
+  # Build sub-supervisor prompt from template (use awk to avoid sed multiline issues)
+  local sub_supervisor_prompt=$(cat "$template_file" | awk \
+    -v n="$subagent_count" \
+    -v domain="$task_domain" \
+    -v words="$max_words" \
+    -v tasks="$task_list" \
+    '{
+      gsub(/{N}/, n);
+      gsub(/{task_domain}/, domain);
+      gsub(/{max_words}/, words);
+      if (/{task_list}/) {
+        sub(/{task_list}/, tasks);
+      }
+      print
+    }')
+
+  # Log sub-supervisor invocation
+  local log_dir="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
+  mkdir -p "$log_dir"
+  local supervision_log="$log_dir/supervision-tree.log"
+
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] SUB-SUPERVISOR INVOKED:" >> "$supervision_log"
+  echo "  Domain: $task_domain" >> "$supervision_log"
+  echo "  Depth: $SUPERVISION_DEPTH" >> "$supervision_log"
+  echo "  Subagent Count: $subagent_count" >> "$supervision_log"
+  echo "---" >> "$supervision_log"
+
+  # Note: Actual agent invocation must be done by command layer using Task tool
+  # This function prepares the prompt and returns invocation metadata
+
+  local invocation_metadata=$(jq -n \
+    --arg prompt "$sub_supervisor_prompt" \
+    --arg domain "$task_domain" \
+    --arg depth "$SUPERVISION_DEPTH" \
+    --arg count "$subagent_count" \
+    '{
+      sub_supervisor_prompt: $prompt,
+      task_domain: $domain,
+      supervision_depth: ($depth | tonumber),
+      subagent_count: ($count | tonumber),
+      requires_agent_invocation: true
+    }')
+
+  # Decrement depth when returning (will be incremented again if sub-supervisor invokes another)
+  SUPERVISION_DEPTH=$((SUPERVISION_DEPTH - 1))
+
+  echo "$invocation_metadata"
+}
+
+# track_supervision_depth: Track and validate supervision depth
+# Usage: track_supervision_depth <operation>
+# Operations: increment, decrement, reset, check
+# Example: track_supervision_depth increment
+track_supervision_depth() {
+  local operation="${1:-check}"
+
+  case "$operation" in
+    increment)
+      SUPERVISION_DEPTH=$((SUPERVISION_DEPTH + 1))
+      if [ "$SUPERVISION_DEPTH" -gt "$MAX_SUPERVISION_DEPTH" ]; then
+        echo "ERROR: Maximum supervision depth ($MAX_SUPERVISION_DEPTH) exceeded" >&2
+        SUPERVISION_DEPTH=$((SUPERVISION_DEPTH - 1))
+        return 1
+      fi
+      echo "$SUPERVISION_DEPTH"
+      ;;
+    decrement)
+      if [ "$SUPERVISION_DEPTH" -gt 0 ]; then
+        SUPERVISION_DEPTH=$((SUPERVISION_DEPTH - 1))
+      fi
+      echo "$SUPERVISION_DEPTH"
+      ;;
+    reset)
+      SUPERVISION_DEPTH=0
+      echo "$SUPERVISION_DEPTH"
+      ;;
+    check)
+      echo "$SUPERVISION_DEPTH"
+      ;;
+    *)
+      echo "Usage: track_supervision_depth <increment|decrement|reset|check>" >&2
+      return 1
+      ;;
+  esac
+}
+
+# generate_supervision_tree: Generate ASCII tree showing supervisor hierarchy
+# Usage: generate_supervision_tree <workflow-state-json>
+# Returns: ASCII tree visualization
+# Example: generate_supervision_tree "$workflow_state"
+generate_supervision_tree() {
+  local workflow_state_json="${1:-{}}"
+
+  if [ -z "$workflow_state_json" ] || [ "$workflow_state_json" = "{}" ]; then
+    echo "No supervision hierarchy to display"
+    return 0
+  fi
+
+  # Parse workflow state for supervision structure
+  local tree_output="Orchestrator\n"
+
+  if command -v jq &> /dev/null; then
+    # Extract supervisor information
+    local supervisor_count=$(echo "$workflow_state_json" | jq -r '.supervisors | length' 2>/dev/null | tr -d '\n' || echo "0")
+    supervisor_count=${supervisor_count:-0}
+
+    if [ "$supervisor_count" -gt 0 ]; then
+      local idx=0
+      while [ "$idx" -lt "$supervisor_count" ]; do
+        local supervisor_name=$(echo "$workflow_state_json" | jq -r ".supervisors[$idx].name" 2>/dev/null || echo "Unknown")
+        local subagent_count=$(echo "$workflow_state_json" | jq ".supervisors[$idx].subagents | length" 2>/dev/null || echo "0")
+
+        # Determine tree connector
+        local connector="├──"
+        if [ "$idx" -eq $((supervisor_count - 1)) ]; then
+          connector="└──"
+        fi
+
+        tree_output="${tree_output}${connector} ${supervisor_name} (${subagent_count} subagents)\n"
+
+        # Add subagents
+        if [ "$subagent_count" -gt 0 ]; then
+          local sub_idx=0
+          while [ "$sub_idx" -lt "$subagent_count" ]; do
+            local agent_name=$(echo "$workflow_state_json" | jq -r ".supervisors[$idx].subagents[$sub_idx].name" 2>/dev/null || echo "Agent")
+            local artifact_path=$(echo "$workflow_state_json" | jq -r ".supervisors[$idx].subagents[$sub_idx].artifact" 2>/dev/null || echo "")
+
+            local sub_connector="│   ├──"
+            if [ "$sub_idx" -eq $((subagent_count - 1)) ]; then
+              sub_connector="│   └──"
+            fi
+            if [ "$idx" -eq $((supervisor_count - 1)) ]; then
+              sub_connector="    ${sub_connector:4}"
+            fi
+
+            tree_output="${tree_output}${sub_connector} ${agent_name}"
+            if [ -n "$artifact_path" ] && [ "$artifact_path" != "null" ]; then
+              tree_output="${tree_output} → ${artifact_path}\n"
+            else
+              tree_output="${tree_output}\n"
+            fi
+
+            sub_idx=$((sub_idx + 1))
+          done
+        fi
+
+        idx=$((idx + 1))
+      done
+    fi
+  fi
+
+  echo -e "$tree_output"
+}
+
+# ==============================================================================
 # Export Functions
 # ==============================================================================
 
@@ -2500,4 +2705,9 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f forward_message
   export -f parse_subagent_response
   export -f build_handoff_context
+
+  # Recursive supervision functions
+  export -f invoke_sub_supervisor
+  export -f track_supervision_depth
+  export -f generate_supervision_tree
 fi
