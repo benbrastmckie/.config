@@ -18,36 +18,37 @@ This directory provides:
 docs/
 ├── README.md                          Main documentation index
 │
-Core System Guides/
+Core System Guides (5)
 ├── command-reference.md               Complete command catalog
 ├── agent-reference.md                 Complete agent catalog
 ├── claude-md-section-schema.md        CLAUDE.md section format
-└── command_architecture_standards.md  Command/agent architecture standards
+├── command_architecture_standards.md  Command/agent architecture standards
+└── phase_dependencies.md              Wave-based parallel execution
 │
-Advanced Features/
+Advanced Features (7)
 ├── orchestration-guide.md             Multi-agent workflows
 ├── adaptive-planning-guide.md         Progressive plans and checkpointing
 ├── template-system-guide.md           Template-based planning
 ├── efficiency-guide.md                Performance optimization
-└── error-enhancement-guide.md         Error handling patterns
+├── error-enhancement-guide.md         Error handling patterns
+├── artifact_organization.md           Topic-based artifact structure
+└── spec_updater_guide.md              Spec updater agent guide
 │
-Development Guides/
+Development Guides (8)
 ├── creating-commands.md               Command development guide
 ├── creating-agents.md                 Agent creation guide
 ├── using-agents.md                    Agent integration patterns
 ├── standards-integration.md           Standards discovery and application
-└── command-patterns.md                Command pattern catalog
+├── command-patterns.md                Command pattern catalog
+├── command-examples.md                Reusable command patterns
+└── logging-patterns.md                Standardized logging formats
 │
-Integration Guides/
+Integration Guides (2)
 ├── tts-integration-guide.md           TTS system setup
-├── tts-message-examples.md            TTS message formats
 └── conversion-guide.md                Document conversion
 │
-Migration/
-└── migration-guide-adaptive-plans.md  Adaptive planning migration
-│
-Archived/
-└── archived/                          Deprecated documentation (preserved)
+Archive/
+└── archive/                           Historical documentation
 ```
 
 ## Quick Start by Role
@@ -153,6 +154,25 @@ Archived/
 
 ---
 
+#### phase_dependencies.md
+**Purpose**: Wave-based parallel execution with phase dependencies
+
+**Contents**:
+- Dependency syntax and formats
+- Validation rules (no cycles, no forward deps)
+- Wave calculation using Kahn's algorithm
+- Common dependency patterns (fan-out, fan-in, diamond)
+- Performance optimization strategies
+- Integration with /orchestrate and /implement
+
+**Use Cases**:
+- Declaring phase dependencies in implementation plans
+- Understanding wave-based execution
+- Optimizing parallelization (40-60% time savings)
+- Troubleshooting dependency errors
+
+---
+
 ### Advanced Features
 
 #### orchestration-guide.md
@@ -236,6 +256,44 @@ Archived/
 - Improving error messages
 - Implementing error recovery
 - Debugging command failures
+
+---
+
+#### artifact_organization.md
+**Purpose**: Topic-based artifact organization system
+
+**Contents**:
+- Directory structure (`specs/{NNN_topic}/`)
+- Artifact taxonomy (reports, plans, summaries, debug, scripts, outputs)
+- Gitignore rules (debug/ committed, others gitignored)
+- Artifact lifecycle management
+- Shell utilities for artifact operations
+- Cleanup patterns for temporary artifacts
+
+**Use Cases**:
+- Understanding spec directory organization
+- Managing workflow artifacts
+- Creating debug reports and investigation scripts
+- Cleaning up temporary files after workflows
+
+---
+
+#### spec_updater_guide.md
+**Purpose**: Spec updater agent usage and integration
+
+**Contents**:
+- Agent responsibilities (artifact management, cross-references, organization)
+- Usage patterns from /orchestrate, /implement, /plan
+- Debug report creation workflows
+- Investigation script creation
+- Implementation summary generation
+- Gitignore compliance verification
+
+**Use Cases**:
+- Using spec updater agent in commands
+- Creating properly structured artifacts
+- Maintaining cross-references between artifacts
+- Understanding topic-based artifact structure
 
 ---
 
@@ -332,6 +390,43 @@ Archived/
 
 ---
 
+#### command-examples.md
+**Purpose**: Reusable command patterns and examples
+
+**Contents**:
+- Dry-run mode examples with analysis output
+- Dashboard progress tracking patterns
+- Checkpoint save/restore workflows
+- Test execution patterns
+- Git commit patterns with pre-commit validation
+
+**Use Cases**:
+- Implementing dry-run mode in commands
+- Adding progress dashboards
+- Creating resumable workflows with checkpoints
+- Standardizing test execution
+- Automating git commits
+
+---
+
+#### logging-patterns.md
+**Purpose**: Standardized logging patterns for agents and commands
+
+**Contents**:
+- Progress markers (PROGRESS: format)
+- Structured logging format
+- Error logging patterns with recovery suggestions
+- Summary report format
+- File path output format (REPORT_PATH, PLAN_PATH, etc.)
+
+**Use Cases**:
+- Implementing consistent logging in commands
+- Parsing agent output programmatically
+- Providing actionable error messages
+- Creating workflow summaries
+
+---
+
 ### Integration Guides
 
 #### tts-integration-guide.md
@@ -340,32 +435,16 @@ Archived/
 **Contents**:
 - Architecture overview
 - Configuration guide
-- Category descriptions
-- Message customization
+- Category descriptions (completion and permission notifications)
+- Message customization (uniform "directory, branch" format)
+- Integration with commands
 - Troubleshooting
 
 **Use Cases**:
 - Setting up TTS notifications
 - Understanding TTS flow
-- Customizing messages
+- Customizing voice parameters
 - Debugging TTS issues
-
----
-
-#### tts-message-examples.md
-**Purpose**: Example TTS messages for all categories
-
-**Contents**:
-- Message format examples
-- Context variations
-- Voice parameter effects
-- Customization examples
-- Common patterns
-
-**Use Cases**:
-- Understanding message format
-- Customizing TTS messages
-- Testing TTS output
 
 ---
 
@@ -506,6 +585,7 @@ Before committing:
 - [agent-reference.md](agent-reference.md) - Agent catalog
 - [claude-md-section-schema.md](claude-md-section-schema.md) - Section schema
 - [command_architecture_standards.md](command_architecture_standards.md) - Architecture standards
+- [phase_dependencies.md](phase_dependencies.md) - Wave-based execution
 
 **Advanced Features**:
 - [orchestration-guide.md](orchestration-guide.md) - Multi-agent workflows
@@ -513,6 +593,8 @@ Before committing:
 - [template-system-guide.md](template-system-guide.md) - Plan templates
 - [efficiency-guide.md](efficiency-guide.md) - Performance optimization
 - [error-enhancement-guide.md](error-enhancement-guide.md) - Error handling
+- [artifact_organization.md](artifact_organization.md) - Artifact structure
+- [spec_updater_guide.md](spec_updater_guide.md) - Spec updater agent
 
 **Development Guides**:
 - [creating-commands.md](creating-commands.md) - Command development
@@ -520,10 +602,11 @@ Before committing:
 - [using-agents.md](using-agents.md) - Agent integration
 - [standards-integration.md](standards-integration.md) - Standards usage
 - [command-patterns.md](command-patterns.md) - Pattern catalog
+- [command-examples.md](command-examples.md) - Command examples
+- [logging-patterns.md](logging-patterns.md) - Logging standards
 
 **Integration Guides**:
 - [tts-integration-guide.md](tts-integration-guide.md) - TTS setup
-- [tts-message-examples.md](tts-message-examples.md) - TTS messages
 - [conversion-guide.md](conversion-guide.md) - Document conversion
 
 ### By Topic
@@ -560,7 +643,6 @@ Before committing:
 
 **TTS**:
 - [tts-integration-guide.md](tts-integration-guide.md)
-- [tts-message-examples.md](tts-message-examples.md)
 
 **Conversion**:
 - [conversion-guide.md](conversion-guide.md)
@@ -669,7 +751,6 @@ See: [standards-integration.md](standards-integration.md)
 
 ### TTS System
 - [tts-integration-guide.md](tts-integration-guide.md)
-- [tts-message-examples.md](tts-message-examples.md)
 - [../tts/README.md](../tts/README.md)
 - [../hooks/tts-dispatcher.sh](../hooks/tts-dispatcher.sh)
 
