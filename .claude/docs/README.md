@@ -297,6 +297,110 @@ Archive/
 
 ---
 
+### Architecture and System Patterns
+
+#### Context Preservation Utilities
+**Purpose**: Metadata extraction and context-efficient artifact passing
+
+**Contents**:
+- Metadata extraction utilities (extract_report_metadata, extract_plan_metadata)
+- Forward message pattern for subagent responses
+- Context pruning workflows and policies
+- Layered context architecture (5 layers: Meta/Operational/Domain/Historical/Environmental)
+- Context reduction metrics (95% reduction: 5000 tokens → 250 tokens)
+
+**Use Cases**:
+- Passing reports/plans between agents without full content
+- Reducing context usage in multi-agent workflows
+- Maintaining <30% context usage throughout orchestration
+- Implementing metadata-only artifact references
+
+**See Also**:
+- [command_architecture_standards.md](command_architecture_standards.md#context-preservation-standards) - Standards 6-8
+- [orchestration-guide.md](orchestration-guide.md) - Context pruning workflows
+- [using-agents.md](using-agents.md) - Layered context architecture
+- [hierarchical_agents.md](hierarchical_agents.md) - Context pruning for multi-agent coordination
+- `.claude/lib/artifact-operations.sh` - Metadata extraction utilities
+- `.claude/lib/context-pruning.sh` - Context pruning utilities
+
+---
+
+#### Pattern Libraries
+**Purpose**: Reusable procedure patterns for commands (bash-patterns, implementation-patterns)
+
+**Contents**:
+- Bash utility patterns (utility initialization, checkpoint setup, metadata extraction)
+- Implementation workflow patterns (phase-by-phase execution, test-after-phase, git commits)
+- Variable substitution syntax for pattern adaptation
+- Cross-references to command architecture standards (Standard 9)
+
+**Use Cases**:
+- Reducing command file size by extracting procedures
+- Standardizing utility initialization across commands
+- Implementing consistent checkpoint workflows
+- Following DRY principles for command development
+
+**See Also**:
+- `.claude/templates/bash-patterns.yaml` - Bash procedure patterns (Phase 6, to be created)
+- `.claude/templates/implementation-patterns.yaml` - Implementation workflow patterns (Phase 6, to be created)
+- [command_architecture_standards.md](command_architecture_standards.md#standard-9) - Pattern extraction guidelines
+- [creating-commands.md](creating-commands.md) - Pattern library integration
+- [command-patterns.md](command-patterns.md) - Command pattern catalog
+
+---
+
+#### Spec Maintenance
+**Purpose**: Artifact lifecycle management and cross-referencing protocols
+
+**Contents**:
+- Bidirectional cross-referencing (reports ↔ plans ↔ summaries)
+- Artifact lifecycle stages (Creation → Usage → Completion → Archival)
+- Retention policies (debug: permanent, scripts: 0-day, artifacts: 30-day)
+- Gitignore compliance (debug/ committed, other artifacts gitignored)
+- Spec updater agent integration patterns
+- Cleanup automation utilities
+
+**Use Cases**:
+- Creating properly cross-referenced artifacts
+- Managing artifact lifecycle from creation to archival
+- Automating cleanup of temporary artifacts
+- Maintaining bidirectional links between plans and reports
+- Validating gitignore compliance
+
+**See Also**:
+- [spec_updater_guide.md](spec_updater_guide.md) - Spec updater agent guide
+- [artifact_organization.md](artifact_organization.md) - Artifact lifecycle management
+- [topic_based_organization.md](topic_based_organization.md) - Gitignore compliance protocols
+- `.claude/lib/artifact-operations.sh` - Bidirectional cross-referencing utilities
+
+---
+
+#### Topic-Based Organization
+**Purpose**: Unified artifact organization system (`specs/{NNN_topic}/`)
+
+**Contents**:
+- Topic directory structure with numbered topics (001, 002, 003...)
+- Artifact subdirectories (plans/, reports/, summaries/, debug/, scripts/, outputs/)
+- Topic creation and management utilities
+- Cross-topic linking for related features
+- Metadata-only artifact references
+- Context-efficient artifact usage patterns
+
+**Use Cases**:
+- Organizing all artifacts for a feature in one directory
+- Creating and managing topic directories
+- Migrating legacy flat structure to topic-based structure
+- Implementing cross-topic references
+- Following gitignore compliance protocols
+
+**See Also**:
+- [topic_based_organization.md](topic_based_organization.md) - Complete topic organization guide
+- [directory-protocols.md](directory-protocols.md) - Directory structure protocols
+- [artifact_organization.md](artifact_organization.md) - Artifact taxonomy and lifecycle
+- `.claude/lib/template-integration.sh` - Topic management utilities
+
+---
+
 ### Development Guides
 
 #### creating-commands.md
