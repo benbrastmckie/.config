@@ -22,7 +22,7 @@ source "$SCRIPT_DIR/timestamp-utils.sh"
 # ==============================================================================
 
 # Schema version for checkpoint format
-readonly CHECKPOINT_SCHEMA_VERSION="1.2"
+readonly CHECKPOINT_SCHEMA_VERSION="1.3"
 
 # Checkpoint directory
 readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints"
@@ -119,7 +119,22 @@ save_checkpoint() {
         replan_history: ($state.replan_history // []),
         debug_report_path: ($state.debug_report_path // null),
         user_last_choice: ($state.user_last_choice // null),
-        debug_iteration_count: ($state.debug_iteration_count // 0)
+        debug_iteration_count: ($state.debug_iteration_count // 0),
+        topic_directory: ($state.topic_directory // null),
+        topic_number: ($state.topic_number // null),
+        context_preservation: ($state.context_preservation // {
+          pruning_log: [],
+          artifact_metadata_cache: {},
+          subagent_output_references: []
+        }),
+        template_source: ($state.template_source // null),
+        template_variables: ($state.template_variables // null),
+        spec_maintenance: ($state.spec_maintenance // {
+          parent_plan_path: null,
+          grandparent_plan_path: null,
+          spec_updater_invocations: [],
+          checkbox_propagation_log: []
+        })
       }')
   else
     # Fallback: Basic JSON construction without jq
@@ -316,10 +331,40 @@ migrate_checkpoint_format() {
   # Migrate from 1.1 to 1.2 (add debug fields)
   if [ "$current_version" = "1.1" ]; then
     jq '. + {
-      schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+      schema_version: "1.2",
       debug_report_path: (.debug_report_path // null),
       user_last_choice: (.user_last_choice // null),
       debug_iteration_count: (.debug_iteration_count // 0)
+    }' "$checkpoint_file" > "${checkpoint_file}.migrated"
+
+    # Replace original with migrated version
+    mv "${checkpoint_file}.migrated" "$checkpoint_file"
+    current_version="1.2"
+  fi
+
+  # Migrate from 1.2 to 1.3 (add topic, context preservation, template, and spec maintenance fields)
+  if [ "$current_version" = "1.2" ]; then
+    # Extract topic info from workflow_state if available
+    local topic_dir=$(jq -r '.workflow_state.topic_directory // null' "$checkpoint_file")
+    local topic_num=$(jq -r '.workflow_state.topic_number // null' "$checkpoint_file")
+
+    jq '. + {
+      schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+      topic_directory: (if .workflow_state.topic_directory then .workflow_state.topic_directory else null end),
+      topic_number: (if .workflow_state.topic_number then .workflow_state.topic_number else null end),
+      context_preservation: (.context_preservation // {
+        pruning_log: [],
+        artifact_metadata_cache: {},
+        subagent_output_references: []
+      }),
+      template_source: (if .workflow_state.template_source then .workflow_state.template_source else null end),
+      template_variables: (if .workflow_state.template_variables then .workflow_state.template_variables else null end),
+      spec_maintenance: (.spec_maintenance // {
+        parent_plan_path: null,
+        grandparent_plan_path: null,
+        spec_updater_invocations: [],
+        checkbox_propagation_log: []
+      })
     }' "$checkpoint_file" > "${checkpoint_file}.migrated"
 
     # Replace original with migrated version
