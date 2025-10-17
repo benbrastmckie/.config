@@ -659,7 +659,7 @@ mv specs/ specs_migrated/
 mv specs.backup/ specs/
 ```
 
-See `.claude/docs/specs_migration_guide.md` for detailed migration instructions.
+See `.claude/docs/archive/specs_migration_guide.md` for detailed migration instructions (archived).
 
 ---
 
@@ -786,8 +786,8 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 
 - **CLAUDE.md**: Spec Updater Integration section (artifact lifecycle summary)
 - **spec_updater_guide.md**: Spec updater agent usage and patterns
-- **specs_migration_guide.md**: Detailed migration from flat to topic-based structure
-- **orchestration_enhancement_guide.md**: Usage of artifacts in orchestration workflows
+- **archive/specs_migration_guide.md**: Detailed migration from flat to topic-based structure (archived)
+- **archive/orchestration_enhancement_guide.md**: Usage of artifacts in orchestration workflows (archived)
 
 ---
 
