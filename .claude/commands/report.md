@@ -89,7 +89,83 @@ REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "$REPORT_NAME" "$REPO
 - Automatic subdirectory creation
 - Single utility manages all artifact creation
 
-### 4. Research Phase
+### 4. Spec-Updater Agent Invocation
+
+**IMPORTANT**: After the report file is created and written, invoke the spec-updater agent to update cross-references and link the report to related plans.
+
+This step ensures the report is properly integrated into the topic structure and cross-referenced with related artifacts.
+
+#### Step 4.1: Invoke Spec-Updater Agent
+
+Use the Task tool to invoke the spec-updater agent:
+
+```
+Task tool invocation:
+subagent_type: general-purpose
+description: "Update cross-references for new report"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/spec-updater.md
+
+  You are acting as a Spec Updater Agent.
+
+  Context:
+  - Report created at: {report_path}
+  - Topic directory: {topic_dir}
+  - Related plan (if exists): {plan_path}
+  - Operation: report_creation
+
+  Tasks:
+  1. Check if a plan exists in the topic's plans/ subdirectory
+
+  2. If related plan exists:
+     - Add report reference to plan metadata
+     - Update plan's "Research Reports" section
+     - Use relative path (e.g., ../reports/NNN_report.md)
+
+  3. If no plan exists yet:
+     - Note that report is standalone research
+     - Report can be referenced when plan is created later
+
+  4. Validate cross-references are bidirectional:
+     - Report includes link to plan (if applicable)
+     - Plan includes link to report (if applicable)
+
+  5. Verify topic subdirectories are present
+
+  Return:
+  - Cross-reference update status
+  - Plan files modified (if any)
+  - Confirmation that report is ready for use
+  - Any warnings or issues encountered
+```
+
+#### Step 4.2: Handle Spec-Updater Response
+
+After spec-updater completes:
+- Display cross-reference status to user
+- If plan was updated: Show which plan file was modified
+- If warnings/issues: Show them and suggest fixes
+- If successful: Confirm report is ready
+
+**Example Output**:
+```
+Cross-references updated:
+✓ Report linked to plan: specs/042_auth/plans/001_implementation.md
+✓ Plan metadata updated with report reference
+✓ All links validated
+```
+
+or if no plan exists:
+
+```
+Report created successfully:
+✓ Standalone research report (no plan yet)
+✓ Report will be available for future plan creation
+✓ Topic structure verified
+```
+
+### 5. Research Phase
 I'll conduct thorough research by:
 - **Code Analysis**: Examining relevant source files
 - **Documentation Review**: Reading existing docs and comments
@@ -97,7 +173,7 @@ I'll conduct thorough research by:
 - **Dependency Mapping**: Understanding relationships between components
 - **Web Research** (if needed): Gathering external context and best practices
 
-### 5. Report Structure
+### 6. Report Structure
 The report will include:
 - **Executive Summary**: Brief overview of findings
 - **Background**: Context and problem space
@@ -107,7 +183,7 @@ The report will include:
 - **Recommendations**: Suggested improvements or next steps
 - **References**: Links to relevant files and resources
 
-### 6. Report Metadata
+### 7. Report Metadata
 Each report will include:
 - **Topic Directory**: Path to the topic directory (e.g., `specs/042_authentication/`)
 - **Report Number**: Three-digit number within this topic's reports/ subdirectory
