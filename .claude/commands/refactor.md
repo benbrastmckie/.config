@@ -120,67 +120,19 @@ I'll create a comprehensive refactoring report in `specs/reports/`:
 - Name format: `NNN_refactoring_[scope].md`
 
 #### Report Structure
-```markdown
-# Refactoring Analysis: [Scope]
 
-## Metadata
-- **Date**: [YYYY-MM-DD]
-- **Specs Directory**: [path/to/specs/]
-- **Report Number**: [NNN]
-- **Scope**: [Files/directories analyzed]
-- **Standards Applied**: CLAUDE.md, [other relevant docs]
-- **Specific Concerns**: [User-provided concerns if any]
+Refactoring reports follow the standard structure defined in `.claude/templates/refactor-structure.md`.
 
-## Executive Summary
-[High-level overview of findings and recommendations]
+Key sections include:
+- **Executive Summary**: High-level findings and overall assessment
+- **Critical Issues**: Must-fix problems (bugs, security, major standards violations)
+- **Refactoring Opportunities**: Categorized findings (duplication, complexity, standards, architecture, testing, docs)
+- **Implementation Roadmap**: Phased approach with effort and risk estimates
+- **Testing Strategy**: How to verify refactoring doesn't break functionality
+- **Migration Path**: Step-by-step guide for applying refactorings
+- **Metrics**: Files analyzed, issues found, effort estimates
 
-## Critical Issues
-[Must-fix problems that violate core standards or cause bugs]
-
-## Refactoring Opportunities
-
-### Category 1: [e.g., Code Duplication]
-#### Finding 1.1: [Specific issue]
-- **Location**: file.nix:lines
-- **Current State**: [Problem description]
-- **Proposed Solution**: [Specific refactoring]
-- **Priority**: Critical/High/Medium/Low
-- **Effort**: Quick Win/Small/Medium/Large
-- **Risk**: Safe/Low/Medium/High
-
-### Category 2: [e.g., Architecture Improvements]
-[Continue with findings...]
-
-## Implementation Roadmap
-1. **Phase 1 - Critical Fixes**: [What to do first]
-2. **Phase 2 - High Priority**: [Next steps]
-3. **Phase 3 - Improvements**: [Nice to have]
-
-## Testing Strategy
-[How to verify refactoring doesn't break functionality]
-
-## Migration Path
-[Step-by-step guide for applying refactorings]
-
-## Metrics
-- **Files Analyzed**: [count]
-- **Issues Found**: [count by priority]
-- **Estimated Total Effort**: [hours]
-- **Test Coverage Impact**: [expected changes]
-
-## Implementation Status
-- **Status**: Research Complete
-- **Plan**: None yet
-- **Implementation**: Not started
-- **Date**: [YYYY-MM-DD]
-
-*This section will be updated if/when refactoring recommendations are implemented.*
-
-## References
-- [Links to relevant files]
-- [Documentation references]
-- [Related plans/reports]
-```
+For complete refactoring report structure and analysis guidelines, see `.claude/templates/refactor-structure.md`
 
 ### 7. Actionable Output
 The report will provide:

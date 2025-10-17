@@ -151,30 +151,91 @@ link_template_to_plan() {
   fi
 }
 
-# Get or create topic directory with proper numbering
-# Args: $1 = description (for generating topic name)
-#       $2 = base specs directory (optional, defaults to "specs")
-# Returns: topic directory path (e.g., "specs/042_authentication")
-get_or_create_topic_dir() {
-  local description="${1:-}"
-  local base_specs_dir="${2:-specs}"
+# Extract topic name from user question or feature description
+# Args: $1 = question/description text
+# Returns: Sanitized topic name (e.g., "user_authentication_jwt")
+extract_topic_from_question() {
+  local question="${1:-}"
 
-  if [[ -z "$description" ]]; then
-    echo "Error: get_or_create_topic_dir requires description" >&2
+  if [[ -z "$question" ]]; then
+    echo "Error: extract_topic_from_question requires question text" >&2
     return 1
   fi
 
-  # Convert description to topic name (lowercase with underscores)
-  local topic_name
-  topic_name=$(echo "$description" | \
+  # Remove common stop words
+  local cleaned
+  cleaned=$(echo "$question" | \
+    sed -E 's/\b(implement|add|fix|update|create|the|a|an|for|with|using|to|from|in|on|at|by)\b//gi' | \
     tr '[:upper:]' '[:lower:]' | \
     sed 's/[^a-z0-9 ]//g' | \
-    tr ' ' '_' | \
+    tr -s ' ' | \
+    sed 's/^ //; s/ $//')
+
+  # Extract 2-3 keywords and convert to snake_case
+  local topic_name
+  topic_name=$(echo "$cleaned" | \
+    awk '{for(i=1;i<=3 && i<=NF;i++) printf "%s%s", $i, (i<3 && i<NF ? "_" : "")}' | \
     sed 's/__*/_/g' | \
     sed 's/^_//; s/_$//' | \
     cut -c1-50)  # Limit length
 
-  # Find next available topic number
+  echo "$topic_name"
+}
+
+# Find matching topic directory by keyword
+# Args: $1 = keyword to match
+#       $2 = base specs directory (optional, defaults to "specs")
+# Returns: Matching topic directory path or empty string
+find_matching_topic() {
+  local keyword="${1:-}"
+  local base_specs_dir="${2:-specs}"
+
+  if [[ -z "$keyword" ]]; then
+    echo ""
+    return 0
+  fi
+
+  if [[ ! -d "$base_specs_dir" ]]; then
+    echo ""
+    return 0
+  fi
+
+  # Normalize keyword for matching
+  local norm_keyword
+  norm_keyword=$(echo "$keyword" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+
+  # Find all topic directories and check for fuzzy match
+  local best_match=""
+  local best_score=0
+
+  while IFS= read -r topic_dir; do
+    local topic_name
+    topic_name=$(basename "$topic_dir" | sed 's/^[0-9]*_//')
+
+    # Normalize topic name
+    local norm_topic
+    norm_topic=$(echo "$topic_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+
+    # Check for substring match
+    if [[ "$norm_topic" == *"$norm_keyword"* ]]; then
+      # Calculate match score (longer match = better score)
+      local score=${#norm_keyword}
+      if [[ $score -gt $best_score ]]; then
+        best_score=$score
+        best_match="$topic_dir"
+      fi
+    fi
+  done < <(find "$base_specs_dir" -maxdepth 1 -type d -name "[0-9]*_*" 2>/dev/null)
+
+  echo "$best_match"
+}
+
+# Get next available topic number
+# Args: $1 = base specs directory (optional, defaults to "specs")
+# Returns: Next topic number with zero-padding (e.g., "042")
+get_next_topic_number() {
+  local base_specs_dir="${1:-specs}"
+
   local max_num=0
 
   if [[ -d "$base_specs_dir" ]]; then
@@ -189,9 +250,38 @@ get_or_create_topic_dir() {
     done < <(find "$base_specs_dir" -maxdepth 1 -type d -name "[0-9]*_*" 2>/dev/null)
   fi
 
-  # Create topic directory with number
+  printf "%03d" $((max_num + 1))
+}
+
+# Get or create topic directory with proper numbering
+# Args: $1 = description (for generating topic name)
+#       $2 = base specs directory (optional, defaults to "specs")
+# Returns: topic directory path (e.g., "specs/042_authentication")
+get_or_create_topic_dir() {
+  local description="${1:-}"
+  local base_specs_dir="${2:-specs}"
+
+  if [[ -z "$description" ]]; then
+    echo "Error: get_or_create_topic_dir requires description" >&2
+    return 1
+  fi
+
+  # Extract topic name from description
+  local topic_name
+  topic_name=$(extract_topic_from_question "$description")
+
+  # Try to find existing matching topic
+  local existing_topic
+  existing_topic=$(find_matching_topic "$topic_name" "$base_specs_dir")
+
+  if [[ -n "$existing_topic" ]]; then
+    echo "$existing_topic"
+    return 0
+  fi
+
+  # No existing topic found, create new one
   local next_num
-  next_num=$(printf "%03d" $((max_num + 1)))
+  next_num=$(get_next_topic_number "$base_specs_dir")
   local topic_dir="${base_specs_dir}/${next_num}_${topic_name}"
 
   # Create topic directory with all standard subdirectories
