@@ -28,6 +28,36 @@ The specifications directory uses a uniform topic-based structure where all arti
 - Numbering resets per topic directory
 - Example: `specs/042_auth/plans/001_user_auth.md`, `specs/042_auth/plans/002_session.md`
 
+**Metadata-Only References**:
+
+Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+
+**Metadata Extraction Utilities** (`.claude/lib/artifact-operations.sh`):
+- `extract_report_metadata(report_path)` - Extracts title, 50-word summary, key findings, file paths
+- `extract_plan_metadata(plan_path)` - Extracts complexity, phases, time estimates, dependencies
+- `load_metadata_on_demand(artifact_path)` - Generic metadata loader with caching
+
+**Usage Pattern**:
+```bash
+# Extract metadata from research reports
+for report in "${RESEARCH_REPORTS[@]}"; do
+  METADATA=$(extract_report_metadata "$report")
+  # METADATA: path, 50-word summary, key findings
+  REPORT_REFS+=("$METADATA")
+done
+
+# Pass metadata (250 tokens) instead of full content (5000 tokens)
+Task {
+  prompt: "...
+          Research Reports (metadata):
+          ${REPORT_REFS[@]}
+
+          Use Read tool to access full content selectively if needed.
+          ..."
+}
+# Context reduction: 95%
+```
+
 **Location**: specs/ directories can exist at project root or in subdirectories (e.g., `.claude/specs/`) for scoped specifications.
 
 **Important**: Most specs/ artifacts are gitignored (plans/, reports/, summaries/, scripts/, outputs/, artifacts/, backups/). Debug reports in `debug/` subdirectories are COMMITTED to git for issue tracking.
