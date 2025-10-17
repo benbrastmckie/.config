@@ -2238,6 +2238,203 @@ clear_metadata_cache() {
 }
 
 # ==============================================================================
+# Forward Message Pattern (Context Preservation)
+# ==============================================================================
+
+# forward_message: Pass subagent response to next phase without re-summarization
+# Usage: forward_message <subagent-output>
+# Returns: JSON with structured handoff context
+# Example: forward_message "$research_agent_output"
+forward_message() {
+  local subagent_output="${1:-}"
+
+  if [ -z "$subagent_output" ]; then
+    echo "Usage: forward_message <subagent-output>" >&2
+    return 1
+  fi
+
+  # Parse subagent output for artifact paths
+  local artifact_paths=$(echo "$subagent_output" | grep -oE 'specs/[^[:space:]]+\.md' | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+  # Extract status indicators
+  local status="unknown"
+  if echo "$subagent_output" | grep -qi 'success\|complete'; then
+    status="success"
+  elif echo "$subagent_output" | grep -qi 'fail\|error'; then
+    status="failed"
+  fi
+
+  # Extract metadata blocks (JSON or YAML in code blocks)
+  local metadata_blocks=$(echo "$subagent_output" | sed -n '/```json/,/```/p' | grep -v '```' || echo "{}")
+
+  # Build summary (first 100 words of subagent output)
+  local summary=$(echo "$subagent_output" | tr '\n' ' ' | awk '{for(i=1;i<=100 && i<=NF;i++) printf "%s ", $i}')
+
+  # Build structured handoff
+  local handoff_context=""
+  if command -v jq &> /dev/null && [ -n "$artifact_paths" ] && [ "$artifact_paths" != "[]" ]; then
+    # Extract metadata for each artifact
+    local artifacts_with_metadata="[]"
+    while IFS= read -r artifact_path; do
+      if [ -f "$artifact_path" ]; then
+        local metadata=$(load_metadata_on_demand "$artifact_path" 2>/dev/null || echo '{"error":"metadata_unavailable"}')
+        # Only add if metadata is valid JSON
+        if echo "$metadata" | jq -e . >/dev/null 2>&1; then
+          artifacts_with_metadata=$(echo "$artifacts_with_metadata" | jq \
+            --arg path "$artifact_path" \
+            --argjson meta "$metadata" \
+            '. += [{path: $path, metadata: $meta}]')
+        else
+          # Add with minimal metadata if extraction failed
+          artifacts_with_metadata=$(echo "$artifacts_with_metadata" | jq \
+            --arg path "$artifact_path" \
+            '. += [{path: $path, metadata: {}}]')
+        fi
+      fi
+    done < <(echo "$artifact_paths" | jq -r '.[]')
+
+    handoff_context=$(jq -n \
+      --arg phase "unknown" \
+      --argjson artifacts "$artifacts_with_metadata" \
+      --arg summary "${summary% }" \
+      --arg status "$status" \
+      '{
+        phase_complete: $phase,
+        artifacts: $artifacts,
+        summary: $summary,
+        status: $status,
+        next_phase_reads: ($artifacts | map(.path))
+      }')
+  else
+    # Fallback without artifact metadata
+    handoff_context=$(jq -n \
+      --arg summary "$(echo "$subagent_output" | tr '\n' ' ' | head -c 200)" \
+      --arg status "$status" \
+      '{
+        phase_complete: "unknown",
+        artifacts: [],
+        summary: $summary,
+        status: $status,
+        next_phase_reads: []
+      }')
+  fi
+
+  # Log original subagent output
+  local log_dir="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
+  mkdir -p "$log_dir"
+  local log_file="$log_dir/subagent-outputs.log"
+
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] SUBAGENT OUTPUT:" >> "$log_file"
+  echo "$subagent_output" >> "$log_file"
+  echo "---" >> "$log_file"
+
+  # Log handoff context
+  local handoff_log="$log_dir/phase-handoffs.log"
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] PHASE HANDOFF:" >> "$handoff_log"
+  echo "$handoff_context" | jq '.' >> "$handoff_log" 2>/dev/null || echo "$handoff_context" >> "$handoff_log"
+  echo "---" >> "$handoff_log"
+
+  # Enable log rotation (10MB max, 5 files)
+  for log in "$log_file" "$handoff_log"; do
+    if [ -f "$log" ] && [ $(wc -c < "$log") -gt 10485760 ]; then
+      # Rotate logs
+      for i in {4..1}; do
+        [ -f "${log}.$i" ] && mv "${log}.$i" "${log}.$((i+1))"
+      done
+      mv "$log" "${log}.1"
+      touch "$log"
+    fi
+  done
+
+  echo "$handoff_context"
+}
+
+# parse_subagent_response: Extract structured data from subagent output
+# Usage: parse_subagent_response <subagent-output>
+# Returns: JSON with artifact paths, status, metadata
+# Example: parse_subagent_response "$agent_response"
+parse_subagent_response() {
+  local subagent_output="${1:-}"
+
+  if [ -z "$subagent_output" ]; then
+    echo "Usage: parse_subagent_response <subagent-output>" >&2
+    return 1
+  fi
+
+  # Extract artifact paths (markdown files in specs/)
+  local artifact_paths=$(echo "$subagent_output" | grep -oE 'specs/[^[:space:]]+\.md' | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+  # Extract status indicators
+  local status="unknown"
+  if echo "$subagent_output" | grep -qi 'success\|complete\|done'; then
+    status="success"
+  elif echo "$subagent_output" | grep -qi 'fail\|error'; then
+    status="failed"
+  elif echo "$subagent_output" | grep -qi 'in progress\|working'; then
+    status="in_progress"
+  fi
+
+  # Extract JSON metadata blocks
+  local metadata_blocks=$(echo "$subagent_output" | sed -n '/```json/,/```/p' | sed '1d;$d' || echo "{}")
+
+  # Build response object
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --argjson paths "${artifact_paths:-[]}" \
+      --arg status "$status" \
+      --argjson meta "${metadata_blocks:-{}}" \
+      '{
+        artifact_paths: $paths,
+        status: $status,
+        metadata: $meta
+      }'
+  else
+    cat <<EOF
+{
+  "artifact_paths": ${artifact_paths:-[]},
+  "status": "$status",
+  "metadata": ${metadata_blocks:-{}}
+}
+EOF
+  fi
+}
+
+# build_handoff_context: Build context for next phase
+# Usage: build_handoff_context <phase-name> <artifacts-json> <summary>
+# Returns: JSON handoff context
+# Example: build_handoff_context "research" "$artifacts" "Research complete"
+build_handoff_context() {
+  local phase_name="${1:-unknown}"
+  local artifacts_json="${2:-[]}"
+  local summary="${3:-No summary provided}"
+
+  # Limit summary to 100 words
+  local summary_limited=$(echo "$summary" | tr '\n' ' ' | awk '{for(i=1;i<=100 && i<=NF;i++) printf "%s ", $i}')
+
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --arg phase "$phase_name" \
+      --argjson artifacts "$artifacts_json" \
+      --arg summary "${summary_limited% }" \
+      '{
+        phase_complete: $phase,
+        artifacts: $artifacts,
+        summary: $summary,
+        next_phase_reads: ($artifacts | map(.path))
+      }'
+  else
+    cat <<EOF
+{
+  "phase_complete": "$phase_name",
+  "artifacts": $artifacts_json,
+  "summary": "${summary_limited% }",
+  "next_phase_reads": []
+}
+EOF
+  fi
+}
+
+# ==============================================================================
 # Export Functions
 # ==============================================================================
 
@@ -2298,4 +2495,9 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f cache_metadata
   export -f get_cached_metadata
   export -f clear_metadata_cache
+
+  # Forward message pattern functions
+  export -f forward_message
+  export -f parse_subagent_response
+  export -f build_handoff_context
 fi
