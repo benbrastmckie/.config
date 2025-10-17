@@ -443,136 +443,18 @@ Choose agent based on primary task:
 - **Performance**: metrics-specialist
 - **Complexity Analysis**: complexity_estimator
 
-## Context-Efficient Agent Integration
+## Context Preservation in Multi-Agent Workflows
 
-When integrating agents into multi-phase workflows, apply these context preservation patterns from Standards 6-8:
+When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](hierarchical_agents.md).
 
-### Pattern: Metadata-Only Passing (Standard 6)
+**Key Patterns** (detailed in hierarchical_agents.md):
+- **Metadata-Only Passing**: Extract path + 50-word summary instead of full content (95-99% reduction)
+- **Forward Message**: Pass subagent responses without re-summarization (eliminates 200-300 token overhead)
+- **Context Pruning**: Prune completed phase data, retain only references (80-90% reduction)
 
-**Problem**: Passing full artifact content between agents consumes excessive context.
+**Target**: <30% context usage throughout multi-phase workflows
 
-**Solution**: Extract and pass only metadata (path + 50-word summary).
-
-**Implementation**:
-```bash
-# After research agent completes
-report_path="specs/042_auth/reports/001_patterns.md"
-
-# Extract metadata instead of reading full content
-source .claude/lib/artifact-operations.sh
-metadata=$(extract_report_metadata "$report_path")
-
-# Pass metadata to planning agent (250 tokens vs 5000 tokens)
-summary=$(echo "$metadata" | jq -r '.summary')  # 50 words max
-```
-
-**Reduction**: 95-99% context savings per artifact
-
-### Pattern: Forward Message (Standard 7)
-
-**Problem**: Primary agent re-summarizes subagent outputs, adding paraphrasing overhead.
-
-**Solution**: Pass subagent responses directly without re-summarization.
-
-**Implementation**:
-```bash
-# After subagent completes
-subagent_output="Research complete. Created report at specs/042_auth/reports/001_patterns.md.
-Summary: JWT vs sessions analysis..."
-
-# Extract handoff context (no paraphrasing)
-handoff=$(forward_message "$subagent_output")
-
-# Pass to next phase unchanged
-planning_context=$(echo "$handoff" | jq -r '.next_phase_context')
-```
-
-**Reduction**: Eliminates 200-300 token paraphrasing overhead per subagent
-
-### Pattern: Context Pruning (Standard 8)
-
-**Problem**: Completed phase data accumulates throughout workflow.
-
-**Solution**: Prune full content after metadata extraction, retain only paths.
-
-**Implementation**:
-```bash
-# After research phase completes
-source .claude/lib/context-pruning.sh
-
-# Prune research phase data
-prune_phase_metadata "research"
-
-# Completed phases now represented as:
-# { "phase": "research", "artifacts": ["path1", "path2"], "status": "complete" }
-# vs full content: 15000+ tokens
-```
-
-**Reduction**: 80-90% reduction in accumulated context
-
-### Metadata Extraction Examples
-
-**For Research Reports** (extract_report_metadata):
-```bash
-metadata=$(extract_report_metadata "specs/042_auth/reports/001_patterns.md")
-# Returns:
-# {
-#   "title": "Authentication Patterns Analysis",
-#   "summary": "JWT vs sessions comparison. JWT recommended for APIs, sessions for web apps. Security considerations: HTTPS, token expiry, refresh rotation.",
-#   "file_paths": ["lib/auth/jwt.lua", "lib/auth/sessions.lua"],
-#   "recommendations": ["Use JWT for API auth", "Use sessions for web", "Implement refresh token rotation"]
-# }
-```
-
-**For Implementation Plans** (extract_plan_metadata):
-```bash
-metadata=$(extract_plan_metadata "specs/042_auth/plans/001_implementation.md")
-# Returns:
-# {
-#   "title": "Authentication Implementation Plan",
-#   "complexity": "Medium",
-#   "phases": 5,
-#   "time_estimate": "6-8 hours",
-#   "success_criteria": 8
-# }
-```
-
-### Context Targets
-
-**Per-Artifact**:
-- Full content: 1000-5000 tokens
-- Metadata: 50-250 tokens
-- **Target reduction**: 80-95%
-
-**Per-Phase**:
-- Without metadata extraction: 5000-15000 tokens
-- With metadata extraction: 500-2000 tokens
-- **Target reduction**: 87-97%
-
-**Full Workflow**:
-- Without context management: 20000-50000 tokens
-- With context management: 2000-8000 tokens
-- **Target**: <30% context usage throughout
-
-### Utilities Reference
-
-**Metadata Extraction**: `.claude/lib/artifact-operations.sh`
-- `extract_report_metadata()` - Research reports
-- `extract_plan_metadata()` - Implementation plans
-- `load_metadata_on_demand()` - Auto-detection with caching
-
-**Forward Message**: `.claude/lib/artifact-operations.sh`
-- `forward_message()` - Extract handoff without paraphrasing
-- `parse_subagent_response()` - Parse structured JSON/YAML
-
-**Context Pruning**: `.claude/lib/context-pruning.sh`
-- `prune_subagent_output()` - Prune after metadata extraction
-- `prune_phase_metadata()` - Prune completed phases
-- `apply_pruning_policy()` - Automatic policy-based pruning
-
-**See Also**:
-- [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 details
-- [Hierarchical Agents Guide](hierarchical_agents.md) for complete context management architecture
+**See Also**: [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 requirements
 
 ## Command-Agent Matrix
 
