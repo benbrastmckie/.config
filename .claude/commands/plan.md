@@ -60,6 +60,140 @@ I'll parse the arguments to separate the feature description from any report pat
 
 **Note**: This analysis is informational only. It helps guide planning decisions but doesn't restrict plan creation. All plans start as single files (Level 0) regardless of estimated complexity.
 
+### 0.5. Research Agent Delegation for Complex Features
+
+**When no research reports are provided AND the feature is complex**, I'll delegate research to specialized subagents before planning.
+
+#### Complexity Triggers for Research Delegation
+
+Research subagents are invoked when ALL of the following apply:
+- **No research reports provided** in command arguments
+- **Feature complexity indicators** (any 2 or more):
+  - Ambiguous requirements (multiple possible interpretations)
+  - Multiple technical approaches mentioned or implied
+  - Cross-cutting concerns (security, performance, scalability)
+  - Integration with external systems or complex APIs
+  - Novel features without clear precedent in codebase
+
+#### Research Delegation Workflow
+
+When triggers met, perform research delegation:
+
+**Step 1: Source Context Preservation Utilities**
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
+```
+
+**Step 2: Track Context Before Research**
+```bash
+# Track initial context
+CONTEXT_BEFORE=$(track_context_usage "before" "plan_research" "")
+```
+
+**Step 3: Define Research Topics**
+
+Identify 2-3 research focus areas based on feature requirements:
+- **Patterns**: Existing implementations and architectural patterns
+- **Best Practices**: Security, performance, testing standards
+- **Alternatives**: Different technical approaches and trade-offs
+
+**Step 4: Invoke Research Subagents in Parallel**
+
+Use Task tool to invoke 2-3 research-specialist agents in parallel (single message, multiple Task calls):
+
+```
+For each research topic (e.g., patterns, best practices, alternatives):
+
+Task tool invocation:
+subagent_type: general-purpose
+description: "Research {topic} for {feature}"
+prompt: |
+  Read and follow the behavioral guidelines from:
+  /home/benjamin/.config/.claude/agents/research-specialist.md
+
+  You are acting as a Research Specialist Agent.
+
+  Research Focus: {topic} (patterns | best practices | alternatives)
+  Feature: {feature_description}
+
+  Tasks:
+  1. Search codebase for existing implementations (Grep, Glob)
+  2. Identify relevant patterns, utilities, conventions
+  3. Research best practices for this type of feature
+  4. Analyze security, performance, testing considerations
+  5. Document alternative approaches with pros/cons
+
+  Output:
+  - Create report: specs/{topic}/reports/{NNN}_{topic}.md
+  - Include: Executive Summary, Findings, Recommendations, References
+  - Return metadata: {path, 50-word summary, key_findings[]}
+
+  Project standards: Read CLAUDE.md for coding conventions
+```
+
+**Step 5: Extract Metadata Using forward_message Pattern**
+
+After each research subagent completes:
+```bash
+# For each subagent response
+RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "research_${TOPIC}")
+
+# Extract artifact path and metadata
+ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
+ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
+
+# Cache metadata for on-demand loading (not full content!)
+cache_metadata "$ARTIFACT_PATH" "$ARTIFACT_METADATA"
+
+# Accumulate artifact paths for planning phase
+RESEARCH_REPORTS="$RESEARCH_REPORTS $ARTIFACT_PATH"
+```
+
+**Step 6: Track Context After Research**
+```bash
+# Calculate context reduction
+CONTEXT_AFTER=$(track_context_usage "after" "plan_research" "")
+CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+
+# Log reduction metrics
+echo "Context reduction: $CONTEXT_REDUCTION% (metadata-only passing)"
+```
+
+**Expected Context Reduction**:
+- 92-95% reduction vs. loading full research reports
+- Full reports: ~3000 chars per report × 3 = 9000 chars
+- Metadata only: ~150 chars per report × 3 = 450 chars
+- Reduction: 9000 → 450 = 95%
+
+#### On-Demand Report Loading
+
+During plan creation (Steps 2-8), I'll load full report content only when needed:
+
+```bash
+# When synthesizing technical design or phase tasks
+if [ -n "$ARTIFACT_PATH" ]; then
+  FULL_REPORT=$(load_metadata_on_demand "$ARTIFACT_PATH")
+  # Use full report content for detailed planning
+  # Report content not retained in memory after use
+fi
+```
+
+#### Benefits of Research Delegation
+
+- **Comprehensive Research**: 2-3 specialized agents cover multiple perspectives
+- **Parallel Execution**: All research happens simultaneously (60-80% time savings)
+- **Minimal Context**: Metadata-only passing (95% reduction)
+- **On-Demand Details**: Load full reports only when needed
+- **Better Plans**: Informed by actual codebase patterns and best practices
+
+#### Skip Research Delegation
+
+To skip automatic research delegation (use direct planning):
+- Provide existing research reports in command arguments
+- Use `--skip-research` flag (suppresses research delegation)
+- Research delegation only occurs when no reports provided
+
 ### 1. Report Integration (if provided)
 If research reports are provided, I'll:
 - Read and analyze each report

@@ -539,6 +539,76 @@ CHECKPOINT=".claude/checkpoints/orchestrate_user_authentication_20251013.json"
 
 **Proceed to Planning Phase** after research checkpoint saved and all reports verified.
 
+#### Research Phase - Forward Message Integration
+
+After research agents complete, use forward_message pattern to extract metadata and preserve context.
+
+**When to Use**:
+- After all research-specialist agents complete
+- Before passing results to planning phase
+- To achieve 95%+ context reduction
+
+**Workflow**:
+1. Collect research agent outputs
+2. Use forward_message to extract artifact metadata
+3. Store metadata in checkpoint (not full content)
+4. Track context metrics
+
+**Key Execution**:
+
+```bash
+# Source context preservation utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
+
+# Track context before metadata extraction
+CONTEXT_BEFORE=$(track_context_usage "before" "research_phase_synthesis" "")
+
+# For each research agent output
+RESEARCH_METADATA=""
+for i in $(seq 1 $RESEARCH_AGENT_COUNT); do
+  SUBAGENT_OUTPUT="$( # output from research agent $i )"
+
+  # Extract metadata using forward_message
+  RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "research_agent_$i")
+
+  # Extract artifact path and metadata
+  ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
+  ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
+
+  # Cache metadata for on-demand loading
+  cache_metadata "$ARTIFACT_PATH" "$ARTIFACT_METADATA"
+
+  # Accumulate metadata summaries
+  SUMMARY=$(echo "$ARTIFACT_METADATA" | jq -r '.summary')
+  RESEARCH_METADATA="$RESEARCH_METADATA\n$SUMMARY"
+done
+
+# Track context after (metadata only, not full reports)
+CONTEXT_AFTER=$(track_context_usage "after" "research_phase_synthesis" "$RESEARCH_METADATA")
+
+# Calculate and log reduction
+CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+echo "PROGRESS: Research synthesis complete - context reduction: ${CONTEXT_REDUCTION}%"
+
+# Store in checkpoint (paths + metadata only)
+workflow_state.context_preservation.research_reports=[
+  {"path": "$REPORT_PATH_1", "metadata": {...}},
+  {"path": "$REPORT_PATH_2", "metadata": {...}}
+]
+```
+
+**Benefits**:
+- 95% context reduction (full reports ~3000 chars → metadata ~150 chars)
+- On-demand loading: Planning agent loads full reports only when needed
+- Checkpoint efficiency: Minimal checkpoint size enables faster save/restore
+- Context preservation: Metadata provides sufficient context for most operations
+
+**Integration with Planning Phase**:
+- Pass report paths (not summaries) to plan-architect agent
+- Agent uses load_metadata_on_demand() to read full reports selectively
+- Metadata summaries available for quick reference without reading files
+
 ### Planning Phase (Sequential Execution)
 
 The planning phase synthesizes research findings into a structured implementation plan with clear phases, tasks, and testing requirements.

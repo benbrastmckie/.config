@@ -427,7 +427,8 @@ Validation:
 **Objective**: Add subagent delegation to `/implement`, `/plan`, `/report`, `/debug` commands for context preservation
 
 Tasks:
-- [ ] Update `/implement` command for subagent delegation (.claude/commands/implement.md:200-350)
+- [x] Update `/implement` command for subagent delegation (.claude/commands/implement.md:522-678)
+  - Step 1.57: Implementation Research Agent Invocation
   - Before implementing complex phase (complexity ≥8 or >10 tasks)
   - Delegate codebase exploration to research subagent
   - Subagent analyzes existing implementations, patterns, conventions
@@ -435,7 +436,7 @@ Tasks:
   - `/implement` receives metadata only (path + 50-word summary)
   - `/implement` reads artifact on-demand when implementing phase
 
-- [ ] Create implementation research subagent template (.claude/agents/implementation-researcher.md:1-300)
+- [x] Create implementation research subagent template (.claude/agents/implementation-researcher.md:1-230)
   ```markdown
   # Implementation Researcher Agent
 
@@ -465,7 +466,8 @@ Tasks:
   4. Integration points (identify dependencies, imports)
   ```
 
-- [ ] Update `/plan` command for subagent delegation (.claude/commands/plan.md:250-400)
+- [x] Update `/plan` command for subagent delegation (.claude/commands/plan.md:63-195)
+  - Section 0.5: Research Agent Delegation for Complex Features
   - For complex features (ambiguous requirements, multiple approaches)
   - Delegate research to subagents before planning
   - 2-3 research subagents in parallel (patterns, best practices, alternatives)
@@ -473,7 +475,8 @@ Tasks:
   - `/plan` receives metadata only
   - `/plan` reads reports on-demand when synthesizing plan
 
-- [ ] Update `/debug` command for subagent delegation (.claude/commands/debug.md:200-350)
+- [x] Update `/debug` command for subagent delegation (.claude/commands/debug.md:65-248)
+  - Section 3.5: Parallel Hypothesis Investigation (for Complex Issues)
   - For complex bugs (multiple potential root causes)
   - Delegate root cause analysis to subagents
   - Each subagent investigates one potential cause
@@ -481,7 +484,7 @@ Tasks:
   - `/debug` receives metadata only
   - `/debug` synthesizes findings and proposes fix
 
-- [ ] Create debug analysis subagent template (.claude/agents/debug-analyst.md:1-250)
+- [x] Create debug analysis subagent template (.claude/agents/debug-analyst.md:1-230)
   ```markdown
   # Debug Analyst Agent
 
@@ -505,17 +508,19 @@ Tasks:
   Return metadata: {path, summary (50 words), root_cause, proposed_fix}
   ```
 
-- [ ] Add context preservation metrics to commands (.claude/lib/context-metrics.sh:1-200)
+- [x] Add context preservation metrics to commands (.claude/lib/context-metrics.sh:1-257)
   - Track context usage before and after subagent delegation
   - Measure: tokens used, artifacts referenced, metadata size
   - Calculate reduction percentage
   - Log metrics to `.claude/data/logs/context-metrics.log`
 
-- [ ] Implement aggressive context pruning in commands
+- [x] Implement aggressive context pruning in commands (.claude/lib/context-pruning.sh:1-423)
   - After subagent completes: clear full output from memory
   - Retain only: artifact path, metadata (title + 50-word summary)
   - After phase completes: prune phase-specific metadata
   - Example: after planning complete, prune research metadata (no longer needed)
+  - Functions: prune_subagent_output(), prune_phase_metadata(), prune_workflow_metadata()
+  - Policies: apply_pruning_policy() for automatic pruning by workflow type
 
 Testing:
 ```bash

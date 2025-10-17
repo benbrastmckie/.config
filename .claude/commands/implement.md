@@ -519,6 +519,163 @@ Before implementation, evaluate if phase should be expanded using agent-based ju
 - **Proactive** (1.55): Before implementation, recommendation only
 - **Reactive** (3.4): After implementation, auto-revision via `/revise --auto-mode`
 
+### 1.57. Implementation Research Agent Invocation
+
+Invoke implementation-researcher agent for complex phases to gather codebase context before implementation.
+
+**When to Invoke**:
+- **Complexity trigger**: $COMPLEXITY_SCORE ≥ 8 (from Step 1.5)
+- **Task trigger**: $TASK_COUNT > 10 (from Step 1.5)
+- **Purpose**: Search existing implementations, identify patterns, detect integration challenges
+
+**Workflow Overview**:
+1. Check complexity/task thresholds
+2. Invoke implementation-researcher agent via Task tool
+3. Use forward_message pattern to extract artifact metadata
+4. Store metadata in context (minimal footprint)
+5. Load full artifact on-demand during implementation
+
+**Key Execution Requirements**:
+
+1. **Check thresholds** (uses variables from Step 1.5):
+   ```bash
+   # Thresholds from complexity evaluation
+   RESEARCH_NEEDED="false"
+   [ "$COMPLEXITY_SCORE" -ge 8 ] || [ "$TASK_COUNT" -gt 10 ] && RESEARCH_NEEDED="true"
+
+   if [ "$RESEARCH_NEEDED" = "true" ]; then
+     echo "PROGRESS: Complex phase detected (score: $COMPLEXITY_SCORE, tasks: $TASK_COUNT) - invoking implementation researcher"
+   fi
+   ```
+
+2. **Invoke implementation-researcher agent**:
+   ```bash
+   # Source context preservation utilities
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
+
+   # Track context before research
+   CONTEXT_BEFORE=$(track_context_usage "before" "phase_${CURRENT_PHASE}_research" "")
+
+   # Build task list for agent
+   FILE_LIST=$(echo "$PHASE_CONTENT" | grep -oE '[a-zA-Z0-9_/.-]+\.(js|py|lua|sh|md|yaml)' | sort -u | head -20 | tr '\n' ', ')
+
+   # Invoke agent
+   RESEARCH_AGENT_PROMPT=$(cat <<'EOF'
+Read and follow behavioral guidelines from:
+${CLAUDE_PROJECT_DIR}/.claude/agents/implementation-researcher.md
+
+You are acting as an Implementation Researcher Agent.
+
+Research Context:
+- Phase: ${CURRENT_PHASE}
+- Description: ${PHASE_NAME}
+- Files to modify: ${FILE_LIST}
+- Task count: ${TASK_COUNT}
+- Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+Research existing implementations, patterns, and utilities for this phase.
+Create artifact at: specs/${TOPIC_DIR}/artifacts/phase_${CURRENT_PHASE}_exploration.md
+Return metadata only (path + 50-word summary + key findings JSON).
+EOF
+)
+
+   # Replace variables in prompt
+   RESEARCH_AGENT_PROMPT=$(echo "$RESEARCH_AGENT_PROMPT" | \
+     sed "s|\${CLAUDE_PROJECT_DIR}|${CLAUDE_PROJECT_DIR}|g" | \
+     sed "s|\${CURRENT_PHASE}|${CURRENT_PHASE}|g" | \
+     sed "s|\${PHASE_NAME}|${PHASE_NAME}|g" | \
+     sed "s|\${FILE_LIST}|${FILE_LIST}|g" | \
+     sed "s|\${TASK_COUNT}|${TASK_COUNT}|g" | \
+     sed "s|\${TOPIC_DIR}|${TOPIC_DIR}|g")
+
+   # Note: Actual Task tool invocation happens in AI execution layer
+   # This is the prompt content that should be used
+   ```
+
+3. **Extract metadata using forward_message**:
+   ```bash
+   # Parse subagent response for artifact paths and metadata
+   RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "phase_${CURRENT_PHASE}_research")
+
+   # Extract artifact path and metadata
+   ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
+   ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
+   RESEARCH_SUMMARY=$(echo "$ARTIFACT_METADATA" | jq -r '.summary')
+
+   # Track context after research (metadata only, not full artifact)
+   CONTEXT_AFTER=$(track_context_usage "after" "phase_${CURRENT_PHASE}_research" "$RESEARCH_SUMMARY")
+
+   # Calculate and log reduction
+   CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+   echo "PROGRESS: Research complete - context reduction: ${CONTEXT_REDUCTION}%"
+   ```
+
+4. **Store metadata for on-demand loading**:
+   ```bash
+   # Cache metadata in memory
+   cache_metadata "$ARTIFACT_PATH" "$ARTIFACT_METADATA"
+
+   # Store path in phase context
+   PHASE_RESEARCH_ARTIFACT="$ARTIFACT_PATH"
+
+   # During implementation: Load full artifact only when needed
+   # FULL_RESEARCH=$(load_metadata_on_demand "$PHASE_RESEARCH_ARTIFACT")
+   ```
+
+**Quick Example**:
+```bash
+# Check if research needed
+RESEARCH_NEEDED="false"
+[ "$COMPLEXITY_SCORE" -ge 8 ] || [ "$TASK_COUNT" -gt 10 ] && RESEARCH_NEEDED="true"
+
+if [ "$RESEARCH_NEEDED" = "true" ]; then
+  # Track context before
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
+  CONTEXT_BEFORE=$(track_context_usage "before" "phase_3_research" "")
+
+  # Invoke implementation-researcher agent (Task tool in AI layer)
+  # Returns: {"artifact_path": "specs/042_auth/artifacts/phase_3_exploration.md", "metadata": {...}}
+
+  # Extract metadata using forward_message
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+  RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "phase_3_research")
+  ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
+  RESEARCH_SUMMARY=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata.summary')
+
+  # Track context after (metadata only)
+  CONTEXT_AFTER=$(track_context_usage "after" "phase_3_research" "$RESEARCH_SUMMARY")
+
+  # Cache for on-demand loading
+  cache_metadata "$ARTIFACT_PATH" "$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')"
+
+  # Reduction: 95% (full artifact ~2000 tokens → metadata ~100 tokens)
+  REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+  echo "Context reduction: ${REDUCTION}%"
+fi
+```
+
+**Expected Impact**:
+- 95% context reduction vs. loading full research (2000 tokens → 100 tokens)
+- Research loaded on-demand only when implementing complex phases
+- Metadata provides sufficient context for most implementation decisions
+
+**Integration Points**:
+- **Agent template**: `.claude/agents/implementation-researcher.md`
+- **Utilities**: `artifact-operations.sh` (forward_message, cache_metadata), `context-metrics.sh` (tracking)
+- **Output artifact**: `specs/{topic}/artifacts/phase_{N}_exploration.md`
+
+**Error Handling**:
+- Agent timeout/failure → Skip research, log warning, continue with implementation
+- Invalid metadata → Fallback to minimal context, log error
+- Artifact creation failure → Non-blocking, implementation proceeds
+
+**Benefits**:
+- Identifies reusable utilities before implementation (reduces duplication)
+- Discovers patterns and conventions (increases consistency)
+- Detects integration challenges early (reduces rework)
+- Minimal context footprint (enables scaling to larger plans)
+
 ### 1.6. Parallel Wave Execution
 
 For parallel agent invocation patterns, see [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation).
