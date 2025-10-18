@@ -131,7 +131,7 @@ This project prioritizes clean, coherent systems over backward compatibility. Re
 
 Core values: clarity, quality, coherence, maintainability.
 
-See [Development Philosophy](.claude/docs/development-philosophy.md) for complete refactoring principles and documentation standards.
+See [Writing Standards](.claude/docs/writing-standards.md) for complete refactoring principles and documentation standards.
 <!-- END_SECTION: development_philosophy -->
 
 <!-- SECTION: adaptive_planning -->
