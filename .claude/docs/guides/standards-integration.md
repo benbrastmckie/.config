@@ -612,7 +612,7 @@ When developing commands or agents, CLAUDE.md standards discovery is complemente
 - Language-specific conventions
 - Discovered at runtime by commands
 
-**Command Architecture Standards** ([command_architecture_standards.md](command_architecture_standards.md)):
+**Command Architecture Standards** ([command_architecture_standards.md](../reference/command_architecture_standards.md)):
 - How command/agent files are structured (Standards 1-5)
 - How commands pass context between agents (Standards 6-8)
 - How commands manage file size and complexity (Standards 9-11)
@@ -711,7 +711,7 @@ When implementing standards discovery in commands, reference both standard types
 ## Standards Discovery and Application
 
 This command follows:
-- **[Command Architecture Standards](command_architecture_standards.md)** for command file structure (Standards 1-11)
+- **[Command Architecture Standards](../reference/command_architecture_standards.md)** for command file structure (Standards 1-11)
 - **CLAUDE.md Standards** (this guide) for project-specific code generation
 
 ### Discovery Process
@@ -726,8 +726,8 @@ This command follows:
 
 ### References
 
-- [command_architecture_standards.md](command_architecture_standards.md) - Command file structure standards (Standards 1-11)
-- [CLAUDE.md Section Schema](claude-md-section-schema.md) - Project CLAUDE.md format
+- [command_architecture_standards.md](../reference/command_architecture_standards.md) - Command file structure standards (Standards 1-11)
+- [CLAUDE.md Section Schema](../reference/claude-md-section-schema.md) - Project CLAUDE.md format
 - [Creating Commands](creating-commands.md) - Command development guide integrating both standard types
 
 ---

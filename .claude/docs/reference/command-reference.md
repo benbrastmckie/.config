@@ -1,6 +1,6 @@
 # Command Quick Reference
 
-Quick lookup guide for all Claude Code slash commands. For comprehensive command development guidance, see [Creating Commands](creating-commands.md).
+Quick lookup guide for all Claude Code slash commands. For comprehensive command development guidance, see [Creating Commands](../guides/creating-commands.md).
 
 ## About This Reference
 
@@ -431,7 +431,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 **Reason**: Consolidated into `/revise` to reduce command overlap and confusion
 
-**See**: [update.md](../commands/update.md), [Command Selection Guide](creating-commands.md)
+**See**: [update.md](../commands/update.md), [Command Selection Guide](../guides/creating-commands.md)
 
 ---
 
@@ -523,10 +523,10 @@ Code quality analysis:
 
 ## Related Documentation
 
-- **[Creating Commands](creating-commands.md)** - Comprehensive guide for developing commands
-- **[Command Patterns](command-patterns.md)** - Reusable implementation patterns
+- **[Creating Commands](../guides/creating-commands.md)** - Comprehensive guide for developing commands
+- **[Command Patterns](../guides/command-patterns.md)** - Reusable implementation patterns
 - **[Agent Reference](agent-reference.md)** - Quick agent reference (Phase 4)
-- **[Command Selection Guide](creating-commands.md)** - Decision tree for choosing commands
+- **[Command Selection Guide](../guides/creating-commands.md)** - Decision tree for choosing commands
 - **[Commands README](../commands/README.md)** - Complete command documentation
 
 ---

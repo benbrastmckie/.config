@@ -811,9 +811,9 @@ This section demonstrates correct execution-critical content:
 ## Related Standards
 
 This document should be read in conjunction with:
-- [Command Patterns](command-patterns.md): Common execution patterns across commands
-- [Agent Patterns](agent-patterns.md): Agent invocation and coordination patterns
-- [Testing Standards](testing-standards.md): Validation and testing requirements
+- [Command Patterns](../guides/command-patterns.md): Common execution patterns across commands
+- [Agent Patterns](../guides/agent-patterns.md): Agent invocation and coordination patterns
+- [Testing Standards](../guides/testing-standards.md): Validation and testing requirements
 - [Documentation Standards](../CLAUDE.md#documentation-policy): General documentation guidelines
 
 ---

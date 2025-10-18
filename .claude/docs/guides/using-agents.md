@@ -10,7 +10,7 @@ This guide contains the ONLY correct pattern for agent invocation. Any command t
 
 This project uses specialized agent behaviors to handle specific workflow tasks. Agent behaviors are defined in `.claude/agents/` and are invoked using the `general-purpose` agent type with behavioral injection, following the supervisor pattern for multi-agent coordination.
 
-For command architecture standards and context preservation patterns, see [Command Architecture Standards](command_architecture_standards.md).
+For command architecture standards and context preservation patterns, see [Command Architecture Standards](../reference/command_architecture_standards.md).
 
 ## Layered Context Architecture
 
@@ -118,8 +118,8 @@ Task {
 - **Scalability**: Enables 10+ parallel agents without context exhaustion
 
 **See Also**:
-- [Command Architecture Standards](command_architecture_standards.md#layered-context-architecture) for complete layered context guidelines
-- [Hierarchical Agents Guide](hierarchical_agents.md#metadata-extraction) for metadata extraction patterns
+- [Command Architecture Standards](../reference/command_architecture_standards.md#layered-context-architecture) for complete layered context guidelines
+- [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extraction) for metadata extraction patterns
 
 ## Critical: Agent Invocation Pattern
 
@@ -445,7 +445,7 @@ Choose agent based on primary task:
 
 ## Context Preservation in Multi-Agent Workflows
 
-When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](hierarchical_agents.md).
+When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](../concepts/hierarchical_agents.md).
 
 **Key Patterns** (detailed in hierarchical_agents.md):
 - **Metadata-Only Passing**: Extract path + 50-word summary instead of full content (95-99% reduction)
@@ -454,7 +454,7 @@ When integrating agents into multi-phase workflows, use metadata-based context p
 
 **Target**: <30% context usage throughout multi-phase workflows
 
-**See Also**: [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 requirements
+**See Also**: [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards) for Standards 6-8 requirements
 
 ## Command-Agent Matrix
 

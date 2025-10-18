@@ -2,7 +2,7 @@
 
 This document provides reusable patterns and examples for implementing Claude Code commands. Commands should reference these patterns rather than duplicating documentation inline.
 
-For command architecture standards and design principles, see [Command Architecture Standards](command_architecture_standards.md).
+For command architecture standards and design principles, see [Command Architecture Standards](../reference/command_architecture_standards.md).
 
 **Last Updated**: 2025-10-10
 
@@ -1351,7 +1351,7 @@ fi
 - Success/failure routing
 - Unique to single command
 
-See [Command Architecture Standards](command_architecture_standards.md#standard-1) for complete inline requirements.
+See [Command Architecture Standards](../reference/command_architecture_standards.md#standard-1) for complete inline requirements.
 
 ---
 
@@ -1461,7 +1461,7 @@ apply_pruning_policy --mode aggressive --workflow orchestrate
 - `prune_phase_metadata()` - Remove phase data after completion
 - `apply_pruning_policy()` - Automatic pruning by workflow type
 
-See [Command Architecture Standards](command_architecture_standards.md#context-preservation-standards) for Standards 6-8 details.
+See [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards) for Standards 6-8 details.
 
 ---
 

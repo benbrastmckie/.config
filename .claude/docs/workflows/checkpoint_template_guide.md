@@ -1015,16 +1015,16 @@ yq eval '.name, .category, .variables, .plan_template' template.yaml
 
 ## Cross-References
 
-- **Command Architecture Standards**: [command_architecture_standards.md](command_architecture_standards.md) - Context preservation patterns
+- **Command Architecture Standards**: [command_architecture_standards.md](../reference/command_architecture_standards.md) - Context preservation patterns
 - **Bash Patterns**: [bash-patterns.yaml](../templates/bash-patterns.yaml) - Reusable utility procedures
 - **Implementation Patterns**: [implementation-patterns.yaml](../templates/implementation-patterns.yaml) - Workflow procedures
 - **Orchestration Guide**: [orchestration-guide.md](orchestration-guide.md) - Multi-agent workflows with checkpoints
-- **Directory Protocols**: [directory-protocols.md](directory-protocols.md) - Topic-based organization
-- **Development Workflow**: [development-workflow.md](development-workflow.md) - Standard development workflow
+- **Directory Protocols**: [directory-protocols.md](../concepts/directory-protocols.md) - Topic-based organization
+- **Development Workflow**: [development-workflow.md](../concepts/development-workflow.md) - Standard development workflow
 - **Report 052**: [.claude/specs/reports/052_checkpoint_template_system_integration_analysis.md](../specs/reports/052_checkpoint_template_system_integration_analysis.md) - Detailed integration analysis
 
 ---
 
 **Last Updated**: 2025-10-17 (Schema v1.3 release)
 **Consolidates**: 22 scattered checkpoint/template references
-**Maintainer**: See [writing-standards.md](writing-standards.md) for contribution guidelines
+**Maintainer**: See [writing-standards.md](../concepts/writing-standards.md) for contribution guidelines
