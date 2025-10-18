@@ -1027,4 +1027,4 @@ yq eval '.name, .category, .variables, .plan_template' template.yaml
 
 **Last Updated**: 2025-10-17 (Schema v1.3 release)
 **Consolidates**: 22 scattered checkpoint/template references
-**Maintainer**: See [development-philosophy.md](development-philosophy.md) for contribution guidelines
+**Maintainer**: See [writing-standards.md](writing-standards.md) for contribution guidelines
