@@ -1,5 +1,112 @@
 # .claude/ Infrastructure Systematic Refactoring
 
+## Plan Structure and Progress Tracking
+
+### Hierarchy Overview
+
+```
+072_claude_infrastructure_refactoring/
+├── 072_claude_infrastructure_refactoring.md (this file)
+│
+├── Phase 1: Agent Registry Foundation [PENDING]
+│   ├── phase_1_agent_registry_foundation.md
+│   ├── Stage 1: Enhanced Registry Schema Design [PENDING]
+│   ├── Stage 2: Agent Discovery Implementation [PENDING]
+│   ├── Stage 3: Schema Validation and Compliance [PENDING]
+│   └── Stage 4: Testing and Documentation [PENDING]
+│
+├── Phase 2: Utility Modularization [PENDING]
+│   ├── phase_2_utility_modularization/
+│   │   ├── phase_2_utility_modularization.md
+│   │   └── stage_1_dependency_analysis.md ✓ EXPANDED
+│   ├── Stage 1: Dependency Analysis and Module Boundaries [PENDING]
+│   ├── Stage 2: Module Extraction [PENDING]
+│   ├── Stage 3: Backward Compatibility Wrapper [PENDING]
+│   ├── Stage 4: Testing and Validation [PENDING]
+│   └── Stage 5: Documentation Updates [PENDING]
+│
+├── Phase 3: Command Shared Documentation [PENDING]
+│   ├── phase_3_command_shared_documentation.md
+│   ├── Stage 1: Shared Reference Audit [PENDING]
+│   ├── Stage 2: Missing Documentation Creation [PENDING]
+│   ├── Stage 3: Additional Pattern Extraction [PENDING]
+│   └── Stage 4: Validation Integration [PENDING]
+│
+├── Phase 4: Documentation Integration [PENDING]
+│   ├── phase_4_documentation_integration.md
+│   ├── Stage 1: Navigation Update [PENDING]
+│   ├── Stage 2: Archive Cleanup [PENDING]
+│   ├── Stage 3: Cross-Reference Validation [PENDING]
+│   └── Stage 4: Optional Optimization [PENDING]
+│
+├── Phase 5: Discovery Infrastructure [PENDING]
+│   ├── phase_5_discovery_infrastructure/
+│   │   ├── phase_5_discovery_infrastructure.md
+│   │   └── stage_3_dependency_mapping.md ✓ EXPANDED
+│   ├── Stage 1: Command Discovery Implementation [PENDING]
+│   ├── Stage 2: Structure Validation Implementation [PENDING]
+│   ├── Stage 3: Dependency Mapping Implementation [PENDING]
+│   ├── Stage 4: Registry Population and Management [PENDING]
+│   └── Stage 5: Testing and Integration [PENDING]
+│
+└── Phase 6: Integration Testing [PENDING]
+    ├── phase_6_integration_testing.md
+    ├── Stage 1: Test Suite Execution [PENDING]
+    ├── Stage 2: Backward Compatibility Validation [PENDING]
+    ├── Stage 3: Performance Benchmarking [PENDING]
+    ├── Stage 4: Documentation Review and Updates [PENDING]
+    ├── Stage 5: Integration Smoke Tests [PENDING]
+    └── Stage 6: Final Reporting [PENDING]
+```
+
+### Completion Status Summary
+
+**Structure Level**: 2 (phases expanded + 2 stages expanded to separate files)
+
+**Phase Status**: 0/6 phases completed
+- ⬜ Phase 1: Agent Registry Foundation (12 tasks, 4 stages)
+- ⬜ Phase 2: Utility Modularization (18 tasks, 5 stages) - **Stage 1 EXPANDED**
+- ⬜ Phase 3: Command Shared Documentation (8 tasks, 4 stages)
+- ⬜ Phase 4: Documentation Integration (6 tasks, 4 stages)
+- ⬜ Phase 5: Discovery Infrastructure (12 tasks, 5 stages) - **Stage 3 EXPANDED**
+- ⬜ Phase 6: Integration Testing (10 tasks, 6 stages)
+
+**Stage Expansions**: 2/66 stages expanded to Level 2
+- ✅ Phase 2, Stage 1: Dependency Analysis (400+ lines, comprehensive module boundary spec)
+- ✅ Phase 5, Stage 3: Dependency Mapping (1287 lines, advanced graph algorithms)
+
+**Total Tasks**: 66 detailed tasks across all phases
+
+**Estimated Effort**: 3-5 days for complete implementation
+
+### Quick Navigation
+
+- **Main Plan**: [072_claude_infrastructure_refactoring.md](#) (this file)
+- **Phase 1**: [Agent Registry Foundation](phase_1_agent_registry_foundation.md)
+- **Phase 2**: [Utility Modularization](phase_2_utility_modularization/phase_2_utility_modularization.md)
+  - [Stage 1: Dependency Analysis](phase_2_utility_modularization/stage_1_dependency_analysis.md) ✓
+- **Phase 3**: [Command Shared Documentation](phase_3_command_shared_documentation.md)
+- **Phase 4**: [Documentation Integration](phase_4_documentation_integration.md)
+- **Phase 5**: [Discovery Infrastructure](phase_5_discovery_infrastructure/phase_5_discovery_infrastructure.md)
+  - [Stage 3: Dependency Mapping](phase_5_discovery_infrastructure/stage_3_dependency_mapping.md) ✓
+- **Phase 6**: [Integration Testing](phase_6_integration_testing.md)
+
+### Implementation Waves
+
+**Wave 1** (Parallel execution recommended):
+- ⬜ Phase 1: Agent Registry Foundation
+- ⬜ Phase 2: Utility Modularization (dependencies analyzed in Stage 1)
+- ⬜ Phase 3: Command Shared Documentation
+- ⬜ Phase 4: Documentation Integration
+
+**Wave 2** (Sequential, after Wave 1):
+- ⬜ Phase 5: Discovery Infrastructure (depends on Phase 1 pattern + Phase 2 validation targets)
+
+**Wave 3** (Sequential, after Wave 2):
+- ⬜ Phase 6: Integration Testing (validates all previous work)
+
+---
+
 ## Design Vision Alignment
 
 **This refactoring plan aims to bring the contents of `.claude/` into full alignment with the design vision documented in [`.claude/docs/README.md`](.claude/docs/README.md).**
@@ -18,8 +125,11 @@ This refactoring systematically addresses gaps between current implementation an
 - **Date**: 2025-10-18
 - **Feature**: Systematic refactoring of .claude/ commands and agents infrastructure
 - **Scope**: Agent registry completion, utility modularization, documentation integration, discovery/validation systems
-- **Structure Level**: 1 (all 6 phases expanded to separate files)
+- **Structure Level**: 2 (phases expanded, Stage 3 of Phase 2 and Stage 3 of Phase 5 expanded to separate files)
 - **Expanded Phases**: [1, 2, 3, 4, 5, 6]
+- **Expanded Stages**:
+  - Phase 2, Stage 1: Dependency Analysis and Module Boundary Definition
+  - Phase 5, Stage 3: Dependency Mapping Implementation
 - **Total Phases**: 6
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Design Reference**: /home/benjamin/.config/.claude/docs/README.md
@@ -679,6 +789,36 @@ Each phase has been expanded into a detailed specification file with comprehensi
 **Estimated total effort**: 3-5 days for complete implementation across all 6 phases
 
 ## Revision History
+
+### 2025-10-18 - Revision 2: Plan Structure and Progress Tracking
+
+**Changes Made**:
+- Added comprehensive "Plan Structure and Progress Tracking" section at the top
+- Included visual hierarchy tree showing all 6 phases and 25 stages
+- Added completion status summary with checkboxes for tracking progress
+- Included stage expansion status (2/66 stages expanded to Level 2)
+- Added quick navigation links to all phase and expanded stage files
+- Organized implementation waves for parallel execution guidance
+
+**Reason for Revision**:
+User requested the full structure of the plan be reflected at the top to easily keep track of what has been completed. This provides a single-view dashboard for the entire refactoring effort.
+
+**New Sections Added**:
+- Hierarchy Overview (ASCII tree showing all files and stages)
+- Completion Status Summary (phase/stage tracking with checkboxes)
+- Quick Navigation (direct links to all plan documents)
+- Implementation Waves (parallel execution recommendations)
+
+**Modified Sections**:
+- Added 108-line "Plan Structure and Progress Tracking" section at beginning
+- No changes to existing phase content or metadata
+- Preserved all existing revision history
+
+**Reports Used**: None (structural reorganization for better tracking)
+
+**Impact**: Significantly improved plan navigability and progress tracking. No changes to implementation content. Users can now see the entire plan hierarchy and completion status at a glance.
+
+---
 
 ### 2025-10-18 - Revision 1: Design Vision Alignment
 
