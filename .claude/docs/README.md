@@ -25,14 +25,17 @@ Core System Guides (5)
 ├── command_architecture_standards.md  Command/agent architecture standards
 └── phase_dependencies.md              Wave-based parallel execution
 │
-Advanced Features (7)
+Advanced Features (10)
 ├── orchestration-guide.md             Multi-agent workflows
 ├── adaptive-planning-guide.md         Progressive plans and checkpointing
 ├── template-system-guide.md           Template-based planning
 ├── efficiency-guide.md                Performance optimization
 ├── error-enhancement-guide.md         Error handling patterns
-├── artifact_organization.md           Topic-based artifact structure
-└── spec_updater_guide.md              Spec updater agent guide
+├── directory-protocols.md             Topic-based artifact structure
+├── spec_updater_guide.md              Spec updater agent guide
+├── hierarchical_agents.md             Multi-level agent coordination
+├── development-workflow.md            Development workflow patterns
+└── writing-standards.md               Documentation and code standards
 │
 Development Guides (8)
 ├── creating-commands.md               Command development guide
@@ -49,7 +52,13 @@ Integration Guides (2)
 │
 Archive/
 └── archive/                           Historical documentation
+    ├── topic_based_organization.md    → See directory-protocols.md
+    ├── artifact_organization.md       → See directory-protocols.md
+    ├── development-philosophy.md      → See writing-standards.md
+    └── timeless_writing_guide.md      → See writing-standards.md
 ```
+
+**Note**: Archived files (marked with →) have been consolidated into unified guides. See archive/README.md for details.
 
 ## Quick Start by Role
 
@@ -259,8 +268,8 @@ Archive/
 
 ---
 
-#### artifact_organization.md
-**Purpose**: Topic-based artifact organization system
+#### directory-protocols.md
+**Purpose**: Topic-based artifact organization system and directory structure protocols
 
 **Contents**:
 - Directory structure (`specs/{NNN_topic}/`)
@@ -269,12 +278,15 @@ Archive/
 - Artifact lifecycle management
 - Shell utilities for artifact operations
 - Cleanup patterns for temporary artifacts
+- Progressive plan organization (Level 0 → Level 1 → Level 2)
+- Phase dependencies and wave-based execution
 
 **Use Cases**:
 - Understanding spec directory organization
 - Managing workflow artifacts
 - Creating debug reports and investigation scripts
 - Cleaning up temporary files after workflows
+- Organizing implementation plans
 
 ---
 
@@ -369,8 +381,7 @@ Archive/
 
 **See Also**:
 - [spec_updater_guide.md](spec_updater_guide.md) - Spec updater agent guide
-- [artifact_organization.md](artifact_organization.md) - Artifact lifecycle management
-- [topic_based_organization.md](topic_based_organization.md) - Gitignore compliance protocols
+- [directory-protocols.md](directory-protocols.md) - Artifact lifecycle management and gitignore compliance
 - `.claude/lib/artifact-operations.sh` - Bidirectional cross-referencing utilities
 
 ---
@@ -394,10 +405,80 @@ Archive/
 - Following gitignore compliance protocols
 
 **See Also**:
-- [topic_based_organization.md](topic_based_organization.md) - Complete topic organization guide
-- [directory-protocols.md](directory-protocols.md) - Directory structure protocols
-- [artifact_organization.md](artifact_organization.md) - Artifact taxonomy and lifecycle
+- [directory-protocols.md](directory-protocols.md) - Complete directory structure protocols, artifact taxonomy, and lifecycle management
 - `.claude/lib/template-integration.sh` - Topic management utilities
+
+---
+
+#### hierarchical_agents.md
+**Purpose**: Multi-level agent coordination architecture
+
+**Contents**:
+- Metadata extraction patterns (99% context reduction)
+- Forward message pattern for subagent responses
+- Recursive supervision for complex workflows
+- Context pruning strategies
+- Agent delegation patterns
+- Performance metrics and optimization
+
+**Use Cases**:
+- Coordinating multiple agents in workflows
+- Minimizing context window consumption
+- Delegating complex tasks to specialized subagents
+- Managing sub-supervisors for large workflows
+
+**See Also**:
+- [using-agents.md](using-agents.md) - Agent invocation patterns
+- [command_architecture_standards.md](command_architecture_standards.md) - Context preservation standards
+- `.claude/lib/artifact-operations.sh` - Metadata extraction utilities
+- `.claude/lib/context-pruning.sh` - Context pruning utilities
+
+---
+
+#### development-workflow.md
+**Purpose**: Standard development workflow patterns and artifact management
+
+**Contents**:
+- 5-phase workflow: research → plan → implement → test → summarize
+- Spec updater integration for artifact management
+- Plan hierarchy updates and checkbox propagation
+- Git workflow patterns (feature branches, atomic commits)
+- Adaptive planning integration
+- Cross-reference maintenance
+
+**Use Cases**:
+- Understanding standard development workflow
+- Managing artifacts in topic-based structure
+- Integrating spec updater agent
+- Following git best practices
+
+**See Also**:
+- [directory-protocols.md](directory-protocols.md) - Artifact organization
+- [spec_updater_guide.md](spec_updater_guide.md) - Spec updater agent
+- [adaptive-planning-guide.md](adaptive-planning-guide.md) - Adaptive planning
+
+---
+
+#### writing-standards.md
+**Purpose**: Development philosophy, documentation standards, and timeless writing principles
+
+**Contents**:
+- Clean-break refactor philosophy
+- Development core values (clarity, quality, coherence)
+- Present-focused documentation standards
+- Banned patterns and temporal markers
+- Rewriting patterns for timeless writing
+- Decision framework for documentation
+- Review process and enforcement tools
+
+**Use Cases**:
+- Writing timeless documentation
+- Refactoring without historical burden
+- Removing temporal references from docs
+- Following project documentation standards
+
+**See Also**:
+- [command_architecture_standards.md](command_architecture_standards.md) - Command-specific refactoring rules
 
 ---
 
@@ -697,8 +778,11 @@ Before committing:
 - [template-system-guide.md](template-system-guide.md) - Plan templates
 - [efficiency-guide.md](efficiency-guide.md) - Performance optimization
 - [error-enhancement-guide.md](error-enhancement-guide.md) - Error handling
-- [artifact_organization.md](artifact_organization.md) - Artifact structure
+- [directory-protocols.md](directory-protocols.md) - Directory structure and artifacts
 - [spec_updater_guide.md](spec_updater_guide.md) - Spec updater agent
+- [hierarchical_agents.md](hierarchical_agents.md) - Multi-level agent coordination
+- [development-workflow.md](development-workflow.md) - Development workflow patterns
+- [writing-standards.md](writing-standards.md) - Documentation and code standards
 
 **Development Guides**:
 - [creating-commands.md](creating-commands.md) - Command development
