@@ -1,7 +1,10 @@
 {
+  "schema_version": "1.0.0",
+  "last_updated": "2025-10-18T20:21:00Z",
   "agents": {
     "doc-converter": {
       "type": "specialized",
+      "category": "documentation",
       "description": "Bidirectional document conversion between Markdown, DOCX, and PDF",
       "tools": [
         "Read",
@@ -10,16 +13,19 @@
         "Bash",
         "Write"
       ],
-      "total_invocations": 0,
-      "successes": 0,
-      "total_duration_ms": 0,
-      "avg_duration_ms": 0,
-      "success_rate": 0.0,
-      "last_execution": null,
-      "last_status": null
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.00,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/doc-converter.md"
     },
     "spec-updater": {
       "type": "specialized",
+      "category": "analysis",
       "description": "Manages spec artifacts in topic-based directory structure with proper placement and cross-references",
       "tools": [
         "Read",
@@ -29,19 +35,15 @@
         "Glob",
         "Bash"
       ],
-      "total_invocations": 0,
-      "successes": 0,
-      "total_duration_ms": 0,
-      "avg_duration_ms": 0,
-      "success_rate": 0.0,
-      "last_execution": null,
-      "last_status": null
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.00,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/spec-updater.md"
     }
-  },
-  "metadata": {
-    "created": "2025-10-03",
-    "last_updated": "2025-10-12T19:57:54Z",
-    "description": "Agent performance tracking registry",
-    "version": "1.0"
   }
 }
