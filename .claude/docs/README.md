@@ -61,6 +61,170 @@ docs/
     └── README.md                Archive index with redirects
 ```
 
+## Hierarchical Agent Workflow System
+
+Claude Code uses a sophisticated **hierarchical agent architecture** where commands orchestrate specialized subagents to execute multi-phase development workflows while preserving context through metadata-only passing.
+
+### How It Works
+
+**Primary Agent** (supervisor) → **Subagents** (workers) → **Artifacts** (organized by topic)
+
+Commands invoke subagents that perform specialized tasks and return **summary + reference** (not full content), achieving 92-97% context reduction. Artifacts are organized in numbered topic directories (`specs/{NNN_topic}/`) with type-specific subdirectories.
+
+### Command Workflow Chains
+
+**`/plan`**: Creates implementation plans with automatic complexity-based expansion
+```
+plan-architect → complexity-evaluator → expander (if needed)
+  ↓
+Returns: Plan path + metadata (complexity, phases, dependencies)
+Context: 96% reduction (8000 tokens → 350 tokens)
+```
+
+**`/implement`**: Executes plans phase-by-phase with testing and debugging
+```
+FOR EACH PHASE:
+  implementation-researcher (if complex) → code-writer → test-specialist
+  ↓
+  IF tests fail repeatedly:
+    debug-specialist (max 3 iterations) → code-writer (apply fixes)
+  ↓
+  spec-updater (update hierarchy, create summaries)
+
+Returns: Implementation summary + files modified + test status
+Context: 98% reduction through aggressive pruning
+```
+
+**`/report`**: Research with parallel subagents returning summaries
+```
+research-specialist (×2-4 in parallel)
+  ↓
+Each returns: Report path + 50-word summary + key findings
+Context: 95% reduction (5000 tokens → 250 tokens per report)
+```
+
+**`/document`**: Documentation updates with summary
+```
+doc-writer
+  ↓
+Returns: Updated docs list + 100-word summary
+Context: 95% reduction
+```
+
+**`/orchestrate`**: Complete end-to-end workflow coordination (most complex)
+```
+Phase 1: Research (parallel) → Synthesize summaries
+Phase 2: Planning → Store plan path only
+Phase 3: Implementation → Phase summaries only
+Phase 4: Testing/Debugging (conditional) → Debug summaries
+Phase 5: Documentation → Doc update summary
+Phase 6: Workflow Summary → Final cross-references
+
+Master Plan: Holds main todos, guides workflow
+Context Strategy: Read full artifacts only when needed
+Target: <30% context usage throughout
+```
+
+### Artifact Organization
+
+**Topic-Based Structure**: `specs/{NNN_topic}/`
+```
+027_authentication/
+├── reports/          Research reports (gitignored)
+├── plans/            Implementation plans (gitignored)
+│   ├── 027_auth.md           Level 0 (main plan)
+│   ├── phase_2_backend.md    Level 1 (expanded phase)
+│   └── phase_2/              Level 2 (stages)
+├── summaries/        Workflow summaries (gitignored)
+├── debug/            Debug reports (COMMITTED for history!)
+├── scripts/          Investigation scripts (temp, gitignored)
+└── outputs/          Test outputs (temp, gitignored)
+```
+
+**Plan Expansion**: Automatic expansion based on complexity thresholds
+- **Level 0**: Single file, all phases inline
+- **Level 1**: High-complexity phases → separate files
+- **Level 2**: Complex phases → staged subdirectories
+
+**Checkbox Propagation**: Changes cascade through plan hierarchy (L2 → L1 → L0)
+
+### Context Preservation
+
+**Metadata-Only Passing**: Subagents return summaries, not full content
+```yaml
+extract_report_metadata():
+  Full report: 5000 tokens
+  Metadata: 250 tokens (title + 50-word summary + key findings)
+  Reduction: 95%
+
+extract_plan_metadata():
+  Full plan: 8000 tokens
+  Metadata: 350 tokens (phases + complexity + dependencies)
+  Reduction: 96%
+```
+
+**Forward Message Pattern**: Pass subagent responses directly (no paraphrasing)
+
+**Five-Layer Context Architecture**:
+1. **Full Artifacts** (filesystem) - Read only when necessary
+2. **Metadata Summaries** (250-350 tokens) - Default passing
+3. **Checkpoint State** (100-200 tokens/phase) - Workflow tracking
+4. **Master Plan** (500-800 tokens) - Primary context anchor
+5. **Minimal State** (200-300 tokens) - Essential control
+
+**Aggressive Pruning**: Clear subagent outputs after each phase, keep only summaries
+
+### Parallel Execution with Dependencies
+
+**Phase Dependencies**: Enables wave-based parallel execution
+```yaml
+Phase 1: Database Setup      [no dependencies]
+Phase 2: Backend API         [depends_on: [1]]
+Phase 3: Frontend UI         [depends_on: [1]]
+Phase 4: Integration         [depends_on: [2, 3]]
+
+Waves:
+  Wave 1: Phase 1              (30 min)
+  Wave 2: Phase 2 | Phase 3    (45 min in parallel)
+  Wave 3: Phase 4              (35 min)
+
+Sequential: 150 min
+Parallel: 110 min
+Savings: 40 min (27%)
+```
+
+**Kahn's Algorithm**: Topological sorting for wave calculation
+
+### Spec Updater Agent
+
+**Purpose**: Manages artifacts and maintains cross-references throughout workflow
+
+**Automatic Triggers**:
+- Phase completion
+- Context window <20% free
+- Plan expansion complete
+- Workflow complete
+
+**Actions**:
+- Create artifacts in topic directories
+- Update plan hierarchy checkboxes (L2 → L1 → L0)
+- Maintain cross-references between artifacts
+- Create implementation summaries
+- Verify gitignore compliance (debug/ committed, others ignored)
+
+### Performance Metrics
+
+**Context Reduction**: 92-97% throughout workflows (target: <30% usage)
+
+**Time Savings with Parallelization**:
+- Research phase: 40-60% faster (parallel subagents)
+- Implementation phase: 40-60% faster (wave-based execution)
+- Overall workflows: 35-50% faster vs sequential
+
+**For Complete Details**: See [Hierarchical Agent Workflow Guide](workflows/hierarchical-agent-workflow.md)
+
+---
+
 ## Browse by Category
 
 ### [Reference Documentation](reference/README.md)
