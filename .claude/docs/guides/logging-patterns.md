@@ -55,7 +55,7 @@ PROGRESS: Phase 3 complete - tests passing
 
 ### Agent Invocation Markers
 
-**Context-Efficient Logging** (see [Command Architecture Standards - Standard 6](command_architecture_standards.md#standard-6)):
+**Context-Efficient Logging** (see [Command Architecture Standards - Standard 6](../reference/command_architecture_standards.md#standard-6)):
 
 When logging artifact references, use **metadata-only** format to minimize context usage:
 

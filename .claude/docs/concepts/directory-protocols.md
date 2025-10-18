@@ -107,7 +107,7 @@ specs/009_orchestration_enhancement/
 
 ### Metadata-Only References
 
-Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/command_architecture_standards.md#context-preservation-standards)).
 
 **Metadata Extraction Utilities** (`.claude/lib/artifact-operations.sh`):
 - `extract_report_metadata(report_path)` - Extracts title, 50-word summary, key findings, file paths
@@ -1004,4 +1004,4 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 
 ---
 
-**Cross-Reference**: See [Command Architecture Standards](command_architecture_standards.md) for context preservation patterns when working with topic artifacts.
+**Cross-Reference**: See [Command Architecture Standards](../reference/command_architecture_standards.md) for context preservation patterns when working with topic artifacts.

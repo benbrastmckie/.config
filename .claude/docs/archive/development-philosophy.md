@@ -8,7 +8,7 @@
 - **System integration**: What matters is that existing commands and agents work well together in the current implementation
 - **No legacy burden**: Don't compromise current design to support old formats or deprecated patterns
 - **Migration is acceptable**: Breaking changes are acceptable when they improve system quality
-- **Exception - Command Files**: Command and agent files require special refactoring rules (see [Command Architecture Standards](.claude/docs/command_architecture_standards.md)) because they are AI prompts, not traditional code
+- **Exception - Command Files**: Command and agent files require special refactoring rules (see [Command Architecture Standards](../reference/command_architecture_standards.md)) because they are AI prompts, not traditional code
 
 ## Documentation Standards
 

@@ -171,7 +171,7 @@ Reports reference plans they inform:
 
 ## Context-Efficient Artifact Usage
 
-When working with artifacts across workflows, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+When working with artifacts across workflows, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/command_architecture_standards.md#context-preservation-standards)).
 
 ### Metadata Extraction Examples
 
@@ -317,7 +317,7 @@ git rm --cached specs/042_auth/reports/001_research.md
 
 ## Best Practices
 
-**Cross-Reference**: See [Command Architecture Standards](command_architecture_standards.md) for context preservation patterns when working with topic artifacts.
+**Cross-Reference**: See [Command Architecture Standards](../reference/command_architecture_standards.md) for context preservation patterns when working with topic artifacts.
 
 ### Topic Naming
 
@@ -398,7 +398,7 @@ cleanup_topic_artifacts "<topic_dir>" "<type>" [age_days]
 cleanup_all_temp_artifacts "<topic_dir>"
 ```
 
-**Metadata Extraction** (see [Command Architecture Standards - Standard 6](command_architecture_standards.md#standard-6)):
+**Metadata Extraction** (see [Command Architecture Standards - Standard 6](../reference/command_architecture_standards.md#standard-6)):
 
 ```bash
 # Extract metadata for context-efficient artifact usage

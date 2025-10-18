@@ -64,7 +64,7 @@ This optimization utility is designed for **CLAUDE.md files only**, NOT for comm
 - Agent files (`.claude/agents/*.md`)
 - Any file containing executable instructions for Claude
 
-**Rationale**: Command files are AI execution scripts, not documentation. Over-extraction of command content violates [Command Architecture Standards - Standard 1 (Inline Execution)](command_architecture_standards.md#standard-1), which requires workflow logic, tool invocations, and decision points to remain inline for direct AI interpretation.
+**Rationale**: Command files are AI execution scripts, not documentation. Over-extraction of command content violates [Command Architecture Standards - Standard 1 (Inline Execution)](../reference/command_architecture_standards.md#standard-1), which requires workflow logic, tool invocations, and decision points to remain inline for direct AI interpretation.
 
 **Usage**:
 ```bash
@@ -307,5 +307,5 @@ See `.claude/examples/setup/` for complete examples:
 ## See Also
 
 - [CLAUDE.md](../CLAUDE.md) - Project standards file
-- [Command Architecture Standards](command_architecture_standards.md) - Command design patterns
-- [Development Workflow](development-workflow.md) - Spec updater integration
+- [Command Architecture Standards](../reference/command_architecture_standards.md) - Command design patterns
+- [Development Workflow](../concepts/development-workflow.md) - Spec updater integration

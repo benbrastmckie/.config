@@ -76,7 +76,7 @@ allowed-tools: Read, Write, Edit, Bash, TodoWrite
 
 **Rationale for Tool Combinations**: These groupings ensure agents have sufficient tools for their task while maintaining security through restriction. Inline requirements (Standard 1) mean agents must be self-contained with appropriate tool access, not relying on external helper agents.
 
-**See Also**: [Command Architecture Standards](command_architecture_standards.md#agent-file-standards) for complete tool selection guidelines.
+**See Also**: [Command Architecture Standards](../reference/command_architecture_standards.md#agent-file-standards) for complete tool selection guidelines.
 
 ## Agent Output Requirements
 
@@ -122,7 +122,7 @@ TESTS_PASSED: [count]
 
 **Why This Matters**: Structured outputs enable `extract_report_metadata()` and `forward_message()` utilities to extract metadata (path + 50-word summary) instead of passing full content between agents, achieving 99% context reduction.
 
-**See Also**: [Hierarchical Agents Guide](hierarchical_agents.md#metadata-extraction) for complete metadata extraction patterns.
+**See Also**: [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extraction) for complete metadata extraction patterns.
 
 ### Structural Annotations (Standard 5)
 
@@ -153,7 +153,7 @@ Return structured JSON with status, artifacts[], summary.
 - `[REFERENCE-OK]` - Can be supplemented with external references
 - `[EXAMPLE-ONLY]` - Can be moved to external files if core example remains
 
-**See Also**: [Command Architecture Standards](command_architecture_standards.md#standard-5) for complete structural annotation guidelines.
+**See Also**: [Command Architecture Standards](../reference/command_architecture_standards.md#standard-5) for complete structural annotation guidelines.
 
 ### description (required)
 

@@ -13,7 +13,7 @@ Comprehensive guide for developing custom slash commands with standards integrat
 7. [Common Patterns and Examples](#7-common-patterns-and-examples)
 8. [References](#references)
 
-For a quick reference of all available commands, see [Command Quick Reference](command-reference.md).
+For a quick reference of all available commands, see [Command Quick Reference](../reference/command-reference.md).
 
 ---
 
@@ -530,7 +530,7 @@ Task {
 - Bash procedures (utility init, checkpoint setup) → **Reference pattern libraries**
 - Workflow logic (agent invocation, decisions) → **Keep inline**
 
-See [Command Architecture Standards](command_architecture_standards.md#standard-1) and [Standard 9](command_architecture_standards.md#standard-9) for complete guidance.
+See [Command Architecture Standards](../reference/command_architecture_standards.md#standard-1) and [Standard 9](../reference/command_architecture_standards.md#standard-9) for complete guidance.
 
 ### 3.4 Command Size Thresholds (Standard 11)
 
@@ -583,7 +583,7 @@ Total: 380 lines of reusable procedures
 Total: Procedures referenced, not duplicated
 ```
 
-See [Command Architecture Standards](command_architecture_standards.md#standard-11) for complete size guidelines.
+See [Command Architecture Standards](../reference/command_architecture_standards.md#standard-11) for complete size guidelines.
 
 ### 3.5 Quality Checklist
 
@@ -968,7 +968,7 @@ Task {
 - Historical context passed as metadata (selective reading)
 - Clear separation of concerns
 
-See [Command Architecture Standards](command_architecture_standards.md#layered-context-architecture) for complete details.
+See [Command Architecture Standards](../reference/command_architecture_standards.md#layered-context-architecture) for complete details.
 
 ### 5.2 When Commands Use Agents
 
@@ -1710,10 +1710,10 @@ Return to user:
 
 ## References
 
-- **[Command Quick Reference](command-reference.md)** - Quick lookup for all commands
+- **[Command Quick Reference](../reference/command-reference.md)** - Quick lookup for all commands
 - **[Command Patterns](command-patterns.md)** - Reusable implementation patterns
-- **[Command Architecture Standards](command_architecture_standards.md)** - Architecture standards for commands/agents
-- **[Agent Reference](agent-reference.md)** - Quick agent reference
+- **[Command Architecture Standards](../reference/command_architecture_standards.md)** - Architecture standards for commands/agents
+- **[Agent Reference](../reference/agent-reference.md)** - Quick agent reference
 - **[Agent Development Guide](creating-agents.md)** - How to create agents
 - **[Standards Integration Guide](standards-integration.md)** - Standards integration details
 - **[Commands README](../commands/README.md)** - Complete command list and navigation

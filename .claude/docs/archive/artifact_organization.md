@@ -372,7 +372,7 @@ create_topic_artifact "specs/009_topic" "debug" "test_failure" "# Debug Report\n
 
 #### Metadata Extraction
 
-When referencing artifacts in cross-references, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](command_architecture_standards.md#context-preservation-standards)).
+When referencing artifacts in cross-references, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/command_architecture_standards.md#context-preservation-standards)).
 
 **Metadata Extraction Utilities** (`.claude/lib/artifact-operations.sh`):
 
@@ -628,7 +628,7 @@ META=$(load_metadata_on_demand "specs/042_auth/reports/001_jwt_patterns.md")
 
 ## Anti-Patterns
 
-When working with artifacts, avoid these common anti-patterns that violate [Command Architecture Standards 6-7](command_architecture_standards.md#context-preservation-standards):
+When working with artifacts, avoid these common anti-patterns that violate [Command Architecture Standards 6-7](../reference/command_architecture_standards.md#context-preservation-standards):
 
 ### Anti-Pattern 1: Full Content Passing
 
