@@ -49,7 +49,7 @@ Together, these features enable:
 
 **Structure**:
 ```
-specs/plans/NNN_feature_name.md
+specs/NNN_topic/plans/NNN_feature_name.md
 ```
 
 **Characteristics**:
@@ -57,6 +57,7 @@ specs/plans/NNN_feature_name.md
 - Inline phase sections with `### Phase N:` headers
 - Simple, linear organization
 - Easy to read and edit
+- No subdirectory needed (simple, non-structured plan)
 
 **When to Use**:
 - **Task count**: < 10 tasks
@@ -70,15 +71,15 @@ specs/plans/NNN_feature_name.md
 - Small feature additions
 - Documentation updates
 
-### Level 1: Phase Directory (Tier 2)
+### Level 1: Phase Directory (Tier 2 - Structured Plan)
 
 **Structure**:
 ```
-specs/plans/NNN_feature_name/
-├── NNN_feature_name.md       # Overview with phase summaries
-├── phase_1_setup.md          # Detailed tasks for phase 1
-├── phase_2_implementation.md # Detailed tasks for phase 2
-└── phase_3_testing.md        # Detailed tasks for phase 3
+specs/NNN_topic/plans/NNN_feature_name/    # Structured plan subdirectory
+├── NNN_feature_name.md                    # Overview with phase summaries
+├── phase_1_setup.md                       # Detailed tasks for phase 1
+├── phase_2_implementation.md              # Detailed tasks for phase 2
+└── phase_3_testing.md                     # Detailed tasks for phase 3
 ```
 
 **Characteristics**:
@@ -103,12 +104,12 @@ specs/plans/NNN_feature_name/
 
 **Structure**:
 ```
-specs/plans/NNN_feature_name/
-├── NNN_feature_name.md           # Main overview
+specs/NNN_topic/plans/NNN_feature_name/     # Structured plan subdirectory
+├── NNN_feature_name.md                     # Main overview
 ├── phase_1_analysis/
-│   ├── phase_1_overview.md       # Phase overview
-│   ├── stage_1_codebase_scan.md  # Stage details
-│   └── stage_2_metrics.md        # Stage details
+│   ├── phase_1_overview.md                 # Phase overview
+│   ├── stage_1_codebase_scan.md            # Stage details
+│   └── stage_2_metrics.md                  # Stage details
 └── phase_2_design/
     ├── phase_2_overview.md
     └── stage_1_architecture.md
