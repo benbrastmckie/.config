@@ -8,6 +8,7 @@
 - **Status**: PENDING
 - **Dependencies**: Phase 1 (agent-discovery.sh pattern), Phase 2 (modular utilities to validate)
 - **Estimated Tasks**: 15 detailed tasks
+- **Expanded Stages**: [3]
 
 ## Overview
 
@@ -853,304 +854,31 @@ run_all_tests
 - Validates documentation cross-references
 - Generates accurate validation reports
 
-## Stage 3: Dependency Mapping Implementation
+## Stage 3: Dependency Mapping Implementation (High Complexity)
 
 ### Objective
-Create dependency-mapper.sh to generate dependency graphs and enable impact analysis.
+Create dependency-mapper.sh with advanced graph algorithms for circular dependency detection, transitive analysis, and impact assessment.
 
-### Tasks
+### Summary
+This stage implements comprehensive dependency mapping infrastructure using advanced graph algorithms. Key capabilities include:
 
-#### Task 3.1: Dependency Graph Construction
-**File**: `.claude/lib/dependency-mapper.sh`
+- **Advanced dependency graph construction** - Adjacency list representation with metadata-rich nodes and edges
+- **Three-color DFS cycle detection** - Detects all circular dependencies with complete path reconstruction
+- **BFS transitive analysis** - Forward/backward dependency propagation with depth tracking
+- **Multi-level impact analysis** - Tracks ripple effects across utilities → commands → agents hierarchy
+- **Change simulation** - Function removal/rename impact assessment
+- **Visualization and reporting** - ASCII graphs, JSON exports, and comprehensive statistics
 
-```bash
-#!/usr/bin/env bash
-# Dependency Mapper Utility
-# Maps dependencies between commands, agents, and utilities
+**Complexity**: High (8/10) - Requires advanced graph algorithms (DFS, BFS), transitive closure computation, and sophisticated impact propagation.
 
-set -euo pipefail
+**For detailed implementation**, see [Stage 3: Dependency Mapping](stage_3_dependency_mapping.md)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/base-utils.sh"
-source "$SCRIPT_DIR/unified-logger.sh"
-
-# Configuration
-DEPENDENCY_MAP="${CLAUDE_ROOT}/.claude/data/registries/utility-dependency-map.json"
-
-#######################################
-# Build utility dependency graph
-# Outputs:
-#   JSON dependency map
-#######################################
-build_utility_dependency_map() {
-  log_info "Building utility dependency map..."
-
-  local utilities_json="{}"
-
-  # Scan all utilities
-  while IFS= read -r util_file; do
-    local util_name=$(basename "$util_file")
-
-    # Find what sources this utility
-    local sourced_by=()
-
-    # Check commands
-    while IFS= read -r cmd_file; do
-      if grep -q "$util_name" "$cmd_file" 2>/dev/null; then
-        sourced_by+=("command:$(basename "$cmd_file" .md)")
-      fi
-    done < <(find "$COMMANDS_DIR" -maxdepth 1 -name "*.md" -type f)
-
-    # Check other utilities
-    while IFS= read -r other_util; do
-      if [[ "$other_util" != "$util_file" ]]; then
-        if grep -q "$util_name" "$other_util" 2>/dev/null; then
-          sourced_by+=("utility:$(basename "$other_util")")
-        fi
-      fi
-    done < <(find "$LIB_DIR" -name "*.sh" -type f)
-
-    # Find dependencies of this utility
-    local dependencies=()
-    while IFS= read -r dep; do
-      dependencies+=("$dep")
-    done < <(grep -oP '(?<=source\s).*?\.sh' "$util_file" 2>/dev/null | xargs -I {} basename {} || true)
-
-    # Extract exported functions
-    local functions=()
-    while IFS= read -r func; do
-      functions+=("$func")
-    done < <(grep -oP '^[a-z_][a-z0-9_]*\(\)' "$util_file" | sed 's/()//' || true)
-
-    # Build JSON entry
-    local sourced_by_json=$(printf '%s\n' "${sourced_by[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-    local dependencies_json=$(printf '%s\n' "${dependencies[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-    local functions_json=$(printf '%s\n' "${functions[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-
-    utilities_json=$(echo "$utilities_json" | jq \
-      --arg name "$util_name" \
-      --argjson sourced_by "$sourced_by_json" \
-      --argjson deps "$dependencies_json" \
-      --argjson funcs "$functions_json" \
-      '.[$name] = {
-        "sourced_by": $sourced_by,
-        "dependencies": $deps,
-        "functions_exported": $funcs
-      }')
-  done < <(find "$LIB_DIR" -name "*.sh" -type f | sort)
-
-  # Build complete map
-  cat <<EOF
-{
-  "metadata": {
-    "created": "$(date -Iseconds)",
-    "total_utilities": $(echo "$utilities_json" | jq 'length')
-  },
-  "utilities": $utilities_json
-}
-EOF
-}
-
-#######################################
-# Detect circular dependencies
-# Arguments:
-#   $1 - Dependency map JSON
-# Outputs:
-#   Array of circular dependency chains
-#######################################
-detect_circular_dependencies() {
-  local dep_map="$1"
-
-  log_info "Detecting circular dependencies..."
-
-  # Simple cycle detection: for each utility, check if it transitively depends on itself
-  local -a cycles=()
-
-  while IFS= read -r util_name; do
-    local -A visited=()
-    local -a stack=("$util_name")
-
-    while [[ ${#stack[@]} -gt 0 ]]; do
-      local current="${stack[-1]}"
-      unset 'stack[-1]'
-
-      if [[ -n "${visited[$current]:-}" ]]; then
-        continue
-      fi
-      visited[$current]=1
-
-      # Get dependencies of current
-      local deps
-      deps=$(echo "$dep_map" | jq -r --arg util "$current" '.utilities[$util].dependencies[]? // empty')
-
-      while IFS= read -r dep; do
-        if [[ "$dep" == "$util_name" ]]; then
-          cycles+=("Circular: $util_name -> ... -> $dep")
-        else
-          stack+=("$dep")
-        fi
-      done <<< "$deps"
-    done
-  done < <(echo "$dep_map" | jq -r '.utilities | keys[]')
-
-  printf '%s\n' "${cycles[@]}"
-}
-
-#######################################
-# Generate text-based dependency graph
-# Arguments:
-#   $1 - Utility name
-#   $2 - Dependency map JSON
-# Outputs:
-#   Tree visualization of dependencies
-#######################################
-generate_dependency_tree() {
-  local util_name="$1"
-  local dep_map="$2"
-  local prefix="${3:-}"
-
-  echo "${prefix}${util_name}"
-
-  local deps
-  deps=$(echo "$dep_map" | jq -r --arg util "$util_name" '.utilities[$util].dependencies[]? // empty')
-
-  local -a dep_array=()
-  while IFS= read -r dep; do
-    [[ -n "$dep" ]] && dep_array+=("$dep")
-  done <<< "$deps"
-
-  for i in "${!dep_array[@]}"; do
-    local dep="${dep_array[$i]}"
-    if [[ $i -eq $((${#dep_array[@]} - 1)) ]]; then
-      generate_dependency_tree "$dep" "$dep_map" "${prefix}└─ "
-    else
-      generate_dependency_tree "$dep" "$dep_map" "${prefix}├─ "
-    fi
-  done
-}
-
-#######################################
-# Analyze impact of changing a utility
-# Arguments:
-#   $1 - Utility name
-#   $2 - Dependency map JSON
-# Outputs:
-#   Impact analysis report
-#######################################
-analyze_utility_impact() {
-  local util_name="$1"
-  local dep_map="$2"
-
-  log_info "Analyzing impact of changes to $util_name"
-
-  # Find direct consumers
-  local sourced_by
-  sourced_by=$(echo "$dep_map" | jq -r --arg util "$util_name" '.utilities[$util].sourced_by[]? // empty')
-
-  local -a commands=()
-  local -a utilities=()
-
-  while IFS= read -r consumer; do
-    if [[ "$consumer" =~ ^command: ]]; then
-      commands+=("${consumer#command:}")
-    elif [[ "$consumer" =~ ^utility: ]]; then
-      utilities+=("${consumer#utility:}")
-    fi
-  done <<< "$sourced_by"
-
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "IMPACT ANALYSIS: $util_name"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "Direct Impact:"
-  echo "  Commands affected: ${#commands[@]}"
-  echo "  Utilities affected: ${#utilities[@]}"
-  echo ""
-
-  if [[ ${#commands[@]} -gt 0 ]]; then
-    echo "Affected Commands:"
-    printf '  - %s\n' "${commands[@]}"
-    echo ""
-  fi
-
-  if [[ ${#utilities[@]} -gt 0 ]]; then
-    echo "Affected Utilities:"
-    printf '  - %s\n' "${utilities[@]}"
-    echo ""
-
-    echo "Transitive Impact (utilities that depend on affected utilities):"
-    for util in "${utilities[@]}"; do
-      local trans_sourced
-      trans_sourced=$(echo "$dep_map" | jq -r --arg util "$util" '.utilities[$util].sourced_by[]? // empty')
-      if [[ -n "$trans_sourced" ]]; then
-        echo "  Via $util:"
-        echo "$trans_sourced" | sed 's/^/    - /'
-      fi
-    done
-  fi
-}
-```
-
-#### Task 3.2: Dependency Mapping Testing
-**File**: `.claude/tests/test_dependency_mapper.sh`
-
-```bash
-#!/usr/bin/env bash
-# Test suite for dependency-mapper.sh
-
-source .claude/lib/test-framework.sh
-source .claude/lib/dependency-mapper.sh
-
-test_build_dependency_map() {
-  local dep_map
-  dep_map=$(build_utility_dependency_map)
-
-  assert_valid_json "$dep_map"
-
-  local total_utils
-  total_utils=$(echo "$dep_map" | jq -r '.metadata.total_utilities')
-  assert_greater_than "$total_utils" 0
-}
-
-test_detect_circular_deps() {
-  # Create test utilities with circular dependency
-  echo 'source test-util-b.sh' > /tmp/test-util-a.sh
-  echo 'source test-util-a.sh' > /tmp/test-util-b.sh
-
-  # Build map and detect cycles
-  local dep_map
-  dep_map=$(build_utility_dependency_map)
-
-  local cycles
-  cycles=$(detect_circular_dependencies "$dep_map")
-
-  # Should detect the cycle
-  assert_contains "$cycles" "Circular"
-
-  rm -f /tmp/test-util-{a,b}.sh
-}
-
-test_impact_analysis() {
-  local dep_map
-  dep_map=$(build_utility_dependency_map)
-
-  # Analyze impact of base-utils.sh (should affect many things)
-  local impact
-  impact=$(analyze_utility_impact "base-utils.sh" "$dep_map")
-
-  assert_contains "$impact" "Commands affected"
-  assert_contains "$impact" "Utilities affected"
-}
-
-run_all_tests
-```
-
-**Success Criteria**:
-- Accurately maps all utility dependencies
-- Detects circular dependencies
-- Generates readable dependency trees
-- Provides accurate impact analysis
-- Handles edge cases (missing files, broken refs)
+### Key Deliverables
+- `.claude/lib/dependency-mapper.sh` (~1200 lines)
+- Advanced DFS/BFS algorithms with cycle detection
+- Impact scoring and risk assessment functions
+- Comprehensive test suite (5 test cases + benchmarks)
+- Graph visualization utilities
 
 ## Stage 4: Registry Population and Management
 
