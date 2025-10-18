@@ -131,10 +131,20 @@ Target: <30% context usage throughout
 ```
 027_authentication/
 ├── reports/          Research reports (gitignored)
+│   ├── 027_research/             # Multiple reports from one task
+│   │   ├── 027_auth_security.md
+│   │   ├── 027_auth_frameworks.md
+│   │   └── 027_auth_patterns.md
+│   └── 028_single_report.md      # Single report (no subdirectory)
 ├── plans/            Implementation plans (gitignored)
-│   ├── 027_auth.md           Level 0 (main plan)
-│   ├── phase_2_backend.md    Level 1 (expanded phase)
-│   └── phase_2/              Level 2 (stages)
+│   ├── 027_auth_implementation/  # Structured plan subdirectory
+│   │   ├── 027_auth_implementation.md  # Level 0 (main plan)
+│   │   ├── phase_2_backend.md          # Level 1 (expanded phase)
+│   │   ├── phase_4_integration.md      # Level 1 (expanded phase)
+│   │   └── phase_2/                    # Level 2 (stages)
+│   │       ├── stage_1_database.md
+│   │       └── stage_2_api.md
+│   └── 028_simple_fix.md         # Simple plan (no subdirectory)
 ├── summaries/        Workflow summaries (gitignored)
 ├── debug/            Debug reports (COMMITTED for history!)
 ├── scripts/          Investigation scripts (temp, gitignored)

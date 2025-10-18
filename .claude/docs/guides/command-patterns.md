@@ -265,9 +265,9 @@ Task {
 - `update_checkbox <file> <task_pattern> <new_state>` - Updates single checkbox in file
 
 **Plan hierarchy levels**:
-- **Level 0**: Single file (`plan.md`) - No propagation needed
-- **Level 1**: Plan + phase files (`plan.md`, `plan/phase_N_name.md`) - Propagate phase → main
-- **Level 2**: Plan + phase + stage files (`plan.md`, `plan/phase_N/phase_N_overview.md`, `plan/phase_N/stage_M.md`) - Propagate stage → phase → main
+- **Level 0**: Single file (`NNN_plan.md`) - No propagation needed (simple plan, no subdirectory)
+- **Level 1**: Plan + phase files in subdirectory (`NNN_plan/NNN_plan.md`, `NNN_plan/phase_N_name.md`) - Propagate phase → main
+- **Level 2**: Plan + phase + stage files (`NNN_plan/NNN_plan.md`, `NNN_plan/phase_N/phase_N_overview.md`, `NNN_plan/phase_N/stage_M.md`) - Propagate stage → phase → main
 
 **Checkpoint integration**:
 ```bash

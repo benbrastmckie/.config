@@ -119,7 +119,7 @@ expansion_decision:
 
 **Metadata Returned** (to primary agent):
 ```yaml
-plan_path: "specs/027_auth/plans/027_auth_implementation.md"
+plan_path: "specs/027_auth/plans/027_auth_implementation/027_auth_implementation.md"
 summary: "[50-word plan overview]"
 complexity: 12.5
 phases: 6
@@ -511,13 +511,20 @@ All artifacts for a single feature/topic are co-located in one numbered director
 specs/
 ├── 027_authentication/
 │   ├── reports/                Research reports (gitignored)
-│   │   ├── 027_auth_security.md
-│   │   ├── 027_auth_frameworks.md
-│   │   └── 027_auth_patterns.md
+│   │   ├── 027_research/              # Multiple reports from one task
+│   │   │   ├── 027_auth_security.md
+│   │   │   ├── 027_auth_frameworks.md
+│   │   │   └── 027_auth_patterns.md
+│   │   └── 028_single_analysis.md     # Single report (no subdirectory)
 │   ├── plans/                  Implementation plans (gitignored)
-│   │   ├── 027_auth_implementation.md        # Level 0 (main plan)
-│   │   ├── phase_2_backend.md                # Level 1 (expanded phase)
-│   │   └── phase_4_integration.md            # Level 1 (expanded phase)
+│   │   ├── 027_auth_implementation/   # Structured plan subdirectory
+│   │   │   ├── 027_auth_implementation.md  # Level 0 (main plan)
+│   │   │   ├── phase_2_backend.md          # Level 1 (expanded phase)
+│   │   │   ├── phase_4_integration.md      # Level 1 (expanded phase)
+│   │   │   └── phase_2/                    # Level 2 (stages)
+│   │   │       ├── stage_1_database.md
+│   │   │       └── stage_2_api.md
+│   │   └── 028_simple_fix.md          # Simple plan (no subdirectory)
 │   ├── summaries/              Implementation summaries (gitignored)
 │   │   ├── 027_implementation.md
 │   │   └── 027_workflow.md
@@ -550,22 +557,23 @@ specs/
 
 **Level 0** (Single File):
 ```
-specs/027_auth/plans/027_auth_implementation.md
+specs/027_auth/plans/027_simple_feature.md
 
 Contains:
 - All phases inline
 - Basic task lists
 - Simple dependencies
+- No subdirectory needed (simple, non-structured plan)
 ```
 
-**Level 1** (Phase Expansion):
+**Level 1** (Phase Expansion - Structured Plan):
 ```
-specs/027_auth/plans/
-├── 027_auth_implementation.md              # Main plan (references)
-├── phase_1_research.md                     # Expanded phase
-├── phase_2_backend.md                      # Expanded phase (high complexity)
+specs/027_auth/plans/027_auth_implementation/     # Structured plan subdirectory
+├── 027_auth_implementation.md                    # Main plan (references phases)
+├── phase_1_research.md                           # Expanded phase
+├── phase_2_backend.md                            # Expanded phase (high complexity)
 ├── phase_3_frontend.md
-├── phase_4_integration.md                  # Expanded phase (high complexity)
+├── phase_4_integration.md                        # Expanded phase (high complexity)
 └── phase_5_documentation.md
 
 Main plan contains:
@@ -573,12 +581,12 @@ Main plan contains:
 - Checkboxes that auto-update from child phases
 ```
 
-**Level 2** (Stage Expansion):
+**Level 2** (Stage Expansion - Structured Plan):
 ```
-specs/027_auth/plans/
-├── 027_auth_implementation.md              # Main plan
-├── phase_2_backend.md                      # Phase file (references stages)
-├── phase_2/                                # Stage subdirectory
+specs/027_auth/plans/027_auth_implementation/     # Structured plan subdirectory
+├── 027_auth_implementation.md                    # Main plan
+├── phase_2_backend.md                            # Phase file (references stages)
+├── phase_2/                                      # Stage subdirectory
 │   ├── stage_1_database.md
 │   ├── stage_2_api.md
 │   └── stage_3_validation.md
