@@ -4,7 +4,9 @@
 - **Date**: 2025-10-18
 - **Feature**: Systematic refactoring of .claude/ commands and agents infrastructure
 - **Scope**: Agent registry completion, utility modularization, documentation integration, discovery/validation systems
-- **Estimated Phases**: 6 high-level phases (designed for successive /expand expansion)
+- **Structure Level**: 1 (all 6 phases expanded to separate files)
+- **Expanded Phases**: [1, 2, 3, 4, 5, 6]
+- **Total Phases**: 6
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - Internal research: Documentation structure analysis (41 files, Diataxis framework)
@@ -234,223 +236,115 @@ Current state:
 
 ## Implementation Phases
 
-**Note**: Each phase below is designed as a high-level overview suitable for expansion via `/expand` command. Phases are ordered by dependency and priority.
+**Note**: All phases have been expanded to Level 1 with detailed implementation specifications.
 
-### Phase 1: Agent Registry Foundation and Discovery
+### Phase 1: Agent Registry Foundation and Discovery (Medium Complexity)
 **Objective**: Complete agent registry infrastructure and auto-discovery system
-**Complexity**: Medium
+**Status**: EXPANDED
 **Dependencies**: None
-**Estimated Expansion**: 8-12 detailed tasks when expanded
 
-**High-Level Tasks**:
-- [ ] Enhance agent-registry.json schema with new metadata fields (type, category, tools, dependencies)
-- [ ] Create agent-discovery.sh utility for auto-scanning .claude/agents/
-- [ ] Implement agent frontmatter validation (schema compliance checking)
-- [ ] Register all 19 agents with complete metadata
-- [ ] Create agent-registry-utils.sh enhancements for new schema
-- [ ] Add tests for agent discovery and validation
+**Summary**: Enhance agent registry schema to include type, category, tools, and dependencies metadata. Implement auto-discovery utility for scanning .claude/agents/ and registering all 19 agents. Create schema validation and frontmatter compliance checking.
 
-**Testing**:
-- Verify all 19 agents registered with accurate metadata
-- Test auto-discovery on new agent additions
-- Validate schema compliance checking
-- Run agent-registry-utils.sh tests
+**Key Deliverables**:
+- Enhanced agent-registry.json with 8 metadata fields (was 4)
+- agent-discovery.sh for auto-scanning and registration
+- agent-schema-validator.sh for compliance checking
+- 19/19 agents registered (was 2/19)
+- Comprehensive test suite (test_agent_discovery.sh)
 
-**Success Criteria**:
-- agent-registry.json contains all 19 agents
-- agent-discovery.sh operational and tested
-- All agents pass frontmatter validation
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. Schema design stage (JSON structure, validation rules)
-2. Discovery utility implementation stage
-3. Registry population stage
-4. Testing and validation stage
+**For detailed tasks and implementation**, see [Phase 1: Agent Registry Foundation](phase_1_agent_registry_foundation.md)
 
 ---
 
-### Phase 2: Utility Modularization - Split artifact-operations.sh
+### Phase 2: Utility Modularization - Split artifact-operations.sh (High Complexity)
 **Objective**: Split 2,713-line artifact-operations.sh into focused modules with backward compatibility
-**Complexity**: High
+**Status**: EXPANDED
 **Dependencies**: None (independent refactoring)
-**Estimated Expansion**: 15-20 detailed tasks when expanded
 
-**High-Level Tasks**:
-- [ ] Analyze artifact-operations.sh function dependencies and groupings
-- [ ] Create metadata-extraction.sh module (~600 lines)
-- [ ] Create hierarchical-agent-coordination.sh module (~800 lines)
-- [ ] Create context-pruning.sh module (~500 lines)
-- [ ] Create forward-message-patterns.sh module (~400 lines)
-- [ ] Create artifact-registry.sh module (~400 lines)
-- [ ] Update artifact-operations.sh as compatibility wrapper
-- [ ] Update all sourcing references in commands and agents
-- [ ] Create comprehensive tests for each new module
-- [ ] Validate backward compatibility
+**Summary**: Split large monolithic artifact-operations.sh into 5 focused modules: metadata-extraction.sh (~600 lines), hierarchical-agent-coordination.sh (~800 lines), context-pruning.sh (~500 lines), forward-message-patterns.sh (~400 lines), and artifact-registry.sh (~400 lines). Maintain backward compatibility via wrapper pattern.
 
-**Testing**:
-- Each module: unit tests for all exported functions
-- Integration tests: verify wrapper sources all modules correctly
-- Regression tests: all existing commands/agents work unchanged
-- Performance tests: ensure no significant overhead from splitting
+**Key Deliverables**:
+- 5 modular utilities (each <1000 lines)
+- artifact-operations.sh wrapper for backward compatibility
+- 6 new test suites (32-48 new tests)
+- Zero breaking changes guaranteed
+- Performance overhead <5%
 
-**Success Criteria**:
-- All 5 new modules created and tested
-- artifact-operations.sh wrapper maintains 100% compatibility
-- Zero breaking changes for existing commands
-- All 54 existing tests still pass
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. Dependency analysis and module boundary definition
-2. Module extraction stages (one per module)
-3. Wrapper creation and testing stage
-4. Reference update stage
-5. Comprehensive testing and validation stage
+**For detailed tasks and implementation**, see [Phase 2: Utility Modularization](phase_2_utility_modularization.md)
 
 ---
 
-### Phase 3: Command Shared Documentation Completion
+### Phase 3: Command Shared Documentation Completion (Low-Medium Complexity)
 **Objective**: Audit and complete command shared documentation, remove dead references
-**Complexity**: Low-Medium
+**Status**: EXPANDED
 **Dependencies**: None
-**Estimated Expansion**: 6-10 detailed tasks when expanded
 
-**High-Level Tasks**:
-- [ ] Audit all command references to commands/shared/ files
-- [ ] Identify missing shared documentation (error-recovery.md, context-management.md, etc.)
-- [ ] Create missing documentation or remove dead references
-- [ ] Extract additional common patterns from commands (3-5 candidates)
-- [ ] Standardize commands/shared/README.md as index
-- [ ] Update command files to reference correct shared docs
-- [ ] Add validation to structure-validator.sh for shared doc references
+**Summary**: Audit all command references to commands/shared/ files, create missing documentation (error-recovery.md, context-management.md, checkpoint-patterns.md), extract 3-5 additional common patterns, and integrate validation into structure-validator.sh to prevent future dead references.
 
-**Testing**:
-- Verify all shared doc references resolve correctly
-- Test shared documentation examples are current
-- Validate no dead references in any command file
-- Check commands/shared/README.md completeness
+**Key Deliverables**:
+- 3-5 new shared documentation files (13-15 total)
+- Zero dead references across all 21 commands
+- Comprehensive commands/shared/README.md index
+- structure-validator.sh integration for validation
+- Audit report documenting all changes
 
-**Success Criteria**:
-- Zero dead references in commands
-- All referenced shared docs exist and are current
-- commands/shared/README.md provides complete index
-- New validation prevents future dead references
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. Audit and inventory stage
-2. Missing documentation creation stage
-3. Reference cleanup stage
-4. Validation integration stage
+**For detailed tasks and implementation**, see [Phase 3: Command Shared Documentation](phase_3_command_shared_documentation.md)
 
 ---
 
-### Phase 4: Documentation Integration and Navigation Updates
+### Phase 4: Documentation Integration and Navigation Updates (Low Complexity)
 **Objective**: Integrate hierarchical-agent-workflow.md and clean up archive references
-**Complexity**: Low
+**Status**: EXPANDED
 **Dependencies**: None
-**Estimated Expansion**: 5-8 detailed tasks when expanded
 
-**High-Level Tasks**:
-- [ ] Add hierarchical-agent-workflow.md to Workflows section in main README
-- [ ] Update all navigation links to remove archive references
-- [ ] Create .claude/docs/archive/README.md explaining historical context
-- [ ] Review main README for potential section extractions (optional optimization)
-- [ ] Update cross-references in related documentation
-- [ ] Validate all internal links resolve correctly
+**Summary**: Add hierarchical-agent-workflow.md to Workflows section in main README with cross-references from using-agents.md and hierarchical_agents.md. Remove all archive references from active documentation, create archive/README.md with historical context, and validate all internal links.
 
-**Testing**:
-- Check all internal links in main README
-- Verify hierarchical-agent-workflow.md accessible from navigation
-- Validate archive references don't appear in active docs
-- Test documentation structure with structure-validator.sh
+**Key Deliverables**:
+- hierarchical-agent-workflow.md integrated with cross-references
+- Zero archive references in active docs
+- archive/README.md with comprehensive historical context
+- validate-doc-links.sh utility for link validation
+- All internal links verified and working
 
-**Success Criteria**:
-- hierarchical-agent-workflow.md integrated into main navigation
-- Zero archive references in active documentation
-- All internal links validated and working
-- Documentation structure maintains Diataxis integrity
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. Navigation update stage
-2. Archive cleanup stage
-3. Cross-reference validation stage
-4. Optional optimization stage (if main README needs extraction)
+**For detailed tasks and implementation**, see [Phase 4: Documentation Integration](phase_4_documentation_integration.md)
 
 ---
 
-### Phase 5: Discovery and Validation Infrastructure
+### Phase 5: Discovery and Validation Infrastructure (Medium-High Complexity)
 **Objective**: Create comprehensive discovery and validation utilities for ongoing maintenance
-**Complexity**: Medium-High
+**Status**: EXPANDED
 **Dependencies**: Phase 1 (agent-discovery.sh pattern), Phase 2 (modular utilities)
-**Estimated Expansion**: 12-18 detailed tasks when expanded
 
-**High-Level Tasks**:
-- [ ] Create command-discovery.sh for command metadata extraction
-- [ ] Create structure-validator.sh for cross-reference checking
-- [ ] Create dependency-mapper.sh for dependency graph generation
-- [ ] Implement command-metadata.json registry
-- [ ] Implement utility-dependency-map.json tracking
-- [ ] Add validation for command dependencies (dependent-commands metadata)
-- [ ] Create comprehensive test suite for discovery utilities
-- [ ] Generate initial dependency graphs and compliance reports
+**Summary**: Create 4 discovery/validation utilities: command-discovery.sh for metadata extraction, structure-validator.sh for cross-reference checking, dependency-mapper.sh for dependency graphs, and registry management utilities. Implement command-metadata.json and utility-dependency-map.json registries.
 
-**Testing**:
-- Test command-discovery.sh scans all 21 commands
-- Test structure-validator.sh finds dead references
-- Test dependency-mapper.sh generates accurate graphs
-- Validate registries auto-update on structure changes
-- Test all discovery utilities with edge cases
+**Key Deliverables**:
+- 4 discovery utilities (~1,050 lines total code)
+- command-metadata.json registry (all 21 commands)
+- utility-dependency-map.json registry (all 44 utilities)
+- Comprehensive test suite (25 new tests)
+- Dependency graph visualization (Unicode box-drawing)
+- Impact analysis capabilities
 
-**Success Criteria**:
-- All 4 discovery utilities operational and tested
-- command-metadata.json and utility-dependency-map.json populated
-- Dependency graphs generated successfully
-- Structure validation catches all known issues
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. command-discovery.sh implementation stage
-2. structure-validator.sh implementation stage
-3. dependency-mapper.sh implementation stage
-4. Registry population stage
-5. Testing and reporting stage
+**For detailed tasks and implementation**, see [Phase 5: Discovery Infrastructure](phase_5_discovery_infrastructure.md)
 
 ---
 
-### Phase 6: Integration Testing and Documentation Updates
+### Phase 6: Integration Testing and Documentation Updates (Medium Complexity)
 **Objective**: Comprehensive testing of all refactored components and documentation updates
-**Complexity**: Medium
-**Dependencies**: Phases 1-5 (all previous phases)
-**Estimated Expansion**: 8-12 detailed tasks when expanded
+**Status**: EXPANDED
+**Dependencies**: Phases 1-5 (all previous phases must be complete)
 
-**High-Level Tasks**:
-- [ ] Run full test suite (54 existing + new discovery tests)
-- [ ] Perform integration testing across commands, agents, utilities
-- [ ] Validate backward compatibility for all existing workflows
-- [ ] Update all affected documentation (guides, reference, concepts)
-- [ ] Generate refactoring summary report
-- [ ] Update CLAUDE.md with new utilities and registries
-- [ ] Create migration guide for users (if needed)
-- [ ] Performance benchmarking (ensure no regressions)
+**Summary**: Execute full test suite (54 existing + 25-35 new tests), perform end-to-end integration testing across all refactored components, validate zero breaking changes, update all documentation (reference, guides, concepts), and generate comprehensive refactoring summary report.
 
-**Testing**:
-- Full .claude/tests/run_all_tests.sh execution
-- Test all 21 commands with refactored infrastructure
-- Test all hierarchical agent workflows
-- Validate discovery utilities in real scenarios
-- Performance comparison before/after refactoring
+**Key Deliverables**:
+- 100% test pass rate (79-89 total tests)
+- Test execution report with coverage analysis
+- Backward compatibility validation
+- Performance benchmarks (<5% overhead)
+- 10+ documentation updates (reference, guides, concepts, CLAUDE.md)
+- Comprehensive refactoring summary report
 
-**Success Criteria**:
-- 100% test pass rate (existing + new tests)
-- Zero breaking changes for existing users
-- All documentation updated and accurate
-- Performance metrics show no significant regression
-- Refactoring summary report complete
-
-**Expansion Notes**: When expanded, this phase should break down into:
-1. Testing orchestration stage (existing + new tests)
-2. Integration validation stage
-3. Documentation update stage (per category: reference, guides, concepts)
-4. Performance benchmarking stage
-5. Summary and migration guide stage
+**For detailed tasks and implementation**, see [Phase 6: Integration Testing](phase_6_integration_testing.md)
 
 ---
 
@@ -719,29 +613,20 @@ All documentation updates must follow:
 
 ### Expansion Strategy
 
-**How to use /expand on this plan**:
+**Expansion Status**: ✅ COMPLETE - All 6 phases expanded to Level 1
 
-Each phase is designed as a high-level overview. Use `/expand` to break down individual phases:
+Each phase has been expanded into a detailed specification file with comprehensive implementation guidance:
 
-```bash
-# Expand Phase 1 into detailed task breakdown
-/expand-phase .claude/specs/plans/072_claude_infrastructure_refactoring.md 1
+- **Phase 1**: [phase_1_agent_registry_foundation.md](phase_1_agent_registry_foundation.md) - 12 detailed tasks across 4 stages
+- **Phase 2**: [phase_2_utility_modularization.md](phase_2_utility_modularization.md) - 18 detailed tasks across 5 stages
+- **Phase 3**: [phase_3_command_shared_documentation.md](phase_3_command_shared_documentation.md) - 8 detailed tasks across 4 stages
+- **Phase 4**: [phase_4_documentation_integration.md](phase_4_documentation_integration.md) - 6 detailed tasks across 4 stages
+- **Phase 5**: [phase_5_discovery_infrastructure.md](phase_5_discovery_infrastructure.md) - 12 detailed tasks across 5 stages
+- **Phase 6**: [phase_6_integration_testing.md](phase_6_integration_testing.md) - 10 detailed tasks across 6 stages
 
-# Expand Phase 2 into detailed task breakdown
-/expand-phase .claude/specs/plans/072_claude_infrastructure_refactoring.md 2
+**Total detailed tasks**: 66 tasks across all phases
 
-# And so on for each phase...
-```
-
-**Expected expansion results**:
-- Phase 1: 8-12 detailed tasks (schema design, discovery implementation, registration, testing)
-- Phase 2: 15-20 detailed tasks (dependency analysis, module extraction × 5, wrapper creation, testing)
-- Phase 3: 6-10 detailed tasks (audit, creation, cleanup, validation)
-- Phase 4: 5-8 detailed tasks (navigation updates, archive cleanup, validation)
-- Phase 5: 12-18 detailed tasks (4 utilities × 3-4 tasks each, registry creation, testing)
-- Phase 6: 8-12 detailed tasks (testing orchestration, documentation updates, performance benchmarking)
-
-**Total estimated tasks after full expansion**: 54-80 detailed tasks across all 6 phases
+**Ready for Implementation**: Use `/implement` on individual phase files or the main plan for wave-based execution.
 
 ### Success Metrics
 
@@ -764,5 +649,7 @@ Each phase is designed as a high-level overview. Use `/expand` to break down ind
 ---
 
 **Plan created**: 2025-10-18
-**Ready for**: Review and successive /expand expansion per phase
-**Estimated total effort**: 3-5 days for complete implementation (after expansion and detailed planning)
+**Plan expanded**: 2025-10-18
+**Status**: ✅ All phases expanded to Level 1
+**Ready for**: Implementation via `/implement` (wave-based or individual phases)
+**Estimated total effort**: 3-5 days for complete implementation across all 6 phases
