@@ -53,7 +53,7 @@ Key concepts:
 - **Phase dependencies**: Enable parallel execution of independent phases (40-60% time savings)
 - **Artifact lifecycle**: Debug reports committed, others gitignored
 
-See [Directory Protocols](.claude/docs/directory-protocols.md) for complete structure, examples, and dependency syntax.
+See [Directory Protocols](.claude/docs/concepts/directory-protocols.md) for complete structure, examples, and dependency syntax.
 <!-- END_SECTION: directory_protocols -->
 
 <!-- SECTION: testing_protocols -->
@@ -119,7 +119,7 @@ Commands should check CLAUDE.md in priority order:
 - **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
 - **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
 - **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
-- See [Command Architecture Standards](.claude/docs/command_architecture_standards.md) for complete guidelines
+- See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: development_philosophy -->
@@ -131,7 +131,7 @@ This project prioritizes clean, coherent systems over backward compatibility. Re
 
 Core values: clarity, quality, coherence, maintainability.
 
-See [Writing Standards](.claude/docs/writing-standards.md) for complete refactoring principles and documentation standards.
+See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete refactoring principles and documentation standards.
 <!-- END_SECTION: development_philosophy -->
 
 <!-- SECTION: adaptive_planning -->
@@ -221,7 +221,7 @@ Key patterns:
 - **Plan hierarchy updates**: Automatic checkbox propagation across plan levels
 - **Git workflow**: Feature branches, atomic commits, test before commit
 
-See [Development Workflow](.claude/docs/development-workflow.md) for spec updater details, artifact lifecycle, and integration patterns.
+See [Development Workflow](.claude/docs/concepts/development-workflow.md) for spec updater details, artifact lifecycle, and integration patterns.
 <!-- END_SECTION: development_workflow -->
 
 <!-- SECTION: hierarchical_agent_architecture -->
@@ -290,7 +290,7 @@ Multi-level agent coordination system that minimizes context window consumption 
 # Context reduction: 5000 tokens → 250 tokens (95%)
 ```
 
-See [Hierarchical Agent Architecture Guide](.claude/docs/hierarchical_agents.md) for complete documentation, patterns, and best practices.
+See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete documentation, patterns, and best practices.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: project_commands -->
@@ -330,7 +330,7 @@ For detailed usage, see `.claude/commands/README.md` and individual command file
 - **Optimize CLAUDE.md**: `.claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run` - Analyze bloat
 - **Generate READMEs**: `.claude/lib/generate-readme.sh --generate-all [dir]` - Documentation coverage
 
-See [Setup Guide](.claude/docs/setup-command-guide.md) for detailed usage patterns and troubleshooting.
+See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage patterns and troubleshooting.
 
 ### Navigation
 - [Neovim Configuration](nvim/)
