@@ -14,7 +14,9 @@ For command architecture standards and context preservation patterns, see [Comma
 
 ## Layered Context Architecture
 
-Agent invocations use a layered context model to separate concerns and minimize context consumption:
+Agent invocations use a layered context model to separate concerns and minimize context consumption.
+
+**Quick Overview**: For a concise summary of layered context architecture, see [README: Layered Context Architecture](../README.md#layered-context-architecture).
 
 ### Five Context Layers
 

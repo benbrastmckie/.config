@@ -73,57 +73,43 @@ Commands invoke subagents that perform specialized tasks and return **summary + 
 
 ### Command Workflow Chains
 
+Commands orchestrate specialized subagents through structured workflows:
+
 **`/plan`**: Creates implementation plans with automatic complexity-based expansion
-```
-plan-architect → complexity-evaluator → expander (if needed)
-  ↓
-Returns: Plan path + metadata (complexity, phases, dependencies)
-Context: 96% reduction (8000 tokens → 350 tokens)
-```
+- Invokes: plan-architect → complexity-evaluator → expander (if needed)
+- Context: 96% reduction (8000 tokens → 350 tokens)
 
 **`/implement`**: Executes plans phase-by-phase with testing and debugging
-```
-FOR EACH PHASE:
-  implementation-researcher (if complex) → code-writer → test-specialist
-  ↓
-  IF tests fail repeatedly:
-    debug-specialist (max 3 iterations) → code-writer (apply fixes)
-  ↓
-  spec-updater (update hierarchy, create summaries)
+- Invokes: implementation-researcher (complex phases) → code-writer → test-specialist
+- Debug loop: debug-specialist (max 3 iterations) when tests fail
+- Context: 98% reduction through aggressive pruning
 
-Returns: Implementation summary + files modified + test status
-Context: 98% reduction through aggressive pruning
-```
+**`/report`**: Research with parallel subagents (2-4 agents concurrently)
+- Context: 95% reduction (5000 tokens → 250 tokens per report)
 
-**`/report`**: Research with parallel subagents returning summaries
-```
-research-specialist (×2-4 in parallel)
-  ↓
-Each returns: Report path + 50-word summary + key findings
-Context: 95% reduction (5000 tokens → 250 tokens per report)
-```
+**`/document`**: Documentation updates
+- Context: 95% reduction
 
-**`/document`**: Documentation updates with summary
-```
-doc-writer
-  ↓
-Returns: Updated docs list + 100-word summary
-Context: 95% reduction
-```
+**`/orchestrate`**: Complete end-to-end workflow (6 phases: research → planning → implementation → testing → debugging → documentation)
+- Target: <30% context usage throughout
 
-**`/orchestrate`**: Complete end-to-end workflow coordination (most complex)
-```
-Phase 1: Research (parallel) → Synthesize summaries
-Phase 2: Planning → Store plan path only
-Phase 3: Implementation → Phase summaries only
-Phase 4: Testing/Debugging (conditional) → Debug summaries
-Phase 5: Documentation → Doc update summary
-Phase 6: Workflow Summary → Final cross-references
+**For Complete Command Workflow Details**: See [Hierarchical Agent Workflow Guide](workflows/hierarchical-agent-workflow.md)
 
-Master Plan: Holds main todos, guides workflow
-Context Strategy: Read full artifacts only when needed
-Target: <30% context usage throughout
-```
+### Layered Context Architecture
+
+Agent invocations use five context layers to minimize token consumption while maintaining clarity:
+
+1. **Meta-Context**: Agent behavior definition (0 tokens - file read via behavioral injection)
+2. **Operational Context**: Task instructions (200-500 tokens)
+3. **Domain Context**: Project standards reference (50-100 tokens)
+4. **Historical Context**: Prior results metadata only (250 tokens vs 5000 for full content)
+5. **Environmental Context**: Workflow state (100-200 tokens)
+
+**Benefits**: 90-95% context reduction through separation of concerns and metadata-only passing
+
+**Example**: Traditional invocation (11,500 tokens) → Layered invocation (700 tokens) = 94% reduction
+
+**For Complete Details**: See [Layered Context Architecture](guides/using-agents.md#layered-context-architecture)
 
 ### Artifact Organization
 
@@ -158,31 +144,29 @@ Target: <30% context usage throughout
 
 **Checkbox Propagation**: Changes cascade through plan hierarchy (L2 → L1 → L0)
 
+### Key Features
+
+- **Metadata-Only Passing**: 92-97% context reduction (summary + reference, not full content)
+- **Layered Context Architecture**: 5-layer separation of concerns (90-95% reduction)
+- **Forward Message Pattern**: Direct subagent response passing (no paraphrasing overhead)
+- **Recursive Supervision**: Supervisors manage sub-supervisors (10+ agents vs 4)
+- **Context Pruning**: Aggressive cleanup after phases (80-90% reduction)
+- **Wave-Based Execution**: Parallel phase execution with dependencies (40-60% time savings)
+- **Spec Updater Integration**: Automatic artifact management and cross-referencing
+
 ### Context Preservation
 
-**Metadata-Only Passing**: Subagents return summaries, not full content
-```yaml
-extract_report_metadata():
-  Full report: 5000 tokens
-  Metadata: 250 tokens (title + 50-word summary + key findings)
-  Reduction: 95%
+**Metadata Extraction**: Subagents return summaries, not full content
+- Report metadata: 5000 tokens → 250 tokens (95% reduction)
+- Plan metadata: 8000 tokens → 350 tokens (96% reduction)
 
-extract_plan_metadata():
-  Full plan: 8000 tokens
-  Metadata: 350 tokens (phases + complexity + dependencies)
-  Reduction: 96%
-```
+**Forward Message Pattern**: Pass subagent responses directly without re-summarization
 
-**Forward Message Pattern**: Pass subagent responses directly (no paraphrasing)
+**Context Pruning**: Clear completed phase data, retain only references (80-90% reduction)
 
-**Five-Layer Context Architecture**:
-1. **Full Artifacts** (filesystem) - Read only when necessary
-2. **Metadata Summaries** (250-350 tokens) - Default passing
-3. **Checkpoint State** (100-200 tokens/phase) - Workflow tracking
-4. **Master Plan** (500-800 tokens) - Primary context anchor
-5. **Minimal State** (200-300 tokens) - Essential control
+**Target**: <30% context usage throughout workflows
 
-**Aggressive Pruning**: Clear subagent outputs after each phase, keep only summaries
+**For Technical Details**: See [Hierarchical Agents Guide](concepts/hierarchical_agents.md)
 
 ### Parallel Execution with Dependencies
 

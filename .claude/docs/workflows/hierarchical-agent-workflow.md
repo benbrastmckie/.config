@@ -4,13 +4,16 @@
 
 This guide explains how Claude Code commands orchestrate hierarchical agent workflows, where a primary agent invokes specialized subagents that create artifacts organized in topic-based directories, while preserving context through metadata-only passing and aggressive pruning.
 
+**Quick Overview**: For a concise summary of the hierarchical agent workflow system, see [README: Hierarchical Agent Workflow System](../README.md#hierarchical-agent-workflow-system).
+
 ## Navigation
 
 - [← Workflows Index](README.md)
 - [Documentation Index](../README.md)
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md)
-- [Development Workflow](../concepts/development-workflow.md)
-- [Orchestration Guide](orchestration-guide.md)
+- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Technical architecture and utilities
+- [Using Agents](../guides/using-agents.md) - Agent invocation patterns
+- [Development Workflow](../concepts/development-workflow.md) - Spec updater and artifact lifecycle
+- [Orchestration Guide](orchestration-guide.md) - Multi-agent coordination tutorial
 
 ## Overview
 
