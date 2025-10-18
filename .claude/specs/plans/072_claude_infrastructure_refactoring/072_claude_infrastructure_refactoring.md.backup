@@ -1,19 +1,5 @@
 # .claude/ Infrastructure Systematic Refactoring
 
-## Design Vision Alignment
-
-**This refactoring plan aims to bring the contents of `.claude/` into full alignment with the design vision documented in [`.claude/docs/README.md`](.claude/docs/README.md).**
-
-The design vision establishes a hierarchical agent architecture where commands orchestrate specialized subagents through structured workflows, achieving 92-97% context reduction via metadata-only passing. The `.claude/` infrastructure is organized around:
-
-- **Diataxis Documentation Framework**: Reference, Guides, Concepts, Workflows
-- **Hierarchical Agent Coordination**: Multi-level supervision with metadata-based context passing
-- **Topic-Based Artifact Organization**: Numbered topic directories (`specs/{NNN_topic}/`)
-- **Command Workflow Chains**: Specialized subagents for research, planning, implementation, debugging
-- **Modular Utility Architecture**: Focused utilities with clear separation of concerns
-
-This refactoring systematically addresses gaps between current implementation and design vision, ensuring all components work cohesively within the documented architecture.
-
 ## Metadata
 - **Date**: 2025-10-18
 - **Feature**: Systematic refactoring of .claude/ commands and agents infrastructure
@@ -22,7 +8,6 @@ This refactoring systematically addresses gaps between current implementation an
 - **Expanded Phases**: [1, 2, 3, 4, 5, 6]
 - **Total Phases**: 6
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Design Reference**: /home/benjamin/.config/.claude/docs/README.md
 - **Research Reports**:
   - Internal research: Documentation structure analysis (41 files, Diataxis framework)
   - Internal research: Command architecture analysis (21 commands, 13,193 lines)
@@ -32,14 +17,6 @@ This refactoring systematically addresses gaps between current implementation an
 ## Overview
 
 This plan addresses systematic refactoring of the entire `.claude/` infrastructure based on comprehensive research findings across four domains: documentation, commands, agents, and shared utilities. The refactoring prioritizes completion of incomplete systems (agent registry at 2/19 agents), modularization of large consolidated utilities (artifact-operations.sh at 2,713 lines), integration of recent documentation changes, and creation of discovery/validation infrastructure.
-
-**Alignment with Design Vision**: Each phase directly supports key architectural principles from `.claude/docs/README.md`:
-- **Phase 1** (Agent Registry): Enables comprehensive agent tracking for hierarchical coordination
-- **Phase 2** (Utility Modularization): Implements focused utilities with clear separation of concerns
-- **Phase 3** (Shared Documentation): Completes reference-based composition pattern
-- **Phase 4** (Documentation Integration): Maintains Diataxis framework integrity
-- **Phase 5** (Discovery Infrastructure): Enables automated validation and maintenance
-- **Phase 6** (Integration Testing): Validates alignment with architectural vision
 
 ### Current State Summary
 
@@ -673,36 +650,6 @@ Each phase has been expanded into a detailed specification file with comprehensi
 
 **Plan created**: 2025-10-18
 **Plan expanded**: 2025-10-18
-**Last revised**: 2025-10-18
 **Status**: ✅ All phases expanded to Level 1
 **Ready for**: Implementation via `/implement` (wave-based or individual phases)
 **Estimated total effort**: 3-5 days for complete implementation across all 6 phases
-
-## Revision History
-
-### 2025-10-18 - Revision 1: Design Vision Alignment
-
-**Changes Made**:
-- Added "Design Vision Alignment" section at plan beginning
-- Linked refactoring objectives to design vision in `.claude/docs/README.md`
-- Added "Design Reference" to metadata
-- Added phase-by-phase alignment description in Overview
-
-**Reason for Revision**:
-User requested explicit statement that the refactoring aims to align `.claude/` contents with the design vision documented in `.claude/docs/README.md`. This ensures all stakeholders understand the architectural principles guiding the refactoring.
-
-**Key Architectural Principles Referenced**:
-- Hierarchical agent architecture with 92-97% context reduction
-- Diataxis documentation framework (Reference, Guides, Concepts, Workflows)
-- Topic-based artifact organization (`specs/{NNN_topic}/`)
-- Command workflow chains with specialized subagents
-- Modular utility architecture with clear separation of concerns
-
-**Modified Sections**:
-- Added new "Design Vision Alignment" section (lines 3-15)
-- Updated Metadata with "Design Reference" field
-- Enhanced Overview with alignment mapping per phase
-
-**Reports Used**: None (revision based on design vision documentation)
-
-**Impact**: No changes to phase content or task breakdown. This revision provides strategic context and ensures implementation decisions align with documented architecture.
