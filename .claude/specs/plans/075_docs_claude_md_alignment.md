@@ -93,23 +93,23 @@ grep -E "(adaptive-planning-logger|artifact-operations|parse-plan-core)" /home/b
 
 Expected outcome: All utility paths resolve, zero outdated references
 
-### Phase 2: Update Documentation Index and Missing Guides
+### Phase 2: Update Documentation Index and Missing Guides [COMPLETED]
 **Objective**: Index hierarchical-agent-workflow.md and document new directories in appropriate guides
 **Complexity**: Low
 
 Tasks:
-- [ ] Add hierarchical-agent-workflow.md to workflows/README.md
+- [x] Add hierarchical-agent-workflow.md to workflows/README.md
   - Insert entry after orchestration-guide.md (around line 26)
   - Include purpose, use cases, and "See Also" sections
   - Maintain alphabetical/logical ordering
-- [ ] Update guides/creating-commands.md or appropriate guide
+- [x] Update guides/creating-commands.md or appropriate guide
   - Document examples/ directory purpose and usage patterns
   - Document scripts/ directory for standalone utilities
   - Document utils/ directory distinction from lib/
-- [ ] Update reference documentation if needed
+- [x] Update reference documentation if needed
   - Add new directory references to relevant reference docs
   - Ensure cross-links from CLAUDE.md sections work correctly
-- [ ] Validate all cross-references
+- [x] Validate all cross-references
   - Check links from CLAUDE.md to .claude/docs/
   - Check links between docs/ subdirectories
   - Verify navigation links in README files
