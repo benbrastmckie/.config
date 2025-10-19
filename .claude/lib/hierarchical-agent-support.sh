@@ -8,6 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/base-utils.sh"
 source "${SCRIPT_DIR}/unified-logger.sh"
 
+# Configuration
+SUPERVISION_DEPTH=${SUPERVISION_DEPTH:-0}
+MAX_SUPERVISION_DEPTH=3
+
 # Functions:
 
 invoke_sub_supervisor() {
@@ -121,11 +125,11 @@ track_supervision_depth() {
       SUPERVISION_DEPTH=0
       echo "$SUPERVISION_DEPTH"
       ;;
-    check)
+    check|get)
       echo "$SUPERVISION_DEPTH"
       ;;
     *)
-      echo "Usage: track_supervision_depth <increment|decrement|reset|check>" >&2
+      echo "Usage: track_supervision_depth <increment|decrement|reset|check|get>" >&2
       return 1
       ;;
   esac
