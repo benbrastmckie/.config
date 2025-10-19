@@ -21,7 +21,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 export CLAUDE_PROJECT_DIR="$PROJECT_ROOT"
 
 # Source artifact utilities
-source "$PROJECT_ROOT/.claude/lib/artifact-operations.sh"
+source "$PROJECT_ROOT/.claude/lib/artifact-creation.sh"
 
 # Test directory
 TEST_DIR="$PROJECT_ROOT/.claude/tests/test_data"

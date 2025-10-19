@@ -11,7 +11,6 @@ PROJECT_ROOT="$(cd "$CLAUDE_DIR/.." && pwd)"
 
 # Source utilities
 source "$CLAUDE_DIR/lib/template-integration.sh"
-source "$CLAUDE_DIR/lib/artifact-operations.sh"
 
 # Test counters
 TESTS_RUN=0

@@ -27,9 +27,7 @@ evaluate_collapse_opportunity() {
   local plan_path="$2"
 
   # Source required utilities
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
   source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
 
   # Get phase file path
@@ -91,9 +89,7 @@ evaluate_expansion_opportunity() {
   local plan_path="$2"
 
   # Source required utilities
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
   source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
 
   # Determine main plan file location
@@ -197,9 +193,7 @@ display_structure_recommendations() {
   local affected_phases="$2"
 
   # Source required utilities
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/parse-plan-core.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-structure-utils.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-metadata-utils.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
   source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
 
   local collapse_recommendations=()

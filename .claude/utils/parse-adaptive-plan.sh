@@ -9,11 +9,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/../lib"
 
-# Source all the utility modules that contain the refactored functions
-source "$LIB_DIR/plan-structure-utils.sh" 2>/dev/null || true
-source "$LIB_DIR/plan-metadata-utils.sh" 2>/dev/null || true
+# Source the utility modules (wrappers removed, using direct modules)
+source "$LIB_DIR/plan-core-bundle.sh" 2>/dev/null || true
 source "$LIB_DIR/progressive-planning-utils.sh" 2>/dev/null || true
-source "$LIB_DIR/parse-plan-core.sh" 2>/dev/null || true
 
 # If called as a script (not sourced), execute the requested function
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

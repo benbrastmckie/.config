@@ -7,9 +7,7 @@ set -euo pipefail
 
 # Source dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/parse-plan-core.sh" 2>/dev/null || true
-source "$SCRIPT_DIR/plan-structure-utils.sh" 2>/dev/null || true
-source "$SCRIPT_DIR/plan-metadata-utils.sh" 2>/dev/null || true
+source "$SCRIPT_DIR/plan-core-bundle.sh"
 
 # ============================================================================
 # Generic Parallel Agent Invocation

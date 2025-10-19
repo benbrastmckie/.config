@@ -7,7 +7,8 @@ set -euo pipefail
 
 # Source required libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/artifact-operations.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/../lib/artifact-creation.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/../lib/metadata-extraction.sh" 2>/dev/null || true
 source "${SCRIPT_DIR}/../lib/detect-project-dir.sh" 2>/dev/null || true
 
 # Test counters

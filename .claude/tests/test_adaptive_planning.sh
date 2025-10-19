@@ -55,7 +55,7 @@ LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 # Source utilities
 source "$LIB_DIR/checkpoint-utils.sh"
 source "$LIB_DIR/complexity-utils.sh"
-source "$LIB_DIR/adaptive-planning-logger.sh"
+source "$LIB_DIR/unified-logger.sh"
 
 # Create test environment
 mkdir -p "$TEST_DIR/.claude/logs"

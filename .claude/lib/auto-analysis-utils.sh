@@ -7,16 +7,14 @@ set -euo pipefail
 
 # Source dependencies
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/parse-plan-core.sh"
-source "$SCRIPT_DIR/plan-structure-utils.sh"
-source "$SCRIPT_DIR/plan-metadata-utils.sh"
+source "$SCRIPT_DIR/plan-core-bundle.sh"
 source "$SCRIPT_DIR/json-utils.sh" 2>/dev/null || true
 source "$SCRIPT_DIR/error-handling.sh" 2>/dev/null || true
 
 # Source modular components
 source "$SCRIPT_DIR/agent-invocation.sh"
 source "$SCRIPT_DIR/analysis-pattern.sh"
-source "$SCRIPT_DIR/artifact-operations.sh"
+source "$SCRIPT_DIR/artifact-registry.sh"
 
 # ============================================================================
 # Parallel Execution Functions
