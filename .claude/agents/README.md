@@ -594,7 +594,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Agent Definitions
 - [code-reviewer.md](code-reviewer.md) - Code quality analysis
 - [code-writer.md](code-writer.md) - Code implementation
-- [complexity_estimator.md](complexity_estimator.md) - Context-aware complexity analysis
+- [complexity-estimator.md](complexity-estimator.md) - Context-aware complexity analysis
 - [debug-specialist.md](debug-specialist.md) - Issue investigation
 - [doc-converter.md](doc-converter.md) - Convert Word/PDF to Markdown
 - [doc-writer.md](doc-writer.md) - Documentation creation
