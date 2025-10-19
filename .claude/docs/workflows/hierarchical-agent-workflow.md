@@ -631,7 +631,7 @@ automation:
 **Implementation**:
 ```yaml
 metadata_extraction:
-  utility: ".claude/lib/artifact-operations.sh"
+  utility: ".claude/lib/metadata-extraction.sh"
 
   extract_report_metadata(report_path):
     output:
@@ -706,7 +706,7 @@ supervisor_action: forward_to_next_phase
 
 **Implementation**:
 ```bash
-# .claude/lib/artifact-operations.sh
+# .claude/lib/metadata-extraction.sh
 
 forward_message() {
   local subagent_output="$1"
@@ -870,7 +870,7 @@ parallel_execution_time:
 time_saved: 40 min (23.5% reduction)
 ```
 
-**Utility**: `.claude/lib/wave-calculator.sh`
+**Utility**: `.claude/lib/dependency-analysis.sh`
 
 ```bash
 calculate_waves() {

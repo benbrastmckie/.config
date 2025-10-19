@@ -274,7 +274,7 @@ Create artifacts programmatically:
 
 ```bash
 # Source utilities
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 # Create debug report
 DEBUG_CONTENT="$(cat <<EOF
@@ -357,7 +357,7 @@ When creating cross-references between artifacts, use **metadata-only passing** 
 
 ### Metadata Extraction for Cross-References
 
-Use `extract_report_metadata()` utility from `.claude/lib/artifact-operations.sh` when creating cross-references:
+Use `extract_report_metadata()` utility from `.claude/lib/metadata-extraction.sh` when creating cross-references:
 
 ```bash
 # Extract metadata from research reports
@@ -584,4 +584,4 @@ grep -r "specs/009_topic" specs/
 
 - **Artifact Taxonomy**: `specs/009_orchestration_enhancement_adapted/design/artifact_taxonomy.md`
 - **CLAUDE.md**: Project-level standards for artifact organization
-- **artifact-operations.sh**: Shell utilities for artifact management
+- **metadata-extraction.sh**: Shell utilities for artifact management

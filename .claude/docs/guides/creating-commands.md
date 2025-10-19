@@ -463,7 +463,7 @@ Commands should reference reusable bash procedures from pattern libraries rather
 #### When to Reference Pattern Libraries (Standard 9)
 
 **Reference bash-patterns.md** for:
-- Utility initialization sequences (sourcing checkpoint-utils.sh, artifact-operations.sh, etc.)
+- Utility initialization sequences (sourcing checkpoint-utils.sh, metadata-extraction.sh, etc.)
 - Checkpoint setup boilerplate (mkdir, restore_checkpoint, validate_checkpoint)
 - Metadata extraction patterns (extract_report_metadata, extract_plan_metadata)
 - Context pruning patterns (apply_pruning_policy, prune_subagent_output)
@@ -498,7 +498,7 @@ Source required utility libraries:
 ```bash
 # Initialize utilities (see bash-patterns.md#utility-init)
 source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
 source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
 ```
 

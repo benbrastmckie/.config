@@ -109,7 +109,7 @@ specs/009_orchestration_enhancement/
 
 Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/command_architecture_standards.md#context-preservation-standards)).
 
-**Metadata Extraction Utilities** (`.claude/lib/artifact-operations.sh`):
+**Metadata Extraction Utilities** (`.claude/lib/metadata-extraction.sh`):
 - `extract_report_metadata(report_path)` - Extracts title, 50-word summary, key findings, file paths
 - `extract_plan_metadata(plan_path)` - Extracts complexity, phases, time estimates, dependencies
 - `load_metadata_on_demand(artifact_path)` - Generic metadata loader with caching
@@ -414,7 +414,7 @@ git rm --cached specs/042_auth/reports/001_research.md
 **Manual Creation**:
 ```bash
 # Create artifact using utility function
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 create_topic_artifact "specs/009_topic" "debug" "test_failure" "# Debug Report\n\n..."
 ```
@@ -500,11 +500,11 @@ find specs/009_topic/backups/ -mtime +30 -delete
 
 ## Shell Utilities
 
-### artifact-operations.sh Functions
+### metadata-extraction.sh Functions
 
 **Source Utilities**:
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
 ```
 
 **create_topic_artifact()**
@@ -1000,7 +1000,7 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 - **spec_updater_guide.md**: Spec updater agent usage and patterns
 - **command_architecture_standards.md**: Context preservation standards (Standards 6-8)
 - **phase_dependencies.md**: Wave-based execution and dependency syntax
-- **.claude/lib/artifact-operations.sh**: Shell utility implementations
+- **.claude/lib/metadata-extraction.sh**: Shell utility implementations
 
 ---
 

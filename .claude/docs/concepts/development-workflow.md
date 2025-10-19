@@ -75,7 +75,7 @@ The spec updater agent manages artifacts in topic-based directory structure:
 
 ## Shell Utilities
 
-Located in `.claude/lib/artifact-operations.sh`:
+Located in `.claude/lib/metadata-extraction.sh`:
 - `create_topic_artifact <topic-dir> <type> <name> <content>` - Create artifact
 - `cleanup_topic_artifacts <topic-dir> <type> [age-days]` - Clean specific type
 - `cleanup_all_temp_artifacts <topic-dir>` - Clean all temporary artifacts

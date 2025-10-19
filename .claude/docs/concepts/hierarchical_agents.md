@@ -139,13 +139,13 @@ Level 3: Task Executors (focused single-task agents - rarely used)
 
 ### extract_report_metadata()
 
-**Location**: `.claude/lib/artifact-operations.sh:1906-1984`
+**Location**: `.claude/lib/metadata-extraction.sh`
 
 **Purpose**: Extract concise metadata from research reports.
 
 **Usage**:
 ```bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 metadata=$(extract_report_metadata "specs/042_auth/reports/001_patterns.md")
 title=$(echo "$metadata" | jq -r '.title')
@@ -162,7 +162,7 @@ summary=$(echo "$metadata" | jq -r '.summary')  # ≤50 words
 
 ### extract_plan_metadata()
 
-**Location**: `.claude/lib/artifact-operations.sh:1986-2067`
+**Location**: `.claude/lib/metadata-extraction.sh`
 
 **Purpose**: Extract implementation plan metadata for complexity assessment.
 
@@ -181,7 +181,7 @@ phases=$(echo "$metadata" | jq -r '.phases')
 
 ### load_metadata_on_demand()
 
-**Location**: `.claude/lib/artifact-operations.sh:2149-2202`
+**Location**: `.claude/lib/metadata-extraction.sh`
 
 **Purpose**: Generic metadata loader with automatic type detection and caching.
 
@@ -202,7 +202,7 @@ cached=$(load_metadata_on_demand "specs/042_auth/reports/001_patterns.md")
 
 ### Metadata Cache Management
 
-**Location**: `.claude/lib/artifact-operations.sh:2204-2238`
+**Location**: `.claude/lib/metadata-extraction.sh:2204-2238`
 
 **Cache Operations**:
 ```bash
@@ -227,7 +227,7 @@ declare -A METADATA_CACHE
 
 ### forward_message()
 
-**Location**: `.claude/lib/artifact-operations.sh:2244-2340`
+**Location**: `.claude/lib/metadata-extraction.sh:2244-2340`
 
 **Purpose**: Extract structured handoff context from subagent output without re-summarization.
 
@@ -266,7 +266,7 @@ Handoff passed to next phase
 
 ### parse_subagent_response()
 
-**Location**: `.claude/lib/artifact-operations.sh:2342-2390`
+**Location**: `.claude/lib/metadata-extraction.sh:2342-2390`
 
 **Purpose**: Parse structured JSON/YAML from subagent outputs.
 
@@ -285,7 +285,7 @@ artifacts=$(echo "$response" | jq -r '.artifacts[]')
 
 ### Handoff Logging
 
-**Location**: `.claude/lib/artifact-operations.sh:2322-2338`
+**Location**: `.claude/lib/metadata-extraction.sh:2322-2338`
 
 **Logs**:
 - **Subagent Outputs**: `.claude/data/logs/subagent-outputs.log`
@@ -328,7 +328,7 @@ Primary Orchestrator
 
 ### invoke_sub_supervisor()
 
-**Location**: `.claude/lib/artifact-operations.sh:2445-2524`
+**Location**: `.claude/lib/metadata-extraction.sh:2445-2524`
 
 **Purpose**: Prepare sub-supervisor invocation with task domain and subagent list.
 
@@ -351,7 +351,7 @@ invocation_data=$(invoke_sub_supervisor "$config")
 
 ### track_supervision_depth()
 
-**Location**: `.claude/lib/artifact-operations.sh:2526-2561`
+**Location**: `.claude/lib/metadata-extraction.sh:2526-2561`
 
 **Purpose**: Prevent infinite recursion in supervisor hierarchies.
 
@@ -385,7 +385,7 @@ track_supervision_depth decrement
 
 ### generate_supervision_tree()
 
-**Location**: `.claude/lib/artifact-operations.sh:2563-2628`
+**Location**: `.claude/lib/metadata-extraction.sh:2563-2628`
 
 **Purpose**: Visualize hierarchical agent structure for debugging.
 
@@ -678,7 +678,7 @@ prune_workflow_metadata "$workflow_type"
 apply_pruning_policy --mode [aggressive|moderate|minimal] --workflow [name]
 ```
 
-**Metadata Extraction** (`.claude/lib/artifact-operations.sh`):
+**Metadata Extraction** (`.claude/lib/metadata-extraction.sh`):
 ```bash
 # Extract before pruning
 extract_report_metadata "$report_path"
@@ -699,7 +699,7 @@ log_context_metrics "$command" "$reduction_percent"
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 source .claude/lib/context-pruning.sh
 
 # Launch 3 research agents in parallel
@@ -1184,7 +1184,7 @@ grep "REDUCTION:" .claude/data/logs/context-metrics.log | \
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 # Extract report metadata
 report_path="specs/042_auth/reports/001_patterns.md"
@@ -1206,7 +1206,7 @@ echo "Referenced files: $paths"
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 # Simulate subagent completion
 subagent_output="Research complete. Created report at specs/042_auth/reports/001_patterns.md.
@@ -1230,7 +1230,7 @@ next_phase_context=$(echo "$handoff" | jq -r '.next_phase_context')
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/metadata-extraction.sh
 
 # Primary orchestrator invokes sub-supervisor
 track_supervision_depth reset

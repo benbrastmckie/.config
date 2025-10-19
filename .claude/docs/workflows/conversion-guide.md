@@ -606,9 +606,9 @@ PROGRESS: Conversion complete: 14 succeeded, 1 failed
 
 The command delegates to two implementation layers:
 
-### Layer 1: convert-docs.sh Script
+### Layer 1: convert-core.sh Script
 
-Core conversion engine (`/home/benjamin/.config/.claude/lib/convert-docs.sh`)
+Core conversion engine (`/home/benjamin/.config/.claude/lib/convert-core.sh`)
 
 **Responsibilities**:
 - Tool detection and validation
@@ -629,9 +629,9 @@ Core conversion engine (`/home/benjamin/.config/.claude/lib/convert-docs.sh`)
 
 **Usage** (direct script invocation):
 ```bash
-bash .claude/lib/convert-docs.sh ~/docs ~/output
-bash .claude/lib/convert-docs.sh ~/docs ~/output --parallel 4
-bash .claude/lib/convert-docs.sh --detect-tools
+bash .claude/lib/convert-core.sh ~/docs ~/output
+bash .claude/lib/convert-core.sh ~/docs ~/output --parallel 4
+bash .claude/lib/convert-core.sh --detect-tools
 ```
 
 ### Layer 2: doc-converter Agent
@@ -866,7 +866,7 @@ cp ./converted_output/user-guide.* ~/shared/
 ### Related Documentation
 - [Command Reference](../commands/convert-docs.md) - `/convert-docs` command specification
 - [Agent Definition](../agents/doc-converter.md) - `doc-converter` agent details
-- [Script Implementation](../lib/convert-docs.sh) - Core conversion engine
+- [Script Implementation](../../lib/convert-core.sh) - Core conversion engine
 
 ### Tool Documentation
 - [MarkItDown](https://github.com/microsoft/markitdown) - Primary conversion tool
