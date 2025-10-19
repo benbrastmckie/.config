@@ -604,6 +604,10 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 - [research-specialist.md](research-specialist.md) - Research and reports
 - [test-specialist.md](test-specialist.md) - Testing and validation
 
+### Subdirectories
+- [prompts/](prompts/README.md) - Agent evaluation prompt templates
+- [shared/](shared/README.md) - Shared protocols and guidelines
+
 ### Related
 - [← Parent Directory](../README.md)
 - [commands/](../commands/README.md) - Commands that use agents

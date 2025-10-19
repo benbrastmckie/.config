@@ -41,8 +41,10 @@ This directory provides a complete development workflow ecosystem:
 │   ├── metrics/        Command performance tracking (JSONL)
 │   └── templates/      Template usage data
 ├── docs/                Integration guides and standards
+├── examples/            Workflow demonstration scripts
 ├── hooks/               Event-driven automation scripts
 ├── lib/                 Utility libraries and shared functions
+├── scripts/             System management and validation utilities
 ├── specs/               Plans, reports, summaries (gitignored)
 │   ├── plans/          Implementation plans
 │   ├── reports/        Research and investigations
@@ -51,6 +53,7 @@ This directory provides a complete development workflow ecosystem:
 ├── templates/           Reusable workflow templates (YAML)
 ├── tests/               Test suites for system validation
 ├── tts/                 Voice notification system
+├── utils/               Specialized helper utilities
 └── settings.local.json  Hook and permission configuration
 ```
 
@@ -71,16 +74,48 @@ This directory provides a complete development workflow ecosystem:
 
 ---
 
-### utils/ - Standalone Helper Scripts
-**Purpose**: Task-specific helper scripts that may be executed directly or sourced
+### utils/ - Specialized Helper Utilities
+**Purpose**: Specialized helper utilities for specific operational tasks
 
 **Characteristics**:
-- Contains executable scripts (may be `.sh` or other types)
-- Less general-purpose than lib/ utilities
-- May have specific command-line interfaces
-- Examples: parse-adaptive-plan.sh, parse-template.sh
+- Can be executed directly or sourced as functions
+- Bridge between general-purpose lib/ and task-specific scripts/
+- Provide compatibility interfaces and specialized functionality
+- Examples: parse-adaptive-plan.sh (compatibility shim), show-agent-metrics.sh
 
-**Difference from lib/**: utils/ scripts are often invoked directly, while lib/ files are always sourced
+**Difference from lib/**: utils/ are specialized helpers, lib/ are general-purpose functions
+
+**Documentation**: See [utils/README.md](utils/README.md)
+
+---
+
+### scripts/ - System Management Utilities
+**Purpose**: Standalone operational scripts for system management and validation
+
+**Characteristics**:
+- Task-specific executables for maintenance and analysis
+- Include CLI argument parsing and formatted output
+- System-level operations (migration, validation, metrics)
+- Examples: migrate_to_topic_structure.sh, validate_migration.sh, context_metrics_dashboard.sh
+
+**Difference from lib/**: scripts/ are standalone executables, lib/ are sourced functions
+
+**Documentation**: See [scripts/README.md](scripts/README.md)
+
+---
+
+### examples/ - Workflow Demonstrations
+**Purpose**: End-to-end workflow demonstration scripts
+
+**Characteristics**:
+- Self-contained runnable examples
+- Demonstrate complete workflow patterns
+- Show integration between system components
+- Examples: artifact_creation_workflow.sh
+
+**Use Case**: Learning system capabilities and workflow patterns
+
+**Documentation**: See [examples/README.md](examples/README.md)
 
 ---
 
