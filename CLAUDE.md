@@ -155,7 +155,7 @@ See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete
 ### Logging
 - **Log File**: `.claude/data/logs/adaptive-planning.log`
 - **Log Rotation**: 10MB max, 5 files retained
-- **Query Logs**: Use functions from `.claude/lib/adaptive-planning-logger.sh`
+- **Query Logs**: Use functions from `.claude/lib/unified-logger.sh`
 
 ### Loop Prevention
 - Replan counters tracked in checkpoints
@@ -166,7 +166,7 @@ See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete
 ### Utilities
 - **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh`
 - **Complexity Analysis**: `.claude/lib/complexity-utils.sh`
-- **Adaptive Logging**: `.claude/lib/adaptive-planning-logger.sh`
+- **Adaptive Logging**: `.claude/lib/unified-logger.sh`
 - **Error Handling**: `.claude/lib/error-handling.sh`
 <!-- END_SECTION: adaptive_planning -->
 
@@ -244,17 +244,14 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **Performance**: 60-80% time savings with parallel subagent execution
 
 ### Utilities
-- **Metadata Extraction**: `.claude/lib/artifact-operations.sh`
+- **Metadata Extraction**: `.claude/lib/metadata-extraction.sh`
   - `extract_report_metadata()` - Extract title, summary, file paths, recommendations
   - `extract_plan_metadata()` - Extract complexity, phases, time estimates
   - `load_metadata_on_demand()` - Generic metadata loader with caching
-- **Forward Message**: `.claude/lib/artifact-operations.sh`
-  - `forward_message()` - Extract artifact paths and create minimal handoff context
-  - `parse_subagent_response()` - Parse structured subagent outputs
-- **Recursive Supervision**: `.claude/lib/artifact-operations.sh`
-  - `invoke_sub_supervisor()` - Prepare sub-supervisor invocation metadata
-  - `track_supervision_depth()` - Prevent infinite recursion (max depth: 3)
-  - `generate_supervision_tree()` - Visualize hierarchical agent structure
+- **Plan Parsing**: `.claude/lib/plan-core-bundle.sh`
+  - `parse_plan_file()` - Parse plan structure and phases
+  - `extract_phase_info()` - Extract phase details and tasks
+  - `get_plan_metadata()` - Get plan-level metadata
 - **Context Management**: `.claude/lib/context-pruning.sh`
   - `prune_subagent_output()` - Clear full outputs after metadata extraction
   - `prune_phase_metadata()` - Remove phase data after completion
