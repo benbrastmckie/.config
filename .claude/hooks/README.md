@@ -543,9 +543,8 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Related
 - [← Parent Directory](../README.md)
 - [tts/](../tts/README.md) - TTS configuration and messages
-- [metrics/](../metrics/README.md) - Metrics output
-- [logs/](../logs/README.md) - Hook logs
-- [docs/tts-integration-guide.md](../docs/tts-integration-guide.md) - TTS guide
+- [data/metrics/](../data/metrics/README.md) - Metrics output
+- [data/logs/](../data/logs/README.md) - Hook logs
 
 ### Configuration
 - [settings.local.json](../settings.local.json) - Hook registration

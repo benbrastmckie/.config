@@ -789,14 +789,11 @@ description: Brief description shown in picker
 ## Navigation
 
 ### Command Definitions
-- [analyze-agents.md](analyze-agents.md) - Agent performance analysis
-- [cleanup.md](cleanup.md) - CLAUDE.md optimization
+- [analyze.md](analyze.md) - System analysis (agents, patterns, metrics)
 - [debug.md](debug.md) - Issue investigation
 - [document.md](document.md) - Documentation updates
 - [implement.md](implement.md) - Plan execution
-- [list-plans.md](list-plans.md) - Plan listing
-- [list-reports.md](list-reports.md) - Report listing
-- [list-summaries.md](list-summaries.md) - Summary listing
+- [list.md](list.md) - List artifacts (plans, reports, summaries)
 - [expand-phase.md](expand-phase.md) - Phase expansion (L0→L1)
 - [expand-stage.md](expand-stage.md) - Stage expansion (L1→L2)
 - [collapse-phase.md](collapse-phase.md) - Phase collapse (L1→L0)
