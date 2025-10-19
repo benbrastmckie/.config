@@ -210,9 +210,178 @@ list_agents() {
   jq -r '.agents | keys[]' "$REGISTRY_FILE"
 }
 
+#
+# get_agents_by_type - Get agents filtered by type
+#
+# Arguments:
+#   $1 - agent_type (specialized/hierarchical)
+#
+get_agents_by_type() {
+  local agent_type="$1"
+
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
+    echo "Registry file not found: $REGISTRY_FILE" >&2
+    return 1
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    echo "jq not available" >&2
+    return 1
+  fi
+
+  jq -r ".agents | to_entries[] | select(.value.type == \"$agent_type\") | .key" \
+    "$REGISTRY_FILE"
+}
+
+#
+# get_agents_by_category - Get agents filtered by category
+#
+# Arguments:
+#   $1 - category (research/planning/implementation/debugging/documentation/analysis/coordination)
+#
+get_agents_by_category() {
+  local category="$1"
+
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
+    echo "Registry file not found: $REGISTRY_FILE" >&2
+    return 1
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    echo "jq not available" >&2
+    return 1
+  fi
+
+  jq -r ".agents | to_entries[] | select(.value.category == \"$category\") | .key" \
+    "$REGISTRY_FILE"
+}
+
+#
+# get_agents_by_tool - Get agents that use a specific tool
+#
+# Arguments:
+#   $1 - tool_name (Read/Write/Edit/Bash/Grep/Glob/WebSearch/WebFetch/Task)
+#
+get_agents_by_tool() {
+  local tool="$1"
+
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
+    echo "Registry file not found: $REGISTRY_FILE" >&2
+    return 1
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    echo "jq not available" >&2
+    return 1
+  fi
+
+  jq -r ".agents | to_entries[] | select(.value.tools | contains([\"$tool\"])) | .key" \
+    "$REGISTRY_FILE"
+}
+
+#
+# update_agent_metrics_v2 - Update agent metrics (new schema with nested metrics object)
+#
+# Arguments:
+#   $1 - agent_name
+#   $2 - success (true/false)
+#   $3 - duration_seconds
+#
+update_agent_metrics_v2() {
+  local agent_name="$1"
+  local success="$2"
+  local duration="$3"
+
+  ensure_registry_exists
+
+  if ! command -v jq &> /dev/null; then
+    return 1
+  fi
+
+  if ! jq -e ".agents.\"$agent_name\"" "$REGISTRY_FILE" > /dev/null 2>&1; then
+    echo "Warning: Agent '$agent_name' not found in registry" >&2
+    return 1
+  fi
+
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  local temp_file="${REGISTRY_FILE}.tmp.$$"
+
+  # Update metrics based on new schema (nested metrics object)
+  if [[ "$success" == "true" ]]; then
+    jq \
+      --arg agent "$agent_name" \
+      --argjson duration "$duration" \
+      --arg timestamp "$timestamp" \
+      '.agents[$agent].metrics.total_invocations += 1 |
+       .agents[$agent].metrics.successful_invocations += 1 |
+       .agents[$agent].metrics.average_duration_seconds =
+         ((.agents[$agent].metrics.average_duration_seconds *
+           (.agents[$agent].metrics.total_invocations - 1)) + $duration) /
+         .agents[$agent].metrics.total_invocations |
+       .agents[$agent].metrics.last_invocation = $timestamp |
+       .last_updated = $timestamp' \
+      "$REGISTRY_FILE" > "$temp_file"
+  else
+    jq \
+      --arg agent "$agent_name" \
+      --argjson duration "$duration" \
+      --arg timestamp "$timestamp" \
+      '.agents[$agent].metrics.total_invocations += 1 |
+       .agents[$agent].metrics.failed_invocations += 1 |
+       .agents[$agent].metrics.average_duration_seconds =
+         ((.agents[$agent].metrics.average_duration_seconds *
+           (.agents[$agent].metrics.total_invocations - 1)) + $duration) /
+         .agents[$agent].metrics.total_invocations |
+       .agents[$agent].metrics.last_invocation = $timestamp |
+       .last_updated = $timestamp' \
+      "$REGISTRY_FILE" > "$temp_file"
+  fi
+
+  mv "$temp_file" "$REGISTRY_FILE"
+  return 0
+}
+
+#
+# get_agent_stats - Get formatted stats for an agent
+#
+# Arguments:
+#   $1 - agent_name
+#
+get_agent_stats() {
+  local agent_name="$1"
+
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
+    echo "Registry file not found: $REGISTRY_FILE" >&2
+    return 1
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    echo "jq not available" >&2
+    return 1
+  fi
+
+  jq -r ".agents.\"$agent_name\" |
+    \"Agent: \($agent_name)
+Type: \(.type)
+Category: \(.category)
+Description: \(.description)
+Tools: \(.tools | join(\", \"))
+Total Invocations: \(.metrics.total_invocations)
+Success Rate: \((.metrics.successful_invocations / (.metrics.total_invocations | if . > 0 then . else 1 end) * 100))%
+Avg Duration: \(.metrics.average_duration_seconds)s
+Last Invocation: \(.metrics.last_invocation // \"never\")\"" \
+    "$REGISTRY_FILE"
+}
+
 # Export functions
 export -f ensure_registry_exists
 export -f register_agent
 export -f update_agent_metrics
+export -f update_agent_metrics_v2
 export -f get_agent_info
+export -f get_agent_stats
 export -f list_agents
+export -f get_agents_by_type
+export -f get_agents_by_category
+export -f get_agents_by_tool

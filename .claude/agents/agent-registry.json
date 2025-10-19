@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "last_updated": "2025-10-18T20:21:00Z",
+  "last_updated": "2025-10-19T07:54:46Z",
   "agents": {
     "doc-converter": {
       "type": "specialized",
@@ -17,7 +17,7 @@
         "total_invocations": 0,
         "successful_invocations": 0,
         "failed_invocations": 0,
-        "average_duration_seconds": 0.00,
+        "average_duration_seconds": 0.0,
         "last_invocation": null
       },
       "dependencies": [],
@@ -39,11 +39,317 @@
         "total_invocations": 0,
         "successful_invocations": 0,
         "failed_invocations": 0,
-        "average_duration_seconds": 0.00,
+        "average_duration_seconds": 0.0,
         "last_invocation": null
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/spec-updater.md"
+    },
+    "code-reviewer": {
+      "type": "specialized",
+      "category": "implementation",
+      "description": "Specialized in reviewing code against project standards",
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/code-reviewer.md"
+    },
+    "code-writer": {
+      "type": "hierarchical",
+      "category": "implementation",
+      "description": "Specialized in writing and modifying code following project standards",
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Bash",
+        "TodoWrite"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/code-writer.md"
+    },
+    "collapse-specialist": {
+      "type": "hierarchical",
+      "category": "analysis",
+      "description": "You are a Collapse Specialist responsible for merging expanded phases or stages back into parent plans. Your role is focused and procedural: execute collapse operations with precision and save structu",
+      "tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Task",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/collapse-specialist.md"
+    },
+    "complexity-estimator": {
+      "type": "specialized",
+      "category": "analysis",
+      "description": "Estimates plan/phase/stage complexity considering broader context to recommend expansion/collapse decisions",
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/complexity-estimator.md"
+    },
+    "debug-analyst": {
+      "type": "specialized",
+      "category": "debugging",
+      "description": "Investigate potential root cause for test failure or bug",
+      "tools": [
+        "Read",
+        "Task"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/debug-analyst.md"
+    },
+    "debug-specialist": {
+      "type": "specialized",
+      "category": "debugging",
+      "description": "Specialized in root cause analysis and diagnostic investigations",
+      "tools": [
+        "Read",
+        "Bash",
+        "Grep",
+        "Glob",
+        "WebSearch",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/debug-specialist.md"
+    },
+    "doc-writer": {
+      "type": "specialized",
+      "category": "implementation",
+      "description": "Specialized in maintaining documentation consistency",
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Grep",
+        "Glob"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/doc-writer.md"
+    },
+    "expansion-specialist": {
+      "type": "hierarchical",
+      "category": "analysis",
+      "description": "You are an Expansion Specialist responsible for extracting complex phases or stages from implementation plans into separate files. Your role is focused and procedural: execute expansion operations wit",
+      "tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Task",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/expansion-specialist.md"
+    },
+    "github-specialist": {
+      "type": "specialized",
+      "category": "analysis",
+      "description": "Specialized in GitHub operations including PRs, issues, and CI/CD monitoring",
+      "tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/github-specialist.md"
+    },
+    "implementation-researcher": {
+      "type": "specialized",
+      "category": "research",
+      "description": "Analyze codebase to inform implementation phase execution",
+      "tools": [
+        "Glob",
+        "Grep",
+        "Read",
+        "Task",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/implementation-researcher.md"
+    },
+    "metrics-specialist": {
+      "type": "specialized",
+      "category": "analysis",
+      "description": "Specialized in performance analysis and optimization recommendations",
+      "tools": [
+        "Read",
+        "Bash",
+        "Grep"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/metrics-specialist.md"
+    },
+    "plan-architect": {
+      "type": "hierarchical",
+      "category": "planning",
+      "description": "Specialized in creating detailed, phased implementation plans",
+      "tools": [
+        "Read",
+        "Write",
+        "Grep",
+        "Glob",
+        "WebSearch"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/plan-architect.md"
+    },
+    "plan-expander": {
+      "type": "specialized",
+      "category": "planning",
+      "description": "Coordinates plan expansion based on complexity analysis",
+      "tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Task",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/plan-expander.md"
+    },
+    "research-specialist": {
+      "type": "specialized",
+      "category": "research",
+      "description": "Specialized in codebase research, best practice investigation, and report file creation",
+      "tools": [
+        "Read",
+        "Write",
+        "Grep",
+        "Glob",
+        "WebSearch",
+        "WebFetch"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/research-specialist.md"
+    },
+    "test-specialist": {
+      "type": "specialized",
+      "category": "analysis",
+      "description": "Specialized in running tests and analyzing failures",
+      "tools": [
+        "Bash",
+        "Read",
+        "Grep"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/test-specialist.md"
     }
   }
 }
