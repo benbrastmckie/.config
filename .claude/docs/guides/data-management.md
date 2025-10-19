@@ -212,7 +212,7 @@ grep "EVENT=Stop" .claude/data/logs/hook-debug.log
 #### adaptive-planning.log
 **Purpose**: Adaptive planning replan event logging
 
-**Written By**: `.claude/lib/adaptive-planning-logger.sh`
+**Written By**: `.claude/lib/unified-logger.sh`
 
 **Format**: Structured logging of complexity detection, replan triggers, and plan updates
 
@@ -464,7 +464,7 @@ Artifact metadata tracking enables:
 
 ### Which Utilities Write Registry Files
 
-- `.claude/lib/artifact-operations.sh` - Unified artifact management
+- `.claude/lib/metadata-extraction.sh` - Unified artifact management
 - `/orchestrate` - Workflow coordination
 - `/implement` - Implementation tracking
 - Various commands creating trackable artifacts
@@ -570,7 +570,7 @@ find .claude/data/registry -name "*.json" -mtime +30 -delete
 ### Artifact Lifecycle
 
 1. **Creation**: Command creates artifact (report, plan, debug doc)
-2. **Registration**: `artifact-operations.sh` creates registry entry
+2. **Registration**: `metadata-extraction.sh` creates registry entry
 3. **Usage**: Other commands reference artifact via registry metadata
 4. **Completion**: Workflow completes, artifact status updated
 5. **Cleanup**: Registry entry persists until manual cleanup or project reset

@@ -400,7 +400,8 @@ Use checkpoint utilities to preserve state after each major operation.
 **Example**:
 ```bash
 # Save checkpoint after research phase
-.claude/lib/save-checkpoint.sh orchestrate "$PROJECT_NAME" "$WORKFLOW_STATE_JSON"
+source .claude/lib/checkpoint-utils.sh
+save_checkpoint orchestrate "$PROJECT_NAME" "$WORKFLOW_STATE_JSON"
 ```
 
 **Checkpoint data structure**:
@@ -430,7 +431,8 @@ Check for existing checkpoints at command start to enable workflow resumption.
 **Example**:
 ```bash
 # Load most recent checkpoint
-CHECKPOINT=$(.claude/lib/load-checkpoint.sh orchestrate 2>/dev/null || echo "")
+source .claude/lib/checkpoint-utils.sh
+CHECKPOINT=$(load_checkpoint orchestrate 2>/dev/null || echo "")
 
 if [ -n "$CHECKPOINT" ]; then
   # Present resume options to user
@@ -950,7 +952,7 @@ Source adaptive planning logger with no-op fallbacks when unavailable.
 **Example**:
 ```bash
 # Logger initialization with fallbacks
-LOGGER_PATH=".claude/lib/adaptive-planning-logger.sh"
+LOGGER_PATH=".claude/lib/unified-logger.sh"
 
 if [ -f "$LOGGER_PATH" ]; then
   # Source logger utility
@@ -1306,7 +1308,7 @@ Commands are AI execution scripts, not traditional code. Understanding what must
 # bash-patterns.md - Reusable utility initialization
 init_utilities() {
   source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
   source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
 }
 ```
@@ -1395,7 +1397,7 @@ Task {
 }
 ```
 
-**Utility**: `extract_report_metadata()` in `.claude/lib/artifact-operations.sh`
+**Utility**: `extract_report_metadata()` in `.claude/lib/metadata-extraction.sh`
 
 ### Forward Message Pattern (Standard 7)
 
@@ -1426,7 +1428,7 @@ Task {
 }
 ```
 
-**Utility**: `forward_message()` in `.claude/lib/artifact-operations.sh`
+**Utility**: `forward_message()` in `.claude/lib/metadata-extraction.sh`
 
 ### Context Pruning (Standard 8)
 

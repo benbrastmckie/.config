@@ -66,7 +66,7 @@ This guide covers the `/orchestrate` command and the underlying parallel executi
 
 #### 2. Utility Libraries
 
-**Artifact Management** (`.claude/lib/artifact-utils.sh`)
+**Artifact Management** (`.claude/lib/artifact-creation.sh`, `.claude/lib/artifact-registry.sh`)
 ```bash
 create_artifact_directory()         # Create specs/artifacts/{plan_name}/
 save_operation_artifact()           # Save operation results
@@ -83,7 +83,7 @@ aggregate_collapse_artifacts()      # Collect collapse artifacts
 coordinate_metadata_updates()       # Update plan metadata
 ```
 
-**Error Recovery** (`.claude/lib/error-utils.sh`)
+**Error Recovery** (`.claude/lib/error-handling.sh`)
 ```bash
 retry_with_timeout()                # Retry with 1.5x timeout
 retry_with_fallback()               # Retry with reduced toolset

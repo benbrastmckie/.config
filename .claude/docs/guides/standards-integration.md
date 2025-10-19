@@ -700,7 +700,7 @@ In this example:
 - `docs/README.md` - Follows format from CLAUDE.md Documentation Policy
 
 **Utility Libraries** (neither applies directly):
-- `.claude/lib/artifact-operations.sh` - General bash best practices
+- `.claude/lib/metadata-extraction.sh` - General bash best practices
 - `.claude/lib/checkpoint-utils.sh` - Internal utility conventions
 
 ### Cross-References
