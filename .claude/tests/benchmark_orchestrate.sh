@@ -9,11 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source artifact-operations.sh"
-  exit 1
-}
-
 source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh" 2>/dev/null || {
   echo "ERROR: Failed to source complexity-utils.sh"
   exit 1

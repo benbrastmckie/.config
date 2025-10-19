@@ -18,7 +18,7 @@ PROJECT_ROOT="$(cd "$CLAUDE_DIR/.." && pwd)"
 
 # Source required utilities
 source "$CLAUDE_DIR/lib/template-integration.sh"
-source "$CLAUDE_DIR/lib/artifact-operations.sh"
+# artifact-operations.sh removed - modular utilities sourced as needed
 
 # Configuration
 DRY_RUN="${DRY_RUN:-true}"

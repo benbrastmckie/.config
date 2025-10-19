@@ -29,8 +29,11 @@ setup() {
   mkdir -p "$TEST_DIR/.claude/data/logs"
 
   # Source utility libraries
-  if [ -f "$LIB_DIR/artifact-operations.sh" ]; then
-    source "$LIB_DIR/artifact-operations.sh" 2>/dev/null || true
+  if [ -f "$LIB_DIR/metadata-extraction.sh" ]; then
+    source "$LIB_DIR/metadata-extraction.sh" 2>/dev/null || true
+  fi
+  if [ -f "$LIB_DIR/hierarchical-agent-support.sh" ]; then
+    source "$LIB_DIR/hierarchical-agent-support.sh" 2>/dev/null || true
   fi
 }
 

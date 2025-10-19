@@ -344,10 +344,10 @@ echo ""
 info "Testing artifact-operations.sh"
 
 # Source the library
-if source "$LIB_DIR/artifact-operations.sh" 2>/dev/null; then
-  pass "artifact-operations.sh sourced successfully"
+if source "$LIB_DIR/artifact-registry.sh" 2>/dev/null; then
+  pass "artifact-registry.sh sourced successfully"
 else
-  fail "Failed to source artifact-operations.sh"
+  fail "Failed to source artifact-registry.sh"
 fi
 
 # Test register_artifact

@@ -64,11 +64,10 @@ echo "────────────────────────�
 check_criterion "base-utils.sh created" "[ -f '$LIB_DIR/base-utils.sh' ]"
 check_criterion "plan-core-bundle.sh created" "[ -f '$LIB_DIR/plan-core-bundle.sh' ]"
 check_criterion "unified-logger.sh created" "[ -f '$LIB_DIR/unified-logger.sh' ]"
-check_criterion "parse-plan-core.sh is wrapper" "grep -q 'source.*plan-core-bundle' '$LIB_DIR/parse-plan-core.sh'"
-check_criterion "plan-metadata-utils.sh is wrapper" "grep -q 'source.*plan-core-bundle' '$LIB_DIR/plan-metadata-utils.sh'"
-check_criterion "plan-structure-utils.sh is wrapper" "grep -q 'source.*plan-core-bundle' '$LIB_DIR/plan-structure-utils.sh'"
-check_criterion "adaptive-planning-logger.sh is wrapper" "grep -q 'source.*unified-logger' '$LIB_DIR/adaptive-planning-logger.sh'"
-check_criterion "conversion-logger.sh is wrapper" "grep -q 'source.*unified-logger' '$LIB_DIR/conversion-logger.sh'"
+# Wrappers removed - now using modular utilities directly
+# parse-plan-core.sh, plan-metadata-utils.sh, plan-structure-utils.sh → plan-core-bundle.sh
+# adaptive-planning-logger.sh, conversion-logger.sh → unified-logger.sh
+# artifact-operations.sh → 7 modular utilities
 
 # Stage 4 Criteria
 echo "Stage 4: Update Commands and Documentation"

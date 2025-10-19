@@ -9,10 +9,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/base-utils.sh"
 
-if [[ -f "$SCRIPT_DIR/../lib/parse-plan-core.sh" ]]; then
-  source "$SCRIPT_DIR/../lib/parse-plan-core.sh"
-  source "$SCRIPT_DIR/../lib/plan-structure-utils.sh"
-  source "$SCRIPT_DIR/../lib/plan-metadata-utils.sh"
+if [[ -f "$SCRIPT_DIR/../lib/plan-core-bundle.sh" ]]; then
+  source "$SCRIPT_DIR/../lib/plan-core-bundle.sh"
 fi
 
 # === LAST-ITEM DETECTION ===

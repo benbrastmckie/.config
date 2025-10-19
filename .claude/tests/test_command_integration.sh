@@ -610,7 +610,8 @@ test_metadata_extraction() {
 
   # Source metadata extraction utilities
   if [ -f ".claude/lib/artifact-operations.sh" ]; then
-    source .claude/lib/artifact-operations.sh 2>/dev/null || true
+    source .claude/lib/metadata-extraction.sh 2>/dev/null || true
+    source .claude/lib/hierarchical-agent-support.sh 2>/dev/null || true
   fi
 
   # Create test report
@@ -681,7 +682,8 @@ test_recursive_supervision_depth() {
 
   # Source supervision utilities
   if [ -f ".claude/lib/artifact-operations.sh" ]; then
-    source .claude/lib/artifact-operations.sh 2>/dev/null || true
+    source .claude/lib/metadata-extraction.sh 2>/dev/null || true
+    source .claude/lib/hierarchical-agent-support.sh 2>/dev/null || true
   fi
 
   # Test depth tracking (if function available)

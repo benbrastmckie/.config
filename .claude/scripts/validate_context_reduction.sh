@@ -124,7 +124,7 @@ validate_metadata_extraction() {
     test_report+="FAIL: Missing artifact-operations.sh\n"
     test_passed=false
   else
-    source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+    source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
 
     # Test if functions exist
     local required_functions=(
@@ -170,7 +170,7 @@ validate_forward_message() {
     return 1
   fi
 
-  source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh"
+  source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
 
   # Test if forward_message exists
   if ! declare -f "forward_message" >/dev/null 2>&1; then
