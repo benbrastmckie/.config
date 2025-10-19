@@ -17,26 +17,28 @@ When Claude processes a command, it automatically reads referenced files, making
 ## Shared Sections
 
 ### High Priority (orchestrate.md)
-- `workflow-phases.md` - Detailed phase descriptions (~800 lines)
-- `orchestrate-enhancements.md` - Complexity evaluation, expansion, wave-based patterns (~350 lines) ✓
-- `error-recovery.md` - Error handling patterns (~400 lines)
-- `context-management.md` - Context optimization guide (~300 lines)
-- `agent-coordination.md` - Agent invocation patterns (~500 lines)
-- `orchestrate-examples.md` - Usage examples (~400 lines)
+- `workflow-phases.md` - Detailed phase descriptions ✓
+- `orchestrate-enhancements.md` - Complexity evaluation, expansion, wave-based patterns ✓
+- `error-recovery.md` - Error handling patterns ✓
+- `context-management.md` - Context optimization guide ✓
+- `agent-coordination.md` - Agent invocation patterns ✓
+- `orchestrate-examples.md` - Usage examples ✓
 
 ### Medium Priority (implement.md, setup.md, revise.md)
-- `adaptive-planning.md` - Adaptive planning guide (~200 lines)
-- `progressive-structure.md` - L0->L1->L2 documentation (~150 lines)
-- `phase-execution.md` - Phase execution protocol (~180 lines)
-- `setup-modes.md` - Setup command modes (~300 lines)
-- `bloat-detection.md` - Bloat detection algorithms (~150 lines)
-- `extraction-strategies.md` - Extraction preferences (~100 lines)
-- `revise-auto-mode.md` - Auto-mode specification (~250 lines)
-- `revision-types.md` - Revision type descriptions (~250 lines)
+- `adaptive-planning.md` - Adaptive planning guide ✓
+- `progressive-structure.md` - L0->L1->L2 documentation ✓
+- `phase-execution.md` - Phase execution protocol ✓
+- `setup-modes.md` - Setup command modes ✓
+- `bloat-detection.md` - Bloat detection algorithms ✓
+- `extraction-strategies.md` - Extraction preferences ✓
+- `revise-auto-mode.md` - Auto-mode specification ✓
+- `revision-types.md` - Revision type descriptions ✓
+- `implementation-workflow.md` - Implementation patterns ✓
+- `standards-analysis.md` - Standards analysis patterns ✓
 
 ### Low Priority (multiple commands)
-- `error-handling.md` - Common error patterns
-- `testing-patterns.md` - Testing protocols
+- `error-handling.md` - Common error patterns ✓
+- `testing-patterns.md` - Testing protocols ✓
 
 ## Cross-Reference Index
 
