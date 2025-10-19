@@ -8,6 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/base-utils.sh"
 source "${SCRIPT_DIR}/unified-logger.sh"
 
+# Configuration
+readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/data/registry"
+
 # Functions:
 
 register_artifact() {
