@@ -22,7 +22,20 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When using auto-analysis mode for automatic complexity-based expansion/collapse
 - To implement end-to-end development workflows with specialized agents
 
-**See Also**: [Hierarchical Agents](../concepts/hierarchical_agents.md), [Command Reference](../reference/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
+**See Also**: [Hierarchical Agent Workflow](hierarchical-agent-workflow.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Command Reference](../reference/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
+
+---
+
+### [Hierarchical Agent Workflow](hierarchical-agent-workflow.md)
+**Purpose**: Comprehensive guide for supervisor-worker agent patterns with metadata-only context passing and artifact-based organization.
+
+**Use Cases**:
+- To understand how commands coordinate subagent execution
+- When implementing commands that need to delegate specialized tasks
+- To learn metadata extraction and context preservation patterns
+- When optimizing multi-agent workflows for minimal context consumption
+
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Using Agents](../guides/using-agents.md), [Development Workflow](../concepts/development-workflow.md)
 
 ---
 
@@ -123,6 +136,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 workflows/
 ├── README.md                       (this file)
 ├── orchestration-guide.md          Multi-agent workflow coordination
+├── hierarchical-agent-workflow.md  Supervisor-worker agent patterns
 ├── adaptive-planning-guide.md      Progressive plan organization and checkpoints
 ├── checkpoint_template_guide.md    Checkpoint and template system integration
 ├── spec_updater_guide.md           Artifact management and organization
@@ -183,10 +197,11 @@ workflows/
 
 ### Advanced Path
 1. [Orchestration Guide](orchestration-guide.md) - Start with full workflow
-2. [Hierarchical Agents](../concepts/hierarchical_agents.md) - Deep architecture
-3. [Adaptive Planning Guide](adaptive-planning-guide.md) - Advanced structures
-4. [Checkpoint Template Guide](checkpoint_template_guide.md) - State optimization
-5. [Spec Updater Guide](spec_updater_guide.md) - Custom artifact management
+2. [Hierarchical Agent Workflow](hierarchical-agent-workflow.md) - Supervisor-worker patterns
+3. [Hierarchical Agents](../concepts/hierarchical_agents.md) - Deep architecture
+4. [Adaptive Planning Guide](adaptive-planning-guide.md) - Advanced structures
+5. [Checkpoint Template Guide](checkpoint_template_guide.md) - State optimization
+6. [Spec Updater Guide](spec_updater_guide.md) - Custom artifact management
 
 ### Integration Path
 1. [Checkpoint Template Guide](checkpoint_template_guide.md) - Template → checkpoint flow
