@@ -1042,6 +1042,18 @@ The planning phase synthesizes research findings into a structured implementatio
    - Agent invokes /plan slash command
    - Wait for agent completion before proceeding
 
+**EXECUTE NOW - Generate Implementation Plan**
+
+YOU MUST invoke the /plan command to generate a structured implementation plan. This is NOT optional.
+
+**WHY THIS MATTERS**: The planning phase is critical - it structures all research findings into actionable implementation steps. Skipping or simplifying this step leads to unstructured implementation and likely failure. A well-structured plan is the foundation for successful execution.
+
+**MANDATORY INPUTS**:
+- Workflow description (original user request)
+- Research report paths (from Research Phase, if completed)
+- Project standards file path (CLAUDE.md)
+- Thinking mode (for consistency with research)
+
 **EXECUTE NOW - Delegate Planning to plan-architect Agent**:
 
 Invoke the plan-architect agent to create the implementation plan:
@@ -1087,6 +1099,22 @@ Task {
 }
 ```
 
+**CRITICAL REQUIREMENTS**:
+- YOU MUST use Task tool (not simulate invocation)
+- YOU MUST pass ALL research report paths to the agent
+- YOU MUST pass complete workflow description (no paraphrasing)
+- DO NOT simplify or modify the agent prompt template
+- Agent MUST invoke /plan slash command (not simulate)
+
+**CHECKPOINT BEFORE INVOCATION**:
+```
+CHECKPOINT: Planning phase starting
+- Workflow: [workflow description]
+- Research reports: [count]
+- Report paths ready: ✓
+- Invoking: plan-architect agent
+```
+
 **Verification Checklist**:
 - [ ] plan-architect agent invoked via Task tool
 - [ ] Agent prompt includes workflow description, thinking mode, and research report paths
@@ -1109,50 +1137,90 @@ Task {
      - Max 1 retry if validation fails
    ```
 
-**EXECUTE NOW - Verify Plan File Created**:
+**MANDATORY VERIFICATION - Plan File Created**
 
-After plan-architect agent completes, parse and verify the plan file:
+After plan-architect agent completes, YOU MUST verify that a plan file was created. This verification is NOT optional.
+
+**WHY THIS MATTERS**: Without verification, the workflow might proceed to implementation without a valid plan, leading to failure. The plan file is the contract for what will be implemented.
+
+**EXECUTE NOW - Extract and Verify Plan Path**:
 
 ```bash
-# Parse PLAN_PATH from agent output
-PLAN_PATH=$(echo "$PLANNING_AGENT_OUTPUT" | grep -oP 'PLAN_PATH:\s*\K/.+' | head -1)
+# STEP 1: Extract plan path from /plan command output
+# Expected format: "PLAN_PATH: /path/to/specs/plans/NNN_feature.md"
+PLAN_OUTPUT="$PLANNING_AGENT_OUTPUT"
+PLAN_PATH=$(echo "$PLAN_OUTPUT" | grep -oP 'PLAN_PATH:\s*\K/.+' | head -1)
 
 if [ -z "$PLAN_PATH" ]; then
-  echo "ERROR: plan-architect did not return PLAN_PATH"
+  echo "❌ CRITICAL ERROR: /plan did not return plan path"
+  echo "Agent output: $PLAN_OUTPUT"
   exit 1
 fi
 
-echo "PROGRESS: Verifying plan file: $PLAN_PATH"
+echo "✓ Plan path extracted: $PLAN_PATH"
 
-# Verify plan file exists
+# STEP 2: Convert to absolute path if needed (should already be absolute)
+if [[ ! "$PLAN_PATH" =~ ^/ ]]; then
+  PLAN_PATH="$CLAUDE_PROJECT_DIR/$PLAN_PATH"
+fi
+
+echo "✓ Absolute plan path: $PLAN_PATH"
+
+# STEP 3: MANDATORY file existence check
+echo "Verifying plan file exists..."
+
 if [ ! -f "$PLAN_PATH" ]; then
-  echo "ERROR: Plan file not found at $PLAN_PATH"
+  echo "❌ CRITICAL ERROR: Plan file not found at: $PLAN_PATH"
+  echo "This should never happen if /plan executed correctly"
   exit 1
 fi
 
-# Verify plan references research reports
-REPORT_REF_COUNT=$(grep -c "specs/reports/" "$PLAN_PATH" 2>/dev/null || echo 0)
-if [ $REPORT_REF_COUNT -lt 1 ]; then
-  echo "WARNING: Plan may not reference research reports"
-fi
+echo "✓ VERIFIED: Plan file exists"
 
-# Verify plan has required sections
-for section in "Metadata" "Overview" "Implementation Phases" "Testing Strategy"; do
+# STEP 4: Verify plan has required sections
+REQUIRED_SECTIONS=("Metadata" "Overview" "Implementation Phases" "Testing Strategy")
+MISSING_SECTIONS=()
+
+for section in "${REQUIRED_SECTIONS[@]}"; do
   if ! grep -q "## $section" "$PLAN_PATH"; then
-    echo "WARNING: Plan missing section: $section"
+    MISSING_SECTIONS+=("$section")
   fi
 done
 
-echo "✓ Plan file verified: $PLAN_PATH"
+if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
+  echo "⚠️  WARNING: Plan missing sections: ${MISSING_SECTIONS[*]}"
+  echo "Plan may be incomplete"
+fi
+
+echo "✓ VERIFIED: Plan has required structure"
+
+# Export for implementation phase
 export IMPLEMENTATION_PLAN_PATH="$PLAN_PATH"
+echo "✓ Exported: IMPLEMENTATION_PLAN_PATH=$PLAN_PATH"
 ```
 
-**Verification Checklist**:
-- [ ] PLAN_PATH extracted from agent output
-- [ ] Plan file exists at expected path
-- [ ] Plan references research reports (if research performed)
+**MANDATORY VERIFICATION CHECKLIST**:
+
+YOU MUST confirm ALL before proceeding to implementation:
+
+- [ ] Plan path extracted from /plan output
+- [ ] Plan path converted to absolute
+- [ ] Plan file exists at expected location
 - [ ] Plan has required sections (Metadata, Overview, Phases, Testing)
-- [ ] Path exported for implementation phase
+- [ ] Plan path exported for implementation phase
+
+**CHECKPOINT REQUIREMENT**:
+```
+CHECKPOINT: Planning phase complete
+- Plan created: ✓
+- Plan path: $PLAN_PATH
+- Plan structure verified: ✓
+- Required sections present: ✓
+- Exported to: IMPLEMENTATION_PLAN_PATH
+- Proceeding to: Implementation phase
+```
+
+**CRITICAL**: If plan file verification fails, DO NOT proceed to implementation.
 
 **Failure Handling**:
 
@@ -1308,6 +1376,30 @@ The implementation phase executes the plan using /implement command, runs tests 
    COMPLEXITY=$(grep "^- \*\*Complexity\*\*:" "$PLAN_PATH" | cut -d: -f2 | tr -d ' ')
    ```
 
+**EXECUTE NOW - Execute Implementation Plan**
+
+YOU MUST invoke the /implement command to execute the plan created in the planning phase. This is the core execution step.
+
+**WHY THIS MATTERS**: This step performs the actual code changes. Without proper enforcement, the workflow stops at planning without implementation. The implementation phase is where plans become reality.
+
+**MANDATORY INPUT**:
+- Plan path from planning phase: $IMPLEMENTATION_PLAN_PATH
+
+**CRITICAL REQUIREMENTS**:
+- YOU MUST use Task tool to invoke code-writer agent
+- YOU MUST pass plan path from planning phase
+- DO NOT modify or simplify the plan path
+- Agent MUST invoke /implement slash command (not simulate)
+- Timeout MUST be sufficient for multi-phase execution (600000ms minimum)
+
+**CHECKPOINT BEFORE INVOCATION**:
+```
+CHECKPOINT: Implementation phase starting
+- Plan path: $IMPLEMENTATION_PLAN_PATH
+- Plan verified: ✓ (from planning phase)
+- Invoking: code-writer agent with /implement command
+```
+
 2. **Agent Invocation** (Step 3):
    ```json
    {
@@ -1318,9 +1410,82 @@ The implementation phase executes the plan using /implement command, runs tests 
    }
    ```
 
-3. **Result Parsing** (Step 4):
+**MANDATORY VERIFICATION - Implementation Status**
+
+After /implement command completes, YOU MUST verify implementation status and test results. This verification is NOT optional.
+
+**WHY THIS MATTERS**: Without status verification, we cannot determine if implementation succeeded or needs debugging. Test status determines whether to proceed to documentation or enter debugging loop.
+
+**EXECUTE NOW - Extract and Verify Implementation Status**:
+
+```bash
+# STEP 1: Extract test status from /implement output
+# Expected format includes: "Tests passing: ✓" or "Tests passing: ✗"
+IMPLEMENT_OUTPUT="[capture code-writer agent output]"
+
+# Extract test status
+TESTS_PASSING=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Tests passing:\s*\K[✓✗]' | head -1)
+
+if [ "$TESTS_PASSING" == "✓" ]; then
+  echo "✓ VERIFIED: All tests passing"
+  IMPLEMENTATION_SUCCESS=true
+elif [ "$TESTS_PASSING" == "✗" ]; then
+  echo "❌ TESTS FAILING"
+  IMPLEMENTATION_SUCCESS=false
+else
+  echo "⚠️  WARNING: Could not determine test status from output"
+  IMPLEMENTATION_SUCCESS=unknown
+fi
+
+# STEP 2: Extract phases completed
+PHASES_COMPLETED=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Phases completed:\s*\K\d+/\d+' | head -1)
+echo "Phases completed: $PHASES_COMPLETED"
+
+# STEP 3: Extract files modified
+FILES_MODIFIED=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Files modified:\s*\K\d+' | head -1)
+echo "Files modified: $FILES_MODIFIED"
+
+# STEP 4: Extract git commits
+GIT_COMMITS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Git commits:\s*\K\d+' | head -1)
+echo "Git commits: $GIT_COMMITS"
+
+# Export status for documentation phase
+export IMPLEMENTATION_SUCCESS
+export TESTS_PASSING
+export PHASES_COMPLETED
+export FILES_MODIFIED
+export GIT_COMMITS
+```
+
+**MANDATORY VERIFICATION CHECKLIST**:
+
+YOU MUST confirm before proceeding to documentation:
+
+- [ ] Test status extracted (passing or failing)
+- [ ] Phases completed count extracted
+- [ ] Files modified count extracted
+- [ ] Git commits count extracted
+- [ ] Implementation status exported
+
+**CHECKPOINT REQUIREMENT**:
+```
+CHECKPOINT: Implementation phase complete
+- Implementation status: $IMPLEMENTATION_SUCCESS
+- Tests passing: $TESTS_PASSING
+- Phases completed: $PHASES_COMPLETED
+- Files modified: $FILES_MODIFIED
+- Git commits: $GIT_COMMITS
+- Proceeding to: Documentation phase (if tests passing) OR Debugging loop (if tests failing)
+```
+
+**CONDITIONAL LOGIC** (if tests failing):
+
+If $IMPLEMENTATION_SUCCESS is false, trigger debugging loop (not part of this task).
+For this orchestration, proceed to documentation phase regardless (document current state).
+
+3. **Result Parsing** (Step 4 - Legacy Reference):
    ```python
-   # Extract from agent output using regex
+   # Extract from agent output using regex (reference only)
    tests_passing = bool(re.search(r'TESTS_PASSING: true', output))
    phases = re.search(r'PHASES_COMPLETED: (\d+)/(\d+)', output)
    files = re.search(r'FILES_MODIFIED: \[(.*?)\]', output)
@@ -1733,9 +1898,41 @@ prompt: |
      - Add usage examples where appropriate
      - Ensure documentation follows CLAUDE.md standards
 
+**EXECUTE NOW - Generate Workflow Summary**
+
+YOU MUST create a comprehensive workflow summary documenting the entire orchestration. This is NOT optional.
+
+**WHY THIS MATTERS**: The summary is the permanent record of what was accomplished. Without it, the orchestration workflow is undocumented and non-reproducible. The summary enables future reference, knowledge transfer, and workflow improvement.
+
+**MANDATORY INPUTS**:
+- Workflow description (original user request)
+- Research report paths (from Research Phase, if completed)
+- Implementation plan path (from Planning Phase)
+- Implementation status (from Implementation Phase)
+- All phase metrics (timing, file counts, etc.)
+
+**EXECUTE NOW - Calculate Summary Path**:
+
+```bash
+# STEP 1: Calculate summary path (same directory as plan)
+PLAN_DIR=$(dirname "$IMPLEMENTATION_PLAN_PATH")
+PLAN_BASE=$(basename "$IMPLEMENTATION_PLAN_PATH" .md)
+PLAN_NUM=$(echo "$PLAN_BASE" | grep -oP '^\d+')
+
+# Summary goes in same topic directory, summaries/ subdirectory
+SUMMARY_DIR="$(dirname "$PLAN_DIR")/summaries"
+mkdir -p "$SUMMARY_DIR"
+
+SUMMARY_PATH="$SUMMARY_DIR/${PLAN_NUM}_workflow_summary.md"
+
+echo "Summary will be created at: $SUMMARY_PATH"
+```
+
   2. **Create Workflow Summary**:
      Create a comprehensive workflow summary file at:
      `[plan_directory]/specs/summaries/[plan_number]_workflow_summary.md`
+
+     **EXECUTE NOW - Create Summary File**:
 
      Use this exact template:
 
@@ -1883,6 +2080,58 @@ prompt: |
      *Workflow orchestrated using /orchestrate command*
      *For questions or issues, refer to the implementation plan and research reports linked above.*
      ```
+
+**MANDATORY VERIFICATION - Summary File Created**
+
+After creating the summary file, YOU MUST verify it was created successfully. This verification is NOT optional.
+
+**WHY THIS MATTERS**: The summary file is the permanent record of the workflow. If it's not created or is incomplete, the entire orchestration effort is undocumented.
+
+**EXECUTE NOW - Verify Summary File**:
+
+```bash
+# STEP 1: Verify summary exists
+if [ ! -f "$SUMMARY_PATH" ]; then
+  echo "❌ CRITICAL ERROR: Summary file not created"
+  echo "Expected path: $SUMMARY_PATH"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Summary file exists at $SUMMARY_PATH"
+
+# STEP 2: Verify summary has required sections
+REQUIRED_SECTIONS=("Metadata" "Workflow Execution" "Artifacts Generated" "Cross-References")
+MISSING_SECTIONS=()
+
+for section in "${REQUIRED_SECTIONS[@]}"; do
+  if ! grep -q "## $section" "$SUMMARY_PATH"; then
+    MISSING_SECTIONS+=("$section")
+  fi
+done
+
+if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
+  echo "⚠️  WARNING: Summary missing sections: ${MISSING_SECTIONS[*]}"
+  echo "Summary may be incomplete"
+fi
+
+echo "✓ VERIFIED: Summary structure complete"
+```
+
+**CRITICAL REQUIREMENTS**:
+- YOU MUST create summary file (not optional)
+- YOU MUST include all cross-references
+- YOU MUST verify file created
+- Summary MUST use the template structure
+
+**CHECKPOINT REQUIREMENT**:
+```
+CHECKPOINT: Documentation phase complete
+- Summary created: ✓
+- Summary path: $SUMMARY_PATH
+- Cross-references included: ✓
+- All phases documented: ✓
+- Proceeding to: Final workflow checkpoint
+```
 
   3. **Create Cross-References**:
 
