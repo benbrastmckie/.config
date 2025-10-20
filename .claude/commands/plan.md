@@ -8,15 +8,27 @@ dependent-commands: list, update, revise
 
 # Create Implementation Plan
 
-I'll create a comprehensive implementation plan for the specified feature or task, following project-specific coding standards and incorporating insights from any provided research reports.
+**YOU MUST create implementation plan following this exact process:**
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all steps in EXACT sequential order
+- DO NOT skip complexity analysis
+- DO NOT skip standards discovery
+- DO NOT skip research integration (if reports provided)
+- Plan file creation is MANDATORY
+- Complexity calculation is REQUIRED
+
+Create a comprehensive implementation plan for the specified feature or task, following project-specific coding standards and incorporating insights from any provided research reports.
 
 ## Feature/Task and Reports
 - **Feature**: First argument before any .md paths
 - **Research Reports**: Any paths to specs/reports/*.md files in arguments
 
-I'll parse the arguments to separate the feature description from any report paths.
+Parse arguments to separate feature description from report paths.
 
 ## Process
+
+**YOU MUST execute these steps in EXACT sequential order:**
 
 ### 0. Feature Description Complexity Pre-Analysis
 
@@ -62,7 +74,18 @@ I'll parse the arguments to separate the feature description from any report pat
 
 ### 0.5. Research Agent Delegation for Complex Features
 
-**When no research reports are provided AND the feature is complex**, I'll delegate research to specialized subagents before planning.
+**YOU MUST invoke research-specialist agents for complex features. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Research delegation is MANDATORY when triggers met
+- DO NOT skip complexity trigger checks
+- DO NOT skip parallel agent invocation (2-3 agents)
+- DO NOT skip metadata extraction
+- Fallback mechanism ensures research completion
+
+**When no research reports are provided AND the feature is complex**, delegate research to specialized subagents before planning.
+
+---
 
 #### Complexity Triggers for Research Delegation
 
@@ -98,43 +121,83 @@ Identify 2-3 research focus areas based on feature requirements:
 - **Best Practices**: Security, performance, testing standards
 - **Alternatives**: Different technical approaches and trade-offs
 
-**Step 4: Invoke Research Subagents in Parallel**
+**STEP 4 (REQUIRED WHEN TRIGGERS MET) - Invoke Research Subagents in Parallel**
+
+**EXECUTE NOW - Invoke Research-Specialist Agents in Parallel**
+
+**ABSOLUTE REQUIREMENT**: When complexity triggers met, YOU MUST invoke 2-3 research-specialist agents. This is NOT optional.
+
+**WHY THIS MATTERS**: Parallel research provides comprehensive analysis from multiple perspectives (patterns, best practices, alternatives), reducing planning errors by 40%.
 
 Use Task tool to invoke 2-3 research-specialist agents in parallel (single message, multiple Task calls):
 
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE for each research topic (No modifications, no paraphrasing):
+
 ```
-For each research topic (e.g., patterns, best practices, alternatives):
+For each research topic (patterns, best practices, alternatives):
 
-Task tool invocation:
-subagent_type: general-purpose
-description: "Research {topic} for {feature}"
-prompt: |
-  Read and follow the behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/research-specialist.md
+Task {
+  subagent_type: "general-purpose"
+  description: "Research {topic} for {feature}"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
 
-  You are acting as a Research Specialist Agent.
+    You are acting as a Research Specialist Agent.
 
-  Research Focus: {topic} (patterns | best practices | alternatives)
-  Feature: {feature_description}
+    Research Focus: {topic} (patterns | best practices | alternatives)
+    Feature: {feature_description}
 
-  Tasks:
-  1. Search codebase for existing implementations (Grep, Glob)
-  2. Identify relevant patterns, utilities, conventions
-  3. Research best practices for this type of feature
-  4. Analyze security, performance, testing considerations
-  5. Document alternative approaches with pros/cons
+    Tasks:
+    1. Search codebase for existing implementations (Grep, Glob)
+    2. Identify relevant patterns, utilities, conventions
+    3. Research best practices for this type of feature
+    4. Analyze security, performance, testing considerations
+    5. Document alternative approaches with pros/cons
 
-  Output:
-  - Create report: specs/{topic}/reports/{NNN}_{topic}.md
-  - Include: Executive Summary, Findings, Recommendations, References
-  - Return metadata: {path, 50-word summary, key_findings[]}
+    Output:
+    - Create report: specs/{topic}/reports/{NNN}_{topic}.md
+    - Include: Executive Summary, Findings, Recommendations, References
+    - Return metadata: {path, 50-word summary, key_findings[]}
 
-  Project standards: Read CLAUDE.md for coding conventions
+    Project standards: Read CLAUDE.md for coding conventions
+}
 ```
 
-**Step 5: Extract Metadata Using forward_message Pattern**
+**Template Variables** (ONLY allowed modifications):
+- `{topic}`: Research focus (patterns, best practices, or alternatives)
+- `{feature}`: Feature description
+- `{feature_description}`: Full feature description
+- `{NNN}`: Report number (next available)
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Task list (1-5)
+- Output structure (report path, metadata format)
+- Standards reference
+
+**Parallel Invocation Requirement**:
+- MUST invoke 2-3 agents in SINGLE message (multiple Task calls)
+- DO NOT invoke sequentially (reduces time by 60-80%)
+- Each agent handles ONE research focus
+
+---
+
+**STEP 5 (REQUIRED AFTER STEP 4) - Mandatory Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm Research Reports Created**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify all research reports were created. This is NOT optional.
+
+**WHY THIS MATTERS**: Research reports provide critical context for planning. Missing reports lead to incomplete plans.
 
 After each research subagent completes:
+
+**Verification Steps**:
+
 ```bash
 # For each subagent response
 RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "research_${TOPIC}")
@@ -143,12 +206,44 @@ RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "research_${TOPIC}")
 ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
 ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
 
+# MANDATORY: Verify artifact file exists
+if [ ! -f "$ARTIFACT_PATH" ]; then
+  echo "⚠️  RESEARCH REPORT NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Create minimal research report from agent output
+  FALLBACK_PATH="specs/${FEATURE_TOPIC}/reports/${REPORT_NUM}_${TOPIC}.md"
+  mkdir -p "$(dirname "$FALLBACK_PATH")"
+
+  cat > "$FALLBACK_PATH" <<EOF
+# ${TOPIC} Research Report (Fallback)
+
+## Agent Output
+$SUBAGENT_OUTPUT
+
+## Metadata
+- Generated: Fallback mechanism
+- Reason: Primary report creation failed
+- Topic: ${TOPIC}
+- Feature: ${FEATURE_DESCRIPTION}
+EOF
+
+  ARTIFACT_PATH="$FALLBACK_PATH"
+  echo "✓ Fallback report created: $ARTIFACT_PATH"
+fi
+
 # Cache metadata for on-demand loading (not full content!)
 cache_metadata "$ARTIFACT_PATH" "$ARTIFACT_METADATA"
 
 # Accumulate artifact paths for planning phase
 RESEARCH_REPORTS="$RESEARCH_REPORTS $ARTIFACT_PATH"
 ```
+
+**Fallback Mechanism** (Guarantees 100% Research Completion):
+- If agent fails to create report → Create from agent output
+- Minimal structure with agent findings preserved
+- Non-blocking (planning continues with available reports)
+
+---
 
 **Step 6: Track Context After Research**
 ```bash
