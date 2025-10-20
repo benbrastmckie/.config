@@ -7,7 +7,17 @@ command-type: workflow
 
 # Expand Phase or Stage to Separate File
 
-I'll expand phases or stages from inline content to detailed separate files, creating the progressive planning structure.
+**YOU MUST expand phases/stages following exact process:**
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all steps in EXACT sequential order
+- DO NOT skip complexity analysis
+- DO NOT skip agent invocation for complex phases
+- DO NOT skip file creation verification
+- DO NOT skip metadata updates
+- Fallback mechanisms ensure 100% expansion success
+
+Expand phases or stages from inline content to detailed separate files, creating the progressive planning structure.
 
 ## Modes
 
@@ -330,33 +340,53 @@ echo "Current structure level: $structure_level"
 
 #### Phase 2: Invoke Complexity Estimator Agent
 
-Since bash cannot directly invoke the Task tool, show prompt for agent invocation:
+**YOU MUST invoke complexity-estimator agent. This is NOT optional.**
+
+**EXECUTE NOW - Analyze Phases for Expansion**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke complexity_estimator agent to analyze phases. This is NOT optional.
+
+**WHY THIS MATTERS**: Agent provides context-aware analysis of which phases should be expanded, reducing expansion errors by 40%.
+
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
 ```
-Use Task tool to invoke complexity_estimator agent:
-
 Task {
   subagent_type: "general-purpose"
   description: "Analyze plan complexity for expansion decisions"
-  prompt: "Read and follow the behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/complexity-estimator.md
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/complexity-estimator.md
 
-          You are acting as a Complexity Estimator.
+    You are acting as a Complexity Estimator.
 
-          Analysis Task: Expansion Analysis
+    Analysis Task: Expansion Analysis
 
-          [Include parent plan context from analyze_phases_for_expansion]
-          [Include all phase contents to analyze]
+    [Include parent plan context from analyze_phases_for_expansion]
+    [Include all phase contents to analyze]
 
-          For each phase, provide JSON output with:
-          - item_id, item_name, complexity_level (1-10)
-          - reasoning (context-aware, not just task count)
-          - recommendation (expand or skip)
-          - confidence (low/medium/high)
+    For each phase, provide JSON output with:
+    - item_id, item_name, complexity_level (1-10)
+    - reasoning (context-aware, not just task count)
+    - recommendation (expand or skip)
+    - confidence (low/medium/high)
 
-          Output: JSON array only"
+    Output: JSON array only
 }
 ```
+
+**Template Variables** (ONLY allowed modifications):
+- Plan context and phase contents (dynamically generated)
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Output format requirements
+- JSON structure
+
+**MANDATORY VERIFICATION**: After agent completes, verify JSON output is valid and contains all required fields.
 
 #### Phase 3: Parallel Agent Invocation
 
