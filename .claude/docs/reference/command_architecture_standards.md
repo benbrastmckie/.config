@@ -1466,6 +1466,23 @@ Use this checklist when reviewing pull requests that modify command or agent fil
 - [ ] **Annotations**: Are structural annotations present ([EXECUTION-CRITICAL], etc.)?
 - [ ] **Testing**: Has the command been executed successfully after changes?
 
+### Agent File Changes (NEW)
+
+**Subagent Prompt Enforcement** (Standard 0.5):
+- [ ] **Imperative Language**: All critical steps use "YOU MUST", "EXECUTE NOW", "ABSOLUTE REQUIREMENT"?
+- [ ] **Role Declaration**: Uses "YOU MUST perform" instead of "I am a specialized agent"?
+- [ ] **Sequential Dependencies**: Steps marked "STEP N (REQUIRED BEFORE STEP N+1)"?
+- [ ] **File Creation Priority**: File creation marked as "PRIMARY OBLIGATION" or "ABSOLUTE REQUIREMENT"?
+- [ ] **Verification Checkpoints**: "MANDATORY VERIFICATION" blocks present after critical operations?
+- [ ] **Template Enforcement**: Output formats marked "THIS EXACT TEMPLATE (No modifications)"?
+- [ ] **Passive Voice Elimination**: Zero "should/may/can" in critical sections, all use "MUST/WILL/SHALL"?
+- [ ] **Completion Criteria**: Explicit checklist with "ALL REQUIRED" marker present?
+- [ ] **Why This Matters Context**: Enforcement rationale provided for critical operations?
+- [ ] **Checkpoint Reporting**: "CHECKPOINT REQUIREMENT" blocks present at major milestones?
+- [ ] **Fallback Integration**: Compatible with command-level fallback mechanisms?
+
+**Quality Scoring**: Does the agent file score 95+/100 on the enforcement rubric (9.5+ categories at full strength)?
+
 ### Reference File Changes
 
 - [ ] **Supplemental**: Does content supplement command files (not replace)?
