@@ -333,19 +333,81 @@ Analyze phase dependencies to enable parallel execution in waves.
 
 ## Phase Execution Protocol
 
+**YOU MUST follow the wave execution flow for each phase. This is NOT optional.**
+
 Execute phases either sequentially (traditional) or in parallel waves (with dependencies).
 
 **Execution Modes**:
 - **Sequential**: Execute phases in order (Phase 1, 2, 3, ...) when no dependencies declared
 - **Parallel**: Parse dependencies into waves, execute waves sequentially, parallelize phases within waves (>1 phase per wave)
 
+**CRITICAL INSTRUCTIONS**:
+- Wave execution flow is MANDATORY
+- DO NOT skip complexity analysis
+- DO NOT skip agent selection based on complexity
+- Agent delegation is REQUIRED for complex phases (score ≥3)
+
 **Wave Execution Flow**:
 1. **Wave Initialization**: Identify phases in current wave, log wave execution start
 2. **Phase Preparation**: Display phase number, name, tasks for each phase in wave
 3. **Complexity Analysis**: Run analyzer, calculate hybrid complexity score (see Step 1.5)
 4. **Agent Selection** (using $COMPLEXITY_SCORE from Step 1.5):
-   - Direct execution (0-2), code-writer (3-5), code-writer + think (6-7), code-writer + think hard (8-9), code-writer + think harder (10+)
-   - Special case overrides: doc-writer (documentation), test-specialist (testing), debug-specialist (debug)
+
+**MANDATORY AGENT DELEGATION** (based on complexity score):
+
+- **Score 0-2**: Direct execution (use Read, Edit, Write tools directly)
+- **Score 3-5**: **code-writer agent** (standard delegation)
+- **Score 6-7**: **code-writer agent** + extended thinking time
+- **Score 8-9**: **code-writer agent** + deep analysis mode
+- **Score 10+**: **code-writer agent** + maximum reasoning depth
+
+**Special Case Overrides** (TAKE PRECEDENCE over score):
+- **Documentation phases**: Use **doc-writer agent** (regardless of score)
+- **Testing phases**: Use **test-specialist agent** (regardless of score)
+- **Debug phases**: Use **debug-specialist agent** (regardless of score)
+
+**Agent Invocation Template** (code-writer):
+
+YOU MUST use THIS EXACT TEMPLATE for code-writer delegation:
+
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Implement Phase ${PHASE_NUM} - ${PHASE_NAME}"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/code-writer.md
+
+    You are acting as a Code Writer Agent.
+
+    Implement Phase ${PHASE_NUM}: ${PHASE_NAME}
+
+    Plan: ${PLAN_PATH}
+    Phase Tasks:
+    ${TASK_LIST}
+
+    Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+    Complexity: ${COMPLEXITY_SCORE}
+
+    Follow plan tasks exactly, apply coding standards, run tests after implementation.
+
+    Return: Summary of changes made + test results
+}
+```
+
+**Template Variables** (ONLY allowed modifications):
+- `${PHASE_NUM}`: Phase number
+- `${PHASE_NAME}`: Phase description
+- `${PLAN_PATH}`: Absolute plan path
+- `${TASK_LIST}`: Phase task list
+- `${COMPLEXITY_SCORE}`: Complexity score from Step 1.5
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Standards reference
+- Return format requirement
+
 5. **Delegation**: Invoke agent via Task tool with behavioral injection, monitor PROGRESS markers
 6. **Testing and Commit**: Execute for all phases in wave (see subsequent sections)
 
@@ -511,12 +573,20 @@ This is informational only and helps understand the current plan organization.
 
 ### 1.5. Hybrid Complexity Evaluation
 
+**YOU MUST evaluate phase complexity before implementation. This is NOT optional.**
+
 Evaluate phase complexity using hybrid approach: threshold-based scoring with agent evaluation for borderline cases (score ≥7 or ≥8 tasks).
 
 **When to Use**:
 - **Every phase**: Always evaluate complexity before implementation
 - **Borderline cases**: Automatic agent invocation for context-aware analysis
 - **Agent triggers**: Threshold score ≥7 OR task count ≥8
+
+**CRITICAL INSTRUCTIONS**:
+- Complexity evaluation is MANDATORY for every phase
+- DO NOT skip threshold calculation
+- DO NOT skip agent invocation when thresholds met
+- Agent evaluation provides context-aware accuracy
 
 **Workflow Overview**:
 1. Calculate threshold-based score (complexity-utils.sh)
@@ -525,6 +595,8 @@ Evaluate phase complexity using hybrid approach: threshold-based scoring with ag
 4. Parse result (final_score, evaluation_method, agent_reasoning)
 5. Log evaluation for analytics (adaptive-planning-logger.sh)
 6. Export COMPLEXITY_SCORE for downstream decisions (expansion, agent selection)
+
+---
 
 **Key Execution Requirements**:
 
@@ -536,16 +608,28 @@ Evaluate phase complexity using hybrid approach: threshold-based scoring with ag
    ```
 
 2. **Hybrid evaluation with agent fallback**:
+
+**AGENT INVOCATION NOTE**: The `hybrid_complexity_evaluation` function automatically invokes the **complexity-estimator agent** when borderline thresholds are met. This agent invocation is handled by the utility function and is NOT optional.
+
    ```bash
    # Determine if agent needed (score ≥7 OR tasks ≥8)
    AGENT_NEEDED="false"
    [ "$THRESHOLD_SCORE" -ge 7 ] || [ "$TASK_COUNT" -ge 8 ] && AGENT_NEEDED="true"
 
-   # Run hybrid evaluation (may invoke complexity_estimator agent)
+   # Run hybrid evaluation
+   # IMPORTANT: This function invokes complexity-estimator agent when AGENT_NEEDED="true"
+   # Agent provides context-aware evaluation for borderline phases
    EVALUATION_RESULT=$(hybrid_complexity_evaluation "$PHASE_NAME" "$TASK_LIST" "$PLAN_FILE")
    COMPLEXITY_SCORE=$(echo "$EVALUATION_RESULT" | jq -r '.final_score')
    EVALUATION_METHOD=$(echo "$EVALUATION_RESULT" | jq -r '.evaluation_method')  # "threshold", "agent", or "reconciled"
    ```
+
+**Complexity-Estimator Agent Behavior** (invoked automatically by utility):
+- Agent reads phase context from plan file
+- Evaluates task complexity, scope breadth, integration challenges
+- Returns numerical score with reasoning
+- Utility reconciles agent score with threshold score
+- Fallback to threshold score if agent fails
 
 3. **Logging and analytics**:
    ```bash
@@ -1280,9 +1364,23 @@ If git commit fails after marking phase complete:
 
 ## Summary Generation
 
+**YOU MUST finalize summary after all phases complete. This is NOT optional.**
+
 After completing all phases:
 
+**CRITICAL INSTRUCTIONS**:
+- Summary finalization is MANDATORY
+- DO NOT skip registry updates
+- DO NOT skip cross-reference links
+- Final checkpoint reporting is REQUIRED
+
 ### 1-3. Finalize Summary File
+
+**EXECUTE NOW - Finalize Implementation Summary**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST finalize the implementation summary. This is NOT optional.
+
+**WHY THIS MATTERS**: Summary provides complete implementation record for future reference and tracks artifacts used during implementation.
 
 **Workflow**:
 - Check for partial summary: `[specs-dir]/summaries/NNN_partial.md`
@@ -1297,6 +1395,36 @@ After completing all phases:
 - Update phases: `M/N` → `N/N`
 - Add completion date and lessons learned
 - Remove resume instructions
+
+---
+
+**CHECKPOINT REQUIREMENT - Report Implementation Complete**
+
+**ABSOLUTE REQUIREMENT**: After summary finalization, YOU MUST report this final checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Final checkpoint confirms all phases complete, provides implementation metrics, and marks workflow conclusion.
+
+**Report Format**:
+
+```
+CHECKPOINT: Implementation Complete
+- Plan: ${PLAN_NAME}
+- Phases: ${TOTAL_PHASES}/${TOTAL_PHASES} (100%)
+- Summary: ${SUMMARY_PATH}
+- Duration: ${IMPLEMENTATION_TIME}
+- Commits: ${COMMIT_COUNT}
+- Tests: ✓ ALL PASSED
+- Status: COMPLETE
+```
+
+**Required Information**:
+- Plan name (from plan metadata)
+- Total phases completed
+- Summary file path
+- Implementation duration (first commit to last commit)
+- Total commit count
+- Final test status
+- Completion status
 
 ### 4-5. Registry and Cross-References
 
