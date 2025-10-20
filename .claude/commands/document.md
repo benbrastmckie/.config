@@ -58,6 +58,17 @@ Analyzes the codebase and updates all relevant documentation
 - Reviews implementation summaries if available
 
 ### 2. **Standards Verification**
+
+**YOU MUST verify documentation standards. This is NOT optional.**
+
+**STEP 1 (REQUIRED) - Load and Verify Documentation Standards**
+
+**EXECUTE NOW - Read CLAUDE.md Documentation Standards**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST read and apply documentation standards from CLAUDE.md. This is NOT optional.
+
+**WHY THIS MATTERS**: Documentation standards ensure consistency and compliance across all project documentation.
+
 - Reads CLAUDE.md for project documentation standards
 - Checks for specific requirements:
   - README.md requirements per directory
@@ -65,6 +76,25 @@ Analyzes the codebase and updates all relevant documentation
   - ASCII diagram standards
   - Character encoding rules
   - API documentation format
+
+**Verification Steps**:
+```bash
+# Load documentation standards
+STANDARDS_FILE=$(find_upward_claude_md "$PWD")
+
+if [ -z "$STANDARDS_FILE" ] || [ ! -f "$STANDARDS_FILE" ]; then
+  echo "⚠️  CLAUDE.md not found - Using default standards"
+  # Fallback: Use sensible defaults
+else
+  # Extract documentation policy section
+  DOC_POLICY=$(extract_section "$STANDARDS_FILE" "documentation_policy")
+  echo "✓ Documentation standards loaded from: $STANDARDS_FILE"
+fi
+```
+
+**Fallback Mechanism**:
+- If CLAUDE.md not found → Use sensible language-specific defaults
+- If documentation_policy section missing → Use core requirements (README.md, UTF-8, no emojis)
 
 ### 3. **Documentation Identification**
 Automatically identifies and updates:
@@ -111,29 +141,127 @@ Description of what this module does and its key functions.
 
 ### 5. **Compliance Checks**
 
+**YOU MUST perform compliance checks. This is NOT optional.**
+
+**STEP 2 (REQUIRED) - Verify Documentation Compliance**
+
+**EXECUTE NOW - Check All Documentation Standards**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify all documentation meets standards. This is NOT optional.
+
+**WHY THIS MATTERS**: Compliance checks prevent documentation drift and ensure maintainability.
+
 #### Style Compliance
-- Indentation (as specified in CLAUDE.md)
-- Line length limits
-- Naming conventions
-- Import organization
+**MANDATORY CHECKS**:
+- ✓ Indentation (as specified in CLAUDE.md)
+- ✓ Line length limits
+- ✓ Naming conventions
+- ✓ Import organization
 
 #### Content Requirements
-- All directories have README.md
-- All public functions documented
-- Configuration options explained
-- System capabilities accurately described
+**MANDATORY CHECKS**:
+- ✓ All directories have README.md
+- ✓ All public functions documented
+- ✓ Configuration options explained
+- ✓ System capabilities accurately described
 
 #### Formatting Standards
-- UTF-8 encoding (no emojis in files)
-- Box-drawing characters for diagrams
-- Markdown formatting consistency
-- Code example syntax highlighting
+**MANDATORY CHECKS**:
+- ✓ UTF-8 encoding (no emojis in files)
+- ✓ Box-drawing characters for diagrams
+- ✓ Markdown formatting consistency
+- ✓ Code example syntax highlighting
+
+**Verification Process**:
+```bash
+# Check each updated file for compliance
+COMPLIANCE_ERRORS=0
+
+for doc_file in $UPDATED_FILES; do
+  # Check UTF-8 encoding
+  if ! file "$doc_file" | grep -q "UTF-8"; then
+    echo "❌ Encoding error: $doc_file (not UTF-8)"
+    ((COMPLIANCE_ERRORS++))
+  fi
+
+  # Check for emojis in content
+  if grep -P '[\x{1F300}-\x{1F9FF}]' "$doc_file" > /dev/null 2>&1; then
+    echo "❌ Emoji found in: $doc_file"
+    ((COMPLIANCE_ERRORS++))
+  fi
+
+  # Check for README.md in each directory
+  if [ -d "$doc_file" ] && [ ! -f "$doc_file/README.md" ]; then
+    echo "⚠️  Missing README.md in: $doc_file"
+    ((COMPLIANCE_ERRORS++))
+  fi
+done
+
+if [ $COMPLIANCE_ERRORS -eq 0 ]; then
+  echo "✓ All compliance checks passed"
+else
+  echo "⚠️  Compliance errors found: $COMPLIANCE_ERRORS"
+  echo "Manual review required"
+fi
+```
 
 ### 6. **Cross-Reference Updates**
-- Updates links between documents
-- Fixes broken references
-- Updates navigation sections
-- Maintains document hierarchy
+
+**YOU MUST verify and fix cross-references. This is NOT optional.**
+
+**STEP 3 (REQUIRED) - Verify All Cross-References**
+
+**EXECUTE NOW - Check and Fix Document Links**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify all cross-references are valid. This is NOT optional.
+
+**WHY THIS MATTERS**: Broken links reduce documentation usability and indicate documentation drift.
+
+**MANDATORY OPERATIONS**:
+- ✓ Updates links between documents
+- ✓ Fixes broken references
+- ✓ Updates navigation sections
+- ✓ Maintains document hierarchy
+
+**Verification Process**:
+```bash
+# Extract and verify all markdown links
+BROKEN_LINKS=0
+
+for doc_file in $UPDATED_FILES; do
+  # Extract all markdown links
+  LINKS=$(grep -oP '\[.*?\]\(\K[^)]+' "$doc_file" 2>/dev/null || echo "")
+
+  while IFS= read -r link; do
+    [ -z "$link" ] && continue
+
+    # Skip external URLs
+    [[ "$link" =~ ^https?:// ]] && continue
+
+    # Resolve relative path
+    DOC_DIR=$(dirname "$doc_file")
+    RESOLVED_PATH=$(cd "$DOC_DIR" && realpath -m "$link" 2>/dev/null)
+
+    # Check if file exists
+    if [ ! -f "$RESOLVED_PATH" ] && [ ! -d "$RESOLVED_PATH" ]; then
+      echo "❌ BROKEN LINK in $doc_file: $link → $RESOLVED_PATH"
+      ((BROKEN_LINKS++))
+    fi
+  done <<< "$LINKS"
+done
+
+if [ $BROKEN_LINKS -eq 0 ]; then
+  echo "✓ All cross-references valid"
+else
+  echo "⚠️  Broken links found: $BROKEN_LINKS"
+  echo "Manual review required"
+fi
+```
+
+**Fallback Mechanism**:
+- If link verification fails → Log broken links but continue
+- Document broken links in update summary
+- Non-blocking (documentation updates complete)
 
 ## Documentation Priorities
 
@@ -289,6 +417,42 @@ Before finalizing documentation updates, verify:
 - Reports formatting issues
 - Suggests corrections
 - Maintains backup of originals
+
+## Checkpoint Reporting
+
+**YOU MUST report documentation update checkpoint. This is NOT optional.**
+
+**CHECKPOINT REQUIREMENT - Report Documentation Updates Complete**
+
+**ABSOLUTE REQUIREMENT**: After all documentation updates complete, YOU MUST report this checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Checkpoint reporting confirms successful documentation updates with compliance verified and cross-references validated.
+
+**Report Format**:
+
+```
+CHECKPOINT: Documentation Updates Complete
+- Scope: ${SCOPE_DESCRIPTION}
+- Files Updated: ${UPDATED_FILE_COUNT}
+- Compliance Checks: ${COMPLIANCE_STATUS}
+- Cross-References: ${CROSSREF_STATUS}
+- Broken Links Fixed: ${BROKEN_LINKS_FIXED}
+- New Documentation: ${NEW_DOC_COUNT}
+- Standards: ✓ CLAUDE.md COMPLIANT
+- Status: DOCUMENTATION CURRENT
+```
+
+**Required Information**:
+- Scope description (from user input or auto-detected)
+- Number of files updated
+- Compliance check status (passed/warnings)
+- Cross-reference verification status (all valid/broken links found)
+- Number of broken links fixed
+- Number of new documentation files created
+- Standards compliance confirmation
+- Documentation current status
+
+---
 
 ## Agent Usage
 
