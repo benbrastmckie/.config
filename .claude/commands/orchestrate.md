@@ -497,6 +497,15 @@ echo "Identified ${#TOPICS[@]} research topics for workflow"
 **Adapting Topics**:
 
 ```bash
+# First, create or find the workflow topic directory
+# This centralizes all artifacts (reports, plans, summaries) for this workflow
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/template-integration.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+
+WORKFLOW_TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" ".claude/specs")
+echo "Workflow topic directory: $WORKFLOW_TOPIC_DIR"
+
 # Example topics (adapt based on workflow):
 TOPICS=("existing_patterns" "best_practices" "integration_approaches")
 
@@ -504,15 +513,9 @@ TOPICS=("existing_patterns" "best_practices" "integration_approaches")
 declare -A REPORT_PATHS
 
 for topic in "${TOPICS[@]}"; do
-  # Create topic directory if it doesn't exist
-  TOPIC_DIR="${CLAUDE_PROJECT_DIR}/specs/reports/${topic}"
-  mkdir -p "$TOPIC_DIR"
-
-  # Get next available number for this topic
-  NEXT_NUM=$(get_next_artifact_number "$TOPIC_DIR")
-
-  # Construct absolute path
-  REPORT_PATH="${TOPIC_DIR}/${NEXT_NUM}_analysis.md"
+  # Use create_topic_artifact() to create report with proper numbering
+  # This ensures topic-based organization: specs/{NNN_workflow}/reports/NNN_topic.md
+  REPORT_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "reports" "${topic}" "")
 
   # Store in associative array
   REPORT_PATHS["$topic"]="$REPORT_PATH"
@@ -533,30 +536,28 @@ done
 For each research agent, include the calculated absolute path in the agent prompt:
 
 ```markdown
-**CRITICAL: Create Report File**
+**ABSOLUTE REQUIREMENT - File Creation is Your Primary Task**
 
-You MUST create a research report file using the Write tool at this EXACT path:
+Creating the report file is NOT optional. It is your PRIMARY task. Follow these steps IN ORDER:
 
+**STEP 1: CREATE THE FILE** (Do this FIRST)
+Use the Write tool to create a report file at this EXACT path:
 **Report Path**: ${REPORT_PATHS["topic_name"]}
 
-DO NOT:
-- Return only a summary
-- Use relative paths
-- Calculate the path yourself
+**STEP 2: CONDUCT RESEARCH**
+Gather findings, analyze patterns, identify recommendations
 
-DO:
-- Use Write tool with exact path above
-- Create complete report (not abbreviated)
-- Return: REPORT_PATH: ${REPORT_PATHS["topic_name"]}
-
-After completing research, return this exact format:
-
-**Primary Output**:
+**STEP 3: RETURN CONFIRMATION**
+After completing Steps 1 and 2, return ONLY:
 ```
-REPORT_PATH: ${REPORT_PATHS["topic_name"]}
+REPORT_CREATED: ${REPORT_PATHS["topic_name"]}
 ```
 
-**Secondary Output**: Brief summary (1-2 sentences ONLY)
+**CRITICAL REQUIREMENTS**:
+- DO NOT return summary text. Orchestrator will read your report file.
+- DO NOT use relative paths or calculate paths yourself
+- DO NOT skip file creation - it is mandatory
+- Use Write tool with the EXACT path provided above
 ```
 
 **Path Calculation Benefits**:
@@ -573,40 +574,32 @@ Task {
   description: "Research authentication patterns with artifact creation"
   timeout: 300000  # 5 minutes per research agent
   prompt: "
-    **CRITICAL: Create Report File**
+    **ABSOLUTE REQUIREMENT - File Creation is Your Primary Task**
 
-    **Report Path**: /home/benjamin/.config/.claude/specs/reports/authentication_patterns/001_analysis.md
+    Creating the report file is NOT optional. It is your PRIMARY task. Follow these steps IN ORDER:
 
-    You MUST create a research report file using the Write tool at the EXACT path above.
+    **STEP 1: CREATE THE FILE** (Do this FIRST)
+    Use the Write tool to create a report file at this EXACT path:
+    **Report Path**: /home/benjamin/.config/.claude/specs/067_add_user_authentication/reports/001_authentication_patterns.md
 
-    DO NOT:
-    - Return only a summary
-    - Use relative paths
-    - Calculate the path yourself
-
-    DO:
-    - Use Write tool with exact path above
-    - Create complete report (not abbreviated)
-    - Return: REPORT_PATH: /absolute/path
-
-    ---
-
-    ## Research Task: Authentication Patterns
-
+    **STEP 2: CONDUCT RESEARCH**
     Analyze existing authentication implementations in the codebase:
     1. Search for authentication-related files
     2. Identify patterns and conventions
     3. Document integration points
     4. Note security considerations
 
-    ## Expected Output
-
-    **Primary Output**:
+    **STEP 3: RETURN CONFIRMATION**
+    After completing Steps 1 and 2, return ONLY:
     \`\`\`
-    REPORT_PATH: /home/benjamin/.config/.claude/specs/reports/authentication_patterns/001_analysis.md
+    REPORT_CREATED: /home/benjamin/.config/.claude/specs/067_add_user_authentication/reports/001_authentication_patterns.md
     \`\`\`
 
-    **Secondary Output**: Brief 1-2 sentence summary
+    **CRITICAL REQUIREMENTS**:
+    - DO NOT return summary text. Orchestrator will read your report file.
+    - DO NOT use relative paths or calculate paths yourself
+    - DO NOT skip file creation - it is mandatory
+    - Use Write tool with the EXACT path provided above
   "
 }
 ```
@@ -652,28 +645,50 @@ declare -A AGENT_REPORT_PATHS
 
 for topic in "${!REPORT_PATHS[@]}"; do
   AGENT_OUTPUT="${RESEARCH_AGENT_OUTPUTS[$topic]}"  # From Task tool results
+  REPORT_PATH="${REPORT_PATHS[$topic]}"
 
-  # Extract REPORT_PATH line (format: "REPORT_PATH: /absolute/path")
-  EXTRACTED_PATH=$(echo "$AGENT_OUTPUT" | grep -oP 'REPORT_PATH:\s*\K/.+' | head -1)
+  # Extract REPORT_CREATED line (format: "REPORT_CREATED: /absolute/path")
+  EXTRACTED_PATH=$(echo "$AGENT_OUTPUT" | grep -oP 'REPORT_CREATED:\s*\K/.+' | head -1)
 
   if [ -z "$EXTRACTED_PATH" ]; then
-    echo "  ⚠️  Agent for '$topic' did not return REPORT_PATH"
-    echo "    Using pre-calculated path: ${REPORT_PATHS[$topic]}"
-    EXTRACTED_PATH="${REPORT_PATHS[$topic]}"
+    echo "  ⚠️  Agent for '$topic' did not return REPORT_CREATED"
   else
     echo "  ✓ Agent reported: $EXTRACTED_PATH"
 
     # Verify path matches expected
-    if [ "$EXTRACTED_PATH" != "${REPORT_PATHS[$topic]}" ]; then
+    if [ "$EXTRACTED_PATH" != "$REPORT_PATH" ]; then
       echo "  ⚠️  Path mismatch detected!"
-      echo "    Expected: ${REPORT_PATHS[$topic]}"
+      echo "    Expected: $REPORT_PATH"
       echo "    Agent returned: $EXTRACTED_PATH"
-      echo "    Using expected path (more reliable)"
-      EXTRACTED_PATH="${REPORT_PATHS[$topic]}"
     fi
   fi
 
-  AGENT_REPORT_PATHS["$topic"]="$EXTRACTED_PATH"
+  # Verify file exists (critical check)
+  if [ ! -f "$REPORT_PATH" ]; then
+    echo "  ⚠️  Report file not found at: $REPORT_PATH"
+    echo "  Creating fallback report from agent output..."
+
+    # Create fallback report
+    cat > "$REPORT_PATH" <<EOF
+# ${topic}
+
+## Metadata
+- **Date**: $(date -u +%Y-%m-%d)
+- **Agent**: research-specialist (fallback creation)
+- **Topic**: ${topic}
+
+## Findings
+$AGENT_OUTPUT
+
+## Note
+This report was created by fallback mechanism because the agent did not create the file directly.
+EOF
+    echo "  ✓ Fallback report created"
+  else
+    echo "  ✓ Report file verified at: $REPORT_PATH"
+  fi
+
+  AGENT_REPORT_PATHS["$topic"]="$REPORT_PATH"
 done
 
 # Export for subsequent phases
@@ -682,9 +697,11 @@ echo "PROGRESS: Parsed ${#AGENT_REPORT_PATHS[@]} report paths from agent outputs
 ```
 
 **Verification Checklist**:
-- [ ] REPORT_PATH extracted from each agent output
-- [ ] Fallback to pre-calculated path if missing
-- [ ] Path mismatch detection and correction
+- [ ] REPORT_CREATED extracted from each agent output
+- [ ] File existence verified for each report
+- [ ] Fallback report created if file missing
+- [ ] Path mismatch detection and logging
+- [ ] All reports guaranteed to exist (via fallback)
 - [ ] Paths exported for planning phase
 
 **EXECUTE NOW - Verify Report File Creation** (Step 4: After Agent Completion)
@@ -940,8 +957,8 @@ for topic in "${!AGENT_REPORT_PATHS[@]}"; do
 done
 
 # Calculate context reduction metrics
-TOTAL_REPORT_SIZE=$(find "${CLAUDE_PROJECT_DIR}/specs/reports" \
-  -name "[0-9][0-9][0-9]_*.md" -mmin -10 -exec wc -c {} + | tail -1 | awk '{print $1}')
+TOTAL_REPORT_SIZE=$(find "${WORKFLOW_TOPIC_DIR}/reports" \
+  -name "[0-9][0-9][0-9]_*.md" -exec wc -c {} + 2>/dev/null | tail -1 | awk '{print $1}')
 TOTAL_METADATA_SIZE=$(echo "${REPORT_METADATA[@]}" | wc -c)
 
 if [ "$TOTAL_REPORT_SIZE" -gt 0 ]; then
