@@ -1216,7 +1216,49 @@ Planning Time: 2m 45s
 → Proceeding to Implementation Phase
 ```
 
-**Proceed to Implementation Phase** after planning checkpoint saved and plan validated.
+---
+
+## Planning Phase Complete
+
+**CHECKPOINT REQUIREMENT - Report Planning Phase Completion**
+
+Before proceeding to implementation phase, YOU MUST report this checkpoint:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Planning Phase Complete
+═══════════════════════════════════════════════════════
+
+Phase Status: COMPLETE ✓
+
+Planning Execution:
+- Plan created: ✓
+- Plan path: $IMPLEMENTATION_PLAN_PATH
+- Planning agent invoked: ✓
+- Planning time: [N] minutes
+
+Plan Validation:
+- File exists: ✓
+- Required sections present: ✓
+- Research reports referenced: ✓
+- Plan structure verified: ✓
+
+Plan Details:
+- Phases defined: [N]
+- Complexity score: [score]
+- Estimated hours: [N-N]
+- Research reports used: ${#RESEARCH_REPORT_PATHS[@]}
+
+Next Phase: Implementation
+- Will execute: /implement command
+- Will use: $IMPLEMENTATION_PLAN_PATH
+- Expected: Automated phase-by-phase implementation with tests
+═══════════════════════════════════════════════════════
+```
+
+**CRITICAL**: This checkpoint is MANDATORY. Do NOT proceed to implementation phase without reporting it.
+
+---
 
 ### Implementation Phase (Adaptive Execution)
 
@@ -1429,7 +1471,48 @@ Options:
 Workflow paused - awaiting user input.
 ```
 
-**Proceed to Documentation Phase** after implementation succeeds OR user resolves escalation.
+---
+
+## Implementation Phase Complete
+
+**CHECKPOINT REQUIREMENT - Report Implementation Phase Completion**
+
+Before proceeding to documentation phase, YOU MUST report this checkpoint:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Implementation Phase Complete
+═══════════════════════════════════════════════════════
+
+Phase Status: COMPLETE ✓
+
+Implementation Execution:
+- Plan executed: $IMPLEMENTATION_PLAN_PATH
+- /implement command invoked: ✓
+- Implementation time: [N] minutes
+
+Implementation Results:
+- Tests passing: $TESTS_PASSING
+- Phases completed: $PHASES_COMPLETED
+- Files modified: $FILES_MODIFIED
+- Git commits: $GIT_COMMITS
+- Implementation status: $IMPLEMENTATION_SUCCESS
+
+Debugging Summary (if occurred):
+- Debug iterations: $DEBUG_ITERATION_COUNT
+- Debug reports created: ${#DEBUG_REPORTS[@]}
+- Final status: [resolved|escalated|none]
+
+Next Phase: Documentation
+- Will create: Workflow summary
+- Will update: Project documentation
+- Will cross-reference: All artifacts
+═══════════════════════════════════════════════════════
+```
+
+**CRITICAL**: This checkpoint is MANDATORY. Do NOT proceed to documentation phase without reporting it.
+
+---
 
 ### Documentation Phase (Sequential Execution)
 
@@ -2864,6 +2947,64 @@ Performance Metrics:
 Checkpoint Saved: workflow_complete
 Status: ✅ Success
 ```
+
+---
+
+## Orchestration Workflow Complete
+
+**CHECKPOINT REQUIREMENT - Report Workflow Completion**
+
+After documentation phase completes, YOU MUST report this final checkpoint:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Orchestration Workflow Complete
+═══════════════════════════════════════════════════════
+
+Workflow Status: COMPLETE ✓
+
+Workflow Summary:
+- Original request: $WORKFLOW_DESCRIPTION
+- Total duration: [calculated]
+- Phases executed: 4 (Research, Planning, Implementation, Documentation)
+
+Artifacts Created:
+- Research reports: ${#RESEARCH_REPORT_PATHS[@]}
+- Implementation plan: $IMPLEMENTATION_PLAN_PATH
+- Implementation commits: $GIT_COMMITS
+- Workflow summary: $SUMMARY_PATH
+
+Implementation Results:
+- Tests passing: $TESTS_PASSING
+- Files modified: $FILES_MODIFIED
+- Phases completed: $PHASES_COMPLETED
+- Implementation success: $IMPLEMENTATION_SUCCESS
+
+Performance Metrics:
+- Research time: [duration]
+- Planning time: [duration]
+- Implementation time: [duration]
+- Documentation time: [duration]
+- Total workflow time: [duration]
+- Parallel execution savings: ~60-70% (research phase)
+
+Context Usage:
+- Research phase: <10% (metadata only)
+- Planning phase: <20%
+- Implementation phase: variable
+- Documentation phase: <10%
+- Overall: <30% average
+
+Next Steps:
+- Review workflow summary: $SUMMARY_PATH
+- Review implementation plan: $IMPLEMENTATION_PLAN_PATH
+- Review research reports: ${#RESEARCH_REPORT_PATHS[@]} files
+═══════════════════════════════════════════════════════
+```
+
+**CRITICAL**: This checkpoint is MANDATORY. It marks the official completion of the orchestration workflow.
+
+---
 
 ## Context Management Strategy
 
