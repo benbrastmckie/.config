@@ -1346,6 +1346,334 @@ prune_phase_metadata "research"
 # Context saved: 95% (5000 tokens → 250 tokens)
 ```
 
+## Agent Invocation Patterns
+
+### Overview
+
+This section documents the correct patterns for invoking agents from commands, with emphasis on the **behavioral injection pattern** that enables metadata-based context reduction and topic-based artifact organization.
+
+**Related Documentation**:
+- [Agent Authoring Guide](../guides/agent-authoring-guide.md) - Creating agent behavioral files
+- [Command Authoring Guide](../guides/command-authoring-guide.md) - Invoking agents from commands
+
+### The Behavioral Injection Pattern
+
+#### Pattern Definition
+
+**Behavioral injection** is the practice of:
+1. **Commands** pre-calculate topic-based artifact paths
+2. **Commands** load agent behavioral prompts (or reference files)
+3. **Commands** inject complete context into agent invocation
+4. **Agents** create artifacts directly at provided paths
+5. **Commands** verify artifacts and extract metadata only
+
+#### Why This Pattern Exists
+
+**Problem**: If agents invoke slash commands:
+- Loss of control over artifact paths
+- Cannot extract metadata before context bloat
+- Violates topic-based artifact organization
+- Risk of recursion (agent → command → agent)
+
+**Solution**: Commands control orchestration, agents execute:
+- Commands calculate paths → topic-based organization enforced
+- Commands inject context → agents have everything needed
+- Agents create artifacts → direct file operations
+- Commands extract metadata → 95% context reduction
+
+#### Pattern Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PRIMARY COMMAND (orchestration layer)                       │
+│                                                              │
+│ 1. Calculate Topic-Based Path                               │
+│    ARTIFACT_PATH = specs/{NNN_topic}/reports/{NNN}_name.md   │
+│                                                              │
+│ 2. Load Agent Behavioral Prompt (optional)                  │
+│    AGENT_PROMPT = load_agent_behavioral_prompt("agent")     │
+│                                                              │
+│ 3. Inject Complete Context                                  │
+│    - Behavioral guidelines                                  │
+│    - Task requirements                                      │
+│    - ARTIFACT_PATH (pre-calculated)                         │
+│    - Success criteria                                       │
+│                                                              │
+│ 4. Invoke Agent via Task Tool                               │
+│    ↓                                                         │
+└────┬────────────────────────────────────────────────────────┘
+     │
+     ↓
+┌────┴────────────────────────────────────────────────────────┐
+│ AGENT (execution layer)                                      │
+│                                                              │
+│ - Receives: Behavioral prompt + context + ARTIFACT_PATH     │
+│ - Executes: Uses Read/Write/Edit tools                      │
+│ - Creates: Artifact at EXACT path provided                  │
+│ - Returns: Metadata only (path + summary + findings)        │
+│                                                              │
+│ ⚠️  NEVER uses SlashCommand for artifact creation           │
+│                                                              │
+└────┬────────────────────────────────────────────────────────┘
+     │
+     ↓
+┌────┴────────────────────────────────────────────────────────┐
+│ PRIMARY COMMAND (post-processing)                           │
+│                                                              │
+│ 5. Verify Artifact Created                                  │
+│    VERIFIED = verify_artifact_or_recover(path, slug)        │
+│                                                              │
+│ 6. Extract Metadata Only                                    │
+│    METADATA = extract_report_metadata(path)                 │
+│    Context reduction: 5000 tokens → 250 tokens (95%)        │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Anti-Pattern: Agent Invokes Slash Command
+
+#### What Not To Do
+
+```markdown
+# WRONG: agent-behavioral-file.md
+
+**CRITICAL**: You MUST use SlashCommand to invoke /plan:
+
+SlashCommand {
+  command: "/plan ${FEATURE_DESCRIPTION}"
+}
+```
+
+#### Why It's Wrong
+
+| Issue | Impact |
+|-------|--------|
+| **Loss of Path Control** | Cannot pre-calculate topic-based paths |
+| **Context Bloat** | Cannot extract metadata before full content loaded |
+| **Recursion Risk** | Agent may invoke command that invoked it |
+| **Organization Violation** | Artifacts may not follow topic-based structure |
+| **Testing Difficulty** | Cannot mock agent behavior in tests |
+
+#### Example: /orchestrate Anti-Pattern (Before Fix)
+
+**Before** (plan-architect.md - WRONG):
+```markdown
+## Step 1: Create Implementation Plan
+
+You MUST use SlashCommand to invoke /plan command:
+
+SlashCommand {
+  command: "/plan ${FEATURE_DESCRIPTION}"
+}
+```
+
+**Result**:
+- plan-architect agent invokes /plan command
+- /plan command creates plan at unknown path
+- /orchestrate cannot verify plan location
+- Cannot extract metadata (don't know path)
+- Context bloat: 168.9k tokens (no reduction)
+
+### Correct Pattern: Behavioral Injection
+
+#### Reference Implementation
+
+**Command** (orchestrate.md - CORRECT):
+```bash
+# 1. Pre-calculate topic-based plan path
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" "specs")
+PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "implementation" "")
+# Result: specs/042_workflow/plans/042_implementation.md
+
+# 2. Invoke plan-architect agent with injected context
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan for ${FEATURE}"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    You are acting as a Plan Architect Agent.
+
+    **Feature**: ${FEATURE_DESCRIPTION}
+    **Research Reports**: ${RESEARCH_REPORT_PATHS}
+    **Plan Output Path**: ${PLAN_PATH}
+
+    Create the implementation plan at the exact path provided.
+    Return metadata: {path, phase_count, complexity_score}
+}
+
+# 3. Verify plan created at expected path
+VERIFIED_PATH=$(verify_artifact_or_recover "$PLAN_PATH" "implementation")
+
+# 4. Extract metadata only
+PLAN_METADATA=$(extract_plan_metadata "$VERIFIED_PATH")
+PHASE_COUNT=$(echo "$PLAN_METADATA" | jq -r '.phase_count')
+```
+
+**Agent** (plan-architect.md - CORRECT):
+```markdown
+## Step 1: Receive Context
+
+You will receive:
+- **Feature Description**: The feature to implement
+- **Research Reports**: Paths to research reports
+- **Plan Output Path**: EXACT path where plan must be created
+
+## Step 2: Create Plan at Exact Path
+
+Use Write tool to create plan file:
+
+Write {
+  file_path: "${PLAN_PATH}"  # Use exact path from context
+  content: |
+    # ${FEATURE} Implementation Plan
+
+    ## Metadata
+    - **Research Reports**:
+      - ${RESEARCH_REPORT_1}
+      - ${RESEARCH_REPORT_2}
+
+    ## Phases
+    ...
+}
+
+## Step 3: Return Metadata
+
+{
+  "path": "${PLAN_PATH}",
+  "phase_count": 6,
+  "complexity_score": 78,
+  "estimated_hours": 14
+}
+```
+
+**Result**:
+- Command controls path → topic-based organization
+- Agent creates artifact → direct Write tool
+- Command verifies → confirm expected location
+- Command extracts metadata → 95% context reduction
+- Zero slash command invocations → no recursion risk
+
+### Utilities for Behavioral Injection
+
+#### Path Calculation Utilities
+
+**Source**: `.claude/lib/artifact-creation.sh`
+
+```bash
+# Get or create topic directory
+get_or_create_topic_dir(description, base_dir)
+# Returns: specs/042_feature_name
+
+# Create artifact with sequential numbering
+create_topic_artifact(topic_dir, artifact_type, name, content)
+# Returns: specs/042_feature/reports/042_name.md
+```
+
+#### Agent Loading Utilities
+
+**Source**: `.claude/lib/agent-loading-utils.sh`
+
+```bash
+# Load agent behavioral prompt (strip YAML frontmatter)
+load_agent_behavioral_prompt(agent_name)
+# Returns: Behavioral prompt content
+
+# Get next artifact number
+get_next_artifact_number(artifact_dir)
+# Returns: "043" (next sequential number)
+
+# Verify artifact with recovery
+verify_artifact_or_recover(expected_path, topic_slug)
+# Returns: Actual path (may differ if recovery needed)
+```
+
+#### Metadata Extraction Utilities
+
+**Source**: `.claude/lib/metadata-extraction.sh`
+
+```bash
+# Extract report metadata
+extract_report_metadata(report_path)
+# Returns: {path, summary, key_findings, recommendations}
+
+# Extract plan metadata
+extract_plan_metadata(plan_path)
+# Returns: {path, phase_count, complexity_score, estimated_hours}
+
+# Extract debug metadata
+extract_debug_metadata(debug_path)
+# Returns: {path, summary, findings, proposed_fixes}
+```
+
+### Cross-Reference Requirements
+
+#### Plan-Architect Agent
+
+**Requirement**: All plans must reference research reports that informed them.
+
+**Implementation**:
+```markdown
+## Metadata
+- **Date**: 2025-10-20
+- **Feature**: User Authentication System
+- **Research Reports**:
+  - specs/042_auth/reports/042_security_patterns.md
+  - specs/042_auth/reports/043_best_practices.md
+  - specs/042_auth/reports/044_framework_comparison.md
+```
+
+**Why**: Enables traceability from plan to research.
+
+#### Doc-Writer Agent (Summarizer)
+
+**Requirement**: All workflow summaries must reference all artifacts generated.
+
+**Implementation**:
+```markdown
+## Artifacts Generated
+
+### Research Reports
+- specs/042_auth/reports/042_security_patterns.md
+- specs/042_auth/reports/043_best_practices.md
+- specs/042_auth/reports/044_framework_comparison.md
+
+### Implementation Plan
+- specs/042_auth/plans/042_implementation.md
+
+### Debug Reports (if applicable)
+- specs/042_auth/debug/042_investigation_token_expiry.md
+```
+
+**Why**: Provides complete workflow audit trail.
+
+### Troubleshooting
+
+See [Agent Delegation Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) for common issues:
+- Agent invokes slash command instead of creating artifact
+- Artifact not found at expected path
+- Context reduction not achieved
+- Recursion risk or infinite loops
+- Artifacts not in topic-based directories
+
+### Pattern Summary
+
+**Behavioral Injection Pattern**:
+- ✅ Commands pre-calculate topic-based paths
+- ✅ Commands inject complete context into agents
+- ✅ Agents create artifacts at exact paths provided
+- ✅ Agents return metadata only (not full content)
+- ✅ Commands verify and extract metadata
+- ✅ 95% context reduction achieved
+
+**Anti-Pattern to Avoid**:
+- ❌ Agents invoking slash commands for artifact creation
+- ❌ Agents calculating their own paths
+- ❌ Commands loading full artifact content
+- ❌ Flat directory structures (non-topic-based)
+
 ## Summary
 
 The hierarchical agent architecture provides:
