@@ -33,13 +33,19 @@ echo ""
 # Find all test files
 TEST_FILES=$(find "$TEST_DIR" -name "test_*.sh" -not -name "run_all_tests.sh" | sort)
 
-if [ -z "$TEST_FILES" ]; then
+# Find all validation scripts
+VALIDATION_FILES=$(find "$TEST_DIR" -name "validate_*.sh" | sort)
+
+# Combine test and validation files
+ALL_TEST_FILES="$TEST_FILES $VALIDATION_FILES"
+
+if [ -z "$ALL_TEST_FILES" ]; then
   echo "No test files found!"
   exit 1
 fi
 
 # Run each test file
-for test_file in $TEST_FILES; do
+for test_file in $ALL_TEST_FILES; do
   test_name=$(basename "$test_file" .sh)
 
   echo -e "${BLUE}Running: $test_name${NC}"
