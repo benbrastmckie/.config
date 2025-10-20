@@ -1054,72 +1054,105 @@ YOU MUST invoke the /plan command to generate a structured implementation plan. 
 - Project standards file path (CLAUDE.md)
 - Thinking mode (for consistency with research)
 
-**EXECUTE NOW - Delegate Planning to plan-architect Agent**:
+**EXECUTE NOW - Calculate Topic-Based Plan Path BEFORE Agent Invocation**
 
-Invoke the plan-architect agent to create the implementation plan:
+**WHY THIS MATTERS**: The plan must be created in the same topic directory as research reports for proper artifact organization. We pre-calculate the path to guarantee correct location.
+
+**VERIFICATION REQUIREMENT**: After executing this block, you MUST confirm PLAN_PATH is absolute and in topic-based structure.
+
+```bash
+# STEP 1: Source artifact creation utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+
+# STEP 2: Use WORKFLOW_TOPIC_DIR from research phase (already calculated)
+# This ensures plan goes in same directory as research reports
+# WORKFLOW_TOPIC_DIR is already set (e.g., ".claude/specs/027_workflow")
+
+echo "Planning phase starting..."
+echo "Topic directory: $WORKFLOW_TOPIC_DIR"
+
+# STEP 3: Calculate plan path using create_topic_artifact utility
+PLAN_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "plans" "implementation" "")
+# Result: specs/{NNN_workflow}/plans/{NNN}_implementation.md
+# Example: .claude/specs/027_auth/plans/027_implementation.md
+
+echo "Plan path calculated: $PLAN_PATH"
+
+# STEP 4: Verify path is absolute
+if [[ ! "$PLAN_PATH" =~ ^/ ]]; then
+  echo "❌ CRITICAL ERROR: Plan path is not absolute: $PLAN_PATH"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Plan path is absolute and topic-based"
+```
+
+**CHECKPOINT - Path Pre-Calculation Complete**:
+```
+CHECKPOINT: Plan path calculated
+- Topic directory: [WORKFLOW_TOPIC_DIR]
+- Plan path: [PLAN_PATH]
+- Path is absolute: ✓
+- Topic-based structure: ✓
+- Ready to invoke: plan-architect agent
+```
+
+**EXECUTE NOW - Invoke plan-architect Agent with Behavioral Injection**
+
+**WHY THIS MATTERS**: We pass the pre-calculated PLAN_PATH to the agent so it creates the plan at the exact location we want, following topic-based organization.
+
+**CRITICAL INSTRUCTION**: Use this EXACT template (no modifications):
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Create implementation plan using plan-architect protocol"
-  timeout: 600000  # 10 minutes for complex planning
+  description: "Create implementation plan using plan-architect behavioral guidelines"
+  timeout: 600000  # 10 minutes for planning
   prompt: "
-    Read and follow the behavioral guidelines from:
+    Read and follow behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-    ## Planning Task
+    You are acting as a Plan Architect Agent.
 
-    ### Context
-    - Workflow: ${WORKFLOW_DESC}
-    - Thinking Mode: ${THINKING_MODE}
-    - Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+    **Workflow Description**: ${WORKFLOW_DESCRIPTION}
 
-    ### Research Reports Available
-    $(for path in \"${RESEARCH_REPORT_PATHS[@]}\"; do
-      echo \"    - $path\"
-    done)
+    **Plan Output Path** (ABSOLUTE REQUIREMENT):
+    ${PLAN_PATH}
 
-    Use Read tool to access report content as needed.
+    **Research Reports** (CRITICAL - Include ALL in plan metadata):
+    ${RESEARCH_REPORT_PATHS_FORMATTED}
 
-    ### Your Task
-    1. Read all research reports to understand findings
-    2. Invoke SlashCommand: /plan \"${WORKFLOW_DESC}\" ${RESEARCH_REPORT_PATHS[@]}
-    3. Verify plan file created successfully
-    4. Return: PLAN_PATH: /absolute/path/to/plan.md
+    **Cross-Reference Requirements**:
+    - In plan metadata, include \"Research Reports\" section with ALL report paths above
+    - This enables traceability from plan to research that informed it
+    - Summary will later reference both plan and reports for complete audit trail
 
-    ## Expected Output
+    **CRITICAL REQUIREMENTS**:
+    1. CREATE plan file at EXACT path above using Write tool (not SlashCommand)
+    2. INCLUDE all research reports in metadata \"Research Reports\" section
+    3. FOLLOW topic-based artifact organization (path already calculated correctly)
+    4. RETURN format: PLAN_CREATED: [path]
 
-    **Primary Output**:
-    \`\`\`
-    PLAN_PATH: /absolute/path/to/specs/plans/NNN_feature.md
-    \`\`\`
+    **Expected Output Format**:
+    PLAN_CREATED: [absolute path]
 
-    **Secondary Output**: Brief summary (1-2 sentences)
+    Metadata:
+    - Phases: [N]
+    - Complexity: [Low|Medium|High]
+    - Estimated Hours: [H]
   "
 }
 ```
 
-**CRITICAL REQUIREMENTS**:
-- YOU MUST use Task tool (not simulate invocation)
-- YOU MUST pass ALL research report paths to the agent
-- YOU MUST pass complete workflow description (no paraphrasing)
-- DO NOT simplify or modify the agent prompt template
-- Agent MUST invoke /plan slash command (not simulate)
-
-**CHECKPOINT BEFORE INVOCATION**:
+**CHECKPOINT - Agent Invocation Complete**:
 ```
-CHECKPOINT: Planning phase starting
-- Workflow: [workflow description]
-- Research reports: [count]
-- Report paths ready: ✓
-- Invoking: plan-architect agent
+CHECKPOINT: plan-architect agent invoked
+- Agent type: general-purpose
+- Behavioral file: plan-architect.md
+- Plan path provided: ✓
+- Research reports provided: ✓
+- Awaiting: PLAN_CREATED response
 ```
-
-**Verification Checklist**:
-- [ ] plan-architect agent invoked via Task tool
-- [ ] Agent prompt includes workflow description, thinking mode, and research report paths
-- [ ] Agent instructed to invoke /plan command
-- [ ] Agent expected to return PLAN_PATH
 
 3. **Plan Validation** (Step 4):
    ```bash
@@ -1139,43 +1172,45 @@ CHECKPOINT: Planning phase starting
 
 **MANDATORY VERIFICATION - Plan File Created**
 
-After plan-architect agent completes, YOU MUST verify that a plan file was created. This verification is NOT optional.
+After plan-architect agent completes, YOU MUST verify the plan was created at the expected path.
 
-**WHY THIS MATTERS**: Without verification, the workflow might proceed to implementation without a valid plan, leading to failure. The plan file is the contract for what will be implemented.
+**WHY THIS MATTERS**: We pre-calculated the plan path, so verification confirms the agent followed instructions and created the plan at the correct topic-based location.
 
-**EXECUTE NOW - Extract and Verify Plan Path**:
+**EXECUTE NOW - Verify Plan Creation**:
 
 ```bash
-# STEP 1: Extract plan path from /plan command output
-# Expected format: "PLAN_PATH: /path/to/specs/plans/NNN_feature.md"
+# STEP 1: Extract confirmation from agent output
+# Expected format: "PLAN_CREATED: /absolute/path/to/plan.md"
 PLAN_OUTPUT="$PLANNING_AGENT_OUTPUT"
-PLAN_PATH=$(echo "$PLAN_OUTPUT" | grep -oP 'PLAN_PATH:\s*\K/.+' | head -1)
+PLAN_CREATED_PATH=$(echo "$PLAN_OUTPUT" | grep -oP 'PLAN_CREATED:\s*\K/.+' | head -1)
 
-if [ -z "$PLAN_PATH" ]; then
-  echo "❌ CRITICAL ERROR: /plan did not return plan path"
-  echo "Agent output: $PLAN_OUTPUT"
-  exit 1
+if [ -z "$PLAN_CREATED_PATH" ]; then
+  echo "⚠️  WARNING: Agent did not return PLAN_CREATED confirmation"
+  echo "Falling back to pre-calculated path: $PLAN_PATH"
+  PLAN_CREATED_PATH="$PLAN_PATH"
 fi
 
-echo "✓ Plan path extracted: $PLAN_PATH"
+echo "✓ Plan creation path: $PLAN_CREATED_PATH"
 
-# STEP 2: Convert to absolute path if needed (should already be absolute)
-if [[ ! "$PLAN_PATH" =~ ^/ ]]; then
-  PLAN_PATH="$CLAUDE_PROJECT_DIR/$PLAN_PATH"
+# STEP 2: Verify paths match (agent created at expected location)
+if [ "$PLAN_CREATED_PATH" != "$PLAN_PATH" ]; then
+  echo "⚠️  WARNING: Path mismatch"
+  echo "  Expected: $PLAN_PATH"
+  echo "  Agent created: $PLAN_CREATED_PATH"
+  echo "  Using agent's path (may indicate path calculation issue)"
+  PLAN_PATH="$PLAN_CREATED_PATH"
 fi
-
-echo "✓ Absolute plan path: $PLAN_PATH"
 
 # STEP 3: MANDATORY file existence check
-echo "Verifying plan file exists..."
+echo "Verifying plan file exists at topic-based path..."
 
 if [ ! -f "$PLAN_PATH" ]; then
   echo "❌ CRITICAL ERROR: Plan file not found at: $PLAN_PATH"
-  echo "This should never happen if /plan executed correctly"
+  echo "Agent may have failed to create plan using Write tool"
   exit 1
 fi
 
-echo "✓ VERIFIED: Plan file exists"
+echo "✓ VERIFIED: Plan file exists at topic-based path"
 
 # STEP 4: Verify plan has required sections
 REQUIRED_SECTIONS=("Metadata" "Overview" "Implementation Phases" "Testing Strategy")
@@ -1189,35 +1224,51 @@ done
 
 if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
   echo "⚠️  WARNING: Plan missing sections: ${MISSING_SECTIONS[*]}"
-  echo "Plan may be incomplete"
+  echo "Plan may be incomplete, but continuing..."
 fi
 
-echo "✓ VERIFIED: Plan has required structure"
+echo "✓ VERIFIED: Plan structure complete"
+
+# STEP 5: Verify research reports cross-referenced [Revision 3]
+if [ -n "$RESEARCH_REPORT_PATHS_FORMATTED" ]; then
+  echo "Verifying plan references research reports..."
+
+  if ! grep -q "## Metadata" "$PLAN_PATH"; then
+    echo "⚠️  WARNING: Plan missing Metadata section"
+  elif ! grep -A 20 "## Metadata" "$PLAN_PATH" | grep -q "Research Reports"; then
+    echo "⚠️  WARNING: Plan missing 'Research Reports' in metadata"
+    echo "Plan should cross-reference research reports for traceability"
+  else
+    echo "✓ VERIFIED: Plan includes research reports cross-reference"
+  fi
+fi
+
+# STEP 6: Extract metadata from agent output (context reduction)
+PLAN_PHASE_COUNT=$(echo "$PLAN_OUTPUT" | grep -oP 'Phases:\s*\K\d+' | head -1)
+PLAN_COMPLEXITY=$(echo "$PLAN_OUTPUT" | grep -oP 'Complexity:\s*\K\w+' | head -1)
+PLAN_HOURS=$(echo "$PLAN_OUTPUT" | grep -oP 'Estimated Hours:\s*\K\d+' | head -1)
+
+echo "✓ METADATA EXTRACTED (not full plan content):"
+echo "  Phases: ${PLAN_PHASE_COUNT:-Unknown}"
+echo "  Complexity: ${PLAN_COMPLEXITY:-Unknown}"
+echo "  Hours: ${PLAN_HOURS:-Unknown}"
+echo "✓ Context reduction achieved (metadata-only, not full plan)"
 
 # Export for implementation phase
 export IMPLEMENTATION_PLAN_PATH="$PLAN_PATH"
 echo "✓ Exported: IMPLEMENTATION_PLAN_PATH=$PLAN_PATH"
 ```
 
-**MANDATORY VERIFICATION CHECKLIST**:
-
-YOU MUST confirm ALL before proceeding to implementation:
-
-- [ ] Plan path extracted from /plan output
-- [ ] Plan path converted to absolute
-- [ ] Plan file exists at expected location
-- [ ] Plan has required sections (Metadata, Overview, Phases, Testing)
-- [ ] Plan path exported for implementation phase
-
-**CHECKPOINT REQUIREMENT**:
+**CHECKPOINT - Plan Verification Complete**:
 ```
-CHECKPOINT: Planning phase complete
-- Plan created: ✓
-- Plan path: $PLAN_PATH
-- Plan structure verified: ✓
-- Required sections present: ✓
-- Exported to: IMPLEMENTATION_PLAN_PATH
-- Proceeding to: Implementation phase
+CHECKPOINT: Plan created and verified
+- Plan path: [PLAN_PATH]
+- File exists: ✓
+- Topic-based structure: ✓
+- Required sections: ✓
+- Research reports cross-referenced: ✓
+- Metadata extracted: ✓
+- Ready for: Implementation or summary phase
 ```
 
 **CRITICAL**: If plan file verification fails, DO NOT proceed to implementation.

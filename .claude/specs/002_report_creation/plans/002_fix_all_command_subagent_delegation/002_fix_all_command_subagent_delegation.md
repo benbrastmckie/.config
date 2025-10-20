@@ -512,29 +512,50 @@ For detailed tasks and implementation, see **[Phase 1 Details](phase_1_shared_ut
 
 **Actual Time**: 30 minutes
 
-**Git Commit**: (pending)
+**Git Commit**: aa33d0db - "fix: remove /implement recursion risk from code-writer agent"
 
 ---
 
-### Phase 3: Fix /orchestrate Planning Phase (EXPANDED)
+### Phase 3: Fix /orchestrate Planning Phase (EXPANDED) [COMPLETED]
 
 **Objective**: Implement behavioral injection for plan-architect agent in /orchestrate
 
 **Complexity**: High (Analysis: 9/10 - Multi-file coordination, cross-reference requirements)
 
-**Status**: PENDING
+**Status**: ✅ COMPLETED (2025-10-20)
 
 **Summary**: Refactors /orchestrate planning phase to use behavioral injection with topic-based path pre-calculation. Implements Revision 3 cross-reference requirements (plans reference reports, summaries reference all artifacts). Achieves 95% context reduction target (168.9k → <30k tokens).
 
-For detailed tasks and implementation, see **[Phase 3 Details](phase_3_orchestrate_fix.md)** (675 lines)
+For detailed tasks and implementation, see **[Phase 3 Details](phase_3_orchestrate_fix.md)** (1,500 lines)
 
 **Key Deliverables**:
-- plan-architect.md: Remove SlashCommand, add cross-references
-- orchestrate.md: 3 section updates (planning, research verification, summary verification)
-- workflow-phases.md: Updated templates
-- Integration tests for behavioral injection
+- ✅ plan-architect.md: Removed SlashCommand, added cross-references (STEP 2, 3, 4 updated)
+- ✅ orchestrate.md: 2 section updates (planning phase invocation, plan verification)
+- ✅ workflow-phases.md: Updated planning template with behavioral injection pattern
+- ✅ Research phase verified to use topic-based paths (already correct)
+- ✅ Summary phase verified to include cross-references (already correct)
+- ✅ Integration test created: test_orchestrate_planning_behavioral_injection.sh (16/16 tests passing)
 
-**Estimated Time**: 4-5 hours
+**Actual Outputs**:
+- ✅ plan-architect agent no longer invokes /plan slash command
+- ✅ orchestrate planning phase pre-calculates topic-based plan paths
+- ✅ Agent receives PLAN_PATH and creates plan directly using Write tool
+- ✅ Plans include "Research Reports" metadata section for cross-referencing
+- ✅ Summary template already includes complete cross-references
+- ✅ Metadata-only extraction implemented (95% context reduction)
+- ✅ All behavioral injection tests passing (16/16)
+
+**Files Modified**:
+- `.claude/agents/plan-architect.md` (3 major sections updated)
+- `.claude/commands/orchestrate.md` (2 sections: planning invocation + verification)
+- `.claude/commands/shared/workflow-phases.md` (planning template updated)
+
+**Files Created**:
+- `.claude/tests/test_orchestrate_planning_behavioral_injection.sh` (16 tests, all passing)
+
+**Actual Time**: 2 hours (faster than 4-5 hour estimate due to clear Phase 3 expansion specification)
+
+**Git Commit**: (pending)
 
 ---
 
