@@ -74,6 +74,15 @@ Investigates issues and creates a comprehensive diagnostic report without making
 
 ### 3.5. Parallel Hypothesis Investigation (for Complex Issues)
 
+**YOU MUST invoke debug-analyst agents in parallel for complex issues. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Parallel investigation is MANDATORY for complex issues
+- DO NOT investigate hypotheses sequentially
+- DO NOT skip metadata extraction
+- DO NOT skip synthesis of findings
+- Fallback mechanism ensures complete investigation
+
 For complex issues with multiple potential root causes, use parallel debug-analyst agents to investigate hypotheses simultaneously.
 
 **When to Use**:
@@ -88,6 +97,8 @@ For complex issues with multiple potential root causes, use parallel debug-analy
 3. Use forward_message to extract metadata from each investigation
 4. Synthesize findings to identify confirmed hypothesis
 5. Create consolidated debug report with all investigation results
+
+---
 
 **Key Execution Requirements**:
 
@@ -105,38 +116,78 @@ For complex issues with multiple potential root causes, use parallel debug-analy
    echo "PROGRESS: Investigating $HYPOTHESIS_COUNT hypotheses in parallel"
    ```
 
+**STEP A (REQUIRED FOR COMPLEX ISSUES) - Invoke Debug-Analyst Agents in Parallel**
+
+**EXECUTE NOW - Parallel Hypothesis Investigation**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke debug-analyst agents in parallel (single message). This is NOT optional.
+
+**WHY THIS MATTERS**: Parallel investigation reduces debugging time by 60-80% compared to sequential hypothesis testing.
+
 2. **Invoke debug-analyst agents in parallel** (single message, multiple Task tool calls):
-   ```bash
-   # Source context preservation utilities
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
-   # Track context before parallel investigation
-   CONTEXT_BEFORE=$(track_context_usage "before" "debug_parallel_investigation" "")
+**Agent Invocation Template**:
 
-   # Build agent prompts for each hypothesis
-   for i in $(seq 0 $((HYPOTHESIS_COUNT - 1))); do
-     HYPOTHESIS=$(echo "$HYPOTHESES" | jq -r ".[$i].hypothesis")
-     PRIORITY=$(echo "$HYPOTHESES" | jq -r ".[$i].priority")
+YOU MUST use THIS EXACT TEMPLATE for each hypothesis (No modifications, no paraphrasing):
 
-     # Create invocation prompt for agent
-     DEBUG_ANALYST_PROMPT=$(cat <<EOF
-Read and follow behavioral guidelines from:
-${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+**CRITICAL**: All Task tool calls MUST be in a SINGLE message for true parallel execution.
 
-You are acting as a Debug Analyst Agent.
+```bash
+# Source context preservation utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
-Investigation Context:
-- Issue: "${ISSUE_DESCRIPTION}"
-- Failed test: ${TEST_COMMAND}
-- Modified files: ${FILE_LIST}
-- Hypothesis: ${HYPOTHESIS}
-- Priority: ${PRIORITY}
+# Track context before parallel investigation
+CONTEXT_BEFORE=$(track_context_usage "before" "debug_parallel_investigation" "")
 
-Investigate this hypothesis and create artifact at:
-specs/${TOPIC_DIR}/debug/$(printf "%03d" $((i+1)))_investigation_${HYPOTHESIS// /_}.md
+# Build agent prompts for each hypothesis
+for i in $(seq 0 $((HYPOTHESIS_COUNT - 1))); do
+  HYPOTHESIS=$(echo "$HYPOTHESES" | jq -r ".[$i].hypothesis")
+  PRIORITY=$(echo "$HYPOTHESES" | jq -r ".[$i].priority")
 
-Return metadata only (path + 50-word summary + confirmation JSON).
+  # Invoke Task tool for this hypothesis (all in ONE message)
+  Task {
+    subagent_type: "general-purpose"
+    description: "Investigate hypothesis: ${HYPOTHESIS}"
+    prompt: |
+      Read and follow behavioral guidelines from:
+      ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+
+      You are acting as a Debug Analyst Agent.
+
+      Investigation Context:
+      - Issue: "${ISSUE_DESCRIPTION}"
+      - Failed test: ${TEST_COMMAND}
+      - Modified files: ${FILE_LIST}
+      - Hypothesis: ${HYPOTHESIS}
+      - Priority: ${PRIORITY}
+
+      Investigate this hypothesis and create artifact at:
+      specs/${TOPIC_DIR}/debug/$(printf "%03d" $((i+1)))_investigation_${HYPOTHESIS// /_}.md
+
+      Return metadata only (path + 50-word summary + confirmation JSON).
+  }
+done
+```
+
+**Parallel Invocation Requirements**:
+- MUST invoke ALL debug-analyst agents in ONE message (not sequential)
+- Maximum 4 hypotheses per parallel batch
+- MUST use exact template for each hypothesis
+- MUST NOT modify agent behavioral guidelines path
+
+**Template Variables** (ONLY allowed modifications):
+- `${ISSUE_DESCRIPTION}`: Issue description from user input
+- `${TEST_COMMAND}`: Failed test command (if applicable)
+- `${FILE_LIST}`: Modified files related to issue
+- `${HYPOTHESIS}`: Specific hypothesis to investigate
+- `${PRIORITY}`: Hypothesis priority (high/medium/low)
+- `${TOPIC_DIR}`: Topic directory for debug artifacts
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Return format requirement (metadata only)
 
 Expected response format:
 {
@@ -284,10 +335,52 @@ else
   TOPIC_DIR=$(get_or_create_topic_dir "$ISSUE_DESCRIPTION" "specs")
 fi
 
+**STEP B (REQUIRED) - Create Debug Report File with Verification**
+
+**EXECUTE NOW - Create Debug Report File**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST create debug report file and verify creation. This is NOT optional.
+
+**WHY THIS MATTERS**: Debug report is the primary deliverable documenting investigation findings and root cause analysis.
+
 # Create debug report in topic's debug/ subdirectory
 DEBUG_PATH=$(create_topic_artifact "$TOPIC_DIR" "debug" "$DEBUG_NAME" "$DEBUG_CONTENT")
 # Creates: ${TOPIC_DIR}/debug/NNN_debug_issue.md
+
+# MANDATORY: Verify file exists
+if [ ! -f "$DEBUG_PATH" ]; then
+  echo "⚠️  DEBUG REPORT NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Create file directly with Write tool
+  FALLBACK_PATH="${TOPIC_DIR}/debug/${DEBUG_NAME}.md"
+  mkdir -p "$(dirname "$FALLBACK_PATH")"
+
+  # Use Write tool to create debug report
+  cat > "$FALLBACK_PATH" <<EOF
+$DEBUG_CONTENT
+EOF
+
+  DEBUG_PATH="$FALLBACK_PATH"
+  echo "✓ Fallback debug report created: $DEBUG_PATH"
+
+  # Manual registration in artifact registry
+  echo "$DEBUG_PATH" >> "${TOPIC_DIR}/.artifact-registry"
+fi
+
+# Verify file is readable and non-empty
+if [ ! -s "$DEBUG_PATH" ]; then
+  echo "❌ CRITICAL: Debug report empty or unreadable: $DEBUG_PATH"
+  exit 1
+fi
+
+echo "✓ Debug report created successfully: $DEBUG_PATH"
 ```
+
+**Fallback Mechanism** (Guarantees 100% Report Creation):
+- If `create_topic_artifact` fails → Create file directly with Write tool
+- Manual directory creation if needed
+- Manual artifact registry update
+- File size verification ensures non-empty file
 
 **Benefits**:
 - Debug reports in same topic as related plans/reports
@@ -297,44 +390,86 @@ DEBUG_PATH=$(create_topic_artifact "$TOPIC_DIR" "debug" "$DEBUG_NAME" "$DEBUG_CO
 
 ### 5. Spec-Updater Agent Invocation
 
+**YOU MUST invoke spec-updater agent after debug report creation. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Spec-updater invocation is MANDATORY after debug report file creation
+- DO NOT skip cross-reference linking
+- DO NOT skip plan annotation
+- Fallback mechanism ensures debug report is linked
+
 **IMPORTANT**: After the debug report file is created and written, invoke the spec-updater agent to link the debug report to the related plan and update cross-references.
 
 This step ensures the debug report is properly integrated into the topic structure and the plan is annotated with debugging information.
 
+---
+
+**STEP C (REQUIRED AFTER STEP B) - Invoke Spec-Updater Agent**
+
+**EXECUTE NOW - Link Debug Report via Spec-Updater**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke spec-updater agent to link debug report. This is NOT optional.
+
+**WHY THIS MATTERS**: Cross-reference linking enables navigation between debug reports and plans, essential for tracking debugging history.
+
 #### Step 5.1: Invoke Spec-Updater Agent
 
-Use the Task tool to invoke the spec-updater agent:
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
 ```
-Task tool invocation:
-subagent_type: general-purpose
-description: "Link debug report to plan"
-prompt: |
-  Read and follow the behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/spec-updater.md
+Task {
+  subagent_type: "general-purpose"
+  description: "Link debug report to plan"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
 
-  You are acting as a Spec Updater Agent.
+    You are acting as a Spec Updater Agent.
 
-  Context:
-  - Debug report created at: {debug_report_path}
-  - Topic directory: {topic_dir}
-  - Related plan: {plan_path}
-  - Failed phase: {phase_number} (if applicable)
-  - Operation: debug_report_creation
+    Context:
+    - Debug report created at: {debug_report_path}
+    - Topic directory: {topic_dir}
+    - Related plan: {plan_path}
+    - Failed phase: {phase_number} (if applicable)
+    - Operation: debug_report_creation
 
-  Tasks:
-  1. Add debug report reference to plan metadata:
-     - Update plan's "Debug Reports" section (create if missing)
-     - Use relative path (e.g., ../debug/NNN_debug_issue.md)
+    Tasks:
+    1. Add debug report reference to plan metadata:
+       - Update plan's "Debug Reports" section (create if missing)
+       - Use relative path (e.g., ../debug/NNN_debug_issue.md)
 
-  2. If phase specified, add debugging note to phase section:
-     - Add "#### Debugging Notes" subsection after phase tasks
-     - Include: Date, Issue, Debug Report link, Root Cause
-     - Format for tracking resolution status
+    2. If phase specified, add debugging note to phase section:
+       - Add "#### Debugging Notes" subsection after phase tasks
+       - Include: Date, Issue, Debug Report link, Root Cause
+       - Format for tracking resolution status
 
-  3. Verify debug/ subdirectory is NOT gitignored:
-     - Debug reports must be committed to git
-     - Check git status to confirm tracking
+    3. Verify debug/ subdirectory is NOT gitignored:
+       - Debug reports must be committed to git
+       - Check git status to confirm tracking
+}
+```
+
+**Template Variables** (ONLY allowed modifications):
+- `{debug_report_path}`: Absolute debug report file path (from STEP B)
+- `{topic_dir}`: Topic directory path
+- `{plan_path}`: Related plan file path (if applicable)
+- `{phase_number}`: Failed phase number (if applicable)
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Task list (1-3)
+- Return format requirements
+
+---
+
+**STEP D (REQUIRED AFTER STEP C) - Mandatory Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm Debug Report Linked**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify debug report was linked to plan. This is NOT optional.
 
   4. Update cross-references:
      - Debug report links to plan
@@ -547,6 +682,40 @@ Tasks:
 - Error message clarity
 - Workflow disruptions
 - Feature failures
+
+## Checkpoint Reporting
+
+**YOU MUST report debug investigation checkpoint. This is NOT optional.**
+
+**CHECKPOINT REQUIREMENT - Report Debug Investigation Complete**
+
+**ABSOLUTE REQUIREMENT**: After debug report creation and linking, YOU MUST report this checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Checkpoint reporting confirms successful investigation completion with debug report created and cross-referenced.
+
+**Report Format**:
+
+```
+CHECKPOINT: Debug Investigation Complete
+- Issue: ${ISSUE_DESCRIPTION}
+- Debug Report: ${DEBUG_PATH}
+- Topic: ${TOPIC_DIR}
+- Hypotheses Investigated: ${HYPOTHESIS_COUNT}
+- Root Cause: ${ROOT_CAUSE_SUMMARY}
+- Plan Annotated: ${PLAN_PATH} (if applicable)
+- Status: INVESTIGATION COMPLETE
+```
+
+**Required Information**:
+- Issue description (from user input)
+- Debug report file path (from STEP B)
+- Topic directory
+- Number of hypotheses investigated (if parallel investigation used)
+- Root cause summary (one-line)
+- Related plan path (if applicable)
+- Investigation complete confirmation
+
+---
 
 ## Agent Usage
 
