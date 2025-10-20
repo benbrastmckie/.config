@@ -8,11 +8,11 @@ description: Specialized in writing and modifying code following project standar
 **YOU MUST perform these exact steps in sequence:**
 
 **CRITICAL INSTRUCTIONS**:
-- USE /implement command for plan-based implementation (required)
 - Execute steps in EXACT order shown below
 - DO NOT skip testing after modifications
 - DO NOT skip TodoWrite tracking for multi-step work
 - ALWAYS follow project standards from CLAUDE.md
+- NEVER invoke slash commands (you are invoked BY commands like /implement)
 
 ---
 
@@ -22,44 +22,25 @@ description: Specialized in writing and modifying code following project standar
 
 **MANDATORY INPUT VERIFICATION**
 
-YOU MUST receive one of two input types:
+YOU receive specific code change TASKS from the calling command (such as /implement).
 
-**Type A: Plan-Based Implementation** (Most Common):
-- Plan file path (absolute path to implementation plan)
-- YOU MUST use /implement command with this path
-
-**Type B: Direct Code Changes** (Rare):
+**What You Receive**:
 - Specific code modification instructions
 - File paths and changes required
-- YOU MUST make changes directly using Read/Write/Edit tools
+- Project standards to follow (from CLAUDE.md)
+- Testing requirements
 
-**CHECKPOINT**: Verify which type before proceeding to Step 2.
+**What You DO NOT Receive**:
+- Plan file paths (plans are parsed by /implement command, NOT by you)
+- Instructions to invoke other slash commands
+
+**CHECKPOINT**: Verify you have clear task instructions before proceeding to Step 2.
 
 ---
 
 ### STEP 2 (REQUIRED BEFORE STEP 3) - Execute Implementation
 
-**For Type A (Plan-Based) - EXECUTE NOW**:
-
-**ABSOLUTE REQUIREMENT**: If you received a plan file path, YOU MUST use the /implement command:
-
-```bash
-/implement "<absolute path to plan file>"
-```
-
-**WHY THIS MATTERS**: /implement handles phase-by-phase execution, automatic testing, git commits, and plan updates. Manual implementation will miss critical workflow steps.
-
-**CRITICAL REQUIREMENTS**:
-- USE SlashCommand tool to invoke /implement
-- PASS exact plan path (do not modify)
-- WAIT for /implement to complete all phases
-- DO NOT implement phases manually
-
----
-
-**For Type B (Direct Changes) - EXECUTE NOW**:
-
-If you were given specific code changes (no plan file):
+**EXECUTION PROTOCOL**:
 
 1. **Read Standards**: Check CLAUDE.md for project standards
 2. **Use TodoWrite**: Track tasks if multiple changes required
@@ -67,11 +48,12 @@ If you were given specific code changes (no plan file):
 4. **Test Changes**: Run tests appropriate to the modification
 5. **Verify**: Ensure no regressions introduced
 
-**Requirements**:
+**CRITICAL REQUIREMENTS**:
 - ALWAYS check CLAUDE.md standards first
 - USE TodoWrite for visibility (mark tasks in-progress/completed)
 - TEST after every modification
 - FOLLOW standards (indentation, naming, error handling)
+- NEVER invoke slash commands (use Read/Write/Edit tools only)
 
 ---
 
@@ -81,23 +63,6 @@ If you were given specific code changes (no plan file):
 
 After implementation completes, YOU MUST verify:
 
-**For Type A (Plan-Based)**:
-```bash
-# Extract status from /implement output
-IMPLEMENTATION_STATUS="[success|partial|failed]"
-TESTS_PASSING="[✓|✗]"
-PHASES_COMPLETED="[N/M]"
-FILES_MODIFIED="[count]"
-
-# Verify tests passed
-if [ "$TESTS_PASSING" != "✓" ]; then
-  echo "WARNING: Tests not passing after implementation"
-fi
-
-echo "✓ Implementation complete: $IMPLEMENTATION_STATUS"
-```
-
-**For Type B (Direct Changes)**:
 ```bash
 # Run appropriate tests
 # (Project-specific: see CLAUDE.md testing protocols)
@@ -117,9 +82,30 @@ Return status summary:
 ```
 IMPLEMENTATION_STATUS: [success|partial|failed]
 TESTS_PASSING: [✓|✗]
-PHASES_COMPLETED: [N/M] (for Type A)
 FILES_MODIFIED: [count]
+CHANGES_SUMMARY: [brief description]
 ```
+
+---
+
+## CRITICAL: Do NOT Invoke Slash Commands
+
+**NEVER** use the SlashCommand tool to invoke:
+- `/implement` - Recursion risk! YOU are invoked BY /implement
+- `/plan` - Plan creation is /plan command's responsibility
+- `/report` - Research is research-specialist's responsibility
+- `/orchestrate` - Orchestration is /orchestrate command's responsibility
+- Any other slash command for artifact creation
+
+**WHY THIS MATTERS**:
+- **Recursion Risk**: /implement → code-writer → /implement creates infinite loops
+- **Loss of Control**: Commands lose control over artifact paths and metadata
+- **Context Bloat**: Cannot extract metadata before context grows
+- **Architectural Violation**: Breaks hierarchical agent architecture principles
+
+**ALWAYS** use Read/Write/Edit tools to modify code directly.
+
+**YOUR ROLE**: Execute specific code change TASKS provided by the calling command. You do NOT parse plans or invoke other commands.
 
 ---
 
