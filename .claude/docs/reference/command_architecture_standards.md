@@ -48,6 +48,262 @@ When Claude executes a command:
 
 ## Core Standards
 
+### Standard 0: Execution Enforcement (NEW)
+
+**Problem**: Command files contain behavioral instructions that Claude may interpret loosely, skip steps, or simplify critical procedures, leading to incomplete execution.
+
+**Solution**: Distinguish between descriptive documentation and mandatory execution directives using specific linguistic patterns and verification checkpoints.
+
+#### Imperative vs Descriptive Language
+
+**Descriptive Language** (Explains what happens):
+```markdown
+❌ BAD - Descriptive, easily skipped:
+"The research phase invokes parallel agents to gather information."
+"Reports are created in topic directories."
+"Agents return file paths for verification."
+```
+
+**Imperative Language** (Commands what MUST happen):
+```markdown
+✅ GOOD - Imperative, enforceable:
+"YOU MUST invoke research agents in this exact sequence:"
+"EXECUTE NOW: Create topic directory using this code block:"
+"MANDATORY: Verify file existence before proceeding:"
+```
+
+#### Enforcement Patterns
+
+**Pattern 1: Direct Execution Blocks**
+
+Use explicit "EXECUTE NOW" markers for critical operations:
+
+```markdown
+**EXECUTE NOW - Calculate Report Paths**
+
+Run this code block BEFORE invoking agents:
+
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+WORKFLOW_TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" ".claude/specs")
+
+declare -A REPORT_PATHS
+for topic in "${TOPICS[@]}"; do
+  REPORT_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "reports" "${topic}" "")
+  REPORT_PATHS["$topic"]="$REPORT_PATH"
+  echo "Pre-calculated path: $REPORT_PATH"
+done
+```
+
+**Verification**: Confirm paths calculated for all topics before continuing.
+```
+
+**Pattern 2: Mandatory Verification Checkpoints**
+
+Add explicit verification that Claude MUST execute:
+
+```markdown
+**MANDATORY VERIFICATION - Report File Existence**
+
+After agents complete, YOU MUST execute this verification:
+
+```bash
+for topic in "${!REPORT_PATHS[@]}"; do
+  EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+  if [ ! -f "$EXPECTED_PATH" ]; then
+    echo "CRITICAL: Report missing at $EXPECTED_PATH"
+    echo "Executing fallback creation..."
+
+    # Fallback: Create from agent output
+    cat > "$EXPECTED_PATH" <<EOF
+# ${topic}
+## Findings
+${AGENT_OUTPUT[$topic]}
+EOF
+  fi
+
+  echo "✓ Verified: $EXPECTED_PATH"
+done
+```
+
+**REQUIREMENT**: This verification is NOT optional. Execute it exactly as shown.
+```
+
+**Pattern 3: Non-Negotiable Agent Prompts**
+
+When agent prompts are critical, use "THIS EXACT TEMPLATE" enforcement:
+
+```markdown
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} with mandatory file creation"
+  prompt: "
+    **ABSOLUTE REQUIREMENT - File Creation is Your Primary Task**
+
+    **STEP 1: CREATE FILE** (Do this FIRST, before research)
+    Use Write tool to create: ${REPORT_PATHS[$TOPIC]}
+
+    **STEP 2: RESEARCH**
+    [research instructions]
+
+    **STEP 3: RETURN CONFIRMATION**
+    Return ONLY: REPORT_CREATED: ${REPORT_PATHS[$TOPIC]}
+
+    **CRITICAL**: DO NOT return summary text. File creation is MANDATORY.
+  "
+}
+```
+
+**ENFORCEMENT**: Copy this template verbatim. Do NOT simplify or paraphrase the prompt.
+```
+
+**Pattern 4: Checkpoint Reporting**
+
+Require explicit completion reporting:
+
+```markdown
+**CHECKPOINT REQUIREMENT**
+
+After completing each major step, report status:
+
+```
+CHECKPOINT: Research phase complete
+- Topics researched: ${#TOPICS[@]}
+- Reports created: ${#VERIFIED_REPORTS[@]}
+- All files verified: ✓
+- Proceeding to: Planning phase
+```
+
+This reporting is MANDATORY and confirms proper execution.
+```
+
+#### Language Strength Hierarchy
+
+Use appropriate strength for different situations:
+
+| Strength | Pattern | When to Use | Example |
+|----------|---------|-------------|---------|
+| **Critical** | "CRITICAL:", "ABSOLUTE REQUIREMENT" | Safety, data integrity | File creation enforcement |
+| **Mandatory** | "YOU MUST", "REQUIRED", "EXECUTE NOW" | Essential steps | Path pre-calculation |
+| **Strong** | "Always", "Never", "Ensure" | Best practices | Error handling |
+| **Standard** | "Should", "Recommended" | Preferences | Optimization hints |
+| **Optional** | "May", "Can", "Consider" | Alternatives | Advanced features |
+
+**Rule**: Critical operations (file creation, data persistence, security) require Critical/Mandatory strength.
+
+#### Fallback Mechanism Requirements
+
+When commands depend on agent compliance, include fallback mechanisms:
+
+**Required Structure**:
+```markdown
+### Agent Execution with Fallback
+
+**Primary Path**: Agent follows instructions and creates output
+**Fallback Path**: Command creates output from agent response if agent doesn't comply
+
+**Implementation**:
+1. Invoke agent with explicit file creation directive
+2. Verify expected output exists
+3. If missing: Create from agent's text output
+4. Guarantee: Output exists regardless of agent behavior
+
+**Example**:
+```bash
+# After agent completes
+if [ ! -f "$EXPECTED_FILE" ]; then
+  echo "Agent didn't create file. Executing fallback..."
+  cat > "$EXPECTED_FILE" <<EOF
+# Fallback Report
+$AGENT_OUTPUT
+EOF
+fi
+```
+```
+
+**When Fallbacks Required**:
+- ✅ Agent file creation (reports, plans, documentation)
+- ✅ Agent structured output parsing
+- ✅ Agent artifact organization
+- ✅ Cross-agent coordination
+- ❌ Not needed for read-only operations
+- ❌ Not needed for tool-based operations (Write/Edit directly)
+
+#### Anti-Pattern: Assumption Without Verification
+
+**❌ BAD - Assumes compliance**:
+```markdown
+Step 3: Extract Report Paths
+
+Research agents return report paths. Extract them for use in planning:
+```bash
+REPORT_PATH=$(echo "$AGENT_OUTPUT" | grep "Report path:")
+```
+```
+
+**✅ GOOD - Verifies and enforces**:
+```markdown
+**EXECUTE NOW - Extract and Verify Report Paths**
+
+Extract paths from agent outputs, with mandatory verification:
+
+```bash
+REPORT_PATH=$(echo "$AGENT_OUTPUT" | grep -oP 'REPORT_CREATED:\s*\K.+')
+
+# MANDATORY VERIFICATION
+if [ -z "$REPORT_PATH" ]; then
+  echo "CRITICAL: Agent didn't return REPORT_CREATED"
+  REPORT_PATH="${EXPECTED_PATH}"  # Use pre-calculated path
+fi
+
+if [ ! -f "$REPORT_PATH" ]; then
+  echo "CRITICAL: File doesn't exist at $REPORT_PATH"
+  echo "Executing fallback creation..."
+  # [Fallback code]
+fi
+
+echo "✓ Verified report exists: $REPORT_PATH"
+```
+
+**REQUIREMENT**: Both extraction AND verification are mandatory.
+```
+
+#### Testing Execution Enforcement
+
+**Test 1: Compliance Under Simplification**
+
+Attempt to simplify command execution and verify critical steps aren't skipped:
+
+```bash
+# Simulate: Claude simplifying the research phase
+# Expected: Files still created via fallback
+# Test: Run command and verify all expected files exist
+```
+
+**Test 2: Agent Non-Compliance**
+
+Simulate agents ignoring file creation directives:
+
+```bash
+# Simulate: Agent returns text summary instead of creating file
+# Expected: Fallback creates file from text
+# Test: Verify file exists and contains agent output
+```
+
+**Test 3: Verification Bypass Detection**
+
+Check if verification checkpoints are executed:
+
+```bash
+# Expected: Verification logs appear in output
+# Expected: "✓ Verified:" messages for each critical step
+# Test: grep for verification markers in command output
+```
+
 ### Standard 1: Executable Instructions Must Be Inline
 
 **REQUIRED in Command Files**:
@@ -682,6 +938,11 @@ Use this checklist when reviewing pull requests that modify command or agent fil
 
 ### Command File Changes
 
+- [ ] **Execution Enforcement (NEW)**: Are critical steps marked with "EXECUTE NOW", "YOU MUST", or "MANDATORY"?
+- [ ] **Verification Checkpoints (NEW)**: Are verification steps explicit with "if [ ! -f ]" checks?
+- [ ] **Fallback Mechanisms (NEW)**: Do agent-dependent operations include fallback creation?
+- [ ] **Agent Template Enforcement (NEW)**: Are agent prompts marked "THIS EXACT TEMPLATE (No modifications)"?
+- [ ] **Checkpoint Reporting (NEW)**: Do major steps include explicit completion reporting?
 - [ ] **Execution Steps**: Are numbered steps still present and complete?
 - [ ] **Tool Examples**: Are tool invocation examples still inline and copy-paste ready?
 - [ ] **Critical Warnings**: Are CRITICAL/IMPORTANT/NEVER statements still present?
