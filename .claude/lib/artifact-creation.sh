@@ -23,12 +23,16 @@ create_topic_artifact() {
   fi
 
   # Validate artifact type
+  # Artifact types and gitignore behavior:
+  # - debug: Committed to git (contains diagnostic info worth preserving)
+  # - reports, plans: Gitignored (ephemeral research/planning artifacts)
+  # - scripts, outputs, artifacts, backups, data, logs, notes: Gitignored
   case "$artifact_type" in
-    debug|scripts|outputs|artifacts|backups|data|logs|notes)
+    debug|scripts|outputs|artifacts|backups|data|logs|notes|reports|plans)
       ;;
     *)
       echo "Error: Invalid artifact type '$artifact_type'" >&2
-      echo "Valid types: debug, scripts, outputs, artifacts, backups, data, logs, notes" >&2
+      echo "Valid types: debug, scripts, outputs, artifacts, backups, data, logs, notes, reports, plans" >&2
       return 1
       ;;
   esac
