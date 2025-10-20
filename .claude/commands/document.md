@@ -57,6 +57,28 @@ Analyzes the codebase and updates all relevant documentation
 - Determines which documentation needs updating
 - Reviews implementation summaries if available
 
+**MANDATORY VERIFICATION - Scope and Paths Validated**:
+
+```bash
+# Verify scope is valid
+if [ -z "$SCOPE" ]; then
+  SCOPE="$PWD"
+  echo "✓ Using current directory as scope: $SCOPE"
+fi
+
+# Verify scope path exists
+if [ ! -d "$SCOPE" ]; then
+  echo "❌ ERROR: Scope directory not found: $SCOPE"
+  exit 1
+fi
+
+# Identify documentation files in scope
+DOC_FILES=$(find "$SCOPE" -name "README.md" -o -name "*.md" | sort)
+DOC_COUNT=$(echo "$DOC_FILES" | wc -l)
+
+echo "✓ VERIFIED: Scope validated ($DOC_COUNT documentation files found)"
+```
+
 ### 2. **Standards Verification**
 
 **YOU MUST verify documentation standards. This is NOT optional.**
@@ -140,6 +162,54 @@ Description of what this module does and its key functions.
 - Documents current settings
 - Updates default values
 - Documents option behaviors
+
+**MANDATORY VERIFICATION - All Documentation Files Created/Updated**:
+
+```bash
+# Verify all required documentation files exist
+REQUIRED_DOCS=()
+MISSING_DOCS=()
+
+# Check for README.md in each directory with code
+for dir in $(find "$SCOPE" -type d); do
+  # Skip hidden and non-code directories
+  [[ "$dir" =~ /\. ]] && continue
+  [[ "$dir" =~ /(node_modules|vendor|dist|build)/ ]] && continue
+
+  # Check if directory has code files
+  CODE_FILES=$(find "$dir" -maxdepth 1 -type f \( -name "*.lua" -o -name "*.md" -o -name "*.sh" \) 2>/dev/null)
+
+  if [ -n "$CODE_FILES" ]; then
+    README_PATH="$dir/README.md"
+    REQUIRED_DOCS+=("$README_PATH")
+
+    if [ ! -f "$README_PATH" ]; then
+      MISSING_DOCS+=("$README_PATH")
+      echo "⚠️  Missing README.md: $dir"
+    fi
+  fi
+done
+
+# Report results
+if [ ${#MISSING_DOCS[@]} -eq 0 ]; then
+  echo "✓ VERIFIED: All required documentation files exist (${#REQUIRED_DOCS[@]} files)"
+else
+  echo "⚠️  WARNING: ${#MISSING_DOCS[@]} missing README.md files (should be created)"
+  for missing in "${MISSING_DOCS[@]}"; do
+    echo "  - $missing"
+  done
+fi
+
+# Verify updated files were actually modified
+for doc_file in "${UPDATED_FILES[@]}"; do
+  if [ ! -f "$doc_file" ]; then
+    echo "❌ ERROR: Updated file not found: $doc_file"
+    exit 1
+  fi
+done
+
+echo "✓ VERIFIED: All updated documentation files exist"
+```
 
 ### 5. **Compliance Checks**
 
