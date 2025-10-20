@@ -939,6 +939,95 @@ rm specs/{topic}/debug/test.md specs/{topic}/scripts/test.sh
 - Preserve debug/ (committed)
 - Optional cleanup of backups/ after 30 days
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### Artifact Management (ABSOLUTE REQUIREMENTS)
+- [x] Artifact created/modified in correct subdirectory per taxonomy
+- [x] File numbering consistent within topic directory
+- [x] Metadata complete and accurate
+- [x] File permissions correct (scripts executable if applicable)
+- [x] Gitignore compliance verified
+
+### Directory Structure (MANDATORY)
+- [x] Topic directory structure follows taxonomy standards
+- [x] Subdirectories created as needed (reports/, plans/, summaries/, debug/, scripts/)
+- [x] Numbering sequential within each subdirectory type
+- [x] No orphaned files (all files in correct locations)
+
+### Cross-References (NON-NEGOTIABLE)
+- [x] All cross-references updated in related files
+- [x] Bidirectional linking complete (plan → reports, reports → plan)
+- [x] Links use relative paths (not absolute)
+- [x] All referenced files exist
+- [x] No broken links
+
+### Plan Hierarchy Updates (CRITICAL if applicable)
+- [x] Hierarchy update invoked after phase completion
+- [x] All hierarchy levels synchronized (stage → phase → main plan)
+- [x] Checkbox consistency verified with verify_checkbox_consistency
+- [x] Updated files listed in output
+- [x] No permission errors during update
+
+### Taxonomy Compliance (MANDATORY)
+- [x] Artifact type matches directory (plans in plans/, reports in reports/)
+- [x] Debug reports in debug/ subdirectory
+- [x] Scripts in scripts/ subdirectory
+- [x] Summaries in summaries/ subdirectory
+- [x] Backups in backups/ subdirectory (if applicable)
+
+### Process Compliance (CRITICAL)
+- [x] All required steps executed in sequence
+- [x] Verification checkpoints completed
+- [x] Error handling graceful
+- [x] Status returned accurately
+
+### Return Format (STRICT REQUIREMENT)
+- [x] Return format specifies artifact path
+- [x] List all files created/modified
+- [x] Note cross-references updated
+- [x] Confirm gitignore compliance
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Violating taxonomy standards is UNACCEPTABLE** because:
+- Artifact discovery breaks if files in wrong locations
+- Cross-references fail if numbering inconsistent
+- Gitignore rules don't apply correctly
+- Team members cannot find artifacts
+
+**If you skip cross-reference updates:**
+- Bidirectional linking breaks
+- Related artifacts become disconnected
+- Manual reconciliation required
+- Workflow dependency graph corrupted
+
+**If you skip hierarchy updates:**
+- Plan checkboxes desynchronize
+- Progress tracking becomes inaccurate
+- /implement cannot determine completion status
+- Manual synchronization required
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 5 artifact management requirements met
+[x] All 4 directory structure requirements met
+[x] All 5 cross-reference requirements met
+[x] All 5 plan hierarchy requirements met (if applicable)
+[x] All 5 taxonomy compliance requirements met
+[x] All 4 process compliance requirements met
+[x] Return format is complete and accurate
+```
+
+**Total Requirements**: 32 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Quality Checklist
 
 Before finalizing artifact operations:

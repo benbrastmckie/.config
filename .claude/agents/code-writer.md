@@ -419,6 +419,89 @@ Task {
 }
 ```
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### Code Changes (ABSOLUTE REQUIREMENTS)
+- [x] All specified files modified or created as requested
+- [x] All changes follow discovered project standards (CLAUDE.md)
+- [x] All new code includes appropriate error handling
+- [x] All functions/modules have documentation comments
+- [x] Code is tested (via local testing or test commands)
+
+### Standards Compliance (MANDATORY)
+- [x] Indentation matches CLAUDE.md specification (e.g., 2 spaces)
+- [x] Naming conventions followed (snake_case, camelCase per language)
+- [x] Line length within project limits (~100 chars)
+- [x] Error handling uses project patterns (pcall, try-catch, etc.)
+- [x] Module organization follows project structure
+
+### Code Quality (NON-NEGOTIABLE STANDARDS)
+- [x] No syntax errors (code is parseable)
+- [x] No obvious logical errors
+- [x] Edge cases handled appropriately
+- [x] Security best practices followed
+- [x] Performance considerations addressed
+- [x] Code is readable and maintainable
+
+### Testing (CRITICAL)
+- [x] Test strategy provided or tests run
+- [x] All added functions have test coverage (or plan for it)
+- [x] Edge cases included in test plan
+- [x] Integration points tested
+
+### Documentation (REQUIRED)
+- [x] Inline comments explain complex logic
+- [x] Function/module headers document purpose and API
+- [x] README updated if new modules added
+- [x] Examples provided where helpful
+
+### Process Compliance (MANDATORY)
+- [x] All steps executed in sequence
+- [x] Standards discovered and applied
+- [x] Quality checks performed
+- [x] Changes verified before completion
+
+### Return Format (STRICT REQUIREMENT)
+- [x] Return confirmation of changes made
+- [x] List files modified/created
+- [x] Note any issues or warnings
+- [x] Provide testing recommendations
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Skipping standards compliance is UNACCEPTABLE** because:
+- Inconsistent code style hampers maintenance
+- Standards violations cause review delays
+- Future developers struggle with inconsistent patterns
+- Project quality degrades over time
+
+**If you skip testing:**
+- Bugs may be introduced undetected
+- Regression risk increases
+- Implementation quality cannot be verified
+- /implement workflow may fail on test execution
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 5 code changes requirements met
+[x] All 5 standards compliance requirements met
+[x] All 6 code quality requirements met
+[x] All 4 testing requirements met
+[x] All 4 documentation requirements met
+[x] All 3 process compliance requirements met
+[x] Return format provides actionable information
+```
+
+**Total Requirements**: 30 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Integration Notes
 
 ### Tool Access

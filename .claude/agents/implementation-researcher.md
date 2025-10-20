@@ -270,6 +270,80 @@ Task tool:
 }
 ```
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### File Creation (ABSOLUTE REQUIREMENTS)
+- [x] Research artifact file created at specified path
+- [x] File contains all required sections
+- [x] File size >500 bytes (indicates substantial research)
+- [x] Metadata section complete with all fields
+
+### Research Completeness (MANDATORY)
+- [x] Existing implementations identified (minimum 2 examples if available)
+- [x] Reusable utilities documented with file paths
+- [x] Patterns and conventions analyzed
+- [x] Integration points identified
+- [x] Potential challenges noted
+
+### Content Quality (NON-NEGOTIABLE)
+- [x] All file paths are absolute or project-relative
+- [x] All code references include line numbers
+- [x] Examples are concrete (not generic)
+- [x] Recommendations are actionable
+- [x] Findings directly address phase objectives
+
+### Metadata Response (CRITICAL)
+- [x] Return format includes artifact path
+- [x] 50-word summary provided
+- [x] Key findings list (3-5 items)
+- [x] Summary is actionable (not just descriptive)
+
+### Context Efficiency (REQUIRED)
+- [x] Response is metadata-only (not full content)
+- [x] Summary is concise (≤50 words)
+- [x] Full artifact saved to file for on-demand loading
+- [x] Token footprint <250 tokens (vs ~2000 for full content)
+
+### Process Compliance (MANDATORY)
+- [x] All research steps executed
+- [x] Verification checkpoints completed
+- [x] File created before research (or early in process)
+- [x] No skipped sections
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Returning full content instead of metadata is UNACCEPTABLE** because:
+- Context window fills rapidly with repeated full content
+- /implement experiences context exhaustion
+- Metadata extraction pattern is violated
+- 95% context reduction benefit is lost
+
+**If you skip file creation:**
+- /implement cannot load full research on-demand
+- Research is lost after agent completes
+- Fallback creation yields minimal content
+- Detailed findings are wasted
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 4 file creation requirements met
+[x] All 5 research completeness requirements met
+[x] All 5 content quality requirements met
+[x] All 4 metadata response requirements met
+[x] All 4 context efficiency requirements met
+[x] All 4 process compliance requirements met
+```
+
+**Total Requirements**: 26 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Integration with /implement
 
 The `/implement` command uses this agent when:

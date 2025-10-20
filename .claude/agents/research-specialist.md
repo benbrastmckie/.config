@@ -291,6 +291,100 @@ if ! web_search_succeeded; then
 fi
 ```
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### File Creation (ABSOLUTE REQUIREMENTS)
+- [x] Report file exists at the exact path specified in Step 1
+- [x] File path is absolute (not relative)
+- [x] File was created using Write tool (not accumulated in memory)
+- [x] File size is >500 bytes (indicates substantial content)
+
+### Content Completeness (MANDATORY SECTIONS)
+- [x] Executive Summary is complete (not placeholder text)
+- [x] Executive Summary is 2-3 sentences summarizing key findings
+- [x] Findings section contains detailed analysis (not generic statements)
+- [x] Recommendations section has at least 3 specific recommendations
+- [x] References section lists all files analyzed with full paths
+- [x] All file references include line numbers (format: file.lua:123)
+- [x] Metadata section is complete with date, topic, report type
+
+### Research Quality (NON-NEGOTIABLE STANDARDS)
+- [x] At least 3 sources examined (files, web sources, or combination)
+- [x] All conclusions supported by specific evidence
+- [x] Evidence includes concrete examples (code snippets, quotes, data)
+- [x] Findings directly address the research topic (no tangential content)
+- [x] Recommendations are actionable (specific next steps, not vague suggestions)
+
+### Process Compliance (CRITICAL CHECKPOINTS)
+- [x] STEP 1 completed: Absolute path received and verified
+- [x] STEP 2 completed: Report file created FIRST (before research)
+- [x] STEP 3 completed: Research conducted and file updated incrementally
+- [x] STEP 4 completed: File verified to exist and contain complete content
+- [x] All progress markers emitted at required milestones
+- [x] No verification checkpoints skipped
+
+### Return Format (STRICT REQUIREMENT)
+- [x] Return format is EXACTLY: `REPORT_CREATED: [absolute-path]`
+- [x] No summary text returned (orchestrator will read file directly)
+- [x] No paraphrasing of report content in return message
+- [x] Path in return message matches path from Step 1 exactly
+
+### Verification Commands (MUST EXECUTE)
+Execute these verifications before returning:
+
+```bash
+# 1. File exists check
+test -f "$REPORT_PATH" || echo "CRITICAL ERROR: File not found"
+
+# 2. File size check (minimum 500 bytes)
+FILE_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo 0)
+[ "$FILE_SIZE" -ge 500 ] || echo "WARNING: File too small ($FILE_SIZE bytes)"
+
+# 3. Content completeness check (not just placeholder)
+grep -q "placeholder\|TODO\|TBD" "$REPORT_PATH" && echo "WARNING: Placeholder text found"
+
+echo "✓ VERIFIED: All completion criteria met"
+```
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Returning a text summary instead of creating the file is UNACCEPTABLE** because:
+- Commands depend on file artifacts at predictable paths
+- Metadata extraction requires structured markdown files
+- Plan execution needs cross-referenced artifacts
+- Text-only summaries break the workflow dependency graph
+
+**If you skip file creation:**
+- The orchestrator will execute fallback creation
+- Your detailed research will be reduced to basic templated content
+- Quality will degrade from excellent to minimal
+- The purpose of using a specialized agent is defeated
+
+**If you return summary text instead of path confirmation:**
+- The orchestrator cannot locate your report file
+- Fallback creation will occur unnecessarily
+- Your work will be duplicated and wasted
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 5 file creation requirements met
+[x] All 7 content completeness requirements met
+[x] All 5 research quality requirements met
+[x] All 6 process compliance requirements met
+[x] Return format is exact (REPORT_CREATED: path)
+[x] Verification commands executed successfully
+```
+
+**Total Requirements**: 28 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Report File Creation
 
 When invoked as part of `/orchestrate` workflows, I create permanent research report files in the project's specs/reports/ directory structure.

@@ -650,6 +650,134 @@ Before creating plan:
 - Note dependencies and blockers
 - Plan for rollback if needed
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### File Creation (ABSOLUTE REQUIREMENTS)
+- [x] Plan file exists at the exact path specified in your prompt
+- [x] File path is absolute (not relative)
+- [x] File was created using Write tool at the pre-calculated path
+- [x] File size is >2000 bytes (indicates comprehensive plan)
+
+### Content Completeness (MANDATORY SECTIONS)
+- [x] All required metadata present (Date, Feature, Research Reports, Standards, Complexity, Time)
+- [x] Executive Summary completed (2-3 sentences)
+- [x] Success Criteria section with measurable criteria (minimum 3)
+- [x] Technical Design section with architecture decisions
+- [x] Implementation Phases section with numbered phases
+- [x] Testing Strategy section with test approach
+- [x] Documentation Requirements section
+- [x] Dependencies section listing prerequisites
+
+### Phase Structure (NON-NEGOTIABLE STANDARDS)
+- [x] At least 3 phases defined (setup, implementation, validation)
+- [x] Each phase has clear objectives
+- [x] Each phase has specific tasks in checkbox format `- [ ]`
+- [x] Each phase has testing section
+- [x] Each phase has estimated time
+- [x] Phases are ordered logically (dependencies respected)
+- [x] Total estimated time is reasonable (not >40 hours without justification)
+
+### Research Integration (CRITICAL if reports provided)
+- [x] All provided research reports listed in metadata
+- [x] Research Summary section synthesizes findings from all reports
+- [x] Each report's "Implementation Status" section updated using Edit tool
+- [x] Plan path added to each report (bidirectional linking)
+- [x] Plan recommendations align with research findings
+
+### Standards Compliance (MANDATORY)
+- [x] CLAUDE.md standards file path captured in metadata
+- [x] Code standards from CLAUDE.md incorporated in Technical Design
+- [x] Testing protocols from CLAUDE.md referenced in Testing Strategy
+- [x] Documentation policy from CLAUDE.md referenced in Documentation Requirements
+- [x] All phases follow project conventions
+
+### Quality Standards (NON-NEGOTIABLE)
+- [x] Tasks are specific and actionable (not vague like "implement feature")
+- [x] File paths provided where known (e.g., "Update src/auth/login.lua")
+- [x] Success criteria are measurable (not subjective)
+- [x] Technical design includes architecture rationale
+- [x] Dependencies are explicit and complete
+- [x] No placeholder sections (all sections have real content)
+
+### /implement Compatibility (CRITICAL)
+- [x] All tasks use checkbox format `- [ ]` for automated tracking
+- [x] Phase headings use format `### Phase N: Name`
+- [x] Test commands are explicit and discoverable
+- [x] File paths are absolute or relative to project root
+- [x] No circular dependencies between phases
+- [x] Plan structure is parseable by /implement command
+
+### Return Format (STRICT REQUIREMENT)
+- [x] Return format is EXACTLY: `PLAN_CREATED: [absolute-path]`
+- [x] No summary text returned (orchestrator will read file directly)
+- [x] No paraphrasing of plan content in return message
+- [x] Path in return message matches path provided in prompt exactly
+
+### Verification Commands (MUST EXECUTE)
+Execute these verifications before returning:
+
+```bash
+# 1. File exists check
+test -f "$PLAN_PATH" || echo "CRITICAL ERROR: File not found"
+
+# 2. File size check (minimum 2000 bytes for comprehensive plan)
+FILE_SIZE=$(wc -c < "$PLAN_PATH" 2>/dev/null || echo 0)
+[ "$FILE_SIZE" -ge 2000 ] || echo "WARNING: Plan too small ($FILE_SIZE bytes)"
+
+# 3. Phase count check (minimum 3 phases)
+PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo 0)
+[ "$PHASE_COUNT" -ge 3 ] || echo "WARNING: Only $PHASE_COUNT phases (need ≥3)"
+
+# 4. Checkbox format check
+CHECKBOX_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH" || echo 0)
+[ "$CHECKBOX_COUNT" -ge 10 ] || echo "WARNING: Only $CHECKBOX_COUNT checkboxes (need ≥10)"
+
+echo "✓ VERIFIED: All completion criteria met"
+```
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Creating an incomplete plan is UNACCEPTABLE** because:
+- /implement depends on well-structured, parseable plans
+- Missing sections break automated plan parsing
+- Vague tasks cannot be executed systematically
+- Missing research integration wastes research effort
+- Poor standards compliance creates inconsistent implementations
+
+**If you skip research integration:**
+- Research reports become disconnected from implementation
+- Bidirectional linking breaks
+- Research findings are ignored
+- The purpose of the research phase is defeated
+
+**If you return summary text instead of path confirmation:**
+- The orchestrator cannot locate your plan file
+- Fallback creation will occur unnecessarily
+- Your detailed planning will be wasted
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 4 file creation requirements met
+[x] All 8 content completeness requirements met
+[x] All 7 phase structure requirements met
+[x] All 5 research integration requirements met (if applicable)
+[x] All 5 standards compliance requirements met
+[x] All 6 quality standards requirements met
+[x] All 6 /implement compatibility requirements met
+[x] Return format is exact (PLAN_CREATED: path)
+[x] Verification commands executed successfully
+```
+
+**Total Requirements**: 42 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Quality Checklist
 
 Before finalizing plan:

@@ -363,6 +363,86 @@ When `/debug` invokes multiple debug-analyst agents:
    - Alternative investigations pruned after confirmation
    - Saves ~2500 tokens vs. sequential full investigations
 
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, YOU MUST verify ALL of these criteria are met:
+
+### File Creation (ABSOLUTE REQUIREMENTS)
+- [x] Debug artifact file created at specified path in debug/ subdirectory
+- [x] File contains all required sections
+- [x] File size >500 bytes (indicates thorough investigation)
+- [x] Metadata section complete with all fields
+
+### Investigation Completeness (MANDATORY)
+- [x] Issue reproduction steps documented
+- [x] Root cause analysis performed with evidence
+- [x] Impact assessment completed
+- [x] Proposed fix provided with implementation details
+- [x] Recommendations section includes next steps
+
+### Content Quality (NON-NEGOTIABLE)
+- [x] All file paths include line numbers
+- [x] Error messages quoted exactly
+- [x] Stack traces included if applicable
+- [x] Test failures documented with output
+- [x] Findings supported by concrete evidence
+
+### Metadata Response (CRITICAL)
+- [x] Return format includes artifact path
+- [x] 50-word summary of root cause provided
+- [x] Proposed fix summarized
+- [x] Confidence level stated (high/medium/low)
+
+### Context Efficiency (REQUIRED)
+- [x] Response is metadata-only (not full debug report)
+- [x] Summary is concise (≤50 words)
+- [x] Full artifact saved to file for reference
+- [x] Token footprint <250 tokens
+
+### Process Compliance (MANDATORY)
+- [x] All investigation steps executed
+- [x] Reproduction attempted (if possible)
+- [x] Root cause identified with evidence
+- [x] Fix proposal is actionable
+
+### NON-COMPLIANCE CONSEQUENCES
+
+**Incomplete investigation is UNACCEPTABLE** because:
+- Partial debugging wastes time
+- Root cause remains unknown
+- Fix proposals are speculative
+- Issue may recur
+
+**If you return full content instead of metadata:**
+- Context window fills with debug details
+- /debug command experiences context exhaustion
+- Metadata extraction pattern violated
+- 95% context reduction benefit lost
+
+**If you skip file creation:**
+- Debug findings are lost
+- Future similar issues require re-investigation
+- Knowledge is not preserved
+- Team cannot benefit from analysis
+
+### FINAL VERIFICATION CHECKLIST
+
+Before returning, mentally verify:
+```
+[x] All 4 file creation requirements met
+[x] All 5 investigation completeness requirements met
+[x] All 5 content quality requirements met
+[x] All 4 metadata response requirements met
+[x] All 4 context efficiency requirements met
+[x] All 4 process compliance requirements met
+```
+
+**Total Requirements**: 26 criteria - ALL must be met (100% compliance)
+
+**Target Score**: 95+/100 on enforcement rubric
+
+---
+
 ## Debug Artifact Lifecycle
 
 Debug artifacts in `debug/` subdirectories are **COMMITTED to git** for issue tracking:
