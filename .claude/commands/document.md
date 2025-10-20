@@ -8,6 +8,16 @@ allowed-tools: Read, Write, Edit, MultiEdit, Grep, Glob, Task, TodoWrite
 
 # /document Command
 
+**YOU MUST update documentation following exact process:**
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all documentation steps in EXACT sequential order
+- DO NOT skip cross-reference verification
+- DO NOT skip README updates
+- DO NOT skip CLAUDE.md compliance checks
+- DO NOT skip documentation validation
+- Fallback mechanisms ensure 100% documentation completeness
+
 Updates all relevant documentation to accurately reflect the current codebase state, ensuring compliance with project documentation standards defined in CLAUDE.md.
 
 ## Usage
