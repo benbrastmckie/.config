@@ -925,13 +925,21 @@ For parallel agent invocation patterns, see [Parallel Agent Invocation](../docs/
 
 **Parallelism limits**: Max 3 concurrent phases per wave, split into sub-waves if needed
 
-### 2. Implementation
+**STEP 2 (REQUIRED BEFORE STEP 3) - Implementation**
+
+**EXECUTE NOW - Implement Phase Tasks**:
+
 Create or modify the necessary files according to the plan specifications.
 
 **If Agent Delegated**: Use agent's output
 **If Direct Execution**: Implement manually following standards
 
-### 3. Testing
+---
+
+**STEP 3 (REQUIRED BEFORE STEP 4) - Testing**
+
+**EXECUTE NOW - Run Phase Tests**:
+
 Run tests by:
 - Looking for test commands in the phase tasks
 - Checking for common test patterns (npm test, pytest, make test)
@@ -1128,7 +1136,7 @@ esac
 - **Fix Applied In**: abc1234
 ```
 
-### 4. Git Commit
+**STEP 4 (REQUIRED BEFORE STEP 5) - Git Commit**
 
 **YOU MUST create git commit after each phase. This is NOT optional.**
 
@@ -1198,7 +1206,9 @@ CHECKPOINT: Phase ${PHASE_NUM} Complete
 - Count of modified files
 - Next phase number (or "Summary Generation" if last phase)
 
-### 5. Plan Update (After Git Commit Succeeds)
+**STEP 5 (REQUIRED) - Plan Update (After Git Commit Succeeds)**
+
+**EXECUTE NOW - Update Plan Files**:
 
 Update plan files incrementally after each successful phase completion.
 

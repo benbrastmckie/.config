@@ -546,6 +546,26 @@ if [ ! -s "$PLAN_PATH" ]; then
 fi
 
 echo "✓ Plan file created successfully: $PLAN_PATH"
+
+# Additional verification - file structure and metadata
+if ! grep -q "## Metadata" "$PLAN_PATH"; then
+  echo "❌ ERROR: Plan file missing metadata section"
+  exit 1
+fi
+
+if ! grep -q "## Implementation Phases" "$PLAN_PATH"; then
+  echo "❌ ERROR: Plan file missing phases section"
+  exit 1
+fi
+
+# Verify file size is reasonable (should be >1000 bytes for a proper plan)
+file_size=$(wc -c < "$PLAN_PATH")
+if [ "$file_size" -lt 1000 ]; then
+  echo "❌ ERROR: Plan file too small (${file_size} bytes), expected >1000"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Plan file complete and well-formed (${file_size} bytes)"
 ```
 
 **Fallback Mechanism** (Guarantees 100% Plan Creation):
@@ -553,6 +573,19 @@ echo "✓ Plan file created successfully: $PLAN_PATH"
 - Manual directory creation if needed
 - Manual artifact registry update
 - File size verification ensures non-empty file
+- Structure verification ensures required sections present
+
+**MANDATORY VERIFICATION - Plan File Complete**:
+
+```bash
+# Final comprehensive verification
+if [ ! -f "$PLAN_PATH" ]; then
+  echo "❌ CRITICAL: Plan file does not exist after creation"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Plan file exists and is complete: $PLAN_PATH"
+```
 
 ---
 

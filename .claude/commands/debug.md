@@ -52,25 +52,84 @@ Investigates issues and creates a comprehensive diagnostic report without making
 
 ## Process
 
-### 1. Issue Analysis
+**STEP 1 (REQUIRED BEFORE STEP 2) - Issue Analysis**
+
+**EXECUTE NOW - Parse and Analyze Issue**:
+
 - Parse and understand the reported behavior
 - Identify affected components and systems
 - Review any provided context reports
 - Determine investigation scope
 
-### 2. Evidence Gathering
+**MANDATORY VERIFICATION - Issue Scope Determined**:
+
+```bash
+if [ -z "$issue_description" ]; then
+  echo "❌ ERROR: No issue description provided"
+  exit 1
+fi
+
+if [ -z "$affected_components" ]; then
+  echo "❌ ERROR: Affected components not identified"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Issue analyzed, scope determined"
+echo "  - Components: $affected_components"
+echo "  - Scope: $investigation_scope"
+```
+
+---
+
+**STEP 2 (REQUIRED BEFORE STEP 3) - Evidence Gathering**
+
+**EXECUTE NOW - Collect Diagnostic Evidence**:
+
 - **Code Inspection**: Examine relevant source files
 - **Environment Analysis**: Check configuration and environment variables
 - **Log Analysis**: Review error logs and debug output (if available)
 - **Dependency Review**: Verify module dependencies and versions
 - **State Examination**: Check caches, session data, and persistent state
 
-### 3. Root Cause Investigation
+**MANDATORY VERIFICATION - Evidence Collected**:
+
+```bash
+if [ ${#evidence_items[@]} -eq 0 ]; then
+  echo "❌ ERROR: No evidence collected"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Evidence gathered (${#evidence_items[@]} items)"
+for item in "${evidence_items[@]}"; do
+  echo "  - $item"
+done
+```
+
+---
+
+**STEP 3 (REQUIRED BEFORE STEP 3.5 OR STEP 4) - Root Cause Investigation**
+
+**EXECUTE NOW - Analyze Root Causes**:
+
 - **Trace Execution Paths**: Follow code flow from symptoms to source
 - **Identify Patterns**: Look for common failure modes
 - **Test Hypotheses**: Validate potential causes through inspection
 - **Check Recent Changes**: Review git history if relevant
 - **Environmental Factors**: Consider system-specific issues
+
+**MANDATORY VERIFICATION - Root Cause Analysis Complete**:
+
+```bash
+if [ -z "$root_cause_analysis" ]; then
+  echo "❌ ERROR: Root cause analysis not performed"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Root cause analysis complete"
+echo "  - Hypotheses generated: $hypothesis_count"
+```
+
+---
 
 ### 3.5. Parallel Hypothesis Investigation (for Complex Issues)
 
@@ -308,9 +367,9 @@ FULL_INVESTIGATION=$(load_metadata_on_demand "$CONFIRMED_PATH")
 - Failed hypotheses documented for future reference
 - Clear path from investigation to fix
 
-### 4. Debug Report Creation Using Uniform Structure
+**STEP 4 (REQUIRED BEFORE STEP 5) - Debug Report Creation Using Uniform Structure**
 
-**Step 1: Source Required Utilities**
+**EXECUTE NOW - Source Required Utilities**:
 ```bash
 source .claude/lib/artifact-operations.sh
 source .claude/lib/template-integration.sh
@@ -388,7 +447,7 @@ echo "✓ Debug report created successfully: $DEBUG_PATH"
 - Debug reports are committed to git (unlike other artifact types)
 - Single utility manages creation
 
-### 5. Spec-Updater Agent Invocation
+**STEP 5 (REQUIRED) - Spec-Updater Agent Invocation**
 
 **YOU MUST invoke spec-updater agent after debug report creation. This is NOT optional.**
 

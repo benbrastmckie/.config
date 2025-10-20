@@ -63,7 +63,9 @@ Transform a brief 30-50 line phase outline into a detailed 300-500+ line impleme
 
 ### Phase Expansion Process
 
-#### 1. Analyze Current Structure
+**STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure**
+
+**EXECUTE NOW - Detect Plan Structure**:
 
 ```bash
 # Detect project directory dynamically
@@ -83,9 +85,26 @@ elif [[ -f "$plan_path" ]]; then
   plan_file="$plan_path"
   structure_level=0
 fi
+
+echo "✓ Structure level detected: $structure_level"
 ```
 
-#### 2. Extract Phase Content
+**MANDATORY VERIFICATION - Plan File Exists**:
+
+```bash
+if [ ! -f "$plan_file" ]; then
+  echo "❌ ERROR: Plan file not found: $plan_file"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Plan file exists: $plan_file"
+```
+
+---
+
+**STEP 2 (REQUIRED BEFORE STEP 3) - Extract Phase Content**
+
+**EXECUTE NOW - Parse Phase from Plan**:
 
 Read the specified phase from the main plan using `parse-adaptive-plan.sh` utilities:
 - Phase heading and title
@@ -95,7 +114,22 @@ Read the specified phase from the main plan using `parse-adaptive-plan.sh` utili
 - All task checkboxes
 - Any existing implementation notes
 
-#### 3. Complexity Detection
+**MANDATORY VERIFICATION - Phase Content Extracted**:
+
+```bash
+if [ -z "$phase_content" ]; then
+  echo "❌ ERROR: Phase $phase_num not found in plan"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Phase $phase_num content extracted (${#phase_content} bytes)"
+```
+
+---
+
+**STEP 3 (REQUIRED BEFORE STEP 4) - Complexity Detection**
+
+**EXECUTE NOW - Analyze Phase Complexity**:
 
 Analyze the phase to determine if agent-assisted research is needed:
 
@@ -119,25 +153,67 @@ file_count=$(echo "$file_refs" | wc -l)
 - Expand directly with detailed task breakdown
 - Target: 200-300 lines with specific guidance
 
-#### 4. Create File Structure
+**MANDATORY VERIFICATION - Complexity Determined**:
 
-**If Level 0 (single file):**
 ```bash
-# Create plan directory
-plan_dir="${plan_file%.md}"
-mkdir -p "$plan_dir"
-
-# Move main plan into directory
-mv "$plan_file" "$plan_dir/$(basename "$plan_file")"
+if [ "$task_count" -gt 5 ] || [ "$file_count" -gt 10 ]; then
+  complexity="high"
+  echo "✓ Phase complexity: HIGH ($task_count tasks, $file_count files)"
+else
+  complexity="low"
+  echo "✓ Phase complexity: LOW ($task_count tasks, $file_count files)"
+fi
 ```
 
-**Create phase file:**
+---
+
+**STEP 4 (REQUIRED BEFORE STEP 5) - Create File Structure**
+
+**EXECUTE NOW - Create Directory Structure** (if Level 0):
+
+```bash
+if [ "$structure_level" -eq 0 ]; then
+  # Create plan directory
+  plan_dir="${plan_file%.md}"
+  mkdir -p "$plan_dir"
+
+  # Move main plan into directory
+  mv "$plan_file" "$plan_dir/$(basename "$plan_file")"
+
+  echo "✓ Plan directory created: $plan_dir"
+fi
+```
+
+**EXECUTE NOW - Create Phase File**:
+
 ```bash
 phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
-# Write expanded content to phase file
+# Write expanded content to phase file using Write tool
 ```
 
-#### 5. Update Metadata
+**MANDATORY VERIFICATION - Phase File Created**:
+
+```bash
+if [ ! -f "$phase_file" ]; then
+  echo "❌ CRITICAL ERROR: Phase file not created: $phase_file"
+  exit 1
+fi
+
+# Verify file has content
+file_size=$(wc -c < "$phase_file")
+if [ "$file_size" -lt 500 ]; then
+  echo "❌ ERROR: Phase file too small (${file_size} bytes), expected >500"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Phase file created: $phase_file (${file_size} bytes)"
+```
+
+---
+
+**STEP 5 (REQUIRED) - Update Metadata**
+
+**EXECUTE NOW - Update Main Plan Metadata**:
 
 **Main plan metadata:**
 - Update `Structure Level: 1`
@@ -163,6 +239,43 @@ phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
 For detailed tasks and implementation, see [Phase N Details](phase_N_name.md)
 ```
 
+**MANDATORY VERIFICATION - Metadata Updated**:
+
+```bash
+# Verify main plan updated
+if ! grep -q "Structure Level: 1" "$plan_file"; then
+  echo "❌ ERROR: Main plan metadata not updated"
+  exit 1
+fi
+
+# Verify phase number in expanded phases list
+if ! grep -q "Expanded Phases:.*$phase_num" "$plan_file"; then
+  echo "❌ ERROR: Phase $phase_num not added to expanded phases list"
+  exit 1
+fi
+
+echo "✓ VERIFIED: All metadata updates applied"
+```
+
+---
+
+**CHECKPOINT REQUIREMENT - Phase Expansion Complete**
+
+After completing phase expansion, YOU MUST report:
+
+```
+CHECKPOINT: Phase expansion complete
+- Phase number: $phase_num
+- Phase file: $phase_file
+- File size: ${file_size} bytes
+- Complexity: $complexity
+- Structure level: 0 → 1
+- Metadata updated: ✓
+- All verifications passed: ✓
+```
+
+**This checkpoint is MANDATORY and confirms successful expansion.**
+
 ## Expand Stage
 
 ### Arguments
@@ -175,7 +288,9 @@ Progressive stage expansion: Extract stage content from phase file to dedicated 
 
 ### Stage Expansion Process
 
-#### 1. Analyze Current Structure
+**STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure**
+
+**EXECUTE NOW - Normalize Phase Path and Detect Structure**:
 
 ```bash
 # Normalize phase path (accept both file and directory)
@@ -202,42 +317,117 @@ phase_num=$(echo "$phase_base" | grep -oP 'phase_\K\d+' | head -1)
 
 # Detect structure level
 structure_level=$(detect_structure_level "$(dirname "$main_plan")")
+
+echo "✓ Structure analysis complete (level: $structure_level)"
 ```
 
-#### 2. Extract Stage Content
+**MANDATORY VERIFICATION - Phase File Exists**:
+
+```bash
+if [ ! -f "$phase_file" ]; then
+  echo "❌ ERROR: Phase file not found: $phase_file"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Phase file exists: $phase_file"
+```
+
+---
+
+**STEP 2 (REQUIRED BEFORE STEP 3) - Extract Stage Content**
+
+**EXECUTE NOW - Parse Stage from Phase File**:
 
 Read stage content from phase file:
 - Stage heading and title
 - Tasks within stage
 - Scope and objectives
 
-#### 3. Complexity Detection
+**MANDATORY VERIFICATION - Stage Content Extracted**:
+
+```bash
+if [ -z "$stage_content" ]; then
+  echo "❌ ERROR: Stage $stage_num not found in phase file"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Stage $stage_num content extracted"
+```
+
+---
+
+**STEP 3 (REQUIRED BEFORE STEP 4) - Complexity Detection**
+
+**EXECUTE NOW - Analyze Stage Complexity**:
 
 Similar to phase expansion:
 - Complex stages (>3 tasks, >5 files): Use agent research
 - Simple stages: Direct expansion with detailed task breakdown
 
-#### 4. Create Phase Directory Structure
+**MANDATORY VERIFICATION - Complexity Determined**:
 
-**If first stage expansion:**
 ```bash
-# Create phase directory (Level 1 → 2)
-phase_subdir="$phase_dir/$phase_base"
-mkdir -p "$phase_subdir"
+if [ -z "$stage_complexity" ]; then
+  echo "❌ ERROR: Stage complexity not determined"
+  exit 1
+fi
 
-# Move phase file into directory
-mv "$phase_file" "$phase_subdir/$phase_base.md"
-phase_file="$phase_subdir/$phase_base.md"
+echo "✓ Stage complexity: $stage_complexity"
 ```
 
-#### 5. Create Stage File
+---
+
+**STEP 4 (REQUIRED BEFORE STEP 5) - Create Phase Directory Structure**
+
+**EXECUTE NOW - Create Phase Subdirectory** (if first stage expansion):
+
+```bash
+if [ "$first_stage_expansion" = "true" ]; then
+  # Create phase directory (Level 1 → 2)
+  phase_subdir="$phase_dir/$phase_base"
+  mkdir -p "$phase_subdir"
+
+  # Move phase file into directory
+  mv "$phase_file" "$phase_subdir/$phase_base.md"
+  phase_file="$phase_subdir/$phase_base.md"
+
+  echo "✓ Phase subdirectory created: $phase_subdir"
+fi
+```
+
+---
+
+**STEP 5 (REQUIRED BEFORE STEP 6) - Create Stage File**
+
+**EXECUTE NOW - Write Stage File**:
 
 ```bash
 stage_file="$phase_subdir/stage_${stage_num}_${stage_name}.md"
-# Write expanded content to stage file
+# Write expanded content to stage file using Write tool
 ```
 
-#### 6. Update Three-Way Metadata
+**MANDATORY VERIFICATION - Stage File Created**:
+
+```bash
+if [ ! -f "$stage_file" ]; then
+  echo "❌ CRITICAL ERROR: Stage file not created: $stage_file"
+  exit 1
+fi
+
+file_size=$(wc -c < "$stage_file")
+if [ "$file_size" -lt 200 ]; then
+  echo "❌ ERROR: Stage file too small (${file_size} bytes)"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Stage file created: $stage_file (${file_size} bytes)"
+```
+
+---
+
+**STEP 6 (REQUIRED) - Update Three-Way Metadata**
+
+**EXECUTE NOW - Update All Three Levels**:
 
 **Main plan:**
 - Update `Structure Level: 2` (if first stage expansion)
@@ -252,6 +442,49 @@ stage_file="$phase_subdir/stage_${stage_num}_${stage_name}.md"
 - Add `Phase Number: N`
 - Add `Objective: <from original>`
 - Add `Status: PENDING`
+
+**MANDATORY VERIFICATION - Three-Way Metadata Updated**:
+
+```bash
+# Verify main plan structure level
+if ! grep -q "Structure Level: 2" "$main_plan"; then
+  echo "❌ ERROR: Main plan structure level not updated"
+  exit 1
+fi
+
+# Verify phase file has stage in expanded list
+if ! grep -q "Expanded Stages:.*$stage_num" "$phase_file"; then
+  echo "❌ ERROR: Stage $stage_num not in expanded stages list"
+  exit 1
+fi
+
+# Verify stage file has metadata
+if ! grep -q "Stage Number: $stage_num" "$stage_file"; then
+  echo "❌ ERROR: Stage file missing metadata"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Three-way metadata complete"
+```
+
+---
+
+**CHECKPOINT REQUIREMENT - Stage Expansion Complete**
+
+After completing stage expansion, YOU MUST report:
+
+```
+CHECKPOINT: Stage expansion complete
+- Stage number: $stage_num
+- Stage file: $stage_file
+- File size: ${file_size} bytes
+- Complexity: $stage_complexity
+- Structure level: 1 → 2
+- Three-way metadata: ✓
+- All verifications passed: ✓
+```
+
+**This checkpoint is MANDATORY and confirms successful stage expansion.**
 
 ## Implementation
 
