@@ -1107,6 +1107,253 @@ Use this scoring to decide whether to delegate to agent:
 - Score: 2 + 3 + 2 + 1 = 8 points
 - **Decision**: Delegate to code-writer agent
 
+### 5.5 Subagent Prompt Enforcement Patterns
+
+**Purpose**: Ensure agents execute commands reliably and create required outputs (100% file creation rate).
+
+When creating commands that invoke subagents, use execution enforcement patterns from [Command Architecture Standards - Standard 0.5](../reference/command_architecture_standards.md#standard-05-subagent-prompt-enforcement) to guarantee reliable execution.
+
+#### Two-Layer Enforcement Approach
+
+Commands should enforce execution at **two layers** for defense-in-depth:
+
+**Layer 1: Command-Level Enforcement** (Fallback Guarantee)
+- Pre-calculate output paths before agent invocation
+- Verify files exist after agent completes
+- Execute fallback creation if agent doesn't comply
+- Guarantee outcome regardless of agent behavior
+
+**Layer 2: Agent Prompt Enforcement** (Primary Path)
+- Use "THIS EXACT TEMPLATE" markers for agent prompts
+- Include "ABSOLUTE REQUIREMENT" for file creation
+- Mark critical operations with "EXECUTE NOW"
+- Add "MANDATORY VERIFICATION" checkpoints
+
+#### Pattern E1: Pre-Calculate Paths (Layer 1)
+
+Calculate file paths BEFORE invoking agents:
+
+```markdown
+**EXECUTE NOW - Pre-Calculate Report Paths**
+
+Before invoking research agents, calculate exact file paths:
+
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+
+# Calculate paths for all research topics
+declare -A REPORT_PATHS
+for topic in "${TOPICS[@]}"; do
+  REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "${topic}" "")
+  REPORT_PATHS["$topic"]="$REPORT_PATH"
+  echo "Pre-calculated path: $REPORT_PATH"
+done
+```
+
+**WHY THIS MATTERS**: Agents receive explicit paths (no guessing), commands can verify exact locations, fallback creation knows where to write.
+```
+
+#### Pattern E2: Enforce in Agent Prompt (Layer 2)
+
+Mark agent invocations with enforcement directives:
+
+```markdown
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${topic} with mandatory file creation"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    **ABSOLUTE REQUIREMENT**: File creation is your PRIMARY task.
+
+    Research Topic: ${topic}
+    Output Path: ${REPORT_PATHS[$topic]}
+
+    **CRITICAL**: YOU MUST create the file at the exact path specified.
+    DO NOT return a text summary without creating the file.
+
+    Return ONLY: REPORT_CREATED: ${REPORT_PATHS[$topic]}
+  "
+}
+```
+
+**ENFORCEMENT**: Copy this template verbatim. Do NOT simplify the prompt.
+```
+
+#### Pattern E3: Mandatory Verification (Layer 1)
+
+Verify outputs after agent completion:
+
+```markdown
+**MANDATORY VERIFICATION - Report File Existence**
+
+After research agent completes, YOU MUST verify the file was created:
+
+```bash
+EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+if [ ! -f "$EXPECTED_PATH" ]; then
+  echo "CRITICAL: Agent didn't create file at $EXPECTED_PATH"
+  echo "Executing fallback creation..."
+
+  # Fallback: Extract content from agent output
+  cat > "$EXPECTED_PATH" <<EOF
+# ${topic}
+
+## Findings
+${AGENT_OUTPUT}
+EOF
+
+  echo "✓ Fallback file created at $EXPECTED_PATH"
+fi
+
+echo "✓ Verified: Report exists at $EXPECTED_PATH"
+```
+
+**GUARANTEE**: File exists regardless of agent compliance.
+```
+
+#### Pattern E4: Checkpoint Reporting
+
+Require agents to report completion:
+
+```markdown
+**CHECKPOINT REQUIREMENT**
+
+After research phase completes, emit status:
+
+```
+CHECKPOINT: Research phase complete
+- Topics researched: ${#TOPICS[@]}
+- Reports created: ${#VERIFIED_REPORTS[@]}
+- All files verified: ✓
+- Proceeding to: Planning phase
+```
+
+This reporting is MANDATORY and confirms proper execution.
+```
+
+#### Pattern E5: Imperative Language
+
+Use strong imperative language in agent prompts:
+
+| Strength | Pattern | When to Use | Example |
+|----------|---------|-------------|---------|
+| **Critical** | "CRITICAL:", "ABSOLUTE REQUIREMENT" | File creation, data integrity | "ABSOLUTE REQUIREMENT: Create report file" |
+| **Mandatory** | "YOU MUST", "REQUIRED", "EXECUTE NOW" | Essential steps | "YOU MUST verify file exists" |
+| **Strong** | "Always", "Never", "Ensure" | Best practices | "Always use absolute paths" |
+
+**Weak language to avoid**:
+- ❌ "should create" → ✅ "YOU MUST create"
+- ❌ "may verify" → ✅ "MANDATORY VERIFICATION"
+- ❌ "can emit" → ✅ "SHALL emit"
+
+#### Integration Example: Research Command with Enforcement
+
+```markdown
+## Workflow for /report Command
+
+### Step 1: Pre-Calculate Report Path
+
+**EXECUTE NOW - Calculate Report Path**
+
+```bash
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-creation.sh"
+TOPIC_DIR=$(get_or_create_topic_dir "$RESEARCH_TOPIC" ".claude/specs")
+REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001_${TOPIC_SLUG}" "")
+echo "Report will be written to: $REPORT_PATH"
+```
+
+### Step 2: Invoke Research Agent with Enforcement
+
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE**
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${RESEARCH_TOPIC}"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    **ABSOLUTE REQUIREMENT**: Creating the report file is your PRIMARY task.
+
+    Research Topic: ${RESEARCH_TOPIC}
+    Output Path: ${REPORT_PATH}
+
+    **STEP 1 (REQUIRED BEFORE STEP 2)**: Use Write tool to create file at ${REPORT_PATH}
+    **STEP 2**: Conduct research and populate file
+    **STEP 3 (MANDATORY)**: Return ONLY: REPORT_CREATED: ${REPORT_PATH}
+
+    **NON-NEGOTIABLE**: File must exist at ${REPORT_PATH} when you complete.
+  "
+}
+```
+
+### Step 3: Verify and Fallback
+
+**MANDATORY VERIFICATION - Report File Exists**
+
+```bash
+if [ ! -f "$REPORT_PATH" ]; then
+  echo "CRITICAL: Agent didn't create report file"
+  echo "Executing fallback creation..."
+
+  cat > "$REPORT_PATH" <<EOF
+# ${RESEARCH_TOPIC}
+
+## Findings
+${AGENT_OUTPUT}
+EOF
+fi
+
+echo "✓ Verified: Report exists at $REPORT_PATH"
+```
+
+**GUARANTEE**: Report file exists regardless of agent compliance (100% creation rate).
+
+### Step 4: Report Completion
+
+**CHECKPOINT REQUIREMENT**
+
+```
+CHECKPOINT: Research complete
+- Report created: ${REPORT_PATH}
+- File verified: ✓
+- Ready for: Planning phase
+```
+```
+
+#### Quality Checklist for Agent-Invoking Commands
+
+When commands invoke subagents, verify:
+
+**Execution Enforcement**:
+- [ ] Paths pre-calculated before agent invocation
+- [ ] Agent prompt uses "THIS EXACT TEMPLATE" marker
+- [ ] File creation marked as "ABSOLUTE REQUIREMENT"
+- [ ] "EXECUTE NOW" markers for critical operations
+- [ ] "MANDATORY VERIFICATION" blocks after agent execution
+- [ ] Fallback mechanism if agent doesn't comply
+- [ ] Checkpoint reporting after major steps
+- [ ] Zero weak language ("should", "may", "can")
+
+**Verification**:
+- [ ] File existence verified with `test -f` or `[ ! -f ]`
+- [ ] Fallback creates file from agent output
+- [ ] Path variables used consistently
+- [ ] Verification errors logged clearly
+
+**Completeness**:
+- [ ] All critical outputs have fallback creation
+- [ ] All verification checkpoints present
+- [ ] All enforcement patterns applied
+- [ ] Agent prompts include step dependencies ("STEP 1 REQUIRED BEFORE STEP 2")
+
+See [Command Architecture Standards - Standard 0.5](../reference/command_architecture_standards.md#standard-05-subagent-prompt-enforcement) for complete subagent enforcement patterns, before/after examples, and testing strategies.
+
 ---
 
 ## 6. Testing and Validation

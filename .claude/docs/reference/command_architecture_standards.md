@@ -304,6 +304,518 @@ Check if verification checkpoints are executed:
 # Test: grep for verification markers in command output
 ```
 
+### Standard 0.5: Subagent Prompt Enforcement
+
+**Extension of Standard 0 for Agent Definition Files**
+
+Subagent prompts in `.claude/agents/` follow the same enforcement principles as command files, with additional patterns specific to agent behavior and file creation guarantees.
+
+#### Problem Statement
+
+Agent definition files historically used descriptive language ("I am a specialized agent") that Claude treats as guidance rather than mandatory directives. This leads to:
+- Variable file creation rates (60-80% vs 100% target)
+- Optional interpretation of verification steps
+- Skipped checkpoint reporting
+- Passive voice that implies optionality
+
+#### Solution: Agent-Specific Enforcement Patterns
+
+**Pattern A: Role Declaration Transformation**
+
+Replace descriptive "I am" declarations with imperative "YOU MUST" directives:
+
+```markdown
+❌ WEAK - Descriptive language:
+## Research Specialist Agent
+
+I am a specialized agent focused on thorough research and analysis.
+
+My role is to:
+- Investigate the codebase for patterns
+- Create structured markdown report files using Write tool
+- Emit progress markers during research
+
+✅ STRONG - Imperative enforcement:
+## Research Specialist Agent
+
+**YOU MUST perform these exact steps in sequence:**
+
+**ROLE**: You are a research specialist with ABSOLUTE REQUIREMENT to create structured report files.
+
+**PRIMARY OBLIGATION**: File creation is NOT optional. You WILL use the Write tool to create the report file at the exact path specified.
+```
+
+**Pattern B: Sequential Step Dependencies**
+
+Enforce step ordering with explicit dependencies:
+
+```markdown
+❌ WEAK - Unordered list:
+Steps to complete:
+- Research the topic thoroughly
+- Organize findings into sections
+- Create report file
+- Verify all links work
+
+✅ STRONG - Sequential dependencies:
+**STEP 1 (REQUIRED BEFORE STEP 2) - Pre-Calculate Report Path**
+
+EXECUTE NOW - Calculate the exact file path where you will write the report:
+
+```bash
+REPORT_PATH="${OUTPUT_DIR}/${TOPIC_NUMBER}_${TOPIC_SLUG}.md"
+echo "Report will be written to: $REPORT_PATH"
+```
+
+**VERIFICATION**: Path must be absolute and directory must exist.
+
+**STEP 2 (REQUIRED BEFORE STEP 3) - Conduct Research**
+
+YOU MUST investigate the codebase using Grep, Glob, and Read tools.
+
+[research instructions]
+
+**STEP 3 (ABSOLUTE REQUIREMENT) - Create Report File**
+
+**EXECUTE NOW - Create Report File**
+
+YOU MUST use the Write tool to create the report file at the exact path from Step 1.
+
+**THIS IS NON-NEGOTIABLE**: File creation MUST occur even if research findings are minimal.
+
+**STEP 4 (MANDATORY VERIFICATION) - Verify File Creation**
+
+After creating the report, YOU MUST verify:
+
+```bash
+test -f "$REPORT_PATH" || echo "CRITICAL: Report file not created at $REPORT_PATH"
+```
+
+**CHECKPOINT REQUIREMENT**: Report this confirmation before completing the agent task.
+```
+
+**Pattern C: File Creation as Primary Obligation**
+
+Elevate file creation to the highest priority:
+
+```markdown
+❌ WEAK - File creation as one of many tasks:
+Tasks:
+- Research patterns
+- Analyze findings
+- Write report
+- Return summary
+
+✅ STRONG - File creation as primary obligation:
+**PRIMARY OBLIGATION - File Creation**
+
+**ABSOLUTE REQUIREMENT**: Creating the output file is your PRIMARY task, not a secondary deliverable.
+
+**PRIORITY ORDER**:
+1. FIRST: Create output file at specified path (even if empty initially)
+2. SECOND: Conduct research and populate file
+3. THIRD: Verify file exists and contains all required sections
+4. FOURTH: Return confirmation of file creation
+
+**WHY THIS MATTERS**: Commands depend on file artifacts existing at predictable paths. Text summaries returned without files break downstream workflows.
+
+**NON-COMPLIANCE CONSEQUENCE**: If you return a summary without creating the file, the calling command will execute fallback creation, but this degrades quality and loses your detailed findings.
+```
+
+**Pattern D: Elimination of Passive Voice**
+
+Replace passive constructions with active imperatives:
+
+```markdown
+❌ WEAK - Passive voice (implies optionality):
+"Reports should be created in topic directories."
+"Links should be verified after file creation."
+"Progress markers can be emitted during research."
+"Consider adding examples for clarity."
+
+✅ STRONG - Active imperatives:
+"YOU MUST create reports in topic directories using this exact path structure:"
+"YOU WILL verify all links after creating the file using this command:"
+"YOU SHALL emit progress markers at these specific checkpoints:"
+"YOU MUST add concrete examples using this template:"
+```
+
+**Pattern E: Template-Based Output Enforcement**
+
+Specify non-negotiable output formats:
+
+```markdown
+❌ WEAK - Flexible format suggestions:
+Include these sections in your report:
+- Overview
+- Findings
+- Recommendations
+
+You may add additional sections as needed.
+
+✅ STRONG - Non-negotiable template:
+**OUTPUT FORMAT - Use THIS EXACT TEMPLATE (No modifications)**
+
+YOUR REPORT MUST contain these sections IN THIS ORDER:
+
+```markdown
+# [Topic Title]
+
+## Overview
+[2-3 sentence summary - REQUIRED, not optional]
+
+## Current State Analysis
+[Existing implementation details - MANDATORY section]
+
+## Research Findings
+[Detailed findings - MINIMUM 5 bullet points REQUIRED]
+
+## Recommendations
+[Specific, actionable guidance - MINIMUM 3 recommendations REQUIRED]
+
+## Implementation Guidance
+[Step-by-step implementation steps - REQUIRED]
+
+## References
+[Sources and links - ALL sources MUST be listed]
+
+## Metadata
+- Research Date: [YYYY-MM-DD - REQUIRED]
+- Files Analyzed: [List of files - REQUIRED if codebase research performed]
+- External Sources: [List of URLs - REQUIRED if web research performed]
+```
+
+**ENFORCEMENT**: Every section marked REQUIRED or MANDATORY is NON-NEGOTIABLE. Reports missing required sections are INCOMPLETE.
+```
+
+#### Agent-Specific Anti-Patterns
+
+**Anti-Pattern A1: Optional Language**
+
+```markdown
+❌ BAD - "should", "may", "can" (implies choice):
+"You should create a report file."
+"You may include additional sections."
+"You can emit progress markers."
+
+✅ GOOD - "MUST", "WILL", "SHALL" (mandatory):
+"YOU MUST create a report file."
+"YOU WILL include these exact sections."
+"YOU SHALL emit progress markers at these checkpoints."
+```
+
+**Anti-Pattern A2: Vague Completion Criteria**
+
+```markdown
+❌ BAD - Unclear success definition:
+"Complete the research task and return findings."
+
+✅ GOOD - Specific completion markers:
+**COMPLETION CRITERIA - ALL REQUIRED**:
+- [x] Report file exists at exact path specified
+- [x] Report contains all mandatory sections
+- [x] All internal links verified functional
+- [x] Checkpoint confirmation emitted
+- [x] File path returned in format: "REPORT_CREATED: /path/to/report.md"
+
+**YOU MUST verify ALL criteria before considering task complete.**
+```
+
+**Anti-Pattern A3: Missing "Why This Matters" Context**
+
+```markdown
+❌ BAD - Instructions without rationale:
+"Create the report file at the specified path."
+
+✅ GOOD - Instructions with enforcement rationale:
+**EXECUTE NOW - Create Report File**
+
+Create the report file at the exact path specified in your task prompt.
+
+**WHY THIS MATTERS**:
+- Commands rely on artifacts existing at predictable paths
+- Metadata extraction depends on file structure
+- Plan execution needs cross-references between artifacts
+- Text-only summaries break the workflow dependency graph
+
+**CONSEQUENCE OF NON-COMPLIANCE**:
+If you return findings as text instead of creating the file, the calling command will execute fallback creation, but your detailed analysis will be reduced to basic templated content.
+
+**GUARANTEE REQUIRED**: File MUST exist at the specified path when you complete this task.
+```
+
+#### Before/After Example: research-specialist.md
+
+**Before (Weak Enforcement)**:
+```markdown
+# Research Specialist Agent
+
+I am a specialized agent focused on thorough research and analysis.
+
+My role is to:
+- Investigate the codebase for patterns and existing implementations
+- Search external sources for best practices
+- Create structured markdown report files using Write tool
+- Emit progress markers during research
+
+## Research Process
+
+1. Analyze the research topic and scope
+2. Search codebase using Grep, Glob, Read tools
+3. Research best practices using WebSearch, WebFetch
+4. Organize findings into coherent report structure
+5. Create report file in topic directory
+6. Verify links and cross-references work
+
+## Output Format
+
+Create markdown report with these sections:
+- Overview (2-3 sentences)
+- Current State Analysis
+- Research Findings
+- Recommendations
+- References
+```
+
+**After (Strong Enforcement)**:
+```markdown
+# Research Specialist Agent
+
+**YOU MUST perform these exact steps in sequence.**
+
+**PRIMARY OBLIGATION**: Creating the report file is MANDATORY, not optional.
+
+---
+
+## STEP 1 (REQUIRED BEFORE STEP 2) - Pre-Calculate Report Path
+
+**EXECUTE NOW - Calculate Report Path**
+
+Before beginning research, calculate the exact file path where you will write the report:
+
+```bash
+REPORT_PATH="${OUTPUT_DIR}/${TOPIC_SLUG}.md"
+echo "Report will be written to: $REPORT_PATH"
+```
+
+**VERIFICATION**: Confirm path is absolute and directory exists.
+
+---
+
+## STEP 2 (REQUIRED BEFORE STEP 3) - Conduct Research
+
+**YOU MUST investigate the topic using these tools IN THIS ORDER:**
+
+1. **Codebase Analysis** (MANDATORY):
+   - Grep: Search for relevant patterns
+   - Glob: Find related files
+   - Read: Analyze implementations
+
+2. **External Research** (REQUIRED if topic needs current best practices):
+   - WebSearch: Find 2025 best practices
+   - WebFetch: Retrieve authoritative sources
+
+**CHECKPOINT**: Emit progress marker after each research phase:
+```
+PROGRESS: Codebase analysis complete (N files analyzed)
+PROGRESS: External research complete (N sources reviewed)
+```
+
+---
+
+## STEP 3 (ABSOLUTE REQUIREMENT) - Create Report File
+
+**EXECUTE NOW - Create Report File**
+
+**THIS IS YOUR PRIMARY TASK**: YOU MUST use the Write tool to create the report file at the exact path from Step 1.
+
+**WHY THIS MATTERS**:
+- Commands depend on file artifacts at predictable paths
+- Text-only summaries break workflow dependencies
+- Plan execution needs cross-referenced artifacts
+
+**OUTPUT FORMAT - Use THIS EXACT TEMPLATE (No modifications)**:
+
+```markdown
+# [Topic Title]
+
+## Overview
+[2-3 sentence summary - REQUIRED]
+
+## Current State Analysis
+[Existing implementation - MANDATORY if codebase research performed]
+
+## Research Findings
+[Detailed findings - MINIMUM 5 bullet points REQUIRED]
+
+## Recommendations
+[Actionable guidance - MINIMUM 3 recommendations REQUIRED]
+
+## Implementation Guidance
+[Step-by-step instructions - REQUIRED]
+
+## References
+[Sources - ALL sources MUST be listed]
+
+## Metadata
+- Research Date: [YYYY-MM-DD - REQUIRED]
+- Files Analyzed: [N files - REQUIRED if codebase analysis]
+- External Sources: [N sources - REQUIRED if web research]
+```
+
+**ENFORCEMENT**: Every section marked REQUIRED or MANDATORY is NON-NEGOTIABLE.
+
+---
+
+## STEP 4 (MANDATORY VERIFICATION) - Verify File Creation
+
+**YOU MUST execute this verification** after creating the report:
+
+```bash
+test -f "$REPORT_PATH" || echo "CRITICAL: Report file not created at $REPORT_PATH"
+```
+
+**CHECKPOINT REQUIREMENT**: Emit this confirmation:
+```
+CHECKPOINT: Report created and verified at $REPORT_PATH
+```
+
+---
+
+## COMPLETION CRITERIA - ALL REQUIRED
+
+Before completing your task, verify ALL of these:
+- [x] Report file exists at exact path specified
+- [x] Report contains all mandatory sections
+- [x] All sections marked REQUIRED are present and populated
+- [x] All internal links are functional
+- [x] Checkpoint confirmation emitted
+- [x] File path returned in this exact format: "REPORT_CREATED: /path/to/report.md"
+
+**NON-COMPLIANCE**: Returning a summary without creating the file is UNACCEPTABLE.
+```
+
+#### Integration with Command-Level Enforcement
+
+Commands that invoke subagents should use a two-layer enforcement approach:
+
+**Layer 1: Command-Level Enforcement (Fallback Guarantee)**
+```markdown
+**MANDATORY VERIFICATION - Report File Existence**
+
+After research agent completes, YOU MUST verify the file was created:
+
+```bash
+EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+if [ ! -f "$EXPECTED_PATH" ]; then
+  echo "CRITICAL: Agent didn't create file at $EXPECTED_PATH"
+  echo "Executing fallback creation..."
+
+  # Fallback: Extract content from agent output
+  cat > "$EXPECTED_PATH" <<EOF
+# ${topic}
+## Findings
+${AGENT_OUTPUT}
+EOF
+
+  echo "✓ Fallback file created at $EXPECTED_PATH"
+fi
+```
+
+**GUARANTEE**: File exists regardless of agent compliance.
+```
+
+**Layer 2: Agent-Level Enforcement (Primary Path)**
+```markdown
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE**
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${topic} with mandatory file creation"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    **ABSOLUTE REQUIREMENT**: File creation is your PRIMARY task.
+
+    Research Topic: ${topic}
+    Output Path: ${REPORT_PATHS[$topic]}
+    Thinking Mode: ${thinking_mode}
+
+    **CRITICAL**: YOU MUST create the file at the exact path specified.
+    DO NOT return a text summary without creating the file.
+
+    Return ONLY: REPORT_CREATED: ${REPORT_PATHS[$topic]}
+  "
+}
+```
+
+**ENFORCEMENT**: Copy this template verbatim. Do NOT simplify the prompt.
+```
+
+**Result**: 100% file creation rate through defense-in-depth:
+1. Agent prompt enforces file creation (primary path)
+2. Agent definition file reinforces enforcement (behavioral layer)
+3. Command verification + fallback guarantees outcome (safety net)
+
+#### Testing Subagent Enforcement
+
+**Test Suite**: `.claude/tests/test_subagent_enforcement.sh`
+
+**Test SA-1: File Creation Rate**
+```bash
+# Invoke each priority agent with standard task
+# Expected: 100% file creation rate
+# Metric: Files exist at specified paths
+```
+
+**Test SA-2: Sequential Step Compliance**
+```bash
+# Monitor agent execution for checkpoint markers
+# Expected: "STEP 1", "STEP 2", "STEP 3" markers in output
+# Metric: All steps reported in correct order
+```
+
+**Test SA-3: Template Adherence**
+```bash
+# Verify output files contain all required sections
+# Expected: All MANDATORY sections present
+# Metric: Parse markdown headers, check against template
+```
+
+**Test SA-4: Verification Checkpoint Execution**
+```bash
+# Check for verification confirmation in output
+# Expected: "✓ Verified:" or "CHECKPOINT:" markers
+# Metric: grep for verification patterns
+```
+
+**Test SA-5: Fallback Activation**
+```bash
+# Simulate agent non-compliance (text return, no file)
+# Expected: Command fallback creates file
+# Metric: File exists even with non-compliant agent
+```
+
+#### Quality Metrics
+
+**Target**: All priority agents achieve 95+/100 on enforcement checklist
+
+**Scoring Rubric** (10 points per category):
+1. **Imperative Language**: All critical steps use YOU MUST/EXECUTE NOW (10 pts)
+2. **Sequential Dependencies**: Steps marked REQUIRED BEFORE STEP N+1 (10 pts)
+3. **File Creation Priority**: Marked as ABSOLUTE REQUIREMENT (10 pts)
+4. **Verification Checkpoints**: MANDATORY VERIFICATION blocks present (10 pts)
+5. **Template Enforcement**: THIS EXACT TEMPLATE markers for outputs (10 pts)
+6. **Passive Voice Elimination**: Zero "should/may/can" in critical sections (10 pts)
+7. **Completion Criteria**: Explicit checklist with ALL REQUIRED marker (10 pts)
+8. **Why This Matters Context**: Enforcement rationale provided (10 pts)
+9. **Checkpoint Reporting**: CHECKPOINT REQUIREMENT blocks present (10 pts)
+10. **Fallback Integration**: Compatible with command-level fallback mechanisms (10 pts)
+
+**95+/100 = 9.5+ categories at full strength**
+
 ### Standard 1: Executable Instructions Must Be Inline
 
 **REQUIRED in Command Files**:
