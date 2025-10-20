@@ -8,6 +8,16 @@ allowed-tools: Read, Bash, Grep, Glob, WebSearch, WebFetch, TodoWrite, Task
 
 # /debug Command
 
+**YOU MUST investigate and create debug report following exact process:**
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all investigation steps in EXACT sequential order
+- DO NOT skip parallel hypothesis investigation
+- DO NOT skip report file creation
+- DO NOT skip root cause analysis
+- DO NOT make code changes (diagnostic only)
+- Fallback mechanisms ensure 100% report creation
+
 Investigates issues and creates a comprehensive diagnostic report without making any code changes. Focuses on understanding root causes and documenting findings.
 
 ## Usage
