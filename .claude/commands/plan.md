@@ -320,23 +320,77 @@ If research reports are provided, I'll:
 - If report already has a plan link: Update existing (report can inform multiple plans)
 
 ### 2. Requirements Analysis and Complexity Evaluation
-I'll analyze the feature requirements to determine:
+
+**YOU MUST perform complexity evaluation. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Complexity calculation is MANDATORY for every plan
+- DO NOT skip requirements analysis
+- DO NOT skip complexity scoring
+- Complexity score MUST be stored in plan metadata
+
+Analyze the feature requirements to determine:
 - Core functionality needed
 - Technical scope and boundaries
 - Affected components and modules
 - Dependencies and prerequisites
 - Alignment with report recommendations (if applicable)
 
+---
+
+**STEP 6 (REQUIRED BEFORE PLAN CREATION) - Mandatory Complexity Evaluation**
+
+**EXECUTE NOW - Calculate Plan Complexity**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST calculate plan complexity using utilities. This is NOT optional.
+
+**WHY THIS MATTERS**: Complexity score guides phase expansion decisions during implementation and is stored in metadata for future reference.
+
 **Complexity Evaluation** (Progressive Planning):
-- Use `.claude/lib/analyze-plan-requirements.sh` to estimate:
-  - Task count
-  - Phase count
-  - Estimated hours
-  - Dependency complexity
-- Use `.claude/lib/calculate-plan-complexity.sh` for informational scoring only
+
+```bash
+# Source complexity utilities
+source .claude/lib/analyze-plan-requirements.sh
+source .claude/lib/calculate-plan-complexity.sh
+
+# Analyze requirements
+REQUIREMENTS_ANALYSIS=$(analyze_plan_requirements "$FEATURE_DESCRIPTION" "$RESEARCH_REPORTS")
+
+# Extract estimates
+TASK_COUNT=$(echo "$REQUIREMENTS_ANALYSIS" | jq -r '.task_count')
+PHASE_COUNT=$(echo "$REQUIREMENTS_ANALYSIS" | jq -r '.phase_count')
+ESTIMATED_HOURS=$(echo "$REQUIREMENTS_ANALYSIS" | jq -r '.estimated_hours')
+DEPENDENCY_COMPLEXITY=$(echo "$REQUIREMENTS_ANALYSIS" | jq -r '.dependency_complexity')
+
+# Calculate complexity score
+COMPLEXITY_SCORE=$(calculate_plan_complexity "$TASK_COUNT" "$PHASE_COUNT" "$ESTIMATED_HOURS" "$DEPENDENCY_COMPLEXITY")
+
+# MANDATORY: Store complexity score for metadata
+export PLAN_COMPLEXITY_SCORE="$COMPLEXITY_SCORE"
+
+# Display complexity hint if score ≥50
+if [ "$COMPLEXITY_SCORE" -ge 50 ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "COMPLEXITY HINT"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Complexity Score: $COMPLEXITY_SCORE"
+  echo "Recommendation: Consider using /expand phase during"
+  echo "implementation if phases prove complex"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
+```
+
+**Required Outputs**:
+- `$PLAN_COMPLEXITY_SCORE`: Exported for metadata inclusion
+- Complexity hint displayed if score ≥50
+- Task count, phase count, estimated hours calculated
+
+**Important Notes**:
 - **All plans start as single files (Level 0)** regardless of complexity
-- If complexity score ≥50: Show hint about using `/expand phase` during implementation
-- Complexity score stored in metadata for future reference
+- Complexity score guides `/expand phase` usage during implementation
+- Complexity score stored in plan metadata for future reference
+
+---
 
 ### 3. Topic-Based Location Determination
 I'll determine the topic directory location using the uniform structure:
@@ -378,24 +432,129 @@ TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
   - `backups/` - Backups (gitignored)
 
 ### 4. Plan Creation Using Uniform Structure
-I'll create the plan using `create_topic_artifact()`:
+
+**YOU MUST create plan file using exact process. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Plan file creation is MANDATORY
+- DO NOT skip artifact number calculation
+- DO NOT skip plan name generation
+- DO NOT skip file creation verification
+- Fallback mechanism ensures 100% plan creation
+
+Create the plan using `create_topic_artifact()`:
+
+---
+
+**STEP 7 (REQUIRED) - Calculate Plan Number**
+
+**EXECUTE NOW - Get Next Plan Number**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST calculate next available plan number. This is NOT optional.
+
+**WHY THIS MATTERS**: Sequential numbering prevents conflicts and maintains artifact organization.
 
 **Step 1: Get Next Plan Number Within Topic**
 ```bash
+# Source artifact utilities
+source .claude/lib/artifact-operations.sh
+
 # Get next number in topic's plans/ subdirectory
 NEXT_NUM=$(get_next_artifact_number "${TOPIC_DIR}/plans")
+
+# MANDATORY: Verify number is valid
+if [ -z "$NEXT_NUM" ] || [ "$NEXT_NUM" -lt 1 ]; then
+  echo "⚠️  INVALID PLAN NUMBER - Triggering fallback"
+  # Fallback: Use 001 or scan directory manually
+  NEXT_NUM=$(find "${TOPIC_DIR}/plans" -name "*.md" | wc -l)
+  NEXT_NUM=$((NEXT_NUM + 1))
+fi
+
+# Format with leading zeros (e.g., 001, 002, 003)
+PLAN_NUM=$(printf "%03d" "$NEXT_NUM")
 ```
 
+---
+
+**STEP 8 (REQUIRED AFTER STEP 7) - Generate Plan Name**
+
+**EXECUTE NOW - Create Plan Filename**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST generate valid plan name. This is NOT optional.
+
 **Step 2: Generate Plan Name**
-- Convert feature description to snake_case (e.g., "Add User Auth" → "add_user_auth")
-- Truncate to reasonable length (50 chars)
+```bash
+# Convert feature description to snake_case
+PLAN_NAME=$(echo "$FEATURE_DESCRIPTION" | \
+  tr '[:upper:]' '[:lower:]' | \
+  sed 's/[^a-z0-9]/_/g' | \
+  sed 's/__*/_/g' | \
+  sed 's/^_//; s/_$//' | \
+  cut -c1-50)
+
+# MANDATORY: Verify name is not empty
+if [ -z "$PLAN_NAME" ]; then
+  echo "⚠️  EMPTY PLAN NAME - Using fallback"
+  PLAN_NAME="implementation_plan"
+fi
+
+# Create full filename
+PLAN_FILENAME="${PLAN_NUM}_${PLAN_NAME}.md"
+```
+
+---
+
+**STEP 9 (REQUIRED AFTER STEP 8) - Create Plan File with Verification**
+
+**EXECUTE NOW - Create Plan File Using Utility**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST create plan file and verify creation. This is NOT optional.
+
+**WHY THIS MATTERS**: Plan file is the primary deliverable of this command. Missing file means command failure.
 
 **Step 3: Create Plan File**
 ```bash
+# Create plan file using utility (auto-numbers and registers)
 PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "$PLAN_NAME" "$PLAN_CONTENT")
 # Creates: ${TOPIC_DIR}/plans/NNN_plan_name.md
-# Auto-numbers, registers in artifact registry
+
+# MANDATORY: Verify file exists
+if [ ! -f "$PLAN_PATH" ]; then
+  echo "⚠️  PLAN FILE NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Create file directly with Write tool
+  FALLBACK_PATH="${TOPIC_DIR}/plans/${PLAN_FILENAME}"
+  mkdir -p "$(dirname "$FALLBACK_PATH")"
+
+  # Use Write tool to create plan file
+  # (PLAN_CONTENT already prepared in Steps 6-8)
+  cat > "$FALLBACK_PATH" <<EOF
+$PLAN_CONTENT
+EOF
+
+  PLAN_PATH="$FALLBACK_PATH"
+  echo "✓ Fallback plan file created: $PLAN_PATH"
+
+  # Manual registration in artifact registry
+  echo "$PLAN_PATH" >> "${TOPIC_DIR}/.artifact-registry"
+fi
+
+# Verify file is readable and non-empty
+if [ ! -s "$PLAN_PATH" ]; then
+  echo "❌ CRITICAL: Plan file empty or unreadable: $PLAN_PATH"
+  exit 1
+fi
+
+echo "✓ Plan file created successfully: $PLAN_PATH"
 ```
+
+**Fallback Mechanism** (Guarantees 100% Plan Creation):
+- If `create_topic_artifact` fails → Create file directly with Write tool
+- Manual directory creation if needed
+- Manual artifact registry update
+- File size verification ensures non-empty file
+
+---
 
 **Benefits of Uniform Structure**:
 - All artifacts for a topic in one directory
@@ -598,71 +757,155 @@ This analysis replaces the generic complexity hint (≥50 threshold) with specif
 
 ### 9. Spec-Updater Agent Invocation
 
-**IMPORTANT**: After the plan file is created and written, invoke the spec-updater agent to verify topic structure and initialize cross-references.
+**YOU MUST invoke spec-updater agent after plan creation. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Spec-updater invocation is MANDATORY after plan file creation
+- DO NOT skip topic structure verification
+- DO NOT skip cross-reference initialization
+- Fallback mechanism ensures topic structure is valid
+
+After the plan file is created and written, invoke the spec-updater agent to verify topic structure and initialize cross-references.
 
 This step ensures the topic directory structure is properly initialized and ready for implementation.
 
-#### Step 9.1: Invoke Spec-Updater Agent
+---
 
-Use the Task tool to invoke the spec-updater agent:
+**STEP 10 (REQUIRED AFTER STEP 9) - Invoke Spec-Updater Agent**
+
+**EXECUTE NOW - Verify Topic Structure via Spec-Updater**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke spec-updater agent to verify topic structure. This is NOT optional.
+
+**WHY THIS MATTERS**: Topic structure verification ensures all subdirectories exist and gitignore compliance is correct, preventing file organization errors during implementation.
+
+#### Step 10.1: Invoke Spec-Updater Agent
+
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
 ```
-Task tool invocation:
-subagent_type: general-purpose
-description: "Initialize topic structure for new plan"
-prompt: |
-  Read and follow the behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/spec-updater.md
+Task {
+  subagent_type: "general-purpose"
+  description: "Initialize topic structure for new plan"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
 
-  You are acting as a Spec Updater Agent.
+    You are acting as a Spec Updater Agent.
 
-  Context:
-  - Plan created at: {plan_path}
-  - Topic directory: {topic_dir}
-  - Operation: plan_creation
+    Context:
+    - Plan created at: {plan_path}
+    - Topic directory: {topic_dir}
+    - Operation: plan_creation
 
-  Tasks:
-  1. Verify topic subdirectories exist:
-     - reports/
-     - plans/
-     - summaries/
-     - debug/
-     - scripts/
-     - outputs/
-     - artifacts/
-     - backups/
+    Tasks:
+    1. Verify topic subdirectories exist:
+       - reports/
+       - plans/
+       - summaries/
+       - debug/
+       - scripts/
+       - outputs/
+       - artifacts/
+       - backups/
 
-  2. Create any missing subdirectories
+    2. Create any missing subdirectories
 
-  3. Create .gitkeep in debug/ subdirectory (ensures directory tracked in git)
+    3. Create .gitkeep in debug/ subdirectory (ensures directory tracked in git)
 
-  4. Validate gitignore compliance:
-     - Debug reports should NOT be gitignored
-     - All other subdirectories should be gitignored
+    4. Validate gitignore compliance:
+       - Debug reports should NOT be gitignored
+       - All other subdirectories should be gitignored
 
-  5. Initialize plan metadata cross-reference section if missing
+    5. Initialize plan metadata cross-reference section if missing
 
-  Return:
-  - Verification status (subdirectories_ok: true/false, gitignore_ok: true/false)
-  - List of subdirectories created (if any)
-  - Any warnings or issues encountered
-  - Confirmation message for user
+    Return:
+    - Verification status (subdirectories_ok: true/false, gitignore_ok: true/false)
+    - List of subdirectories created (if any)
+    - Any warnings or issues encountered
+    - Confirmation message for user
+}
 ```
 
-#### Step 9.2: Handle Spec-Updater Response
+**Template Variables** (ONLY allowed modifications):
+- `{plan_path}`: Absolute plan file path (from STEP 9)
+- `{topic_dir}`: Topic directory path (from STEP 3)
 
-After spec-updater completes:
-- Display verification status to user
-- If warnings/issues: Show them and suggest fixes
-- If successful: Continue to complexity evaluation
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Task list (1-5)
+- Return format requirements
 
-**Example Output**:
+---
+
+**STEP 11 (REQUIRED AFTER STEP 10) - Mandatory Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm Topic Structure Valid**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify topic structure is valid. This is NOT optional.
+
+#### Step 11.1: Handle Spec-Updater Response
+
+**Verification Steps**:
+
+```bash
+# Parse agent response for verification status
+VERIFICATION_STATUS=$(echo "$AGENT_OUTPUT" | jq -r '.subdirectories_ok')
+GITIGNORE_STATUS=$(echo "$AGENT_OUTPUT" | jq -r '.gitignore_ok')
+
+# MANDATORY: Verify topic structure
+if [ "$VERIFICATION_STATUS" != "true" ] || [ "$GITIGNORE_STATUS" != "true" ]; then
+  echo "⚠️  TOPIC STRUCTURE INCOMPLETE - Triggering fallback mechanism"
+
+  # Fallback: Create subdirectories manually
+  for subdir in reports plans summaries debug scripts outputs artifacts backups; do
+    mkdir -p "${TOPIC_DIR}/${subdir}"
+  done
+
+  # Create .gitkeep in debug/
+  touch "${TOPIC_DIR}/debug/.gitkeep"
+
+  # Verify .gitignore compliance
+  if [ -f ".gitignore" ]; then
+    # Ensure gitignored subdirectories are listed
+    for subdir in scripts outputs artifacts backups; do
+      if ! grep -q "specs/.*/${subdir}/" .gitignore 2>/dev/null; then
+        echo "specs/**/${subdir}/" >> .gitignore
+      fi
+    done
+  fi
+
+  echo "✓ Fallback: Topic structure created manually"
+fi
+
+# Display verification status to user
+if [ "$VERIFICATION_STATUS" = "true" ] && [ "$GITIGNORE_STATUS" = "true" ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Topic structure verified:"
+  echo "✓ All subdirectories present"
+  echo "✓ Gitignore compliance validated"
+  echo "✓ Debug directory ready for issue tracking"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
+
+# If warnings/issues present, display them
+WARNINGS=$(echo "$AGENT_OUTPUT" | jq -r '.warnings[]' 2>/dev/null)
+if [ -n "$WARNINGS" ]; then
+  echo "⚠️  Warnings from spec-updater:"
+  echo "$WARNINGS"
+fi
 ```
-Topic structure verified:
-✓ All subdirectories present
-✓ Gitignore compliance validated
-✓ Debug directory ready for issue tracking
-```
+
+**Fallback Mechanism** (Guarantees 100% Topic Structure):
+- If agent fails → Create subdirectories manually
+- If subdirectories missing → Create them with mkdir -p
+- If .gitkeep missing → Create it with touch
+- If gitignore incomplete → Update it manually
+
+---
 
 ### 10. Post-Creation Automatic Complexity Evaluation
 
@@ -1020,5 +1263,43 @@ For agent invocation patterns, see [Agent Invocation Patterns](../docs/command-p
 - Adds expansion hints if complexity ≥50
 - Follows project standards from CLAUDE.md
 - Uses /implement-compatible checkbox format
+
+---
+
+## Checkpoint Reporting
+
+**YOU MUST report plan creation checkpoint. This is NOT optional.**
+
+**CHECKPOINT REQUIREMENT - Report Plan Creation Complete**
+
+**ABSOLUTE REQUIREMENT**: After spec-updater verification and plan file creation, YOU MUST report this checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Checkpoint reporting provides confirmation that plan was created successfully with all metadata and cross-references.
+
+**Report Format**:
+
+```
+CHECKPOINT: Plan Creation Complete
+- Plan: ${PLAN_PATH}
+- Topic: ${TOPIC_DIR}
+- Complexity: ${PLAN_COMPLEXITY_SCORE}
+- Phases: ${PHASE_COUNT}
+- Estimated Hours: ${ESTIMATED_HOURS}
+- Research Reports: ${REPORT_COUNT}
+- Topic Structure: ✓ VERIFIED
+- Status: READY FOR IMPLEMENTATION
+```
+
+**Required Information**:
+- Plan file path (absolute path from STEP 9)
+- Topic directory (from STEP 3)
+- Complexity score (from STEP 6)
+- Phase count (from STEP 6)
+- Estimated hours (from STEP 6)
+- Number of research reports used (if any)
+- Topic structure verification status (from STEP 11)
+- Ready for implementation confirmation
+
+---
 
 Let me analyze your feature requirements and create a comprehensive implementation plan.
