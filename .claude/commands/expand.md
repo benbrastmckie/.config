@@ -390,6 +390,14 @@ Task {
 
 #### Phase 3: Parallel Agent Invocation
 
+**YOU MUST invoke expansion agents in parallel. This is NOT optional.**
+
+**EXECUTE NOW - Invoke Parallel Expansion Agents**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke all expansion agents in a SINGLE message with multiple Task calls. This is NOT optional.
+
+**WHY THIS MATTERS**: Parallel agent invocation reduces expansion time by 60-80% compared to sequential execution. Single-message invocation is MANDATORY for true parallelism.
+
 Use parallel execution functions from auto-analysis-utils.sh:
 
 ```bash
@@ -406,23 +414,49 @@ agent_tasks=$(invoke_expansion_agents_parallel "$PLAN_PATH" "$agent_response")
 # ]
 ```
 
-**Invoke Task tool in parallel for all agents:**
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE for each expansion agent (No modifications, no paraphrasing):
+
+**CRITICAL**: All Task tool calls MUST be in a SINGLE message for true parallel execution.
 
 ```
-For each agent task, invoke Task tool concurrently (single message, multiple Task calls):
+For each agent task in agent_tasks array, invoke Task tool:
 
 Task {
   subagent_type: "general-purpose"
   description: "Expand phase N for plan"
-  prompt: [agent_prompt from agent_tasks JSON]
+  prompt: [agent_prompt from agent_tasks JSON - use exact prompt, no modifications]
 }
 ```
 
-**Critical**: All Task tool calls must be in a single response for true parallel execution.
+**Parallel Invocation Requirements**:
+- MUST invoke ALL agents in ONE message (not sequential)
+- MUST use exact prompts from agent_tasks JSON
+- MUST NOT modify agent prompts
+- Maximum 3 agents per parallel batch (split if more)
+
+**Template Variables** (ONLY allowed modifications):
+- Agent prompts are dynamically generated (use as-is from JSON)
+
+**DO NOT modify**:
+- Agent behavioral guidelines paths in prompts
+- Agent role statements in prompts
+- Output format requirements in prompts
 
 #### Phase 4: Artifact Aggregation
 
+**YOU MUST verify all expansion artifacts were created. This is NOT optional.**
+
+**MANDATORY VERIFICATION - Confirm All Expansion Files Created**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify all expansion artifact files exist. This is NOT optional.
+
+**WHY THIS MATTERS**: Missing expansion files mean incomplete phase details, causing implementation failures later.
+
 After all agents complete, collect and validate results:
+
+**Verification Steps**:
 
 ```bash
 # Load artifact references (paths only, not content)
@@ -441,7 +475,63 @@ aggregation_result=$(aggregate_expansion_artifacts "$PLAN_PATH" "$artifact_refs"
 #     ...
 #   ]
 # }
+
+# MANDATORY: Verify all artifacts exist
+FAILED_COUNT=$(echo "$aggregation_result" | jq -r '.failed')
+if [ "$FAILED_COUNT" -gt 0 ]; then
+  echo "⚠️  EXPANSION ARTIFACTS MISSING - Triggering fallback mechanism"
+
+  # Fallback: Check each artifact and create minimal versions for failures
+  echo "$artifact_refs" | jq -c '.[]' | while read -r artifact; do
+    ARTIFACT_PATH=$(echo "$artifact" | jq -r '.artifact_path')
+    ITEM_ID=$(echo "$artifact" | jq -r '.item_id')
+
+    if [ ! -f "$ARTIFACT_PATH" ]; then
+      echo "Creating fallback artifact: $ARTIFACT_PATH"
+
+      # Extract phase/stage content from main plan
+      PHASE_NUM=$(echo "$ITEM_ID" | grep -oP '\d+')
+      PHASE_CONTENT=$(extract_phase_content "$PLAN_PATH" "$PHASE_NUM")
+
+      # Create minimal expansion file
+      mkdir -p "$(dirname "$ARTIFACT_PATH")"
+      cat > "$ARTIFACT_PATH" <<EOF
+# Phase $PHASE_NUM Expansion (Fallback)
+
+## Original Content
+$PHASE_CONTENT
+
+## Note
+This expansion was created via fallback mechanism.
+Agent expansion failed - manual enhancement recommended.
+EOF
+
+      echo "✓ Fallback artifact created: $ARTIFACT_PATH"
+    fi
+  done
+
+  # Re-aggregate after fallback creation
+  aggregation_result=$(aggregate_expansion_artifacts "$PLAN_PATH" "$artifact_refs")
+fi
+
+# Verify all artifacts now exist
+SUCCESSFUL_COUNT=$(echo "$aggregation_result" | jq -r '.successful')
+TOTAL_COUNT=$(echo "$aggregation_result" | jq -r '.total')
+
+if [ "$SUCCESSFUL_COUNT" -ne "$TOTAL_COUNT" ]; then
+  echo "❌ CRITICAL: Not all expansion artifacts created: $SUCCESSFUL_COUNT/$TOTAL_COUNT"
+  echo "Manual intervention required"
+  exit 1
+fi
+
+echo "✓ All $SUCCESSFUL_COUNT expansion artifacts verified"
 ```
+
+**Fallback Mechanism** (Guarantees 100% Artifact Creation):
+- If agent fails → Extract phase content from main plan
+- Create minimal expansion file with original content
+- Mark as fallback for manual enhancement later
+- Non-blocking (expansion continues)
 
 **Context reduction**: Artifact-based aggregation uses ~50 words per operation vs 200+ for full content (60-80% reduction).
 
@@ -694,6 +784,40 @@ if [[ "$STATUS" == "success" ]]; then
   # Continue processing...
 fi
 ```
+
+## Checkpoint Reporting
+
+**YOU MUST report expansion checkpoint. This is NOT optional.**
+
+**CHECKPOINT REQUIREMENT - Report Expansion Complete**
+
+**ABSOLUTE REQUIREMENT**: After expansion completes, YOU MUST report this checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Checkpoint reporting confirms successful expansion with all artifacts created and metadata updated.
+
+**Report Format**:
+
+```
+CHECKPOINT: Expansion Complete
+- Type: [phase|stage] expansion
+- Plan: ${PLAN_PATH}
+- Items Expanded: ${EXPANDED_COUNT}
+- Structure Level: ${OLD_LEVEL} → ${NEW_LEVEL}
+- Artifacts Created: ${ARTIFACT_COUNT}
+- Metadata: ✓ UPDATED
+- Status: READY FOR IMPLEMENTATION
+```
+
+**Required Information**:
+- Expansion type (phase or stage)
+- Plan file path
+- Number of items expanded
+- Structure level change (0→1 or 1→2)
+- Number of artifact files created
+- Metadata update confirmation
+- Ready for implementation status
+
+---
 
 ## Standards Applied
 
