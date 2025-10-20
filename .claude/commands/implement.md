@@ -8,11 +8,23 @@ dependent-commands: list, update, revise, debug, document, expand, github-specia
 
 # Execute Implementation Plan
 
-I'll help you systematically implement the plan file with automated testing and commits at each phase.
+**YOU MUST perform systematic implementation following this exact process:**
+
+**CRITICAL INSTRUCTIONS**:
+- Execute phases in EXACT sequential order
+- DO NOT skip testing after each phase
+- DO NOT skip git commits
+- DO NOT proceed if tests fail (unless debugging mode)
+- MANDATORY: Update plan file after each phase
 
 ## Plan Information
-- **Plan file**: $1 (or I'll find the most recent incomplete plan)
-- **Starting phase**: $2 (default: resume from last incomplete phase or 1)
+
+**INPUTS REQUIRED**:
+- **Plan file**: $1 (absolute path, or auto-detected most recent incomplete plan)
+- **Starting phase**: $2 (default: auto-resume from last incomplete phase or 1)
+
+**MANDATORY INPUT VALIDATION**:
+Before proceeding, verify plan file exists and is readable.
 
 ## Adaptive Planning Features
 
@@ -153,7 +165,24 @@ For standards discovery patterns, see:
 
 ## Process
 
-### Utility Initialization
+**YOU MUST execute these steps in EXACT sequential order:**
+
+---
+
+### STEP 1 (REQUIRED BEFORE STEP 2) - Utility Initialization
+
+**EXECUTE NOW - Initialize Required Utilities**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST initialize all required utilities before beginning implementation. This is NOT optional.
+
+**WHY THIS MATTERS**: Utilities provide error handling, state management, and logging that are critical for reliable implementation. Skipping initialization will cause failures.
+
+**Utilities REQUIRED**:
+1. error-handling.sh (error classification and recovery)
+2. checkpoint-utils.sh (workflow state persistence)
+3. complexity-utils.sh (phase complexity scoring)
+4. adaptive-planning-logger.sh (trigger evaluation logging)
+5. agent-registry-utils.sh (agent invocation management)
 
 Initialize required utilities for consistent error handling, state management, and logging before beginning implementation.
 
