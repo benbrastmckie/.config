@@ -17,6 +17,23 @@
 - **Type**: plans
 - **Number**: 001
 
+## Spec Updater Checklist
+
+Standard checklist for artifact management within topic-based structure:
+
+- [x] Plan located in topic-based directory structure (specs/068_orchestrate_execution_enforcement/plans/)
+- [x] Standard subdirectories exist (reports/, plans/, summaries/, debug/, scripts/, outputs/)
+- [x] Cross-references use relative paths
+- [ ] Implementation summary created when complete (summaries/001_*.md)
+- [x] Gitignore compliance verified (debug/ committed, others ignored)
+- [x] Artifact metadata complete
+- [x] Bidirectional cross-references validated
+
+**Spec Updater Agent**: `.claude/agents/spec-updater.md`
+**Management Utilities**: `.claude/lib/metadata-extraction.sh`
+
+See [Spec Updater Guide](../../docs/workflows/spec_updater_guide.md) for artifact lifecycle management.
+
 ## Overview
 
 The /orchestrate command, other high-priority commands (/implement, /plan, /expand), and subagent prompts suffer from **execution enforcement gaps** where Claude Code may interpret behavioral instructions loosely, skip critical steps, or simplify procedures, leading to incomplete execution (e.g., research agents not creating report files).
@@ -259,6 +276,27 @@ Current Flow:                          Fixed Flow:
 5. Continue to planning                5. CHECKPOINT: Report completion
                                        6. Continue to planning
 ```
+
+### Cross-Reference Metadata Pattern
+
+This plan references external documentation. When implementing, use metadata extraction to minimize context usage:
+
+**Standards Documents** (metadata-only references):
+- Path: `.claude/docs/reference/command_architecture_standards.md`
+- Standard: Standard 0 (Execution Enforcement)
+- Relevant Sections: Patterns 1-5, Agent invocation patterns
+- Context Reduction: 95% (250 tokens vs 5000 tokens)
+
+**Extraction Pattern**:
+```bash
+# Extract metadata from standards documents
+METADATA=$(extract_report_metadata "$STANDARDS_PATH")
+# Returns: {path, 50-word summary, key_patterns[]}
+
+# Use Read tool selectively for specific patterns only
+```
+
+Use metadata-only passing when invoking agents or creating cross-references to reduce context consumption from 5000+ tokens to <300 tokens per reference.
 
 ## Implementation Phases
 
