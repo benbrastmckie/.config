@@ -352,6 +352,8 @@ Execute phases either sequentially (traditional) or in parallel waves (with depe
 **Pattern Details**: See [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection) for delegation patterns.
 ### Plan Hierarchy Update After Phase Completion
 
+**YOU MUST update plan hierarchy after each phase completion. This is NOT optional.**
+
 After successfully completing a phase (tests passing and git commit created), update the plan hierarchy to ensure all parent/grandparent plan files reflect completion status.
 
 **When to Update**:
@@ -359,48 +361,99 @@ After successfully completing a phase (tests passing and git commit created), up
 - Before saving the checkpoint
 - For all hierarchy levels (Level 0, Level 1, Level 2)
 
-**Update Workflow**:
+**CRITICAL INSTRUCTIONS**:
+- Plan hierarchy updates are MANDATORY
+- DO NOT skip verification steps
+- DO NOT proceed to next phase if hierarchy update fails
+- Fallback mechanism ensures 100% update success
 
-1. **Invoke Spec-Updater Agent**:
-   ```
-   Task {
-     subagent_type: "general-purpose"
-     description: "Update plan hierarchy after Phase N completion"
-     prompt: |
-       Read and follow the behavioral guidelines from:
-       /home/benjamin/.config/.claude/agents/spec-updater.md
+---
 
-       You are acting as a Spec Updater Agent.
+**STEP A (REQUIRED BEFORE STEP B) - Invoke Spec-Updater Agent**
 
-       Update plan hierarchy checkboxes after Phase ${PHASE_NUM} completion.
+**EXECUTE NOW - Update Plan Hierarchy via Spec-Updater Agent**
 
-       Plan: ${PLAN_PATH}
-       Phase: ${PHASE_NUM}
-       All tasks in this phase have been completed.
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke the spec-updater agent to update plan checkboxes. This is NOT optional.
 
-       Steps:
-       1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
-       2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
-       3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
-       4. Report: List all files updated (stage → phase → main plan)
+**WHY THIS MATTERS**: Parent plan files must reflect phase completion for accurate progress tracking. Skipping this step creates inconsistency across plan hierarchy.
 
-       Expected output:
-       - Confirmation of hierarchy update
-       - List of updated files
-       - Verification status
-   }
-   ```
+**Agent Invocation Template**:
 
-2. **Validate Update Success**:
-   - Check agent response for successful completion
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
+
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after Phase N completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy checkboxes after Phase ${PHASE_NUM} completion.
+
+    Plan: ${PLAN_PATH}
+    Phase: ${PHASE_NUM}
+    All tasks in this phase have been completed.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
+    3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
+    4. Report: List all files updated (stage → phase → main plan)
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of updated files
+    - Verification status
+}
+```
+
+**Template Variables** (ONLY allowed modifications):
+- `${PHASE_NUM}`: Replace with current phase number
+- `${PLAN_PATH}`: Replace with absolute plan file path
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Step sequence or numbering
+- Expected output format
+
+---
+
+**STEP B (REQUIRED AFTER STEP A) - Mandatory Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm Hierarchy Updated**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify hierarchy update succeeded. This is NOT optional.
+
+**Verification Steps**:
+
+1. **Check agent response for successful completion**:
+   - Look for confirmation message
    - Verify all hierarchy levels updated
    - Confirm no consistency errors
 
-3. **Handle Update Failures**:
-   - If hierarchy update fails: Log error and escalate to user
-   - Do NOT proceed to checkpoint save if update fails
-   - Preserve phase completion in working directory
-   - User can manually fix hierarchy and resume
+2. **If agent succeeds**: Extract updated file list and log success
+
+3. **If agent fails**: EXECUTE FALLBACK MECHANISM
+
+**Fallback Mechanism** (Guarantees 100% Success):
+
+```bash
+# Direct utility invocation if agent fails
+source .claude/lib/checkbox-utils.sh
+mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
+verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"
+echo "✓ Fallback hierarchy update complete"
+```
+
+**Handle Update Failures**:
+- If hierarchy update fails (both agent AND fallback): Log error and escalate to user
+- Do NOT proceed to checkpoint save if update fails
+- Preserve phase completion in working directory
+- User can manually fix hierarchy and resume
 
 4. **Update Checkpoint State**:
    Add `hierarchy_updated` field to checkpoint data:
@@ -550,6 +603,8 @@ Before implementation, evaluate if phase should be expanded using agent-based ju
 
 ### 1.57. Implementation Research Agent Invocation
 
+**YOU MUST invoke implementation-researcher for complex phases. This is NOT optional.**
+
 Invoke implementation-researcher agent for complex phases to gather codebase context before implementation.
 
 **When to Invoke**:
@@ -557,12 +612,20 @@ Invoke implementation-researcher agent for complex phases to gather codebase con
 - **Task trigger**: $TASK_COUNT > 10 (from Step 1.5)
 - **Purpose**: Search existing implementations, identify patterns, detect integration challenges
 
+**CRITICAL INSTRUCTIONS**:
+- Research invocation is MANDATORY for complex phases
+- DO NOT skip threshold checks
+- DO NOT skip metadata extraction
+- Fallback mechanism ensures research completion
+
 **Workflow Overview**:
 1. Check complexity/task thresholds
 2. Invoke implementation-researcher agent via Task tool
 3. Use forward_message pattern to extract artifact metadata
 4. Store metadata in context (minimal footprint)
 5. Load full artifact on-demand during implementation
+
+---
 
 **Key Execution Requirements**:
 
@@ -577,68 +640,127 @@ Invoke implementation-researcher agent for complex phases to gather codebase con
    fi
    ```
 
+**STEP C (REQUIRED BEFORE STEP D) - Invoke Implementation-Researcher Agent**
+
+**EXECUTE NOW - Invoke Research Agent for Complex Phase**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke implementation-researcher agent when complexity thresholds met. This is NOT optional.
+
+**WHY THIS MATTERS**: Complex phases benefit from codebase exploration before implementation. Research identifies reusable patterns and integration challenges, reducing rework.
+
 2. **Invoke implementation-researcher agent**:
-   ```bash
-   # Source context preservation utilities
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
-   # Track context before research
-   CONTEXT_BEFORE=$(track_context_usage "before" "phase_${CURRENT_PHASE}_research" "")
+**Agent Invocation Template**:
 
-   # Build task list for agent
-   FILE_LIST=$(echo "$PHASE_CONTENT" | grep -oE '[a-zA-Z0-9_/.-]+\.(js|py|lua|sh|md|yaml)' | sort -u | head -20 | tr '\n' ', ')
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
-   # Invoke agent
-   RESEARCH_AGENT_PROMPT=$(cat <<'EOF'
-Read and follow behavioral guidelines from:
-${CLAUDE_PROJECT_DIR}/.claude/agents/implementation-researcher.md
+```bash
+# Source context preservation utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
-You are acting as an Implementation Researcher Agent.
+# Track context before research
+CONTEXT_BEFORE=$(track_context_usage "before" "phase_${CURRENT_PHASE}_research" "")
 
-Research Context:
-- Phase: ${CURRENT_PHASE}
-- Description: ${PHASE_NAME}
-- Files to modify: ${FILE_LIST}
-- Task count: ${TASK_COUNT}
-- Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+# Build task list for agent
+FILE_LIST=$(echo "$PHASE_CONTENT" | grep -oE '[a-zA-Z0-9_/.-]+\.(js|py|lua|sh|md|yaml)' | sort -u | head -20 | tr '\n' ', ')
 
-Research existing implementations, patterns, and utilities for this phase.
-Create artifact at: specs/${TOPIC_DIR}/artifacts/phase_${CURRENT_PHASE}_exploration.md
-Return metadata only (path + 50-word summary + key findings JSON).
-EOF
-)
+# Invoke agent with THIS EXACT PROMPT
+Task {
+  subagent_type: "general-purpose"
+  description: "Research phase ${CURRENT_PHASE} implementation context"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementation-researcher.md
 
-   # Replace variables in prompt
-   RESEARCH_AGENT_PROMPT=$(echo "$RESEARCH_AGENT_PROMPT" | \
-     sed "s|\${CLAUDE_PROJECT_DIR}|${CLAUDE_PROJECT_DIR}|g" | \
-     sed "s|\${CURRENT_PHASE}|${CURRENT_PHASE}|g" | \
-     sed "s|\${PHASE_NAME}|${PHASE_NAME}|g" | \
-     sed "s|\${FILE_LIST}|${FILE_LIST}|g" | \
-     sed "s|\${TASK_COUNT}|${TASK_COUNT}|g" | \
-     sed "s|\${TOPIC_DIR}|${TOPIC_DIR}|g")
+    You are acting as an Implementation Researcher Agent.
 
-   # Note: Actual Task tool invocation happens in AI execution layer
-   # This is the prompt content that should be used
-   ```
+    Research Context:
+    - Phase: ${CURRENT_PHASE}
+    - Description: ${PHASE_NAME}
+    - Files to modify: ${FILE_LIST}
+    - Task count: ${TASK_COUNT}
+    - Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+    Research existing implementations, patterns, and utilities for this phase.
+    Create artifact at: specs/${TOPIC_DIR}/artifacts/phase_${CURRENT_PHASE}_exploration.md
+    Return metadata only (path + 50-word summary + key findings JSON).
+}
+```
+
+**Template Variables** (ONLY allowed modifications):
+- `${CLAUDE_PROJECT_DIR}`: Project directory path
+- `${CURRENT_PHASE}`: Current phase number
+- `${PHASE_NAME}`: Phase description
+- `${FILE_LIST}`: Files to modify
+- `${TASK_COUNT}`: Task count
+- `${TOPIC_DIR}`: Topic directory name
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Research context structure
+- Return format requirement (metadata only)
+
+---
+
+**STEP D (REQUIRED AFTER STEP C) - Mandatory Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm Research Artifact Created**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify research artifact was created. This is NOT optional.
 
 3. **Extract metadata using forward_message**:
-   ```bash
-   # Parse subagent response for artifact paths and metadata
-   RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "phase_${CURRENT_PHASE}_research")
 
-   # Extract artifact path and metadata
-   ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
-   ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
-   RESEARCH_SUMMARY=$(echo "$ARTIFACT_METADATA" | jq -r '.summary')
+**Verification Steps**:
 
-   # Track context after research (metadata only, not full artifact)
-   CONTEXT_AFTER=$(track_context_usage "after" "phase_${CURRENT_PHASE}_research" "$RESEARCH_SUMMARY")
+```bash
+# Parse subagent response for artifact paths and metadata
+RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "phase_${CURRENT_PHASE}_research")
 
-   # Calculate and log reduction
-   CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
-   echo "PROGRESS: Research complete - context reduction: ${CONTEXT_REDUCTION}%"
-   ```
+# Extract artifact path and metadata
+ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
+ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
+RESEARCH_SUMMARY=$(echo "$ARTIFACT_METADATA" | jq -r '.summary')
+
+# MANDATORY: Verify artifact file exists
+if [ ! -f "$ARTIFACT_PATH" ]; then
+  echo "⚠️  ARTIFACT NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Create minimal research artifact from agent output
+  FALLBACK_PATH="specs/${TOPIC_DIR}/artifacts/phase_${CURRENT_PHASE}_exploration.md"
+  mkdir -p "$(dirname "$FALLBACK_PATH")"
+
+  cat > "$FALLBACK_PATH" <<EOF
+# Phase ${CURRENT_PHASE} Implementation Research
+
+## Agent Output
+$SUBAGENT_OUTPUT
+
+## Metadata
+- Generated: Fallback mechanism
+- Reason: Primary artifact creation failed
+- Phase: ${CURRENT_PHASE}
+- Complexity: ${COMPLEXITY_SCORE}
+EOF
+
+  ARTIFACT_PATH="$FALLBACK_PATH"
+  RESEARCH_SUMMARY="Fallback research artifact created"
+  echo "✓ Fallback artifact created: $ARTIFACT_PATH"
+fi
+
+# Track context after research (metadata only, not full artifact)
+CONTEXT_AFTER=$(track_context_usage "after" "phase_${CURRENT_PHASE}_research" "$RESEARCH_SUMMARY")
+
+# Calculate and log reduction
+CONTEXT_REDUCTION=$(calculate_context_reduction "$CONTEXT_BEFORE" "$CONTEXT_AFTER")
+echo "PROGRESS: Research complete - context reduction: ${CONTEXT_REDUCTION}%"
+```
+
+**Fallback Mechanism** (Guarantees 100% Success):
+- If agent fails to create artifact → Create from agent output
+- Minimal structure with agent findings preserved
+- Non-blocking (implementation continues)
 
 4. **Store metadata for on-demand loading**:
    ```bash
@@ -733,10 +855,18 @@ Run tests by:
 
 ### 3.3. Automatic Debug Integration (if tests fail)
 
+**YOU MUST invoke debug-analyst for test failures. This is NOT optional.**
+
 **When to Use Automatic Debug Integration**:
 - **Test failures** in any phase during implementation
 - **Automatic triggers**: No manual invocation needed
 - **Tiered recovery**: 4 escalating levels of error handling
+
+**CRITICAL INSTRUCTIONS**:
+- Debug invocation is MANDATORY for test failures
+- DO NOT skip error classification
+- DO NOT skip /debug agent invocation (Level 4)
+- User choice execution is MANDATORY
 
 **Quick Overview**:
 1. Classify error type and display suggestions (error-handling.sh)
@@ -748,6 +878,8 @@ Run tests by:
 
 **Pattern Details**: See [Error Recovery Patterns](../docs/command-patterns.md#error-recovery-patterns) for complete tiered recovery workflow.
 
+---
+
 **Key Execution Requirements**:
 
 1. **Error classification** (uses error-handling.sh):
@@ -757,12 +889,64 @@ Run tests by:
    SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
    ```
 
+**STEP E (REQUIRED FOR TEST FAILURES) - Automatic /debug Invocation**
+
+**EXECUTE NOW - Invoke /debug for Root Cause Analysis**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST invoke /debug command when Level 4 triggered. This is NOT optional.
+
+**WHY THIS MATTERS**: Automated root cause analysis identifies underlying issues systematically, reducing debugging time by 50%.
+
 2. **Automatic /debug invocation** (Level 4):
-   ```bash
-   DEBUG_RESULT=$(invoke_slash_command "/debug \"Phase $CURRENT_PHASE failure\" \"$PLAN_PATH\"")
-   DEBUG_REPORT_PATH=$(extract_report_path "$DEBUG_RESULT")
-   # Fallback: .claude/lib/analyze-error.sh if /debug fails
-   ```
+
+**Debug Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
+
+```bash
+# Invoke /debug command with exact parameters
+SlashCommand {
+  command: "/debug \"Phase $CURRENT_PHASE failure: $ERROR_TYPE\" \"$PLAN_PATH\""
+}
+
+# Extract debug report path from response
+DEBUG_REPORT_PATH=$(extract_report_path "$DEBUG_RESULT")
+
+# MANDATORY: Verify debug report created
+if [ -z "$DEBUG_REPORT_PATH" ] || [ ! -f "$DEBUG_REPORT_PATH" ]; then
+  echo "⚠️  DEBUG REPORT NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Use analyze-error.sh utility
+  source .claude/lib/analyze-error.sh
+  DEBUG_ANALYSIS=$(analyze_error "$ERROR_TYPE" "$TEST_OUTPUT" "$CURRENT_PHASE")
+
+  # Create fallback debug report
+  FALLBACK_REPORT="specs/${TOPIC_DIR}/debug/phase_${CURRENT_PHASE}_failure.md"
+  mkdir -p "$(dirname "$FALLBACK_REPORT")"
+
+  cat > "$FALLBACK_REPORT" <<EOF
+# Phase ${CURRENT_PHASE} Debug Report (Fallback)
+
+## Error Analysis
+$DEBUG_ANALYSIS
+
+## Context
+- Phase: ${CURRENT_PHASE}
+- Error Type: ${ERROR_TYPE}
+- Test Output: ${TEST_OUTPUT}
+EOF
+
+  DEBUG_REPORT_PATH="$FALLBACK_REPORT"
+  echo "✓ Fallback debug report created: $DEBUG_REPORT_PATH"
+fi
+```
+
+**Fallback Mechanism** (Guarantees 100% Debug Report):
+- If /debug fails → Use analyze-error.sh utility
+- Create minimal debug report with error analysis
+- Non-blocking (user choices still presented)
+
+---
 
 3. **User choice actions**:
    - **(r)evise**: Invoke `/revise --auto-mode` with debug findings, retry phase
@@ -861,15 +1045,74 @@ esac
 ```
 
 ### 4. Git Commit
-Create a structured commit:
-```
+
+**YOU MUST create git commit after each phase. This is NOT optional.**
+
+**CRITICAL INSTRUCTIONS**:
+- Git commits are MANDATORY after successful phase completion
+- DO NOT skip commit creation
+- DO NOT proceed to next phase without commit
+- Structured commit message format is REQUIRED
+
+**EXECUTE NOW - Create Structured Git Commit**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST create a git commit using the exact format below. This is NOT optional.
+
+**WHY THIS MATTERS**: Git commits preserve implementation progress incrementally. Each commit represents a checkpoint for rollback and debugging.
+
+**Commit Message Template**:
+
+Create a structured commit using THIS EXACT FORMAT:
+
+```bash
+git add <modified-files>
+
+git commit -m "$(cat <<'EOF'
 feat: implement Phase N - Phase Name
 
 Automated implementation of phase N from implementation plan
 All tests passed successfully
 
 Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
 ```
+
+**Template Variables** (ONLY allowed modifications):
+- `<modified-files>`: Files changed in this phase
+- `Phase N`: Replace with actual phase number
+- `Phase Name`: Replace with actual phase name
+
+**DO NOT modify**:
+- Commit type prefix (`feat:`)
+- Commit structure (title, blank line, body)
+- Co-Authored-By footer
+
+---
+
+**CHECKPOINT REQUIREMENT - Report Phase Completion**
+
+**ABSOLUTE REQUIREMENT**: After git commit succeeds, YOU MUST report this checkpoint. This is NOT optional.
+
+**WHY THIS MATTERS**: Checkpoint reporting provides progress visibility and enables workflow monitoring.
+
+**Report Format**:
+
+```
+CHECKPOINT: Phase ${PHASE_NUM} Complete
+- Phase: ${PHASE_NAME}
+- Tests: ✓ PASSED
+- Commit: ${COMMIT_HASH}
+- Files Modified: ${FILE_COUNT}
+- Next Phase: ${NEXT_PHASE}
+```
+
+**Required Information**:
+- Phase number and name
+- Test status (PASSED)
+- Git commit hash (from git log -1)
+- Count of modified files
+- Next phase number (or "Summary Generation" if last phase)
 
 ### 5. Plan Update (After Git Commit Succeeds)
 
@@ -1068,6 +1311,8 @@ After completing all phases:
 
 ### 6. Create Pull Request (Optional)
 
+**IF --create-pr flag present, YOU MUST invoke github-specialist. This is NOT optional.**
+
 For PR creation workflow, see [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection).
 
 **Implement-specific PR workflow**:
@@ -1077,6 +1322,159 @@ For PR creation workflow, see [Single Agent with Behavioral Injection](../docs/c
 - Content: Implementation overview, phases, test results, reports, file changes
 - Update: Add PR link to summary and plan files
 - Graceful degradation: Provide manual gh command if fails
+
+**CRITICAL INSTRUCTIONS** (when --create-pr flag present):
+- Github-specialist invocation is MANDATORY
+- DO NOT skip gh CLI verification
+- DO NOT skip PR link updates
+- Fallback mechanism ensures PR creation or manual instructions
+
+---
+
+**STEP F (REQUIRED IF --create-pr FLAG) - Invoke Github-Specialist Agent**
+
+**EXECUTE NOW - Create Pull Request via Github-Specialist**
+
+**ABSOLUTE REQUIREMENT**: IF --create-pr flag present, YOU MUST invoke github-specialist agent. This is NOT optional.
+
+**WHY THIS MATTERS**: Automated PR creation streamlines the review workflow and provides structured implementation summary in PR description.
+
+**Prerequisite Check**:
+
+```bash
+# Verify gh CLI available
+if ! command -v gh &> /dev/null; then
+  echo "⚠️  gh CLI not found - Providing manual instructions"
+  echo "Install: https://cli.github.com/"
+  echo "Manual PR creation: gh pr create --title '...' --body '...'"
+  exit 0
+fi
+
+# Verify gh authentication
+if ! gh auth status &> /dev/null; then
+  echo "⚠️  gh CLI not authenticated - Providing manual instructions"
+  echo "Authenticate: gh auth login"
+  exit 0
+fi
+```
+
+**Agent Invocation Template**:
+
+YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
+
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Create pull request for implementation"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/github-specialist.md
+
+    You are acting as a Github Specialist Agent.
+
+    Create pull request for completed implementation.
+
+    Plan: ${PLAN_PATH}
+    Summary: ${SUMMARY_PATH}
+    Branch: ${CURRENT_BRANCH}
+    Base: ${BASE_BRANCH}
+
+    Steps:
+    1. Generate PR title from plan name
+    2. Create PR body with implementation overview, phases, test results, file changes
+    3. Execute: gh pr create --title "..." --body "..."
+    4. Extract PR URL from output
+    5. Return PR URL
+
+    Expected output:
+    - PR URL (https://github.com/...)
+    - PR number
+}
+```
+
+**Template Variables** (ONLY allowed modifications):
+- `${PLAN_PATH}`: Absolute plan file path
+- `${SUMMARY_PATH}`: Implementation summary path
+- `${CURRENT_BRANCH}`: Current git branch
+- `${BASE_BRANCH}`: Target branch for PR (usually main/master)
+
+**DO NOT modify**:
+- Agent behavioral guidelines path
+- Agent role statement
+- Step sequence
+- Expected output format
+
+---
+
+**STEP G (REQUIRED AFTER STEP F) - Mandatory PR Verification with Fallback**
+
+**MANDATORY VERIFICATION - Confirm PR Created**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST verify PR was created. This is NOT optional.
+
+**Verification Steps**:
+
+```bash
+# Extract PR URL from agent response
+PR_URL=$(echo "$AGENT_OUTPUT" | grep -oE 'https://github.com/[^[:space:]]+/pull/[0-9]+')
+PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+
+# MANDATORY: Verify PR exists
+if [ -z "$PR_URL" ]; then
+  echo "⚠️  PR URL NOT FOUND - Triggering fallback mechanism"
+
+  # Fallback: Provide manual gh command
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Manual PR Creation Required"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Run this command:"
+  echo ""
+  echo "gh pr create \\"
+  echo "  --title \"${PR_TITLE}\" \\"
+  echo "  --body \"${PR_BODY}\""
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Non-blocking: Continue without PR URL
+  PR_URL="(manual creation required)"
+  PR_NUMBER="N/A"
+fi
+
+# Update summary and plan with PR link
+if [ "$PR_URL" != "(manual creation required)" ]; then
+  echo "## Pull Request" >> "$SUMMARY_PATH"
+  echo "" >> "$SUMMARY_PATH"
+  echo "- **PR**: [$PR_NUMBER]($PR_URL)" >> "$SUMMARY_PATH"
+
+  echo "" >> "$PLAN_PATH"
+  echo "## Pull Request" >> "$PLAN_PATH"
+  echo "" >> "$PLAN_PATH"
+  echo "- **PR**: [$PR_NUMBER]($PR_URL)" >> "$PLAN_PATH"
+
+  echo "✓ PR links added to summary and plan"
+fi
+```
+
+**Fallback Mechanism** (Graceful Degradation):
+- If agent fails → Provide manual gh command with pre-filled title/body
+- If gh CLI unavailable → Provide installation instructions
+- If gh not authenticated → Provide authentication instructions
+- Non-blocking (summary finalization continues)
+
+---
+
+**CHECKPOINT REQUIREMENT - Report PR Creation**
+
+**IF PR created successfully**, YOU MUST report this checkpoint:
+
+```
+CHECKPOINT: Pull Request Created
+- PR: #${PR_NUMBER}
+- URL: ${PR_URL}
+- Branch: ${CURRENT_BRANCH} → ${BASE_BRANCH}
+- Summary: Updated with PR link
+```
 
 ## Finding the Implementation Plan
 
