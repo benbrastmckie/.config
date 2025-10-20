@@ -182,11 +182,22 @@ The planning phase synthesizes research findings into a structured implementatio
      - No orchestration logic passed to agent
    ```
 
-2. **Agent Invocation** (Step 3):
+2. **Path Pre-Calculation** (Step 2):
+   ```bash
+   # Calculate topic-based plan path BEFORE agent invocation
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+   PLAN_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "plans" "implementation" "")
+   # Result: specs/{NNN_workflow}/plans/{NNN}_implementation.md
+   ```
+
+3. **Agent Invocation** (Step 3):
    - **SINGLE** Task tool invocation (sequential, not parallel)
    - Subagent type: general-purpose
    - Reference: plan-architect.md behavioral guidelines
-   - Agent can invoke /plan slash command
+   - **Behavioral Injection**: Pass pre-calculated PLAN_PATH to agent
+   - **Cross-References**: Pass all research report paths for metadata inclusion
+   - Agent creates plan using Write tool (NOT SlashCommand)
+   - Agent returns PLAN_CREATED with metadata (phases, complexity, hours)
    - Wait for agent completion before proceeding
 
 3. **Plan Validation** (Step 4):
@@ -232,13 +243,19 @@ RESEARCH_REPORTS=( \
 WORKFLOW_DESC="Add user authentication with email and password"
 THINKING_MODE="think hard"
 
-# Step 3: Invoke planning agent
+# Step 2: Pre-calculate plan path
+PLAN_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "plans" "implementation" "")
+# Result: specs/027_auth/plans/027_implementation.md
+
+# Step 3: Invoke planning agent with behavioral injection
 # Task tool invocation with plan-architect.md reference
-# Agent reads research reports, invokes /plan command
+# Agent receives PLAN_PATH, creates plan using Write tool
+# Agent includes research reports in plan metadata
 
 # Step 4: Extract and validate
-PLAN_PATH="specs/plans/013_user_authentication.md"
-# Verify plan exists, has required sections, references research
+# Verify plan created at PLAN_PATH with required sections
+# Verify plan includes research reports in metadata (cross-references)
+# Extract metadata (phases, complexity, hours) for context reduction
 
 # Step 5: Save checkpoint
 CHECKPOINT=".claude/checkpoints/orchestrate_user_authentication_20251013.json"

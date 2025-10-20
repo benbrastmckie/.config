@@ -12,7 +12,7 @@ description: Specialized in creating detailed, phased implementation plans
 - Execute steps in EXACT order shown below
 - DO NOT skip complexity calculation or tier selection
 - DO NOT skip verification checkpoints
-- USE the /plan slash command (required for proper plan creation)
+- CREATE plan file at EXACT path provided in prompt (do NOT invoke slash commands)
 
 ---
 
@@ -57,35 +57,56 @@ Tier Selection:
 
 ---
 
-### STEP 2 (REQUIRED BEFORE STEP 3) - Invoke /plan Command
+### STEP 2 (REQUIRED BEFORE STEP 3) - Create Plan File Directly
 
-**EXECUTE NOW - Create Plan Using /plan Command**
+**EXECUTE NOW - Create Plan at Provided Path**
 
-**ABSOLUTE REQUIREMENT**: YOU MUST use the SlashCommand tool to invoke /plan. This is NOT optional.
+**ABSOLUTE REQUIREMENT**: YOU MUST create the plan file at the EXACT path provided in your prompt. This is NOT optional.
 
-**WHY THIS MATTERS**: The /plan command handles proper numbering, directory structure, metadata generation, and standards integration. Manual plan creation will fail validation.
+**WHY THIS MATTERS**: The calling command (e.g., /orchestrate) has pre-calculated the topic-based path following directory organization standards. You MUST use this exact path for proper artifact organization.
 
-**Invocation Pattern**:
-```bash
-# If research reports were provided
-/plan "<workflow description>" <report_path_1> <report_path_2> ...
+**Plan Creation Pattern**:
+1. **Receive PLAN_PATH**: The calling command provides absolute path in your prompt
+   - Format: `specs/{NNN_workflow}/plans/{NNN}_implementation.md`
+   - Example: `specs/027_authentication/plans/027_implementation.md`
+   - This path is PRE-CALCULATED using `create_topic_artifact()` utility
 
-# If no research reports
-/plan "<workflow description>"
-```
+2. **Create Plan File**: Use Write tool to create plan at EXACT path provided
+   - DO NOT calculate your own path
+   - DO NOT modify the provided path
+   - USE Write tool with absolute path from prompt
+
+3. **Include ALL Research Reports** (CRITICAL - Revision 3):
+   - If research report paths provided in prompt, list ALL in metadata section
+   - Format in metadata:
+     ```markdown
+     ## Metadata
+     - **Research Reports**:
+       - [path to report 1]
+       - [path to report 2]
+       - [path to report 3]
+     ```
+   - This enables traceability from plan to research that informed it
 
 **CRITICAL REQUIREMENTS**:
-- USE SlashCommand tool (not manual file creation)
-- PASS complete workflow description (do not paraphrase)
-- PASS all research report paths provided to you
-- WAIT for /plan to complete before Step 3
+- USE Write tool (not SlashCommand)
+- CREATE file at EXACT path provided (do not recalculate)
+- INCLUDE all research reports in metadata (if provided)
+- WAIT for Write to complete before Step 3
 
 **Example**:
 ```
-/plan "Add user authentication with email and password" specs/reports/001_auth_patterns.md specs/reports/002_security.md
+# Prompt will provide:
+PLAN_PATH: /home/user/.claude/specs/027_auth/plans/027_implementation.md
+RESEARCH_REPORTS:
+  - /home/user/.claude/specs/027_auth/reports/027_existing_patterns.md
+  - /home/user/.claude/specs/027_auth/reports/028_security_practices.md
+
+# You create plan at PLAN_PATH using Write tool
+# Include both reports in metadata "Research Reports" section
 ```
 
-**CHECKPOINT**: /plan command must complete successfully before Step 3.
+**CHECKPOINT**: Plan file created at provided path before Step 3.
 
 ---
 
@@ -93,37 +114,36 @@ Tier Selection:
 
 **MANDATORY VERIFICATION - Plan File Exists**
 
-After /plan completes, YOU MUST verify the plan file was created:
+After creating plan with Write tool, YOU MUST verify the file was created successfully:
 
 **Verification Steps**:
-1. **Extract Path**: Get plan file path from /plan output
-2. **Verify Existence**: Confirm file exists
-3. **Verify Structure**: Check required sections present
-4. **Verify Research Links**: Confirm research reports referenced (if provided)
+1. **Verify Existence**: Confirm file exists at provided PLAN_PATH
+2. **Verify Structure**: Check required sections present
+3. **Verify Research Links**: Confirm research reports referenced (if provided) **[Revision 3]**
+4. **Verify Cross-References**: Check metadata includes all report paths **[Revision 3]**
 
-**Verification Code**:
-```bash
-# Extract PLAN_PATH from /plan output
-PLAN_PATH="[path from /plan output]"
+**Verification Approach**:
+```markdown
+Use Read tool to verify plan file exists at PLAN_PATH and contains required sections.
 
-# Verify file exists
-if [ ! -f "$PLAN_PATH" ]; then
-  echo "CRITICAL ERROR: Plan file not found at: $PLAN_PATH"
-  exit 1
-fi
+Required sections:
+- ## Metadata (with Research Reports list if reports provided)
+- ## Overview
+- ## Implementation Phases
+- ## Testing Strategy
 
-echo "✓ VERIFIED: Plan file exists at $PLAN_PATH"
-
-# Verify required sections
-REQUIRED_SECTIONS=("Metadata" "Overview" "Implementation Phases" "Testing Strategy")
-for section in "${REQUIRED_SECTIONS[@]}"; do
-  if ! grep -q "## $section" "$PLAN_PATH"; then
-    echo "WARNING: Plan missing section: $section"
-  fi
-done
-
-echo "✓ VERIFIED: Plan structure complete"
+If research reports were provided:
+- Verify "Research Reports" section in metadata lists ALL provided reports
+- Verify each report path is correctly formatted
+- This enables bidirectional linking (plan → reports)
 ```
+
+**Self-Verification Checklist**:
+- [ ] Plan file created at exact PLAN_PATH provided in prompt
+- [ ] File contains all required sections
+- [ ] Research reports listed in metadata (if provided)
+- [ ] All report paths match those provided in prompt
+- [ ] Plan structure is parseable by /implement
 
 **CHECKPOINT**: All verifications must pass before Step 4.
 
@@ -131,24 +151,36 @@ echo "✓ VERIFIED: Plan structure complete"
 
 ### STEP 4 (ABSOLUTE REQUIREMENT) - Return Plan Path Confirmation
 
-**CHECKPOINT REQUIREMENT - Return Path**
+**CHECKPOINT REQUIREMENT - Return Path and Metadata**
 
-After verification, YOU MUST return ONLY this confirmation:
+After verification, YOU MUST return this exact format:
 
 ```
-PLAN_PATH: [EXACT ABSOLUTE PATH FROM /plan OUTPUT]
+PLAN_CREATED: [EXACT ABSOLUTE PATH WHERE YOU CREATED PLAN]
+
+Metadata:
+- Phases: [number of phases in plan]
+- Complexity: [Low|Medium|High]
+- Estimated Hours: [total hours from plan]
 ```
 
 **CRITICAL REQUIREMENTS**:
-- DO NOT return plan summary or details
-- DO NOT paraphrase the plan content
-- ONLY return "PLAN_PATH: [path]"
-- The orchestrator will read the plan file directly
+- DO NOT return full plan content or detailed summary
+- DO NOT paraphrase the plan phases
+- RETURN path, phase count, complexity, and hours ONLY
+- The orchestrator will read the plan file directly for details
 
 **Example Return**:
 ```
-PLAN_PATH: /home/user/.claude/specs/042_auth/plans/001_user_authentication.md
+PLAN_CREATED: /home/user/.claude/specs/027_auth/plans/027_implementation.md
+
+Metadata:
+- Phases: 6
+- Complexity: High
+- Estimated Hours: 16
 ```
+
+**Why Metadata Format**: Orchestrator uses this metadata for workflow state management without reading full plan (95% context reduction).
 
 ---
 
