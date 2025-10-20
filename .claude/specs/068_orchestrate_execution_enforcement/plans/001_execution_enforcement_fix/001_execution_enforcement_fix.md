@@ -32,7 +32,7 @@ Standard checklist for artifact management within topic-based structure:
 **Spec Updater Agent**: `.claude/agents/spec-updater.md`
 **Management Utilities**: `.claude/lib/metadata-extraction.sh`
 
-See [Spec Updater Guide](../../docs/workflows/spec_updater_guide.md) for artifact lifecycle management.
+See [Spec Updater Guide](../../../../docs/workflows/spec_updater_guide.md) for artifact lifecycle management.
 
 ## Overview
 
