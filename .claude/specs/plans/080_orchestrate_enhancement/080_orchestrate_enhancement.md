@@ -58,6 +58,55 @@ This plan enhances the `/orchestrate` command to fully implement the documented 
 - [ ] **CRITICAL**: /orchestrate NEVER invokes other slash commands (/plan, /implement, /debug, /document) - only invokes subagents
 - [ ] All command-to-command invocations removed and replaced with direct subagent invocations
 
+### Testing Validation
+
+- [ ] TESTING: Verify artifact structure compliance
+  ```bash
+  # Verify all reports in correct structure
+  find specs/*/reports -name "*.md" | grep -E "specs/[0-9]{3}_\w+/reports/"
+  ```
+- [ ] TESTING: Verify overview report contains cross-references
+  ```bash
+  # Check overview has links to individual reports
+  grep -c "\[.*\](.*\.md)" specs/*/reports/*_overview.md
+  ```
+- [ ] TESTING: Verify plan complexity metadata
+  ```bash
+  # Check plans have complexity scores
+  grep -E "complexity.*[0-9]+\.[0-9]" specs/*/plans/*.md
+  ```
+- [ ] TESTING: Verify automatic expansion at thresholds
+  ```bash
+  # Verify phases with >8.0 complexity or >10 tasks expanded to separate files
+  .claude/lib/complexity-utils.sh --test-expansion-triggers
+  ```
+- [ ] TESTING: Verify hierarchical directory structure
+  ```bash
+  # Check for proper phase/stage file organization
+  find specs -type d -name "*_plan" -exec test -d {}/phase_1 \; -print
+  ```
+- [ ] TESTING: Verify parent plan updates after expansion
+  ```bash
+  # Check parent plans reference expanded phase files
+  grep -r "phase_.*\.md" specs/*/plans/*_plan.md
+  ```
+- [ ] TESTING: Verify wave-based parallel execution
+  ```bash
+  # Test dependency analyzer identifies parallel phases
+  .claude/lib/dependency-analyzer.sh test-parallel-detection
+  ```
+- [ ] TESTING: Verify context usage <30%
+  ```bash
+  # Analyze context consumption in orchestrate workflow logs
+  grep "context.*usage" .claude/data/logs/orchestrate.log | awk '{sum+=$NF} END {print sum/NR "%"}'
+  ```
+- [ ] TESTING: Verify no SlashCommand usage in /orchestrate
+  ```bash
+  # CRITICAL: Ensure no command-to-command invocations
+  ! grep "SlashCommand" .claude/commands/orchestrate.md
+  grep -c "Task {" .claude/commands/orchestrate.md  # Should be >=5
+  ```
+
 ## Technical Design
 
 ### Gap 1: Artifact Organization with Location Subagent

@@ -1258,7 +1258,7 @@ After all 6 stages are complete:
 
 - [ ] **Update documentation**
  - [ ] Update .claude/agents/README.md with expansion-specialist
- - [ ] Update .claude/docs/concepts/progressive-planning.md with expansion details
+ - [ ] Update .claude/docs/workflows/adaptive-planning-guide.md with expansion details
  - [ ] Add expansion examples to documentation
  - [ ] Document expansion configuration in CLAUDE.md
 
