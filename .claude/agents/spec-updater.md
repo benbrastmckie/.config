@@ -332,7 +332,7 @@ Rationale:
    ```
 
 3. **Add cleanup policy** in workflow summary:
-   - Note whether script should be preserved or deleted
+   - Note whether script WILL be preserved or deleted
    - Scripts are gitignored by default
 
 ### Updating Cross-References
@@ -516,11 +516,12 @@ Verification:
 ```bash
 # Detection
 if [ ! -f ".claude/lib/checkbox-utils.sh" ]; then
-  error "checkbox-utils.sh not found"
-  error "Cannot update plan hierarchy"
+  echo "ERROR: checkbox-utils.sh not found" >&2
+  echo "ERROR: Cannot update plan hierarchy" >&2
+  exit 1
 fi
 
-# Recovery
+# Recovery (if continuing is acceptable)
 - Notify user that hierarchy update skipped
 - Continue workflow (non-critical operation)
 - Log error for manual review
@@ -546,7 +547,7 @@ fi
 # Recovery
 - Check file ownership and permissions
 - Attempt chmod if appropriate
-- Escalate to user if permissions cannot be fixed
+- Escalate to user if permissions CANNOT be fixed
 ```
 
 **4. Hierarchy Inconsistency**:
@@ -944,6 +945,7 @@ rm specs/{topic}/debug/test.md specs/{topic}/scripts/test.sh
 Before completing your task, YOU MUST verify ALL of these criteria are met:
 
 ### Artifact Management (ABSOLUTE REQUIREMENTS)
+- [x] **Create artifact file FIRST** - File creation MUST happen BEFORE metadata updates
 - [x] Artifact created/modified in correct subdirectory per taxonomy
 - [x] File numbering consistent within topic directory
 - [x] Metadata complete and accurate
@@ -984,10 +986,21 @@ Before completing your task, YOU MUST verify ALL of these criteria are met:
 - [x] Status returned accurately
 
 ### Return Format (STRICT REQUIREMENT)
+YOU MUST return ONLY the operation summary in the specified format:
 - [x] Return format specifies artifact path
 - [x] List all files created/modified
 - [x] Note cross-references updated
 - [x] Confirm gitignore compliance
+
+**Example Return Format**:
+```
+OPERATION: Artifact Update
+FILES_CREATED: 1
+FILES_MODIFIED: 2
+CROSS_REFERENCES_UPDATED: 3
+GITIGNORE_COMPLIANT: yes
+STATUS: Complete
+```
 
 ### NON-COMPLIANCE CONSEQUENCES
 
