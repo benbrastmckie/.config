@@ -119,6 +119,8 @@ Commands should check CLAUDE.md in priority order:
 - **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
 - **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
 - **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
+- **Behavioral Injection**: Commands invoke agents via Task tool with context injection (not SlashCommand) - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
+- **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
 <!-- END_SECTION: code_standards -->
 
@@ -164,10 +166,11 @@ See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete
 - User escalation when limit exceeded
 
 ### Utilities
-- **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh`
+- **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh` - See [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
 - **Complexity Analysis**: `.claude/lib/complexity-utils.sh`
 - **Adaptive Logging**: `.claude/lib/unified-logger.sh`
 - **Error Handling**: `.claude/lib/error-handling.sh`
+- **Context Management**: See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md) for pruning and reduction techniques
 <!-- END_SECTION: adaptive_planning -->
 
 <!-- SECTION: adaptive_planning_config -->
@@ -220,6 +223,8 @@ Key patterns:
 - **Spec updater integration**: Artifact management, lifecycle tracking, gitignore compliance
 - **Plan hierarchy updates**: Automatic checkbox propagation across plan levels
 - **Git workflow**: Feature branches, atomic commits, test before commit
+- **Checkpoint Recovery**: State preservation for resumable workflows - See [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
+- **Parallel Execution**: Wave-based implementation for 40-60% time savings - See [Parallel Execution Pattern](.claude/docs/concepts/patterns/parallel-execution.md)
 
 See [Development Workflow](.claude/docs/concepts/development-workflow.md) for spec updater details, artifact lifecycle, and integration patterns.
 <!-- END_SECTION: development_workflow -->
@@ -232,11 +237,11 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for sp
 Multi-level agent coordination system that minimizes context window consumption through metadata-based context passing and recursive supervision. Agents delegate work to subagents and pass report references (not full content) between levels.
 
 ### Key Features
-- **Metadata Extraction**: Extract title + 50-word summary from reports/plans (99% context reduction)
-- **Forward Message Pattern**: Pass subagent responses directly without re-summarization
-- **Recursive Supervision**: Supervisors can manage sub-supervisors for complex workflows
-- **Context Pruning**: Aggressive cleanup of completed phase data
-- **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents
+- **Metadata Extraction**: Extract title + 50-word summary from reports/plans (99% context reduction) - See [Metadata Extraction Pattern](.claude/docs/concepts/patterns/metadata-extraction.md)
+- **Forward Message Pattern**: Pass subagent responses directly without re-summarization - See [Forward Message Pattern](.claude/docs/concepts/patterns/forward-message.md)
+- **Recursive Supervision**: Supervisors can manage sub-supervisors for complex workflows - See [Hierarchical Supervision Pattern](.claude/docs/concepts/patterns/hierarchical-supervision.md)
+- **Context Pruning**: Aggressive cleanup of completed phase data - See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md)
+- **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 
 ### Context Reduction Metrics
 - **Target**: <30% context usage throughout workflows
