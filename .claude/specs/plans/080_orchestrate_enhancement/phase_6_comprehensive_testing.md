@@ -49,13 +49,12 @@ Add dedicated Phase 4 (Testing) that:
 **Tasks**:
 - [ ] **Update orchestrate.md phase numbering**
  - Locate orchestrate.md workflow section (typically has markdown headers for each phase)
- - Current structure: 7 phases (Research → Planning → Implementation → Debugging → Documentation → GitHub → Summary)
- - New structure: 8 phases (Research → Planning → Implementation → **Testing** → Debugging → Documentation → GitHub → Summary)
- - Renumber existing phases:
-  - Current Phase 4 (Debugging) → New Phase 5 (Debugging)
-  - Current Phase 5 (Documentation) → New Phase 6 (Documentation)
-  - Current Phase 6 (GitHub) → New Phase 7 (GitHub)
-  - Current Phase 7 (Summary) → New Phase 8 (Summary)
+ - Target structure: 8 phases (Research → Planning → Implementation → **Testing** → Debugging → Documentation → GitHub → Summary)
+ - Renumber phases to accommodate Testing phase:
+  - Phase 4 (Debugging) → Phase 5 (Debugging)
+  - Phase 5 (Documentation) → Phase 6 (Documentation)
+  - Phase 6 (GitHub) → Phase 7 (GitHub)
+  - Phase 7 (Summary) → Phase 8 (Summary)
  - Verify all phase references updated (headers, dependencies, cross-references)
 
 - [ ] **Add Phase 4 section header in orchestrate.md**
@@ -576,7 +575,7 @@ Top Failures:
  - Modify Phase 5 debug-specialist prompt to receive test failures
  - Include test_output_path for detailed error analysis
  - Inject failed test details for focused debugging
- - Updated debug-specialist prompt:
+ - debug-specialist prompt:
   ```yaml
   Task {
    subagent_type: "general-purpose"
@@ -701,7 +700,7 @@ test_results.failed=4
  - Clarify agent role: "Implementation only, testing in separate phase"
  - Remove test-related checkpoints and verification steps
  - Simplify completion criteria: tasks complete, plan updated, no testing
- - Updated agent description:
+ - Agent description:
   ```markdown
   # Implementation Executor Agent
 
@@ -730,7 +729,7 @@ test_results.failed=4
  - Remove test passing requirements from completion checklist
  - Focus on implementation completion only
  - Document that testing validation happens in Phase 4
- - Updated completion criteria:
+ - Completion criteria:
   ```markdown
   ## Phase Completion Checklist (implementation-executor)
 
@@ -820,12 +819,11 @@ grep -A 5 "Phase 3.*Implementation" /home/benjamin/.config/.claude/commands/orch
 ```
 
 **Expected Outcomes**:
-- implementation-executor agent no longer executes tests
-- Agent focuses purely on code implementation
-- Completion criteria updated: implementation done, not tests passing
+- implementation-executor agent focuses purely on code implementation
+- Agent completion criteria: implementation done, testing deferred
 - Phase 3 (Implementation) documented as implementation-only
 - Clear handoff between Phase 3 (Implementation) and Phase 4 (Testing)
-- Rationale documented for workflow change
+- Rationale documented for separation of concerns
 
 ---
 
@@ -1120,8 +1118,6 @@ Phase 3: Implementation (no testing) → Phase 4: Testing → [if fail] Phase 5:
 6. **Test Metrics**: Pass rate, coverage, duration reported to user for quality visibility
 7. **Artifact Organization**: Test outputs saved to `{topic_path}/outputs/` per directory protocols standards
 
-## Revision History
+## Phase Expansion
 
-- **2025-10-21**: Phase 6 expansion created from Level 0 plan (080_orchestrate_enhancement.md)
-- **Expansion Reason**: Complexity score 7/10, workflow restructuring with conditional logic across multiple files
-- **Parent Plan Updated**: Summary and reference added to Level 0 plan Phase 6 section
+This phase file represents an expanded Level 1 plan (complexity score 7/10) separated from the main Level 0 plan for workflow restructuring with conditional logic across multiple files.

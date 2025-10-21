@@ -309,7 +309,7 @@ specs/027_auth/plans/027_auth_implementation/
 
 ### Integration of Unused Commands and Agents
 
-The enhanced `/orchestrate` now integrates previously unused infrastructure:
+The enhanced `/orchestrate` integrates available infrastructure:
 
 **Integrated Agents** (15 new):
 1. **location-specialist** (Gap 1): Project location and topic directory creation
@@ -688,43 +688,6 @@ Measurable success criteria:
 8. **Context Usage**: <30% average throughout workflow
 9. **Integration Success**: All 6 TODO.md gaps addressed and validated
 
-## Revision History
+## Plan Structure
 
-### 2025-10-21 - Revision 2: Add Dedicated Testing Phase
-**Changes**: Added Phase 6 (Testing) to create 8-phase workflow with dedicated test suite execution
-**Reason**: User requested increase from 7 to 8 sequential phases by adding Testing phase between Implementation and Debugging
-**Impact**:
-- Added NEW Phase 6: Comprehensive Testing with test-specialist agent (MEDIUM complexity, HIGH priority)
-- Workflow now: Research → Planning → Implementation → Testing → Debugging → Documentation → GitHub → Summary
-- Testing phase executes comprehensive test suite (not just phase-specific tests)
-- Debugging phase (now Phase 5) only invoked if Phase 4 tests fail (conditional execution)
-- Clear separation between implementation (Phase 3) and testing (Phase 4)
-- Test output saved to `{topic_path}/outputs/test_results.txt` for artifact organization
-- Context reduction: 10k+ token test output → 100 token summary to orchestrator
-- Updated phase dependencies: Phase 7 (Progress Tracking) now depends on Phase 0 and Phase 6
-**Infrastructure Leveraged**:
-- test-specialist agent (already exists in .claude/agents/)
-- /test-all command patterns (for test discovery and execution)
-- Testing Protocols from CLAUDE.md
-- testing-patterns.md shared documentation
-**Modified Phases**:
-- NEW Phase 6: Comprehensive Testing (between Implementation and Debugging)
-- Phase renumbering: Old Phase 6 → Phase 7 (Progress Tracking)
-- Updated all dependencies for renumbered phases
-**Rationale**: Dedicated testing phase provides clearer failure analysis, comprehensive test coverage reporting, and better separation of concerns. Conditional debugging (only when tests fail) saves time on successful workflows.
-
-### 2025-10-21 - Revision 1: Critical Architectural Violation Fix
-**Changes**: Added Phase 0 to address command-to-command invocation anti-pattern
-**Reason**: User identified critical issue in TODO.md Example 2 showing /orchestrate calling /plan command via SlashCommand tool, violating documented pattern "Commands should NEVER call other commands, only subagents"
-**Impact**:
-- Added Phase 0 (CRITICAL priority): Remove all SlashCommand invocations from orchestrate.md
-- Replace /plan, /implement, /debug, /document invocations with direct Task tool subagent calls
-- Renumbered existing phases: Phase 1→2, Phase 2→3, Phase 3→4, Phase 4→5, Phase 5→6, Phase 6→7
-- Updated dependencies: All phases now depend on Phase 0 completion for [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) to work
-- Added success criteria: Zero SlashCommand invocations in orchestrate.md
-- Added validation script requirement to prevent regression
-**Modified Phases**:
-- NEW Phase 0: Remove command-to-command invocations (HIGH complexity, CRITICAL priority)
-- Updated Phase 1 dependencies: Now depends on Phase 0
-- Updated all phase numbers +1
-**Rationale**: Without fixing the architectural violation first, [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) (artifact path context) cannot work, blocking all subsequent enhancement phases. Phase 0 must be completed before location-specialist, research-synthesizer, or any other enhancements can function correctly.
+This plan is organized for clarity and standards compliance per writing-standards.md. The 8-phase structure addresses critical gaps in the /orchestrate command through systematic enhancement of artifact organization, research synthesis, complexity-driven expansion, hierarchical plan structure, wave-based implementation, and progress tracking.
