@@ -737,14 +737,15 @@ get_complexity_thresholds
   - Log error with details
   - Continue workflow without metadata injection
 
-- [ ] **Update plan revision history**
- - Add revision entry to plan metadata:
+- [ ] **Update plan metadata with complexity analysis**
+ - Add complexity metadata to plan:
   ```markdown
-  ## Revision History
-  - **2025-10-21 14:32**: Complexity analysis added (avg 5.8, max 8.5)
-  - **2025-10-21 14:45**: Phase 2 expanded to Level 1 (complexity 8.5)
+  ## Complexity Analysis
+  - **Average Complexity**: 5.8/10
+  - **Maximum Complexity**: 8.5/10 (Phase 2)
+  - **Expanded Phases**: Phase 2 (Level 1 expansion due to complexity threshold)
   ```
- - Track metadata injection as revision event
+ - Document metadata injection in plan metadata section
 
 ### Testing
 
