@@ -35,6 +35,7 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 ## Project Standards and Guidelines
 
 ### Core Documentation
+- [Claude Code Documentation](.claude/docs/README.md) - Complete index of patterns, guides, workflows, and reference documentation for working with .claude/ system
 - [Neovim Configuration Guidelines](nvim/CLAUDE.md) - Coding standards, style guide, and architecture documentation for Neovim configuration
 - [Code Standards](nvim/docs/CODE_STANDARDS.md) - Lua coding conventions, module structure, and development process
 - [Documentation Standards](nvim/docs/DOCUMENTATION_STANDARDS.md) - Documentation structure, style guide, and content standards
@@ -119,9 +120,14 @@ Commands should check CLAUDE.md in priority order:
 - **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
 - **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
 - **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
+- **Imperative Language**: All required actions use MUST/WILL/SHALL (never should/may/can) - See [Imperative Language Guide](.claude/docs/guides/imperative-language-guide.md)
 - **Behavioral Injection**: Commands invoke agents via Task tool with context injection (not SlashCommand) - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
+
+### Development Guides
+- [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Complete guide to creating and maintaining slash commands
+- [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Complete guide to creating and maintaining specialized agents
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: development_philosophy -->
@@ -333,6 +339,10 @@ For detailed usage, see `.claude/commands/README.md` and individual command file
 - **Generate READMEs**: `.claude/lib/generate-readme.sh --generate-all [dir]` - Documentation coverage
 
 See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage patterns and troubleshooting.
+
+### Command and Agent Reference
+- [Command Reference](.claude/docs/reference/command-reference.md) - Complete catalog of all slash commands with syntax and examples
+- [Agent Reference](.claude/docs/reference/agent-reference.md) - Complete catalog of all specialized agents with capabilities and usage
 
 ### Navigation
 - [Neovim Configuration](nvim/)
