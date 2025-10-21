@@ -942,6 +942,135 @@ grep -i error operation.log
 - **Max Parallel Operations:** 4-6 recommended
 - **Timeout:** Base 120s, retry at 180s, 270s
 
+## Wave-Based Parallel Execution
+
+### Overview
+
+Wave-based execution (from Plan 080) enables parallel implementation of independent plan phases while respecting dependency constraints. This provides 40-60% time savings compared to sequential execution.
+
+### Dependency-Driven Wave Organization
+
+**Phase Dependency Syntax**:
+```yaml
+## Dependencies
+- depends_on: [phase_1, phase_2]
+- blocks: [phase_5, phase_6]
+```
+
+**Wave Calculation**:
+1. **Wave 1**: All phases with no dependencies (empty `depends_on` list)
+2. **Wave 2**: Phases dependent only on Wave 1 phases
+3. **Wave N**: Phases dependent only on phases in previous waves
+
+**Example from Plan 080**:
+```
+Plan with 6 phases:
+- Phase 1: Setup (no dependencies)               → Wave 1
+- Phase 2: Database (no dependencies)            → Wave 1
+- Phase 3: API (depends_on: [phase_2])          → Wave 2
+- Phase 4: Auth (depends_on: [phase_2])         → Wave 2
+- Phase 5: Integration (depends_on: [phase_3, phase_4]) → Wave 3
+- Phase 6: Testing (depends_on: [phase_5])      → Wave 4
+
+Execution:
+Wave 1: Phases 1, 2 in parallel (200s max, not 380s sum)
+Wave 2: Phases 3, 4 in parallel (210s max, not 420s sum)
+Wave 3: Phase 5 sequential (180s)
+Wave 4: Phase 6 sequential (150s)
+
+Total: 740s (vs 1,140s sequential)
+Savings: 35%
+```
+
+### Implementer-Coordinator Subagent
+
+The implementer-coordinator manages wave-based execution:
+
+**Responsibilities**:
+1. Parse plan hierarchy (Level 0 → Level 1 → Level 2)
+2. Extract dependency metadata from all phases/stages
+3. Build dependency graph and calculate waves
+4. Invoke implementation-executor subagents in parallel per wave
+5. Monitor wave completion before starting next wave
+6. Update plan hierarchy with progress checkboxes
+
+**Context Injection** (Behavioral Injection Pattern):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Coordinate wave-based implementation"
+  prompt: |
+    Read: .claude/agents/implementer-coordinator.md
+
+    **Plan Path**: ${PLAN_PATH}
+    **Topic Directory**: ${TOPIC_DIR}
+
+    Execute wave-based implementation:
+    1. Parse plan hierarchy and dependencies
+    2. Calculate waves
+    3. Invoke executors in parallel per wave
+    4. Update plan files with progress
+    5. Return wave execution summary
+}
+```
+
+**Output** (Metadata Only):
+```json
+{
+  "waves_executed": 4,
+  "phases_completed": 6,
+  "time_saved": "35%",
+  "failures": [],
+  "checkpoint_path": ".claude/data/checkpoints/implement_027_auth.json"
+}
+```
+
+### Progress Tracking Across Plan Hierarchy
+
+Wave execution updates all levels of plan hierarchy:
+
+**Level 2** (Stage file):
+```markdown
+### Stage 1: Database Schema
+- [x] Design user table
+- [x] Design session table
+- [ ] Create migration scripts
+```
+
+**Level 1** (Phase file aggregates stages):
+```markdown
+### Phase 2: Database Implementation
+**Progress**: 2/3 stages complete (67%)
+- [x] Stage 1: Database Schema (2/3 tasks)
+- [ ] Stage 2: Query Layer
+- [ ] Stage 3: Testing
+```
+
+**Level 0** (Main plan aggregates phases):
+```markdown
+### Phase 2: Database Implementation
+**Status**: In Progress (Wave 1)
+**Progress**: 2/9 total tasks complete (22%)
+
+See [phase_2_database.md](phase_2_database.md) for details.
+```
+
+**Checkpoint Propagation**:
+Each executor creates checkpoints containing:
+- Current wave number
+- Phase/stage completion status
+- Task-level checkbox states
+- Updated plan file paths (all levels)
+- Next wave to execute
+
+### Cross-References to Patterns
+
+**Wave-based execution implements**:
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Commands control orchestration
+- [Parallel Execution Pattern](../concepts/patterns/parallel-execution.md) - Concurrent wave execution
+- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Wave state preservation
+- [Hierarchical Supervision Pattern](../concepts/patterns/hierarchical-supervision.md) - Coordinator → Executors
+
 ## Advanced Features
 
 ### Hierarchy Review

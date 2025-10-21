@@ -304,6 +304,116 @@ Check if verification checkpoints are executed:
 # Test: grep for verification markers in command output
 ```
 
+#### Phase 0: Orchestrator vs Executor Role Clarification
+
+**Problem** (from Plan 080): Multi-agent commands that invoke other slash commands create architectural violations:
+- Commands calling other commands (e.g., `/orchestrate` calling `/plan`, `/implement`)
+- Loss of artifact path control (cannot pre-calculate topic-based paths)
+- Context bloat (cannot extract metadata before full content loaded)
+- Recursion risk (command → command → command loops)
+
+**Solution**: Distinguish between orchestrator and executor roles:
+
+**Orchestrator Role** (coordinates workflow):
+- Pre-calculates all artifact paths (topic-based organization)
+- Invokes specialized subagents via Task tool (NOT SlashCommand)
+- Injects complete context into subagents (behavioral injection pattern)
+- Verifies artifacts created at expected locations
+- Extracts metadata only (95% context reduction)
+- Examples: `/orchestrate`, `/plan` (when coordinating research agents)
+
+**Executor Role** (performs atomic operations):
+- Receives pre-calculated paths from orchestrator
+- Executes specific task using Read/Write/Edit/Bash tools
+- Creates artifacts at exact paths provided
+- Returns metadata only (not full content)
+- Examples: research-specialist agent, plan-architect agent, implementation-executor agent
+
+**Phase 0 Requirement for Orchestrators**:
+
+Every orchestrator command MUST include Phase 0 (before invoking any subagents):
+
+```markdown
+## Phase 0: Pre-Calculate Artifact Paths and Topic Directory
+
+**EXECUTE NOW - Topic Directory Determination**
+
+Before invoking ANY subagents, calculate all artifact paths:
+
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+
+# Determine topic directory
+WORKFLOW_DESC="$1"  # From user input
+TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESC" ".claude/specs")
+# Result: .claude/specs/042_workflow_description/
+
+# Create subdirectories
+mkdir -p "$TOPIC_DIR"/{reports,plans,summaries,debug,scripts,outputs}
+
+# Pre-calculate artifact paths
+RESEARCH_REPORT_BASE="$TOPIC_DIR/reports"
+PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "implementation" "")
+SUMMARY_PATH=$(create_topic_artifact "$TOPIC_DIR" "summaries" "workflow_summary" "")
+
+# Export for subagent injection
+export TOPIC_DIR RESEARCH_REPORT_BASE PLAN_PATH SUMMARY_PATH
+
+echo "✓ Topic directory: $TOPIC_DIR"
+echo "✓ Artifact paths calculated"
+```
+
+**VERIFICATION**: All paths must be calculated BEFORE any Task invocations.
+```
+
+**Anti-Pattern to Avoid**:
+
+```markdown
+❌ BAD - Orchestrator invokes other command via SlashCommand:
+
+SlashCommand {
+  command: "/plan ${FEATURE_DESCRIPTION}"
+}
+
+# Problems:
+# - /plan calculates its own paths (orchestrator loses control)
+# - /plan creates artifacts (orchestrator can't extract metadata first)
+# - Context bloat (full plan content loaded into orchestrator)
+
+✅ GOOD - Orchestrator invokes plan-architect agent via Task:
+
+# Phase 0: Pre-calculate plan path
+PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "implementation" "")
+
+# Phase N: Invoke agent with injected context
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan"
+  prompt: |
+    Read: .claude/agents/plan-architect.md
+
+    **Plan Output Path**: ${PLAN_PATH}  # ← Orchestrator controls path
+    **Feature**: ${FEATURE_DESCRIPTION}
+
+    Create plan at exact path provided.
+    Return metadata: {path, phase_count, complexity}
+}
+
+# Phase N+1: Verify and extract metadata
+PLAN_METADATA=$(extract_plan_metadata "$PLAN_PATH")
+# Result: 95% context reduction (5000 tokens → 250 tokens)
+```
+
+**When Phase 0 Required**:
+- ✅ `/orchestrate` (coordinates research → plan → implement workflow)
+- ✅ `/plan` (if coordinating research agents)
+- ✅ `/implement` (if using wave-based parallel execution)
+- ✅ `/debug` (if coordinating parallel hypothesis testing)
+- ❌ `/list-plans` (read-only, no artifact creation)
+- ❌ `/test` (executor role, not orchestrator)
+
+**Cross-Reference**: See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for complete implementation details.
+
 ### Standard 0.5: Subagent Prompt Enforcement
 
 **Extension of Standard 0 for Agent Definition Files**
