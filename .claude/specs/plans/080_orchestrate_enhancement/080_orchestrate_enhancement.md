@@ -424,12 +424,22 @@ The enhanced `/orchestrate` integrates available infrastructure:
 
 ## Implementation Phases
 
-### Phase 0: CRITICAL - Remove Command-to-Command Invocations
-**Status**: Expanded to detailed phase plan
+### Phase 0: CRITICAL - Remove Command-to-Command Invocations [COMPLETED]
+**Status**: COMPLETED ✓
 **Complexity**: 9/10 (High)
 **Priority**: CRITICAL - Must be completed before other phases
+**Completed**: 2025-10-21
+**Commit**: 008f0691
 
-**Summary**: Refactor /orchestrate to eliminate all SlashCommand tool invocations (violates documented pattern "Commands should NEVER call other commands"). Replace 4 command invocations (/plan, /implement, /debug, /document) with direct Task tool subagent invocations. This architectural fix enables [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) of artifact paths from location-specialist to all downstream phases. Without this fix, artifact path context cannot reach planning/implementation agents, blocking the entire orchestration enhancement.
+**Summary**: Refactored /orchestrate to eliminate SlashCommand tool invocations (violates documented pattern "Commands should NEVER call other commands"). Replaced 1 command invocation (/implement) with direct Task tool code-writer agent invocation with behavioral injection. This architectural fix enables [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) of artifact paths (WORKFLOW_TOPIC_DIR) to implementation phase. Planning phase was already compliant. Debugging and documentation phases not yet implemented.
+
+**Implementation Results**:
+- ✅ Audit report created: phase0_audit.md (identified 1 violation, 0 in planning/debug/doc)
+- ✅ orchestrate.md refactored: Implementation phase uses Task(code-writer) with artifact injection
+- ✅ Validation script created: validate-orchestrate-pattern.sh (4 checks, all passing)
+- ✅ Test integration: validate_orchestrate_pattern.sh wrapper for CI
+- ✅ Architectural policy documented: Comment block in orchestrate.md header
+- ✅ All validation checks passing: 11 Task invocations, artifact paths injected, no SlashCommand usage
 
 For detailed tasks and implementation, see [phase_0_critical_remove_command_invocations.md](phase_0_critical_remove_command_invocations.md)
 
