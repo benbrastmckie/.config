@@ -27,7 +27,7 @@ docs/
 │   ├── command_architecture_standards.md  Command/agent architecture standards
 │   └── phase_dependencies.md    Wave-based parallel execution syntax
 │
-├── guides/                      Task-focused how-to guides (11 files)
+├── guides/                      Task-focused how-to guides (14 files)
 │   ├── README.md                How-to guides index
 │   ├── creating-commands.md     Command development guide
 │   ├── creating-agents.md       Agent creation guide
@@ -39,14 +39,27 @@ docs/
 │   ├── setup-command-guide.md   /setup command usage patterns
 │   ├── efficiency-guide.md      Performance optimization
 │   ├── error-enhancement-guide.md Error handling patterns
-│   └── data-management.md       Data handling and persistence
+│   ├── data-management.md       Data handling and persistence
+│   ├── testing-patterns.md      Test organization and coverage
+│   ├── migration-validation.md  Enforcement migration verification
+│   └── performance-measurement.md Context reduction and time savings
 │
-├── concepts/                    Understanding-oriented explanations (4 files)
+├── concepts/                    Understanding-oriented explanations (4 files + patterns)
 │   ├── README.md                Concepts documentation index
 │   ├── hierarchical_agents.md   Multi-level agent coordination
 │   ├── writing-standards.md     Development philosophy and documentation
 │   ├── directory-protocols.md   Topic-based artifact organization
-│   └── development-workflow.md  Development workflow patterns
+│   ├── development-workflow.md  Development workflow patterns
+│   └── patterns/                Architectural patterns catalog (8 patterns)
+│       ├── README.md            Patterns catalog index
+│       ├── behavioral-injection.md      Commands inject context into agents
+│       ├── hierarchical-supervision.md  Multi-level agent coordination
+│       ├── forward-message.md           Direct subagent response passing
+│       ├── metadata-extraction.md       95-99% context reduction via summaries
+│       ├── context-management.md        <30% context usage techniques
+│       ├── verification-fallback.md     100% file creation via checkpoints
+│       ├── checkpoint-recovery.md       State preservation and restoration
+│       └── parallel-execution.md        Wave-based concurrent execution
 │
 ├── workflows/                   Learning-oriented step-by-step tutorials (6 files)
 │   ├── README.md                Workflow tutorials index
