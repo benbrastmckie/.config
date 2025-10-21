@@ -1,6 +1,6 @@
 # Context Management Pattern
 
-[Used by: all commands, agents, and multi-phase workflows]
+[Used by: /orchestrate, /implement, all commands, agents, and multi-phase workflows]
 
 Techniques for maintaining <30% context usage throughout workflows through aggressive pruning, layered context, and metadata-only passing.
 
