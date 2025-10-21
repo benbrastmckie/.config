@@ -14,13 +14,14 @@ Understanding-oriented explanations of system architecture and principles. Use t
 ## Documents in This Section
 
 ### [Hierarchical Agent Architecture](hierarchical_agents.md)
-**Purpose**: Complete architecture guide for multi-level agent coordination with metadata-based context passing, recursive supervision, and context pruning strategies.
+**Purpose**: Complete architecture guide for multi-level agent coordination with metadata-based context passing, recursive supervision, and context pruning strategies. Includes comprehensive tutorial walkthrough section with step-by-step examples of /orchestrate, /implement, and /plan workflows.
 
 **Use Cases**:
 - To understand how hierarchical agents minimize context consumption
 - When designing multi-agent workflows that need to scale beyond 4-5 agents
 - To learn metadata extraction patterns and forward message techniques
 - When debugging context exhaustion issues in complex workflows
+- For step-by-step tutorial walkthroughs of complete workflows (see Tutorial Walkthrough section)
 
 **See Also**: [Using Agents](../guides/using-agents.md), [Orchestration Guide](../workflows/orchestration-guide.md), [Command Architecture Standards](../reference/command_architecture_standards.md)
 

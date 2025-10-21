@@ -463,8 +463,8 @@ return {
     -- ============================================================================
 
     wk.add({
-      -- Group header (dynamic, only shows for jupyter files)
-      { "<leader>j", group = function() return is_jupyter() and "jupyter" or nil end, icon = "󰌠", cond = is_jupyter },
+      -- Group header (static name, conditional visibility)
+      { "<leader>j", group = "jupyter", icon = "󰌠", cond = is_jupyter },
 
       -- Jupyter-specific mappings
       { "<leader>ja", "<cmd>lua require('notebook-navigator').run_all_cells()<CR>", desc = "run all cells", icon = "󰐊", cond = is_jupyter },
@@ -493,8 +493,8 @@ return {
     -- ============================================================================
 
     wk.add({
-      -- Group header (dynamic, only shows for LaTeX files)
-      { "<leader>l", group = function() return is_latex() and "latex" or nil end, icon = "󰙩", cond = is_latex },
+      -- Group header (static name, conditional visibility)
+      { "<leader>l", group = "latex", icon = "󰙩", cond = is_latex },
 
       -- LaTeX-specific mappings
       { "<leader>la", "<cmd>lua PdfAnnots()<CR>", desc = "annotate", icon = "󰏪", cond = is_latex },
@@ -559,8 +559,8 @@ return {
     -- ============================================================================
 
     wk.add({
-      -- Group header (dynamic, only shows for pandoc-compatible files)
-      { "<leader>p", group = function() return is_pandoc_compatible() and "pandoc" or nil end, icon = "󰈙", cond = is_pandoc_compatible },
+      -- Group header (static name, conditional visibility)
+      { "<leader>p", group = "pandoc", icon = "󰈙", cond = is_pandoc_compatible },
 
       -- Pandoc-specific mappings
       { "<leader>ph", "<cmd>TermExec cmd='pandoc %:p -o %:p:r.html'<CR>", desc = "html", icon = "󰌝", cond = is_pandoc_compatible },
@@ -644,8 +644,8 @@ return {
     -- ============================================================================
 
     wk.add({
-      -- Group header (dynamic, only shows for LaTeX files)
-      { "<leader>T", group = function() return is_latex() and "templates" or nil end, icon = "󰈭", cond = is_latex },
+      -- Group header (static name, conditional visibility)
+      { "<leader>T", group = "templates", icon = "󰈭", cond = is_latex },
 
       -- Template mappings
       { "<leader>Ta", "<cmd>read ~/.config/nvim/templates/article.tex<CR>", desc = "article.tex", icon = "󰈙", cond = is_latex },

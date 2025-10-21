@@ -27,8 +27,8 @@ NC='\033[0m'
 pass_test() {
   local test_name="$1"
   echo -e "${GREEN}✓${NC} $test_name"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 fail_test() {
@@ -36,8 +36,8 @@ fail_test() {
   local reason="${2:-}"
   echo -e "${RED}✗${NC} $test_name"
   [ -n "$reason" ] && echo "  Reason: $reason"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

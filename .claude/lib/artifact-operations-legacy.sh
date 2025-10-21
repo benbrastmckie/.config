@@ -68,8 +68,10 @@ readonly ARTIFACT_TYPE_REPORT="report"
 readonly ARTIFACT_TYPE_SUMMARY="summary"
 readonly ARTIFACT_TYPE_CHECKPOINT="checkpoint"
 
-# Registry directory
-readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/registry"
+# Registry directory (conditional readonly to avoid conflicts with artifact-registry.sh)
+if [[ -z "${ARTIFACT_REGISTRY_DIR:-}" ]]; then
+  readonly ARTIFACT_REGISTRY_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/registry"
+fi
 
 # ==============================================================================
 # Registry Operations

@@ -22,10 +22,10 @@ FAIL=0
 for bundle in "${BUNDLES[@]}"; do
   if [[ -f "$LIB_DIR/$bundle" ]]; then
     echo "  ✓ $bundle exists"
-    ((PASS++))
+    ((PASS++)) || true
   else
     echo "  ✗ $bundle missing"
-    ((FAIL++))
+    ((FAIL++)) || true
   fi
 done
 
@@ -41,10 +41,10 @@ FAIL=0
 for util in "${DEPRECATED[@]}"; do
   if [[ ! -f "$LIB_DIR/$util" ]]; then
     echo "  ✓ $util correctly removed"
-    ((PASS++))
+    ((PASS++)) || true
   else
     echo "  ✗ $util still exists (should be deprecated)"
-    ((FAIL++))
+    ((FAIL++)) || true
   fi
 done
 
@@ -60,10 +60,10 @@ FAIL=0
 for util in "${STANDALONE[@]}"; do
   if [[ -f "$LIB_DIR/$util" ]]; then
     echo "  ✓ $util exists"
-    ((PASS++))
+    ((PASS++)) || true
   else
     echo "  ✗ $util missing"
-    ((FAIL++))
+    ((FAIL++)) || true
   fi
 done
 
@@ -78,10 +78,10 @@ FAIL=0
 for bundle in "plan-core-bundle.sh" "unified-logger.sh"; do
   if grep -q 'source.*base-utils.sh' "$LIB_DIR/$bundle"; then
     echo "  ✓ $bundle sources base-utils.sh"
-    ((PASS++))
+    ((PASS++)) || true
   else
     echo "  ✗ $bundle doesn't source base-utils.sh"
-    ((FAIL++))
+    ((FAIL++)) || true
   fi
 done
 

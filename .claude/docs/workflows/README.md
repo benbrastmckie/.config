@@ -26,14 +26,14 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 
 ---
 
-### [Hierarchical Agent Workflow](hierarchical-agent-workflow.md)
-**Purpose**: Comprehensive guide for supervisor-worker agent patterns with metadata-only context passing and artifact-based organization.
+### [Hierarchical Agent Workflow](hierarchical-agent-workflow.md) → Consolidated
+**Status**: This guide has been consolidated into [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md#tutorial-walkthrough) as the "Tutorial Walkthrough" section.
 
-**Use Cases**:
-- To understand how commands coordinate subagent execution
-- When implementing commands that need to delegate specialized tasks
-- To learn metadata extraction and context preservation patterns
-- When optimizing multi-agent workflows for minimal context consumption
+**Migration**: For step-by-step workflow tutorials, see the comprehensive Tutorial Walkthrough section in [Hierarchical Agents](../concepts/hierarchical_agents.md#tutorial-walkthrough), which includes:
+- /orchestrate complete workflow walkthrough
+- /implement with subagent delegation tutorial
+- /plan with research integration tutorial
+- Checkpoint recovery tutorial
 
 **See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Using Agents](../guides/using-agents.md), [Development Workflow](../concepts/development-workflow.md)
 

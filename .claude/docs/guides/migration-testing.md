@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide documents the testing procedures for the execution enforcement migration (Plan 077). The migration transforms commands and agents to use systematic execution enforcement patterns, achieving 100% file creation rates and ≥95/100 audit scores.
+This guide documents the testing procedures for execution enforcement migrations. The migration transforms commands and agents to use systematic execution enforcement patterns, achieving 100% file creation rates and ≥95/100 audit scores.
+
+For complete migration process and enforcement patterns, see [Execution Enforcement Guide](./execution-enforcement-guide.md).
 
 ## Testing Infrastructure
 
@@ -485,7 +487,13 @@ Store all test logs in `/tmp/` with descriptive names:
 
 ## Related Documentation
 
-- [Execution Enforcement Migration Plan](../../specs/plans/077_execution_enforcement_migration/077_execution_enforcement_migration.md)
-- [Execution Enforcement Migration Guide](./execution-enforcement-migration-guide.md)
-- [Agent Reference](../../agents/README.md)
-- [Command Reference](../../commands/README.md)
+- [Execution Enforcement Guide](./execution-enforcement-guide.md) - Complete migration process, enforcement patterns, validation techniques
+- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 0 and 0.5 definitions
+- [Agent Reference](../../agents/README.md) - Agent catalog and usage
+- [Command Reference](../../commands/README.md) - Command catalog and usage
+
+---
+
+**Guide Status**: ✅ ACTIVE
+**Version**: 1.1 (Updated to reference consolidated enforcement guide)
+**Last Updated**: 2025-10-21

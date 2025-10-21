@@ -721,15 +721,32 @@ echo "✓ Verified: Report exists at $REPORT_PATH"
 
 ---
 
-## References
+## Cross-References
+
+### Architectural Patterns
+
+Commands should implement these patterns from the [Patterns Catalog](../concepts/patterns/README.md):
+
+- [Behavioral Injection](../concepts/patterns/behavioral-injection.md) - How commands invoke agents via context injection
+- [Verification and Fallback](../concepts/patterns/verification-fallback.md) - Mandatory checkpoints for file creation operations
+- [Metadata Extraction](../concepts/patterns/metadata-extraction.md) - Passing report/plan summaries between agents
+- [Checkpoint Recovery](../concepts/patterns/checkpoint-recovery.md) - State preservation for resumable workflows
+- [Parallel Execution](../concepts/patterns/parallel-execution.md) - Wave-based concurrent agent invocation
+
+### Related Guides
+
+- [Agent Development Guide](agent-development-guide.md) - Creating agents that commands invoke
+- [Standards Integration](standards-integration.md) - Implementing CLAUDE.md standards discovery
+- [Testing Patterns](testing-patterns.md) - Test organization and validation approaches
+- [Execution Enforcement Guide](execution-enforcement-guide.md) - Migration patterns for command refactoring
+
+### Reference Documentation
 
 - [Command Quick Reference](../reference/command-reference.md) - Quick lookup for all commands
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture standards for commands/agents
 - [Agent Reference](../reference/agent-reference.md) - Quick agent reference
-- [Agent Development Guide](agent-development-guide.md) - How to create agents
 - [Commands README](../../commands/README.md) - Complete command list and navigation
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Multi-agent coordination
-- [Correct Agent Invocation Examples](../examples/correct-agent-invocation.md) - Task tool templates
 
 ---
 

@@ -1,38 +1,35 @@
-# Test Plan: Level 1 (Phase Expansion)
+# Test Level 1 Plan
 
 ## Metadata
-- **Date**: 2025-10-15
-- **Plan Number**: 098
-- **Feature**: Test level 1 plan structure
-- **Structure Level**: 1 (phase expansion)
-- **Estimated Phases**: 3
+- **Created**: 2025-10-20
+- **Status**: Test Fixture
+- **Type**: Level 1 (Expanded Phases)
 
-## Overview
+## Objective
 
-This is a Level 1 plan with some phases expanded to separate files.
+Test fixture for spec_updater integration tests with expanded phases.
 
-## Implementation Phases
+## Phases
 
 ### Phase 1: Setup
 
-See [phase_1_setup.md](phase_1_setup.md) for details.
+[See detailed phase plan](phase_1_setup.md)
 
-**Summary**: Initialize project and dependencies
-
-**Tasks**: 5 tasks
-
-### Phase 2: Implementation
-
-**Objective**: Implement core functionality
+### Phase 2: Implementation (Inline)
 
 **Tasks**:
-- [ ] Write main module
-- [ ] Add tests
+1. Task 2.1: Implement core logic
+2. Task 2.2: Add error handling
+
+**Files**:
+- src/main.js
 
 ### Phase 3: Documentation
 
-See [phase_3_documentation.md](phase_3_documentation.md) for details.
+[See detailed phase plan](phase_3_documentation.md)
 
-**Summary**: Complete all documentation
+## Success Criteria
 
-**Tasks**: 4 tasks
+- [ ] All phases completed
+- [ ] Tests passing
+- [ ] Documentation updated

@@ -848,14 +848,31 @@ Before committing a new agent:
 
 ---
 
-## Related Documentation
+## Cross-References
+
+### Architectural Patterns
+
+Agents should implement these patterns from the [Patterns Catalog](../concepts/patterns/README.md):
+
+- [Behavioral Injection](../concepts/patterns/behavioral-injection.md) - How agents receive context from commands
+- [Metadata Extraction](../concepts/patterns/metadata-extraction.md) - Returning summaries instead of full content
+- [Forward Message Pattern](../concepts/patterns/forward-message.md) - Passing subagent responses directly
+- [Hierarchical Supervision](../concepts/patterns/hierarchical-supervision.md) - Coordinating sub-agents recursively
+- [Context Management](../concepts/patterns/context-management.md) - Minimizing token usage in outputs
+
+### Related Guides
 
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
+- [Using Agents](using-agents.md) - Agent invocation and coordination patterns
+- [Testing Patterns](testing-patterns.md) - Validation and quality assurance
+- [Standards Integration](standards-integration.md) - CLAUDE.md standards discovery
+
+### Reference Documentation
+
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Multi-agent coordination
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture standards
 - [Agent Reference](../reference/agent-reference.md) - Quick agent reference
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) - Common issues
-- [Correct Agent Invocation Examples](../examples/correct-agent-invocation.md) - Task tool templates
 
 ---
 

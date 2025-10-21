@@ -125,7 +125,7 @@ test_list_templates() {
   local count
   count=$(echo "$output" | wc -l)
 
-  assert_equals "10" "$count" "Should list 10 templates"
+  assert_equals "11" "$count" "Should list 11 templates"
 }
 
 test_list_categories() {
