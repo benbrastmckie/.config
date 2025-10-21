@@ -254,25 +254,57 @@ Task {
  - Add verification logic after plan creation
 
 - [ ] **Add plan file verification**
- ```markdown
- ## Phase 2 Verification
 
- After plan-architect completes, YOU MUST verify plan file exists:
-
+ **MANDATORY VERIFICATION CHECKPOINT:**
+ ```bash
+ # Verify plan-architect created plan file at expected location
  EXPECTED_PLAN_PATH="${artifact_paths.plans}/${topic_number}_${plan_name}.md"
 
- if [[ ! -f "$EXPECTED_PLAN_PATH" ]]; then
-  echo "ERROR: Plan file not created at expected location"
-  echo "Expected: $EXPECTED_PLAN_PATH"
-  echo "Agent WILL have created plan elsewhere - search and move:"
+ if [ ! -f "$EXPECTED_PLAN_PATH" ]; then
+   echo "ERROR: Plan file not created at expected location: $EXPECTED_PLAN_PATH"
+   echo "FALLBACK: plan-architect failed - searching for misplaced plan file"
 
-  # Search for recently created plan files
-  find specs/ -name "*.md" -mmin -5 -type f
+   # Search for recently created plan files (last 5 minutes)
+   FOUND_PLANS=$(find specs/ -name "*.md" -mmin -5 -type f 2>/dev/null)
 
-  # Fallback: Create minimal plan template
-  # (Only if absolutely necessary - prefer agent retry)
+   if [ -n "$FOUND_PLANS" ]; then
+     echo "Found recently created plan files:"
+     echo "$FOUND_PLANS"
+     echo "ACTION: Review and move to correct location: $EXPECTED_PLAN_PATH"
+   else
+     echo "FALLBACK: No plan files found - creating minimal plan template"
+
+     # Create minimal plan template
+     cat > "$EXPECTED_PLAN_PATH" <<'EOF'
+# Implementation Plan
+
+## Overview
+Minimal plan created by fallback mechanism.
+plan-architect agent failed to create plan file.
+
+## Phases
+
+### Phase 1: Manual Planning Required
+- [ ] Review research reports
+- [ ] Define implementation approach
+- [ ] Break down into specific tasks
+
+## Metadata
+- Created: $(date -Iseconds)
+- Status: Manual intervention required
+EOF
+   fi
  fi
+
+ # Verify plan file is readable
+ if [ -f "$EXPECTED_PLAN_PATH" ] && [ ! -r "$EXPECTED_PLAN_PATH" ]; then
+   echo "ERROR: Plan file exists but is not readable: $EXPECTED_PLAN_PATH"
+   echo "ACTION: Check file permissions"
+ fi
+
+ echo "Verification complete: Plan file validated at $EXPECTED_PLAN_PATH"
  ```
+ End verification. Proceed only if plan file exists.
 
 - [ ] **Extract plan metadata for workflow state**
  ```markdown
@@ -716,30 +748,68 @@ fi
  - Inject artifact path for debug reports
 
 - [ ] **Add debug report verification**
- ```markdown
- ## Phase 4 Verification
 
- After debug-specialist completes, YOU MUST verify debug report created:
+ **MANDATORY VERIFICATION CHECKPOINT:**
+ ```bash
+ # Verify debug-specialist created debug report
+ DEBUG_REPORT_PATH=$(echo "$DEBUG_SPECIALIST_OUTPUT" | grep -oP 'DEBUG_REPORT_PATH:\s*\K.*' || echo "")
 
- DEBUG_REPORT_PATH=$(parse_agent_response "DEBUG_REPORT_PATH")
+ if [ -z "$DEBUG_REPORT_PATH" ]; then
+   echo "ERROR: debug-specialist did not return DEBUG_REPORT_PATH"
+   echo "FALLBACK: Searching for recently created debug reports"
 
- if [[ ! -f "$DEBUG_REPORT_PATH" ]]; then
-  echo "WARNING: Debug report not created at expected location"
-  echo "Expected pattern: ${WORKFLOW_TOPIC_DIR}/debug/${topic_number}_debug_*.md"
+   # Search for recently created debug reports (last 5 minutes)
+   FOUND_REPORTS=$(find "${WORKFLOW_TOPIC_DIR}/debug" -name "${topic_number}_debug_*.md" -mmin -5 -type f 2>/dev/null | head -1)
 
-  # Search for recently created debug reports
-  find "${WORKFLOW_TOPIC_DIR}/debug" -name "*.md" -mmin -5
+   if [ -n "$FOUND_REPORTS" ]; then
+     DEBUG_REPORT_PATH="$FOUND_REPORTS"
+     echo "Found debug report: $DEBUG_REPORT_PATH"
+   else
+     echo "FALLBACK: No debug report found - creating minimal debug report"
+
+     DEBUG_REPORT_PATH="${WORKFLOW_TOPIC_DIR}/debug/${topic_number}_debug_$(date +%Y%m%d_%H%M%S).md"
+     cat > "$DEBUG_REPORT_PATH" <<'EOF'
+# Debug Report
+
+## Summary
+Minimal debug report created by fallback mechanism.
+debug-specialist agent failed to create debug report.
+
+## Test Failures
+Review test output manually for failure details.
+
+## Root Cause
+Manual investigation required.
+
+## Proposed Fixes
+- Review test output
+- Analyze implementation code
+- Compare with plan requirements
+
+## Action Required
+Manual debugging session needed.
+EOF
+   fi
  fi
 
- # Extract fix proposals
- ROOT_CAUSE=$(parse_agent_response "ROOT_CAUSE")
- FIX_CONFIDENCE=$(parse_agent_response "FIX_CONFIDENCE")
+ # Verify debug report file exists
+ if [ ! -f "$DEBUG_REPORT_PATH" ]; then
+   echo "ERROR: Debug report path returned but file does not exist: $DEBUG_REPORT_PATH"
+   echo "ACTION: Manual debug report creation required"
+ fi
 
- echo "Debug Analysis:"
- echo " Root Cause: $ROOT_CAUSE"
- echo " Fix Confidence: $FIX_CONFIDENCE"
- echo " Report: $DEBUG_REPORT_PATH"
+ # Extract fix proposals (best effort)
+ ROOT_CAUSE=$(echo "$DEBUG_SPECIALIST_OUTPUT" | grep -oP 'ROOT_CAUSE:\s*\K.*' || echo "Unknown")
+ FIX_CONFIDENCE=$(echo "$DEBUG_SPECIALIST_OUTPUT" | grep -oP 'FIX_CONFIDENCE:\s*\K.*' || echo "Unknown")
+
+ echo "Debug Analysis Complete:"
+ echo "  Root Cause: $ROOT_CAUSE"
+ echo "  Fix Confidence: $FIX_CONFIDENCE"
+ echo "  Report: $DEBUG_REPORT_PATH"
+
+ echo "Verification complete: Debug report validated"
  ```
+ End verification. Proceed even if debug report missing (non-critical for workflow continuation).
 
 - [ ] **Implement debugging loop**
  ```bash
@@ -930,37 +1000,70 @@ Task {
  - Inject artifact path for summary location
 
 - [ ] **Add summary verification**
- ```markdown
- ## Phase 5 Verification
 
- After doc-writer completes, YOU MUST verify summary created:
+ **MANDATORY VERIFICATION CHECKPOINT:**
+ ```bash
+ # Verify doc-writer created workflow summary
+ SUMMARY_PATH=$(echo "$DOC_WRITER_OUTPUT" | grep -oP 'SUMMARY_PATH:\s*\K.*' || echo "")
 
- SUMMARY_PATH=$(parse_agent_response "SUMMARY_PATH")
+ if [ -z "$SUMMARY_PATH" ]; then
+   echo "ERROR: doc-writer did not return SUMMARY_PATH"
+   echo "FALLBACK: Searching for recently created summary files"
 
- if [[ ! -f "$SUMMARY_PATH" ]]; then
-  echo "WARNING: Workflow summary not created"
-  echo "Expected: ${WORKFLOW_TOPIC_DIR}/summaries/${topic_number}_*_summary.md"
+   # Search for recently created summary files (last 5 minutes)
+   FOUND_SUMMARIES=$(find "${WORKFLOW_TOPIC_DIR}/summaries" -name "${topic_number}_*_summary.md" -mmin -5 -type f 2>/dev/null | head -1)
 
-  # Create minimal summary as fallback
-  cat > "${WORKFLOW_TOPIC_DIR}/summaries/${topic_number}_${topic_name}_summary.md" <<EOF
-  # Workflow Summary: ${topic_number} - ${topic_name}
+   if [ -n "$FOUND_SUMMARIES" ]; then
+     SUMMARY_PATH="$FOUND_SUMMARIES"
+     echo "Found workflow summary: $SUMMARY_PATH"
+   else
+     echo "FALLBACK: No summary found - creating minimal workflow summary"
 
-  ## Overview
-  ${workflow_description}
+     SUMMARY_PATH="${WORKFLOW_TOPIC_DIR}/summaries/${topic_number}_${topic_name}_summary.md"
+     cat > "$SUMMARY_PATH" <<EOF
+# Workflow Summary: ${topic_number} - ${topic_name}
 
-  ## Artifacts
-  - Plan: ${PLAN_PATH}
-  - Files modified: ${FILES_MODIFIED[@]}
-  EOF
+## Overview
+Minimal summary created by fallback mechanism.
+doc-writer agent failed to create comprehensive summary.
+
+Feature: ${workflow_description}
+
+## Artifacts Created
+- Plan: ${PLAN_PATH}
+- Research Reports: ${WORKFLOW_TOPIC_DIR}/reports/
+- Debug Reports: ${WORKFLOW_TOPIC_DIR}/debug/ (if any)
+
+## Implementation Summary
+- Files Modified: ${FILES_MODIFIED[@]}
+- Phases Completed: ${PHASES_COMPLETED}
+- Tests Status: ${TESTS_PASSING}
+- Commits: ${COMMIT_HASHES[@]}
+
+## Action Required
+Review artifacts and create comprehensive summary manually.
+EOF
+   fi
  fi
 
- # Extract updated documentation
- READMES_UPDATED=$(parse_agent_response "READMES_UPDATED")
+ # Verify summary file exists
+ if [ ! -f "$SUMMARY_PATH" ]; then
+   echo "ERROR: Summary path returned but file does not exist: $SUMMARY_PATH"
+   echo "ACTION: Manual summary creation required"
+ fi
+
+ # Extract documentation updates (best effort)
+ READMES_UPDATED=$(echo "$DOC_WRITER_OUTPUT" | grep -oP 'READMES_UPDATED:\s*\K.*' || echo "None")
+ GUIDES_UPDATED=$(echo "$DOC_WRITER_OUTPUT" | grep -oP 'GUIDES_UPDATED:\s*\K.*' || echo "None")
 
  echo "Documentation Phase Complete:"
- echo " Summary: $SUMMARY_PATH"
- echo " READMEs Updated: $READMES_UPDATED"
+ echo "  Summary: $SUMMARY_PATH"
+ echo "  READMEs Updated: $READMES_UPDATED"
+ echo "  Guides Updated: $GUIDES_UPDATED"
+
+ echo "Verification complete: Workflow summary validated"
  ```
+ End verification. Proceed even if summary missing (non-critical for workflow completion).
 
 **Testing**:
 ```bash

@@ -296,6 +296,28 @@ ls -la /home/benjamin/.config/specs/081_authentication/
   ```
  - Persist state for cross-phase access
 
+MANDATORY VERIFICATION CHECKPOINT:
+```bash
+# Verify topic directory structure was created
+TOPIC_PATH="${LOCATION_CONTEXT[topic_path]}"
+if [ ! -d "$TOPIC_PATH" ]; then
+  echo "ERROR: Topic directory not created at $TOPIC_PATH"
+  echo "FALLBACK: location-specialist failed - creating directory structure manually"
+  mkdir -p "$TOPIC_PATH"/{reports,plans,summaries,debug,scripts,outputs}
+fi
+
+# Verify all required subdirectories exist
+for subdir in reports plans summaries debug scripts outputs; do
+  if [ ! -d "$TOPIC_PATH/$subdir" ]; then
+    echo "WARNING: Missing subdirectory $TOPIC_PATH/$subdir - creating"
+    mkdir -p "$TOPIC_PATH/$subdir"
+  fi
+done
+
+echo "Verification complete: Topic directory structure validated at $TOPIC_PATH"
+```
+End verification. Proceed only if directory structure exists.
+
 - [ ] Add validation after Phase 0 completion
  - Verify topic directory exists
  - Verify all subdirectories created
