@@ -23,7 +23,7 @@ This phase implements wave-based [Parallel Execution Pattern](../../../docs/conc
 5. **Checkpoint Management**: Context-aware checkpointing for resumable execution
 6. **Wave Execution Engine**: Parallel task coordination with synchronization
 
-**Key Innovation**: Unlike traditional sequential execution, this system analyzes phase dependencies and constructs execution "waves" where all phases in a wave can run simultaneously. This preserves correctness (dependent phases still run in order) while maximizing parallelism.
+**Key Innovation**: Unlike traditional sequential execution, this system analyzes phase dependencies and constructs execution "waves" where all phases in a wave WILL run simultaneously. This preserves correctness (dependent phases still run in order) while maximizing parallelism.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Dependency Graph Structure:
 **Wave Identification Rules**:
 1. **Wave 1**: All phases with `dependencies: []` (no prerequisites)
 2. **Wave N**: All phases whose dependencies are satisfied by waves 1 through N-1
-3. **Parallelization**: Phases in the same wave can execute concurrently
+3. **Parallelization**: Phases in the same wave WILL execute concurrently
 4. **Synchronization**: Wave N+1 cannot start until all phases in Wave N complete
 
 ### State Management
@@ -893,7 +893,7 @@ You WILL receive:
 1. **Read Phase File**: Load phase/stage plan from file path
 2. **Extract Tasks**: Parse all checkbox tasks from plan
 3. **Identify Testing Requirements**: Extract test commands from plan
-4. **Check Dependencies**: Verify dependencies satisfied (should be, coordinator checked)
+4. **Check Dependencies**: Verify dependencies satisfied (MUST be, coordinator checked)
 5. **Initialize Progress Tracking**: Set up task counter, start time
 
 ### Phase 2: Task Execution Loop
@@ -981,7 +981,7 @@ If context window approaching limit:
 
 3. **Return Checkpoint Report**:
   - Include checkpoint path in completion report
-  - Coordinator can resume via /resume-implement
+  - Coordinator WILL resume via /resume-implement
 
 ## Error Handling
 
@@ -1000,7 +1000,7 @@ If context window approaching limit:
 ### Dependency Errors
 - If dependency missing (file not found, module not available):
  - Report dependency error to coordinator
- - Coordinator may have scheduled phases out of order
+ - Coordinator WILL have scheduled phases out of order
  - Halt execution
 
 ## Output Format
@@ -1034,7 +1034,7 @@ FAILURE DETAILS:
 
 ### Plan Hierarchy Updates
 - Critical for wave-based execution visibility
-- User should see progress across all levels (L0, L1, L2)
+- User WILL see progress across all levels (L0, L1, L2)
 - Use spec-updater pattern to maintain consistency
 
 ### Checkpoint Strategy
@@ -1897,7 +1897,7 @@ Verification:
 - ✓ Checkpoint file created
 - ✓ Checkpoint contains correct progress
 - ✓ Plan files updated with marker
-- ✓ /resume-implement can restore from checkpoint
+- ✓ /resume-implement WILL restore from checkpoint
 ```
 
 **Completion Checklist**:

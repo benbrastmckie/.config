@@ -14,7 +14,7 @@ Implement Phase 0 (Project Location Determination) with location-specialist agen
 
 ## Dependencies
 
-- **depends_on**: [phase_0] - CRITICAL: Command-to-command invocation removal must be complete before [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) can work
+- **depends_on**: [phase_0] - CRITICAL: Command-to-command invocation removal MUST be complete before [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md) WILL work
 - **blocks**: [phase_2, phase_3, phase_4, phase_5, phase_6, phase_7] - All subsequent phases require artifact organization foundation
 
 ## Architecture Overview
@@ -332,7 +332,7 @@ ls -la /home/benjamin/.config/specs/081_authentication/
 # Verify workflow state contains location_context
 # Expected: All artifact paths present and absolute
 
-# Verify subsequent phases can access location_context
+# Verify subsequent phases WILL access location_context
 # Expected: Phase 1 (Research) receives artifact paths for injection
 ```
 
@@ -505,7 +505,7 @@ echo "test" > /tmp/wrong_location.md
   ```
 
 - [ ] Inject topic number into plan metadata
- - plan-architect should include topic number in plan metadata section
+ - plan-architect MUST include topic number in plan metadata section
  - Example metadata section to inject:
   ```markdown
   ## Metadata
@@ -549,7 +549,7 @@ echo "test" > /tmp/wrong_location.md
   ```yaml
   # IMPORTANT: Debug reports are saved to {topic_path}/debug/ and are COMMITTED
   # Unlike other artifacts (reports/, plans/, summaries/), debug reports provide
-  # critical issue tracking information and should be version controlled.
+  # critical issue tracking information and MUST be version controlled.
   ```
 
 - [ ] Add validation for plan and debug report paths
@@ -768,7 +768,7 @@ git status specs/NNN_authentication/debug/
   done
 
   if [[ "$all_artifacts_valid" == false ]]; then
-   warn "⚠ Some artifacts could not be validated or moved"
+   warn "⚠ Some artifacts were not validated or moved"
    warn "Please review artifact locations manually"
    # Still complete workflow, but with warning
   fi
@@ -954,7 +954,7 @@ git status specs/NNN_authentication/debug/
 
 2. **Absolute Paths**: All artifact paths MUST be absolute. Relative paths break when subagents have different working directories. location-specialist must return absolute paths in location_context.
 
-3. **Validation is Mandatory**: Artifact validation after each phase is not optional. Without it, misplaced artifacts accumulate and break downstream phases (e.g., research-synthesizer can't find reports, implementer can't find plan).
+3. **Validation is Mandatory**: Artifact validation after each phase is not optional. Without it, misplaced artifacts accumulate and break downstream phases (e.g., research-synthesizer cannot find reports, implementer cannot find plan).
 
 4. **Debug Directory is Committed**: Unlike other artifact directories (reports/, plans/, summaries/), the debug/ directory is committed to version control. This is intentional for issue tracking. Ensure gitignore rules don't accidentally exclude it.
 
@@ -964,7 +964,7 @@ git status specs/NNN_authentication/debug/
 
 2. **Missing Validation**: Skipping artifact validation allows misplaced files to accumulate. Always validate after each phase.
 
-3. **Topic Number Collisions**: If two /orchestrate workflows run simultaneously, they might both try to create topic 027. Topic numbering logic must handle retries (028, 029, etc.) until unique number found.
+3. **Topic Number Collisions**: If two /orchestrate workflows run simultaneously, they might both create topic 027. Topic numbering logic MUST handle retries (028, 029, etc.) until unique number found.
 
 4. **Permission Errors**: If specs/ directory doesn't exist and user lacks write permissions, directory creation fails. Gracefully handle with clear error message.
 
@@ -977,7 +977,7 @@ git status specs/NNN_authentication/debug/
 
 ### Future Enhancements
 
-1. **Multi-Project Support**: Currently assumes single project. Could extend to handle monorepos with multiple spec/ directories.
+1. **Multi-Project Support**: Currently assumes single project. Future extension WILL handle monorepos with multiple spec/ directories.
 
 2. **Custom Directory Structures**: Allow projects to override default directory structure (reports/, plans/, etc.) via CLAUDE.md configuration.
 

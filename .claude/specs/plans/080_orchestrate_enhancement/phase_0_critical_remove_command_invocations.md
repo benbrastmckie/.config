@@ -127,7 +127,7 @@ Refactor `/orchestrate` to eliminate ALL `SlashCommand` tool invocations and rep
 - [ ] **Analyze context requirements for each command**
  - What information does each command need?
  - What artifacts does each command create?
- - What metadata should be returned to orchestrator?
+ - What metadata MUST be returned to orchestrator?
 
 **Testing**:
 ```bash
@@ -264,7 +264,7 @@ Task {
  if [[ ! -f "$EXPECTED_PLAN_PATH" ]]; then
   echo "ERROR: Plan file not created at expected location"
   echo "Expected: $EXPECTED_PLAN_PATH"
-  echo "Agent may have created plan elsewhere - search and move:"
+  echo "Agent WILL have created plan elsewhere - search and move:"
 
   # Search for recently created plan files
   find specs/ -name "*.md" -mmin -5 -type f
@@ -552,7 +552,7 @@ grep -A 50 "Phase 3: Implementation" .claude/commands/orchestrate.md | grep -q "
 if [ $? -eq 0 ]; then
  echo "PASS: Timeout configured"
 else
- echo "WARN: No explicit timeout (may use default)"
+ echo "WARN: No explicit timeout (WILL use default)"
 fi
 ```
 
@@ -1089,7 +1089,7 @@ fi
  for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
   if grep "Task {" -A 20 "$ORCHESTRATE_FILE" | grep -q "$pattern"; then
    echo "✗ FAIL: Slash command '$pattern' found in Task prompt"
-   echo "This may indicate command invocation instead of agent invocation"
+   echo "This might indicate command invocation instead of agent invocation"
    exit 1
   fi
  done
