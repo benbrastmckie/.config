@@ -144,20 +144,49 @@ echo "✓ VERIFIED: Analysis scope: $SCOPE"
 - Suggest preparatory refactoring to ease feature implementation
 - Highlight architectural changes needed
 
-### STEP 7 (FINAL STEP) - Report Generation
+### STEP 7 (FINAL STEP) - Report Generation and File Creation
+
+**CRITICAL**: YOU MUST create refactoring report file BEFORE returning to user.
 
 **YOU MUST create a comprehensive refactoring report in `specs/reports/`**:
 
-#### Report Number Assignment
-- Check existing reports in appropriate `specs/reports/` directory
-- Use next sequential number (NNN format with leading zeros)
-- Name format: `NNN_refactoring_[scope].md`
+#### Report Path Pre-Calculation
+
+**EXECUTE NOW - Calculate Report Path BEFORE Agent Invocation**:
+
+```bash
+# Determine specs directory
+SPECS_DIR="${CLAUDE_PROJECT_DIR}/specs"
+if [[ ! -d "$SPECS_DIR" ]]; then
+  mkdir -p "$SPECS_DIR/reports" || {
+    echo "❌ CRITICAL ERROR: Cannot create specs directory"
+    exit 1
+  }
+fi
+
+# Calculate next report number
+REPORT_NUM=$(find "$SPECS_DIR/reports" -name "*_refactoring_*.md" 2>/dev/null | wc -l)
+REPORT_NUM=$((REPORT_NUM + 1))
+
+# Generate report filename
+SCOPE_SLUG=$(echo "$SCOPE" | tr ' /' '_' | tr -cd '[:alnum:]_')
+REPORT_PATH="$SPECS_DIR/reports/$(printf "%03d" $REPORT_NUM)_refactoring_${SCOPE_SLUG}.md"
+
+echo "PROGRESS: Report path calculated: $REPORT_PATH"
+```
+
+**MANDATORY VERIFICATION - Path Calculated**:
+```bash
+[[ -z "$REPORT_PATH" ]] && echo "❌ ERROR: Report path not calculated" && exit 1
+[[ -f "$REPORT_PATH" ]] && echo "⚠️  WARNING: Report already exists, will overwrite"
+echo "✓ VERIFIED: Report path ready: $REPORT_PATH"
+```
 
 #### Report Structure
 
-Refactoring reports follow the standard structure defined in `.claude/templates/refactor-structure.md`.
+**CRITICAL**: Refactoring reports MUST follow the standard structure defined in `.claude/templates/refactor-structure.md`.
 
-Key sections include:
+Key sections (ALL REQUIRED):
 - **Executive Summary**: High-level findings and overall assessment
 - **Critical Issues**: Must-fix problems (bugs, security, major standards violations)
 - **Refactoring Opportunities**: Categorized findings (duplication, complexity, standards, architecture, testing, docs)
@@ -168,13 +197,65 @@ Key sections include:
 
 For complete refactoring report structure and analysis guidelines, see `.claude/templates/refactor-structure.md`
 
-### 7. Actionable Output
-The report will provide:
-- Clear, prioritized list of refactoring tasks
-- Specific code examples of problems and solutions
-- Integration points with new features (if applicable)
-- Commands to run for validation
-- Links to create follow-up plans with `/plan` command
+#### File Creation Enforcement
+
+**CRITICAL**: Create report file BEFORE returning success.
+
+**MANDATORY VERIFICATION - Report File Created**:
+```bash
+if [[ ! -f "$REPORT_PATH" ]]; then
+  echo "❌ CRITICAL ERROR: Refactoring report not created at $REPORT_PATH"
+
+  # FALLBACK: Search for report in alternative locations
+  echo "⚠️  Attempting fallback search..."
+  FOUND_REPORT=$(find "$SPECS_DIR" -name "*refactoring*.md" -type f -newer /tmp/refactor_start 2>/dev/null | head -1)
+
+  if [[ -n "$FOUND_REPORT" ]]; then
+    echo "✓ FALLBACK: Found report at $FOUND_REPORT"
+    REPORT_PATH="$FOUND_REPORT"
+  else
+    echo "❌ FALLBACK FAILED: No refactoring report found"
+    exit 1
+  fi
+fi
+
+# Verify report has minimum content
+REPORT_LINES=$(wc -l < "$REPORT_PATH")
+if [[ $REPORT_LINES -lt 50 ]]; then
+  echo "⚠️  WARNING: Report seems incomplete ($REPORT_LINES lines)"
+fi
+
+echo "✓ VERIFIED: Refactoring report created: $REPORT_PATH"
+```
+
+**CHECKPOINT REQUIREMENT - Report Generation Complete**:
+
+Report creation status:
+```
+CHECKPOINT: Refactoring Analysis Complete
+- Scope: $SCOPE
+- Report Path: $REPORT_PATH
+- Report Lines: $REPORT_LINES
+- Agent: code-reviewer
+- Status: SUCCESS
+```
+
+#### Return Format Specification
+
+**CRITICAL**: YOU MUST return ONLY the following format (no additional analysis):
+
+```
+✓ Refactoring Analysis Complete
+
+Scope: $SCOPE
+Report: $REPORT_PATH
+Agent: code-reviewer
+
+Next Steps:
+- Review report for critical issues
+- Create implementation plan: /plan "Address refactoring recommendations" $REPORT_PATH
+- Prioritize high-impact, low-risk refactorings first
+```
 
 ## Success Criteria
 - All code analyzed against CLAUDE.md standards

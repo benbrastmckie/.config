@@ -636,4 +636,53 @@ Following CLAUDE.md standards:
 - **Content Preservation**: All completion status maintained
 - **Git Tracking**: All file operations tracked
 
-Let me collapse the requested phase or stage.
+## Final Verification and Reporting
+
+### File Creation Enforcement
+
+**CRITICAL**: Verify content was merged into parent file BEFORE deleting expanded file.
+
+This verification is already performed in Steps 4-6, ensuring:
+- Expanded content successfully merged into parent
+- Parent file updated with new content
+- Metadata synchronized across all levels
+- ONLY THEN: Expanded file deleted
+
+### CHECKPOINT REQUIREMENT - Collapse Operation Complete
+
+**YOU MUST report collapse status**:
+
+```
+CHECKPOINT: Collapse Operation Complete
+- Type: [phase|stage]
+- Target: [phase_N or stage_N]
+- Parent Plan: [main plan path]
+- Structure Level: [0|1|2] (after collapse)
+- Files Deleted: [expanded file path]
+- Content Preserved: YES
+- Status: SUCCESS
+```
+
+### Return Format Specification
+
+**CRITICAL**: YOU MUST return ONLY the following format:
+
+```
+✓ Collapse Complete
+
+Type: [phase|stage]
+Target: [phase_N_name or stage_N_name]
+Parent: [parent file path]
+Structure Level: [0|1|2]
+
+Collapsed: [expanded file path]
+Content: Preserved in parent
+Metadata: Updated
+
+Next Steps:
+- Review parent file for correctness
+- Verify all completion status preserved
+- Continue implementation if needed
+```
+
+**EXECUTE NOW**: Collapse the requested phase or stage.
