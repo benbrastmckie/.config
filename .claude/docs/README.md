@@ -13,6 +13,35 @@ This directory provides structured documentation following the [Diataxis framewo
 
 This organization ensures developers can quickly find the right documentation based on their immediate need: looking up syntax, solving a specific problem, understanding a concept, or learning a new workflow.
 
+## Quick Navigation for Agents
+
+Looking to work on a specific area? Use these quick-start paths:
+
+### Working on Commands?
+→ **Start**: [Command Development Guide](guides/command-development-guide.md)
+→ **Patterns**: [Behavioral Injection Pattern](concepts/patterns/behavioral-injection.md)
+→ **Reference**: [Command Reference](reference/command-reference.md)
+
+### Working on Agents?
+→ **Start**: [Agent Development Guide](guides/agent-development-guide.md)
+→ **Architecture**: [Hierarchical Agents](concepts/hierarchical_agents.md)
+→ **Reference**: [Agent Reference](reference/agent-reference.md)
+
+### Refactoring .claude/?
+→ **Standards**: [Command Architecture Standards](reference/command_architecture_standards.md)
+→ **Migration**: [Execution Enforcement Guide](guides/execution-enforcement-guide.md)
+→ **Testing**: [Testing Patterns](guides/testing-patterns.md)
+
+### Content Ownership
+
+**Single Source of Truth**:
+- **Patterns**: `concepts/patterns/` catalog is authoritative for architectural patterns
+- **Command Syntax**: `reference/command-reference.md` is authoritative for command usage
+- **Agent Syntax**: `reference/agent-reference.md` is authoritative for agent capabilities
+- **Architecture**: `concepts/hierarchical_agents.md` is authoritative for system design
+
+Guides should cross-reference these authoritative sources rather than duplicating content.
+
 ## Documentation Structure
 
 ```
@@ -27,12 +56,13 @@ docs/
 │   ├── command_architecture_standards.md  Command/agent architecture standards
 │   └── phase_dependencies.md    Wave-based parallel execution syntax
 │
-├── guides/                      Task-focused how-to guides (14 files)
+├── guides/                      Task-focused how-to guides (15 files)
 │   ├── README.md                How-to guides index
 │   ├── creating-commands.md     Command development guide
 │   ├── creating-agents.md       Agent creation guide
 │   ├── using-agents.md          Agent integration patterns
 │   ├── standards-integration.md Standards discovery and application
+│   ├── imperative-language-guide.md  MUST/WILL/SHALL usage for required actions
 │   ├── command-patterns.md      Command pattern catalog
 │   ├── command-examples.md      Reusable command patterns
 │   ├── logging-patterns.md      Standardized logging formats
@@ -63,15 +93,21 @@ docs/
 │
 ├── workflows/                   Learning-oriented step-by-step tutorials (6 files)
 │   ├── README.md                Workflow tutorials index
-│   ├── orchestration-guide.md   Multi-agent workflow tutorial
+│   ├── orchestration-guide.md   Multi-agent workflow tutorial (includes behavioral injection example)
 │   ├── adaptive-planning-guide.md Progressive plan structures
 │   ├── checkpoint_template_guide.md Template-based planning
 │   ├── spec_updater_guide.md    Spec updater agent usage
 │   ├── tts-integration-guide.md TTS system setup tutorial
 │   └── conversion-guide.md      Document conversion workflows
 │
-└── archive/                     Historical documentation
-    └── README.md                Archive index with redirects
+└── archive/                     Historical documentation (5 files)
+    ├── README.md                Archive index with redirects
+    ├── artifact_organization.md Topic-based organization guide (archived)
+    ├── topic_based_organization.md Directory structure guide (archived)
+    ├── development-philosophy.md Development philosophy (archived)
+    ├── timeless_writing_guide.md Writing standards (archived)
+    ├── migration-guide-adaptive-plans.md Adaptive planning migration (archived)
+    └── orchestration_enhancement_guide.md Orchestration enhancements (archived)
 ```
 
 ## Hierarchical Agent Workflow System
@@ -106,7 +142,7 @@ Commands orchestrate specialized subagents through structured workflows:
 **`/orchestrate`**: Complete end-to-end workflow (6 phases: research → planning → implementation → testing → debugging → documentation)
 - Target: <30% context usage throughout
 
-**For Complete Command Workflow Details**: See [Hierarchical Agent Workflow Guide](workflows/hierarchical-agent-workflow.md)
+**For Complete Command Workflow Details**: See [Hierarchical Agent Architecture - Tutorial Walkthrough](concepts/hierarchical_agents.md#tutorial-walkthrough)
 
 ### Layered Context Architecture
 
@@ -228,7 +264,7 @@ Savings: 40 min (27%)
 - Implementation phase: 40-60% faster (wave-based execution)
 - Overall workflows: 35-50% faster vs sequential
 
-**For Complete Details**: See [Hierarchical Agent Workflow Guide](workflows/hierarchical-agent-workflow.md)
+**For Complete Details**: See [Hierarchical Agent Architecture](concepts/hierarchical_agents.md) and [Tutorial Walkthrough](concepts/hierarchical_agents.md#tutorial-walkthrough)
 
 ---
 

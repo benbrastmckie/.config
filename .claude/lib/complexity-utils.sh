@@ -43,17 +43,17 @@ calculate_phase_complexity() {
     # Fallback: simple calculation
     local score=0
 
-    # High complexity keywords (weight: 3)
-    if echo "$phase_name" | grep -qiE "refactor|architecture|redesign|migrate|security"; then
-      score=$((score + 3))
-    fi
+    # High complexity keywords (weight: 3 each)
+    local high_keywords="refactor|architecture|redesign|migrate|security|microservice"
+    local high_matches=$(echo "$phase_name" | grep -oiE "$high_keywords" | wc -l | tr -d ' ')
+    score=$((score + (high_matches * 3)))
 
-    # Medium complexity keywords (weight: 2)
-    if echo "$phase_name" | grep -qiE "implement|create|build|integrate|add"; then
-      score=$((score + 2))
-    fi
+    # Medium complexity keywords (weight: 2 each)
+    local med_keywords="implement|create|build|integrate|add"
+    local med_matches=$(echo "$phase_name" | grep -oiE "$med_keywords" | wc -l | tr -d ' ')
+    score=$((score + (med_matches * 2)))
 
-    # Task count
+    # Task count (weight: 1 per 5 tasks)
     if [ -n "$task_list" ]; then
       local task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
       # Ensure task_count is numeric
@@ -384,13 +384,13 @@ EOF
 get_complexity_level() {
   local score="${1:-0}"
 
-  if [ "$score" -le "$COMPLEXITY_THRESHOLD_LOW" ]; then
+  if [ "$score" -lt "$COMPLEXITY_THRESHOLD_LOW" ]; then
     echo "trivial"
-  elif [ "$score" -le "$COMPLEXITY_THRESHOLD_MEDIUM" ]; then
+  elif [ "$score" -lt "$COMPLEXITY_THRESHOLD_MEDIUM" ]; then
     echo "low"
-  elif [ "$score" -le "$COMPLEXITY_THRESHOLD_HIGH" ]; then
+  elif [ "$score" -lt "$COMPLEXITY_THRESHOLD_HIGH" ]; then
     echo "medium"
-  elif [ "$score" -le "$COMPLEXITY_THRESHOLD_CRITICAL" ]; then
+  elif [ "$score" -lt "$COMPLEXITY_THRESHOLD_CRITICAL" ]; then
     echo "high"
   else
     echo "critical"

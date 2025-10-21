@@ -33,8 +33,8 @@ NC='\033[0m' # No Color
 pass_test() {
   local test_name="$1"
   echo -e "${GREEN}✓${NC} $test_name"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 fail_test() {
@@ -44,8 +44,8 @@ fail_test() {
   if [ -n "$reason" ]; then
     echo "  Reason: $reason"
   fi
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 # Test: calculate_phase_complexity with simple phase

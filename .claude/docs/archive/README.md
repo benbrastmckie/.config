@@ -29,12 +29,16 @@ For current, up-to-date documentation, refer to the main documentation directory
 ### Migration Guides
 
 - **migration-guide-adaptive-plans.md** - Migration guide for adaptive planning tier system (superseded by integrated documentation)
-- **specs_migration_guide.md** - Specs directory migration guide (topic-based structure now standard)
 
 ### Historical Architecture
 
 - **orchestration_enhancement_guide.md** - Early orchestration enhancements (integrated into orchestration-guide.md)
-- **architecture.md** - Phase 7 modularization architecture (integrated into current command documentation)
+
+### Removed (2025-10-21)
+
+The following documents were removed as obsolete during Plan 082 refactoring:
+- **specs_migration_guide.md** - Specs directory migration guide (topic-based structure now standard, migration complete)
+- **architecture.md** - Phase 7 modularization architecture (superseded by current concepts/ documentation)
 
 ## When to Use Archive
 

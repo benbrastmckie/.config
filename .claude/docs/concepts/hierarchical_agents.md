@@ -9,7 +9,7 @@ The hierarchical agent architecture enables multi-level agent coordination that 
 **Related Documentation**:
 - [Using Agents](../guides/using-agents.md) - Agent invocation patterns and behavioral injection
 - [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards) - Standards 1, 6-8
-- [Hierarchical Agent Workflow Guide](../workflows/hierarchical-agent-workflow.md) - Practical workflow examples
+- [Tutorial Walkthrough](#tutorial-walkthrough) - Step-by-step practical workflow examples
 
 ## Table of Contents
 
@@ -24,6 +24,7 @@ The hierarchical agent architecture enables multi-level agent coordination that 
 - [Performance Optimization](#performance-optimization)
 - [Troubleshooting](#troubleshooting)
 - [Examples](#examples)
+- [Tutorial Walkthrough](#tutorial-walkthrough)
 
 ## Architecture Principles
 
@@ -1726,6 +1727,427 @@ See [Agent Delegation Troubleshooting Guide](../troubleshooting/agent-delegation
 - ❌ Agents calculating their own paths
 - ❌ Commands loading full artifact content
 - ❌ Flat directory structures (non-topic-based)
+
+## Tutorial Walkthrough
+
+This section provides step-by-step walkthroughs of hierarchical agent workflows for each major command, demonstrating how the architecture principles translate into practice.
+
+### Tutorial: /orchestrate Workflow
+
+**Scenario**: Implement an authentication system end-to-end
+
+**Steps**:
+
+```
+User runs: /orchestrate "implement authentication system"
+
+Primary Orchestrator initializes workflow state:
+  - Creates master plan (todo list)
+  - Determines topic directory: specs/027_authentication/
+  - Sets context target: <30% usage
+
+PHASE 1: Research (Parallel)
+  ↓
+Orchestrator invokes 3 research specialists in parallel:
+  Task { research-specialist: "authentication patterns" }
+  Task { research-specialist: "security best practices" }
+  Task { research-specialist: "framework comparison" }
+
+Each specialist completes and returns metadata:
+  {
+    "report_path": "specs/027_auth/reports/027_patterns.md",
+    "summary": "JWT vs sessions analysis. JWT recommended for APIs...",
+    "key_findings": [...],
+    "recommendations": [...]
+  }
+
+Orchestrator receives 3 metadata summaries (250 tokens each = 750 tokens)
+  - Does NOT read full reports (would be 15,000 tokens)
+  - Stores: report paths + summaries only
+  - Context usage: 3.75% (750/20,000)
+
+PHASE 2: Planning (Sequential)
+  ↓
+Orchestrator calculates plan path:
+  - PLAN_PATH = "specs/027_auth/plans/027_implementation.md"
+
+Orchestrator invokes plan-architect agent:
+  Task {
+    description: "Create implementation plan"
+    prompt: |
+      Feature: Authentication system
+      Research Reports:
+        - specs/027_auth/reports/027_patterns.md
+        - specs/027_auth/reports/027_security.md
+        - specs/027_auth/reports/027_frameworks.md
+      Plan Output Path: ${PLAN_PATH}
+
+      Create plan at exact path provided.
+      Return metadata only.
+  }
+
+Plan-architect completes:
+  - Uses Write tool to create plan at PLAN_PATH
+  - Returns metadata:
+    {
+      "path": "specs/027_auth/plans/027_implementation.md",
+      "phases": 6,
+      "complexity_score": 78,
+      "estimated_hours": 14,
+      "expanded_phases": [2, 4]
+    }
+
+Orchestrator receives plan metadata (350 tokens)
+  - Does NOT read full plan (would be 8,000 tokens)
+  - Stores: plan path + metadata only
+  - Context usage: 5.5% (1,100/20,000)
+
+PHASE 3: Complexity Evaluation (Conditional)
+  ↓
+Orchestrator checks complexity score (78 > 70 threshold)
+  - Decision: Proceed with plan as-is (complexity acceptable)
+  - Alternative: If score >90, would invoke /expand
+
+PHASE 4: Implementation (Wave-Based)
+  ↓
+Orchestrator invokes /implement:
+  - SlashCommand { command: "/implement ${PLAN_PATH}" }
+
+/implement executes phases in waves:
+  Wave 1: Phase 1 (database setup)
+  Wave 2: Phase 2, 3 in parallel (backend, frontend)
+  Wave 3: Phase 4 (integration)
+  Wave 4: Phase 5, 6 sequential (testing, docs)
+
+After each phase completion, /implement prunes context:
+  - Clears implementation details
+  - Keeps: phase summary (100 words) + files modified
+  - Context reduction: 5,000 tokens → 150 tokens (97%)
+
+/implement completes and returns:
+  {
+    "implementation_complete": true,
+    "phases_completed": "6/6",
+    "tests_passing": true,
+    "summary_path": "specs/027_auth/summaries/027_implementation.md",
+    "summary": "[200-word summary]"
+  }
+
+Orchestrator receives implementation summary (200 tokens)
+  - Does NOT read full summary file
+  - Stores: summary text + summary path
+  - Context usage: 7% (1,400/20,000)
+
+PHASE 5: Documentation (Sequential)
+  ↓
+Orchestrator invokes /document:
+  - SlashCommand { command: "/document 'authentication system'" }
+
+/document completes:
+  {
+    "files_modified": ["README.md", "USER_GUIDE.md"],
+    "summary": "[100-word summary]"
+  }
+
+Orchestrator receives doc summary (100 tokens)
+  - Context usage: 7.5% (1,500/20,000)
+
+PHASE 6: Workflow Summary (Final)
+  ↓
+Orchestrator invokes spec-updater agent:
+  Task {
+    description: "Create workflow summary"
+    prompt: |
+      Create summary at: specs/027_auth/summaries/027_workflow.md
+
+      Artifacts:
+        Reports: [paths]
+        Plan: ${PLAN_PATH}
+        Implementation summary: [path]
+
+      Return: summary_path + metadata
+  }
+
+Spec-updater creates workflow summary:
+  - Aggregates all artifact references
+  - Updates cross-references
+  - Returns metadata (150 tokens)
+
+FINAL STATE:
+  Total context usage: 8.25% (1,650/20,000)
+  Target achieved: <30%
+  Time elapsed: 45 minutes
+  Artifacts created:
+    - 3 research reports
+    - 1 implementation plan (Level 1 expanded)
+    - 1 implementation summary
+    - 1 workflow summary
+  Performance: 60% time savings vs sequential execution
+```
+
+**Key Observations**:
+- Metadata-only passing maintained context <10% throughout
+- Parallel research saved 66% time (3 agents × 5min = 15min → 5min)
+- Wave-based implementation saved 40% time
+- Full artifacts never loaded into orchestrator context
+
+### Tutorial: /implement with Subagent Delegation
+
+**Scenario**: Complex phase triggers implementation-researcher subagent
+
+**Steps**:
+
+```
+User runs: /implement specs/027_auth/plans/027_implementation.md
+
+/implement parses plan:
+  - 6 phases total
+  - Phase 3 complexity: 9.2 (high)
+  - Phase 3 tasks: 12 (exceeds 10 threshold)
+
+/implement reaches Phase 3:
+  Phase 3: Implement JWT token generation and validation
+    Complexity: 9.2
+    Tasks: 12
+    Files: lib/auth/jwt.lua, lib/auth/tokens.lua, lib/crypto/sign.lua
+
+Trigger: complexity ≥8 AND tasks >10
+  ↓
+/implement invokes implementation-researcher subagent:
+  Task {
+    description: "Explore codebase for Phase 3"
+    prompt: |
+      Phase: 3
+      Description: Implement JWT token generation and validation
+      Files: lib/auth/jwt.lua, lib/auth/tokens.lua, lib/crypto/sign.lua
+
+      Research:
+        1. Existing JWT/crypto implementations
+        2. Available utility functions
+        3. Patterns to follow
+        4. Integration points
+
+      Create exploration report at:
+        specs/027_auth/artifacts/phase_3_exploration.md
+
+      Return metadata: {path, summary, key_findings}
+  }
+
+Implementation-researcher explores codebase:
+  - Greps for "jwt", "crypto", "sign" across codebase
+  - Reads lib/crypto/sign.lua (finds signing utility)
+  - Reads lib/auth/sessions.lua (finds similar pattern)
+  - Identifies middleware/auth.lua as integration point
+
+Implementation-researcher creates artifact:
+  - Writes: specs/027_auth/artifacts/phase_3_exploration.md (5,000 tokens)
+  - Returns metadata:
+    {
+      "path": "specs/027_auth/artifacts/phase_3_exploration.md",
+      "summary": "Found existing JWT utility in lib/crypto/sign.lua. Sessions pattern in lib/auth/sessions.lua provides good structure. Middleware integration via lib/middleware/auth.lua required.",
+      "key_findings": [
+        "Reuse lib/crypto/sign.lua for JWT signing",
+        "Follow sessions.lua structure for token management",
+        "Add middleware integration in lib/middleware/auth.lua"
+      ]
+    }
+
+/implement receives metadata (250 tokens, not 5,000):
+  - Context reduction: 95%
+  - Stores: metadata only
+
+/implement proceeds with Phase 3 implementation:
+  - Reads exploration artifact on-demand for context
+  - Follows identified patterns
+  - Reuses crypto/sign.lua utility
+  - Completes Phase 3 successfully
+
+/implement prunes exploration artifact:
+  - Clears full artifact content from memory
+  - Retains: artifact path + metadata (250 tokens)
+  - Ready for Phase 4 with <25% context usage
+```
+
+**Key Observations**:
+- Subagent delegation triggered automatically by complexity/tasks
+- Context saved: 95% (5,000 tokens → 250 tokens)
+- On-demand reading: Full artifact loaded only when implementing
+- Aggressive pruning: Full content cleared after phase completion
+
+### Tutorial: /plan with Research Integration
+
+**Scenario**: Ambiguous feature requires research before planning
+
+**Steps**:
+
+```
+User runs: /plan "add caching layer"
+
+/plan analyzes feature description:
+  - Ambiguity detected: "caching layer" could mean:
+    1. In-memory caching (Redis, Memcached)
+    2. HTTP caching (Varnish, CDN)
+    3. Database query caching
+    4. Application-level caching
+
+Decision: Invoke research agents to clarify approaches
+  ↓
+/plan invokes 3 research agents in parallel:
+  Task { research-specialist: "in-memory caching patterns" }
+  Task { research-specialist: "HTTP caching best practices" }
+  Task { research-specialist: "database query caching strategies" }
+
+Each agent completes in 4-6 minutes (parallel execution)
+  - Total time: 6 minutes (vs 18 minutes sequential)
+  - Time savings: 66%
+
+Each agent returns metadata:
+  {
+    "report_path": "specs/028_caching/reports/028_inmemory.md",
+    "summary": "Redis recommended for session data, Memcached for simple key-value...",
+    "key_findings": [...],
+    "recommendations": [...]
+  }
+
+/plan receives 3 metadata summaries (750 tokens total)
+  - Does NOT read full reports yet
+  - Context usage: 3.75%
+
+/plan synthesizes research findings:
+  - Determines: Application-level + in-memory caching (Redis)
+  - Creates plan incorporating research recommendations
+
+/plan invokes plan-architect agent:
+  Task {
+    prompt: |
+      Feature: Caching layer (Redis-based)
+      Research Reports:
+        - specs/028_caching/reports/028_inmemory.md
+        - specs/028_caching/reports/028_http.md
+        - specs/028_caching/reports/028_database.md
+
+      Create plan at: specs/028_caching/plans/028_implementation.md
+
+      Plan should:
+        - Follow Redis recommendations from research
+        - Include cache invalidation strategy
+        - Address concerns from research reports
+  }
+
+Plan-architect completes:
+  - Reads research reports for detailed recommendations
+  - Creates plan with 5 phases
+  - Cross-references research reports in plan metadata
+  - Returns metadata:
+    {
+      "path": "specs/028_caching/plans/028_implementation.md",
+      "phases": 5,
+      "complexity_score": 65,
+      "research_reports": [
+        "specs/028_caching/reports/028_inmemory.md",
+        "specs/028_caching/reports/028_http.md",
+        "specs/028_caching/reports/028_database.md"
+      ]
+    }
+
+/plan completes:
+  - Total time: 12 minutes (6 research + 6 planning)
+  - Context usage: 5% (1,000 tokens)
+  - Artifacts: 3 reports + 1 plan with cross-references
+```
+
+**Key Observations**:
+- Research delegation triggered by ambiguous feature description
+- Parallel research saved 66% time
+- Metadata-only passing until planning phase needed details
+- Cross-references establish traceability from plan to research
+
+### Tutorial: Checkpoint Recovery
+
+**Scenario**: Implementation interrupted, resume from last checkpoint
+
+**Steps**:
+
+```
+User runs: /implement specs/027_auth/plans/027_implementation.md
+
+/implement begins:
+  Phase 1: Database setup (COMPLETE)
+  Phase 2: Backend API (COMPLETE)
+  Phase 3: Frontend components (IN PROGRESS - interrupted)
+    Task 1: Create login form ✓
+    Task 2: Create session management ✗ (interrupted here)
+    Task 3: Add error handling ✗
+
+System interruption occurs (user closes terminal, timeout, etc.)
+
+Checkpoint system automatically saved state:
+  Location: .claude/data/checkpoints/027_auth_implementation.json
+  Content:
+    {
+      "plan_path": "specs/027_auth/plans/027_implementation.md",
+      "current_phase": 3,
+      "completed_phases": [1, 2],
+      "phase_3_progress": {
+        "completed_tasks": [1],
+        "pending_tasks": [2, 3],
+        "files_modified": ["components/LoginForm.vue"]
+      },
+      "context_summary": {
+        "phase_1": "Database schema created, migrations run",
+        "phase_2": "API endpoints implemented, tests passing"
+      }
+    }
+
+---
+
+User resumes: /implement specs/027_auth/plans/027_implementation.md
+
+/implement detects checkpoint:
+  - Reads checkpoint file
+  - Restores workflow state
+  - Context restoration: 500 tokens (not full 10,000 tokens)
+
+/implement resumes from Phase 3, Task 2:
+  - Loads phase 3 context from checkpoint
+  - Reviews completed work (Task 1)
+  - Continues with Task 2
+
+Phase 3 completes successfully
+
+/implement updates checkpoint:
+  - current_phase: 4
+  - completed_phases: [1, 2, 3]
+  - Removes phase_3_progress (no longer needed)
+
+/implement continues to Phase 4...
+```
+
+**Key Observations**:
+- Checkpoint saved automatically after each phase
+- Recovery restores state without re-reading all artifacts
+- Context restoration: 500 tokens (metadata) vs 10,000+ tokens (full artifacts)
+- Work not lost: Resumed exactly where interrupted
+
+### Best Practices from Tutorials
+
+**For Command Developers**:
+1. Always trigger subagents before high-complexity phases (≥8 score)
+2. Use metadata-only passing throughout workflow
+3. Implement checkpointing for long-running workflows
+4. Prune context aggressively after each phase completion
+
+**For Workflow Orchestrators**:
+1. Maintain master plan as primary context anchor
+2. Read full artifacts only when absolutely necessary
+3. Monitor context usage, target <30% throughout
+4. Use parallel execution for independent phases
+
+**For Integration**:
+1. Cross-reference artifacts in metadata for traceability
+2. Update plan hierarchy checkboxes automatically
+3. Create summaries when context usage exceeds 25%
+4. Verify gitignore compliance for all artifacts
 
 ## Summary
 

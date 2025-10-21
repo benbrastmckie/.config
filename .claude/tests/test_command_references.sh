@@ -55,7 +55,7 @@ for cmd_file in "$COMMANDS_DIR"/*.md; do
   echo "Checking: $cmd_name"
 
   # Use grep to extract markdown links to shared/
-  grep -oP '\[([^\]]+)\]\(shared/([^)]+)\)' "$cmd_file" 2>/dev/null | while read -r match; do
+  grep -oP '\[([^\]]+)\]\(shared/([^)]+)\)' "$cmd_file" 2>/dev/null || true | while read -r match; do
     link_text=$(echo "$match" | grep -oP '\[\K[^\]]+')
     link_path=$(echo "$match" | grep -oP 'shared/\K[^)]+')
     validate_link "$cmd_file" "$link_text" "shared/$link_path"
@@ -76,15 +76,15 @@ for shared_file in "$SHARED_DIR"/*.md; do
   echo "Checking: $shared_name"
 
   # Extract markdown links to other files (skip http/https)
-  grep -oP '\[([^\]]+)\]\(([^)]+\.md[^)]*)\)' "$shared_file" 2>/dev/null | while read -r match; do
+  grep -oP '\[([^\]]+)\]\(([^)]+\.md[^)]*)\)' "$shared_file" 2>/dev/null || true | while read -r match; do
     link_text=$(echo "$match" | grep -oP '\[\K[^\]]+')
     link_path=$(echo "$match" | grep -oP '\(\K[^)]+')
-    
+
     # Skip external links
     if echo "$link_path" | grep -q '^https\?://'; then
       continue
     fi
-    
+
     validate_link "$shared_file" "$link_text" "$link_path"
   done
 done
@@ -109,7 +109,7 @@ for shared_file in "$SHARED_DIR"/*.md; do
   fi
 
   # Extract markdown links back to parent directory
-  grep -oP '\[([^\]]+)\]\(\.\./([^)]+\.md[^)]*)\)' "$shared_file" 2>/dev/null | while read -r match; do
+  grep -oP '\[([^\]]+)\]\(\.\./([^)]+\.md[^)]*)\)' "$shared_file" 2>/dev/null || true | while read -r match; do
     link_text=$(echo "$match" | grep -oP '\[\K[^\]]+')
     link_path=$(echo "$match" | grep -oP '\(\K[^)]+')
     validate_link "$shared_file" "$link_text" "$link_path"
@@ -129,15 +129,15 @@ for readme in "$COMMANDS_DIR/README.md" "$SHARED_DIR/README.md" "$CLAUDE_DIR/lib
   echo ""
   echo "Checking: $readme_name"
 
-  grep -oP '\[([^\]]+)\]\(([^)]+\.md[^)]*)\)' "$readme" 2>/dev/null | while read -r match; do
+  grep -oP '\[([^\]]+)\]\(([^)]+\.md[^)]*)\)' "$readme" 2>/dev/null || true | while read -r match; do
     link_text=$(echo "$match" | grep -oP '\[\K[^\]]+')
     link_path=$(echo "$match" | grep -oP '\(\K[^)]+')
-    
+
     # Skip external links
     if echo "$link_path" | grep -q '^https\?://'; then
       continue
     fi
-    
+
     validate_link "$readme" "$link_text" "$link_path"
   done
 done

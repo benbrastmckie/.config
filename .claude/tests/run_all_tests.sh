@@ -16,7 +16,7 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
-SKIPPED_TESTS=0
+SKIPPED_SUITES=0
 
 # Colors
 RED='\033[0;31m'
@@ -47,6 +47,16 @@ fi
 # Run each test file
 for test_file in $ALL_TEST_FILES; do
   test_name=$(basename "$test_file" .sh)
+
+  # Check if test should be skipped
+  if [ -f "${test_file}.skip" ]; then
+    skip_reason=$(cat "${test_file}.skip" 2>/dev/null || echo "No reason provided")
+    echo -e "${YELLOW}⊘ SKIPPING: $test_name${NC}"
+    echo "  Reason: $skip_reason"
+    echo ""
+    SKIPPED_SUITES=$((SKIPPED_SUITES + 1))
+    continue
+  fi
 
   echo -e "${BLUE}Running: $test_name${NC}"
   echo "────────────────────────────────────────────────"
@@ -101,6 +111,9 @@ echo "  Test Results Summary"
 echo "════════════════════════════════════════════════"
 echo -e "Test Suites Passed:  ${GREEN}${PASSED_TESTS}${NC}"
 echo -e "Test Suites Failed:  ${RED}${FAILED_TESTS}${NC}"
+if [ $SKIPPED_SUITES -gt 0 ]; then
+  echo -e "Test Suites Skipped: ${YELLOW}${SKIPPED_SUITES}${NC}"
+fi
 echo -e "Total Individual Tests: ${TOTAL_TESTS}"
 echo ""
 

@@ -106,10 +106,10 @@ if [ -f "$CHECKPOINT_FILE" ]; then
   # Check for schema version (v1.2 with replanning fields)
   if command -v jq &>/dev/null; then
     SCHEMA_VERSION=$(jq -r '.schema_version // "unknown"' "$CHECKPOINT_FILE")
-    if [ "$SCHEMA_VERSION" = "1.2" ]; then
-      pass "Checkpoint schema version is 1.2"
+    if [ "$SCHEMA_VERSION" = "1.3" ]; then
+      pass "Checkpoint schema version is 1.3"
     else
-      fail "Checkpoint schema version mismatch" "Expected 1.2, got $SCHEMA_VERSION"
+      fail "Checkpoint schema version mismatch" "Expected 1.3, got $SCHEMA_VERSION"
     fi
 
     # Check replanning fields

@@ -1,5 +1,7 @@
 # Architectural Patterns Catalog
 
+**AUTHORITATIVE SOURCE**: This catalog is the single source of truth for all architectural patterns in Claude Code. Guides and workflows should reference these patterns rather than duplicating their explanations.
+
 [Used by: all commands, agents, and workflows]
 
 This directory documents the core architectural patterns that enable reliable, efficient multi-agent orchestration in Claude Code. These patterns have been validated through implementation and testing, demonstrating measurable improvements in file creation rates (100%), context reduction (95-99%), and time savings (40-60%).

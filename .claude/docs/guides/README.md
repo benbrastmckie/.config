@@ -158,6 +158,33 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
+### [Execution Enforcement Guide](execution-enforcement-guide.md)
+**Purpose**: Comprehensive guide for creating and migrating commands and agents to use execution enforcement patterns (Standards 0 and 0.5). Consolidates migration process, enforcement patterns, validation techniques, and troubleshooting.
+
+**Use Cases**:
+- When creating new commands or agents with reliability requirements
+- To migrate existing commands/agents from descriptive to enforcement language
+- To achieve 100% file creation rates (vs 60-80% without enforcement)
+- When improving audit scores to ≥95/100 for production readiness
+- To understand the 11 enforcement patterns and their scoring impact
+
+**See Also**: [Migration Testing Guide](migration-testing.md), [Command Architecture Standards](../reference/command_architecture_standards.md), [Command Development Guide](command-development-guide.md), [Agent Development Guide](agent-development-guide.md)
+
+---
+
+### [Migration Testing Guide](migration-testing.md)
+**Purpose**: Testing procedures for execution enforcement migrations including test infrastructure, file creation validation, and tracking/reporting.
+
+**Use Cases**:
+- When testing command/agent migrations for enforcement compliance
+- To run file creation rate tests (target: 10/10 successes)
+- When validating audit scores (target: ≥95/100)
+- To test verification checkpoints and fallback mechanisms
+
+**See Also**: [Execution Enforcement Guide](execution-enforcement-guide.md), [Command Architecture Standards](../reference/command_architecture_standards.md)
+
+---
+
 ## Quick Start
 
 ### Create Your First Command
@@ -182,10 +209,8 @@ Task-focused how-to guides for specific development activities. Use this section
 ```
 guides/
 ├── README.md                         (this file)
-├── creating-commands.md              Command development guide
-├── command-authoring-guide.md        Behavioral injection pattern for commands (NEW)
-├── creating-agents.md                Agent creation guide
-├── agent-authoring-guide.md          Behavioral injection pattern for agents (NEW)
+├── command-development-guide.md      Comprehensive command development (consolidated)
+├── agent-development-guide.md        Comprehensive agent development (consolidated)
 ├── using-agents.md                   Agent integration patterns
 ├── standards-integration.md          CLAUDE.md standards discovery
 ├── command-patterns.md               Reusable implementation patterns
@@ -194,8 +219,16 @@ guides/
 ├── setup-command-guide.md            /setup utilities documentation
 ├── efficiency-guide.md               Performance optimization features
 ├── error-enhancement-guide.md        Error analysis and suggestions
-└── data-management.md                .claude/data/ ecosystem guide
+├── data-management.md                .claude/data/ ecosystem guide
+├── execution-enforcement-guide.md    Execution enforcement (Standards 0 & 0.5)
+└── migration-testing.md              Testing procedures for migrations
 ```
+
+**Note**: The following guides were consolidated into `execution-enforcement-guide.md` (2025-10-21):
+- `execution-enforcement-migration-guide.md` (migration process)
+- `enforcement-patterns.md` (pattern library)
+- `migration-validation.md` (validation techniques)
+- `audit-execution-enforcement.md` (audit process)
 
 ## Related Documentation
 

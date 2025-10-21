@@ -49,9 +49,13 @@ return {
       toggle = {
         normal = false,          -- Disable default keymaps
         terminal = false,
+        variants = {
+          continue = false,      -- Disable <leader>cC keymap
+          verbose = false,       -- Disable <leader>cV keymap
+        },
       },
-      window_navigation = true,  -- Keep window navigation enabled
-      scrolling = true,          -- Keep scrolling enabled
+      window_navigation = false, -- Disable window navigation keymaps
+      scrolling = false,         -- Disable scrolling keymaps
     },
   },
 

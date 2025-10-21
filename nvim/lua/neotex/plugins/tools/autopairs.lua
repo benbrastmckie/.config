@@ -21,6 +21,7 @@ return {
       enable_moveright = true,
       ignored_next_char = "",
       enable_check_bracket_line = true, -- check bracket in same line
+      map_cr = false,                   -- Don't map CR automatically (we'll handle it with blink.cmp)
     })
 
     -- Add Lean-specific unicode mathematical pairs
@@ -85,36 +86,38 @@ return {
       return opts.char == opts.next_char:sub(1, 1)
     end)
 
-    -- Custom blink.cmp integration using community workaround
+    -- blink.cmp integration for Enter key with autopairs
     local function setup_blink_integration()
       local ok, blink = pcall(require, 'blink.cmp')
       if not ok then return end
 
-      -- Check if blink.cmp has the visibility check method
+      -- Check if blink.cmp has the required API
       if not blink.is_visible then
-        -- If blink.cmp doesn't support autopairs integration yet, skip setup
-        vim.notify("blink.cmp autopairs integration not available", vim.log.levels.WARN)
         return
       end
 
-      -- Use community-proposed solution from GitHub issue #477
-      local cmp_autopairs = require("nvim-autopairs.completion.cmp")
-      
-      -- Override CR keymap to include autopairs callback
+      -- Helper function to evaluate terminal codes
+      local function t(str)
+        return vim.api.nvim_replace_termcodes(str, true, true, true)
+      end
+
+      -- Map CR to handle both completion and autopairs
       vim.keymap.set('i', '<CR>', function()
         if blink.is_visible() then
-          return blink.accept({ 
-            callback = cmp_autopairs.on_confirm_done({
-              filetypes = {
-                tex = false, -- Disable for tex (conflicts with LaTeX spacing rules)
-                lean = true  -- Enable for lean
-              }
-            })
-          })
+          -- Accept completion when menu is visible
+          blink.accept()
+          return t('<Ignore>')
         else
-          return '<CR>'
+          -- Check if we're between brackets for autopairs behavior
+          local npairs = require('nvim-autopairs')
+          if npairs.check_break_line_char() then
+            -- Manually create the indented newline pattern
+            return t('<CR><C-o>O')
+          else
+            return t('<CR>')
+          end
         end
-      end, { expr = true, silent = true, desc = "Accept completion with autopairs" })
+      end, { expr = true, silent = true, noremap = true, replace_keycodes = false, desc = "Accept completion or autopairs CR" })
     end
 
     -- Initialize blink.cmp integration
