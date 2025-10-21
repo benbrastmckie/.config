@@ -1,6 +1,6 @@
 Agent/Command,Type,Pre-Migration Score,Post-Migration Score,File Creation Rate,Status,Notes
 doc-writer.md,Agent,~45/100,105/100,TBD,MIGRATED,Phase 2 Wave 1 - Exceeds target score of 95/100
-debug-specialist.md,Agent,~40/100,TBD,TBD,PENDING,Phase 2 Wave 1
+debug-specialist.md,Agent,~40/100,100/100,TBD,MIGRATED,Phase 2 Wave 1 - Meets target score of 95/100
 test-specialist.md,Agent,~40/100,TBD,TBD,PENDING,Phase 2 Wave 1
 expansion-specialist.md,Agent,~15/100,TBD,TBD,PENDING,Phase 3 Wave 2
 collapse-specialist.md,Agent,~15/100,TBD,TBD,PENDING,Phase 3 Wave 2

@@ -252,7 +252,7 @@ Agents (13 audited, including references):
 
 #### Key Deliverables
 - [x] doc-writer.md migrated and tested (score 105/100 - EXCEEDS TARGET, file creation TBD)
-- [ ] debug-specialist.md migrated and tested (score ≥95/100, 10/10 file creation)
+- [x] debug-specialist.md migrated and tested (score 100/100 - MEETS TARGET, file creation TBD)
 - [ ] test-specialist.md migrated and tested (score ≥95/100, 10/10 file creation)
 - [x] Tracking spreadsheet updated with Wave 1 results (created and doc-writer.md recorded)
 
