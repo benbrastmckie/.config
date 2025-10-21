@@ -13,29 +13,31 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ## Documents in This Section
 
-### [Creating Commands](creating-commands.md)
-**Purpose**: Comprehensive guide for developing custom slash commands with standards integration, agent coordination, and testing protocols.
+### [Command Development Guide](command-development-guide.md)
+**Purpose**: Comprehensive guide for developing custom slash commands with standards integration, agent coordination, and testing protocols. Consolidates command creation and authoring best practices.
 
 **Use Cases**:
 - When creating a new slash command for a repetitive workflow
 - To understand command file structure, metadata fields, and workflow patterns
 - When integrating standards discovery and application in commands
-- To learn how to coordinate multiple agents within a command
+- To learn how to coordinate multiple agents using behavioral injection
+- When implementing metadata-only context passing (95% context reduction)
 
-**See Also**: [Command Reference](../reference/command-reference.md), [Command Patterns](command-patterns.md), [Command Architecture Standards](../reference/command_architecture_standards.md)
+**See Also**: [Command Reference](../reference/command-reference.md), [Command Patterns](command-patterns.md), [Command Architecture Standards](../reference/command_architecture_standards.md), [Hierarchical Agents](../concepts/hierarchical_agents.md)
 
 ---
 
-### [Creating Agents](creating-agents.md)
-**Purpose**: Guide for creating and maintaining custom Claude Code agents with proper tool restrictions and behavioral guidelines.
+### [Agent Development Guide](agent-development-guide.md)
+**Purpose**: Comprehensive guide for creating agent behavioral files that follow the behavioral injection pattern. Consolidates agent creation and authoring best practices.
 
 **Use Cases**:
-- When you need a specialized agent for a specific task domain
+- When creating new agent behavioral files (REQUIRED reading)
 - To understand agent file structure, frontmatter metadata, and output requirements
+- To understand anti-patterns and correct patterns for agent development
 - When designing agents compatible with metadata extraction utilities
-- To learn proper tool selection for different agent capabilities
+- To ensure agents never invoke slash commands for artifact creation
 
-**See Also**: [Agent Reference](../reference/agent-reference.md), [Using Agents](using-agents.md), [Command Architecture Standards](../reference/command_architecture_standards.md)
+**See Also**: [Agent Reference](../reference/agent-reference.md), [Command Development Guide](command-development-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Troubleshooting](../troubleshooting/agent-delegation-issues.md)
 
 ---
 
@@ -179,18 +181,20 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ```
 guides/
-├── README.md                    (this file)
-├── creating-commands.md         Command development guide
-├── creating-agents.md           Agent creation guide
-├── using-agents.md              Agent integration patterns
-├── standards-integration.md     CLAUDE.md standards discovery
-├── command-patterns.md          Reusable implementation patterns
-├── command-examples.md          Example command patterns
-├── logging-patterns.md          Structured logging standards
-├── setup-command-guide.md       /setup utilities documentation
-├── efficiency-guide.md          Performance optimization features
-├── error-enhancement-guide.md   Error analysis and suggestions
-└── data-management.md           .claude/data/ ecosystem guide
+├── README.md                         (this file)
+├── creating-commands.md              Command development guide
+├── command-authoring-guide.md        Behavioral injection pattern for commands (NEW)
+├── creating-agents.md                Agent creation guide
+├── agent-authoring-guide.md          Behavioral injection pattern for agents (NEW)
+├── using-agents.md                   Agent integration patterns
+├── standards-integration.md          CLAUDE.md standards discovery
+├── command-patterns.md               Reusable implementation patterns
+├── command-examples.md               Example command patterns
+├── logging-patterns.md               Structured logging standards
+├── setup-command-guide.md            /setup utilities documentation
+├── efficiency-guide.md               Performance optimization features
+├── error-enhancement-guide.md        Error analysis and suggestions
+└── data-management.md                .claude/data/ ecosystem guide
 ```
 
 ## Related Documentation

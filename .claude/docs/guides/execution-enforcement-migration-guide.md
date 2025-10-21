@@ -19,6 +19,11 @@ This guide provides a systematic process for migrating existing commands and age
 1. [Migration Overview](#migration-overview)
 2. [Pre-Migration Assessment](#pre-migration-assessment)
 3. [Command Migration Process](#command-migration-process)
+   - [Phase 0: Clarify Command Role](#phase-0-clarify-command-role-critical-foundation) ← **NEW: Critical for multi-agent commands**
+   - [Phase 1: Add Path Pre-Calculation](#phase-1-add-path-pre-calculation-pattern-1)
+   - [Phase 2: Add Verification Checkpoints](#phase-2-add-verification-checkpoints-pattern-2)
+   - [Phase 3: Add Checkpoint Reporting](#phase-3-add-checkpoint-reporting-pattern-4)
+   - [Phase 4: Update Agent Invocation Templates](#phase-4-update-agent-invocation-templates)
 4. [Agent Migration Process](#agent-migration-process)
 5. [Testing and Validation](#testing-and-validation)
 6. [Migration Checklist](#migration-checklist)
@@ -138,6 +143,293 @@ Before making changes, document:
 ---
 
 ## Command Migration Process
+
+### Phase 0: Clarify Command Role (Critical Foundation)
+
+**When**: ALL commands that orchestrate subagents
+
+**Priority**: HIGHEST - Must be done FIRST before all other phases
+
+**Problem**: Commands with ambiguous opening statements cause Claude to execute tasks directly instead of delegating to subagents.
+
+**Root Cause**: First-person declarative language ("I'll research...") is interpreted as "I (Claude) should do this" rather than "I will orchestrate agents to do this".
+
+---
+
+#### Pattern A: Ambiguous Opening (Broken)
+
+**Symptoms**:
+- Claude uses Read/Write/Grep tools directly
+- No Task tool invocations visible in output
+- Single artifact created instead of multiple subtopic artifacts
+- No parallelization or metadata reduction
+
+**Example** (from `/report` command):
+```markdown
+# Generate Research Report
+
+I'll research the specified topic and create a comprehensive report in the most appropriate location.
+
+## Topic/Question
+$ARGUMENTS
+
+## Process
+[sections describing hierarchical multi-agent pattern...]
+```
+
+**Claude's Interpretation**:
+- "I'll research" → "I (Claude) will research"
+- Sees sections as documentation/examples, not executable directives
+- Executes research directly using available tools
+
+**Result**: ❌ Hierarchical pattern not executed, no subagents invoked
+
+---
+
+#### Pattern B: Clear Orchestrator Role (Fixed)
+
+**Solution**: Explicitly state Claude's role as orchestrator in opening paragraph.
+
+**Template**:
+```markdown
+# [Command Name]
+
+I'll orchestrate [task type] by delegating to specialized subagents.
+
+**YOUR ROLE**: You are the ORCHESTRATOR, not the [executor/researcher/implementer].
+
+**CRITICAL INSTRUCTIONS**:
+- DO NOT execute [task] yourself using [tool list] tools
+- ONLY use Task tool to delegate [task] to [agent-type] agents
+- Your job: [orchestration steps: decompose → invoke → verify → synthesize]
+
+You will NOT see [task results] directly. Agents will create [artifact type],
+and you will [action] after creation.
+
+## [Task] Description
+$ARGUMENTS
+
+## Process
+[sections with executable directives using Phase 1-4 patterns...]
+```
+
+**Example** (fixed `/report`):
+```markdown
+# Generate Research Report
+
+I'll orchestrate hierarchical research by delegating to specialized subagents.
+
+**YOUR ROLE**: You are the ORCHESTRATOR, not the researcher.
+
+**CRITICAL INSTRUCTIONS**:
+- DO NOT execute research yourself using Read/Grep/Write tools
+- ONLY use Task tool to delegate research to research-specialist agents
+- Your job: decompose topic → invoke agents → verify outputs → synthesize
+
+You will NOT see research findings directly. Agents will create report files,
+and you will read those files after creation.
+
+## Research Topic
+$ARGUMENTS
+
+## Process
+
+### STEP 1 (REQUIRED BEFORE STEP 2) - Topic Decomposition
+
+**EXECUTE NOW - Source Utilities and Decompose Topic**
+[executable directive with bash code...]
+```
+
+**Claude's Interpretation**:
+- "I'll orchestrate" → "I will coordinate agents"
+- "YOU are the ORCHESTRATOR" → "My role is to delegate, not execute"
+- "DO NOT execute research yourself" → "I should not use Read/Grep/Write"
+- "ONLY use Task tool" → "I must invoke agents"
+- "EXECUTE NOW" markers → "These are commands to execute, not examples"
+
+**Result**: ✅ Hierarchical pattern executed correctly, subagents invoked
+
+---
+
+#### Before/After Example: /report Command
+
+**BEFORE** (Ambiguous - Broken):
+```markdown
+# Generate Research Report
+
+I'll research the specified topic and create a comprehensive report in the most appropriate location.
+
+## Topic/Question
+$ARGUMENTS
+
+## Process
+
+### 1. Topic Analysis
+First, I'll analyze the topic to determine:
+- Key concepts and scope
+- Complexity and breadth (determines number of subtopics)
+```
+
+**Execution Trace**:
+```
+User: /report "topic"
+Claude reads opening: "I'll research the specified topic"
+Claude interprets: "I should research this topic myself"
+Claude executes: Read, Grep, Write (direct research)
+Result: Single report, no subagents
+```
+
+**AFTER** (Clear Role - Fixed):
+```markdown
+# Generate Research Report
+
+I'll orchestrate hierarchical research by delegating to specialized subagents.
+
+**YOUR ROLE**: You are the ORCHESTRATOR, not the researcher.
+
+**CRITICAL INSTRUCTIONS**:
+- DO NOT execute research yourself using Read/Grep/Write tools
+- ONLY use Task tool to delegate research to research-specialist agents
+- Your job: decompose topic → invoke agents → verify outputs → synthesize
+
+## Research Topic
+$ARGUMENTS
+
+## Process
+
+### STEP 1 (REQUIRED BEFORE STEP 2) - Topic Decomposition
+
+**EXECUTE NOW - Source Utilities and Decompose Topic**
+```
+
+**Execution Trace**:
+```
+User: /report "topic"
+Claude reads opening: "I'll orchestrate... You are the ORCHESTRATOR"
+Claude interprets: "I should delegate, not execute research myself"
+Claude sees: "EXECUTE NOW - Source Utilities" (executable directive)
+Claude executes: Bash (source utilities), Task (invoke agents)
+Result: Multiple subtopic reports + overview, hierarchical pattern executed
+```
+
+---
+
+#### Migration Steps for Phase 0
+
+**Step 1: Identify Command Type** (2 minutes)
+
+Determine if command orchestrates subagents:
+```bash
+grep -c "Task {" .claude/commands/your-command.md
+# If count > 0: Command orchestrates subagents → needs Phase 0
+```
+
+**Step 2: Analyze Opening Statement** (3 minutes)
+
+Check for ambiguous language:
+```bash
+# Read first 20 lines
+head -20 .claude/commands/your-command.md
+
+# Look for problematic patterns:
+# - "I'll [verb]" where verb is the task (research, implement, analyze)
+# - No explicit role clarification
+# - No "DO NOT" constraints
+```
+
+**Step 3: Rewrite Opening** (10 minutes)
+
+Use the template from Pattern B:
+1. Change "I'll [task]" to "I'll orchestrate [task] by delegating..."
+2. Add "**YOUR ROLE**:" section
+3. Add "**CRITICAL INSTRUCTIONS**:" with DO NOT and ONLY directives
+4. Add "You will NOT see [results] directly" explanation
+
+**Step 4: Update Section Headers** (5 minutes)
+
+Transform documentation-style headers to executable directives:
+
+**Before**:
+```markdown
+### 1. Topic Analysis
+First, I'll analyze the topic to determine:
+```
+
+**After**:
+```markdown
+### STEP 1 (REQUIRED BEFORE STEP 2) - Topic Decomposition
+
+**EXECUTE NOW - Source Utilities and Decompose Topic**
+
+YOU MUST run this code block NOW:
+```
+
+**Step 5: Test** (5 minutes)
+
+Run command and verify:
+```bash
+/your-command "test input"
+
+# Expected in output:
+# - Task tool invocations visible
+# - Multiple agents invoked (if parallel pattern)
+# - Verification checkpoints executed
+# - NOT: Direct tool usage (Read/Write for agent tasks)
+```
+
+**Total Time**: ~25 minutes per command
+
+---
+
+#### Common Mistakes to Avoid
+
+**Mistake 1: Half-Way Fix**
+```markdown
+❌ I'll orchestrate research by creating a comprehensive report...
+```
+Still says "I'll... creating" → suggests direct execution
+
+**Mistake 2: Missing "DO NOT" Constraints**
+```markdown
+❌ **YOUR ROLE**: You are the orchestrator.
+
+[No explicit "DO NOT use tools directly" statement]
+```
+Role stated but constraints unclear
+
+**Mistake 3: Tools Listed Without Context**
+```markdown
+❌ Use Task tool to delegate research.
+```
+Missing "ONLY" and "DO NOT use Read/Grep/Write"
+
+**Mistake 4: No Execution Markers**
+```markdown
+❌ ### 1. Topic Decomposition
+
+Decompose the topic into subtopics:
+```
+Still descriptive, needs "STEP 1 (REQUIRED BEFORE STEP 2)" and "EXECUTE NOW"
+
+---
+
+#### Quick Checklist for Phase 0
+
+After applying Phase 0 fix, verify:
+
+- [ ] Opening statement says "I'll orchestrate" (not "I'll [execute task]")
+- [ ] "**YOUR ROLE**:" section explicitly states orchestrator role
+- [ ] "**CRITICAL INSTRUCTIONS**:" includes:
+  - [ ] "DO NOT execute [task] yourself using [tools]"
+  - [ ] "ONLY use Task tool to delegate"
+  - [ ] List of orchestration steps
+- [ ] "You will NOT see [results] directly" explanation present
+- [ ] All major sections use "STEP N (REQUIRED BEFORE STEP N+1)" format
+- [ ] All critical operations use "EXECUTE NOW" markers
+- [ ] Bash code blocks preceded by imperative instructions
+- [ ] Task invocations preceded by "AGENT INVOCATION - Use THIS EXACT TEMPLATE"
+
+---
 
 ### Phase 1: Add Path Pre-Calculation (Pattern 1)
 
