@@ -198,8 +198,8 @@ See [Progress Streaming Protocol](shared/progress-streaming-protocol.md).
 **Purpose**: Reduce agent duplication, standardize patterns
 **Impact**: ~100 LOC reduction, improved consistency
 
-## See Also
+## Navigation
 
-- [Agent Architecture README](../README.md) - Overview of all agents
+- [← Parent Directory](../README.md) - Overview of all agents
 - [Agent Registry](../agent-registry.json) - Agent metadata and performance tracking
 - [Command Documentation](../../commands/README.md) - Commands that invoke agents

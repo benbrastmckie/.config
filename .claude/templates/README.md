@@ -277,8 +277,10 @@ The picker will automatically detect new templates on next open.
 - [Commands Picker](../../nvim/lua/neotex/plugins/ai/claude/commands/README.md) - Picker documentation
 - [Picker Implementation](../../nvim/lua/neotex/plugins/ai/claude/commands/picker.lua) - Source code
 
-## References
+## Navigation
 
+- [← Parent Directory](../README.md)
 - [Plan Wizard](../commands/plan-wizard.md) - Interactive planning
 - [Plan Command](../commands/plan.md) - Manual planning
+- [Plan-from-Template Command](../commands/plan-from-template.md) - Template-based planning
 - [Implementation Standards](../../CLAUDE.md)

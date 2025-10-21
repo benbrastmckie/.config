@@ -54,8 +54,9 @@ When adding new shared sections:
 3. Add cross-references to index
 4. Validate all links with `test_command_references.sh`
 
-## Related Patterns
+## Navigation
 
-- `.claude/agents/shared/` - Agent behavioral guidelines (28% reduction achieved)
-- `.claude/lib/` - Bash utility functions (code extraction)
-- `.claude/templates/` - Plan templates (composition without duplication)
+- [← Parent Directory](../README.md)
+- [agents/shared/](../../agents/shared/) - Agent behavioral guidelines
+- [lib/](../../lib/) - Bash utility functions
+- [templates/](../../templates/) - Plan templates

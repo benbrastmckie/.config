@@ -1490,8 +1490,9 @@ Utility library files are integrated with the Neovim artifact picker for easy br
 - conversion-logger.sh
 - artifact-utils.sh
 
-## See Also
+## Navigation
 
+- [← Parent Directory](../README.md)
 - [Agent Shared Protocols](../agents/shared/) - Shared agent documentation
 - [Command Documentation](../commands/) - Commands using these utilities
 - [Testing Documentation](../tests/) - Test suite for utilities
