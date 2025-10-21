@@ -8,7 +8,16 @@ dependent-commands: update, list
 
 # Generate Research Report
 
-I'll research the specified topic and create a comprehensive report in the most appropriate location.
+I'll orchestrate hierarchical research by delegating to specialized subagents who will investigate focused subtopics in parallel.
+
+**YOUR ROLE**: You are the ORCHESTRATOR, not the researcher.
+
+**CRITICAL INSTRUCTIONS**:
+- DO NOT execute research yourself using Read/Grep/Write tools
+- ONLY use Task tool to delegate research to research-specialist agents
+- Your job: decompose topic → invoke agents → verify outputs → synthesize
+
+You will NOT see research findings directly. Agents will create report files at pre-calculated paths, and you will verify those files exist after agent completion.
 
 ## Topic/Question
 $ARGUMENTS
@@ -22,7 +31,9 @@ First, I'll analyze the topic to determine:
 - Relevant files and directories in the codebase
 - Most appropriate location for the specs/reports/ directory
 
-### 1.5. Topic Decomposition
+### STEP 1 (REQUIRED BEFORE STEP 2) - Topic Decomposition
+
+**EXECUTE NOW - Decompose Research Topic Into Subtopics**
 
 **Decompose research topic into focused subtopics**:
 
@@ -63,7 +74,9 @@ SUBTOPICS=(
 )
 ```
 
-### 2. Topic-Based Location Determination and Path Pre-Calculation
+### STEP 2 (REQUIRED BEFORE STEP 3) - Path Pre-Calculation
+
+**EXECUTE NOW - Calculate Absolute Paths for All Subtopic Reports**
 
 **Step 1: Get or Create Main Topic Directory**
 ```bash
@@ -140,7 +153,9 @@ CHECKPOINT: Path pre-calculation complete
 - Proceeding to: Parallel agent invocation
 ```
 
-### 3. Parallel Research-Specialist Invocation
+### STEP 3 (REQUIRED BEFORE STEP 4) - Invoke Research Agents
+
+**EXECUTE NOW - Invoke All Research-Specialist Agents in Parallel**
 
 **AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
 
@@ -198,7 +213,9 @@ Task {
 - Collect REPORT_CREATED: paths when agents complete
 - Verify paths match pre-calculated paths
 
-### 3.5. Report Verification and Error Recovery
+### STEP 4 (REQUIRED BEFORE STEP 5) - Verify Report Creation
+
+**MANDATORY VERIFICATION - All Subtopic Reports Must Exist**
 
 **After all agents complete**, verify reports exist at expected paths:
 
@@ -228,10 +245,33 @@ for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
       echo "  → ERROR: Report not created by agent for: $subtopic"
       VERIFICATION_ERRORS=$((VERIFICATION_ERRORS + 1))
 
-      # Fallback: Create minimal report from agent output
-      # (Extract from agent response if available)
-      echo "  → Creating fallback report..."
-      # Implementation: Extract agent's research output and create report
+      # Fallback: Create minimal report with placeholder content
+      echo "  → Creating fallback report at: $EXPECTED_PATH"
+
+      cat > "$EXPECTED_PATH" <<EOF
+# ${subtopic//_/ } Research Report
+
+## Metadata
+- **Date**: $(date +%Y-%m-%d)
+- **Status**: Fallback Creation (Agent Non-Compliance)
+- **Topic**: $subtopic
+
+## Note
+This report was created by fallback mechanism due to agent non-compliance.
+The research-specialist agent did not create this file as instructed.
+
+## Placeholder Content
+Research findings for ${subtopic//_/ } should be added manually.
+
+EOF
+
+      if [ -f "$EXPECTED_PATH" ]; then
+        echo "  → ✓ Fallback report created successfully"
+        VERIFIED_PATHS["$subtopic"]="$EXPECTED_PATH"
+      else
+        echo "  → ✗ CRITICAL: Fallback creation also failed"
+        exit 1
+      fi
     fi
   fi
 done
@@ -243,7 +283,9 @@ fi
 echo "✓ All subtopic reports verified (${#VERIFIED_PATHS[@]}/${#SUBTOPICS[@]})"
 ```
 
-### 4. Overview Report Synthesis
+### STEP 5 (REQUIRED BEFORE STEP 6) - Synthesize Overview Report
+
+**EXECUTE NOW - Invoke Research-Synthesizer Agent**
 
 **After all subtopic reports verified**, invoke research-synthesizer agent:
 
@@ -259,6 +301,8 @@ for subtopic in "${!VERIFIED_PATHS[@]}"; do
   SUBTOPIC_PATHS_ARRAY+=("${VERIFIED_PATHS[$subtopic]}")
 done
 ```
+
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
 
 **Invoke research-synthesizer** using Task tool:
 
@@ -301,11 +345,15 @@ $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
 - Collect OVERVIEW_CREATED: path when complete
 - Verify overview exists at expected path
 
-### 5. Spec-Updater Agent Invocation
+### STEP 6 (ABSOLUTE REQUIREMENT) - Update Cross-References
+
+**EXECUTE NOW - Invoke Spec-Updater for Cross-Reference Management**
 
 **IMPORTANT**: After all reports created (subtopics + overview), invoke spec-updater agent to update cross-references.
 
-#### Step 5.1: Invoke Spec-Updater Agent
+#### Step 6.1: Invoke Spec-Updater Agent
+
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
 
 Use the Task tool to invoke the spec-updater agent:
 
@@ -314,6 +362,8 @@ Task {
   subagent_type: "general-purpose"
   description: "Update cross-references for hierarchical research reports"
   prompt: "
+    **ABSOLUTE REQUIREMENT - Cross-Reference Updates Are Mandatory**
+
     Read and follow the behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/spec-updater.md
 
@@ -327,7 +377,7 @@ $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "      - $path"; done)
     - Related plan (if exists): [check topic's plans/ subdirectory]
     - Operation: hierarchical_report_creation
 
-    Tasks:
+    **REQUIRED TASKS (ALL MUST BE COMPLETED)**:
     1. Check if a plan exists in the topic's plans/ subdirectory
 
     2. If related plan exists:
