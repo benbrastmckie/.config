@@ -302,7 +302,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 
 ### Related
 - [← Parent Directory](../README.md)
-- [checkpoints/](../checkpoints/README.md) - Uses checkpoint utilities
+- [data/checkpoints/](../data/checkpoints/README.md) - Uses checkpoint utilities
 - [templates/](../templates/README.md) - Uses template utilities
 - [commands/](../commands/README.md) - Commands using utilities
 - [tests/](../tests/README.md) - Test suites for utilities

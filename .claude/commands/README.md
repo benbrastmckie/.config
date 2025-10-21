@@ -2,7 +2,7 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 25 active commands + 1 deprecated (reduced from 29 through consolidation)
+**Current Command Count**: 21 active commands + 1 deprecated (reduced from 29 through consolidation)
 
 ## Recent Changes
 
@@ -31,8 +31,6 @@ Complete multi-agent workflow coordination with enhanced capabilities:
 **Why**: `/update` and `/revise` had 70% overlapping functionality, causing user confusion
 about when to use which command. All update capabilities have been integrated into
 `/revise` for a single, clear command for all content modifications.
-
-**Migration**: See [Command Selection Guide](.claude/docs/creating-commands.md)
 
 ### Command Consolidation (2025-10-06)
 Consolidated redundant commands for a cleaner interface:
@@ -378,8 +376,6 @@ See `.claude/templates/example-feature.yaml` for template structure.
 - Clearer command responsibilities (content vs structure)
 - Better features (auto-mode, research integration, structure recommendations)
 - Single command for all content modifications
-
-**See**: [Command Selection Guide](../docs/creating-commands.md) for migration examples
 
 ---
 
@@ -814,7 +810,6 @@ description: Brief description shown in picker
 - [← Parent Directory](../README.md)
 - [agents/](../agents/README.md) - Agents used by commands
 - [specs/](../specs/README.md) - Command outputs
-- [docs/command-standards-flow.md](../docs/command-standards-flow.md) - Standards integration
 
 ## Examples
 
