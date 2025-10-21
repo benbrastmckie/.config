@@ -10,11 +10,30 @@ dependent-commands: list, update, revise
 
 **YOU MUST create implementation plan following this exact process:**
 
+**YOUR EXECUTION MODE**: This command uses a MIXED EXECUTION MODEL with TWO distinct modes:
+
+**MODE 1: Direct Plan Creation (Steps 1-7)**
+- **Your Role**: You are the PLAN CREATOR
+- **Execution Style**: Direct - use Read, Write, Edit, Grep, Glob tools yourself
+- **When**: All features (this is the core workflow)
+- **Output**: Implementation plan file created by you directly
+
+**MODE 2: Research Orchestration (Step 0.5 - Conditional)**
+- **Your Role**: You are the ORCHESTRATOR (NOT the researcher)
+- **Execution Style**: Delegation - use Task tool to invoke research-specialist agents
+- **When**: Complex features meeting specific triggers (see Step 0.5)
+- **Output**: Research reports created by subagents, then proceed to Mode 1
+
+**CRITICAL DISTINCTION**:
+- Step 0.5 (research delegation) = ORCHESTRATION MODE (if triggered)
+- Steps 1-7 (plan creation) = DIRECT EXECUTION MODE (always)
+
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order
 - DO NOT skip complexity analysis
 - DO NOT skip standards discovery
 - DO NOT skip research integration (if reports provided)
+- DO NOT skip Step 0.5 research delegation (if complexity triggers met)
 - Plan file creation is MANDATORY
 - Complexity calculation is REQUIRED
 
@@ -73,6 +92,24 @@ Parse arguments to separate feature description from report paths.
 **Note**: This analysis is informational only. It helps guide planning decisions but doesn't restrict plan creation. All plans start as single files (Level 0) regardless of estimated complexity.
 
 ### 0.5. Research Agent Delegation for Complex Features
+
+**ORCHESTRATION MODE ACTIVATED** (When Complexity Triggers Met)
+
+**YOUR ROLE FOR STEP 0.5**: You are the RESEARCH ORCHESTRATOR, not the researcher.
+
+**CRITICAL INSTRUCTIONS FOR STEP 0.5**:
+- DO NOT execute research yourself using Read/Grep/Write tools when complexity triggers met
+- ONLY use Task tool to delegate research to research-specialist agents
+- Your job in Step 0.5: decompose research needs → invoke agents in parallel → verify report creation → cache metadata
+- You will NOT see research content directly (agents create reports, you read them later in planning steps)
+
+**EXECUTION MODES IN THIS STEP**:
+- **If complexity triggers NOT met**: Skip Step 0.5 entirely, proceed to Step 1 (direct mode)
+- **If complexity triggers met**: Execute Step 0.5 as ORCHESTRATOR (delegate to agents)
+
+**After Step 0.5 completes**: Return to DIRECT EXECUTION MODE for Steps 1-7 (you create the plan yourself)
+
+---
 
 **YOU MUST invoke research-specialist agents for complex features. This is NOT optional.**
 
@@ -133,7 +170,7 @@ Use Task tool to invoke 2-3 research-specialist agents in parallel (single messa
 
 **Agent Invocation Template**:
 
-YOU MUST use THIS EXACT TEMPLATE for each research topic (No modifications, no paraphrasing):
+**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications, no paraphrasing)**
 
 ```
 For each research topic (patterns, best practices, alternatives):
@@ -150,14 +187,16 @@ Task {
     Research Focus: {topic} (patterns | best practices | alternatives)
     Feature: {feature_description}
 
-    Tasks:
+    Tasks (ALL REQUIRED):
     1. Search codebase for existing implementations (Grep, Glob)
     2. Identify relevant patterns, utilities, conventions
     3. Research best practices for this type of feature
     4. Analyze security, performance, testing considerations
     5. Document alternative approaches with pros/cons
 
-    Output:
+    **ABSOLUTE REQUIREMENT**: Create report file at specified path. This is MANDATORY.
+
+    Output (ALL REQUIRED):
     - Create report: specs/{topic}/reports/{NNN}_{topic}.md
     - Include: Executive Summary, Findings, Recommendations, References
     - Return metadata: {path, 50-word summary, key_findings[]}
@@ -208,13 +247,14 @@ ARTIFACT_METADATA=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata')
 
 # MANDATORY: Verify artifact file exists
 if [ ! -f "$ARTIFACT_PATH" ]; then
-  echo "⚠️  RESEARCH REPORT NOT FOUND - Triggering fallback mechanism"
+  echo "⚠️  RESEARCH REPORT NOT FOUND - TRIGGERING MANDATORY FALLBACK"
 
-  # Fallback: Create minimal research report from agent output
+  # FALLBACK MECHANISM (Guarantees 100% Research Completion)
   FALLBACK_PATH="specs/${FEATURE_TOPIC}/reports/${REPORT_NUM}_${TOPIC}.md"
   mkdir -p "$(dirname "$FALLBACK_PATH")"
 
-  cat > "$FALLBACK_PATH" <<EOF
+  # EXECUTE NOW - Create Fallback Report
+  cat > "$FALLBACK_PATH" <<'EOF'
 # ${TOPIC} Research Report (Fallback)
 
 ## Agent Output
@@ -225,10 +265,17 @@ $SUBAGENT_OUTPUT
 - Reason: Primary report creation failed
 - Topic: ${TOPIC}
 - Feature: ${FEATURE_DESCRIPTION}
+- Status: Fallback (requires review)
 EOF
 
   ARTIFACT_PATH="$FALLBACK_PATH"
-  echo "✓ Fallback report created: $ARTIFACT_PATH"
+  echo "✓ VERIFIED: Fallback report created: $ARTIFACT_PATH"
+
+  # MANDATORY: Verify fallback file created
+  if [ ! -f "$FALLBACK_PATH" ]; then
+    echo "CRITICAL ERROR: Fallback mechanism failed"
+    exit 1
+  fi
 fi
 
 # Cache metadata for on-demand loading (not full content!)
@@ -289,7 +336,20 @@ To skip automatic research delegation (use direct planning):
 - Use `--skip-research` flag (suppresses research delegation)
 - Research delegation only occurs when no reports provided
 
+---
+
+**RETURN TO DIRECT EXECUTION MODE** (Steps 1-7)
+
+**YOUR ROLE FOR STEPS 1-7**: You are the PLAN CREATOR (not an orchestrator)
+
+You will now create the implementation plan yourself using Read, Write, Edit, Grep, Glob tools directly. This is NOT orchestration - you execute these steps yourself.
+
+---
+
 ### 1. Report Integration (if provided)
+
+**Note**: Direct execution by you, no agent delegation.
+
 If research reports are provided, I'll:
 - Read and analyze each report
 - Extract key findings and recommendations
@@ -320,6 +380,8 @@ If research reports are provided, I'll:
 - If report already has a plan link: Update existing (report can inform multiple plans)
 
 ### 2. Requirements Analysis and Complexity Evaluation
+
+**Note**: Direct execution by you, no agent delegation.
 
 **YOU MUST perform complexity evaluation. This is NOT optional.**
 
@@ -393,6 +455,8 @@ fi
 ---
 
 ### 3. Topic-Based Location Determination
+
+**Note**: Direct execution by you, no agent delegation.
 I'll determine the topic directory location using the uniform structure:
 
 **Step 1: Source Required Utilities**
@@ -432,6 +496,8 @@ TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
   - `backups/` - Backups (gitignored)
 
 ### 4. Plan Creation Using Uniform Structure
+
+**Note**: Direct execution by you, no agent delegation.
 
 **YOU MUST create plan file using exact process. This is NOT optional.**
 
@@ -508,11 +574,13 @@ PLAN_FILENAME="${PLAN_NUM}_${PLAN_NAME}.md"
 
 **EXECUTE NOW - Create Plan File Using Utility**
 
-**ABSOLUTE REQUIREMENT**: YOU MUST create plan file and verify creation. This is NOT optional.
+**MANDATORY FILE CREATION**: YOU MUST create plan file and verify creation. This is NOT optional.
+
+**ABSOLUTE REQUIREMENT**: Plan file creation is the primary deliverable of this command. Missing file means command failure.
 
 **WHY THIS MATTERS**: Plan file is the primary deliverable of this command. Missing file means command failure.
 
-**Step 3: Create Plan File**
+**Step 3: Create Plan File (MANDATORY)**
 ```bash
 # Create plan file using utility (auto-numbers and registers)
 PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "$PLAN_NAME" "$PLAN_CONTENT")
@@ -597,6 +665,9 @@ echo "✓ VERIFIED: Plan file exists and is complete: $PLAN_PATH"
 - Single utility manages all artifact creation
 
 ### 5. Standards Discovery
+
+**Note**: Direct execution by you, no agent delegation.
+
 For standards discovery process, see [Standards Discovery Patterns](../docs/command-patterns.md#standards-discovery-patterns).
 
 **Plan-specific discovery:**
@@ -605,7 +676,10 @@ For standards discovery process, see [Standards Discovery Patterns](../docs/comm
 - Note coding standards for task descriptions
 
 ### 6. Plan Structure
-The implementation plan will include:
+
+**Note**: Direct execution by you, no agent delegation.
+
+**YOU MUST include these sections in the implementation plan:**
 
 #### Overview
 - Feature description and objectives
@@ -619,7 +693,7 @@ The implementation plan will include:
 - API design (if applicable)
 
 #### Implementation Phases
-Each phase will include:
+**YOU MUST include in each phase:**
 - Clear objectives and scope
 - Specific tasks with checkboxes `- [ ]`
 - Testing requirements
@@ -652,6 +726,9 @@ verify_checkbox_consistency <plan_path> <phase_num>
 ```
 
 ### 7. Standards Integration
+
+**Note**: Direct execution by you, no agent delegation.
+
 Based on discovered standards, I'll ensure:
 - Code style matches project conventions
 - File organization follows existing patterns
@@ -682,11 +759,11 @@ Based on discovered standards, I'll ensure:
 
 ### 8.5. Agent-Based Plan Phase Analysis
 
-After creating the plan, I'll analyze the entire plan holistically to identify which phases (if any) would benefit from expansion to separate files.
+**After creating the plan, YOU MUST analyze the entire plan holistically to identify which phases (if any) require expansion to separate files.**
 
 **Analysis Approach:**
 
-The primary agent (executing `/plan`) has just created the plan and has all phases in context. Rather than using a generic complexity threshold, I'll review the entire plan and make informed recommendations about which specific phases might benefit from expansion.
+The primary agent (executing `/plan`) has just created the plan and has all phases in context. Rather than using a generic complexity threshold, YOU MUST review the entire plan and make informed recommendations about which specific phases require expansion.
 
 **Evaluation Criteria:**
 
