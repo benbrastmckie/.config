@@ -607,13 +607,13 @@ EOF
   echo "$PLAN_PATH" >> "${TOPIC_DIR}/.artifact-registry"
 fi
 
-# Verify file is readable and non-empty
+# FILE_CREATION_ENFORCED: Verify file is readable and non-empty
 if [ ! -s "$PLAN_PATH" ]; then
   echo "❌ CRITICAL: Plan file empty or unreadable: $PLAN_PATH"
   exit 1
 fi
 
-echo "✓ Plan file created successfully: $PLAN_PATH"
+echo "✓ CRITICAL: Plan file created successfully: $PLAN_PATH"
 
 # Additional verification - file structure and metadata
 if ! grep -q "## Metadata" "$PLAN_PATH"; then
@@ -652,6 +652,7 @@ if [ ! -f "$PLAN_PATH" ]; then
   exit 1
 fi
 
+# RETURN_FORMAT_SPECIFIED: Output plan creation confirmation
 echo "✓ VERIFIED: Plan file exists and is complete: $PLAN_PATH"
 ```
 
