@@ -352,6 +352,12 @@ function M.setup()
     -- Use intelligent buffer switching (sorted by modification time)
     map("n", "<TAB>", function() buffer_utils.goto_buffer(1, 1) end, {}, "Next buffer")
     map("n", "<S-TAB>", function() buffer_utils.goto_buffer(1, -1) end, {}, "Previous buffer")
+
+    -- Restore <C-i> for jump-forward navigation (requires Kitty keyboard protocol)
+    -- Note: <C-i> and <Tab> send identical keycodes in traditional terminals.
+    -- Modern keyboard protocols (Kitty, CSI u) can distinguish them.
+    -- This mapping ensures <C-i> jumps forward in jump list when protocol is enabled.
+    map("n", "<C-i>", "<C-i>", { noremap = true }, "Jump forward in jump list")
   end
 
   -- Fallback chain if advanced utils are unavailable
@@ -360,6 +366,7 @@ function M.setup()
     if _G.GotoBuffer then
       map("n", "<TAB>", function() _G.GotoBuffer(1, 1) end, {}, "Next buffer")
       map("n", "<S-TAB>", function() _G.GotoBuffer(1, -1) end, {}, "Previous buffer")
+      map("n", "<C-i>", "<C-i>", { noremap = true }, "Jump forward in jump list")
     else
       -- Safe buffer navigation that excludes terminal and unlisted buffers
       local function safe_buffer_next()
@@ -418,6 +425,7 @@ function M.setup()
       
       map("n", "<TAB>", safe_buffer_next, {}, "Next buffer")
       map("n", "<S-TAB>", safe_buffer_prev, {}, "Previous buffer")
+      map("n", "<C-i>", "<C-i>", { noremap = true }, "Jump forward in jump list")
     end
   end
 
