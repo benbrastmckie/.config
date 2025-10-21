@@ -418,6 +418,8 @@ After spec-updater completes:
 - If warnings/issues: Show them and suggest fixes
 - If successful: Confirm all reports are ready
 
+**RETURN_FORMAT_SPECIFIED**: YOU MUST return ONLY this exact format (no modifications):
+
 **Example Output**:
 ```
 Cross-references updated:

@@ -377,7 +377,7 @@ If research reports are provided, I'll:
 
 **Edge Cases:**
 - If report lacks "Implementation Status" section: Use Edit tool to append section before updating
-- If report already has a plan link: Update existing (report can inform multiple plans)
+- If report already has a plan link: Update existing (report WILL inform multiple plans)
 
 ### 2. Requirements Analysis and Complexity Evaluation
 
@@ -531,7 +531,7 @@ NEXT_NUM=$(get_next_artifact_number "${TOPIC_DIR}/plans")
 # MANDATORY: Verify number is valid
 if [ -z "$NEXT_NUM" ] || [ "$NEXT_NUM" -lt 1 ]; then
   echo "⚠️  INVALID PLAN NUMBER - Triggering fallback"
-  # Fallback: Use 001 or scan directory manually
+  # Fallback: Use 001 or enumerate directory manually
   NEXT_NUM=$(find "${TOPIC_DIR}/plans" -name "*.md" | wc -l)
   NEXT_NUM=$((NEXT_NUM + 1))
 fi
@@ -626,7 +626,7 @@ if ! grep -q "## Implementation Phases" "$PLAN_PATH"; then
   exit 1
 fi
 
-# Verify file size is reasonable (should be >1000 bytes for a proper plan)
+# Verify file size is reasonable (MUST be >1000 bytes for a proper plan)
 file_size=$(wc -c < "$PLAN_PATH")
 if [ "$file_size" -lt 1000 ]; then
   echo "❌ ERROR: Plan file too small (${file_size} bytes), expected >1000"
@@ -797,7 +797,7 @@ Display formatted analysis:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE COMPLEXITY ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-The following phases may benefit from expansion:
+The following phases WILL benefit from expansion:
 
 Phase [N]: [Phase Name]
 Rationale: [Agent's reasoning based on understanding the phase]
@@ -807,7 +807,7 @@ Phase [M]: [Phase Name]
 Rationale: [Agent's reasoning based on understanding the phase]
 Command: /expand phase <plan-path> [M]
 
-Note: Expansion is optional. You can expand now before starting
+Note: Expansion is optional. You MAY expand now before starting
 implementation, or expand during implementation using /expand phase
 if phases prove too complex.
 
@@ -829,7 +829,7 @@ tasks that work well together in the single-file format."]
 
 Overall Complexity Score: [X] (stored in plan metadata)
 
-Note: Phases can be expanded during implementation if needed using
+Note: Phases MAY be expanded during implementation if needed using
 /expand phase <plan-path> <phase-num>.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -927,8 +927,8 @@ Task {
     3. Create .gitkeep in debug/ subdirectory (ensures directory tracked in git)
 
     4. Validate gitignore compliance:
-       - Debug reports should NOT be gitignored
-       - All other subdirectories should be gitignored
+       - Debug reports MUST NOT be gitignored
+       - All other subdirectories MUST be gitignored
 
     5. Initialize plan metadata cross-reference section if missing
 
@@ -1020,7 +1020,7 @@ fi
 
 ### 10. Post-Creation Automatic Complexity Evaluation
 
-**IMPORTANT**: After spec-updater verification completes, perform automatic complexity-based evaluation to determine if any phases should be auto-expanded.
+**IMPORTANT**: After spec-updater verification completes, perform automatic complexity-based evaluation to determine if any phases WILL be auto-expanded.
 
 This step runs **after** spec-updater invocation (Step 9), providing automated structure optimization.
 
@@ -1135,13 +1135,13 @@ else
     task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
 
     # Decide if expansion needed
-    should_expand=false
+    needs_expansion=false
     expansion_reason=""
 
     # Use bc for float comparison if available
     if command -v bc &>/dev/null; then
       if (( $(echo "$complexity_score > $EXPANSION_THRESHOLD" | bc -l) )); then
-        should_expand=true
+        needs_expansion=true
         expansion_reason="complexity $complexity_score > threshold $EXPANSION_THRESHOLD"
       fi
     else
@@ -1149,13 +1149,13 @@ else
       complexity_int=${complexity_score%.*}
       threshold_int=${EXPANSION_THRESHOLD%.*}
       if [ "$complexity_int" -gt "$threshold_int" ]; then
-        should_expand=true
+        needs_expansion=true
         expansion_reason="complexity $complexity_score > threshold $EXPANSION_THRESHOLD"
       fi
     fi
 
     if [ "$task_count" -gt "$TASK_COUNT_THRESHOLD" ]; then
-      should_expand=true
+      needs_expansion=true
       if [ -n "$expansion_reason" ]; then
         expansion_reason="$expansion_reason AND $task_count tasks > $TASK_COUNT_THRESHOLD"
       else
@@ -1164,7 +1164,7 @@ else
     fi
 
     # Auto-expand if threshold exceeded
-    if [ "$should_expand" = "true" ]; then
+    if [ "$needs_expansion" = "true" ]; then
       echo "Phase $phase_num: $phase_name"
       echo "  Complexity: $complexity_score | Tasks: $task_count"
       echo "  Reason: $expansion_reason"
@@ -1212,7 +1212,7 @@ fi
 After auto-expansion (if any), ensure the final plan path points to the correct location:
 
 ```bash
-# Final plan path (may have changed from L0 → L1)
+# Final plan path (might have changed from L0 → L1)
 FINAL_PLAN_PATH="$plan_file"
 ```
 
@@ -1285,17 +1285,17 @@ Testing:
 
 ## Phase Dependencies
 
-Phase dependencies enable wave-based parallel execution during implementation. Phases with no dependencies (or satisfied dependencies) can execute in parallel, significantly reducing implementation time.
+Phase dependencies enable wave-based parallel execution during implementation. Phases with no dependencies (or satisfied dependencies) WILL execute in parallel, substantially reducing implementation time.
 
 **Dependency Syntax**:
-- `Dependencies: []` - No dependencies (independent phase, can run in wave 1)
+- `Dependencies: []` - No dependencies (independent phase, WILL run in wave 1)
 - `Dependencies: [1]` - Depends on phase 1 completing first
 - `Dependencies: [1, 2]` - Depends on phases 1 and 2 both completing first
 - `Dependencies: [2, 3, 5]` - Depends on multiple non-consecutive phases
 
 **Rules**:
 - Dependencies are phase numbers (integers)
-- A phase can only depend on earlier phases (no forward dependencies)
+- A phase MUST only depend on earlier phases (no forward dependencies)
 - Circular dependencies are invalid and will be detected
 - Self-dependencies are invalid
 - If no Dependencies field specified, defaults to `[]` (independent)
