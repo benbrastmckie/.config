@@ -6,6 +6,35 @@ command-type: primary
 dependent-commands: report, plan, implement, debug, test, document, github-specialist
 ---
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- CRITICAL ARCHITECTURAL PATTERN - DO NOT VIOLATE                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- /orchestrate MUST NEVER invoke other slash commands             -->
+<!-- FORBIDDEN TOOLS: SlashCommand                                   -->
+<!-- REQUIRED PATTERN: Task tool → Specialized agents                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                                                                 -->
+<!-- WHY THIS MATTERS:                                               -->
+<!-- 1. Context Bloat: SlashCommand expands entire command prompts  -->
+<!--    (3000+ tokens each), consuming valuable context window      -->
+<!-- 2. Broken Behavioral Injection: Commands invoked via            -->
+<!--    SlashCommand cannot receive artifact path context from       -->
+<!--    location-specialist, breaking topic-based organization       -->
+<!-- 3. Lost Control: Orchestrator cannot customize agent behavior,  -->
+<!--    inject topic numbers, or ensure artifacts in correct paths   -->
+<!-- 4. Anti-Pattern Propagation: Sets bad example for future        -->
+<!--    command development                                          -->
+<!--                                                                 -->
+<!-- CORRECT PATTERN:                                                -->
+<!--   /orchestrate → Task(plan-architect) with artifact context     -->
+<!--   NOT: /orchestrate → SlashCommand("/plan")                     -->
+<!--                                                                 -->
+<!-- ENFORCEMENT:                                                    -->
+<!-- - Validation script: .claude/lib/validate-orchestrate-pattern.sh-->
+<!-- - Runs in test suite: Fails if SlashCommand detected           -->
+<!-- - Code review: Reject PRs violating this pattern               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
 # Multi-Agent Workflow Orchestration
 
 **YOU MUST orchestrate a 7-phase development workflow by delegating to specialized subagents.**
@@ -1402,7 +1431,7 @@ Plan Details:
 - Research reports used: ${#RESEARCH_REPORT_PATHS[@]}
 
 Next Phase: Implementation
-- Will execute: /implement command
+- Will execute: code-writer agent with behavioral injection
 - Will use: $IMPLEMENTATION_PLAN_PATH
 - Expected: Automated phase-by-phase implementation with tests
 ═══════════════════════════════════════════════════════
@@ -1414,18 +1443,18 @@ Next Phase: Implementation
 
 ### Implementation Phase (Adaptive Execution)
 
-The implementation phase executes the plan using /implement command, runs tests after each phase, and conditionally enters debugging loop if tests fail.
+The implementation phase executes the plan using code-writer agent with behavioral injection, runs tests after each phase, and conditionally enters debugging loop if tests fail.
 
 **When to Use Implementation Phase**:
 - **All workflows** that have a validated plan file
 - Follows planning phase completion
-- Single code-writer agent execution with /implement command
+- Single code-writer agent execution with behavioral injection
 - Conditional debugging loop (max 3 iterations) if tests fail
 
 **Quick Overview**:
 1. Extract plan path and metadata from planning checkpoint
 2. Build code-writer agent prompt with plan context
-3. Invoke code-writer agent with /implement command (extended timeout)
+3. Invoke code-writer agent with behavioral injection (extended timeout)
 4. Parse implementation results (test status, phases completed, files modified)
 5. Evaluate test status → Success: proceed to docs OR Failure: enter debugging loop
 6. Save checkpoint with implementation status
@@ -1462,48 +1491,115 @@ The implementation phase executes the plan using /implement command, runs tests 
 
 **EXECUTE NOW - Execute Implementation Plan**
 
-YOU MUST invoke the /implement command to execute the plan created in the planning phase. This is the core execution step.
+YOU MUST invoke the code-writer agent DIRECTLY (NOT via /implement command) to execute the plan created in the planning phase. This is the core execution step.
 
-**WHY THIS MATTERS**: This step performs the actual code changes. Without proper enforcement, the workflow stops at planning without implementation. The implementation phase is where plans become reality.
+**WHY THIS MATTERS**: This step performs the actual code changes. Without proper enforcement, the workflow stops at planning without implementation. The implementation phase is where plans become reality. Using behavioral injection ensures artifacts are created in the correct topic-based locations.
 
 **MANDATORY INPUT**:
 - Plan path from planning phase: $IMPLEMENTATION_PLAN_PATH
+- Topic directory: $WORKFLOW_TOPIC_DIR
+- Topic number: Extracted from plan path
 
 **CRITICAL REQUIREMENTS**:
-- YOU MUST use Task tool to invoke code-writer agent
+- YOU MUST use Task tool to invoke code-writer agent with behavioral injection
 - YOU MUST pass plan path from planning phase
-- DO NOT modify or simplify the plan path
-- Agent MUST invoke /implement slash command (not simulate)
+- YOU MUST inject artifact paths for debug/outputs/scripts
+- DO NOT use SlashCommand tool or /implement command
 - Timeout MUST be sufficient for multi-phase execution (600000ms minimum)
 
 **CHECKPOINT BEFORE INVOCATION**:
 ```
 CHECKPOINT: Implementation phase starting
 - Plan path: $IMPLEMENTATION_PLAN_PATH
+- Topic directory: $WORKFLOW_TOPIC_DIR
 - Plan verified: ✓ (from planning phase)
-- Invoking: code-writer agent with /implement command
+- Invoking: code-writer agent with behavioral injection
 ```
 
 2. **Agent Invocation** (Step 3):
-   ```json
-   {
-     "subagent_type": "general-purpose",
-     "description": "Execute implementation plan NNN using code-writer",
-     "timeout": 600000,  // CRITICAL: 10min for multi-phase execution
-     "prompt": "Read: .claude/agents/code-writer.md\n\n/implement [plan_path]"
-   }
-   ```
+
+**CRITICAL**: DO NOT use SlashCommand tool. Use Task tool with explicit Behavioral Injection Pattern.
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute implementation plan with testing and progress tracking"
+  timeout: 600000  # 10 minutes for complex implementations
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/code-writer.md
+
+    You are acting as a Code Writer Agent for plan execution.
+
+    IMPLEMENTATION PLAN:
+    Read the complete implementation plan from:
+    ${IMPLEMENTATION_PLAN_PATH}
+
+    EXECUTION REQUIREMENTS:
+    1. **Phase-by-Phase Execution**: Execute each phase sequentially
+    2. **Task Completion**: Complete all tasks in each phase before proceeding
+    3. **Testing After Each Phase**: Run test suite after completing each phase
+    4. **Progress Updates**: Update plan file with task checkboxes [x] after completion
+    5. **Git Commits**: Create git commit after each phase completion
+    6. **Checkpoint Creation**: Save checkpoint if context window constrained
+
+    ARTIFACT ORGANIZATION (CRITICAL):
+    - **Debug Reports**: Save any debugging artifacts to ${WORKFLOW_TOPIC_DIR}/debug/
+    - **Test Outputs**: Save test results to ${WORKFLOW_TOPIC_DIR}/outputs/
+    - **Generated Scripts**: Save temporary scripts to ${WORKFLOW_TOPIC_DIR}/scripts/
+    - **Plan Updates**: Update ${IMPLEMENTATION_PLAN_PATH} with progress markers
+
+    TESTING PROTOCOL:
+    - Discover test command from CLAUDE.md testing protocols
+    - Run full test suite after each phase
+    - If tests fail: Report failures and STOP (debugging phase will handle)
+    - If tests pass: Continue to next phase
+
+    GIT COMMIT FORMAT:
+    After each phase completion, create commit with format:
+    feat(${WORKFLOW_TOPIC_NUMBER}): complete Phase N - [Phase Name]
+
+    Example: feat(027): complete Phase 2 - Backend Implementation
+
+    PROGRESS REPORTING:
+    Update plan file ${IMPLEMENTATION_PLAN_PATH} after each task/phase:
+    - Mark completed tasks: - [x] Task description
+    - Update phase status: **Status**: Completed
+    - Preserve all formatting and metadata
+
+    CHECKPOINT MANAGEMENT:
+    If context window exceeds 80% capacity:
+    1. Create checkpoint: .claude/data/checkpoints/${WORKFLOW_TOPIC_NUMBER}_phase_N.json
+    2. Update plan with partial progress
+    3. Return checkpoint path for resumption
+
+    RETURN FORMAT:
+    After implementation completes (or checkpoint created):
+
+    IMPLEMENTATION_STATUS: [complete|partial|failed]
+    TESTS_PASSING: [true|false]
+    PHASES_COMPLETED: N
+    FILES_MODIFIED: [list of file paths]
+    COMMIT_HASHES: [list of git commit hashes]
+    CHECKPOINT_PATH: [path if checkpoint created, else "none"]
+    FAILURE_REASON: [if failed, brief description]
+
+    If tests fail, include:
+    FAILED_TESTS: [list of failed test names]
+    TEST_OUTPUT_PATH: ${WORKFLOW_TOPIC_DIR}/outputs/test_failures.txt
+}
+```
 
 **MANDATORY VERIFICATION - Implementation Status**
 
-After /implement command completes, YOU MUST verify implementation status and test results. This verification is NOT optional.
+After code-writer agent completes, YOU MUST verify implementation status and test results. This verification is NOT optional.
 
 **WHY THIS MATTERS**: Without status verification, determining implementation success or debugging needs is impossible. Test status determines whether to proceed to documentation or enter debugging loop.
 
 **EXECUTE NOW - Extract and Verify Implementation Status**:
 
 ```bash
-# STEP 1: Extract test status from /implement output
+# STEP 1: Extract test status from code-writer agent output
 # Expected format includes: "Tests passing: ✓" or "Tests passing: ✗"
 IMPLEMENT_OUTPUT="[capture code-writer agent output]"
 
@@ -1639,7 +1735,7 @@ PHASE_COUNT=4
 COMPLEXITY="Medium"
 
 # Step 3: Invoke code-writer (timeout 600000ms)
-# Agent executes: /implement specs/plans/013_user_authentication.md
+# Agent executes plan: specs/plans/013_user_authentication.md
 # Output after 25 minutes:
 PROGRESS: Implementing Phase 1: Database schema...
 PROGRESS: Running tests for Phase 1... ✓ All passing
@@ -1737,7 +1833,7 @@ Phase Status: COMPLETE ✓
 
 Implementation Execution:
 - Plan executed: $IMPLEMENTATION_PLAN_PATH
-- /implement command invoked: ✓
+- code-writer agent invoked with behavioral injection: ✓
 - Implementation time: [N] minutes
 
 Implementation Results:
@@ -3630,7 +3726,7 @@ When invoked with `<workflow-description>`:
 
 The /orchestrate command provides comprehensive multi-agent workflow coordination with:
 - Parallel research execution with context minimization
-- Seamless integration with /plan, /implement, /debug, /document commands
+- Direct agent invocation via Behavioral Injection Pattern (plan-architect, code-writer, debug-specialist, doc-writer)
 - Robust error recovery with automatic retry strategies
 - Intelligent debugging loop with 3-iteration limit
 - Complete documentation generation with cross-referencing
@@ -3746,7 +3842,7 @@ After implementation completes successfully, update plan hierarchy to ensure all
 **Skip Conditions**:
 - Level 0 plans (single file) - no hierarchy to update
 - Plans not using progressive expansion
-- Implementation phase did not use /implement command
+- Implementation phase did not use code-writer agent with behavioral injection
 
 
 ### Agent Integration Benefits
