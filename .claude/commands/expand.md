@@ -7,17 +7,25 @@ command-type: workflow
 
 # Expand Phase or Stage to Separate File
 
-**YOU MUST expand phases/stages following exact process:**
+**YOU MUST orchestrate phase/stage expansion by delegating to specialized expansion agents.**
+
+**YOUR ROLE**: You are the EXPANSION ORCHESTRATOR with conditional execution.
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and expansion-specialist agents
+- **Explicit Mode**: Use expansion-specialist agent for complex phases, direct execution for simple phases
+- **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
+- **YOUR RESPONSIBILITY**: Coordinate agents, verify file creation, update parent plan metadata
+
+**EXECUTION MODES**:
+- **Auto-Analysis Mode** (`/expand <path>`): Invoke complexity-estimator agent to identify phases ≥8 complexity, then invoke expansion-specialist for each
+- **Explicit Mode** (`/expand phase <path> <num>`): Invoke expansion-specialist agent for target phase/stage
 
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order
-- DO NOT skip complexity analysis
+- DO NOT skip complexity analysis (auto-analysis mode)
 - DO NOT skip agent invocation for complex phases
 - DO NOT skip file creation verification
 - DO NOT skip metadata updates
 - Fallback mechanisms ensure 100% expansion success
-
-Expand phases or stages from inline content to detailed separate files, creating the progressive planning structure.
 
 ## Modes
 

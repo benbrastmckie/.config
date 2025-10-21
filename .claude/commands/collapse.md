@@ -7,7 +7,26 @@ command-type: workflow
 
 # Collapse Phase or Stage to Parent File
 
-I'll merge expanded phases or stages back into their parent files and clean up directory structure, either automatically based on complexity analysis or for specific items.
+**YOU MUST orchestrate phase/stage collapse by delegating to specialized collapse agents.**
+
+**YOUR ROLE**: You are the COLLAPSE ORCHESTRATOR with conditional execution.
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and collapse-specialist agents
+- **Explicit Mode**: Use collapse-specialist agent for complex collapses, direct execution for simple collapses
+- **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
+- **YOUR RESPONSIBILITY**: Coordinate agents, verify content preservation, update parent metadata
+
+**EXECUTION MODES**:
+- **Auto-Analysis Mode** (`/collapse <path>`): Invoke complexity-estimator agent to identify phases ≤5 complexity, then invoke collapse-specialist for each
+- **Explicit Mode** (`/collapse phase <path> <num>`): Invoke collapse-specialist agent for target phase/stage
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all steps in EXACT sequential order
+- DO NOT skip complexity analysis (auto-analysis mode)
+- DO NOT skip agent invocation for content-heavy phases
+- DO NOT skip content preservation verification
+- DO NOT skip metadata updates
+- DO NOT delete expanded files until content verified in parent
+- Fallback mechanisms ensure 100% content preservation
 
 ## Modes
 
@@ -54,7 +73,9 @@ Reverse phase expansion by merging expanded phase content back into the main pla
 
 ### Phase Collapse Process
 
-#### 1. Analyze Current Structure
+**EXECUTE NOW**: Follow these steps in EXACT sequential order.
+
+#### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure
 
 ```bash
 # Detect project directory dynamically
@@ -95,12 +116,15 @@ main_plan="$plan_path/$plan_base.md"
 [[ ! -f "$main_plan" ]] && error "Main plan file not found: $main_plan"
 ```
 
-**Validation**:
-- [ ] Plan path resolves to valid directory
-- [ ] Structure Level is 1 (phase expansion exists)
-- [ ] Main plan file exists and is readable
+**MANDATORY VERIFICATION - Structure Validated**:
+```bash
+[[ ! -d "$plan_path" ]] && echo "❌ ERROR: Plan path invalid" && exit 1
+[[ "$structure_level" != "1" ]] && echo "❌ ERROR: Must be Level 1" && exit 1
+[[ ! -f "$main_plan" ]] && echo "❌ ERROR: Main plan not found" && exit 1
+echo "✓ VERIFIED: Structure valid for collapse"
+```
 
-#### 2. Validate Collapse Operation
+#### STEP 2 (REQUIRED BEFORE STEP 3) - Validate Collapse Operation
 
 ```bash
 # Construct phase file path
@@ -129,7 +153,7 @@ fi
 - [ ] Phase file exists and is unique
 - [ ] Phase has no expanded stages
 
-#### 3. Read Phase Content
+#### STEP 3 (REQUIRED BEFORE STEP 4) - Read Phase Content
 
 ```bash
 # Read expanded phase content
@@ -141,7 +165,7 @@ phase_objective=$(grep "^**Objective" "$phase_file" | head -1 | sed 's/\*\*Objec
 phase_status=$(grep "^**Status" "$phase_file" | head -1 | sed 's/\*\*Status\*\*: //')
 ```
 
-#### 4. Merge Content into Main Plan
+#### STEP 4 (REQUIRED BEFORE STEP 5) - Merge Content into Main Plan
 
 ```bash
 # Find phase section in main plan
@@ -151,7 +175,7 @@ phase_status=$(grep "^**Status" "$phase_file" | head -1 | sed 's/\*\*Status\*\*:
 # Use Edit tool to replace phase summary with full content
 ```
 
-#### 5. Update Metadata
+#### STEP 5 (REQUIRED BEFORE STEP 6) - Update Metadata
 
 **Remove from Expanded Phases list:**
 ```bash
@@ -171,7 +195,7 @@ else
 fi
 ```
 
-#### 6. Delete Phase File
+#### STEP 6 (REQUIRED BEFORE STEP 7) - Delete Phase File
 
 ```bash
 # Delete expanded phase file
@@ -179,7 +203,7 @@ rm "$phase_file"
 echo "Deleted: $phase_file"
 ```
 
-#### 7. Convert to Level 0 (If Last Phase)
+#### STEP 7 (FINAL STEP) - Convert to Level 0 (If Last Phase)
 
 ```bash
 if [[ $convert_to_level_0 == true ]]; then
@@ -214,7 +238,9 @@ Reverse stage expansion by merging expanded stage content back into the phase fi
 
 ### Stage Collapse Process
 
-#### 1. Analyze Current Structure
+**EXECUTE NOW**: Follow these steps in EXACT sequential order.
+
+#### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure
 
 ```bash
 # Normalize phase path (handle both directory and file paths)
@@ -262,7 +288,7 @@ phase_num=$(echo "$phase_base" | grep -oP 'phase_\K\d+' | head -1)
 - [ ] Main plan file exists
 - [ ] Phase number extracted correctly
 
-#### 2. Validate Collapse Operation
+#### STEP 2 (REQUIRED BEFORE STEP 3) - Validate Collapse Operation
 
 ```bash
 # Construct stage file path
@@ -281,10 +307,13 @@ stage_name=$(basename "$stage_file" .md)
 echo "Found stage file: $stage_name.md"
 ```
 
-**Validation**:
-- [ ] Stage file exists and is unique
+**MANDATORY VERIFICATION - Stage File Validated**:
+```bash
+[[ ! -f "$stage_file" ]] && echo "❌ ERROR: Stage file not found" && exit 1
+echo "✓ VERIFIED: Stage file exists: $stage_file"
+```
 
-#### 3. Read Stage Content
+#### STEP 3 (REQUIRED BEFORE STEP 4) - Read Stage Content
 
 ```bash
 # Read expanded stage content
@@ -296,7 +325,7 @@ stage_objective=$(grep "^**Objective" "$stage_file" | head -1)
 stage_status=$(grep "^**Status" "$stage_file" | head -1)
 ```
 
-#### 4. Merge Content into Phase File
+#### STEP 4 (REQUIRED BEFORE STEP 5) - Merge Content into Phase File
 
 ```bash
 # Find stage section in phase file
@@ -304,7 +333,7 @@ stage_status=$(grep "^**Status" "$stage_file" | head -1)
 # Preserve heading, update status if changed
 ```
 
-#### 5. Update Three-Way Metadata
+#### STEP 5 (REQUIRED BEFORE STEP 6) - Update Three-Way Metadata
 
 **Phase file:**
 - Remove stage from `Expanded Stages` list
@@ -325,7 +354,9 @@ else
 fi
 ```
 
-#### 6. Delete Stage File
+#### STEP 6 (REQUIRED BEFORE STEP 7) - Delete Stage File
+
+**CRITICAL**: DO NOT delete stage file until content verified in parent.
 
 ```bash
 # Delete expanded stage file
@@ -333,7 +364,7 @@ rm "$stage_file"
 echo "Deleted: $stage_file"
 ```
 
-#### 7. Convert to Level 1 (If Last Stage)
+#### STEP 7 (FINAL STEP) - Convert to Level 1 (If Last Stage)
 
 ```bash
 if [[ $convert_to_level_1 == true ]]; then
