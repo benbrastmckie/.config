@@ -326,6 +326,53 @@ Primary Orchestrator
 
 **Scalability**: 10+ agents vs 4 agents (2.5x increase)
 
+### Sub-Supervisor Pattern
+
+The sub-supervisor pattern enables managing 10+ parallel agents by delegating coordination to specialized supervisors within specific domains.
+
+**Key Characteristics**:
+- Each sub-supervisor manages 2-3 specialized agents
+- Sub-supervisors aggregate metadata before returning to parent
+- Parent orchestrator receives only domain-level summaries (not individual agent outputs)
+- Enables 3-level hierarchy: Orchestrator → Sub-Supervisors → Specialized Agents
+
+**Example from Plan 080**:
+
+```yaml
+Phase 1: Research Phase (10 topics)
+  ↓
+Location Specialist calculates topic directory
+  ↓
+Research Coordinator invokes 3 sub-supervisors:
+  ├─ Security Research Supervisor
+  │   ├─ Authentication Patterns Agent
+  │   ├─ Authorization Patterns Agent
+  │   └─ Encryption Standards Agent
+  ├─ Architecture Research Supervisor
+  │   ├─ Database Design Agent
+  │   ├─ API Design Agent
+  │   ├─ Service Architecture Agent
+  │   └─ Integration Patterns Agent
+  └─ Implementation Research Supervisor
+      ├─ Testing Strategy Agent
+      ├─ Deployment Patterns Agent
+      └─ Performance Optimization Agent
+```
+
+Each sub-supervisor:
+1. Receives domain-specific task list from parent
+2. Assigns tasks to specialized agents (parallel invocation)
+3. Collects agent outputs and extracts metadata
+4. Aggregates into domain summary (100-word limit)
+5. Returns to parent: `{domain, artifacts[], summary, key_findings[]}`
+
+**Context Reduction**:
+- Without sub-supervisors: 10 agents × 250 tokens = 2,500 tokens
+- With sub-supervisors: 3 domains × 150 tokens = 450 tokens
+- Reduction: 82%
+
+**Template Location**: `.claude/templates/sub_supervisor_pattern.md`
+
 ### invoke_sub_supervisor()
 
 **Location**: `.claude/lib/metadata-extraction.sh:2445-2524`
@@ -978,6 +1025,12 @@ You are a {task_domain} sub-supervisor managing {N} specialized subagents.
 - Reduction: 84-96%
 
 **Target**: <30% context usage throughout workflows
+
+**Plan 080 Metrics** (10-agent research phase):
+- Without sub-supervisors: 10 reports × 500 tokens = 5,000 tokens (25% context)
+- With sub-supervisors: 3 domains × 150 tokens = 450 tokens (2.25% context)
+- Reduction: 91%
+- Scalability improvement: Enables 40+ agents before hitting 30% threshold (vs 12 agents without)
 
 ### Optimization Strategies
 
