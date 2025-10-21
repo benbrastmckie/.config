@@ -8,7 +8,49 @@ dependent-commands: list, update, revise, debug, document, expand, github-specia
 
 # Execute Implementation Plan
 
-**YOU MUST perform systematic implementation following this exact process:**
+**YOU MUST orchestrate or execute implementation following this exact process:**
+
+**YOUR ROLE - ADAPTIVE BASED ON PHASE COMPLEXITY**:
+
+You are the implementation manager with THREE distinct roles that activate conditionally:
+
+1. **Phase Coordinator** (ALWAYS ACTIVE):
+   - **DO**: Manage workflow state, checkpoints, progress tracking
+   - **DO**: Update plan files and hierarchy after each phase
+   - **DO**: Run tests and create git commits
+   - **DO NOT**: Skip testing, commits, or plan updates
+   - **Tools**: checkpoint-utils.sh, checkbox-utils.sh, progress-dashboard.sh
+
+2. **Direct Executor** (FOR SIMPLE PHASES - Complexity Score <3):
+   - **WHEN**: Phase complexity score <3 (from Step 1.5 hybrid evaluation)
+   - **DO**: Execute implementation yourself using Read/Edit/Write tools
+   - **DO**: Apply coding standards from CLAUDE.md
+   - **DO NOT**: Invoke agents for simple tasks
+   - **Tools**: Read, Edit, Write, Bash
+
+3. **Agent Orchestrator** (FOR COMPLEX PHASES - Complexity Score ≥3):
+   - **WHEN**: Phase complexity score ≥3 (from Step 1.5 hybrid evaluation)
+   - **DO**: Delegate implementation to specialized agents
+   - **DO**: Invoke implementation-researcher for exploration (score ≥8)
+   - **DO**: Invoke code-writer for implementation (score 3-10)
+   - **DO**: Invoke debug-specialist for test failures
+   - **DO**: Invoke doc-writer for documentation phases
+   - **DO NOT**: Execute complex implementation yourself
+   - **DO NOT**: Use Read/Grep/Write for tasks requiring agent expertise
+   - **Tools**: Task tool with behavioral injection
+
+**CRITICAL ROLE SWITCHING**:
+- Role switches automatically based on $COMPLEXITY_SCORE from Step 1.5
+- YOU WILL NOT see implementation details when orchestrating (agents work independently)
+- YOUR JOB when orchestrating: Invoke agents → Verify outputs → Update plan
+- YOUR JOB when executing: Read files → Make changes → Test changes
+
+**EXECUTION FLOW**:
+1. STEP 1: Evaluate phase complexity (hybrid_complexity_evaluation)
+2. STEP 2: Switch to appropriate role based on complexity score
+3. STEP 3: Execute or orchestrate implementation
+4. STEP 4: Run tests and verify success
+5. STEP 5: Update plan hierarchy and create git commit
 
 **CRITICAL INSTRUCTIONS**:
 - Execute phases in EXACT sequential order
@@ -16,6 +58,142 @@ dependent-commands: list, update, revise, debug, document, expand, github-specia
 - DO NOT skip git commits
 - DO NOT proceed if tests fail (unless debugging mode)
 - MANDATORY: Update plan file after each phase
+
+## Adaptive Role Clarification
+
+**BEFORE EACH PHASE, YOU MUST:**
+
+1. **Read complexity score** from Step 1.5 hybrid evaluation ($COMPLEXITY_SCORE)
+2. **Identify active role** based on score and phase type
+3. **Switch execution mode** to match role
+
+**Role Decision Tree**:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Phase Complexity Evaluation (Step 1.5)                  │
+│ → $COMPLEXITY_SCORE exported                            │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │ $COMPLEXITY_SCORE ?  │
+              └──────────────────────┘
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+          ▼              ▼              ▼
+     Score 0-2      Score 3-7      Score 8-10
+  ┌─────────────┐ ┌────────────┐ ┌─────────────┐
+  │   Direct    │ │ Orchestrate│ │ Orchestrate │
+  │  Execution  │ │ code-writer│ │ code-writer │
+  │             │ │            │ │ + researcher│
+  └─────────────┘ └────────────┘ └─────────────┘
+       │              │              │
+       └──────────────┼──────────────┘
+                      │
+         ┌────────────┴────────────┐
+         │                         │
+         ▼                         ▼
+  Special Overrides        Tests Fail?
+  ┌──────────────┐         ┌──────────┐
+  │ Doc phase?   │─Yes─→   │ Invoke   │
+  │ → doc-writer │         │  debug   │
+  └──────────────┘         └──────────┘
+```
+
+**Special Case Overrides** (TAKE PRECEDENCE over complexity score):
+- Documentation phase → Use doc-writer agent (any complexity)
+- Testing phase → Use test-specialist agent (any complexity)
+- Debug phase → Use debug-specialist agent (any complexity)
+- Test failure → Auto-invoke debug-specialist (Step 3.3)
+- After phase complete → Invoke spec-updater (Plan Hierarchy Update)
+
+**Example Phase Execution**:
+
+**Simple Phase** (complexity 2):
+```
+Phase 4: Add utility function
+→ Complexity: 2/10 (threshold calculation)
+→ Role: Direct Executor
+→ Action: Read utils.sh → Add function → Test → Commit
+→ Tools: Read, Edit, Write, Bash
+```
+
+**Complex Phase** (complexity 8):
+```
+Phase 3: Database integration
+→ Complexity: 8/10 (hybrid: threshold=7, agent=9, reconciled=8)
+→ Role: Agent Orchestrator
+→ Action: Invoke implementation-researcher → Invoke code-writer → Verify outputs
+→ Tools: Task (with behavioral injection)
+```
+
+**Documentation Phase** (complexity 5, but special override):
+```
+Phase 6: Update documentation
+→ Complexity: 5/10
+→ Role: Agent Orchestrator (override)
+→ Action: Invoke doc-writer agent
+→ Reason: Documentation phases always use doc-writer (special case override)
+```
+
+**PHASE 0 ROLE CLARIFICATION - Documentation Phases**
+
+**YOUR ROLE (when phase type = documentation)**:
+
+You are the DOCUMENTATION ORCHESTRATOR, not the documentation writer.
+
+**CRITICAL INSTRUCTIONS FOR DOCUMENTATION PHASES**:
+
+1. **DO NOT write documentation yourself** regardless of complexity score
+   - DO NOT use Write tool to create .md files
+   - DO NOT update README files directly
+   - DO NOT generate documentation content yourself
+
+2. **ONLY use Task tool** to delegate to doc-writer agent
+   - Agent will create/update documentation files
+   - Agent will follow Documentation Policy from CLAUDE.md
+   - You will verify documentation created
+
+3. **YOUR JOB**:
+   - Detect documentation phase (phase name contains "document", "docs", "README")
+   - Invoke doc-writer agent via Task tool with phase context
+   - Verify documentation files created (fallback if needed)
+   - Update plan hierarchy after completion
+
+**SPECIAL CASE OVERRIDE**:
+- Documentation phases ALWAYS use doc-writer agent
+- Complexity score IGNORED for this phase type
+- Even simple documentation (complexity 2) uses agent
+- Reason: Consistency in documentation format and standards compliance
+
+**WHEN THIS APPLIES**:
+- Phase name/description contains: "document", "docs", "README", "documentation"
+- Phase tasks include creating/updating .md files
+- Regardless of complexity score
+
+**Agent Invocation Template** (use THIS EXACT TEMPLATE):
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Create/update documentation for Phase ${PHASE_NUM}"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/doc-writer.md
+
+    You are acting as a Documentation Writer Agent.
+
+    Create/update documentation for Phase ${PHASE_NUM}: ${PHASE_NAME}
+
+    Plan: ${PLAN_PATH}
+    Phase Tasks: ${TASK_LIST}
+    Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+    Follow Documentation Policy from standards.
+    Return: List of files created/updated
+}
+```
 
 ## Plan Information
 
@@ -552,7 +730,7 @@ mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
 verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"
 ```
 
-### 1.4. Check Expansion Status
+### STEP 1.4 (REQUIRED BEFORE STEP 1.5) - Check Expansion Status
 
 Before implementing the phase, check if it's already expanded and display current structure:
 
@@ -669,7 +847,7 @@ export COMPLEXITY_SCORE EVALUATION_METHOD
 
 **Error Handling**: Agent timeout/failure/invalid response → Fallback to threshold score (all fallbacks logged)
 
-### 1.55. Proactive Expansion Check
+### STEP 1.55 (REQUIRED BEFORE STEP 1.6) - Proactive Expansion Check
 
 Before implementation, evaluate if phase should be expanded using agent-based judgment.
 
@@ -685,7 +863,51 @@ Before implementation, evaluate if phase should be expanded using agent-based ju
 - **Proactive** (1.55): Before implementation, recommendation only
 - **Reactive** (3.4): After implementation, auto-revision via `/revise --auto-mode`
 
-### 1.57. Implementation Research Agent Invocation
+---
+
+**PHASE 0 ROLE CLARIFICATION - Implementation Research**
+
+**YOUR ROLE (for complex phases requiring research)**:
+
+You are the RESEARCH ORCHESTRATOR, not the researcher.
+
+**CRITICAL INSTRUCTIONS FOR STEP 1.57**:
+
+1. **DO NOT execute research yourself** when complexity ≥8 OR tasks >10
+   - DO NOT use Read/Grep tools to explore codebase
+   - DO NOT analyze existing implementations directly
+   - DO NOT identify patterns yourself
+
+2. **ONLY use Task tool** to delegate to implementation-researcher agent
+   - Agent will explore codebase and identify patterns
+   - Agent will create artifact with findings
+   - You will receive metadata only (path + summary)
+
+3. **YOUR JOB**:
+   - Calculate complexity threshold (Step 1.5 result)
+   - Check if RESEARCH_NEEDED = true
+   - Invoke implementation-researcher via Task tool
+   - Extract artifact metadata via forward_message pattern
+   - Store metadata for on-demand loading during implementation
+
+**YOU WILL NOT see full research findings**:
+- Agent returns metadata only (artifact path + 50-word summary)
+- Full artifact loaded on-demand during implementation (if needed)
+- Context reduction: 95% (2000 tokens → 100 tokens)
+
+**WHEN THIS SECTION APPLIES**:
+- Complexity score ≥8 (from Step 1.5)
+- OR task count >10
+- Purpose: Gather codebase context before implementation
+
+**WHEN TO SKIP THIS SECTION**:
+- Complexity score <8 AND task count ≤10
+- Simple phases don't need research
+- Continue to Step 1.6 (agent selection for implementation)
+
+---
+
+### STEP 1.57 (REQUIRED BEFORE STEP 1.6) - Implementation Research Agent Invocation
 
 **YOU MUST invoke implementation-researcher for complex phases. This is NOT optional.**
 
@@ -945,6 +1167,56 @@ Run tests by:
 - Checking for common test patterns (npm test, pytest, make test)
 - Running language-specific test commands based on project type
 
+---
+
+**PHASE 0 ROLE CLARIFICATION - Debug Integration**
+
+**YOUR ROLE (when test failures occur)**:
+
+You are the DEBUG ORCHESTRATOR, not the debugger.
+
+**CRITICAL INSTRUCTIONS FOR STEP 3.3**:
+
+1. **DO NOT debug failures yourself** when Level 4 triggered
+   - DO NOT analyze error messages directly
+   - DO NOT investigate root causes manually
+   - DO NOT propose fixes yourself
+
+2. **ONLY use SlashCommand tool** to invoke /debug command
+   - /debug will coordinate debug-analyst agents
+   - /debug will create structured debug report
+   - You will receive report path for user choices
+
+3. **YOUR JOB**:
+   - Classify error type (error-handling.sh)
+   - Execute tiered recovery (Levels 1-3)
+   - Invoke /debug for Level 4 (complex failures)
+   - Present user choices: (r)evise, (c)ontinue, (s)kip, (a)bort
+   - Execute chosen action
+
+**TIERED RECOVERY LEVELS**:
+- **Level 1**: Error classification + suggestions (no retry)
+- **Level 2**: Transient retry (timeout, busy, locked errors)
+- **Level 3**: Tool fallback (reduced toolset retry)
+- **Level 4**: Auto-invoke /debug (orchestration mode) ← THIS IS WHERE YOU ORCHESTRATE
+
+**YOU WILL NOT see debug analysis directly**:
+- /debug command creates report artifact
+- You receive report path only
+- User chooses action based on report
+- If (r)evise chosen: Invoke /revise --auto-mode with debug findings
+
+**WHEN THIS SECTION APPLIES**:
+- Test failures in any phase
+- Automatic trigger (no manual invocation needed)
+- Applies after Levels 1-3 if still failing
+
+**FALLBACK MECHANISM**:
+- If /debug fails: Use analyze-error.sh utility (guaranteed report creation)
+- Non-blocking: User choices presented regardless
+
+---
+
 ### 3.3. Automatic Debug Integration (if tests fail)
 
 **YOU MUST invoke debug-analyst for test failures. This is NOT optional.**
@@ -1090,7 +1362,7 @@ esac
 
 **Benefits**: 50% faster debug workflow, 4-level tiered recovery, graceful degradation, clear user choices
 
-### 3.4. Adaptive Planning Detection
+### STEP 3.4 (CONDITIONAL - IF TRIGGERS DETECTED) - Adaptive Planning Detection
 
 **Overview**: See [Adaptive Planning Features](#adaptive-planning-features) section for full details.
 
@@ -1106,7 +1378,7 @@ esac
 - **add_phase**: Test failure pattern detected
 - **update_tasks**: Scope drift flagged
 
-### 3.5. Update Debug Resolution (if tests pass for previously-failed phase)
+### STEP 3.5 (CONDITIONAL - IF PREVIOUSLY DEBUGGED) - Update Debug Resolution
 **Check if this phase was previously debugged:**
 
 **Step 1: Check for Debugging Notes**
@@ -1222,7 +1494,7 @@ Update plan files incrementally after each successful phase completion.
 
 **Progress Section Content**: Last completed phase, completion date, git commit hash, status "In Progress (M/N phases complete)", resume instructions `/implement <plan-file> <next-phase-number>`
 
-### 5.5. Automatic Collapse Detection
+### STEP 5.5 (CONDITIONAL - IF PHASE EXPANDED) - Automatic Collapse Detection
 
 Automatically evaluate if an expanded phase should be collapsed back to the main plan file after completion.
 
