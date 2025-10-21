@@ -355,8 +355,9 @@ Planned improvements to the test suite:
 - [ ] Test data fixtures and mocking
 - [ ] Integration with code review process
 
-## References
+## Navigation
 
-- [Project Standards](/home/benjamin/.config/CLAUDE.md)
-- [Implementation Plan](/home/benjamin/.config/.claude/specs/plans/026_agential_system_refinement.md)
-- [Testing Protocols](/home/benjamin/.config/CLAUDE.md#testing-protocols)
+- [← Parent Directory](../README.md)
+- [Project Standards](/home/benjamin/.config/CLAUDE.md) - Testing protocols and standards
+- [Commands](../commands/) - Commands that use tests
+- [Library Utilities](../lib/) - Utilities being tested
