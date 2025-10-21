@@ -182,7 +182,7 @@ This directory provides a complete development workflow ecosystem:
 
 **Structure**: Variables section + plan structure with placeholders
 
-**Documentation**: See [templates/README.md](templates/README.md) and [docs/template-system-guide.md](docs/template-system-guide.md)
+**Documentation**: See [templates/README.md](templates/README.md)
 
 ---
 
@@ -343,8 +343,6 @@ lib/base-utils.sh (~100 lines)
 
 **Commands Updated**: 7 commands now use consolidated utilities (implement, expand, collapse, orchestrate, revise, shared documentation files)
 
-**Architecture Diagrams**: See [docs/architecture.md](docs/architecture.md) for visual representation of command→shared references and utility consolidation.
-
 ---
 
 ## Core Capabilities
@@ -383,7 +381,7 @@ Reusable plan templates with variable substitution:
 - Simple variables, conditionals, and array iteration
 - Use `/plan-from-template` command
 
-**Location**: `templates/` | **See**: [templates/README.md](templates/README.md) | [Template Guide](docs/template-system-guide.md)
+**Location**: `templates/` | **See**: [templates/README.md](templates/README.md)
 **Neovim**: Browse via `<leader>ac` → [Templates] section
 
 ### Hooks (Event Automation)
@@ -425,7 +423,7 @@ Workflow state persistence for interruption recovery:
 - 7-day automatic cleanup
 - Failed workflow archival
 
-**Location**: `checkpoints/` | **See**: [checkpoints/README.md](checkpoints/README.md)
+**Location**: `data/checkpoints/` | **See**: [data/checkpoints/README.md](data/checkpoints/README.md)
 
 ### Artifacts (Context Management)
 
@@ -752,7 +750,7 @@ ls .claude/commands/ .claude/agents/ .claude/templates/
 
 ### Core Subsystems
 - [agents/](agents/README.md) - Specialized AI assistants
-- [checkpoints/](checkpoints/README.md) - Workflow state persistence
+- [data/checkpoints/](data/checkpoints/README.md) - Workflow state persistence
 - [commands/](commands/README.md) - Slash commands
 - [data/](data/README.md) - Runtime logs and metrics (gitignored)
 - [docs/](docs/README.md) - Integration guides and standards

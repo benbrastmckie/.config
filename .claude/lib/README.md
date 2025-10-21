@@ -1,6 +1,6 @@
 # Shared Utility Libraries
 
-This directory contains 30 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
+This directory contains 58 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
 
 **Note**: This README documents **sourced utility libraries** (functions that are sourced into other scripts). For documentation of **standalone utility scripts** (executable scripts), see [UTILS_README.md](UTILS_README.md).
 

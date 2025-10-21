@@ -37,13 +37,12 @@ echo
 echo "=== Broken Link Check ==="
 echo
 
-# Check for known broken links
+# Check for known broken links (excluding correct data/checkpoints path)
 BROKEN_LINKS=(
   "docs/template-system-guide.md"
   "docs/architecture.md"
   "docs/creating-commands.md"
   "docs/command-standards-flow.md"
-  "checkpoints/README.md"
 )
 
 for link in "${BROKEN_LINKS[@]}"; do
@@ -54,6 +53,14 @@ for link in "${BROKEN_LINKS[@]}"; do
     echo "✓ No broken link references to: $link"
   fi
 done
+
+# Special check for checkpoints (must be data/checkpoints, not just checkpoints)
+if grep -rE "\]\(checkpoints/README\.md\)" "$CLAUDE_DIR"/*.md "$CLAUDE_DIR"/*/README.md 2>/dev/null | grep -v "specs/plans" | grep -v "data/README.md" | grep -v "^Binary" > /dev/null; then
+  echo "✗ FOUND broken link reference: checkpoints/README.md (should be data/checkpoints/README.md)"
+  EXIT_CODE=1
+else
+  echo "✓ No broken link references to: checkpoints/README.md (correctly using data/checkpoints/)"
+fi
 
 echo
 echo "=== Navigation Section Check ==="
