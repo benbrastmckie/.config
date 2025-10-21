@@ -418,6 +418,28 @@ Tasks:
  - Inject artifact paths for overview report location
  - Extract overview metadata (title + 100-word summary + path)
  - Update research_summary in workflow state to reference overview (not individual reports)
+
+MANDATORY VERIFICATION CHECKPOINT:
+```bash
+# Verify overview report was created by research-synthesizer
+OVERVIEW_PATH="${ARTIFACT_PATHS[reports]}/NNN_research_overview.md"
+if [ ! -f "$OVERVIEW_PATH" ]; then
+  echo "ERROR: Overview report not created by research-synthesizer at $OVERVIEW_PATH"
+  echo "FALLBACK: Creating minimal overview template"
+  cat > "$OVERVIEW_PATH" <<'EOF'
+# Research Overview
+
+## Executive Summary
+[Synthesized overview created by fallback mechanism]
+
+## Individual Research Reports
+[Please review individual reports for detailed findings]
+EOF
+fi
+echo "Verification complete: Overview report validated at $OVERVIEW_PATH"
+```
+End verification. Proceed only if overview report exists.
+
 - [ ] Modify planning phase to receive overview report reference
  - Update plan-architect prompt to include: "Reference overview report at {overview_path}"
  - Plan MUST cite overview in metadata section

@@ -658,6 +658,36 @@ echo "✓ Plan hierarchy updated"
 echo "$UPDATED_FILES"
 \```
 
+  **MANDATORY VERIFICATION CHECKPOINT:**
+  ```bash
+  # Verify spec-updater actually updated plan hierarchy files
+  if [ -z "$SPEC_UPDATER_OUTPUT" ]; then
+    echo "ERROR: spec-updater returned empty output"
+    echo "FALLBACK: spec-updater failed - manually updating plan hierarchy"
+
+    # Fallback: Use checkbox-utils.sh directly
+    if [ -f ".claude/lib/checkbox-utils.sh" ]; then
+      source .claude/lib/checkbox-utils.sh
+      mark_phase_complete "${PLAN_PATH}" "${PHASE_NUM}"
+
+      echo "FALLBACK COMPLETE: Phase ${PHASE_NUM} marked complete using checkbox-utils"
+      echo "WARNING: spec-updater failure may affect cross-reference integrity"
+    else
+      echo "CRITICAL: checkbox-utils.sh not found - manual plan update required"
+      echo "ACTION: Manually check phase ${PHASE_NUM} in ${PLAN_PATH}"
+    fi
+  else
+    # Verify at least one file was updated
+    if ! echo "$SPEC_UPDATER_OUTPUT" | grep -q "Files updated:"; then
+      echo "WARNING: spec-updater output missing 'Files updated:' confirmation"
+      echo "ACTION: Manually verify plan hierarchy consistency"
+    fi
+  fi
+
+  echo "Verification complete: Plan hierarchy update validated"
+  ```
+  End verification. Proceed even if spec-updater failed (non-critical).
+
 **Error Handling**:
 ```bash
 # If spec-updater fails

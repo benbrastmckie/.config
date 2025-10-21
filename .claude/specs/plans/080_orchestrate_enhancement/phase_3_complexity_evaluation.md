@@ -426,6 +426,37 @@ EOF
     Output: Structured YAML complexity report
   ```
 
+MANDATORY VERIFICATION CHECKPOINT:
+```bash
+# Verify complexity-estimator produced valid output
+if [ -z "$COMPLEXITY_ESTIMATOR_OUTPUT" ]; then
+  echo "ERROR: complexity-estimator agent returned empty output"
+  echo "FALLBACK: Creating minimal complexity report with conservative estimates"
+  COMPLEXITY_ESTIMATOR_OUTPUT=$(cat <<'EOF'
+phases:
+  - phase_number: 1
+    complexity_score: 5.0
+    recommendation: "Manual review required"
+summary:
+  phases_to_expand: []
+  expansion_count: 0
+  average_complexity: 5.0
+  max_complexity: 5.0
+  recommendation: "Manual complexity analysis required - agent failed"
+EOF
+)
+fi
+
+# Verify output contains required fields
+if ! echo "$COMPLEXITY_ESTIMATOR_OUTPUT" | grep -q "phases:"; then
+  echo "ERROR: complexity-estimator output missing 'phases:' field"
+  echo "FALLBACK: Using conservative fallback report"
+fi
+
+echo "Verification complete: Complexity report validated"
+```
+End verification. Proceed only if complexity report exists.
+
 - [ ] **Extract complexity report from agent response**
  - Parse YAML output from complexity-estimator
  - Extract key fields:

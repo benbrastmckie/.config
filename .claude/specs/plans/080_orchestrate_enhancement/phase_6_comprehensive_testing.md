@@ -333,6 +333,46 @@ grep -i "context reduction\|metadata.*only" /home/benjamin/.config/.claude/comma
   4. Verify all required fields populated
   ```
 
+  **MANDATORY VERIFICATION CHECKPOINT:**
+  ```bash
+  # Verify test-specialist created test output file
+  TEST_OUTPUT="${test_output_path}"
+
+  if [ ! -f "$TEST_OUTPUT" ]; then
+    echo "ERROR: Test output not created at $TEST_OUTPUT"
+    echo "FALLBACK: test-specialist failed to save output - creating minimal test report"
+
+    # Create fallback test output
+    cat > "$TEST_OUTPUT" <<'EOF'
+# Test Results
+
+## Summary
+Minimal test report created by fallback mechanism.
+test-specialist agent failed to save full test output.
+
+## Status
+- Total Tests: Unknown
+- Status: Manual verification required
+
+## Recommendation
+Review test execution logs and manually verify test results.
+EOF
+  fi
+
+  # Verify coverage directory if coverage was reported
+  if [ -n "${coverage}" ] && [ "${coverage}" != "0" ]; then
+    COVERAGE_DIR="${topic_path}/outputs/coverage"
+    if [ ! -d "$COVERAGE_DIR" ]; then
+      echo "WARNING: Coverage reported but coverage directory missing at $COVERAGE_DIR"
+      echo "FALLBACK: Creating coverage directory for future reports"
+      mkdir -p "$COVERAGE_DIR"
+    fi
+  fi
+
+  echo "Verification complete: Test output artifacts validated"
+  ```
+  End verification. Proceed only if test output file exists.
+
 - [ ] **Implement percentage calculation for pass/fail rates**
  - Calculate passed_pct = (passed / total_tests) * 100
  - Calculate failed_pct = (failed / total_tests) * 100

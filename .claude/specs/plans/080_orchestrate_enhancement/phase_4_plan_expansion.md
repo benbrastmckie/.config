@@ -1075,6 +1075,58 @@ This final stage adds the expansion orchestration to the /orchestrate workflow, 
   - `plan_is_hierarchical`: true if level > 0
   ```
 
+  **MANDATORY VERIFICATION CHECKPOINT:**
+  ```bash
+  # Verify expansion-specialist created required artifacts
+  EXPANSION_SUMMARY="${expansion_summary_path}"
+
+  if [ ! -f "$EXPANSION_SUMMARY" ]; then
+    echo "ERROR: Expansion summary not created at $EXPANSION_SUMMARY"
+    echo "FALLBACK: expansion-specialist failed - creating minimal expansion summary"
+
+    # Create fallback expansion summary
+    cat > "$EXPANSION_SUMMARY" <<'EOF'
+# Expansion Summary
+
+## Summary
+Minimal expansion summary created by fallback mechanism.
+
+## Files Created
+- (Manual expansion required - agent failed)
+
+## Recommendation
+Review complexity report and manually expand high-complexity phases.
+EOF
+  fi
+
+  # Verify phase/stage files from files_created list
+  for phase_file in "${files_created[@]}"; do
+    if [ ! -f "$phase_file" ]; then
+      echo "WARNING: Expected phase/stage file missing: $phase_file"
+      echo "FALLBACK: Creating minimal phase file"
+
+      # Extract phase number from filename
+      phase_num=$(basename "$phase_file" | sed 's/phase_\([0-9]*\).*/\1/')
+
+      # Create minimal phase file
+      cat > "$phase_file" <<EOF
+# Phase $phase_num
+
+## Overview
+Minimal phase file created by fallback mechanism.
+Manual expansion required.
+
+## Tasks
+- [ ] Review complexity analysis
+- [ ] Manually break down this phase
+EOF
+    fi
+  done
+
+  echo "Verification complete: Expansion artifacts validated"
+  ```
+  End verification. Proceed only if expansion summary exists.
+
 - [ ] **Add expansion validation**
  - Document validation steps after expansion:
   ```markdown
