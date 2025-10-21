@@ -119,6 +119,8 @@ Thresholds read from CLAUDE.md section:
 
 **Duration**: 1-2 hours
 
+**Note**: For current threshold values (expansion threshold, task count threshold, file reference threshold), see [CLAUDE.md adaptive_planning_config](../../../CLAUDE.md#adaptive_planning_config). This stage documents the underlying formula weights, normalization algorithm, and measurement methodology that drive those thresholds.
+
 ### Tasks
 
 - [ ] **Document weighted formula specification**
