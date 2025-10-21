@@ -1460,6 +1460,8 @@ EOF
 
 **WHY THIS MATTERS**: Checkpoint reporting provides progress visibility and enables workflow monitoring.
 
+**RETURN_FORMAT_SPECIFIED**: YOU MUST return ONLY this exact format (no modifications):
+
 **Report Format**:
 
 ```
@@ -1686,6 +1688,8 @@ After completing all phases:
 
 **WHY THIS MATTERS**: Final checkpoint confirms all phases complete, provides implementation metrics, and marks workflow conclusion.
 
+**RETURN_FORMAT_SPECIFIED**: YOU MUST return ONLY this exact format (no modifications):
+
 **Report Format**:
 
 ```
@@ -1877,6 +1881,8 @@ fi
 **CHECKPOINT REQUIREMENT - Report PR Creation**
 
 **IF PR created successfully**, YOU MUST report this checkpoint:
+
+**RETURN_FORMAT_SPECIFIED**: YOU MUST return ONLY this exact format (no modifications):
 
 ```
 CHECKPOINT: Pull Request Created
