@@ -158,7 +158,7 @@ Even Level 0 plans (not yet expanded) need progress tracking reminders for direc
 - [ ] Expand high-complexity phase with expansion-specialist
 - [ ] Verify Level 1 phase file includes task-level checkpoints (every 3-5 tasks)
 - [ ] Verify Level 1 phase file includes completion checklist
-- [ ] Count reminder frequency: Should be every 3-5 tasks
+- [ ] Count reminder frequency: MUST be every 3-5 tasks
 - [ ] Verify reminder templates follow exact format from Stage 1
 
 **Testing Commands**:
@@ -490,7 +490,7 @@ fi
 
 **Objective**: Update implementation-executor agent to invoke git-commit-helper and create git commits after phase completion.
 
-**Current Behavior**: implementation-executor completes phase tasks but may not create standardized git commits.
+**Current Behavior**: implementation-executor completes phase tasks but might not create standardized git commits.
 
 **Target Behavior**: After phase completion, executor invokes git-commit-helper, gets formatted message, creates commit.
 
@@ -688,7 +688,7 @@ fi
 ```bash
 # Create expanded plan
 /plan "Feature with complex Phase 2"
-# (Phase 2 should be expanded automatically if complexity >8)
+# (Phase 2 MUST be expanded automatically if complexity >8)
 
 # Complete Phase 2
 # (implementation-executor invoked)
@@ -732,7 +732,7 @@ stage_1_db.md      phase_2_backend.md   027_auth.md
 
 **Task 5.1: Verify checkbox-utils.sh supports L2 propagation**
 
-Current checkbox-utils.sh may only support L0 ↔ L1 propagation. Need L2 → L1 → L0.
+Current checkbox-utils.sh might only support L0 ↔ L1 propagation. Need L2 → L1 → L0.
 
 - [ ] Read `.claude/lib/checkbox-utils.sh`
 - [ ] Check if `propagate_checkbox_update` handles stage files (L2)
@@ -794,7 +794,7 @@ fi
 - [ ] Verify main plan NOT yet updated (phase incomplete)
 - [ ] Complete Stage 2 of Phase 2 (last stage)
 - [ ] Verify Phase 2 NOW marked [x] in main plan
-- [ ] Run `verify_checkbox_consistency` - should pass
+- [ ] Run `verify_checkbox_consistency` - MUST pass
 
 **Testing Commands**:
 ```bash

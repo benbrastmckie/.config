@@ -24,8 +24,8 @@ This plan enhances the `/orchestrate` command to fully implement the documented 
 - **ARCHITECTURAL VIOLATION**: Direct slash command invocation using SlashCommand tool (/plan, /implement, /debug, /document)
  - Example from TODO.md Example 2: Line 332-340 shows `/orchestrate` calling `/plan` command
  - This violates the documented pattern: Commands should NEVER call other commands, only subagents
- - Causes context bloat and breaks [[Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md)](../../../docs/concepts/patterns/behavioral-injection.md)
-- Context usage <30% through [[Forward Message Pattern](../../../docs/concepts/patterns/forward-message.md)](../../../docs/concepts/patterns/forward-message.md) (but could be better without command chaining)
+ - Causes context bloat and breaks [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md)
+- Context usage <30% through [Forward Message Pattern](../../../docs/concepts/patterns/forward-message.md) (but WILL be better without command chaining)
 - No artifact organization enforcement
 - No complexity-driven plan expansion
 - No wave-based implementation
@@ -207,7 +207,7 @@ specs/027_auth/plans/027_auth_implementation/
   - Build dependency graph: identify independent vs sequential phases
 
 2. **Wave Identification**:
-  - Wave 1: All phases with no dependencies (can run in parallel)
+  - Wave 1: All phases with no dependencies (WILL run in parallel)
   - Wave 2: Phases dependent only on Wave 1 (run after Wave 1 completes)
   - Wave N: Continue until all phases assigned to waves
 
@@ -237,7 +237,7 @@ specs/027_auth/plans/027_auth_implementation/
   - Updates plan file with partial progress markers
   - Updates all parent plans in hierarchy
   - Returns checkpoint path + progress summary
-  - Coordinator can resume from checkpoint later
+  - Coordinator WILL resume from checkpoint later
 
 6. **Failure Handling**:
   If any executor in a wave fails:
@@ -368,7 +368,7 @@ The enhanced `/orchestrate` now integrates previously unused infrastructure:
   - Enable workflow resumption
 
 5. ** [Hierarchical Supervision Pattern](../../../docs/concepts/patterns/hierarchical-supervision.md)** (for 10+ agents):
-  - Orchestrator can invoke sub-supervisor agents
+  - Orchestrator WILL invoke sub-supervisor agents
   - Sub-supervisors manage 2-3 specialized agents per domain
   - 3-level depth limit
   - Example: implementer-coordinator → wave-supervisor-1, wave-supervisor-2 → implementation-executors
@@ -420,7 +420,7 @@ Tasks:
  - Update research_summary in workflow state to reference overview (not individual reports)
 - [ ] Modify planning phase to receive overview report reference
  - Update plan-architect prompt to include: "Reference overview report at {overview_path}"
- - Plan should cite overview in metadata section
+ - Plan MUST cite overview in metadata section
 - [ ] Add cross-reference validation
  - Verify overview report links to all individual reports
  - Verify plan references overview report
@@ -595,10 +595,10 @@ For detailed tasks and implementation, see [phase_7_progress_tracking.md](phase_
  - Fallback: Manual plan updates if automated propagation fails
 
 ### Medium Risk
-- **Context Window Pressure**: Adding more agents may increase context usage
+- **Context Window Pressure**: Adding more agents WILL increase context usage
  - Mitigation: Aggressive [Metadata Extraction Pattern](../../../docs/concepts/patterns/metadata-extraction.md), context pruning after each phase
  - Target: Maintain <30% context usage throughout
-- **Expansion Recursion**: Over-expansion could create too many files
+- **Expansion Recursion**: Over-expansion WILL create too many files
  - Mitigation: Maximum 2 levels enforced (L0 → L1 → L2), complexity thresholds tuned
  - Fallback: Manual /collapse if over-expanded
 

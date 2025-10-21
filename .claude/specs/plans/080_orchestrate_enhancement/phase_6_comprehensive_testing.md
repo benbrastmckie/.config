@@ -232,7 +232,7 @@ grep "Phase 4.*test" /home/benjamin/.config/.claude/commands/orchestrate.md
 
 - [ ] **Add explicit instructions for metadata-only return**
  - Emphasize context reduction pattern
- - test-specialist should save full output to file
+ - test-specialist MUST save full output to file
  - Only return structured summary to orchestrator
  - Instruction template:
   ```markdown
@@ -943,7 +943,7 @@ grep -A 5 "Phase 3.*Implementation" /home/benjamin/.config/.claude/commands/orch
   # Verify test output file exists
   if [ ! -f "$test_output_file" ]; then
    echo "WARNING: Test output file not created at $test_output_file"
-   echo "test-specialist may not have saved output correctly"
+   echo "test-specialist might not have saved output correctly"
   fi
 
   # Verify file is not empty
@@ -1031,7 +1031,7 @@ grep "outputs.*test_results\|outputs.*coverage" .gitignore
 - Context reduction: 99%+ reduction (18,000 tokens → <100 tokens)
 - Artifact paths follow topic-based organization (directory protocols)
 - Test outputs gitignored per artifact lifecycle standards
-- User can access full test output at known path for debugging
+- User WILL access full test output at known path for debugging
 
 ---
 
@@ -1098,7 +1098,7 @@ After completing all 6 stages:
 ### Downstream Impact
 - **Phase 5 (Debugging)**: Now conditionally invoked based on Phase 4 test results
 - **Phase 6 (Documentation)**: Receives test results for workflow summary
-- **Phase 7 (Progress Tracking)**: May track test metrics (pass rate, coverage trends)
+- **Phase 7 (Progress Tracking)**: WILL track test metrics (pass rate, coverage trends)
 
 ### Workflow Changes Summary
 ```

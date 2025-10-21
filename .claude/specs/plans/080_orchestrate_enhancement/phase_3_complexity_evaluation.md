@@ -12,7 +12,7 @@
 
 ## Objective
 
-Implement automated complexity evaluation system that analyzes implementation plans, calculates multi-factor complexity scores, and determines which phases should be expanded to separate files. This system enables intelligent plan organization by identifying high-complexity phases that require detailed expansion before implementation.
+Implement automated complexity evaluation system that analyzes implementation plans, calculates multi-factor complexity scores, and determines which phases MUST be expanded to separate files. This system enables intelligent plan organization by identifying high-complexity phases that require detailed expansion before implementation.
 
 ## Overview
 

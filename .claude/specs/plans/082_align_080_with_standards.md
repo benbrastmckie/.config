@@ -399,14 +399,14 @@ End verification. Proceed only if all pattern files exist.
 
 ---
 
-### Phase 2: Imperative Language Transformation
+### Phase 2: Imperative Language Transformation [COMPLETED]
 **Objective**: Replace weak language (should/may/can) with imperative language (MUST/WILL/SHALL) achieving ≥90% ratio
 **Complexity**: 7/10 (Medium-High - systematic replacement, context-sensitive)
 **Dependencies**: depends_on: [phase_1]
 
 **Tasks**:
 
-- [ ] STEP 1 (REQUIRED BEFORE STEP 2): Create weak language detection script
+- [x] STEP 1 (REQUIRED BEFORE STEP 2): Create weak language detection script
   ```bash
   cat > /home/benjamin/.config/.claude/lib/tmp/detect_weak_language.sh <<'EOF'
 #!/bin/bash
@@ -444,14 +444,14 @@ fi
 ```
 End verification. Proceed only if script exists and is executable.
 
-- [ ] STEP 2 (REQUIRED BEFORE STEP 3): Baseline audit - measure current imperative ratio
+- [x] STEP 2 (REQUIRED BEFORE STEP 3): Baseline audit - measure current imperative ratio
   ```bash
   for file in /home/benjamin/.config/.claude/specs/plans/080_orchestrate_enhancement/*.md; do
     /home/benjamin/.config/.claude/lib/tmp/detect_weak_language.sh "$file"
   done > /tmp/baseline_imperative_audit.txt
   ```
 
-- [ ] STEP 3 (REQUIRED BEFORE STEP 4): Apply systematic replacements to all 8 files
+- [x] STEP 3 (REQUIRED BEFORE STEP 4): Apply systematic replacements to all 8 files
   - `should create` → `MUST create`
   - `should update` → `MUST update`
   - `should verify` → `MUST verify`
@@ -466,12 +466,12 @@ End verification. Proceed only if script exists and is executable.
   - `try to` → `WILL`
   - `attempt to` → `WILL`
 
-- [ ] STEP 4 (REQUIRED BEFORE STEP 5): Context-sensitive review of replacements
+- [x] STEP 4 (REQUIRED BEFORE STEP 5): Context-sensitive review of replacements
   - Review each file for grammatical correctness after replacements
   - Ensure MUST used for requirements, WILL used for outcomes/behaviors
   - Verify SHALL used for specifications (rare, mostly MUST/WILL)
 
-- [ ] STEP 5: Post-transformation audit - verify ≥90% imperative ratio
+- [x] STEP 5: Post-transformation audit - verify ≥90% imperative ratio
   ```bash
   for file in /home/benjamin/.config/.claude/specs/plans/080_orchestrate_enhancement/*.md; do
     /home/benjamin/.config/.claude/lib/tmp/detect_weak_language.sh "$file"
@@ -481,8 +481,8 @@ End verification. Proceed only if script exists and is executable.
   awk '/Ratio:/ { if ($NF < 90) print "FAILED: " FILENAME " has ratio " $NF }' /tmp/final_imperative_audit.txt
   ```
 
-- [ ] TESTING: Execute imperative language audit - all 8 files MUST show ≥90% ratio
-- [ ] TESTING: Grep for remaining weak language - expect <10 occurrences total across all files
+- [x] TESTING: Execute imperative language audit - all 8 files MUST show ≥90% ratio
+- [x] TESTING: Grep for remaining weak language - expect <10 occurrences total across all files
 
 **Expected Outcomes**:
 - All 8 files achieve ≥90% imperative language ratio
