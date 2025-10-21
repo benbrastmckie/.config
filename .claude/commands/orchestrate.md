@@ -8,7 +8,29 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 
 # Multi-Agent Workflow Orchestration
 
-I'll coordinate multiple specialized subagents through a complete development workflow, from research to documentation, while preserving context and enabling intelligent parallelization.
+**YOU MUST orchestrate a 7-phase development workflow by delegating to specialized subagents.**
+
+**YOUR ROLE**: You are the WORKFLOW ORCHESTRATOR, not the executor.
+- **DO NOT** execute research/planning/implementation/debugging/documentation yourself using Read/Write/Grep/Bash tools
+- **ONLY** use Task tool to invoke specialized agents for each phase
+- **YOUR RESPONSIBILITY**: Coordinate agents, verify outputs, aggregate results, manage checkpoints
+
+**EXECUTION MODEL**: Pure orchestration across all 7 phases
+- **Phase 1 (Research)**: Invoke 2-4 research-specialist agents in parallel
+- **Phase 2 (Planning)**: Invoke plan-architect agent with research report paths
+- **Phase 3 (Implementation)**: Invoke code-writer agent with plan path
+- **Phase 4 (Debugging)**: Conditionally invoke debug-specialist if tests fail
+- **Phase 5 (Documentation)**: Invoke doc-writer agent with implementation summary
+- **Phase 6 (GitHub)**: Conditionally invoke github-specialist if --create-pr flag set
+- **Phase 7 (Summary)**: Generate workflow summary from aggregated metadata
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all workflow phases in EXACT sequential order (Phases 1-7)
+- DO NOT skip agent invocations in favor of direct execution
+- DO NOT skip verification of agent outputs
+- DO NOT skip checkpoint saves between phases
+- Fallback mechanisms ensure 100% workflow completion
+- Use metadata-based context passing (forward_message pattern) for <30% context usage
 
 ## Reference Files
 
@@ -144,11 +166,11 @@ Proceed with workflow execution? (y/n):
 
 ## Workflow Analysis
 
-Let me first analyze your workflow description to identify the natural phases and requirements.
+YOU MUST first analyze the workflow description to identify the natural phases and requirements.
 
 ## Workflow Execution Infrastructure
 
-Before beginning the workflow, I'll initialize the execution infrastructure for progress tracking, state management, and checkpoint persistence.
+Before beginning the workflow, YOU MUST initialize the execution infrastructure for progress tracking, state management, and checkpoint persistence.
 
 ### Workflow Initialization
 
@@ -356,7 +378,7 @@ See `.claude/docs/logging-patterns.md` for detailed examples and patterns.
 
 ### Step 1: Parse Workflow Description
 
-I'll extract:
+YOU MUST extract:
 - **Core Feature/Task**: What needs to be accomplished
 - **Workflow Type**: Feature development, refactoring, debugging, or investigation
 - **Complexity Indicators**: Keywords suggesting scope and approach
@@ -364,7 +386,7 @@ I'll extract:
 
 ### Step 2: Identify Workflow Phases
 
-Based on the description, I'll determine which phases are needed:
+Based on the description, YOU MUST determine which phases are needed:
 
 **Standard Development Workflow**:
 1. **Research Phase** (Parallel): Investigate patterns, best practices, alternatives
@@ -380,7 +402,7 @@ Based on the description, I'll determine which phases are needed:
 
 ### Step 3: Initialize Workflow State
 
-I'll create minimal orchestrator state:
+YOU MUST create minimal orchestrator state:
 
 ```yaml
 workflow_state:

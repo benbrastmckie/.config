@@ -8,22 +8,51 @@ dependent-commands: report, plan, implement
 
 # Refactoring Analysis Report
 
-I'll analyze the specified part of the project (or the entire project if unspecified) for refactoring opportunities based on CLAUDE.md standards and any specific concerns provided.
+**YOU MUST orchestrate refactoring analysis by delegating to code-reviewer agent.**
+
+**YOUR ROLE**: You are the REFACTORING ORCHESTRATOR, not the code analyzer.
+- **DO NOT** analyze code yourself using Read/Grep/Glob tools
+- **ONLY** use Task tool to invoke code-reviewer agent for analysis
+- **YOUR RESPONSIBILITY**: Determine scope, invoke agent, verify report creation
+
+**EXECUTION MODEL**: Single-agent delegation
+- Invoke code-reviewer agent with scope and CLAUDE.md standards
+- Agent performs read-only analysis (no code changes)
+- Verify refactoring report created at calculated path
+- Return report path to user
+
+**CRITICAL INSTRUCTIONS**:
+- Execute all steps in EXACT sequential order
+- DO NOT skip scope determination
+- DO NOT skip agent invocation
+- DO NOT skip report path calculation
+- DO NOT skip report creation verification
+- Fallback mechanisms ensure 100% report creation
 
 ## Target Scope
 $ARGUMENTS
 
 ## Process
 
-### 1. Scope Determination
-I'll identify what to analyze:
+**EXECUTE NOW**: Follow these steps in EXACT sequential order.
+
+### STEP 1 (REQUIRED BEFORE STEP 2) - Scope Determination
+
+**YOU MUST identify what to analyze**:
 - If specific file/directory provided: Focus on that area
 - If module name provided: Find all related files for that module
 - If no arguments: Analyze entire project structure
 - Parse any specific concerns or new feature descriptions provided
 
-### 2. Location Determination and Registration
-I'll determine the specs directory location using this process:
+**MANDATORY VERIFICATION - Scope Identified**:
+```bash
+[[ -z "$SCOPE" ]] && echo "❌ ERROR: Scope not determined" && exit 1
+echo "✓ VERIFIED: Analysis scope: $SCOPE"
+```
+
+### STEP 2 (REQUIRED BEFORE STEP 3) - Location Determination and Registration
+
+**YOU MUST determine the specs directory location using this process**:
 
 **Step 1: Detect Project Directory**
 - Identify the scope of refactoring (file, directory, module, or entire project)
@@ -43,16 +72,18 @@ I'll determine the specs directory location using this process:
 - Update "Last Updated" date and increment "Reports" count
 - Use Edit tool to update SPECS.md
 
-### 3. Standards Review
-I'll load and apply standards from:
+### STEP 3 (REQUIRED BEFORE STEP 4) - Standards Review
+
+**The code-reviewer agent WILL load and apply standards from**:
 - **CLAUDE.md**: Project conventions and standards
 - **Nix Development Standards**: Code style, organization, testing
 - **Documentation Standards**: Specs directory protocol
 - **Application Configurations**: From docs/applications.md
 - **Package Management**: Best practices from docs/packages.md
 
-### 3. Code Analysis Phase
-I'll systematically examine:
+### STEP 4 (REQUIRED BEFORE STEP 5) - Code Analysis Phase
+
+**The code-reviewer agent WILL systematically examine**:
 
 #### Code Quality Issues
 - **Duplication**: Repeated code that could be abstracted
@@ -83,8 +114,9 @@ I'll systematically examine:
 - **Outdated Docs**: Documentation not matching implementation
 - **Spec Compliance**: Missing plans/reports/summaries per protocol
 
-### 4. Opportunity Identification
-I'll categorize refactoring opportunities by:
+### STEP 5 (REQUIRED BEFORE STEP 6) - Opportunity Identification
+
+**The code-reviewer agent WILL categorize refactoring opportunities by**:
 
 #### Priority Levels
 - **Critical**: Breaking standards, causing bugs, security issues
@@ -104,15 +136,17 @@ I'll categorize refactoring opportunities by:
 - **Medium Risk**: Significant changes, needs thorough testing
 - **High Risk**: Core functionality changes, breaking changes possible
 
-### 5. Specific Concern Analysis
-If user provides specific concerns (e.g., new feature requirements):
+### STEP 6 (REQUIRED BEFORE STEP 7) - Specific Concern Analysis
+
+**If user provides specific concerns**, the code-reviewer agent WILL:
 - Analyze how existing code conflicts with new requirements
 - Identify components that need modification
 - Suggest preparatory refactoring to ease feature implementation
 - Highlight architectural changes needed
 
-### 6. Report Generation
-I'll create a comprehensive refactoring report in `specs/reports/`:
+### STEP 7 (FINAL STEP) - Report Generation
+
+**YOU MUST create a comprehensive refactoring report in `specs/reports/`**:
 
 #### Report Number Assignment
 - Check existing reports in appropriate `specs/reports/` directory

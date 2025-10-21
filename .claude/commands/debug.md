@@ -8,17 +8,24 @@ allowed-tools: Read, Bash, Grep, Glob, WebSearch, WebFetch, TodoWrite, Task
 
 # /debug Command
 
-**YOU MUST investigate and create debug report following exact process:**
+**YOU MUST orchestrate a diagnostic investigation by delegating to specialized debug agents.**
+
+**YOUR ROLE**: You are the INVESTIGATION ORCHESTRATOR, not the investigator.
+- **DO NOT** analyze code/logs/errors yourself using Read/Grep/Bash tools
+- **ONLY** use Task tool to invoke debug-specialist or debug-analyst agents
+- **YOUR RESPONSIBILITY**: Coordinate investigation, aggregate findings, verify report creation
+
+**EXECUTION MODES**:
+- **Simple Mode** (single root cause): Invoke debug-specialist for direct analysis
+- **Complex Mode** (2+ potential causes): Invoke multiple debug-analyst agents in parallel for hypothesis testing
 
 **CRITICAL INSTRUCTIONS**:
-- Execute all investigation steps in EXACT sequential order
-- DO NOT skip parallel hypothesis investigation
-- DO NOT skip report file creation
-- DO NOT skip root cause analysis
-- DO NOT make code changes (diagnostic only)
+- Execute all investigation steps in EXACT sequential order (Steps 1-5)
+- DO NOT skip Step 3.5 (parallel investigation) for complex issues
+- DO NOT skip report file creation and verification
+- DO NOT skip spec-updater invocation for plan linking
+- DO NOT make code changes (diagnostic only - agents document findings)
 - Fallback mechanisms ensure 100% report creation
-
-Investigates issues and creates a comprehensive diagnostic report without making any code changes. Focuses on understanding root causes and documenting findings.
 
 ## Usage
 

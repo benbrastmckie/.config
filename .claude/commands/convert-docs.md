@@ -8,7 +8,28 @@ agent-dependencies: doc-converter
 
 # Convert Documents - Bidirectional Conversion
 
-Convert between Markdown, Word (DOCX), and PDF formats with automatic direction detection. Uses a fast script for standard conversions or an intelligent agent for complex orchestration workflows.
+**YOU MUST execute document conversion using conditional mode selection: script mode OR agent mode.**
+
+**YOUR ROLE**: You are the CONVERSION COORDINATOR with two execution paths.
+- **DO NOT** convert files yourself using Read/Write/Bash tools directly
+- **Script Mode**: ONLY invoke the conversion script via Bash tool (source + main_conversion)
+- **Agent Mode**: ONLY use Task tool to invoke doc-converter agent
+- **YOUR RESPONSIBILITY**: Parse arguments, detect mode, delegate to script or agent
+
+**EXECUTION MODES**:
+- **Script Mode** (default): Invoke `.claude/lib/convert-core.sh` script via Bash - fast, direct tool invocation
+- **Agent Mode** (--use-agent or keywords): Invoke doc-converter agent via Task tool - comprehensive 5-phase workflow with validation
+
+**MODE DETECTION LOGIC**:
+- IF `--use-agent` flag present OR orchestration keywords detected ("detailed logging", "quality reporting", "verify tools") → Agent Mode
+- ELSE → Script Mode
+
+**CRITICAL INSTRUCTIONS**:
+- Execute mode detection BEFORE any conversion attempt
+- DO NOT execute conversion logic yourself
+- DO NOT skip agent invocation when agent mode triggers
+- DO NOT skip script invocation when script mode triggers
+- Both modes produce conversion.log and converted files
 
 ## Usage
 
