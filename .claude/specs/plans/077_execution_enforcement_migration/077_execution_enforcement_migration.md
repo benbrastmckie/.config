@@ -9,7 +9,7 @@
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Migration Guide**: /home/benjamin/.config/.claude/docs/guides/execution-enforcement-migration-guide.md
 - **Priority**: High - Critical for reliable subagent delegation and 100% file creation rates
-- **Structure Level**: 1
+- **Structure Level**: 2
 - **Expanded Phases**: [2, 3, 4, 5, 6, 7, 8]
 
 ## Overview
@@ -248,13 +248,13 @@ Agents (13 audited, including references):
 
 **Summary**: First wave of agent migrations applying 5-phase transformation (role declaration, sequential steps, passive voice elimination, template enforcement, completion criteria) to three critical file creation agents. Each agent requires detailed transformation with concrete before/after examples and comprehensive testing to achieve ≥95/100 audit scores and 100% file creation rates.
 
-**Detailed Implementation**: See [Phase 2 Expansion](phase_2_expansion.md) (2,102 lines)
+**Detailed Implementation**: See [Phase 2 Expansion](phase_2_expansion/phase_2_expansion.md) (885 lines, Stage 1 expanded to separate file)
 
 #### Key Deliverables
-- [ ] doc-writer.md migrated and tested (score ≥95/100, 10/10 file creation)
+- [x] doc-writer.md migrated and tested (score 105/100 - EXCEEDS TARGET, file creation TBD)
 - [ ] debug-specialist.md migrated and tested (score ≥95/100, 10/10 file creation)
 - [ ] test-specialist.md migrated and tested (score ≥95/100, 10/10 file creation)
-- [ ] Tracking spreadsheet updated with Wave 1 results
+- [x] Tracking spreadsheet updated with Wave 1 results (created and doc-writer.md recorded)
 
 ---
 

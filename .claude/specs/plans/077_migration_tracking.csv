@@ -1,0 +1,20 @@
+Agent/Command,Type,Pre-Migration Score,Post-Migration Score,File Creation Rate,Status,Notes
+doc-writer.md,Agent,~45/100,105/100,TBD,MIGRATED,Phase 2 Wave 1 - Exceeds target score of 95/100
+debug-specialist.md,Agent,~40/100,TBD,TBD,PENDING,Phase 2 Wave 1
+test-specialist.md,Agent,~40/100,TBD,TBD,PENDING,Phase 2 Wave 1
+expansion-specialist.md,Agent,~15/100,TBD,TBD,PENDING,Phase 3 Wave 2
+collapse-specialist.md,Agent,~15/100,TBD,TBD,PENDING,Phase 3 Wave 2
+spec-updater.md,Agent,85/100,TBD,TBD,PENDING,Phase 3 Wave 2 - Fine-tuning
+/report,Command,95/100,TBD,TBD,PENDING,Phase 4 - Already high score
+/plan,Command,90/100,TBD,TBD,PENDING,Phase 5
+/implement,Command,95/100,TBD,TBD,PENDING,Phase 6
+/orchestrate,Command,95/100,TBD,TBD,PENDING,Phase 7
+/debug,Command,100/100,TBD,TBD,PENDING,Phase 7 - Already compliant
+/refactor,Command,-5/100,TBD,TBD,PENDING,Phase 7
+/expand,Command,100/100,TBD,TBD,PENDING,Phase 7 - Already compliant
+/collapse,Command,20/100,TBD,TBD,PENDING,Phase 7
+/convert-docs,Command,TBD,TBD,TBD,PENDING,Phase 7
+code-reviewer.md,Agent,~15/100,TBD,TBD,PENDING,Phase 8 Wave 3
+complexity-estimator.md,Agent,~15/100,TBD,TBD,PENDING,Phase 8 Wave 4
+plan-expander.md,Agent,~15/100,TBD,TBD,PENDING,Phase 8 Wave 4
+metrics-specialist.md,Agent,~15/100,TBD,TBD,PENDING,Phase 8 Wave 4
