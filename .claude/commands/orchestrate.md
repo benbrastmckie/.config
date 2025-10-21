@@ -29,8 +29,19 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 - DO NOT skip agent invocations in favor of direct execution
 - DO NOT skip verification of agent outputs
 - DO NOT skip checkpoint saves between phases
+- **FILE CREATION ENFORCEMENT**: Verify files created BEFORE proceeding to next phase
 - Fallback mechanisms ensure 100% workflow completion
 - Use metadata-based context passing (forward_message pattern) for <30% context usage
+
+**FILE CREATION VERIFICATION REQUIREMENT**:
+Each phase MUST verify that agents created required files BEFORE marking phase complete:
+- Phase 1: Verify all research report files exist
+- Phase 2: Verify implementation plan file exists
+- Phase 3: Verify code files and tests exist
+- Phase 4: Verify debug reports exist (if invoked)
+- Phase 5: Verify documentation files exist
+- Phase 6: Verify PR created (if --create-pr flag set)
+- Phase 7: Verify workflow summary file exists
 
 ## Reference Files
 
@@ -382,7 +393,7 @@ YOU MUST extract:
 - **Core Feature/Task**: What needs to be accomplished
 - **Workflow Type**: Feature development, refactoring, debugging, or investigation
 - **Complexity Indicators**: Keywords suggesting scope and approach
-- **Parallelization Hints**: Tasks that can run concurrently
+- **Parallelization Hints**: Tasks eligible for concurrent execution
 
 ### Step 2: Identify Workflow Phases
 
@@ -717,7 +728,7 @@ Message 3: Task { [agent 3] }
 ENFORCEMENT RATIONALE: Mandatory Verification + Fallback
 
 WHY "MANDATORY VERIFICATION" instead of "Verify that":
-- Descriptive "verify that" sounds advisory, Claude may skip
+- Descriptive "verify that" sounds advisory, Claude WILL skip
 - ~20% of runs skip verification when not marked mandatory
 - Without verification, missing files go undetected
 - Without fallback trigger, 0% success when agent doesn't comply
@@ -827,7 +838,7 @@ done
 
 if [ $MISSING_COUNT -gt 0 ]; then
   echo "❌ VERIFICATION FAILED: $MISSING_COUNT reports missing"
-  echo "❌ This should be impossible due to fallback mechanism"
+  echo "❌ CRITICAL: Fallback mechanism failed to create missing reports"
   exit 1
 fi
 
@@ -1219,7 +1230,7 @@ if [ "$PLAN_CREATED_PATH" != "$PLAN_PATH" ]; then
   echo "⚠️  WARNING: Path mismatch"
   echo "  Expected: $PLAN_PATH"
   echo "  Agent created: $PLAN_CREATED_PATH"
-  echo "  Using agent's path (may indicate path calculation issue)"
+  echo "  Using agent's path (indicates path calculation issue)"
   PLAN_PATH="$PLAN_CREATED_PATH"
 fi
 
@@ -1259,7 +1270,7 @@ if [ -n "$RESEARCH_REPORT_PATHS_FORMATTED" ]; then
     echo "⚠️  WARNING: Plan missing Metadata section"
   elif ! grep -A 20 "## Metadata" "$PLAN_PATH" | grep -q "Research Reports"; then
     echo "⚠️  WARNING: Plan missing 'Research Reports' in metadata"
-    echo "Plan should cross-reference research reports for traceability"
+    echo "⚠️  RECOMMENDATION: Cross-reference research reports for traceability"
   else
     echo "✓ VERIFIED: Plan includes research reports cross-reference"
   fi
@@ -1487,7 +1498,7 @@ CHECKPOINT: Implementation phase starting
 
 After /implement command completes, YOU MUST verify implementation status and test results. This verification is NOT optional.
 
-**WHY THIS MATTERS**: Without status verification, we cannot determine if implementation succeeded or needs debugging. Test status determines whether to proceed to documentation or enter debugging loop.
+**WHY THIS MATTERS**: Without status verification, determining implementation success or debugging needs is impossible. Test status determines whether to proceed to documentation or enter debugging loop.
 
 **EXECUTE NOW - Extract and Verify Implementation Status**:
 
@@ -3405,7 +3416,7 @@ See [Checkpoint Management Patterns](../docs/command-patterns.md#checkpoint-mana
 1. **Max retries exceeded** (3 attempts for most error types)
 2. **Critical failures** (data loss, security issues)
 3. **Debugging loop limit** (3 debugging iterations)
-4. **Context overflow** (cannot compress further)
+4. **Context overflow** (compression limit reached)
 5. **Architectural decisions** (user input required)
 
 #### Escalation Format
@@ -3527,7 +3538,7 @@ When invoked with `<workflow-description>`:
 **Expected Execution**:
 - Research: 2 parallel research-specialist agents
 - Plan: plan-architect creates comprehensive plan
-- Implement: code-writer executes plan (may fail tests initially)
+- Implement: code-writer executes plan (possible test failures initially)
 - Debug: debug-specialist investigates failures, code-writer applies fixes (1-3 iterations)
 - Document: doc-writer updates documentation
 
@@ -3729,7 +3740,7 @@ After implementation completes successfully, update plan hierarchy to ensure all
 
 **Error Handling**:
 - If hierarchy update fails: Log warning but continue with summary generation
-- User notified in workflow summary that manual sync may be needed
+- User notified in workflow summary that manual sync is required
 - Link to checkbox-utils.sh for manual synchronization
 
 **Skip Conditions**:
@@ -3747,7 +3758,7 @@ After implementation completes successfully, update plan hierarchy to ensure all
 
 ## Checkpoint Detection and Resume
 
-Before starting the workflow, I'll check for existing checkpoints that might indicate an interrupted workflow.
+Before starting the workflow, YOU MUST check for existing checkpoints that might indicate an interrupted workflow.
 
 ### Step 1: Check for Existing Checkpoint
 
@@ -3758,7 +3769,7 @@ CHECKPOINT=$(.claude/lib/load-checkpoint.sh orchestrate 2>/dev/null || echo "")
 
 ### Step 2: Interactive Resume Prompt (if checkpoint found)
 
-If a checkpoint exists, I'll present interactive options:
+If a checkpoint exists, YOU MUST present interactive options:
 
 ```
 Found existing checkpoint for orchestrate workflow

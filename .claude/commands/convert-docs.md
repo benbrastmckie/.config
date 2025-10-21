@@ -152,70 +152,252 @@ All script mode features PLUS:
 
 ## Task
 
-Determine conversion mode based on user request, then execute conversion.
+**EXECUTE NOW**: Follow these steps in EXACT sequential order.
 
-### Parse Arguments
+### STEP 1 (REQUIRED BEFORE STEP 2) - Parse Arguments
 
-```
-input_dir = {arg1} or "."
-output_dir = {arg2} or "./converted_output"
-user_request = full command text
-```
-
-### Detect Conversion Mode
-
-Check for agent mode triggers:
-- `--use-agent` flag present in arguments
-- Orchestration keywords in request: "detailed logging", "quality reporting", "verify tools", "orchestrated workflow", "comprehensive logging"
-
-If agent mode triggered: Use Agent Mode (Task tool)
-Otherwise: Use Script Mode (Bash tool)
-
-### Script Mode Execution
-
-Execute the conversion script directly:
+**YOU MUST parse arguments and set defaults**:
 
 ```bash
-# Source the conversion core module and run main function
-source /home/benjamin/.config/.claude/lib/convert-core.sh
-main_conversion "{input_dir}" "{output_dir}"
+input_dir="${1:-.}"
+output_dir="${2:-./converted_output}"
+user_request="$*"  # Full command text for mode detection
 ```
 
-The script handles:
-- Tool detection and fallback
-- File discovery and conversion
-- Progress indicators
-- Validation and reporting
-- Conversion log generation
+**MANDATORY VERIFICATION - Arguments Parsed**:
+```bash
+[[ -z "$input_dir" ]] && echo "❌ ERROR: Input directory not set" && exit 1
+[[ -z "$output_dir" ]] && echo "❌ ERROR: Output directory not set" && exit 1
+echo "✓ VERIFIED: input_dir=$input_dir, output_dir=$output_dir"
+```
 
-### Agent Mode Execution
+### STEP 2 (REQUIRED BEFORE STEP 3) - Verify Input Path
 
-Invoke doc-converter agent via Task tool (see agent guidelines at `/home/benjamin/.config/.claude/agents/doc-converter.md`):
+**EXECUTE NOW - Path Verification**:
+
+```bash
+# Verify input directory exists
+if [[ ! -d "$input_dir" ]]; then
+  echo "❌ CRITICAL ERROR: Input directory does not exist: $input_dir"
+  exit 1
+fi
+
+# Count files to convert
+file_count=$(find "$input_dir" -type f \( -name "*.md" -o -name "*.docx" -o -name "*.pdf" \) 2>/dev/null | wc -l)
+
+if [[ $file_count -eq 0 ]]; then
+  echo "❌ CRITICAL ERROR: No convertible files found in $input_dir"
+  echo "   Looking for: *.md, *.docx, *.pdf"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Found $file_count files to convert"
+```
+
+### STEP 3 (REQUIRED BEFORE STEP 4) - Detect Conversion Mode
+
+**YOU MUST determine execution mode** (script or agent):
+
+```bash
+agent_mode=false
+
+# Check for --use-agent flag
+if [[ "$user_request" =~ --use-agent ]]; then
+  agent_mode=true
+fi
+
+# Check for orchestration keywords
+if echo "$user_request" | grep -qiE "detailed logging|quality reporting|verify tools|orchestrated workflow|comprehensive logging"; then
+  agent_mode=true
+fi
+
+echo "PROGRESS: Conversion mode: $([ "$agent_mode" = true ] && echo "AGENT" || echo "SCRIPT")"
+```
+
+**MANDATORY VERIFICATION - Mode Selected**:
+```bash
+[[ -z "$agent_mode" ]] && echo "❌ ERROR: Mode not determined" && exit 1
+echo "✓ VERIFIED: Execution mode determined: $agent_mode"
+```
+
+### STEP 4 (CONDITIONAL) - Script Mode Execution
+
+**CRITICAL**: Execute this step ONLY if agent_mode=false
+
+**EXECUTE NOW - Invoke Conversion Script**:
+
+```bash
+# Pre-calculate output directory (absolute path)
+OUTPUT_DIR_ABS="$(cd "$(dirname "$output_dir")" 2>/dev/null && pwd)/$(basename "$output_dir")"
+
+# Create output directory if needed
+mkdir -p "$OUTPUT_DIR_ABS" || {
+  echo "❌ CRITICAL ERROR: Cannot create output directory: $OUTPUT_DIR_ABS"
+  exit 1
+}
+
+echo "PROGRESS: Output directory: $OUTPUT_DIR_ABS"
+
+# Source the conversion core module and run main function
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert-core.sh" || {
+  echo "❌ CRITICAL ERROR: Cannot source convert-core.sh"
+  exit 1
+}
+
+# Execute conversion with error handling
+if ! main_conversion "$input_dir" "$OUTPUT_DIR_ABS"; then
+  echo "❌ ERROR: Script mode conversion failed"
+  exit 1
+fi
+```
+
+**MANDATORY VERIFICATION - Script Conversion Complete**:
+```bash
+# Check conversion log exists
+if [[ ! -f "$OUTPUT_DIR_ABS/conversion.log" ]]; then
+  echo "⚠️  WARNING: conversion.log not found (script may have failed silently)"
+fi
+
+# Count output files
+output_count=$(find "$OUTPUT_DIR_ABS" -type f \( -name "*.md" -o -name "*.docx" -o -name "*.pdf" \) 2>/dev/null | wc -l)
+
+if [[ $output_count -eq 0 ]]; then
+  echo "❌ CRITICAL ERROR: No files generated in output directory"
+  exit 1
+fi
+
+echo "✓ VERIFIED: $output_count files generated"
+echo "✓ VERIFIED: Script mode conversion complete"
+```
+
+**CHECKPOINT REQUIREMENT - Script Mode Complete**:
+
+Report conversion results:
+```
+CHECKPOINT: Script Mode Conversion Complete
+- Input Directory: $input_dir
+- Output Directory: $OUTPUT_DIR_ABS
+- Files Converted: $output_count
+- Log File: $OUTPUT_DIR_ABS/conversion.log
+- Status: SUCCESS
+```
+
+### STEP 5 (CONDITIONAL) - Agent Mode Execution
+
+**CRITICAL**: Execute this step ONLY if agent_mode=true
+
+**EXECUTE NOW - Invoke doc-converter Agent**:
+
+YOU MUST use THIS EXACT TEMPLATE for agent invocation (No modifications):
 
 ```
 Task {
   subagent_type: "general-purpose"
   description: "Convert documents with orchestration"
   prompt: |
-    Read and follow behavioral guidelines: /home/benjamin/.config/.claude/agents/doc-converter.md
+    Read and follow behavioral guidelines: ${CLAUDE_PROJECT_DIR}/.claude/agents/doc-converter.md
 
-    Convert documents with 5-phase orchestration workflow:
-    - Input: {input_dir}
-    - Output: {output_dir}
-    - Direction: Auto-detect from file extensions
-    - Orchestration mode: ENABLED
+    YOU MUST convert documents with 5-phase orchestration workflow.
 
-    Provide comprehensive logging, validation, and quality reporting.
+    REQUIRED PARAMETERS (ALL MANDATORY):
+    - Input Directory: $input_dir (ABSOLUTE PATH REQUIRED)
+    - Output Directory: $output_dir (ABSOLUTE PATH REQUIRED)
+    - Direction: Auto-detect from file extensions (.md → DOCX, .docx/.pdf → MD)
+    - Orchestration Mode: ENABLED
+
+    MANDATORY DELIVERABLES:
+    1. Converted files in output directory
+    2. conversion.log with per-file results
+    3. Quality validation report
+    4. Tool selection explanations
+
+    Return metadata only (paths + file count summary).
 }
+```
+
+**MANDATORY VERIFICATION - Agent Conversion Complete**:
+```bash
+# Check if output directory was created by agent
+if [[ ! -d "$output_dir" ]]; then
+  echo "❌ CRITICAL ERROR: Agent did not create output directory"
+
+  # FALLBACK: Search for output in alternative locations
+  echo "⚠️  Attempting fallback search..."
+  possible_output=$(find . -name "converted_output" -o -name "output" -type d 2>/dev/null | head -1)
+
+  if [[ -n "$possible_output" ]]; then
+    echo "✓ FALLBACK: Found output at $possible_output"
+    output_dir="$possible_output"
+  else
+    echo "❌ FALLBACK FAILED: No output directory found"
+    exit 1
+  fi
+fi
+
+# Verify converted files exist
+output_count=$(find "$output_dir" -type f \( -name "*.md" -o -name "*.docx" -o -name "*.pdf" \) 2>/dev/null | wc -l)
+
+if [[ $output_count -eq 0 ]]; then
+  echo "❌ CRITICAL ERROR: Agent mode produced no output files"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Agent mode produced $output_count files"
+```
+
+**CHECKPOINT REQUIREMENT - Agent Mode Complete**:
+
+Report agent results:
+```
+CHECKPOINT: Agent Mode Conversion Complete
+- Input Directory: $input_dir
+- Output Directory: $output_dir
+- Files Converted: $output_count
+- Agent: doc-converter
+- Orchestration: 5-phase workflow
+- Status: SUCCESS
+```
+
+### STEP 6 (FINAL STEP) - File Creation Verification and Return Format
+
+**FILE CREATION ENFORCEMENT**: YOU MUST verify that files were created BEFORE returning success.
+
+Create verification BEFORE proceeding:
+- Script mode: Verify $output_count files exist in $OUTPUT_DIR_ABS
+- Agent mode: Verify $output_count files exist in $output_dir
+- If zero files: Exit with error (already enforced in Steps 4 and 5)
+
+**RETURN FORMAT SPECIFICATION**: YOU MUST return ONLY the following format (no additional text)
+
+```
+✓ Document Conversion Complete
+
+Mode: [SCRIPT|AGENT]
+Input: $input_dir ($file_count files)
+Output: $output_dir ($output_count files converted)
+Log: $output_dir/conversion.log
+
+Next Steps:
+- Review conversion.log for any warnings
+- Check output files for formatting correctness
+- Use converted files as needed
 ```
 
 ### Error Handling
 
+**CRITICAL ERROR HANDLING - ALL MODES**:
+
 **Script Mode**:
-- Missing tools reported with installation guidance
-- Failed conversions logged with error details
-- Continues processing remaining files
-- Shows missing tools report if any failures
+- Missing tools → Report installation guidance + exit 1
+- Failed conversions → Log error details + continue remaining files
+- Zero successful conversions → exit 1
+- Missing conversion.log → Warning (not fatal)
+
+**Agent Mode**:
+- Agent invocation failure → Retry once, then exit 1
+- Missing output directory → Search fallback locations, then exit 1
+- Zero output files → exit 1
+- Missing validation report → Warning (not fatal)
 
 **Agent Mode**:
 - Detailed tool detection with version reporting
