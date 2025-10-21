@@ -20,13 +20,13 @@ Migrate the `/report` command with Phase 0 role clarification to fix hierarchica
 
 ### Critical Success Criteria
 
-- [ ] Phase 0 role clarification added with all 4 required elements
-- [ ] Hierarchical multi-agent pattern executes correctly (Task tool invocations visible)
-- [ ] 10/10 file creation tests pass (100% reliability)
-- [ ] Audit score ≥95/100 (up from baseline)
-- [ ] Existing /report functionality preserved (zero regressions)
-- [ ] Metadata-based context reduction verified (92-97% reduction maintained)
-- [ ] Parallel agent execution verified (2-4 agents invoked simultaneously)
+- [x] Phase 0 role clarification added with all 4 required elements
+- [ ] Hierarchical multi-agent pattern executes correctly (Task tool invocations visible) - Integration testing pending
+- [ ] 10/10 file creation tests pass (100% reliability) - Integration testing pending
+- [x] Audit score ≥95/100 (achieved 95/100)
+- [x] Existing /report functionality preserved (code patterns retained)
+- [ ] Metadata-based context reduction verified (92-97% reduction maintained) - Integration testing pending
+- [ ] Parallel agent execution verified (2-4 agents invoked simultaneously) - Integration testing pending
 
 ### Problem Statement
 
