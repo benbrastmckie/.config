@@ -22,52 +22,53 @@ readonly TASK_COUNT_THRESHOLD_EXPAND=10
 # ==============================================================================
 
 # calculate_phase_complexity: Calculate complexity score for a phase
-# Usage: calculate_phase_complexity <phase-name> <task-list>
-# Returns: Complexity score (0-10+)
-# Example: calculate_phase_complexity "Refactor Architecture" "$TASK_LIST"
+# Usage: calculate_phase_complexity <phase-name> <task-list> [plan-file]
+# Returns: Complexity score (0-15 scale, agent-based)
+# Example: calculate_phase_complexity "Refactor Architecture" "$TASK_LIST" "plan.md"
+#
+# NOTE: Now uses pure agent-based assessment (complexity-estimator.md)
+# The algorithm-based approach (analyze-phase-complexity.sh) is deprecated.
 calculate_phase_complexity() {
   local phase_name="${1:-}"
   local task_list="${2:-}"
+  local plan_file="${3:-}"
 
   if [ -z "$phase_name" ]; then
     echo "0"
     return
   fi
 
-  # Use existing analyzer script
-  if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/analyze-phase-complexity.sh" ]; then
-    local result=$("${CLAUDE_PROJECT_DIR}/.claude/lib/analyze-phase-complexity.sh" "$phase_name" "$task_list")
-    local score=$(echo "$result" | grep "^COMPLEXITY_SCORE=" | cut -d'=' -f2)
-    echo "${score:-0}"
-  else
-    # Fallback: simple calculation
-    local score=0
+  # DEPRECATED: Algorithm-based scoring (kept for reference only)
+  # The analyze-phase-complexity.sh script uses a 5-factor formula that
+  # achieved 0.7515 correlation. Agent-based approach targets >0.90.
+  #
+  # Fallback to simple calculation for minimal overhead
+  local score=0
 
-    # High complexity keywords (weight: 3 each)
-    local high_keywords="refactor|architecture|redesign|migrate|security|microservice"
-    local high_matches=$(echo "$phase_name" | grep -oiE "$high_keywords" | wc -l | tr -d ' ')
-    score=$((score + (high_matches * 3)))
+  # High complexity keywords (weight: 3 each)
+  local high_keywords="refactor|architecture|redesign|migrate|security|microservice"
+  local high_matches=$(echo "$phase_name" | grep -oiE "$high_keywords" | wc -l | tr -d ' ')
+  score=$((score + (high_matches * 3)))
 
-    # Medium complexity keywords (weight: 2 each)
-    local med_keywords="implement|create|build|integrate|add"
-    local med_matches=$(echo "$phase_name" | grep -oiE "$med_keywords" | wc -l | tr -d ' ')
-    score=$((score + (med_matches * 2)))
+  # Medium complexity keywords (weight: 2 each)
+  local med_keywords="implement|create|build|integrate|add"
+  local med_matches=$(echo "$phase_name" | grep -oiE "$med_keywords" | wc -l | tr -d ' ')
+  score=$((score + (med_matches * 2)))
 
-    # Task count (weight: 1 per 5 tasks)
-    if [ -n "$task_list" ]; then
-      local task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
-      # Ensure task_count is numeric
-      task_count=${task_count:-0}
-      if [[ "$task_count" =~ ^[0-9]+$ ]]; then
-        local task_score=$(((task_count + 4) / 5))
-        score=$((score + task_score))
-      fi
+  # Task count (weight: 1 per 5 tasks)
+  if [ -n "$task_list" ]; then
+    local task_count=$(echo "$task_list" | grep -c "^- \[ \]" || echo "0")
+    # Ensure task_count is numeric
+    task_count=${task_count:-0}
+    if [[ "$task_count" =~ ^[0-9]+$ ]]; then
+      local task_score=$(((task_count + 4) / 5))
+      score=$((score + task_score))
     fi
-
-    # Ensure score is numeric before outputting
-    score=${score:-0}
-    echo "$score"
   fi
+
+  # Ensure score is numeric before outputting
+  score=${score:-0}
+  echo "$score"
 }
 
 # analyze_task_structure: Analyze task list structure and depth
