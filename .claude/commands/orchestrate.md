@@ -1131,33 +1131,130 @@ Each template increases enforcement:
 
 ---
 
-**MANDATORY: Parallel Invocation Pattern**
+**EXECUTE NOW - Research Phase with Auto-Retry**
 
-To achieve true parallel execution (60-70% time savings), YOU MUST invoke ALL research agents in a SINGLE message with multiple Task tool calls:
+The research phase invokes agents with automatic retry on failure. Each topic is attempted up to 3 times with escalating template enforcement.
 
-**CORRECT PATTERN** (Required):
+**Auto-Retry Wrapper Function**
+
+For each research topic, invoke agents with retry logic:
+
+```bash
+# Research phase with auto-retry and degraded continuation
+declare -a SUCCESSFUL_REPORTS=()
+declare -a FAILED_TOPICS=()
+
+for topic in "${!REPORT_PATHS[@]}"; do
+  echo ""
+  echo "=== Researching: $topic ==="
+
+  max_attempts=3
+  success=false
+
+  for attempt in $(seq 1 $max_attempts); do
+    # Select template based on attempt number
+    if [ $attempt -eq 1 ]; then
+      template="standard"
+      echo "Invoking research agent for '$topic' (attempt $attempt/$max_attempts, template: $template)"
+      # Use STANDARD template
+    elif [ $attempt -eq 2 ]; then
+      template="ultra_explicit"
+      echo "⚠️  Attempt 1 failed. Retrying with ultra-explicit enforcement (attempt $attempt/$max_attempts)"
+      # Use ULTRA-EXPLICIT template
+    else
+      template="step_by_step"
+      echo "⚠️  Attempt 2 failed. Final retry with step-by-step enforcement (attempt $attempt/$max_attempts)"
+      # Use STEP-BY-STEP template
+    fi
+
+    # Invoke research agent with selected template
+    # YOU MUST use Task tool with appropriate template from Auto-Recovery Agent Templates section
+
+    # After agent returns, check if file was created
+    EXPECTED_PATH="${REPORT_PATHS[$topic]}"
+
+    if [ -f "$EXPECTED_PATH" ]; then
+      # Validate file has content
+      if [ -s "$EXPECTED_PATH" ]; then
+        echo "  ✓ Success on attempt $attempt (template: $template)"
+        SUCCESSFUL_REPORTS+=("$EXPECTED_PATH")
+        success=true
+        break
+      else
+        echo "  ⚠️  File created but empty, retrying..."
+        rm "$EXPECTED_PATH"  # Clean up empty file
+      fi
+    else
+      echo "  ⚠️  File not created by agent"
+    fi
+
+    if [ $attempt -lt $max_attempts ]; then
+      echo "  Retrying with enhanced enforcement..."
+    fi
+  done
+
+  if [ "$success" = false ]; then
+    echo "  ❌ All $max_attempts retry attempts failed for topic: $topic"
+    FAILED_TOPICS+=("$topic")
+    echo "  Continuing to next topic..."
+  fi
+done
+
+# Check if we have at least one report
+if [ ${#SUCCESSFUL_REPORTS[@]} -eq 0 ]; then
+  echo ""
+  echo "❌ CRITICAL: No research reports created - cannot proceed to planning"
+  echo "All topics failed: ${!REPORT_PATHS[@]}"
+  exit 1
+fi
+
+# Show summary before proceeding
+echo ""
+echo "=== RESEARCH PHASE SUMMARY ==="
+echo "Successful: ${#SUCCESSFUL_REPORTS[@]}/${#REPORT_PATHS[@]} topics"
+if [ ${#FAILED_TOPICS[@]} -gt 0 ]; then
+  echo "⚠️  Failed topics: ${FAILED_TOPICS[@]}"
+  echo "Proceeding to planning with partial results..."
+fi
+```
+
+**Implementation Instructions**
+
+When executing research phase, YOU MUST:
+
+1. **Iterate through topics**: Process each topic in REPORT_PATHS
+2. **Retry loop**: For each topic, attempt up to 3 times
+3. **Template selection**:
+   - Attempt 1: Use STANDARD template
+   - Attempt 2: Use ULTRA-EXPLICIT template
+   - Attempt 3: Use STEP-BY-STEP template
+4. **File verification**: After each attempt, check file exists and has content
+5. **Success tracking**: Add successful paths to SUCCESSFUL_REPORTS array
+6. **Failure tracking**: Add failed topics to FAILED_TOPICS array
+7. **Degraded continuation**: Continue to next topic if all retries fail
+8. **Critical check**: Exit if NO reports created (need at least one)
+
+**MANDATORY: Parallel Invocation for First Attempt**
+
+For the FIRST attempt (standard template), invoke ALL research agents in parallel in a SINGLE message:
+
+**CORRECT PATTERN** (Required for Attempt 1):
 ```
 Message to Claude Code:
-I'm invoking 3 research agents in parallel:
+I'm invoking 3 research agents in parallel (attempt 1, standard template):
 
-Task { [agent 1 with EXACT template above] }
-Task { [agent 2 with EXACT template above] }
-Task { [agent 3 with EXACT template above] }
+Task { [topic 1 with STANDARD template] }
+Task { [topic 2 with STANDARD template] }
+Task { [topic 3 with STANDARD template] }
 ```
 
-**INCORRECT PATTERN** (Do NOT do this):
-```
-Message 1: Task { [agent 1] }
-[wait for response]
-Message 2: Task { [agent 2] }
-[wait for response]
-Message 3: Task { [agent 3] }
-```
+For retries (attempts 2-3), invoke agents sequentially as failures are discovered.
 
 **VERIFICATION BEFORE INVOCATION**:
-- [ ] All agent prompts use EXACT template
+- [ ] All agent prompts use EXACT template for current attempt
 - [ ] All REPORT_PATHS replaced with absolute paths
-- [ ] All Task calls in SINGLE message
+- [ ] First attempt uses SINGLE message with all Task calls
+- [ ] Retry attempts use selected enforcement template
 - [ ] No enforcement markers removed
 
 <!--
