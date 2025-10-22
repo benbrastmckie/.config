@@ -1086,9 +1086,426 @@ The expansion-specialist uses complexity scores to determine how to structure ex
 - **Task Count Threshold**: 5
 ```
 
+## Stage 6: Implement Complete 5-Factor Scoring Algorithm
+
+**Objective**: Replace the incomplete fallback implementation with the full 5-factor weighted complexity formula as specified in Phase 3 design.
+
+**Duration**: 2-3 hours
+
+**Note**: This stage addresses the missing implementation identified in calibration testing. The current code references a non-existent `analyze-phase-complexity.sh` and falls back to a basic 2-factor formula (keywords + weak task weighting). This stage implements the complete formula with proper factor extraction and weighting.
+
+### Tasks
+
+- [x] **Create the missing analyze-phase-complexity.sh script**
+  - File: `.claude/lib/analyze-phase-complexity.sh` ✓
+  - Purpose: Standalone complexity analyzer implementing full 5-factor formula ✓
+  - Input parameters: `phase_name` and `task_list` (matching current fallback signature) ✓
+  - Output format: `COMPLEXITY_SCORE=N.N` to match expected integration ✓
+  - Make executable: `chmod +x analyze-phase-complexity.sh` ✓
+
+- [x] **Implement task count extraction with proper weighting**
+  - Replace weak formula: `(task_count + 4) / 5` → proper weighted calculation ✓
+  - Weight: 0.30 (30% of total score) ✓
+  - Measurement: `grep -c "^- \[ \]" <<< "$task_list"` ✓
+  - Scoring: `task_score = task_count * 0.30` ✓
+  - Handle edge cases: 0 tasks, missing task list, malformed checkboxes ✓
+
+- [x] **Implement file reference extraction**
+  - Weight: 0.20 (20% of total score) ✓
+  - Measurement: Extract unique file paths from task list ✓
+  - Scoring: `file_score = file_count * 0.20` ✓
+  - Cap file count at 30 to prevent extreme scores ✓
+
+- [x] **Implement dependency depth calculation**
+  - Weight: 0.20 (20% of total score) ✓
+  - Measurement: Parse `depends_on: [...]` metadata and calculate chain depth ✓
+  - Scoring: `depth_score = depth * 0.20` ✓
+  - Default to 0 if no dependency metadata found ✓
+
+- [x] **Implement test scope detection**
+  - Weight: 0.15 (15% of total score) ✓
+  - Measurement: Count test-related keywords in tasks ✓
+  - Scoring: `test_score = test_count * 0.15` ✓
+  - Cap test count at 20 to prevent over-weighting ✓
+
+- [x] **Implement risk factor detection**
+  - Weight: 0.15 (15% of total score) ✓
+  - Measurement: Count high-risk keywords ✓
+  - Scoring: `risk_score = risk_count * 0.15` ✓
+  - Cap risk count at 10 to prevent over-weighting ✓
+
+- [x] **Implement weighted formula calculation**
+  - Calculate raw score using integer arithmetic (multiplied by 100 for precision) ✓
+  - Apply normalization (0.822 = 822/1000) ✓
+  - Round to 1 decimal place for readability ✓
+
+- [x] **Add detailed debug logging**
+  - Log all factor values before calculation ✓
+  - Conditional debug output: only if `COMPLEXITY_DEBUG=1` environment variable set ✓
+  - Log to `.claude/data/logs/complexity-debug.log` for analysis ✓
+
+- [x] **Replace fallback in complexity-utils.sh**
+  - Script automatically used by existing integration in complexity-utils.sh:38-41 ✓
+  - Fallback (lines 43-70) remains for script missing scenario ✓
+  - Integration tested and verified working ✓
+
+### Testing
+
+```bash
+# Test 5-factor formula with simple phase
+cat > /tmp/test_phase.txt <<'EOF'
+Phase 1: Simple Setup
+- [ ] Install dependencies (package.json)
+- [ ] Create config file (config/app.json)
+- [ ] Write unit tests
+EOF
+
+.claude/lib/analyze-phase-complexity.sh "Simple Setup" "$(cat /tmp/test_phase.txt)"
+# Expected: ~2.5 (3 tasks * 0.3 = 0.9, 2 files * 0.2 = 0.4, 1 test * 0.15 = 0.15, normalized)
+
+# Test with complex phase (high task count)
+cat > /tmp/test_complex.txt <<'EOF'
+Phase 2: Authentication System
+depends_on: [phase_1]
+- [ ] Design database schema (db/schema.sql)
+- [ ] Implement user model (src/models/user.ts)
+- [ ] Create JWT service (src/auth/jwt.ts)
+- [ ] Add password hashing (src/auth/hash.ts)
+- [ ] Implement OAuth provider (src/auth/oauth.ts)
+- [ ] Add session management (src/auth/session.ts)
+- [ ] Create middleware (src/middleware/auth.ts)
+- [ ] Write API endpoints (src/routes/auth.ts)
+- [ ] Add rate limiting (src/middleware/ratelimit.ts)
+- [ ] Implement 2FA (src/auth/2fa.ts)
+- [ ] Write unit tests (tests/auth.test.ts)
+- [ ] Write integration tests (tests/integration/auth.test.ts)
+- [ ] Add security auditing (src/audit/security.ts)
+- [ ] Create documentation (docs/auth.md)
+- [ ] Setup CI/CD pipeline (.github/workflows/auth.yml)
+EOF
+
+.claude/lib/analyze-phase-complexity.sh "Authentication System" "$(cat /tmp/test_complex.txt)"
+# Expected: >8.0 (15 tasks, 15 files, 1 dep, 2 tests, 3 security keywords)
+
+# Test debug logging
+COMPLEXITY_DEBUG=1 .claude/lib/analyze-phase-complexity.sh "Test Phase" "$(cat /tmp/test_phase.txt)"
+# Expected: Debug output showing all factor values
+
+# Test with Plan 080 phases for calibration baseline
+.claude/tests/test_complexity_calibration.sh
+# Expected: Scores distributed across 0-15 range, fewer phases capping at 15.0
+```
+
+### Expected Outcomes [COMPLETED]
+
+- ✅ Complete 5-factor complexity analyzer script created (206 lines)
+- ✅ All factor extraction logic implemented correctly (task count, files, deps, tests, risks)
+- ✅ Weighted formula calculation using integer arithmetic (no bc dependency)
+- ✅ Debug logging available via `COMPLEXITY_DEBUG=1` environment variable
+- ✅ Integration with complexity-utils.sh working (automatic detection)
+- ✅ Baseline scores verified: Simple phase = 1.2, Complex phase = 7.1
+- ✅ Ready for normalization calibration (Stage 7)
+
+---
+
+## Stage 7: Calibrate Normalization Factor with Robust Scaling
+
+**Objective**: Replace linear normalization (0.822 factor) with robust scaling to prevent score capping and improve correlation with actual complexity.
+
+**Duration**: 2-3 hours
+
+**Note**: This stage addresses the core calibration issues: 7/8 phases capping at 15.0, negative correlation (-0.18), and insufficient normalization factor. It implements empirical calibration using Plan 080 as validation dataset.
+
+### Tasks
+
+- [ ] **Create validation dataset from Plan 080**
+  - File: `.claude/tests/fixtures/complexity/plan_080_ground_truth.yaml`
+  - Manually assess each Phase 0-7 complexity (human judgment, 0-15 scale)
+  - Rate based on actual implementation experience:
+    - Phase 0: How complex was location specialist implementation?
+    - Phase 1: How complex was research synthesis?
+    - Phase 3: How complex was complexity evaluation? (this phase!)
+  - Document rationale for each rating
+  - Use as gold standard for correlation testing
+
+- [ ] **Calculate baseline metrics with current formula**
+  - Run new 5-factor analyzer (from Stage 6) on all Plan 080 phases
+  - Record raw scores and normalized scores (using 0.822 factor)
+  - Calculate distribution metrics:
+    ```bash
+    # Mean, median, std dev, IQR
+    raw_scores=($(analyze_all_phases plan_080.md))
+    mean=$(echo "${raw_scores[@]}" | awk '{sum+=$1} END {print sum/NR}')
+    median=$(echo "${raw_scores[@]}" | sort -n | awk '{a[NR]=$1} END {print a[int(NR/2)]}')
+    ```
+  - Calculate correlation with ground truth:
+    ```bash
+    correlation=$(calculate_correlation "${raw_scores[@]}" "${ground_truth[@]}")
+    echo "Baseline correlation: $correlation (target >0.90)"
+    ```
+
+- [ ] **Implement IQR-based robust scaling**
+  - Create utility: `.claude/lib/robust-scaling.sh`
+  - Calculate IQR from validation dataset:
+    ```bash
+    # Sort scores, find Q1 (25th percentile) and Q3 (75th percentile)
+    Q1=$(echo "${scores[@]}" | sort -n | awk '{a[NR]=$1} END {print a[int(NR*0.25)]}')
+    Q3=$(echo "${scores[@]}" | sort -n | awk '{a[NR]=$1} END {print a[int(NR*0.75)]}')
+    IQR=$(echo "$Q3 - $Q1" | bc)
+    median=$(calculate_median "${scores[@]}")
+    ```
+  - Apply robust scaling formula:
+    ```bash
+    # Scale using IQR instead of standard deviation
+    scaled=$(echo "scale=4; ($raw_score - $median) / $IQR" | bc)
+    ```
+  - Store IQR and median in configuration file for reuse
+
+- [ ] **Implement sigmoid mapping to 0-15 range**
+  - Add sigmoid function to prevent ceiling effects:
+    ```bash
+    # Sigmoid mapping: final = 15 / (1 + e^(-scaled))
+    # Uses bc's built-in exponential (e function)
+    final_score=$(echo "scale=2; 15 / (1 + e(-1 * $scaled))" | bc -l)
+    ```
+  - Adjust sigmoid steepness parameter for optimal distribution:
+    - Default steepness: 1.0 (standard sigmoid)
+    - If scores cluster too tightly: increase steepness (e.g., 1.5)
+    - If scores spread too widely: decrease steepness (e.g., 0.7)
+  - Test sigmoid with Plan 080: verify scores distributed across full 0-15 range
+
+- [ ] **Tune normalization for target correlation >0.90**
+  - Iterative tuning process:
+    1. Run robust scaling + sigmoid on Plan 080 phases
+    2. Calculate correlation with ground truth
+    3. If correlation <0.90: adjust feature weights or sigmoid steepness
+    4. Repeat until correlation >0.90
+  - Feature weight adjustment strategy:
+    - If high task count phases under-scored: increase task weight (e.g., 0.30 → 0.35)
+    - If security phases under-scored: increase risk weight (e.g., 0.15 → 0.20)
+    - Maintain total weight = 1.00 (redistribute from other factors)
+  - Document final calibrated weights in complexity formula spec
+
+- [ ] **Verify score distribution improvements**
+  - Compare before/after metrics:
+    ```
+    Before (linear 0.822):
+      - 7/8 phases capped at 15.0
+      - Correlation: -0.18
+      - Score range: 14.8-15.0 (clustered)
+
+    After (robust + sigmoid):
+      - Target: 0-2 phases at 15.0 (only true extreme complexity)
+      - Correlation: >0.90
+      - Score range: 2.0-14.0 (distributed)
+    ```
+  - Calculate Coefficient of Variation (CV): CV = std/mean
+  - Target CV: 15-25% (good distribution without excessive variance)
+
+- [ ] **Update normalization in analyze-phase-complexity.sh**
+  - Replace linear normalization:
+    ```bash
+    # OLD: normalized = raw * 0.822
+    # NEW: robust scaling + sigmoid
+    median=$(cat /home/benjamin/.config/.claude/data/complexity_calibration/median.txt)
+    IQR=$(cat /home/benjamin/.config/.claude/data/complexity_calibration/iqr.txt)
+    scaled=$(echo "scale=4; ($raw_score - $median) / $IQR" | bc)
+    final_score=$(echo "scale=2; 15 / (1 + e(-1 * $scaled))" | bc -l)
+    ```
+  - Store calibration parameters in data directory for consistency
+  - Add recalibration mechanism: if new plans show poor correlation, trigger re-tuning
+
+- [ ] **Document calibration process and results**
+  - Create report: `.claude/docs/reference/complexity-calibration-report.md`
+  - Include:
+    - Validation dataset description (Plan 080 ground truth)
+    - Baseline metrics (before calibration)
+    - Tuning iterations and adjustments made
+    - Final metrics (after calibration)
+    - Correlation improvement: -0.18 → target >0.90
+    - Score distribution charts (text-based histograms)
+    - Recommended recalibration schedule (quarterly review)
+
+### Testing
+
+```bash
+# Test robust scaling calculation
+.claude/lib/robust-scaling.sh calculate_iqr "5.2 8.1 3.4 12.5 6.7 9.3 4.8"
+# Expected: Q1=4.8, Q3=9.3, IQR=4.5, median=6.7
+
+# Test sigmoid mapping
+.claude/lib/robust-scaling.sh sigmoid_map 2.5 15
+# Expected: ~12.0 (positive scaled value → upper range)
+
+.claude/lib/robust-scaling.sh sigmoid_map -2.5 15
+# Expected: ~3.0 (negative scaled value → lower range)
+
+# Test full calibration on Plan 080
+.claude/tests/test_complexity_calibration.sh --run-full-calibration
+# Expected output:
+#   Baseline correlation: -0.18
+#   After robust scaling: 0.65
+#   After sigmoid + tuning: >0.90
+#   Score distribution: 0-2 phases at max (15.0)
+
+# Verify correlation improvement
+correlation=$(calculate_correlation plan_080_ground_truth.yaml plan_080_calibrated_scores.yaml)
+echo "Final correlation: $correlation"
+# Expected: >0.90
+
+# Test on different plan for generalization
+.claude/lib/analyze-phase-complexity.sh --analyze-plan specs/plans/042_auth/042_auth.md
+# Verify: Scores reasonable, no artificial capping, good distribution
+```
+
+### Expected Outcomes
+
+- Validation dataset created from Plan 080 with manual complexity ratings
+- Baseline metrics calculated showing current issues quantitatively
+- IQR-based robust scaling implemented to prevent ceiling effects
+- Sigmoid mapping ensures full 0-15 range utilization
+- Correlation with ground truth improved from -0.18 to >0.90
+- Score distribution no longer clusters (CV 15-25%)
+- Normalization factor tuned empirically based on real data
+- Calibration process documented for future adjustments
+- Recalibration mechanism in place for continuous improvement
+
+---
+
+## Stage 8: Validate and Test End-to-End Complexity Evaluation
+
+**Objective**: Comprehensive testing of the complete complexity evaluation system from threshold loading through metadata injection, ensuring all components work together correctly.
+
+**Duration**: 1-2 hours
+
+**Note**: This final validation stage ensures the calibrated complexity system integrates seamlessly with /orchestrate and produces accurate, actionable expansion recommendations.
+
+### Tasks
+
+- [ ] **Create comprehensive test suite**
+  - File: `.claude/tests/test_complexity_integration.sh`
+  - Test scenarios:
+    1. Simple plan (no expansion needed)
+    2. Medium plan (1-2 phases need expansion)
+    3. Complex plan (4+ phases need expansion)
+    4. Edge cases (0 tasks, 100+ tasks, malformed metadata)
+  - Verify end-to-end flow:
+    ```bash
+    # 1. Load thresholds from CLAUDE.md
+    # 2. Analyze plan with 5-factor formula
+    # 3. Apply robust scaling + sigmoid
+    # 4. Compare scores to thresholds
+    # 5. Generate expansion recommendations
+    # 6. Inject metadata into plan
+    # 7. Verify correlation with manual assessment
+    ```
+
+- [ ] **Test threshold loading integration**
+  - Verify thresholds loaded from CLAUDE.md correctly
+  - Test subdirectory override mechanism
+  - Test default fallback when CLAUDE.md missing
+  - Test invalid threshold validation and rejection
+
+- [ ] **Test complexity-estimator agent integration**
+  - Invoke complexity-estimator with test plan
+  - Verify structured YAML output format
+  - Verify all 5 factors extracted correctly
+  - Verify expansion recommendations accurate
+  - Test error handling (malformed plan, missing metadata)
+
+- [ ] **Test metadata injection**
+  - Verify complexity metadata added to phase headers
+  - Verify plan-level summary table created
+  - Test metadata update (overwrite scenario)
+  - Test conflict handling (manual notes preserved)
+  - Verify no plan file corruption
+
+- [ ] **Test orchestrate.md Phase 2.5 integration**
+  - Run /orchestrate with simple workflow
+  - Verify Phase 2.5 invokes complexity-estimator
+  - Verify complexity summary displayed to user
+  - Verify conditional branching (expand vs skip)
+  - Verify error recovery (estimator failure)
+
+- [ ] **Validate correlation on multiple plans**
+  - Test calibrated system on 3+ different plans (not just Plan 080)
+  - Calculate correlation for each plan vs manual assessment
+  - Verify all correlations >0.85 (allowing slight variance)
+  - Check for systematic bias (consistently over/under-scoring)
+
+- [ ] **Performance benchmarking**
+  - Test analysis speed on 50-phase plan
+  - Verify <5 second completion time
+  - Test memory usage (target <100 MB)
+  - Test with plans of varying sizes (5, 20, 50, 100 phases)
+
+- [ ] **Regression testing against existing plans**
+  - Run calibrated complexity analyzer on all existing plans in specs/
+  - Compare expansion recommendations to actual expanded phases
+  - Calculate recommendation accuracy: (correct_recommendations / total_phases)
+  - Target accuracy: >90%
+
+- [ ] **Document validation results**
+  - Create validation report: `.claude/tests/validation_results/phase_3_complexity_validation.md`
+  - Include:
+    - Test coverage summary (scenarios tested)
+    - Correlation results (Plan 080 + 3 additional plans)
+    - Performance metrics (speed, memory, scalability)
+    - Regression testing accuracy
+    - Edge case handling verification
+    - Known limitations and future improvements
+
+### Testing
+
+```bash
+# Run comprehensive integration test suite
+.claude/tests/test_complexity_integration.sh
+# Expected: All tests pass, correlation >0.90, performance <5s
+
+# Test with real /orchestrate workflow
+/orchestrate "Add user profile editing with avatar upload"
+# Verify Phase 2.5 runs, complexity evaluated, expansion triggered if needed
+
+# Benchmark performance
+time .claude/lib/analyze-phase-complexity.sh --analyze-plan specs/plans/080_orchestrate_enhancement/080_orchestrate_enhancement.md
+# Expected: <5 seconds for 8-phase plan
+
+# Regression test on existing plans
+.claude/tests/test_complexity_regression.sh specs/plans/
+# Expected: >90% accuracy in expansion recommendations
+
+# Validate against Plan 042 (auth implementation - known complex)
+.claude/lib/analyze-phase-complexity.sh --analyze-plan specs/plans/042_auth/042_auth.md
+# Expected: High complexity scores for auth phases, expansion recommended
+
+# Test error recovery
+cat > /tmp/malformed_plan.md <<'EOF'
+This is not a valid plan.
+No phases present.
+EOF
+.claude/lib/analyze-phase-complexity.sh --analyze-plan /tmp/malformed_plan.md
+# Expected: Graceful error, no crash, helpful error message
+```
+
+### Expected Outcomes
+
+- Comprehensive test suite covering all integration points
+- End-to-end flow validated from threshold loading to metadata injection
+- Correlation >0.90 on Plan 080 and >0.85 on additional validation plans
+- Performance <5s for 50-phase plans, <100 MB memory usage
+- Regression testing shows >90% accuracy on existing plans
+- Error handling robust and graceful for all edge cases
+- /orchestrate Phase 2.5 integration working seamlessly
+- Validation report documents all results and limitations
+- System ready for production use in /orchestrate workflows
+
+---
+
 ### Future Enhancements
 
 - **Machine learning tuning**: Train weights on historical plan data
 - **Project-type detection**: Automatically adjust thresholds based on project characteristics
 - **Real-time feedback**: Update complexity scores as plan is implemented
 - **Complexity visualization**: Generate graphs showing complexity distribution
+- **Adaptive recalibration**: Automatically re-tune when correlation drops below threshold
+- **Multi-project calibration**: Share calibration data across related projects
