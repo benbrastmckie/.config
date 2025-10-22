@@ -37,14 +37,15 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 
 # Multi-Agent Workflow Orchestration
 
-**YOU MUST orchestrate a 7-phase development workflow by delegating to specialized subagents.**
+**YOU MUST orchestrate an 8-phase development workflow by delegating to specialized subagents.**
 
 **YOUR ROLE**: You are the WORKFLOW ORCHESTRATOR, not the executor.
 - **DO NOT** execute research/planning/implementation/debugging/documentation yourself using Read/Write/Grep/Bash tools
 - **ONLY** use Task tool to invoke specialized agents for each phase
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify outputs, aggregate results, manage checkpoints
 
-**EXECUTION MODEL**: Pure orchestration across all 7 phases
+**EXECUTION MODEL**: Pure orchestration across all 8 phases
+- **Phase 0 (Location)**: Invoke location-specialist to create topic directory structure
 - **Phase 1 (Research)**: Invoke 2-4 research-specialist agents in parallel
 - **Phase 2 (Planning)**: Invoke plan-architect agent with research report paths
 - **Phase 3 (Implementation)**: Invoke code-writer agent with plan path
@@ -54,7 +55,7 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 - **Phase 7 (Summary)**: Generate workflow summary from aggregated metadata
 
 **CRITICAL INSTRUCTIONS**:
-- Execute all workflow phases in EXACT sequential order (Phases 1-7)
+- Execute all workflow phases in EXACT sequential order (Phases 0-7)
 - DO NOT skip agent invocations in favor of direct execution
 - DO NOT skip verification of agent outputs
 - DO NOT skip checkpoint saves between phases
@@ -476,6 +477,212 @@ performance_metrics:
 
 ## Phase Coordination
 
+### Phase 0: Project Location Determination (Foundation)
+
+The location determination phase establishes the foundation for artifact organization by analyzing the workflow request, determining the topic directory location, and creating the directory structure for all subsequent artifacts.
+
+**When to Execute Phase 0**:
+- **ALL workflows** - This phase is mandatory for proper artifact organization
+- Executes BEFORE research phase
+- Single location-specialist agent execution
+
+**Quick Overview**:
+1. Invoke location-specialist agent with workflow description
+2. Agent analyzes request to identify affected components
+3. Agent determines next topic number in specs/ directory
+4. Agent creates topic directory structure: `specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/`
+5. Extract location context from agent response
+6. Store location context in workflow state for injection into all subsequent phases
+7. Verify directory structure created successfully
+
+**Artifact Organization**:
+- **Purpose**: Ensure all workflow artifacts organized in single topic directory
+- **Structure**: `specs/NNN_topic/` with 6 subdirectories
+- **Benefits**: Easy navigation, clear artifact ownership, gitignore compliance
+- **Integration**: Location context injected into all subsequent subagent prompts
+
+**EXECUTE NOW - Invoke Location Specialist**
+
+YOU MUST invoke the location-specialist agent to establish artifact organization foundation.
+
+**WHY THIS MATTERS**: Without proper artifact organization, research reports, plans, and debug reports will be scattered across the project. The location-specialist creates a single topic directory where ALL workflow artifacts will be saved, enabling proper organization and discoverability.
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Determine project location and create topic directory structure"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/location-specialist.md
+
+    You are acting as a location-specialist agent.
+
+    OPERATION: Analyze workflow request and establish artifact organization
+
+    Context:
+     - Workflow request: "${WORKFLOW_DESCRIPTION}"
+     - Project root: "${CLAUDE_PROJECT_DIR}"
+     - Current working directory: "${PWD}"
+
+    Tasks:
+     1. Analyze workflow request to identify affected components and keywords
+     2. Search codebase for related files using Grep/Glob tools (if specific modules mentioned)
+     3. Find deepest common parent directory or use project root
+     4. Determine specs/ directory location (or create if missing)
+     5. Calculate next topic number by finding max(existing topics) + 1
+     6. Generate sanitized topic name from workflow description
+     7. Create topic directory structure: specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/
+     8. Return location context object with ABSOLUTE paths
+
+    Required output format (between delimiters):
+     LOCATION_CONTEXT_START
+     location_context:
+       topic_path: "..."
+       topic_number: "..."
+       topic_name: "..."
+       artifact_paths:
+         reports: "..."
+         plans: "..."
+         summaries: "..."
+         debug: "..."
+         scripts: "..."
+         outputs: "..."
+       project_root: "..."
+       specs_root: "..."
+     LOCATION_CONTEXT_END
+
+    CRITICAL REQUIREMENTS:
+     - ALL paths MUST be absolute (start with /)
+     - topic_number MUST be 3-digit zero-padded (e.g., "027")
+     - topic_name MUST be sanitized (lowercase, underscores, alphanumeric only)
+     - All artifact_paths MUST end with trailing slash (/)
+     - Verify all 6 subdirectories created before returning
+}
+```
+
+**MANDATORY EXTRACTION - Location Context**
+
+After location-specialist completes, YOU MUST extract location context from agent response.
+
+```bash
+# Extract location context from agent response
+LOCATION_SPECIALIST_OUTPUT="[capture agent output]"
+
+# Parse YAML between delimiters
+LOCATION_CONTEXT=$(echo "$LOCATION_SPECIALIST_OUTPUT" | \
+  sed -n '/LOCATION_CONTEXT_START/,/LOCATION_CONTEXT_END/p' | \
+  sed '1d;$d')
+
+# Extract individual fields for easy access
+TOPIC_PATH=$(echo "$LOCATION_CONTEXT" | grep "topic_path:" | cut -d'"' -f2)
+TOPIC_NUMBER=$(echo "$LOCATION_CONTEXT" | grep "topic_number:" | cut -d'"' -f2)
+TOPIC_NAME=$(echo "$LOCATION_CONTEXT" | grep "topic_name:" | cut -d'"' -f2)
+
+# Extract artifact paths
+ARTIFACT_REPORTS=$(echo "$LOCATION_CONTEXT" | grep "reports:" | cut -d'"' -f2)
+ARTIFACT_PLANS=$(echo "$LOCATION_CONTEXT" | grep "plans:" | cut -d'"' -f2)
+ARTIFACT_SUMMARIES=$(echo "$LOCATION_CONTEXT" | grep "summaries:" | cut -d'"' -f2)
+ARTIFACT_DEBUG=$(echo "$LOCATION_CONTEXT" | grep "debug:" | cut -d'"' -f2)
+ARTIFACT_SCRIPTS=$(echo "$LOCATION_CONTEXT" | grep "scripts:" | cut -d'"' -f2)
+ARTIFACT_OUTPUTS=$(echo "$LOCATION_CONTEXT" | grep "outputs:" | cut -d'"' -f2)
+
+PROJECT_ROOT=$(echo "$LOCATION_CONTEXT" | grep "project_root:" | cut -d'"' -f2)
+SPECS_ROOT=$(echo "$LOCATION_CONTEXT" | grep "specs_root:" | cut -d'"' -f2)
+
+# Store in workflow state
+export WORKFLOW_TOPIC_DIR="$TOPIC_PATH"
+export WORKFLOW_TOPIC_NUMBER="$TOPIC_NUMBER"
+export WORKFLOW_TOPIC_NAME="$TOPIC_NAME"
+```
+
+**MANDATORY VERIFICATION - Directory Structure**
+
+After extraction, YOU MUST verify topic directory structure was created correctly.
+
+**VERIFICATION CHECKPOINT:**
+```bash
+# Verify topic directory exists
+if [ ! -d "$TOPIC_PATH" ]; then
+  echo "❌ ERROR: Topic directory not created at $TOPIC_PATH"
+  echo "FALLBACK: location-specialist failed - creating directory structure manually"
+
+  # Fallback: Create directory structure manually
+  mkdir -p "$TOPIC_PATH"/{reports,plans,summaries,debug,scripts,outputs}
+
+  if [ $? -eq 0 ]; then
+    echo "✓ Fallback successful: Directory structure created manually"
+  else
+    echo "✗ CRITICAL FAILURE: Cannot create directory structure"
+    echo "Please check permissions and disk space at: $TOPIC_PATH"
+    exit 1
+  fi
+fi
+
+# Verify all required subdirectories exist
+MISSING_SUBDIRS=()
+for subdir in reports plans summaries debug scripts outputs; do
+  if [ ! -d "$TOPIC_PATH/$subdir" ]; then
+    echo "⚠ WARNING: Missing subdirectory $TOPIC_PATH/$subdir - creating"
+    mkdir -p "$TOPIC_PATH/$subdir"
+    if [ $? -ne 0 ]; then
+      MISSING_SUBDIRS+=("$subdir")
+    fi
+  fi
+done
+
+if [ ${#MISSING_SUBDIRS[@]} -gt 0 ]; then
+  echo "✗ ERROR: Failed to create subdirectories: ${MISSING_SUBDIRS[*]}"
+  exit 1
+fi
+
+echo "✓ Verification complete: Topic directory structure validated at $TOPIC_PATH"
+```
+End verification. Proceed only if directory structure exists.
+
+**Phase 0 Completion Summary**
+
+Display Phase 0 summary to user:
+
+```
+═══════════════════════════════════════════════════════
+✓ Phase 0: Project Location Determination Complete
+═══════════════════════════════════════════════════════
+
+Topic: ${TOPIC_NUMBER}_${TOPIC_NAME}
+Location: ${TOPIC_PATH}
+
+Artifact Paths Configured:
+ - Reports: ${ARTIFACT_REPORTS}
+ - Plans: ${ARTIFACT_PLANS}
+ - Summaries: ${ARTIFACT_SUMMARIES}
+ - Debug: ${ARTIFACT_DEBUG} (committed to git)
+ - Scripts: ${ARTIFACT_SCRIPTS} (temporary)
+ - Outputs: ${ARTIFACT_OUTPUTS} (test results)
+
+All subsequent phases will save artifacts to this topic directory.
+
+Next Phase: Research
+═══════════════════════════════════════════════════════
+```
+
+**Checkpoint: Phase 0 Complete**
+
+Mark Phase 0 as complete in workflow state:
+```yaml
+workflow_state:
+  phase: 1  # Ready for Research phase
+  location_context:
+    topic_path: "${TOPIC_PATH}"
+    topic_number: "${TOPIC_NUMBER}"
+    topic_name: "${TOPIC_NAME}"
+    artifact_paths: { ... }
+  research_reports: []  # Will be populated in Phase 1
+  overview_report: null  # Will be populated in Phase 2
+  plan_path: null        # Will be populated in Phase 2
+```
+
+---
+
 ### Research Phase (Parallel Execution)
 
 The research phase coordinates multiple specialized agents to investigate different aspects of the workflow in parallel, then verifies all research outputs before proceeding.
@@ -680,7 +887,16 @@ Task {
 
     **STEP 1: CREATE THE FILE** (Do this FIRST, before any research)
     Use the Write tool to create a report file at this EXACT path:
-    **Report Path**: [INSERT ABSOLUTE PATH FROM REPORT_PATHS ARRAY HERE]
+    **Report Path**: ${ARTIFACT_REPORTS}${TOPIC_NUMBER}_research_[TOPIC_NAME].md
+
+    **ARTIFACT ORGANIZATION** (CRITICAL - From Phase 0 Location Context):
+    - Save report to artifact directory: ${ARTIFACT_REPORTS}
+    - Filename format: ${TOPIC_NUMBER}_research_[TOPIC_NAME].md
+    - Example: If topic number is 027 and topic is oauth_patterns, filename is 027_research_oauth_patterns.md
+    - Full path example: /home/user/.config/specs/027_auth/reports/027_research_oauth_patterns.md
+    - DO NOT use relative paths
+    - DO NOT save to arbitrary locations
+    - MUST use absolute path from location context
 
     **CRITICAL**: Use Write tool NOW. Do not wait until after research. Create the file FIRST with initial structure, then fill in findings.
 
@@ -696,7 +912,7 @@ Task {
     **STEP 3: RETURN CONFIRMATION**
     After completing Steps 1 and 2, return ONLY this confirmation (no summary):
     \`\`\`
-    REPORT_CREATED: [SAME ABSOLUTE PATH FROM STEP 1]
+    REPORT_CREATED: ${ARTIFACT_REPORTS}${TOPIC_NUMBER}_research_[TOPIC_NAME].md
     \`\`\`
 
     **CRITICAL REQUIREMENTS** (Non-Negotiable):
@@ -706,15 +922,21 @@ Task {
     - DO NOT wait to create file - do it in STEP 1
     - Use Write tool with the EXACT path provided above
     - File MUST exist at specified path when you return
+    - File MUST be in ${ARTIFACT_REPORTS} directory
   "
 }
 ```
 
 **VARIABLES TO REPLACE** (These are the ONLY parts you modify):
-- `[TOPIC]`: Replace with topic name (e.g., "authentication_patterns")
-- `[INSERT ABSOLUTE PATH FROM REPORT_PATHS ARRAY HERE]`: Replace with `${REPORT_PATHS["topic_name"]}`
+- `[TOPIC]`: Replace with topic name (e.g., "oauth_patterns")
+- `[TOPIC_NAME]`: Replace with sanitized topic name matching [TOPIC] (e.g., "oauth_patterns")
 - `[SPECIFIC RESEARCH FOCUS FOR THIS TOPIC]`: Replace with topic-specific research requirements
 - `[Specific search pattern N]`: Replace with specific search/analysis steps for this topic
+
+**AUTOMATIC SUBSTITUTION FROM PHASE 0** (DO NOT manually replace these):
+- `${ARTIFACT_REPORTS}`: Absolute path to reports directory from location context
+- `${TOPIC_NUMBER}`: 3-digit topic number from location context (e.g., "027")
+- These variables are set in Phase 0 and available in workflow state
 
 **ENFORCEMENT VERIFICATION**: After replacing variables, confirm:
 - [ ] All enforcement markers preserved ("ABSOLUTE REQUIREMENT", "CRITICAL", "STEP 1", etc.)
@@ -873,7 +1095,50 @@ fi
 
 echo "✓ VERIFICATION PASSED: All ${#REPORT_PATHS[@]} reports exist"
 
-# Export for subsequent phases
+# STEP 5: Artifact Path Validation (from Phase 0 location context)
+# Verify all reports are in the correct artifact directory
+echo "Validating artifact paths against location context..."
+
+MISPLACED_COUNT=0
+CORRECTED_REPORTS=()
+
+for topic in "${!AGENT_REPORT_PATHS[@]}"; do
+  REPORT_PATH="${AGENT_REPORT_PATHS[$topic]}"
+
+  # Check if report is in expected artifact directory
+  if [[ "$REPORT_PATH" != "$ARTIFACT_REPORTS"* ]]; then
+    echo "⚠ WARNING: Report created in wrong location"
+    echo "  Topic: $topic"
+    echo "  Actual: $REPORT_PATH"
+    echo "  Expected: $ARTIFACT_REPORTS"
+
+    # Fallback: Move report to correct location
+    filename=$(basename "$REPORT_PATH")
+    correct_path="${ARTIFACT_REPORTS}${filename}"
+
+    if mv "$REPORT_PATH" "$correct_path" 2>/dev/null; then
+      echo "  ✓ Moved to correct location: $correct_path"
+      AGENT_REPORT_PATHS["$topic"]="$correct_path"
+      CORRECTED_REPORTS+=("$topic")
+      ((MISPLACED_COUNT++))
+    else
+      echo "  ❌ ERROR: Failed to move report to correct location"
+      echo "  Manual intervention required"
+    fi
+  else
+    echo "  ✓ Report in correct location: $(basename $REPORT_PATH)"
+  fi
+done
+
+if [ $MISPLACED_COUNT -gt 0 ]; then
+  echo "⚠ ARTIFACT ORGANIZATION WARNING: $MISPLACED_COUNT/$${#AGENT_REPORT_PATHS[@]} reports were corrected"
+  echo "  Corrected topics: ${CORRECTED_REPORTS[*]}"
+  echo "  Note: High misplacement rate may indicate prompt injection issue"
+else
+  echo "✓ ARTIFACT VALIDATION PASSED: All reports in correct location"
+fi
+
+# Export for subsequent phases (with corrected paths)
 export RESEARCH_REPORT_PATHS=("${AGENT_REPORT_PATHS[@]}")
 ```
 
@@ -1118,35 +1383,37 @@ YOU MUST invoke the /plan command to generate a structured implementation plan. 
 
 **EXECUTE NOW - Calculate Topic-Based Plan Path BEFORE Agent Invocation**
 
-**WHY THIS MATTERS**: The plan must be created in the same topic directory as research reports for proper artifact organization. We pre-calculate the path to guarantee correct location.
+**WHY THIS MATTERS**: The plan must be created in the same topic directory as research reports for proper artifact organization. We use the location context from Phase 0 to guarantee correct location.
 
 **VERIFICATION REQUIREMENT**: After executing this block, you MUST confirm PLAN_PATH is absolute and in topic-based structure.
 
 ```bash
-# STEP 1: Source artifact creation utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
-
-# STEP 2: Use WORKFLOW_TOPIC_DIR from research phase (already calculated)
-# This ensures plan goes in same directory as research reports
-# WORKFLOW_TOPIC_DIR is already set (e.g., ".claude/specs/027_workflow")
-
+# Use location context from Phase 0
 echo "Planning phase starting..."
 echo "Topic directory: $WORKFLOW_TOPIC_DIR"
+echo "Topic number: $WORKFLOW_TOPIC_NUMBER"
 
-# STEP 3: Calculate plan path using create_topic_artifact utility
-PLAN_PATH=$(create_topic_artifact "$WORKFLOW_TOPIC_DIR" "plans" "implementation" "")
-# Result: specs/{NNN_workflow}/plans/{NNN}_implementation.md
-# Example: .claude/specs/027_auth/plans/027_implementation.md
+# Calculate plan path using artifact paths from Phase 0 location context
+# Format: ${ARTIFACT_PLANS}${TOPIC_NUMBER}_implementation.md
+PLAN_PATH="${ARTIFACT_PLANS}${WORKFLOW_TOPIC_NUMBER}_implementation.md"
 
 echo "Plan path calculated: $PLAN_PATH"
 
-# STEP 4: Verify path is absolute
+# Verify path is absolute
 if [[ ! "$PLAN_PATH" =~ ^/ ]]; then
   echo "❌ CRITICAL ERROR: Plan path is not absolute: $PLAN_PATH"
   exit 1
 fi
 
-echo "✓ VERIFIED: Plan path is absolute and topic-based"
+# Verify plan will be in correct artifact directory
+if [[ "$PLAN_PATH" != "$ARTIFACT_PLANS"* ]]; then
+  echo "❌ CRITICAL ERROR: Plan path not in artifact plans directory"
+  echo "  Expected directory: $ARTIFACT_PLANS"
+  echo "  Plan path: $PLAN_PATH"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Plan path is absolute and in artifact plans directory"
 ```
 
 **CHECKPOINT - Path Pre-Calculation Complete**:
@@ -1181,19 +1448,27 @@ Task {
     **Plan Output Path** (ABSOLUTE REQUIREMENT):
     ${PLAN_PATH}
 
+    **Topic Information** (CRITICAL - From Phase 0 Location Context):
+    - Topic Number: ${WORKFLOW_TOPIC_NUMBER}
+    - Topic Path: ${WORKFLOW_TOPIC_DIR}
+    - Topic Name: ${WORKFLOW_TOPIC_NAME}
+
     **Research Reports** (CRITICAL - Include ALL in plan metadata):
     ${RESEARCH_REPORT_PATHS_FORMATTED}
 
     **Cross-Reference Requirements**:
     - In plan metadata, include \"Research Reports\" section with ALL report paths above
+    - In plan metadata, include \"Topic Number\" field with value: ${WORKFLOW_TOPIC_NUMBER}
+    - In plan metadata, include \"Topic Path\" field with value: ${WORKFLOW_TOPIC_DIR}
     - This enables traceability from plan to research that informed it
     - Summary will later reference both plan and reports for complete audit trail
 
     **CRITICAL REQUIREMENTS**:
     1. CREATE plan file at EXACT path above using Write tool (not SlashCommand)
     2. INCLUDE all research reports in metadata \"Research Reports\" section
-    3. FOLLOW topic-based artifact organization (path already calculated correctly)
-    4. RETURN format: PLAN_CREATED: [path]
+    3. INCLUDE topic number and path in metadata \"Topic Number\" and \"Topic Path\" fields
+    4. FOLLOW topic-based artifact organization (path already calculated correctly)
+    5. RETURN format: PLAN_CREATED: [path]
 
     **Expected Output Format**:
     PLAN_CREATED: [absolute path]
