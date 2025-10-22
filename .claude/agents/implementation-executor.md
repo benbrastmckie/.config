@@ -170,32 +170,56 @@ After all tasks complete:
 
 #### Create Git Commit
 
-**CRITICAL**: Follow standardized commit format.
+**CRITICAL**: Use git-commit-helper for standardized commit message generation.
 
-**Commit Message Format**:
-- **Stage completion** (L2): `feat(NNN): complete Phase N Stage M - Stage Name`
-- **Phase completion** (L1): `feat(NNN): complete Phase N - Phase Name`
-- **Plan completion** (L0): `feat(NNN): complete Feature Name`
+**Phase Completion Workflow**:
 
-Example:
+**STEP 1: Generate Commit Message Using git-commit-helper**
+
 ```bash
 # Extract topic number from topic_path
 topic_num=$(basename "$topic_path" | sed -E 's/([0-9]{3}).*/\1/')
 
-# Determine commit message based on plan level
+# Determine completion type and extract names
 if [[ "$phase_file" == */stage_*.md ]]; then
   # Level 2: Stage completion
+  completion_type="stage"
   stage_num=$(basename "$phase_file" | sed -E 's/stage_([0-9]+).*/\1/')
   stage_name=$(grep "^#" "$phase_file" | head -1 | sed 's/^#\+\s*//')
-  commit_msg="feat($topic_num): complete Phase $phase_number Stage $stage_num - $stage_name"
+
+  # Load git-utils.sh for helper function
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-utils.sh" || {
+    echo "ERROR: git-utils.sh not found" >&2
+    exit 1
+  }
+
+  # Generate commit message
+  commit_msg=$(generate_commit_message "$topic_num" "$completion_type" "$phase_number" "$stage_num" "$stage_name" "")
 else
   # Level 1: Phase completion
+  completion_type="phase"
   phase_name=$(grep "^#" "$phase_file" | head -1 | sed 's/^#\+\s*//')
-  commit_msg="feat($topic_num): complete Phase $phase_number - $phase_name"
+
+  # Load git-utils.sh
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-utils.sh" || {
+    echo "ERROR: git-utils.sh not found" >&2
+    exit 1
+  }
+
+  # Generate commit message
+  commit_msg=$(generate_commit_message "$topic_num" "$completion_type" "$phase_number" "" "$phase_name" "")
 fi
 
-# Create commit
+echo "Generated commit message: $commit_msg"
+```
+
+**STEP 2: Create Git Commit**
+
+```bash
+# Stage modified files
 git add .
+
+# Create commit with generated message
 git commit -m "$commit_msg
 
 Automated implementation via wave-based execution
@@ -203,8 +227,114 @@ Testing deferred to Phase 6
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
+# Verify commit created
+if [ $? -ne 0 ]; then
+  echo "ERROR: Git commit failed" >&2
+  exit 1
+fi
+
 # Capture commit hash
 commit_hash=$(git rev-parse HEAD)
+echo "✓ Git commit created: $commit_hash"
+echo "  Message: $commit_msg"
+```
+
+**STEP 3: Invoke spec-updater for Hierarchical Plan Updates**
+
+**CRITICAL**: Invoke spec-updater to maintain checkbox consistency across hierarchy.
+
+**Invocation Pattern**:
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after Phase ${phase_number} completion"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy checkboxes after Phase ${phase_number} completion.
+
+    Plan: ${phase_file}
+    Phase: ${phase_number}
+    All tasks in this phase have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. Mark phase complete: mark_phase_complete "${phase_file}" ${phase_number}
+    3. Verify consistency: verify_checkbox_consistency "${phase_file}" ${phase_number}
+    4. Report: List all files updated (stage → phase → main plan)
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of updated files at each level
+    - Verification that all levels are synchronized
+}
+```
+
+**Verify spec-updater Response**:
+```bash
+# Extract files updated from spec-updater response
+UPDATED_FILES=$(echo "$SPEC_UPDATER_OUTPUT" | grep -oP 'Files updated:.*')
+
+echo "✓ Plan hierarchy updated"
+echo "$UPDATED_FILES"
+```
+
+**MANDATORY VERIFICATION CHECKPOINT:**
+```bash
+# Verify spec-updater actually updated plan hierarchy files
+if [ -z "$SPEC_UPDATER_OUTPUT" ]; then
+  echo "ERROR: spec-updater returned empty output"
+  echo "FALLBACK: spec-updater failed - manually updating plan hierarchy"
+
+  # Fallback: Use checkbox-utils.sh directly
+  if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" ]; then
+    source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh"
+    mark_phase_complete "${phase_file}" "${phase_number}"
+
+    echo "FALLBACK COMPLETE: Phase ${phase_number} marked complete using checkbox-utils"
+    echo "WARNING: spec-updater failure may affect cross-reference integrity"
+  else
+    echo "CRITICAL: checkbox-utils.sh not found - manual plan update required"
+    echo "ACTION: Manually check phase ${phase_number} in ${phase_file}"
+  fi
+else
+  # Verify at least one file was updated
+  if ! echo "$SPEC_UPDATER_OUTPUT" | grep -q "Files updated:"; then
+    echo "WARNING: spec-updater output missing 'Files updated:' confirmation"
+    echo "ACTION: Manually verify plan hierarchy consistency"
+  fi
+fi
+
+echo "Verification complete: Plan hierarchy update validated"
+```
+End verification. Proceed even if spec-updater failed (non-critical).
+
+**Error Handling**:
+```bash
+# If spec-updater fails
+if ! spec_updater_successful; then
+  warn "Hierarchy update failed - manual verification needed"
+  warn "Phase marked complete in phase file only"
+  # Continue workflow (non-critical failure)
+fi
+```
+
+**STEP 4: Create Checkpoint**
+
+```bash
+# Save checkpoint after successful phase completion
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" || {
+  echo "WARNING: checkpoint-utils.sh not found, skipping checkpoint" >&2
+}
+
+# Create checkpoint if utility available
+if command -v create_checkpoint &>/dev/null; then
+  create_checkpoint "$phase_file" "$phase_number" "completed"
+  echo "✓ Checkpoint created"
+fi
 ```
 
 #### Return Completion Report
