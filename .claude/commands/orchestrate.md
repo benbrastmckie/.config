@@ -1170,6 +1170,154 @@ CHECKPOINT: Report verification complete
 
 ---
 
+**EXECUTE NOW - Synthesize Individual Reports into Overview** (Phase 2: Research Synthesis)
+
+After all individual reports are verified, invoke research-synthesizer to create overview report aggregating findings.
+
+**WHY THIS MATTERS**: Overview report provides unified synthesis of all research findings, enabling plan-architect to consume single coherent document instead of multiple individual reports. Reduces planning phase complexity and improves plan coherence.
+
+**EXECUTE NOW - Invoke research-synthesizer Agent**:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Synthesize individual research reports into overview"
+  timeout: 300000  # 5 minutes for synthesis
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-synthesizer.md
+
+    You are acting as a Research Synthesizer Agent.
+
+    OPERATION: Aggregate individual research reports into comprehensive overview
+
+    Individual Report Paths:
+    ${RESEARCH_REPORT_PATHS_FORMATTED}
+
+    Overview Output Path (ABSOLUTE REQUIREMENT):
+    ${ARTIFACT_REPORTS}${WORKFLOW_TOPIC_NUMBER}_research_overview.md
+
+    Topic Information:
+    - Topic Number: ${WORKFLOW_TOPIC_NUMBER}
+    - Topic Name: ${WORKFLOW_TOPIC_NAME}
+    - Reports Directory: ${ARTIFACT_REPORTS}
+
+    Tasks:
+    1. Read all ${#RESEARCH_REPORT_PATHS[@]} individual reports completely
+    2. Extract key findings, recommendations, constraints from each
+    3. Identify cross-report patterns and themes
+    4. Synthesize into overview with 6 required sections:
+       - Executive Summary (3-5 sentences)
+       - Cross-Report Findings (patterns across reports)
+       - Detailed Findings by Topic (one section per report with link)
+       - Recommended Approach (synthesized strategy)
+       - Constraints and Trade-offs
+       - Individual Report References (navigation links)
+    5. Create overview file at EXACT path above using Write tool
+    6. Generate 100-word summary for context reduction
+    7. Return confirmation with metadata
+
+    Required output format:
+    OVERVIEW_CREATED: [absolute path]
+
+    OVERVIEW_SUMMARY:
+    [100-word synthesis of all findings]
+
+    METADATA:
+    - Reports Synthesized: [N]
+    - Cross-Report Patterns: [count]
+    - Recommended Approach: [brief description]
+    - Critical Constraints: [if any]
+
+    CRITICAL REQUIREMENTS:
+    - CREATE overview file at exact path above
+    - INCLUDE cross-reference links to all individual reports
+    - USE relative paths for links (reports in same directory)
+    - RETURN 100-word summary (not full content)
+    - DO NOT skip reading any individual reports
+}
+```
+
+**MANDATORY VERIFICATION - Overview Report Created**
+
+After research-synthesizer completes, YOU MUST verify overview was created.
+
+```bash
+# Extract overview path from agent output
+OVERVIEW_OUTPUT="$SYNTHESIZER_AGENT_OUTPUT"
+OVERVIEW_PATH=$(echo "$OVERVIEW_OUTPUT" | grep -oP 'OVERVIEW_CREATED:\s*\K/.+' | head -1)
+
+if [ -z "$OVERVIEW_PATH" ]; then
+  echo "⚠️  WARNING: Agent did not return OVERVIEW_CREATED confirmation"
+  echo "Falling back to expected path"
+  OVERVIEW_PATH="${ARTIFACT_REPORTS}${WORKFLOW_TOPIC_NUMBER}_research_overview.md"
+fi
+
+echo "✓ Overview path: $OVERVIEW_PATH"
+
+# Verify file exists
+if [ ! -f "$OVERVIEW_PATH" ]; then
+  echo "❌ ERROR: Overview report not created at $OVERVIEW_PATH"
+  echo "FALLBACK: Creating minimal overview template"
+
+  cat > "$OVERVIEW_PATH" <<EOF
+# Research Overview
+
+## Metadata
+- **Date**: $(date -u +%Y-%m-%d)
+- **Agent**: research-synthesizer (fallback)
+- **Topic Number**: ${WORKFLOW_TOPIC_NUMBER}
+- **Individual Reports**: ${#RESEARCH_REPORT_PATHS[@]} reports
+
+## Executive Summary
+Research synthesis not completed by agent. Please review individual reports:
+
+## Individual Report References
+EOF
+
+  # Add links to individual reports
+  for report_path in "${RESEARCH_REPORT_PATHS[@]}"; do
+    filename=$(basename "$report_path")
+    echo "- [$filename](./$filename)" >> "$OVERVIEW_PATH"
+  done
+
+  if [ ! -f "$OVERVIEW_PATH" ]; then
+    echo "❌ CRITICAL: Fallback overview creation failed"
+    exit 1
+  fi
+
+  echo "✓ FALLBACK: Minimal overview created"
+fi
+
+echo "✓ VERIFIED: Overview report exists at $OVERVIEW_PATH"
+
+# Extract 100-word summary from agent output
+OVERVIEW_SUMMARY=$(echo "$OVERVIEW_OUTPUT" | sed -n '/OVERVIEW_SUMMARY:/,/METADATA:/p' | sed '1d;$d' | tr '\n' ' ')
+
+if [ -z "$OVERVIEW_SUMMARY" ]; then
+  echo "⚠️  WARNING: No summary provided by agent"
+  OVERVIEW_SUMMARY="Research overview synthesized from ${#RESEARCH_REPORT_PATHS[@]} individual reports. See overview file for details."
+fi
+
+echo "✓ Overview summary extracted (${#OVERVIEW_SUMMARY} chars)"
+
+# Store overview path for planning phase
+export RESEARCH_OVERVIEW_PATH="$OVERVIEW_PATH"
+export RESEARCH_OVERVIEW_SUMMARY="$OVERVIEW_SUMMARY"
+```
+
+**CHECKPOINT - Research Synthesis Complete**:
+```
+CHECKPOINT: Research synthesis complete
+- Individual reports: ${#RESEARCH_REPORT_PATHS[@]}
+- Overview created: ✓
+- Overview path: $OVERVIEW_PATH
+- Summary extracted: ✓
+- Proceeding to: Planning phase with overview reference
+```
+
+---
+
 **EXECUTE NOW - Extract Metadata from Research Reports** (After Verification Complete)
 
 Now that ALL report files are guaranteed to exist (100% verified), extract metadata for context passing to planning phase.
@@ -1453,22 +1601,31 @@ Task {
     - Topic Path: ${WORKFLOW_TOPIC_DIR}
     - Topic Name: ${WORKFLOW_TOPIC_NAME}
 
-    **Research Reports** (CRITICAL - Include ALL in plan metadata):
+    **Research Overview** (PRIMARY RESEARCH INPUT):
+    - Overview Report Path: ${RESEARCH_OVERVIEW_PATH}
+    - Overview Summary: ${RESEARCH_OVERVIEW_SUMMARY}
+
+    **Individual Research Reports** (REFERENCE - Include in plan metadata):
     ${RESEARCH_REPORT_PATHS_FORMATTED}
 
     **Cross-Reference Requirements**:
-    - In plan metadata, include \"Research Reports\" section with ALL report paths above
+    - In plan metadata, include \"Research Overview\" field with path: ${RESEARCH_OVERVIEW_PATH}
+    - In plan metadata, include \"Research Reports\" section with ALL individual report paths above
     - In plan metadata, include \"Topic Number\" field with value: ${WORKFLOW_TOPIC_NUMBER}
     - In plan metadata, include \"Topic Path\" field with value: ${WORKFLOW_TOPIC_DIR}
+    - PRIORITIZE overview report for planning (synthesized findings)
+    - Reference individual reports for specific details if needed
     - This enables traceability from plan to research that informed it
     - Summary will later reference both plan and reports for complete audit trail
 
     **CRITICAL REQUIREMENTS**:
     1. CREATE plan file at EXACT path above using Write tool (not SlashCommand)
-    2. INCLUDE all research reports in metadata \"Research Reports\" section
-    3. INCLUDE topic number and path in metadata \"Topic Number\" and \"Topic Path\" fields
-    4. FOLLOW topic-based artifact organization (path already calculated correctly)
-    5. RETURN format: PLAN_CREATED: [path]
+    2. READ research overview report at ${RESEARCH_OVERVIEW_PATH} for synthesized findings
+    3. INCLUDE research overview in metadata \"Research Overview\" field with path
+    4. INCLUDE all individual research reports in metadata \"Research Reports\" section
+    5. INCLUDE topic number and path in metadata \"Topic Number\" and \"Topic Path\" fields
+    6. FOLLOW topic-based artifact organization (path already calculated correctly)
+    7. RETURN format: PLAN_CREATED: [path]
 
     **Expected Output Format**:
     PLAN_CREATED: [absolute path]
@@ -1566,17 +1723,51 @@ fi
 
 echo "✓ VERIFIED: Plan structure complete"
 
-# STEP 5: Verify research reports cross-referenced [Revision 3]
+# STEP 5: Verify research overview and reports cross-referenced [Phase 2]
+if [ -n "$RESEARCH_OVERVIEW_PATH" ]; then
+  echo "Verifying plan references research overview..."
+
+  # Check for Research Overview field in plan metadata
+  if ! grep -q "## Metadata" "$PLAN_PATH"; then
+    echo "⚠️  WARNING: Plan missing Metadata section"
+  elif ! grep -A 30 "## Metadata" "$PLAN_PATH" | grep -q "Research Overview"; then
+    echo "⚠️  WARNING: Plan missing 'Research Overview' in metadata"
+    echo "⚠️  RECOMMENDATION: Reference overview report for traceability"
+  else
+    echo "✓ VERIFIED: Plan includes research overview cross-reference"
+  fi
+
+  # Verify overview report links to individual reports
+  echo "Verifying overview report cross-references..."
+
+  if ! grep -q "## Individual Report References" "$RESEARCH_OVERVIEW_PATH"; then
+    echo "⚠️  WARNING: Overview missing 'Individual Report References' section"
+    echo "⚠️  This section should link to all individual research reports"
+  else
+    # Count links in overview
+    OVERVIEW_LINKS=$(grep -c "](\./" "$RESEARCH_OVERVIEW_PATH" || echo 0)
+    INDIVIDUAL_REPORTS=${#RESEARCH_REPORT_PATHS[@]}
+
+    if [ "$OVERVIEW_LINKS" -lt "$INDIVIDUAL_REPORTS" ]; then
+      echo "⚠️  WARNING: Overview has $OVERVIEW_LINKS links but $INDIVIDUAL_REPORTS individual reports"
+      echo "⚠️  Some individual reports may not be cross-referenced in overview"
+    else
+      echo "✓ VERIFIED: Overview includes links to individual reports ($OVERVIEW_LINKS links)"
+    fi
+  fi
+fi
+
+# Verify individual research reports cross-referenced
 if [ -n "$RESEARCH_REPORT_PATHS_FORMATTED" ]; then
-  echo "Verifying plan references research reports..."
+  echo "Verifying plan references individual research reports..."
 
   if ! grep -q "## Metadata" "$PLAN_PATH"; then
     echo "⚠️  WARNING: Plan missing Metadata section"
-  elif ! grep -A 20 "## Metadata" "$PLAN_PATH" | grep -q "Research Reports"; then
+  elif ! grep -A 30 "## Metadata" "$PLAN_PATH" | grep -q "Research Reports"; then
     echo "⚠️  WARNING: Plan missing 'Research Reports' in metadata"
     echo "⚠️  RECOMMENDATION: Cross-reference research reports for traceability"
   else
-    echo "✓ VERIFIED: Plan includes research reports cross-reference"
+    echo "✓ VERIFIED: Plan includes individual research reports cross-reference"
   fi
 fi
 
