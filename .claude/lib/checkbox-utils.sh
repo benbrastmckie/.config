@@ -265,8 +265,76 @@ mark_phase_complete() {
   return 0
 }
 
+# Mark all checkboxes in a stage to completed state
+# Usage: mark_stage_complete <phase_file> <stage_num>
+mark_stage_complete() {
+  local phase_file="$1"
+  local stage_num="$2"
+
+  if [[ ! -f "$phase_file" ]]; then
+    error "Phase file not found: $phase_file"
+  fi
+
+  # Get phase directory for stage files
+  local phase_name=$(basename "$phase_file" .md)
+  local phase_dir="$(dirname "$phase_file")/$phase_name"
+
+  if [[ ! -d "$phase_dir" ]]; then
+    warn "Phase directory not found: $phase_dir (phase not expanded to stages)"
+    return 1
+  fi
+
+  # Find stage file
+  local stage_file=$(find "$phase_dir" -maxdepth 1 -name "stage_${stage_num}_*.md" | head -1)
+
+  if [[ -z "$stage_file" ]]; then
+    error "Stage file not found: stage_${stage_num}_*.md in $phase_dir"
+  fi
+
+  # Mark all tasks in stage file as complete
+  local temp_file=$(mktemp)
+  sed 's/^- \[[ ]\]/- [x]/g' "$stage_file" > "$temp_file"
+  mv "$temp_file" "$stage_file"
+
+  # Update stage checkbox in phase file
+  update_checkbox "$phase_file" "Stage $stage_num" "x" || \
+    warn "Could not update Stage $stage_num checkbox in phase file"
+
+  # Check if all stages in phase are now complete
+  local all_stages_complete=1
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]\[[[:space:]]\][[:space:]].*Stage ]]; then
+      # Found an unchecked stage checkbox
+      all_stages_complete=0
+      break
+    fi
+  done < "$phase_file"
+
+  # If all stages complete, mark the phase complete in main plan
+  if [[ $all_stages_complete -eq 1 ]]; then
+    # Get main plan file
+    local plan_dir=$(dirname "$(dirname "$phase_file")")
+    local plan_name=$(basename "$plan_dir")
+    local main_plan="$plan_dir.md"
+
+    if [[ -f "$main_plan" ]]; then
+      # Extract phase number from phase file name
+      local phase_num=$(basename "$phase_file" | sed -E 's/phase_([0-9]+).*/\1/')
+
+      # Mark phase complete in main plan
+      update_checkbox "$main_plan" "Phase $phase_num" "x" || \
+        warn "Could not update Phase $phase_num checkbox in main plan"
+
+      log "All stages in Phase $phase_num complete - marked phase complete in main plan"
+    fi
+  fi
+
+  return 0
+}
+
 # Export all functions for sourcing
 export -f update_checkbox
 export -f propagate_checkbox_update
 export -f verify_checkbox_consistency
 export -f mark_phase_complete
+export -f mark_stage_complete
