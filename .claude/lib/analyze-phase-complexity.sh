@@ -2,6 +2,17 @@
 #
 # analyze-phase-complexity.sh - Standalone 5-factor complexity analyzer
 #
+# ⚠️ DEPRECATED (2025-10-21) - Superseded by agent-based approach
+#
+# This algorithm-based scorer achieved 0.7515 correlation with human assessment.
+# It has been superseded by pure LLM judgment (complexity-estimator.md agent)
+# which targets >0.90 correlation through few-shot calibration.
+#
+# This file is kept for reference and as fallback, but the agent-based approach
+# is now the primary complexity assessment method.
+#
+# See: .claude/specs/plans/080_orchestrate_enhancement/artifacts/phase_3_agent_based_research.md
+#
 # Usage: analyze-phase-complexity.sh <phase_name> <task_list>
 # Output: COMPLEXITY_SCORE=N.N
 #
