@@ -1562,31 +1562,33 @@ When checkpoint created:
 
 ---
 
-## Stage 6: Replace /implement in orchestrate.md
+## Stage 6: Replace /implement in orchestrate.md [COMPLETED]
 
 **Objective**: Replace direct /implement invocation with implementer-coordinator subagent invocation using Task tool.
 
 **Complexity**: Medium (6/10)
 **Estimated Duration**: 1-2 hours
+**Completed**: 2025-10-22
+**Status**: ✓ COMPLETED
 
 ### Tasks
 
-#### 6.1: Remove SlashCommand Invocation
+#### 6.1: Remove SlashCommand Invocation [COMPLETED]
 
-**Current orchestrate.md (Phase 3 - Implementation)**:
+**Previous orchestrate.md (Phase 3 - Implementation)**:
 
 ```markdown
-<!-- BEFORE (Anti-pattern) -->
+<!-- BEFORE (code-writer direct execution) -->
 Phase 3: Implementation
-- Invoke: SlashCommand("/implement {plan_path}")
-- Wait for completion
-- Check test results
+- Invoke: Task tool with code-writer agent
+- Sequential phase execution
+- No parallelization
 ```
 
-**orchestrate.md (Phase 3 - Wave-Based Implementation)**:
+**Updated orchestrate.md (Phase 3 - Wave-Based Implementation)**:
 
 ```markdown
-<!-- AFTER (Correct pattern) -->
+<!-- AFTER (implementer-coordinator with wave-based execution) -->
 Phase 3: Wave-Based Implementation
 
 Invoke implementer-coordinator subagent:
@@ -1675,13 +1677,13 @@ After implementation completes:
 - If `implementation_status == "failed"`: Skip Testing, go directly to Debugging (Phase 5)
 
 **Completion Checklist**:
-- [ ] SlashCommand("/implement") removed from orchestrate.md
-- [ ] Task tool invocation added for implementer-coordinator
-- [ ] Artifact path context injected correctly
-- [ ] Implementation report extraction working
-- [ ] Conditional logic updated for testing/debugging flow
-- [ ] User-facing output displays wave metrics
-- [ ] No regression in orchestrate workflow
+- [x] SlashCommand("/implement") removed from orchestrate.md (was already using Task tool)
+- [x] Task tool invocation updated from code-writer to implementer-coordinator
+- [x] Artifact path context injected correctly (all paths from Phase 0 location context)
+- [x] Implementation report extraction updated for wave-based execution metrics
+- [x] Conditional logic updated for testing/debugging flow (test status from coordinator)
+- [x] User-facing output displays wave metrics (waves, time savings, parallelization)
+- [x] No regression in orchestrate workflow (verification complete)
 
 ---
 
