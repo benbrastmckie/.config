@@ -1275,180 +1275,35 @@ BEFORE: "Verify that files were created" (80% execution, 0% fallback)
 AFTER: "**MANDATORY VERIFICATION**" + fallback (100% execution, 100% creation)
 -->
 
-**MANDATORY VERIFICATION - Report File Creation** (NON-OPTIONAL - Execute Immediately After Agents Complete)
+**Auto-Recovery Architecture - No Fallback Mechanisms**
 
-**ABSOLUTE REQUIREMENT**: This verification step MUST execute after research agents complete. This is NOT optional debugging - it is a MANDATORY checkpoint that guarantees 100% file creation rate.
+**DESIGN CHANGE**: This orchestrator uses strict subagent-only operation with auto-recovery.
 
-**WHY THIS MATTERS**: Without this verification, ~20-40% of research runs result in missing report files. This checkpoint + fallback mechanism guarantees ALL reports exist regardless of agent compliance.
+**How Verification Works Now**:
+1. **Auto-Retry**: Research phase automatically retries each topic up to 3 times with escalating enforcement
+2. **File Validation**: Built into retry loop - checks file exists and has content after each attempt
+3. **Degraded Continuation**: Topics that fail all 3 attempts are added to FAILED_TOPICS array
+4. **Workflow Continues**: Planning proceeds with SUCCESSFUL_REPORTS (requires at least one)
+5. **NO Orchestrator Fallback**: Orchestrator NEVER creates files - only subagents create artifacts
 
-**EXECUTE NOW - Parse and Verify Report Paths**:
+**What Was Removed**:
+- Orchestrator fallback file creation (`cat > "$PATH" <<EOF`)
+- Post-hoc verification with fallback triggers
+- Manual file creation from agent outputs
+- Path correction mechanisms
 
-```bash
-# STEP 1: Extract REPORT_CREATED confirmations from agent outputs
-declare -A AGENT_REPORT_PATHS
+**Why This Is Better**:
+1. **Single Responsibility**: Subagents create files, orchestrator verifies
+2. **Immediate Failure Detection**: No hidden compensations masking agent issues
+3. **Simpler Code**: No dual-path logic (primary + fallback)
+4. **Clear Success/Failure**: Workflow summary shows exactly what succeeded and failed
+5. **User Visibility**: Failed topics explicitly reported, not silently created by orchestrator
 
-for topic in "${!REPORT_PATHS[@]}"; do
-  AGENT_OUTPUT="${RESEARCH_AGENT_OUTPUTS[$topic]}"  # From Task tool results
-  EXPECTED_PATH="${REPORT_PATHS[$topic]}"
-
-  echo "Processing topic: $topic"
-
-  # Extract REPORT_CREATED line (format: "REPORT_CREATED: /absolute/path")
-  EXTRACTED_PATH=$(echo "$AGENT_OUTPUT" | grep -oP 'REPORT_CREATED:\s*\K/.+' | head -1)
-
-  if [ -z "$EXTRACTED_PATH" ]; then
-    echo "  ⚠️  Agent did not return REPORT_CREATED confirmation"
-  else
-    echo "  ✓ Agent reported: $EXTRACTED_PATH"
-
-    # Verify path matches expected
-    if [ "$EXTRACTED_PATH" != "$EXPECTED_PATH" ]; then
-      echo "  ⚠️  PATH MISMATCH DETECTED"
-      echo "    Expected: $EXPECTED_PATH"
-      echo "    Agent returned: $EXTRACTED_PATH"
-    fi
-  fi
-
-  # STEP 2: MANDATORY file existence check
-  echo "  Verifying file exists at: $EXPECTED_PATH"
-
-  if [ ! -f "$EXPECTED_PATH" ]; then
-    echo "  ⚠️  FILE NOT FOUND - Triggering fallback mechanism"
-
-    # STEP 3: GUARANTEED fallback creation
-    echo "  Creating fallback report from agent output..."
-
-    mkdir -p "$(dirname "$EXPECTED_PATH")"
-
-    cat > "$EXPECTED_PATH" <<EOF
-# ${topic} Research Report
-
-## Metadata
-- **Date**: $(date -u +%Y-%m-%d)
-- **Agent**: research-specialist
-- **Creation Method**: Fallback (agent did not create file directly)
-- **Topic**: ${topic}
-
-## Agent Output
-
-$AGENT_OUTPUT
-
-## Note
-
-This report was created by the orchestrator's fallback mechanism because the research agent did not create the file directly. The agent output above contains the research findings.
-
-## Recommendations
-
-[Review agent output above for actionable recommendations]
-
-EOF
-
-    echo "  ✓ FALLBACK REPORT CREATED"
-
-    # Verify fallback succeeded
-    if [ ! -f "$EXPECTED_PATH" ]; then
-      echo "  ❌ CRITICAL ERROR: Fallback creation failed"
-      echo "  ❌ File still does not exist: $EXPECTED_PATH"
-      exit 1
-    fi
-
-    echo "  ✓ VERIFIED: Fallback report exists"
-  else
-    echo "  ✓ VERIFIED: Report file exists"
-  fi
-
-  AGENT_REPORT_PATHS["$topic"]="$EXPECTED_PATH"
-done
-
-# STEP 4: Final verification - MUST have all reports
-MISSING_COUNT=0
-for topic in "${!REPORT_PATHS[@]}"; do
-  if [ ! -f "${REPORT_PATHS[$topic]}" ]; then
-    echo "❌ CRITICAL: Report missing for topic: $topic"
-    ((MISSING_COUNT++))
-  fi
-done
-
-if [ $MISSING_COUNT -gt 0 ]; then
-  echo "❌ VERIFICATION FAILED: $MISSING_COUNT reports missing"
-  echo "❌ CRITICAL: Fallback mechanism failed to create missing reports"
-  exit 1
-fi
-
-echo "✓ VERIFICATION PASSED: All ${#REPORT_PATHS[@]} reports exist"
-
-# STEP 5: Artifact Path Validation (from Phase 0 location context)
-# Verify all reports are in the correct artifact directory
-echo "Validating artifact paths against location context..."
-
-MISPLACED_COUNT=0
-CORRECTED_REPORTS=()
-
-for topic in "${!AGENT_REPORT_PATHS[@]}"; do
-  REPORT_PATH="${AGENT_REPORT_PATHS[$topic]}"
-
-  # Check if report is in expected artifact directory
-  if [[ "$REPORT_PATH" != "$ARTIFACT_REPORTS"* ]]; then
-    echo "⚠ WARNING: Report created in wrong location"
-    echo "  Topic: $topic"
-    echo "  Actual: $REPORT_PATH"
-    echo "  Expected: $ARTIFACT_REPORTS"
-
-    # Fallback: Move report to correct location
-    filename=$(basename "$REPORT_PATH")
-    correct_path="${ARTIFACT_REPORTS}${filename}"
-
-    if mv "$REPORT_PATH" "$correct_path" 2>/dev/null; then
-      echo "  ✓ Moved to correct location: $correct_path"
-      AGENT_REPORT_PATHS["$topic"]="$correct_path"
-      CORRECTED_REPORTS+=("$topic")
-      ((MISPLACED_COUNT++))
-    else
-      echo "  ❌ ERROR: Failed to move report to correct location"
-      echo "  Manual intervention required"
-    fi
-  else
-    echo "  ✓ Report in correct location: $(basename $REPORT_PATH)"
-  fi
-done
-
-if [ $MISPLACED_COUNT -gt 0 ]; then
-  echo "⚠ ARTIFACT ORGANIZATION WARNING: $MISPLACED_COUNT/$${#AGENT_REPORT_PATHS[@]} reports were corrected"
-  echo "  Corrected topics: ${CORRECTED_REPORTS[*]}"
-  echo "  Note: High misplacement rate may indicate prompt injection issue"
-else
-  echo "✓ ARTIFACT VALIDATION PASSED: All reports in correct location"
-fi
-
-# Export for subsequent phases (with corrected paths)
-export RESEARCH_REPORT_PATHS=("${AGENT_REPORT_PATHS[@]}")
-```
-
-**MANDATORY VERIFICATION CHECKLIST** (ALL must be ✓ before proceeding):
-
-YOU MUST confirm ALL of these before moving to planning phase:
-
-- [ ] Extracted REPORT_CREATED from each agent output (or noted absence)
-- [ ] Checked file existence for EVERY expected report path
-- [ ] Fallback report created for ANY missing file
-- [ ] Verified fallback file exists (critical safety check)
-- [ ] Path mismatch detection logged (if any occurred)
-- [ ] Final count verification: ALL reports present
-- [ ] NO missing reports (count = 0)
-- [ ] Paths exported to RESEARCH_REPORT_PATHS
-
-**CHECKPOINT REQUIREMENT**: Report verification completion:
-```
-CHECKPOINT: Report verification complete
-- Reports expected: ${#REPORT_PATHS[@]}
-- Reports verified: ${#AGENT_REPORT_PATHS[@]}
-- Fallback creations: [count]
-- All reports exist: ✓
-- File creation rate: 100%
-- Proceeding to: Metadata extraction
-```
-
-**CRITICAL SUCCESS CRITERION**: File creation rate MUST be 100%. If ANY report is missing after fallback, the orchestration MUST NOT proceed.
+**Recovery Strategy**:
+- Retry with escalation (standard → ultra-explicit → step-by-step)
+- Maximum 3 attempts per topic before marking as failed
+- Workflow continues with partial results (degraded continuation)
+- Planning requires at least 1 successful report to proceed
 
 ---
 
