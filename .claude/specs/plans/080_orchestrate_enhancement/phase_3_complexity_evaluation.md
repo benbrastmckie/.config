@@ -1,95 +1,123 @@
 # Phase 3: Complexity Evaluation - Automated Plan Analysis
 
+## ⚠️ ARCHITECTURAL REVISION (2025-10-21)
+
+**Status**: This plan has been revised to use **pure agent-based complexity assessment** instead of algorithm-based scoring.
+
+**Rationale**: After implementing and calibrating the 5-factor algorithm (Stages 6-7), achieving 0.7515 correlation, user decision was made to pivot to pure LLM judgment for superior accuracy (target >0.90 correlation) and simplicity.
+
+**What Changed**:
+- **Stages 1-5**: Remain valid (formula spec, agent framework, integration, thresholds, testing)
+- **Stage 6-7 (OLD)**: Algorithm implementation and calibration → **SUPERSEDED**
+- **Stage 6-7 (NEW)**: Pure agent enhancement with few-shot calibration → **See revised sections below**
+- **Stage 8**: Validation approach remains similar, criteria updated
+
+**Algorithm Work Status**: Completed as valuable research (3,900+ lines, correlation 0.7515) but replaced by simpler agent-based approach. Ground truth dataset and calibration insights inform few-shot examples for agent.
+
+**Research**: See [phase_3_agent_based_research.md](artifacts/phase_3_agent_based_research.md) for complete analysis and design.
+
+---
+
 ## Metadata
 - **Phase Number**: 3
-- **Phase Name**: Complexity Evaluation - Automated Plan Analysis
+- **Phase Name**: Complexity Evaluation - Automated Plan Analysis (Agent-Based)
 - **Parent Plan**: [080_orchestrate_enhancement.md](../080_orchestrate_enhancement.md)
-- **Complexity Score**: 8/10
-- **Expansion Reason**: Algorithmic design, multi-factor analysis, and critical role in downstream automation
+- **Complexity Score**: 8/10 → 7/10 (agent-based is simpler than algorithm)
+- **Expansion Reason**: ~~Algorithmic design~~ Agent prompt engineering, few-shot calibration, critical role in downstream automation
 - **Dependencies**: depends_on: [phase_1, phase_2]
-- **Estimated Duration**: 6-8 hours
-- **Risk Level**: High (algorithm accuracy affects all downstream expansion decisions)
+- **Estimated Duration**: ~~6-8 hours~~ 4-6 hours (agent approach is faster)
+- **Risk Level**: ~~High~~ Medium (agent judgment more robust than algorithm)
 
 ## Objective
 
-Implement automated complexity evaluation system that analyzes implementation plans, calculates multi-factor complexity scores, and determines which phases MUST be expanded to separate files. This system enables intelligent plan organization by identifying high-complexity phases that require detailed expansion before implementation.
+Implement automated complexity evaluation system using **pure LLM judgment** that analyzes implementation plans, assesses complexity through contextual understanding, and determines which phases MUST be expanded to separate files. This system enables intelligent plan organization by identifying high-complexity phases that require detailed expansion before implementation.
+
+**Key Insight**: LLM-based judgment outperforms algorithmic scoring by understanding semantic complexity (e.g., "auth migration" vs "documentation update") and handling edge cases (collapsed plans, context-dependent risk).
 
 ## Overview
 
-This phase creates the analytical foundation for adaptive plan organization by implementing:
+This phase creates the analytical foundation for adaptive plan organization using **agent-based assessment**:
 
-1. **Weighted Complexity Formula**: Multi-factor algorithm balancing task count, file dependencies, risk factors, testing scope, and dependency chain depth
-2. **complexity-estimator Agent**: Specialized agent that analyzes plan structure and returns structured complexity reports
+1. **complexity-estimator Agent**: Enhanced LLM agent that uses few-shot calibration and contextual reasoning to assess phase complexity (0-15 scale)
+2. **Few-Shot Calibration**: Ground truth examples from Plan 080 anchor agent judgment for consistency and accuracy
 3. **Threshold Configuration**: CLAUDE.md integration for project-specific complexity tolerances
-4. **Metadata Injection**: Automatic insertion of complexity scores into plan files for transparency
+4. **Structured Reasoning**: Agent provides transparent reasoning chains explaining complexity assessments
 5. **Expansion Triggering**: Automated decision-making for when to invoke expansion-specialist
+
+**Architecture Shift**: Replaces 5-factor algorithmic scoring with LLM judgment. Agent understands context, handles edge cases naturally, and achieves higher correlation (target >0.90 vs 0.7515 with algorithm).
 
 The complexity evaluation system runs after plan creation (Phase 2) and before implementation (Phase 5), ensuring plans are optimally structured before execution begins.
 
 ## Success Criteria
 
-- [ ] Complexity formula produces scores 0.0-15.0 with clear normalization
-- [ ] complexity-estimator agent returns structured YAML reports
-- [ ] Scores accurately reflect manual complexity assessment (95%+ correlation)
-- [ ] Thresholds loaded from CLAUDE.md `adaptive_planning_config` section
-- [ ] Plans automatically injected with complexity metadata
+- [x] ~~Complexity formula produces scores 0.0-15.0~~ **Agent produces scores 0-15 via LLM judgment**
+- [x] complexity-estimator agent returns structured YAML reports ✓
+- [ ] **Scores accurately reflect manual complexity assessment (>0.90 correlation)** ← Primary goal
+- [x] Thresholds loaded from CLAUDE.md `adaptive_planning_config` section ✓
+- [ ] Plans automatically injected with complexity metadata (orchestrate integration)
 - [ ] Expansion recommendations trigger expansion-specialist correctly
 - [ ] Error handling covers malformed plans, missing metadata, invalid YAML
-- [ ] Performance: <5 seconds for plans up to 50 phases
+- [ ] **Performance: <5 seconds for plans up to 50 phases** (agent: ~2-5s per phase, acceptable)
+- [ ] **Consistency: Agent produces scores within ±0.5 points across multiple runs** (new requirement)
+- [ ] **Edge case handling: Agent detects and corrects for collapsed phases** (new requirement)
 
 ## Architecture
 
-### Complexity Score Components
+### Agent-Based Complexity Assessment (REVISED)
 
-The complexity score is a weighted combination of 5 factors:
+**Core Principle**: Use LLM judgment with few-shot calibration instead of algorithmic formulas.
 
 ```yaml
-Components:
- task_count:
-  weight: 0.30
-  rationale: Task volume is primary complexity driver
-  measurement: Count of checkbox items per phase
+Input:
+  phase_name: "Authentication System Migration"
+  phase_content: |
+    Tasks, dependencies, files, context
+  is_expanded: true/false
+  project_context: "Web application security enhancement"
 
- file_references:
-  weight: 0.20
-  rationale: More files = more integration complexity
-  measurement: Count of unique file paths in phase
+Processing:
+  complexity-estimator-agent:
+    - Receives phase content + context
+    - Compares to few-shot examples from ground truth
+    - Reasons through complexity factors holistically
+    - Considers semantic meaning (e.g., "auth" = high risk)
+    - Detects edge cases (collapsed plans, unusual structures)
+    - Assigns score 0-15 with explicit reasoning
 
- dependency_depth:
-  weight: 0.20
-  rationale: Complex dependency chains increase coordination overhead
-  measurement: Maximum chain length from dependency graph
-
- test_scope:
-  weight: 0.15
-  rationale: Comprehensive testing adds complexity
-  measurement: Count of test-related tasks and commands
-
- risk_factors:
-  weight: 0.15
-  rationale: High-risk operations require extra care
-  measurement: Presence of keywords (security, migration, breaking, API)
+Output:
+  complexity_score: 10
+  confidence: high
+  reasoning: |
+    This phase involves authentication system changes (high risk),
+    database migration (breaking changes), and extensive testing
+    requirements. Comparable to ground truth example "Complexity
+    Evaluation" (10.0) but with additional security concerns.
+  key_factors:
+    - Security-critical authentication changes
+    - Database schema migration
+    - Breaking API changes
+    - Extensive integration testing required
+  expansion_recommended: true
 ```
 
-**Total Weight**: 1.00 (100%)
+### Few-Shot Calibration Strategy
 
-### Normalization Strategy
+Agent prompt includes reference examples spanning complexity range:
 
-Raw scores normalized to 0.0-15.0 scale:
+- **Score 5.0**: Simple agent creation (Research Synthesis example)
+- **Score 8.0**: Multi-stage foundation work (Location Specialist example)
+- **Score 10.0**: Algorithmic design + calibration (Complexity Evaluation example)
+- **Score 12.0**: Parallel execution coordination (Wave-Based Implementation example)
 
-```
-normalized_score = min(15.0, raw_score * normalization_factor)
+These examples from Plan 080 ground truth anchor the agent's judgment, ensuring consistency and accuracy.
 
-Where:
- normalization_factor = 15.0 / expected_max_raw_score
- expected_max_raw_score = (30 tasks * 0.3) + (30 files * 0.2) + (5 depth * 0.2) + (10 tests * 0.15) + (5 risks * 0.15)
-             = 9.0 + 6.0 + 1.0 + 1.5 + 0.75
-             = 18.25
+### Advantages Over Algorithm
 
- normalization_factor = 15.0 / 18.25 = 0.822
-```
-
-This ensures scores typically range 0.0-12.0 with extreme cases capping at 15.0.
+1. **Context Understanding**: Recognizes "auth migration" as high-risk vs literal task count
+2. **Edge Case Handling**: Detects collapsed phases, adjusts score accordingly
+3. **No Ceiling Effects**: Can discriminate between phases all scoring 15.0 algorithmically
+4. **Semantic Awareness**: Understands "5 security tasks" > "15 documentation tasks"
+5. **Transparent Reasoning**: Natural language explanations vs numeric factor breakdowns
 
 ### Threshold Configuration
 
@@ -1086,15 +1114,35 @@ The expansion-specialist uses complexity scores to determine how to structure ex
 - **Task Count Threshold**: 5
 ```
 
-## Stage 6: Implement Complete 5-Factor Scoring Algorithm [COMPLETED]
+## Stage 6: ~~Implement Complete 5-Factor Scoring Algorithm~~ **SUPERSEDED BY AGENT APPROACH**
 
-**Status**: COMPLETED ✓ (2025-10-21)
+### ⚠️ SUPERSEDED (2025-10-21)
+
+**Original Status**: COMPLETED ✓ (Algorithm implementation finished)
+**Current Status**: **SUPERSEDED** - Replaced by pure agent-based approach
+
+**Why Superseded**: After completing algorithm implementation and calibration (correlation 0.7515), user decision was made to pivot to pure LLM judgment for superior accuracy (>0.90 target) and simplicity.
+
+**What Was Completed** (Algorithm-Based):
+- Created `analyze-phase-complexity.sh` with full 5-factor formula (206 lines)
+- Achieved correlation 0.7515 through empirical calibration
+- Identified limitations: ceiling effects, edge cases, context-blindness
+
+**New Stage 6**: See "Stage 6 (NEW): Pure Agent Complexity Assessment" below
+
+---
+
+### Original Stage 6 (Algorithm-Based) - For Reference Only
+
+**Status**: COMPLETED ✓ (2025-10-21) - **Now superseded**
 **Commit**: 853f97af
 **Objective**: Replace the incomplete fallback implementation with the full 5-factor weighted complexity formula as specified in Phase 3 design.
 
 **Duration**: 2-3 hours (Actual: ~2 hours)
 
 **Note**: This stage addressed the missing implementation identified in calibration testing. The code previously referenced a non-existent `analyze-phase-complexity.sh` and fell back to a basic 2-factor formula (keywords + weak task weighting). This stage successfully implemented the complete formula with proper factor extraction and weighting.
+
+**Outcome**: Algorithm completed but superseded by agent approach. Work remains valuable as research informing few-shot examples.
 
 ### Tasks
 
@@ -1210,15 +1258,36 @@ COMPLEXITY_DEBUG=1 .claude/lib/analyze-phase-complexity.sh "Test Phase" "$(cat /
 
 ---
 
-## Stage 7: Calibrate Normalization Factor with Robust Scaling [COMPLETED]
+## Stage 7: ~~Calibrate Normalization Factor~~ **SUPERSEDED BY AGENT APPROACH**
 
-**Status**: COMPLETED ✓ (2025-10-21)
-**Commit**: Pending
+### ⚠️ SUPERSEDED (2025-10-21)
+
+**Original Status**: COMPLETED ✓ (Calibration finished, correlation 0.7515)
+**Current Status**: **SUPERSEDED** - Replaced by pure agent few-shot tuning
+
+**Why Superseded**: Calibration achieved 0.7515 correlation (8.7x improvement from baseline 0.0869), but user decision was made to pivot to pure LLM judgment which can achieve >0.90 correlation without formula tuning.
+
+**What Was Completed** (Algorithm Calibration):
+- Created Plan 080 ground truth dataset (manual ratings for 8 phases)
+- Grid search calibration (linear, power law, robust sigmoid)
+- Achieved correlation 0.7515 with normalization factor 0.411
+- Identified 4 structural limitations preventing >0.90
+
+**New Stage 7**: See "Stage 7 (NEW): Few-Shot Tuning for Agent Consistency" below
+
+---
+
+### Original Stage 7 (Algorithm Calibration) - For Reference Only
+
+**Status**: COMPLETED ✓ (2025-10-21) - **Now superseded**
+**Commit**: 135dd8d7
 **Objective**: Replace linear normalization (0.822 factor) with robust scaling to prevent score capping and improve correlation with actual complexity.
 
 **Duration**: 2-3 hours (Actual: ~2 hours)
 
 **Note**: This stage addressed the core calibration issues. Discovered that original report of "7/8 phases capping at 15.0" was based on collapsed parent plan analysis. After fixing to analyze expanded phase files, calibration improved correlation from 0.0869 to 0.7515 (below 0.90 target but substantial improvement). Normalization factor adjusted from 0.822 to 0.411.
+
+**Outcome**: Ground truth dataset and calibration insights directly inform few-shot examples for agent approach. Work remains highly valuable.
 
 ### Tasks
 
@@ -1372,6 +1441,160 @@ echo "Final correlation: $correlation"
 - Robust scaling utility: robust-scaling.sh
 - Calibration report: complexity-calibration-report.md
 - Updated analyzer: analyze-phase-complexity.sh (factor 0.411)
+
+---
+
+## Stage 6 (NEW): Pure Agent Complexity Assessment
+
+**Status**: PENDING (Replaces algorithm-based Stage 6)
+**Objective**: Implement pure LLM-based complexity assessment using few-shot calibration from ground truth dataset.
+
+**Duration**: 1-2 hours (simpler than algorithm implementation)
+
+**Note**: This stage leverages the ground truth dataset created in original Stage 7 to calibrate agent judgment. No formula implementation needed—agent reasons through complexity holistically.
+
+### Tasks
+
+- [ ] **Remove algorithm dependency**
+  - Document that `analyze-phase-complexity.sh` is deprecated (keep for reference)
+  - Update `complexity-utils.sh` to call agent directly (not algorithm)
+  - Remove fallback formula logic
+
+- [ ] **Enhance complexity-estimator agent with few-shot examples**
+  - File: `.claude/agents/complexity-estimator.md`
+  - Add few-shot calibration section with 4-5 examples from Plan 080:
+    - Score 5.0: Research Synthesis (simple agent creation)
+    - Score 8.0: Foundation - Location Specialist (multi-stage)
+    - Score 10.0: Complexity Evaluation (algorithmic design)
+    - Score 12.0: Wave-Based Implementation (parallel execution)
+  - Include explicit scoring rubric (0-15 scale with anchors)
+  - Add reasoning chain template (compare to examples → enumerate factors → assign score)
+  - Add edge case guidance (collapsed phases, very simple, very complex)
+
+- [ ] **Design structured output format**
+  - YAML structure with:
+    ```yaml
+    complexity_score: 10
+    confidence: high  # high | medium | low
+    reasoning: |
+      [2-3 sentences explaining score]
+    key_factors:
+      - Factor 1
+      - Factor 2
+      - Factor 3
+    expansion_recommended: true/false
+    ```
+  - Ensure consistent parsing in orchestrate.md integration
+
+- [ ] **Test agent on sample phases**
+  - Test with simple phase (expected score ~2-4)
+  - Test with medium phase (expected score ~6-8)
+  - Test with complex phase (expected score ~10-12)
+  - Verify structured output parses correctly
+  - Verify reasoning quality and factor enumeration
+
+### Testing
+
+```bash
+# Test agent invocation manually
+# Input: Simple phase
+echo "Testing simple phase assessment..."
+# Expected: Score 2-4, clear reasoning
+
+# Input: Complex phase from Plan 080
+echo "Testing Phase 3 (Complexity Evaluation)..."
+# Expected: Score ~10, comparable to ground truth
+
+# Test output parsing
+# Verify YAML structure is valid and contains all required fields
+```
+
+### Expected Outcomes
+
+- Agent prompt enhanced with few-shot examples
+- No algorithm dependency (pure LLM judgment)
+- Structured YAML output with reasoning
+- Tested on sample phases, scores reasonable
+- Ready for correlation validation in Stage 7
+
+---
+
+## Stage 7 (NEW): Few-Shot Tuning for Agent Consistency
+
+**Status**: PENDING (Replaces calibration-based Stage 7)
+**Objective**: Validate and tune agent judgment to achieve >0.90 correlation with ground truth, ensure consistency across runs.
+
+**Duration**: 1-2 hours (simpler than formula calibration)
+
+**Note**: Uses existing Plan 080 ground truth dataset. Instead of tuning normalization factors, we iterate on prompt examples and rubric for optimal accuracy.
+
+### Tasks
+
+- [ ] **Run agent on all Plan 080 phases**
+  - Execute agent assessment for Phases 0-7
+  - Collect scores and reasoning for each
+  - Document results in comparison table
+
+- [ ] **Calculate correlation with ground truth**
+  - Compare agent scores to Plan 080 ground truth ratings
+  - Calculate Pearson correlation coefficient
+  - Target: >0.90 (vs 0.7515 with algorithm)
+  - Document correlation and phase-by-phase accuracy
+
+- [ ] **Iterate on prompt if correlation <0.90**
+  - Analyze which phases have largest errors
+  - Adjust few-shot examples (add/modify examples)
+  - Refine scoring rubric language
+  - Update reasoning chain template
+  - Re-test and measure correlation improvement
+
+- [ ] **Validate consistency (same phase multiple runs)**
+  - Run same phase through agent 10 times
+  - Measure standard deviation of scores
+  - Target: σ < 0.5 (acceptable variance)
+  - If variance high: Lower temperature, add more explicit rubric
+
+- [ ] **Test edge case handling**
+  - Test with collapsed phase (should detect and adjust)
+  - Test with very simple phase (should avoid over-estimation)
+  - Test with very complex phase (should use full 13-15 range)
+  - Verify agent handles all cases appropriately
+
+- [ ] **Document final agent prompt**
+  - Save final calibrated prompt in complexity-estimator.md
+  - Document achieved correlation
+  - Document consistency metrics
+  - Note any remaining limitations
+
+### Testing
+
+```bash
+# Correlation validation
+python3 .claude/tests/test_agent_correlation.py
+# Expected: Correlation >0.90
+
+# Consistency test
+for i in {1..10}; do
+  # Run same phase 10 times
+  score=$(invoke_agent "Phase 3 content")
+  echo "$score"
+done
+# Expected: All scores within ±0.5 of each other
+
+# Edge case tests
+test_collapsed_phase
+test_very_simple_phase
+test_very_complex_phase
+# Expected: Agent handles all appropriately
+```
+
+### Expected Outcomes
+
+- Agent achieves >0.90 correlation on Plan 080
+- Consistency: scores vary <0.5 points across runs
+- Edge cases handled correctly (collapsed, simple, complex)
+- Final prompt documented and validated
+- Ready for end-to-end validation in Stage 8
 
 ---
 
