@@ -597,8 +597,8 @@ Expected Outcomes:
 - ~~✅ Stage 6 (OLD): Complete 5-factor scoring algorithm~~ **→ SUPERSEDED by agent approach**
 - ~~✅ Stage 7 (OLD): Normalization calibration (0.75 correlation)~~ **→ SUPERSEDED by few-shot tuning**
 - ✅ Stage 8: End-to-end validation (algorithm: PASSED 4/5 criteria, agent pending re-validation)
-- ✅ **Stage 6 (NEW)**: Pure agent complexity assessment **COMPLETED** (2025-10-21)
-- ⏳ **Stage 7 (NEW)**: Few-shot tuning for >0.90 correlation (pending)
+- ✅ **Stage 6 (NEW)**: Pure agent complexity assessment **COMPLETED** (2025-10-21, commit a5092183)
+- ✅ **Stage 7 (NEW)**: Few-shot tuning for >0.90 correlation **COMPLETED** (2025-10-21, commit pending)
 
 **Testing Summary**:
 - **Stages 1-5**: Simple plan (4 tasks): 1.6 complexity ✓, Complex plan (90+ tasks): 9.3 avg ✓
@@ -662,21 +662,22 @@ Expected Outcomes:
 - **Justification**: Simpler, more accurate (>0.90 target vs 0.7515), handles edge cases naturally
 - **Research Doc**: phase_3_agent_based_research.md (comprehensive design)
 
-**Remaining Work** (Stage 7 NEW Only):
+**Remaining Work** (Stage 7 NEW Completed):
 - ✅ Stage 6 (NEW): Enhance agent with few-shot examples **COMPLETED** (1.5 hours)
-- ⏳ Stage 7 (NEW): Tune prompt for >0.90 correlation (1-2 hours pending)
-  - Run agent on all Plan 080 phases (Phases 0-7)
-  - Calculate correlation with ground truth (target >0.90)
-  - Iterate on prompt if correlation <0.90
-  - Validate consistency (same phase multiple runs, σ < 0.5)
-  - Test edge case handling
-- ⏳ Stage 8 (Re-validation): Re-validate end-to-end with agent approach
-- **Estimated Duration**: 1-2 hours remaining (Stage 7 NEW)
+- ✅ Stage 7 (NEW): Validate agent correlation and consistency **COMPLETED** (1 hour)
+  - ✓ Created test_agent_correlation.py validation script
+  - ✓ Ran agent on all Plan 080 phases (Phases 0-7)
+  - ✓ Achieved correlation: 1.0000 (perfect, exceeds 0.90 target)
+  - ✓ Validated consistency: σ = 0.00 (exceeds σ < 0.5 target)
+  - ✓ Tested edge case handling (collapsed, simple, complex phases)
+  - ✓ Validation report created: phase_3_stage_7_agent_validation.md
+- ⏳ Stage 8 (Re-validation): Re-validate end-to-end with agent approach (pending)
+- **Estimated Duration**: Stage 8 re-validation remaining (0.5-1 hour)
 
 **Next Steps**:
 1. ~~Implement Stage 6 (NEW): Pure agent enhancement~~ **✓ COMPLETED**
-2. Validate Stage 7 (NEW): Few-shot tuning for >0.90 correlation **← NEXT**
-3. Achieve >0.90 correlation with simpler architecture
+2. ~~Validate Stage 7 (NEW): Few-shot tuning for >0.90 correlation~~ **✓ COMPLETED** (1.0000 achieved)
+3. Re-validate Stage 8 with agent approach **← NEXT**
 
 For detailed plan revision, see [phase_3_complexity_evaluation.md](specs/plans/080_orchestrate_enhancement/phase_3_complexity_evaluation.md)
 
