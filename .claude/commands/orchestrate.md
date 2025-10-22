@@ -1931,22 +1931,33 @@ Next Phase: Implementation
 
 **EXECUTE NOW - Load Complexity Thresholds**:
 
-First, load complexity thresholds from CLAUDE.md or use defaults:
+Load complexity thresholds from CLAUDE.md with subdirectory override support:
 
 ```bash
-# STEP 1: Load thresholds from CLAUDE.md
-# (For Stage 4 integration - for now, use hardcoded defaults)
+# STEP 1: Load thresholds from CLAUDE.md hierarchy
+# Source the threshold extraction utility
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-thresholds.sh"
 
-# Hardcoded defaults (will be replaced by CLAUDE.md reader in Stage 4)
-EXPANSION_THRESHOLD=8.0
-TASK_COUNT_THRESHOLD=10
-FILE_REFERENCE_THRESHOLD=10
-REPLAN_LIMIT=2
+# Determine starting directory for threshold search
+# Use plan's directory if available, otherwise current directory
+if [ -n "$IMPLEMENTATION_PLAN_PATH" ]; then
+  THRESHOLD_SEARCH_DIR=$(dirname "$IMPLEMENTATION_PLAN_PATH")
+else
+  THRESHOLD_SEARCH_DIR="."
+fi
 
-echo "Complexity Thresholds:"
+# Load thresholds (searches upward from plan directory)
+echo "Loading complexity thresholds..."
+get_complexity_thresholds "$THRESHOLD_SEARCH_DIR"
+
+# Display loaded thresholds
+echo ""
+echo "Complexity Thresholds Loaded:"
 echo "- Expansion Threshold: $EXPANSION_THRESHOLD"
 echo "- Task Count Threshold: $TASK_COUNT_THRESHOLD"
 echo "- File Reference Threshold: $FILE_REFERENCE_THRESHOLD"
+echo "- Replan Limit: $REPLAN_LIMIT"
+echo "- Source: $THRESHOLDS_SOURCE"
 echo ""
 ```
 
