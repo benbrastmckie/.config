@@ -40,7 +40,7 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 **YOU MUST orchestrate an 8-phase development workflow by delegating to specialized subagents.**
 
 **YOUR ROLE**: You are the WORKFLOW ORCHESTRATOR, not the executor.
-- **DO NOT** execute research/planning/implementation/debugging/documentation yourself using Read/Write/Grep/Bash tools
+- **DO NOT** execute research/planning/implementation/testing/debugging/documentation yourself using Read/Write/Grep/Bash tools
 - **ONLY** use Task tool to invoke specialized agents for each phase
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify outputs, aggregate results, manage checkpoints
 
@@ -48,14 +48,13 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 - **Phase 0 (Location)**: Invoke location-specialist to create topic directory structure
 - **Phase 1 (Research)**: Invoke 2-4 research-specialist agents in parallel
 - **Phase 2 (Planning)**: Invoke plan-architect agent with research report paths
-- **Phase 3 (Implementation)**: Invoke code-writer agent with plan path
-- **Phase 4 (Debugging)**: Conditionally invoke debug-specialist if tests fail
-- **Phase 5 (Documentation)**: Invoke doc-writer agent with implementation summary
-- **Phase 6 (GitHub)**: Conditionally invoke github-specialist if --create-pr flag set
-- **Phase 7 (Summary)**: Generate workflow summary from aggregated metadata
+- **Phase 3-5 (Implementation)**: Invoke code-writer agent with plan path (includes complexity evaluation, expansion, wave-based execution)
+- **Phase 6 (Testing)**: Invoke test-specialist to execute comprehensive test suite
+- **Phase 7 (Debugging)**: Conditionally invoke debug-specialist if Phase 6 tests fail
+- **Phase 8 (Documentation)**: Invoke doc-writer agent with implementation summary and test results
 
 **CRITICAL INSTRUCTIONS**:
-- Execute all workflow phases in EXACT sequential order (Phases 0-7)
+- Execute all workflow phases in EXACT sequential order (Phases 0-8)
 - DO NOT skip agent invocations in favor of direct execution
 - DO NOT skip verification of agent outputs
 - DO NOT skip checkpoint saves between phases
@@ -65,13 +64,13 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 
 **FILE CREATION VERIFICATION REQUIREMENT**:
 Each phase MUST verify that agents created required files BEFORE marking phase complete:
+- Phase 0: Verify topic directory structure created
 - Phase 1: Verify all research report files exist
 - Phase 2: Verify implementation plan file exists
-- Phase 3: Verify code files and tests exist
-- Phase 4: Verify debug reports exist (if invoked)
-- Phase 5: Verify documentation files exist
-- Phase 6: Verify PR created (if --create-pr flag set)
-- Phase 7: Verify workflow summary file exists
+- Phase 3-5: Verify code files and implementation complete
+- Phase 6: Verify test output file exists (test_results.txt)
+- Phase 7: Verify debug reports exist (if invoked due to test failures)
+- Phase 8: Verify documentation and workflow summary files exist
 
 ## Reference Files
 
@@ -3194,11 +3193,11 @@ Workflow paused - awaiting user input.
 
 ---
 
-## Debugging Loop (Conditional)
+## Phase 7: Debugging Loop (Conditional)
 
-**CONDITIONAL ENTRY**: Only enter this section if `$TESTS_PASSING == false` from Implementation Phase.
+**CONDITIONAL ENTRY**: Only enter this section if `$DEBUGGING_SKIPPED == false` from Phase 6 (Testing).
 
-If tests are passing, skip this entire section and proceed directly to Documentation Phase.
+If all tests are passing (`$TESTS_PASSING == true`), skip this entire section and proceed directly to Phase 8 (Documentation).
 
 ### Step 1: Initialize Debug Loop State
 
@@ -3604,7 +3603,7 @@ echo ""
 
 **CHECKPOINT REQUIREMENT - Report Implementation Phase Completion**
 
-Before proceeding to documentation phase, YOU MUST report this checkpoint:
+Before proceeding to testing phase, YOU MUST report this checkpoint:
 
 ```
 ═══════════════════════════════════════════════════════
@@ -3630,22 +3629,261 @@ Debugging Summary (if occurred):
 - Debug reports created: ${#DEBUG_REPORTS[@]}
 - Final status: [resolved|escalated|none]
 
-Next Phase: Documentation
-- Will create: Workflow summary
-- Will update: Project documentation
-- Will cross-reference: All artifacts
+Next Phase: Testing (Phase 6)
+- Will execute: Comprehensive test suite
+- Will verify: Implementation correctness
+- Will determine: Need for debugging phase
 ═══════════════════════════════════════════════════════
 ```
 
-**CRITICAL**: This checkpoint is MANDATORY. Do NOT proceed to documentation phase without reporting it.
+**CRITICAL**: This checkpoint is MANDATORY. Do NOT proceed to testing phase without reporting it.
 
 ---
 
-### Documentation Phase (Sequential Execution)
+## Phase 6: Comprehensive Testing
+
+This phase executes the comprehensive test suite to validate implementation quality before proceeding to debugging (if needed) or documentation. Testing is separated from implementation to provide clear failure analysis and conditional debugging.
+
+**Objective**: Execute comprehensive test suite and determine if debugging is needed
+**Timing**: After implementation completes, before debugging or documentation
+**Conditional**: Always run, but debugging (Phase 7) only invoked if tests fail
+
+### Step 1: Invoke test-specialist Agent
+
+**EXECUTE NOW - Invoke test-specialist with Behavioral Injection**:
+
+Use the Task tool to invoke test-specialist agent with artifact context from Phase 0:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute comprehensive test suite using test-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/test-specialist.md
+
+    You are acting as a Test Specialist Agent.
+
+    CONTEXT:
+    - Implementation Phase Complete: All phases implemented
+    - Plan Path: ${IMPLEMENTATION_PLAN_PATH}
+    - Topic Path: ${TOPIC_PATH}
+    - Modified Files: ${FILES_MODIFIED}
+
+    TASK:
+    Execute comprehensive test suite for the implemented feature.
+
+    TEST SCOPE:
+    - Run full test suite (not just unit tests)
+    - Include integration tests if available
+    - Execute regression tests for modified files
+    - Verify all test types per project standards
+
+    ARTIFACT MANAGEMENT (CRITICAL - From Phase 0 Location Context):
+    - Save full test output to: ${ARTIFACT_OUTPUTS}test_results.txt
+    - Save coverage report (if available) to: ${ARTIFACT_OUTPUTS}coverage/
+    - Return ONLY metadata summary (not full output) to orchestrator
+
+    TEST DISCOVERY:
+    - Check CLAUDE.md Testing Protocols section for test commands
+    - Use project-specific test patterns
+    - Fall back to framework defaults only if CLAUDE.md incomplete
+
+    REQUIRED OUTPUT FORMAT:
+    You MUST return structured test results in this format:
+
+    TEST_RESULTS_START
+    tests_passing: true|false
+    total_tests: N
+    passed: N
+    passed_pct: X.X
+    failed: N
+    failed_pct: Y.Y
+    skipped: N
+    duration: "Xs"
+    coverage: "X%" (if available)
+    test_output_path: "${ARTIFACT_OUTPUTS}test_results.txt"
+    TEST_RESULTS_END
+
+    [If tests_passing=false, also include:]
+    FAILED_TESTS_START
+    - test_name: "test_auth_validation"
+      location: "auth.lua:42"
+      error_type: "assertion"
+      error_message: "Expected true, got false"
+    - test_name: "test_session_timeout"
+      location: "session.lua:67"
+      error_type: "timeout"
+      error_message: "Test exceeded 5s timeout"
+    FAILED_TESTS_END
+
+    CRITICAL: Context Reduction Pattern
+    - Full test output (10,000+ tokens) MUST be saved to test_output_file
+    - Return ONLY structured summary (<100 tokens) to orchestrator
+    - DO NOT include full test output or stack traces in return message
+
+    Follow all test-specialist protocol requirements (5 steps).
+}
+```
+
+**MANDATORY VERIFICATION CHECKPOINT**:
+
+```bash
+# Verify test-specialist created test output file
+TEST_OUTPUT="${ARTIFACT_OUTPUTS}test_results.txt"
+
+if [ ! -f "$TEST_OUTPUT" ]; then
+  echo "ERROR: Test output not created by test-specialist at $TEST_OUTPUT"
+  echo "FALLBACK: Creating minimal test report"
+
+  # Create fallback test output
+  mkdir -p "${ARTIFACT_OUTPUTS}"
+  cat > "$TEST_OUTPUT" <<'EOF'
+# Test Results
+
+## Summary
+Minimal test report created by fallback mechanism.
+test-specialist agent failed to save full test output.
+
+## Status
+- Total Tests: Unknown
+- Status: Manual verification required
+
+## Recommendation
+Review test execution logs and manually verify test results.
+EOF
+fi
+
+# Verify coverage directory if coverage was reported
+if [ -n "${COVERAGE}" ] && [ "${COVERAGE}" != "0" ]; then
+  COVERAGE_DIR="${ARTIFACT_OUTPUTS}coverage"
+  if [ ! -d "$COVERAGE_DIR" ]; then
+    echo "WARNING: Coverage reported but coverage directory missing at $COVERAGE_DIR"
+    echo "FALLBACK: Creating coverage directory for future reports"
+    mkdir -p "$COVERAGE_DIR"
+  fi
+fi
+
+echo "✓ VERIFIED: Test output artifacts validated"
+```
+
+### Step 2: Extract and Parse Test Results
+
+**EXECUTE NOW - Parse test-specialist Response**:
+
+Extract structured test results from test-specialist response and store in workflow state:
+
+```bash
+# Parse test results from agent response
+# Look for TEST_RESULTS_START ... TEST_RESULTS_END block
+
+# Extract required fields
+TESTS_PASSING=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "tests_passing:" | awk '{print $2}')
+TOTAL_TESTS=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "total_tests:" | awk '{print $2}')
+PASSED_TESTS=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "^passed:" | awk '{print $2}')
+FAILED_TESTS=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "^failed:" | awk '{print $2}')
+SKIPPED_TESTS=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "skipped:" | awk '{print $2}')
+TEST_DURATION=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "duration:" | awk '{print $2}')
+TEST_COVERAGE=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "coverage:" | awk '{print $2}')
+TEST_OUTPUT_PATH=$(echo "$TEST_SPECIALIST_RESPONSE" | grep "test_output_path:" | awk '{print $2}')
+
+# Calculate percentages
+if [ "$TOTAL_TESTS" -gt 0 ]; then
+  PASSED_PCT=$(awk "BEGIN {printf \"%.1f\", ($PASSED_TESTS / $TOTAL_TESTS) * 100}")
+  FAILED_PCT=$(awk "BEGIN {printf \"%.1f\", ($FAILED_TESTS / $TOTAL_TESTS) * 100}")
+else
+  PASSED_PCT="0.0"
+  FAILED_PCT="0.0"
+fi
+
+# Parse failed test details if tests failed
+if [ "$TESTS_PASSING" = "false" ]; then
+  # Extract FAILED_TESTS_START ... FAILED_TESTS_END block
+  FAILED_TEST_DETAILS=$(echo "$TEST_SPECIALIST_RESPONSE" | \
+    sed -n '/FAILED_TESTS_START/,/FAILED_TESTS_END/p' | \
+    grep -v "FAILED_TESTS_")
+fi
+
+echo "Test Results Extracted:"
+echo "- Tests Passing: $TESTS_PASSING"
+echo "- Total Tests: $TOTAL_TESTS"
+echo "- Passed: $PASSED_TESTS ($PASSED_PCT%)"
+echo "- Failed: $FAILED_TESTS ($FAILED_PCT%)"
+echo "- Duration: $TEST_DURATION"
+echo "- Coverage: $TEST_COVERAGE"
+```
+
+### Step 3: Display Test Summary and Conditional Branch
+
+**EXECUTE NOW - Display Test Summary**:
+
+```bash
+echo ""
+echo "═══════════════════════════════════════════════════════"
+echo "PHASE 6: Comprehensive Testing Complete"
+echo "═══════════════════════════════════════════════════════"
+echo ""
+echo "Test Suite Results:"
+echo "  Total Tests: $TOTAL_TESTS"
+echo "  ✓ Passed: $PASSED_TESTS ($PASSED_PCT%)"
+echo "  ✗ Failed: $FAILED_TESTS ($FAILED_PCT%)"
+echo "  ⊘ Skipped: $SKIPPED_TESTS"
+echo "  Duration: $TEST_DURATION"
+if [ -n "$TEST_COVERAGE" ]; then
+  echo "  Coverage: $TEST_COVERAGE"
+fi
+echo ""
+echo "Full test output: $TEST_OUTPUT_PATH"
+if [ -d "${ARTIFACT_OUTPUTS}coverage/" ]; then
+  echo "Coverage report: ${ARTIFACT_OUTPUTS}coverage/index.html"
+fi
+echo ""
+```
+
+**EXECUTE NOW - Conditional Branching Logic**:
+
+```bash
+if [ "$TESTS_PASSING" = "true" ]; then
+  echo "✓ All tests passing, skipping debugging phase"
+  echo ""
+  echo "Next Phase: Documentation (Phase 8)"
+  echo "═══════════════════════════════════════════════════════"
+
+  # Set flag to skip debugging
+  DEBUGGING_SKIPPED=true
+  DEBUGGING_REASON="tests_passing"
+
+  # Jump to Documentation Phase
+  # (Skip Debugging Loop section entirely)
+
+else
+  echo "⚠ $FAILED_TESTS tests failed, proceeding to debugging phase"
+  echo ""
+  echo "Next Phase: Debugging Loop (Phase 7)"
+  echo ""
+  echo "Failed Tests:"
+  echo "$FAILED_TEST_DETAILS" | head -3  # Show top 3 failures
+  echo "═══════════════════════════════════════════════════════"
+
+  # Set flag to invoke debugging
+  DEBUGGING_SKIPPED=false
+  DEBUGGING_REASON="tests_failing"
+
+  # Store test failure context for debugging phase
+  ERROR_MESSAGE="$FAILED_TESTS test(s) failed in Phase 6 (Testing)"
+  FAILED_TEST_LIST="$FAILED_TEST_DETAILS"
+
+  # Proceed to Debugging Loop (next section)
+fi
+```
+
+---
+
+## Phase 8: Documentation Phase (Sequential Execution)
 
 This phase completes the workflow by updating project documentation, generating a comprehensive workflow summary with performance metrics, establishing bidirectional cross-references between all artifacts, and optionally creating a pull request.
 
-#### Step 1: Prepare Documentation Context
+### Step 1: Prepare Documentation Context
 
 GATHER workflow artifacts and build documentation context structure for the doc-writer agent.
 
@@ -3656,9 +3894,9 @@ EXTRACT the following from workflow_state and prior phase checkpoints:
 1. **Research report paths** (from research phase checkpoint, if completed)
 2. **Implementation plan path** (from planning phase checkpoint)
 3. **Implementation status** (from implementation phase checkpoint)
-4. **Debug report paths** (from debugging phase checkpoint, if occurred)
-5. **Modified files list** (from implementation agent output)
-6. **Test results** (passing or fixed_after_debugging)
+4. **Test results** (from Phase 6 testing checkpoint)
+5. **Debug report paths** (from Phase 7 debugging checkpoint, if invoked)
+6. **Modified files list** (from implementation agent output)
 
 BUILD the documentation context structure:
 
@@ -3694,7 +3932,17 @@ documentation_context:
       "hash2"
     ]
 
-  # From debugging phase (if occurred)
+  # From Phase 6 (Testing)
+  test_results:
+    tests_passing: true|false
+    total_tests: N
+    passed: N (X%)
+    failed: N (Y%)
+    duration: "Xs"
+    coverage: "X%"
+    test_output_path: "specs/NNN_topic/outputs/test_results.txt"
+
+  # From Phase 7 (Debugging - if invoked)
   debug_reports: [
     "debug/phase1_failures/001_config_init.md"
   ]
