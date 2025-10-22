@@ -1086,13 +1086,15 @@ The expansion-specialist uses complexity scores to determine how to structure ex
 - **Task Count Threshold**: 5
 ```
 
-## Stage 6: Implement Complete 5-Factor Scoring Algorithm
+## Stage 6: Implement Complete 5-Factor Scoring Algorithm [COMPLETED]
 
+**Status**: COMPLETED ✓ (2025-10-21)
+**Commit**: 853f97af
 **Objective**: Replace the incomplete fallback implementation with the full 5-factor weighted complexity formula as specified in Phase 3 design.
 
-**Duration**: 2-3 hours
+**Duration**: 2-3 hours (Actual: ~2 hours)
 
-**Note**: This stage addresses the missing implementation identified in calibration testing. The current code references a non-existent `analyze-phase-complexity.sh` and falls back to a basic 2-factor formula (keywords + weak task weighting). This stage implements the complete formula with proper factor extraction and weighting.
+**Note**: This stage addressed the missing implementation identified in calibration testing. The code previously referenced a non-existent `analyze-phase-complexity.sh` and fell back to a basic 2-factor formula (keywords + weak task weighting). This stage successfully implemented the complete formula with proper factor extraction and weighting.
 
 ### Tasks
 

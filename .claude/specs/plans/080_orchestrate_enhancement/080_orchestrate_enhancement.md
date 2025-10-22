@@ -569,13 +569,13 @@ Expected Outcomes:
 ---
 
 ### Phase 3: Complexity Evaluation - Automated Plan Analysis [IN PROGRESS]
-**Status**: IN PROGRESS (Stages 1-5 Complete, Stages 6-8 In Progress)
+**Status**: IN PROGRESS (Stages 1-6 Complete, Stages 7-8 Pending)
 **Complexity**: 8/10 (High)
 **Dependencies**: depends_on: [phase_1, phase_2] ✓
 **Started**: 2025-10-21
-**Commit**: 888de1f4 (Stages 1-2), af754b57 (Stage 3), 97f25ee5 (Stage 4), ab8d4b0c (Stage 5)
+**Commit**: 888de1f4 (Stages 1-2), af754b57 (Stage 3), 97f25ee5 (Stage 4), ab8d4b0c (Stage 5), 853f97af (Stage 6)
 
-**Summary**: Implemented complete complexity evaluation system with complexity-estimator agent using weighted 5-factor formula. Created formula specification (560 lines), specialized agent (581 lines), integrated into orchestrate.md as Phase 2.5 (356 lines), and threshold configuration system (250 lines). Stages 1-5 completed successfully but revealed calibration issues requiring three additional stages for robust scaling implementation.
+**Summary**: Implemented complete complexity evaluation system with complexity-estimator agent using weighted 5-factor formula. Created formula specification (560 lines), specialized agent (581 lines), integrated into orchestrate.md as Phase 2.5 (356 lines), and threshold configuration system (250 lines). Stages 1-5 completed successfully but revealed calibration issues. Stage 6 implemented the missing 5-factor scoring algorithm (206 lines). Stages 7-8 remain for normalization calibration and validation.
 
 **Implementation Results**:
 - ✅ Stage 1: Complexity formula specification with ground truth dataset (11 phases)
@@ -583,33 +583,40 @@ Expected Outcomes:
 - ✅ Stage 3: Phase 2.5 integration in orchestrate.md with conditional branching
 - ✅ Stage 4: Threshold configuration reading from CLAUDE.md
 - ✅ Stage 5: End-to-end testing (functional, calibration issues identified)
-- ⏳ Stage 6: Implement complete 5-factor scoring algorithm (pending)
+- ✅ Stage 6: Complete 5-factor scoring algorithm implemented (206 lines, all factors working)
 - ⏳ Stage 7: Calibrate normalization factor with robust scaling (pending)
 - ⏳ Stage 8: Validate and test end-to-end complexity evaluation (pending)
 
-**Testing Summary (Stages 1-5)**:
-- Simple plan (4 tasks): 1.6 complexity ✓
-- Complex plan (90+ tasks): 9.3 avg complexity, 6/6 phases flagged ✓
+**Testing Summary**:
+- **Stages 1-5**: Simple plan (4 tasks): 1.6 complexity ✓, Complex plan (90+ tasks): 9.3 avg ✓
+- **Stage 6**: Simple phase (3 tasks, 2 files, 1 test): 1.2 complexity ✓
+- **Stage 6**: Complex auth phase (15 tasks, 15 files, security): 7.1 complexity ✓
 - Plan 080 validation: Over-estimation identified (7/8 phases capped at 15.0)
-- Correlation vs ground truth: -0.18 (below target 0.90)
-- **Status**: Functional for expansion decisions, needs calibration for accuracy
+- Correlation vs ground truth: -0.18 (below target 0.90, will be fixed in Stage 7)
+- **Status**: Full 5-factor formula working, needs calibration for optimal distribution
 
-**Calibration Issues Identified (Triggering Stages 6-8)**:
-- ⚠️ **Root Cause**: 5-factor formula never implemented - code references non-existent `analyze-phase-complexity.sh`
-- ⚠️ **Current Fallback**: Basic 2-factor formula (keywords + weak task weighting: `(task_count + 4) / 5`)
-- ⚠️ **Score Capping**: 7/8 Plan 080 phases cap at 15.0 maximum (no distribution)
-- ⚠️ **Negative Correlation**: -0.18 vs target >0.90 (inverse weighting likely)
-- ⚠️ **Normalization Factor**: 0.822 insufficient (recommended 0.35 or robust scaling)
+**Stage 6 Completion (2025-10-21)**:
+- ✅ Created `analyze-phase-complexity.sh` with complete 5-factor formula
+- ✅ All factors implemented: task count (30%), files (20%), deps (20%), tests (15%), risks (15%)
+- ✅ Integer arithmetic (no bc dependency) for portability
+- ✅ Debug logging via COMPLEXITY_DEBUG=1 environment variable
+- ✅ Automatic integration with complexity-utils.sh verified
+- ✅ Tested: Simple phase = 1.2, Complex phase = 7.1
+- ✅ Research summary documented in artifacts/phase_3_calibration_research_summary.md
 
-**Stages 6-8 Objectives**:
-- **Stage 6**: Create missing `analyze-phase-complexity.sh` with full 5-factor formula (task count, file refs, dependency depth, test scope, risk factors)
+**Remaining Calibration Issues (Stages 7-8)**:
+- ⚠️ **Score Distribution**: Need robust scaling to prevent capping (7/8 phases at 15.0)
+- ⚠️ **Correlation**: Need sigmoid mapping + tuning to improve -0.18 → >0.90
+- ⚠️ **Normalization**: Replace linear 0.822 with IQR-based robust scaling
+
+**Stages 7-8 Objectives**:
 - **Stage 7**: Replace linear normalization (0.822) with IQR-based robust scaling + sigmoid mapping to prevent ceiling effects and improve correlation to >0.90
 - **Stage 8**: Comprehensive end-to-end validation ensuring calibrated system integrates with /orchestrate and produces accurate expansion recommendations
 
 **Research Conducted** (2025-10-21):
 - Normalization techniques: IQR-based robust scaling prevents ceiling effects vs linear scaling
 - Correlation improvement: Feature sign verification, permutation importance, MCC validation
-- Current implementation analysis: Confirmed missing 5-factor formula, basic fallback active
+- Current implementation analysis: Confirmed missing 5-factor formula (now implemented in Stage 6)
 
 For detailed tasks and implementation, see [phase_3_complexity_evaluation.md](phase_3_complexity_evaluation.md)
 
