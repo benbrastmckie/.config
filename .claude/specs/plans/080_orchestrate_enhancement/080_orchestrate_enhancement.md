@@ -727,11 +727,29 @@ For detailed tasks and implementation, see [phase_3_4_compliance_and_cleanup.md]
 ---
 
 ### Phase 4: Plan Expansion - Hierarchical Structure and Automated Expansion
-**Status**: Expanded to detailed phase plan
+**Status**: IN PROGRESS - Stage 6 Complete ✓ (6/6 stages complete)
 **Complexity**: 9/10 (High)
-**Dependencies**: depends_on: [phase_3, phase_3_4]
+**Dependencies**: depends_on: [phase_3, phase_3_4] ✓
+**Progress**: Stage 6 Complete (2025-10-22)
 
-**Summary**: Implement automated plan expansion with expansion-specialist agent to create hierarchical plan structure (Level 0 → Level 1 → Level 2). Handles phase-to-stages expansion (L1) and stage-to-detailed-files expansion (L2), with recursive complexity evaluation to prevent over/under-expansion (max 2 levels). Updates parent plans with summaries and reference links, maintains expansion metadata history, and integrates with orchestrate.md as Phase 2.5 for conditional expansion workflow.
+**Summary**: Implement automated plan expansion with expansion-specialist agent to create hierarchical plan structure (Level 0 → Level 1 → Level 2). Handles phase-to-stages expansion (L1) and stage-to-detailed-files expansion (L2), with recursive complexity evaluation to prevent over/under-expansion (max 2 levels). Updates parent plans with summaries and reference links, maintains expansion metadata history, and integrates with orchestrate.md as Phase 4 for conditional expansion workflow.
+
+**Stage 6 Implementation (COMPLETED 2025-10-22)**:
+- ✓ Added Phase 4 (Plan Expansion) section to orchestrate.md (422 lines)
+- ✓ Documented conditional execution (triggers when EXPANSION_PENDING = true from Phase 2.5)
+- ✓ expansion-specialist agent invocation via Task tool with behavioral injection
+- ✓ 6-step expansion workflow: verify, invoke, validate, extract metadata, update state, display
+- ✓ Mandatory verification checkpoints with fallback mechanisms
+- ✓ Workflow state management for hierarchical plans (FINAL_STRUCTURE_LEVEL, PLAN_IS_HIERARCHICAL)
+- ✓ All validation tests passed (7/7 checks)
+
+**Stages Complete**:
+- ✓ Stage 1: expansion-specialist agent template
+- ✓ Stage 2: Level 1 expansion logic (Phase → Stages)
+- ✓ Stage 3: Level 2 expansion logic (Stage → Files)
+- ✓ Stage 4: Parent plan update logic
+- ✓ Stage 5: Recursive complexity evaluation
+- ✓ Stage 6: orchestrate.md integration
 
 For detailed tasks and implementation, see [phase_4_plan_expansion.md](phase_4_plan_expansion.md)
 
