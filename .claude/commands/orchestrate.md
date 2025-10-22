@@ -2744,31 +2744,33 @@ The implementation phase executes the plan using code-writer agent with behavior
    COMPLEXITY=$(grep "^- \*\*Complexity\*\*:" "$PLAN_PATH" | cut -d: -f2 | tr -d ' ')
    ```
 
-**EXECUTE NOW - Execute Implementation Plan**
+**EXECUTE NOW - Execute Implementation Plan with Wave-Based Parallel Execution**
 
-YOU MUST invoke the code-writer agent DIRECTLY (NOT via /implement command) to execute the plan created in the planning phase. This is the core execution step.
+YOU MUST invoke the implementer-coordinator agent to execute the plan created in the planning phase using wave-based parallel execution. This enables 40-60% time savings by running independent phases concurrently.
 
-**WHY THIS MATTERS**: This step performs the actual code changes. Without proper enforcement, the workflow stops at planning without implementation. The implementation phase is where plans become reality. Using behavioral injection ensures artifacts are created in the correct topic-based locations.
+**WHY THIS MATTERS**: This step performs the actual code changes using intelligent parallelization. The implementer-coordinator analyzes phase dependencies and creates execution "waves" where all independent phases in a wave run simultaneously. This preserves correctness (dependent phases still run in order) while maximizing speed.
 
 **MANDATORY INPUT**:
 - Plan path from planning phase: $IMPLEMENTATION_PLAN_PATH
 - Topic directory: $WORKFLOW_TOPIC_DIR
-- Topic number: Extracted from plan path
+- Topic number: $WORKFLOW_TOPIC_NUMBER
+- Artifact paths: From Phase 0 location context
 
 **CRITICAL REQUIREMENTS**:
-- YOU MUST use Task tool to invoke code-writer agent with behavioral injection
+- YOU MUST use Task tool to invoke implementer-coordinator agent with behavioral injection
 - YOU MUST pass plan path from planning phase
-- YOU MUST inject artifact paths for debug/outputs/scripts
+- YOU MUST inject artifact paths for debug/outputs/scripts/checkpoints
 - DO NOT use SlashCommand tool or /implement command
-- Timeout MUST be sufficient for multi-phase execution (600000ms minimum)
+- Timeout MUST be sufficient for multi-wave execution (900000ms minimum = 15 minutes)
 
 **CHECKPOINT BEFORE INVOCATION**:
 ```
-CHECKPOINT: Implementation phase starting
+CHECKPOINT: Wave-based implementation phase starting
 - Plan path: $IMPLEMENTATION_PLAN_PATH
 - Topic directory: $WORKFLOW_TOPIC_DIR
 - Plan verified: ✓ (from planning phase)
-- Invoking: code-writer agent with behavioral injection
+- Execution mode: Wave-based parallel
+- Invoking: implementer-coordinator agent with behavioral injection
 ```
 
 2. **Agent Invocation** (Step 3):
@@ -2778,144 +2780,263 @@ CHECKPOINT: Implementation phase starting
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Execute implementation plan with testing and progress tracking"
-  timeout: 600000  # 10 minutes for complex implementations
+  description: "Orchestrate wave-based implementation with parallel phase execution"
+  timeout: 900000  # 15 minutes for complex multi-phase implementations
   prompt: |
     Read and follow the behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/code-writer.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
 
-    You are acting as a Code Writer Agent for plan execution.
+    You are acting as an Implementer Coordinator Agent for wave-based execution.
 
     IMPLEMENTATION PLAN:
-    Read the complete implementation plan from:
+    Read and analyze the complete implementation plan from:
     ${IMPLEMENTATION_PLAN_PATH}
 
-    EXECUTION REQUIREMENTS:
-    1. **Phase-by-Phase Execution**: Execute each phase sequentially
-    2. **Task Completion**: Complete all tasks in each phase before proceeding
-    3. **Testing After Each Phase**: Run test suite after completing each phase
-    4. **Progress Updates**: Update plan file with task checkboxes [x] after completion
-    5. **Git Commits**: Create git commit after each phase completion
-    6. **Checkpoint Creation**: Save checkpoint if context window constrained
+    WAVE-BASED EXECUTION:
+    1. **Dependency Analysis**: Use dependency-analyzer.sh to build dependency graph and identify waves
+    2. **Wave Identification**: Group independent phases into parallel execution waves
+    3. **Parallel Execution**: Invoke multiple implementation-executor subagents concurrently per wave
+    4. **Progress Monitoring**: Track real-time progress from all executors
+    5. **Wave Synchronization**: Wait for all executors in a wave to complete before next wave
+    6. **Failure Handling**: Isolate failures, continue independent work
 
-    ARTIFACT ORGANIZATION (CRITICAL):
-    - **Debug Reports**: Save any debugging artifacts to ${WORKFLOW_TOPIC_DIR}/debug/
-    - **Test Outputs**: Save test results to ${WORKFLOW_TOPIC_DIR}/outputs/
-    - **Generated Scripts**: Save temporary scripts to ${WORKFLOW_TOPIC_DIR}/scripts/
-    - **Plan Updates**: Update ${IMPLEMENTATION_PLAN_PATH} with progress markers
+    TOPIC INFORMATION (FROM PHASE 0 LOCATION CONTEXT):
+    - **Topic Number**: ${WORKFLOW_TOPIC_NUMBER}
+    - **Topic Name**: ${WORKFLOW_TOPIC_NAME}
+    - **Topic Path**: ${WORKFLOW_TOPIC_DIR}
+
+    ARTIFACT PATHS (BEHAVIORAL INJECTION):
+    - **Plans**: ${ARTIFACT_PLANS}
+    - **Debug Reports**: ${ARTIFACT_DEBUG}
+    - **Test Outputs**: ${ARTIFACT_OUTPUTS}
+    - **Generated Scripts**: ${ARTIFACT_SCRIPTS}
+    - **Checkpoints**: ${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints/
+
+    EXECUTION WORKFLOW:
+
+    STEP 1: DEPENDENCY ANALYSIS
+    ```bash
+    # Invoke dependency-analyzer utility
+    source ${CLAUDE_PROJECT_DIR}/.claude/lib/dependency-analyzer.sh
+
+    # Analyze plan dependencies
+    DEPENDENCY_ANALYSIS=$(analyze_dependencies "${IMPLEMENTATION_PLAN_PATH}")
+
+    # Extract wave structure
+    WAVES=$(echo "$DEPENDENCY_ANALYSIS" | jq -r '.waves')
+    METRICS=$(echo "$DEPENDENCY_ANALYSIS" | jq -r '.metrics')
+
+    # Display wave structure to user
+    echo "Wave Structure Identified:"
+    echo "$WAVES" | jq '.'
+    echo ""
+    echo "Estimated Time Savings: $(echo "$METRICS" | jq -r '.time_savings_percentage')"
+    ```
+
+    STEP 2: WAVE EXECUTION LOOP
+    For each wave in wave structure:
+      A. Start all phases in wave in parallel (multiple implementation-executor invocations)
+      B. Monitor progress from all executors
+      C. Wait for wave completion
+      D. Handle any failures
+      E. Proceed to next wave
+
+    STEP 3: INVOKE PARALLEL EXECUTORS
+    For each phase in current wave, invoke implementation-executor subagent:
+
+    ```yaml
+    Task {
+      subagent_type: "general-purpose"
+      description: "Execute Phase N implementation"
+      timeout: 600000  # 10 minutes per phase
+      prompt: |
+        Read and follow behavioral guidelines from:
+        ${CLAUDE_PROJECT_DIR}/.claude/agents/implementation-executor.md
+
+        You are executing Phase N of the implementation plan.
+
+        Input:
+        - phase_file_path: [path to phase file or inline plan]
+        - topic_path: ${WORKFLOW_TOPIC_DIR}
+        - wave_number: [current wave]
+        - phase_number: N
+        - artifact_paths:
+            debug: ${ARTIFACT_DEBUG}
+            outputs: ${ARTIFACT_OUTPUTS}
+            scripts: ${ARTIFACT_SCRIPTS}
+
+        Execute all tasks in this phase, update plan hierarchy, run tests,
+        create git commit, report completion.
+    }
+    ```
+
+    (Invoke one Task per phase in wave, all in single message for parallelism)
+
+    STEP 4: PROGRESS AGGREGATION
+    - Collect progress updates from all executors
+    - Display real-time wave progress to user
+    - Update implementation state
+
+    STEP 5: FAILURE HANDLING
+    - If any executor fails: Mark phase as failed
+    - Check if failure blocks subsequent waves (dependency check)
+    - Continue with independent phases
+    - Report failure details for debugging
 
     TESTING PROTOCOL:
-    - Discover test command from CLAUDE.md testing protocols
-    - Run full test suite after each phase
-    - If tests fail: Report failures and STOP (debugging phase will handle)
-    - If tests pass: Continue to next phase
+    - Each implementation-executor runs tests after its phase
+    - Coordinator aggregates test results across all phases
+    - If any phase tests fail: Mark implementation as partial failure
 
     GIT COMMIT FORMAT:
-    After each phase completion, create commit with format:
+    Each implementation-executor creates commits per phase:
     feat(${WORKFLOW_TOPIC_NUMBER}): complete Phase N - [Phase Name]
 
-    Example: feat(027): complete Phase 2 - Backend Implementation
-
-    PROGRESS REPORTING:
-    Update plan file ${IMPLEMENTATION_PLAN_PATH} after each task/phase:
-    - Mark completed tasks: - [x] Task description
-    - Update phase status: **Status**: Completed
-    - Preserve all formatting and metadata
-
     CHECKPOINT MANAGEMENT:
-    If context window exceeds 80% capacity:
-    1. Create checkpoint: .claude/data/checkpoints/${WORKFLOW_TOPIC_NUMBER}_phase_N.json
-    2. Update plan with partial progress
-    3. Return checkpoint path for resumption
+    If any executor reports context pressure:
+    - Executor creates checkpoint
+    - Coordinator logs checkpoint path
+    - Continue with remaining phases
+    - Return checkpoint paths in final report
 
     RETURN FORMAT:
-    After implementation completes (or checkpoint created):
+    After all waves complete (or failure):
 
-    IMPLEMENTATION_STATUS: [complete|partial|failed]
-    TESTS_PASSING: [true|false]
-    PHASES_COMPLETED: N
-    FILES_MODIFIED: [list of file paths]
-    COMMIT_HASHES: [list of git commit hashes]
-    CHECKPOINT_PATH: [path if checkpoint created, else "none"]
-    FAILURE_REASON: [if failed, brief description]
+    IMPLEMENTATION REPORT
+    Status: [completed|partial|failed]
+    Waves Executed: N
+    Total Phases: M
+    Successful Phases: S
+    Failed Phases: F
+    Elapsed Time: X hours
+    Estimated Sequential Time: Y hours
+    Time Savings: Z%
+    Git Commits: [count]
+    Checkpoints: [paths if any]
 
-    If tests fail, include:
-    FAILED_TESTS: [list of failed test names]
-    TEST_OUTPUT_PATH: ${WORKFLOW_TOPIC_DIR}/outputs/test_failures.txt
+    If failures occurred:
+    FAILED PHASES:
+    - Phase N: [name] - [error summary]
+    - Phase M: [name] - [error summary]
+
+    Test Results Summary:
+    - Phases with passing tests: N
+    - Phases with failing tests: M
+    - Test output paths: [list]
 }
 ```
 
-**MANDATORY VERIFICATION - Implementation Status**
+**MANDATORY VERIFICATION - Wave-Based Implementation Status**
 
-After code-writer agent completes, YOU MUST verify implementation status and test results. This verification is NOT optional.
+After implementer-coordinator agent completes, YOU MUST verify implementation status, wave execution metrics, and test results. This verification is NOT optional.
 
-**WHY THIS MATTERS**: Without status verification, determining implementation success or debugging needs is impossible. Test status determines whether to proceed to documentation or enter debugging loop.
+**WHY THIS MATTERS**: Without status verification, determining implementation success or debugging needs is impossible. Wave metrics show parallelization performance. Test status determines whether to proceed to documentation or enter debugging loop.
 
-**EXECUTE NOW - Extract and Verify Implementation Status**:
+**EXECUTE NOW - Extract and Verify Wave Execution Status**:
 
 ```bash
-# STEP 1: Extract test status from code-writer agent output
-# Expected format includes: "Tests passing: ✓" or "Tests passing: ✗"
-IMPLEMENT_OUTPUT="[capture code-writer agent output]"
+# STEP 1: Extract implementation status from implementer-coordinator output
+# Expected format: "Status: completed|partial|failed"
+IMPLEMENT_OUTPUT="[capture implementer-coordinator agent output]"
 
-# Extract test status
-TESTS_PASSING=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Tests passing:\s*\K[✓✗]' | head -1)
+# Extract status
+IMPLEMENTATION_STATUS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Status:\s*\K(completed|partial|failed)' | head -1)
 
-if [ "$TESTS_PASSING" == "✓" ]; then
-  echo "✓ VERIFIED: All tests passing"
-  IMPLEMENTATION_SUCCESS=true
-elif [ "$TESTS_PASSING" == "✗" ]; then
-  echo "❌ TESTS FAILING"
-  IMPLEMENTATION_SUCCESS=false
+case "$IMPLEMENTATION_STATUS" in
+  "completed")
+    echo "✓ VERIFIED: Implementation completed successfully"
+    IMPLEMENTATION_SUCCESS=true
+    ;;
+  "partial")
+    echo "⚠️  WARNING: Implementation partially completed (some phases failed)"
+    IMPLEMENTATION_SUCCESS=false
+    ;;
+  "failed")
+    echo "❌ CRITICAL: Implementation failed"
+    IMPLEMENTATION_SUCCESS=false
+    ;;
+  *)
+    echo "⚠️  WARNING: Could not determine implementation status from output"
+    IMPLEMENTATION_SUCCESS=unknown
+    ;;
+esac
+
+# STEP 2: Extract wave execution metrics
+WAVES_EXECUTED=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Waves Executed:\s*\K\d+' | head -1)
+TOTAL_PHASES=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Total Phases:\s*\K\d+' | head -1)
+SUCCESSFUL_PHASES=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Successful Phases:\s*\K\d+' | head -1)
+FAILED_PHASES=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Failed Phases:\s*\K\d+' | head -1)
+TIME_SAVINGS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Time Savings:\s*\K\d+%' | head -1)
+GIT_COMMITS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Git Commits:\s*\K\d+' | head -1)
+
+echo "Wave Execution Metrics:"
+echo "- Waves executed: $WAVES_EXECUTED"
+echo "- Total phases: $TOTAL_PHASES"
+echo "- Successful phases: $SUCCESSFUL_PHASES"
+echo "- Failed phases: $FAILED_PHASES"
+echo "- Time savings: $TIME_SAVINGS"
+echo "- Git commits: $GIT_COMMITS"
+
+# STEP 3: Extract test results
+# Check Test Results Summary section
+PHASES_WITH_PASSING_TESTS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Phases with passing tests:\s*\K\d+' | head -1)
+PHASES_WITH_FAILING_TESTS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Phases with failing tests:\s*\K\d+' | head -1)
+
+if [[ "$PHASES_WITH_FAILING_TESTS" == "0" || -z "$PHASES_WITH_FAILING_TESTS" ]]; then
+  echo "✓ VERIFIED: All phase tests passing"
+  TESTS_PASSING=true
 else
-  echo "⚠️  WARNING: Could not determine test status from output"
-  IMPLEMENTATION_SUCCESS=unknown
+  echo "❌ TESTS FAILING in $PHASES_WITH_FAILING_TESTS phase(s)"
+  TESTS_PASSING=false
 fi
 
-# STEP 2: Extract phases completed
-PHASES_COMPLETED=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Phases completed:\s*\K\d+/\d+' | head -1)
-echo "Phases completed: $PHASES_COMPLETED"
-
-# STEP 3: Extract files modified
-FILES_MODIFIED=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Files modified:\s*\K\d+' | head -1)
-echo "Files modified: $FILES_MODIFIED"
-
-# STEP 4: Extract git commits
-GIT_COMMITS=$(echo "$IMPLEMENT_OUTPUT" | grep -oP 'Git commits:\s*\K\d+' | head -1)
-echo "Git commits: $GIT_COMMITS"
+# STEP 4: Extract checkpoint paths (if any)
+CHECKPOINTS=$(echo "$IMPLEMENT_OUTPUT" | sed -n '/Checkpoints:/,/^$/p' | grep -v "Checkpoints:" | grep -v "^$")
+if [[ -n "$CHECKPOINTS" ]]; then
+  echo "⚠️  Checkpoints created: $CHECKPOINTS"
+fi
 
 # Export status for documentation phase
 export IMPLEMENTATION_SUCCESS
+export IMPLEMENTATION_STATUS
 export TESTS_PASSING
-export PHASES_COMPLETED
-export FILES_MODIFIED
+export WAVES_EXECUTED
+export TOTAL_PHASES
+export SUCCESSFUL_PHASES
+export FAILED_PHASES
+export TIME_SAVINGS
 export GIT_COMMITS
+export CHECKPOINTS
 ```
 
 **MANDATORY VERIFICATION CHECKLIST**:
 
 YOU MUST confirm before proceeding to documentation:
 
-- [ ] Test status extracted (passing or failing)
-- [ ] Phases completed count extracted
-- [ ] Files modified count extracted
+- [ ] Implementation status extracted (completed/partial/failed)
+- [ ] Wave execution metrics extracted
+- [ ] Test status determined (all passing or failures present)
+- [ ] Time savings calculated (from parallel execution)
 - [ ] Git commits count extracted
 - [ ] Implementation status exported
 
 **CHECKPOINT REQUIREMENT**:
 ```
-CHECKPOINT: Implementation phase complete
-- Implementation status: $IMPLEMENTATION_SUCCESS
+CHECKPOINT: Wave-based implementation phase complete
+- Implementation status: $IMPLEMENTATION_STATUS
 - Tests passing: $TESTS_PASSING
-- Phases completed: $PHASES_COMPLETED
-- Files modified: $FILES_MODIFIED
+- Waves executed: $WAVES_EXECUTED
+- Successful phases: $SUCCESSFUL_PHASES
+- Failed phases: $FAILED_PHASES
+- Time savings: $TIME_SAVINGS (vs sequential execution)
 - Git commits: $GIT_COMMITS
+- Checkpoints: $CHECKPOINTS
 - Proceeding to: Documentation phase (if tests passing) OR Debugging loop (if tests failing)
 ```
 
 **CONDITIONAL LOGIC** (if tests failing):
 
-If $IMPLEMENTATION_SUCCESS is false, trigger debugging loop NOW (see below).
+If $TESTS_PASSING is false, trigger debugging loop NOW (see below).
 If tests passing, proceed directly to documentation phase.
 
 3. **Result Parsing** (Step 4 - Legacy Reference):
