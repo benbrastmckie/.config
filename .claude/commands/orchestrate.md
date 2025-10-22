@@ -2126,8 +2126,8 @@ CHECKPOINT: Implementation phase complete
 
 **CONDITIONAL LOGIC** (if tests failing):
 
-If $IMPLEMENTATION_SUCCESS is false, trigger debugging loop (not part of this task).
-For this orchestration, proceed to documentation phase regardless (document current state).
+If $IMPLEMENTATION_SUCCESS is false, trigger debugging loop NOW (see below).
+If tests passing, proceed directly to documentation phase.
 
 3. **Result Parsing** (Step 4 - Legacy Reference):
    ```python
@@ -2280,6 +2280,412 @@ Options:
   3. Continue to documentation with known test failures (not recommended)
 
 Workflow paused - awaiting user input.
+```
+
+---
+
+## Debugging Loop (Conditional)
+
+**CONDITIONAL ENTRY**: Only enter this section if `$TESTS_PASSING == false` from Implementation Phase.
+
+If tests are passing, skip this entire section and proceed directly to Documentation Phase.
+
+### Step 1: Initialize Debug Loop State
+
+**EXECUTE NOW - Initialize Debugging Variables**:
+
+```bash
+# Initialize debug iteration counter
+DEBUG_ITERATION=0
+MAX_DEBUG_ITERATIONS=3
+
+# Initialize debug state arrays
+DEBUG_REPORTS=()
+DEBUG_ISSUES_RESOLVED=()
+
+# Store initial error information
+INITIAL_ERROR_MESSAGE="$ERROR_MESSAGE"
+INITIAL_FAILED_PHASE="$FAILED_PHASE"
+
+echo "═══════════════════════════════════════════════════════"
+echo "ENTERING DEBUGGING LOOP"
+echo "═══════════════════════════════════════════════════════"
+echo ""
+echo "Test Failure Detected:"
+echo "- Failed Phase: $INITIAL_FAILED_PHASE"
+echo "- Error Message: $INITIAL_ERROR_MESSAGE"
+echo "- Max Iterations: $MAX_DEBUG_ITERATIONS"
+echo ""
+```
+
+### Step 2: Generate Debug Topic Slug (First Iteration Only)
+
+**EXECUTE NOW - Create Debug Topic Slug**:
+
+```bash
+# Extract error type from test output (first iteration only)
+# Example: "auth_spec.lua:42 - Expected 200, got 401" → "expected_200_got_401"
+# Example: "Timeout in async operation" → "timeout_async_operation"
+
+DEBUG_SLUG=$(echo "$ERROR_MESSAGE" | \
+  sed 's/.*: //' | \           # Remove everything before last colon
+  tr ' ' '_' | \                # Replace spaces with underscores
+  tr '[:upper:]' '[:lower:]' | \ # Convert to lowercase
+  sed 's/[^a-z0-9_]//g' | \     # Remove non-alphanumeric except underscores
+  cut -c1-50)                   # Limit to 50 characters
+
+# Fallback if slug is empty
+if [[ -z "$DEBUG_SLUG" ]]; then
+  DEBUG_SLUG="test_failure_phase${INITIAL_FAILED_PHASE}"
+fi
+
+echo "Debug Topic Slug: $DEBUG_SLUG"
+```
+
+### Step 3: Debug Loop Execution
+
+**EXECUTE NOW - Enter Debug Iteration Loop**:
+
+```bash
+while [[ $DEBUG_ITERATION -lt $MAX_DEBUG_ITERATIONS ]] && [[ "$TESTS_PASSING" == "false" ]]; do
+  DEBUG_ITERATION=$((DEBUG_ITERATION + 1))
+
+  echo ""
+  echo "───────────────────────────────────────────────────────"
+  echo "DEBUG ITERATION $DEBUG_ITERATION of $MAX_DEBUG_ITERATIONS"
+  echo "───────────────────────────────────────────────────────"
+  echo ""
+
+  # Generate debug filename with iteration suffix (iter2, iter3)
+  if [[ $DEBUG_ITERATION -eq 1 ]]; then
+    DEBUG_FILENAME="${TOPIC_NUMBER}_debug_${DEBUG_SLUG}.md"
+  else
+    DEBUG_FILENAME="${TOPIC_NUMBER}_debug_${DEBUG_SLUG}_iter${DEBUG_ITERATION}.md"
+  fi
+
+  DEBUG_REPORT_PATH="${ARTIFACT_DEBUG}${DEBUG_FILENAME}"
+
+  echo "Debug Report Path: $DEBUG_REPORT_PATH"
+  echo ""
+```
+
+### Step 4: Invoke Debug-Analyst Agent
+
+**EXECUTE NOW - Invoke Debug-Analyst with Behavioral Injection**:
+
+Use the Task tool to invoke debug-analyst agent with artifact path injection:
+
+```yaml
+subagent_type: general-purpose
+
+description: "Investigate test failure and create debug report (iteration $DEBUG_ITERATION)"
+
+timeout: 300000  # 5 minutes for investigation
+
+prompt: |
+  Read and follow the behavioral guidelines from:
+  ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+
+  You are acting as a Debug Analyst Agent.
+
+  OPERATION: Investigate test failure and propose fix
+
+  Context:
+   - Iteration: ${DEBUG_ITERATION} of ${MAX_DEBUG_ITERATIONS}
+   - Issue: ${ERROR_MESSAGE}
+   - Failed tests: ${FAILED_TEST_LIST}
+   - Failed phase: ${FAILED_PHASE}
+   - Modified files: ${FILES_MODIFIED}
+   - Test output file: ${ARTIFACT_OUTPUTS}test_failures.txt
+   - Project root: ${PROJECT_ROOT}
+   - Project standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+  ARTIFACT ORGANIZATION (CRITICAL - From Phase 0 Location Context):
+   - Save debug report to: ${ARTIFACT_DEBUG}
+   - Filename: ${DEBUG_FILENAME}
+   - Full absolute path: ${DEBUG_REPORT_PATH}
+   - DO NOT use relative paths
+   - DO NOT save to arbitrary locations
+   - NOTE: Debug reports are COMMITTED (not gitignored) for issue tracking
+
+  Investigation Requirements:
+   - Read test failure output from ${ARTIFACT_OUTPUTS}test_failures.txt
+   - Analyze root cause with evidence from code and test output
+   - Reproduce test failure if possible
+   - Propose specific fix with:
+     - Exact file paths and line numbers
+     - Code examples showing before/after
+     - Rationale for the fix
+   - Assess impact and fix complexity
+   - Rate confidence level in proposed fix (Low/Medium/High)
+
+  RETURN FORMAT (you must return this structure):
+
+  DEBUG_REPORT_CREATED: ${DEBUG_REPORT_PATH}
+
+  Root Cause Summary (50 words max):
+  [concise summary of findings - what caused the failure and why]
+
+  Proposed Fix Summary (30 words max):
+  [brief description of the recommended fix]
+
+  Confidence Level: [Low|Medium|High]
+```
+
+**MANDATORY VERIFICATION CHECKPOINT**:
+
+```bash
+# Verify debug report was created by debug-analyst
+if [[ ! -f "$DEBUG_REPORT_PATH" ]]; then
+  echo "ERROR: Debug report not created at $DEBUG_REPORT_PATH"
+  echo "FALLBACK: Creating minimal debug report template"
+
+  mkdir -p "$(dirname "$DEBUG_REPORT_PATH")"
+  cat > "$DEBUG_REPORT_PATH" <<'EOF'
+# Debug Report - Iteration ${DEBUG_ITERATION}
+
+## Issue
+${ERROR_MESSAGE}
+
+## Root Cause
+[Debug-analyst agent failed to create report - manual investigation required]
+
+## Proposed Fix
+[Manual intervention needed]
+
+## Confidence
+Low - automated analysis failed
+EOF
+
+  echo "Minimal debug report created at: $DEBUG_REPORT_PATH"
+fi
+
+echo "✓ VERIFIED: Debug report exists at $DEBUG_REPORT_PATH"
+```
+
+### Step 5: Parse Debug-Analyst Response
+
+**EXECUTE NOW - Extract Debug Report Metadata**:
+
+```bash
+# Extract debug report path from agent response
+DEBUG_REPORT_CREATED=$(echo "$AGENT_OUTPUT" | grep "DEBUG_REPORT_CREATED:" | cut -d: -f2- | tr -d ' ')
+
+# Extract root cause summary (50-word summary)
+ROOT_CAUSE_SUMMARY=$(echo "$AGENT_OUTPUT" | sed -n '/Root Cause Summary/,/^$/p' | tail -n +2 | head -n -1)
+
+# Extract proposed fix summary (30-word summary)
+PROPOSED_FIX_SUMMARY=$(echo "$AGENT_OUTPUT" | sed -n '/Proposed Fix Summary/,/^$/p' | tail -n +2 | head -n -1)
+
+# Extract confidence level
+CONFIDENCE_LEVEL=$(echo "$AGENT_OUTPUT" | grep "Confidence Level:" | cut -d: -f2 | tr -d ' ')
+
+# Store report path in array
+DEBUG_REPORTS+=("$DEBUG_REPORT_PATH")
+
+# Display summary
+echo "Debug Analysis Complete:"
+echo "- Report: $DEBUG_REPORT_PATH"
+echo "- Root Cause: $ROOT_CAUSE_SUMMARY"
+echo "- Proposed Fix: $PROPOSED_FIX_SUMMARY"
+echo "- Confidence: $CONFIDENCE_LEVEL"
+echo ""
+```
+
+### Step 6: Apply Fix from Debug Report
+
+**EXECUTE NOW - Invoke Code-Writer to Apply Fix**:
+
+Use the Task tool to apply the fix proposed in the debug report:
+
+```yaml
+subagent_type: general-purpose
+
+description: "Apply fix from debug report (iteration $DEBUG_ITERATION)"
+
+timeout: 300000  # 5 minutes for fix application
+
+prompt: |
+  Read and follow the behavioral guidelines from:
+  ${CLAUDE_PROJECT_DIR}/.claude/agents/code-writer.md
+
+  You are acting as a Code Writer Agent.
+
+  OPERATION: Apply fix proposed in debug report
+
+  Context:
+   - Debug report path: ${DEBUG_REPORT_PATH}
+   - Debug iteration: ${DEBUG_ITERATION}
+   - Project root: ${PROJECT_ROOT}
+   - Project standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
+
+  Task:
+   1. Read the debug report at: ${DEBUG_REPORT_PATH}
+   2. Locate the "Proposed Fix" section
+   3. Implement the code changes exactly as recommended
+   4. Use Edit tool to modify files at specified line numbers
+   5. Follow project coding standards from CLAUDE.md
+   6. Create git commit with message: "fix: apply debug iteration ${DEBUG_ITERATION} - ${PROPOSED_FIX_SUMMARY}"
+
+  Files to Modify:
+   - Files listed in debug report "Proposed Fix" section
+   - Make ONLY the changes specified in the report
+   - Do NOT make additional "improvements" beyond the fix
+
+  RETURN FORMAT:
+
+  FIX_APPLIED: true
+  FILES_MODIFIED: [list of modified files]
+  GIT_COMMIT: [commit hash]
+```
+
+### Step 7: Re-Run Tests After Fix
+
+**EXECUTE NOW - Re-Run Test Suite**:
+
+```bash
+echo "Re-running test suite after fix application..."
+echo ""
+
+# Re-run the same tests that failed
+# (Using same test command from implementation phase)
+
+TEST_OUTPUT=$(run_tests_command 2>&1)
+TEST_EXIT_CODE=$?
+
+# Save test output to artifact
+echo "$TEST_OUTPUT" > "${ARTIFACT_OUTPUTS}test_failures_iter${DEBUG_ITERATION}.txt"
+
+# Parse test results
+if [[ $TEST_EXIT_CODE -eq 0 ]]; then
+  TESTS_PASSING="true"
+  echo "✓ TESTS PASSING after debug iteration $DEBUG_ITERATION"
+  echo ""
+
+  # Record resolved issue
+  DEBUG_ISSUES_RESOLVED+=("Iteration $DEBUG_ITERATION: $PROPOSED_FIX_SUMMARY")
+
+else
+  TESTS_PASSING="false"
+
+  # Extract new error message for next iteration
+  ERROR_MESSAGE=$(echo "$TEST_OUTPUT" | grep -E "Error:|FAIL:" | head -n 1)
+
+  echo "✗ TESTS STILL FAILING after debug iteration $DEBUG_ITERATION"
+  echo "New Error: $ERROR_MESSAGE"
+  echo ""
+fi
+```
+
+### Step 8: Iteration Control Logic
+
+**EXECUTE NOW - Evaluate Loop Continuation**:
+
+```bash
+# End of while loop - loop continues if:
+# - DEBUG_ITERATION < MAX_DEBUG_ITERATIONS (3)
+# - AND TESTS_PASSING == "false"
+
+done  # End of debugging loop
+```
+
+### Step 9: Post-Loop Evaluation
+
+**EXECUTE NOW - Evaluate Final Debug Status**:
+
+```bash
+echo "═══════════════════════════════════════════════════════"
+echo "DEBUGGING LOOP COMPLETE"
+echo "═══════════════════════════════════════════════════════"
+echo ""
+
+if [[ "$TESTS_PASSING" == "true" ]]; then
+  # SUCCESS PATH: Tests resolved after debugging
+  echo "✓ DEBUGGING SUCCESSFUL"
+  echo ""
+  echo "Debug Summary:"
+  echo "- Total Iterations: $DEBUG_ITERATION"
+  echo "- Debug Reports Created: ${#DEBUG_REPORTS[@]}"
+  echo "- Issues Resolved:"
+  for issue in "${DEBUG_ISSUES_RESOLVED[@]}"; do
+    echo "  - $issue"
+  done
+  echo ""
+  echo "Debug Reports:"
+  for report in "${DEBUG_REPORTS[@]}"; do
+    echo "  - $report"
+  done
+  echo ""
+  echo "Proceeding to Documentation Phase with resolved test failures."
+  echo ""
+
+  # Update workflow state
+  DEBUG_STATUS="resolved"
+
+else
+  # ESCALATION PATH: Tests still failing after max iterations
+  echo "⚠️  DEBUGGING ESCALATION - Manual Intervention Required"
+  echo ""
+  echo "Debugging Attempts: $DEBUG_ITERATION iterations"
+  echo ""
+  echo "Debug Reports Created:"
+  for i in "${!DEBUG_REPORTS[@]}"; do
+    echo "  $((i+1)). ${DEBUG_REPORTS[$i]}"
+  done
+  echo ""
+  echo "Last Error: $ERROR_MESSAGE"
+  echo ""
+
+  # Save escalation checkpoint
+  ESCALATION_CHECKPOINT="${CHECKPOINT_DIR}/080_phase1_debug_escalation.json"
+  cat > "$ESCALATION_CHECKPOINT" <<EOF
+{
+  "workflow_id": "${WORKFLOW_ID}",
+  "phase": "debugging_escalation",
+  "debug_iteration": ${DEBUG_ITERATION},
+  "debug_reports": $(printf '%s\n' "${DEBUG_REPORTS[@]}" | jq -R . | jq -s .),
+  "last_error": "${ERROR_MESSAGE}",
+  "tests_passing": false,
+  "timestamp": "$(date -Iseconds)"
+}
+EOF
+
+  echo "Checkpoint Saved: $ESCALATION_CHECKPOINT"
+  echo ""
+  echo "Options:"
+  echo "  1. Review debug reports and provide guidance"
+  echo "  2. Adjust plan complexity and retry implementation"
+  echo "  3. Continue to documentation with known test failures (not recommended)"
+  echo ""
+  echo "Workflow paused - awaiting user input."
+  echo ""
+
+  # Update workflow state
+  DEBUG_STATUS="escalated"
+
+  # PAUSE WORKFLOW - wait for user decision
+  # (In actual implementation, this would return control to user)
+  exit 1
+fi
+```
+
+### Step 10: Update Workflow State with Debug Results
+
+**EXECUTE NOW - Store Debug Results in Workflow State**:
+
+```bash
+# Update workflow state with debugging results
+WORKFLOW_STATE_DEBUG_ITERATION=$DEBUG_ITERATION
+WORKFLOW_STATE_DEBUG_REPORTS=("${DEBUG_REPORTS[@]}")
+WORKFLOW_STATE_DEBUG_STATUS="$DEBUG_STATUS"
+WORKFLOW_STATE_TESTS_PASSING="$TESTS_PASSING"
+
+echo "Workflow state updated with debug results:"
+echo "- Debug iterations: $WORKFLOW_STATE_DEBUG_ITERATION"
+echo "- Debug reports: ${#WORKFLOW_STATE_DEBUG_REPORTS[@]}"
+echo "- Debug status: $WORKFLOW_STATE_DEBUG_STATUS"
+echo "- Tests passing: $WORKFLOW_STATE_TESTS_PASSING"
+echo ""
 ```
 
 ---
@@ -2536,6 +2942,25 @@ prompt: |
   - Parallelization Savings: [time_saved_percentage% or "N/A"]
   - Error Recovery Rate: [recovery_success_rate% or "100% (no errors)"]
 
+  ### ARTIFACT ORGANIZATION (CRITICAL - From Phase 0 Location Context)
+
+  - **Summary Path**: ${ARTIFACT_SUMMARIES}${TOPIC_NUMBER}_workflow_summary.md
+  - **Topic Number**: ${TOPIC_NUMBER}
+  - **Topic Name**: ${TOPIC_NAME}
+  - **Topic Path**: ${TOPIC_PATH}
+  - **All Artifact Paths** (for cross-references):
+    - Reports: ${ARTIFACT_REPORTS}
+    - Plans: ${ARTIFACT_PLANS}
+    - Debug: ${ARTIFACT_DEBUG}
+    - Summaries: ${ARTIFACT_SUMMARIES}
+    - Outputs: ${ARTIFACT_OUTPUTS}
+
+  **CRITICAL REQUIREMENTS**:
+  - Use the summary path from location context (NOT calculated manually)
+  - DO NOT use relative paths - all paths are absolute
+  - DO NOT calculate summary directory from plan path
+  - Summary metadata MUST include topic information (see below)
+
   ### Documentation Requirements
 
   1. **Update Project Documentation**:
@@ -2557,21 +2982,16 @@ YOU MUST create a comprehensive workflow summary documenting the entire orchestr
 - Implementation status (from Implementation Phase)
 - All phase metrics (timing, file counts, etc.)
 
-**EXECUTE NOW - Calculate Summary Path**:
+**EXECUTE NOW - Get Summary Path from Phase 0 Location Context**:
 
 ```bash
-# STEP 1: Calculate summary path (same directory as plan)
-PLAN_DIR=$(dirname "$IMPLEMENTATION_PLAN_PATH")
-PLAN_BASE=$(basename "$IMPLEMENTATION_PLAN_PATH" .md)
-PLAN_NUM=$(echo "$PLAN_BASE" | grep -oP '^\d+')
+# STEP 1: Use summary path from Phase 0 location context (no manual calculation needed)
+# Phase 0 already created the summaries/ directory and determined the topic number
 
-# Summary goes in same topic directory, summaries/ subdirectory
-SUMMARY_DIR="$(dirname "$PLAN_DIR")/summaries"
-mkdir -p "$SUMMARY_DIR"
-
-SUMMARY_PATH="$SUMMARY_DIR/${PLAN_NUM}_workflow_summary.md"
+SUMMARY_PATH="${ARTIFACT_SUMMARIES}${TOPIC_NUMBER}_workflow_summary.md"
 
 echo "Summary will be created at: $SUMMARY_PATH"
+echo "(Path from Phase 0 location context - no manual calculation needed)"
 ```
 
   2. **Create Workflow Summary**:
@@ -2587,10 +3007,20 @@ echo "Summary will be created at: $SUMMARY_PATH"
 
      ## Metadata
      - **Date Completed**: [YYYY-MM-DD]
-     - **Specs Directory**: [specs_directory_path]
-     - **Summary Number**: [NNN] (matches plan number)
+     - **Topic Number**: ${TOPIC_NUMBER}
+     - **Topic Name**: ${TOPIC_NAME}
+     - **Topic Path**: ${TOPIC_PATH}
      - **Workflow Type**: [feature|refactor|debug|investigation]
      - **Original Request**: [workflow_description]
+     - **Completion Status**: [success|success_with_debugging|partial]
+
+     ## Artifact Organization
+     All artifacts for this workflow are organized in:
+     - **Reports**: ${ARTIFACT_REPORTS}
+     - **Plans**: ${ARTIFACT_PLANS}
+     - **Summaries**: ${ARTIFACT_SUMMARIES}
+     - **Debug**: ${ARTIFACT_DEBUG} (if debugging occurred)
+     - **Outputs**: ${ARTIFACT_OUTPUTS}
      - **Total Duration**: [HH:MM:SS]
 
      ## Workflow Execution
@@ -2859,7 +3289,78 @@ CHECKPOINT: Documentation phase complete
 - [ ] Cross-reference instructions explicit
 - [ ] Agent execution monitored (progress markers)
 
-#### Step 4: Extract Documentation Results
+#### Step 4: Validate Summary Creation
+
+**MANDATORY VERIFICATION - Summary File Created in Correct Location**:
+
+```bash
+EXPECTED_SUMMARY_PATH="${ARTIFACT_SUMMARIES}${TOPIC_NUMBER}_workflow_summary.md"
+
+if [[ ! -f "$EXPECTED_SUMMARY_PATH" ]]; then
+  echo "ERROR: Workflow summary not created at expected location: $EXPECTED_SUMMARY_PATH"
+  echo ""
+
+  # FALLBACK MECHANISM: Search for summary file in common locations
+  echo "Searching for summary file in topic directory..."
+  FOUND_SUMMARY=$(find "${TOPIC_PATH}" -name "*workflow_summary.md" -o -name "*summary.md" 2>/dev/null | head -n 1)
+
+  if [[ -n "$FOUND_SUMMARY" ]]; then
+    echo "⚠️  Found summary in wrong location: $FOUND_SUMMARY"
+    echo "Moving to correct location: $EXPECTED_SUMMARY_PATH"
+
+    mkdir -p "$(dirname "$EXPECTED_SUMMARY_PATH")"
+    mv "$FOUND_SUMMARY" "$EXPECTED_SUMMARY_PATH"
+
+    echo "✓ Summary moved to correct location"
+  else
+    echo "CRITICAL: Workflow summary not found anywhere in topic directory"
+    echo "Creating minimal summary template as fallback..."
+
+    mkdir -p "$(dirname "$EXPECTED_SUMMARY_PATH")"
+    cat > "$EXPECTED_SUMMARY_PATH" <<EOF
+# Workflow Summary: ${WORKFLOW_DESCRIPTION}
+
+## Metadata
+- **Date Completed**: $(date -u +%Y-%m-%d)
+- **Topic Number**: ${TOPIC_NUMBER}
+- **Topic Name**: ${TOPIC_NAME}
+- **Topic Path**: ${TOPIC_PATH}
+- **Workflow Type**: feature
+- **Original Request**: ${WORKFLOW_DESCRIPTION}
+- **Completion Status**: partial (doc-writer failed to create summary)
+
+## Artifact Organization
+All artifacts for this workflow are organized in:
+- **Reports**: ${ARTIFACT_REPORTS}
+- **Plans**: ${ARTIFACT_PLANS}
+- **Summaries**: ${ARTIFACT_SUMMARIES}
+- **Debug**: ${ARTIFACT_DEBUG}
+- **Outputs**: ${ARTIFACT_OUTPUTS}
+
+## Note
+This summary was auto-generated as a fallback because the doc-writer agent
+did not create the summary file. Manual documentation recommended.
+EOF
+
+    echo "✓ Minimal summary created at: $EXPECTED_SUMMARY_PATH"
+  fi
+else
+  echo "✓ VERIFIED: Workflow summary validated at: $EXPECTED_SUMMARY_PATH"
+fi
+
+# Verify summary includes topic metadata
+echo "Verifying summary metadata includes topic information..."
+if grep -q "Topic Number:" "$EXPECTED_SUMMARY_PATH" && \
+   grep -q "Topic Path:" "$EXPECTED_SUMMARY_PATH"; then
+  echo "✓ VERIFIED: Summary includes topic metadata"
+else
+  echo "⚠️  WARNING: Summary missing topic metadata - may need manual update"
+fi
+
+echo ""
+```
+
+#### Step 5: Extract Documentation Results
 
 PARSE the doc-writer agent output to extract and validate documentation results.
 

@@ -445,26 +445,45 @@ For detailed tasks and implementation, see [phase_0_critical_remove_command_invo
 
 ---
 
-### Phase 1: Foundation - Location Specialist and Artifact Organization [IN PROGRESS]
-**Status**: Stages 1-4 COMPLETED ✓, Stage 5 Skipped
-**Complexity**: 7/10 (Medium-High)
+### Phase 1: Foundation - Location Specialist and Artifact Organization [COMPLETED]
+**Status**: COMPLETED ✓
+**Complexity**: 8/10 (Medium-High) - Increased due to debug loop complexity
 **Dependencies**: depends_on: [phase_0] ✓
-**Completed**: 2025-10-21 (partial)
+**Completed**: 2025-10-21
 **Commit**: Pending
+**Revision**: 2025-10-21 - Expanded scope to include debug loop and documentation phase
 
-**Summary**: Implemented Phase 0 (Project Location Determination) with location-specialist agent and enforced artifact organization for Research and Planning phases. Location-specialist creates topic-based directory structure (`specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/`), and artifact paths are injected into research-specialist and plan-architect prompts via [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md). Inline validation ensures artifacts are created in correct locations with automatic fallback.
+**Summary**: Implemented Phase 0 (Project Location Determination) with location-specialist agent and enforced artifact organization across ALL phases of /orchestrate workflow (Research, Planning, Implementation, Debug, Documentation). Location-specialist creates topic-based directory structure (`specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/`), and artifact paths are injected into all subagent prompts via [Behavioral Injection Pattern](../../../docs/concepts/patterns/behavioral-injection.md). Inline validation ensures artifacts are created in correct locations with automatic fallback.
 
-**Implementation Results (Stages 1-4)**:
+**Phase 1 expanded to include debug loop implementation and documentation phase artifact injection to fully complete the artifact organization foundation before proceeding to Phases 3-5.**
+
+**Implementation Results**:
 - ✅ Stage 1: location-specialist agent created (.claude/agents/location-specialist.md)
 - ✅ Stage 2: Phase 0 integrated into orchestrate.md (8-phase workflow established)
 - ✅ Stage 3: Research phase artifact injection with validation
 - ✅ Stage 4: Planning phase artifact injection with topic metadata
 - ⊘ Stage 5: Skipped (inline validation sufficient, separate utility not needed)
+- ✅ Stage 6: Debug loop with artifact path injection (COMPLETED - Complexity 8/10)
+- ✅ Stage 7: Documentation phase artifact path injection (COMPLETED - Complexity 4/10)
 
-**Remaining Work**:
-- Debug phase artifact injection (blocked: debug phase not yet implemented)
-- Documentation phase artifact injection (blocked: doc phase not yet implemented)
-- End-to-end testing with actual /orchestrate workflow
+**Stage 6 Implementation (Debug Loop)**:
+- Debug loop added to orchestrate.md between Implementation and Documentation phases
+- debug-analyst agent invoked via Task tool with behavioral injection
+- Artifact paths injected: ARTIFACT_DEBUG, ARTIFACT_OUTPUTS, ARTIFACT_SCRIPTS
+- Fix application loop: debug → fix → test → evaluate (max 3 iterations)
+- Escalation handling: displays all debug reports and pauses workflow
+- Validation with fallback: ensures debug reports in correct topic-based location
+
+**Stage 7 Implementation (Documentation Phase)**:
+- Manual summary path calculation removed from orchestrate.md (lines 2563-2575)
+- Summary path now uses Phase 0 location context (ARTIFACT_SUMMARIES + TOPIC_NUMBER)
+- doc-writer prompt includes ARTIFACT ORGANIZATION section with all paths
+- Location context variables injected: TOPIC_NUMBER, TOPIC_NAME, TOPIC_PATH, artifact paths
+- Validation with fallback: ensures summary created in correct location
+- Summary metadata template updated to include topic information
+- Documentation Phase now consistent with Research, Planning, Debug phases
+
+**Testing**: End-to-end testing pending (will be performed as part of full /orchestrate workflow test)
 
 For detailed tasks and implementation, see [phase_1_foundation_location_specialist.md](phase_1_foundation_location_specialist.md)
 
