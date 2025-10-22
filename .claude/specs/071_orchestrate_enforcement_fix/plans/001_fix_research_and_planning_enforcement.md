@@ -385,22 +385,22 @@ grep -q "Continuing to next topic" .claude/commands/orchestrate.md
 
 ---
 
-### Phase 3: Implement Auto-Retry Logic for Planning
+### Phase 3: Implement Auto-Retry Logic for Planning [COMPLETED]
 **Objective**: Add retry wrapper function for plan-architect with same 3-attempt strategy.
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current plan-architect invocation code in orchestrate.md
-- [ ] Create `invoke_plan_architect_with_retry()` function:
-  - [ ] Loop 3 times (max_attempts=3)
-  - [ ] Select template based on attempt (standard → ultra-explicit → step-by-step)
-  - [ ] Invoke plan-architect with selected template
-  - [ ] Check if plan file created and has content
-  - [ ] Return 0 on success, 1 after all attempts fail
-- [ ] Update planning phase to use retry function
-- [ ] Add critical failure check: exit if planning fails after all retries
-- [ ] Ensure planning only proceeds if at least one research report exists
+- [x] Read current plan-architect invocation code in orchestrate.md
+- [x] Create `invoke_plan_architect_with_retry()` function:
+  - [x] Loop 3 times (max_attempts=3)
+  - [x] Select template based on attempt (standard → ultra-explicit → step-by-step)
+  - [x] Invoke plan-architect with selected template
+  - [x] Check if plan file created and has content
+  - [x] Return 0 on success, 1 after all attempts fail
+- [x] Update planning phase to use retry function
+- [x] Add critical failure check: exit if planning fails after all retries
+- [x] Ensure planning only proceeds if at least one research report exists
 
 **Testing**:
 ```bash

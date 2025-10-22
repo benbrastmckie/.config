@@ -1856,11 +1856,86 @@ CHECKPOINT: Plan path calculated
 - Ready to invoke: plan-architect agent
 ```
 
-**EXECUTE NOW - Invoke plan-architect Agent with Behavioral Injection**
+**EXECUTE NOW - Invoke plan-architect Agent with Auto-Retry**
 
-**WHY THIS MATTERS**: We pass the pre-calculated PLAN_PATH to the agent so it creates the plan at the exact location we want, following topic-based organization.
+**WHY THIS MATTERS**: Planning is critical for workflow success. Auto-retry with escalating enforcement ensures plan file creation even if first attempt fails.
 
-**CRITICAL INSTRUCTION**: Use this EXACT template (no modifications):
+**Auto-Retry Logic for Planning**
+
+Planning phase attempts up to 3 times with escalating template enforcement. Unlike research (which continues with partial results), planning MUST succeed for workflow to continue.
+
+```bash
+# Planning phase with auto-retry
+echo "Planning phase starting with auto-retry..."
+
+max_attempts=3
+plan_created=false
+
+for attempt in $(seq 1 $max_attempts); do
+  # Select template based on attempt number
+  if [ $attempt -eq 1 ]; then
+    template="standard"
+    echo "Invoking plan-architect (attempt $attempt/$max_attempts, template: $template)"
+    # Use STANDARD template from Auto-Recovery Agent Templates
+  elif [ $attempt -eq 2 ]; then
+    template="ultra_explicit"
+    echo "⚠️  Attempt 1 failed. Retrying with ultra-explicit enforcement (attempt $attempt/$max_attempts)"
+    # Use ULTRA-EXPLICIT template from Auto-Recovery Agent Templates
+  else
+    template="step_by_step"
+    echo "⚠️  Attempt 2 failed. Final retry with step-by-step enforcement (attempt $attempt/$max_attempts)"
+    # Use STEP-BY-STEP template from Auto-Recovery Agent Templates
+  fi
+
+  # Invoke plan-architect agent with selected template
+  # YOU MUST use Task tool with appropriate PLAN-ARCHITECT template
+
+  # After agent returns, check if plan file was created
+  if [ -f "$PLAN_PATH" ]; then
+    # Validate plan has content
+    if [ -s "$PLAN_PATH" ]; then
+      echo "  ✓ Plan created successfully on attempt $attempt (template: $template)"
+      plan_created=true
+      break
+    else
+      echo "  ⚠️  Plan file created but empty, retrying..."
+      rm "$PLAN_PATH"  # Clean up empty file
+    fi
+  else
+    echo "  ⚠️  Plan file not created by agent"
+  fi
+
+  if [ $attempt -lt $max_attempts ]; then
+    echo "  Retrying with enhanced enforcement..."
+  fi
+done
+
+# Critical check: planning MUST succeed
+if [ "$plan_created" = false ]; then
+  echo ""
+  echo "❌ CRITICAL: Planning phase failed after $max_attempts attempts"
+  echo "Cannot complete workflow without implementation plan"
+  echo "Plan path: $PLAN_PATH"
+  exit 1
+fi
+
+echo "✓ Planning phase complete"
+```
+
+**Implementation Instructions for Planning Retry**
+
+When executing planning phase, YOU MUST:
+
+1. **Check prerequisites**: Verify at least one research report exists in SUCCESSFUL_REPORTS
+2. **Retry loop**: Attempt up to 3 times
+3. **Template selection**:
+   - Attempt 1: Use PLAN-ARCHITECT STANDARD template
+   - Attempt 2: Use PLAN-ARCHITECT ULTRA-EXPLICIT template
+   - Attempt 3: Use PLAN-ARCHITECT STEP-BY-STEP template
+4. **File verification**: After each attempt, check file exists and has content
+5. **Critical failure**: Exit if all 3 attempts fail (planning is required)
+
+**CRITICAL INSTRUCTION**: Use EXACT templates from Auto-Recovery Agent Templates section (no modifications):
 
 ```yaml
 Task {
