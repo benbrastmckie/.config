@@ -6,7 +6,7 @@
 - **Scope**: Add artifact organization, research synthesis, complexity-driven expansion, hierarchical plan structure, wave-based implementation, and progress tracking
 - **Estimated Phases**: 8
 - **Structure Level**: 1
-- **Expanded Phases**: [0, 1, 3, 4, 5, 6, 7]
+- **Expanded Phases**: [0, 1, 3, 3.4, 4, 5, 6, 7]
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**: User-provided TODO.md analysis and infrastructure survey
 
@@ -694,11 +694,30 @@ For detailed plan revision, see [phase_3_complexity_evaluation.md](specs/plans/0
 
 ---
 
+### Phase 3.4: Compliance and Cleanup - Pre-Phase 4 Standards Enforcement
+**Status**: Expanded to detailed phase plan
+**Complexity**: 5/10 (Medium)
+**Dependencies**: depends_on: [phase_3]
+**Priority**: HIGH (blocks Phase 4)
+**Analysis Report**: [phase_3_pre_phase_4_analysis.md](reports/phase_3_pre_phase_4_analysis.md)
+
+**Summary**: Address critical compliance issues and remove deprecated cruft from Phase 3 implementation before Phase 4. Enhance complexity-estimator.md imperative language enforcement (target 95+/100 score), validate complexity output format for Phase 4 compatibility, archive deprecated algorithm utilities (~2.2MB), and design orchestrate.md Phase 2.5 integration approach. Resolves 3 critical blockers identified in pre-Phase 4 analysis: agent enforcement standards, output format validation, and Phase 2.5 integration strategy.
+
+**Key Issues Addressed**:
+- ⚠️ complexity-estimator.md missing full imperative language enforcement (85/100 → 95+/100)
+- ⚠️ Complexity output format not validated for Phase 4 expansion-specialist compatibility
+- 🗑️ ~2.2MB deprecated algorithm utilities and backup files (archive/remove)
+- 📋 51 files with historical markers "(NEW)", "(OLD)", "SUPERSEDED" (deferred to later cleanup)
+- 🔧 orchestrate.md Phase 2.5 integration strategy (design for Phase 4 Stage 0)
+
+For detailed tasks and implementation, see [phase_3_4_compliance_and_cleanup.md](phase_3_4_compliance_and_cleanup.md)
+
+---
 
 ### Phase 4: Plan Expansion - Hierarchical Structure and Automated Expansion
 **Status**: Expanded to detailed phase plan
 **Complexity**: 9/10 (High)
-**Dependencies**: depends_on: [phase_3]
+**Dependencies**: depends_on: [phase_3, phase_3_4]
 
 **Summary**: Implement automated plan expansion with expansion-specialist agent to create hierarchical plan structure (Level 0 → Level 1 → Level 2). Handles phase-to-stages expansion (L1) and stage-to-detailed-files expansion (L2), with recursive complexity evaluation to prevent over/under-expansion (max 2 levels). Updates parent plans with summaries and reference links, maintains expansion metadata history, and integrates with orchestrate.md as Phase 2.5 for conditional expansion workflow.
 
