@@ -345,25 +345,25 @@ grep -q "PLAN-ARCHITECT INVOCATION - STEP-BY-STEP" .claude/commands/orchestrate.
 
 ---
 
-### Phase 2: Implement Auto-Retry Logic for Research
+### Phase 2: Implement Auto-Retry Logic for Research [COMPLETED]
 **Objective**: Add retry wrapper function that attempts up to 3 times with escalating template enforcement.
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current research agent invocation code in orchestrate.md
-- [ ] Create `invoke_research_agent_with_retry()` function:
-  - [ ] Accept topic parameter
-  - [ ] Loop 3 times (max_attempts=3)
-  - [ ] Select template based on attempt number (standard → ultra-explicit → step-by-step)
-  - [ ] Invoke research agent with selected template
-  - [ ] Check if file created with [ -f "$path" ]
-  - [ ] Validate file has content with [ -s "$path" ]
-  - [ ] Return 0 on success, 1 after all attempts fail
-- [ ] Update main research loop to use retry function
-- [ ] Track successful and failed topics in arrays
-- [ ] Add "Continuing to next topic..." message on failure
-- [ ] Add critical check: exit if NO reports created
+- [x] Read current research agent invocation code in orchestrate.md
+- [x] Create `invoke_research_agent_with_retry()` function:
+  - [x] Accept topic parameter
+  - [x] Loop 3 times (max_attempts=3)
+  - [x] Select template based on attempt number (standard → ultra-explicit → step-by-step)
+  - [x] Invoke research agent with selected template
+  - [x] Check if file created with [ -f "$path" ]
+  - [x] Validate file has content with [ -s "$path" ]
+  - [x] Return 0 on success, 1 after all attempts fail
+- [x] Update main research loop to use retry function
+- [x] Track successful and failed topics in arrays
+- [x] Add "Continuing to next topic..." message on failure
+- [x] Add critical check: exit if NO reports created
 
 **Testing**:
 ```bash
