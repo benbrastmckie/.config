@@ -945,6 +945,192 @@ Task {
 
 ---
 
+**Auto-Recovery Agent Templates**
+
+The following three template variations enable retry-with-escalation for subagent enforcement. Each retry attempt uses a progressively stronger template to maximize compliance.
+
+**RESEARCH AGENT INVOCATION - STANDARD TEMPLATE** (Attempt 1)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} with mandatory artifact creation"
+  timeout: 300000  # 5 minutes
+  prompt: "
+    **FILE CREATION REQUIRED**
+
+    Use Write tool to create: ${REPORT_PATH}
+
+    Research ${TOPIC} and document findings in the file.
+
+    Return only: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+**RESEARCH AGENT INVOCATION - ULTRA-EXPLICIT TEMPLATE** (Attempt 2)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} - RETRY with ultra-explicit enforcement"
+  timeout: 300000  # 5 minutes
+  prompt: "
+    **CRITICAL: You MUST create a file. This is NON-NEGOTIABLE.**
+
+    **STEP 1 - CREATE FILE NOW**
+    Use the Write tool RIGHT NOW with this exact path:
+    ${REPORT_PATH}
+
+    **STEP 2 - RESEARCH**
+    Research ${TOPIC} thoroughly and document in the file.
+
+    **STEP 3 - RETURN CONFIRMATION ONLY**
+    Return ONLY this text: REPORT_CREATED: ${REPORT_PATH}
+
+    **PROHIBITED**: Do NOT return summaries or findings in your response.
+  "
+}
+```
+
+**RESEARCH AGENT INVOCATION - STEP-BY-STEP TEMPLATE** (Attempt 3)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} - FINAL RETRY with step verification"
+  timeout: 300000  # 5 minutes
+  prompt: "
+    **EXECUTE IMMEDIATELY: File creation is your PRIMARY and ONLY deliverable**
+
+    **ACTION 1: CREATE THE FILE**
+    Use Write tool NOW: ${REPORT_PATH}
+    Initial content: '# Research Report: ${TOPIC}'
+
+    **ACTION 2: VERIFY FILE CREATED**
+    Use Read tool to confirm file exists: ${REPORT_PATH}
+
+    **ACTION 3: CONDUCT RESEARCH**
+    Research ${TOPIC} using Grep/Glob/Read tools
+
+    **ACTION 4: UPDATE FILE**
+    Use Edit tool to add findings to ${REPORT_PATH}
+
+    **ACTION 5: FINAL VERIFICATION**
+    Use Read tool to verify content exists
+
+    **ACTION 6: RETURN CONFIRMATION**
+    Return ONLY: REPORT_CREATED: ${REPORT_PATH}
+
+    **CRITICAL**: If you skip any action, you will fail. Each action is MANDATORY.
+  "
+}
+```
+
+**PLAN-ARCHITECT INVOCATION - STANDARD TEMPLATE** (Attempt 1)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan using plan-architect behavioral guidelines"
+  timeout: 600000  # 10 minutes
+  prompt: "
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    **FILE CREATION REQUIRED**
+
+    Use Write tool to create: ${PLAN_PATH}
+
+    Create implementation plan for: ${WORKFLOW_DESCRIPTION}
+
+    Return only: PLAN_CREATED: ${PLAN_PATH}
+  "
+}
+```
+
+**PLAN-ARCHITECT INVOCATION - ULTRA-EXPLICIT TEMPLATE** (Attempt 2)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan - RETRY with ultra-explicit enforcement"
+  timeout: 600000  # 10 minutes
+  prompt: "
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    **CRITICAL: You MUST create a plan file. This is NON-NEGOTIABLE.**
+
+    **STEP 1 - CREATE FILE NOW**
+    Use the Write tool RIGHT NOW with this exact path:
+    ${PLAN_PATH}
+
+    **STEP 2 - CREATE PLAN**
+    Create implementation plan for: ${WORKFLOW_DESCRIPTION}
+    Follow plan-architect guidelines thoroughly.
+
+    **STEP 3 - RETURN CONFIRMATION ONLY**
+    Return ONLY this text: PLAN_CREATED: ${PLAN_PATH}
+
+    **PROHIBITED**: Do NOT return summaries or plan content in your response.
+  "
+}
+```
+
+**PLAN-ARCHITECT INVOCATION - STEP-BY-STEP TEMPLATE** (Attempt 3)
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan - FINAL RETRY with step verification"
+  timeout: 600000  # 10 minutes
+  prompt: "
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    **EXECUTE IMMEDIATELY: Plan file creation is your PRIMARY and ONLY deliverable**
+
+    **ACTION 1: CREATE THE FILE**
+    Use Write tool NOW: ${PLAN_PATH}
+    Initial content: '# Implementation Plan: ${WORKFLOW_DESCRIPTION}'
+
+    **ACTION 2: VERIFY FILE CREATED**
+    Use Read tool to confirm file exists: ${PLAN_PATH}
+
+    **ACTION 3: CREATE PLAN**
+    Create implementation plan following plan-architect guidelines
+
+    **ACTION 4: UPDATE FILE**
+    Use Edit tool to add plan content to ${PLAN_PATH}
+
+    **ACTION 5: FINAL VERIFICATION**
+    Use Read tool to verify content exists
+
+    **ACTION 6: RETURN CONFIRMATION**
+    Return ONLY: PLAN_CREATED: ${PLAN_PATH}
+
+    **CRITICAL**: If you skip any action, you will fail. Each action is MANDATORY.
+  "
+}
+```
+
+**Template Selection Logic**
+
+Select template based on retry attempt number:
+- Attempt 1: Standard template (baseline enforcement)
+- Attempt 2: Ultra-explicit template (enhanced enforcement with CRITICAL markers)
+- Attempt 3: Step-by-step template (maximum enforcement with mandatory action sequence)
+
+**Template Escalation Strategy**
+
+Each template increases enforcement:
+1. **Standard**: Clear requirements, single-path instruction
+2. **Ultra-Explicit**: CRITICAL markers, PROHIBITED actions, numbered steps
+3. **Step-by-Step**: Mandatory action sequence, verification after each step
+
+---
+
 **MANDATORY: Parallel Invocation Pattern**
 
 To achieve true parallel execution (60-70% time savings), YOU MUST invoke ALL research agents in a SINGLE message with multiple Task tool calls:
