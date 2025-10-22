@@ -1920,6 +1920,46 @@ if [ "$plan_created" = false ]; then
 fi
 
 echo "✓ Planning phase complete"
+
+# Display workflow summary
+echo ""
+echo "============================================"
+echo "    /orchestrate WORKFLOW SUMMARY"
+echo "============================================"
+echo ""
+echo "Research Phase:"
+echo "  ✓ Successful: ${#SUCCESSFUL_REPORTS[@]} topics"
+if [ ${#FAILED_TOPICS[@]} -gt 0 ]; then
+  echo "  ❌ Failed: ${#FAILED_TOPICS[@]} topics"
+fi
+echo ""
+echo "Planning Phase:"
+echo "  ✓ Plan created: $PLAN_PATH"
+echo ""
+
+if [ ${#FAILED_TOPICS[@]} -gt 0 ]; then
+  echo "⚠️  WORKFLOW COMPLETED WITH WARNINGS"
+  echo ""
+  echo "Failed research topics:"
+  for topic in "${FAILED_TOPICS[@]}"; do
+    echo "  - $topic"
+  done
+  echo ""
+  echo "Note: Plan was created with partial research results."
+  echo "Consider re-running research for failed topics manually."
+else
+  echo "✓ WORKFLOW COMPLETED SUCCESSFULLY"
+  echo "All research topics completed and plan created."
+fi
+
+echo ""
+echo "Artifacts created:"
+echo "  Plan: $PLAN_PATH"
+echo "  Reports: ${#SUCCESSFUL_REPORTS[@]} files"
+for report in "${SUCCESSFUL_REPORTS[@]}"; do
+  echo "    - $report"
+done
+echo ""
 ```
 
 **Implementation Instructions for Planning Retry**
