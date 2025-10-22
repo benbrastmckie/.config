@@ -568,25 +568,37 @@ Expected Outcomes:
 
 ---
 
-### Phase 3: Complexity Evaluation - Automated Plan Analysis [COMPLETED]
-**Status**: COMPLETED ✓ (All 8 Stages Complete)
-**Complexity**: 8/10 (High)
+### Phase 3: Complexity Evaluation - Automated Plan Analysis [REVISED]
+**Status**: ARCHITECTURAL REVISION - Pure Agent Approach (Stages 6-7 NEW pending)
+**Complexity**: ~~8/10~~ 7/10 (Agent approach simpler than algorithm)
 **Dependencies**: depends_on: [phase_1, phase_2] ✓
 **Started**: 2025-10-21
-**Completed**: 2025-10-21
-**Commit**: 888de1f4 (Stages 1-2), af754b57 (Stage 3), 97f25ee5 (Stage 4), ab8d4b0c (Stage 5), 853f97af (Stage 6), 135dd8d7 (Stage 7), b2b56ab3 (Stage 8)
+**Algorithm Research**: 2025-10-21 (Stages 6-7 OLD completed, then superseded)
+**Revision Date**: 2025-10-21
+**Commit**: 888de1f4 (Stages 1-2), af754b57 (Stage 3), 97f25ee5 (Stage 4), ab8d4b0c (Stage 5), 853f97af (Stage 6 OLD), 135dd8d7 (Stage 7 OLD), b2b56ab3 (Stage 8), TBD (Stages 6-7 NEW), TBD (Revision commit)
 
-**Summary**: Successfully implemented and validated complete complexity evaluation system with calibrated 5-factor formula. Created formula specification, complexity-estimator agent, orchestrate.md integration, threshold configuration, 5-factor scoring algorithm, empirical calibration (correlation 0.09→0.75), and comprehensive validation. System operational with documented limitations and improvement roadmap for achieving >0.90 correlation target.
+**Summary**: Implemented complexity evaluation system with algorithmic 5-factor formula achieving 0.7515 correlation. After completion, **user decision to pivot to pure LLM-based judgment** for superior accuracy (target >0.90 vs 0.7515) and simplicity. Algorithm work (3,900+ lines) remains as valuable research informing few-shot calibration examples. **Stages 6-7 (NEW) pending**: Pure agent enhancement with few-shot tuning to replace algorithm dependency.
 
-**Implementation Results** (All Stages Complete):
+**Architectural Pivot Rationale**:
+- Algorithm achieved 0.7515 correlation despite extensive calibration
+- Agent-based judgment can understand semantic complexity ("auth migration" > "15 doc tasks")
+- Handles edge cases naturally (collapsed plans, context-dependent risk)
+- Simpler implementation (few-shot examples vs formula tuning)
+- Estimated >0.90 correlation achievable with pure agent approach
+
+**See**: [phase_3_agent_based_research.md](specs/plans/080_orchestrate_enhancement/artifacts/phase_3_agent_based_research.md) for complete design rationale
+
+**Implementation Results** (Stages 1-5, 8 Complete; 6-7 Revised):
 - ✅ Stage 1: Complexity formula specification with ground truth dataset (11 phases)
 - ✅ Stage 2: complexity-estimator agent with YAML output (581 lines)
 - ✅ Stage 3: Phase 2.5 integration in orchestrate.md with conditional branching (356 lines)
 - ✅ Stage 4: Threshold configuration reading from CLAUDE.md (250 lines)
 - ✅ Stage 5: End-to-end testing (functional, calibration issues identified)
-- ✅ Stage 6: Complete 5-factor scoring algorithm (206 lines, all factors working)
-- ✅ Stage 7: Normalization calibration (correlation 0.09 → 0.75, factor 0.822 → 0.411)
-- ✅ Stage 8: End-to-end validation (PASSED: 4/5 criteria, limitations documented)
+- ~~✅ Stage 6 (OLD): Complete 5-factor scoring algorithm~~ **→ SUPERSEDED by agent approach**
+- ~~✅ Stage 7 (OLD): Normalization calibration (0.75 correlation)~~ **→ SUPERSEDED by few-shot tuning**
+- ✅ Stage 8: End-to-end validation (algorithm: PASSED 4/5 criteria, agent pending)
+- ⏳ **Stage 6 (NEW)**: Pure agent complexity assessment (pending)
+- ⏳ **Stage 7 (NEW)**: Few-shot tuning for >0.90 correlation (pending)
 
 **Testing Summary**:
 - **Stages 1-5**: Simple plan (4 tasks): 1.6 complexity ✓, Complex plan (90+ tasks): 9.3 avg ✓
@@ -622,16 +634,30 @@ Expected Outcomes:
 - ✅ Validation status: PASSED (4/5 criteria: functionality, performance, docs, tests)
 - ⚠️ Known limitation: Correlation 0.7515 < 0.90 target (documented with improvement roadmap)
 
-**Phase 3 Final Status**:
-- **Duration**: Single day (2025-10-21, Stages 1-8 completed)
-- **Total Lines Added**: 3,900+ lines (code, tests, documentation)
-- **Deliverables**: 15 files (formula spec, agent, scripts, tests, reports)
-- **Correlation Achievement**: 8.7x improvement (0.0869 → 0.7515)
-- **Performance**: Exceeds all targets (<1s, <100 MB)
-- **Operational Status**: System validated and ready for use
-- **Next Steps**: Documented improvement roadmap for >0.90 correlation (optional future work)
+**Phase 3 Current Status** (Algorithm Research Complete, Agent Approach Pending):
+- **Algorithm Research Completed**: Single day (2025-10-21, Stages 1-5, 6-7 OLD, 8)
+- **Total Lines (Algorithm)**: 3,900+ lines (code, tests, documentation)
+- **Algorithm Deliverables**: 15 files (formula spec, agent framework, scripts, tests, reports)
+- **Algorithm Correlation**: 8.7x improvement (0.0869 → 0.7515)
+- **Research Value**: Ground truth dataset, calibration insights → inform few-shot examples
 
-For detailed tasks and implementation, see [phase_3_complexity_evaluation.md](phase_3_complexity_evaluation.md)
+**Architectural Pivot**:
+- **Decision**: Replace algorithm with pure LLM judgment
+- **Justification**: Simpler, more accurate (>0.90 target vs 0.7515), handles edge cases naturally
+- **Research Doc**: phase_3_agent_based_research.md (comprehensive design)
+
+**Remaining Work** (Stages 6-7 NEW):
+- ⏳ Stage 6: Enhance agent with few-shot examples (1-2 hours)
+- ⏳ Stage 7: Tune prompt for >0.90 correlation (1-2 hours)
+- ⏳ Stage 8: Re-validate with agent approach
+- **Estimated Duration**: 2-4 hours (vs 4-6 hours for algorithm approach)
+
+**Next Steps**:
+1. Implement Stage 6 (NEW): Pure agent enhancement
+2. Validate Stage 7 (NEW): Few-shot tuning
+3. Achieve >0.90 correlation with simpler architecture
+
+For detailed plan revision, see [phase_3_complexity_evaluation.md](specs/plans/080_orchestrate_enhancement/phase_3_complexity_evaluation.md)
 
 ---
 
