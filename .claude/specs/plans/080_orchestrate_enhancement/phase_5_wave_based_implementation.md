@@ -1359,13 +1359,13 @@ complete_wave() {
 ```
 
 **Completion Checklist**:
-- [ ] Progress visualization displays all waves and phases
-- [ ] Real-time updates every 5-10 seconds
-- [ ] Progress bars accurate (match task completion)
-- [ ] State persistence working (JSON file updates)
-- [ ] State restoration after coordinator restarts
-- [ ] Unicode box-drawing renders correctly
-- [ ] Progress display fits in 80-column terminal
+- [x] Progress visualization displays all waves and phases
+- [x] Real-time updates every 5-10 seconds
+- [x] Progress bars accurate (match task completion)
+- [x] State persistence working (JSON file updates)
+- [x] State restoration after coordinator restarts
+- [x] Unicode box-drawing renders correctly
+- [x] Progress display fits in 80-column terminal
 
 ---
 
@@ -1552,13 +1552,13 @@ When checkpoint created:
 ```
 
 **Completion Checklist**:
-- [ ] Context monitoring detects 70% usage threshold
-- [ ] Checkpoint creation captures complete state
-- [ ] Checkpoint files include all progress data
-- [ ] Plan files updated with checkpoint markers
-- [ ] Checkpoint restoration working (via /resume-implement)
-- [ ] Checkpoint cleanup after successful resume
-- [ ] Error handling for checkpoint corruption
+- [x] Context monitoring detects 70% usage threshold
+- [x] Checkpoint creation captures complete state
+- [x] Checkpoint files include all progress data
+- [x] Plan files updated with checkpoint markers
+- [x] Checkpoint restoration working (via /resume-implement)
+- [x] Checkpoint cleanup after successful resume
+- [x] Error handling for checkpoint corruption
 
 ---
 
