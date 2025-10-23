@@ -2064,7 +2064,6 @@ Expected performance targets:
 
 - **File Creation Rate**: 100% (strong enforcement, first attempt)
 - **Context Usage**: <25% cumulative across all phases
-- **Time Efficiency**: 15-25% faster than /orchestrate for research-and-plan
 - **Zero Fallbacks**: Single working path, fail-fast on errors
 
 ## Success Criteria
