@@ -37,24 +37,24 @@ dependent-commands: report, plan, implement, debug, test, document, github-speci
 
 # Multi-Agent Workflow Orchestration
 
-**YOU MUST orchestrate an 8-phase development workflow by delegating to specialized subagents.**
+**YOU MUST orchestrate a 6-phase development workflow by delegating to specialized subagents.**
 
 **YOUR ROLE**: You are the WORKFLOW ORCHESTRATOR, not the executor.
 - **DO NOT** execute research/planning/implementation/testing/debugging/documentation yourself using Read/Write/Grep/Bash tools
 - **ONLY** use Task tool to invoke specialized agents for each phase
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify outputs, aggregate results, manage checkpoints
 
-**EXECUTION MODEL**: Pure orchestration across all 8 phases
+**EXECUTION MODEL**: Pure orchestration across all 6 phases
 - **Phase 0 (Location)**: Invoke location-specialist to create topic directory structure
 - **Phase 1 (Research)**: Invoke 2-4 research-specialist agents in parallel
 - **Phase 2 (Planning)**: Invoke plan-architect agent with research report paths
-- **Phase 3-5 (Implementation)**: Invoke code-writer agent with plan path (includes complexity evaluation, expansion, wave-based execution)
-- **Phase 6 (Testing)**: Invoke test-specialist to execute comprehensive test suite
-- **Phase 7 (Debugging)**: Conditionally invoke debug-specialist if Phase 6 tests fail
-- **Phase 8 (Documentation)**: Invoke doc-writer agent with implementation summary and test results
+- **Phase 3 (Implementation)**: Invoke code-writer agent with plan path (wave-based execution)
+- **Phase 4 (Testing)**: Invoke test-specialist to execute comprehensive test suite
+- **Phase 5 (Debugging)**: Conditionally invoke debug-specialist if Phase 4 tests fail
+- **Phase 6 (Documentation)**: Invoke doc-writer agent with implementation summary and test results
 
 **CRITICAL INSTRUCTIONS**:
-- Execute all workflow phases in EXACT sequential order (Phases 0-8)
+- Execute all workflow phases in EXACT sequential order (Phases 0-6)
 - DO NOT skip agent invocations in favor of direct execution
 - DO NOT skip verification of agent outputs
 - DO NOT skip checkpoint saves between phases
@@ -67,10 +67,10 @@ Each phase MUST verify that agents created required files BEFORE marking phase c
 - Phase 0: Verify topic directory structure created
 - Phase 1: Verify all research report files exist
 - Phase 2: Verify implementation plan file exists
-- Phase 3-5: Verify code files and implementation complete
-- Phase 6: Verify test output file exists (test_results.txt)
-- Phase 7: Verify debug reports exist (if invoked due to test failures)
-- Phase 8: Verify documentation and workflow summary files exist
+- Phase 3: Verify code files and implementation complete
+- Phase 4: Verify test output file exists (test_results.txt)
+- Phase 5: Verify debug reports exist (if invoked due to test failures)
+- Phase 6: Verify documentation and workflow summary files exist
 
 ## Reference Files
 
@@ -2211,7 +2211,7 @@ Next Phase: Implementation
 
 ---
 
-## Phase 5: Implementation (Adaptive Execution)
+## Phase 3: Implementation (Adaptive Execution)
 
 The implementation phase executes the plan using code-writer agent with behavioral injection, runs tests after each phase, and conditionally enters debugging loop if tests fail.
 
@@ -2709,11 +2709,11 @@ Workflow paused - awaiting user input.
 
 ---
 
-## Phase 7: Debugging Loop (Conditional)
+## Phase 5: Debugging Loop (Conditional)
 
 **CONDITIONAL ENTRY**: Only enter this section if `$DEBUGGING_SKIPPED == false` from Phase 6 (Testing).
 
-If all tests are passing (`$TESTS_PASSING == true`), skip this entire section and proceed directly to Phase 8 (Documentation).
+If all tests are passing (`$TESTS_PASSING == true`), skip this entire section and proceed directly to Phase 6 (Documentation).
 
 ### Step 1: Initialize Debug Loop State
 
@@ -3156,13 +3156,13 @@ Next Phase: Testing (Phase 6)
 
 ---
 
-## Phase 6: Comprehensive Testing
+## Phase 4: Comprehensive Testing
 
 This phase executes the comprehensive test suite to validate implementation quality before proceeding to debugging (if needed) or documentation. Testing is separated from implementation to provide clear failure analysis and conditional debugging.
 
 **Objective**: Execute comprehensive test suite and determine if debugging is needed
 **Timing**: After implementation completes, before debugging or documentation
-**Conditional**: Always run, but debugging (Phase 7) only invoked if tests fail
+**Conditional**: Always run, but debugging (Phase 5) only invoked if tests fail
 
 ### Step 1: Invoke test-specialist Agent
 
@@ -3362,7 +3362,7 @@ echo ""
 if [ "$TESTS_PASSING" = "true" ]; then
   echo "✓ All tests passing, skipping debugging phase"
   echo ""
-  echo "Next Phase: Documentation (Phase 8)"
+  echo "Next Phase: Documentation (Phase 6)"
   echo "═══════════════════════════════════════════════════════"
 
   # Set flag to skip debugging
@@ -3375,7 +3375,7 @@ if [ "$TESTS_PASSING" = "true" ]; then
 else
   echo "⚠ $FAILED_TESTS tests failed, proceeding to debugging phase"
   echo ""
-  echo "Next Phase: Debugging Loop (Phase 7)"
+  echo "Next Phase: Debugging Loop (Phase 5)"
   echo ""
   echo "Failed Tests:"
   echo "$FAILED_TEST_DETAILS" | head -3  # Show top 3 failures
@@ -3395,7 +3395,7 @@ fi
 
 ---
 
-## Phase 8: Documentation Phase (Sequential Execution)
+## Phase 6: Documentation Phase (Sequential Execution)
 
 This phase completes the workflow by updating project documentation, generating a comprehensive workflow summary with performance metrics, establishing bidirectional cross-references between all artifacts, and optionally creating a pull request.
 
@@ -3411,7 +3411,7 @@ EXTRACT the following from workflow_state and prior phase checkpoints:
 2. **Implementation plan path** (from planning phase checkpoint)
 3. **Implementation status** (from implementation phase checkpoint)
 4. **Test results** (from Phase 6 testing checkpoint)
-5. **Debug report paths** (from Phase 7 debugging checkpoint, if invoked)
+5. **Debug report paths** (from Phase 5 debugging checkpoint, if invoked)
 6. **Modified files list** (from implementation agent output)
 
 BUILD the documentation context structure:
@@ -3458,7 +3458,7 @@ documentation_context:
     coverage: "X%"
     test_output_path: "specs/NNN_topic/outputs/test_results.txt"
 
-  # From Phase 7 (Debugging - if invoked)
+  # From Phase 5 (Debugging - if invoked)
   debug_reports: [
     "debug/phase1_failures/001_config_init.md"
   ]
