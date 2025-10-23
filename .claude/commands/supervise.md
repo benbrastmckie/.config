@@ -1186,7 +1186,7 @@ Task {
 
 ### Mandatory Verification - Plan Creation
 
-STEP 3: Verify plan file created successfully
+STEP 3: Verify plan file created successfully (with auto-recovery)
 
 ```bash
 echo "════════════════════════════════════════════════════════"
@@ -1194,36 +1194,70 @@ echo "  MANDATORY VERIFICATION - Implementation Plan"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-# Check 1: File exists
-if [ ! -f "$PLAN_PATH" ]; then
-  echo "❌ VERIFICATION FAILED: Plan not created"
-  echo "   Expected: $PLAN_PATH"
-  echo "   Agent failed STEP 1. Workflow TERMINATED."
-  exit 1
-fi
+# Emit progress marker
+emit_progress "2" "Verifying implementation plan"
 
-# Check 2: File has content
-if [ ! -s "$PLAN_PATH" ]; then
-  echo "❌ VERIFICATION FAILED: Plan file is empty"
-  echo "   Agent failed STEP 3. Workflow TERMINATED."
-  exit 1
-fi
+# Check if file exists and has content
+if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+  # Success path - perform quality checks
+  PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
 
-# Check 3: Verify plan structure (contains phases)
-PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
-if [ "$PHASE_COUNT" -lt 3 ]; then
-  echo "⚠️  WARNING: Plan has only $PHASE_COUNT phases"
-  echo "   Expected at least 3 phases for proper structure."
-fi
+  if [ "$PHASE_COUNT" -lt 3 ]; then
+    echo "⚠️  WARNING: Plan has only $PHASE_COUNT phases"
+    echo "   Expected at least 3 phases for proper structure."
+  fi
 
-# Check 4: Verify metadata section exists
-if ! grep -q "^## Metadata" "$PLAN_PATH"; then
-  echo "⚠️  WARNING: Plan missing metadata section"
-fi
+  if ! grep -q "^## Metadata" "$PLAN_PATH"; then
+    echo "⚠️  WARNING: Plan missing metadata section"
+  fi
 
-echo "✅ VERIFICATION PASSED: Plan created with $PHASE_COUNT phases"
-echo "   Path: $PLAN_PATH"
-echo ""
+  echo "✅ VERIFICATION PASSED: Plan created with $PHASE_COUNT phases"
+  echo "   Path: $PLAN_PATH"
+  echo ""
+else
+  # Failure path - extract error info and attempt recovery
+  ERROR_MSG="Plan file missing or empty: $PLAN_PATH"
+  ERROR_LOCATION=$(extract_error_location "$ERROR_MSG")
+  ERROR_TYPE=$(detect_specific_error_type "$ERROR_MSG")
+
+  # Classify error for retry decision
+  RETRY_DECISION=$(classify_and_retry "$ERROR_MSG")
+
+  if [ "$RETRY_DECISION" == "retry" ]; then
+    echo "⚠️  TRANSIENT ERROR: Retrying once..."
+    sleep 1
+
+    if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+      PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
+      echo "✅ RETRY SUCCESSFUL: Plan created with $PHASE_COUNT phases"
+    else
+      echo "❌ RETRY FAILED: Plan still missing"
+      echo ""
+      echo "ERROR: $ERROR_TYPE"
+      if [ -n "$ERROR_LOCATION" ]; then
+        echo "   at $ERROR_LOCATION"
+      fi
+      echo ""
+      echo "Recovery suggestions:"
+      suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+      echo ""
+      echo "Workflow TERMINATED."
+      exit 1
+    fi
+  else
+    # Permanent error - fail fast
+    echo "❌ PERMANENT ERROR: $ERROR_TYPE"
+    if [ -n "$ERROR_LOCATION" ]; then
+      echo "   at $ERROR_LOCATION"
+    fi
+    echo ""
+    echo "Recovery suggestions:"
+    suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+    echo ""
+    echo "Workflow TERMINATED."
+    exit 1
+  fi
+fi
 ```
 
 ### Plan Metadata Extraction
@@ -1395,6 +1429,18 @@ fi
 
 echo "Phase 3 Complete: Implementation finished"
 echo ""
+
+# Save checkpoint after Phase 3
+ARTIFACT_PATHS_JSON=$(cat <<EOF
+{
+  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
+  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  "plan_path": "$PLAN_PATH",
+  "impl_artifacts": "$IMPL_ARTIFACTS"
+}
+EOF
+)
+save_phase_checkpoint 3 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 4: Testing
@@ -1491,6 +1537,19 @@ fi
 echo ""
 echo "Phase 4 Complete: Testing finished"
 echo ""
+
+# Save checkpoint after Phase 4
+ARTIFACT_PATHS_JSON=$(cat <<EOF
+{
+  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
+  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  "plan_path": "$PLAN_PATH",
+  "impl_artifacts": "$IMPL_ARTIFACTS",
+  "test_status": "$TEST_STATUS"
+}
+EOF
+)
+save_phase_checkpoint 4 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 5: Debug (Conditional)
