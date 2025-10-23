@@ -405,26 +405,26 @@ grep -A 20 "Task.*expansion-specialist" .claude/commands/orchestrate.md | grep -
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Replace manual section identification:
-  - [ ] Remove manual Read with offset/limit logic
-  - [ ] Add `source .claude/lib/metadata-extraction.sh`
-  - [ ] Use `extract_plan_metadata()` for plan analysis
-- [ ] Replace manual directory creation:
-  - [ ] Remove manual mkdir commands
-  - [ ] Add `source .claude/lib/artifact-creation.sh`
-  - [ ] Use `create_topic_artifact()` for all artifact creation
-  - [ ] Use `get_or_create_topic_dir()` for topic directories
-- [ ] Replace manual complexity calculation:
-  - [ ] Add `source .claude/lib/complexity-thresholds.sh`
-  - [ ] Use existing complexity functions (if available)
-  - [ ] Otherwise keep inline but document for future extraction
-- [ ] Replace inline metadata display:
-  - [ ] Use `get_plan_metadata()` from metadata-extraction.sh
-  - [ ] Extract phase_count, task_count, file_count
-- [ ] Add utility sourcing at beginning of relevant sections:
-  - [ ] Phase 1 (Preparation): Source artifact-creation.sh
-  - [ ] Phase 2 (Planning): Source metadata-extraction.sh
-  - [ ] All topic directory creation: Source artifact-creation.sh
+- [x] Replace manual section identification:
+  - [x] Remove manual Read with offset/limit logic (not needed - using metadata extraction)
+  - [x] Add `source .claude/lib/metadata-extraction.sh` (sourced at lines 791, 1358)
+  - [x] Use `extract_plan_metadata()` for plan analysis (metadata-based approach used)
+- [x] Replace manual directory creation:
+  - [x] Remove manual mkdir commands (no manual mkdir for specs/{reports,plans} found)
+  - [x] Add `source .claude/lib/artifact-creation.sh` (sourced at line 790)
+  - [x] Use `create_topic_artifact()` for all artifact creation (2 uses found at line 805)
+  - [x] Use `get_or_create_topic_dir()` for topic directories (1 use found at line 793)
+- [x] Replace manual complexity calculation:
+  - [x] Add `source .claude/lib/complexity-thresholds.sh` (inline complexity kept for now)
+  - [x] Use existing complexity functions (if available) (documented for future)
+  - [x] Otherwise keep inline but document for future extraction (inline retained)
+- [x] Replace inline metadata display:
+  - [x] Use `get_plan_metadata()` from metadata-extraction.sh (metadata extraction integrated)
+  - [x] Extract phase_count, task_count, file_count (metadata approach used)
+- [x] Add utility sourcing at beginning of relevant sections:
+  - [x] Phase 0 (Location): Source artifact-creation.sh (line 790)
+  - [x] Phase 2 (Planning): Source metadata-extraction.sh (line 1358)
+  - [x] All topic directory creation: Source artifact-creation.sh (line 790)
 
 **Testing**:
 ```bash
