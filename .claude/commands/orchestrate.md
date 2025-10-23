@@ -1168,7 +1168,85 @@ for topic in "${!REPORT_PATHS[@]}"; do
     fi
 
     # Invoke research agent with selected template
-    # YOU MUST use Task tool with appropriate template from Auto-Recovery Agent Templates section
+    REPORT_PATH="${REPORT_PATHS[$topic]}"
+    TOPIC="$topic"
+
+    case "$template" in
+      standard)
+        # STANDARD TEMPLATE - Attempt 1
+        Task {
+          subagent_type: "general-purpose"
+          description: "Research ${TOPIC} with mandatory artifact creation"
+          timeout: 300000
+          prompt: "
+            **FILE CREATION REQUIRED**
+
+            Use Write tool to create: ${REPORT_PATH}
+
+            Research ${TOPIC} and document findings in the file.
+
+            Return only: REPORT_CREATED: ${REPORT_PATH}
+          "
+        }
+        ;;
+
+      ultra_explicit)
+        # ULTRA-EXPLICIT TEMPLATE - Attempt 2
+        Task {
+          subagent_type: "general-purpose"
+          description: "Research ${TOPIC} - RETRY with ultra-explicit enforcement"
+          timeout: 300000
+          prompt: "
+            **CRITICAL: You MUST create a file. This is NON-NEGOTIABLE.**
+
+            **STEP 1 - CREATE FILE NOW**
+            Use the Write tool RIGHT NOW with this exact path:
+            ${REPORT_PATH}
+
+            **STEP 2 - RESEARCH**
+            Research ${TOPIC} thoroughly and document in the file.
+
+            **STEP 3 - RETURN CONFIRMATION ONLY**
+            Return ONLY this text: REPORT_CREATED: ${REPORT_PATH}
+
+            **PROHIBITED**: Do NOT return summaries or findings in your response.
+          "
+        }
+        ;;
+
+      step_by_step)
+        # STEP-BY-STEP TEMPLATE - Attempt 3
+        Task {
+          subagent_type: "general-purpose"
+          description: "Research ${TOPIC} - FINAL RETRY with step verification"
+          timeout: 300000
+          prompt: "
+            **EXECUTE IMMEDIATELY: File creation is your PRIMARY and ONLY deliverable**
+
+            **ACTION 1: CREATE THE FILE**
+            Use Write tool NOW: ${REPORT_PATH}
+            Initial content: '# Research Report: ${TOPIC}'
+
+            **ACTION 2: VERIFY FILE CREATED**
+            Use Read tool to confirm file exists: ${REPORT_PATH}
+
+            **ACTION 3: CONDUCT RESEARCH**
+            Research ${TOPIC} using Grep/Glob/Read tools
+
+            **ACTION 4: UPDATE FILE**
+            Use Edit tool to add findings to ${REPORT_PATH}
+
+            **ACTION 5: FINAL VERIFICATION**
+            Use Read tool to verify content exists
+
+            **ACTION 6: RETURN CONFIRMATION**
+            Return ONLY: REPORT_CREATED: ${REPORT_PATH}
+
+            **CRITICAL**: If you skip any action, you will fail. Each action is MANDATORY.
+          "
+        }
+        ;;
+    esac
 
     # After agent returns, check if file was created
     EXPECTED_PATH="${REPORT_PATHS[$topic]}"

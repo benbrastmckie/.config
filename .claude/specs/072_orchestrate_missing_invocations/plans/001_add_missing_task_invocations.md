@@ -175,23 +175,23 @@ grep -A 50 "case \"\$template\" in" .claude/commands/orchestrate.md | grep -q "s
 
 ---
 
-### Phase 3: Fix Research Phase (Same Pattern)
+### Phase 3: Fix Research Phase (Same Pattern) [COMPLETED]
 **Objective**: Apply same fix to research phase retry loop
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Search orchestrate.md for research agent retry loop
-- [ ] Identify line with comment placeholder (similar to planning phase)
-- [ ] Add context preparation before research retry loop:
-  - [ ] Extract research topics from TOPICS array
-  - [ ] Build report paths from REPORT_PATHS map
-  - [ ] Get standards file path
-- [ ] Replace comment placeholder with case statement:
-  - [ ] Case 'standard': Task invocation with research standard template
-  - [ ] Case 'ultra_explicit': Task invocation with research ultra-explicit template
-  - [ ] Case 'step_by_step': Task invocation with research step-by-step template
-- [ ] Each invocation includes REPORT_PATH, TOPIC, and behavioral injection
+- [x] Search orchestrate.md for research agent retry loop
+- [x] Identify line with comment placeholder (similar to planning phase)
+- [x] Add context preparation before research retry loop:
+  - [x] Extract research topics from TOPICS array
+  - [x] Build report paths from REPORT_PATHS map
+  - [x] Get standards file path
+- [x] Replace comment placeholder with case statement:
+  - [x] Case 'standard': Task invocation with research standard template
+  - [x] Case 'ultra_explicit': Task invocation with research ultra-explicit template
+  - [x] Case 'step_by_step': Task invocation with research step-by-step template
+- [x] Each invocation includes REPORT_PATH, TOPIC, and behavioral injection
 
 **Testing**:
 ```bash
