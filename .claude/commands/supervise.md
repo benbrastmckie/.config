@@ -162,26 +162,6 @@ The command detects the workflow type and executes only the appropriate phases:
 - **Recovery Rate**: >95% for transient errors (timeouts, file locks)
 - **Performance Overhead**: <5% for recovery infrastructure
 
-### Relationship with /orchestrate
-
-This command (`/supervise`) and `/orchestrate` serve different purposes and are complementary tools:
-
-**Use /supervise for:**
-- Research-and-plan workflows (most common)
-- Debug-only workflows
-- Workflows requiring clean fail-fast behavior
-- Scenarios where minimalism and speed are priorities
-
-**Use /orchestrate for:**
-- Complex multi-phase implementation workflows
-- Workflows requiring extensive parallel agent coordination
-- Scenarios needing recursive supervision (10+ research topics)
-- Projects with complex wave-based execution patterns
-
-**Current Status:** Both commands are actively maintained. Any future decisions about deprecation or consolidation are outside the scope of this implementation and will be handled separately based on user feedback and production usage patterns.
-
-**Auto-Recovery:** This command now includes auto-recovery features similar to `/orchestrate`, making it production-ready for most workflows while maintaining its clean, minimal architecture.
-
 ## Auto-Recovery
 
 This command includes minimal auto-recovery capabilities for transient failures while maintaining fail-fast behavior for permanent errors.
