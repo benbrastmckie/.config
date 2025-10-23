@@ -158,9 +158,192 @@ The command detects the workflow type and executes only the appropriate phases:
 ### Performance Targets
 
 - **Context Usage**: <25% throughout workflow
-- **File Creation Rate**: 100% (strong enforcement, no retries)
+- **File Creation Rate**: 100% with auto-recovery (single retry for transient failures)
 - **Time Efficiency**: 15-25% faster than /orchestrate for non-implementation workflows
-- **Zero Fallbacks**: Single working path, fail-fast on errors
+- **Recovery Rate**: >95% for transient errors (timeouts, file locks)
+- **Performance Overhead**: <5% for recovery infrastructure
+
+### Relationship with /orchestrate
+
+This command (`/supervise`) and `/orchestrate` serve different purposes and are complementary tools:
+
+**Use /supervise for:**
+- Research-and-plan workflows (most common)
+- Debug-only workflows
+- Workflows requiring clean fail-fast behavior
+- Scenarios where minimalism and speed are priorities
+
+**Use /orchestrate for:**
+- Complex multi-phase implementation workflows
+- Workflows requiring extensive parallel agent coordination
+- Scenarios needing recursive supervision (10+ research topics)
+- Projects with complex wave-based execution patterns
+
+**Current Status:** Both commands are actively maintained. Any future decisions about deprecation or consolidation are outside the scope of this implementation and will be handled separately based on user feedback and production usage patterns.
+
+**Auto-Recovery:** This command now includes auto-recovery features similar to `/orchestrate`, making it production-ready for most workflows while maintaining its clean, minimal architecture.
+
+## Auto-Recovery
+
+This command includes minimal auto-recovery capabilities for transient failures while maintaining fail-fast behavior for permanent errors.
+
+### Recovery Philosophy
+
+**Auto-recover from transient failures**:
+- Network timeouts
+- Temporary file locks
+- Rate limiting (API throttling)
+- Resource temporarily unavailable
+
+**Fail-fast for permanent errors**:
+- Syntax errors
+- Missing dependencies
+- Invalid configuration
+- Permission errors
+
+### Recovery Mechanism
+
+**Single-Retry Strategy**:
+1. Agent invocation completes
+2. Verify expected output file exists
+3. If missing: Classify error type
+4. If transient: Sleep 1s, retry agent invocation once
+5. If permanent or retry fails: Display enhanced error and terminate
+
+**No User Prompts**: Recovery is fully automated. Users only see errors on terminal failures.
+
+## Enhanced Error Reporting
+
+When workflow failures occur, the command provides detailed diagnostic information:
+
+### Error Location Extraction
+
+Parses common error formats to extract file:line information:
+- `SyntaxError at file.js:42: Missing closing brace`
+- `Error in module.py:156 - undefined variable`
+- `file:line:column` format from compilers
+
+### Specific Error Types
+
+Categorizes errors into 4 types for better diagnostics:
+1. **timeout** - Network timeouts, connection failures
+2. **syntax_error** - Code syntax issues, parsing failures
+3. **missing_dependency** - Import errors, package not found
+4. **unknown** - Unclassified errors
+
+### Recovery Suggestions
+
+Provides context-specific actionable guidance on failures:
+
+**Timeout errors**:
+- Check network connection
+- Retry workflow
+- Increase timeout threshold
+
+**Syntax errors**:
+- Check syntax at file:line
+- Run linter
+- Verify closing braces/brackets
+
+**Missing dependency errors**:
+- Install missing package
+- Check import statements
+- Verify PATH and environment
+
+### Error Display Format
+
+```
+ERROR: [Specific Error Type] at [file:line]
+  → [Error message]
+
+  Recovery suggestions:
+  1. [Suggestion 1]
+  2. [Suggestion 2]
+  3. [Suggestion 3]
+```
+
+## Partial Failure Handling
+
+### Research Phase Resilience
+
+The research phase (Phase 1) supports partial success when running multiple parallel agents:
+
+**Success Threshold**: ≥50% of research agents must succeed
+
+**Behavior**:
+- 4 agents invoked, 3 succeed, 1 fails → Continue with 3 reports
+- 4 agents invoked, 2 succeed, 2 fail → Continue with 2 reports (50% threshold)
+- 4 agents invoked, 1 succeeds, 3 fail → Terminate (insufficient coverage)
+
+**Rationale**: Some research is better than no research. Missing 1-2 reports is acceptable if majority succeed.
+
+**Warning**: Workflow logs which reports failed and continues with partial results.
+
+## Checkpoint Resume
+
+### Phase-Boundary Checkpoints
+
+Checkpoints are saved after completion of:
+- Phase 1 (Research)
+- Phase 2 (Planning)
+- Phase 3 (Implementation)
+- Phase 4 (Testing)
+
+**Not checkpointed**: Phase 5 (Debug - conditional), Phase 6 (Documentation - final)
+
+### Checkpoint Schema
+
+Minimal v1.0 format:
+```json
+{
+  "schema_version": "1.0",
+  "workflow_type": "supervise",
+  "workflow_description": "...",
+  "current_phase": 2,
+  "completed_phases": [0, 1],
+  "scope": "research-and-plan",
+  "topic_path": "/path/to/specs/NNN_topic",
+  "artifact_paths": {
+    "research_reports": [...],
+    "plan_path": "...",
+    "overview_path": "..."
+  }
+}
+```
+
+### Auto-Resume Behavior
+
+**On workflow startup**:
+1. Check for `.claude/data/checkpoints/supervise_latest.json`
+2. If exists: Validate checkpoint (phase valid, artifacts exist)
+3. If valid: Skip completed phases, resume from next phase
+4. If invalid: Delete checkpoint silently, start fresh
+
+**No User Prompts**: Resume is fully automated and seamless.
+
+**Cleanup**: Checkpoint deleted on successful workflow completion.
+
+## Progress Markers
+
+### Format
+
+```
+PROGRESS: [Phase N] - [action]
+```
+
+### Examples
+
+```
+PROGRESS: [Phase 0] - Topic directory created
+PROGRESS: [Phase 1] - Research agent 1/4 invoked
+PROGRESS: [Phase 1] - Research complete (4/4 succeeded)
+PROGRESS: [Phase 2] - Planning agent invoked
+PROGRESS: [Resume] - Skipping completed phases 0-2
+```
+
+### Purpose
+
+Provides workflow visibility without TodoWrite overhead. Silent markers emitted at phase transitions and critical checkpoints.
 
 ## Shared Utility Functions
 
@@ -1921,14 +2104,27 @@ Expected performance targets:
 - [ ] Imperative language ratio ≥95%: MUST/WILL/SHALL for all required actions
 - [ ] Step-by-step enforcement: STEP 1/2/3 pattern in all agent templates
 - [ ] Mandatory verification: Explicit checkpoints after every file operation
-- [ ] 100% file creation rate: Strong enforcement achieves success on first attempt
-- [ ] Zero retry infrastructure: Single template per agent type, no attempt loops
+- [ ] 100% file creation rate with auto-recovery: Single retry for transient failures
+- [ ] Minimal retry infrastructure: Single-retry strategy (not multi-attempt loops)
 
 ### Performance Targets
 - [ ] File size: 2,500-3,000 lines (achieved)
 - [ ] Context usage: <25% throughout workflow
 - [ ] Time efficiency: 15-25% faster for non-implementation workflows
 - [ ] Code coverage: ≥80% test coverage for scope detection logic
+- [ ] Recovery rate: >95% for transient errors (timeouts, file locks)
+- [ ] Performance overhead: <5% for recovery infrastructure
+- [ ] Checkpoint resume: Seamless auto-resume from phase boundaries
+
+### Auto-Recovery Features
+- [ ] Transient error auto-recovery: Single retry for timeouts and file locks
+- [ ] Permanent error fail-fast: Immediate termination with enhanced error reporting
+- [ ] Error location extraction: Parse file:line from error messages
+- [ ] Specific error type detection: Categorize into 4 types (timeout, syntax, dependency, unknown)
+- [ ] Recovery suggestions: Context-specific actionable guidance on failures
+- [ ] Partial research failure handling: ≥50% success threshold allows continuation
+- [ ] Progress markers: PROGRESS: [Phase N] emitted at phase transitions
+- [ ] Checkpoint save/resume: Phase-boundary checkpoints with auto-resume
 
 ### Deficiency Resolution
 - [ ] ✓ Research agents create files on first attempt (vs inline summaries)
