@@ -103,26 +103,26 @@ Remove inappropriate command cross-references from the /supervise command docume
 
 ---
 
-### Phase 2.6: Remove /implement Next Steps Suggestions
+### Phase 2.6: Remove /implement Next Steps Suggestions [COMPLETED]
 **Objective**: Remove all suggestions to run /implement command after workflow completion (lines 788, 1508, 2057)
 
 **Tasks**:
-- [ ] Locate line 788 (likely in completion summary for research-and-plan workflow)
-- [ ] Remove echo statement: `echo "    /implement $PLAN_PATH"`
-- [ ] Locate line 1508 (likely duplicate in different workflow context)
-- [ ] Remove duplicate echo statement
-- [ ] Locate line 2057 (likely in usage example documentation)
-- [ ] Remove comment or documentation line: `# - Suggests: /implement <plan-path>`
-- [ ] Replace with generic next steps guidance:
+- [x] Locate line 788 (likely in completion summary for research-and-plan workflow)
+- [x] Remove echo statement: `echo "    /implement $PLAN_PATH"`
+- [x] Locate line 1508 (likely duplicate in different workflow context)
+- [x] Remove duplicate echo statement
+- [x] Locate line 2057 (likely in usage example documentation)
+- [x] Remove comment or documentation line: `# - Suggests: /implement <plan-path>`
+- [x] Replace with generic next steps guidance:
   - "Next steps: Execute the implementation plan to complete the workflow"
   - "The plan is ready for execution" (without specifying how)
-- [ ] Ensure completion messages remain informative
+- [x] Ensure completion messages remain informative
 
 **Testing**:
-- [ ] Verify completion summaries don't suggest specific external commands
-- [ ] Check that users understand plan creation was successful
-- [ ] Validate all three locations were updated
-- [ ] Run `grep -n "/implement" supervise.md` to verify only architectural prohibitions remain
+- [x] Verify completion summaries don't suggest specific external commands
+- [x] Check that users understand plan creation was successful
+- [x] Validate all three locations were updated
+- [x] Run `grep -n "/implement" supervise.md` to verify only architectural prohibitions remain
 
 **Complexity**: 3/10
 **Estimated Time**: 25 minutes
