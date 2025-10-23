@@ -1400,6 +1400,50 @@ prune_phase_metadata "research"
 # Context saved: 95% (5000 tokens → 250 tokens)
 ```
 
+### Example 6: /research Command with Hierarchical Research
+
+```bash
+# User runs:
+/research "authentication patterns and security best practices"
+
+# /research automatically decomposes topic into 2-4 subtopics:
+SUBTOPICS=(
+  "jwt_implementation_patterns"
+  "oauth2_flows_and_providers"
+  "security_best_practices"
+)
+
+# Pre-calculates hierarchical paths:
+RESEARCH_SUBDIR="specs/074_auth_patterns/reports/001_research/"
+SUBTOPIC_PATHS=(
+  "$RESEARCH_SUBDIR/001_jwt_implementation_patterns.md"
+  "$RESEARCH_SUBDIR/002_oauth2_flows_and_providers.md"
+  "$RESEARCH_SUBDIR/003_security_best_practices.md"
+)
+OVERVIEW_PATH="$RESEARCH_SUBDIR/OVERVIEW.md"  # ALL CAPS, not numbered
+
+# Invokes 3 research-specialist agents in parallel:
+# - Each agent receives pre-calculated absolute path
+# - Agents create reports independently
+# - 40-60% time savings vs sequential
+
+# After all subtopic reports created:
+# - Invokes research-synthesizer agent
+# - Creates OVERVIEW.md synthesis report
+# - Invokes spec-updater for cross-references
+
+# Final structure:
+# specs/074_auth_patterns/reports/001_research/
+#   ├── 001_jwt_implementation_patterns.md
+#   ├── 002_oauth2_flows_and_providers.md
+#   ├── 003_security_best_practices.md
+#   └── OVERVIEW.md  # Final synthesis (ALL CAPS)
+
+# Context reduction: 95% (3x 5000 chars → 750 chars)
+```
+
+**OVERVIEW.md Convention**: The overview file is always named `OVERVIEW.md` (ALL CAPS, not numbered) to distinguish it as the final synthesis report rather than another numbered subtopic report. This makes it easy to identify the entry point for understanding all research in a hierarchical research directory.
+
 ## Agent Invocation Patterns
 
 ### Overview
