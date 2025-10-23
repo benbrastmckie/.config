@@ -71,10 +71,23 @@ specs/042_authentication/
 │   ├── 001_user_auth.md
 │   └── 002_session.md
 ├── reports/
-│   ├── 001_auth_patterns.md
-│   └── 002_security_practices.md
+│   ├── 001_auth_patterns.md            # Single-topic report (/report command)
+│   ├── 002_security_practices.md       # Single-topic report
+│   └── 003_research/                   # Hierarchical research (/research command)
+│       ├── 001_jwt_patterns.md         # Individual subtopic
+│       ├── 002_oauth_flows.md          # Individual subtopic
+│       ├── 003_security_best_practices.md  # Individual subtopic
+│       └── OVERVIEW.md                 # Final synthesis (ALL CAPS, not numbered)
 └── debug/
     └── 001_token_refresh.md
+```
+
+**Hierarchical Research Subdirectories**:
+- Created by `/research` command for multi-subtopic investigations
+- Format: `NNN_research/` within `reports/` directory
+- Contains numbered individual subtopic reports (001, 002, 003...)
+- Contains `OVERVIEW.md` (ALL CAPS, not numbered) as final synthesis
+- OVERVIEW.md distinguishes final synthesis from individual subtopic reports
 ```
 
 ### Complete Topic Structure Example

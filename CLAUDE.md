@@ -310,6 +310,7 @@ Located in `.claude/commands/`:
 - `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
 - `/report <topic>` - Generate research documentation in specs/reports/
+- `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (improved /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts

@@ -190,6 +190,27 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
+#### /research
+**Purpose**: Research topics using hierarchical multi-agent pattern (improved /report)
+
+**Usage**: `/research <topic or question>`
+
+**Features**:
+- Automatic topic decomposition into 2-4 subtopics
+- Parallel research-specialist agents for faster execution (40-60% time savings)
+- Hierarchical structure with individual subtopic reports
+- Comprehensive OVERVIEW.md synthesis report (ALL CAPS)
+- Cross-references between all reports
+- Better organization with grouped subdirectories
+
+**Output**: `specs/{NNN_topic}/reports/{NNN_research}/` directory containing:
+- Individual subtopic reports: `001_subtopic.md`, `002_subtopic.md`, etc.
+- Final synthesis: `OVERVIEW.md` (ALL CAPS, not numbered)
+
+**Note**: Improved alternative to `/report` with automatic hierarchical research. The existing `/report` command remains available as a fallback option.
+
+---
+
 #### /test
 **Purpose**: Run project-specific tests based on CLAUDE.md protocols
 
