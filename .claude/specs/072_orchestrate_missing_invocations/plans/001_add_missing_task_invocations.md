@@ -207,25 +207,27 @@ RESEARCH_TASK_COUNT=$(grep -A 200 "Research.*retry" .claude/commands/orchestrate
 
 ---
 
-### Phase 4: Cleanup and Validation
+### Phase 4: Cleanup and Validation [COMPLETED]
 **Objective**: Remove duplicate templates and add validation script
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Remove template definition sections (lines 1030-1127):
-  - [ ] PLAN-ARCHITECT INVOCATION - STANDARD TEMPLATE
-  - [ ] PLAN-ARCHITECT INVOCATION - ULTRA-EXPLICIT TEMPLATE
-  - [ ] PLAN-ARCHITECT INVOCATION - STEP-BY-STEP TEMPLATE
-  - [ ] Reason: Now inline in case statements, duplicates are confusing
-- [ ] Remove research template definitions (similar section for research agents)
-- [ ] Create validation script: `.claude/lib/validate-orchestrate-implementation.sh`
-  - [ ] Test 1: No SlashCommand invocations (grep fails on "SlashCommand(")
-  - [ ] Test 2: At least 2 Task invocations present (research + planning)
-  - [ ] Test 3: All "YOU MUST" comments followed by actual Task code
-  - [ ] Test 4: Case statements have all 3 branches (standard, ultra-explicit, step-by-step)
-- [ ] Make validation script executable (chmod +x)
-- [ ] Run validation script to verify all fixes
+- [x] Remove template definition sections (lines 946-1133):
+  - [x] RESEARCH AGENT INVOCATION templates (STANDARD, ULTRA-EXPLICIT, STEP-BY-STEP)
+  - [x] PLAN-ARCHITECT INVOCATION templates (STANDARD, ULTRA-EXPLICIT, STEP-BY-STEP)
+  - [x] Template Selection Logic section
+  - [x] Template Escalation Strategy section
+  - [x] Reason: Now inline in case statements, duplicates are confusing
+- [x] Create validation script: `.claude/lib/validate-orchestrate-implementation.sh`
+  - [x] Test 1: No SlashCommand invocations (excludes comments)
+  - [x] Test 2: At least 6 Task invocations present (3 research + 3 planning)
+  - [x] Test 3: Research retry loop has 3 Task invocations
+  - [x] Test 4: Planning retry loop has 3 Task invocations
+  - [x] Test 5: Case statements have all 3 branches (standard, ultra-explicit, step-by-step)
+  - [x] Test 6: Context preparation exists
+- [x] Make validation script executable (chmod +x)
+- [x] Run validation script to verify all fixes
 
 **Testing**:
 ```bash
