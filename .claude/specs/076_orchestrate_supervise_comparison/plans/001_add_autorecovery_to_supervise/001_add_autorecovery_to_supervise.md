@@ -222,7 +222,7 @@ echo "✓ Restored from backup: $BACKUP_FILE"
 
 ---
 
-### Phase 0: Utility Integration and Error Classification
+### Phase 0: Utility Integration and Error Classification [COMPLETED]
 
 **Objective**: Integrate error-handling.sh and create minimal recovery wrappers
 
@@ -234,16 +234,16 @@ echo "✓ Restored from backup: $BACKUP_FILE"
 - Wrapper functions SHALL NOT exceed 20 lines each (minimal overhead requirement)
 
 **Tasks**:
-- [ ] **MUST** add error-handling.sh sourcing to supervise.md:260 (after utility initialization section)
-- [ ] **MUST** create `classify_and_retry()` wrapper function in supervise.md shared utilities
+- [x] **MUST** add error-handling.sh sourcing to supervise.md:260 (after utility initialization section)
+- [x] **MUST** create `classify_and_retry()` wrapper function in supervise.md shared utilities
   - Takes agent output, classifies error type
   - Returns: "retry" | "fail" | "success"
   - Integrates `classify_error()` from error-handling.sh:20-42
-- [ ] Create `verify_and_retry()` wrapper combining verification + classification
+- [x] Create `verify_and_retry()` wrapper combining verification + classification
   - Input: file_path, agent_output, agent_type
   - Logic: verify file → classify error if missing → retry if transient
   - Max 1 retry (not 3 like /orchestrate)
-- [ ] Create `emit_progress()` helper for silent progress markers
+- [x] Create `emit_progress()` helper for silent progress markers
   - Format: `PROGRESS: [Phase N] - [action]`
   - No TodoWrite overhead, just echo with prefix
 
@@ -266,9 +266,9 @@ verify_and_retry "/tmp/test_report.md" "REPORT_CREATED: /tmp/test_report.md" "re
 - `.claude/commands/supervise.md:260-342` (shared utilities section)
 
 **Success Criteria**:
-- [ ] Error classification correctly identifies transient vs permanent errors
-- [ ] verify_and_retry performs exactly 1 retry for transient failures
-- [ ] All wrappers under 20 lines each (minimal overhead)
+- [x] Error classification correctly identifies transient vs permanent errors
+- [x] verify_and_retry performs exactly 1 retry for transient failures
+- [x] All wrappers under 20 lines each (minimal overhead)
 
 ---
 

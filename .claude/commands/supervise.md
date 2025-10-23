@@ -275,6 +275,73 @@ verify_file_created() {
 }
 
 # ═══════════════════════════════════════════════════════════════
+# Error Handling and Recovery Integration
+# ═══════════════════════════════════════════════════════════════
+
+# Source error-handling library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../lib/error-handling.sh" ]; then
+  source "$SCRIPT_DIR/../lib/error-handling.sh"
+else
+  echo "ERROR: error-handling.sh not found"
+  exit 1
+fi
+
+# classify_and_retry: Classify error and return retry decision
+# Usage: classify_and_retry <agent_output>
+# Returns: "retry" | "fail" | "success"
+classify_and_retry() {
+  local agent_output="${1:-}"
+
+  # Check for success indicators
+  if echo "$agent_output" | grep -q "REPORT_CREATED\|PLAN_CREATED\|IMPLEMENTATION_COMPLETE"; then
+    echo "success"
+    return
+  fi
+
+  # Classify error using error-handling.sh
+  local error_type=$(classify_error "$agent_output")
+
+  if [ "$error_type" == "$ERROR_TYPE_TRANSIENT" ]; then
+    echo "retry"
+  else
+    echo "fail"
+  fi
+}
+
+# verify_and_retry: Verify file creation with single retry for transient failures
+# Usage: verify_and_retry <file_path> <agent_output> <agent_type>
+# Returns: 0 on success, 1 on failure
+verify_and_retry() {
+  local file_path="$1"
+  local agent_output="$2"
+  local agent_type="$3"
+
+  # First attempt verification
+  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+    return 0
+  fi
+
+  # File missing - classify error
+  local retry_decision=$(classify_and_retry "$agent_output")
+
+  if [ "$retry_decision" == "retry" ]; then
+    echo "⚠️  Transient error detected - retrying once..."
+    return 2  # Signal caller to retry
+  else
+    return 1  # Permanent failure
+  fi
+}
+
+# emit_progress: Emit silent progress marker
+# Usage: emit_progress <phase_number> <action>
+emit_progress() {
+  local phase="$1"
+  local action="$2"
+  echo "PROGRESS: [Phase $phase] - $action"
+}
+
+# ═══════════════════════════════════════════════════════════════
 # Completion Summary Display
 # ═══════════════════════════════════════════════════════════════
 
