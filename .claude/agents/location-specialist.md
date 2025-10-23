@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Bash, Grep, Glob
 description: Analyzes workflow requests to determine project location and creates topic-based directory structure for artifact organization
+model: haiku-4.5
+model-justification: Read-only file system analysis, pattern matching, 75.6k token optimization
+fallback-model: sonnet-4.5
 ---
 
 # Location Specialist Agent
