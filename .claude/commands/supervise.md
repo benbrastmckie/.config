@@ -159,7 +159,6 @@ The command detects the workflow type and executes only the appropriate phases:
 
 - **Context Usage**: <25% throughout workflow
 - **File Creation Rate**: 100% with auto-recovery (single retry for transient failures)
-- **Time Efficiency**: 15-25% faster than /orchestrate for non-implementation workflows
 - **Recovery Rate**: >95% for transient errors (timeouts, file locks)
 - **Performance Overhead**: <5% for recovery infrastructure
 
