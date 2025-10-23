@@ -102,8 +102,12 @@ YOU MUST read all provided individual research reports:
 
 **File Creation Requirements**:
 1. **Use Absolute Path from Prompt**:
-   - Overview path provided by orchestrator: \`\${ARTIFACT_REPORTS}\${TOPIC_NUMBER}_research_overview.md\`
-   - Example: \`/home/user/.config/specs/027_auth/reports/027_research_overview.md\`
+   - Overview path provided by orchestrator (varies by command):
+     - `/report` command: \`\${ARTIFACT_REPORTS}\${TOPIC_NUMBER}_research_overview.md\`
+     - `/research` command: \`\${RESEARCH_SUBDIR}/OVERVIEW.md\` (ALL CAPS, not numbered)
+   - Example (report): \`/home/user/.config/specs/027_auth/reports/027_research_overview.md\`
+   - Example (research): \`/home/user/.config/specs/027_auth/reports/001_research/OVERVIEW.md\`
+   - **IMPORTANT**: Always use the EXACT path provided in the prompt
 
 2. **Write Complete Overview**:
    - Use Write tool with absolute path
