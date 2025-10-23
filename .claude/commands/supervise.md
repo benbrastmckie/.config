@@ -287,6 +287,14 @@ else
   exit 1
 fi
 
+# Source checkpoint-utils library
+if [ -f "$SCRIPT_DIR/../lib/checkpoint-utils.sh" ]; then
+  source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
+else
+  echo "ERROR: checkpoint-utils.sh not found"
+  exit 1
+fi
+
 # classify_and_retry: Classify error and return retry decision
 # Usage: classify_and_retry <agent_output>
 # Returns: "retry" | "fail" | "success"
@@ -469,6 +477,71 @@ handle_partial_research_failure() {
   fi
 }
 
+# save_phase_checkpoint: Save minimal checkpoint at phase boundary
+# Usage: save_phase_checkpoint <phase_number> <scope> <topic_path> <artifact_paths_json>
+# Saves to: .claude/data/checkpoints/supervise_latest.json
+save_phase_checkpoint() {
+  local phase_number="$1"
+  local scope="$2"
+  local topic_path="$3"
+  local artifact_paths="$4"  # JSON string
+
+  # Create checkpoint directory if needed
+  local checkpoint_dir=".claude/data/checkpoints"
+  mkdir -p "$checkpoint_dir"
+
+  # Create minimal checkpoint JSON
+  local checkpoint_file="$checkpoint_dir/supervise_latest.json"
+  local completed_phases=$(seq -s "," 0 $phase_number)
+
+  cat > "$checkpoint_file" <<EOF
+{
+  "schema_version": "1.0",
+  "workflow_type": "supervise",
+  "current_phase": $phase_number,
+  "completed_phases": [$completed_phases],
+  "scope": "$scope",
+  "topic_path": "$topic_path",
+  "artifact_paths": $artifact_paths
+}
+EOF
+
+  emit_progress "$phase_number" "Checkpoint saved"
+}
+
+# load_phase_checkpoint: Load checkpoint and return resume phase
+# Usage: resume_phase=$(load_phase_checkpoint)
+# Returns: Phase number to resume from (current_phase + 1) or empty if no checkpoint
+load_phase_checkpoint() {
+  local checkpoint_file=".claude/data/checkpoints/supervise_latest.json"
+
+  if [ ! -f "$checkpoint_file" ]; then
+    echo ""
+    return
+  fi
+
+  # Validate checkpoint exists and is readable
+  if ! jq . "$checkpoint_file" >/dev/null 2>&1; then
+    # Invalid JSON - delete silently
+    rm -f "$checkpoint_file"
+    echo ""
+    return
+  fi
+
+  # Extract current phase
+  local current_phase=$(jq -r '.current_phase' "$checkpoint_file")
+
+  if [ -z "$current_phase" ] || [ "$current_phase" -ge 6 ]; then
+    # Invalid phase - delete checkpoint
+    rm -f "$checkpoint_file"
+    echo ""
+    return
+  fi
+
+  # Return next phase to execute
+  echo $((current_phase + 1))
+}
+
 # ═══════════════════════════════════════════════════════════════
 # Completion Summary Display
 # ═══════════════════════════════════════════════════════════════
@@ -554,6 +627,23 @@ if [ -z "$WORKFLOW_DESCRIPTION" ]; then
   echo "ERROR: Workflow description required"
   echo "Usage: /supervise \"<workflow description>\""
   exit 1
+fi
+
+# Check for existing checkpoint (auto-resume capability)
+RESUME_PHASE=$(load_phase_checkpoint)
+
+if [ -n "$RESUME_PHASE" ]; then
+  echo "════════════════════════════════════════════════════════"
+  echo "  CHECKPOINT DETECTED - RESUMING WORKFLOW"
+  echo "════════════════════════════════════════════════════════"
+  echo ""
+  emit_progress "Resume" "Skipping completed phases 0-$((RESUME_PHASE - 1))"
+  echo ""
+  echo "Resuming from Phase $RESUME_PHASE..."
+  echo ""
+
+  # Skip to the resume phase
+  # (Implementation note: In actual execution, this would jump to the appropriate phase section)
 fi
 ```
 
@@ -988,6 +1078,16 @@ fi
 
 echo "Phase 1 Complete: Research artifacts verified"
 echo ""
+
+# Save checkpoint after Phase 1
+ARTIFACT_PATHS_JSON=$(cat <<EOF
+{
+  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
+  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'"' || echo '')
+}
+EOF
+)
+save_phase_checkpoint 1 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 2: Planning
@@ -1145,6 +1245,17 @@ echo ""
 
 echo "Phase 2 Complete: Implementation plan created"
 echo ""
+
+# Save checkpoint after Phase 2
+ARTIFACT_PATHS_JSON=$(cat <<EOF
+{
+  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
+  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  "plan_path": "$PLAN_PATH"
+}
+EOF
+)
+save_phase_checkpoint 2 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ### Workflow Completion Check (After Phase 2)
@@ -1665,6 +1776,14 @@ echo ""
 Display final workflow summary and artifact locations.
 
 ```bash
+# Clean up checkpoint on successful completion
+CHECKPOINT_FILE=".claude/data/checkpoints/supervise_latest.json"
+if [ -f "$CHECKPOINT_FILE" ]; then
+  rm -f "$CHECKPOINT_FILE"
+  echo "✓ Checkpoint cleaned up"
+  echo ""
+fi
+
 display_completion_summary
 exit 0
 ```

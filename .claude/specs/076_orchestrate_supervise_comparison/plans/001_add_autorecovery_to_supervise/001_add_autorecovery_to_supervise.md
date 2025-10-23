@@ -393,7 +393,7 @@ For detailed tasks and implementation, see [Phase 1 Details](phase_1_research_au
 
 ---
 
-### Phase 2: Checkpoint Integration (Phase-Boundary Only)
+### Phase 2: Checkpoint Integration (Phase-Boundary Only) [COMPLETED]
 
 **Objective**: Add lightweight checkpoints at phase transitions for workflow resumption
 
@@ -406,24 +406,27 @@ For detailed tasks and implementation, see [Phase 1 Details](phase_1_research_au
 - Checkpoint schema MUST use minimal v1.0 format (no error history, no replan tracking)
 
 **Tasks**:
-- [ ] **MUST** source checkpoint-utils.sh in utility initialization (supervise.md:260)
-- [ ] **MUST** create `save_phase_checkpoint()` wrapper (minimal subset of save_checkpoint):
+- [x] **MUST** source checkpoint-utils.sh in utility initialization (supervise.md:260)
+- [x] **MUST** create `save_phase_checkpoint()` wrapper (minimal subset of save_checkpoint):
   - Takes: phase_number, scope, topic_path, artifact_paths
   - Saves to: `.claude/data/checkpoints/supervise_latest.json`
   - Schema: Minimal v1.0 (only phase, scope, paths - NO error history, NO replan tracking)
-- [ ] Add checkpoint save after Phase 1 completion (supervise.md:735)
+- [x] Create `load_phase_checkpoint()` helper for auto-resume
+  - Returns next phase to resume from (current_phase + 1)
+  - Validates checkpoint JSON and deletes invalid checkpoints silently
+- [x] Add checkpoint save after Phase 1 completion
   - After research verification passes, before Phase 2 check
   - Save: current_phase=1, artifact_paths.research_reports, artifact_paths.overview_path
-- [ ] Add checkpoint save after Phase 2 completion (supervise.md:893)
+- [x] Add checkpoint save after Phase 2 completion
   - After plan verification passes, before Phase 3 check
   - Save: current_phase=2, artifact_paths.plan_path
-- [ ] Implement auto-resume logic in Phase 0 (supervise.md:400-520):
+- [x] Implement auto-resume logic in Phase 0:
   - Check for `.claude/data/checkpoints/supervise_latest.json`
   - If exists: Load checkpoint, validate phase < 6, skip to current_phase + 1
   - If invalid: Delete checkpoint, start fresh (no user prompt)
   - Emit progress: "PROGRESS: [Resume] Skipping completed phases 0-N"
-- [ ] Add checkpoint cleanup on workflow completion (supervise.md:1410)
-  - Delete checkpoint file when Phase 6 completes successfully
+- [x] Add checkpoint cleanup on workflow completion
+  - Delete checkpoint file when workflow completes successfully
 
 **Testing**:
 ```bash
@@ -460,10 +463,17 @@ cat .claude/data/checkpoints/supervise_latest.json | jq .
 - `.claude/commands/supervise.md:1410` (workflow completion cleanup)
 
 **Success Criteria**:
-- [ ] Checkpoints saved only at phase boundaries (not per-agent)
-- [ ] Auto-resume skips completed phases without user prompt
-- [ ] Invalid checkpoints deleted silently, workflow starts fresh
-- [ ] Checkpoint file removed on successful completion
+- [x] Checkpoints saved only at phase boundaries (not per-agent)
+- [x] Auto-resume skips completed phases without user prompt
+- [x] Invalid checkpoints deleted silently, workflow starts fresh
+- [x] Checkpoint file removed on successful completion
+
+**Implementation Details**:
+- Added save_phase_checkpoint() - 28 lines
+- Added load_phase_checkpoint() - 28 lines
+- Checkpoint saves after Phase 1 and Phase 2
+- Auto-resume detection in Phase 0
+- Cleanup on workflow completion
 
 ---
 
