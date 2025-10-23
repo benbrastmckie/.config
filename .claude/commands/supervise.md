@@ -763,8 +763,7 @@ display_completion_summary() {
   # Suggest next steps
   if [ "$WORKFLOW_SCOPE" == "research-and-plan" ]; then
     echo "Next Steps:"
-    echo "  To execute the plan:"
-    echo "    /implement $PLAN_PATH"
+    echo "  The plan is ready for execution"
     echo ""
   fi
 }
@@ -1483,8 +1482,7 @@ should_run_phase 3 || {
   echo "  ✓ Summary NOT created (per standards - no implementation)"
   echo ""
   echo "Next Steps:"
-  echo "  To execute the plan:"
-  echo "    /implement $PLAN_PATH"
+  echo "  The plan is ready for execution"
   echo ""
   exit 0
 }
@@ -2033,7 +2031,7 @@ exit 0
 # - Phases executed: 0, 1, 2
 # - Artifacts: 4 research reports + 1 implementation plan
 # - No implementation, no summary (per standards)
-# - Suggests: /implement <plan-path>
+# - Plan ready for execution
 ```
 
 ### Example 3: Full-implementation workflow
