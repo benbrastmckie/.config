@@ -1720,7 +1720,45 @@ CHECKPOINT: Plan path calculated
 Planning phase attempts up to 3 times with escalating template enforcement. Unlike research (which continues with partial results), planning MUST succeed for workflow to continue.
 
 ```bash
+# Prepare planning context
+echo "Preparing planning context..."
+
+# Extract workflow description from arguments (first argument to /orchestrate)
+WORKFLOW_DESCRIPTION="$1"
+
+# Build research reports list from SUCCESSFUL_REPORTS array
+RESEARCH_REPORTS_LIST=""
+if [ ${#SUCCESSFUL_REPORTS[@]} -gt 0 ]; then
+  RESEARCH_REPORTS_LIST="Research Reports (MANDATORY - include all in plan metadata):"
+  local idx=1
+  for report_path in "${SUCCESSFUL_REPORTS[@]}"; do
+    # Extract report title from file
+    report_title=$(grep "^# " "$report_path" | head -1 | sed 's/^# //' 2>/dev/null || echo "Report $idx")
+    RESEARCH_REPORTS_LIST+="
+  ${idx}. ${report_title}: ${report_path}"
+    ((idx++))
+  done
+else
+  RESEARCH_REPORTS_LIST="No research reports (create plan from workflow description only)"
+fi
+
+# Get standards file path
+STANDARDS_FILE="${CLAUDE_PROJECT_DIR}/CLAUDE.md"
+if [ ! -f "$STANDARDS_FILE" ]; then
+  STANDARDS_FILE="Not found - use language-specific defaults"
+fi
+
+# Get current working directory for agent behavioral injection
+CLAUDE_PROJECT_DIR="$(pwd)"
+
+echo "✓ Planning context prepared"
+echo "  - Plan path: $PLAN_PATH"
+echo "  - Research reports: ${#SUCCESSFUL_REPORTS[@]}"
+echo "  - Workflow: $WORKFLOW_DESCRIPTION"
+echo "  - Standards: $STANDARDS_FILE"
+
 # Planning phase with auto-retry
+echo ""
 echo "Planning phase starting with auto-retry..."
 
 max_attempts=3
