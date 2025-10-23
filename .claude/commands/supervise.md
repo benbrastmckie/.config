@@ -1494,7 +1494,7 @@ should_run_phase 3 || {
 
 **Pattern**: Invoke code-writer agent with plan context → Verify implementation artifacts → Track completion
 
-**Critical**: Code-writer agent uses /implement pattern internally (phase-by-phase execution)
+**Critical**: Code-writer agent uses phase-by-phase execution pattern internally (with testing and commits after each phase)
 
 ### Phase 3 Execution Check
 
@@ -1522,7 +1522,7 @@ Task {
 
     STEP 1: Read implementation plan: ${PLAN_PATH}
 
-    STEP 2: Execute plan using /implement pattern:
+    STEP 2: Execute plan using phase-by-phase execution pattern:
             - Phase-by-phase execution
             - Run tests after each phase
             - Create git commits for completed phases
