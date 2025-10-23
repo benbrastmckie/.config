@@ -1163,37 +1163,138 @@ for iteration in 1 2 3; do
   echo ""
 
   # Invoke debug-analyst agent
-  # Task {
-  #   subagent_type: "general-purpose"
-  #   description: "Analyze test failures"
-  #   prompt: "
-  #     Read: .claude/agents/debug-analyst.md
-  #
-  #     STEP 1: Analyze test failures from: ${TOPIC_PATH}/outputs/test_results.md
-  #     STEP 2: Identify root causes and propose fixes
-  #     STEP 3: Create debug report: ${DEBUG_REPORT}
-  #     STEP 4: Return: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
-  #   "
-  # }
+  Task {
+    subagent_type: "general-purpose"
+    description: "Analyze test failures - iteration $iteration"
+    prompt: "
+      Read behavioral guidelines: .claude/agents/debug-analyst.md
+
+      **EXECUTE NOW - DEBUG ANALYSIS REQUIRED**
+
+      STEP 1: Analyze test failures from: ${TOPIC_PATH}/outputs/test_results.md
+              Read the test results file and identify failing tests
+              Extract error messages and stack traces
+
+      STEP 2: Identify root causes and propose fixes
+              For each failing test:
+              - Determine the root cause
+              - Identify the file(s) that need changes
+              - Propose specific fixes with code examples
+
+      STEP 3: Use Write tool IMMEDIATELY to create: ${DEBUG_REPORT}
+              Content: Debug analysis with root causes and proposed fixes
+              **DO THIS FIRST** - File MUST exist before continuing.
+
+      STEP 4: Use Edit tool to expand debug report with:
+              - Root cause analysis for each failure
+              - Specific file changes needed (with line numbers)
+              - Code snippets showing fixes
+              - Priority order for applying fixes
+
+      STEP 5: Return ONLY: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
+              **DO NOT** return full analysis text.
+              Return ONLY the confirmation line above.
+
+      **MANDATORY VERIFICATION**: Orchestrator verifies file exists.
+
+      **REMINDER**: You are the EXECUTOR. Use exact path provided.
+    "
+  }
 
   # Verify debug report created
   verify_file_created "$DEBUG_REPORT" "Debug Report" "$AGENT_OUTPUT"
 
   # Invoke code-writer to apply fixes
-  # Task {
-  #   subagent_type: "general-purpose"
-  #   description: "Apply debug fixes"
-  #   prompt: "
-  #     Read: .claude/agents/code-writer.md
-  #
-  #     STEP 1: Read debug analysis: ${DEBUG_REPORT}
-  #     STEP 2: Apply recommended fixes
-  #     STEP 3: Return: FIXES_APPLIED: {count}
-  #   "
-  # }
+  Task {
+    subagent_type: "general-purpose"
+    description: "Apply debug fixes - iteration $iteration"
+    prompt: "
+      Read behavioral guidelines: .claude/agents/code-writer.md
+
+      **EXECUTE NOW - APPLY FIXES**
+
+      STEP 1: Read debug analysis: ${DEBUG_REPORT}
+              Review all proposed fixes and their priority order
+
+      STEP 2: Apply recommended fixes using Edit tool
+              For each fix:
+              - Locate the file and line number
+              - Apply the exact code change recommended
+              - Preserve code style and formatting
+              - Do NOT skip any fixes
+
+      STEP 3: Verify fixes applied
+              Check that all changes were successfully made
+              Count the number of files modified
+
+      STEP 4: Return fix status:
+              FIXES_APPLIED: {count}
+              FILES_MODIFIED: {list of file paths}
+
+              **DO NOT** return full diff or code listings.
+              Return ONLY status metadata above.
+
+      **STANDARDS COMPLIANCE**:
+      - Follow code standards from: ${STANDARDS_FILE}
+      - Maintain existing indentation and style
+      - Add comments for complex fixes if needed
+
+      **REMINDER**: You are the EXECUTOR. Apply all fixes methodically.
+    "
+  }
+
+  # Parse fixes applied
+  FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
+  echo "Fixes Applied: $FIXES_APPLIED"
+  echo ""
 
   # Re-run tests (invoke test-specialist again)
-  # [Same pattern as Phase 4]
+  echo "Re-running tests to verify fixes..."
+  echo ""
+
+  Task {
+    subagent_type: "general-purpose"
+    description: "Re-run tests after fixes"
+    prompt: "
+      Read behavioral guidelines: .claude/agents/test-specialist.md
+
+      **EXECUTE NOW - RE-RUN TESTS**
+
+      STEP 1: Discover test commands from standards: ${STANDARDS_FILE}
+
+      STEP 2: Run project test suite
+              Execute the same tests that were run in Phase 4
+
+      STEP 3: Update test results report: ${TOPIC_PATH}/outputs/test_results.md
+              Append results from this iteration
+              Note which iteration this is (iteration $iteration)
+
+      STEP 4: Return test status:
+              TEST_STATUS: {passing|failing}
+              TESTS_TOTAL: {N}
+              TESTS_PASSED: {M}
+              TESTS_FAILED: {K}
+
+      **REMINDER**: You are the EXECUTOR. Run the tests now.
+    "
+  }
+
+  # Parse updated test status
+  TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
+  TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
+  TESTS_PASSED=$(echo "$AGENT_OUTPUT" | grep "TESTS_PASSED:" | cut -d: -f2 | xargs)
+  TESTS_FAILED=$(echo "$AGENT_OUTPUT" | grep "TESTS_FAILED:" | cut -d: -f2 | xargs)
+
+  # Update TESTS_PASSING flag based on current test status
+  if [ "$TEST_STATUS" == "passing" ]; then
+    TESTS_PASSING="true"
+  else
+    TESTS_PASSING="false"
+  fi
+
+  echo "Updated Test Status: $TEST_STATUS"
+  echo "Tests: $TESTS_PASSED / $TESTS_TOTAL passed"
+  echo ""
 
   # Check if tests now passing
   if [ "$TESTS_PASSING" == "true" ]; then
