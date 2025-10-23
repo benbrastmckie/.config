@@ -1781,7 +1781,131 @@ for attempt in $(seq 1 $max_attempts); do
   fi
 
   # Invoke plan-architect agent with selected template
-  # YOU MUST use Task tool with appropriate PLAN-ARCHITECT template
+  case "$template" in
+    standard)
+      # STANDARD TEMPLATE - Attempt 1
+      Task {
+        subagent_type: "general-purpose"
+        description: "Create implementation plan using plan-architect behavioral guidelines"
+        timeout: 600000
+        prompt: "
+          Read and follow behavioral guidelines from:
+          ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+          You are acting as a Plan Architect Agent with the tools and constraints
+          defined in that file.
+
+          **PLAN PATH (MANDATORY - Use this EXACT path)**: ${PLAN_PATH}
+
+          Use Write tool to create: ${PLAN_PATH}
+
+          Create implementation plan for: ${WORKFLOW_DESCRIPTION}
+
+          ${RESEARCH_REPORTS_LIST}
+
+          Standards file: ${STANDARDS_FILE}
+
+          Return only: PLAN_CREATED: ${PLAN_PATH}
+
+          Metadata to include:
+          - Phases: [number of phases]
+          - Complexity: [Low|Medium|High]
+          - Estimated Hours: [total hours]
+        "
+      }
+      ;;
+
+    ultra_explicit)
+      # ULTRA-EXPLICIT TEMPLATE - Attempt 2
+      Task {
+        subagent_type: "general-purpose"
+        description: "Create implementation plan - RETRY with ultra-explicit enforcement"
+        timeout: 600000
+        prompt: "
+          Read and follow behavioral guidelines from:
+          ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+          You are acting as a Plan Architect Agent with the tools and constraints
+          defined in that file.
+
+          **CRITICAL: You MUST create a file. This is NON-NEGOTIABLE.**
+
+          **STEP 1 - CREATE FILE NOW**
+          Use the Write tool RIGHT NOW with this exact path:
+          ${PLAN_PATH}
+
+          **STEP 2 - CREATE PLAN**
+          Create comprehensive implementation plan for: ${WORKFLOW_DESCRIPTION}
+
+          ${RESEARCH_REPORTS_LIST}
+
+          Standards file: ${STANDARDS_FILE}
+
+          Follow plan-architect guidelines thoroughly.
+
+          **STEP 3 - RETURN CONFIRMATION ONLY**
+          Return ONLY this text: PLAN_CREATED: ${PLAN_PATH}
+
+          Include metadata:
+          - Phases: [number]
+          - Complexity: [Low|Medium|High]
+          - Estimated Hours: [hours]
+
+          **PROHIBITED**: Do NOT return summaries or plan content in your response.
+        "
+      }
+      ;;
+
+    step_by_step)
+      # STEP-BY-STEP TEMPLATE - Attempt 3
+      Task {
+        subagent_type: "general-purpose"
+        description: "Create implementation plan - FINAL RETRY with step verification"
+        timeout: 600000
+        prompt: "
+          Read and follow behavioral guidelines from:
+          ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+          You are acting as a Plan Architect Agent with the tools and constraints
+          defined in that file.
+
+          **EXECUTE IMMEDIATELY: File creation is your PRIMARY and ONLY deliverable**
+
+          **ACTION 1: CREATE THE FILE**
+          Use Write tool NOW: ${PLAN_PATH}
+          Initial content: '# Implementation Plan: ${WORKFLOW_DESCRIPTION}'
+
+          **ACTION 2: VERIFY FILE CREATED**
+          Use Read tool to confirm file exists: ${PLAN_PATH}
+
+          **ACTION 3: DEVELOP PLAN CONTENT**
+          Create comprehensive implementation plan for: ${WORKFLOW_DESCRIPTION}
+
+          ${RESEARCH_REPORTS_LIST}
+
+          Standards file: ${STANDARDS_FILE}
+
+          Follow all plan-architect behavioral guidelines.
+
+          **ACTION 4: UPDATE FILE WITH FULL PLAN**
+          Use Edit tool to add complete plan content to ${PLAN_PATH}
+
+          **ACTION 5: FINAL VERIFICATION**
+          Use Read tool to verify plan content exists and is complete
+
+          **ACTION 6: RETURN CONFIRMATION**
+          Return ONLY: PLAN_CREATED: ${PLAN_PATH}
+
+          Metadata:
+          - Phases: [number]
+          - Complexity: [Low|Medium|High]
+          - Estimated Hours: [hours]
+
+          **CRITICAL**: If you skip any action, you will fail. Each action is MANDATORY.
+        "
+      }
+      ;;
+  esac
 
   # After agent returns, check if plan file was created
   if [ -f "$PLAN_PATH" ]; then
