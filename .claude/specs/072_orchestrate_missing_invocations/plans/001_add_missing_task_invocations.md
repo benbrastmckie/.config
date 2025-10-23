@@ -118,24 +118,24 @@ grep -A 15 "Prepare planning context" .claude/commands/orchestrate.md | grep -q 
 
 ---
 
-### Phase 2: Add Task Invocation Code in Planning Retry Loop
+### Phase 2: Add Task Invocation Code in Planning Retry Loop [COMPLETED]
 **Objective**: Replace comment placeholder with actual case statement invoking Task tool
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read orchestrate.md lines 1723-1776 (planning retry loop)
-- [ ] Replace lines 1746-1747 (comment placeholder) with case statement:
-  - [ ] Case 'standard': Task invocation with STANDARD template
-  - [ ] Case 'ultra_explicit': Task invocation with ULTRA-EXPLICIT template
-  - [ ] Case 'step_by_step': Task invocation with STEP-BY-STEP template
-- [ ] Each Task invocation includes:
-  - [ ] subagent_type: "general-purpose"
-  - [ ] description: appropriate for attempt number
-  - [ ] timeout: 600000 (10 minutes)
-  - [ ] prompt: behavioral injection referencing plan-architect.md
-  - [ ] Context injection: PLAN_PATH, WORKFLOW_DESCRIPTION, RESEARCH_REPORTS_LIST
-- [ ] Verify case statement syntax is correct (esac at end)
+- [x] Read orchestrate.md lines 1723-1776 (planning retry loop)
+- [x] Replace lines 1746-1747 (comment placeholder) with case statement:
+  - [x] Case 'standard': Task invocation with STANDARD template
+  - [x] Case 'ultra_explicit': Task invocation with ULTRA-EXPLICIT template
+  - [x] Case 'step_by_step': Task invocation with STEP-BY-STEP template
+- [x] Each Task invocation includes:
+  - [x] subagent_type: "general-purpose"
+  - [x] description: appropriate for attempt number
+  - [x] timeout: 600000 (10 minutes)
+  - [x] prompt: behavioral injection referencing plan-architect.md
+  - [x] Context injection: PLAN_PATH, WORKFLOW_DESCRIPTION, RESEARCH_REPORTS_LIST
+- [x] Verify case statement syntax is correct (esac at end)
 
 **Task Prompt Structure** (all 3 templates):
 ```yaml
