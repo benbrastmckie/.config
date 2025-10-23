@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test script for /supervise auto-recovery features
-# Tests: 47 comprehensive tests covering all recovery scenarios
+# Tests: 55 comprehensive tests covering all recovery scenarios
 # Usage: bash test_supervise_recovery.sh
 
 set -euo pipefail
@@ -53,7 +53,7 @@ source_supervise_functions() {
 
     if echo "$error_msg" | grep -Eiq "timeout|connection|network"; then
       echo "retry"
-    elif echo "$error_msg" | grep -Eiq "syntax|import|module.*not.*found"; then
+    elif echo "$error_msg" | grep -Eiq "syntax|import|module.*not.*found|cannot find module"; then
       echo "fail"
     else
       echo "success"
@@ -709,11 +709,100 @@ test_suite_8_error_logging() {
   fi
 }
 
+# Test Suite 9: Enhanced Error Reporting Integration in verify_file_created (8 tests)
+test_suite_9_verify_file_integration() {
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Test Suite 9: verify_file_created Integration (8 tests)"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  # Test 9.1: File missing - error location extraction
+  run_test "verify_file_created: Extract location from agent output"
+  agent_output="Error at implementation.sh:127 - file creation failed"
+  location=$(extract_error_location "$agent_output")
+  if echo "$location" | grep -q "implementation.sh:127"; then
+    pass_test "Location extracted from agent output in file missing scenario"
+  else
+    fail_test "Location extracted from agent output in file missing scenario" "Expected 'implementation.sh:127', got '$location'"
+  fi
+
+  # Test 9.2: File missing - error type detection
+  run_test "verify_file_created: Detect error type from agent output"
+  agent_output="Connection timeout while creating file"
+  error_type=$(detect_specific_error_type "$agent_output")
+  if [ "$error_type" = "timeout" ]; then
+    pass_test "Timeout error type detected in file missing scenario"
+  else
+    fail_test "Timeout error type detected in file missing scenario" "Expected 'timeout', got '$error_type'"
+  fi
+
+  # Test 9.3: File missing - syntax error type
+  run_test "verify_file_created: Detect syntax error in agent output"
+  agent_output="SyntaxError: unexpected token at writer.js:45"
+  error_type=$(detect_specific_error_type "$agent_output")
+  if [ "$error_type" = "syntax_error" ]; then
+    pass_test "Syntax error type detected in file missing scenario"
+  else
+    fail_test "Syntax error type detected in file missing scenario" "Expected 'syntax_error', got '$error_type'"
+  fi
+
+  # Test 9.4: File missing - dependency error type
+  run_test "verify_file_created: Detect dependency error in agent output"
+  agent_output="ModuleNotFoundError: No module named 'writer' at writer.py:12"
+  error_type=$(detect_specific_error_type "$agent_output")
+  if [ "$error_type" = "missing_dependency" ]; then
+    pass_test "Dependency error type detected in file missing scenario"
+  else
+    fail_test "Dependency error type detected in file missing scenario" "Expected 'missing_dependency', got '$error_type'"
+  fi
+
+  # Test 9.5: File missing - unknown error type fallback
+  run_test "verify_file_created: Unknown error type fallback"
+  agent_output="Something mysterious went wrong"
+  error_type=$(detect_specific_error_type "$agent_output")
+  if [ "$error_type" = "unknown" ]; then
+    pass_test "Unknown error type detected as fallback"
+  else
+    fail_test "Unknown error type detected as fallback" "Expected 'unknown', got '$error_type'"
+  fi
+
+  # Test 9.6: File missing - timeout recovery suggestions
+  run_test "verify_file_created: Timeout recovery suggestions"
+  suggestions=$(suggest_recovery_actions "timeout" "file.sh:42" "Connection timeout")
+  if echo "$suggestions" | grep -q "network" || echo "$suggestions" | grep -q "Retry"; then
+    pass_test "Timeout recovery suggestions provided"
+  else
+    fail_test "Timeout recovery suggestions provided" "Suggestions incomplete: $suggestions"
+  fi
+
+  # Test 9.7: File missing - syntax error recovery suggestions
+  run_test "verify_file_created: Syntax error recovery suggestions"
+  suggestions=$(suggest_recovery_actions "syntax_error" "test.sh:45" "unexpected token")
+  if echo "$suggestions" | grep -q "syntax" || echo "$suggestions" | grep -q "linter"; then
+    pass_test "Syntax error recovery suggestions provided"
+  else
+    fail_test "Syntax error recovery suggestions provided" "Suggestions incomplete: $suggestions"
+  fi
+
+  # Test 9.8: Empty file - complete error context
+  run_test "verify_file_created: Complete error context for empty file"
+  agent_output="File created but write failed at writer.py:89"
+  location=$(extract_error_location "$agent_output")
+  error_type=$(detect_specific_error_type "$agent_output")
+  suggestions=$(suggest_recovery_actions "$error_type" "$location" "$agent_output")
+
+  if [ -n "$location" ] && [ -n "$error_type" ] && [ -n "$suggestions" ]; then
+    pass_test "Complete error context available for empty file scenario"
+  else
+    fail_test "Complete error context available for empty file scenario" "Missing components - location: $location, type: $error_type"
+  fi
+}
+
 # Main test execution
 main() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "  /supervise Auto-Recovery Test Suite"
-  echo "  Testing 47 recovery scenarios"
+  echo "  Testing 55 recovery scenarios"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   # Source functions
@@ -728,6 +817,7 @@ main() {
   test_suite_6_checkpoint_resume     # 4 tests
   test_suite_7_progress_markers      # 7 tests
   test_suite_8_error_logging         # 7 tests
+  test_suite_9_verify_file_integration  # 8 tests
 
   # Summary
   echo ""
