@@ -80,23 +80,23 @@ Remove inappropriate command cross-references from the /supervise command docume
 
 ---
 
-### Phase 2.5: Remove /debug Command Suggestion
+### Phase 2.5: Remove /debug Command Suggestion [COMPLETED]
 **Objective**: Remove suggestion to use /debug command in error recovery guidance (line 610)
 
 **Tasks**:
-- [ ] Locate line 610 in error recovery or troubleshooting section
-- [ ] Read surrounding context to understand the guidance flow
-- [ ] Remove the line "3. Use /debug for detailed investigation" (or similar)
-- [ ] Replace with generic inline guidance such as:
+- [x] Locate line 610 in error recovery or troubleshooting section
+- [x] Read surrounding context to understand the guidance flow
+- [x] Remove the line "3. Use /debug for detailed investigation" (or similar)
+- [x] Replace with generic inline guidance such as:
   - "3. Investigate root causes using research agents with detailed prompts"
   - "3. Create debug report analyzing failure patterns and proposing fixes"
-- [ ] Ensure error recovery guidance remains complete and actionable
-- [ ] Verify numbered list remains coherent if applicable
+- [x] Ensure error recovery guidance remains complete and actionable
+- [x] Verify numbered list remains coherent if applicable
 
 **Testing**:
-- [ ] Verify error recovery section provides clear, self-contained guidance
-- [ ] Check that users understand what to do without external command reference
-- [ ] Validate markdown formatting and list structure
+- [x] Verify error recovery section provides clear, self-contained guidance
+- [x] Check that users understand what to do without external command reference
+- [x] Validate markdown formatting and list structure
 
 **Complexity**: 2/10
 **Estimated Time**: 15 minutes
