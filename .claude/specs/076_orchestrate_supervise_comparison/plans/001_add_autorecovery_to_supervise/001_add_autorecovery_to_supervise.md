@@ -272,7 +272,7 @@ verify_and_retry "/tmp/test_report.md" "REPORT_CREATED: /tmp/test_report.md" "re
 
 ---
 
-### Phase 0.5: Enhanced Error Reporting Infrastructure
+### Phase 0.5: Enhanced Error Reporting Infrastructure [COMPLETED]
 
 **Objective**: Add strategic error reporting infrastructure for improved user experience on failures
 
@@ -285,18 +285,18 @@ verify_and_retry "/tmp/test_report.md" "REPORT_CREATED: /tmp/test_report.md" "re
 - Total addition SHALL NOT exceed 120 lines (minimal overhead requirement)
 
 **Tasks**:
-- [ ] **MUST** create `extract_error_location()` wrapper (supervise.md shared utilities)
+- [x] **MUST** create `extract_error_location()` wrapper (supervise.md shared utilities)
   - Parses `file:line` format from error messages
   - Based on error-handling.sh:130-145
   - Returns: {file: "path", line: number} or null
-  - ~15 lines
-- [ ] Create `detect_specific_error_type()` wrapper (4 categories, not 8)
+  - Actual: 12 lines
+- [x] Create `detect_specific_error_type()` wrapper (4 categories, not 8)
   - Input: error message string
   - Categories: "timeout", "syntax_error", "missing_dependency", "unknown"
   - Based on error-handling.sh:77-128 (simplified)
   - Uses pattern matching on error keywords
-  - ~30 lines
-- [ ] Create `suggest_recovery_actions()` wrapper
+  - Actual: 24 lines
+- [x] Create `suggest_recovery_actions()` wrapper
   - Input: error_type, location, error_message
   - Returns: Array of 2-3 actionable suggestions
   - Based on error-handling.sh:44-71
@@ -304,13 +304,13 @@ verify_and_retry "/tmp/test_report.md" "REPORT_CREATED: /tmp/test_report.md" "re
     - syntax_error → "Check syntax at file:line", "Run linter", "Verify closing braces"
     - missing_dependency → "Install missing package", "Check imports", "Verify PATH"
     - timeout → "Check network connection", "Retry workflow", "Increase timeout"
-  - ~25 lines
-- [ ] Create `handle_partial_research_failure()` wrapper (research phase only)
+  - Actual: 32 lines
+- [x] Create `handle_partial_research_failure()` wrapper (research phase only)
   - Input: total_agents, successful_agents, failed_agents[]
   - Logic: If success_rate ≥ 50%, continue with warning
   - Returns: "continue" | "terminate"
   - Based on error-handling.sh:532-604
-  - ~40 lines
+  - Actual: 44 lines
 - [ ] Integrate enhanced error reporting into error display
   - Update error messages to include location (when available)
   - Display specific error type instead of generic "permanent error"
@@ -325,6 +325,7 @@ verify_and_retry "/tmp/test_report.md" "REPORT_CREATED: /tmp/test_report.md" "re
       2. [Suggestion 2]
       3. [Suggestion 3]
     ```
+  - Note: This will be done during Phase 1 implementation when integrating with actual agent invocations
 
 **Testing**:
 ```bash
@@ -359,12 +360,12 @@ result=$(handle_partial_research_failure 4 1 "agent_2 agent_3 agent_4")
 - `.claude/commands/supervise.md:260-342` (shared utilities section, adds ~110 lines)
 
 **Success Criteria**:
-- [ ] Error location extraction works for common error formats
-- [ ] Error type detection correctly categorizes 4 error types
-- [ ] Recovery suggestions provide actionable guidance
-- [ ] Partial research failure allows continuation at ≥50% success rate
-- [ ] Enhanced error messages displayed on all terminal failures
-- [ ] Total addition: ~110 lines (minimal overhead for significant UX improvement)
+- [x] Error location extraction works for common error formats
+- [x] Error type detection correctly categorizes 4 error types
+- [x] Recovery suggestions provide actionable guidance
+- [x] Partial research failure allows continuation at ≥50% success rate
+- [ ] Enhanced error messages displayed on all terminal failures (deferred to Phase 1)
+- [x] Total addition: 112 lines (minimal overhead for significant UX improvement)
 
 **Impact**:
 - **Lines Added**: ~110 (4 wrappers + integration)

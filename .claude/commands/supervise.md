@@ -341,6 +341,134 @@ emit_progress() {
   echo "PROGRESS: [Phase $phase] - $action"
 }
 
+# extract_error_location: Extract file:line location from error message
+# Usage: extract_error_location <error_message>
+# Returns: file:line format or empty string
+extract_error_location() {
+  local error_msg="$1"
+
+  # Try common patterns: file.ext:line, at file.ext:line
+  if echo "$error_msg" | grep -qo '[a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+'; then
+    echo "$error_msg" | grep -o '[a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+' | head -1
+  elif echo "$error_msg" | grep -qo 'at [a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+'; then
+    echo "$error_msg" | grep -o 'at [a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+' | sed 's/^at //' | head -1
+  else
+    echo ""
+  fi
+}
+
+# detect_specific_error_type: Detect specific error category (simplified 4 categories)
+# Usage: detect_specific_error_type <error_message>
+# Returns: timeout | syntax_error | missing_dependency | unknown
+detect_specific_error_type() {
+  local error_msg="$1"
+
+  # Timeout errors
+  if echo "$error_msg" | grep -qiE "timeout|timed out|deadline exceeded|connection.*timeout"; then
+    echo "timeout"
+    return
+  fi
+
+  # Syntax errors
+  if echo "$error_msg" | grep -qiE "syntax error|syntaxerror|unexpected.*token|expected.*got"; then
+    echo "syntax_error"
+    return
+  fi
+
+  # Missing dependencies (imports, modules, packages)
+  if echo "$error_msg" | grep -qiE "cannot.*import|module.*not.*found|modulenotfounderror|no module named|require.*failed|package.*not.*found"; then
+    echo "missing_dependency"
+    return
+  fi
+
+  # Default: unknown
+  echo "unknown"
+}
+
+# suggest_recovery_actions: Generate context-specific recovery suggestions
+# Usage: suggest_recovery_actions <error_type> <location> <error_message>
+# Returns: Multi-line string with 2-3 suggestions
+suggest_recovery_actions() {
+  local error_type="$1"
+  local location="$2"
+  local error_msg="$3"
+
+  case "$error_type" in
+    timeout)
+      echo "1. Check network connection and retry"
+      echo "2. Increase timeout value if possible"
+      echo "3. Verify remote service availability"
+      ;;
+    syntax_error)
+      if [ -n "$location" ]; then
+        echo "1. Check syntax at $location"
+      else
+        echo "1. Check syntax in error location"
+      fi
+      echo "2. Run linter on affected file"
+      echo "3. Verify matching braces/brackets"
+      ;;
+    missing_dependency)
+      echo "1. Install missing package/module"
+      echo "2. Check import statements"
+      echo "3. Verify PATH and environment variables"
+      ;;
+    unknown)
+      echo "1. Review full error message above"
+      echo "2. Check recent code changes"
+      echo "3. Use /debug for detailed investigation"
+      ;;
+  esac
+}
+
+# handle_partial_research_failure: Allow continuation if ≥50% research agents succeed
+# Usage: handle_partial_research_failure <total_agents> <successful_agents> <failed_agents_list>
+# Returns: continue | terminate
+handle_partial_research_failure() {
+  local total_agents="$1"
+  local successful_agents="$2"
+  local failed_agents="$3"
+
+  # Calculate success rate
+  local success_rate=$(( (successful_agents * 100) / total_agents ))
+
+  echo ""
+  echo "════════════════════════════════════════════════════════"
+  echo "    PARTIAL RESEARCH FAILURE DETECTED"
+  echo "════════════════════════════════════════════════════════"
+  echo ""
+  echo "Research Completion Status:"
+  echo "  Total agents: $total_agents"
+  echo "  Successful: $successful_agents"
+  echo "  Failed: $(( total_agents - successful_agents ))"
+  echo "  Success rate: ${success_rate}%"
+  echo ""
+
+  if [ "$failed_agents" != "" ]; then
+    echo "Failed agents:"
+    echo "  $failed_agents"
+    echo ""
+  fi
+
+  # Decision: continue if ≥50% success
+  if [ "$success_rate" -ge 50 ]; then
+    echo "Decision: CONTINUE with partial results"
+    echo "Reason: Success rate ≥50% provides sufficient coverage"
+    echo ""
+    echo "Note: Planning phase will work with available research."
+    echo "      Some areas may have less detail than optimal."
+    echo ""
+    echo "continue"
+  else
+    echo "Decision: TERMINATE workflow"
+    echo "Reason: Success rate <50% - insufficient coverage"
+    echo ""
+    echo "Recommendation: Fix research issues and retry workflow"
+    echo ""
+    echo "terminate"
+  fi
+}
+
 # ═══════════════════════════════════════════════════════════════
 # Completion Summary Display
 # ═══════════════════════════════════════════════════════════════
