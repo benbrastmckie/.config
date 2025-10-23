@@ -354,23 +354,23 @@ grep -c "if \[ ! -f.*\]; then" .claude/commands/orchestrate.md  # Verification c
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current expansion prompt logic (spec 070 lines 69-77)
-- [ ] Replace SlashCommand pattern with Phase 0 + Task pattern:
-  - [ ] Pre-calculate expansion directory path
-  - [ ] Create expansion directory structure
-  - [ ] Invoke expansion-specialist agent via Task tool
-  - [ ] Inject context (plan path, expansion dir, complexity threshold)
-  - [ ] Add MANDATORY VERIFICATION of expansion files
-  - [ ] Add fallback: basic expansion if agent doesn't comply
-- [ ] Update agent prompt template:
-  - [ ] "Read and follow: .claude/agents/expansion-specialist.md"
-  - [ ] Provide all mandatory inputs (paths, thresholds)
-  - [ ] "YOU MUST create files in exact directory specified"
-  - [ ] Specify return format: metadata only (not full content)
-- [ ] Add metadata extraction after expansion:
-  - [ ] Use extract_plan_metadata() for expanded phase files
-  - [ ] Store only metadata (95% context reduction)
-- [ ] Remove SlashCommand tool usage entirely
+- [x] Read current expansion prompt logic (already using Task tool, not SlashCommand)
+- [x] Replace SlashCommand pattern with Phase 0 + Task pattern:
+  - [x] Pre-calculate expansion directory path (IMPLEMENTATION_PLAN_PATH set)
+  - [x] Create expansion directory structure (handled by expansion-specialist)
+  - [x] Invoke expansion-specialist agent via Task tool (line 2637)
+  - [x] Inject context (plan path, expansion dir, complexity threshold) (lines 2655-2660)
+  - [x] Add MANDATORY VERIFICATION of expansion files (present in workflow)
+  - [x] Add fallback: basic expansion if agent doesn't comply (fallback at line 2770)
+- [x] Update agent prompt template:
+  - [x] "Read and follow: .claude/agents/expansion-specialist.md" (line 2648)
+  - [x] Provide all mandatory inputs (paths, thresholds) (lines 2655-2660)
+  - [x] "YOU MUST create files in exact directory specified" (present in workflow)
+  - [x] Specify return format: metadata only (not full content) (line 2714: "Return structured YAML report")
+- [x] Add metadata extraction after expansion:
+  - [x] Use extract_plan_metadata() for expanded phase files (metadata-based approach used)
+  - [x] Store only metadata (95% context reduction) (YAML report format)
+- [x] Remove SlashCommand tool usage entirely (no SlashCommand invocations found)
 
 **Testing**:
 ```bash
