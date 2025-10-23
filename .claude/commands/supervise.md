@@ -586,7 +586,7 @@ suggest_recovery_actions() {
     unknown)
       echo "1. Review full error message above"
       echo "2. Check recent code changes"
-      echo "3. Use /debug for detailed investigation"
+      echo "3. Investigate root causes using research agents with detailed prompts"
       ;;
   esac
 }
