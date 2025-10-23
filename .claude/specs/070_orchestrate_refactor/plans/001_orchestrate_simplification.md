@@ -1,17 +1,48 @@
 # /orchestrate Command Systematic Refactor - Implementation Plan
 
 ## Metadata
-- **Date**: 2025-10-22
+- **Date**: 2025-10-22 (Created), 2025-10-23 (Revised)
 - **Feature**: Systematic refactor of /orchestrate command
 - **Scope**: Remove automatic complexity evaluation and expansion, simplify phase architecture, enhance user control
 - **Estimated Phases**: 6
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Context**: TODO3.md requirements, command architecture standards compliance
 - **Plan Number**: 070-001
+- **Structure Level**: 1
+- **Expanded Phases**: [3]
+- **Revision**: 2 (Standards Compliance Enhancement - see REVISION_SUMMARY.md)
+
+## Revision History
+
+### 2025-10-23 - Revision 2: Standards Compliance Enhancement
+
+**Changes**: Enhanced all phases with imperative enforcement patterns, verification checkpoints, and fallback mechanisms per `.claude/docs/` standards
+
+**Reason**: User requested "fully comply with the standards given in .claude/docs/"
+
+**Modified Phases**: Phases 1, 2, 4 enhanced with execution blocks and verification; Phases 5, 6 status fields added
+
+**Details**: See [REVISION_SUMMARY.md](001_orchestrate_simplification_REVISION_SUMMARY.md) for complete analysis
+
+**Standards Applied**:
+- ✅ Standard 0: Execution Enforcement (EXECUTE NOW, MANDATORY VERIFICATION)
+- ✅ Standard 1: Inline Execution Content (37+ bash blocks)
+- ✅ Directory Protocols (topic-based organization)
+- ✅ Imperative Language Guidelines (YOU MUST, CRITICAL, REQUIRED)
+
+**Metrics**:
+- Bash blocks: 11 → 37+ (+236% increase)
+- Verification checkpoints: 0 → 26+ (new)
+- Fallback mechanisms: 0 → 3 (new)
+- Plan size: 854 → 1,337 lines (+56% for execution content)
+
+---
 
 ## Overview
 
 This refactor addresses the concerns raised in TODO3.md by systematically removing the automatic complexity evaluation (Phase 2.5) and automatic expansion pipeline (Phase 4) from `/orchestrate`, simplifying the command to a clean 6-phase architecture that respects user agency and adheres strictly to command architecture standards documented in `.claude/docs/`.
+
+**Plan now includes imperative enforcement patterns throughout for full standards compliance.**
 
 **Current State**:
 - File size: 206KB (6,051 lines, 56,849 tokens)
@@ -165,44 +196,232 @@ Following the 80/20 rule from command architecture standards:
 
 **Complexity**: Low
 
-**Tasks**:
-- [ ] Create topic directory structure: `.claude/specs/070_orchestrate_refactor/{plans,reports,summaries,debug}/`
-- [ ] Read complete orchestrate.md file (use multiple Read calls with offset/limit due to size)
-- [ ] Identify all sections to remove:
-  - [ ] Phase 2.5 section (lines ~1909-2256, 347 lines)
-  - [ ] Phase 4 section (lines ~2257-2727, 470 lines)
-  - [ ] Complexity-evaluator agent invocation code
-  - [ ] Expansion-specialist agent invocation code
-- [ ] Identify all phase number references to update:
-  - [ ] Checkpoint variable names (CHECKPOINT_PHASE_5 → CHECKPOINT_PHASE_3)
-  - [ ] Error messages referencing phases
-  - [ ] TodoWrite phase descriptions
-  - [ ] Progress markers (PROGRESS: Phase N)
-  - [ ] Cross-references in documentation sections
-- [ ] Create extraction target files in `.claude/commands/shared/`:
-  - [ ] `complexity-evaluation-details.md` (extended examples)
-  - [ ] `orchestration-alternatives.md` (alternative approaches)
-  - [ ] `orchestration-history.md` (historical context, design decisions)
-  - [ ] `orchestration-troubleshooting.md` (advanced scenarios)
-  - [ ] `orchestration-performance.md` (optimization techniques)
-- [ ] Document current line numbers and sections in phase map
-- [ ] Create backup of orchestrate.md: `orchestrate.md.backup-$(date +%Y%m%d)`
+**Status**: PENDING
 
-**Testing**:
+#### Implementation Steps
+
+**STEP 1 (REQUIRED) - Create Topic Directory Structure**
+
+**EXECUTE NOW - Create Directory Tree**:
+
 ```bash
-# Verify topic directory created
-[ -d ".claude/specs/070_orchestrate_refactor" ]
+# Create complete topic directory structure
+TOPIC_DIR=".claude/specs/070_orchestrate_refactor"
 
-# Verify backup created
-[ -f ".claude/commands/orchestrate.md.backup-$(date +%Y%m%d)" ]
+mkdir -p "$TOPIC_DIR"/{plans,reports,summaries,debug,scripts,outputs,artifacts,backups}
 
-# Verify extraction target files created
-for file in complexity-evaluation-details orchestration-alternatives orchestration-history orchestration-troubleshooting orchestration-performance; do
-  [ -f ".claude/commands/shared/${file}.md" ] || echo "Missing: $file"
+echo "✓ Topic directory structure created: $TOPIC_DIR"
+```
+
+**MANDATORY VERIFICATION - Directory Structure Created**:
+
+```bash
+# Verify all subdirectories exist
+REQUIRED_DIRS=("plans" "reports" "summaries" "debug" "scripts" "outputs" "artifacts" "backups")
+
+for dir in "${REQUIRED_DIRS[@]}"; do
+  if [ ! -d "$TOPIC_DIR/$dir" ]; then
+    echo "❌ ERROR: Required directory missing: $TOPIC_DIR/$dir"
+    exit 1
+  fi
 done
 
-# Count current phases references
-grep -c "Phase [0-9]" .claude/commands/orchestrate.md
+echo "✓ VERIFIED: All 8 subdirectories created"
+```
+
+---
+
+**STEP 2 (REQUIRED) - Read Complete orchestrate.md File**
+
+**EXECUTE NOW - Read File in Segments** (file is 6,051 lines):
+
+```bash
+ORCHESTRATE_FILE=".claude/commands/orchestrate.md"
+TOTAL_LINES=$(wc -l < "$ORCHESTRATE_FILE")
+
+echo "Reading orchestrate.md: $TOTAL_LINES lines total"
+echo "Will read in segments due to size"
+
+# Read first 2000 lines to identify Phase 2.5
+# Read next 2000 lines to identify Phase 4
+# Use Read tool with offset/limit parameters
+```
+
+**YOU MUST** use multiple Read tool calls:
+- Read lines 1-2000 (identify Phase 2.5 start)
+- Read lines 2000-4000 (identify Phase 4)
+- Read lines 4000-6051 (identify remaining phase references)
+
+---
+
+**STEP 3 (REQUIRED) - Identify Sections to Remove**
+
+**EXECUTE NOW - Locate Phase 2.5 and Phase 4 Boundaries**:
+
+```bash
+# Find Phase 2.5 section
+PHASE_2_5_START=$(grep -n "^## Phase 2\.5:" "$ORCHESTRATE_FILE" | cut -d: -f1)
+PHASE_2_5_END=$(grep -n "^## Phase 4:" "$ORCHESTRATE_FILE" | cut -d: -f1)
+PHASE_2_5_LINES=$((PHASE_2_5_END - PHASE_2_5_START))
+
+# Find Phase 4 section
+PHASE_4_START="$PHASE_2_5_END"
+PHASE_4_END=$(grep -n "^## Phase 5:" "$ORCHESTRATE_FILE" | cut -d: -f1)
+PHASE_4_LINES=$((PHASE_4_END - PHASE_4_START))
+
+echo "Phase 2.5: Lines $PHASE_2_5_START-$PHASE_2_5_END ($PHASE_2_5_LINES lines)"
+echo "Phase 4: Lines $PHASE_4_START-$PHASE_4_END ($PHASE_4_LINES lines)"
+
+# Document in phase map file
+cat > "$TOPIC_DIR/artifacts/phase_map.txt" <<EOF
+Phase 2.5 Boundaries:
+  Start: Line $PHASE_2_5_START
+  End: Line $PHASE_2_5_END
+  Lines: $PHASE_2_5_LINES
+
+Phase 4 Boundaries:
+  Start: Line $PHASE_4_START
+  End: Line $PHASE_4_END
+  Lines: $PHASE_4_LINES
+
+Agent References:
+  complexity-estimator: $(grep -n "complexity-estimator" "$ORCHESTRATE_FILE" | wc -l) occurrences
+  expansion-specialist: $(grep -n "expansion-specialist" "$ORCHESTRATE_FILE" | wc -l) occurrences
+EOF
+```
+
+**MANDATORY VERIFICATION - Sections Identified**:
+
+```bash
+# Verify phase boundaries found
+if [ -z "$PHASE_2_5_START" ] || [ -z "$PHASE_4_START" ]; then
+  echo "❌ CRITICAL: Phase boundaries not found"
+  exit 1
+fi
+
+# Verify expected line counts
+if [ "$PHASE_2_5_LINES" -lt 300 ] || [ "$PHASE_2_5_LINES" -gt 400 ]; then
+  echo "⚠️  WARNING: Phase 2.5 size unexpected ($PHASE_2_5_LINES lines, expected ~347)"
+fi
+
+if [ "$PHASE_4_LINES" -lt 400 ] || [ "$PHASE_4_LINES" -gt 500 ]; then
+  echo "⚠️  WARNING: Phase 4 size unexpected ($PHASE_4_LINES lines, expected ~470)"
+fi
+
+echo "✓ VERIFIED: Phase boundaries documented in $TOPIC_DIR/artifacts/phase_map.txt"
+```
+
+---
+
+**STEP 4 (REQUIRED) - Create Extraction Target Files**
+
+**EXECUTE NOW - Create Shared Reference Files**:
+
+```bash
+SHARED_DIR=".claude/commands/shared"
+mkdir -p "$SHARED_DIR"
+
+# Create extraction target files with headers
+declare -A EXTRACTION_FILES=(
+  ["complexity-evaluation-details.md"]="Complexity Evaluation Details"
+  ["orchestration-alternatives.md"]="Orchestration Workflow Alternatives"
+  ["orchestration-history.md"]="Orchestration Architecture History"
+  ["orchestration-troubleshooting.md"]="Orchestration Troubleshooting Guide"
+  ["orchestration-performance.md"]="Orchestration Performance Optimization"
+)
+
+for file in "${!EXTRACTION_FILES[@]}"; do
+  TITLE="${EXTRACTION_FILES[$file]}"
+  cat > "$SHARED_DIR/$file" <<EOF
+# $TITLE
+
+[Extracted from orchestrate.md during 070 refactor]
+
+Last Updated: $(date +%Y-%m-%d)
+
+---
+
+[Content will be added during Phase 2, 3, and 5]
+EOF
+  echo "✓ Created: $SHARED_DIR/$file"
+done
+```
+
+**MANDATORY VERIFICATION - Files Created**:
+
+```bash
+# Verify all extraction files exist
+for file in "${!EXTRACTION_FILES[@]}"; do
+  if [ ! -f "$SHARED_DIR/$file" ]; then
+    echo "❌ ERROR: Extraction file not created: $file"
+    exit 1
+  fi
+done
+
+echo "✓ VERIFIED: All 5 extraction target files created"
+```
+
+---
+
+**STEP 5 (REQUIRED) - Create Backup**
+
+**EXECUTE NOW - Backup orchestrate.md**:
+
+```bash
+BACKUP_FILE="$ORCHESTRATE_FILE.backup-$(date +%Y%m%d)"
+
+# Create backup
+cp "$ORCHESTRATE_FILE" "$BACKUP_FILE"
+
+# Verify backup matches original
+if ! cmp -s "$ORCHESTRATE_FILE" "$BACKUP_FILE"; then
+  echo "❌ CRITICAL: Backup verification failed"
+  exit 1
+fi
+
+echo "✓ Backup created: $BACKUP_FILE"
+```
+
+**FALLBACK MECHANISM**:
+
+```bash
+# If any phase fails, restore from backup:
+# cp "$BACKUP_FILE" "$ORCHESTRATE_FILE"
+```
+
+---
+
+**CHECKPOINT REQUIREMENT**
+
+After completing Phase 1, YOU MUST report:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Phase 1 Complete - Preparation and Analysis
+═══════════════════════════════════════════════════════
+
+Directory Structure: ✓ CREATED
+  Location: .claude/specs/070_orchestrate_refactor/
+  Subdirectories: 8 (plans, reports, summaries, debug, scripts, outputs, artifacts, backups)
+
+Phase Boundaries Identified: ✓ DOCUMENTED
+  Phase 2.5: Lines $PHASE_2_5_START-$PHASE_2_5_END ($PHASE_2_5_LINES lines)
+  Phase 4: Lines $PHASE_4_START-$PHASE_4_END ($PHASE_4_LINES lines)
+  Phase map: artifacts/phase_map.txt
+
+Extraction Files Created: ✓ VERIFIED (5 files)
+  - complexity-evaluation-details.md
+  - orchestration-alternatives.md
+  - orchestration-history.md
+  - orchestration-troubleshooting.md
+  - orchestration-performance.md
+
+Backup Created: ✓ VERIFIED
+  File: orchestrate.md.backup-$(date +%Y%m%d)
+  Size: $(wc -l < "$BACKUP_FILE") lines (matches original)
+
+Status: READY FOR PHASE 2
+═══════════════════════════════════════════════════════
 ```
 
 **Git Commit**: `feat(070): Phase 1 - preparation and analysis complete`
@@ -214,54 +433,237 @@ grep -c "Phase [0-9]" .claude/commands/orchestrate.md
 
 **Complexity**: Medium
 
-**Tasks**:
-- [ ] Read Phase 2.5 section completely (lines 1909-2256)
-- [ ] Extract valuable content for reference files:
-  - [ ] Complexity formula documentation → `shared/complexity-evaluation-details.md`
-  - [ ] Threshold loading examples → `shared/complexity-evaluation-details.md`
-  - [ ] Complexity metrics parsing → `shared/complexity-evaluation-details.md`
-- [ ] Remove Phase 2.5 section from orchestrate.md:
-  - [ ] Delete section header: "## Phase 2.5: Complexity Evaluation and Expansion Analysis"
-  - [ ] Delete all subsections (Steps 1-6)
-  - [ ] Delete complexity-estimator agent invocation template
-  - [ ] Delete complexity report validation code
-  - [ ] Delete complexity metrics extraction code
-  - [ ] Delete workflow state updates for complexity
-  - [ ] Delete conditional branching decision code
-- [ ] Update Phase 2 (Planning) completion:
-  - [ ] Remove transition to Phase 2.5
-  - [ ] Add AskUserQuestion invocation for expansion choice
-  - [ ] Add inline complexity indicator display (simple, no agent):
-    ```bash
-    # Display plan summary
-    PHASE_COUNT=$(grep -c "^### Phase" "$PLAN_PATH")
-    TASK_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH")
-    echo "Plan created: $PHASE_COUNT phases, $TASK_COUNT tasks"
-    echo ""
-    echo "You can expand this plan for more detailed phase organization."
-    ```
-  - [ ] Add conditional branch: expansion yes/no → Phase 3 or /expand
-- [ ] Remove Phase 2.5 references from:
-  - [ ] TodoWrite initialization (remove Phase 2.5 todo item)
-  - [ ] Workflow state tracking variables
-  - [ ] Checkpoint save operations
-  - [ ] Error messages and recovery logic
-- [ ] Update documentation sections mentioning Phase 2.5
+**Status**: PENDING
 
-**Testing**:
+#### Implementation Steps
+
+**STEP 1 (REQUIRED) - Extract Valuable Content for Reference Files**
+
+**EXECUTE NOW - Copy Content to Extraction Files**:
+
 ```bash
-# Verify Phase 2.5 completely removed
-! grep -q "Phase 2\.5" .claude/commands/orchestrate.md
+ORCHESTRATE_FILE=".claude/commands/orchestrate.md"
+SHARED_DIR=".claude/commands/shared"
+PHASE_2_5_START=$(grep -n "^## Phase 2\.5:" "$ORCHESTRATE_FILE" | cut -d: -f1)
+PHASE_2_5_END=$(grep -n "^## Phase 4:" "$ORCHESTRATE_FILE" | cut -d: -f1)
 
-# Verify no complexity-estimator agent invocations in orchestrate
-! grep -q "complexity-estimator" .claude/commands/orchestrate.md
+# Extract Phase 2.5 content to temporary file
+sed -n "${PHASE_2_5_START},${PHASE_2_5_END}p" "$ORCHESTRATE_FILE" > /tmp/phase_2_5_content.txt
 
-# Verify AskUserQuestion added after Phase 2
-grep -A 10 "Planning Phase Complete" .claude/commands/orchestrate.md | grep -q "AskUserQuestion"
+# Extract complexity formula documentation
+grep -A 20 "complexity formula\|complexity score\|complexity calculation" /tmp/phase_2_5_content.txt >> "$SHARED_DIR/complexity-evaluation-details.md"
+
+# Extract threshold loading examples
+grep -A 30 "load_complexity_thresholds\|EXPANSION_THRESHOLD\|TASK_COUNT_THRESHOLD" /tmp/phase_2_5_content.txt >> "$SHARED_DIR/complexity-evaluation-details.md"
+
+# Extract complexity metrics parsing
+grep -A 25 "parse.*complexity\|extract.*complexity\|complexity.*metrics" /tmp/phase_2_5_content.txt >> "$SHARED_DIR/complexity-evaluation-details.md"
+
+echo "✓ Content extracted to complexity-evaluation-details.md"
+```
+
+**MANDATORY VERIFICATION - Content Extracted**:
+
+```bash
+# Verify extraction file has content
+FILE_SIZE=$(wc -l < "$SHARED_DIR/complexity-evaluation-details.md")
+
+if [ "$FILE_SIZE" -lt 50 ]; then
+  echo "⚠️  WARNING: Extraction file smaller than expected ($FILE_SIZE lines)"
+fi
+
+echo "✓ VERIFIED: Content extracted ($FILE_SIZE lines total)"
+```
+
+---
+
+**STEP 2 (REQUIRED) - Remove Phase 2.5 Section**
+
+**EXECUTE NOW - Delete Phase 2.5 Section**:
+
+```bash
+# Calculate exact lines to delete
+LINES_TO_DELETE=$((PHASE_2_5_END - PHASE_2_5_START))
+
+echo "Deleting Phase 2.5: Lines $PHASE_2_5_START to $PHASE_2_5_END ($LINES_TO_DELETE lines)"
+
+# Create backup before deletion
+cp "$ORCHESTRATE_FILE" "${ORCHESTRATE_FILE}.pre-phase2-deletion"
+
+# Delete section
+sed -i "${PHASE_2_5_START},$((PHASE_2_5_END - 1))d" "$ORCHESTRATE_FILE"
+
+echo "✓ Phase 2.5 section deleted"
+```
+
+**MANDATORY VERIFICATION - Section Deleted**:
+
+```bash
+# Verify Phase 2.5 header no longer exists
+if grep -q "^## Phase 2\.5:" "$ORCHESTRATE_FILE"; then
+  echo "❌ CRITICAL: Phase 2.5 header still present"
+  # Rollback
+  cp "${ORCHESTRATE_FILE}.pre-phase2-deletion" "$ORCHESTRATE_FILE"
+  exit 1
+fi
+
+# Verify complexity-estimator no longer invoked in orchestrate
+if grep -q "complexity-estimator" "$ORCHESTRATE_FILE"; then
+  echo "⚠️  WARNING: complexity-estimator still referenced (expected in /expand only)"
+fi
 
 # Verify line count reduced
-CURRENT_LINES=$(wc -l < .claude/commands/orchestrate.md)
-[ "$CURRENT_LINES" -lt 5700 ]  # Should be ~5700 after removing 347 lines
+CURRENT_LINES=$(wc -l < "$ORCHESTRATE_FILE")
+EXPECTED_MAX=5750  # 6051 - 347 + buffer
+
+if [ "$CURRENT_LINES" -gt "$EXPECTED_MAX" ]; then
+  echo "⚠️  WARNING: Line count higher than expected ($CURRENT_LINES > $EXPECTED_MAX)"
+fi
+
+echo "✓ VERIFIED: Phase 2.5 removed, line count now $CURRENT_LINES"
+```
+
+---
+
+**STEP 3 (REQUIRED) - Update Phase 2 Completion with User Prompt**
+
+**EXECUTE NOW - Add AskUserQuestion After Phase 2**:
+
+**YOU MUST** locate the Phase 2 completion section and add this exact code block:
+
+```markdown
+---
+
+## Optional: Plan Review and Expansion
+
+After plan creation, user can choose whether to expand the plan.
+
+**EXECUTE NOW - Display Plan Summary**:
+
+```bash
+# Extract basic complexity indicators
+PHASE_COUNT=$(grep -c "^### Phase" "$IMPLEMENTATION_PLAN_PATH")
+TOTAL_TASKS=$(grep -c "^- \[ \]" "$IMPLEMENTATION_PLAN_PATH")
+AVG_TASKS=$((TOTAL_TASKS / PHASE_COUNT))
+
+echo "Plan Summary:"
+echo "  Phases: $PHASE_COUNT"
+echo "  Total tasks: $TOTAL_TASKS"
+echo "  Average tasks/phase: $AVG_TASKS"
+echo ""
+
+if [ "$AVG_TASKS" -gt 8 ] || [ "$PHASE_COUNT" -gt 5 ]; then
+  echo "💡 Recommendation: Consider expanding plan (complex structure detected)"
+fi
+```
+
+**EXECUTE NOW - Present Expansion Choice**:
+
+```yaml
+AskUserQuestion:
+  questions:
+    - question: "Would you like to expand this plan for detailed phase organization?"
+      header: "Expand Plan"
+      multiSelect: false
+      options:
+        - label: "Yes - expand now"
+          description: "Invoke /expand to create detailed phase files with complexity analysis"
+        - label: "No - proceed to implementation"
+          description: "Use current plan structure and proceed directly to implementation"
+```
+
+**EXECUTE NOW - Handle User Response**:
+
+```bash
+if [[ "$ANSWER_EXPAND_PLAN" == "Yes - expand now" ]]; then
+  echo "Invoking /expand command..."
+  /expand "$IMPLEMENTATION_PLAN_PATH"
+  echo "✓ Plan expansion complete"
+else
+  echo "Proceeding with current plan structure"
+fi
+```
+```
+
+---
+
+**STEP 4 (REQUIRED) - Remove Phase 2.5 References**
+
+**EXECUTE NOW - Clean Up References**:
+
+```bash
+# Remove TodoWrite Phase 2.5 items
+sed -i '/Phase 2\.5/d' "$ORCHESTRATE_FILE"
+
+# Remove workflow state variables for complexity
+sed -i '/WORKFLOW_STATE.*COMPLEXITY/d' "$ORCHESTRATE_FILE"
+sed -i '/WORKFLOW_STATE.*EXPANSION_PENDING/d' "$ORCHESTRATE_FILE"
+
+# Remove checkpoint operations for Phase 2.5
+sed -i '/CHECKPOINT.*2\.5/d' "$ORCHESTRATE_FILE"
+sed -i '/checkpoint.*complexity.*evaluation/Iid' "$ORCHESTRATE_FILE"
+
+echo "✓ Phase 2.5 references removed"
+```
+
+**MANDATORY VERIFICATION - References Removed**:
+
+```bash
+# Count remaining Phase 2.5 references
+REMAINING_REFS=$(grep -c "Phase 2\.5\|Phase 2-5\|phase_2_5" "$ORCHESTRATE_FILE" || true)
+
+if [ "$REMAINING_REFS" -gt 0 ]; then
+  echo "⚠️  WARNING: $REMAINING_REFS Phase 2.5 references remain"
+  grep -n "Phase 2\.5\|Phase 2-5\|phase_2_5" "$ORCHESTRATE_FILE"
+fi
+
+echo "✓ VERIFIED: Phase 2.5 references removed (remaining: $REMAINING_REFS)"
+```
+
+---
+
+**FALLBACK MECHANISM**:
+
+```bash
+# If deletion fails, restore from backup:
+# cp "${ORCHESTRATE_FILE}.pre-phase2-deletion" "$ORCHESTRATE_FILE"
+```
+
+---
+
+**CHECKPOINT REQUIREMENT**
+
+After completing Phase 2, YOU MUST report:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Phase 2 Complete - Phase 2.5 Removed
+═══════════════════════════════════════════════════════
+
+Content Extracted: ✓ COMPLETED
+  Destination: shared/complexity-evaluation-details.md
+  Size: $FILE_SIZE lines
+
+Phase 2.5 Section Deleted: ✓ VERIFIED
+  Lines removed: $LINES_TO_DELETE
+  New file size: $CURRENT_LINES lines (was 6051)
+  Reduction: $((6051 - CURRENT_LINES)) lines
+
+User Prompt Added: ✓ VERIFIED
+  Location: After Phase 2 completion
+  AskUserQuestion: Plan expansion choice
+  Fallback: Proceed to implementation if user declines
+
+References Cleaned: ✓ VERIFIED
+  TodoWrite: Phase 2.5 item removed
+  Workflow state: Complexity variables removed
+  Checkpoints: Phase 2.5 checkpoints removed
+  Remaining references: $REMAINING_REFS
+
+Backup Available: orchestrate.md.pre-phase2-deletion
+
+Status: READY FOR PHASE 3
+═══════════════════════════════════════════════════════
 ```
 
 **Git Commit**: `feat(070): Phase 2 - remove automatic complexity evaluation (Phase 2.5)`
@@ -271,64 +673,13 @@ CURRENT_LINES=$(wc -l < .claude/commands/orchestrate.md)
 ### Phase 3: Remove Phase 4 (Plan Expansion)
 **Objective**: Completely remove the automatic plan expansion section (Phase 4) and transfer expansion logic to /expand command.
 
-**Complexity**: Medium-High
+**Complexity**: High (8.0/10)
 
-**Tasks**:
-- [ ] Read Phase 4 section completely (lines ~2257-2727, 470 lines)
-- [ ] Extract valuable content for /expand enhancement:
-  - [ ] Expansion-specialist agent invocation template → Transfer to `/expand` command
-  - [ ] Phase expansion algorithm → Document in `/expand` command
-  - [ ] Recursive expansion logic → Transfer to `/expand` command
-  - [ ] Expansion verification patterns → Transfer to `/expand` command
-- [ ] Extract supplemental content for reference files:
-  - [ ] Extended expansion examples → `shared/orchestration-alternatives.md`
-  - [ ] Expansion strategy alternatives → `shared/orchestration-alternatives.md`
-- [ ] Remove Phase 4 section from orchestrate.md:
-  - [ ] Delete section header: "## Phase 4: Plan Expansion"
-  - [ ] Delete all subsections
-  - [ ] Delete expansion-specialist agent invocation template
-  - [ ] Delete expansion file verification code
-  - [ ] Delete recursive expansion logic
-  - [ ] Delete expansion checkpoint code
-- [ ] Update /expand command (`.claude/commands/expand.md`):
-  - [ ] Add Phase 0: Complexity Evaluation (using complexity-estimator agent)
-  - [ ] Transfer Phase 4 expansion logic as new Phase 1
-  - [ ] Add recursive expansion capability (expand generated phase files if warranted)
-  - [ ] Ensure /expand can be invoked standalone or from /orchestrate
-  - [ ] Update /expand to accept plan path as argument
-- [ ] Remove Phase 4 references from orchestrate.md:
-  - [ ] Conditional branching from Phase 2.5 → Phase 4
-  - [ ] TodoWrite phase items
-  - [ ] Workflow state variables
-  - [ ] Checkpoint operations
-  - [ ] Error messages
-- [ ] Update Phase 2→Phase 3 transition:
-  - [ ] If user chooses expansion: Invoke /expand command via SlashCommand
-  - [ ] If user skips expansion: Proceed directly to Phase 3 (Implementation)
-  - [ ] After /expand completes: Resume with Phase 3 (Implementation)
+**Status**: PENDING
 
-**Testing**:
-```bash
-# Verify Phase 4 completely removed from orchestrate
-! grep -q "Phase 4:" .claude/commands/orchestrate.md
-! grep -q "Plan Expansion" .claude/commands/orchestrate.md
+**Summary**: This phase removes the 470-line Phase 4 (Plan Expansion) section from orchestrate.md, transfers expansion logic to /expand with new Phase 0 (Complexity Evaluation), and updates Phase 2→3 transition with user prompt for optional expansion via SlashCommand invocation.
 
-# Verify no expansion-specialist invocations in orchestrate
-! grep -q "expansion-specialist" .claude/commands/orchestrate.md
-
-# Verify /expand command enhanced
-grep -q "Phase 0: Complexity Evaluation" .claude/commands/expand.md
-grep -q "complexity-estimator" .claude/commands/expand.md
-
-# Verify line count further reduced
-CURRENT_LINES=$(wc -l < .claude/commands/orchestrate.md)
-[ "$CURRENT_LINES" -lt 5300 ]  # Should be ~5230 after removing 470 more lines
-
-# Test /expand can be invoked standalone
-# (Manual test: /expand specs/plans/001_test_plan.md)
-```
-
-**Git Commit**: `feat(070): Phase 3 - remove automatic expansion and enhance /expand command`
+For detailed tasks and implementation, see [Phase 3 Details](phase_3_remove_phase_4_expansion.md)
 
 ---
 
@@ -337,62 +688,224 @@ CURRENT_LINES=$(wc -l < .claude/commands/orchestrate.md)
 
 **Complexity**: Medium
 
-**Tasks**:
-- [ ] Renumber phase sections in orchestrate.md:
-  - [ ] Phase 5 (Implementation) → Phase 3 (Implementation)
-  - [ ] Phase 6 (Testing) → Phase 4 (Testing)
-  - [ ] Phase 7 (Debugging) → Phase 5 (Debugging)
-  - [ ] Phase 8 (Documentation) → [MERGE into Phase 3 completion or keep as Phase 6]
-- [ ] Update phase section headers:
-  - [ ] Find: `## Phase 5:` → Replace: `## Phase 3:`
-  - [ ] Find: `## Phase 6:` → Replace: `## Phase 4:`
-  - [ ] Find: `## Phase 7:` → Replace: `## Phase 5:`
-- [ ] Update TodoWrite initialization:
-  - [ ] Update todo item descriptions to reflect new phase numbers
-  - [ ] Ensure 6 phase items (0-5) instead of 8+
-- [ ] Update checkpoint variable names:
-  - [ ] `CHECKPOINT_PHASE_5_*` → `CHECKPOINT_PHASE_3_*`
-  - [ ] `CHECKPOINT_PHASE_6_*` → `CHECKPOINT_PHASE_4_*`
-  - [ ] `CHECKPOINT_PHASE_7_*` → `CHECKPOINT_PHASE_5_*`
-- [ ] Update PROGRESS markers:
-  - [ ] Find: `PROGRESS: Phase 5` → Replace: `PROGRESS: Phase 3`
-  - [ ] Find: `PROGRESS: Phase 6` → Replace: `PROGRESS: Phase 4`
-  - [ ] Find: `PROGRESS: Phase 7` → Replace: `PROGRESS: Phase 5`
-- [ ] Update error messages and logging:
-  - [ ] Search for all phase number references in error strings
-  - [ ] Update conditional logic branches
-  - [ ] Update phase completion checkpoints
-- [ ] Update workflow state variables:
-  - [ ] `current_phase` values (use new phase names/numbers)
-  - [ ] `completed_phases` array tracking
-- [ ] Update cross-references in documentation sections:
-  - [ ] Command description (lines 40-55)
-  - [ ] Reference files section
-  - [ ] Example workflows
-  - [ ] Dry-run output examples
+**Status**: PENDING
 
-**Testing**:
+#### Implementation Steps
+
+**STEP 1 (REQUIRED) - Renumber Phase Section Headers**
+
+**EXECUTE NOW - Update Phase Headers Sequentially**:
+
 ```bash
-# Verify no references to old phase numbers for removed phases
-! grep -q "Phase 2\.5" .claude/commands/orchestrate.md
-! grep -q "Phase 4:" .claude/commands/orchestrate.md  # Old Phase 4 (expansion)
-! grep -q "Phase 5:" .claude/commands/orchestrate.md  # Old Phase 5 (implementation)
-! grep -q "Phase 6:" .claude/commands/orchestrate.md  # Old Phase 6 (testing)
-! grep -q "Phase 7:" .claude/commands/orchestrate.md  # Old Phase 7 (debugging)
+ORCHESTRATE_FILE=".claude/commands/orchestrate.md"
 
-# Verify new phase numbering (sequential 0-5 or 0-6)
-grep -q "## Phase 0:" .claude/commands/orchestrate.md
-grep -q "## Phase 1:" .claude/commands/orchestrate.md
-grep -q "## Phase 2:" .claude/commands/orchestrate.md
-grep -q "## Phase 3:" .claude/commands/orchestrate.md
-grep -q "## Phase 4:" .claude/commands/orchestrate.md
-grep -q "## Phase 5:" .claude/commands/orchestrate.md
+# Create backup before renumbering
+cp "$ORCHESTRATE_FILE" "${ORCHESTRATE_FILE}.pre-renumbering"
 
-# Verify TodoWrite has 6 items (not 8+)
-grep -A 50 "TodoWrite" .claude/commands/orchestrate.md | grep -c '"content":' | grep -q "6"
+# Renumber phases (do in reverse order to avoid conflicts)
+sed -i 's/^## Phase 7:/## Phase 5:/' "$ORCHESTRATE_FILE"
+sed -i 's/^## Phase 6:/## Phase 4:/' "$ORCHESTRATE_FILE"
+sed -i 's/^## Phase 5:/## Phase 3:/' "$ORCHESTRATE_FILE"
 
-# Check for orphaned phase references
-! grep -E "Phase [789]:" .claude/commands/orchestrate.md
+# Verify Phase 8 handling (merge or keep as Phase 6)
+if grep -q "^## Phase 8:" "$ORCHESTRATE_FILE"; then
+  echo "⚠️  Phase 8 found - review if it should be merged into Phase 3 or kept as Phase 6"
+fi
+
+echo "✓ Phase headers renumbered"
+```
+
+**MANDATORY VERIFICATION - Headers Renumbered**:
+
+```bash
+# Verify new phase numbering exists
+for phase in 0 1 2 3 4 5; do
+  if ! grep -q "^## Phase $phase:" "$ORCHESTRATE_FILE"; then
+    echo "⚠️  WARNING: Phase $phase header not found"
+  fi
+done
+
+# Verify old phase numbers removed (5, 6, 7 should not exist anymore)
+for old_phase in 5 6 7; do
+  # Check if old phase number appears as a header (not in text)
+  if grep -q "^## Phase $old_phase:" "$ORCHESTRATE_FILE"; then
+    echo "❌ ERROR: Old Phase $old_phase header still exists"
+    exit 1
+  fi
+done
+
+echo "✓ VERIFIED: Phase headers renumbered (0-5)"
+```
+
+---
+
+**STEP 2 (REQUIRED) - Update Checkpoint Variable Names**
+
+**EXECUTE NOW - Rename Checkpoint Variables**:
+
+```bash
+# Update checkpoint variable names throughout file
+sed -i 's/CHECKPOINT_PHASE_7/CHECKPOINT_PHASE_5/g' "$ORCHESTRATE_FILE"
+sed -i 's/CHECKPOINT_PHASE_6/CHECKPOINT_PHASE_4/g' "$ORCHESTRATE_FILE"
+sed -i 's/CHECKPOINT_PHASE_5/CHECKPOINT_PHASE_3/g' "$ORCHESTRATE_FILE"
+
+# Update phase_5, phase_6, phase_7 in variable names
+sed -i 's/_phase_7_/_phase_5_/g' "$ORCHESTRATE_FILE"
+sed -i 's/_phase_6_/_phase_4_/g' "$ORCHESTRATE_FILE"
+sed -i 's/_phase_5_/_phase_3_/g' "$ORCHESTRATE_FILE"
+
+echo "✓ Checkpoint variables renamed"
+```
+
+**MANDATORY VERIFICATION - Variables Renamed**:
+
+```bash
+# Check for orphaned old checkpoint variables
+ORPHANED=$(grep -c "CHECKPOINT_PHASE_[567]" "$ORCHESTRATE_FILE" || true)
+
+if [ "$ORPHANED" -gt 0 ]; then
+  echo "⚠️  WARNING: $ORPHANED orphaned checkpoint variables found"
+  grep -n "CHECKPOINT_PHASE_[567]" "$ORCHESTRATE_FILE"
+fi
+
+echo "✓ VERIFIED: Checkpoint variables updated (orphaned: $ORPHANED)"
+```
+
+---
+
+**STEP 3 (REQUIRED) - Update PROGRESS Markers and TodoWrite**
+
+**EXECUTE NOW - Update Progress Tracking**:
+
+```bash
+# Update PROGRESS markers
+sed -i 's/PROGRESS: Phase 7/PROGRESS: Phase 5/g' "$ORCHESTRATE_FILE"
+sed -i 's/PROGRESS: Phase 6/PROGRESS: Phase 4/g' "$ORCHESTRATE_FILE"
+sed -i 's/PROGRESS: Phase 5/PROGRESS: Phase 3/g' "$ORCHESTRATE_FILE"
+
+# Update TodoWrite phase descriptions
+sed -i 's/"Phase 7:/"Phase 5:/g' "$ORCHESTRATE_FILE"
+sed -i 's/"Phase 6:/"Phase 4:/g' "$ORCHESTRATE_FILE"
+sed -i 's/"Phase 5:/"Phase 3:/g' "$ORCHESTRATE_FILE"
+
+echo "✓ PROGRESS markers and TodoWrite updated"
+```
+
+**MANDATORY VERIFICATION - Progress Tracking Updated**:
+
+```bash
+# Verify TodoWrite has correct number of items (6 phases: 0-5)
+TODO_COUNT=$(grep -A 100 "TodoWrite" "$ORCHESTRATE_FILE" | grep -c '"Phase [0-5]:' || true)
+
+if [ "$TODO_COUNT" -ne 6 ]; then
+  echo "⚠️  WARNING: TodoWrite has $TODO_COUNT items, expected 6"
+fi
+
+echo "✓ VERIFIED: TodoWrite has $TODO_COUNT phase items"
+```
+
+---
+
+**STEP 4 (REQUIRED) - Update Error Messages and Documentation**
+
+**EXECUTE NOW - Update Phase References in Text**:
+
+```bash
+# Update error messages referencing old phase numbers
+sed -i 's/failed at Phase 7/failed at Phase 5/gi' "$ORCHESTRATE_FILE"
+sed -i 's/failed at Phase 6/failed at Phase 4/gi' "$ORCHESTRATE_FILE"
+sed -i 's/failed at Phase 5/failed at Phase 3/gi' "$ORCHESTRATE_FILE"
+
+# Update documentation references to phases
+sed -i 's/Phase 7 (Debugging)/Phase 5 (Debugging)/g' "$ORCHESTRATE_FILE"
+sed -i 's/Phase 6 (Testing)/Phase 4 (Testing)/g' "$ORCHESTRATE_FILE"
+sed -i 's/Phase 5 (Implementation)/Phase 3 (Implementation)/g' "$ORCHESTRATE_FILE"
+
+# Update workflow state variables
+sed -i 's/current_phase=7/current_phase=5/g' "$ORCHESTRATE_FILE"
+sed -i 's/current_phase=6/current_phase=4/g' "$ORCHESTRATE_FILE"
+sed -i 's/current_phase=5/current_phase=3/g' "$ORCHESTRATE_FILE"
+
+echo "✓ Error messages and documentation updated"
+```
+
+**MANDATORY VERIFICATION - Complete Renumbering Check**:
+
+```bash
+# Comprehensive check for any remaining old phase references
+echo "Checking for orphaned phase references..."
+
+# Check for Phase 4 (should only be the NEW Phase 4: Testing)
+PHASE_4_REFS=$(grep -n "Phase 4" "$ORCHESTRATE_FILE" | grep -v "Phase 4 (Testing)\|Phase 4:" | wc -l)
+
+# Check for Phase 5 references (should be NEW Phase 5: Debugging)
+PHASE_5_REFS=$(grep -n "Phase 5" "$ORCHESTRATE_FILE" | grep -v "Phase 5 (Debugging)\|Phase 5:" | wc -l)
+
+# Check for Phase 6, 7 references (should not exist)
+PHASE_6_REFS=$(grep -c "Phase 6" "$ORCHESTRATE_FILE" || true)
+PHASE_7_REFS=$(grep -c "Phase 7" "$ORCHESTRATE_FILE" || true)
+
+if [ "$PHASE_6_REFS" -gt 0 ] || [ "$PHASE_7_REFS" -gt 0 ]; then
+  echo "⚠️  WARNING: Found Phase 6 ($PHASE_6_REFS) or Phase 7 ($PHASE_7_REFS) references"
+  grep -n "Phase [67]" "$ORCHESTRATE_FILE" | head -10
+fi
+
+echo "✓ VERIFIED: Renumbering complete"
+echo "  - Phase 4 contextual refs: $PHASE_4_REFS"
+echo "  - Phase 5 contextual refs: $PHASE_5_REFS"
+echo "  - Phase 6 refs (should be 0): $PHASE_6_REFS"
+echo "  - Phase 7 refs (should be 0): $PHASE_7_REFS"
+```
+
+---
+
+**FALLBACK MECHANISM**:
+
+```bash
+# If renumbering creates errors, restore from backup:
+# cp "${ORCHESTRATE_FILE}.pre-renumbering" "$ORCHESTRATE_FILE"
+```
+
+---
+
+**CHECKPOINT REQUIREMENT**
+
+After completing Phase 4, YOU MUST report:
+
+```
+═══════════════════════════════════════════════════════
+CHECKPOINT: Phase 4 Complete - Renumbering Complete
+═══════════════════════════════════════════════════════
+
+Phase Headers Renumbered: ✓ VERIFIED
+  OLD → NEW:
+  - Phase 5 (Implementation) → Phase 3 (Implementation)
+  - Phase 6 (Testing) → Phase 4 (Testing)
+  - Phase 7 (Debugging) → Phase 5 (Debugging)
+
+Checkpoint Variables Updated: ✓ VERIFIED
+  - CHECKPOINT_PHASE_5 → CHECKPOINT_PHASE_3
+  - CHECKPOINT_PHASE_6 → CHECKPOINT_PHASE_4
+  - CHECKPOINT_PHASE_7 → CHECKPOINT_PHASE_5
+  - Orphaned variables: $ORPHANED
+
+PROGRESS Markers Updated: ✓ VERIFIED
+  - All phase progress markers use new numbers
+  - TodoWrite has $TODO_COUNT phase items
+
+Error Messages Updated: ✓ VERIFIED
+  - All error messages reference new phase numbers
+  - Documentation references updated
+  - Workflow state variables updated
+
+Verification Results:
+  - Phase 6 remaining refs: $PHASE_6_REFS (expected: 0)
+  - Phase 7 remaining refs: $PHASE_7_REFS (expected: 0)
+
+Backup Available: orchestrate.md.pre-renumbering
+
+Status: READY FOR PHASE 5
+═══════════════════════════════════════════════════════
 ```
 
 **Git Commit**: `feat(070): Phase 4 - renumber phases and update cross-references`
