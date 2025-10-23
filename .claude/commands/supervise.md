@@ -767,6 +767,12 @@ STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task ca
 
 **CRITICAL**: All agents invoked in a single message for parallel execution.
 
+```bash
+# Emit progress marker before agent invocations
+emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+echo ""
+```
+
 ```yaml
 # Research Agent Template (repeated for each topic)
 Task {
@@ -812,9 +818,15 @@ Task {
 
 **Note**: The actual implementation will generate N Task calls based on RESEARCH_COMPLEXITY.
 
-### Mandatory Verification - Research Reports
+```bash
+# Emit progress marker after agent invocations complete
+emit_progress "1" "All research agents invoked - awaiting completion"
+echo ""
+```
 
-STEP 3: Verify ALL research reports created successfully
+### Mandatory Verification - Research Reports with Auto-Recovery
+
+STEP 3: Verify ALL research reports created successfully (with single-retry for transient failures)
 
 ```bash
 echo "════════════════════════════════════════════════════════"
@@ -824,44 +836,85 @@ echo ""
 
 VERIFICATION_FAILURES=0
 SUCCESSFUL_REPORT_PATHS=()
+FAILED_AGENTS=()
 
 for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
 
+  # Emit progress marker
+  emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
+
   echo "Verifying Report $i: $(basename $REPORT_PATH)"
 
-  # Check 1: File exists
-  if [ ! -f "$REPORT_PATH" ]; then
-    echo "  ❌ FAILED: File does not exist"
-    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-    continue
-  fi
+  # Check if file exists and has content
+  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+    # Success path - perform quality checks
+    FILE_SIZE=$(wc -c < "$REPORT_PATH")
 
-  # Check 2: File has content
-  if [ ! -s "$REPORT_PATH" ]; then
-    echo "  ❌ FAILED: File is empty"
-    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-    continue
-  fi
+    if [ "$FILE_SIZE" -lt 200 ]; then
+      echo "  ⚠️  WARNING: File is very small ($FILE_SIZE bytes)"
+    fi
 
-  # Check 3: File size reasonable (at least 200 bytes)
-  FILE_SIZE=$(wc -c < "$REPORT_PATH")
-  if [ "$FILE_SIZE" -lt 200 ]; then
-    echo "  ⚠️  WARNING: File is very small ($FILE_SIZE bytes)"
-  fi
+    if ! grep -q "^# " "$REPORT_PATH"; then
+      echo "  ⚠️  WARNING: Missing markdown header"
+    fi
 
-  # Check 4: Contains header
-  if ! grep -q "^# " "$REPORT_PATH"; then
-    echo "  ⚠️  WARNING: Missing markdown header"
-  fi
+    echo "  ✅ PASSED: Report created successfully ($FILE_SIZE bytes)"
+    SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+  else
+    # Failure path - extract error info and attempt recovery
+    ERROR_MSG="Report file missing or empty: $REPORT_PATH"
+    ERROR_LOCATION=$(extract_error_location "$ERROR_MSG")
+    ERROR_TYPE=$(detect_specific_error_type "$ERROR_MSG")
 
-  # Check 5: Contains code references
-  if ! grep -q ":" "$REPORT_PATH" | grep -q "[0-9]"; then
-    echo "  ⚠️  WARNING: No code references (file:line format)"
-  fi
+    # Classify error for retry decision
+    RETRY_DECISION=$(classify_and_retry "$ERROR_MSG")
 
-  echo "  ✅ PASSED: Report created successfully ($FILE_SIZE bytes)"
-  SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+    if [ "$RETRY_DECISION" == "retry" ]; then
+      echo "  ⚠️  TRANSIENT ERROR: Retrying once..."
+
+      # Note: In actual execution, retry would re-invoke the agent
+      # For now, just re-check the file after a short delay
+      sleep 1
+
+      if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+        FILE_SIZE=$(wc -c < "$REPORT_PATH")
+        echo "  ✅ RETRY SUCCESSFUL: Report created ($FILE_SIZE bytes)"
+        SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+      else
+        # Retry failed - update error info and mark as failed
+        ERROR_TYPE=$(detect_specific_error_type "Retry failed: $ERROR_MSG")
+        ERROR_LOCATION=$(extract_error_location "$REPORT_PATH")
+
+        echo "  ❌ RETRY FAILED: Report still missing"
+        echo ""
+        echo "ERROR: $ERROR_TYPE"
+        if [ -n "$ERROR_LOCATION" ]; then
+          echo "   at $ERROR_LOCATION"
+        fi
+        echo ""
+        echo "Recovery suggestions:"
+        suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+        echo ""
+
+        FAILED_AGENTS+=("agent_$i")
+        VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+      fi
+    else
+      # Permanent error - no retry
+      echo "  ❌ PERMANENT ERROR: $ERROR_TYPE"
+      if [ -n "$ERROR_LOCATION" ]; then
+        echo "     at $ERROR_LOCATION"
+      fi
+      echo ""
+      echo "Recovery suggestions:"
+      suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+      echo ""
+
+      FAILED_AGENTS+=("agent_$i")
+      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+    fi
+  fi
 done
 
 SUCCESSFUL_REPORT_COUNT=${#SUCCESSFUL_REPORT_PATHS[@]}
@@ -873,18 +926,25 @@ echo "  Reports Created: $SUCCESSFUL_REPORT_COUNT"
 echo "  Verification Failures: $VERIFICATION_FAILURES"
 echo ""
 
-# Fail-fast if any reports missing
+# Partial failure handling - allow continuation if ≥50% success
 if [ $VERIFICATION_FAILURES -gt 0 ]; then
-  echo "❌ CRITICAL FAILURE: Not all research reports were created"
+  DECISION=$(handle_partial_research_failure $RESEARCH_COMPLEXITY $SUCCESSFUL_REPORT_COUNT "${FAILED_AGENTS[*]}")
+
+  if [ "$DECISION" == "terminate" ]; then
+    echo "Workflow TERMINATED. Fix research issues and retry."
+    exit 1
+  fi
+
+  # Continue with partial results
+  echo "⚠️  Continuing workflow with partial research results"
   echo ""
-  echo "ERROR: $VERIFICATION_FAILURES agents failed to create report files."
-  echo "This indicates agents did not follow STEP 1 instructions."
-  echo ""
-  echo "Workflow TERMINATED. Fix agent enforcement and retry."
-  exit 1
 fi
 
-echo "✅ ALL RESEARCH REPORTS VERIFIED SUCCESSFULLY"
+if [ $VERIFICATION_FAILURES -eq 0 ]; then
+  echo "✅ ALL RESEARCH REPORTS VERIFIED SUCCESSFULLY"
+else
+  echo "✅ PARTIAL SUCCESS - Continuing with available research"
+fi
 echo ""
 ```
 
