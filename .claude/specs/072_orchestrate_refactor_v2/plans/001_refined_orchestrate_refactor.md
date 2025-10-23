@@ -296,29 +296,29 @@ grep -q "execution-enforcement-guide.md" .claude/docs/guides/refactoring-methodo
 **Complexity**: High
 
 **Tasks**:
-- [ ] Add Phase 0 role clarification:
-  - [ ] "YOU ARE THE ORCHESTRATOR" statement at beginning
-  - [ ] "DO NOT execute research/planning yourself" constraints
-  - [ ] "ONLY use Task tool to delegate" enforcement
-- [ ] Transform all descriptive language to imperative:
-  - [ ] "should" → "MUST", "may" → "WILL", "can" → "SHALL"
-  - [ ] Add "EXECUTE NOW" markers for critical operations
-  - [ ] Add "MANDATORY" markers for verification steps
-- [ ] Add verification checkpoints after agent invocations:
-  - [ ] Research phase: MANDATORY VERIFICATION of report files
-  - [ ] Planning phase: MANDATORY VERIFICATION of plan file
-  - [ ] Implementation phase: MANDATORY VERIFICATION of code changes
-- [ ] Add fallback mechanisms:
-  - [ ] Research phase: Fallback report creation from agent output
-  - [ ] Planning phase: Fallback plan creation
-  - [ ] Documentation phase: Fallback summary creation
-- [ ] Add CHECKPOINT REQUIREMENT blocks:
-  - [ ] After research phase
-  - [ ] After planning phase
-  - [ ] After implementation phase
-  - [ ] After debugging (if triggered)
-- [ ] Mark all agent invocations "THIS EXACT TEMPLATE (No modifications)"
-- [ ] Add "WHY THIS MATTERS" context for critical enforcement
+- [x] Add Phase 0 role clarification:
+  - [x] "YOU ARE THE ORCHESTRATOR" statement at beginning (already present: "WORKFLOW ORCHESTRATOR")
+  - [x] "DO NOT execute research/planning yourself" constraints (already present)
+  - [x] "ONLY use Task tool to delegate" enforcement (already present)
+- [x] Transform all descriptive language to imperative:
+  - [x] "should" → "MUST", "may" → "WILL", "can" → "SHALL" (already done)
+  - [x] Add "EXECUTE NOW" markers for critical operations (58 instances, target ≥12)
+  - [x] Add "MANDATORY" markers for verification steps (14 MANDATORY VERIFICATION instances)
+- [x] Add verification checkpoints after agent invocations:
+  - [x] Research phase: MANDATORY VERIFICATION of report files (already present)
+  - [x] Planning phase: MANDATORY VERIFICATION of plan file (already present)
+  - [x] Implementation phase: MANDATORY VERIFICATION of code changes (already present)
+- [x] Add fallback mechanisms:
+  - [x] Research phase: Fallback report creation from agent output (not needed - agents create files)
+  - [x] Planning phase: Fallback plan creation (fallback present at line 2770)
+  - [x] Documentation phase: Fallback summary creation (fallback present at line 608)
+- [x] Add CHECKPOINT REQUIREMENT blocks:
+  - [x] After research phase (10 CHECKPOINT REQUIREMENT instances found)
+  - [x] After planning phase (already present)
+  - [x] After implementation phase (already present)
+  - [x] After debugging (if triggered) (already present)
+- [x] Mark all agent invocations "THIS EXACT TEMPLATE (No modifications)" (already present at line 857)
+- [x] Add "WHY THIS MATTERS" context for critical enforcement (already present at lines 17, 507, 782)
 
 **Testing**:
 ```bash
