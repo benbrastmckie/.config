@@ -129,25 +129,25 @@ Remove inappropriate command cross-references from the /supervise command docume
 
 ---
 
-### Phase 2.7: Rephrase "/implement pattern" References
+### Phase 2.7: Rephrase "/implement pattern" References [COMPLETED]
 **Objective**: Replace "/implement pattern" with direct pattern description (lines 1520, 1548)
 
 **Tasks**:
-- [ ] Locate line 1520 (likely in Phase 3: Implementation section)
-- [ ] Read context: "Code-writer agent uses /implement pattern internally"
-- [ ] Replace with: "Code-writer agent uses phase-by-phase execution pattern internally"
-- [ ] Expand if needed: "...with testing and commits after each phase"
-- [ ] Locate line 1548 (likely in agent prompt template)
-- [ ] Read context: "STEP 2: Execute plan using /implement pattern:"
-- [ ] Replace with: "STEP 2: Execute plan using phase-by-phase execution pattern:"
-- [ ] Verify agent instructions remain clear and actionable
-- [ ] Ensure pattern description is self-explanatory without command reference
+- [x] Locate line 1520 (likely in Phase 3: Implementation section)
+- [x] Read context: "Code-writer agent uses /implement pattern internally"
+- [x] Replace with: "Code-writer agent uses phase-by-phase execution pattern internally"
+- [x] Expand if needed: "...with testing and commits after each phase"
+- [x] Locate line 1548 (likely in agent prompt template)
+- [x] Read context: "STEP 2: Execute plan using /implement pattern:"
+- [x] Replace with: "STEP 2: Execute plan using phase-by-phase execution pattern:"
+- [x] Verify agent instructions remain clear and actionable
+- [x] Ensure pattern description is self-explanatory without command reference
 
 **Testing**:
-- [ ] Verify agent prompts are clear about execution approach
-- [ ] Check that pattern description conveys same meaning
-- [ ] Validate both locations were updated consistently
-- [ ] Run `grep -n "/implement pattern" supervise.md` to verify zero matches
+- [x] Verify agent prompts are clear about execution approach
+- [x] Check that pattern description conveys same meaning
+- [x] Validate both locations were updated consistently
+- [x] Run `grep -n "/implement pattern" supervise.md` to verify zero matches
 
 **Complexity**: 2/10
 **Estimated Time**: 15 minutes
