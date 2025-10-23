@@ -1,0 +1,13 @@
+Phase 2.5 Boundaries:
+  Start: Line 2214
+  End: Line 2581
+  Lines: 367
+
+Phase 4 Boundaries:
+  Start: Line 2581
+  End: Line 3003
+  Lines: 422
+
+Agent References:
+  complexity-estimator: 8 occurrences
+  expansion-specialist: 7 occurrences
