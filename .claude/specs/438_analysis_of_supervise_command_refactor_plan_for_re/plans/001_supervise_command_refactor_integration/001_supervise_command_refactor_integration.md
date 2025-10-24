@@ -19,10 +19,12 @@
 The /supervise command contains a critical anti-pattern: it uses YAML documentation blocks for Task invocations instead of executable imperative patterns. This results in 0% agent delegation rate (0/9 invocations executing), making the command non-functional for its intended orchestration purpose.
 
 ### Root Cause Analysis
-- **Anti-Pattern**: supervise is the ONLY command using YAML documentation blocks (`Example agent invocation:` followed by code blocks)
-- **Impact**: Agent invocations appear as documentation examples, not executable instructions
-- **Scope**: 9 agent invocations across 6 phases (research, planning, implementation, testing, debugging, documentation)
-- **Pattern Discrepancy**: All other orchestration commands (/orchestrate, /implement, /plan) use imperative "EXECUTE NOW" pattern
+- **Anti-Pattern**: supervise contains YAML code blocks with inline behavioral content that should reference agent files
+- **Actual Pattern**: 7 YAML blocks marked with ` ```yaml` fences (NOT "Example agent invocation:" - that pattern does not exist)
+- **Block Locations**: Lines 49, 63 (documentation examples); lines 682, 1082, 1440, 1721, 2246 (agent templates with behavioral duplication)
+- **Impact**: Agent invocations contain duplicated behavioral procedures (~885 lines) instead of lean context injection
+- **Target State**: Retain 2 documentation examples, remove 5 agent template blocks (replace with context injection)
+- **Pattern Discrepancy**: All other orchestration commands (/orchestrate, /implement, /plan) use behavioral injection pattern
 
 ### Solution Approach: "Integrate, Not Build"
 Research reveals 70-80% of originally planned refactor work already exists in production-ready form. Instead of building new infrastructure, this plan integrates existing capabilities:
@@ -44,12 +46,12 @@ Research reveals 70-80% of originally planned refactor work already exists in pr
 ## Success Criteria
 
 ### Primary Goals
-- [ ] 100% agent delegation rate (9/9 invocations executing)
-- [ ] 0 YAML documentation blocks remaining in command
-- [ ] All agent invocations use imperative "EXECUTE NOW" pattern
-- [ ] All agent invocations reference `.claude/agents/*.md` behavioral files
+- [ ] Pattern verification passes (Phase 0: confirm 7 ` ```yaml` blocks, 0 "Example agent invocation:" occurrences)
+- [ ] Target state achieved: 2 YAML blocks retained (documentation examples), 5 removed (agent templates)
+- [ ] 840+ lines removed (92% reduction from behavioral duplication elimination)
+- [ ] All agent invocations use behavioral injection pattern (reference `.claude/agents/*.md` files)
 - [ ] Context usage <30% throughout workflow
-- [ ] Regression test passes (test_supervise_delegation.sh)
+- [ ] Regression test passes with corrected patterns (test_supervise_delegation.sh)
 
 ### Secondary Goals
 - [ ] Integration with existing libraries (4 libraries sourced at command start)
@@ -255,28 +257,53 @@ retry_with_backoff 2 1000 verify_report_exists "$REPORT_PATH"
 
 ## Implementation Phases
 
-### Phase 0: Audit and Regression Test (1.5 days)
+### Phase 0: Pattern Verification and Baseline Audit (1.5 days)
 
-**Objective**: Establish baseline and create regression test to validate refactor
+**Objective**: Verify search patterns exist before implementation, establish baseline metrics
 **Complexity**: Low
+**Rationale**: Prevents wasted effort from pattern mismatches (lesson from spec 444 diagnostic)
 
 #### Tasks
 
+- [ ] **CRITICAL: Verify Search Patterns**
+  - **Pattern verification prevents implementation failure**
+  - Run these commands to confirm actual file patterns:
+    ```bash
+    # Verify YAML block count (expect: 7)
+    grep -c '```yaml' .claude/commands/supervise.md
+
+    # Verify "Example agent invocation:" does NOT exist (expect: 0)
+    grep -c "Example agent invocation:" .claude/commands/supervise.md
+
+    # Verify YAML block line numbers (expect: 49, 63, 682, 1082, 1440, 1721, 2246)
+    awk '/```yaml/{print NR}' .claude/commands/supervise.md
+    ```
+  - **If patterns don't match expectations, STOP and review plan**
+  - Document: Pattern verification results in audit output
+
 - [ ] **Run audit on current supervise.md state**
-  - Count YAML documentation blocks (expect 9)
-  - Count imperative invocations (expect 0)
-  - Measure file size (current: 2,521 lines)
-  - Document current agent delegation rate (0%)
+  - Count YAML code blocks (expect 7: 2 documentation, 5 agent templates)
+  - Target state: Retain 2 documentation examples, remove 5 agent template blocks
+  - Expected reduction: 840 lines (92% from agent template removal)
+  - Measure file size (current: 2,520 lines → target: ~1,680 lines)
+  - Document current behavioral duplication: ~885 lines in agent templates
   - File: `.claude/commands/supervise.md`
 
 - [ ] **Create regression test: `test_supervise_delegation.sh`**
   - Test 1: Count imperative invocations (expect ≥9)
-  - Test 2: Count YAML documentation blocks (expect 0)
-  - Test 3: Verify agent behavioral file references (expect 6)
-  - Test 4: Verify library sourcing (expect 4)
-  - Test 5: Verify metadata extraction calls (expect ≥6 phases)
-  - Test 6: Verify context pruning calls (expect ≥6 phases)
-  - Test 7: Verify retry_with_backoff usage (expect ≥9 verifications)
+  - Test 2: Count YAML blocks with behavioral duplication (use corrected pattern):
+    ```bash
+    # After refactor: Exclude documentation section (lines 1-99)
+    YAML_BLOCKS=$(tail -n +100 "$SUPERVISE_FILE" | grep -c '```yaml')
+    # Before refactor: 5 (agent templates)
+    # After refactor: 0 (all replaced with context injection)
+    ```
+  - Test 3: Verify "Example agent invocation:" stays at 0 (anti-pattern eliminated)
+  - Test 4: Verify agent behavioral file references (expect 6)
+  - Test 5: Verify library sourcing (expect 4)
+  - Test 6: Verify metadata extraction calls (expect ≥6 phases)
+  - Test 7: Verify context pruning calls (expect ≥6 phases)
+  - Test 8: Verify retry_with_backoff usage (expect ≥9 verifications)
   - File: `.claude/tests/test_supervise_delegation.sh`
 
 - [ ] **Integrate test into test suite**
@@ -291,13 +318,19 @@ retry_with_backoff 2 1000 verify_report_exists "$REPORT_PATH"
 
 #### Testing
 ```bash
+# First: Verify search patterns (CRITICAL - prevents implementation failure)
+cd .claude/commands
+grep -c '```yaml' supervise.md  # Expect: 7
+grep -c "Example agent invocation:" supervise.md  # Expect: 0
+
 # Run regression test (expect failures on current state)
 cd /home/benjamin/.config/.claude/tests
 ./test_supervise_delegation.sh
 
 # Expected output (before refactor):
 # FAIL: Imperative invocations: 0 (expected ≥9)
-# FAIL: YAML blocks: 9 (expected 0)
+# PASS: Pattern verification: 7 YAML blocks found, 0 "Example agent invocation:"
+# FAIL: YAML blocks (agent templates): 5 (expected 0 after refactor)
 # FAIL: Agent references: 0 (expected 6)
 # FAIL: Library sourcing: 0 (expected 4)
 ```
@@ -316,14 +349,21 @@ cd /home/benjamin/.config/.claude/tests
 
 **Problem Statement**: supervise.md contains 7 YAML code blocks (```yaml...```) that provide inline template examples for agent invocations. These templates duplicate agent behavioral guidelines that already exist in `.claude/agents/*.md` files. This violates the "single source of truth" principle and creates maintenance burden (templates must be manually synchronized with behavioral files).
 
-**Current Anti-Pattern Locations** (7 YAML blocks at lines):
-1. Line 49-54: Example SlashCommand pattern (incorrect pattern demonstration)
-2. Line 63-82: Example Task pattern with embedded template (should reference agent file)
-3. Line 682-829: Research agent template (duplicates research-specialist.md)
-4. Line 1082-1262: Planning agent template (duplicates plan-architect.md)
-5. Line 1440-1619: Implementation agent template (duplicates code-writer.md)
-6. Line 1721-1834: Testing agent template (duplicates test-specialist.md)
-7. Line 2246-2359: Documentation agent template (duplicates doc-writer.md)
+**YAML Block Classification** (7 blocks total, per spec 444 analysis):
+
+**Documentation Examples** (lines 49-89) - RETAIN (2 blocks):
+1. **Line 49-54**: SlashCommand anti-pattern example (structural - shows what NOT to do)
+2. **Line 63-80**: Task invocation example (mixed - REFACTOR to remove embedded STEP sequences, keep structural syntax)
+
+**Agent Templates with Behavioral Duplication** (lines 682+) - REMOVE (5 blocks):
+3. **Line 682-829**: Research agent template (~147 lines - duplicates research-specialist.md)
+4. **Line 1082-1246**: Planning agent template (~164 lines - duplicates plan-architect.md)
+5. **Line 1440-1615**: Implementation agent template (~175 lines - duplicates code-writer.md)
+6. **Line 1721-1925**: Testing agent template (~204 lines - duplicates test-specialist.md)
+7. **Line 2246-2441**: Documentation agent template (~195 lines - duplicates doc-writer.md)
+
+**Total Behavioral Duplication**: ~885 lines in agent templates (blocks 3-7)
+**Expected Reduction**: ~840 lines removed (92%) after replacing with context injection
 
 **Solution Approach**: Replace each inline YAML template with:
 1. **Direct reference** to the corresponding `.claude/agents/[agent-name].md` behavioral file
@@ -334,24 +374,28 @@ cd /home/benjamin/.config/.claude/tests
 **Summary**: Remove 7 inline YAML template blocks from supervise.md and replace with references to 6 agent behavioral files (`.claude/agents/*.md`). Integrate 4 utility libraries for location detection, metadata extraction, context pruning, and error handling. Apply patterns from /orchestrate (5,443 lines, production-tested).
 
 **Key Tasks**:
-1. Remove inline YAML templates at 7 locations
-2. Replace with references to agent behavioral files (research-specialist.md, plan-architect.md, code-writer.md, test-specialist.md, debug-analyst.md, doc-writer.md)
-3. Integrate 4 utility libraries (sourcing at command start)
-4. Add metadata extraction after verifications (95% context reduction)
-5. Add context pruning after phases (<30% usage target)
-6. Add error handling with retry_with_backoff
-7. Final validation and cleanup
+1. Refactor documentation examples (blocks 1-2): Remove embedded STEP sequences, keep Task invocation structure
+2. Remove 5 agent template blocks (blocks 3-7 at lines 682+): Replace with context injection
+3. Replace with references to agent behavioral files (research-specialist.md, plan-architect.md, code-writer.md, test-specialist.md, debug-analyst.md, doc-writer.md)
+4. Integrate 4 utility libraries (sourcing at command start)
+5. Add metadata extraction after verifications (95% context reduction)
+6. Add context pruning after phases (<30% usage target)
+7. Add error handling with retry_with_backoff
+8. Final validation and cleanup
 
 **Success Criteria**:
-- [ ] 0 inline YAML template blocks remaining (remove all 7)
+- [ ] Target state achieved: 2 YAML blocks retained (documentation examples), 5 removed (agent templates)
+- [ ] Documentation examples (blocks 1-2) show structural syntax only, no behavioral STEP sequences
+- [ ] Agent template blocks (blocks 3-7) replaced with lean context injection (~12-15 lines each)
+- [ ] 840+ lines removed from behavioral duplication (92% reduction)
 - [ ] All agent invocations reference `.claude/agents/*.md` behavioral files directly
 - [ ] Agent prompts contain ONLY context injection (paths, parameters), NOT step-by-step instructions
 - [ ] 4 libraries sourced at command start (unified-location-detection.sh, metadata-extraction.sh, context-pruning.sh, error-handling.sh)
 - [ ] All verifications use retry_with_backoff
 - [ ] Metadata extraction after each verification
 - [ ] Context pruning after each phase
-- [ ] Regression test passes (7 checks)
-- [ ] File size ≤2,000 lines (expect ~1,900 after removing template bloat)
+- [ ] Regression test passes (8 checks including pattern verification)
+- [ ] File size ~1,680 lines (2,520 - 840 = 1,680)
 
 For detailed implementation tasks, see [Phase 1 Details](phase_1_convert_to_executable_invocations.md)
 
@@ -1030,142 +1074,45 @@ cd /home/benjamin/.config/.claude/specs/080_supervise_refactor
 - **Maintainability**: +60% (references existing patterns vs. duplicating)
 - **Standards Compliance**: 100% maintained (essential patterns preserved)
 
-### 2025-10-24 - Revision 1: Standards Compliance (SUPERSEDED BY REVISION 2)
+### 2025-10-24 - Revision 3: Pattern Corrections (CURRENT)
 
-Initial revision added comprehensive standards compliance but was determined to be overly verbose. See Revision 2 for streamlined approach.
-
----
-
-## ADDENDUM: Pattern Corrections (Spec 444)
-
-### Issue Discovered
-
-**Date**: 2025-10-24
-**Source**: Diagnostic analysis (spec 444/001)
-**Severity**: CRITICAL - Blocks Phase 1 implementation
-
-### Problem
-
-Phase 1 of this plan is **blocked** due to a search pattern mismatch:
-
-- **Plan searches for**: `Example agent invocation:` followed by ` ```yaml`
-- **Actual file contains**: ` ```yaml` fences WITHOUT "Example agent invocation:" prefix
-- **Result**: Edit tool finds 0 matches, implementation cannot proceed
-
-### Evidence
-
-From diagnostic report (`.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`):
-
-```bash
-# Pattern plan expects (line 22 of this file):
-grep -c "Example agent invocation:" .claude/commands/supervise.md
-# Result: 0 (pattern does not exist)
-
-# Pattern that actually exists:
-grep -c '```yaml' .claude/commands/supervise.md
-# Result: 7 (actual YAML blocks)
-```
-
-**Line Numbers of YAML Blocks**: 49, 63, 682, 1082, 1440, 1721, 2246
-
-### Root Cause
-
-The plan assumed pattern `Example agent invocation:` based on analysis, but never verified actual strings with Grep tool. The supervise.md file has different patterns at those locations.
-
-### Corrected Implementation
-
-**DO NOT EXECUTE THIS PLAN AS-IS.** Instead, use the corrected plan:
-
-**Location**: `.claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md`
+**Changes**: Fixed search patterns based on spec 444 diagnostic analysis
+**Reason**: Original plan assumed "Example agent invocation:" pattern that never existed in supervise.md
+**Reports Used**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
+**Modified Sections**:
+- Root Cause Analysis: Updated to reflect actual patterns (` ```yaml` fences, NOT "Example agent invocation:")
+- Success Criteria: Added pattern verification as Phase 0 critical task
+- Phase 0: Added pattern verification step before audit (prevents implementation failure)
+- Phase 0: Corrected YAML block count from 9 to 7, clarified target state (2 retained, 5 removed)
+- Phase 0: Updated regression test patterns to detect actual strings
+- Phase 1: Added YAML block classification from spec 444 analysis
+- Phase 1: Clarified which blocks to retain (2 documentation) vs remove (5 agent templates)
+- Phase 1: Updated success criteria to reflect 840-line reduction target (92%)
 
 **Key Corrections**:
+1. **Search Pattern**: Use ` ```yaml` + `Task {` (NOT "Example agent invocation:")
+2. **YAML Block Count**: 7 blocks total (NOT 9)
+3. **Target State**: Retain 2 documentation examples, remove 5 agent templates (NOT "remove all 7")
+4. **Pattern Verification**: Added as critical Phase 0 task (prevents wasted implementation effort)
+5. **Regression Test**: Fixed Test 2 to use actual pattern (`tail -n +100 | grep '```yaml'`)
 
-1. **Phase 0 Added**: Pattern verification step to catch mismatches before implementation
-   ```bash
-   # Verify YAML block count
-   YAML_COUNT=$(grep -c '```yaml' .claude/commands/supervise.md)
-   # Expected: 7
+**Impact**:
+- **Unblocked Implementation**: Phase 1 can now proceed with correct search patterns
+- **Accurate Expectations**: Target reduction clarified (840 lines vs previous unclear goal)
+- **Prevention**: Pattern verification guards against future mismatches
+- **Single Source of Truth**: Plan now standalone (no separate corrected plan needed)
 
-   # Verify "Example agent invocation:" does NOT exist
-   EXAMPLE_COUNT=$(grep -c "Example agent invocation:" .claude/commands/supervise.md)
-   # Expected: 0 (confirms absence)
+**Backup Created**: `001_supervise_command_refactor_integration.md.backup-revision3-*`
 
-   # If verification fails, STOP and review
-   ```
-
-2. **Search Patterns Updated**: Use actual ` ```yaml` + `Task {` patterns instead of "Example agent invocation:"
-
-3. **Target State Clarified**:
-   - **Retain**: 2 YAML blocks (documentation examples at lines 49, 63)
-   - **Remove**: 5 YAML blocks (agent templates at lines 682, 1082, 1440, 1721, 2246)
-   - **Result**: ~840 lines removed (92% reduction)
-
-4. **Regression Test Fixed**: Updated to detect actual patterns, not phantom patterns
-
-### Classification of YAML Blocks
-
-Per detailed classification (spec 444/001/supervise_yaml_classification.md):
-
-| Block | Lines | Type | Decision |
-|-------|-------|------|----------|
-| 1 | 49-54 | Structural | KEEP (documentation example) |
-| 2 | 63-80 | Mixed | REFACTOR (remove behavioral parts) |
-| 3 | 682-829 | Behavioral | REMOVE (replace with context injection) |
-| 4 | 1082-1246 | Behavioral | REMOVE (replace with context injection) |
-| 5 | 1440-1615 | Behavioral | REMOVE (replace with context injection) |
-| 6 | 1721-1925 | Behavioral | REMOVE (replace with context injection) |
-| 7 | 2246-2441 | Behavioral | REMOVE (replace with context injection) |
-
-### Implementation Path Forward
-
-**Option A**: Update this plan with corrected patterns (inline revision)
-- **Pro**: Single source of truth
-- **Con**: Loses diagnostic trail
-
-**Option B**: Reference corrected plan from spec 444 (RECOMMENDED)
-- **Pro**: Preserves problem → diagnosis → fix workflow
-- **Pro**: Educational value for future refactors
-- **Con**: Must track two related plans
-
-**Decision**: Option B
-
-**Rationale**: Preserving the diagnostic trail demonstrates:
-1. How pattern mismatches are caught
-2. Why pattern verification in Phase 0 is critical
-3. Importance of using Grep to verify patterns before planning
-4. Classification process for structural vs behavioral content
-
-### References
-
-- **Diagnostic Report**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
-  - Pattern mismatch analysis
-  - Search pattern verification
-  - Recommendations for correction
-
-- **Classification**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/supervise_yaml_classification.md`
-  - All 7 YAML blocks classified
-  - Line-by-line structural vs behavioral analysis
-  - Keep/refactor/remove decisions with rationale
-
-- **Corrected Plan**: `.claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md`
-  - Phase 0: Pattern verification guards
-  - Updated search patterns (actual strings)
-  - Clear target state (2 retained, 5 removed)
-  - Fixed regression test patterns
-
-- **Case Study**: `.claude/docs/troubleshooting/inline-template-duplication.md#real-world-example-supervise-command-refactor`
-  - Complete walkthrough of problem → solution
-  - Lessons learned for future refactors
-  - Prevention checklist
-
-### Status
-
-**This Plan (Spec 438)**: BLOCKED at Phase 1 (search pattern mismatch)
-
-**Corrected Plan (Spec 444)**: READY FOR IMPLEMENTATION
-
-**Action Required**: Execute spec 444/001_supervise_refactor_corrected.md instead of this plan
+**Status**: Plan is now READY FOR IMPLEMENTATION with corrected patterns.
 
 ---
 
-**END OF ADDENDUM**
+### 2025-10-24 - Revision 2: Streamline for Economy (SUPERSEDED BY REVISION 3)
+
+**Changes**: Streamlined to remove unnecessary verbosity
+**Rationale**: Previous revision added compliance patterns but created unnecessary bloat. This revision maintains standards compliance (imperative language, essential verifications) while prioritizing efficiency and economy.
+
+### 2025-10-24 - Revision 1: Standards Compliance (SUPERSEDED BY REVISION 3)
+
+Initial revision added comprehensive standards compliance but was determined to be overly verbose. See Revision 2 for streamlined approach.
