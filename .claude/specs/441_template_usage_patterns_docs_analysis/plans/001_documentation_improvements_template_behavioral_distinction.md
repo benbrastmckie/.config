@@ -2,15 +2,19 @@
 
 ## Metadata
 - **Date**: 2025-10-24
+- **Last Revised**: 2025-10-24 (Revision 2: Reorganized phase order for logical execution flow)
 - **Feature**: Documentation improvements for structural template vs behavioral content distinction
-- **Scope**: Update .claude/docs/ to clarify when inline templates are appropriate vs when behavioral injection is required
-- **Estimated Phases**: 6
+- **Scope**: Update .claude/docs/ to clarify when inline templates are appropriate vs when behavioral injection is required; apply standards to /supervise command
+- **Estimated Phases**: 7 (reorganized for optimal execution order)
+- **Phase Execution Order**: Foundation docs → Real-world application → Guides → Troubleshooting → Quick reference → Validation → Navigation
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - `.claude/specs/441_template_usage_patterns_docs_analysis/reports/001_template_patterns_research/OVERVIEW.md`
   - `.claude/specs/441_template_usage_patterns_docs_analysis/reports/001_template_patterns_research/001_inline_template_patterns_and_usage.md`
   - `.claude/specs/441_template_usage_patterns_docs_analysis/reports/001_template_patterns_research/002_behavioral_injection_reference_patterns.md`
   - `.claude/specs/441_template_usage_patterns_docs_analysis/reports/001_template_patterns_research/003_template_vs_behavioral_decision_criteria.md`
+- **Diagnostic Reports**:
+  - `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md` (Pattern mismatch in spec 438 supervise refactor)
 
 ## Overview
 
@@ -161,7 +165,166 @@ done
 
 ---
 
-### Phase 2: Update Enforcement and Development Guides (Medium Priority) [COMPLETED]
+### Phase 2: Apply Standards to /supervise Command (Critical Priority - Real-World Validation) [COMPLETED]
+
+**Objective**: Fix /supervise command to comply with structural vs behavioral distinction standards using diagnostic findings from spec 444
+
+**Status**: COMPLETED
+
+**Complexity**: High
+
+**Estimated Time**: 3-4 hours
+
+**Context**: Diagnostic report (spec 444/001/OVERVIEW.md) identified critical issues in supervise refactor plan (spec 438/001):
+- Incorrect search pattern blocks Phase 1 implementation
+- Plan searches for non-existent "Example agent invocation:" pattern
+- Actual file has 7 YAML blocks with different patterns
+- Regression test gives false pass (searches wrong pattern)
+- Need to apply structural/behavioral distinction to determine which YAML blocks to keep vs remove
+
+#### Tasks
+
+**Task 2.1: Analyze Current /supervise YAML Blocks Against Standards**
+
+- [x] Read current `.claude/commands/supervise.md` to identify all 7 YAML blocks
+  - [x] Lines 49, 63: Documentation examples (Wrong vs Correct patterns)
+  - [x] Line 682: Research agent template
+  - [x] Line 1082: Planning agent template
+  - [x] Line 1440: Implementation agent template
+  - [x] Line 1721: Testing agent template
+  - [x] Line 2246: Documentation agent template
+
+- [x] Classify each YAML block per structural vs behavioral distinction:
+  - [x] **Documentation examples (lines 49, 63)**: Determine if these are structural templates (keep) or behavioral duplication (remove)
+    - Analysis: These show Task invocation SYNTAX (structural) but may include behavioral STEP sequences
+    - Decision needed: Keep Task structure, remove embedded STEP sequences?
+  - [x] **Agent templates (lines 682+)**: These are BEHAVIORAL content (must be removed)
+    - Contains: STEP 1/2/3 sequences, PRIMARY OBLIGATION blocks, verification procedures
+    - Target: Extract to `.claude/agents/*.md` files, replace with context injection references
+
+- [x] Document classification results in diagnostic addendum:
+  - [x] Create `.claude/specs/444_research_allowed_tools_fix/reports/001_research/supervise_yaml_classification.md`
+  - [x] For each block: Location, type (structural/behavioral), keep/remove decision, rationale
+  - [x] Include line-by-line breakdown showing which parts are structural vs behavioral
+
+**Task 2.2: Create Corrected Refactor Instructions for /supervise**
+
+- [x] Create new implementation guide: `.claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md`
+  - [x] **Phase 0: Pattern Verification** (from Recommendation 4)
+    - [x] Add grep commands to verify actual patterns before implementation
+    - [x] Test for `Example agent invocation:` (expect 0)
+    - [x] Test for ` ```yaml` (expect 7)
+    - [x] Test for YAML + Task combination (expect 7)
+    - [x] Exit with error if patterns don't match expectations
+
+  - [x] **Phase 1: Fix Documentation Examples** (Lines 49-89)
+    - [x] Decision: RETAIN Task invocation syntax (structural), REMOVE any embedded STEP sequences (behavioral)
+    - [x] Update line 49-82 example to show pure context injection (no behavioral procedures)
+    - [x] Ensure examples reference `.claude/agents/*.md` files instead of duplicating procedures
+    - [x] Validate: Examples demonstrate correct pattern per template-vs-behavioral-distinction.md
+
+  - [x] **Phase 2: Extract Agent Behavioral Content** (Lines 682, 1082, 1440, 1721, 2246)
+    - [x] For EACH of 5 agent templates:
+      - [x] **Step 1**: Extract behavioral content (STEP sequences, PRIMARY OBLIGATION blocks)
+      - [x] **Step 2**: Verify corresponding agent file in `.claude/agents/` contains this content
+      - [x] **Step 3**: If content missing from agent file, add it (research-specialist.md, plan-architect.md, etc.)
+      - [x] **Step 4**: Replace inline template with lean context injection (10-15 lines)
+      - [x] **Step 5**: Validate reduction: ~90% fewer lines per invocation
+    - [x] Target: 150 lines → 15 lines per invocation (consistent with research metrics)
+
+  - [x] **Phase 3: Update Regression Test** (from Recommendation 2)
+    - [x] Fix `.claude/tests/test_supervise_delegation.sh:78`
+    - [x] Replace search for "Example agent invocation:" with actual pattern:
+      ```bash
+      # Exclude first 100 lines (documentation section)
+      YAML_BLOCKS=$(tail -n +100 "$SUPERVISE_FILE" | grep -c '```yaml')
+      ```
+    - [x] Add test: Verify "Example agent invocation:" stays at 0 (anti-pattern eliminated)
+    - [x] Expected after refactor: 2 YAML blocks (documentation examples), 0 agent templates
+
+  - [x] **Success Criteria**:
+    - [x] Pattern verification passes before implementation begins
+    - [x] Documentation examples retain structural syntax, remove behavioral duplication
+    - [x] 5 agent templates replaced with context injection references
+    - [x] 90% line reduction achieved (750+ lines removed)
+    - [x] Regression test detects actual patterns (not false pass)
+    - [x] All agent behavioral content in `.claude/agents/*.md` files (single source of truth)
+
+**Task 2.3: Document /supervise as Case Study**
+
+- [x] Add /supervise case study to `.claude/docs/troubleshooting/inline-template-duplication.md`
+  - [x] New section: "Real-World Example: /supervise Command Refactor"
+  - [x] Problem: Plan 438 blocked due to search pattern mismatch
+  - [x] Root cause: Incorrect assumptions about file patterns
+  - [x] Solution: Pattern verification + structural/behavioral classification
+  - [x] Results: 90% code reduction, correct pattern application
+  - [x] Lessons learned:
+    - [x] Always verify search patterns exist before planning replacements
+    - [x] Use Grep to extract actual strings, not inferred descriptions
+    - [x] Classify YAML blocks as structural vs behavioral before deciding keep/remove
+    - [x] Pattern verification in Phase 0 prevents wasted implementation effort
+
+- [x] Update `.claude/docs/reference/template-vs-behavioral-distinction.md`
+  - [x] Add subsection under "Common Pitfalls": "Search Pattern Mismatches in Refactoring"
+  - [x] Reference /supervise diagnostic (spec 444/001) as example
+  - [x] Key insight: "Example agent invocation:" pattern assumed but never existed
+  - [x] Prevention: Pattern verification step before implementation
+  - [x] Link to corrected refactor plan (spec 444/001/plans)
+
+**Task 2.4: Update Spec 438 Plan with Corrections**
+
+- [x] Option A: Create addendum to spec 438/001 referencing spec 444 corrections
+  - [x] Add section "Plan Revision - Pattern Corrections" to 438/001/001_supervise_command_refactor_integration.md
+  - [x] Reference diagnostic report: spec 444/001/OVERVIEW.md
+  - [x] Reference corrected plan: spec 444/001/plans/001_supervise_refactor_corrected.md
+  - [x] Mark Phase 1 as "BLOCKED - See spec 444 for corrected implementation"
+  - [x] Preserve original plan as historical record (don't delete incorrect patterns)
+
+- [ ] Option B: Use /revise on spec 438 plan directly
+  - [ ] Run: `/revise "Fix search patterns per spec 444 diagnostic" specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
+  - [ ] This will update 438 plan with corrected patterns inline
+  - [ ] Add revision history documenting pattern corrections
+  - [ ] Preferred if we want single source of truth for implementation
+
+- [x] **Decision**: Choose Option A (addendum) to preserve diagnostic trail
+  - [x] Rationale: Shows problem → diagnosis → fix workflow
+  - [x] Benefit: Future developers see how pattern mismatches are caught and corrected
+  - [x] Educational value: Case study for pattern verification importance
+
+**Testing**:
+```bash
+# Verify classification document created
+test -f .claude/specs/444_research_allowed_tools_fix/reports/001_research/supervise_yaml_classification.md
+
+# Verify corrected plan created
+test -f .claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md
+
+# Verify case study added to troubleshooting
+grep -A 10 "Real-World Example: /supervise Command Refactor" \
+  .claude/docs/troubleshooting/inline-template-duplication.md
+
+# Verify pattern verification step exists in corrected plan
+grep -A 5 "Phase 0: Pattern Verification" \
+  .claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md
+
+# Test pattern verification commands work
+cd .claude/commands
+grep -c "Example agent invocation:" supervise.md  # Expect: 0
+grep -c '```yaml' supervise.md  # Expect: 7
+tail -n +100 supervise.md | grep -c '```yaml'  # Expect: 5 (agent templates only)
+```
+
+**Success Criteria**:
+- [x] All 7 YAML blocks classified as structural or behavioral
+- [x] Corrected refactor plan created with pattern verification step
+- [x] /supervise case study documented in troubleshooting guide
+- [x] Spec 438 plan updated with addendum referencing corrections
+- [x] Pattern verification commands validated on actual file
+- [x] Educational value captured for future refactoring efforts
+
+---
+
+### Phase 3: Update Enforcement and Development Guides (High Priority) [COMPLETED]
 
 **Objective**: Align existing guides with new structural/behavioral distinction
 
@@ -228,7 +391,7 @@ grep -l "template-vs-behavioral-distinction" .claude/docs/guides/*.md | wc -l
 
 ---
 
-### Phase 3: Create Troubleshooting Guide (Medium Priority) [COMPLETED]
+### Phase 4: Create Troubleshooting Guide (Medium Priority) [COMPLETED]
 
 **Objective**: Help developers identify and fix inline duplication anti-pattern
 
@@ -305,7 +468,7 @@ grep "inline-template-duplication" .claude/docs/troubleshooting/README.md
 
 ---
 
-### Phase 4 [COMPLETED]: Create Quick Reference Materials (Low Priority)
+### Phase 5: Create Quick Reference Materials (Low Priority) [COMPLETED]
 
 **Objective**: Provide fast access to decision guidance
 
@@ -382,7 +545,7 @@ grep "template-vs-behavioral-distinction" .claude/docs/README.md
 
 ---
 
-### Phase 5: Optional Validation Tooling (Low Priority)
+### Phase 6: Optional Validation Tooling (Low Priority)
 
 **Objective**: Automate detection of behavioral duplication anti-pattern
 
@@ -530,7 +693,7 @@ test -f .claude/docs/guides/documentation-review-checklist.md && echo "✓ Check
 
 ---
 
-### Phase 6: Update Navigation and Cross-References
+### Phase 7: Update Navigation and Cross-References
 
 **Objective**: Ensure new documentation is discoverable throughout .claude/docs/
 
@@ -736,27 +899,59 @@ grep -r "inline template" .claude/docs/ --include="*.md" | grep -v "structural\|
    - **Mitigation**: Configure as warning initially (not error)
    - **Mitigation**: Tune thresholds based on real-world testing
 
+## Phase Execution Strategy
+
+### Rationale for Phase Order
+
+**Phase 1: Foundation** - Create core reference documentation defining structural vs behavioral distinction
+- **Why first**: Establishes shared vocabulary and principles for all subsequent work
+- **Status**: COMPLETED
+
+**Phase 2: Real-World Validation** - Apply standards to /supervise command
+- **Why second**: Validates documentation works in practice; discovers gaps early
+- **Key benefit**: Lessons learned inform phases 3-5; creates concrete case study
+- **Status**: PENDING (next to execute)
+
+**Phase 3: Guide Updates** - Update enforcement and development guides
+- **Why third**: Can incorporate insights from /supervise application
+- **Status**: COMPLETED (may need updates after Phase 2)
+
+**Phase 4: Troubleshooting** - Create troubleshooting guide with /supervise case study
+- **Why fourth**: Now has real-world example from Phase 2 to document
+- **Status**: COMPLETED (will be enhanced by Phase 2 findings)
+
+**Phase 5: Quick Reference** - Create decision tree and quick lookup
+- **Why fifth**: Builds on validated patterns from Phases 2-4
+- **Status**: COMPLETED
+
+**Phase 6: Validation Tooling** - Optional automated detection script
+- **Why sixth**: All patterns established; can codify detection rules
+- **Status**: PENDING (optional)
+
+**Phase 7: Navigation Polish** - Update cross-references and navigation
+- **Why last**: Final integration after all documentation complete
+- **Status**: PENDING
+
 ## Estimated Timeline
 
-### High Priority (Phases 1-2)
-- Phase 1: 2-3 hours (core reference documentation)
-- Phase 2: 2-3 hours (guide updates)
-- **Subtotal**: 4-6 hours
+### Completed Work (Phases 1, 3, 4, 5)
+- Phase 1: 2-3 hours (core reference documentation) [COMPLETED]
+- Phase 3: 2-3 hours (guide updates) [COMPLETED]
+- Phase 4: 1-2 hours (troubleshooting guide) [COMPLETED]
+- Phase 5: 1-2 hours (quick reference) [COMPLETED]
+- **Completed subtotal**: 6-10 hours
 
-### Medium Priority (Phase 3)
-- Phase 3: 1-2 hours (troubleshooting guide)
-- **Subtotal**: 1-2 hours
-
-### Low Priority (Phases 4-6)
-- Phase 4: 1-2 hours (quick reference)
-- Phase 5: 2-3 hours (optional validation tooling)
-- Phase 6: 30 minutes (navigation updates)
-- **Subtotal**: 3.5-5.5 hours
+### Remaining Work (Phases 2, 6, 7)
+- Phase 2: 3-4 hours (apply standards to /supervise - CRITICAL) [NEXT]
+- Phase 6: 2-3 hours (optional validation tooling)
+- Phase 7: 30 minutes (navigation updates)
+- **Remaining subtotal**: 5.5-7.5 hours
 
 ### Total Estimate
-- **Minimum** (High priority only): 4-6 hours
-- **Recommended** (High + Medium): 5-8 hours
-- **Complete** (All phases): 8.5-13.5 hours
+- **Already completed**: 6-10 hours
+- **Remaining required** (Phases 2, 7): 3.5-4.5 hours
+- **Remaining optional** (Phase 6): 2-3 hours
+- **Complete project total**: 12-17 hours
 
 ## Implementation Notes
 
@@ -814,3 +1009,81 @@ This plan implements findings from comprehensive documentation analysis showing:
 - Interactive examples in documentation
 - Pre-commit hook enforcing validation script
 - Automated link checking in CI/CD pipeline
+
+---
+
+## Revision History
+
+### 2025-10-24 - Revision 2: Reorganize Phase Execution Order
+
+**Changes**: Reorganized phases into logical execution flow: Foundation → Real-world validation → Refinement → Polish
+
+**Reason**: Original phase order had /supervise application (Phase 6) near the end, but applying standards to a real-world case should happen early to:
+1. Validate documentation works in practice
+2. Discover gaps in guidance early
+3. Create concrete case study that informs later phases
+4. Enable validate-early approach rather than document-then-validate
+
+**Phase Reordering**:
+- **Phase 1**: Core Reference Documentation [COMPLETED] - No change (foundation)
+- **Phase 2**: Apply Standards to /supervise [PENDING - CRITICAL] - **MOVED from Phase 6** (real-world validation)
+- **Phase 3**: Update Guides [COMPLETED] - Moved from Phase 2 (can incorporate Phase 2 lessons)
+- **Phase 4**: Troubleshooting Guide [COMPLETED] - Moved from Phase 3 (includes Phase 2 case study)
+- **Phase 5**: Quick Reference [COMPLETED] - Moved from Phase 4 (builds on validated patterns)
+- **Phase 6**: Validation Tooling [PENDING] - Moved from Phase 5 (codifies proven patterns)
+- **Phase 7**: Navigation [PENDING] - No change (final polish)
+
+**New Execution Strategy**:
+- **Completed phases** (1, 3, 4, 5): 6-10 hours
+- **Next phase** (2): 3-4 hours - /supervise application (validates all prior work)
+- **Final phases** (6, 7): 2.5-3.5 hours - Automation + polish
+
+**Key Benefits**:
+- Phase 2 now validates Phase 1 documentation immediately
+- Phases 3-5 can be updated with Phase 2 findings if needed
+- Real-world case study available when creating troubleshooting guide
+- Logical flow: foundation → validation → refinement → automation → polish
+
+**Documentation Updates**:
+- Added "Phase Execution Strategy" section explaining rationale for order
+- Updated timeline to show completed work vs remaining work
+- Clarified that Phase 2 is next critical step
+- Updated metadata with execution order: "Foundation docs → Real-world application → Guides → Troubleshooting → Quick reference → Validation → Navigation"
+- **Task Renumbering**: Updated all task references from "Task 6.x" to "Task 2.x" to match new phase number (Tasks 2.1, 2.2, 2.3, 2.4)
+
+**Impact**: This reorganization creates a validate-early approach where real-world application happens immediately after foundation documentation, enabling faster feedback and higher confidence in guidance quality.
+
+---
+
+### 2025-10-24 - Revision 1: Add /supervise Application Phase
+
+**Changes**: Added Phase 6 to apply structural/behavioral distinction standards to `/supervise` command using diagnostic findings from spec 444
+
+**Reason**: Diagnostic report (spec 444/001) identified that `/supervise` refactor plan (spec 438/001) is blocked due to incorrect search patterns. The plan searches for non-existent "Example agent invocation:" pattern when actual file contains different patterns. Need to:
+1. Classify 7 YAML blocks in supervise.md as structural vs behavioral
+2. Create corrected refactor instructions with pattern verification
+3. Document /supervise as case study in troubleshooting guide
+4. Apply 90% code reduction through proper behavioral extraction
+
+**Reports Used**:
+- `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md` - Pattern mismatch diagnostic
+
+**Modified Phases**:
+- **Added Phase 6**: "Apply Standards to /supervise Command (Critical Priority)" with 4 subtasks
+- **Renumbered**: Previous Phase 6 (Navigation) → Phase 7
+- **Updated Timeline**: Added 3-4 hours for Phase 6; total now 12-17 hours (was 8.5-13.5 hours)
+- **Updated Metadata**: Added diagnostic report reference, increased phase count to 7
+
+**Key Additions**:
+- Task 2.1: Analyze and classify all 7 YAML blocks in supervise.md
+- Task 2.2: Create corrected refactor plan with pattern verification (Phase 0 guard)
+- Task 2.3: Document /supervise as real-world case study
+- Task 2.4: Update spec 438 with addendum preserving diagnostic trail
+
+**Success Criteria Added**:
+- Pattern verification passes before implementation
+- 90% line reduction achieved (750+ lines removed from supervise.md)
+- Regression test fixed to detect actual patterns (not false pass)
+- Case study demonstrates pattern verification importance
+
+**Impact**: This revision ensures the documentation plan directly applies to fixing a critical real-world issue (/supervise blocked refactor), demonstrating the practical value of structural/behavioral distinction standards.

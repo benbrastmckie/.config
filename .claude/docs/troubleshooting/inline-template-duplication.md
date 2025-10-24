@@ -467,6 +467,185 @@ Run detection commands monthly:
 - Check for PRIMARY OBLIGATION in command files
 - Identify large agent invocations (>50 lines)
 
+## Real-World Example: /supervise Command Refactor
+
+### Background
+
+The `/supervise` command orchestrates multi-agent workflows with 5 specialized agents (research, planning, implementation, testing, documentation). Originally, the command contained 7 YAML code blocks (~915 lines total) with extensive behavioral duplication. A refactor plan (spec 438) was created but became blocked due to a search pattern mismatch.
+
+### Problem Discovered
+
+**Issue**: Refactor plan (spec 438/001) searched for pattern `Example agent invocation:` followed by ` ```yaml`, but this pattern never existed in supervise.md.
+
+**Impact**:
+- Phase 1 implementation could not proceed (Edit tool found 0 matches)
+- Regression test gave false pass (searched for non-existent pattern)
+- Wasted implementation effort trying to replace patterns that weren't there
+
+**Root Cause**: Plan assumed a pattern based on analysis rather than verifying actual strings with Grep tool.
+
+### Solution Process
+
+**Step 1: Diagnostic Analysis** (spec 444/001/OVERVIEW.md)
+- Used Grep to find actual patterns in supervise.md
+- Discovered 7 ` ```yaml` blocks at lines 49, 63, 682, 1082, 1440, 1721, 2246
+- Confirmed "Example agent invocation:" pattern had 0 occurrences
+- Identified regression test was searching for wrong pattern
+
+**Step 2: Classification** (Task 2.1 - supervise_yaml_classification.md)
+- Classified all 7 YAML blocks as structural vs behavioral
+- **Block 1** (line 49): Structural (documentation example) - KEEP
+- **Block 2** (line 63): Mixed (structural + behavioral duplication) - REFACTOR
+- **Blocks 3-7** (lines 682-2246): Behavioral duplication (~885 lines) - REMOVE
+
+**Step 3: Corrected Refactor Plan** (Task 2.2 - 001_supervise_refactor_corrected.md)
+- Added Phase 0: Pattern verification (prevents future mismatches)
+- Updated search patterns to use actual ` ```yaml` + `Task {` patterns
+- Clarified target state: 2 blocks retained (documentation), 5 removed (agent templates)
+- Fixed regression test to detect actual patterns
+
+**Step 4: Pattern Verification Guards**
+
+Added verification commands to Phase 0:
+
+```bash
+# Verify YAML block count
+YAML_COUNT=$(grep -c '```yaml' .claude/commands/supervise.md)
+# Expected: 7 before refactor
+
+# Verify assumed pattern does NOT exist
+EXAMPLE_COUNT=$(grep -c "Example agent invocation:" .claude/commands/supervise.md)
+# Expected: 0 (pattern never existed)
+
+# Verify actual pattern EXISTS
+YAML_TASK_COUNT=$(awk '/```yaml/{flag=1} flag && /Task \{/{count++; flag=0} END{print count}' .claude/commands/supervise.md)
+# Expected: 7 (actual pattern to refactor)
+
+# If verification fails, STOP and review
+```
+
+### Results
+
+**Before Refactor**:
+- 7 YAML blocks, ~915 lines total
+- 5 agent templates with full STEP sequences (~885 lines)
+- 2 documentation examples (~30 lines)
+- Maintenance burden: Update 6 files when changing agent behavior
+
+**After Refactor** (projected):
+- 2 YAML blocks, ~75 lines total
+- 5 agent templates replaced with context injection (~60 lines)
+- 2 documentation examples refined (~15 lines)
+- Maintenance: Update 1 agent file per behavior change
+
+**Reduction**: 840 lines removed (92% reduction)
+
+### Key Lessons Learned
+
+#### 1. Always Verify Search Patterns Exist Before Planning Replacements
+
+**Wrong Approach**:
+```markdown
+# Plan assumption (incorrect)
+Current Anti-Pattern Location:
+- Line 49-54: Example agent invocation pattern
+
+Implementation:
+1. Search for "Example agent invocation:" followed by ```yaml
+2. Replace with lean context injection
+```
+
+**Correct Approach**:
+```bash
+# Verify pattern exists first
+grep -n "Example agent invocation:" supervise.md
+# Output: (no matches)
+
+# Conclusion: Pattern doesn't exist, plan needs revision
+```
+
+#### 2. Use Grep to Extract Actual Strings, Not Inferred Descriptions
+
+**Wrong**: "Line 49 shows Example agent invocation pattern"
+- This is an INFERENCE about the block's purpose
+- The actual text at line 49 may be completely different
+
+**Correct**: Use Grep to extract actual strings
+```bash
+# Extract actual context around line 49
+sed -n '45,55p' supervise.md
+
+# Output shows actual text:
+# **Wrong Pattern - Command Chaining** (causes context bloat...):
+# ```yaml
+# # ❌ INCORRECT - Do NOT do this
+```
+
+#### 3. Classify YAML Blocks as Structural vs Behavioral Before Deciding Keep/Remove
+
+Not all YAML/code blocks are behavioral duplication:
+
+- **Documentation examples** (lines 49, 63): Show structural templates (Task invocation syntax)
+  - Decision: KEEP (educational value) or REFACTOR (remove behavioral parts)
+- **Agent templates** (lines 682+): Full behavioral procedures
+  - Decision: REMOVE (replace with context injection)
+
+**Classification prevents**:
+- Removing necessary structural templates
+- Keeping behavioral duplication mistakenly
+- Ambiguous target state ("remove all 7" vs "remove 5, refactor 2")
+
+#### 4. Pattern Verification in Phase 0 Prevents Wasted Implementation Effort
+
+**Cost Without Verification**:
+- Agent reads plan (1036 lines)
+- Agent reads file (2521 lines)
+- Agent attempts implementation
+- Agent reports "0 patterns found, no work to do"
+- Developer investigates → discovers pattern mismatch
+- Plan must be revised and re-implemented
+- **Total wasted effort**: 1-2 hours
+
+**Cost With Verification**:
+- Run Phase 0 verification script (30 seconds)
+- Script reports pattern mismatch immediately
+- Developer fixes pattern in plan before implementation
+- Implementation succeeds on first attempt
+- **Time saved**: 1-2 hours
+
+### Implementation Status
+
+**Completed**:
+- ✅ Diagnostic analysis (spec 444/001/OVERVIEW.md)
+- ✅ YAML block classification (supervise_yaml_classification.md)
+- ✅ Corrected refactor plan with pattern verification (001_supervise_refactor_corrected.md)
+
+**Pending**:
+- ⏳ Execute corrected refactor plan
+- ⏳ Validate 90% code reduction achieved
+- ⏳ Update regression test with actual patterns
+
+### Prevention Checklist for Future Refactors
+
+Based on /supervise experience:
+
+- [ ] **Pattern Verification**: Use Grep to confirm patterns exist before planning replacements
+- [ ] **Actual Strings**: Extract and document actual text, not inferred descriptions
+- [ ] **Classification**: Explicitly classify content as structural vs behavioral
+- [ ] **Phase 0 Guards**: Add verification step to catch mismatches before implementation
+- [ ] **Regression Test Accuracy**: Ensure tests detect actual patterns, not phantom patterns
+- [ ] **Target State Clarity**: Document exact expected outcome (e.g., "2 blocks retained, 5 removed")
+
+### References
+
+- **Diagnostic Report**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
+- **Classification**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/supervise_yaml_classification.md`
+- **Corrected Plan**: `.claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md`
+- **Original Plan** (blocked): `.claude/specs/438_analysis_of_supervise_command_refactor_plan_for_re/plans/001_supervise_command_refactor_integration.md`
+- **Target File**: `.claude/commands/supervise.md` (2,520 lines)
+
+---
+
 ## Related Documentation
 
 - [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) - Decision criteria for inline vs reference
