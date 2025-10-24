@@ -168,170 +168,45 @@ The command detects the workflow type and executes only the appropriate phases:
 
 ## Auto-Recovery
 
-This command includes minimal auto-recovery capabilities for transient failures while maintaining fail-fast behavior for permanent errors.
+This command implements verification-fallback pattern with single-retry for transient errors.
 
-### Recovery Philosophy
+**Key Behaviors**:
+- Transient errors (timeouts, file locks): Single retry after 1s delay
+- Permanent errors (syntax, dependencies): Fail-fast with diagnostics
+- Partial research failure: Continue if ≥50% agents succeed
 
-**Auto-recover from transient failures**:
-- Network timeouts
-- Temporary file locks
-- Rate limiting (API throttling)
-- Resource temporarily unavailable
-
-**Fail-fast for permanent errors**:
-- Syntax errors
-- Missing dependencies
-- Invalid configuration
-- Permission errors
-
-### Recovery Mechanism
-
-**Single-Retry Strategy**:
-1. Agent invocation completes
-2. Verify expected output file exists
-3. If missing: Classify error type
-4. If transient: Sleep 1s, retry agent invocation once
-5. If permanent or retry fails: Display enhanced error and terminate
-
-**No User Prompts**: Recovery is fully automated. Users only see errors on terminal failures.
+**See**: [Verification-Fallback Pattern](../docs/concepts/patterns/verification-fallback.md)
+**See**: [Error Handling Library](../lib/error-handling.sh) - Implementation details
 
 ## Enhanced Error Reporting
 
-When workflow failures occur, the command provides detailed diagnostic information:
+Failed operations receive enhanced diagnostics via error-handling.sh:
+- Error location extraction (file:line parsing)
+- Error type categorization (timeout, syntax, dependency, unknown)
+- Context-specific recovery suggestions
 
-### Error Location Extraction
-
-Parses common error formats to extract file:line information:
-- `SyntaxError at file.js:42: Missing closing brace`
-- `Error in module.py:156 - undefined variable`
-- `file:line:column` format from compilers
-
-### Specific Error Types
-
-Categorizes errors into 4 types for better diagnostics:
-1. **timeout** - Network timeouts, connection failures
-2. **syntax_error** - Code syntax issues, parsing failures
-3. **missing_dependency** - Import errors, package not found
-4. **unknown** - Unclassified errors
-
-### Recovery Suggestions
-
-Provides context-specific actionable guidance on failures:
-
-**Timeout errors**:
-- Check network connection
-- Retry workflow
-- Increase timeout threshold
-
-**Syntax errors**:
-- Check syntax at file:line
-- Run linter
-- Verify closing braces/brackets
-
-**Missing dependency errors**:
-- Install missing package
-- Check import statements
-- Verify PATH and environment
-
-### Error Display Format
-
-Example of enhanced error reporting in Phases 3-6:
-
-```
-❌ PERMANENT ERROR: Timeout error
-   at /home/user/.claude/lib/artifact-operations.sh:127
-   → This indicates agent did not follow STEP 1 instructions.
-
-Recovery suggestions:
-  • Retry the operation (may be a transient network issue)
-  • Check if the remote service is accessible
-  • Increase timeout threshold if problem persists
-
-Workflow TERMINATED. Fix agent enforcement and retry.
-```
+**See**: [Error Handling Library](../lib/error-handling.sh) - Complete error reporting implementation
 
 ## Partial Failure Handling
 
-### Research Phase Resilience
-
-The research phase (Phase 1) supports partial success when running multiple parallel agents:
-
-**Success Threshold**: ≥50% of research agents must succeed
-
-**Behavior**:
-- 4 agents invoked, 3 succeed, 1 fails → Continue with 3 reports
-- 4 agents invoked, 2 succeed, 2 fail → Continue with 2 reports (50% threshold)
-- 4 agents invoked, 1 succeeds, 3 fail → Terminate (insufficient coverage)
-
-**Rationale**: Some research is better than no research. Missing 1-2 reports is acceptable if majority succeed.
-
-**Warning**: Workflow logs which reports failed and continues with partial results.
+Research phase (Phase 1) continues if ≥50% of parallel agents succeed. Workflow logs failures and continues with partial results.
 
 ## Checkpoint Resume
 
-### Phase-Boundary Checkpoints
+Checkpoints saved after Phases 1-4. Auto-resumes from last completed phase on startup.
 
-Checkpoints are saved after completion of:
-- Phase 1 (Research)
-- Phase 2 (Planning)
-- Phase 3 (Implementation)
-- Phase 4 (Testing)
+**Behavior**: Validates checkpoint → Skips completed phases → Resumes seamlessly
 
-**Not checkpointed**: Phase 5 (Debug - conditional), Phase 6 (Documentation - final)
-
-### Checkpoint Schema
-
-Minimal v1.0 format:
-```json
-{
-  "schema_version": "1.0",
-  "workflow_type": "supervise",
-  "workflow_description": "...",
-  "current_phase": 2,
-  "completed_phases": [0, 1],
-  "scope": "research-and-plan",
-  "topic_path": "/path/to/specs/NNN_topic",
-  "artifact_paths": {
-    "research_reports": [...],
-    "plan_path": "...",
-    "overview_path": "..."
-  }
-}
-```
-
-### Auto-Resume Behavior
-
-**On workflow startup**:
-1. Check for `.claude/data/checkpoints/supervise_latest.json`
-2. If exists: Validate checkpoint (phase valid, artifacts exist)
-3. If valid: Skip completed phases, resume from next phase
-4. If invalid: Delete checkpoint silently, start fresh
-
-**No User Prompts**: Resume is fully automated and seamless.
-
-**Cleanup**: Checkpoint deleted on successful workflow completion.
+**See**: [Checkpoint Recovery Pattern](../docs/concepts/patterns/checkpoint-recovery.md) - Schema and implementation details
 
 ## Progress Markers
 
-### Format
-
+Emit silent progress markers at phase boundaries:
 ```
 PROGRESS: [Phase N] - [action]
 ```
 
-### Examples
-
-```
-PROGRESS: [Phase 0] - Topic directory created
-PROGRESS: [Phase 1] - Research agent 1/4 invoked
-PROGRESS: [Phase 1] - Research complete (4/4 succeeded)
-PROGRESS: [Phase 2] - Planning agent invoked
-PROGRESS: [Resume] - Skipping completed phases 0-2
-```
-
-### Purpose
-
-Provides workflow visibility without TodoWrite overhead. Silent markers emitted at phase transitions and critical checkpoints.
+Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 
 ## Shared Utility Functions
 
