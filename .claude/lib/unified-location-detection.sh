@@ -382,5 +382,97 @@ EOF
 }
 
 # ============================================================================
+# SECTION 8: Research Subdirectory Support
+# ============================================================================
+
+# create_research_subdirectory(topic_path, research_name)
+# Purpose: Create numbered subdirectory within topic's reports/ for hierarchical research
+# Arguments:
+#   $1: topic_path - Absolute path to topic directory
+#   $2: research_name - Sanitized snake_case name for research subdirectory
+# Returns: Absolute path to research subdirectory (printed to stdout)
+# Exit Codes:
+#   0: Success
+#   1: Error (invalid arguments, directory creation failed)
+#
+# Usage:
+#   RESEARCH_SUBDIR=$(create_research_subdirectory "$TOPIC_PATH" "auth_patterns")
+#
+# Creates: {topic_path}/reports/{NNN_research_name}/
+#
+create_research_subdirectory() {
+  local topic_path="$1"
+  local research_name="$2"
+
+  # Validate arguments
+  if [ -z "$topic_path" ] || [ -z "$research_name" ]; then
+    echo "ERROR: create_research_subdirectory requires topic_path and research_name" >&2
+    return 1
+  fi
+
+  # Validate topic_path is absolute
+  if [[ ! "$topic_path" =~ ^/ ]]; then
+    echo "ERROR: topic_path must be absolute: $topic_path" >&2
+    return 1
+  fi
+
+  # Validate topic_path exists
+  if [ ! -d "$topic_path" ]; then
+    echo "ERROR: topic_path does not exist: $topic_path" >&2
+    return 1
+  fi
+
+  # Construct reports directory path
+  local reports_dir="${topic_path}/reports"
+
+  # Validate reports directory exists
+  if [ ! -d "$reports_dir" ]; then
+    echo "ERROR: reports directory does not exist: $reports_dir" >&2
+    return 1
+  fi
+
+  # Get next number for research subdirectory
+  local next_num=1
+  local max_num=0
+
+  # Find existing numbered directories in reports/
+  for dir in "$reports_dir"/[0-9][0-9][0-9]_*; do
+    if [ -d "$dir" ]; then
+      # Extract number from directory name
+      local dir_basename
+      dir_basename=$(basename "$dir")
+      local dir_num
+      dir_num=$(echo "$dir_basename" | sed 's/^\([0-9]\{3\}\)_.*/\1/')
+
+      # Convert to decimal (remove leading zeros)
+      dir_num=$((10#$dir_num))
+
+      if [ "$dir_num" -gt "$max_num" ]; then
+        max_num=$dir_num
+      fi
+    fi
+  done
+
+  next_num=$((max_num + 1))
+
+  # Format number as 3 digits
+  local formatted_num
+  formatted_num=$(printf "%03d" "$next_num")
+
+  # Construct research subdirectory path
+  local research_subdir="${reports_dir}/${formatted_num}_${research_name}"
+
+  # Create research subdirectory
+  if ! mkdir -p "$research_subdir"; then
+    echo "ERROR: Failed to create research subdirectory: $research_subdir" >&2
+    return 1
+  fi
+
+  # Return absolute path
+  echo "$research_subdir"
+  return 0
+}
+
+# ============================================================================
 # END OF LIBRARY
 # ============================================================================

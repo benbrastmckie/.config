@@ -80,20 +80,29 @@ SUBTOPICS=(
 
 **Step 1: Get or Create Main Topic Directory**
 ```bash
-# Extract topic from research question
-TOPIC_DESC=$(extract_topic_from_question "$RESEARCH_TOPIC")
+# Source unified location detection library
+source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/unified-location-detection.sh"
 
-# Check for existing topics that match
-EXISTING_TOPIC=$(find_matching_topic "$TOPIC_DESC")
+# Perform location detection using unified library
+LOCATION_JSON=$(perform_location_detection "$RESEARCH_TOPIC" "false")
 
-if [ -n "$EXISTING_TOPIC" ]; then
-  TOPIC_DIR="$EXISTING_TOPIC"
+# Extract topic path from JSON output
+if command -v jq &>/dev/null; then
+  TOPIC_DIR=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
+  TOPIC_NAME=$(echo "$LOCATION_JSON" | jq -r '.topic_name')
 else
-  # Create new topic directory
-  TOPIC_DIR=$(get_or_create_topic_dir "$TOPIC_DESC" ".claude/specs")
-  # Creates: .claude/specs/{NNN_topic}/ with subdirectories
+  # Fallback without jq
+  TOPIC_DIR=$(echo "$LOCATION_JSON" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+  TOPIC_NAME=$(echo "$LOCATION_JSON" | grep -o '"topic_name": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
 fi
 
+# MANDATORY VERIFICATION checkpoint
+if [ ! -d "$TOPIC_DIR" ]; then
+  echo "ERROR: Location detection failed - directory not created: $TOPIC_DIR"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Topic directory created at $TOPIC_DIR"
 echo "Main topic directory: $TOPIC_DIR"
 ```
 
@@ -107,24 +116,31 @@ echo "Main topic directory: $TOPIC_DIR"
 # MANDATORY: Calculate absolute paths for each subtopic
 declare -A SUBTOPIC_REPORT_PATHS
 
-# Create subdirectory for this research task (groups related subtopic reports)
-RESEARCH_SUBDIR="${TOPIC_DIR}/reports/$(printf "%03d" $(get_next_artifact_number "${TOPIC_DIR}/reports"))_research"
-mkdir -p "$RESEARCH_SUBDIR"
+# Create subdirectory for this research task using unified library function
+RESEARCH_SUBDIR=$(create_research_subdirectory "$TOPIC_DIR" "${TOPIC_NAME}_research")
 
+# MANDATORY VERIFICATION - research subdirectory creation
+if [ ! -d "$RESEARCH_SUBDIR" ]; then
+  echo "CRITICAL ERROR: Research subdirectory creation failed: $RESEARCH_SUBDIR"
+  exit 1
+fi
+
+echo "✓ VERIFIED: Research subdirectory created"
 echo "Creating subtopic reports in: $RESEARCH_SUBDIR"
 
+# Calculate paths for each subtopic
+SUBTOPIC_NUM=1
 for subtopic in "${SUBTOPICS[@]}"; do
-  # Calculate next number within research subdirectory
-  NEXT_NUM=$(get_next_artifact_number "$RESEARCH_SUBDIR")
-
-  # Create absolute path
-  REPORT_PATH="${RESEARCH_SUBDIR}/$(printf "%03d" "$NEXT_NUM")_${subtopic}.md"
+  # Create absolute path with sequential numbering
+  REPORT_PATH="${RESEARCH_SUBDIR}/$(printf "%03d" "$SUBTOPIC_NUM")_${subtopic}.md"
 
   # Store in associative array
   SUBTOPIC_REPORT_PATHS["$subtopic"]="$REPORT_PATH"
 
   echo "  Subtopic: $subtopic"
   echo "  Path: $REPORT_PATH"
+
+  SUBTOPIC_NUM=$((SUBTOPIC_NUM + 1))
 done
 ```
 

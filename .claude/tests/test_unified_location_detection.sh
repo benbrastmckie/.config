@@ -610,6 +610,159 @@ edge_3() {
 }
 edge_3
 
+# ============================================================================
+# SECTION 8: Research Subdirectory Tests
+# ============================================================================
+
+echo ""
+echo "Section 8: Research Subdirectory Tests"
+echo "---------------------------------------"
+
+# Test 8.1: Basic research subdirectory creation
+test_8_1() {
+  local test_root="${TEST_TMP_DIR}/test_8_1"
+  mkdir -p "$test_root/.claude/specs"
+  export CLAUDE_PROJECT_DIR="$test_root"
+
+  # Create topic directory with reports subdirectory
+  local location_json
+  location_json=$(perform_location_detection "authentication patterns" "true" 2>&1)
+  local topic_path
+  topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+  # Create research subdirectory
+  local research_subdir
+  research_subdir=$(create_research_subdirectory "$topic_path" "jwt_oauth_analysis")
+
+  unset CLAUDE_PROJECT_DIR
+
+  # Verify subdirectory was created
+  if [ -d "$research_subdir" ] && [[ "$research_subdir" == */001_jwt_oauth_analysis ]]; then
+    report_test "Test 8.1: Basic research subdirectory creation" "PASS"
+  else
+    report_test "Test 8.1: Basic research subdirectory creation" "FAIL"
+    echo "  Expected: ${topic_path}/reports/001_jwt_oauth_analysis"
+    echo "  Got: $research_subdir"
+  fi
+}
+test_8_1
+
+# Test 8.2: Sequential research subdirectory numbering
+test_8_2() {
+  local test_root="${TEST_TMP_DIR}/test_8_2"
+  mkdir -p "$test_root/.claude/specs"
+  export CLAUDE_PROJECT_DIR="$test_root"
+
+  # Create topic directory
+  local location_json
+  location_json=$(perform_location_detection "testing patterns" "true" 2>&1)
+  local topic_path
+  topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+  # Create first research subdirectory
+  local research_subdir_1
+  research_subdir_1=$(create_research_subdirectory "$topic_path" "unit_testing")
+
+  # Create second research subdirectory
+  local research_subdir_2
+  research_subdir_2=$(create_research_subdirectory "$topic_path" "integration_testing")
+
+  unset CLAUDE_PROJECT_DIR
+
+  # Verify numbering is sequential
+  if [[ "$research_subdir_1" == */001_unit_testing ]] && [[ "$research_subdir_2" == */002_integration_testing ]]; then
+    report_test "Test 8.2: Sequential research subdirectory numbering" "PASS"
+  else
+    report_test "Test 8.2: Sequential research subdirectory numbering" "FAIL"
+    echo "  First: $research_subdir_1"
+    echo "  Second: $research_subdir_2"
+  fi
+}
+test_8_2
+
+# Test 8.3: Empty reports directory (first research)
+test_8_3() {
+  local test_root="${TEST_TMP_DIR}/test_8_3"
+  mkdir -p "$test_root/.claude/specs"
+  export CLAUDE_PROJECT_DIR="$test_root"
+
+  # Create topic directory
+  local location_json
+  location_json=$(perform_location_detection "database patterns" "true" 2>&1)
+  local topic_path
+  topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+  # Verify reports directory is empty
+  local reports_dir="${topic_path}/reports"
+  local file_count
+  file_count=$(find "$reports_dir" -mindepth 1 -maxdepth 1 | wc -l)
+
+  # Create first research subdirectory
+  local research_subdir
+  research_subdir=$(create_research_subdirectory "$topic_path" "sql_patterns")
+
+  unset CLAUDE_PROJECT_DIR
+
+  # Verify first research gets number 001
+  if [ "$file_count" -eq 0 ] && [[ "$research_subdir" == */001_sql_patterns ]]; then
+    report_test "Test 8.3: Empty reports directory creates 001" "PASS"
+  else
+    report_test "Test 8.3: Empty reports directory creates 001" "FAIL"
+    echo "  Files in reports: $file_count"
+    echo "  Research subdir: $research_subdir"
+  fi
+}
+test_8_3
+
+# Test 8.4: Absolute path validation
+test_8_4() {
+  local test_root="${TEST_TMP_DIR}/test_8_4"
+  mkdir -p "$test_root/.claude/specs"
+  export CLAUDE_PROJECT_DIR="$test_root"
+
+  # Create topic directory
+  local location_json
+  location_json=$(perform_location_detection "api patterns" "true" 2>&1)
+  local topic_path
+  topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+  # Create research subdirectory
+  local research_subdir
+  research_subdir=$(create_research_subdirectory "$topic_path" "rest_api")
+
+  unset CLAUDE_PROJECT_DIR
+
+  # Verify path is absolute (starts with /)
+  if [[ "$research_subdir" =~ ^/ ]]; then
+    report_test "Test 8.4: Returns absolute path" "PASS"
+  else
+    report_test "Test 8.4: Returns absolute path" "FAIL"
+    echo "  Path: $research_subdir"
+  fi
+}
+test_8_4
+
+# Test 8.5: Error handling - invalid topic path
+test_8_5() {
+  local test_root="${TEST_TMP_DIR}/test_8_5"
+  mkdir -p "$test_root/.claude/specs"
+
+  # Try to create research subdirectory with non-existent topic path
+  local research_subdir
+  research_subdir=$(create_research_subdirectory "/nonexistent/topic/path" "research" 2>&1)
+  local exit_code=$?
+
+  # Verify error is returned
+  if [ $exit_code -ne 0 ] && [[ "$research_subdir" == *"ERROR"* ]]; then
+    report_test "Test 8.5: Error handling for invalid topic path" "PASS"
+  else
+    report_test "Test 8.5: Error handling for invalid topic path" "FAIL"
+    echo "  Exit code: $exit_code"
+    echo "  Output: $research_subdir"
+  fi
+}
+test_8_5
+
 echo ""
 
 # ============================================================================
