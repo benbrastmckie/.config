@@ -338,33 +338,41 @@ test_4_6
 echo ""
 
 # ============================================================================
-# SECTION 5: Topic Structure Creation Tests
+# SECTION 5: Topic Structure Creation Tests (Lazy Creation)
 # ============================================================================
 
-echo "Section 5: Topic Structure Creation"
-echo "------------------------------------"
+echo "Section 5: Topic Structure Creation (Lazy Creation)"
+echo "----------------------------------------------------"
 
-# Test 5.1: All 6 subdirectories created
+# Test 5.1: Lazy directory creation - verify only topic root created
 test_5_1() {
   local test_topic="${TEST_TMP_DIR}/test_topic_1/001_test"
 
   if create_topic_structure "$test_topic"; then
-    local all_exist=true
+    # Verify topic root exists
+    if [ ! -d "$test_topic" ]; then
+      report_test "Test 5.1: Lazy creation - topic root created" "FAIL"
+      echo "  Topic root does not exist: $test_topic"
+      return
+    fi
+
+    # Verify NO subdirectories created (lazy creation)
+    local subdirs_exist=false
     for subdir in reports plans summaries debug scripts outputs; do
-      if [ ! -d "$test_topic/$subdir" ]; then
-        all_exist=false
+      if [ -d "$test_topic/$subdir" ]; then
+        subdirs_exist=true
         break
       fi
     done
 
-    if [ "$all_exist" = true ]; then
-      report_test "Test 5.1: All 6 subdirectories created" "PASS"
+    if [ "$subdirs_exist" = false ]; then
+      report_test "Test 5.1: Lazy creation - only topic root created" "PASS"
     else
-      report_test "Test 5.1: All 6 subdirectories created" "FAIL"
-      echo "  Missing subdirectories in: $test_topic"
+      report_test "Test 5.1: Lazy creation - only topic root created" "FAIL"
+      echo "  Subdirectories should not be created lazily"
     fi
   else
-    report_test "Test 5.1: All 6 subdirectories created" "FAIL"
+    report_test "Test 5.1: Lazy creation - only topic root created" "FAIL"
     echo "  create_topic_structure failed"
   fi
 }
@@ -388,20 +396,69 @@ test_5_3() {
   local test_topic="${TEST_TMP_DIR}/test_topic_3/003_test"
   mkdir -p "$test_topic"
 
-  # Create all but one subdirectory manually to test verification
-  mkdir -p "$test_topic"/{reports,plans,summaries,debug,scripts}
-  # Intentionally omit "outputs"
-
-  # Now try to create structure - should fail verification
-  # (But mkdir -p won't fail, so this tests the verification logic)
-  # Actually, create_topic_structure will create missing ones
-  # Let's test by making a read-only parent to force mkdir failure
-
-  # This is hard to test without root, so mark as skipped
-  echo "  [SKIPPED: Requires permission failure simulation]"
+  # Lazy creation means no subdirectories are verified
+  # This test is now SKIPPED due to design change
+  echo "  [SKIPPED: Lazy creation removed subdirectory verification]"
   ((TOTAL_TESTS++))
 }
 test_5_3
+
+# Test 5.4: ensure_artifact_directory() creates parent directories correctly
+test_5_4() {
+  local test_file="${TEST_TMP_DIR}/test_artifact_1/reports/001_analysis.md"
+
+  if ensure_artifact_directory "$test_file"; then
+    if [ -d "$(dirname "$test_file")" ]; then
+      report_test "Test 5.4: ensure_artifact_directory() creates parent" "PASS"
+    else
+      report_test "Test 5.4: ensure_artifact_directory() creates parent" "FAIL"
+      echo "  Parent directory not created: $(dirname "$test_file")"
+    fi
+  else
+    report_test "Test 5.4: ensure_artifact_directory() creates parent" "FAIL"
+    echo "  ensure_artifact_directory failed"
+  fi
+}
+test_5_4
+
+# Test 5.5: Idempotent behavior - calling ensure_artifact_directory() twice succeeds
+test_5_5() {
+  local test_file="${TEST_TMP_DIR}/test_artifact_2/plans/001_plan.md"
+
+  # First call
+  if ! ensure_artifact_directory "$test_file"; then
+    report_test "Test 5.5: Idempotent ensure_artifact_directory()" "FAIL"
+    echo "  First call failed"
+    return
+  fi
+
+  # Second call (directory already exists)
+  if ensure_artifact_directory "$test_file"; then
+    report_test "Test 5.5: Idempotent ensure_artifact_directory()" "PASS"
+  else
+    report_test "Test 5.5: Idempotent ensure_artifact_directory()" "FAIL"
+    echo "  Second call failed (should be idempotent)"
+  fi
+}
+test_5_5
+
+# Test 5.6: ensure_artifact_directory() creates nested parent directories
+test_5_6() {
+  local test_file="${TEST_TMP_DIR}/test_artifact_3/deep/nested/path/file.md"
+
+  if ensure_artifact_directory "$test_file"; then
+    if [ -d "$(dirname "$test_file")" ]; then
+      report_test "Test 5.6: Nested parent directories created" "PASS"
+    else
+      report_test "Test 5.6: Nested parent directories created" "FAIL"
+      echo "  Nested parent directory not created"
+    fi
+  else
+    report_test "Test 5.6: Nested parent directories created" "FAIL"
+    echo "  ensure_artifact_directory failed for nested path"
+  fi
+}
+test_5_6
 
 echo ""
 
