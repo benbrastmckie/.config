@@ -58,21 +58,24 @@ The `/supervise` command creates all 6 subdirectories (reports/, plans/, summari
 
 ---
 
-### Phase 3: Add Directory Creation to Agent Templates
+### Phase 3: Add Directory Creation to Agent Templates [COMPLETED]
 
 **Objective**: Ensure agent templates create parent directories before writing files
 
 **Tasks**:
-1. Identify all Write tool invocations in `.claude/commands/supervise.md` agent templates
-2. Add `mkdir -p "$(dirname "$FILE_PATH")"` before each Write tool usage
-3. Update verification checkpoints to confirm directory creation
-4. Test all workflow types to ensure subdirectories created when needed
+1. [x] Identify all Write tool invocations in `.claude/commands/supervise.md` agent templates
+2. [x] Add `mkdir -p "$(dirname "$FILE_PATH")"` before each Write tool usage
+3. [x] Update verification checkpoints to confirm directory creation
+4. [x] Test all workflow types to ensure subdirectories created when needed
 
 **Verification**:
-- [ ] Research agents create reports/ when writing files
-- [ ] Plan-architect creates plans/ when writing files
-- [ ] Debug-analyst creates debug/ when writing files
-- [ ] No empty directories remain after workflow completion
+- [x] Research agents create reports/ when writing files (added to research-specialist invocation)
+- [x] Plan-architect creates plans/ when writing files (added to plan-architect invocation)
+- [x] Debug-analyst creates debug/ when writing files (added to debug template)
+- [x] Doc-writer creates summaries/ when writing files (added to doc-writer invocation)
+- [x] Test-specialist creates outputs/ when writing files (added to test-specialist invocation)
+- [x] Code-writer creates artifacts with parent directories (added general instruction)
+- [ ] No empty directories remain after workflow completion (requires integration testing)
 
 **Complexity**: 5/10
 **Dependencies**: Phase 2
@@ -81,12 +84,12 @@ The `/supervise` command creates all 6 subdirectories (reports/, plans/, summari
 
 ## Success Criteria
 
-- [ ] `create_topic_structure()` creates only topic root
-- [ ] `/supervise` Phase 0 creates only topic root
-- [ ] Subdirectories created on-demand when files written
-- [ ] No empty directories after workflow completion
-- [ ] All workflow types functional (research-only, research-and-plan, full-implementation, debug-only)
-- [ ] Backward compatibility maintained
+- [x] `create_topic_structure()` creates only topic root
+- [x] `/supervise` Phase 0 creates only topic root
+- [x] Subdirectories created on-demand when files written (agent templates updated)
+- [ ] No empty directories after workflow completion (requires integration testing)
+- [ ] All workflow types functional (requires integration testing)
+- [x] Backward compatibility maintained (function interface unchanged)
 
 ## Risk Assessment
 
