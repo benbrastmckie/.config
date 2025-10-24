@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, Task
+allowed-tools: Task, Bash, Read
 argument-hint: <topic or question>
 description: Research a topic using hierarchical multi-agent pattern (improved /report)
 command-type: primary
@@ -15,6 +15,7 @@ I'll orchestrate hierarchical research by delegating to specialized subagents wh
 **CRITICAL INSTRUCTIONS**:
 - DO NOT execute research yourself using Read/Grep/Write tools
 - ONLY use Task tool to delegate research to research-specialist agents
+- Use Read tool ONLY for post-delegation verification (confirming agent outputs)
 - Your job: decompose topic → invoke agents → verify outputs → synthesize
 
 You will NOT see research findings directly. Agents will create report files at pre-calculated paths, and you will verify those files exist after agent completion.
@@ -40,7 +41,7 @@ First, I'll analyze the topic to determine:
 ```bash
 # Source decomposition utility
 source .claude/lib/topic-decomposition.sh
-source .claude/lib/artifact-operations.sh
+source .claude/lib/artifact-creation.sh
 source .claude/lib/template-integration.sh
 
 # Determine number of subtopics based on topic complexity
@@ -238,6 +239,7 @@ Task {
 ```bash
 # Track verification results
 declare -A VERIFIED_PATHS
+declare -a FAILED_AGENTS
 VERIFICATION_ERRORS=0
 
 echo "Verifying subtopic reports..."
@@ -258,36 +260,10 @@ for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
       echo "  → Found at alternate location: $FOUND_PATH"
       VERIFIED_PATHS["$subtopic"]="$FOUND_PATH"
     else
-      echo "  → ERROR: Report not created by agent for: $subtopic"
+      echo "  ❌ ERROR: Report not found: $EXPECTED_PATH"
+      echo "  Agent did not create file. Review .claude/agents/research-specialist.md"
       VERIFICATION_ERRORS=$((VERIFICATION_ERRORS + 1))
-
-      # Fallback: Create minimal report with placeholder content
-      echo "  → Creating fallback report at: $EXPECTED_PATH"
-
-      cat > "$EXPECTED_PATH" <<EOF
-# ${subtopic//_/ } Research Report
-
-## Metadata
-- **Date**: $(date +%Y-%m-%d)
-- **Status**: Fallback Creation (Agent Non-Compliance)
-- **Topic**: $subtopic
-
-## Note
-This report was created by fallback mechanism due to agent non-compliance.
-The research-specialist agent did not create this file as instructed.
-
-## Placeholder Content
-Research findings for ${subtopic//_/ } should be added manually.
-
-EOF
-
-      if [ -f "$EXPECTED_PATH" ]; then
-        echo "  → ✓ Fallback report created successfully"
-        VERIFIED_PATHS["$subtopic"]="$EXPECTED_PATH"
-      else
-        echo "  → ✗ CRITICAL: Fallback creation also failed"
-        exit 1
-      fi
+      FAILED_AGENTS+=("$subtopic")
     fi
   fi
 done
