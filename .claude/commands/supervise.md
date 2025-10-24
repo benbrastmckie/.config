@@ -748,6 +748,9 @@ Task {
     - Project Standards: /home/benjamin/.config/CLAUDE.md
     - Complexity Level: ${RESEARCH_COMPLEXITY}
 
+    **CRITICAL**: Before writing report file, ensure parent directory exists:
+    Use Bash tool: mkdir -p \"\$(dirname \\\"${REPORT_PATHS[i]}\\\")\"
+
     Execute research following all guidelines in behavioral file.
     Return: REPORT_CREATED: ${REPORT_PATHS[i]}
   "
@@ -1018,6 +1021,9 @@ Task {
     - Research Reports: ${RESEARCH_REPORTS_LIST}
     - Research Report Count: ${SUCCESSFUL_REPORT_COUNT}
 
+    **CRITICAL**: Before writing plan file, ensure parent directory exists:
+    Use Bash tool: mkdir -p \"\$(dirname \\\"${PLAN_PATH}\\\")\"
+
     Execute planning following all guidelines in behavioral file.
     Return: PLAN_CREATED: ${PLAN_PATH}
   "
@@ -1213,6 +1219,9 @@ Task {
     - Project Standards: ${STANDARDS_FILE}
     - Workflow Type: ${WORKFLOW_SCOPE}
 
+    **CRITICAL**: Before writing any artifact files, ensure parent directories exist:
+    Use Bash tool: mkdir -p \"\$(dirname \\\"<file_path>\\\")\" before each file creation
+
     Execute implementation following all guidelines in behavioral file.
     Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
     PHASES_COMPLETED: {N}
@@ -1334,6 +1343,9 @@ Task {
     - Project Standards: ${STANDARDS_FILE}
     - Plan File: ${PLAN_PATH}
     - Implementation Artifacts: ${IMPL_ARTIFACTS}
+
+    **CRITICAL**: Before writing test results file, ensure parent directory exists:
+    Use Bash tool: mkdir -p \"${TOPIC_PATH}/outputs\"
 
     Execute testing following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
@@ -1461,7 +1473,12 @@ for iteration in 1 2 3; do
 
       **EXECUTE NOW**
 
-      YOU MUST create: ${DEBUG_REPORT}
+      First, ensure parent directory exists:
+      ```bash
+      mkdir -p "$(dirname "${DEBUG_REPORT}")"
+      ```
+
+      Then create: ${DEBUG_REPORT}
 
       Template:
       ```markdown
@@ -1768,6 +1785,9 @@ Task {
     - Implementation Artifacts: ${IMPL_ARTIFACTS}
     - Test Status: ${TEST_STATUS}
     - Workflow Description: ${WORKFLOW_DESCRIPTION}
+
+    **CRITICAL**: Before writing summary file, ensure parent directory exists:
+    Use Bash tool: mkdir -p \"\$(dirname \\\"${SUMMARY_PATH}\\\")\"
 
     Execute documentation following all guidelines in behavioral file.
     Return: SUMMARY_CREATED: ${SUMMARY_PATH}
