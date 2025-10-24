@@ -273,23 +273,24 @@ done
 
 **Task 2.4: Update Spec 438 Plan with Corrections**
 
-- [x] Option A: Create addendum to spec 438/001 referencing spec 444 corrections
-  - [x] Add section "Plan Revision - Pattern Corrections" to 438/001/001_supervise_command_refactor_integration.md
-  - [x] Reference diagnostic report: spec 444/001/OVERVIEW.md
-  - [x] Reference corrected plan: spec 444/001/plans/001_supervise_refactor_corrected.md
-  - [x] Mark Phase 1 as "BLOCKED - See spec 444 for corrected implementation"
-  - [x] Preserve original plan as historical record (don't delete incorrect patterns)
+- [ ] Option A: Create addendum to spec 438/001 referencing spec 444 corrections
+  - [ ] Add section "Plan Revision - Pattern Corrections" to 438/001/001_supervise_command_refactor_integration.md
+  - [ ] Reference diagnostic report: spec 444/001/OVERVIEW.md
+  - [ ] Reference corrected plan: spec 444/001/plans/001_supervise_refactor_corrected.md
+  - [ ] Mark Phase 1 as "BLOCKED - See spec 444 for corrected implementation"
+  - [ ] Preserve original plan as historical record (don't delete incorrect patterns)
 
-- [ ] Option B: Use /revise on spec 438 plan directly
-  - [ ] Run: `/revise "Fix search patterns per spec 444 diagnostic" specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
-  - [ ] This will update 438 plan with corrected patterns inline
-  - [ ] Add revision history documenting pattern corrections
-  - [ ] Preferred if we want single source of truth for implementation
+- [x] Option B: Use /revise on spec 438 plan directly (CHOSEN)
+  - [x] Run: `/revise "Fix search patterns per spec 444 diagnostic" specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
+  - [x] Updated 438 plan with corrected patterns inline
+  - [x] Added Revision 3 history documenting pattern corrections
+  - [x] Preferred for single source of truth implementation
 
-- [x] **Decision**: Choose Option A (addendum) to preserve diagnostic trail
-  - [x] Rationale: Shows problem → diagnosis → fix workflow
-  - [x] Benefit: Future developers see how pattern mismatches are caught and corrected
-  - [x] Educational value: Case study for pattern verification importance
+- [x] **Decision**: Choose Option B (inline revision) for single source of truth
+  - [x] Rationale: Maintains plan as standalone implementation guide
+  - [x] Benefit: No need to track separate corrected plan (spec 444)
+  - [x] Educational value: Revision history shows pattern correction process
+  - [x] Result: Plan is now READY FOR IMPLEMENTATION with corrected patterns
 
 **Testing**:
 ```bash
