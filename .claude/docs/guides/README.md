@@ -218,6 +218,24 @@ Task-focused how-to guides for specific development activities. Use this section
 2. Follow [Standards Integration Guide](standards-integration.md)
 3. Test discovery with example CLAUDE.md files
 
+## Troubleshooting
+
+### [Inline Template Duplication](../troubleshooting/inline-template-duplication.md)
+
+**Problem**: Behavioral content duplicated in command files instead of referenced from agent files
+
+**Symptoms**:
+- Command files >2000 lines
+- STEP sequences in command prompts
+- Maintenance burden updating multiple files
+
+**Quick Fix**:
+1. Extract behavioral content to `.claude/agents/*.md`
+2. Update command to reference agent file with context injection
+3. Validate 90% code reduction per invocation
+
+**See**: [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md)
+
 ## Directory Structure
 
 ```

@@ -91,6 +91,26 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ---
 
+### [Template vs Behavioral Distinction](template-vs-behavioral-distinction.md)
+**Purpose**: Critical architectural principle defining when to use inline templates vs behavioral file references in commands and agents.
+
+**Key Principle**: Structural templates inline, behavioral content referenced
+
+**Metrics**: 90% code reduction, 71% context savings, 100% file creation rate
+
+**Zero Exceptions**: No documented exceptions to behavioral duplication prohibition
+
+**Use Cases**:
+- Before creating any command or agent file (CRITICAL reading)
+- When unsure whether content should be inline or referenced
+- To understand the 5 categories of structural templates (Task syntax, bash blocks, schemas, checkpoints, warnings)
+- When refactoring commands to eliminate behavioral duplication
+- To debug inline duplication anti-pattern (150+ line agent invocations)
+
+**See Also**: [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md), [Command Architecture Standards](command_architecture_standards.md) - Standard 12, [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md)
+
+---
+
 ## Quick Start
 
 ### Look Up a Command
@@ -118,13 +138,14 @@ less .claude/docs/reference/claude-md-section-schema.md
 
 ```
 reference/
-├── README.md                           (this file)
-├── command-reference.md                Quick command lookup
-├── agent-reference.md                  Agent directory
-├── claude-md-section-schema.md         Standards format specification
-├── command_architecture_standards.md   Command/agent design requirements
-├── phase_dependencies.md               Dependency syntax and wave calculation
-└── library-api.md                      Utility library API reference
+├── README.md                              (this file)
+├── command-reference.md                   Quick command lookup
+├── agent-reference.md                     Agent directory
+├── claude-md-section-schema.md            Standards format specification
+├── command_architecture_standards.md      Command/agent design requirements
+├── template-vs-behavioral-distinction.md  Inline vs reference decision criteria
+├── phase_dependencies.md                  Dependency syntax and wave calculation
+└── library-api.md                         Utility library API reference
 ```
 
 ## Related Documentation

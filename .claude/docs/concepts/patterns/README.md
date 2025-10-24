@@ -8,6 +8,10 @@ This directory documents the core architectural patterns that enable reliable, e
 
 ## Pattern Catalog
 
+### Core Patterns
+
+- **[Template vs Behavioral Distinction](../../reference/template-vs-behavioral-distinction.md)** - Critical architectural principle for inline vs reference
+
 ### Agent Coordination Patterns
 
 1. **[Behavioral Injection](./behavioral-injection.md)** - Commands inject context into agents via file reads instead of tool invocations
@@ -27,6 +31,23 @@ This directory documents the core architectural patterns that enable reliable, e
 ### Performance Patterns
 
 8. **[Parallel Execution](./parallel-execution.md)** - Wave-based and concurrent agent execution for 40-60% time savings
+
+## Anti-Patterns
+
+### [Inline Template Duplication](../../troubleshooting/inline-template-duplication.md)
+
+**Problem**: Duplicating agent behavioral guidelines in command prompts instead of referencing agent files
+
+**Impact**: 90% unnecessary code, maintenance burden, synchronization issues
+
+**Detection**:
+- >50 lines per agent invocation
+- STEP sequences in commands (expect <5)
+- PRIMARY OBLIGATION in command files (should be 0)
+
+**Fix**: Extract to `.claude/agents/*.md`, reference via behavioral injection
+
+**See**: [Inline Template Duplication Troubleshooting](../../troubleshooting/inline-template-duplication.md)
 
 ## Pattern Relationships
 
