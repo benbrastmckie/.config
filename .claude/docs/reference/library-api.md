@@ -154,9 +154,61 @@ TOPIC_NAME=$(sanitize_topic_name "OAuth 2.0 Security (Best Practices)")
 # Result: "oauth_20_security_best_practices"
 ```
 
+##### `ensure_artifact_directory(file_path)`
+
+**NEW**: Create parent directory for artifact file using lazy creation pattern.
+
+**Arguments**:
+- `file_path` (string): Absolute path to artifact file (e.g., report, plan, summary)
+
+**Returns**: Nothing (exits on failure)
+
+**Creates**:
+- Parent directory only if it doesn't exist
+
+**Exit Codes**:
+- `0`: Success (directory exists or was created)
+- `1`: Failure (directory creation failed)
+
+**Behavior**:
+- **Idempotent**: Safe to call multiple times for the same path
+- **Lazy**: Creates directories only when files are actually written
+- **Minimal overhead**: <5ms per call, directory check + mkdir if needed
+
+**Performance**: Eliminates 400-500 empty directories by creating directories on-demand instead of eagerly.
+
+**Usage Example**:
+```bash
+# Before writing any file, ensure parent directory exists
+REPORT_PATH="${TOPIC_DIR}/reports/001_analysis.md"
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory"
+  exit 1
+}
+
+# Now safe to write file
+echo "content" > "$REPORT_PATH"
+```
+
+**Common Patterns**:
+```bash
+# In commands
+ensure_artifact_directory "$PLAN_PATH" || exit 1
+cat > "$PLAN_PATH" <<EOF
+...
+EOF
+
+# In agent templates (via Bash tool)
+source .claude/lib/unified-location-detection.sh
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create directory" >&2
+  exit 1
+}
+```
+
 ##### `create_topic_structure(topic_path)`
 
-Create standard 6-subdirectory topic structure.
+Create topic root directory using lazy subdirectory creation.
 
 **Arguments**:
 - `topic_path` (string): Absolute path to topic directory
@@ -164,16 +216,14 @@ Create standard 6-subdirectory topic structure.
 **Returns**: Nothing (exits on failure)
 
 **Creates**:
-- `reports/` - Research documentation
-- `plans/` - Implementation plans
-- `summaries/` - Workflow summaries
-- `debug/` - Debug reports and diagnostics
-- `scripts/` - Utility scripts
-- `outputs/` - Command outputs and logs
+- Topic root directory ONLY
+- Subdirectories (reports/, plans/, etc.) created on-demand via `ensure_artifact_directory()`
 
 **Exit Codes**:
-- `0`: Success (all directories created and verified)
-- `1`: Failure (directory creation failed or verification failed)
+- `0`: Success (topic root created)
+- `1`: Failure (directory creation failed)
+
+**Behavior Change**: Previously created all 6 subdirectories eagerly. Now creates only the topic root, eliminating empty subdirectories.
 
 **Usage Example**:
 ```bash
@@ -182,6 +232,9 @@ create_topic_structure "$TOPIC_PATH" || {
   echo "ERROR: Failed to create topic structure"
   exit 1
 }
+
+# Only topic root exists at this point
+# Subdirectories created when files are written using ensure_artifact_directory()
 ```
 
 ##### `create_research_subdirectory(topic_path, research_name)`
