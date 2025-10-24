@@ -335,21 +335,146 @@ Provides workflow visibility without TodoWrite overhead. Silent markers emitted 
 
 ## Shared Utility Functions
 
-**EXECUTE NOW - Source Required Libraries**
-
 ```bash
-# Determine script directory
+# ═══════════════════════════════════════════════════════════════
+# Workflow Scope Detection (After Phase 0: Location)
+# ═══════════════════════════════════════════════════════════════
+
+detect_workflow_scope() {
+  local workflow_desc="$1"
+
+  # Pattern 1: Research-only (no planning or implementation)
+  # Keywords: "research [topic]" without "plan" or "implement"
+  # Phases: 0 (Location) → 1 (Research) → STOP
+  if echo "$workflow_desc" | grep -Eiq "^research" && \
+     ! echo "$workflow_desc" | grep -Eiq "plan|implement"; then
+    echo "research-only"
+    return
+  fi
+
+  # Pattern 2: Research-and-plan (most common case)
+  # Keywords: "research...to create plan", "analyze...for planning"
+  # Phases: 0 → 1 (Research) → 2 (Planning) → STOP
+  if echo "$workflow_desc" | grep -Eiq "(research|analyze|investigate).*(to |and |for ).*(plan|planning)"; then
+    echo "research-and-plan"
+    return
+  fi
+
+  # Pattern 3: Full-implementation
+  # Keywords: "implement", "build", "add feature", "create [code component]"
+  # Phases: 0 → 1 → 2 → 3 (Implementation) → 4 (Testing) → 5 (Debug if needed) → 6 (Documentation)
+  if echo "$workflow_desc" | grep -Eiq "implement|build|add.*(feature|functionality)|create.*(code|component|module)"; then
+    echo "full-implementation"
+    return
+  fi
+
+  # Pattern 4: Debug-only (fix existing code)
+  # Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
+  # Phases: 0 → 1 (Research) → 5 (Debug) → STOP (no new implementation)
+  if echo "$workflow_desc" | grep -Eiq "^(fix|debug|troubleshoot).*(bug|issue|error|failure)"; then
+    echo "debug-only"
+    return
+  fi
+
+  # Default: Conservative fallback to research-and-plan (safest for ambiguous cases)
+  echo "research-and-plan"
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Phase Execution Check
+# ═══════════════════════════════════════════════════════════════
+
+should_run_phase() {
+  local phase_num="$1"
+
+  # Check if phase is in execution list
+  if echo "$PHASES_TO_EXECUTE" | grep -q "$phase_num"; then
+    return 0  # true: execute phase
+  else
+    return 1  # false: skip phase
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════
+# File Verification Checkpoint Template
+# ═══════════════════════════════════════════════════════════════
+
+verify_file_created() {
+  local file_path="$1"
+  local file_type="$2"
+  local agent_output="$3"
+
+  echo "**MANDATORY VERIFICATION**: Verifying $file_type exists..."
+  echo ""
+
+  # Check 1: File exists
+  if [ ! -f "$file_path" ]; then
+    echo "❌ VERIFICATION FAILED: $file_type does not exist"
+    echo "   Expected: $file_path"
+    echo "   Agent output: $agent_output"
+    echo ""
+
+    # Enhanced Error Reporting - Extract location and type
+    ERROR_MSG="Agent failed to create $file_type file: $file_path"
+    ERROR_LOCATION=$(extract_error_location "$agent_output")
+    ERROR_TYPE=$(detect_specific_error_type "$agent_output")
+
+    echo "❌ PERMANENT ERROR: $ERROR_TYPE"
+    if [ -n "$ERROR_LOCATION" ]; then
+      echo "   at $ERROR_LOCATION"
+    fi
+    echo "   → This indicates agent did not follow STEP 1 instructions."
+    echo ""
+    echo "Recovery suggestions:"
+    suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+    echo ""
+    echo "Workflow TERMINATED. Fix agent enforcement and retry."
+    exit 1
+  fi
+
+  # Check 2: File has content (size > 0)
+  if [ ! -s "$file_path" ]; then
+    echo "❌ VERIFICATION FAILED: $file_type is empty"
+    echo "   Path: $file_path"
+    echo ""
+
+    # Enhanced Error Reporting - Extract location and type
+    ERROR_MSG="Agent created empty $file_type file: $file_path"
+    ERROR_LOCATION=$(extract_error_location "$agent_output")
+    ERROR_TYPE=$(detect_specific_error_type "$agent_output")
+
+    echo "❌ PERMANENT ERROR: $ERROR_TYPE"
+    if [ -n "$ERROR_LOCATION" ]; then
+      echo "   at $ERROR_LOCATION"
+    fi
+    echo "   → This indicates agent did not follow STEP 3 instructions."
+    echo ""
+    echo "Recovery suggestions:"
+    suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
+    echo ""
+    echo "Workflow TERMINATED. Fix agent enforcement and retry."
+    exit 1
+  fi
+
+  # Check 3: File size (should be at least 100 bytes)
+  local file_size=$(wc -c < "$file_path")
+  if [ "$file_size" -lt 100 ]; then
+    echo "⚠️  WARNING: $file_type is very small ($file_size bytes)"
+    echo "   Agent may not have completed all steps."
+  fi
+
+  echo "✅ VERIFICATION PASSED: $file_type created successfully"
+  echo "   Path: $file_path"
+  echo "   Size: $file_size bytes"
+  echo ""
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Error Handling and Recovery Integration
+# ═══════════════════════════════════════════════════════════════
+
+# Source error-handling library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Source workflow detection utilities
-if [ -f "$SCRIPT_DIR/../lib/workflow-detection.sh" ]; then
-  source "$SCRIPT_DIR/../lib/workflow-detection.sh"
-else
-  echo "ERROR: workflow-detection.sh not found"
-  exit 1
-fi
-
-# Source error handling utilities
 if [ -f "$SCRIPT_DIR/../lib/error-handling.sh" ]; then
   source "$SCRIPT_DIR/../lib/error-handling.sh"
 else
@@ -357,7 +482,7 @@ else
   exit 1
 fi
 
-# Source checkpoint utilities
+# Source checkpoint-utils library
 if [ -f "$SCRIPT_DIR/../lib/checkpoint-utils.sh" ]; then
   source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
 else
@@ -365,132 +490,316 @@ else
   exit 1
 fi
 
-# Source unified logger
-if [ -f "$SCRIPT_DIR/../lib/unified-logger.sh" ]; then
-  source "$SCRIPT_DIR/../lib/unified-logger.sh"
-else
-  echo "ERROR: unified-logger.sh not found"
-  exit 1
-fi
-```
+# classify_and_retry: Classify error and return retry decision
+# Usage: classify_and_retry <agent_output>
+# Returns: "retry" | "fail" | "success"
+classify_and_retry() {
+  local agent_output="${1:-}"
 
-**Verification**: All required functions available via sourced libraries.
+  # Check for success indicators
+  if echo "$agent_output" | grep -q "REPORT_CREATED\|PLAN_CREATED\|IMPLEMENTATION_COMPLETE"; then
+    echo "success"
+    return
+  fi
 
-## Available Utility Functions
+  # Classify error using error-handling.sh
+  local error_type=$(classify_error "$agent_output")
 
-All utility functions are now sourced from library files. This table documents the complete API:
-
-### Workflow Detection Functions
-
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `detect_workflow_scope()` | workflow-detection.sh | Determine workflow type from description | `SCOPE=$(detect_workflow_scope "$DESC")` |
-| `should_run_phase()` | workflow-detection.sh | Check if phase executes for current scope | `should_run_phase 3 \|\| exit 0` |
-
-### Error Handling Functions
-
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `classify_error()` | error-handling.sh | Classify error type (transient/permanent/fatal) | `TYPE=$(classify_error "$ERROR_MSG")` |
-| `suggest_recovery()` | error-handling.sh | Suggest recovery action based on error type | `suggest_recovery "$ERROR_TYPE" "$MSG"` |
-| `detect_error_type()` | error-handling.sh | Detect specific error category | `TYPE=$(detect_error_type "$ERROR")` |
-| `extract_location()` | error-handling.sh | Extract file:line from error message | `LOC=$(extract_location "$ERROR")` |
-| `generate_suggestions()` | error-handling.sh | Generate error-specific suggestions | `generate_suggestions "$TYPE" "$MSG" "$LOC"` |
-| `retry_with_backoff()` | error-handling.sh | Retry command with exponential backoff | `retry_with_backoff 3 500 curl "$URL"` |
-
-### Checkpoint Management Functions
-
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `save_checkpoint()` | checkpoint-utils.sh | Save workflow checkpoint for resume | `CKPT=$(save_checkpoint "supervise" "project" "$JSON")` |
-| `restore_checkpoint()` | checkpoint-utils.sh | Load most recent checkpoint | `DATA=$(restore_checkpoint "supervise" "project")` |
-| `checkpoint_get_field()` | checkpoint-utils.sh | Extract field from checkpoint | `PHASE=$(checkpoint_get_field "$CKPT" ".current_phase")` |
-| `checkpoint_set_field()` | checkpoint-utils.sh | Update field in checkpoint | `checkpoint_set_field "$CKPT" ".phase" "3"` |
-
-### Progress Logging Functions
-
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `emit_progress()` | unified-logger.sh | Emit silent progress marker | `emit_progress "1" "Research complete"` |
-
-### Function Categories Summary
-
-- **Workflow Management**: 2 functions (scope detection, phase execution)
-- **Error Handling**: 6 functions (classification, recovery, suggestions)
-- **Checkpoint Management**: 4 functions (save, restore, get/set fields)
-- **Progress Logging**: 1 function (progress markers)
-
-**Total Functions Available**: 13 core utilities
-
-## Retained Usage Examples
-
-The following examples demonstrate common usage patterns for sourced utilities:
-
-### Example 1: Workflow Scope Detection
-
-```bash
-# Detect workflow scope and configure phases
-WORKFLOW_DESCRIPTION="research authentication patterns to create implementation plan"
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-# Map scope to phase execution list
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    PHASES_TO_EXECUTE="0,1"
-    ;;
-  research-and-plan)
-    PHASES_TO_EXECUTE="0,1,2"
-    ;;
-  full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4,6"
-    ;;
-  debug-only)
-    PHASES_TO_EXECUTE="0,1,5"
-    ;;
-esac
-
-export WORKFLOW_SCOPE PHASES_TO_EXECUTE
-```
-
-### Example 2: Conditional Phase Execution
-
-```bash
-# Check if phase should run
-should_run_phase 3 || {
-  echo "⏭️  Skipping Phase 3 (Implementation)"
-  echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
-  exit 0
+  if [ "$error_type" == "$ERROR_TYPE_TRANSIENT" ]; then
+    echo "retry"
+  else
+    echo "fail"
+  fi
 }
 
-echo "Executing Phase 3: Implementation"
-```
+# verify_and_retry: Verify file creation with single retry for transient failures
+# Usage: verify_and_retry <file_path> <agent_output> <agent_type>
+# Returns: 0 on success, 1 on failure
+verify_and_retry() {
+  local file_path="$1"
+  local agent_output="$2"
+  local agent_type="$3"
 
-### Example 3: Error Handling with Recovery
+  # First attempt verification
+  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+    return 0
+  fi
 
-```bash
-# Classify error and determine recovery
-ERROR_MSG="Connection timeout after 30 seconds"
-ERROR_TYPE=$(classify_error "$ERROR_MSG")
+  # File missing - classify error
+  local retry_decision=$(classify_and_retry "$agent_output")
 
-if [ "$ERROR_TYPE" == "transient" ]; then
-  echo "Transient error detected, retrying..."
-  retry_with_backoff 3 1000 curl "https://api.example.com"
-else
-  echo "Permanent error:"
-  suggest_recovery "$ERROR_TYPE" "$ERROR_MSG"
-  exit 1
-fi
-```
+  if [ "$retry_decision" == "retry" ]; then
+    echo "⚠️  Transient error detected - retrying once..."
+    return 2  # Signal caller to retry
+  else
+    return 1  # Permanent failure
+  fi
+}
 
-### Example 4: Progress Markers
+# emit_progress: Emit silent progress marker
+# Usage: emit_progress <phase_number> <action>
+emit_progress() {
+  local phase="$1"
+  local action="$2"
+  echo "PROGRESS: [Phase $phase] - $action"
+}
 
-```bash
-# Emit progress markers at phase transitions
-emit_progress "1" "Invoking 4 research agents in parallel"
-# ... agent invocations ...
-emit_progress "1" "All research agents completed"
-emit_progress "2" "Planning phase started"
-```
+# extract_error_location: Extract file:line location from error message
+# Usage: extract_error_location <error_message>
+# Returns: file:line format or empty string
+extract_error_location() {
+  local error_msg="$1"
+
+  # Try common patterns: file.ext:line, at file.ext:line
+  if echo "$error_msg" | grep -qo '[a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+'; then
+    echo "$error_msg" | grep -o '[a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+' | head -1
+  elif echo "$error_msg" | grep -qo 'at [a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+'; then
+    echo "$error_msg" | grep -o 'at [a-zA-Z0-9_/.-]\+\.[a-z]\+:[0-9]\+' | sed 's/^at //' | head -1
+  else
+    echo ""
+  fi
+}
+
+# detect_specific_error_type: Detect specific error category (simplified 4 categories)
+# Usage: detect_specific_error_type <error_message>
+# Returns: timeout | syntax_error | missing_dependency | unknown
+detect_specific_error_type() {
+  local error_msg="$1"
+
+  # Timeout errors
+  if echo "$error_msg" | grep -qiE "timeout|timed out|deadline exceeded|connection.*timeout"; then
+    echo "timeout"
+    return
+  fi
+
+  # Syntax errors
+  if echo "$error_msg" | grep -qiE "syntax error|syntaxerror|unexpected.*token|expected.*got"; then
+    echo "syntax_error"
+    return
+  fi
+
+  # Missing dependencies (imports, modules, packages)
+  if echo "$error_msg" | grep -qiE "cannot.*import|module.*not.*found|modulenotfounderror|no module named|require.*failed|package.*not.*found"; then
+    echo "missing_dependency"
+    return
+  fi
+
+  # Default: unknown
+  echo "unknown"
+}
+
+# suggest_recovery_actions: Generate context-specific recovery suggestions
+# Usage: suggest_recovery_actions <error_type> <location> <error_message>
+# Returns: Multi-line string with 2-3 suggestions
+suggest_recovery_actions() {
+  local error_type="$1"
+  local location="$2"
+  local error_msg="$3"
+
+  case "$error_type" in
+    timeout)
+      echo "1. Check network connection and retry"
+      echo "2. Increase timeout value if possible"
+      echo "3. Verify remote service availability"
+      ;;
+    syntax_error)
+      if [ -n "$location" ]; then
+        echo "1. Check syntax at $location"
+      else
+        echo "1. Check syntax in error location"
+      fi
+      echo "2. Run linter on affected file"
+      echo "3. Verify matching braces/brackets"
+      ;;
+    missing_dependency)
+      echo "1. Install missing package/module"
+      echo "2. Check import statements"
+      echo "3. Verify PATH and environment variables"
+      ;;
+    unknown)
+      echo "1. Review full error message above"
+      echo "2. Check recent code changes"
+      echo "3. Investigate root causes using research agents with detailed prompts"
+      ;;
+  esac
+}
+
+# handle_partial_research_failure: Allow continuation if ≥50% research agents succeed
+# Usage: handle_partial_research_failure <total_agents> <successful_agents> <failed_agents_list>
+# Returns: continue | terminate
+handle_partial_research_failure() {
+  local total_agents="$1"
+  local successful_agents="$2"
+  local failed_agents="$3"
+
+  # Calculate success rate
+  local success_rate=$(( (successful_agents * 100) / total_agents ))
+
+  echo ""
+  echo "════════════════════════════════════════════════════════"
+  echo "    PARTIAL RESEARCH FAILURE DETECTED"
+  echo "════════════════════════════════════════════════════════"
+  echo ""
+  echo "Research Completion Status:"
+  echo "  Total agents: $total_agents"
+  echo "  Successful: $successful_agents"
+  echo "  Failed: $(( total_agents - successful_agents ))"
+  echo "  Success rate: ${success_rate}%"
+  echo ""
+
+  if [ "$failed_agents" != "" ]; then
+    echo "Failed agents:"
+    echo "  $failed_agents"
+    echo ""
+  fi
+
+  # Decision: continue if ≥50% success
+  if [ "$success_rate" -ge 50 ]; then
+    echo "Decision: CONTINUE with partial results"
+    echo "Reason: Success rate ≥50% provides sufficient coverage"
+    echo ""
+    echo "Note: Planning phase will work with available research."
+    echo "      Some areas may have less detail than optimal."
+    echo ""
+    echo "continue"
+  else
+    echo "Decision: TERMINATE workflow"
+    echo "Reason: Success rate <50% - insufficient coverage"
+    echo ""
+    echo "Recommendation: Fix research issues and retry workflow"
+    echo ""
+    echo "terminate"
+  fi
+}
+
+# save_phase_checkpoint: Save minimal checkpoint at phase boundary
+# Usage: save_phase_checkpoint <phase_number> <scope> <topic_path> <artifact_paths_json>
+# Saves to: .claude/data/checkpoints/supervise_latest.json
+save_phase_checkpoint() {
+  local phase_number="$1"
+  local scope="$2"
+  local topic_path="$3"
+  local artifact_paths="$4"  # JSON string
+
+  # Create checkpoint directory if needed
+  local checkpoint_dir=".claude/data/checkpoints"
+  mkdir -p "$checkpoint_dir"
+
+  # Create minimal checkpoint JSON
+  local checkpoint_file="$checkpoint_dir/supervise_latest.json"
+  local completed_phases=$(seq -s "," 0 $phase_number)
+
+  cat > "$checkpoint_file" <<EOF
+{
+  "schema_version": "1.0",
+  "workflow_type": "supervise",
+  "current_phase": $phase_number,
+  "completed_phases": [$completed_phases],
+  "scope": "$scope",
+  "topic_path": "$topic_path",
+  "artifact_paths": $artifact_paths
+}
+EOF
+
+  emit_progress "$phase_number" "Checkpoint saved"
+}
+
+# load_phase_checkpoint: Load checkpoint and return resume phase
+# Usage: resume_phase=$(load_phase_checkpoint)
+# Returns: Phase number to resume from (current_phase + 1) or empty if no checkpoint
+load_phase_checkpoint() {
+  local checkpoint_file=".claude/data/checkpoints/supervise_latest.json"
+
+  if [ ! -f "$checkpoint_file" ]; then
+    echo ""
+    return
+  fi
+
+  # Validate checkpoint exists and is readable
+  if ! jq . "$checkpoint_file" >/dev/null 2>&1; then
+    # Invalid JSON - delete silently
+    rm -f "$checkpoint_file"
+    echo ""
+    return
+  fi
+
+  # Extract current phase
+  local current_phase=$(jq -r '.current_phase' "$checkpoint_file")
+
+  if [ -z "$current_phase" ] || [ "$current_phase" -ge 6 ]; then
+    # Invalid phase - delete checkpoint
+    rm -f "$checkpoint_file"
+    echo ""
+    return
+  fi
+
+  # Return next phase to execute
+  echo $((current_phase + 1))
+}
+
+# ═══════════════════════════════════════════════════════════════
+# Completion Summary Display
+# ═══════════════════════════════════════════════════════════════
+
+display_completion_summary() {
+  echo ""
+  echo "════════════════════════════════════════════════════════"
+  echo "         /supervise WORKFLOW COMPLETE"
+  echo "════════════════════════════════════════════════════════"
+  echo ""
+  echo "Workflow Type: $WORKFLOW_SCOPE"
+  echo "Phases Executed: $(echo $PHASES_TO_EXECUTE | tr ',' ' ')"
+  echo ""
+  echo "Artifacts Created:"
+
+  # Research reports
+  if [ ${#SUCCESSFUL_REPORT_PATHS[@]} -gt 0 ]; then
+    echo "  ✓ Research Reports: ${#SUCCESSFUL_REPORT_PATHS[@]} files in $TOPIC_PATH/reports/"
+    for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
+      echo "      - $(basename $report)"
+    done
+  fi
+
+  # Overview report
+  if [ -f "$OVERVIEW_PATH" ]; then
+    echo "  ✓ Research Overview: $(basename $OVERVIEW_PATH)"
+  fi
+
+  # Implementation plan
+  if [ -f "$PLAN_PATH" ]; then
+    echo "  ✓ Implementation Plan: $(basename $PLAN_PATH)"
+  fi
+
+  # Implementation artifacts
+  if [ -d "$IMPL_ARTIFACTS" ] && [ "$(ls -A $IMPL_ARTIFACTS)" ]; then
+    echo "  ✓ Implementation Artifacts: $IMPL_ARTIFACTS"
+  fi
+
+  # Debug reports
+  if [ -f "$DEBUG_REPORT" ]; then
+    echo "  ✓ Debug Report: $(basename $DEBUG_REPORT)"
+  fi
+
+  # Summary
+  if [ -f "$SUMMARY_PATH" ]; then
+    echo "  ✓ Workflow Summary: $(basename $SUMMARY_PATH)"
+  fi
+
+  echo ""
+  echo "Standards Compliance:"
+  echo "  ✓ Zero SlashCommand invocations (pure Task tool)"
+  echo "  ✓ 100% file creation rate (strong enforcement)"
+  echo "  ✓ Conditional phase execution (scope-based)"
+  echo "  ✓ Mandatory verification at all checkpoints"
+  echo ""
+
+  # Suggest next steps
+  if [ "$WORKFLOW_SCOPE" == "research-and-plan" ]; then
+    echo "Next Steps:"
+    echo "  The plan is ready for execution"
+    echo ""
+  fi
+}
 ```
 
 ## Phase 0: Project Location and Path Pre-Calculation
