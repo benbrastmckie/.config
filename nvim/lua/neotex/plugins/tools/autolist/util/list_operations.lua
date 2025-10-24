@@ -14,12 +14,12 @@ end
 function M.tab_handler()
   -- Check if we're in a list item first
   local line = vim.fn.getline(".")
-  
+
   if utils.is_list_item(line) then
     -- Close completion menu if open
-    local cmp_exists, cmp = pcall(require, "cmp")
-    if cmp_exists and cmp.visible() then
-      pcall(function() cmp.close() end)
+    local blink_exists, blink = pcall(require, "blink.cmp")
+    if blink_exists and blink.is_visible() then
+      pcall(function() blink.hide() end)
     end
     
     -- If we're in a list, use our indent function
@@ -28,8 +28,8 @@ function M.tab_handler()
   end
   
   -- If we're not in a list item, handle normally
-  local cmp_exists, cmp = pcall(require, "cmp")
-  if cmp_exists and cmp.visible() then
+  local blink_exists, blink = pcall(require, "blink.cmp")
+  if blink_exists and blink.is_visible() then
     return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
   end
   
@@ -50,19 +50,19 @@ function M.shift_tab_handler()
   
   if utils.is_list_item(line) then
     -- Close completion menu if open
-    local cmp_exists, cmp = pcall(require, "cmp")
-    if cmp_exists and cmp.visible() then
-      pcall(function() cmp.close() end)
+    local blink_exists, blink = pcall(require, "blink.cmp")
+    if blink_exists and blink.is_visible() then
+      pcall(function() blink.hide() end)
     end
-    
+
     -- If we're in a list, use our unindent function
     M.unindent_list_item()
     return ""
   end
   
   -- If we're not in a list item, handle normally
-  local cmp_exists, cmp = pcall(require, "cmp")
-  if cmp_exists and cmp.visible() then
+  local blink_exists, blink = pcall(require, "blink.cmp")
+  if blink_exists and blink.is_visible() then
     return vim.api.nvim_replace_termcodes("<S-Tab>", true, true, true)
   end
   

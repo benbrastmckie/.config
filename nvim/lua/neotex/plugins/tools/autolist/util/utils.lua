@@ -37,11 +37,11 @@ end
 -- Close completion menu and prevent reopening
 function M.close_completion_menu(delay)
   delay = delay or 1000
-  
+
   pcall(function()
-    local cmp = require('cmp')
-    if cmp and cmp.visible() then
-      cmp.close()
+    local blink = require('blink.cmp')
+    if blink and blink.is_visible() then
+      blink.hide()
     end
   end)
   
@@ -56,9 +56,9 @@ function M.close_completion_menu(delay)
   -- Add a final close at the very end
   vim.defer_fn(function()
     pcall(function()
-      local cmp = require('cmp')
-      if cmp and cmp.visible() then
-        cmp.close()
+      local blink = require('blink.cmp')
+      if blink and blink.is_visible() then
+        blink.hide()
       end
     end)
   end, 50)
