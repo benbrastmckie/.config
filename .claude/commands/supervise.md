@@ -60,7 +60,8 @@ SlashCommand {
 4. **No Metadata**: Get full output, not structured data for aggregation
 
 **Correct Pattern - Direct Agent Invocation** (lean context, behavioral control):
-```yaml
+
+<!-- This Task invocation is executable -->
 # ✅ CORRECT - Do this instead
 Task {
   subagent_type: "general-purpose"
@@ -77,7 +78,6 @@ Task {
     Return: PLAN_CREATED: ${PLAN_PATH}
   "
 }
-```
 
 **Benefits of direct agent invocation**:
 1. **Lean Context**: Only agent behavioral guidelines loaded (~200 lines)
@@ -215,7 +215,6 @@ Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 
 **EXECUTE NOW - Source Required Libraries**
 
-```bash
 # Determine script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -274,7 +273,6 @@ else
   echo "ERROR: context-pruning.sh not found"
   exit 1
 fi
-```
 
 **Verification**: All required functions available via sourced libraries.
 
