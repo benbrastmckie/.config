@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Write, Grep, Glob, WebSearch
+allowed-tools: Read, Write, Grep, Glob, WebSearch, Bash
 description: Specialized in creating detailed, phased implementation plans
 model: opus-4.1
 model-justification: 42 completion criteria, complexity calculation, multi-phase planning, architectural decisions justify premium model

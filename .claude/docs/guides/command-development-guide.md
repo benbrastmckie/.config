@@ -681,6 +681,106 @@ This anti-pattern was discovered in the /supervise command (spec 438), where 7 Y
 - File creation rate: 0% → 100%
 - Context reduction: Enabled 90% reduction through behavioral injection
 
+### 5.2.2 Code Fence Priming Effect
+
+**Problem**: Code-fenced Task invocation examples (` ```yaml ... ``` `) establish a "documentation interpretation" pattern that causes Claude to treat subsequent unwrapped Task blocks as non-executable examples. This results in 0% agent delegation rate even when the actual Task invocations are structurally correct and lack code fences.
+
+**Root Cause**: When Claude encounters a code-fenced Task example early in a command file (e.g., lines 62-79), it establishes a mental model that "Task blocks are documentation examples". This interpretation persists and applies to later Task invocations, preventing execution even when they are not code-fenced.
+
+**Detection**:
+
+```bash
+# Check for code-fenced Task examples that could cause priming effect
+grep -n '```yaml' .claude/commands/*.md | while read match; do
+  file=$(echo "$match" | cut -d: -f1)
+  line=$(echo "$match" | cut -d: -f2)
+
+  # Check if Task invocation follows
+  sed -n "$((line+1)),$((line+15))p" "$file" | grep -q "Task {" && \
+    echo "Potential priming effect: $file:$line"
+done
+```
+
+**Fix Pattern**:
+
+1. **Remove code fences from Task examples**: Convert ` ```yaml ... ``` ` to unwrapped blocks
+2. **Add HTML comments for clarity**: Use `<!-- This Task invocation is executable -->` above unwrapped examples (invisible to Claude)
+3. **Keep anti-pattern examples fenced**: Examples marked with ❌ should remain code-fenced to prevent accidental execution
+4. **Verify tool access**: Ensure agents have required tools (especially Bash) in allowed-tools frontmatter
+
+**Before (Causes Priming Effect)**:
+
+```markdown
+**Example Pattern**:
+```yaml
+# ✅ CORRECT - Task invocation example
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "..."
+}
+```
+
+Later in file...
+
+**EXECUTE NOW**: Invoke research agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication"
+  prompt: "..."
+}
+
+Result: 0% delegation (priming effect from first code-fenced example)
+```
+
+**After (No Priming Effect)**:
+
+```markdown
+**Example Pattern**:
+
+<!-- This Task invocation is executable -->
+# ✅ CORRECT - Task invocation example
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "..."
+}
+
+Later in file...
+
+**EXECUTE NOW**: Invoke research agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication"
+  prompt: "..."
+}
+
+Result: 100% delegation (no code fences, no priming effect)
+```
+
+**Historical Context**:
+
+This anti-pattern was discovered in the /supervise command (spec 469), where a single code-fenced Task example at lines 62-79 caused 0% agent delegation rate for all 10 Task invocations later in the file. The actual invocations were structurally correct and lacked code fences, but the early code-fenced example established an interpretation pattern that prevented execution.
+
+**Impact of Fix** (Spec 469):
+- Delegation rate: 0% → 100% (all 10 Task invocations)
+- Context usage: >80% → <30% (metadata extraction enabled)
+- Streaming fallback errors: Eliminated
+- Parallel agent execution: 2-4 agents simultaneously (was 0)
+
+**Prevention Guidelines**:
+- Never wrap executable Task invocations in code fences
+- Use HTML comments for annotations (invisible to Claude)
+- Move complex examples to external reference files (e.g., `.claude/docs/patterns/`)
+- Test delegation rate after adding Task examples
+- Ensure agents have Bash in allowed-tools for proper initialization
+
+See also:
+- [Behavioral Injection - Code Fence Priming Effect](../concepts/patterns/behavioral-injection.md#anti-pattern-code-fenced-task-examples-create-priming-effect)
+- [Test Suite](../../tests/test_supervise_agent_delegation.sh) for validation
+
 ### 5.3 Pre-Calculating Topic-Based Artifact Paths
 
 **Why Pre-Calculate Paths?**

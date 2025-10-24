@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Write, Edit, Grep, Glob
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 description: Specialized in maintaining documentation consistency
 model: sonnet-4.5
 model-justification: Documentation creation, README generation, comprehensive doc writing

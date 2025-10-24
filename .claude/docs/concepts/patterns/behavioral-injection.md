@@ -411,6 +411,118 @@ If you find documentation-only YAML blocks:
 
 For detailed conversion steps, see [Command Development Guide](../../guides/command-development-guide.md#avoiding-documentation-only-patterns).
 
+### Anti-Pattern: Code-Fenced Task Examples Create Priming Effect
+
+**Pattern Definition**: Code-fenced Task invocation examples (` ```yaml ... ``` `) that establish a "documentation interpretation" pattern, causing Claude to treat subsequent unwrapped Task blocks as non-executable examples rather than commands. This results in 0% agent delegation rate even when Task invocations are structurally correct.
+
+**Root Cause**: When Claude encounters code-fenced Task examples early in a command file, it establishes a mental model that "Task blocks are documentation examples, not executable commands". This interpretation carries forward to actual Task invocations later in the file, preventing execution even when they lack code fences.
+
+**Detection Rule**: Search for ` ```yaml` wrappers around Task invocation examples. Even a single code-fenced example can establish the priming effect.
+
+**Real-World Example** (from /supervise before fix, spec 469):
+
+```markdown
+❌ INCORRECT - Code-fenced example establishes priming effect:
+
+**Lines 62-79 (Task invocation example)**:
+```yaml
+# ✅ CORRECT - Do this instead
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan"
+  prompt: "
+    Read and follow ALL behavioral guidelines from: .claude/agents/plan-architect.md
+    [...]
+  "
+}
+```
+
+**Lines 350-400 (Actual Task invocations, no code fences)**:
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns"
+  prompt: "..."
+}
+
+**Result**: 0% delegation rate. The actual Task invocation at line 350 is interpreted as a documentation example due to the priming effect from lines 62-79.
+```
+
+**Consequences:**
+1. **0% delegation rate**: All Task invocations fail silently despite correct structure
+2. **Streaming fallback masking**: Error recovery mechanism hides the failure
+3. **Parallel execution disabled**: Agents never initialize, preventing concurrent work
+4. **Context protection disabled**: Metadata extraction never occurs (95% reduction blocked)
+5. **Diagnostic difficulty**: Static analysis shows correct syntax, runtime shows 0% execution
+
+**Correct Pattern** - No code fences around Task invocations:
+
+```markdown
+✅ CORRECT - Task invocation without code fence wrapper:
+
+**Correct Pattern - Direct Agent Invocation** (lean context, behavioral control):
+
+<!-- This Task invocation is executable -->
+# ✅ CORRECT - Do this instead
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan"
+  prompt: "
+    Read and follow ALL behavioral guidelines from: .claude/agents/plan-architect.md
+
+    **Workflow-Specific Context**:
+    - Plan Path: ${PLAN_PATH} (absolute path, pre-calculated)
+    - Research Reports: [list of paths]
+
+    Return: PLAN_CREATED: ${PLAN_PATH}
+  "
+}
+```
+
+**Key Fixes:**
+1. **Remove code fences**: No ` ```yaml ... ``` ` wrapper around Task invocations
+2. **Add HTML comment**: `<!-- This Task invocation is executable -->` clarifies intent without creating priming effect (HTML comments are invisible to Claude)
+3. **Keep anti-pattern examples fenced**: Examples marked with ❌ should remain code-fenced to prevent accidental execution
+4. **Verify tool access**: Ensure agents have Bash in allowed-tools for proper initialization
+
+**How to Detect This Anti-Pattern:**
+
+```bash
+# Check for code-fenced Task examples that could cause priming effect
+grep -n '```yaml' .claude/commands/*.md | while read match; do
+  file=$(echo "$match" | cut -d: -f1)
+  line=$(echo "$match" | cut -d: -f2)
+
+  # Check context around match
+  sed -n "$((line-2)),$((line+15))p" "$file" | grep -q "Task {" && \
+    echo "Potential priming effect in $file at line $line"
+done
+```
+
+**Verification After Fix:**
+
+```bash
+# Run test suite to verify delegation rate
+bash .claude/tests/test_supervise_agent_delegation.sh
+
+# Expected metrics after fix:
+# - Delegation rate: 0% → 100%
+# - Context usage: >80% → <30%
+# - Streaming fallback errors: Eliminated
+# - Parallel agents: 2-4 executing simultaneously
+```
+
+**Related Issues:**
+- Spec 438: Similar issue with documentation-only YAML blocks (different root cause)
+- Spec 444: Tool access mismatches (missing Bash) compound the problem
+- Research report: `.claude/specs/469_supervise_command_agent_delegation_failure_root_ca/reports/001_supervise_command_execution_pattern_analysis.md`
+
+**Prevention Guidelines:**
+- Never wrap executable Task invocations in code fences
+- Use HTML comments for clarifications (invisible to Claude)
+- Move complex examples to external reference files
+- Test delegation rate after adding any Task examples
+- Follow [Command Development Guide](../../guides/command-development-guide.md) patterns
+
 ### Example Violation 1: Command-to-Command Invocation
 
 ```markdown
