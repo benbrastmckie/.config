@@ -240,12 +240,14 @@ function M.unindent_list_item()
   
   -- Calculate new cursor position (shift left, but not past beginning)
   local new_col = math.max(0, col - indent_size)
-  
+
   -- Set cursor position immediately
   pcall(function() vim.api.nvim_win_set_cursor(0, {row, new_col}) end)
-  
+
   -- Ensure we stay in insert mode
-  vim.cmd("startinsert")
+  if vim.api.nvim_get_mode().mode ~= "i" then
+    vim.cmd("startinsert")
+  end
   
   -- Close any open completion menu again to be sure
   utils.close_completion_menu(1000)
