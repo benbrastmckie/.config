@@ -111,6 +111,8 @@ If you find yourself wanting to invoke /plan, /implement, /debug, or /document:
 
 ## Workflow Overview
 
+[REFERENCE-OK: Can be supplemented with external orchestration pattern docs]
+
 This command coordinates multi-agent workflows through 7 phases:
 
 ```
@@ -210,6 +212,8 @@ Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 
 ## Shared Utility Functions
 
+[EXECUTION-CRITICAL: Source statements for required libraries - cannot be moved to external files]
+
 **EXECUTE NOW - Source Required Libraries**
 
 ```bash
@@ -252,6 +256,8 @@ fi
 **Verification**: All required functions available via sourced libraries.
 
 ## Available Utility Functions
+
+[REFERENCE-OK: Can be supplemented with external library documentation]
 
 All utility functions are now sourced from library files. This table documents the complete API:
 
@@ -298,6 +304,8 @@ All utility functions are now sourced from library files. This table documents t
 **Total Functions Available**: 13 core utilities
 
 ## Retained Usage Examples
+
+[REFERENCE-OK: Examples can be moved to library documentation if needed]
 
 The following examples demonstrate common usage patterns for sourced utilities:
 
@@ -369,6 +377,8 @@ emit_progress "2" "Planning phase started"
 ```
 
 ## Phase 0: Project Location and Path Pre-Calculation
+
+[EXECUTION-CRITICAL: Path calculation before agent invocations - inline bash required]
 
 **Objective**: Establish topic directory structure and calculate all artifact paths.
 
@@ -522,19 +532,37 @@ Use the utility function to create the standardized topic directory structure wi
 ```bash
 TOPIC_PATH="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
 
+echo "════════════════════════════════════════════════════════"
+echo "  MANDATORY VERIFICATION - Topic Directory Creation"
+echo "════════════════════════════════════════════════════════"
+echo ""
 echo "Creating topic directory structure at: $TOPIC_PATH"
+echo ""
 
 # Create topic structure using utility function (includes verification)
 if ! create_topic_structure "$TOPIC_PATH"; then
-  echo "❌ ERROR: Failed to create topic directory structure"
-  echo "   Path: $TOPIC_PATH"
+  echo "❌ CRITICAL ERROR: Topic directory not created at $TOPIC_PATH"
   echo ""
-  echo "Workflow TERMINATED."
-  exit 1
+  echo "FALLBACK MECHANISM: Attempting manual directory creation..."
+  mkdir -p "$TOPIC_PATH"/{reports,plans,summaries,debug,scripts,outputs}
+
+  # Re-verification
+  if [ ! -d "$TOPIC_PATH" ]; then
+    echo "❌ FATAL: Fallback failed - directory creation impossible"
+    echo ""
+    echo "Workflow TERMINATED."
+    exit 1
+  fi
+
+  echo "✅ FALLBACK SUCCESSFUL: Topic directory created manually"
 fi
 
-echo "✅ Topic directory structure created successfully"
+echo "✅ VERIFIED: Topic directory exists at $TOPIC_PATH"
 echo "   All 6 subdirectories verified: reports, plans, summaries, debug, scripts, outputs"
+echo ""
+
+# VERIFICATION REQUIREMENT: YOU MUST NOT proceed until verification passes
+echo "Verification checkpoint passed - proceeding to artifact path calculation"
 echo ""
 ```
 
@@ -591,6 +619,8 @@ echo ""
 ```
 
 ## Phase 1: Research
+
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
 
 **Objective**: Conduct parallel research on workflow topics with 100% file creation rate.
 
@@ -653,41 +683,148 @@ echo ""
 # Research Agent Template (repeated for each topic)
 Task {
   subagent_type: "general-purpose"
-  description: "Research ${TOPIC_NAME}"
+  description: "Research ${TOPIC_NAME} with mandatory file creation"
   prompt: "
-    Read behavioral guidelines: .claude/agents/research-specialist.md
+    Read and follow behavioral guidelines: .claude/agents/research-specialist.md
 
-    **EXECUTE NOW - MANDATORY FILE CREATION**
+    **PRIMARY OBLIGATION - File Creation**
 
-    STEP 1: Use Write tool IMMEDIATELY to create this EXACT file:
-            ${REPORT_PATHS[i]}
+    **ABSOLUTE REQUIREMENT**: Creating the report file is your PRIMARY task, not secondary.
 
-            Content: Empty file with header '# ${TOPIC_NAME} Research Report'
+    **WHY THIS MATTERS**:
+    - Commands depend on artifacts existing at predictable paths
+    - Text-only summaries break workflow dependency graph
+    - Plan execution needs cross-referenced artifacts
+    - Metadata extraction requires file structure
 
-            **DO THIS FIRST** - File MUST exist before research begins.
+    **CONSEQUENCE OF NON-COMPLIANCE**:
+    If you return summary without creating file, the calling command will execute
+    fallback creation, but your detailed findings will be reduced to basic content.
 
-    STEP 2: Conduct comprehensive research on topic: ${WORKFLOW_DESCRIPTION}
-            Focus area: [auto-generated based on workflow]
-            - Use Grep/Glob/Read tools to analyze codebase
-            - Search .claude/docs/ for relevant patterns
-            - Identify 3-5 key findings
+    ---
 
-    STEP 3: Use Edit tool to add research findings to ${REPORT_PATHS[i]}
-            - Write 200-300 word summary
-            - Include code references with file:line format
-            - List 3-5 specific recommendations
+    **STEP 1 (REQUIRED BEFORE STEP 2) - Create Report File**
 
-    STEP 4: Return ONLY this exact format:
-            REPORT_CREATED: ${REPORT_PATHS[i]}
+    **EXECUTE NOW - File Creation FIRST**
 
-            **CRITICAL**: DO NOT return summary text in response.
-            Return ONLY the confirmation line above.
+    YOU MUST use Write tool IMMEDIATELY to create this EXACT file:
+    Path: ${REPORT_PATHS[i]}
 
-    **MANDATORY VERIFICATION**: Orchestrator will verify file exists at exact path.
-    If file does not exist or is empty, workflow will FAIL IMMEDIATELY.
+    Initial Content Template:
+    ```markdown
+    # ${TOPIC_NAME} Research Report
+
+    ## Overview
+    [To be populated in STEP 2]
+
+    ## Research Findings
+    [To be populated in STEP 2]
+
+    ## Recommendations
+    [To be populated in STEP 2]
+
+    ## References
+    [To be populated in STEP 2]
+    ```
+
+    **THIS IS NON-NEGOTIABLE**: File creation MUST occur even if research yields
+    minimal findings.
+
+    **VERIFICATION CHECKPOINT**: After creating file, verify it exists:
+    ```bash
+    test -f \"${REPORT_PATHS[i]}\" || echo \"CRITICAL: File not created\"
+    ```
+
+    ---
+
+    **STEP 2 (REQUIRED BEFORE STEP 3) - Conduct Research**
+
+    YOU MUST investigate the topic using these tools:
+
+    Research Topic: ${WORKFLOW_DESCRIPTION}
+    Focus Area: [auto-generated based on workflow]
+
+    **MANDATORY RESEARCH STEPS**:
+    1. Codebase Analysis (REQUIRED):
+       - Use Grep to search for relevant patterns
+       - Use Glob to find related files
+       - Use Read to analyze implementations
+       - Identify 3-5 key findings
+
+    2. Documentation Search (REQUIRED):
+       - Search .claude/docs/ for relevant patterns
+       - Check CLAUDE.md for standards
+       - Review related specs/ for context
+
+    3. Best Practices (IF APPLICABLE):
+       - Use WebSearch for 2025 best practices
+       - Use WebFetch for authoritative sources
+
+    **CHECKPOINT REQUIREMENT**: Emit progress markers:
+    ```
+    PROGRESS: Codebase analysis complete (N files analyzed)
+    PROGRESS: Documentation review complete
+    ```
+
+    ---
+
+    **STEP 3 (REQUIRED BEFORE STEP 4) - Populate Report File**
+
+    **EXECUTE NOW - Use Edit Tool to Populate Report**
+
+    YOU MUST use Edit tool to add research findings to ${REPORT_PATHS[i]}
+
+    **REQUIRED CONTENT** (ALL sections MANDATORY):
+    - Overview: 2-3 sentence summary of findings
+    - Research Findings: 200-300 words with code references (file:line format)
+    - Recommendations: 3-5 specific, actionable recommendations
+    - References: All sources cited (file paths, URLs, documentation links)
+
+    **QUALITY CRITERIA**:
+    - All code references use absolute paths
+    - Recommendations are specific and implementable
+    - Findings organized by relevance
+
+    ---
+
+    **STEP 4 (MANDATORY VERIFICATION) - Verify and Return Confirmation**
+
+    **YOU MUST verify file completeness** before returning:
+
+    ```bash
+    # Verify file exists
+    test -f \"${REPORT_PATHS[i]}\" || echo \"CRITICAL: File missing\"
+
+    # Verify file has content (>100 bytes)
+    [ \$(wc -c < \"${REPORT_PATHS[i]}\") -gt 100 ] || echo \"WARNING: File too small\"
+    ```
+
+    **COMPLETION CRITERIA - ALL REQUIRED**:
+    - [x] Report file exists at exact path specified
+    - [x] Report contains all mandatory sections (Overview, Findings, Recommendations, References)
+    - [x] File size >100 bytes
+    - [x] Checkpoint confirmation emitted
+    - [x] Return confirmation in exact format below
+
+    **RETURN FORMAT** (THIS EXACT FORMAT, NO VARIATIONS):
+    ```
+    REPORT_CREATED: ${REPORT_PATHS[i]}
+    ```
+
+    **CRITICAL**: DO NOT return summary text. Return ONLY the line above.
+
+    ---
+
+    **GUARANTEE REQUIRED**: File MUST exist at ${REPORT_PATHS[i]} when you complete.
+
+    **ORCHESTRATOR VERIFICATION**: After you complete, orchestrator will:
+    1. Verify file exists using ls command
+    2. Verify file size >0 bytes
+    3. If verification fails: Execute fallback creation from your output
+    4. If verification succeeds: Extract metadata and continue workflow
 
     **REMINDER**: You are the EXECUTOR. The orchestrator pre-calculated this path.
-    Use the exact path provided. Do not modify or recalculate.
+    Use the exact path provided. Do NOT modify, recalculate, or choose alternate path.
   "
 }
 ```
@@ -701,6 +838,8 @@ echo ""
 ```
 
 ### Mandatory Verification - Research Reports with Auto-Recovery
+
+**VERIFICATION REQUIRED**: All research report files must exist before continuing to Phase 2
 
 STEP 3: Verify ALL research reports created successfully (with single-retry for transient failures)
 
@@ -822,6 +961,11 @@ else
   echo "✅ PARTIAL SUCCESS - Continuing with available research"
 fi
 echo ""
+
+# VERIFICATION REQUIREMENT: YOU MUST NOT proceed to Phase 2 without at least 50% success
+# This requirement is enforced by handle_partial_research_failure() above
+echo "Verification checkpoint passed - proceeding to research overview"
+echo ""
 ```
 
 ### Research Overview (Optional Synthesis)
@@ -877,6 +1021,8 @@ save_phase_checkpoint 1 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 2: Planning
+
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
 
 **Objective**: Create implementation plan using Task tool with behavioral injection (no SlashCommand).
 
@@ -936,41 +1082,190 @@ STEP 2: Invoke plan-architect agent via Task tool
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Create implementation plan"
+  description: "Create implementation plan with mandatory file creation"
   prompt: "
-    Read behavioral guidelines: .claude/agents/plan-architect.md
+    Read and follow behavioral guidelines: .claude/agents/plan-architect.md
 
-    **EXECUTE NOW - MANDATORY PLAN CREATION**
+    **PRIMARY OBLIGATION - Plan File Creation**
 
-    STEP 1: Use Write tool IMMEDIATELY to create: ${PLAN_PATH}
-            Content: Plan header with metadata section
-            **DO THIS FIRST** - File MUST exist before planning.
+    **ABSOLUTE REQUIREMENT**: Creating the plan file is your PRIMARY task.
 
-    STEP 2: Analyze workflow and research findings
-            Workflow: ${WORKFLOW_DESCRIPTION}
-            Research Reports:
-            ${RESEARCH_REPORTS_LIST}
-            Standards: ${STANDARDS_FILE}
+    **WHY THIS MATTERS**:
+    - /implement command depends on plan file existing at predictable path
+    - Plan structure enables progressive expansion and wave-based execution
+    - Metadata extraction requires standardized plan format
+    - Cross-references between research and implementation require file artifacts
 
-    STEP 3: Use Edit tool to develop implementation phases in ${PLAN_PATH}
-            - Break into 3-7 phases
-            - Each phase: objective, tasks, testing, complexity
-            - Follow progressive organization (Level 0 initially)
-            - Include success criteria and risk assessment
+    **CONSEQUENCE**: If you return plan summary without creating file, workflow
+    TERMINATES. No fallback for planning phase.
 
-    STEP 4: Return ONLY: PLAN_CREATED: ${PLAN_PATH}
-            **DO NOT** return plan summary.
-            **DO NOT** use SlashCommand tool.
+    ---
 
-    **MANDATORY VERIFICATION**: Orchestrator verifies file exists.
-    **CONSEQUENCE**: Workflow fails if file missing or incomplete.
+    **STEP 1 (REQUIRED BEFORE STEP 2) - Create Plan File**
 
-    **REMINDER**: You are the EXECUTOR. Use exact path provided.
+    **EXECUTE NOW - File Creation FIRST**
+
+    YOU MUST use Write tool IMMEDIATELY to create: ${PLAN_PATH}
+
+    Initial Content Template (THIS EXACT STRUCTURE):
+    ```markdown
+    # ${WORKFLOW_DESCRIPTION} - Implementation Plan
+
+    ## Metadata
+    - Complexity: [TBD in STEP 2]
+    - Estimated Time: [TBD in STEP 2]
+    - Phases: [TBD in STEP 2]
+    - Dependencies: [TBD in STEP 2]
+
+    ## Overview
+    [To be populated in STEP 2]
+
+    ## Phases
+    [To be populated in STEP 3]
+
+    ## Success Criteria
+    [To be populated in STEP 3]
+
+    ## Risk Assessment
+    [To be populated in STEP 3]
+    ```
+
+    **VERIFICATION CHECKPOINT**:
+    ```bash
+    test -f \"${PLAN_PATH}\" || echo \"CRITICAL: Plan file not created\"
+    ```
+
+    ---
+
+    **STEP 2 (REQUIRED BEFORE STEP 3) - Analyze Context**
+
+    YOU MUST analyze all available context:
+
+    **Workflow Description**: ${WORKFLOW_DESCRIPTION}
+
+    **Research Reports** (YOU MUST read ALL):
+    ${RESEARCH_REPORTS_LIST}
+
+    **Project Standards**: ${STANDARDS_FILE}
+
+    **ANALYSIS REQUIREMENTS**:
+    1. Read each research report completely
+    2. Extract key recommendations from each report
+    3. Identify implementation dependencies
+    4. Calculate complexity score (1-10 scale)
+    5. Estimate total implementation time
+    6. Determine optimal phase breakdown (3-7 phases)
+
+    **CHECKPOINT**: Emit analysis summary:
+    ```
+    PROGRESS: Analysis complete
+    - Reports analyzed: [count]
+    - Complexity score: [1-10]
+    - Recommended phases: [count]
+    ```
+
+    ---
+
+    **STEP 3 (REQUIRED BEFORE STEP 4) - Develop Implementation Phases**
+
+    **EXECUTE NOW - Use Edit Tool to Populate Plan**
+
+    YOU MUST use Edit tool to add implementation phases to ${PLAN_PATH}
+
+    **PHASE STRUCTURE** (MANDATORY FORMAT):
+
+    For EACH phase (3-7 phases total), YOU MUST include:
+
+    ```markdown
+    ### Phase N: [Phase Name] ([Duration estimate])
+
+    **Objective**: [Clear, specific objective]
+
+    **Duration**: [Estimated time]
+
+    **Tasks**:
+    1. [Specific task with file references]
+    2. [Specific task with file references]
+    3. [etc - minimum 3 tasks per phase]
+
+    **Testing**:
+    - [Test approach for this phase]
+    - [Acceptance criteria]
+
+    **Complexity**: [N/10 - with justification]
+
+    **Dependencies**: [Phase numbers this depends on, or \"None\"]
+    ```
+
+    **PROGRESSIVE ORGANIZATION**:
+    - Use Level 0 initially (single file, all phases inline)
+    - Complexity threshold: Phases with score >8 should be noted for expansion
+    - Task count threshold: Phases with >10 tasks should be noted for breakdown
+
+    **SUCCESS CRITERIA SECTION** (MANDATORY):
+    - [ ] All phases complete with tests passing
+    - [ ] Code follows project standards from ${STANDARDS_FILE}
+    - [ ] Documentation updated
+    - [ ] [Additional project-specific criteria]
+
+    **RISK ASSESSMENT SECTION** (MANDATORY):
+    - Risk 1: [Description] - Mitigation: [Strategy]
+    - Risk 2: [Description] - Mitigation: [Strategy]
+    - [Minimum 2 risks identified]
+
+    ---
+
+    **STEP 4 (MANDATORY VERIFICATION) - Verify and Return**
+
+    **YOU MUST verify plan completeness**:
+
+    ```bash
+    # File exists
+    test -f \"${PLAN_PATH}\" || echo \"CRITICAL: Plan missing\"
+
+    # Has metadata section
+    grep -q \"^## Metadata\" \"${PLAN_PATH}\" || echo \"WARNING: Missing metadata\"
+
+    # Has phases (minimum 3)
+    PHASE_COUNT=\$(grep -c \"^### Phase [0-9]\" \"${PLAN_PATH}\")
+    [ \"\$PHASE_COUNT\" -ge 3 ] || echo \"WARNING: Only \$PHASE_COUNT phases\"
+    ```
+
+    **COMPLETION CRITERIA - ALL REQUIRED**:
+    - [x] Plan file exists at ${PLAN_PATH}
+    - [x] File contains Metadata section
+    - [x] File contains 3-7 phases in standard format
+    - [x] Each phase has objective, tasks, testing, complexity
+    - [x] Success criteria section present
+    - [x] Risk assessment section present
+    - [x] Return confirmation in exact format
+
+    **RETURN FORMAT** (EXACT, NO VARIATIONS):
+    ```
+    PLAN_CREATED: ${PLAN_PATH}
+    ```
+
+    **CRITICAL**: DO NOT return plan summary. DO NOT use SlashCommand tool.
+
+    ---
+
+    **ORCHESTRATOR VERIFICATION**: After completion:
+    1. Verify file exists at ${PLAN_PATH}
+    2. Verify file size >500 bytes (non-trivial plan)
+    3. Extract metadata (phase count, complexity, time estimate)
+    4. If missing: Workflow TERMINATES (no fallback for plans)
+
+    **REMINDER**: You are the EXECUTOR. Orchestrator pre-calculated path.
+    Use exact path. Do NOT invoke /plan command. Do NOT calculate own path.
   "
 }
 ```
 
 ### Mandatory Verification - Plan Creation
+
+**VERIFICATION REQUIRED**: Plan file must exist before continuing to Phase 3 or completing workflow
+
+**GUARANTEE REQUIRED**: Plan contains minimum 3 phases with standard structure
 
 STEP 3: Verify plan file created successfully (with auto-recovery)
 
@@ -999,6 +1294,10 @@ if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
 
   echo "✅ VERIFICATION PASSED: Plan created with $PHASE_COUNT phases"
   echo "   Path: $PLAN_PATH"
+  echo ""
+
+  # VERIFICATION REQUIREMENT: YOU MUST NOT proceed without plan file
+  echo "Verification checkpoint passed - proceeding to plan metadata extraction"
   echo ""
 else
   # Failure path - extract error info and attempt recovery
@@ -1115,6 +1414,8 @@ should_run_phase 3 || {
 
 ## Phase 3: Implementation
 
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
+
 **Objective**: Execute implementation plan phase-by-phase with testing and commits.
 
 **Pattern**: Invoke code-writer agent with plan context → Verify implementation artifacts → Track completion
@@ -1139,30 +1440,173 @@ STEP 1: Invoke code-writer agent with plan context
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Execute implementation plan"
+  description: "Execute implementation plan with mandatory artifact creation"
   prompt: "
     Read behavioral guidelines: .claude/agents/code-writer.md
 
-    **EXECUTE NOW - IMPLEMENTATION REQUIRED**
+    **PRIMARY OBLIGATION - Implementation Artifacts**
 
-    STEP 1: Read implementation plan: ${PLAN_PATH}
+    **ABSOLUTE REQUIREMENT**: Creating implementation artifacts is MANDATORY.
 
-    STEP 2: Execute plan using phase-by-phase execution pattern:
-            - Phase-by-phase execution
-            - Run tests after each phase
-            - Create git commits for completed phases
-            - Update plan with [COMPLETED] markers
+    **WHY THIS MATTERS**:
+    - Testing phase depends on implementation artifacts existing
+    - Debug phase needs implementation logs for root cause analysis
+    - Documentation phase needs code changes summary
+    - /implement pattern requires phase-by-phase execution logs
 
-    STEP 3: Create implementation artifacts in: ${IMPL_ARTIFACTS}
-            (Create directory if it doesn't exist)
+    **CONSEQUENCE**: If artifacts missing, workflow cannot continue to testing.
 
-    STEP 4: Return implementation status:
-            IMPLEMENTATION_STATUS: {complete|partial|failed}
-            PHASES_COMPLETED: {N}
-            PHASES_TOTAL: {M}
+    ---
 
-            **DO NOT** return full implementation summary.
-            Return ONLY status metadata above.
+    **STEP 1 (REQUIRED BEFORE STEP 2) - Create Artifact Directory**
+
+    **EXECUTE NOW - Directory Setup**
+
+    YOU MUST create implementation artifacts directory:
+    ```bash
+    mkdir -p ${IMPL_ARTIFACTS}
+    ```
+
+    Verify directory exists:
+    ```bash
+    test -d \"${IMPL_ARTIFACTS}\" || echo \"CRITICAL: Directory not created\"
+    ```
+
+    ---
+
+    **STEP 2 (REQUIRED BEFORE STEP 3) - Read Implementation Plan**
+
+    YOU MUST read the complete plan: ${PLAN_PATH}
+
+    **ANALYSIS REQUIREMENTS**:
+    1. Parse all phases from plan
+    2. Identify phase dependencies (for execution order)
+    3. Extract testing requirements per phase
+    4. Note complexity scores for each phase
+    5. Determine execution strategy (sequential vs wave-based)
+
+    ---
+
+    **STEP 3 (REQUIRED BEFORE STEP 4) - Execute Plan Phase-by-Phase**
+
+    **EXECUTION PATTERN** (MANDATORY SEQUENCE):
+
+    For EACH phase in plan:
+
+    1. **Implement Phase Tasks**:
+       - Use Edit tool for code modifications
+       - Follow standards from: ${STANDARDS_FILE}
+       - Create git commits after each phase
+       - Update plan with [COMPLETED] markers
+
+    2. **Run Tests After Phase**:
+       - Discover test commands from ${STANDARDS_FILE}
+       - Execute phase-specific tests
+       - Log test results
+
+    3. **Create Phase Artifact**:
+       - Document what was implemented
+       - Record test results
+       - Note any deviations from plan
+
+    4. **Verify Before Next Phase**:
+       - Tests passing for this phase
+       - Code committed
+       - Artifact created
+
+    **CHECKPOINT**: After EACH phase, emit:
+    ```
+    PROGRESS: Phase N complete
+    - Tasks: [completed count]
+    - Tests: [passing/failing]
+    - Committed: [yes/no]
+    ```
+
+    ---
+
+    **STEP 4 (MANDATORY) - Create Implementation Summary**
+
+    **EXECUTE NOW - Create Summary Artifact**
+
+    YOU MUST create: ${IMPL_ARTIFACTS}/implementation_summary.md
+
+    **SUMMARY CONTENT** (ALL REQUIRED):
+    ```markdown
+    # Implementation Summary
+
+    ## Status
+    - Implementation: [complete/partial/failed]
+    - Phases Completed: [N] / [M]
+    - Tests Passing: [yes/no]
+
+    ## Phase-by-Phase Results
+    [For each phase:]
+    ### Phase N: [Name]
+    - Status: [completed/partial/skipped]
+    - Tasks: [completed tasks]
+    - Tests: [test results]
+    - Commit: [commit hash or \"none\"]
+    - Duration: [time estimate]
+
+    ## Code Changes Overview
+    - Files Modified: [count]
+    - Lines Added: [estimate]
+    - Lines Removed: [estimate]
+
+    ## Testing Results
+    - Total Tests: [count]
+    - Passing: [count]
+    - Failing: [count]
+    - Skipped: [count]
+
+    ## Deviations from Plan
+    [Any changes from original plan]
+
+    ## Next Steps
+    [If implementation incomplete]
+    ```
+
+    ---
+
+    **STEP 5 (MANDATORY VERIFICATION) - Verify Artifacts**
+
+    **YOU MUST verify all artifacts created**:
+
+    ```bash
+    # Summary exists
+    test -f \"${IMPL_ARTIFACTS}/implementation_summary.md\" || echo \"CRITICAL: Summary missing\"
+
+    # Directory has content
+    ARTIFACT_COUNT=\$(find \"${IMPL_ARTIFACTS}\" -type f | wc -l)
+    [ \"\$ARTIFACT_COUNT\" -gt 0 ] || echo \"WARNING: No artifacts created\"
+
+    # Plan updated with completion markers
+    grep -c \"\\[COMPLETED\\]\" \"${PLAN_PATH}\" || echo \"INFO: No phases marked complete\"
+    ```
+
+    **COMPLETION CRITERIA - ALL REQUIRED**:
+    - [x] Implementation artifacts directory exists
+    - [x] implementation_summary.md created
+    - [x] Summary contains all required sections
+    - [x] Plan updated with [COMPLETED] markers
+    - [x] Return status metadata in exact format
+
+    **RETURN FORMAT**:
+    ```
+    IMPLEMENTATION_STATUS: {complete|partial|failed}
+    PHASES_COMPLETED: {N}
+    PHASES_TOTAL: {M}
+    ```
+
+    **DO NOT** return full implementation summary text.
+
+    ---
+
+    **ORCHESTRATOR VERIFICATION**:
+    1. Verify ${IMPL_ARTIFACTS} directory exists
+    2. Count artifact files
+    3. Verify plan updated
+    4. Extract metadata for testing phase
 
     **STANDARDS COMPLIANCE**:
     - Follow code standards from: ${STANDARDS_FILE}
@@ -1175,6 +1619,10 @@ Task {
 ```
 
 ### Mandatory Verification - Implementation Completion
+
+**VERIFICATION REQUIRED**: Implementation artifacts directory must exist
+
+**CHECKPOINT REQUIREMENT**: Report implementation status to determine Phase 6 execution
 
 STEP 2: Verify implementation artifacts created
 
@@ -1197,9 +1645,22 @@ echo ""
 if [ ! -d "$IMPL_ARTIFACTS" ]; then
   echo "⚠️  WARNING: Implementation artifacts directory not created"
   echo "   Expected: $IMPL_ARTIFACTS"
+  echo ""
+  echo "FALLBACK MECHANISM: Creating artifacts directory..."
+  mkdir -p "$IMPL_ARTIFACTS"
+
+  # Re-verification
+  if [ ! -d "$IMPL_ARTIFACTS" ]; then
+    echo "❌ FATAL: Fallback failed - cannot create artifacts directory"
+    echo "Workflow TERMINATED."
+    exit 1
+  fi
+
+  echo "✅ FALLBACK SUCCESSFUL: Artifacts directory created"
+  echo ""
 else
   ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f | wc -l)
-  echo "✅ Implementation artifacts: $ARTIFACT_COUNT files"
+  echo "✅ VERIFIED: Implementation artifacts directory exists ($ARTIFACT_COUNT files)"
 fi
 
 # Verify plan updated with completion markers
@@ -1211,6 +1672,10 @@ echo ""
 if [ "$IMPL_STATUS" == "complete" ] || [ "$IMPL_STATUS" == "partial" ]; then
   IMPLEMENTATION_OCCURRED="true"
 fi
+
+# VERIFICATION REQUIREMENT: YOU MUST NOT proceed to Phase 4 without artifacts directory
+echo "Verification checkpoint passed - proceeding to Phase 4 (Testing)"
+echo ""
 
 echo "Phase 3 Complete: Implementation finished"
 echo ""
@@ -1229,6 +1694,8 @@ save_phase_checkpoint 3 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 4: Testing
+
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
 
 **Objective**: Execute comprehensive test suite and collect results.
 
@@ -1254,34 +1721,112 @@ STEP 1: Invoke test-specialist agent
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Execute comprehensive tests"
+  description: "Execute comprehensive tests with mandatory results file"
   prompt: "
     Read behavioral guidelines: .claude/agents/test-specialist.md
 
-    **EXECUTE NOW - COMPREHENSIVE TESTING REQUIRED**
+    **PRIMARY OBLIGATION - Test Results File**
 
-    STEP 1: Discover test commands from standards: ${STANDARDS_FILE}
-            Look for Testing Protocols section
+    **ABSOLUTE REQUIREMENT**: Creating test results file is MANDATORY.
 
-    STEP 2: Run project test suite
-            - Execute all relevant tests
-            - Collect pass/fail statistics
-            - Identify failing tests with error messages
+    **WHY THIS MATTERS**:
+    - Debug phase depends on test results file for failure analysis
+    - Workflow decision (continue vs debug) based on results file
+    - Documentation phase needs test status for summary
+    - Cannot determine success without artifact
 
-    STEP 3: Create test results report: ${TOPIC_PATH}/outputs/test_results.md
-            Include:
-            - Test summary (total, passed, failed)
-            - Failed test details
-            - Coverage metrics (if available)
+    ---
 
-    STEP 4: Return test status:
-            TEST_STATUS: {passing|failing}
-            TESTS_TOTAL: {N}
-            TESTS_PASSED: {M}
-            TESTS_FAILED: {K}
+    **STEP 1 (REQUIRED BEFORE STEP 2) - Create Results File**
 
-            **DO NOT** return full test output.
-            Return ONLY status metadata above.
+    **EXECUTE NOW**
+
+    YOU MUST create: ${TOPIC_PATH}/outputs/test_results.md
+
+    ```bash
+    mkdir -p ${TOPIC_PATH}/outputs
+    ```
+
+    Initial template:
+    ```markdown
+    # Test Results
+
+    ## Summary
+    [To be populated in STEP 3]
+
+    ## Test Execution Log
+    [To be populated in STEP 2]
+
+    ## Failed Tests
+    [To be populated in STEP 3]
+    ```
+
+    ---
+
+    **STEP 2 (REQUIRED BEFORE STEP 3) - Run Tests**
+
+    **DISCOVER TEST COMMANDS**: Read ${STANDARDS_FILE}
+    Look for Testing Protocols section
+
+    **EXECUTE TESTS**:
+    - Run all relevant tests from standards
+    - Capture full output (stdout + stderr)
+    - Record exit codes
+    - Measure execution time
+
+    **CHECKPOINT**:
+    ```
+    PROGRESS: Tests running ([test count] total)
+    ```
+
+    ---
+
+    **STEP 3 (REQUIRED BEFORE STEP 4) - Populate Results**
+
+    **EXECUTE NOW - Use Edit Tool**
+
+    Add to ${TOPIC_PATH}/outputs/test_results.md:
+
+    **REQUIRED CONTENT**:
+    - Summary: Total/Passed/Failed/Skipped counts
+    - Failed Test Details: Name, error message, stack trace
+    - Coverage Metrics (if available)
+    - Execution time
+
+    ---
+
+    **STEP 4 (MANDATORY VERIFICATION) - Verify and Return**
+
+    **VERIFY**:
+    ```bash
+    test -f \"${TOPIC_PATH}/outputs/test_results.md\"
+    grep -q \"^## Summary\" \"${TOPIC_PATH}/outputs/test_results.md\"
+    ```
+
+    **COMPLETION CRITERIA - ALL REQUIRED**:
+    - [x] Test results file exists
+    - [x] File contains Summary section
+    - [x] File contains Test Execution Log
+    - [x] File contains Failed Tests section (if applicable)
+    - [x] Return status metadata in exact format
+
+    **RETURN FORMAT**:
+    ```
+    TEST_STATUS: {passing|failing}
+    TESTS_TOTAL: {N}
+    TESTS_PASSED: {M}
+    TESTS_FAILED: {K}
+    ```
+
+    **DO NOT** return full test output. Return ONLY status metadata above.
+
+    ---
+
+    **ORCHESTRATOR VERIFICATION**:
+    1. Verify test_results.md exists
+    2. Parse status from file
+    3. Determine if debug phase needed
+    4. Extract failure details for debug phase
 
     **REMINDER**: You are the EXECUTOR. Run the tests.
   "
@@ -1290,11 +1835,15 @@ Task {
 
 ### Test Results Verification
 
+**VERIFICATION REQUIRED**: Test results file must exist to determine Phase 5 execution
+
+**CHECKPOINT REQUIREMENT**: Report test status to determine if debugging needed
+
 STEP 2: Parse and verify test results
 
 ```bash
 echo "════════════════════════════════════════════════════════"
-echo "  TEST RESULTS"
+echo "  MANDATORY VERIFICATION - Test Results"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
@@ -1313,13 +1862,18 @@ echo ""
 # Set flag for Phase 5 (debug)
 if [ "$TEST_STATUS" == "passing" ]; then
   TESTS_PASSING="true"
-  echo "✅ All tests passing - no debugging needed"
+  echo "✅ VERIFIED: All tests passing - no debugging needed"
 else
   TESTS_PASSING="false"
-  echo "❌ Tests failing - debugging required (Phase 5)"
+  echo "❌ VERIFIED: Tests failing - debugging required (Phase 5)"
 fi
 
 echo ""
+
+# VERIFICATION REQUIREMENT: YOU MUST NOT skip Phase 5 if tests failed
+echo "Verification checkpoint passed - test status recorded"
+echo ""
+
 echo "Phase 4 Complete: Testing finished"
 echo ""
 
@@ -1338,6 +1892,8 @@ save_phase_checkpoint 4 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
 ```
 
 ## Phase 5: Debug (Conditional)
+
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
 
 **Objective**: Analyze test failures and apply fixes iteratively.
 
@@ -1379,40 +1935,115 @@ for iteration in 1 2 3; do
     prompt: "
       Read behavioral guidelines: .claude/agents/debug-analyst.md
 
-      **EXECUTE NOW - DEBUG ANALYSIS REQUIRED**
+      **PRIMARY OBLIGATION - Debug Report File**
 
-      STEP 1: Analyze test failures from: ${TOPIC_PATH}/outputs/test_results.md
-              Read the test results file and identify failing tests
-              Extract error messages and stack traces
+      **ABSOLUTE REQUIREMENT**: Creating debug report is MANDATORY.
 
-      STEP 2: Identify root causes and propose fixes
-              For each failing test:
-              - Determine the root cause
-              - Identify the file(s) that need changes
-              - Propose specific fixes with code examples
+      **WHY THIS MATTERS**:
+      - Fix application depends on debug report existing
+      - Root cause analysis must be documented for review
+      - Iteration tracking requires file artifacts
+      - Cannot apply fixes without documented analysis
 
-      STEP 3: Use Write tool IMMEDIATELY to create: ${DEBUG_REPORT}
-              Content: Debug analysis with root causes and proposed fixes
-              **DO THIS FIRST** - File MUST exist before continuing.
+      ---
 
-      STEP 4: Use Edit tool to expand debug report with:
-              - Root cause analysis for each failure
-              - Specific file changes needed (with line numbers)
-              - Code snippets showing fixes
-              - Priority order for applying fixes
+      **STEP 1 (REQUIRED BEFORE STEP 2) - Create Debug Report**
 
-      STEP 5: Return ONLY: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
-              **DO NOT** return full analysis text.
-              Return ONLY the confirmation line above.
+      **EXECUTE NOW**
 
-      **MANDATORY VERIFICATION**: Orchestrator verifies file exists.
+      YOU MUST create: ${DEBUG_REPORT}
+
+      Template:
+      ```markdown
+      # Debug Analysis - Iteration $iteration
+
+      ## Test Failures Summary
+      [To be populated in STEP 2]
+
+      ## Root Cause Analysis
+      [To be populated in STEP 3]
+
+      ## Proposed Fixes
+      [To be populated in STEP 3]
+      ```
+
+      ---
+
+      **STEP 2 (REQUIRED BEFORE STEP 3) - Analyze Failures**
+
+      Read: ${TOPIC_PATH}/outputs/test_results.md
+
+      **EXTRACT**:
+      - Each failing test name
+      - Error messages
+      - Stack traces
+      - File locations
+
+      ---
+
+      **STEP 3 (REQUIRED BEFORE STEP 4) - Determine Root Causes**
+
+      For EACH failing test:
+      1. Identify root cause
+      2. Determine affected files
+      3. Propose specific fix with code
+      4. Assign priority
+
+      **POPULATE REPORT** using Edit tool
+
+      ---
+
+      **STEP 4 (MANDATORY VERIFICATION)**
+
+      **VERIFY**:
+      ```bash
+      test -f \"${DEBUG_REPORT}\"
+      grep -q \"^## Root Cause Analysis\" \"${DEBUG_REPORT}\"
+      ```
+
+      **COMPLETION CRITERIA - ALL REQUIRED**:
+      - [x] Debug report exists at ${DEBUG_REPORT}
+      - [x] Report contains Test Failures Summary
+      - [x] Report contains Root Cause Analysis
+      - [x] Report contains Proposed Fixes
+      - [x] Return confirmation in exact format
+
+      **RETURN**: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
+
+      **DO NOT** return full analysis text. Return ONLY confirmation above.
+
+      ---
+
+      **ORCHESTRATOR VERIFICATION**:
+      1. Verify debug report exists
+      2. Extract proposed fixes
+      3. Pass to code-writer for fix application
 
       **REMINDER**: You are the EXECUTOR. Use exact path provided.
     "
   }
 
   # Verify debug report created
-  verify_file_created "$DEBUG_REPORT" "Debug Report" "$AGENT_OUTPUT"
+  echo "════════════════════════════════════════════════════════"
+  echo "  MANDATORY VERIFICATION - Debug Report"
+  echo "════════════════════════════════════════════════════════"
+  echo ""
+
+  # VERIFICATION REQUIRED: Debug report must exist before applying fixes
+  if [ ! -f "$DEBUG_REPORT" ]; then
+    echo "❌ CRITICAL ERROR: Debug report not created at $DEBUG_REPORT"
+    echo ""
+    echo "FALLBACK MECHANISM: Cannot continue without debug analysis"
+    echo "Workflow TERMINATED."
+    exit 1
+  fi
+
+  echo "✅ VERIFIED: Debug report exists at $DEBUG_REPORT"
+  echo ""
+
+  # VERIFICATION REQUIREMENT: YOU MUST NOT apply fixes without debug analysis
+  echo "Verification checkpoint passed - proceeding to fix application"
+  echo ""
 
   # Invoke code-writer to apply fixes
   Task {
@@ -1421,28 +2052,78 @@ for iteration in 1 2 3; do
     prompt: "
       Read behavioral guidelines: .claude/agents/code-writer.md
 
-      **EXECUTE NOW - APPLY FIXES**
+      **PRIMARY OBLIGATION - Apply All Fixes**
 
-      STEP 1: Read debug analysis: ${DEBUG_REPORT}
-              Review all proposed fixes and their priority order
+      **ABSOLUTE REQUIREMENT**: Applying all proposed fixes is MANDATORY.
 
-      STEP 2: Apply recommended fixes using Edit tool
-              For each fix:
-              - Locate the file and line number
-              - Apply the exact code change recommended
-              - Preserve code style and formatting
-              - Do NOT skip any fixes
+      **WHY THIS MATTERS**:
+      - Test re-run depends on fixes being applied
+      - Partial fix application may not resolve failures
+      - Iteration success requires complete fix implementation
 
-      STEP 3: Verify fixes applied
-              Check that all changes were successfully made
-              Count the number of files modified
+      ---
 
-      STEP 4: Return fix status:
-              FIXES_APPLIED: {count}
-              FILES_MODIFIED: {list of file paths}
+      **STEP 1 (REQUIRED BEFORE STEP 2) - Read Debug Analysis**
 
-              **DO NOT** return full diff or code listings.
-              Return ONLY status metadata above.
+      YOU MUST read debug analysis: ${DEBUG_REPORT}
+
+      **ANALYSIS REQUIREMENTS**:
+      - Review all proposed fixes
+      - Understand priority order
+      - Note file locations and line numbers
+
+      ---
+
+      **STEP 2 (REQUIRED BEFORE STEP 3) - Apply Recommended Fixes**
+
+      **EXECUTE NOW - Use Edit Tool**
+
+      For each fix:
+      - Locate the file and line number
+      - Apply the exact code change recommended
+      - Preserve code style and formatting
+      - Do NOT skip any fixes
+
+      **CHECKPOINT**: After EACH fix applied:
+      ```
+      PROGRESS: Fix N applied to [file]
+      ```
+
+      ---
+
+      **STEP 3 (REQUIRED BEFORE STEP 4) - Verify Fixes Applied**
+
+      YOU MUST verify all changes were successfully made:
+
+      ```bash
+      # Count modified files
+      git status --short | wc -l
+      ```
+
+      **VERIFICATION REQUIREMENTS**:
+      - Check that all changes were successfully made
+      - Count the number of files modified
+      - Verify no syntax errors introduced
+
+      ---
+
+      **STEP 4 (MANDATORY) - Return Fix Status**
+
+      **RETURN FORMAT**:
+      ```
+      FIXES_APPLIED: {count}
+      FILES_MODIFIED: {list of file paths}
+      ```
+
+      **DO NOT** return full diff or code listings.
+      Return ONLY status metadata above.
+
+      ---
+
+      **ORCHESTRATOR VERIFICATION**:
+      1. Parse fixes applied count
+      2. Prepare for test re-run
+      3. Determine if fixes resolved failures
 
       **STANDARDS COMPLIANCE**:
       - Follow code standards from: ${STANDARDS_FILE}
@@ -1533,6 +2214,8 @@ echo ""
 
 ## Phase 6: Documentation (Conditional)
 
+[EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
+
 **Objective**: Create workflow summary linking plan, research, and implementation.
 
 **Pattern**: Invoke doc-writer agent → Verify summary created → Update research reports
@@ -1563,36 +2246,113 @@ STEP 1: Invoke doc-writer agent to create summary
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Create workflow summary"
+  description: "Create workflow summary with mandatory file creation"
   prompt: "
     Read behavioral guidelines: .claude/agents/doc-writer.md
 
-    **EXECUTE NOW - MANDATORY SUMMARY CREATION**
+    **PRIMARY OBLIGATION - Summary File Creation**
 
-    STEP 1: Use Write tool IMMEDIATELY to create: ${SUMMARY_PATH}
-            Content: Summary header with metadata
-            **DO THIS FIRST** - File MUST exist before documentation.
+    **ABSOLUTE REQUIREMENT**: Creating summary file is MANDATORY.
 
-    STEP 2: Document workflow execution:
-            - Implementation Overview
-            - Plan Executed: ${PLAN_PATH}
-            - Research Reports Used:
-              ${RESEARCH_REPORTS_LIST}
-            - Key Decisions Made
-            - Code Changes Summary
-            - Test Results: ${TEST_STATUS}
-            - Lessons Learned
+    **WHY THIS MATTERS**:
+    - Summaries are gitignored artifacts documenting workflow completion
+    - /list-summaries command depends on file artifacts
+    - Cross-references between plan/research/implementation require files
+    - Cannot track workflow history without summary artifact
 
-    STEP 3: Use Edit tool to expand summary with:
-            - Cross-references to code changes (file:line)
-            - Links between research recommendations and implementation
-            - Notes on deviations from original plan
-            - Follow-up tasks or known issues
+    **CONSEQUENCE**: Summary missing = incomplete workflow documentation
 
-    STEP 4: Return ONLY: SUMMARY_CREATED: ${SUMMARY_PATH}
-            **DO NOT** return summary text.
+    ---
 
-    **MANDATORY VERIFICATION**: Orchestrator verifies file exists.
+    **STEP 1 (REQUIRED BEFORE STEP 2) - Create Summary File**
+
+    **EXECUTE NOW**
+
+    YOU MUST create: ${SUMMARY_PATH}
+
+    Template:
+    ```markdown
+    # ${WORKFLOW_DESCRIPTION} - Summary
+
+    ## Metadata
+    - Date: [YYYY-MM-DD]
+    - Plan: ${PLAN_PATH}
+    - Implementation: ${IMPL_ARTIFACTS}
+    - Tests: [status]
+
+    ## Overview
+    [To be populated in STEP 2]
+
+    ## Plan Execution
+    [To be populated in STEP 2]
+
+    ## Research Reports Used
+    [To be populated in STEP 2]
+
+    ## Key Decisions
+    [To be populated in STEP 3]
+
+    ## Lessons Learned
+    [To be populated in STEP 3]
+    ```
+
+    ---
+
+    **STEP 2 (REQUIRED BEFORE STEP 3) - Document Workflow**
+
+    **ANALYZE ARTIFACTS**:
+    - Plan: ${PLAN_PATH}
+    - Research: ${RESEARCH_REPORTS_LIST}
+    - Implementation: ${IMPL_ARTIFACTS}
+    - Tests: ${TEST_STATUS}
+
+    **POPULATE SECTIONS**:
+    - Overview: 2-3 sentence summary
+    - Plan Execution: Which phases completed
+    - Research Reports: List all with links
+    - Code Changes: Summary with file:line references
+
+    ---
+
+    **STEP 3 (REQUIRED BEFORE STEP 4) - Add Cross-References**
+
+    **LINK RESEARCH TO IMPLEMENTATION**:
+    - Which research recommendations were implemented
+    - Deviations from research guidance
+    - Follow-up tasks identified
+
+    **DOCUMENT DECISIONS**:
+    - Why certain approaches chosen
+    - Trade-offs made
+    - Technical debt introduced
+
+    ---
+
+    **STEP 4 (MANDATORY VERIFICATION)**
+
+    **VERIFY**:
+    ```bash
+    test -f \"${SUMMARY_PATH}\"
+    grep -q \"^## Metadata\" \"${SUMMARY_PATH}\"
+    grep -q \"^## Research Reports Used\" \"${SUMMARY_PATH}\"
+    ```
+
+    **COMPLETION CRITERIA**:
+    - [x] Summary file exists
+    - [x] All required sections present
+    - [x] Cross-references included
+    - [x] Return confirmation
+
+    **RETURN**: SUMMARY_CREATED: ${SUMMARY_PATH}
+
+    **DO NOT** return summary text. Return ONLY confirmation above.
+
+    ---
+
+    **ORCHESTRATOR VERIFICATION**:
+    1. Verify summary file exists
+    2. Extract workflow completion status
+    3. Clean up checkpoint on success
 
     **REMINDER**: You are the EXECUTOR. Use exact path provided.
   "
@@ -1600,6 +2360,10 @@ Task {
 ```
 
 ### Mandatory Verification - Summary Creation
+
+**VERIFICATION REQUIRED**: Summary file must exist to complete workflow
+
+**GUARANTEE REQUIRED**: Summary links all artifacts (research, plan, implementation)
 
 STEP 2: Verify summary file created
 
@@ -1609,7 +2373,23 @@ echo "  MANDATORY VERIFICATION - Workflow Summary"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-verify_file_created "$SUMMARY_PATH" "Workflow Summary" "$AGENT_OUTPUT"
+# Check if summary file exists and has content
+if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
+  echo "❌ CRITICAL ERROR: Summary file not created at $SUMMARY_PATH"
+  echo ""
+  echo "FALLBACK MECHANISM: Cannot create summary without agent - workflow incomplete"
+  echo "Workflow TERMINATED."
+  exit 1
+fi
+
+echo "✅ VERIFIED: Summary file exists at $SUMMARY_PATH"
+FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
+echo "   File size: $FILE_SIZE bytes"
+echo ""
+
+# VERIFICATION REQUIREMENT: YOU MUST NOT complete workflow without summary
+echo "Verification checkpoint passed - workflow complete"
+echo ""
 
 echo "Phase 6 Complete: Documentation finished"
 echo ""
@@ -1633,6 +2413,8 @@ exit 0
 ```
 
 ## Usage Examples
+
+[REFERENCE-OK: Examples can be moved to external usage guide]
 
 ### Example 1: Research-only workflow
 
@@ -1685,6 +2467,8 @@ exit 0
 
 ## Performance Metrics
 
+[REFERENCE-OK: Metrics can be tracked in external documentation]
+
 Expected performance targets:
 
 - **File Creation Rate**: 100% (strong enforcement, first attempt)
@@ -1692,6 +2476,8 @@ Expected performance targets:
 - **Zero Fallbacks**: Single working path, fail-fast on errors
 
 ## Success Criteria
+
+[REFERENCE-OK: Success criteria can be maintained in external validation docs]
 
 ### Architectural Excellence
 - [ ] Pure orchestration: Zero SlashCommand tool invocations
