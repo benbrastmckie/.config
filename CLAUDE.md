@@ -248,6 +248,7 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **Recursive Supervision**: Supervisors can manage sub-supervisors for complex workflows - See [Hierarchical Supervision Pattern](.claude/docs/concepts/patterns/hierarchical-supervision.md)
 - **Context Pruning**: Aggressive cleanup of completed phase data - See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md)
 - **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
+- **Imperative Agent Invocation**: All agent invocations use imperative pattern (not documentation-only YAML blocks) - See [Standard 11](.claude/docs/reference/command_architecture_standards.md#standard-11) and [Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks)
 
 ### Context Reduction Metrics
 - **Target**: <30% context usage throughout workflows
@@ -287,6 +288,21 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **`/plan`**: Delegates research for ambiguous features (2-3 parallel research agents)
 - **`/debug`**: Delegates root cause analysis for complex bugs (parallel investigations)
 - **`/orchestrate`**: Supports recursive supervision for large-scale workflows (10+ topics)
+- **`/supervise`**: Multi-phase workflow orchestration (research → plan → implement → test → debug → document)
+
+### Anti-Pattern Resolution
+
+**Historical Note**: An anti-pattern was discovered in the `/supervise` command (spec 438) where 7 YAML blocks were wrapped in markdown code fences (` ```yaml`), causing a 0% agent delegation rate. All agent invocations appeared as documentation examples rather than executable instructions.
+
+**Resolution**: All orchestration commands now enforce [Standard 11 (Imperative Agent Invocation Pattern)](.claude/docs/reference/command_architecture_standards.md#standard-11), which requires:
+- Imperative instructions (`**EXECUTE NOW**: USE the Task tool...`)
+- No code block wrappers around Task invocations
+- Direct reference to agent behavioral files (`.claude/agents/*.md`)
+- Explicit completion signals (e.g., `REPORT_CREATED:`)
+
+**Detection Guideline**: All orchestration commands (commands that coordinate multiple agents) MUST use the imperative agent invocation pattern. Commands that violate this pattern will have 0% agent delegation rate, leading to silent failure.
+
+**Best Practices**: See [Behavioral Injection Pattern - Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks) for complete prevention and detection guidance.
 
 ### Usage Example
 ```bash

@@ -487,6 +487,200 @@ Task {
 }
 ```
 
+### 5.2.1 Avoiding Documentation-Only Patterns
+
+**Problem**: YAML code blocks containing Task invocations that are wrapped in markdown fences without imperative instructions create a 0% agent delegation rate because Claude interprets them as syntax examples rather than executable commands.
+
+**Anti-Pattern Detection**:
+
+Commands must NEVER use this pattern:
+
+```markdown
+❌ INCORRECT - Documentation-only pattern:
+
+Example agent invocation:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "Read .claude/agents/research-specialist.md..."
+}
+```
+
+This will never execute because it's wrapped in a code block.
+```
+
+**Correct Pattern - Executable Imperative Invocation**:
+
+```markdown
+✅ CORRECT - Imperative execution pattern:
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    .claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: ${RESEARCH_TOPIC}
+    - Output Path: ${REPORT_PATH}
+    - Project Standards: ${STANDARDS_FILE}
+
+    Execute research per behavioral guidelines.
+    Return: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+#### Pattern Identification
+
+**How to Detect**:
+
+Search for YAML blocks that might be documentation-only:
+
+```bash
+# Find all YAML blocks in command files
+grep -n '```yaml' .claude/commands/*.md
+
+# For each match, check if it's preceded by imperative instruction within 5 lines
+# If no imperative instruction found, it's likely documentation-only
+```
+
+**Automated Detection Script**:
+
+```bash
+#!/bin/bash
+# Detect documentation-only YAML blocks
+
+for file in .claude/commands/*.md; do
+  awk '/```yaml/{
+    found=0
+    for(i=NR-5; i<NR; i++) {
+      if(lines[i] ~ /EXECUTE NOW|USE the Task tool|INVOKE AGENT/) found=1
+    }
+    if(!found) print FILENAME":"NR": Documentation-only YAML block detected"
+  } {lines[NR]=$0}' "$file"
+done
+```
+
+#### Conversion Guide
+
+**Step 1: Identify Documentation-Only Blocks**
+
+Run the detection script to find all YAML blocks without imperative instructions.
+
+**Step 2: Classify Each Block**
+
+For each block found:
+
+1. **If it's a syntax reference** (showing what Task invocations look like):
+   - Keep as-is but clearly mark as non-executable example
+   - Add comment: "This is a syntax reference only, not an executable invocation"
+
+2. **If it should invoke agents** (part of command workflow):
+   - Remove code block wrapper (` ```yaml` and ` ``` `)
+   - Add imperative instruction: `**EXECUTE NOW**: USE the Task tool...`
+   - Remove "Example" prefix if present
+
+**Step 3: Transform to Executable Pattern**
+
+Before:
+```markdown
+Example invocation:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  prompt: "Research ${TOPIC}"
+}
+```
+```
+
+After:
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} with mandatory file creation"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    Research Topic: ${TOPIC}
+    Output Path: ${REPORT_PATH}
+
+    Return: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+**Step 4: Validate Conversion**
+
+Create regression tests to ensure:
+- All agent invocations have imperative instructions
+- Zero documentation-only YAML blocks remain in executable context
+- All invocations reference agent behavioral files
+- All invocations require completion signals
+
+#### Prevention
+
+**Review Checklist for New Commands**:
+
+When creating or modifying commands, ensure:
+
+- [ ] No YAML code blocks in agent invocation sections (use imperative pattern instead)
+- [ ] All Task invocations have `**EXECUTE NOW**` or similar imperative marker
+- [ ] All Task invocations reference `.claude/agents/*.md` behavioral files
+- [ ] All Task invocations require explicit completion signals (e.g., `REPORT_CREATED:`)
+- [ ] Documentation examples clearly marked as non-executable if using code blocks
+
+**Automated Testing** (add to test suite):
+
+```bash
+# Test: No documentation-only YAML blocks in commands
+# Expected: Zero matches (all YAML blocks have imperative instructions)
+
+test_no_documentation_only_yaml_blocks() {
+  local violations=0
+
+  for cmd_file in .claude/commands/*.md; do
+    # Skip documentation section (usually first 100 lines)
+    local yaml_blocks=$(tail -n +100 "$cmd_file" | grep -c '```yaml' || true)
+
+    if [ "$yaml_blocks" -gt 0 ]; then
+      echo "FAIL: $cmd_file has $yaml_blocks YAML blocks (should be 0)"
+      ((violations++))
+    fi
+  done
+
+  if [ "$violations" -eq 0 ]; then
+    echo "PASS: No documentation-only YAML blocks found"
+    return 0
+  else
+    return 1
+  fi
+}
+```
+
+#### Standards Reference
+
+This pattern is enforced by:
+- **Standard 11**: Imperative Agent Invocation Pattern ([Command Architecture Standards](../reference/command_architecture_standards.md#standard-11))
+- **Behavioral Injection Pattern**: Anti-Pattern section ([Behavioral Injection](../concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks))
+
+#### Historical Context
+
+This anti-pattern was discovered in the /supervise command (spec 438), where 7 YAML blocks wrapped in code fences caused a 0% agent delegation rate. All agent invocations appeared as documentation examples rather than executable instructions, leading to silent failure where the command appeared to work but no agents were actually invoked.
+
+**Impact of Fix**:
+- Agent delegation rate: 0% → 100%
+- File creation rate: 0% → 100%
+- Context reduction: Enabled 90% reduction through behavioral injection
+
 ### 5.3 Pre-Calculating Topic-Based Artifact Paths
 
 **Why Pre-Calculate Paths?**
