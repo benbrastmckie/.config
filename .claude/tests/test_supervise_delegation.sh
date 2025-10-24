@@ -54,20 +54,12 @@ else
   FAILED=1
 fi
 
-# Test 6: Metadata extraction (SKIPPED - not needed, supervise uses path-based design)
-METADATA_COUNT=$(grep -c "extract_.*_metadata" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
-echo "⊘ SKIP: Test 6 - Metadata extraction: $METADATA_COUNT (path-based design already lean)"
-
-# Test 7: Context pruning (SKIPPED - not needed, bash variables naturally scope)
-PRUNING_COUNT=$(grep -c "prune_phase_metadata" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
-echo "⊘ SKIP: Test 7 - Context pruning: $PRUNING_COUNT (no evidence of context bloat)"
-
-# Test 8: Verify retry_with_backoff usage (expect ≥8: 6 verifications + 2 documentation)
+# Test 6: Verify retry_with_backoff usage (expect ≥8: 6 verifications + 2 documentation)
 RETRY_COUNT=$(grep -c "retry_with_backoff" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
 if [ "$RETRY_COUNT" -ge 8 ] 2>/dev/null; then
-  echo "✅ PASS: Test 8 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
+  echo "✅ PASS: Test 6 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
 else
-  echo "❌ FAIL: Test 8 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
+  echo "❌ FAIL: Test 6 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
   FAILED=1
 fi
 
