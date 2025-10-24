@@ -1125,6 +1125,96 @@ LEVEL=$(parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
 
 ---
 
+### Standard 12: Structural vs Behavioral Content Separation
+
+Commands MUST distinguish between structural templates (inline) and behavioral content (referenced).
+
+**Requirement - Structural Templates MUST Be Inline**:
+
+Commands MUST include the following structural templates inline:
+
+1. **Task Invocation Syntax**: `Task { subagent_type, description, prompt }` structure
+   - Rationale: Commands must parse this structure to invoke agents correctly
+   - Example: Complete Task blocks with all required parameters
+
+2. **Bash Execution Blocks**: `**EXECUTE NOW**: bash commands`
+   - Rationale: Commands must execute these operations directly
+   - Example: Directory creation, environment setup, test execution
+
+3. **JSON Schemas**: Data structure definitions for agent communication
+   - Rationale: Commands must parse and validate data structures
+   - Example: Report metadata schemas, context injection formats
+
+4. **Verification Checkpoints**: `**MANDATORY VERIFICATION**: file existence checks`
+   - Rationale: Orchestrator (command) is responsible for verification
+   - Example: Verify files created, validate report structure
+
+5. **Critical Warnings**: `**CRITICAL**: error conditions and constraints`
+   - Rationale: Execution-critical constraints that commands must enforce immediately
+   - Example: File creation requirements, error handling rules
+
+**Prohibition - Behavioral Content MUST NOT Be Duplicated**:
+
+Commands MUST NOT duplicate agent behavioral content inline. Instead, reference agent files via behavioral injection pattern:
+
+Behavioral content includes:
+1. **Agent STEP Sequences**: `STEP 1/2/3` procedural instructions
+   - Location: `.claude/agents/*.md` files ONLY
+   - Pattern: "Read and follow: .claude/agents/[name].md" with context injection
+
+2. **File Creation Workflows**: `PRIMARY OBLIGATION` blocks defining agent internal procedures
+   - Location: `.claude/agents/*.md` files ONLY
+   - Pattern: Reference agent file, inject file paths and parameters
+
+3. **Agent Verification Steps**: Agent-internal quality checks before returning
+   - Location: `.claude/agents/*.md` files ONLY
+   - Pattern: Agent files define self-verification procedures
+
+4. **Output Format Specifications**: Templates showing how agent should format responses
+   - Location: `.claude/agents/*.md` files ONLY
+   - Pattern: Agent files contain output templates, commands reference them
+
+**Rationale**:
+- Single source of truth: Agent behavioral guidelines exist in one location only
+- Maintenance burden reduction: 50-67% reduction by eliminating duplication
+- Context efficiency: 90% code reduction per agent invocation (150 lines → 15 lines)
+- Synchronization elimination: No need to manually sync behavioral content across files
+
+**Enforcement**:
+
+Validation criteria:
+- STEP instruction count in commands: <5 (behavioral content should be in agent files)
+- Agent invocation size: <50 lines per Task block (context injection only, not behavioral duplication)
+- PRIMARY OBLIGATION presence: Zero occurrences in command files (agent files only)
+- Behavioral file references: All agent invocations should reference behavioral files
+
+Metrics when properly applied:
+- 90% reduction in code per agent invocation
+- <30% context window usage throughout workflows
+- 100% file creation success rate
+- Elimination of synchronization burden
+
+Detection:
+- Optional validation script: `.claude/tests/validate_no_behavioral_duplication.sh`
+- Automated checks for STEP sequences, PRIMARY OBLIGATION, large Task blocks
+
+**Exceptions**:
+
+NONE - Zero documented exceptions to behavioral duplication prohibition.
+
+If behavioral content duplication is detected:
+1. Extract to appropriate agent file in `.claude/agents/`
+2. Update command to reference agent file with context injection only
+3. Validate reduction (expect ~90% line reduction per invocation)
+4. Test command execution to verify agent receives guidelines
+
+**See Also**:
+- [Template vs Behavioral Distinction](./template-vs-behavioral-distinction.md) - Detailed guidance and decision criteria
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern for referencing agent behavioral files
+- [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md) - Detect and fix anti-pattern
+
+---
+
 ## Refactoring Guidelines
 
 ### When to Extract Content

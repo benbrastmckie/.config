@@ -183,7 +183,141 @@ Task tool invocation:
 - Agents themselves (they receive injected context, don't inject it)
 - Commands that only read and analyze (no file creation)
 
+### Structural Templates vs Behavioral Content
+
+**IMPORTANT CLARIFICATION**: The behavioral injection pattern applies to agent behavioral guidelines, NOT to structural templates.
+
+**Structural Templates (MUST remain inline)**:
+- Task invocation syntax: `Task { subagent_type, description, prompt }`
+- Bash execution blocks: `**EXECUTE NOW**: bash commands`
+- JSON schemas: Data structure definitions
+- Verification checkpoints: `**MANDATORY VERIFICATION**: file checks`
+- Critical warnings: `**CRITICAL**: error conditions`
+
+These are command execution structures, NOT agent behavioral content. They must remain inline for immediate execution and parsing.
+
+**Behavioral Content (MUST be referenced, not duplicated)**:
+- Agent STEP sequences: `STEP 1/2/3` procedural instructions
+- File creation workflows: `PRIMARY OBLIGATION` blocks
+- Agent verification steps: Agent-internal quality checks
+- Output format specifications: Templates for agent responses
+
+### Valid Inline Templates
+
+Anti-Pattern Violation 0 is about behavioral duplication, NOT structural templates. The following inline templates are correct and required:
+
+```markdown
+✓ CORRECT - Task invocation structure (structural template):
+
+Task {
+  subagent_type: "research-specialist"
+  description: "Research authentication patterns"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    CONTEXT (inject parameters, not procedures):
+    - Topic: OAuth 2.0 authentication
+    - Report path: specs/027_auth/reports/001_oauth_patterns.md
+
+    (No STEP sequences here - those are in research-specialist.md)
+  "
+}
+```
+
+```markdown
+✓ CORRECT - Bash execution blocks (structural template):
+
+**EXECUTE NOW**: Run the following commands to prepare environment:
+
+bash
+mkdir -p specs/027_auth/{reports,plans,summaries}
+export REPORT_PATH="specs/027_auth/reports/001_oauth_patterns.md"
+```
+
+```markdown
+✓ CORRECT - Verification checkpoints (structural template):
+
+**MANDATORY VERIFICATION**: After agent completes, verify:
+- Report file exists at $REPORT_PATH
+- Report contains all required sections
+- File is properly formatted markdown
+
+If verification fails, retry agent invocation with corrected path.
+```
+
+### Benefits with Structural Templates Clarified
+
+When properly distinguishing structural templates from behavioral content:
+- **90% reduction applies to behavioral content**, not structural templates
+- **Structural templates remain inline** for immediate command execution
+- **Behavioral content referenced once** from agent files
+- **Single source of truth** for agent guidelines (no duplication)
+
+For detailed guidance on what qualifies as structural vs behavioral, see [Template vs Behavioral Distinction](../../reference/template-vs-behavioral-distinction.md).
+
 ## Anti-Patterns
+
+### Example Violation 0: Inline Template Duplication
+
+```markdown
+❌ BAD - Duplicating agent behavioral guidelines inline:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    **ABSOLUTE REQUIREMENT**: Creating the report file is your PRIMARY task.
+
+    **STEP 1 (REQUIRED BEFORE STEP 2)**: Use Write tool to create file at ${REPORT_PATH}
+    [... 30 lines of detailed instructions ...]
+
+    **STEP 2 (REQUIRED BEFORE STEP 3)**: Conduct research
+    [... 40 lines of detailed instructions ...]
+
+    **STEP 3 (REQUIRED BEFORE STEP 4)**: Populate Report File
+    [... 30 lines of detailed instructions ...]
+
+    **STEP 4 (MANDATORY VERIFICATION)**: Verify and Return
+    [... 20 lines of verification instructions ...]
+  "
+}
+```
+
+**Why This Fails:**
+1. Duplicates 646 lines of research-specialist.md behavioral guidelines (~150 lines per invocation)
+2. Creates maintenance burden: must manually sync template with behavioral file
+3. Violates "single source of truth" principle: two locations for agent guidelines
+4. Adds unnecessary bloat: 800+ lines across command file
+
+**Correct Pattern** - Reference Behavioral File, Inject Context Only:
+```markdown
+✅ GOOD - Reference behavioral file with context injection:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    .claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: ${RESEARCH_TOPIC}
+    - Output Path: ${REPORT_PATH} (absolute path, pre-calculated)
+    - Project Standards: ${STANDARDS_FILE}
+
+    Execute research per behavioral guidelines.
+    Return: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+**Benefits:**
+- 90% reduction: 150 lines → 15 lines per invocation
+- Single source of truth: behavioral file is authoritative
+- No synchronization needed: updates to behavioral file automatically apply
+- Cleaner commands: focus on orchestration, not behavioral details
 
 ### Example Violation 1: Command-to-Command Invocation
 
