@@ -23,6 +23,24 @@
 
 ## Overview
 
+### Agent Behavioral Patterns vs Command Structural Patterns
+
+**IMPORTANT CONTEXT**: This guide shows both agent behavioral patterns (for agent files) and command structural patterns (for command files). Context determines which applies.
+
+| Section | Applies To | File Location | Purpose |
+|---------|-----------|---------------|---------|
+| STEP Dependencies | Agent files | `.claude/agents/*.md` | Agent behavioral guidelines |
+| Execution Blocks | Command files | `.claude/commands/*.md` | Command structural patterns |
+| File-First Creation | Agent files | `.claude/agents/*.md` | Agent workflow procedures |
+| Verification Checkpoints | Command files | `.claude/commands/*.md` | Orchestrator responsibilities |
+
+**Key Distinction**:
+- **Agent behavioral patterns** (STEP sequences, workflows) belong in `.claude/agents/*.md` files
+- **Command structural patterns** (execution blocks, verification checkpoints) belong in `.claude/commands/*.md` files
+- Commands reference agent files via behavioral injection, do not duplicate agent procedures
+
+See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) for detailed guidance.
+
 ### Purpose
 
 This guide provides comprehensive documentation for creating and migrating commands and agents to use execution enforcement patterns. These patterns achieve:
@@ -82,6 +100,42 @@ Agents (`.claude/agents/*.md`) must use:
 - **Verification checkpoints**
 - **Completion criteria checklists**
 
+### IMPORTANT: Behavioral Injection for Agent Invocations
+
+**⚠️ WARNING**: Do not duplicate agent behavioral patterns (STEP sequences, PRIMARY OBLIGATION blocks, verification procedures) in command prompts. Instead, reference agent files via behavioral injection pattern.
+
+**❌ INCORRECT** (Behavioral duplication in command):
+```markdown
+Task {
+  subagent_type: "research-specialist"
+  prompt: "
+    STEP 1: Analyze codebase...
+    STEP 2: Document findings...
+    STEP 3: Create report file...
+    [150+ lines of agent procedures]
+  "
+}
+```
+
+**✓ CORRECT** (Reference agent file, inject context only):
+```markdown
+Task {
+  subagent_type: "research-specialist"
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    CONTEXT (inject parameters, not procedures):
+    - Research topic: OAuth 2.0 authentication
+    - Report path: specs/027_auth/reports/001_oauth.md
+    - Focus areas: [specific requirements]
+  "
+}
+```
+
+**Benefits**: 90% code reduction per invocation, single source of truth for agent behavioral guidelines, no synchronization burden.
+
+See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for complete documentation.
+
 ### Migration Priority
 
 **High Priority** (migrate first):
@@ -129,6 +183,8 @@ Agents (`.claude/agents/*.md`) must use:
 
 ### Pattern 2: Sequential Step Dependencies
 
+**Context**: FOR AGENT FILES - Agent behavioral guidelines in `.claude/agents/*.md`
+
 **Purpose**: Enforce strict execution order with explicit dependencies
 
 **Template**:
@@ -172,6 +228,8 @@ echo "✓ VERIFIED: Absolute report path received: $REPORT_PATH"
 
 ### Pattern 3: File-First Creation
 
+**Context**: FOR AGENT FILES - Agent file creation behavioral guidelines in `.claude/agents/*.md`
+
 **Purpose**: Guarantee artifact creation before any processing
 
 **Template**:
@@ -210,6 +268,8 @@ echo "✓ VERIFIED: File created at $FILE_PATH"
 ---
 
 ### Pattern 4: Verification Checkpoints
+
+**Context**: FOR COMMAND FILES - Orchestrator verification in `.claude/commands/*.md`
 
 **Purpose**: Ensure critical operations complete successfully
 

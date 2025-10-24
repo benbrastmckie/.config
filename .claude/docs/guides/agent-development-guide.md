@@ -119,6 +119,135 @@ The behavioral injection pattern separates concerns:
 
 ---
 
+## 2.5. Agent Files as Single Source of Truth
+
+### Principle: Agent Behavioral Files Contain ALL Execution Procedures
+
+Agent behavioral files in `.claude/agents/*.md` are the **authoritative source** for all agent execution procedures:
+
+- **Commands reference these files**; they do NOT excerpt or summarize agent guidelines
+- **Agent files contain STEP sequences**, PRIMARY OBLIGATION blocks, verification procedures
+- **Commands inject context only**: file paths, parameters, requirements
+
+### Benefits of Single Source of Truth
+
+**90% Code Reduction**:
+- Before (inline duplication): 150 lines per agent invocation
+- After (reference + context): 15 lines per agent invocation
+- Result: 90% reduction in command file bloat
+
+**No Synchronization Burden**:
+- Before: Update agent guidelines in 5+ command files
+- After: Update once in agent file, all commands benefit
+- Result: Zero maintenance overhead for agent behavioral changes
+
+**Single Source of Truth**:
+- Before: Agent guidelines duplicated across commands (divergence risk)
+- After: Agent file is authoritative, commands reference it
+- Result: Guaranteed consistency across all invocations
+
+### Example: Behavioral File + Command Reference (Not Duplication)
+
+**Agent File** (`.claude/agents/research-specialist.md` - excerpt):
+```markdown
+## Behavioral Guidelines
+
+### STEP 1 (REQUIRED BEFORE STEP 2) - Receive and Verify Report Path
+
+**MANDATORY INPUT VERIFICATION**
+
+The invoking command MUST provide you with an absolute report path.
+Verify you have received it before proceeding.
+
+### STEP 2 (REQUIRED BEFORE STEP 3) - Conduct Research
+
+**RESEARCH EXECUTION**
+
+Analyze the codebase, documentation, and requirements to address the research topic.
+
+### STEP 3 (REQUIRED BEFORE STEP 4) - Create Report at Exact Path
+
+**PRIMARY OBLIGATION**: File creation is your PRIMARY task.
+
+YOU MUST use the Write tool to create the report file at the exact path
+from Step 1 BEFORE populating content.
+
+### STEP 4 (MANDATORY VERIFICATION) - Verify and Return
+
+**ABSOLUTE REQUIREMENT**: Verify file exists before returning.
+```
+
+**Command File** (`.claude/commands/report.md` - excerpt):
+```markdown
+## Phase 2: Invoke Research Agent
+
+**EXECUTE NOW**: Invoke research-specialist with context injection:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from: .claude/agents/research-specialist.md
+
+    CONTEXT (inject parameters, not procedures):
+    - Research topic: ${TOPIC}
+    - Report path: ${REPORT_PATH} (absolute path - verified by command)
+    - Focus areas: ${FOCUS_AREAS}
+    - Success criteria: Create report at exact path with research findings
+
+    (No STEP sequences here - those are in research-specialist.md)
+  "
+}
+```
+
+### What NOT to Do
+
+**❌ INCORRECT** (Duplicating agent procedures in command):
+```markdown
+Task {
+  prompt: "
+    STEP 1: Verify report path...
+    STEP 2: Conduct research...
+    STEP 3: Create report file at path...
+    STEP 4: Verify and return...
+    [150+ lines of duplicated agent behavioral guidelines]
+  "
+}
+```
+
+**Why This Is Wrong**:
+- Duplicates agent behavioral file content (synchronization burden)
+- Violates single source of truth principle
+- Adds 90% unnecessary code to command file
+- Requires manual updates in multiple places when agent behavior changes
+
+**✓ CORRECT** (Referencing agent file with context injection):
+```markdown
+Task {
+  prompt: "
+    Read and follow: .claude/agents/research-specialist.md
+
+    CONTEXT:
+    - Report path: ${REPORT_PATH}
+    - Research topic: ${TOPIC}
+  "
+}
+```
+
+**Why This Is Right**:
+- Agent behavioral file is single source of truth
+- Command injects context (parameters) only
+- 90% code reduction (150 lines → 15 lines)
+- Zero synchronization burden
+
+### Key Takeaway
+
+**Agent files are the ONLY location for behavioral guidelines**. Commands invoke agents via "Read and follow ALL behavioral guidelines from: .claude/agents/[name].md" with context injection. Never duplicate STEP sequences, PRIMARY OBLIGATION blocks, or verification procedures in command prompts.
+
+For detailed guidance, see [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md).
+
+---
+
 ## 3. Agent File Structure
 
 ### File Format
@@ -404,6 +533,15 @@ Follow the structure:
 4. Behavioral Guidelines
 5. Expected Input
 6. Expected Output
+
+**IMPORTANT**: Agent files are the ONLY location for behavioral guidelines:
+- Agent files should contain ALL execution procedures (STEP sequences, workflows, verification steps)
+- Commands invoke agents via "Read and follow ALL behavioral guidelines from: .claude/agents/[name].md" with context injection
+- Never duplicate STEP sequences, PRIMARY OBLIGATION blocks, or verification procedures in command prompts
+
+**Why**: This enables 90% code reduction per agent invocation, single source of truth for agent behavior, and zero synchronization burden.
+
+See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) for detailed guidance on what belongs in agent files vs command files.
 
 ### Step 4: Test the Agent
 

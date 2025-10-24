@@ -703,7 +703,8 @@ Before marking command complete:
 - [ ] Validates compliance before completion
 
 **Agent Integration** (if applicable):
-- [ ] Agents invoked using behavioral injection
+- [ ] Agents invoked with context injection only (no behavioral duplication)
+- [ ] Agent prompts reference behavioral files, contain NO STEP sequences
 - [ ] Context passed efficiently (metadata-only)
 - [ ] Results processed correctly
 - [ ] Errors handled gracefully
@@ -734,30 +735,52 @@ REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001_${TOPIC_SLUG}" "
 echo "Report will be written to: $REPORT_PATH"
 ```
 
-### Step 2: Invoke Research Agent with Enforcement
+### Step 2: Invoke Research Agent with Behavioral File Reference
 
-**AGENT INVOCATION - Use Behavioral Injection**
+**AGENT INVOCATION - Reference Behavioral File, Inject Context Only**
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Research ${RESEARCH_TOPIC}"
+  description: "Research ${RESEARCH_TOPIC} with mandatory file creation"
   prompt: "
-    Read and follow: .claude/agents/research-specialist.md
+    Read and follow ALL behavioral guidelines from:
+    .claude/agents/research-specialist.md
 
-    **ABSOLUTE REQUIREMENT**: Creating the report file is your PRIMARY task.
+    **Workflow-Specific Context**:
+    - Research Topic: ${RESEARCH_TOPIC}
+    - Output Path: ${REPORT_PATH} (absolute path, pre-calculated)
+    - Project Standards: ${CLAUDE_PROJECT_DIR}/CLAUDE.md
 
-    Research Topic: ${RESEARCH_TOPIC}
-    Output Path: ${REPORT_PATH}
-
-    **STEP 1 (REQUIRED BEFORE STEP 2)**: Use Write tool to create file at ${REPORT_PATH}
-    **STEP 2**: Conduct research and populate file
-    **STEP 3 (MANDATORY)**: Return ONLY: REPORT_CREATED: ${REPORT_PATH}
-
-    **NON-NEGOTIABLE**: File must exist at ${REPORT_PATH} when you complete.
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: ${REPORT_PATH}
   "
 }
 ```
+
+**Why This Pattern Works**:
+- research-specialist.md contains complete behavioral guidelines (646 lines)
+- Agent reads behavioral file and follows all step-by-step instructions automatically
+- Command only injects workflow-specific context (paths, parameters)
+- No duplication: single source of truth maintained in behavioral file
+- Reduction: ~150 lines → ~15 lines per invocation (90% reduction)
+
+**✓ CORRECT**: This example shows context injection only (parameters, file paths)
+
+**✗ INCORRECT**: Do not add STEP 1/2/3 instructions inline (reference behavioral file instead). Example of anti-pattern:
+```yaml
+# ❌ BAD - Duplicating behavioral content
+Task {
+  prompt: "
+    STEP 1: Analyze codebase...
+    STEP 2: Create report file...
+    STEP 3: Verify and return...
+    [150+ lines of agent behavioral procedures]
+  "
+}
+```
+
+See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) for decision criteria on what qualifies as context (inline OK) vs behavioral content (reference agent file).
 
 ### Step 3: Verify and Fallback
 
@@ -780,7 +803,73 @@ echo "✓ Verified: Report exists at $REPORT_PATH"
 ```
 ```
 
-### 7.2 Anti-Patterns to Avoid
+### 7.2 When to Use Inline Templates
+
+**Structural templates** are command execution patterns that MUST be inline. These are NOT behavioral content and should not be moved to agent files.
+
+**Inline Required** - Structural Templates:
+
+1. **Task Invocation Blocks**
+   ```yaml
+   Task {
+     subagent_type: "general-purpose"
+     description: "Research topic"
+     prompt: "..."
+   }
+   ```
+   - **Why inline**: Commands must parse this structure to invoke agents
+   - **Context**: Command/orchestrator responsibility
+
+2. **Bash Execution Blocks**
+   ```bash
+   # EXECUTE NOW
+   source .claude/lib/artifact-creation.sh
+   REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001" "")
+   ```
+   - **Why inline**: Commands must execute these operations directly
+   - **Context**: Command/orchestrator responsibility
+
+3. **Verification Checkpoints**
+   ```markdown
+   **MANDATORY VERIFICATION**: After agent completes, verify:
+   - Report file exists at $REPORT_PATH
+   - Report contains all required sections
+   ```
+   - **Why inline**: Orchestrator (command) is responsible for verification
+   - **Context**: Command/orchestrator responsibility
+
+4. **JSON Schemas**
+   ```json
+   {
+     "report_metadata": {
+       "title": "string",
+       "summary": "string (max 50 words)"
+     }
+   }
+   ```
+   - **Why inline**: Commands must parse and validate data structures
+   - **Context**: Command/orchestrator responsibility
+
+5. **Critical Warnings**
+   ```markdown
+   **CRITICAL**: Never create empty directories.
+   **IMPORTANT**: File creation operations MUST be verified.
+   ```
+   - **Why inline**: Execution-critical constraints that commands enforce
+   - **Context**: Command/orchestrator responsibility
+
+**NOT Inline** - Behavioral Content (Reference Agent Files):
+
+- Agent STEP sequences: `STEP 1/2/3` procedural instructions
+- File creation workflows: `PRIMARY OBLIGATION` blocks
+- Agent verification steps: Agent-internal quality checks
+- Output format specifications: Templates for agent responses
+
+These belong in `.claude/agents/*.md` files and are referenced via behavioral injection pattern.
+
+See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) for complete decision criteria.
+
+### 7.3 Anti-Patterns to Avoid
 
 | Anti-Pattern | Why It's Wrong | Correct Approach |
 |--------------|---------------|------------------|
