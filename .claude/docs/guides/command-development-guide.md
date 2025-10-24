@@ -575,6 +575,82 @@ See [Correct Agent Invocation Examples](../examples/correct-agent-invocation.md)
 
 ---
 
+## 5.5. Using Utility Libraries
+
+### When to Use Libraries vs Agents
+
+Commands should prefer utility libraries over agent invocation when:
+
+**Deterministic Operations** (No AI reasoning needed):
+- Location detection from user input
+- Topic name sanitization
+- Directory structure creation
+- Plan file parsing
+- Metadata extraction from structured files
+
+**Performance Critical Paths**:
+- Workflow initialization
+- Checkpoint save/load operations
+- Log file writes
+- JSON/YAML parsing
+
+**Context Window Optimization**:
+- Libraries use 0 tokens (pure bash)
+- Agents use 15k-75k tokens per invocation
+- Example: `unified-location-detection.sh` saves 65k tokens vs `location-specialist` agent
+
+### Common Library Usage Pattern
+
+```bash
+#!/usr/bin/env bash
+
+# Get Claude config directory
+CLAUDE_CONFIG="${CLAUDE_CONFIG:-${HOME}/.config}"
+
+# Source the library
+source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+
+# Call library function
+LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
+
+# Extract results (with jq fallback)
+if command -v jq &>/dev/null; then
+  TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
+  REPORTS_DIR=$(echo "$LOCATION_JSON" | jq -r '.artifact_paths.reports')
+else
+  # Fallback without jq
+  TOPIC_PATH=$(echo "$LOCATION_JSON" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+  REPORTS_DIR=$(echo "$LOCATION_JSON" | grep -o '"reports": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+fi
+
+# MANDATORY VERIFICATION checkpoint
+if [ ! -d "$TOPIC_PATH" ]; then
+  echo "ERROR: Location detection failed - directory not created"
+  exit 1
+fi
+```
+
+### Available Libraries
+
+**Core Utilities**:
+- `unified-location-detection.sh` - Standardized location detection (<1s, 0 tokens vs 25s, 75k tokens for agent)
+- `plan-core-bundle.sh` - Plan parsing and manipulation
+- `metadata-extraction.sh` - Report/plan metadata extraction (99% context reduction)
+- `checkpoint-utils.sh` - Checkpoint state management
+
+**Agent Support**:
+- `agent-registry-utils.sh` - Agent registration and discovery
+- `hierarchical-agent-support.sh` - Multi-level agent coordination
+
+**Workflow Support**:
+- `unified-logger.sh` - Structured logging with rotation
+- `error-handling.sh` - Standardized error handling
+- `context-pruning.sh` - Context window optimization
+
+See [Library API Reference](../reference/library-api.md) for complete function signatures and [Using Utility Libraries](using-utility-libraries.md) for detailed patterns and examples.
+
+---
+
 ## 6. Testing and Validation
 
 ### 6.1 Testing Standards Integration

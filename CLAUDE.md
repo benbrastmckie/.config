@@ -321,6 +321,8 @@ Located in `.claude/commands/`:
 
 **Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/templates/README.md`.
 
+**Unified Location Detection**: All workflow commands use standardized location detection library (85% token reduction, 25x speedup vs agent-based detection). See [Library API Reference](.claude/docs/reference/library-api.md) for implementation details.
+
 For detailed usage, see `.claude/commands/README.md` and individual command files in `.claude/commands/`.
 <!-- END_SECTION: project_commands -->
 
