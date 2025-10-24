@@ -34,8 +34,35 @@ GROUP_4_TESTS=0  # Backward compatibility
 TEST_TMP_DIR="/tmp/test_system_wide_$$"
 mkdir -p "$TEST_TMP_DIR"
 
+# Test isolation for specs directory
+TEST_SPECS_ROOT=""
+
+# Setup test environment with isolated specs directory
+setup_test_environment() {
+  # Create temporary specs directory for testing
+  TEST_SPECS_ROOT=$(mktemp -d -t claude-test-specs-XXXXXX)
+
+  # Export override for unified location detection
+  export CLAUDE_SPECS_ROOT="$TEST_SPECS_ROOT"
+
+  echo "Test environment initialized: $TEST_SPECS_ROOT"
+}
+
+# Teardown test environment and cleanup
+teardown_test_environment() {
+  # Clean up temporary specs directory
+  if [ -n "$TEST_SPECS_ROOT" ] && [ -d "$TEST_SPECS_ROOT" ]; then
+    rm -rf "$TEST_SPECS_ROOT"
+    echo "Test environment cleaned up: $TEST_SPECS_ROOT"
+  fi
+
+  # Unset environment overrides
+  unset CLAUDE_SPECS_ROOT
+  unset TEST_SPECS_ROOT
+}
+
 # Cleanup on exit
-trap 'cleanup_test_env' EXIT
+trap 'cleanup_test_env; teardown_test_environment' EXIT
 
 cleanup_test_env() {
   rm -rf "$TEST_TMP_DIR"
@@ -159,6 +186,8 @@ simulate_report_command() {
     # Sanitize topic name for filename
     local sanitized_name=$(echo "$topic" | tr ' ' '_' | tr '/' '_' | sed 's/[^a-zA-Z0-9_]/_/g' | cut -c1-50)
     local report_file="${reports_dir}/001_${sanitized_name}.md"
+    # Create parent directory (lazy creation pattern)
+    mkdir -p "$(dirname "$report_file")"
     echo "# Research Report: $topic" > "$report_file"
     echo "$report_file"
   else
@@ -187,6 +216,8 @@ simulate_plan_command() {
     # Sanitize feature name for filename (lowercase, no special chars)
     local sanitized_name=$(echo "$feature" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '/' '_' | sed 's/[^a-z0-9_]/_/g' | sed 's/__*/_/g' | cut -c1-50)
     local plan_file="${plans_dir}/001_${sanitized_name}.md"
+    # Create parent directory (lazy creation pattern)
+    mkdir -p "$(dirname "$plan_file")"
     echo "# Implementation Plan: $feature" > "$plan_file"
     echo "$plan_file"
   else
@@ -405,6 +436,9 @@ test_report_10_no_regression() {
   local content=$(cat "$report_path")
   assert_contains "$content" "Research Report" "Report 1.10: No regression in format" "GROUP1"
 }
+
+# Setup test environment (isolated specs directory)
+setup_test_environment
 
 # Execute /report tests
 test_report_1_simple_topic
