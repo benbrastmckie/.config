@@ -278,6 +278,11 @@ fi
 
 **Verification**: All required functions available via sourced libraries.
 
+**Note on Design Decisions** (Phase 1B):
+- **Metadata extraction** not implemented: supervise uses path-based context passing (not full content), so the 95% context reduction claim doesn't apply
+- **Context pruning** not implemented: bash variables naturally scope, no evidence of context bloat in current architecture
+- **retry_with_backoff** implemented: 6 verification points wrapped for resilience against transient failures (ZERO overhead in success case)
+
 ## Available Utility Functions
 
 [REFERENCE-OK: Can be supplemented with external library documentation]
@@ -753,8 +758,8 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
 
   echo "Verifying Report $i: $(basename $REPORT_PATH)"
 
-  # Check if file exists and has content
-  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+  # Check if file exists and has content (with retry for transient failures)
+  if retry_with_backoff 2 1000 test -f "$REPORT_PATH" -a -s "$REPORT_PATH"; then
     # Success path - perform quality checks
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
 
@@ -784,7 +789,7 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
       # For now, just re-check the file after a short delay
       sleep 1
 
-      if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+      if retry_with_backoff 2 1000 test -f "$REPORT_PATH" -a -s "$REPORT_PATH"; then
         FILE_SIZE=$(wc -c < "$REPORT_PATH")
         echo "  ✅ RETRY SUCCESSFUL: Report created ($FILE_SIZE bytes)"
         SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
@@ -1008,8 +1013,8 @@ echo ""
 # Emit progress marker
 emit_progress "2" "Verifying implementation plan"
 
-# Check if file exists and has content
-if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+# Check if file exists and has content (with retry for transient failures)
+if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
   # Success path - perform quality checks
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
 
@@ -1042,7 +1047,7 @@ else
     echo "⚠️  TRANSIENT ERROR: Retrying once..."
     sleep 1
 
-    if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+    if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
       PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
       echo "✅ RETRY SUCCESSFUL: Plan created with $PHASE_COUNT phases"
     else
@@ -1507,9 +1512,9 @@ for iteration in 1 2 3; do
   echo "════════════════════════════════════════════════════════"
   echo ""
 
-  # VERIFICATION REQUIRED: Debug report must exist before applying fixes
-  if [ ! -f "$DEBUG_REPORT" ]; then
-    echo "❌ CRITICAL ERROR: Debug report not created at $DEBUG_REPORT"
+  # VERIFICATION REQUIRED: Debug report must exist before applying fixes (with retry)
+  if ! retry_with_backoff 2 1000 test -f "$DEBUG_REPORT"; then
+    echo "❌ CRITICAL ERROR: Debug report not created after retries at $DEBUG_REPORT"
     echo ""
     echo "FALLBACK MECHANISM: Cannot continue without debug analysis"
     echo "Workflow TERMINATED."
@@ -1756,9 +1761,9 @@ echo "  MANDATORY VERIFICATION - Workflow Summary"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-# Check if summary file exists and has content
-if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
-  echo "❌ CRITICAL ERROR: Summary file not created at $SUMMARY_PATH"
+# Check if summary file exists and has content (with retry for transient failures)
+if ! retry_with_backoff 2 1000 test -f "$SUMMARY_PATH" -a -s "$SUMMARY_PATH"; then
+  echo "❌ CRITICAL ERROR: Summary file not created after retries at $SUMMARY_PATH"
   echo ""
   echo "FALLBACK MECHANISM: Cannot create summary without agent - workflow incomplete"
   echo "Workflow TERMINATED."
