@@ -319,6 +319,98 @@ Task {
 - No synchronization needed: updates to behavioral file automatically apply
 - Cleaner commands: focus on orchestration, not behavioral details
 
+### Anti-Pattern: Documentation-Only YAML Blocks
+
+**Pattern Definition**: YAML code blocks (` ```yaml`) that contain Task invocation examples prefixed with "Example" or wrapped in documentation context, causing 0% agent delegation rate.
+
+**Detection Rule**: Search for ` ```yaml` blocks that are not preceded by imperative instructions like `**EXECUTE NOW**` or `USE the Task tool`.
+
+**Real-World Example** (from /supervise before refactor):
+
+```markdown
+❌ INCORRECT - Documentation-only pattern:
+
+The following example shows how to invoke an agent:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "Read .claude/agents/research-specialist.md..."
+}
+```
+
+This pattern never executes because it's wrapped in a code block.
+```
+
+**Consequences:**
+1. **0% delegation rate**: Agent prompts appear in command file but never execute
+2. **Silent failure**: No error messages, command appears to work but agents never invoke
+3. **Maintenance confusion**: Developers assume agents are delegating when they're not
+4. **Wasted effort**: Time spent debugging why artifacts aren't created
+
+**Correct Pattern** - Imperative invocation with no code block wrapper:
+
+```markdown
+✅ CORRECT - Executable imperative pattern:
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    .claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: ${RESEARCH_TOPIC}
+    - Output Path: ${REPORT_PATH}
+
+    Return: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+**Key Differences:**
+1. **Imperative instruction**: `**EXECUTE NOW**: USE the Task tool...` signals immediate execution
+2. **No code block wrapper**: Task invocation is not fenced with ` ``` `
+3. **No "Example" prefix**: Removes documentation context that prevents execution
+4. **Completion signal required**: Agent must return explicit success indicator
+
+**How to Detect This Anti-Pattern:**
+
+```bash
+# Search for documentation-only YAML blocks in commands
+grep -n '```yaml' .claude/commands/*.md
+
+# For each match, check if it's preceded by imperative instruction:
+# - If yes: Executable pattern ✓
+# - If no: Documentation-only anti-pattern ❌
+
+# Automated detection:
+for file in .claude/commands/*.md; do
+  # Find YAML blocks not preceded by "EXECUTE NOW" within 5 lines
+  awk '/```yaml/{
+    found=0
+    for(i=NR-5; i<NR; i++) {
+      if(lines[i] ~ /EXECUTE NOW|USE the Task tool/) found=1
+    }
+    if(!found) print FILENAME":"NR": Documentation-only YAML block"
+  } {lines[NR]=$0}' "$file"
+done
+```
+
+**Migration Guide:**
+
+If you find documentation-only YAML blocks:
+
+1. **Retain for documentation**: If the block shows anti-pattern examples or syntax reference, keep it but clearly mark it as non-executable
+2. **Convert to executable**: If the block should invoke agents, remove code block wrapper and add imperative instruction
+3. **Add tests**: Create regression tests to validate agent delegation rate
+
+For detailed conversion steps, see [Command Development Guide](../../guides/command-development-guide.md#avoiding-documentation-only-patterns).
+
 ### Example Violation 1: Command-to-Command Invocation
 
 ```markdown
