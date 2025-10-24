@@ -582,7 +582,7 @@ echo ""
 
 STEP 5: Create topic directory structure
 
-Use the utility function to create the standardized topic directory structure with verification.
+Create only the topic root directory. Subdirectories (reports/, plans/, summaries/, debug/, scripts/, outputs/) are created on-demand when agents write files.
 
 ```bash
 TOPIC_PATH="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
@@ -591,15 +591,16 @@ echo "════════════════════════�
 echo "  MANDATORY VERIFICATION - Topic Directory Creation"
 echo "════════════════════════════════════════════════════════"
 echo ""
-echo "Creating topic directory structure at: $TOPIC_PATH"
+echo "Creating topic root directory at: $TOPIC_PATH"
+echo "   (Subdirectories created on-demand when files written)"
 echo ""
 
-# Create topic structure using utility function (includes verification)
+# Create topic structure using utility function (creates only root directory)
 if ! create_topic_structure "$TOPIC_PATH"; then
-  echo "❌ CRITICAL ERROR: Topic directory not created at $TOPIC_PATH"
+  echo "❌ CRITICAL ERROR: Topic root directory not created at $TOPIC_PATH"
   echo ""
   echo "FALLBACK MECHANISM: Attempting manual directory creation..."
-  mkdir -p "$TOPIC_PATH"/{reports,plans,summaries,debug,scripts,outputs}
+  mkdir -p "$TOPIC_PATH"
 
   # Re-verification
   if [ ! -d "$TOPIC_PATH" ]; then
@@ -609,11 +610,10 @@ if ! create_topic_structure "$TOPIC_PATH"; then
     exit 1
   fi
 
-  echo "✅ FALLBACK SUCCESSFUL: Topic directory created manually"
+  echo "✅ FALLBACK SUCCESSFUL: Topic root directory created manually"
 fi
 
-echo "✅ VERIFIED: Topic directory exists at $TOPIC_PATH"
-echo "   All 6 subdirectories verified: reports, plans, summaries, debug, scripts, outputs"
+echo "✅ VERIFIED: Topic root directory exists at $TOPIC_PATH"
 echo ""
 
 # VERIFICATION REQUIREMENT: YOU MUST NOT proceed until verification passes
