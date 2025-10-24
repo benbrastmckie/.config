@@ -463,6 +463,7 @@ I'll determine the topic directory location using the uniform structure:
 ```bash
 source .claude/lib/artifact-operations.sh
 source .claude/lib/template-integration.sh
+source .claude/lib/unified-location-detection.sh
 ```
 
 **Step 2: Extract Topic from Report or Feature**
@@ -472,15 +473,36 @@ source .claude/lib/template-integration.sh
   - Use the same topic directory for the plan
 - If no reports:
   - Use feature description to determine topic
-  - Create new topic directory using `get_or_create_topic_dir()`
+  - Use unified location detection library to create topic directory
 
 **Step 3: Get or Create Topic Directory**
 ```bash
 # If using existing topic from report
-TOPIC_DIR=$(dirname "$(dirname "$REPORT_PATH")")
+if [ -n "$REPORT_PATH" ]; then
+  TOPIC_DIR=$(dirname "$(dirname "$REPORT_PATH")")
+else
+  # Use unified location detection library for new topics
+  LOCATION_JSON=$(perform_location_detection "$FEATURE_DESCRIPTION" "false")
 
-# If creating new topic
-TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
+  # Extract topic path from JSON output
+  if command -v jq &>/dev/null; then
+    TOPIC_DIR=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
+    PLANS_DIR=$(echo "$LOCATION_JSON" | jq -r '.artifact_paths.plans')
+  else
+    # Fallback without jq
+    TOPIC_DIR=$(echo "$LOCATION_JSON" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+    PLANS_DIR="${TOPIC_DIR}/plans"
+  fi
+
+  # MANDATORY VERIFICATION checkpoint
+  if [ ! -d "$TOPIC_DIR" ]; then
+    echo "ERROR: Location detection failed - directory not created: $TOPIC_DIR"
+    exit 1
+  fi
+
+  echo "✓ VERIFIED: Topic directory created at $TOPIC_DIR"
+fi
+
 # Creates: specs/{NNN_topic}/ with subdirectories (plans/, reports/, summaries/, debug/, etc.)
 ```
 
