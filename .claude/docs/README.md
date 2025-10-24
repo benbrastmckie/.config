@@ -294,6 +294,10 @@ Task-focused guides for accomplishing specific goals. Use when you have a concre
 ### [Concepts](concepts/README.md)
 Understanding-oriented explanations of architecture and design. Use when you need to understand the "why" and "how it works" behind system components.
 
+**Core Concepts**:
+- [Template vs Behavioral Distinction](reference/template-vs-behavioral-distinction.md) - Critical architectural principle for inline vs reference
+- [Behavioral Injection Pattern](concepts/patterns/behavioral-injection.md) - Reference behavioral files, inject context
+
 **Key Documents**:
 - [Hierarchical Agents](concepts/hierarchical_agents.md) - Multi-level agent coordination architecture
 - [Writing Standards](concepts/writing-standards.md) - Development philosophy and documentation principles
@@ -546,6 +550,17 @@ Before committing:
 - [lib/](../lib/README.md) - Shared utilities
 
 ## Quick Reference
+
+### Template Usage Decision Tree
+See: [Template Usage Decision Tree](quick-reference/template-usage-decision-tree.md)
+
+```
+Should this content be inline in command file?
+├─ Is it STRUCTURAL? → YES → Inline (Task blocks, bash, schemas)
+└─ Is it BEHAVIORAL? → YES → Reference agent file (STEP sequences, workflows)
+```
+
+Quick decisions for inline vs reference patterns. Use when creating commands and unsure whether to duplicate content or reference agent files.
 
 ### Orchestration Workflow
 See: [Orchestration Guide](workflows/orchestration-guide.md)
