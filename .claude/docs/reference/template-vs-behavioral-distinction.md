@@ -254,6 +254,79 @@ If you think you've found a legitimate exception:
 3. Consult [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 4. If still uncertain, default to referencing the agent file (behavioral injection pattern)
 
+## Common Pitfalls
+
+### Search Pattern Mismatches in Refactoring
+
+**Pitfall**: When creating refactor plans to remove behavioral duplication, assuming patterns exist without verification.
+
+**Example**: The /supervise command refactor (spec 438) was blocked because the plan searched for `Example agent invocation:` followed by ` ```yaml`, but this pattern never existed in the file.
+
+**Impact**:
+- Edit tool cannot find patterns to replace (0 matches)
+- Implementation cannot proceed
+- Wasted effort trying to execute impossible replacements
+- False confidence from regression tests searching for wrong patterns
+
+**Root Cause**: Plans assumed patterns based on analysis rather than verifying actual strings with Grep tool.
+
+**Prevention**:
+
+1. **Verify Patterns Exist Before Planning Replacements**
+   ```bash
+   # WRONG: Assume pattern exists
+   # "The file contains 'Example agent invocation:' patterns"
+
+   # CORRECT: Verify with Grep
+   grep -n "Example agent invocation:" target_file.md
+   # If output is empty, pattern doesn't exist
+   ```
+
+2. **Extract Actual Strings, Not Inferred Descriptions**
+   ```bash
+   # WRONG: "Line 49 shows Example agent invocation pattern"
+   # (This is an INFERENCE about purpose, not actual text)
+
+   # CORRECT: Extract actual text
+   sed -n '45,55p' target_file.md
+   # Shows what's actually there: "**Wrong Pattern - Command Chaining**..."
+   ```
+
+3. **Add Pattern Verification to Phase 0**
+   ```bash
+   # Phase 0: Verify patterns before implementation
+   PATTERN_COUNT=$(grep -c "expected pattern" target_file.md)
+   if [ "$PATTERN_COUNT" -eq 0 ]; then
+     echo "ERROR: Pattern not found. Plan needs revision."
+     exit 1
+   fi
+   ```
+
+4. **Update Regression Tests to Detect Actual Patterns**
+   ```bash
+   # WRONG: Test searches for pattern that doesn't exist
+   YAML_BLOCKS=$(grep "Example agent invocation:" file.md | wc -l)
+   # Gives false pass (0 found) when 7 actually exist
+
+   # CORRECT: Test searches for actual pattern
+   YAML_BLOCKS=$(grep -c '```yaml' file.md)
+   # Accurately detects 7 blocks
+   ```
+
+**Case Study**: See [/supervise Command Refactor](../troubleshooting/inline-template-duplication.md#real-world-example-supervise-command-refactor) for complete diagnostic, classification, and corrected refactor plan.
+
+**Key Lessons**:
+- Always use Grep to verify patterns exist before creating refactor plans
+- Extract actual strings, not descriptions
+- Classify blocks as structural vs behavioral before deciding keep/remove
+- Add Phase 0 pattern verification to catch mismatches before implementation
+- Ensure regression tests detect actual patterns, not phantom patterns
+
+**References**:
+- **Diagnostic**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/OVERVIEW.md`
+- **Classification**: `.claude/specs/444_research_allowed_tools_fix/reports/001_research/supervise_yaml_classification.md`
+- **Corrected Plan**: `.claude/specs/444_research_allowed_tools_fix/plans/001_supervise_refactor_corrected.md`
+
 ## Enforcement
 
 ### Validation Criteria
