@@ -54,35 +54,24 @@ sanitize_topic_name() {
     cut -c1-50
 }
 
-# Create the standard topic directory structure with verification
+# Create the topic directory with lazy subdirectory creation
 # Usage: create_topic_structure "/path/to/specs/082_topic_name"
-# Creates: reports/, plans/, summaries/, debug/, scripts/, outputs/ subdirectories
+# Creates: Only the topic root directory
 # Returns: 0 on success, 1 on failure
 #
-# Verification: Checks that all 6 subdirectories exist after creation
+# Note: Subdirectories (reports/, plans/, summaries/, debug/, scripts/, outputs/)
+#       are created on-demand when files are written. This prevents empty directories.
+#
+# Verification: Checks that topic root directory exists after creation
 create_topic_structure() {
   local topic_path="$1"
 
-  # Create parent directory
+  # Create only the topic root directory
   mkdir -p "$topic_path"
 
-  # Create all 6 standard subdirectories
-  mkdir -p "$topic_path"/{reports,plans,summaries,debug,scripts,outputs}
-
   # Verification checkpoint (required by Verification and Fallback pattern)
-  local missing_dirs=()
-  for subdir in reports plans summaries debug scripts outputs; do
-    if [ ! -d "$topic_path/$subdir" ]; then
-      missing_dirs+=("$subdir")
-    fi
-  done
-
-  # If any directories are missing, report error and fail
-  if [ ${#missing_dirs[@]} -gt 0 ]; then
-    echo "ERROR: Failed to create subdirectories in $topic_path:" >&2
-    for missing in "${missing_dirs[@]}"; do
-      echo "  - $missing" >&2
-    done
+  if [ ! -d "$topic_path" ]; then
+    echo "ERROR: Failed to create topic directory: $topic_path" >&2
     return 1
   fi
 
@@ -134,12 +123,13 @@ find_matching_topic() {
 #   TOPIC_NAME=$(sanitize_topic_name "Research: OAuth2 Authentication")
 #   echo "Sanitized: $TOPIC_NAME"  # Output: "research_oauth2_authentication"
 #
-# Example 3: Create topic structure
+# Example 3: Create topic root (subdirectories created on-demand)
 #   TOPIC_PATH="/path/to/specs/083_auth_research"
 #   if create_topic_structure "$TOPIC_PATH"; then
-#     echo "Topic structure created successfully"
+#     echo "Topic root created successfully"
+#     # Subdirectories created when files are written
 #   else
-#     echo "Failed to create topic structure" >&2
+#     echo "Failed to create topic root" >&2
 #     exit 1
 #   fi
 #
