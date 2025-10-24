@@ -37,8 +37,24 @@ create_topic_artifact() {
       ;;
   esac
 
-  # Create artifact subdirectory
+  # Artifact subdirectory path
   local artifact_subdir="${CLAUDE_PROJECT_DIR}/${topic_dir}/${artifact_type}"
+
+  # PATH-ONLY MODE: Calculate path without creating directory (lazy creation)
+  # This mode is used when commands need to pre-calculate paths (e.g., /orchestrate)
+  # without creating empty directories. Directories are created later when files are written.
+  if [ -z "$content" ]; then
+    # Get next artifact number without creating directory
+    local next_num=$(get_next_artifact_number "$artifact_subdir" || echo "001")
+
+    # Return formatted path without creating directory or file
+    local artifact_file="${artifact_subdir}/${next_num}_${artifact_name}.md"
+    echo "$artifact_file"
+    return 0
+  fi
+
+  # FILE CREATION MODE: Create directory and file (original behavior)
+  # This mode is used when commands are ready to write actual content
   mkdir -p "$artifact_subdir"
 
   # Get next artifact number
@@ -48,23 +64,7 @@ create_topic_artifact() {
   local artifact_file="${artifact_subdir}/${next_num}_${artifact_name}.md"
 
   # Write content to file
-  if [ -n "$content" ]; then
-    echo "$content" > "$artifact_file"
-  else
-    # Create empty file with basic metadata
-    cat > "$artifact_file" <<EOF
-# ${artifact_name}
-
-## Metadata
-- **Date**: $(date -u +%Y-%m-%d)
-- **Topic**: $(basename "$topic_dir")
-- **Type**: $artifact_type
-- **Number**: $next_num
-
-## Content
-(Content to be added)
-EOF
-  fi
+  echo "$content" > "$artifact_file"
 
   # Set executable permission for scripts
   if [ "$artifact_type" = "scripts" ]; then
