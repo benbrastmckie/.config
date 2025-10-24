@@ -102,6 +102,32 @@ YOU MUST read all provided individual research reports:
 
 ---
 
+### STEP 2.5 (REQUIRED BEFORE STEP 3) - Ensure Parent Directory Exists
+
+**EXECUTE NOW - Lazy Directory Creation**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST ensure the parent directory exists before creating the overview file.
+
+Use Bash tool to create parent directory if needed:
+
+```bash
+# Source unified location detection library
+source .claude/lib/unified-location-detection.sh
+
+# Ensure parent directory exists (lazy creation pattern)
+# $OVERVIEW_PATH should be provided in your prompt
+ensure_artifact_directory "$OVERVIEW_PATH" || {
+  echo "ERROR: Failed to create parent directory for overview" >&2
+  exit 1
+}
+
+echo "✓ Parent directory ready for overview file"
+```
+
+**CHECKPOINT**: Parent directory must exist before proceeding to Step 3.
+
+---
+
 ### STEP 3 (REQUIRED) - Create Overview Report File
 
 **EXECUTE NOW - Write Overview to Artifact Location**

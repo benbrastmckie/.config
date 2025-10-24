@@ -214,6 +214,15 @@ Task {
     **STEP 1 (MANDATORY)**: Verify you received the absolute report path above.
     If path is not absolute (starts with /), STOP and report error.
 
+    **STEP 1.5 (EXECUTE NOW)**: Ensure parent directory exists (lazy creation):
+    ```bash
+    source .claude/lib/unified-location-detection.sh
+    ensure_artifact_directory "[ABSOLUTE_PATH_FROM_SUBTOPIC_REPORT_PATHS]" || {
+      echo "ERROR: Failed to create parent directory" >&2
+      exit 1
+    }
+    ```
+
     **STEP 2 (EXECUTE NOW)**: Create report file at EXACT path using Write tool.
     Create with initial structure BEFORE conducting research.
 
@@ -355,6 +364,14 @@ Task {
 $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
 
     **STEP 1**: Verify you received absolute overview path and subtopic paths.
+    **STEP 1.5 (EXECUTE NOW)**: Ensure parent directory exists (lazy creation):
+    ```bash
+    source .claude/lib/unified-location-detection.sh
+    ensure_artifact_directory "$OVERVIEW_PATH" || {
+      echo "ERROR: Failed to create parent directory" >&2
+      exit 1
+    }
+    ```
     **STEP 2**: Read ALL subtopic reports using Read tool.
     **STEP 3**: Create overview file at EXACT path using Write tool.
     **STEP 4**: Synthesize findings and update overview using Edit tool.
@@ -551,6 +568,14 @@ Task {
     **Report Path**: [ABSOLUTE_PRE_CALCULATED_PATH]
 
     **STEP 1**: Verify absolute report path received
+    **STEP 1.5 (EXECUTE NOW)**: Ensure parent directory exists (lazy creation):
+    ```bash
+    source .claude/lib/unified-location-detection.sh
+    ensure_artifact_directory "[ABSOLUTE_PRE_CALCULATED_PATH]" || {
+      echo "ERROR: Failed to create parent directory" >&2
+      exit 1
+    }
+    ```
     **STEP 2**: Create report file at EXACT path using Write tool
     **STEP 3**: Conduct research and update report
     **STEP 4**: Verify file exists and return: REPORT_CREATED: [path]
@@ -573,6 +598,14 @@ Task {
     **Subtopic Report Paths**: [ALL_VERIFIED_PATHS]
 
     **STEP 1**: Verify absolute overview path and subtopic paths
+    **STEP 1.5 (EXECUTE NOW)**: Ensure parent directory exists (lazy creation):
+    ```bash
+    source .claude/lib/unified-location-detection.sh
+    ensure_artifact_directory "[ABSOLUTE_OVERVIEW_PATH]" || {
+      echo "ERROR: Failed to create parent directory" >&2
+      exit 1
+    }
+    ```
     **STEP 2**: Read ALL subtopic reports using Read tool
     **STEP 3**: Create overview file at EXACT path
     **STEP 4**: Synthesize findings and update overview

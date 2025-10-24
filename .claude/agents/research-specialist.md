@@ -45,6 +45,31 @@ echo "✓ VERIFIED: Absolute report path received: $REPORT_PATH"
 
 ---
 
+### STEP 1.5 (REQUIRED BEFORE STEP 2) - Ensure Parent Directory Exists
+
+**EXECUTE NOW - Lazy Directory Creation**
+
+**ABSOLUTE REQUIREMENT**: YOU MUST ensure the parent directory exists before creating the report file.
+
+Use Bash tool to create parent directory if needed:
+
+```bash
+# Source unified location detection library
+source .claude/lib/unified-location-detection.sh
+
+# Ensure parent directory exists (lazy creation pattern)
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory for report" >&2
+  exit 1
+}
+
+echo "✓ Parent directory ready for report file"
+```
+
+**CHECKPOINT**: Parent directory must exist before proceeding to Step 2.
+
+---
+
 ### STEP 2 (REQUIRED BEFORE STEP 3) - Create Report File FIRST
 
 **EXECUTE NOW - Create Report File**

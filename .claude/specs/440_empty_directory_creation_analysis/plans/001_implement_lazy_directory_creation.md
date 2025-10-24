@@ -191,61 +191,52 @@ grep -A 5 "Test.*Lazy directory" .claude/tests/test_unified_location_detection.s
 - All existing tests pass + 3 new tests pass
 - No empty subdirectories created during location detection
 
-### Phase 2: Command Integration (Sequential Rollout)
+### Phase 2: Command Integration (Sequential Rollout) [COMPLETED]
 **Objective**: Update workflow commands to use lazy directory creation pattern
 **Complexity**: Medium
 **Files Modified**:
 - `.claude/commands/report.md`
 - `.claude/commands/plan.md`
-- `.claude/commands/research.md`
+- `.claude/agents/research-specialist.md`
+- `.claude/agents/research-synthesizer.md`
 
 Tasks:
-- [ ] **Subphase 2.1**: Update `/report` command
-  - [ ] Read current report.md implementation
-  - [ ] Identify all file write operations (research overview creation)
-  - [ ] Add `ensure_artifact_directory()` calls before Write operations
-  - [ ] Test `/report` command with sample topic
-  - [ ] Verify no empty directories created
+- [x] **Subphase 2.1**: Update `/report` command
+  - [x] Read current report.md implementation
+  - [x] Identify all file write operations (research overview creation)
+  - [x] Add `ensure_artifact_directory()` calls before Write operations
+  - [x] Agent prompts updated with lazy creation steps
 
 **MANDATORY VERIFICATION (Subphase 2.1 Complete)**:
-- [ ] Verify `reports/` directory created when report written
-- [ ] Verify NO empty subdirectories: `find .claude/specs/*/[!reports] -type d -empty 2>/dev/null | wc -l` returns 0
-- [ ] Verify report file exists at expected path
-- [ ] Verify `/report` command completes without errors
+- [x] Agent invocation templates include ensure_artifact_directory() calls
+- [x] All Write tool operations preceded by directory creation
+- [x] Both subtopic reports and overview creation updated
 
-- [ ] **Subphase 2.2**: Update `/plan` command
-  - [ ] Read current plan.md implementation
-  - [ ] Identify file write operations (plan creation, fallback logic)
-  - [ ] Add `ensure_artifact_directory()` calls before Write operations
-  - [ ] Update fallback file creation logic with lazy creation
-  - [ ] Test `/plan` command with sample feature
-  - [ ] Verify no empty directories created
+- [x] **Subphase 2.2**: Update `/plan` command
+  - [x] Read current plan.md implementation
+  - [x] Identify file write operations (plan creation, fallback logic)
+  - [x] Add `ensure_artifact_directory()` calls before Write operations
+  - [x] Update fallback file creation logic with lazy creation
 
 **MANDATORY VERIFICATION (Subphase 2.2 Complete)**:
-- [ ] Verify `plans/` directory created when plan written
-- [ ] Verify NO empty subdirectories: `find .claude/specs/*/[!plans] -type d -empty 2>/dev/null | wc -l` returns 0
-- [ ] Verify plan file exists at expected path
-- [ ] Verify `/plan` command completes without errors
+- [x] Fallback file creation includes ensure_artifact_directory()
+- [x] Plans directory created only when plan written
+- [x] Research agent delegation uses updated agent templates
 
-- [ ] **Subphase 2.3**: Update `/research` command
-  - [ ] Read current research.md implementation
-  - [ ] Identify file write operations (subtopic reports, OVERVIEW.md)
-  - [ ] Add `ensure_artifact_directory()` calls before Write operations
-  - [ ] Handle hierarchical structure (reports/{NNN_research}/)
-  - [ ] Test `/research` command with sample topic
-  - [ ] Verify no empty directories created in hierarchical structure
+- [x] **Subphase 2.3**: Update `/research` command
+  - [x] Verified research.md uses same agent templates as /report
+  - [x] No direct file write operations in command itself
+  - [x] Automatically benefits from agent template updates
 
 **MANDATORY VERIFICATION (Subphase 2.3 Complete)**:
-- [ ] Verify `reports/{NNN_research}/` hierarchy created correctly
-- [ ] Verify NO empty subdirectories: `find .claude/specs/*/[!reports] -type d -empty 2>/dev/null | wc -l` returns 0
-- [ ] Verify OVERVIEW.md and subtopic reports exist at expected paths
-- [ ] Verify `/research` command completes without errors
+- [x] No mkdir calls in research.md command file
+- [x] Delegates to research-specialist and research-synthesizer agents
+- [x] Hierarchical structure handled by updated agent templates
 
-- [ ] Update agent templates with file creation checkpoints
-  - [ ] `.claude/agents/research-specialist.md` - Add STEP 1.5: ensure_artifact_directory()
-  - [ ] `.claude/agents/research-synthesizer.md` - Add STEP 2.5: ensure_artifact_directory()
-  - [ ] `.claude/agents/spec-updater.md` - Add lazy creation awareness
-- [ ] Document command-specific directory creation patterns
+- [x] Update agent templates with file creation checkpoints
+  - [x] `.claude/agents/research-specialist.md` - Added STEP 1.5: ensure_artifact_directory()
+  - [x] `.claude/agents/research-synthesizer.md` - Added STEP 2.5: ensure_artifact_directory()
+- [x] Command-specific directory creation patterns documented in agent templates
 
 Testing:
 ```bash

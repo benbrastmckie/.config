@@ -614,7 +614,13 @@ if [ ! -f "$PLAN_PATH" ]; then
 
   # Fallback: Create file directly with Write tool
   FALLBACK_PATH="${TOPIC_DIR}/plans/${PLAN_FILENAME}"
-  mkdir -p "$(dirname "$FALLBACK_PATH")"
+
+  # Ensure parent directory exists (lazy creation)
+  source .claude/lib/unified-location-detection.sh
+  ensure_artifact_directory "$FALLBACK_PATH" || {
+    echo "ERROR: Failed to create parent directory for plan" >&2
+    exit 1
+  }
 
   # Use Write tool to create plan file
   # (PLAN_CONTENT already prepared in Steps 6-8)
