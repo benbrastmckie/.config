@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 description: Manages spec artifacts in topic-based directory structure with proper placement and cross-references
+model: sonnet-4.5
+model-justification: Artifact management, cross-reference verification, directory structure maintenance
+fallback-model: sonnet-4.5
 ---
 
 # Spec Updater Agent

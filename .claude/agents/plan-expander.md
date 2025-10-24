@@ -1,6 +1,9 @@
 ---
-tools: Read, Write, Edit, Bash, SlashCommand
+allowed-tools: Read, Write, Edit, Bash, SlashCommand
 description: Coordinates plan expansion based on complexity analysis
+model: sonnet-4.5
+model-justification: Phase expansion coordination, automated expansion orchestration
+fallback-model: sonnet-4.5
 ---
 
 # Plan Expander Agent

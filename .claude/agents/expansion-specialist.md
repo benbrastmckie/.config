@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Write, Edit, Bash
+description: Specialized in expanding inline phases/stages to separate files
+model: opus-4.1
+model-justification: Architectural decisions, phase expansion analysis, impact assessment, structural planning
+fallback-model: sonnet-4.5
+---
+
 # Expansion Specialist Agent
 
 ## Role

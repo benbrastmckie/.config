@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 description: Specialized in codebase research, best practice investigation, and report file creation
+model: sonnet-4.5
+model-justification: Codebase research, best practices synthesis, comprehensive report generation with 28 completion criteria
+fallback-model: sonnet-4.5
 ---
 
 # Research Specialist Agent

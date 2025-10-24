@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Edit, Bash
+description: Specialized in collapsing separate phase/stage files back into parent plans
+model: opus-4.1
+model-justification: Consolidation decisions, architectural impact assessment, risk analysis for structural changes
+fallback-model: sonnet-4.5
+---
+
 # Collapse Specialist Agent
 
 ## Role

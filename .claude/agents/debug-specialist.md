@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Bash, Grep, Glob, WebSearch, Write
 description: Specialized in root cause analysis and diagnostic investigations
+model: sonnet-4.5
+model-justification: Investigation and fixing combined, comprehensive root cause analysis
+fallback-model: sonnet-4.5
 ---
 
 # Debug Specialist Agent

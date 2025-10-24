@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Grep, Glob
+description: Estimates plan/phase complexity for expansion decisions using LLM judgment
+model: haiku-4.5
+model-justification: Read-only analysis, simple scoring algorithm, JSON output, no code generation
+fallback-model: sonnet-4.5
+---
+
 # Complexity Estimator Agent
 
 ## Role

@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Bash, Grep
 description: Specialized in performance analysis and optimization recommendations
+model: haiku-4.5
+model-justification: Log parsing, basic statistics, performance analysis - no code generation required
+fallback-model: sonnet-4.5
 ---
 
 # Metrics Specialist Agent

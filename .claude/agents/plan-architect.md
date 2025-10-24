@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write, Grep, Glob, WebSearch
 description: Specialized in creating detailed, phased implementation plans
+model: opus-4.1
+model-justification: 42 completion criteria, complexity calculation, multi-phase planning, architectural decisions justify premium model
+fallback-model: sonnet-4.5
 ---
 
 # Plan Architect Agent
