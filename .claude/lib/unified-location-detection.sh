@@ -79,6 +79,14 @@ detect_project_root() {
 detect_specs_directory() {
   local project_root="$1"
 
+  # Method 0: Respect test environment override (for test isolation)
+  if [ -n "${CLAUDE_SPECS_ROOT:-}" ]; then
+    # Create override directory if it doesn't exist
+    mkdir -p "$CLAUDE_SPECS_ROOT" 2>/dev/null || true
+    echo "$CLAUDE_SPECS_ROOT"
+    return 0
+  fi
+
   # Method 1: Prefer .claude/specs (modern convention)
   if [ -d "${project_root}/.claude/specs" ]; then
     echo "${project_root}/.claude/specs"
