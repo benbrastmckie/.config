@@ -15,16 +15,9 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Source the detect_workflow_scope function from supervise.md
-# Extract the function from the markdown file
-extract_function() {
-  sed -n '/^detect_workflow_scope() {/,/^}/p' /home/benjamin/.config/.claude/commands/supervise.md
-}
-
-# Create a temporary script with the function
-TEMP_SCRIPT=$(mktemp)
-extract_function > "$TEMP_SCRIPT"
-source "$TEMP_SCRIPT"
+# Source the detect_workflow_scope function from workflow-detection.sh library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/workflow-detection.sh"
 
 # Test helper function
 test_scope_detection() {

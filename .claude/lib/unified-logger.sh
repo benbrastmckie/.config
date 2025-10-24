@@ -697,6 +697,27 @@ Completed: $(date)
 EOF
 }
 
+# ==============================================================================
+# Progress Markers
+# ==============================================================================
+
+#
+# emit_progress - Emit silent progress marker
+#
+# Arguments:
+#   $1: phase_number
+#   $2: action description
+#
+# Output format: PROGRESS: [Phase N] - action
+#
+# Example: emit_progress "1" "Research complete (4/4 succeeded)"
+#
+emit_progress() {
+  local phase="$1"
+  local action="$2"
+  echo "PROGRESS: [Phase $phase] - $action"
+}
+
 # Export all functions for use in other scripts
 export -f rotate_log_file
 export -f rotate_log_if_needed
@@ -723,3 +744,4 @@ export -f log_phase_start
 export -f log_phase_end
 export -f log_validation_check
 export -f log_summary
+export -f emit_progress

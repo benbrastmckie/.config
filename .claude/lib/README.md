@@ -1,6 +1,6 @@
 # Shared Utility Libraries
 
-This directory contains 58 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
+This directory contains 59 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
 
 **Note**: This README documents **sourced utility libraries** (functions that are sourced into other scripts). For documentation of **standalone utility scripts** (executable scripts), see [UTILS_README.md](UTILS_README.md).
 
@@ -61,10 +61,11 @@ After the refactor, the library is organized into functional domains:
 - `checkpoint-utils.sh` - Checkpoint management for workflow resume
 - `complexity-utils.sh` - Complexity analysis and threshold detection
 
-### Agent Coordination (3 modules)
+### Agent Coordination (4 modules)
 - `agent-registry-utils.sh` - Agent registry operations
 - `agent-invocation.sh` - Agent coordination and invocation
 - `parallel-orchestration-utils.sh` - Parallel agent workflow management
+- `workflow-detection.sh` - Workflow scope detection and phase execution logic
 
 ### Analysis & Metrics (3 modules)
 - `analysis-pattern.sh` - Common phase/stage analysis patterns
@@ -861,6 +862,35 @@ RESULTS=$(collect_agent_results)
 ```
 
 **Used By:** `/orchestrate`
+
+---
+
+#### workflow-detection.sh (130 lines)
+
+Workflow scope detection and phase execution logic for /supervise command.
+
+**Key Functions:**
+- `detect_workflow_scope()` - Detect workflow type (research-only, research-and-plan, full-implementation, debug-only)
+- `should_run_phase()` - Check if phase should execute for current scope
+
+**Usage Example:**
+```bash
+source .claude/lib/workflow-detection.sh
+
+# Detect workflow scope
+SCOPE=$(detect_workflow_scope "research auth to create plan")
+echo "Detected scope: $SCOPE"  # Output: research-and-plan
+
+# Check if phase should run
+export PHASES_TO_EXECUTE="0,1,2"
+if should_run_phase 3; then
+  echo "Execute phase 3"
+else
+  echo "Skip phase 3"
+fi
+```
+
+**Used By:** `/supervise`
 
 ---
 
