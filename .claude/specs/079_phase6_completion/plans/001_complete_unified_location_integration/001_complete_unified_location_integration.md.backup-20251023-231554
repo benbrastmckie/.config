@@ -621,88 +621,104 @@ See [phase_5_system_wide_integration_testing.md](phase_5_system_wide_integration
 
 ---
 
-### Phase 6: Documentation Integration
+### Phase 6: Documentation and Rollback Procedures
 
 **Dependencies**: [5]
-**Complexity**: 2/10
-**Estimated Time**: 20-30 minutes
+**Complexity**: 3/10
+**Estimated Time**: 30 minutes
 **Risk**: Low (documentation only)
 
 #### Objective
 
-Integrate unified location detection documentation into `.claude/docs/` structure following Diataxis framework, avoiding redundancy with existing documentation.
+Create comprehensive documentation and rollback procedures to support production deployment and maintenance.
 
-#### Documentation Strategy
+#### Tasks - API Documentation
 
-**Key Principle**: Leverage existing `.claude/docs/` structure instead of creating redundant documentation. The unified location detection library is a **utility library**, not a pattern or architecture - it belongs in **reference** documentation with cross-references from relevant guides.
+- [ ] **Create API Reference**: `.claude/docs/reference/unified-location-detection-api.md`
+  - [ ] Function signatures and parameters
+  - [ ] Return formats (JSON output, YAML legacy)
+  - [ ] Usage examples for each command
+  - [ ] Error codes and troubleshooting
+  - [ ] Performance characteristics (<1s execution, <11k tokens)
 
-**Existing Coverage**:
-- Performance measurement patterns already documented in `guides/performance-measurement.md`
-- Testing patterns already covered in `guides/testing-patterns.md`
-- Rollback procedures already created in Phase 5 (`scripts/rollback_unified_integration.sh`)
-- Command patterns covered in `guides/command-patterns.md`
+#### Tasks - Command Documentation Updates
 
-**Documentation Gaps**:
-- No reference documentation for `.claude/lib/` utility libraries
-- No guide for using utility libraries in commands
+- [ ] **Update /supervise docs**: YOU MUST reference unified library in documentation
+- [ ] **Update /orchestrate docs**: YOU MUST document Phase 0 optimization (agent → library)
+- [ ] **Update /report docs**: YOU MUST document location detection changes
+- [ ] **Update /plan docs**: YOU MUST document location detection changes
+- [ ] **Update CLAUDE.md**: Add unified library reference in Project Commands section
 
-#### Tasks - Reference Documentation
+#### Tasks - Rollback Procedures
 
-- [ ] **Create Library Reference**: `.claude/docs/reference/library-api.md`
-  - [ ] Purpose: Quick lookup for all `.claude/lib/` utility libraries
-  - [ ] Section for `unified-location-detection.sh`:
-    - [ ] Core functions: `perform_location_detection()`, `detect_project_root()`, `sanitize_topic_name()`, etc.
-    - [ ] Return formats (JSON with jq/sed fallback)
-    - [ ] Performance characteristics (<1s, <11k tokens vs 75.6k baseline)
-    - [ ] Usage pattern (source, call, extract with jq/sed)
-  - [ ] Section for other libraries (plan-core-bundle.sh, metadata-extraction.sh, etc.)
-  - [ ] Cross-reference from existing library files
+- [ ] **Create Rollback Document**: `.claude/specs/079_phase6_completion/plans/rollback_procedures.md`
+  - [ ] Per-command rollback steps (restore from .backup-unified-integration)
+  - [ ] Feature flag revert instructions (USE_UNIFIED_LOCATION=false)
+  - [ ] Validation checklist for rollback success
+  - [ ] Emergency escalation procedures
 
-- [ ] **Update Reference README**: `.claude/docs/reference/README.md`
-  - [ ] Add `library-api.md` to document list
-  - [ ] Add quick start section for library lookup
+#### Rollback Document Template
 
-#### Tasks - Guide Documentation
+```markdown
+# Unified Location Detection Rollback Procedures
 
-- [ ] **Create Utility Library Guide**: `.claude/docs/guides/using-utility-libraries.md`
-  - [ ] Purpose: How to use `.claude/lib/` utilities in commands and agents
-  - [ ] When to use libraries vs agents (performance, simplicity)
-  - [ ] Pattern: Source library → call function → extract results
-  - [ ] Example: Using unified-location-detection.sh
-  - [ ] Troubleshooting common issues (jq vs sed fallback)
-  - [ ] Cross-reference to `library-api.md` for function signatures
+## Immediate Rollback (ANY command failure >5%)
 
-- [ ] **Update Guides README**: `.claude/docs/guides/README.md`
-  - [ ] Add `using-utility-libraries.md` to document list (alphabetical order)
-  - [ ] Add use cases for when to choose libraries vs agents
+### Step 1: Restore Command Files
+```bash
+# Restore individual command (example: /report)
+cp .claude/commands/report.md.backup-unified-integration .claude/commands/report.md
 
-#### Tasks - CLAUDE.md Minimal Update
+# Or restore all commands
+cp .claude/commands/report.md.backup-unified-integration .claude/commands/report.md
+cp .claude/commands/plan.md.backup-unified-integration .claude/commands/plan.md
+cp .claude/commands/orchestrate.md.backup-unified-integration .claude/commands/orchestrate.md
+# Note: /supervise already optimized, no rollback needed
+```
 
-**Note**: Avoid duplicating detailed API documentation in CLAUDE.md. Instead, add minimal reference pointer.
+### Step 2: Test Rollback Success
+```bash
+# Run integration test suite
+./.claude/tests/test_system_wide_location.sh
+# Expected: 100% pass rate with legacy implementations
+```
 
-- [ ] **Update Project Commands section** in `CLAUDE.md`:
-  - [ ] Add one-line reference: "All workflow commands use unified location detection (see [Library API](.claude/docs/reference/library-api.md))"
-  - [ ] Keep existing command descriptions unchanged
-  - [ ] Remove any redundant location detection details
+### Step 3: Root Cause Analysis
+- Review failed test logs
+- Identify specific failure modes
+- Determine if bug or design flaw
 
-#### Tasks - Cross-Reference Updates
+### Step 4: Fix and Redeploy
+- Correct unified library or command integration
+- Rerun unit tests (100% pass required)
+- Rerun integration tests (95% pass required)
+- Retry deployment with fixed code
+```
 
-- [ ] **Update guides/command-development-guide.md**:
-  - [ ] Add section on "Using Utility Libraries" with link to `using-utility-libraries.md`
-  - [ ] Add unified-location-detection.sh as example of library usage
+#### Tasks - CLAUDE.md Update
 
-- [ ] **Update guides/performance-measurement.md**:
-  - [ ] Add case study: Unified location detection (85% token reduction)
-  - [ ] Cross-reference to `library-api.md` for implementation details
+Add to **Project Commands** section:
+
+```markdown
+### Location Detection (System-Wide)
+
+All workflow commands use unified location detection library:
+- **Library**: .claude/lib/unified-location-detection.sh
+- **Commands**: /supervise, /orchestrate, /report, /plan
+- **Optimization**: 85-95% token reduction vs agent-based approach
+- **Performance**: <1s execution time, <11k tokens
+- **Functions**: 7 core functions (project root, specs detection, topic numbering, sanitization, structure creation, orchestration, legacy compatibility)
+
+**API Reference**: See [Unified Location Detection API](.claude/docs/reference/unified-location-detection-api.md)
+```
 
 #### Success Criteria
 
-- [ ] Library API reference created following Diataxis "Reference" category format
-- [ ] Utility library guide created following Diataxis "Guide" category format
-- [ ] All cross-references updated in relevant existing documents
-- [ ] CLAUDE.md updated with minimal pointer (no duplication)
-- [ ] Documentation follows existing `.claude/docs/` style and structure
-- [ ] No redundant content created (DRY principle applied to documentation)
+- [ ] API reference document created and comprehensive
+- [ ] All command documentation updated with library references
+- [ ] Rollback procedures documented with step-by-step instructions
+- [ ] CLAUDE.md updated with unified library section
+- [ ] Emergency escalation procedures defined
 
 ---
 
@@ -980,39 +996,6 @@ This plan adheres to all standards in `.claude/docs/`:
 - ✓ **Testing Protocols**: Comprehensive unit, integration, and regression testing
 
 ## Revision History
-
-### 2025-10-23 - Revision 3: Phase 6 Documentation Strategy Refinement
-
-**Changes**:
-1. **Simplified Phase 6** from "Documentation and Rollback Procedures" to "Documentation Integration"
-2. **Reduced complexity** from 3/10 to 2/10 (rollback procedures already complete in Phase 5)
-3. **Applied DRY principle** to documentation: avoid redundancy with existing `.claude/docs/` structure
-4. **Integrated with Diataxis framework**:
-   - Reference: Create `library-api.md` for utility library quick lookup
-   - Guide: Create `using-utility-libraries.md` for task-focused how-to
-5. **Minimal CLAUDE.md update**: One-line pointer instead of duplicating API details
-6. **Cross-reference integration**: Update existing guides with library usage examples
-
-**Reason**:
-- Phase 5 already created rollback scripts (`rollback_unified_integration.sh`)
-- Existing `.claude/docs/` structure already covers performance measurement and testing patterns
-- Documentation was at risk of duplicating content across multiple locations
-- Utility libraries need reference documentation but weren't covered in existing `.claude/docs/` structure
-
-**Modified Sections**:
-- Phase 6: Completely restructured to focus on proper documentation integration
-- Removed redundant rollback documentation tasks (already complete)
-- Removed command-specific documentation tasks (commands self-document via inline comments)
-- Added library API reference and utility library guide tasks
-
-**Documentation Gaps Identified**:
-- No reference documentation existed for `.claude/lib/` utilities
-- No guide existed for when to use libraries vs agents in commands
-
-**Standards Compliance**:
-- Follows Diataxis framework (Reference = lookup, Guides = how-to)
-- Maintains DRY principle (Don't Repeat Yourself) in documentation
-- Integrates with existing `.claude/docs/` structure
 
 ### 2025-10-23 - Revision 2: /research Integration + Standards Compliance
 
