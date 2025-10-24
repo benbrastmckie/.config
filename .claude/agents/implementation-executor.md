@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Write, Edit, Bash, TodoWrite
+description: Executes single phase/stage of implementation plan with progress tracking
+model: sonnet-4.5
+model-justification: Task execution, plan hierarchy updates, checkpoint management, git commits
+fallback-model: sonnet-4.5
+---
+
 # Implementation Executor Agent
 
 ## Role

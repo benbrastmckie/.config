@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Grep, Glob, Bash, Write
 description: Bidirectional document conversion between Markdown, Word (DOCX), and PDF formats
+model: sonnet-4.5
+model-justification: DOCX/PDF conversion with multiple tool fallbacks, format preservation
+fallback-model: sonnet-4.5
 ---
 
 # Document Conversion Agent

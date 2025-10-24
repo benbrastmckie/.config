@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write, Edit, Grep, Glob
 description: Specialized in maintaining documentation consistency
+model: sonnet-4.5
+model-justification: Documentation creation, README generation, comprehensive doc writing
+fallback-model: sonnet-4.5
 ---
 
 # Documentation Writer Agent

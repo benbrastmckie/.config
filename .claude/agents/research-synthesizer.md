@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write
 description: Synthesizes multiple individual research reports into comprehensive overview report with cross-references
+model: sonnet-4.5
+model-justification: Research synthesis, cross-reference creation, comprehensive overview generation
+fallback-model: sonnet-4.5
 ---
 
 # Research Synthesizer Agent

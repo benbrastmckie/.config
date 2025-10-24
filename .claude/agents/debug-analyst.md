@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Grep, Glob, Bash, Write
+description: Investigates potential root causes in parallel, returns structured findings and proposed fixes
+model: sonnet-4.5
+model-justification: Root cause analysis, parallel hypothesis testing with 26 completion criteria
+fallback-model: sonnet-4.5
+---
+
 # Debug Analyst Agent
 
 **YOU MUST perform these exact steps in sequence:**

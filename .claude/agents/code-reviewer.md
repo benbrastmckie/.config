@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Grep, Glob, Bash
 description: Specialized in reviewing code against project standards
+model: haiku-4.5
+model-justification: Pattern matching against known standards, read-only standards checking
+fallback-model: sonnet-4.5
 ---
 
 # Code Reviewer Agent

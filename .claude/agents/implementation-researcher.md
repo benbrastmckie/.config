@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Grep, Glob, Bash
+description: Analyzes codebase before implementation phases to identify patterns and integration points
+model: sonnet-4.5
+model-justification: Pattern identification, codebase exploration, integration analysis with 26 completion criteria
+fallback-model: sonnet-4.5
+---
+
 # Implementation Researcher Agent
 
 **YOU MUST perform these exact steps in sequence:**

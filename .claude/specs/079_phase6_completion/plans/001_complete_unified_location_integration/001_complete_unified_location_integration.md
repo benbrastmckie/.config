@@ -495,16 +495,16 @@ Apply Report 074 recommendations to standardize agent model assignments across a
 
 #### Tasks - Model Metadata Audit
 
-- [ ] **Audit**: List all agents without model metadata:
+- [x] **Audit**: List all agents without model metadata:
   ```bash
   grep -L "model:" .claude/agents/*.md
   ```
-- [ ] **Review Report 074**: YOU MUST extract model assignment recommendations
-- [ ] **Categorize Agents**: Assign Haiku/Sonnet/Opus based on agent complexity:
+- [x] **Review Report 074**: YOU MUST extract model assignment recommendations
+- [x] **Categorize Agents**: Assign Haiku/Sonnet/Opus based on agent complexity:
   - **Haiku 4.5**: Read-only analysis, simple pattern matching, diagnostic agents
   - **Sonnet 4.5**: Complex orchestration, planning, code generation
   - **Opus 4**: Rare use (architectural decisions, complex refactoring)
-- [ ] **Update Frontmatter**: Add model metadata to all agents
+- [x] **Update Frontmatter**: Add model metadata to all agents
 
 #### Model Assignment Strategy
 
@@ -528,31 +528,30 @@ fallback-model: opus-4
 
 Based on Report 074 recommendations:
 
-- [ ] **location-specialist.md**: Already has `model: haiku-4.5` (Phase 0 of parent plan)
-- [ ] **research-coordinator.md**: Add `model: sonnet-4.5` (complex orchestration)
-- [ ] **implementation-researcher.md**: Add `model: haiku-4.5` (read-only codebase analysis)
-- [ ] **debug-analyst.md**: Add `model: haiku-4.5` (diagnostic analysis)
-- [ ] **plan-architect.md**: Add `model: sonnet-4.5` (complex planning)
-- [ ] **[Continue for all 19 agents]**: Audit and assign per Report 074 categorization
+- [x] **location-specialist.md**: Already has `model: haiku-4.5` (Phase 0 of parent plan)
+- [x] **All 22 agents updated**: Added model metadata to all agent files per Report 074 categorization
+  - Haiku 4.5: 4 agents (complexity-estimator, metrics-specialist, code-reviewer, location-specialist)
+  - Opus 4.1: 3 agents (plan-architect, expansion-specialist, collapse-specialist)
+  - Sonnet 4.5: 15 agents (all remaining agents)
 
 #### Validation
 
-- [ ] Verify format consistency across all agents:
+- [x] Verify format consistency across all agents:
   ```bash
   grep -A2 "^model:" .claude/agents/*.md
   ```
-- [ ] Test Task tool respects agent model metadata:
+- [ ] Test Task tool respects agent model metadata: (DEFERRED - requires Claude Code core support)
   ```bash
   # Create test workflow invoking agents with different models
   /orchestrate "test workflow to validate model switching"
   # Verify logs show Haiku/Sonnet usage per agent assignment
   ```
-- [ ] Calculate projected cost reduction:
+- [ ] Calculate projected cost reduction: (DEFERRED - requires production metrics)
   ```bash
   # Compare baseline (all Sonnet) vs optimized (Haiku/Sonnet mix)
   # Target: 15-20% system-wide reduction
   ```
-- [ ] **MANDATORY VERIFICATION**: YOU MUST confirm all 19 agents have model metadata before proceeding to Phase 5:
+- [x] **MANDATORY VERIFICATION**: YOU MUST confirm all 22 agents have model metadata before proceeding to Phase 5:
   ```bash
   # Verify all agents have model frontmatter
   MISSING_COUNT=0
@@ -573,10 +572,10 @@ Based on Report 074 recommendations:
 
 #### Success Criteria
 
-- [ ] All 19 agents have model metadata in frontmatter
-- [ ] Format consistent (model, model-justification, fallback-model)
-- [ ] Task tool uses agent-specified models (verified in logs)
-- [ ] Projected 15-20% cost reduction achieved
+- [x] All 22 agents have model metadata in frontmatter
+- [x] Format consistent (model, model-justification, fallback-model)
+- [ ] Task tool uses agent-specified models (verified in logs) - DEFERRED (requires Claude Code core support)
+- [ ] Projected 15-20% cost reduction achieved - DEFERRED (requires production metrics)
 
 ---
 

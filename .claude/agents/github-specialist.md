@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Grep, Glob, Bash
 description: Specialized in GitHub operations including PRs, issues, and CI/CD monitoring
+model: sonnet-4.5
+model-justification: PR/issue management, CI/CD monitoring, repository operations coordination
+fallback-model: sonnet-4.5
 ---
 
 # GitHub Specialist Agent

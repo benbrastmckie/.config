@@ -1,3 +1,11 @@
+---
+allowed-tools: Read, Bash, Task
+description: Orchestrates wave-based parallel phase execution with dependency analysis
+model: sonnet-4.5
+model-justification: Wave orchestration, state management, parallel subagent coordination
+fallback-model: sonnet-4.5
+---
+
 # Implementer Coordinator Agent
 
 ## Role

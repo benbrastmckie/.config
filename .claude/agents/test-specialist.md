@@ -1,6 +1,9 @@
 ---
 allowed-tools: Bash, Read, Grep
 description: Specialized in running tests and analyzing failures
+model: sonnet-4.5
+model-justification: Test execution, failure analysis, error debugging with enhanced error tools
+fallback-model: sonnet-4.5
 ---
 
 # Test Specialist Agent

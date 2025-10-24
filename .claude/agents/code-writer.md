@@ -1,6 +1,9 @@
 ---
 allowed-tools: Read, Write, Edit, Bash, TodoWrite
 description: Specialized in writing and modifying code following project standards
+model: sonnet-4.5
+model-justification: Code implementation with 30 completion criteria, complex code generation and modification
+fallback-model: sonnet-4.5
 ---
 
 # Code Writer Agent
