@@ -185,6 +185,20 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
+### [Using Utility Libraries](using-utility-libraries.md)
+**Purpose**: Task-focused guide for using `.claude/lib/` utility libraries in commands and agents with practical patterns for performance optimization.
+
+**Use Cases**:
+- When deciding between using a utility library vs invoking an agent
+- To understand how to source and call library functions in commands
+- When implementing common patterns (location detection, plan parsing, metadata extraction)
+- To optimize context window usage (0 tokens vs 15k-75k for agents)
+- When handling jq dependency for JSON parsing with fallback
+
+**See Also**: [Library API Reference](../reference/library-api.md), [Command Development Guide](command-development-guide.md), [Performance Measurement](performance-measurement.md)
+
+---
+
 ## Quick Start
 
 ### Create Your First Command
@@ -212,6 +226,7 @@ guides/
 ├── command-development-guide.md      Comprehensive command development (consolidated)
 ├── agent-development-guide.md        Comprehensive agent development (consolidated)
 ├── using-agents.md                   Agent integration patterns
+├── using-utility-libraries.md        Utility library usage patterns
 ├── standards-integration.md          CLAUDE.md standards discovery
 ├── command-patterns.md               Reusable implementation patterns
 ├── command-examples.md               Example command patterns

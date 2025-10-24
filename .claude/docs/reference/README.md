@@ -78,6 +78,19 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ---
 
+### [Library API Reference](library-api.md)
+**Purpose**: Quick lookup reference for all `.claude/lib/` utility libraries with function signatures, return formats, and performance characteristics.
+
+**Use Cases**:
+- When you need to call a specific utility function in a command or agent
+- To understand the API and return format of an existing library
+- To discover available libraries before implementing new logic
+- When optimizing command performance by replacing agent calls with library calls
+
+**See Also**: [Using Utility Libraries](../guides/using-utility-libraries.md), [Command Development Guide](../guides/command-development-guide.md)
+
+---
+
 ## Quick Start
 
 ### Look Up a Command
@@ -110,7 +123,8 @@ reference/
 ├── agent-reference.md                  Agent directory
 ├── claude-md-section-schema.md         Standards format specification
 ├── command_architecture_standards.md   Command/agent design requirements
-└── phase_dependencies.md               Dependency syntax and wave calculation
+├── phase_dependencies.md               Dependency syntax and wave calculation
+└── library-api.md                      Utility library API reference
 ```
 
 ## Related Documentation
