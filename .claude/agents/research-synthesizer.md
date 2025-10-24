@@ -66,34 +66,37 @@ YOU MUST read all provided individual research reports:
    - Primary findings across all reports
    - Recommended overall approach
 
-2. **Cross-Report Findings** (patterns identified):
+2. **Research Structure** (navigation to individual reports):
+   - List all subtopic reports with relative links
+   - Brief description of each report's focus (1 sentence per report)
+   - Format: \`1. **[Topic Name](./NNN_topic_name.md)** - Brief description\`
+   - Example: \`1. **[OAuth Implementation Patterns](./001_oauth_patterns.md)** - Analysis of OAuth 2.0 flows and provider integration strategies\`
+   - This section provides immediate navigation to detailed reports
+
+3. **Cross-Report Findings** (patterns identified):
    - Themes appearing in multiple reports
    - Contradictions between reports (with analysis)
    - Synergies between different approaches
    - Integrated insights
+   - **IMPORTANT**: Reference specific reports when mentioning findings (e.g., "As noted in [OAuth Patterns](./001_oauth_patterns.md)...")
 
-3. **Detailed Findings by Topic** (one section per individual report):
+4. **Detailed Findings by Topic** (one section per individual report):
    - Section header: Topic name from report
    - 50-100 word summary of report key findings
    - Link to full individual report: \`[Full Report]({relative_path})\`
    - Key recommendations from that report
 
-4. **Recommended Approach** (synthesized):
+5. **Recommended Approach** (synthesized):
    - Overall strategy synthesized from all reports
    - Prioritized recommendations
    - Implementation sequence if applicable
    - Integration points between topics
 
-5. **Constraints and Trade-offs**:
+6. **Constraints and Trade-offs**:
    - Limitations identified across reports
    - Design trade-offs to consider
    - Risk factors mentioned
    - Mitigation strategies
-
-6. **Individual Report References**:
-   - Table or list of all individual reports
-   - Format: \`- [{topic}]({report_path})\` for each report
-   - Enables easy navigation to full details
 
 **CHECKPOINT**: YOU MUST have complete overview structure before Step 3.
 
@@ -132,8 +135,13 @@ YOU MUST read all provided individual research reports:
    ## Executive Summary
    [3-5 sentence summary]
 
+   ## Research Structure
+   1. **[Subtopic 1](./001_subtopic_name.md)** - Brief description
+   2. **[Subtopic 2](./002_subtopic_name.md)** - Brief description
+   3. **[Subtopic 3](./003_subtopic_name.md)** - Brief description
+
    ## Cross-Report Findings
-   [Patterns and themes]
+   [Patterns and themes, with references to specific reports]
 
    ...
    \`\`\`
@@ -200,13 +208,22 @@ METADATA:
 
 ### Cross-Reference Requirements
 1. **Link Format**:
-   - Use relative paths from overview location to individual reports
-   - Format: \`[Report Title](./027_research_oauth.md)\`
-   - Ensure links are valid (reports in same directory)
+   - **ALWAYS use relative paths** from overview location to individual reports
+   - Format: \`[Report Title](./NNN_report_name.md)\`
+   - Ensure links are valid (reports typically in same directory)
+   - **Example**: \`[OAuth Patterns](./001_oauth_patterns.md)\`
+   - **NEVER use absolute paths** - maintains portability across systems
 
-2. **Reference Table**:
-   - Include table or list of all reports at end of overview
-   - Enable quick navigation to full details
+2. **Research Structure Section** (MANDATORY):
+   - Include "Research Structure" section immediately after Executive Summary
+   - List all individual reports with numbered list and brief descriptions
+   - Provides immediate navigation to all detailed reports
+   - Format: \`1. **[Topic Name](./NNN_topic.md)** - One sentence description\`
+
+3. **Inline References**:
+   - Reference specific reports throughout Cross-Report Findings and other sections
+   - Use same relative link format
+   - Example: "As noted in [OAuth Patterns](./001_oauth_patterns.md), the authorization code flow..."
 
 ### Integration Notes
 
