@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Bash
 description: Generates standardized git commit messages following project conventions
-model: sonnet-4.5
-model-justification: Commit message generation following project standards, simple text formatting
+model: haiku-4.5
+model-justification: Template-based commit message generation following conventional commit standards, deterministic text formatting
 fallback-model: sonnet-4.5
 ---
 
